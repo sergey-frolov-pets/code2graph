@@ -74,7 +74,7 @@ function buildSingleHtml() {
     <meta name="color-scheme" content="light dark" />
     <meta
       name="description"
-      content="Офлайн-редактор и генератор PlantUML диаграмм на Vue.js"
+      content="Оффлайн-редактор и генератор PlantUML диаграмм на Vue.js"
     />
     <title>vuePlantUML</title>
     <link rel="canonical" href="https://puml.sergey-frolov.ru/" />

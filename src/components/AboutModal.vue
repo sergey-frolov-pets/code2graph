@@ -14,7 +14,7 @@ const emit = defineEmits<{
 <template>
   <AppModal :open="open" title="О программе" @close="emit('close')">
     <p class="about-lead">
-      <strong>{{ APP_META.name }}</strong> — офлайн-редактор и генератор диаграмм
+      <strong>{{ APP_META.name }}</strong> — оффлайн-редактор и генератор диаграмм
       PlantUML в форматах SVG и PNG.
     </p>
     <p class="about-meta">Разработана <strong>{{ APP_META.developer }}</strong></p>

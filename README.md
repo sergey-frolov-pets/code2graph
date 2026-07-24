@@ -1,6 +1,6 @@
 # vuePlantUML
 
-Кросс-платформенный офлайн генератор PlantUML диаграмм на Vue 3 + `@plantuml/core` (Smetana).
+Кросс-платформенный оффлайн генератор PlantUML диаграмм на Vue 3 + `@plantuml/core` (Smetana).
 
 **Сайт:** [puml.sergey-frolov.ru](https://puml.sergey-frolov.ru/)
 
@@ -45,7 +45,7 @@ npm run build:single
 
 - Live-предпросмотр SVG
 - Экспорт SVG и PNG
-- Офлайн (`file://`, PWA)
+- Оффлайн (`file://`, PWA)
 - Smetana / ELK / dot layout
 - Тёмная тема, настройки редактора
 
