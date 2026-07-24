@@ -39,10 +39,10 @@ const emit = defineEmits<{
       aria-hidden="true"
     >
       <path
-        d="M9 9H4V4M15 4h5v5M15 15h5v-4H15M9 15H4v-4"
+        d="M4 4 10 10M10 10 8 10M10 10 10 8M20 4 14 10M14 10 16 10M14 10 14 8M20 20 14 14M14 14 16 14M14 14 14 16M4 20 10 14M10 14 8 14M10 14 10 16"
         fill="none"
         stroke="currentColor"
-        stroke-width="2"
+        stroke-width="2.4"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
