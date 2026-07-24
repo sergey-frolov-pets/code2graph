@@ -19,6 +19,8 @@ const {
   onTouchStart,
   onTouchEnd,
   onTouchCancel,
+  onMouseEnter,
+  onMouseLeave,
 } = useLongPressTooltip(rootRef);
 </script>
 
@@ -32,6 +34,8 @@ const {
     @touchstart.capture.passive="onTouchStart"
     @touchend.capture="onTouchEnd"
     @touchcancel.capture="onTouchCancel"
+    @mouseenter="onMouseEnter"
+    @mouseleave="onMouseLeave"
     @contextmenu.prevent
   >
     <slot />

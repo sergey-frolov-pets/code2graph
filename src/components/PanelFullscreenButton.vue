@@ -38,15 +38,6 @@ const emit = defineEmits<{
       viewBox="0 0 24 24"
       aria-hidden="true"
     >
-      <rect
-        x="5"
-        y="5"
-        width="14"
-        height="14"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-      />
       <path
         d="M7.5 7.5 11.7 11.7M11.7 11.7 11.7 10.4M11.7 11.7 10.4 11.7M16.5 7.5 12.3 11.7M12.3 11.7 12.3 10.4M12.3 11.7 13.6 11.7M16.5 16.5 12.3 12.3M12.3 12.3 12.3 13.6M12.3 12.3 13.6 12.3M7.5 16.5 11.7 12.3M11.7 12.3 11.7 13.6M11.7 12.3 10.4 12.3"
         fill="none"
