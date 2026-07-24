@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import AppModal from "@/components/AppModal.vue";
+import { useLocale } from "@/composables/useLocale";
+import {
+  formatLocalizedSyntaxIssues,
+  localizeSyntaxIssue,
+} from "@/utils/localize-syntax";
 import type { SyntaxCheckResult } from "@/utils/plantuml-syntax";
-import { formatSyntaxIssues } from "@/utils/plantuml-syntax";
 
 const props = defineProps<{
   open: boolean;
@@ -14,14 +18,15 @@ const emit = defineEmits<{
   close: [];
 }>();
 
+const { t } = useLocale();
+
 const title = computed(() => {
-  if (props.isValidating) {
-    return "Проверка синтаксиса";
+  if (props.isValidating || !props.result) {
+    return t("syntax.titleChecking");
   }
-  if (!props.result) {
-    return "Проверка синтаксиса";
-  }
-  return props.result.valid ? "Синтаксис корректен" : "Ошибки синтаксиса";
+  return props.result.valid
+    ? t("syntax.titleValid")
+    : t("syntax.titleInvalid");
 });
 
 const variant = computed(() => {
@@ -33,15 +38,15 @@ const variant = computed(() => {
 
 const message = computed(() => {
   if (props.isValidating) {
-    return "Проверяем исходник через статический анализ и движок PlantUML…";
+    return t("syntax.checkingMessage");
   }
   if (!props.result) {
     return "";
   }
   if (props.result.valid) {
-    return "Диаграмма успешно прошла проверку. Можно экспортировать SVG или PNG.";
+    return t("syntax.validMessage");
   }
-  return formatSyntaxIssues(props.result.issues);
+  return formatLocalizedSyntaxIssues(props.result.issues, t);
 });
 
 const errorLines = computed(() => {
@@ -70,11 +75,13 @@ const errorLines = computed(() => {
     <ul v-if="!isValidating && result && !result.valid" class="issue-list">
       <li
         v-for="(issue, index) in result.issues"
-        :key="`${issue.message}-${index}`"
+        :key="`${issue.messageKey ?? issue.message}-${index}`"
         :class="issue.severity"
       >
-        <span v-if="issue.line" class="issue-line">Строка {{ issue.line }}</span>
-        {{ issue.message }}
+        <span v-if="issue.line" class="issue-line">
+          {{ t("syntax.line", { line: issue.line }) }}
+        </span>
+        {{ localizeSyntaxIssue(issue, t) }}
       </li>
     </ul>
 
@@ -82,13 +89,13 @@ const errorLines = computed(() => {
       v-if="!isValidating && result && !result.valid && errorLines.length > 0"
       class="syntax-hint"
     >
-      Проблемные строки подсвечены в редакторе:
+      {{ t("syntax.highlightHint") }}
       {{ errorLines.join(", ") }}
     </p>
 
     <template #footer>
       <button class="btn btn-primary" type="button" @click="emit('close')">
-        {{ isValidating ? "Подождите…" : "Закрыть" }}
+        {{ isValidating ? t("app.wait") : t("app.close") }}
       </button>
     </template>
   </AppModal>

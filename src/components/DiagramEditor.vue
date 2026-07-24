@@ -7,7 +7,9 @@ import TooltipWrap from "@/components/TooltipWrap.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
 import { isSampleDiagramSource, SAMPLE_DIAGRAMS } from "@/constants";
 import { useAppDialog } from "@/composables/useAppDialog";
+import { useLocale } from "@/composables/useLocale";
 import type { EditorFontSize } from "@/constants/editor-settings";
+import { resolveLocalizedErrorMessage } from "@/utils/localized-app-error";
 import {
   loadPumlFromFile,
   PUML_FILE_ACCEPT,
@@ -45,6 +47,7 @@ const isDragOver = ref(false);
 const isFullscreen = ref(false);
 
 const { confirm } = useAppDialog();
+const { t } = useLocale();
 
 const gutterDigitCount = computed(() => String(lineCount.value).length);
 
@@ -72,7 +75,7 @@ const errorLineSet = computed(() => new Set(props.errorLines ?? []));
 const canClear = computed(() => Boolean(source.value.trim()));
 
 const validateLabel = computed(() =>
-  props.isValidating ? "Проверка..." : "Проверить синтаксис",
+  props.isValidating ? t("editor.validating") : t("editor.validate"),
 );
 
 async function requestClear(): Promise<void> {
@@ -86,9 +89,9 @@ async function requestClear(): Promise<void> {
   }
 
   const confirmed = await confirm({
-    title: "Очистить редактор?",
-    message: "Текущий код будет удалён.",
-    confirmLabel: "Очистить",
+    title: t("editor.clearTitle"),
+    message: t("editor.clearMessage"),
+    confirmLabel: t("editor.clear"),
     variant: "danger",
   });
 
@@ -137,9 +140,7 @@ async function importFile(file: File): Promise<void> {
   } catch (importError) {
     emit(
       "importError",
-      importError instanceof Error
-        ? importError.message
-        : "Не удалось открыть файл",
+      resolveLocalizedErrorMessage(importError, t, "file.openFailed"),
     );
   }
 }
@@ -220,13 +221,13 @@ watch(
     :style="editorStyle"
   >
     <header class="panel-header">
-      <h2 class="panel-title" title="Исходный код PlantUML">Код</h2>
+      <h2 class="panel-title" :title="t('editor.titleTooltip')">{{ t("editor.title") }}</h2>
       <div class="panel-header__toolbar">
-        <IconButton label="Открыть .puml" @click="openFilePicker">
+        <IconButton :label="t('editor.openPuml')" @click="openFilePicker">
           <ActionIcon name="folder-open" />
         </IconButton>
         <IconButton
-          label="Сохранить .puml"
+          :label="t('app.savePuml')"
           primary
           format
           :disabled="!canSave"
@@ -242,21 +243,21 @@ watch(
           <ActionIcon name="check" />
         </IconButton>
         <IconButton
-          label="Очистить"
+          :label="t('editor.clear')"
           :disabled="!canClear"
           @click="requestClear"
         >
           <ActionIcon name="trash" />
         </IconButton>
-        <TooltipWrap label="Примеры диаграмм">
+        <TooltipWrap :label="t('editor.samplesTooltip')">
           <label class="sample-select-wrap">
-            <span class="sr-only">Пример диаграммы</span>
+            <span class="sr-only">{{ t("editor.sampleOption") }}</span>
             <select
               class="select sample-select"
-              title="Примеры диаграмм"
+              :title="t('editor.samplesTooltip')"
               @change="loadSample(($event.target as HTMLSelectElement).value)"
             >
-              <option value="" selected disabled>Примеры</option>
+              <option value="" selected disabled>{{ t("editor.samples") }}</option>
               <option
                 v-for="name in Object.keys(SAMPLE_DIAGRAMS)"
                 :key="name"
@@ -325,7 +326,7 @@ watch(
         </div>
       </div>
 
-      <p class="drop-hint">Перетащите .puml сюда.</p>
+      <p class="drop-hint">{{ t("editor.dropHint") }}</p>
     </div>
   </section>
 </template>

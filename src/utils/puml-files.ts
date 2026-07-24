@@ -1,5 +1,6 @@
 import { MAX_PUML_FILE_BYTES } from "@/constants/diagram-library";
 import { downloadTextFile } from "@/utils/export";
+import { LocalizedAppError } from "@/utils/localized-app-error";
 
 export const PUML_MIME_TYPE = "application/vnd.plantuml";
 
@@ -22,9 +23,9 @@ export function readFileAsText(file: File): Promise<string> {
         resolve(reader.result);
         return;
       }
-      reject(new Error("Не удалось прочитать файл как текст"));
+      reject(new LocalizedAppError("file.readTextFailed"));
     };
-    reader.onerror = () => reject(new Error("Ошибка чтения файла"));
+    reader.onerror = () => reject(new LocalizedAppError("file.readError"));
     reader.readAsText(file, "utf-8");
   });
 }
@@ -41,7 +42,7 @@ export function sanitizeFileName(fileName: string): string {
 export function assertPumlFileSize(file: File, maxBytes = MAX_PUML_FILE_BYTES): void {
   if (file.size > maxBytes) {
     const maxKb = Math.round(maxBytes / 1024);
-    throw new Error(`Файл слишком большой. Максимум ${maxKb} КБ`);
+    throw new LocalizedAppError("file.tooLarge", { size: maxKb });
   }
 }
 
@@ -52,7 +53,7 @@ export async function loadPumlFromFile(file: File): Promise<{
   assertPumlFileSize(file);
   const content = await readFileAsText(file);
   if (!content.trim()) {
-    throw new Error("Файл пустой");
+    throw new LocalizedAppError("file.empty");
   }
 
   return {

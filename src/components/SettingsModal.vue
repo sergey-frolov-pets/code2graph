@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import { APP_LINKS, LAYOUT_ENGINES, type LayoutEngine } from "@/constants";
 import {
@@ -50,6 +50,13 @@ const layoutOptions = Object.entries(LAYOUT_ENGINES).map(([label, value]) => ({
   label,
   value,
 }));
+
+const fontFamilyOptions = computed(() =>
+  EDITOR_FONT_FAMILY_OPTIONS.map((option) => ({
+    ...option,
+    label: option.id === "system" ? t("settings.fontSystem") : option.label,
+  })),
+);
 </script>
 
 <template>
@@ -92,7 +99,7 @@ const layoutOptions = Object.entries(LAYOUT_ENGINES).map(([label, value]) => ({
           "
         >
           <option
-            v-for="option in EDITOR_FONT_FAMILY_OPTIONS"
+            v-for="option in fontFamilyOptions"
             :key="option.id"
             :value="option.id"
           >

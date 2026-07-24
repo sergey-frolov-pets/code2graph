@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, watch } from "vue";
 import { useAppDialog } from "@/composables/useAppDialog";
+import { useLocale } from "@/composables/useLocale";
 
 const {
   dialogState,
@@ -10,6 +11,8 @@ const {
   getCancelLabel,
   getConfirmLabel,
 } = useAppDialog();
+
+const { t } = useLocale();
 
 const inputRef = ref<HTMLInputElement | null>(null);
 
@@ -136,7 +139,7 @@ onUnmounted(() => {
             type="button"
             @click="cancelDialog"
           >
-            {{ dialogState ? getCancelLabel(dialogState) : "Отмена" }}
+            {{ dialogState ? getCancelLabel(dialogState, t) : t("app.cancel") }}
           </button>
           <button
             class="btn app-dialog__btn"
@@ -147,7 +150,7 @@ onUnmounted(() => {
             type="button"
             @click="isPrompt ? submitDialog(promptValue) : submitDialog()"
           >
-            {{ dialogState ? getConfirmLabel(dialogState) : "OK" }}
+            {{ dialogState ? getConfirmLabel(dialogState, t) : t("app.ok") }}
           </button>
         </footer>
       </div>

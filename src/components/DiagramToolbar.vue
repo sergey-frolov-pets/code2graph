@@ -4,6 +4,7 @@ import ActionIcon from "@/components/icons/ActionIcon.vue";
 import FileBadgeIcon from "@/components/icons/FileBadgeIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import TooltipWrap from "@/components/TooltipWrap.vue";
+import { useLocale } from "@/composables/useLocale";
 
 const props = defineProps<{
   isRendering: boolean;
@@ -20,10 +21,10 @@ const emit = defineEmits<{
   "update:diagramDarkMode": [value: boolean];
 }>();
 
+const { t } = useLocale();
+
 const themeToggleLabel = computed(() =>
-  props.diagramDarkMode
-    ? "Переключить на светлую тему диаграммы"
-    : "Переключить на тёмную тему диаграммы",
+  props.diagramDarkMode ? t("toolbar.themeToLight") : t("toolbar.themeToDark"),
 );
 
 function toggleDiagramTheme(): void {
@@ -33,9 +34,9 @@ function toggleDiagramTheme(): void {
 
 <template>
   <div class="preview-toolbar">
-    <TooltipWrap label="Фон предпросмотра">
+    <TooltipWrap :label="t('toolbar.previewBackground')">
       <label class="preview-toolbar__color-field">
-        <span class="sr-only">Фон предпросмотра</span>
+        <span class="sr-only">{{ t("toolbar.previewBackground") }}</span>
         <input
           class="preview-toolbar__color"
           type="color"
@@ -62,7 +63,7 @@ function toggleDiagramTheme(): void {
     </IconButton>
 
     <IconButton
-      label="Обновить"
+      :label="t('toolbar.refresh')"
       :disabled="isRendering"
       @click="emit('renderNow')"
     >
@@ -70,7 +71,7 @@ function toggleDiagramTheme(): void {
     </IconButton>
 
     <IconButton
-      label="Экспорт SVG"
+      :label="t('toolbar.exportSvg')"
       primary
       format
       :disabled="!canExport"
@@ -80,7 +81,7 @@ function toggleDiagramTheme(): void {
     </IconButton>
 
     <IconButton
-      label="Экспорт PNG"
+      :label="t('toolbar.exportPng')"
       primary
       format
       :disabled="!canExport"

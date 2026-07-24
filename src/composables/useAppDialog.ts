@@ -44,8 +44,8 @@ type DialogState =
       resolve: () => void;
     };
 
-const DEFAULT_CANCEL_LABEL = "Отмена";
-const DEFAULT_CONFIRM_LABEL = "OK";
+const DEFAULT_CANCEL_LABEL_KEY = "app.cancel";
+const DEFAULT_CONFIRM_LABEL_KEY = "app.ok";
 
 const dialogState = ref<DialogState | null>(null);
 
@@ -160,20 +160,26 @@ export function useAppDialog() {
     }
   }
 
-  function getCancelLabel(dialog: DialogState): string {
+  function getCancelLabel(
+    dialog: DialogState,
+    t: (key: string) => string,
+  ): string {
     if (dialog.type === "alert") {
-      return DEFAULT_CANCEL_LABEL;
+      return t(DEFAULT_CANCEL_LABEL_KEY);
     }
 
-    return dialog.options.cancelLabel ?? DEFAULT_CANCEL_LABEL;
+    return dialog.options.cancelLabel ?? t(DEFAULT_CANCEL_LABEL_KEY);
   }
 
-  function getConfirmLabel(dialog: DialogState): string {
+  function getConfirmLabel(
+    dialog: DialogState,
+    t: (key: string) => string,
+  ): string {
     if (dialog.type === "alert") {
-      return dialog.options.confirmLabel ?? DEFAULT_CONFIRM_LABEL;
+      return dialog.options.confirmLabel ?? t(DEFAULT_CONFIRM_LABEL_KEY);
     }
 
-    return dialog.options.confirmLabel ?? DEFAULT_CONFIRM_LABEL;
+    return dialog.options.confirmLabel ?? t(DEFAULT_CONFIRM_LABEL_KEY);
   }
 
   return {
