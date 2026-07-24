@@ -60,10 +60,7 @@ watch(isFullscreen, (value) => {
     :class="{ 'is-fullscreen': isFullscreen }"
   >
     <header class="panel-header">
-      <div class="panel-header__top">
-        <h2 class="panel-title" title="Предпросмотр">Просмотр</h2>
-        <PanelFullscreenButton :active="isFullscreen" @toggle="toggleFullscreen" />
-      </div>
+      <h2 class="panel-title" title="Предпросмотр">Просмотр</h2>
       <div class="panel-header__toolbar">
         <DiagramToolbar
           :is-rendering="isRendering"
@@ -78,6 +75,7 @@ watch(isFullscreen, (value) => {
         />
         <span v-if="isRendering" class="status-pill status-pill--compact">…</span>
       </div>
+      <PanelFullscreenButton :active="isFullscreen" @toggle="toggleFullscreen" />
     </header>
 
     <div class="panel-body">

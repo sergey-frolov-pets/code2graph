@@ -220,10 +220,7 @@ watch(
     :style="editorStyle"
   >
     <header class="panel-header">
-      <div class="panel-header__top">
-        <h2 class="panel-title" title="Исходный код PlantUML">Код</h2>
-        <PanelFullscreenButton :active="isFullscreen" @toggle="toggleFullscreen" />
-      </div>
+      <h2 class="panel-title" title="Исходный код PlantUML">Код</h2>
       <div class="panel-header__toolbar">
         <IconButton label="Открыть .puml" @click="openFilePicker">
           <ActionIcon name="folder-open" />
@@ -271,6 +268,7 @@ watch(
           </label>
         </TooltipWrap>
       </div>
+      <PanelFullscreenButton :active="isFullscreen" @toggle="toggleFullscreen" />
     </header>
 
     <div

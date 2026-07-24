@@ -130,28 +130,22 @@ a {
 
 .panel-header {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
   padding: 8px 10px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-muted);
-}
-
-.panel-header__top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
   min-width: 0;
 }
 
 .panel-header__toolbar {
   display: flex;
+  flex: 1;
   flex-direction: row;
   flex-wrap: nowrap;
   align-items: center;
   gap: 4px;
-  width: 100%;
   min-width: 0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -196,8 +190,8 @@ a {
   margin: 0;
   font-size: 0.82rem;
   font-weight: 600;
-  flex: 1;
-  min-width: 0;
+  flex: 0 0 auto;
+  max-width: 5.5rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
