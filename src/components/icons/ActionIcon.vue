@@ -136,21 +136,76 @@ withDefaults(
 
     <template v-else-if="name === 'library'">
       <path
-        d="M6 5.5h4a1 1 0 0 1 1 1v13H6a1 1 0 0 1-1-1v-12a1 1 0 0 1 1-1Z"
+        d="M3.5 18.5h17"
         fill="none"
         stroke="currentColor"
         stroke-width="1.8"
-        stroke-linejoin="round"
+        stroke-linecap="round"
       />
       <path
-        d="M11 4.5h7a1 1 0 0 1 1 1v14h-8V4.5Z"
+        d="M5 18.5V16.5M19 18.5V16.5"
         fill="none"
         stroke="currentColor"
         stroke-width="1.8"
-        stroke-linejoin="round"
+        stroke-linecap="round"
+      />
+      <rect
+        x="5"
+        y="9"
+        width="2.6"
+        height="7.5"
+        fill="currentColor"
+        stroke="none"
+        rx="0.3"
+      />
+      <rect
+        x="8.3"
+        y="9.4"
+        width="2.4"
+        height="7.1"
+        fill="currentColor"
+        stroke="none"
+        rx="0.3"
+        transform="rotate(-14 9.5 13)"
+      />
+      <rect
+        x="10.8"
+        y="8.2"
+        width="2.6"
+        height="8.3"
+        fill="currentColor"
+        stroke="none"
+        rx="0.3"
+      />
+      <rect
+        x="13.9"
+        y="9.5"
+        width="2.6"
+        height="7"
+        fill="currentColor"
+        stroke="none"
+        rx="0.3"
+      />
+      <rect
+        x="16.2"
+        y="10"
+        width="2.2"
+        height="6.5"
+        fill="currentColor"
+        stroke="none"
+        rx="0.3"
+      />
+      <circle
+        cx="17.8"
+        cy="10.2"
+        r="3.6"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
       />
       <path
-        d="M7.5 9h1M7.5 12h1M13 9h3.5M13 12h3.5M13 15h2.5"
+        d="M20.4 12.8 22.2 15.2"
+        fill="none"
         stroke="currentColor"
         stroke-width="1.8"
         stroke-linecap="round"
