@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import AboutModal from "@/components/AboutModal.vue";
 import AppDialogHost from "@/components/AppDialogHost.vue";
 import DiagramEditor from "@/components/DiagramEditor.vue";
@@ -116,8 +116,10 @@ const isSettingsModalOpen = ref(false);
 const isLibraryModalOpen = ref(false);
 const isAboutModalOpen = ref(false);
 const isShareHelpModalOpen = ref(false);
+const statusBarRef = ref<HTMLElement | null>(null);
 
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+let statusBarObserver: ResizeObserver | null = null;
 
 const canExport = computed(() => Boolean(svg.value) && !error.value && !isRendering.value);
 const canSave = computed(() => Boolean(source.value.trim()));
@@ -442,6 +444,21 @@ function openAboutFromSettings(): void {
 }
 
 onMounted(() => {
+  const updateStatusBarHeight = (): void => {
+    const height = statusBarRef.value?.offsetHeight ?? 42;
+    document.documentElement.style.setProperty(
+      "--status-bar-height",
+      `${height}px`,
+    );
+  };
+
+  updateStatusBarHeight();
+
+  if (statusBarRef.value) {
+    statusBarObserver = new ResizeObserver(updateStatusBarHeight);
+    statusBarObserver.observe(statusBarRef.value);
+  }
+
   restoreSettings();
   void initializeIncomingSources();
   void waitForEngineReady()
@@ -460,6 +477,11 @@ onMounted(() => {
           : "Ошибка загрузки движка";
       error.value = engineStatus.value;
     });
+});
+
+onUnmounted(() => {
+  statusBarObserver?.disconnect();
+  statusBarObserver = null;
 });
 </script>
 
@@ -484,7 +506,7 @@ onMounted(() => {
           extra-class="app-header__icon-btn"
           @click="openSettingsModal"
         >
-          <ActionIcon name="settings" />
+          <span class="app-header__gear-icon" aria-hidden="true">⚙</span>
         </IconButton>
       </nav>
     </header>
@@ -518,7 +540,7 @@ onMounted(() => {
       />
     </main>
 
-    <footer class="status-bar">
+    <footer ref="statusBarRef" class="status-bar">
       <span>{{ t("app.file") }}: {{ loadedFileName }}</span>
       <span class="status-bar__engine">
         <span>{{ t("app.engine") }}: {{ layout }}</span>
@@ -611,5 +633,11 @@ onMounted(() => {
   height: 40px;
   min-height: 40px;
   padding: 0;
+}
+
+.app-header__gear-icon {
+  display: block;
+  font-size: 1.25rem;
+  line-height: 1;
 }
 </style>
