@@ -30,7 +30,6 @@ const emit = defineEmits<{
   "update:darkMode": [value: boolean];
   "update:editorFontSize": [value: EditorFontSize];
   "update:editorFontFamilyId": [value: EditorFontFamilyId];
-  openShareHelp: [];
   openAbout: [];
 }>();
 
@@ -192,13 +191,6 @@ const layoutOptions = Object.entries(LAYOUT_ENGINES).map(([label, value]) => ({
     <div class="settings-section">
       <h3 class="settings-section__title">{{ t("settings.help") }}</h3>
       <div class="settings-links">
-        <button
-          class="btn settings-link-btn"
-          type="button"
-          @click="emit('openShareHelp')"
-        >
-          {{ t("settings.shareHelp") }}
-        </button>
         <a
           class="btn settings-link-btn"
           :href="APP_LINKS.plantumlGuide"

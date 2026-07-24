@@ -136,76 +136,14 @@ withDefaults(
 
     <template v-else-if="name === 'library'">
       <path
-        d="M3.5 18.5h17"
+        d="M5 7.5 12 5l7 2.5v11L12 18l-7 2.5V7.5Z"
         fill="none"
         stroke="currentColor"
         stroke-width="1.8"
-        stroke-linecap="round"
+        stroke-linejoin="round"
       />
       <path
-        d="M5 18.5V16.5M19 18.5V16.5"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-        stroke-linecap="round"
-      />
-      <rect
-        x="5"
-        y="9"
-        width="2.6"
-        height="7.5"
-        fill="currentColor"
-        stroke="none"
-        rx="0.3"
-      />
-      <rect
-        x="8.3"
-        y="9.4"
-        width="2.4"
-        height="7.1"
-        fill="currentColor"
-        stroke="none"
-        rx="0.3"
-        transform="rotate(-14 9.5 13)"
-      />
-      <rect
-        x="10.8"
-        y="8.2"
-        width="2.6"
-        height="8.3"
-        fill="currentColor"
-        stroke="none"
-        rx="0.3"
-      />
-      <rect
-        x="13.9"
-        y="9.5"
-        width="2.6"
-        height="7"
-        fill="currentColor"
-        stroke="none"
-        rx="0.3"
-      />
-      <rect
-        x="16.2"
-        y="10"
-        width="2.2"
-        height="6.5"
-        fill="currentColor"
-        stroke="none"
-        rx="0.3"
-      />
-      <circle
-        cx="17.8"
-        cy="10.2"
-        r="3.6"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-      />
-      <path
-        d="M20.4 12.8 22.2 15.2"
-        fill="none"
+        d="M12 5v13"
         stroke="currentColor"
         stroke-width="1.8"
         stroke-linecap="round"

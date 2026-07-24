@@ -9,7 +9,6 @@ import InstallAppButton from "@/components/InstallAppButton.vue";
 import IconButton from "@/components/IconButton.vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import SettingsModal from "@/components/SettingsModal.vue";
-import ShareHelpModal from "@/components/ShareHelpModal.vue";
 import SyntaxResultModal from "@/components/SyntaxResultModal.vue";
 import {
   APP_META,
@@ -115,7 +114,6 @@ const isSyntaxModalOpen = ref(false);
 const isSettingsModalOpen = ref(false);
 const isLibraryModalOpen = ref(false);
 const isAboutModalOpen = ref(false);
-const isShareHelpModalOpen = ref(false);
 const statusBarRef = ref<HTMLElement | null>(null);
 
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -433,11 +431,6 @@ function onLibraryDiagramOpen(payload: {
   applyLoadedSource(payload.content, payload.fileName);
 }
 
-function openShareHelpFromSettings(): void {
-  isSettingsModalOpen.value = false;
-  isShareHelpModalOpen.value = true;
-}
-
 function openAboutFromSettings(): void {
   isSettingsModalOpen.value = false;
   isAboutModalOpen.value = true;
@@ -590,18 +583,12 @@ onUnmounted(() => {
       v-model:editor-font-size="editorFontSize"
       v-model:editor-font-family-id="editorFontFamilyId"
       @close="isSettingsModalOpen = false"
-      @open-share-help="openShareHelpFromSettings"
       @open-about="openAboutFromSettings"
     />
 
     <AboutModal
       :open="isAboutModalOpen"
       @close="isAboutModalOpen = false"
-    />
-
-    <ShareHelpModal
-      :open="isShareHelpModalOpen"
-      @close="isShareHelpModalOpen = false"
     />
   </div>
 </template>
