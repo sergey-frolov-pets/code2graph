@@ -120,7 +120,7 @@ function onClick(event: MouseEvent): void {
 </template>
 
 <style scoped>
-.install-app-btn {
+.install-app-btn.btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -129,7 +129,9 @@ function onClick(event: MouseEvent): void {
   min-width: 40px;
   height: 40px;
   min-height: 40px;
-  padding: 0 14px;
+  max-height: 40px;
+  padding: 0 12px;
+  line-height: 1;
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
   background: color-mix(in srgb, var(--accent) 8%, var(--surface));
@@ -186,7 +188,7 @@ function onClick(event: MouseEvent): void {
     display: none;
   }
 
-  .install-app-btn {
+  .install-app-btn.btn {
     width: 40px;
     min-width: 40px;
     padding: 0;
