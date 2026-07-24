@@ -24,7 +24,7 @@ const emit = defineEmits<{
       aria-hidden="true"
     >
       <path
-        d="M11 11 4 4M4 4 6.5 4M4 4 4 6.5M13 11 20 4M20 4 17.5 4M20 4 20 6.5M13 13 20 20M20 20 17.5 20M20 20 20 17.5M11 13 4 20M4 20 6.5 20M4 20 4 17.5"
+        d="M8 8 4 4M4 4 6.5 4M4 4 4 6.5M16 8 20 4M20 4 17.5 4M20 4 20 6.5M16 16 20 20M20 20 17.5 20M20 20 20 17.5M8 16 4 20M4 20 6.5 20M4 20 4 17.5"
         fill="none"
         stroke="currentColor"
         stroke-width="2.5"
@@ -39,7 +39,7 @@ const emit = defineEmits<{
       aria-hidden="true"
     >
       <path
-        d="M4 4 11 11M11 11 9 11M11 11 11 9M20 4 13 11M13 11 15 11M13 11 13 9M20 20 13 13M13 13 15 13M13 13 13 15M4 20 11 13M11 13 9 13M11 13 11 15"
+        d="M4 4 8 8M8 8 6 8M8 8 8 6M20 4 16 8M16 8 18 8M16 8 16 6M20 20 16 16M16 16 18 16M16 16 16 18M4 20 8 16M8 16 6 16M8 16 8 18"
         fill="none"
         stroke="currentColor"
         stroke-width="2.5"
