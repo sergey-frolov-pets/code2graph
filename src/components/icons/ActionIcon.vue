@@ -135,57 +135,68 @@ withDefaults(
     </template>
 
     <template v-else-if="name === 'library'">
-      <rect
-        x="2.5"
-        y="14"
-        width="3.5"
-        height="5"
+      <path
+        d="M2.5 18.5V14.8c0-.8.7-1.4 1.5-1.4h1.4c.8 0 1.5.6 1.5 1.4v3.7"
         fill="none"
         stroke="currentColor"
         stroke-width="1.8"
-      />
-      <rect
-        x="6.5"
-        y="9"
-        width="3.5"
-        height="10"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-      />
-      <rect
-        x="10.5"
-        y="11.5"
-        width="3"
-        height="7.5"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
       />
       <path
-        d="M3.3 14.8v3.2M7.3 9.8v1.2M8.3 9.8v1.2M7.3 11.8v6.2M11.3 12.3v1M12.3 12.3v1M11.3 14.3v3.7M11.3 17.3h.8M12.3 17.3h.8"
+        d="M3.4 13.4V18.5M4.6 15.2h1.2"
         fill="none"
         stroke="currentColor"
         stroke-width="1.2"
         stroke-linecap="round"
       />
       <path
-        d="M2 19h12"
+        d="M6 18.5V9.6c0-.8.7-1.4 1.5-1.4h1.6c.8 0 1.5.6 1.5 1.4V18.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M7.1 8.2V18.5M8.3 10.3h1.6M8.3 12.1h1.6"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.2"
+        stroke-linecap="round"
+      />
+      <path
+        d="M10.2 18.5V12.1c0-.8.7-1.4 1.4-1.4h1.3c.7 0 1.4.6 1.4 1.4v5.4"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M11.1 10.7V18.5M12.1 13.2h1.1M12.1 15h1.1"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.2"
+        stroke-linecap="round"
+      />
+      <path
+        d="M1.8 18.8h11.8"
         fill="none"
         stroke="currentColor"
         stroke-width="1.8"
         stroke-linecap="round"
       />
       <circle
-        cx="19"
+        cx="18.5"
         cy="10"
-        r="3.5"
+        r="3.2"
         fill="none"
         stroke="currentColor"
         stroke-width="1.8"
       />
       <path
-        d="M21.5 12.5 23 15"
+        d="M20.8 12.3 22.5 14.8"
         fill="none"
         stroke="currentColor"
         stroke-width="1.8"
