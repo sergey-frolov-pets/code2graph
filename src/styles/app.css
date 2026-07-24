@@ -165,10 +165,11 @@ a {
 }
 
 .panel-header__toolbar .btn-format {
-  min-width: 44px;
+  width: 32px;
+  min-width: 32px;
   height: 32px;
   min-height: 32px;
-  padding: 0 8px;
+  padding: 0;
 }
 
 .panel-header__fullscreen {
@@ -258,9 +259,9 @@ a {
 }
 
 .btn-format {
-  width: auto;
-  min-width: 54px;
-  padding: 0 10px;
+  width: 36px;
+  min-width: 36px;
+  padding: 0;
 }
 
 .btn-icon__svg {
