@@ -142,7 +142,7 @@ withDefaults(
         height="5"
         fill="none"
         stroke="currentColor"
-        stroke-width="2.2"
+        stroke-width="1.8"
       />
       <rect
         x="6.5"
@@ -151,7 +151,7 @@ withDefaults(
         height="10"
         fill="none"
         stroke="currentColor"
-        stroke-width="2.2"
+        stroke-width="1.8"
       />
       <rect
         x="10.5"
@@ -160,20 +160,20 @@ withDefaults(
         height="7.5"
         fill="none"
         stroke="currentColor"
-        stroke-width="2.2"
+        stroke-width="1.8"
       />
       <path
         d="M3.3 14.8v3.2M7.3 9.8v1.2M8.3 9.8v1.2M7.3 11.8v6.2M11.3 12.3v1M12.3 12.3v1M11.3 14.3v3.7M11.3 17.3h.8M12.3 17.3h.8"
         fill="none"
         stroke="currentColor"
-        stroke-width="1.5"
+        stroke-width="1.2"
         stroke-linecap="round"
       />
       <path
         d="M2 19h12"
         fill="none"
         stroke="currentColor"
-        stroke-width="2.2"
+        stroke-width="1.8"
         stroke-linecap="round"
       />
       <circle
@@ -182,13 +182,13 @@ withDefaults(
         r="3.5"
         fill="none"
         stroke="currentColor"
-        stroke-width="2.2"
+        stroke-width="1.8"
       />
       <path
         d="M21.5 12.5 23 15"
         fill="none"
         stroke="currentColor"
-        stroke-width="2.4"
+        stroke-width="1.8"
         stroke-linecap="round"
       />
     </template>
