@@ -325,10 +325,7 @@ watch(
         </div>
       </div>
 
-      <p class="drop-hint">
-        Перетащите .puml сюда. На Android через «Поделиться» — см. кнопку
-        «Как передать .puml» в шапке.
-      </p>
+      <p class="drop-hint">Перетащите .puml сюда.</p>
     </div>
   </section>
 </template>
