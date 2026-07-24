@@ -135,72 +135,14 @@ withDefaults(
     </template>
 
     <template v-else-if="name === 'library'">
+      <!-- Lucide library (ISC) https://lucide.dev/icons/library -->
       <path
-        d="M2.5 18.5V14.8c0-.8.7-1.4 1.5-1.4h1.4c.8 0 1.5.6 1.5 1.4v3.7"
+        d="m16 6 4 14M12 6v14M8 8v12M4 4v16"
         fill="none"
         stroke="currentColor"
-        stroke-width="1.8"
+        stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round"
-      />
-      <path
-        d="M3.4 13.4V18.5M4.6 15.2h1.2"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.2"
-        stroke-linecap="round"
-      />
-      <path
-        d="M6 18.5V9.6c0-.8.7-1.4 1.5-1.4h1.6c.8 0 1.5.6 1.5 1.4V18.5"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-      <path
-        d="M7.1 8.2V18.5M8.3 10.3h1.6M8.3 12.1h1.6"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.2"
-        stroke-linecap="round"
-      />
-      <path
-        d="M10.2 18.5V12.1c0-.8.7-1.4 1.4-1.4h1.3c.7 0 1.4.6 1.4 1.4v5.4"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-      <path
-        d="M11.1 10.7V18.5M12.1 13.2h1.1M12.1 15h1.1"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.2"
-        stroke-linecap="round"
-      />
-      <path
-        d="M1.8 18.8h11.8"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-        stroke-linecap="round"
-      />
-      <circle
-        cx="18.5"
-        cy="10"
-        r="3.2"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-      />
-      <path
-        d="M20.8 12.3 22.5 14.8"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-        stroke-linecap="round"
       />
     </template>
   </svg>

@@ -23,11 +23,12 @@ const emit = defineEmits<{
       viewBox="0 0 24 24"
       aria-hidden="true"
     >
+      <!-- Lucide expand (ISC) https://lucide.dev/icons/expand -->
       <path
-        d="M8 8 4 4M4 4 6.5 4M4 4 4 6.5M16 8 20 4M20 4 17.5 4M20 4 20 6.5M16 16 20 20M20 20 17.5 20M20 20 20 17.5M8 16 4 20M4 20 6.5 20M4 20 4 17.5"
+        d="m21 21-6-6m6 6v-4.8m0 4.8h-4.8M3 16.2V21m0 0h4.8M3 21l6-6M21 7.8V3m0 0h-4.8M21 3l-6 6M3 7.8V3m0 0h4.8M3 3l6 6"
         fill="none"
         stroke="currentColor"
-        stroke-width="2.5"
+        stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
@@ -38,11 +39,12 @@ const emit = defineEmits<{
       viewBox="0 0 24 24"
       aria-hidden="true"
     >
+      <!-- Lucide shrink (ISC) https://lucide.dev/icons/shrink -->
       <path
-        d="M4 4 8 8M8 8 6 8M8 8 8 6M20 4 16 8M16 8 18 8M16 8 16 6M20 20 16 16M16 16 18 16M16 16 16 18M4 20 8 16M8 16 6 16M8 16 8 18"
+        d="m15 15 6 6m-6-6v4.8m0-4.8h4.8M9 19.8V15m0 0H4.2M9 15l-6 6M15 4.2V9m0 0h4.8M15 9l6-6M9 4.2V9m0 0H4.2M9 9 3 3"
         fill="none"
         stroke="currentColor"
-        stroke-width="2.5"
+        stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
