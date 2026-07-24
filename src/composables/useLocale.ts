@@ -1,4 +1,4 @@
-import { computed, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import {
   DEFAULT_LOCALE,
   isAppLocale,
@@ -7,9 +7,19 @@ import {
 } from "@/constants/i18n";
 import { formatMessage, messagesByLocale } from "@/locales/messages";
 
+export function translateForLocale(
+  locale: AppLocale,
+  key: string,
+  params?: Record<string, string | number>,
+): string {
+  const template =
+    messagesByLocale[locale][key] ?? messagesByLocale[DEFAULT_LOCALE][key] ?? key;
+  return formatMessage(template, params);
+}
+
 const locale = ref<AppLocale>(readInitialLocale());
 
-function readInitialLocale(): AppLocale {
+export function readInitialLocale(): AppLocale {
   try {
     const saved = localStorage.getItem(STORAGE_KEY_LOCALE);
     if (saved && isAppLocale(saved)) {
@@ -37,6 +47,13 @@ function persistLocale(value: AppLocale): void {
 
 function applyDocumentLocale(value: AppLocale): void {
   document.documentElement.lang = value;
+
+  const description = translateForLocale(value, "app.subtitle");
+  document
+    .querySelector('meta[name="description"]')
+    ?.setAttribute("content", description);
+
+  document.title = "vuePlantUML";
 }
 
 watch(
@@ -49,11 +66,8 @@ watch(
 );
 
 export function useLocale() {
-  const messages = computed(() => messagesByLocale[locale.value]);
-
   function t(key: string, params?: Record<string, string | number>): string {
-    const template = messages.value[key] ?? messagesByLocale[DEFAULT_LOCALE][key] ?? key;
-    return formatMessage(template, params);
+    return translateForLocale(locale.value, key, params);
   }
 
   function setLocale(value: AppLocale): void {

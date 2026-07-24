@@ -12,7 +12,7 @@ import SettingsModal from "@/components/SettingsModal.vue";
 import SyntaxResultModal from "@/components/SyntaxResultModal.vue";
 import {
   APP_META,
-  DEFAULT_SOURCE,
+  getDefaultSource,
   LAYOUT_ENGINES,
   RENDER_DEBOUNCE_MS,
   STORAGE_KEY_DARK,
@@ -20,8 +20,14 @@ import {
   STORAGE_KEY_LAYOUT,
   STORAGE_KEY_UI_DARK,
   STORAGE_KEY_SOURCE,
+  translateSourceForLocale,
   type LayoutEngine,
 } from "@/constants";
+import {
+  findSampleDiagramIdAnyLocale,
+  getSampleDiagramSource,
+  isDefaultSource,
+} from "@/constants/sample-diagrams";
 import {
   DEFAULT_EDITOR_FONT_FAMILY_ID,
   DEFAULT_EDITOR_FONT_SIZE,
@@ -56,13 +62,14 @@ import {
   downloadTextFile,
   svgToPngBlob,
 } from "@/utils/export";
+import { resolveLocalizedErrorMessage } from "@/utils/localized-app-error";
 import { savePumlSource, resolvePumlFileName } from "@/utils/puml-files";
 import type { SyntaxCheckResult } from "@/utils/plantuml-syntax";
 
 const { prompt, alert } = useAppDialog();
-const { t } = useLocale();
+const { t, locale } = useLocale();
 
-const source = ref(DEFAULT_SOURCE);
+const source = ref(getDefaultSource(locale.value));
 const layout = ref<LayoutEngine>(LAYOUT_ENGINES.smetana);
 function readStoredBoolean(key: string): boolean | null {
   try {
@@ -189,6 +196,18 @@ function persistSettings(): void {
   }
 }
 
+function applyLocaleToStoredSource(): void {
+  if (isDefaultSource(source.value)) {
+    source.value = getDefaultSource(locale.value);
+    return;
+  }
+
+  const sampleId = findSampleDiagramIdAnyLocale(source.value);
+  if (sampleId) {
+    source.value = getSampleDiagramSource(sampleId, locale.value);
+  }
+}
+
 function restoreSettings(): void {
   try {
     const savedSource = localStorage.getItem(STORAGE_KEY_SOURCE);
@@ -201,6 +220,8 @@ function restoreSettings(): void {
     if (savedLayout && savedLayout in LAYOUT_ENGINES) {
       layout.value = savedLayout as LayoutEngine;
     }
+
+    applyLocaleToStoredSource();
   } catch {
     // file:// может блокировать localStorage
   }
@@ -226,7 +247,7 @@ async function renderDiagram(): Promise<void> {
     svg.value = "";
     error.value =
       renderError instanceof Error
-        ? renderError.message
+        ? resolveLocalizedErrorMessage(renderError, t, "app.unknownRenderError")
         : t("app.unknownRenderError");
   } finally {
     isRendering.value = false;
@@ -359,10 +380,11 @@ async function exportPng(): Promise<void> {
     const pngBlob = await svgToPngBlob(svg.value, background);
     downloadBlob(pngBlob, "diagram.png");
   } catch (exportError) {
-    const message =
-      exportError instanceof Error
-        ? exportError.message
-        : t("app.exportPngFailed");
+    const message = resolveLocalizedErrorMessage(
+      exportError,
+      t,
+      "app.exportPngFailed",
+    );
     void alert({
       title: t("app.exportError"),
       message,
@@ -416,6 +438,23 @@ watch(source, () => {
   }
 });
 
+watch(locale, (nextLocale, previousLocale) => {
+  if (previousLocale) {
+    const translated = translateSourceForLocale(
+      source.value,
+      previousLocale,
+      nextLocale,
+    );
+    if (translated) {
+      source.value = translated;
+    }
+  }
+
+  engineStatus.value = engineReady.value
+    ? t("app.engineReady")
+    : t("app.engineLoading");
+});
+
 function openSettingsModal(): void {
   isSettingsModalOpen.value = true;
 }
@@ -465,9 +504,7 @@ onMounted(() => {
     .catch((bootError) => {
       engineReady.value = false;
       engineStatus.value =
-        bootError instanceof Error
-          ? bootError.message
-          : t("app.engineLoadError");
+        resolveLocalizedErrorMessage(bootError, t, "app.engineLoadError");
       error.value = engineStatus.value;
     });
 });

@@ -5,7 +5,12 @@ import FileBadgeIcon from "@/components/icons/FileBadgeIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import TooltipWrap from "@/components/TooltipWrap.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
-import { isSampleDiagramSource, SAMPLE_DIAGRAMS } from "@/constants";
+import {
+  getSampleDiagramSource,
+  isSampleDiagramSource,
+  SAMPLE_DIAGRAM_IDS,
+  type SampleDiagramId,
+} from "@/constants/sample-diagrams";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useLocale } from "@/composables/useLocale";
 import type { EditorFontSize } from "@/constants/editor-settings";
@@ -47,7 +52,15 @@ const isDragOver = ref(false);
 const isFullscreen = ref(false);
 
 const { confirm } = useAppDialog();
-const { t } = useLocale();
+const { t, locale } = useLocale();
+
+const sampleOptions = computed(() =>
+  SAMPLE_DIAGRAM_IDS.map((id) => ({
+    id,
+    label: t(`samples.${id}`),
+    source: getSampleDiagramSource(id, locale.value),
+  })),
+);
 
 const gutterDigitCount = computed(() => String(lineCount.value).length);
 
@@ -105,15 +118,13 @@ function clearEditor(): void {
   emit("cleared");
 }
 
-function loadSample(name: string): void {
-  const sample = SAMPLE_DIAGRAMS[name];
-  if (sample) {
-    source.value = sample;
-    emit("fileLoaded", {
-      content: sample,
-      fileName: resolvePumlFileName(`${name}.puml`),
-    });
-  }
+function loadSample(id: SampleDiagramId): void {
+  const sample = getSampleDiagramSource(id, locale.value);
+  source.value = sample;
+  emit("fileLoaded", {
+    content: sample,
+    fileName: resolvePumlFileName(`${t(`samples.${id}`)}.puml`),
+  });
 }
 
 function openFilePicker(): void {
@@ -255,15 +266,15 @@ watch(
             <select
               class="select sample-select"
               :title="t('editor.samplesTooltip')"
-              @change="loadSample(($event.target as HTMLSelectElement).value)"
+              @change="loadSample(($event.target as HTMLSelectElement).value as SampleDiagramId)"
             >
               <option value="" selected disabled>{{ t("editor.samples") }}</option>
               <option
-                v-for="name in Object.keys(SAMPLE_DIAGRAMS)"
-                :key="name"
-                :value="name"
+                v-for="sample in sampleOptions"
+                :key="sample.id"
+                :value="sample.id"
               >
-                {{ name }}
+                {{ sample.label }}
               </option>
             </select>
           </label>
@@ -320,7 +331,7 @@ watch(
             spellcheck="false"
             autocomplete="off"
             autocapitalize="off"
-            placeholder="@startuml&#10;Alice -> Bob : Hello&#10;@enduml"
+            :placeholder="t('editor.placeholder')"
             @scroll="syncScroll"
           />
         </div>

@@ -1,3 +1,5 @@
+import { LocalizedAppError } from "@/utils/localized-app-error";
+
 const SVG_XMLNS = "http://www.w3.org/2000/svg";
 const LIGHT_SVG_FILLS = new Set(["#ffffff", "#fff", "white"]);
 
@@ -49,7 +51,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("Не удалось загрузить SVG для PNG"));
+    image.onerror = () => reject(new LocalizedAppError("engine.svgLoadFailed"));
     image.src = url;
   });
 }
@@ -93,7 +95,7 @@ export async function svgToPngBlob(
 
     const context = canvas.getContext("2d");
     if (!context) {
-      throw new Error("Canvas 2D недоступен");
+      throw new LocalizedAppError("engine.canvasUnavailable");
     }
 
     context.fillStyle = backgroundColor;
@@ -106,7 +108,7 @@ export async function svgToPngBlob(
           resolve(blob);
           return;
         }
-        reject(new Error("Не удалось создать PNG"));
+        reject(new LocalizedAppError("engine.pngCreateFailed"));
       }, "image/png");
     });
 

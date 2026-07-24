@@ -1,5 +1,6 @@
 import { loadPumlFromFile, PUML_MIME_TYPE } from "@/utils/puml-files";
 import { registerAppServiceWorker } from "@/pwa/serviceWorkerRegistration";
+import { translateForLocale, readInitialLocale } from "@/composables/useLocale";
 
 const SHARED_QUERY_PARAM = "shared";
 
@@ -101,16 +102,18 @@ export async function sharePumlSource(
   const safeName = fileName.endsWith(".puml") ? fileName : `${fileName}.puml`;
   const file = new File([content], safeName, { type: PUML_MIME_TYPE });
 
+  const shareTitle = translateForLocale(readInitialLocale(), "share.title");
+
   if (navigator.canShare?.({ files: [file] })) {
     await navigator.share({
-      title: "PlantUML диаграмма",
+      title: shareTitle,
       files: [file],
     });
     return true;
   }
 
   await navigator.share({
-    title: "PlantUML диаграмма",
+    title: shareTitle,
     text: content,
   });
   return true;
