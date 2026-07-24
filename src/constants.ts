@@ -38,122 +38,14 @@ export const LAYOUT_ENGINES = {
 
 export type LayoutEngine = (typeof LAYOUT_ENGINES)[keyof typeof LAYOUT_ENGINES];
 
-export const DEFAULT_SOURCE = `@startuml
-!pragma layout smetana
-
-title Пример диаграммы классов
-
-class User {
-  +name: string
-  +login()
-}
-
-class Order {
-  +total: number
-}
-
-User "1" --> "*" Order : создаёт
-@enduml`;
-
-export const SAMPLE_DIAGRAMS: Record<string, string> = {
-  "Классы (Smetana)": `@startuml
-!pragma layout smetana
-
-class Animal
-class Dog
-class Cat
-
-Animal <|-- Dog
-Animal <|-- Cat
-@enduml`,
-  "Последовательность": `@startuml
-!pragma layout smetana
-
-actor User
-participant App
-database DB
-
-User -> App : запрос
-App -> DB : SELECT
-DB --> App : данные
-App --> User : ответ
-@enduml`,
-  "Компоненты": `@startuml
-!pragma layout smetana
-
-package "Frontend" {
-  [Vue App]
-}
-
-package "Engine" {
-  [@plantuml/core]
-}
-
-[Vue App] --> [@plantuml/core] : render
-@enduml`,
-  "Состояния": `@startuml
-!pragma layout smetana
-
-[*] --> Idle
-Idle --> Rendering : render()
-Rendering --> Done : success
-Rendering --> Error : failure
-Done --> Idle
-Error --> Idle
-@enduml`,
-  "Activity (swimlane)": `@startuml
-!pragma layout smetana
-
-|#E3F2FD|Клиент|
-|#E8F5E9|Система|
-
-|Клиент|
-start
-:Отправить запрос;
-|Система|
-:Обработать запрос;
-:Сформировать ответ;
-|Клиент|
-:Получить результат;
-stop
-@enduml`,
-  "C4 (контейнеры)": `@startuml
-!pragma layout smetana
-
-title C4 — веб-приложение (контейнеры)
-
-skinparam componentStyle rectangle
-skinparam wrapWidth 220
-
-actor "Пользователь" as user
-actor "Администратор" as admin
-
-rectangle "Клиент" as client {
-  rectangle "Web UI" as web_ui {
-    [Vue SPA]
-    [PWA Shell]
-  }
-}
-
-rectangle "Сервер" as server {
-  rectangle "Backend API" as backend {
-    [Auth Service]
-    [Diagram Service]
-  }
-}
-
-database "PostgreSQL" as db
-
-cloud "CDN" as cdn
-
-user --> web_ui : HTTPS
-admin --> web_ui : Управление
-web_ui --> backend : REST / JSON
-backend --> db : SQL / TCP
-web_ui ..> cdn : Статика
-@enduml`,
-};
-
-export function isSampleDiagramSource(source: string): boolean {
-  return Object.values(SAMPLE_DIAGRAMS).includes(source);
-}
+export {
+  DEFAULT_SOURCE,
+  SAMPLE_DIAGRAMS,
+  getDefaultSource,
+  getSampleDiagramSource,
+  isDefaultSource,
+  isSampleDiagramSource,
+  translateSourceForLocale,
+  SAMPLE_DIAGRAM_IDS,
+  type SampleDiagramId,
+} from "@/constants/sample-diagrams";

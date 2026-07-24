@@ -46,6 +46,26 @@ export const ruMessages: LocaleMessages = {
   "editor.samplesTooltip": "Примеры диаграмм",
   "editor.sampleOption": "Пример диаграммы",
   "editor.dropHint": "Перетащите .puml сюда.",
+  "editor.placeholder": "@startuml\nAlice -> Bob : Hello\n@enduml",
+
+  "samples.classes": "Классы (Smetana)",
+  "samples.sequence": "Последовательность",
+  "samples.components": "Компоненты",
+  "samples.state": "Состояния",
+  "samples.activity": "Activity (swimlane)",
+  "samples.c4": "C4 (контейнеры)",
+
+  "share.title": "PlantUML диаграмма",
+
+  "engine.noDecompression": "Браузер не поддерживает DecompressionStream",
+  "engine.vizLoadFailed": "Не удалось загрузить viz-global.js",
+  "engine.vizInitFailed": "viz-global.js не инициализировался",
+  "engine.vizEmbeddedMissing": "Встроенный viz-global.js не найден",
+  "engine.plantumlInitFailed": "plantuml.js не инициализировался",
+  "engine.plantumlEmbeddedMissing": "Встроенный plantuml.js не найден",
+  "engine.canvasUnavailable": "Canvas 2D недоступен",
+  "engine.pngCreateFailed": "Не удалось создать PNG",
+  "engine.svgLoadFailed": "Не удалось загрузить SVG для PNG",
 
   "preview.title": "Просмотр",
   "preview.titleTooltip": "Предпросмотр",
@@ -226,6 +246,26 @@ export const enMessages: LocaleMessages = {
   "editor.samplesTooltip": "Sample diagrams",
   "editor.sampleOption": "Sample diagram",
   "editor.dropHint": "Drop .puml here.",
+  "editor.placeholder": "@startuml\nAlice -> Bob : Hello\n@enduml",
+
+  "samples.classes": "Classes (Smetana)",
+  "samples.sequence": "Sequence",
+  "samples.components": "Components",
+  "samples.state": "States",
+  "samples.activity": "Activity (swimlane)",
+  "samples.c4": "C4 (containers)",
+
+  "share.title": "PlantUML diagram",
+
+  "engine.noDecompression": "Browser does not support DecompressionStream",
+  "engine.vizLoadFailed": "Failed to load viz-global.js",
+  "engine.vizInitFailed": "viz-global.js did not initialize",
+  "engine.vizEmbeddedMissing": "Embedded viz-global.js not found",
+  "engine.plantumlInitFailed": "plantuml.js did not initialize",
+  "engine.plantumlEmbeddedMissing": "Embedded plantuml.js not found",
+  "engine.canvasUnavailable": "Canvas 2D is unavailable",
+  "engine.pngCreateFailed": "Failed to create PNG",
+  "engine.svgLoadFailed": "Failed to load SVG for PNG export",
 
   "preview.title": "Preview",
   "preview.titleTooltip": "Diagram preview",

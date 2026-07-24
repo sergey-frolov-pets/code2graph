@@ -8,6 +8,7 @@ import {
   type SyntaxCheckResult,
 } from "@/utils/plantuml-syntax";
 import { applyLayoutPragma, splitSourceLines } from "@/utils/plantuml-source";
+import { LocalizedAppError } from "@/utils/localized-app-error";
 
 const VIZ_SOURCE_ID = "vendor-viz-global";
 const PLANTUML_SOURCE_ID = "vendor-plantuml";
@@ -34,7 +35,7 @@ async function decompressGzipBase64(payload: string): Promise<string> {
   }
 
   if (typeof DecompressionStream === "undefined") {
-    throw new Error("Браузер не поддерживает DecompressionStream");
+    throw new LocalizedAppError("engine.noDecompression");
   }
 
   const stream = new Response(bytes)
@@ -78,7 +79,7 @@ function loadVizGlobalFromFile(): Promise<void> {
       script.src = getVendorUrl("viz-global.js");
       script.onload = () => resolve();
       script.onerror = () =>
-        reject(new Error("Не удалось загрузить viz-global.js"));
+        reject(new LocalizedAppError("engine.vizLoadFailed"));
       document.head.appendChild(script);
     });
   }
@@ -95,7 +96,7 @@ async function loadVizGlobal(): Promise<void> {
   if (embeddedSource) {
     runEmbeddedScript(embeddedSource);
     if (!window.Viz) {
-      throw new Error("viz-global.js не инициализировался");
+      throw new LocalizedAppError("engine.vizInitFailed");
     }
     return;
   }
@@ -105,7 +106,7 @@ async function loadVizGlobal(): Promise<void> {
     return;
   }
 
-  throw new Error("Встроенный viz-global.js не найден");
+  throw new LocalizedAppError("engine.vizEmbeddedMissing");
 }
 
 async function loadEngine(): Promise<PlantUmlApi> {
@@ -121,7 +122,7 @@ async function loadEngine(): Promise<PlantUmlApi> {
       if (embeddedSource) {
         runEmbeddedScript(embeddedSource);
         if (!window.PlantUML) {
-          throw new Error("plantuml.js не инициализировался");
+          throw new LocalizedAppError("engine.plantumlInitFailed");
         }
         return window.PlantUML;
       }
@@ -132,7 +133,7 @@ async function loadEngine(): Promise<PlantUmlApi> {
         )) as Promise<PlantUmlApi>;
       }
 
-      throw new Error("Встроенный plantuml.js не найден");
+      throw new LocalizedAppError("engine.plantumlEmbeddedMissing");
     })();
   }
 
