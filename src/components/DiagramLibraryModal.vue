@@ -819,6 +819,24 @@ watch(libraryApiUrl, () => {
   max-height: min(90vh, 860px);
 }
 
+@media (min-width: 901px) {
+  :deep(.modal) {
+    width: min(1100px, calc(100vw - 48px));
+  }
+
+  .library-layout {
+    min-height: clamp(420px, 62vh, 720px);
+  }
+
+  .library-content {
+    min-height: clamp(360px, 52vh, 640px);
+  }
+
+  .library-filters {
+    grid-template-columns: minmax(220px, 2fr) minmax(140px, 1fr) minmax(140px, 1fr);
+  }
+}
+
 @media (max-width: 800px) {
   .library-layout,
   .library-content,

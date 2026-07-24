@@ -9,8 +9,7 @@ withDefaults(
       | "refresh"
       | "sun"
       | "moon"
-      | "library"
-      | "settings";
+      | "library";
     size?: "default" | "large";
   }>(),
   {
@@ -137,38 +136,21 @@ withDefaults(
 
     <template v-else-if="name === 'library'">
       <path
-        d="M5 5.5h5.5v13H5a1.5 1.5 0 0 1-1.5-1.5V7a1.5 1.5 0 0 1 1.5-1.5Z"
+        d="M6 5.5h4a1 1 0 0 1 1 1v13H6a1 1 0 0 1-1-1v-12a1 1 0 0 1 1-1Z"
         fill="none"
         stroke="currentColor"
         stroke-width="1.8"
         stroke-linejoin="round"
       />
       <path
-        d="M10.5 5.5H19a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5h-8.5"
+        d="M11 4.5h7a1 1 0 0 1 1 1v14h-8V4.5Z"
         fill="none"
         stroke="currentColor"
         stroke-width="1.8"
         stroke-linejoin="round"
       />
       <path
-        d="M7.25 9h1.5M7.25 12h1.5M13.5 9H17M13.5 12H17"
-        stroke="currentColor"
-        stroke-width="1.8"
-        stroke-linecap="round"
-      />
-    </template>
-
-    <template v-else-if="name === 'settings'">
-      <circle
-        cx="12"
-        cy="12"
-        r="2.75"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-      />
-      <path
-        d="M12 3.25v2.1M12 18.65v2.1M4.6 4.6l1.5 1.5M17.9 17.9l1.5 1.5M3.25 12h2.1M18.65 12h2.1M4.6 19.4l1.5-1.5M17.9 6.1l1.5-1.5"
+        d="M7.5 9h1M7.5 12h1M13 9h3.5M13 12h3.5M13 15h2.5"
         stroke="currentColor"
         stroke-width="1.8"
         stroke-linecap="round"

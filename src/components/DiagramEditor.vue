@@ -338,56 +338,25 @@ watch(
 <style scoped>
 .sample-select-wrap {
   display: inline-flex;
-  flex-shrink: 0;
+  flex: 1 1 auto;
+  min-width: 96px;
   margin: 0;
 }
 
 .sample-select {
-  width: 92px;
-  min-width: 92px;
+  width: 100%;
+  min-width: 0;
   height: 32px;
   min-height: 32px;
-  padding: 0 6px;
+  padding: 0 8px;
   font-size: 0.78rem;
-}
-
-.editor-panel.is-fullscreen {
-  position: fixed;
-  inset: 0;
-  z-index: 900;
-  border-radius: 0;
-  margin: 0;
-}
-
-.editor-panel.is-fullscreen .panel-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.editor-panel.is-fullscreen .code-editor {
-  flex: 1;
-  min-height: 0;
-}
-
-.editor-panel.is-fullscreen .code-editor {
-  flex: 1;
-  min-height: 0;
-}
-
-.editor-panel.is-fullscreen .code-editor__input-wrap {
-  min-height: 0;
-}
-
-.editor-panel.is-fullscreen .code-editor__gutter,
-.editor-panel.is-fullscreen .code-editor__textarea {
-  min-height: 0;
 }
 
 .editor-dropzone {
   position: relative;
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-height: 0;
 }
 
@@ -399,7 +368,8 @@ watch(
   display: flex;
   flex-direction: row;
   align-items: stretch;
-  min-height: 320px;
+  flex: 1;
+  min-height: 200px;
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
@@ -427,7 +397,7 @@ watch(
   width: calc(
     var(--gutter-chars) * 1ch + var(--gutter-padding-inline) * 2
   );
-  min-height: 320px;
+  min-height: 0;
   padding-inline: var(--gutter-padding-inline);
   border-right: 1px solid var(--border);
   background: var(--surface-muted);
@@ -447,7 +417,7 @@ watch(
   position: relative;
   flex: 1;
   min-width: 0;
-  min-height: 320px;
+  min-height: 0;
 }
 
 .code-editor__highlights {
@@ -473,13 +443,14 @@ watch(
   z-index: 1;
   width: 100%;
   height: 100%;
-  min-height: 320px;
-  resize: vertical;
+  min-height: 0;
+  resize: none;
   background: transparent;
   color: var(--text);
 }
 
 .drop-hint {
+  flex-shrink: 0;
   margin: 8px 0 0;
   color: var(--text-muted);
   font-size: 0.82rem;

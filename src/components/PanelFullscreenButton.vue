@@ -38,7 +38,14 @@ const emit = defineEmits<{
       viewBox="0 0 24 24"
       aria-hidden="true"
     >
-      <rect x="9" y="9" width="6" height="6" fill="currentColor" />
+      <path
+        d="M9 9H4V4M15 4h5v5M15 15h5v-5H15M9 15H4v-5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
     </svg>
   </IconButton>
 </template>
