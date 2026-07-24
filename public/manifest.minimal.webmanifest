@@ -1,7 +1,7 @@
 {
   "name": "vuePlantUML",
   "short_name": "PlantUML",
-  "description": "Кросс-платформенный офлайн генератор PlantUML диаграмм",
+  "description": "Кросс-платформенный оффлайн генератор PlantUML диаграмм",
   "id": "./",
   "start_url": "./index.html",
   "scope": "./",

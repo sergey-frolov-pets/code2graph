@@ -3,7 +3,7 @@ import type { AppLocale } from "@/constants/i18n";
 export type LocaleMessages = Record<string, string>;
 
 export const ruMessages: LocaleMessages = {
-  "app.subtitle": "Кросс-платформенный офлайн генератор PlantUML диаграмм",
+  "app.subtitle": "Кросс-платформенный оффлайн генератор PlantUML диаграмм",
   "app.settings": "Настройки",
   "app.library": "Библиотека",
   "app.close": "Закрыть",
@@ -15,7 +15,7 @@ export const ruMessages: LocaleMessages = {
   "app.upload": "Загрузить",
   "app.open": "Открыть",
   "app.search": "Поиск",
-  "app.offline": "Офлайн",
+  "app.offline": "Оффлайн",
   "app.online": "Онлайн",
   "app.loading": "Загрузка…",
   "app.error": "Ошибка",
