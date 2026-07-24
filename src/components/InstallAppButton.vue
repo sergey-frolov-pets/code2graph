@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useLongPressTooltip } from "@/composables/useLongPressTooltip";
+import { useLocale } from "@/composables/useLocale";
 import { usePwaInstall } from "@/composables/usePwaInstall";
 
 const {
@@ -12,20 +13,22 @@ const {
   installApp,
 } = usePwaInstall();
 
+const { t } = useLocale();
+
 const installTitle = computed(() => {
   if (needsHttps.value) {
-    return "Установка доступна только по HTTPS";
+    return t("install.httpsOnly");
   }
 
   if (isAlreadyInstalled.value) {
-    return "Приложение уже установлено";
+    return t("install.alreadyInstalled");
   }
 
   if (!canInstallNow.value) {
-    return "Установка вручную — нажмите для инструкции";
+    return t("install.manual");
   }
 
-  return "Установить приложение";
+  return t("install.title");
 });
 
 const rootRef = ref<HTMLElement | null>(null);
@@ -103,7 +106,7 @@ function onClick(event: MouseEvent): void {
         stroke-linejoin="round"
       />
     </svg>
-    <span class="install-app-btn__label">Установить</span>
+    <span class="install-app-btn__label">{{ t("install.label") }}</span>
   </button>
 
   <Teleport to="body">

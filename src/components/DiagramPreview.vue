@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import DiagramToolbar from "@/components/DiagramToolbar.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
+import { useLocale } from "@/composables/useLocale";
 import { sanitizeSvgForPreview } from "@/utils/export";
 
 const props = defineProps<{
@@ -21,6 +22,7 @@ const emit = defineEmits<{
   "update:diagramDarkMode": [value: boolean];
 }>();
 
+const { t } = useLocale();
 const isFullscreen = ref(false);
 
 const previewMarkup = computed(() => {
@@ -60,7 +62,9 @@ watch(isFullscreen, (value) => {
     :class="{ 'is-fullscreen': isFullscreen }"
   >
     <header class="panel-header">
-      <h2 class="panel-title" title="Предпросмотр">Просмотр</h2>
+      <h2 class="panel-title" :title="t('preview.titleTooltip')">
+        {{ t("preview.title") }}
+      </h2>
       <div class="panel-header__toolbar">
         <DiagramToolbar
           :is-rendering="isRendering"
@@ -86,7 +90,7 @@ watch(isFullscreen, (value) => {
         v-html="previewMarkup"
       />
       <div v-else class="preview-placeholder">
-        Введите PlantUML-код слева — диаграмма появится здесь.
+        {{ t("preview.placeholder") }}
       </div>
     </div>
   </section>

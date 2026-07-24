@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import IconButton from "@/components/IconButton.vue";
+import { useLocale } from "@/composables/useLocale";
 
 defineProps<{
   active: boolean;
@@ -8,12 +9,14 @@ defineProps<{
 const emit = defineEmits<{
   toggle: [];
 }>();
+
+const { t } = useLocale();
 </script>
 
 <template>
   <IconButton
     extra-class="panel-header__fullscreen"
-    :label="active ? 'Свернуть' : 'На весь экран'"
+    :label="active ? t('fullscreen.collapse') : t('fullscreen.expand')"
     :pressed="active"
     @click="emit('toggle')"
   >

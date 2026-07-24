@@ -2,7 +2,9 @@ export type SyntaxIssueSeverity = "error" | "warning";
 
 export interface SyntaxIssue {
   severity: SyntaxIssueSeverity;
-  message: string;
+  message?: string;
+  messageKey?: string;
+  messageParams?: Record<string, string | number>;
   line?: number;
 }
 
@@ -61,6 +63,10 @@ function findMarkerLine(lines: string[], markers: readonly string[]): number | n
   return null;
 }
 
+function bracketDetailKey(count: number, missingCloseKey: string, extraCloseKey: string): string {
+  return count > 0 ? missingCloseKey : extraCloseKey;
+}
+
 function countUnbalancedBrackets(source: string): SyntaxIssue[] {
   const issues: SyntaxIssue[] = [];
   let round = 0;
@@ -79,7 +85,7 @@ function countUnbalancedBrackets(source: string): SyntaxIssue[] {
     if (round < 0 || square < 0 || curly < 0) {
       issues.push({
         severity: "error",
-        message: "Несбалансированные скобки в исходнике",
+        messageKey: "syntax.issue.unbalanced",
       });
       return issues;
     }
@@ -88,19 +94,40 @@ function countUnbalancedBrackets(source: string): SyntaxIssue[] {
   if (round !== 0) {
     issues.push({
       severity: "error",
-      message: `Несбалансированные круглые скобки: ${round > 0 ? "не хватает )" : "лишняя )"}`,
+      messageKey: "syntax.issue.unbalancedRound",
+      messageParams: {
+        detail: bracketDetailKey(
+          round,
+          "syntax.issue.roundMissingClose",
+          "syntax.issue.roundExtraClose",
+        ),
+      },
     });
   }
   if (square !== 0) {
     issues.push({
       severity: "error",
-      message: `Несбалансированные квадратные скобки: ${square > 0 ? "не хватает ]" : "лишняя ]"}`,
+      messageKey: "syntax.issue.unbalancedSquare",
+      messageParams: {
+        detail: bracketDetailKey(
+          square,
+          "syntax.issue.squareMissingClose",
+          "syntax.issue.squareExtraClose",
+        ),
+      },
     });
   }
   if (curly !== 0) {
     issues.push({
       severity: "error",
-      message: `Несбалансированные фигурные скобки: ${curly > 0 ? "не хватает }" : "лишняя }"}`,
+      messageKey: "syntax.issue.unbalancedCurly",
+      messageParams: {
+        detail: bracketDetailKey(
+          curly,
+          "syntax.issue.curlyMissingClose",
+          "syntax.issue.curlyExtraClose",
+        ),
+      },
     });
   }
 
@@ -115,7 +142,7 @@ export function checkPlantUmlSyntax(source: string): SyntaxCheckResult {
   if (!trimmed) {
     return {
       valid: false,
-      issues: [{ severity: "error", message: "Исходник пуст" }],
+      issues: [{ severity: "error", messageKey: "syntax.issue.empty" }],
     };
   }
 
@@ -126,7 +153,7 @@ export function checkPlantUmlSyntax(source: string): SyntaxCheckResult {
   if (!startLine) {
     issues.push({
       severity: "error",
-      message: "Отсутствует @startuml (или другой @start*)",
+      messageKey: "syntax.issue.missingStart",
       line: 1,
     });
   }
@@ -134,14 +161,14 @@ export function checkPlantUmlSyntax(source: string): SyntaxCheckResult {
   if (!endLine) {
     issues.push({
       severity: "error",
-      message: "Отсутствует @enduml (или другой @end*)",
+      messageKey: "syntax.issue.missingEnd",
     });
   }
 
   if (startLine && endLine && endLine < startLine) {
     issues.push({
       severity: "error",
-      message: "Закрывающий маркер @end* находится выше @start*",
+      messageKey: "syntax.issue.endBeforeStart",
       line: endLine,
     });
   }
@@ -185,23 +212,14 @@ export function isPlantUmlErrorSvg(svg: string): boolean {
 export function parsePlantUmlErrorFromSvg(svg: string): SyntaxIssue[] {
   const line = parsePlantUmlErrorLine(svg);
   const messageMatch = svg.match(/Syntax Error\?[^<]*/);
-  const message = messageMatch
-    ? messageMatch[0].trim()
-    : "Ошибка синтаксиса PlantUML";
+  const message = messageMatch?.[0].trim();
 
-  return [{ severity: "error", message, line }];
-}
-
-export function formatSyntaxIssues(issues: SyntaxIssue[]): string {
-  if (issues.length === 0) {
-    return "Синтаксис корректен";
-  }
-
-  return issues
-    .map((issue) => {
-      const prefix = issue.line ? `Строка ${issue.line}: ` : "";
-      const severity = issue.severity === "error" ? "Ошибка" : "Предупреждение";
-      return `${severity}: ${prefix}${issue.message}`;
-    })
-    .join("\n");
+  return [
+    {
+      severity: "error",
+      message: message || undefined,
+      messageKey: message ? undefined : "syntax.issue.engineError",
+      line,
+    },
+  ];
 }

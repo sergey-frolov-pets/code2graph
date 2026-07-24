@@ -1,6 +1,7 @@
 import { computed } from "vue";
 import { APP_LINKS } from "@/constants";
 import { useAppDialog } from "@/composables/useAppDialog";
+import { useLocale } from "@/composables/useLocale";
 import {
   buildManualInstallMessage,
   inspectPwaInstallStatus,
@@ -20,15 +21,9 @@ import {
 } from "@/pwa/installPromptState";
 import { isPwaInstallInProgress } from "@/pwa/pwaInstallState";
 
-const HTTPS_SETUP_MESSAGE =
-  "Сайт открыт по HTTP. Установка PWA возможна только по HTTPS. " +
-  "В GitHub: Settings → Pages → Custom domain → дождитесь проверки DNS и включите «Enforce HTTPS».";
-
-const INSTALL_ERROR_MESSAGE =
-  "Не удалось выполнить установку. Попробуйте через меню браузера или перезагрузите страницу.";
-
 export function usePwaInstall() {
   const { alert, confirm } = useAppDialog();
+  const { t } = useLocale();
 
   const isAlreadyInstalled = computed(
     () =>
@@ -58,12 +53,12 @@ export function usePwaInstall() {
       isStandalone: isStandaloneApp(),
     });
 
-    const message = buildManualInstallMessage(status);
+    const message = buildManualInstallMessage(status, t);
     const openInstallPage = await confirm({
-      title: "Установка вручную",
-      message: `${message}\n\nОткрыть страницу с инструкциями?`,
-      confirmLabel: "Открыть",
-      cancelLabel: "Закрыть",
+      title: t("pwa.manualTitle"),
+      message: `${message}\n\n${t("pwa.manualConfirm")}`,
+      confirmLabel: t("pwa.open"),
+      cancelLabel: t("app.close"),
     });
 
     if (openInstallPage) {
@@ -88,8 +83,8 @@ export function usePwaInstall() {
     try {
       if (!isPwaInstallSupported()) {
         await alert({
-          title: "Нужен HTTPS",
-          message: HTTPS_SETUP_MESSAGE,
+          title: t("pwa.httpsRequiredTitle"),
+          message: t("pwa.httpsSetup"),
           variant: "error",
         });
         return;
@@ -117,9 +112,8 @@ export function usePwaInstall() {
       const installed = await refreshRelatedAppInstalledState();
       if (installed || isAlreadyInstalled.value) {
         await alert({
-          title: "Уже установлено",
-          message:
-            "Приложение уже установлено. Откройте его с рабочего стола или из меню приложений.",
+          title: t("pwa.alreadyInstalledTitle"),
+          message: t("pwa.alreadyInstalledMessage"),
         });
         return;
       }
@@ -127,8 +121,8 @@ export function usePwaInstall() {
       await showManualInstallHelp();
     } catch {
       await alert({
-        title: "Ошибка установки",
-        message: INSTALL_ERROR_MESSAGE,
+        title: t("pwa.installErrorTitle"),
+        message: t("pwa.installError"),
         variant: "error",
       });
     } finally {

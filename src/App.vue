@@ -227,7 +227,7 @@ async function renderDiagram(): Promise<void> {
     error.value =
       renderError instanceof Error
         ? renderError.message
-        : "Неизвестная ошибка рендеринга";
+        : t("app.unknownRenderError");
   } finally {
     isRendering.value = false;
   }
@@ -362,7 +362,7 @@ async function exportPng(): Promise<void> {
     const message =
       exportError instanceof Error
         ? exportError.message
-        : "Не удалось экспортировать PNG";
+        : t("app.exportPngFailed");
     void alert({
       title: t("app.exportError"),
       message,
@@ -467,7 +467,7 @@ onMounted(() => {
       engineStatus.value =
         bootError instanceof Error
           ? bootError.message
-          : "Ошибка загрузки движка";
+          : t("app.engineLoadError");
       error.value = engineStatus.value;
     });
 });

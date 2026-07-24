@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useLocale } from "@/composables/useLocale";
+
 defineProps<{
   title: string;
   open: boolean;
@@ -8,6 +10,8 @@ defineProps<{
 const emit = defineEmits<{
   close: [];
 }>();
+
+const { t } = useLocale();
 
 function onBackdropClick(event: MouseEvent): void {
   if (event.target === event.currentTarget) {
@@ -35,7 +39,7 @@ function onBackdropClick(event: MouseEvent): void {
           <button
             class="modal-close"
             type="button"
-            aria-label="Закрыть"
+            :aria-label="t('modal.closeAria')"
             @click="emit('close')"
           >
             ×

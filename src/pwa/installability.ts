@@ -95,71 +95,43 @@ function isSslCertificateError(error: string | null | undefined): boolean {
   return /ssl certificate/i.test(error);
 }
 
-export function buildManualInstallMessage(status: PwaInstallStatus): string {
+export function buildManualInstallMessage(
+  status: PwaInstallStatus,
+  t: (key: string, params?: Record<string, string | number>) => string,
+): string {
   if (!status.secureContext) {
-    return (
-      "Сайт открыт по HTTP. Установка PWA работает только по HTTPS.\n\n" +
-      "В GitHub: Settings → Pages → Custom domain → включите «Enforce HTTPS»."
-    );
+    return t("pwa.httpOnly");
   }
 
   if (status.isStandalone || status.relatedAppInstalled) {
-    return (
-      "Приложение уже установлено. Откройте его с рабочего стола или из меню приложений."
-    );
+    return t("pwa.alreadyInstalledMessage");
   }
 
   if (status.platform === "ios") {
-    return (
-      "Safari на iPhone/iPad не поддерживает автоматическую установку через кнопку.\n\n" +
-      "Нажмите «Поделиться» → «На экран Домой» → «Добавить»."
-    );
+    return t("pwa.iosManual");
   }
 
   if (!status.supportsBeforeInstallPrompt) {
-    return (
-      "Этот браузер не поддерживает автоматическую установку PWA.\n\n" +
-      "Откройте сайт в Chrome или Edge и используйте меню браузера → «Установить приложение»."
-    );
+    return t("pwa.browserUnsupported");
   }
 
   if (status.serviceWorker === "none") {
     const swError = window.__pwaSwRegistrationError;
 
     if (isSslCertificateError(swError)) {
-      return (
-        "Не удалось загрузить Service Worker из-за ошибки SSL-сертификата домена.\n\n" +
-        "Браузер видит сертификат GitHub (*.github.io), а не вашего домена puml.sergey-frolov.ru.\n\n" +
-        "Что сделать:\n" +
-        "1. GitHub → Settings → Pages → Custom domain: puml.sergey-frolov.ru\n" +
-        "2. Проверьте DNS: CNAME puml → sergey-frolov-pets.github.io\n" +
-        "3. Включите «Enforce HTTPS» и подождите выпуск сертификата (до 24 ч)\n" +
-        "4. Пока сертификат не готов — откройте " +
-        APP_LINKS.githubPages +
-        " для установки PWA"
-      );
+      return t("pwa.sslError", { url: APP_LINKS.githubPages });
     }
 
     const errorHint = swError
-      ? `\n\nОшибка регистрации: ${swError}`
+      ? `\n\n${t("pwa.swRegistrationError", { error: swError })}`
       : "";
 
-    return (
-      "Service Worker не зарегистрирован — браузер не считает сайт устанавливаемым.\n\n" +
-      "Перезагрузите страницу. Если не поможет — откройте страницу установки." +
-      errorHint
-    );
+    return `${t("pwa.swNotRegistered")}${errorHint}`;
   }
 
   if (status.serviceWorker === "registered") {
-    return (
-      "Service Worker ещё не активен на этой вкладке.\n\n" +
-      "Перезагрузите страницу один раз, затем снова нажмите «Установить»."
-    );
+    return t("pwa.swNotActive");
   }
 
-  return (
-    "Chrome не выдал автоматическую установку. Чаще всего это бывает, если вы ранее нажали «Отмена» в диалоге браузера.\n\n" +
-    "Установите вручную: меню браузера (⋮) → «Установить приложение» / «Добавить на главный экран»."
-  );
+  return t("pwa.chromeNoPrompt");
 }

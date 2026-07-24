@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppModal from "@/components/AppModal.vue";
+import { useLocale } from "@/composables/useLocale";
 import { APP_LINKS, APP_META } from "@/constants";
 
 defineProps<{
@@ -9,40 +10,43 @@ defineProps<{
 const emit = defineEmits<{
   close: [];
 }>();
+
+const { t } = useLocale();
 </script>
 
 <template>
-  <AppModal :open="open" title="О программе" @close="emit('close')">
+  <AppModal :open="open" :title="t('about.title')" @close="emit('close')">
     <p class="about-lead">
-      <strong>{{ APP_META.name }}</strong> — оффлайн-редактор и генератор диаграмм
-      PlantUML в форматах SVG и PNG.
+      {{ t("about.lead", { name: APP_META.name }) }}
     </p>
-    <p class="about-meta">Разработана <strong>{{ APP_META.developer }}</strong></p>
-    <p class="about-meta">Версия {{ APP_META.version }}</p>
+    <p class="about-meta">
+      {{ t("about.developedBy", { developer: APP_META.developer }) }}
+    </p>
+    <p class="about-meta">{{ t("about.version", { version: APP_META.version }) }}</p>
 
-    <h3 class="about-subtitle">Сайт</h3>
+    <h3 class="about-subtitle">{{ t("about.site") }}</h3>
     <p class="about-meta">
       <a :href="APP_LINKS.site" target="_blank" rel="noopener noreferrer">
         puml.sergey-frolov.ru
       </a>
     </p>
 
-    <h3 class="about-subtitle">Исходный код</h3>
+    <h3 class="about-subtitle">{{ t("about.sourceCode") }}</h3>
     <p class="about-meta">
       <a :href="APP_LINKS.github" target="_blank" rel="noopener noreferrer">
         github.com/sergey-frolov-pets/vuePUML
       </a>
     </p>
 
-    <h3 class="about-subtitle">Лицензия</h3>
+    <h3 class="about-subtitle">{{ t("about.license") }}</h3>
     <p>
-      Распространяется под лицензией
+      {{ t("about.licenseText") }}
       <a :href="APP_LINKS.mitLicense" target="_blank" rel="noopener noreferrer">
         MIT
       </a>.
     </p>
 
-    <h3 class="about-subtitle">Используемые компоненты</h3>
+    <h3 class="about-subtitle">{{ t("about.components") }}</h3>
     <ul class="about-links">
       <li>
         <a :href="APP_LINKS.plantuml" target="_blank" rel="noopener noreferrer">
@@ -69,7 +73,7 @@ const emit = defineEmits<{
 
     <template #footer>
       <button class="btn btn-primary" type="button" @click="emit('close')">
-        Закрыть
+        {{ t("app.close") }}
       </button>
     </template>
   </AppModal>
