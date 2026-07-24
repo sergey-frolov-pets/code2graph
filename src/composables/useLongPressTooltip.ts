@@ -8,6 +8,7 @@ const TOOLTIP_ESTIMATED_WIDTH_PX = 200;
 const TOOLTIP_ESTIMATED_HEIGHT_PX = 40;
 
 export type TooltipPlacement = 'top' | 'bottom';
+type TooltipMode = 'none' | 'hover' | 'press';
 
 export function useLongPressTooltip(rootRef: Ref<HTMLElement | null>) {
   const tooltipVisible = ref(false);
@@ -20,6 +21,7 @@ export function useLongPressTooltip(rootRef: Ref<HTMLElement | null>) {
   let hideTimer: ReturnType<typeof setTimeout> | null = null;
   let activePointerId: number | null = null;
   let touchActive = false;
+  let tooltipMode: TooltipMode = 'none';
 
   function clearPressTimer(): void {
     if (pressTimer !== null) {
@@ -81,29 +83,7 @@ export function useLongPressTooltip(rootRef: Ref<HTMLElement | null>) {
     tooltipPlacement.value = placement;
   }
 
-  function hideTooltip(): void {
-    tooltipVisible.value = false;
-    clearPressTimer();
-    clearHideTimer();
-    releasePointerCapture();
-    activePointerId = null;
-    touchActive = false;
-  }
-
-  function showTooltip(): void {
-    tooltipVisible.value = true;
-    suppressNextClick.value = true;
-
-    if (typeof navigator.vibrate === 'function') {
-      navigator.vibrate(12);
-    }
-
-    clearHideTimer();
-    hideTimer = setTimeout(() => {
-      tooltipVisible.value = false;
-      hideTimer = null;
-    }, TOOLTIP_HIDE_MS);
-
+  function schedulePositionUpdate(): void {
     void nextTick(() => {
       requestAnimationFrame(() => {
         clampTooltipPosition();
@@ -111,19 +91,66 @@ export function useLongPressTooltip(rootRef: Ref<HTMLElement | null>) {
     });
   }
 
-  function startPressTimer(): void {
+  function hideTooltip(): void {
+    tooltipVisible.value = false;
+    tooltipMode = 'none';
     clearPressTimer();
     clearHideTimer();
-    tooltipVisible.value = false;
+    releasePointerCapture();
+    activePointerId = null;
+    touchActive = false;
+    suppressNextClick.value = false;
+  }
+
+  function showTooltip(mode: 'hover' | 'press'): void {
+    tooltipMode = mode;
+    tooltipVisible.value = true;
+    clearHideTimer();
+
+    if (mode === 'press') {
+      suppressNextClick.value = true;
+
+      if (typeof navigator.vibrate === 'function') {
+        navigator.vibrate(12);
+      }
+
+      hideTimer = setTimeout(() => {
+        hideTooltip();
+      }, TOOLTIP_HIDE_MS);
+    } else {
+      suppressNextClick.value = false;
+    }
+
+    schedulePositionUpdate();
+  }
+
+  function startPressTimer(): void {
+    clearPressTimer();
+    if (tooltipMode === 'hover') {
+      tooltipVisible.value = false;
+      tooltipMode = 'none';
+    }
+    clearHideTimer();
 
     pressTimer = setTimeout(() => {
-      showTooltip();
+      showTooltip('press');
       pressTimer = null;
     }, LONG_PRESS_MS);
   }
 
+  function onMouseEnter(): void {
+    if (activePointerId !== null || touchActive) return;
+    showTooltip('hover');
+  }
+
+  function onMouseLeave(): void {
+    if (tooltipMode !== 'hover') return;
+    hideTooltip();
+  }
+
   function onPointerDown(event: PointerEvent): void {
     if (event.button !== 0) return;
+    if (event.pointerType === 'mouse') return;
     if (activePointerId !== null && activePointerId !== event.pointerId) return;
 
     activePointerId = event.pointerId;
@@ -156,7 +183,7 @@ export function useLongPressTooltip(rootRef: Ref<HTMLElement | null>) {
 
     releasePointerCapture();
 
-    if (tooltipVisible.value) {
+    if (tooltipMode === 'press') {
       hideTooltip();
     }
   }
@@ -180,7 +207,7 @@ export function useLongPressTooltip(rootRef: Ref<HTMLElement | null>) {
   function onTouchCancel(): void {
     if (!touchActive) return;
 
-    if (tooltipVisible.value) {
+    if (tooltipMode === 'press') {
       hideTooltip();
       return;
     }
@@ -216,6 +243,8 @@ export function useLongPressTooltip(rootRef: Ref<HTMLElement | null>) {
     tooltipPosition,
     tooltipPlacement,
     tooltipRef,
+    onMouseEnter,
+    onMouseLeave,
     onPointerDown,
     onPointerUp,
     onPointerCancel,

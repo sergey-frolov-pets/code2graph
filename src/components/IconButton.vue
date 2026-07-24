@@ -28,6 +28,8 @@ const {
   onTouchStart,
   onTouchEnd,
   onTouchCancel,
+  onMouseEnter,
+  onMouseLeave,
   consumeSuppressClick,
 } = useLongPressTooltip(rootRef);
 
@@ -64,6 +66,8 @@ function onClick(event: MouseEvent): void {
     @touchstart.passive="onTouchStart"
     @touchend="onTouchEnd"
     @touchcancel="onTouchCancel"
+    @mouseenter="onMouseEnter"
+    @mouseleave="onMouseLeave"
     @contextmenu.prevent
     @click="onClick"
   >
