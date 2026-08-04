@@ -1,5 +1,6 @@
 import {
   copyFileSync,
+  cpSync,
   mkdirSync,
   readFileSync,
   readdirSync,
@@ -100,6 +101,11 @@ ${escapeScriptContent(appJs)}
   rmSync(singleDir, { recursive: true, force: true });
   mkdirSync(singleDir, { recursive: true });
   writeFileSync(path.join(singleDir, "index.html"), html, "utf8");
+  cpSync(
+    path.join(appRoot, "public", "plantuml-lib"),
+    path.join(singleDir, "plantuml-lib"),
+    { recursive: true },
+  );
 
   const outputSize = Buffer.byteLength(html, "utf8");
   console.log(

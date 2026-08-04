@@ -1,5 +1,4 @@
 import { computed } from "vue";
-import { APP_LINKS } from "@/constants";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useLocale } from "@/composables/useLocale";
 import {
@@ -22,7 +21,7 @@ import {
 import { isPwaInstallInProgress } from "@/pwa/pwaInstallState";
 
 export function usePwaInstall() {
-  const { alert, confirm } = useAppDialog();
+  const { alert } = useAppDialog();
   const { t } = useLocale();
 
   const isAlreadyInstalled = computed(
@@ -54,16 +53,10 @@ export function usePwaInstall() {
     });
 
     const message = buildManualInstallMessage(status, t);
-    const openInstallPage = await confirm({
+    await alert({
       title: t("pwa.manualTitle"),
-      message: `${message}\n\n${t("pwa.manualConfirm")}`,
-      confirmLabel: t("pwa.open"),
-      cancelLabel: t("app.close"),
+      message,
     });
-
-    if (openInstallPage) {
-      window.location.assign(APP_LINKS.installPage);
-    }
   }
 
   function syncEarlyPrompt(): void {

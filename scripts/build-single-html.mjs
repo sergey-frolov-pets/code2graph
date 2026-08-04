@@ -130,14 +130,6 @@ ${escapeScriptContent(appJs)}
     path.join(appRoot, "public", "pwa-install-bootstrap.js"),
     path.join(distDir, "pwa-install-bootstrap.js"),
   );
-  copyFileSync(
-    path.join(appRoot, "public", "install.html"),
-    path.join(distDir, "install.html"),
-  );
-  copyFileSync(
-    path.join(appRoot, "public", "start-termux.sh"),
-    path.join(distDir, "start-termux.sh"),
-  );
   const cnamePath = path.join(appRoot, "public", "CNAME");
   if (existsSync(cnamePath)) {
     copyFileSync(cnamePath, path.join(distDir, "CNAME"));
@@ -145,6 +137,11 @@ ${escapeScriptContent(appJs)}
   cpSync(path.join(appRoot, "public", "icons"), path.join(distDir, "icons"), {
     recursive: true,
   });
+  cpSync(
+    path.join(appRoot, "public", "plantuml-lib"),
+    path.join(distDir, "plantuml-lib"),
+    { recursive: true },
+  );
 
   const distFiles = readdirSync(distDir);
   console.log(`Dist package: ${distFiles.join(", ")}`);
