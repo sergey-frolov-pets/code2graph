@@ -261,6 +261,8 @@ export const ruMessages: LocaleMessages = {
   "toolbar.themeToLight": "Переключить на светлую тему диаграммы",
   "toolbar.themeToDark": "Переключить на тёмную тему диаграммы",
   "toolbar.refresh": "Обновить",
+  "toolbar.zoomIn": "Увеличить",
+  "toolbar.zoomOut": "Уменьшить",
   "toolbar.exportSvg": "Экспорт SVG",
   "toolbar.exportPng": "Экспорт PNG",
 
@@ -663,6 +665,8 @@ export const enMessages: LocaleMessages = {
   "toolbar.themeToLight": "Switch to light diagram theme",
   "toolbar.themeToDark": "Switch to dark diagram theme",
   "toolbar.refresh": "Refresh",
+  "toolbar.zoomIn": "Zoom in",
+  "toolbar.zoomOut": "Zoom out",
   "toolbar.exportSvg": "Export SVG",
   "toolbar.exportPng": "Export PNG",
 

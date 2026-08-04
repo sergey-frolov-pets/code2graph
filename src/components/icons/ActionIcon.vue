@@ -13,7 +13,9 @@ withDefaults(
       | "snippets"
       | "plus"
       | "export"
-      | "import";
+      | "import"
+      | "zoom-in"
+      | "zoom-out";
     size?: "default" | "large";
   }>(),
   {
@@ -212,6 +214,44 @@ withDefaults(
         stroke-width="1.8"
         stroke-linecap="round"
         stroke-linejoin="round"
+      />
+    </template>
+
+    <template v-else-if="name === 'zoom-in'">
+      <!-- Lucide zoom-in (ISC) https://lucide.dev/icons/zoom-in -->
+      <circle
+        cx="11"
+        cy="11"
+        r="7"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+      />
+      <path
+        d="M21 21l-4.3-4.3M11 8v6M8 11h6"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+      />
+    </template>
+
+    <template v-else-if="name === 'zoom-out'">
+      <!-- Lucide zoom-out (ISC) https://lucide.dev/icons/zoom-out -->
+      <circle
+        cx="11"
+        cy="11"
+        r="7"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+      />
+      <path
+        d="M21 21l-4.3-4.3M8 11h6"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
       />
     </template>
   </svg>

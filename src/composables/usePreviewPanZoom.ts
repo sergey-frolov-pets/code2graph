@@ -10,11 +10,15 @@ import {
 import {
   PREVIEW_FIT_MARGIN_RATIO,
   PREVIEW_MIN_ZOOM,
+  PREVIEW_WHEEL_LINE_PIXELS,
   PREVIEW_ZOOM_SENSITIVITY,
+  PREVIEW_ZOOM_STEP,
 } from "@/constants/preview-pan-zoom";
 import { parseSvgSize } from "@/utils/export";
 
 type Size = { width: number; height: number };
+
+const SCALE_EPSILON = 1e-6;
 
 function readViewportSize(viewport: HTMLElement): Size {
   return {
@@ -42,6 +46,39 @@ function clampPan(
   };
 }
 
+function normalizeWheelDelta(event: WheelEvent, viewportHeight: number): number {
+  let delta = event.deltaY;
+
+  if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) {
+    delta *= PREVIEW_WHEEL_LINE_PIXELS;
+  } else if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+    delta *= viewportHeight;
+  }
+
+  if (event.ctrlKey) {
+    delta *= 2;
+  }
+
+  return delta;
+}
+
+function getWheelZoomFactor(event: WheelEvent, viewportHeight: number): number {
+  const delta = normalizeWheelDelta(event, viewportHeight);
+
+  if (delta === 0) {
+    return 1;
+  }
+
+  if (
+    event.deltaMode === WheelEvent.DOM_DELTA_LINE
+    && Math.abs(event.deltaY) <= 3
+  ) {
+    return event.deltaY < 0 ? PREVIEW_ZOOM_STEP : 1 / PREVIEW_ZOOM_STEP;
+  }
+
+  return Math.exp(-delta * PREVIEW_ZOOM_SENSITIVITY);
+}
+
 export function usePreviewPanZoom(
   viewportRef: Ref<HTMLElement | null>,
   contentRef: Ref<HTMLElement | null>,
@@ -60,6 +97,7 @@ export function usePreviewPanZoom(
   let panStartY = 0;
   let activePointerId: number | null = null;
   let resizeObserver: ResizeObserver | null = null;
+  let wheelListener: ((event: WheelEvent) => void) | null = null;
 
   function getScaledSize(): Size {
     return {
@@ -142,10 +180,24 @@ export function usePreviewPanZoom(
     fitToView();
   }
 
+  function getViewportCenter(): { x: number; y: number } {
+    const viewport = viewportRef.value;
+    if (!viewport) {
+      return { x: 0, y: 0 };
+    }
+
+    const { width, height } = readViewportSize(viewport);
+    return { x: width / 2, y: height / 2 };
+  }
+
   function zoomAt(cursorX: number, cursorY: number, zoomFactor: number): void {
+    if (zoomFactor === 1) {
+      return;
+    }
+
     const oldScale = scale.value;
     const newScale = Math.max(PREVIEW_MIN_ZOOM, oldScale * zoomFactor);
-    if (newScale === oldScale) {
+    if (Math.abs(newScale - oldScale) < SCALE_EPSILON) {
       return;
     }
 
@@ -156,8 +208,19 @@ export function usePreviewPanZoom(
     applyClamp();
   }
 
+  function zoomIn(): void {
+    const center = getViewportCenter();
+    zoomAt(center.x, center.y, PREVIEW_ZOOM_STEP);
+  }
+
+  function zoomOut(): void {
+    const center = getViewportCenter();
+    zoomAt(center.x, center.y, 1 / PREVIEW_ZOOM_STEP);
+  }
+
   function onWheel(event: WheelEvent): void {
     event.preventDefault();
+    event.stopPropagation();
 
     const viewport = viewportRef.value;
     if (!viewport) {
@@ -167,7 +230,7 @@ export function usePreviewPanZoom(
     const rect = viewport.getBoundingClientRect();
     const cursorX = event.clientX - rect.left;
     const cursorY = event.clientY - rect.top;
-    const zoomFactor = Math.exp(-event.deltaY * PREVIEW_ZOOM_SENSITIVITY);
+    const zoomFactor = getWheelZoomFactor(event, viewport.clientHeight);
     zoomAt(cursorX, cursorY, zoomFactor);
   }
 
@@ -244,6 +307,11 @@ export function usePreviewPanZoom(
       return;
     }
 
+    wheelListener = (event: WheelEvent) => {
+      onWheel(event);
+    };
+    viewport.addEventListener("wheel", wheelListener, { passive: false });
+
     resizeObserver = new ResizeObserver(() => {
       applyClamp();
     });
@@ -253,6 +321,12 @@ export function usePreviewPanZoom(
   });
 
   onUnmounted(() => {
+    const viewport = viewportRef.value;
+    if (viewport && wheelListener) {
+      viewport.removeEventListener("wheel", wheelListener);
+    }
+    wheelListener = null;
+
     resizeObserver?.disconnect();
     resizeObserver = null;
   });
@@ -260,7 +334,8 @@ export function usePreviewPanZoom(
   return {
     contentStyle,
     isDragging,
-    onWheel,
+    zoomIn,
+    zoomOut,
     onPointerDown,
     onPointerMove,
     onPointerUp: endPointerDrag,

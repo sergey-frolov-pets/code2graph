@@ -38,7 +38,8 @@ const previewMarkup = computed(() => {
 const {
   contentStyle,
   isDragging,
-  onWheel,
+  zoomIn,
+  zoomOut,
   onPointerDown,
   onPointerMove,
   onPointerUp,
@@ -87,6 +88,8 @@ watch(isFullscreen, (value) => {
           @render-now="emit('renderNow')"
           @export-svg="emit('exportSvg')"
           @export-png="emit('exportPng')"
+          @zoom-in="zoomIn"
+          @zoom-out="zoomOut"
           @update:preview-background="emit('update:previewBackground', $event)"
           @update:diagram-dark-mode="emit('update:diagramDarkMode', $event)"
         />
@@ -102,7 +105,6 @@ watch(isFullscreen, (value) => {
           ref="viewportRef"
           class="preview-viewport"
           :class="{ 'is-dragging': isDragging }"
-          @wheel="onWheel"
           @pointerdown="onPointerDown"
           @pointermove="onPointerMove"
           @pointerup="onPointerUp"
