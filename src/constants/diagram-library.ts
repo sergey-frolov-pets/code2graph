@@ -62,3 +62,21 @@ export interface CreateSectionPayload {
   parentId: string | null;
   sortOrder?: number;
 }
+
+export interface UpdateDiagramPayload {
+  title?: string;
+  description?: string;
+  tags?: string[];
+  sectionId?: string | null;
+  source?: string;
+  fileName?: string;
+}
+
+export const LIBRARY_EXPORT_VERSION = 1;
+
+export interface LibraryExportBundle {
+  version: typeof LIBRARY_EXPORT_VERSION;
+  exportedAt: string;
+  sections: SectionDto[];
+  diagrams: DiagramDto[];
+}

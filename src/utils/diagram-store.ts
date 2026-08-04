@@ -3,7 +3,9 @@ import type {
   CreateSectionPayload,
   DiagramDto,
   DiagramListItemDto,
+  LibraryExportBundle,
   SectionDto,
+  UpdateDiagramPayload,
 } from "@/constants/diagram-library";
 import { resolvePumlFileName } from "@/utils/puml-files";
 
@@ -256,6 +258,84 @@ export async function deleteLocalDiagram(diagramId: string): Promise<void> {
     (stores) => {
       stores[STORE_DIAGRAMS].delete(diagramId);
       stores[STORE_DIAGRAM_DETAILS].delete(diagramId);
+    },
+  );
+}
+
+export async function updateLocalDiagram(
+  diagramId: string,
+  payload: UpdateDiagramPayload,
+): Promise<DiagramDto> {
+  const existing = await loadDiagramDetailFromCache(diagramId);
+  if (!existing) {
+    throw new Error("Diagram not found");
+  }
+
+  const source = payload.source ?? existing.source;
+  const updated: DiagramDto = {
+    ...existing,
+    title: payload.title?.trim() || existing.title,
+    description:
+      payload.description !== undefined
+        ? payload.description.trim()
+        : existing.description,
+    tags: payload.tags ?? existing.tags,
+    sectionId:
+      payload.sectionId !== undefined ? payload.sectionId : existing.sectionId,
+    fileName: payload.fileName
+      ? resolvePumlFileName(payload.fileName)
+      : existing.fileName,
+    source,
+    byteSize: new TextEncoder().encode(source).length,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await runTransaction(
+    [STORE_DIAGRAMS, STORE_DIAGRAM_DETAILS],
+    "readwrite",
+    (stores) => {
+      stores[STORE_DIAGRAMS].put(toDiagramListItem(updated));
+      stores[STORE_DIAGRAM_DETAILS].put(updated);
+    },
+  );
+
+  return updated;
+}
+
+export async function importLocalLibrarySelection(
+  bundle: LibraryExportBundle,
+  sectionIds: ReadonlySet<string>,
+  diagramIds: ReadonlySet<string>,
+): Promise<void> {
+  const sectionsToImport = bundle.sections.filter((section) =>
+    sectionIds.has(section.id),
+  );
+  const diagramsToImport = bundle.diagrams.filter((diagram) =>
+    diagramIds.has(diagram.id),
+  );
+  const importedSectionIds = new Set(sectionsToImport.map((section) => section.id));
+
+  await runTransaction(
+    [STORE_SECTIONS, STORE_DIAGRAMS, STORE_DIAGRAM_DETAILS],
+    "readwrite",
+    (stores) => {
+      for (const section of sectionsToImport) {
+        const parentId =
+          section.parentId && importedSectionIds.has(section.parentId)
+            ? section.parentId
+            : null;
+        stores[STORE_SECTIONS].put({ ...section, parentId });
+      }
+
+      for (const diagram of diagramsToImport) {
+        const sectionId =
+          diagram.sectionId && importedSectionIds.has(diagram.sectionId)
+            ? diagram.sectionId
+            : null;
+        const normalized = { ...diagram, sectionId };
+        stores[STORE_DIAGRAMS].put(toDiagramListItem(normalized));
+        stores[STORE_DIAGRAM_DETAILS].put(normalized);
+      }
     },
   );
 }
