@@ -5,6 +5,7 @@ import FileBadgeIcon from "@/components/icons/FileBadgeIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import TooltipWrap from "@/components/TooltipWrap.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
+import SnippetsPanel from "@/components/SnippetsPanel.vue";
 import {
   getSampleDiagramSource,
   isSampleDiagramSource,
@@ -50,6 +51,7 @@ const gutterRef = ref<HTMLTextAreaElement | null>(null);
 const highlightsRef = ref<HTMLDivElement | null>(null);
 const isDragOver = ref(false);
 const isFullscreen = ref(false);
+const snippetsOpen = ref(false);
 
 const { confirm } = useAppDialog();
 const { t, locale } = useLocale();
@@ -197,6 +199,50 @@ function toggleFullscreen(): void {
   isFullscreen.value = !isFullscreen.value;
 }
 
+function toggleSnippetsPanel(): void {
+  snippetsOpen.value = !snippetsOpen.value;
+}
+
+function insertSnippetAtCursor(content: string): void {
+  const textarea = textareaRef.value;
+  const trimmed = content.trimEnd();
+  if (!trimmed) {
+    return;
+  }
+
+  const start = textarea?.selectionStart ?? source.value.length;
+  const end = textarea?.selectionEnd ?? source.value.length;
+  const before = source.value.slice(0, start);
+  const after = source.value.slice(end);
+
+  const needsLeadingNewline =
+    before.length > 0 && !before.endsWith("\n") && !trimmed.startsWith("@");
+  const needsTrailingNewline =
+    after.length > 0 && !after.startsWith("\n") && !trimmed.endsWith("\n");
+  const snippetText =
+    (needsLeadingNewline ? "\n" : "") +
+    trimmed +
+    (trimmed.endsWith("\n") ? "" : "\n") +
+    (needsTrailingNewline ? "" : "");
+
+  source.value = before + snippetText + after;
+
+  const cursorPosition = before.length + snippetText.length;
+  void nextTick(() => {
+    if (!textareaRef.value) {
+      return;
+    }
+    textareaRef.value.focus();
+    textareaRef.value.setSelectionRange(cursorPosition, cursorPosition);
+    syncScroll();
+  });
+}
+
+function onSnippetInsert(content: string): void {
+  insertSnippetAtCursor(content);
+  snippetsOpen.value = false;
+}
+
 function onFullscreenKeydown(event: KeyboardEvent): void {
   if (event.key === "Escape" && isFullscreen.value) {
     isFullscreen.value = false;
@@ -259,6 +305,13 @@ watch(
           @click="requestClear"
         >
           <ActionIcon name="trash" />
+        </IconButton>
+        <IconButton
+          :label="t('editor.snippets')"
+          :pressed="snippetsOpen"
+          @click="toggleSnippetsPanel"
+        >
+          <ActionIcon name="snippets" />
         </IconButton>
         <TooltipWrap :label="t('editor.samplesTooltip')">
           <label class="sample-select-wrap">
@@ -339,6 +392,12 @@ watch(
 
       <p class="drop-hint">{{ t("editor.dropHint") }}</p>
     </div>
+
+    <SnippetsPanel
+      :open="snippetsOpen"
+      @close="snippetsOpen = false"
+      @insert="onSnippetInsert"
+    />
   </section>
 </template>
 

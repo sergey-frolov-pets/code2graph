@@ -9,7 +9,9 @@ withDefaults(
       | "refresh"
       | "sun"
       | "moon"
-      | "library";
+      | "library"
+      | "snippets"
+      | "plus";
     size?: "default" | "large";
   }>(),
   {
@@ -143,6 +145,33 @@ withDefaults(
         stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round"
+      />
+    </template>
+
+    <template v-else-if="name === 'snippets'">
+      <path
+        d="M8 6h12M8 12h12M8 18h8"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+      />
+      <path
+        d="M4 6h.01M4 12h.01M4 18h.01"
+        fill="currentColor"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+    </template>
+
+    <template v-else-if="name === 'plus'">
+      <path
+        d="M12 5v14M5 12h14"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.9"
+        stroke-linecap="round"
       />
     </template>
   </svg>
