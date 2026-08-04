@@ -25,7 +25,7 @@ function transparentizeLightBackground(root: Element): void {
   }
 }
 
-function parseSvgSize(svg: string): { width: number; height: number } {
+export function parseSvgSize(svg: string): { width: number; height: number } {
   const parser = new DOMParser();
   const doc = parser.parseFromString(svg, "image/svg+xml");
   const root = doc.documentElement;

@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import DiagramToolbar from "@/components/DiagramToolbar.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
 import { useLocale } from "@/composables/useLocale";
+import { usePreviewPanZoom } from "@/composables/usePreviewPanZoom";
 import { sanitizeSvgForPreview } from "@/utils/export";
 
 const props = defineProps<{
@@ -24,6 +25,8 @@ const emit = defineEmits<{
 
 const { t } = useLocale();
 const isFullscreen = ref(false);
+const viewportRef = ref<HTMLElement | null>(null);
+const contentRef = ref<HTMLElement | null>(null);
 
 const previewMarkup = computed(() => {
   if (!props.svg) {
@@ -31,6 +34,16 @@ const previewMarkup = computed(() => {
   }
   return sanitizeSvgForPreview(props.svg);
 });
+
+const {
+  contentStyle,
+  isDragging,
+  onWheel,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel,
+} = usePreviewPanZoom(viewportRef, contentRef, previewMarkup);
 
 function toggleFullscreen(): void {
   isFullscreen.value = !isFullscreen.value;
@@ -84,11 +97,26 @@ watch(isFullscreen, (value) => {
 
     <div class="panel-body">
       <div v-if="error" class="preview-error">{{ error }}</div>
-      <div
-        v-else-if="previewMarkup"
-        class="preview-frame"
-        v-html="previewMarkup"
-      />
+      <div v-else-if="previewMarkup" class="preview-frame">
+        <div
+          ref="viewportRef"
+          class="preview-viewport"
+          :class="{ 'is-dragging': isDragging }"
+          @wheel="onWheel"
+          @pointerdown="onPointerDown"
+          @pointermove="onPointerMove"
+          @pointerup="onPointerUp"
+          @pointercancel="onPointerCancel"
+          @pointerleave="onPointerUp"
+        >
+          <div
+            ref="contentRef"
+            class="preview-content"
+            :style="contentStyle"
+            v-html="previewMarkup"
+          />
+        </div>
+      </div>
       <div v-else class="preview-placeholder">
         {{ t("preview.placeholder") }}
       </div>
