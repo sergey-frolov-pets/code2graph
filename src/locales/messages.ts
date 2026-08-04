@@ -167,6 +167,8 @@ export const ruMessages: LocaleMessages = {
   "settings.libraryServerPlaceholder": "Пусто — только локально",
 
   "library.title": "Библиотека диаграмм",
+  "library.browse": "Просмотр",
+  "library.refresh": "Обновить",
   "library.sections": "Разделы",
   "library.allSections": "Все диаграммы",
   "library.addSection": "Добавить раздел",
@@ -367,6 +369,8 @@ export const enMessages: LocaleMessages = {
   "settings.libraryServerPlaceholder": "Empty — local only",
 
   "library.title": "Diagram library",
+  "library.browse": "Browse",
+  "library.refresh": "Refresh",
   "library.sections": "Sections",
   "library.allSections": "All diagrams",
   "library.addSection": "Add section",

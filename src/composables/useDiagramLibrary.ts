@@ -1,4 +1,4 @@
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import {
   LIBRARY_CACHE_KEY,
   LIBRARY_SEARCH_DEBOUNCE_MS,
@@ -382,6 +382,14 @@ export function useDiagramLibrary() {
   onMounted(() => {
     window.addEventListener("online", updateOnlineStatus);
     window.addEventListener("offline", updateOnlineStatus);
+  });
+
+  onUnmounted(() => {
+    window.removeEventListener("online", updateOnlineStatus);
+    window.removeEventListener("offline", updateOnlineStatus);
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+    }
   });
 
   return {

@@ -84,6 +84,30 @@ function buildTree(sections: SectionDto[]): SectionDto[] {
   return roots;
 }
 
+function collectSectionSubtree(
+  rootId: string,
+  sections: Array<{ id: string; parent_id: string | null }>,
+): Set<string> {
+  const ids = new Set<string>([rootId]);
+  let changed = true;
+
+  while (changed) {
+    changed = false;
+    for (const section of sections) {
+      if (
+        section.parent_id &&
+        ids.has(section.parent_id) &&
+        !ids.has(section.id)
+      ) {
+        ids.add(section.id);
+        changed = true;
+      }
+    }
+  }
+
+  return ids;
+}
+
 function mapDiagramListItem(row: {
   id: string;
   section_id: string | null;
@@ -295,8 +319,12 @@ diagramsRouter.get("/", (context) => {
   const params: unknown[] = [];
 
   if (sectionId) {
-    sql += " AND section_id = ?";
-    params.push(sectionId);
+    const allSections = database
+      .prepare("SELECT id, parent_id FROM sections")
+      .all() as Array<{ id: string; parent_id: string | null }>;
+    const sectionIds = [...collectSectionSubtree(sectionId, allSections)];
+    sql += ` AND section_id IN (${sectionIds.map(() => "?").join(", ")})`;
+    params.push(...sectionIds);
   }
 
   if (language && isDiagramLanguage(language)) {

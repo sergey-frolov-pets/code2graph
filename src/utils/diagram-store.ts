@@ -155,7 +155,7 @@ function toDiagramListItem(diagram: DiagramDto): DiagramListItemDto {
   };
 }
 
-function collectSectionSubtree(
+export function collectSectionSubtree(
   rootId: string,
   sections: SectionDto[],
 ): Set<string> {
@@ -276,9 +276,12 @@ export async function searchLocalLibrary(params: {
   const tag = params.tag?.trim().toLowerCase() ?? "";
   const language = params.language?.trim() ?? "";
   const sectionId = params.sectionId ?? null;
+  const sectionIds = sectionId
+    ? collectSectionSubtree(sectionId, await loadSectionsFromCache())
+    : null;
 
   return diagrams.filter((diagram) => {
-    if (sectionId && diagram.sectionId !== sectionId) {
+    if (sectionIds && (!diagram.sectionId || !sectionIds.has(diagram.sectionId))) {
       return false;
     }
     if (language && diagram.language !== language) {
