@@ -8,12 +8,12 @@
     "dev": "vite",
     "dev:api": "npm --prefix server run dev",
     "dev:all": "npm run dev:api & npm run dev",
-    "prebuild": "node scripts/copy-vendor.mjs && node scripts/generate-pwa-icons.mjs",
+    "prebuild": "node scripts/copy-vendor.mjs && node scripts/copy-c4-lib.mjs && node scripts/generate-pwa-icons.mjs",
     "build": "vue-tsc --noEmit && vite build && node scripts/build-single-html.mjs",
     "build:minimal": "vue-tsc --noEmit && vite build && node scripts/build-minimal.mjs",
     "build:single": "vue-tsc --noEmit && vite build && node scripts/build-single-only.mjs",
     "preview": "vite preview",
-    "postinstall": "node scripts/copy-vendor.mjs && node scripts/generate-pwa-icons.mjs"
+    "postinstall": "node scripts/copy-vendor.mjs && node scripts/copy-c4-lib.mjs && node scripts/generate-pwa-icons.mjs"
   },
   "dependencies": {
     "@plantuml/core": "^1.2026.6",

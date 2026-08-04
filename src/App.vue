@@ -54,7 +54,7 @@ import {
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useLocale } from "@/composables/useLocale";
 import {
-  applyLayoutPragma,
+  preparePlantUmlSource,
   splitSourceLines,
 } from "@/utils/plantuml-source";
 import {
@@ -237,7 +237,7 @@ async function renderDiagram(): Promise<void> {
   error.value = "";
 
   try {
-    const prepared = applyLayoutPragma(source.value, layout.value);
+    const prepared = await preparePlantUmlSource(source.value, layout.value);
     const lines = splitSourceLines(prepared);
     const result = await renderPlantUmlToSvg(lines, {
       dark: diagramDarkMode.value,

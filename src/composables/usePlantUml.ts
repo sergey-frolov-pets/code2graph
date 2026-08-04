@@ -7,7 +7,7 @@ import {
   parsePlantUmlErrorLine,
   type SyntaxCheckResult,
 } from "@/utils/plantuml-syntax";
-import { applyLayoutPragma, splitSourceLines } from "@/utils/plantuml-source";
+import { preparePlantUmlSource, splitSourceLines } from "@/utils/plantuml-source";
 import { LocalizedAppError } from "@/utils/localized-app-error";
 
 const VIZ_SOURCE_ID = "vendor-viz-global";
@@ -198,7 +198,7 @@ export async function validatePlantUmlSyntax(
   }
 
   try {
-    const prepared = applyLayoutPragma(source, layout);
+    const prepared = await preparePlantUmlSource(source, layout);
     const lines = splitSourceLines(prepared);
     const rendered = await renderPlantUmlToSvg(lines, { dark: darkMode });
     if (isPlantUmlErrorSvg(rendered)) {

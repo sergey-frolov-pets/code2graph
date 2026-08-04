@@ -1,4 +1,5 @@
 import type { LayoutEngine } from "@/constants";
+import { resolvePlantUmlIncludes } from "@/utils/plantuml-include";
 
 const PRAGMA_LAYOUT_PATTERN = /^\s*!pragma\s+layout\s+\S+/im;
 
@@ -26,6 +27,14 @@ export function applyLayoutPragma(
   }
 
   return `@startuml\n${pragmaLine}\n\n${trimmed}\n@enduml`;
+}
+
+export async function preparePlantUmlSource(
+  source: string,
+  layout: LayoutEngine,
+): Promise<string> {
+  const withLayout = applyLayoutPragma(source, layout);
+  return resolvePlantUmlIncludes(withLayout);
 }
 
 export function ensureDiagramWrapper(source: string): string {
