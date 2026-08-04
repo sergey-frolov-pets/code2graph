@@ -417,7 +417,7 @@ a {
 .preview-frame {
   flex: 1;
   min-height: 200px;
-  overflow: auto;
+  display: flex;
   border: 1px dashed var(--border);
   border-radius: 8px;
   background: var(--preview-bg);
@@ -425,10 +425,20 @@ a {
   padding: 12px;
 }
 
-.preview-frame svg {
+.preview-viewport {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+}
+
+.preview-viewport.is-dragging {
+  cursor: grabbing;
+}
+
+.preview-content svg {
   display: block;
-  max-width: 100%;
-  height: auto;
 }
 
 .preview-placeholder,
