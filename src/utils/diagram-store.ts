@@ -307,10 +307,14 @@ export async function importLocalLibrarySelection(
   sectionIds: ReadonlySet<string>,
   diagramIds: ReadonlySet<string>,
 ): Promise<void> {
-  const sectionsToImport = bundle.sections.filter((section) =>
+  const plainBundle = JSON.parse(
+    JSON.stringify(bundle),
+  ) as LibraryExportBundle;
+
+  const sectionsToImport = plainBundle.sections.filter((section) =>
     sectionIds.has(section.id),
   );
-  const diagramsToImport = bundle.diagrams.filter((diagram) =>
+  const diagramsToImport = plainBundle.diagrams.filter((diagram) =>
     diagramIds.has(diagram.id),
   );
   const importedSectionIds = new Set(sectionsToImport.map((section) => section.id));
@@ -324,7 +328,14 @@ export async function importLocalLibrarySelection(
           section.parentId && importedSectionIds.has(section.parentId)
             ? section.parentId
             : null;
-        stores[STORE_SECTIONS].put({ ...section, parentId });
+        stores[STORE_SECTIONS].put({
+          id: section.id,
+          parentId,
+          title: section.title,
+          sortOrder: section.sortOrder,
+          createdAt: section.createdAt,
+          updatedAt: section.updatedAt,
+        });
       }
 
       for (const diagram of diagramsToImport) {
@@ -332,7 +343,19 @@ export async function importLocalLibrarySelection(
           diagram.sectionId && importedSectionIds.has(diagram.sectionId)
             ? diagram.sectionId
             : null;
-        const normalized = { ...diagram, sectionId };
+        const normalized: DiagramDto = {
+          id: diagram.id,
+          sectionId,
+          title: diagram.title,
+          description: diagram.description,
+          tags: [...diagram.tags],
+          language: diagram.language,
+          source: diagram.source,
+          fileName: diagram.fileName,
+          byteSize: diagram.byteSize,
+          createdAt: diagram.createdAt,
+          updatedAt: diagram.updatedAt,
+        };
         stores[STORE_DIAGRAMS].put(toDiagramListItem(normalized));
         stores[STORE_DIAGRAM_DETAILS].put(normalized);
       }
