@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import AppModal from "@/components/AppModal.vue";
 import LibraryTransferTab from "@/components/LibraryTransferTab.vue";
 import {
   MAX_PUML_FILE_BYTES,
@@ -46,8 +45,10 @@ const {
 } = library;
 
 type LibraryTab = "browse" | "upload" | "transfer";
+type BrowseStep = "sections" | "diagrams" | "detail";
 
 const activeTab = ref<LibraryTab>("browse");
+const browseStep = ref<BrowseStep>("sections");
 const uploadTitle = ref("");
 const uploadSectionId = ref("");
 const uploadFile = ref<File | null>(null);
@@ -69,20 +70,35 @@ const isTransferProcessing = ref(false);
 const maxSizeKb = computed(() => Math.round(MAX_PUML_FILE_BYTES / 1024));
 
 const statusHint = computed(() => {
-  if (isLocalMode.value) {
-    return t("library.localMode");
-  }
-  if (apiAvailable.value) {
-    return t("library.serverMode", { url: libraryApiUrl.value });
-  }
-  if (usingCache.value) {
-    return t("library.offlineCache");
-  }
-  if (isOnline.value) {
-    return t("library.apiUnavailable");
-  }
+  if (isLocalMode.value) return t("library.localMode");
+  if (apiAvailable.value) return t("library.serverMode", { url: libraryApiUrl.value });
+  if (usingCache.value) return t("library.offlineCache");
+  if (isOnline.value) return t("library.apiUnavailable");
   return t("library.offlineCache");
 });
+
+const headerTitle = computed(() => {
+  if (activeTab.value === "upload") return t("library.uploadDiagram");
+  if (activeTab.value === "transfer") return t("library.transfer");
+  if (browseStep.value === "sections") return t("library.chooseSection");
+  if (browseStep.value === "diagrams") {
+    if (selectedSectionId.value === null) return t("library.allSections");
+    const section = flatSectionOptions.value.find(
+      (item) => item.id === selectedSectionId.value,
+    );
+    return section?.title ?? t("library.chooseDiagram");
+  }
+  if (selectedDiagram.value) return selectedDiagram.value.title;
+  return t("library.title");
+});
+
+const showBackButton = computed(
+  () => activeTab.value === "browse" && browseStep.value !== "sections",
+);
+
+const showModeTabs = computed(
+  () => activeTab.value !== "browse" || browseStep.value === "sections",
+);
 
 function formatDate(value: string): string {
   try {
@@ -110,6 +126,33 @@ const flatSectionOptions = computed(() =>
   flattenSections(sectionTree.value),
 );
 
+function resetBrowseFlow(): void {
+  browseStep.value = "sections";
+  resetEditForm();
+}
+
+function goBack(): void {
+  if (browseStep.value === "detail") {
+    browseStep.value = "diagrams";
+    resetEditForm();
+    return;
+  }
+  if (browseStep.value === "diagrams") {
+    browseStep.value = "sections";
+    resetEditForm();
+  }
+}
+
+async function onSectionPick(sectionId: string | null): Promise<void> {
+  await library.selectSection(sectionId);
+  browseStep.value = "diagrams";
+}
+
+async function onDiagramPick(diagramId: string): Promise<void> {
+  await library.selectDiagram(diagramId);
+  browseStep.value = "detail";
+}
+
 async function loadTransferData(): Promise<void> {
   const data = await library.loadTransferData();
   transferSections.value = data.sections;
@@ -125,10 +168,7 @@ function resetEditForm(): void {
 }
 
 function startEdit(): void {
-  if (!selectedDiagram.value) {
-    return;
-  }
-
+  if (!selectedDiagram.value) return;
   editTitle.value = selectedDiagram.value.title;
   editDescription.value = selectedDiagram.value.description;
   editTags.value = selectedDiagram.value.tags.join(", ");
@@ -137,10 +177,7 @@ function startEdit(): void {
 }
 
 async function saveEdit(): Promise<void> {
-  if (!selectedDiagram.value) {
-    return;
-  }
-
+  if (!selectedDiagram.value) return;
   isSaving.value = true;
   uploadError.value = "";
   try {
@@ -148,7 +185,6 @@ async function saveEdit(): Promise<void> {
       .split(",")
       .map((tag) => tag.trim())
       .filter(Boolean);
-
     await library.updateDiagram(selectedDiagram.value.id, {
       title: editTitle.value.trim(),
       description: editDescription.value,
@@ -168,19 +204,16 @@ function onFileChange(event: Event): void {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0] ?? null;
   uploadError.value = "";
-
   if (!file) {
     uploadFile.value = null;
     return;
   }
-
   if (file.size > MAX_PUML_FILE_BYTES) {
     uploadError.value = t("library.fileTooLarge", { size: maxSizeKb.value });
     uploadFile.value = null;
     input.value = "";
     return;
   }
-
   uploadFile.value = file;
   if (!uploadTitle.value.trim()) {
     uploadTitle.value = file.name.replace(/\.(puml|plantuml|txt)$/i, "");
@@ -189,28 +222,25 @@ function onFileChange(event: Event): void {
 
 async function submitUpload(): Promise<void> {
   uploadError.value = "";
-
   if (!uploadFile.value) {
     uploadError.value = t("library.noFile");
     return;
   }
-
   if (uploadFile.value.size > MAX_PUML_FILE_BYTES) {
     uploadError.value = t("library.fileTooLarge", { size: maxSizeKb.value });
     return;
   }
-
   isUploading.value = true;
   try {
     await library.addDiagramFromFile(uploadFile.value, {
       title: uploadTitle.value.trim() || undefined,
       sectionId: uploadSectionId.value || null,
     });
-
     uploadTitle.value = "";
     uploadSectionId.value = selectedSectionId.value ?? "";
     uploadFile.value = null;
     activeTab.value = "browse";
+    resetBrowseFlow();
   } catch (error) {
     uploadError.value =
       error instanceof Error ? error.message : t("library.syncError");
@@ -226,16 +256,10 @@ async function createSection(parentId: string | null): Promise<void> {
     placeholder: t("library.sectionTitle"),
     confirmLabel: t("app.create"),
   });
-
-  if (!title?.trim()) {
-    return;
-  }
-
+  if (!title?.trim()) return;
   try {
     await library.addSection({ title: title.trim(), parentId });
-    if (activeTab.value === "transfer") {
-      await loadTransferData();
-    }
+    if (activeTab.value === "transfer") await loadTransferData();
   } catch (error) {
     uploadError.value =
       error instanceof Error ? error.message : t("library.syncError");
@@ -249,16 +273,11 @@ async function onDeleteSection(sectionId: string, title: string): Promise<void> 
     variant: "danger",
     confirmLabel: t("app.delete"),
   });
-
-  if (!confirmed) {
-    return;
-  }
-
+  if (!confirmed) return;
   try {
     await library.removeSection(sectionId);
-    if (activeTab.value === "transfer") {
-      await loadTransferData();
-    }
+    if (activeTab.value === "transfer") await loadTransferData();
+    if (selectedSectionId.value === sectionId) browseStep.value = "sections";
   } catch (error) {
     uploadError.value =
       error instanceof Error ? error.message : t("library.syncError");
@@ -272,17 +291,12 @@ async function onDeleteDiagram(diagramId: string, title: string): Promise<void> 
     variant: "danger",
     confirmLabel: t("app.delete"),
   });
-
-  if (!confirmed) {
-    return;
-  }
-
+  if (!confirmed) return;
   try {
     await library.removeDiagram(diagramId);
     resetEditForm();
-    if (activeTab.value === "transfer") {
-      await loadTransferData();
-    }
+    browseStep.value = "diagrams";
+    if (activeTab.value === "transfer") await loadTransferData();
   } catch (error) {
     uploadError.value =
       error instanceof Error ? error.message : t("library.syncError");
@@ -290,10 +304,7 @@ async function onDeleteDiagram(diagramId: string, title: string): Promise<void> 
 }
 
 function openInEditor(): void {
-  if (!selectedDiagram.value) {
-    return;
-  }
-
+  if (!selectedDiagram.value) return;
   emit("open-diagram", {
     content: selectedDiagram.value.source,
     fileName: selectedDiagram.value.fileName,
@@ -336,10 +347,7 @@ async function onImportSelection(payload: {
   sectionIds: Set<string>;
   diagramIds: Set<string>;
 }): Promise<void> {
-  if (!importBundle.value) {
-    return;
-  }
-
+  if (!importBundle.value) return;
   isTransferProcessing.value = true;
   uploadError.value = "";
   try {
@@ -351,6 +359,7 @@ async function onImportSelection(payload: {
     importBundle.value = null;
     await loadTransferData();
     activeTab.value = "browse";
+    resetBrowseFlow();
   } catch (error) {
     uploadError.value =
       error instanceof Error ? error.message : t("library.importError");
@@ -359,77 +368,79 @@ async function onImportSelection(payload: {
   }
 }
 
+function switchTab(tab: LibraryTab): void {
+  activeTab.value = tab;
+  if (tab === "browse") resetBrowseFlow();
+  if (tab !== "browse") resetEditForm();
+}
+
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
       uploadSectionId.value = selectedSectionId.value ?? "";
       importBundle.value = null;
-      resetEditForm();
+      activeTab.value = "browse";
+      resetBrowseFlow();
       void library.refresh();
     }
   },
 );
 
 watch(activeTab, (tab) => {
-  if (tab === "transfer") {
-    void loadTransferData();
-  }
-  if (tab !== "browse") {
-    resetEditForm();
-  }
+  if (tab === "transfer") void loadTransferData();
 });
-
-watch(
-  () => selectedDiagram.value?.id,
-  () => resetEditForm(),
-);
 
 watch(searchQuery, () => library.scheduleSearch());
-
-watch(tagFilter, () => {
-  void library.searchDiagrams();
-});
-
+watch(tagFilter, () => void library.searchDiagrams());
 watch(libraryApiUrl, () => {
-  if (props.open) {
-    void library.refresh();
-  }
+  if (props.open) void library.refresh();
 });
 </script>
 
 <template>
-  <AppModal :open="open" :title="t('library.title')" @close="emit('close')">
-    <div class="library-toolbar">
-      <div class="library-status">
-        <span
-          class="status-pill"
-          :class="isOnline ? 'is-ready' : 'is-error'"
-        >
-          {{ isOnline ? t("app.online") : t("app.offline") }}
-        </span>
-        <span class="library-status__hint">{{ statusHint }}</span>
-        <span v-if="isSyncing" class="library-status__hint">
-          {{ t("app.loading") }}
-        </span>
-      </div>
+  <Teleport to="body">
+    <div v-if="open" class="library-screen" role="dialog" aria-modal="true">
+      <header class="library-header">
+        <div class="library-header__row">
+          <button
+            v-if="showBackButton"
+            class="btn library-header__back"
+            type="button"
+            @click="goBack"
+          >
+            ← {{ t("library.back") }}
+          </button>
+          <h2 class="library-header__title">{{ headerTitle }}</h2>
+          <div class="library-header__actions">
+            <button
+              class="btn btn-icon"
+              type="button"
+              :title="t('library.refresh')"
+              :disabled="isSyncing"
+              @click="library.refresh()"
+            >
+              ↻
+            </button>
+            <button
+              class="btn btn-icon library-header__close"
+              type="button"
+              :aria-label="t('app.close')"
+              @click="emit('close')"
+            >
+              ×
+            </button>
+          </div>
+        </div>
 
-      <div class="library-toolbar__actions">
-        <button
-          class="btn btn-icon"
-          type="button"
-          :title="t('library.refresh')"
-          :disabled="isSyncing"
-          @click="library.refresh()"
-        >
-          ↻
-        </button>
-        <div class="library-tabs">
+        <p v-if="showModeTabs" class="library-header__hint">{{ statusHint }}</p>
+
+        <nav v-if="showModeTabs" class="library-modes" :aria-label="t('library.title')">
           <button
             class="btn"
             :class="{ 'is-active': activeTab === 'browse' }"
             type="button"
-            @click="activeTab = 'browse'"
+            @click="switchTab('browse')"
           >
             {{ t("library.browse") }}
           </button>
@@ -437,7 +448,7 @@ watch(libraryApiUrl, () => {
             class="btn"
             :class="{ 'is-active': activeTab === 'upload' }"
             type="button"
-            @click="activeTab = 'upload'"
+            @click="switchTab('upload')"
           >
             {{ t("library.uploadDiagram") }}
           </button>
@@ -445,513 +456,506 @@ watch(libraryApiUrl, () => {
             class="btn"
             :class="{ 'is-active': activeTab === 'transfer' }"
             type="button"
-            @click="activeTab = 'transfer'"
+            @click="switchTab('transfer')"
           >
             {{ t("library.transfer") }}
           </button>
-        </div>
-      </div>
-    </div>
+        </nav>
+      </header>
 
-    <p v-if="uploadError" class="library-error">{{ uploadError }}</p>
-    <p v-if="errorMessage" class="library-error">{{ errorMessage }}</p>
+      <div class="library-body">
+        <p v-if="uploadError" class="library-error">{{ uploadError }}</p>
+        <p v-if="errorMessage" class="library-error">{{ errorMessage }}</p>
 
-    <div v-if="activeTab === 'browse'" class="library-layout">
-      <aside class="library-sidebar">
-        <div class="library-sidebar__header">
-          <h3 class="library-sidebar__title">{{ t("library.sections") }}</h3>
-          <button
-            class="btn btn-icon"
-            type="button"
-            :title="t('library.addSection')"
-            @click="createSection(null)"
-          >
-            +
-          </button>
-        </div>
-
-        <button
-          class="library-section-item"
-          :class="{ 'is-active': selectedSectionId === null }"
-          type="button"
-          @click="library.selectSection(null)"
-        >
-          {{ t("library.allSections") }}
-        </button>
-
+        <!-- Шаг 1: разделы -->
         <div
-          v-for="section in flatSectionOptions"
-          :key="section.id"
-          class="library-section-row"
+          v-if="activeTab === 'browse' && browseStep === 'sections'"
+          class="library-step"
         >
-          <button
-            class="library-section-item"
-            :class="{ 'is-active': selectedSectionId === section.id }"
-            type="button"
-            :style="{ paddingLeft: `${10 + section.depth * 12}px` }"
-            @click="library.selectSection(section.id)"
-          >
-            {{ section.title }}
-          </button>
-          <div class="library-section-row__actions">
+          <div class="library-step__toolbar">
+            <span class="status-pill" :class="isOnline ? 'is-ready' : 'is-error'">
+              {{ isOnline ? t("app.online") : t("app.offline") }}
+            </span>
             <button
-              class="btn btn-icon"
+              class="btn"
               type="button"
-              :title="t('library.addSubsection')"
-              @click="createSection(section.id)"
+              @click="createSection(null)"
             >
-              +
-            </button>
-            <button
-              class="btn btn-icon"
-              type="button"
-              :title="t('app.delete')"
-              @click="onDeleteSection(section.id, section.title)"
-            >
-              ×
+              + {{ t("library.addSection") }}
             </button>
           </div>
-        </div>
-      </aside>
 
-      <section class="library-main">
-        <div class="library-filters">
-          <input
-            v-model="searchQuery"
-            class="select library-search"
-            type="search"
-            :placeholder="t('library.searchPlaceholder')"
-          />
-          <select v-model="tagFilter" class="select">
-            <option value="">{{ t("library.filterByTag") }}</option>
-            <option v-for="tag in allTags" :key="tag" :value="tag">
-              {{ tag }}
-            </option>
-          </select>
+          <div class="library-step__content">
+            <button
+              class="library-row"
+              :class="{ 'is-active': selectedSectionId === null }"
+              type="button"
+              @click="onSectionPick(null)"
+            >
+              <span class="library-row__title">{{ t("library.allSections") }}</span>
+              <span class="library-row__chevron">›</span>
+            </button>
+
+            <div
+              v-for="section in flatSectionOptions"
+              :key="section.id"
+              class="library-section-row"
+            >
+              <button
+                class="library-row"
+                :class="{ 'is-active': selectedSectionId === section.id }"
+                type="button"
+                :style="{ paddingLeft: `${16 + section.depth * 16}px` }"
+                @click="onSectionPick(section.id)"
+              >
+                <span class="library-row__title">{{ section.title }}</span>
+                <span class="library-row__chevron">›</span>
+              </button>
+              <div class="library-section-row__actions">
+                <button
+                  class="btn btn-icon"
+                  type="button"
+                  :title="t('library.addSubsection')"
+                  @click.stop="createSection(section.id)"
+                >
+                  +
+                </button>
+                <button
+                  class="btn btn-icon"
+                  type="button"
+                  :title="t('app.delete')"
+                  @click.stop="onDeleteSection(section.id, section.title)"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="library-panels">
-          <div class="library-list">
-            <p v-if="isLoading" class="library-empty">
-              {{ t("app.loading") }}
-            </p>
+        <!-- Шаг 2: список диаграмм -->
+        <div
+          v-else-if="activeTab === 'browse' && browseStep === 'diagrams'"
+          class="library-step"
+        >
+          <div class="library-filters">
+            <input
+              v-model="searchQuery"
+              class="select library-search"
+              type="search"
+              :placeholder="t('library.searchPlaceholder')"
+            />
+            <select v-model="tagFilter" class="select">
+              <option value="">{{ t("library.filterByTag") }}</option>
+              <option v-for="tag in allTags" :key="tag" :value="tag">
+                {{ tag }}
+              </option>
+            </select>
+          </div>
+
+          <div class="library-step__content">
+            <p v-if="isLoading" class="library-empty">{{ t("app.loading") }}</p>
             <p v-else-if="diagrams.length === 0" class="library-empty">
               {{ t("library.noResults") }}
             </p>
             <button
               v-for="diagram in diagrams"
               :key="diagram.id"
-              class="library-diagram-item"
-              :class="{ 'is-active': selectedDiagram?.id === diagram.id }"
+              class="library-row"
               type="button"
-              @click="library.selectDiagram(diagram.id)"
+              @click="onDiagramPick(diagram.id)"
             >
-              <span class="library-diagram-item__title">{{ diagram.title }}</span>
-              <span class="library-diagram-item__meta">
-                {{ t("library.bytes", { size: diagram.byteSize }) }}
-              </span>
-              <span
-                v-if="diagram.tags.length"
-                class="library-diagram-item__tags"
-              >
-                <span
-                  v-for="tag in diagram.tags"
-                  :key="tag"
-                  class="library-tag"
-                >
-                  {{ tag }}
+              <span class="library-row__main">
+                <span class="library-row__title">{{ diagram.title }}</span>
+                <span class="library-row__meta">
+                  {{ t("library.bytes", { size: diagram.byteSize }) }}
                 </span>
-              </span>
-            </button>
-          </div>
-
-          <div v-if="diagrams.length > 0" class="library-detail">
-            <template v-if="selectedDiagram">
-              <template v-if="isEditing">
-                <label class="settings-field">
-                  <span class="settings-field__label">
-                    {{ t("library.diagramTitle") }}
-                  </span>
-                  <input v-model="editTitle" class="select" type="text" />
-                </label>
-
-                <label class="settings-field">
-                  <span class="settings-field__label">
-                    {{ t("library.description") }}
-                  </span>
-                  <textarea
-                    v-model="editDescription"
-                    class="textarea library-edit__textarea"
-                    rows="3"
-                  />
-                </label>
-
-                <label class="settings-field">
-                  <span class="settings-field__label">{{ t("library.tags") }}</span>
-                  <input v-model="editTags" class="select" type="text" />
-                </label>
-
-                <label class="settings-field">
-                  <span class="settings-field__label">
-                    {{ t("library.sections") }}
-                  </span>
-                  <select v-model="editSectionId" class="select">
-                    <option value="">{{ t("library.allSections") }}</option>
-                    <option
-                      v-for="section in flatSectionOptions"
-                      :key="section.id"
-                      :value="section.id"
-                    >
-                      {{ "—".repeat(section.depth)
-                      }}{{ section.depth > 0 ? " " : "" }}{{ section.title }}
-                    </option>
-                  </select>
-                </label>
-
-                <pre class="library-detail__source">{{ selectedDiagram.source }}</pre>
-
-                <div class="library-detail__actions">
-                  <button
-                    class="btn btn-primary"
-                    type="button"
-                    :disabled="isSaving"
-                    @click="saveEdit"
-                  >
-                    {{ isSaving ? t("app.loading") : t("library.saveChanges") }}
-                  </button>
-                  <button
-                    class="btn"
-                    type="button"
-                    :disabled="isSaving"
-                    @click="resetEditForm"
-                  >
-                    {{ t("app.cancel") }}
-                  </button>
-                </div>
-              </template>
-
-              <template v-else>
-                <h3 class="library-detail__title">{{ selectedDiagram.title }}</h3>
-                <p class="library-detail__meta">
-                  {{ selectedDiagram.fileName }} ·
-                  {{
-                    t("library.updatedAt", {
-                      date: formatDate(selectedDiagram.updatedAt),
-                    })
-                  }}
-                </p>
-                <p
-                  v-if="selectedDiagram.description"
-                  class="library-detail__description"
-                >
-                  {{ selectedDiagram.description }}
-                </p>
-                <div
-                  v-if="selectedDiagram.tags.length"
-                  class="library-detail__tags"
+                <span
+                  v-if="diagram.tags.length"
+                  class="library-row__tags"
                 >
                   <span
-                    v-for="tag in selectedDiagram.tags"
+                    v-for="tag in diagram.tags"
                     :key="tag"
                     class="library-tag"
                   >
                     {{ tag }}
                   </span>
-                </div>
-                <pre class="library-detail__source">{{ selectedDiagram.source }}</pre>
-                <div class="library-detail__actions">
-                  <button
-                    class="btn btn-primary"
-                    type="button"
-                    @click="openInEditor"
-                  >
-                    {{ t("library.openInEditor") }}
-                  </button>
-                  <button class="btn" type="button" @click="startEdit">
-                    {{ t("library.edit") }}
-                  </button>
-                  <button
-                    class="btn"
-                    type="button"
-                    @click="
-                      onDeleteDiagram(selectedDiagram.id, selectedDiagram.title)
-                    "
-                  >
-                    {{ t("app.delete") }}
-                  </button>
-                </div>
-              </template>
-            </template>
-            <p v-else class="library-empty">
-              {{ t("library.selectDiagram") }}
-            </p>
+                </span>
+              </span>
+              <span class="library-row__chevron">›</span>
+            </button>
           </div>
         </div>
-      </section>
-    </div>
 
-    <form v-else-if="activeTab === 'upload'" class="library-upload" @submit.prevent="submitUpload">
-      <p class="library-upload__hint">
-        {{ t("library.sizeLimit", { size: maxSizeKb }) }}
-      </p>
+        <!-- Шаг 3: детали -->
+        <div
+          v-else-if="activeTab === 'browse' && browseStep === 'detail' && selectedDiagram"
+          class="library-step"
+        >
+          <template v-if="isEditing">
+            <div class="library-step__content library-step__content--form">
+              <label class="settings-field">
+                <span class="settings-field__label">{{ t("library.diagramTitle") }}</span>
+                <input v-model="editTitle" class="select" type="text" />
+              </label>
+              <label class="settings-field">
+                <span class="settings-field__label">{{ t("library.description") }}</span>
+                <textarea
+                  v-model="editDescription"
+                  class="textarea"
+                  rows="4"
+                />
+              </label>
+              <label class="settings-field">
+                <span class="settings-field__label">{{ t("library.tags") }}</span>
+                <input v-model="editTags" class="select" type="text" />
+              </label>
+              <label class="settings-field">
+                <span class="settings-field__label">{{ t("library.sections") }}</span>
+                <select v-model="editSectionId" class="select">
+                  <option value="">{{ t("library.allSections") }}</option>
+                  <option
+                    v-for="section in flatSectionOptions"
+                    :key="section.id"
+                    :value="section.id"
+                  >
+                    {{ "—".repeat(section.depth) }}{{ section.depth > 0 ? " " : ""
+                    }}{{ section.title }}
+                  </option>
+                </select>
+              </label>
+              <pre class="library-detail__source">{{ selectedDiagram.source }}</pre>
+              <div class="library-detail__actions">
+                <button
+                  class="btn btn-primary"
+                  type="button"
+                  :disabled="isSaving"
+                  @click="saveEdit"
+                >
+                  {{ isSaving ? t("app.loading") : t("library.saveChanges") }}
+                </button>
+                <button
+                  class="btn"
+                  type="button"
+                  :disabled="isSaving"
+                  @click="resetEditForm"
+                >
+                  {{ t("app.cancel") }}
+                </button>
+              </div>
+            </div>
+          </template>
 
-      <label class="settings-field">
-        <span class="settings-field__label">{{ t("library.selectFile") }}</span>
-        <input type="file" :accept="PUML_FILE_ACCEPT" @change="onFileChange" />
-        <span class="library-upload__file-name">
-          {{ uploadFile?.name ?? t("library.noFile") }}
-        </span>
-      </label>
+          <template v-else>
+            <div class="library-step__content library-step__content--padded">
+              <p class="library-detail__meta">
+                {{ selectedDiagram.fileName }} ·
+                {{ t("library.updatedAt", { date: formatDate(selectedDiagram.updatedAt) }) }}
+              </p>
+              <p
+                v-if="selectedDiagram.description"
+                class="library-detail__description"
+              >
+                {{ selectedDiagram.description }}
+              </p>
+              <div
+                v-if="selectedDiagram.tags.length"
+                class="library-detail__tags"
+              >
+                <span
+                  v-for="tag in selectedDiagram.tags"
+                  :key="tag"
+                  class="library-tag"
+                >
+                  {{ tag }}
+                </span>
+              </div>
+              <pre class="library-detail__source">{{ selectedDiagram.source }}</pre>
+              <div class="library-detail__actions">
+                <button class="btn btn-primary" type="button" @click="openInEditor">
+                  {{ t("library.openInEditor") }}
+                </button>
+                <button class="btn" type="button" @click="startEdit">
+                  {{ t("library.edit") }}
+                </button>
+                <button
+                  class="btn"
+                  type="button"
+                  @click="onDeleteDiagram(selectedDiagram.id, selectedDiagram.title)"
+                >
+                  {{ t("app.delete") }}
+                </button>
+              </div>
+            </div>
+          </template>
+        </div>
 
-      <label class="settings-field">
-        <span class="settings-field__label">{{ t("library.diagramTitle") }}</span>
-        <input v-model="uploadTitle" class="select" type="text" />
-      </label>
-
-      <label class="settings-field">
-        <span class="settings-field__label">{{ t("library.sections") }}</span>
-        <select v-model="uploadSectionId" class="select">
-          <option value="">{{ t("library.allSections") }}</option>
-          <option
-            v-for="section in flatSectionOptions"
-            :key="section.id"
-            :value="section.id"
+        <!-- Загрузка -->
+        <form
+          v-else-if="activeTab === 'upload'"
+          class="library-step library-step__content library-step__content--form"
+          @submit.prevent="submitUpload"
+        >
+          <p class="library-upload__hint">
+            {{ t("library.sizeLimit", { size: maxSizeKb }) }}
+          </p>
+          <label class="settings-field">
+            <span class="settings-field__label">{{ t("library.selectFile") }}</span>
+            <input type="file" :accept="PUML_FILE_ACCEPT" @change="onFileChange" />
+            <span class="library-upload__file-name">
+              {{ uploadFile?.name ?? t("library.noFile") }}
+            </span>
+          </label>
+          <label class="settings-field">
+            <span class="settings-field__label">{{ t("library.diagramTitle") }}</span>
+            <input v-model="uploadTitle" class="select" type="text" />
+          </label>
+          <label class="settings-field">
+            <span class="settings-field__label">{{ t("library.sections") }}</span>
+            <select v-model="uploadSectionId" class="select">
+              <option value="">{{ t("library.allSections") }}</option>
+              <option
+                v-for="section in flatSectionOptions"
+                :key="section.id"
+                :value="section.id"
+              >
+                {{ "—".repeat(section.depth) }}{{ section.depth > 0 ? " " : ""
+                }}{{ section.title }}
+              </option>
+            </select>
+          </label>
+          <button
+            class="btn btn-primary"
+            type="submit"
+            :disabled="isUploading || !uploadFile"
           >
-            {{ "—".repeat(section.depth) }}{{ section.depth > 0 ? " " : ""
-            }}{{ section.title }}
-          </option>
-        </select>
-      </label>
+            {{ isUploading ? t("app.loading") : t("app.upload") }}
+          </button>
+        </form>
 
-      <button
-        class="btn btn-primary"
-        type="submit"
-        :disabled="isUploading || !uploadFile"
-      >
-        {{ isUploading ? t("app.loading") : t("app.upload") }}
-      </button>
-    </form>
-
-    <LibraryTransferTab
-      v-else
-      :sections="transferSections"
-      :diagrams="transferDiagrams"
-      :import-bundle="importBundle"
-      :is-processing="isTransferProcessing"
-      @export="onExportSelection"
-      @import="onImportSelection"
-      @load-import-file="onImportFile"
-    />
-
-    <template #footer>
-      <button class="btn" type="button" @click="emit('close')">
-        {{ t("app.close") }}
-      </button>
-    </template>
-  </AppModal>
+        <!-- Импорт/экспорт -->
+        <LibraryTransferTab
+          v-else-if="activeTab === 'transfer'"
+          :sections="transferSections"
+          :diagrams="transferDiagrams"
+          :import-bundle="importBundle"
+          :is-processing="isTransferProcessing"
+          @export="onExportSelection"
+          @import="onImportSelection"
+          @load-import-file="onImportFile"
+        />
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
-.library-toolbar {
+.library-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 12px;
+  flex-direction: column;
+  background: var(--surface);
+  color: var(--text);
 }
 
-.library-toolbar__actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.library-header {
   flex-shrink: 0;
-  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-muted);
 }
 
-.library-status {
+.library-header__row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
   align-items: center;
-  min-width: 0;
+  gap: 12px;
 }
 
-.library-status__hint {
+.library-header__back {
+  flex-shrink: 0;
+}
+
+.library-header__title {
+  flex: 1;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.library-header__actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.library-header__close {
+  font-size: 1.5rem;
+  line-height: 1;
+  min-height: auto;
+  padding: 0 6px;
+}
+
+.library-header__hint {
+  margin: 6px 0 0;
   color: var(--text-muted);
   font-size: 0.85rem;
-  overflow-wrap: anywhere;
 }
 
-.library-tabs {
+.library-modes {
   display: flex;
-  gap: 6px;
   flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
 }
 
-.library-tabs .btn.is-active {
+.library-modes .btn.is-active {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, var(--surface));
 }
 
-.library-error {
-  margin: 0 0 12px;
-  color: var(--danger);
-  font-size: 0.9rem;
-}
-
-.library-layout {
-  display: grid;
-  grid-template-columns: minmax(140px, 180px) minmax(0, 1fr);
-  gap: 12px;
+.library-body {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 12px 16px 16px;
+}
+
+.library-step {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   overflow: hidden;
 }
 
-.library-sidebar {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-muted);
-  padding: 8px;
-  min-height: 0;
-  overflow: auto;
-}
-
-.library-sidebar__header {
+.library-step__toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 8px;
-}
-
-.library-sidebar__title {
-  margin: 0;
-  font-size: 0.88rem;
-}
-
-.library-section-row {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.library-section-row__actions {
-  display: flex;
-  gap: 2px;
   flex-shrink: 0;
-  opacity: 0;
-  transition: opacity 0.15s;
 }
 
-.library-section-row:hover .library-section-row__actions,
-.library-section-row:focus-within .library-section-row__actions {
-  opacity: 1;
-}
-
-.library-section-item {
+.library-step__content {
   flex: 1;
-  min-width: 0;
-  text-align: left;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  border-radius: 6px;
-  padding: 6px 8px;
-  font-size: 0.85rem;
-}
-
-.library-section-item:hover,
-.library-section-item.is-active {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-}
-
-.library-main {
-  min-width: 0;
   min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-muted);
+}
+
+.library-step__content--form {
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  overflow: hidden;
+  gap: 12px;
+  max-width: 560px;
+}
+
+.library-step__content--padded {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
 }
 
 .library-filters {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(120px, 180px);
   gap: 8px;
-}
-
-.library-search {
-  min-height: 40px;
-  padding: 0 10px;
-}
-
-.library-panels {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.library-list,
-.library-detail {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-muted);
-  overflow: auto;
-}
-
-.library-list {
-  padding: 6px;
-  max-height: min(200px, 28dvh);
   flex-shrink: 0;
 }
 
-.library-detail {
-  padding: 12px;
-  flex: 1;
-  min-height: 0;
+.library-search {
+  min-height: 44px;
+  padding: 0 12px;
 }
 
-.library-diagram-item {
+.library-row {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   width: 100%;
   border: 0;
+  border-bottom: 1px solid var(--border);
   background: transparent;
+  color: var(--text);
   text-align: left;
-  border-radius: 8px;
-  padding: 8px;
-  margin-bottom: 4px;
+  padding: 14px 16px;
+  cursor: pointer;
 }
 
-.library-diagram-item:hover,
-.library-diagram-item.is-active {
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+.library-row:last-child {
+  border-bottom: 0;
 }
 
-.library-diagram-item__title {
+.library-row:hover,
+.library-row.is-active {
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+.library-row__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.library-row__title {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   word-break: break-word;
 }
 
-.library-diagram-item__meta,
-.library-detail__meta {
+.library-row__meta {
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
 }
 
-.library-diagram-item__tags,
-.library-detail__tags {
+.library-row__tags {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+.library-row__chevron {
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.library-section-row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--border);
+}
+
+.library-section-row:last-child {
+  border-bottom: 0;
+}
+
+.library-section-row .library-row {
+  border-bottom: 0;
+}
+
+.library-section-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 8px;
+  flex-shrink: 0;
 }
 
 .library-tag {
@@ -963,55 +967,59 @@ watch(libraryApiUrl, () => {
   font-size: 0.75rem;
 }
 
-.library-detail__title {
-  margin: 0 0 8px;
-  font-size: 1rem;
+.library-detail__meta {
+  margin: 0 0 10px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
 }
 
 .library-detail__description {
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   white-space: pre-wrap;
 }
 
+.library-detail__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
 .library-detail__source {
-  margin: 0 0 12px;
-  padding: 10px;
+  margin: 0 0 16px;
+  padding: 12px;
   border-radius: 8px;
   background: var(--surface);
   border: 1px solid var(--border);
   font-family: var(--font-mono);
-  font-size: 0.78rem;
-  line-height: 1.4;
-  max-height: min(200px, 24dvh);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  flex: 1;
+  min-height: 120px;
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-.library-edit__textarea {
-  min-height: 72px;
-}
-
 .library-detail__actions {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .library-empty {
   margin: 0;
-  padding: 16px;
+  padding: 32px 16px;
   color: var(--text-muted);
   text-align: center;
 }
 
-.library-upload {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
+.library-error {
+  margin: 0 0 8px;
+  color: var(--danger);
+  font-size: 0.9rem;
+  flex-shrink: 0;
 }
 
 .library-upload__hint {
@@ -1036,58 +1044,17 @@ watch(libraryApiUrl, () => {
   color: var(--text-muted);
 }
 
-:deep(.modal) {
-  width: min(720px, calc(100vw - 32px));
-  max-height: min(90dvh, 860px);
-  height: min(90dvh, 860px);
-}
-
-:deep(.modal-body) {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-@media (max-width: 720px) {
-  .library-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .library-sidebar {
-    max-height: min(140px, 20dvh);
-  }
-
+@media (max-width: 600px) {
   .library-filters {
     grid-template-columns: 1fr;
   }
 
-  .library-section-row__actions {
-    opacity: 1;
-  }
-}
-
-@media (max-width: 480px) {
-  :deep(.modal-backdrop) {
-    padding: 0;
-    align-items: stretch;
+  .library-header {
+    padding: 10px 12px;
   }
 
-  :deep(.modal) {
-    width: 100%;
-    max-height: 100dvh;
-    height: 100dvh;
-    border-radius: 0;
-  }
-
-  .library-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .library-toolbar__actions {
-    justify-content: space-between;
+  .library-body {
+    padding: 10px 12px 12px;
   }
 }
 </style>
