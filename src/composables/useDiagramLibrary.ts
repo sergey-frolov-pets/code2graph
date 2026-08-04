@@ -1,4 +1,4 @@
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import {
   LIBRARY_CACHE_KEY,
   LIBRARY_SEARCH_DEBOUNCE_MS,
@@ -6,7 +6,9 @@ import {
   type CreateSectionPayload,
   type DiagramDto,
   type DiagramListItemDto,
+  type LibraryExportBundle,
   type SectionDto,
+  type UpdateDiagramPayload,
 } from "@/constants/diagram-library";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import {
@@ -27,6 +29,8 @@ import {
   deleteLocalDiagram,
   deleteLocalSection,
   getCacheMeta,
+  importLocalLibrarySelection,
+  loadAllDiagramDetailsFromCache,
   loadDiagramDetailFromCache,
   loadDiagramsFromCache,
   loadSectionsFromCache,
@@ -36,7 +40,13 @@ import {
   saveSectionsToCache,
   searchLocalLibrary,
   setCacheMeta,
+  updateLocalDiagram,
 } from "@/utils/diagram-store";
+import {
+  buildLocalExportBundle,
+  downloadLibraryBundle,
+  parseLibraryImportFile,
+} from "@/utils/library-import-export";
 import { assertPumlFileSize, readFileAsText as readPumlFile } from "@/utils/puml-files";
 
 export function useDiagramLibrary() {
@@ -379,9 +389,66 @@ export function useDiagramLibrary() {
     usingCache.value = true;
   }
 
+  async function updateDiagram(
+    diagramId: string,
+    payload: UpdateDiagramPayload,
+  ): Promise<DiagramDto> {
+    const diagram = await updateLocalDiagram(diagramId, payload);
+    await applyLocalState();
+    await searchDiagrams();
+    if (selectedDiagram.value?.id === diagramId) {
+      selectedDiagram.value = diagram;
+    }
+    usingCache.value = true;
+    return diagram;
+  }
+
+  async function loadTransferData(): Promise<{
+    sections: SectionDto[];
+    diagrams: DiagramDto[];
+  }> {
+    const [sections, diagrams] = await Promise.all([
+      loadSectionsFromCache(),
+      loadAllDiagramDetailsFromCache(),
+    ]);
+    return { sections, diagrams };
+  }
+
+  async function exportLibrarySelection(
+    sectionIds: ReadonlySet<string>,
+    diagramIds: ReadonlySet<string>,
+  ): Promise<void> {
+    const bundle = await buildLocalExportBundle(sectionIds, diagramIds);
+    downloadLibraryBundle(bundle);
+  }
+
+  function parseImportBundle(content: string): LibraryExportBundle {
+    return parseLibraryImportFile(content);
+  }
+
+  async function importLibrarySelection(
+    bundle: LibraryExportBundle,
+    sectionIds: ReadonlySet<string>,
+    diagramIds: ReadonlySet<string>,
+  ): Promise<void> {
+    await importLocalLibrarySelection(bundle, sectionIds, diagramIds);
+    selectedDiagram.value = null;
+    await applyLocalState();
+    await searchDiagrams();
+    usingCache.value = true;
+  }
+
   onMounted(() => {
     window.addEventListener("online", updateOnlineStatus);
     window.addEventListener("offline", updateOnlineStatus);
+  });
+
+  onUnmounted(() => {
+    window.removeEventListener("online", updateOnlineStatus);
+    window.removeEventListener("offline", updateOnlineStatus);
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+    }
   });
 
   return {
@@ -413,5 +480,10 @@ export function useDiagramLibrary() {
     addDiagram,
     addDiagramFromFile,
     removeDiagram,
+    updateDiagram,
+    loadTransferData,
+    exportLibrarySelection,
+    parseImportBundle,
+    importLibrarySelection,
   };
 }

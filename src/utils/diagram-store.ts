@@ -3,7 +3,9 @@ import type {
   CreateSectionPayload,
   DiagramDto,
   DiagramListItemDto,
+  LibraryExportBundle,
   SectionDto,
+  UpdateDiagramPayload,
 } from "@/constants/diagram-library";
 import { resolvePumlFileName } from "@/utils/puml-files";
 
@@ -155,7 +157,7 @@ function toDiagramListItem(diagram: DiagramDto): DiagramListItemDto {
   };
 }
 
-function collectSectionSubtree(
+export function collectSectionSubtree(
   rootId: string,
   sections: SectionDto[],
 ): Set<string> {
@@ -260,6 +262,107 @@ export async function deleteLocalDiagram(diagramId: string): Promise<void> {
   );
 }
 
+export async function updateLocalDiagram(
+  diagramId: string,
+  payload: UpdateDiagramPayload,
+): Promise<DiagramDto> {
+  const existing = await loadDiagramDetailFromCache(diagramId);
+  if (!existing) {
+    throw new Error("Diagram not found");
+  }
+
+  const source = payload.source ?? existing.source;
+  const updated: DiagramDto = {
+    ...existing,
+    title: payload.title?.trim() || existing.title,
+    description:
+      payload.description !== undefined
+        ? payload.description.trim()
+        : existing.description,
+    tags: payload.tags ?? existing.tags,
+    sectionId:
+      payload.sectionId !== undefined ? payload.sectionId : existing.sectionId,
+    fileName: payload.fileName
+      ? resolvePumlFileName(payload.fileName)
+      : existing.fileName,
+    source,
+    byteSize: new TextEncoder().encode(source).length,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await runTransaction(
+    [STORE_DIAGRAMS, STORE_DIAGRAM_DETAILS],
+    "readwrite",
+    (stores) => {
+      stores[STORE_DIAGRAMS].put(toDiagramListItem(updated));
+      stores[STORE_DIAGRAM_DETAILS].put(updated);
+    },
+  );
+
+  return updated;
+}
+
+export async function importLocalLibrarySelection(
+  bundle: LibraryExportBundle,
+  sectionIds: ReadonlySet<string>,
+  diagramIds: ReadonlySet<string>,
+): Promise<void> {
+  const plainBundle = JSON.parse(
+    JSON.stringify(bundle),
+  ) as LibraryExportBundle;
+
+  const sectionsToImport = plainBundle.sections.filter((section) =>
+    sectionIds.has(section.id),
+  );
+  const diagramsToImport = plainBundle.diagrams.filter((diagram) =>
+    diagramIds.has(diagram.id),
+  );
+  const importedSectionIds = new Set(sectionsToImport.map((section) => section.id));
+
+  await runTransaction(
+    [STORE_SECTIONS, STORE_DIAGRAMS, STORE_DIAGRAM_DETAILS],
+    "readwrite",
+    (stores) => {
+      for (const section of sectionsToImport) {
+        const parentId =
+          section.parentId && importedSectionIds.has(section.parentId)
+            ? section.parentId
+            : null;
+        stores[STORE_SECTIONS].put({
+          id: section.id,
+          parentId,
+          title: section.title,
+          sortOrder: section.sortOrder,
+          createdAt: section.createdAt,
+          updatedAt: section.updatedAt,
+        });
+      }
+
+      for (const diagram of diagramsToImport) {
+        const sectionId =
+          diagram.sectionId && importedSectionIds.has(diagram.sectionId)
+            ? diagram.sectionId
+            : null;
+        const normalized: DiagramDto = {
+          id: diagram.id,
+          sectionId,
+          title: diagram.title,
+          description: diagram.description,
+          tags: [...diagram.tags],
+          language: diagram.language,
+          source: diagram.source,
+          fileName: diagram.fileName,
+          byteSize: diagram.byteSize,
+          createdAt: diagram.createdAt,
+          updatedAt: diagram.updatedAt,
+        };
+        stores[STORE_DIAGRAMS].put(toDiagramListItem(normalized));
+        stores[STORE_DIAGRAM_DETAILS].put(normalized);
+      }
+    },
+  );
+}
+
 export async function searchLocalLibrary(params: {
   q?: string;
   sectionId?: string | null;
@@ -276,9 +379,12 @@ export async function searchLocalLibrary(params: {
   const tag = params.tag?.trim().toLowerCase() ?? "";
   const language = params.language?.trim() ?? "";
   const sectionId = params.sectionId ?? null;
+  const sectionIds = sectionId
+    ? collectSectionSubtree(sectionId, await loadSectionsFromCache())
+    : null;
 
   return diagrams.filter((diagram) => {
-    if (sectionId && diagram.sectionId !== sectionId) {
+    if (sectionIds && (!diagram.sectionId || !sectionIds.has(diagram.sectionId))) {
       return false;
     }
     if (language && diagram.language !== language) {
