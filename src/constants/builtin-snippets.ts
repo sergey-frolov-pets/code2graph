@@ -385,6 +385,178 @@ end`,
   App --> User : fail
 end`,
   },
+
+  // c4
+  {
+    id: "c4-context",
+    categoryId: "c4",
+    titleKey: "snippets.builtin.c4Context",
+    descriptionKey: "snippets.builtin.c4ContextDesc",
+    content: `person "Пользователь" as user
+system "Система" as system
+
+user --> system : Использует`,
+  },
+  {
+    id: "c4-container",
+    categoryId: "c4",
+    titleKey: "snippets.builtin.c4Container",
+    descriptionKey: "snippets.builtin.c4ContainerDesc",
+    content: `rectangle "Клиент" as client {
+  [Web UI]
+}
+
+rectangle "Сервер" as server {
+  [API]
+}
+
+database "PostgreSQL" as db
+
+client --> server : REST
+server --> db : SQL`,
+  },
+  {
+    id: "c4-component",
+    categoryId: "c4",
+    titleKey: "snippets.builtin.c4Component",
+    descriptionKey: "snippets.builtin.c4ComponentDesc",
+    content: `rectangle "Backend" as backend {
+  [Auth Service]
+  [Diagram Service]
+}
+
+[Auth Service] --> [Diagram Service] : token`,
+  },
+  {
+    id: "c4-relationship",
+    categoryId: "c4",
+    titleKey: "snippets.builtin.c4Relationship",
+    descriptionKey: "snippets.builtin.c4RelationshipDesc",
+    content: `Rel(user, system, "Использует", "HTTPS")
+Rel(system, db, "Читает/пишет", "SQL/TCP")`,
+  },
+
+  // er
+  {
+    id: "er-entity",
+    categoryId: "er",
+    titleKey: "snippets.builtin.erEntity",
+    descriptionKey: "snippets.builtin.erEntityDesc",
+    content: `entity "User" as user {
+  *id : int <<PK>>
+  --
+  name : string
+  email : string
+}`,
+  },
+  {
+    id: "er-relationship",
+    categoryId: "er",
+    titleKey: "snippets.builtin.erRelationship",
+    descriptionKey: "snippets.builtin.erRelationshipDesc",
+    content: `user ||--o{ order : places`,
+  },
+  {
+    id: "er-many-to-many",
+    categoryId: "er",
+    titleKey: "snippets.builtin.erManyToMany",
+    descriptionKey: "snippets.builtin.erManyToManyDesc",
+    content: `student }o--o{ course : enrolls`,
+  },
+  {
+    id: "er-weak-entity",
+    categoryId: "er",
+    titleKey: "snippets.builtin.erWeakEntity",
+    descriptionKey: "snippets.builtin.erWeakEntityDesc",
+    content: `entity "Order" as order
+entity "OrderItem" as item <<weak>>
+
+order ||--|{ item : contains`,
+  },
+
+  // gantt
+  {
+    id: "gantt-wrapper",
+    categoryId: "gantt",
+    titleKey: "snippets.builtin.ganttWrapper",
+    descriptionKey: "snippets.builtin.ganttWrapperDesc",
+    content: `@startgantt
+project starts 2026-01-01
+saturday are closed
+sunday are closed
+
+[Задача A] lasts 5 days
+[Задача B] lasts 3 days
+[Задача B] starts at [Задача A]'s end
+@endgantt`,
+  },
+  {
+    id: "gantt-task",
+    categoryId: "gantt",
+    titleKey: "snippets.builtin.ganttTask",
+    descriptionKey: "snippets.builtin.ganttTaskDesc",
+    content: `[Разработка] lasts 10 days
+[Тестирование] lasts 5 days
+[Тестирование] starts at [Разработка]'s end`,
+  },
+  {
+    id: "gantt-milestone",
+    categoryId: "gantt",
+    titleKey: "snippets.builtin.ganttMilestone",
+    descriptionKey: "snippets.builtin.ganttMilestoneDesc",
+    content: `[Релиз] happens at 2026-03-01`,
+  },
+  {
+    id: "gantt-colored",
+    categoryId: "gantt",
+    titleKey: "snippets.builtin.ganttColored",
+    descriptionKey: "snippets.builtin.ganttColoredDesc",
+    content: `[Критичная задача] lasts 4 days and is colored in Coral`,
+  },
+
+  // wbs
+  {
+    id: "wbs-wrapper",
+    categoryId: "wbs",
+    titleKey: "snippets.builtin.wbsWrapper",
+    descriptionKey: "snippets.builtin.wbsWrapperDesc",
+    content: `@startwbs
+* Проект
+** Планирование
+*** Сбор требований
+*** Оценка
+** Разработка
+** Тестирование
+@endwbs`,
+  },
+  {
+    id: "wbs-item",
+    categoryId: "wbs",
+    titleKey: "snippets.builtin.wbsItem",
+    descriptionKey: "snippets.builtin.wbsItemDesc",
+    content: `* Корневой элемент
+** Подзадача
+*** Деталь`,
+  },
+  {
+    id: "wbs-colored",
+    categoryId: "wbs",
+    titleKey: "snippets.builtin.wbsColored",
+    descriptionKey: "snippets.builtin.wbsColoredDesc",
+    content: `*#LightBlue Проект
+**#Pink Фаза 1
+*** Задача`,
+  },
+  {
+    id: "wbs-left",
+    categoryId: "wbs",
+    titleKey: "snippets.builtin.wbsLeft",
+    descriptionKey: "snippets.builtin.wbsLeftDesc",
+    content: `left side
+** Элемент слева
+right side
+** Элемент справа`,
+  },
 ];
 
 export function findBuiltinSnippet(id: string): BuiltinSnippet | undefined {

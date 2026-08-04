@@ -11,7 +11,9 @@ withDefaults(
       | "moon"
       | "library"
       | "snippets"
-      | "plus";
+      | "plus"
+      | "export"
+      | "import";
     size?: "default" | "large";
   }>(),
   {
@@ -172,6 +174,44 @@ withDefaults(
         stroke="currentColor"
         stroke-width="1.9"
         stroke-linecap="round"
+      />
+    </template>
+
+    <template v-else-if="name === 'export'">
+      <path
+        d="M12 3v10M8.5 9.5 12 13l3.5-3.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M5 15v4a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </template>
+
+    <template v-else-if="name === 'import'">
+      <path
+        d="M12 21V11M8.5 14.5 12 11l3.5 3.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M5 7V3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v4"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
       />
     </template>
   </svg>

@@ -8,6 +8,10 @@ export const SNIPPET_CATEGORY_IDS = [
   "styles",
   "notes",
   "conditional",
+  "c4",
+  "er",
+  "gantt",
+  "wbs",
 ] as const;
 
 export type SnippetCategoryId = (typeof SNIPPET_CATEGORY_IDS)[number];

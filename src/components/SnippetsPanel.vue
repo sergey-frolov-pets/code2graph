@@ -1,12 +1,23 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, nextTick, onUnmounted, ref, watch } from "vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import SnippetEditorModal from "@/components/SnippetEditorModal.vue";
+import {
+  SNIPPETS_PANEL_MARGIN,
+  SNIPPETS_PANEL_WIDTH,
+} from "@/constants/snippets-settings";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useLocale } from "@/composables/useLocale";
 import { useSnippets } from "@/composables/useSnippets";
 import type { CustomSnippet, SnippetListItem } from "@/types/snippets";
+import {
+  clampSnippetsPanelPosition,
+  getDefaultSnippetsPanelPosition,
+  loadSnippetsPanelPosition,
+  saveSnippetsPanelPosition,
+  SNIPPETS_IMPORT_ACCEPT,
+} from "@/utils/snippet-store";
 
 const props = defineProps<{
   open: boolean;
@@ -18,12 +29,28 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
-const { confirm } = useAppDialog();
+const { confirm, alert } = useAppDialog();
 
 const snippets = useSnippets();
 
+const panelRef = ref<HTMLElement | null>(null);
+const importInputRef = ref<HTMLInputElement | null>(null);
 const editorOpen = ref(false);
 const editingSnippet = ref<CustomSnippet | null>(null);
+const panelPosition = ref(getDefaultSnippetsPanelPosition(SNIPPETS_PANEL_WIDTH));
+const isDragging = ref(false);
+
+const dragState = {
+  pointerId: -1,
+  offsetX: 0,
+  offsetY: 0,
+};
+
+const panelStyle = computed(() => ({
+  left: `${panelPosition.value.x}px`,
+  top: `${panelPosition.value.y}px`,
+  width: `min(${SNIPPETS_PANEL_WIDTH}px, calc(100vw - ${SNIPPETS_PANEL_MARGIN * 2}px))`,
+}));
 
 const categoryTabs = computed(() => [
   { id: "all" as const, label: t("snippets.category.all") },
@@ -35,6 +62,109 @@ const categoryTabs = computed(() => [
 ]);
 
 const filteredItems = computed(() => snippets.filterItems(t));
+
+function clampPanelToViewport(): void {
+  const panel = panelRef.value;
+  if (!panel) {
+    return;
+  }
+
+  panelPosition.value = clampSnippetsPanelPosition(
+    panelPosition.value,
+    panel.offsetWidth,
+    panel.offsetHeight,
+    SNIPPETS_PANEL_MARGIN,
+  );
+}
+
+function persistPanelPosition(): void {
+  saveSnippetsPanelPosition(panelPosition.value);
+}
+
+function onHeaderPointerDown(event: PointerEvent): void {
+  if ((event.target as Element).closest("button")) {
+    return;
+  }
+
+  const panel = panelRef.value;
+  if (!panel) {
+    return;
+  }
+
+  isDragging.value = true;
+  dragState.pointerId = event.pointerId;
+  dragState.offsetX = event.clientX - panelPosition.value.x;
+  dragState.offsetY = event.clientY - panelPosition.value.y;
+  panel.setPointerCapture(event.pointerId);
+}
+
+function onHeaderPointerMove(event: PointerEvent): void {
+  if (!isDragging.value || event.pointerId !== dragState.pointerId) {
+    return;
+  }
+
+  const panel = panelRef.value;
+  if (!panel) {
+    return;
+  }
+
+  panelPosition.value = clampSnippetsPanelPosition(
+    {
+      x: event.clientX - dragState.offsetX,
+      y: event.clientY - dragState.offsetY,
+    },
+    panel.offsetWidth,
+    panel.offsetHeight,
+    SNIPPETS_PANEL_MARGIN,
+  );
+}
+
+function onHeaderPointerUp(event: PointerEvent): void {
+  if (event.pointerId !== dragState.pointerId) {
+    return;
+  }
+
+  isDragging.value = false;
+  dragState.pointerId = -1;
+  panelRef.value?.releasePointerCapture(event.pointerId);
+  persistPanelPosition();
+}
+
+function onWindowResize(): void {
+  clampPanelToViewport();
+  persistPanelPosition();
+}
+
+watch(
+  () => props.open,
+  async (open) => {
+    if (!open) {
+      return;
+    }
+
+    const saved = loadSnippetsPanelPosition();
+    panelPosition.value =
+      saved ?? getDefaultSnippetsPanelPosition(SNIPPETS_PANEL_WIDTH);
+
+    await nextTick();
+    clampPanelToViewport();
+  },
+);
+
+onUnmounted(() => {
+  window.removeEventListener("resize", onWindowResize);
+});
+
+watch(
+  () => props.open,
+  (open) => {
+    if (open) {
+      window.addEventListener("resize", onWindowResize);
+    } else {
+      window.removeEventListener("resize", onWindowResize);
+    }
+  },
+);
 
 function getItemTitle(item: SnippetListItem): string {
   if (item.kind === "builtin") {
@@ -106,22 +236,94 @@ function onPanelKeydown(event: KeyboardEvent): void {
     emit("close");
   }
 }
+
+function exportSnippets(): void {
+  if (snippets.customSnippets.value.length === 0) {
+    void alert({
+      title: t("snippets.exportEmptyTitle"),
+      message: t("snippets.exportEmptyMessage"),
+    });
+    return;
+  }
+
+  snippets.exportCustomSnippets();
+}
+
+function openImportPicker(): void {
+  importInputRef.value?.click();
+}
+
+async function onImportFileSelected(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = "";
+
+  if (!file) {
+    return;
+  }
+
+  try {
+    const raw = await file.text();
+    const hasExisting = snippets.customSnippets.value.length > 0;
+    let mode: "merge" | "replace" = "merge";
+
+    if (hasExisting) {
+      const replace = await confirm({
+        title: t("snippets.importModeTitle"),
+        message: t("snippets.importModeMessage"),
+        confirmLabel: t("snippets.importReplace"),
+        cancelLabel: t("snippets.importMerge"),
+      });
+      mode = replace ? "replace" : "merge";
+    }
+
+    const result = snippets.importCustomSnippets(raw, mode);
+    await alert({
+      title: t("snippets.importSuccessTitle"),
+      message: t("snippets.importSuccessMessage", {
+        imported: result.imported,
+        skipped: result.skipped,
+      }),
+    });
+  } catch {
+    await alert({
+      title: t("snippets.importErrorTitle"),
+      message: t("snippets.importErrorMessage"),
+      variant: "error",
+    });
+  }
+}
 </script>
 
 <template>
   <Teleport to="body">
     <div
       v-if="open"
+      ref="panelRef"
       class="snippets-panel"
+      :class="{ 'is-dragging': isDragging }"
+      :style="panelStyle"
       role="dialog"
       aria-labelledby="snippets-panel-title"
       @keydown="onPanelKeydown"
     >
-      <header class="snippets-panel__header">
+      <header
+        class="snippets-panel__header"
+        @pointerdown="onHeaderPointerDown"
+        @pointermove="onHeaderPointerMove"
+        @pointerup="onHeaderPointerUp"
+        @pointercancel="onHeaderPointerUp"
+      >
         <h3 id="snippets-panel-title" class="snippets-panel__title">
           {{ t("snippets.panelTitle") }}
         </h3>
         <div class="snippets-panel__header-actions">
+          <IconButton :label="t('snippets.export')" @click="exportSnippets">
+            <ActionIcon name="export" />
+          </IconButton>
+          <IconButton :label="t('snippets.import')" @click="openImportPicker">
+            <ActionIcon name="import" />
+          </IconButton>
           <IconButton :label="t('snippets.add')" @click="openAddEditor">
             <ActionIcon name="plus" />
           </IconButton>
@@ -135,6 +337,8 @@ function onPanelKeydown(event: KeyboardEvent): void {
           </button>
         </div>
       </header>
+
+      <div class="snippets-panel__drag-hint">{{ t("snippets.dragHint") }}</div>
 
       <div class="snippets-panel__search">
         <input
@@ -214,6 +418,14 @@ function onPanelKeydown(event: KeyboardEvent): void {
           </div>
         </article>
       </div>
+
+      <input
+        ref="importInputRef"
+        class="sr-only"
+        type="file"
+        :accept="SNIPPETS_IMPORT_ACCEPT"
+        @change="onImportFileSelected"
+      />
     </div>
   </Teleport>
 
@@ -228,10 +440,7 @@ function onPanelKeydown(event: KeyboardEvent): void {
 <style scoped>
 .snippets-panel {
   position: fixed;
-  top: 72px;
-  right: 16px;
   z-index: 900;
-  width: min(420px, calc(100vw - 32px));
   max-height: min(72vh, 640px);
   display: flex;
   flex-direction: column;
@@ -242,6 +451,11 @@ function onPanelKeydown(event: KeyboardEvent): void {
   overflow: hidden;
 }
 
+.snippets-panel.is-dragging {
+  user-select: none;
+  cursor: grabbing;
+}
+
 .snippets-panel__header {
   display: flex;
   align-items: center;
@@ -250,6 +464,12 @@ function onPanelKeydown(event: KeyboardEvent): void {
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-muted);
+  cursor: grab;
+  touch-action: none;
+}
+
+.snippets-panel.is-dragging .snippets-panel__header {
+  cursor: grabbing;
 }
 
 .snippets-panel__title {
@@ -272,6 +492,13 @@ function onPanelKeydown(event: KeyboardEvent): void {
   line-height: 1;
   padding: 0 4px;
   min-height: auto;
+  cursor: pointer;
+}
+
+.snippets-panel__drag-hint {
+  padding: 4px 12px 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
 }
 
 .snippets-panel__search {
@@ -378,13 +605,19 @@ function onPanelKeydown(event: KeyboardEvent): void {
   font-size: 0.78rem;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
 @media (max-width: 720px) {
   .snippets-panel {
-    top: auto;
-    bottom: 12px;
-    right: 12px;
-    left: 12px;
-    width: auto;
     max-height: 55vh;
   }
 }

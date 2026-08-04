@@ -21,6 +21,10 @@ import {
   PUML_FILE_ACCEPT,
   resolvePumlFileName,
 } from "@/utils/puml-files";
+import {
+  isSnippetsHotkey,
+  SNIPPETS_KEYBOARD_SHORTCUT,
+} from "@/constants/snippets-settings";
 
 const EDITOR_LINE_HEIGHT = 1.45;
 const EDITOR_PADDING = "12px";
@@ -240,12 +244,17 @@ function insertSnippetAtCursor(content: string): void {
 
 function onSnippetInsert(content: string): void {
   insertSnippetAtCursor(content);
-  snippetsOpen.value = false;
 }
 
-function onFullscreenKeydown(event: KeyboardEvent): void {
+function onEditorKeydown(event: KeyboardEvent): void {
   if (event.key === "Escape" && isFullscreen.value) {
     isFullscreen.value = false;
+    return;
+  }
+
+  if (isSnippetsHotkey(event)) {
+    event.preventDefault();
+    snippetsOpen.value = !snippetsOpen.value;
   }
 }
 
@@ -254,11 +263,11 @@ watch(isFullscreen, (value) => {
 });
 
 onMounted(() => {
-  window.addEventListener("keydown", onFullscreenKeydown);
+  window.addEventListener("keydown", onEditorKeydown);
 });
 
 onUnmounted(() => {
-  window.removeEventListener("keydown", onFullscreenKeydown);
+  window.removeEventListener("keydown", onEditorKeydown);
   document.body.style.overflow = "";
 });
 
@@ -307,7 +316,7 @@ watch(
           <ActionIcon name="trash" />
         </IconButton>
         <IconButton
-          :label="t('editor.snippets')"
+          :label="`${t('editor.snippets')} (${SNIPPETS_KEYBOARD_SHORTCUT})`"
           :pressed="snippetsOpen"
           @click="toggleSnippetsPanel"
         >

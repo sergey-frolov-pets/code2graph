@@ -7,10 +7,16 @@ import {
   type SnippetListItem,
 } from "@/types/snippets";
 import {
+  buildSnippetsExportPayload,
   createCustomSnippetId,
   loadCustomSnippets,
+  parseSnippetsExportPayload,
   saveCustomSnippets,
+  SNIPPETS_EXPORT_FILE_NAME,
 } from "@/utils/snippet-store";
+import { downloadTextFile } from "@/utils/export";
+
+export type SnippetsImportMode = "merge" | "replace";
 
 export function useSnippets() {
   const customSnippets = ref<CustomSnippet[]>(loadCustomSnippets());
@@ -80,14 +86,17 @@ export function useSnippets() {
       return item.kind === "custom";
     }
 
-    return item.kind === "builtin" && item.categoryId === activeCategory.value;
+    if (item.kind === "builtin") {
+      return item.categoryId === activeCategory.value;
+    }
+
+    return item.snippet.categoryId === activeCategory.value;
   }
 
   function filterItems(t: (key: string) => string): SnippetListItem[] {
     return allItems.value.filter(
       (item) =>
-        matchesCategory(item) &&
-        matchesSearch(item, searchQuery.value, t),
+        matchesCategory(item) && matchesSearch(item, searchQuery.value, t),
     );
   }
 
@@ -161,6 +170,52 @@ export function useSnippets() {
     return customSnippets.value.find((item) => item.id === id);
   }
 
+  function exportCustomSnippets(): void {
+    const payload = buildSnippetsExportPayload(customSnippets.value);
+    downloadTextFile(
+      JSON.stringify(payload, null, 2),
+      SNIPPETS_EXPORT_FILE_NAME,
+      "application/json;charset=utf-8",
+    );
+  }
+
+  function importCustomSnippets(
+    raw: string,
+    mode: SnippetsImportMode,
+  ): { imported: number; skipped: number } {
+    const importedSnippets = parseSnippetsExportPayload(raw);
+
+    if (mode === "replace") {
+      customSnippets.value = importedSnippets.map((snippet) => ({
+        ...snippet,
+        updatedAt: new Date().toISOString(),
+      }));
+      persistCustomSnippets();
+      return { imported: importedSnippets.length, skipped: 0 };
+    }
+
+    const existingIds = new Set(customSnippets.value.map((item) => item.id));
+    const toAdd: CustomSnippet[] = [];
+    let skipped = 0;
+
+    for (const snippet of importedSnippets) {
+      if (existingIds.has(snippet.id)) {
+        skipped += 1;
+        continue;
+      }
+
+      toAdd.push({
+        ...snippet,
+        id: createCustomSnippetId(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    customSnippets.value = [...customSnippets.value, ...toAdd];
+    persistCustomSnippets();
+    return { imported: toAdd.length, skipped };
+  }
+
   return {
     SNIPPET_CATEGORY_IDS,
     customSnippets,
@@ -171,5 +226,7 @@ export function useSnippets() {
     updateCustomSnippet,
     deleteCustomSnippet,
     getCustomSnippet,
+    exportCustomSnippets,
+    importCustomSnippets,
   };
 }
