@@ -12,6 +12,15 @@ export const MAX_PUML_FILE_BYTES = Number(
 export const DB_PATH =
   process.env.DB_PATH ?? path.resolve(serverRoot, "../../data/library.db");
 
+export const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim() || undefined;
+export const GROQ_API_KEY = process.env.GROQ_API_KEY?.trim() || undefined;
+export const OPENROUTER_API_KEY =
+  process.env.OPENROUTER_API_KEY?.trim() || undefined;
+
+export const LLM_RATE_LIMIT_PER_MINUTE = Number(
+  process.env.LLM_RATE_LIMIT_PER_MINUTE ?? 20,
+);
+
 export const DIAGRAM_LANGUAGES = [
   "plantuml",
   "mermaid",

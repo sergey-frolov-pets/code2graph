@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>vuePlantUML — API keys for LLM (BYOK)</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f4f6f8;
+        --surface: #fff;
+        --text: #1a1f24;
+        --text-muted: #5b6670;
+        --border: #d5dde5;
+        --accent: #0f6cbd;
+        --highlight: #e8f4fc;
+        --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+        --mono: "Consolas", "SFMono-Regular", monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f1419;
+          --surface: #171d24;
+          --text: #edf2f7;
+          --text-muted: #9aa7b5;
+          --border: #2f3a45;
+          --accent: #4da3ff;
+          --highlight: #1a2a3a;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: var(--font);
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+      }
+      .wrap {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 24px 16px 48px;
+      }
+      h1 {
+        font-size: 1.35rem;
+        margin: 0 0 8px;
+      }
+      .lead {
+        color: var(--text-muted);
+        margin: 0 0 24px;
+      }
+      section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px 18px;
+        margin-bottom: 16px;
+      }
+      section:target {
+        border-color: var(--accent);
+        background: var(--highlight);
+      }
+      h2 {
+        font-size: 1.05rem;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 0 0 10px;
+        font-size: 0.92rem;
+      }
+      ol {
+        margin: 0;
+        padding-left: 1.25rem;
+        font-size: 0.92rem;
+      }
+      a {
+        color: var(--accent);
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.85em;
+      }
+      .badge {
+        display: inline-block;
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--border);
+        color: var(--text-muted);
+        margin-left: 6px;
+      }
+      .lang-toggle {
+        margin-bottom: 20px;
+        font-size: 0.88rem;
+      }
+      .en-block {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>vuePlantUML — ключи API для LLM (BYOK)</h1>
+      <p class="lead">
+        Ключ нужен только для провайдеров <strong>«свой ключ»</strong> в
+        <em>Настройки → AI</em>. Бесплатные провайдеры без ключа работают через
+        сервер приложения (<code>POST /api/llm/chat</code>).
+      </p>
+
+      <section id="google-gemini">
+        <h2>Google Gemini <span class="badge">google-gemini</span></h2>
+        <p>Рекомендованный BYOK-провайдер. Модель по умолчанию: Gemini 2.0 Flash.</p>
+        <ol>
+          <li>Войдите в <a href="https://aistudio.google.com/" target="_blank" rel="noopener">Google AI Studio</a>.</li>
+          <li>
+            Создайте ключ:
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>
+          </li>
+          <li>Free tier — лимиты Google (RPM / сутки). См. <a href="https://ai.google.dev/gemini-api/docs" target="_blank" rel="noopener">документацию</a>.</li>
+          <li>vuePlantUML: <strong>Настройки → AI → Google Gemini (свой ключ)</strong> → вставьте ключ.</li>
+        </ol>
+      </section>
+
+      <section id="groq">
+        <h2>Groq <span class="badge">groq</span></h2>
+        <p>Быстрые open-модели, free tier с лимитами RPM.</p>
+        <ol>
+          <li>Регистрация: <a href="https://console.groq.com/" target="_blank" rel="noopener">console.groq.com</a></li>
+          <li>Ключ: <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a></li>
+          <li>Настройки → AI → Groq (свой ключ).</li>
+        </ol>
+      </section>
+
+      <section id="openrouter">
+        <h2>OpenRouter <span class="badge">openrouter</span></h2>
+        <p>Агрегатор моделей, доступны free-модели с суффиксом <code>:free</code>.</p>
+        <ol>
+          <li><a href="https://openrouter.ai/" target="_blank" rel="noopener">openrouter.ai</a> → аккаунт</li>
+          <li>Ключ: <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a></li>
+          <li>Настройки → AI → OpenRouter (свой ключ).</li>
+        </ol>
+      </section>
+
+      <section id="mistral">
+        <h2>Mistral <span class="badge">mistral</span></h2>
+        <ol>
+          <li><a href="https://console.mistral.ai/" target="_blank" rel="noopener">console.mistral.ai</a></li>
+          <li>Ключ: <a href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener">API keys</a></li>
+          <li>Настройки → AI → Mistral (свой ключ).</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>Безопасность</h2>
+        <ol>
+          <li>Не коммитьте ключи в git и не публикуйте в issue.</li>
+          <li>Ключ хранится только в <code>localStorage</code> вашего браузера.</li>
+          <li>Не вставляйте ключ в share-URL диаграммы.</li>
+        </ol>
+      </section>
+
+      <div class="en-block lang-toggle">
+        <h1>English — API keys for LLM (BYOK)</h1>
+        <p class="lead">
+          Keys are required only for <strong>“your key”</strong> providers in
+          <em>Settings → AI</em>. Free providers without a key use the app server.
+        </p>
+        <section id="google-gemini-en">
+          <h2>Google Gemini</h2>
+          <ol>
+            <li><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Create API key</a></li>
+            <li>Paste in Settings → AI → Google Gemini (your key).</li>
+          </ol>
+        </section>
+        <p>Same steps for Groq, OpenRouter, and Mistral — use each provider’s console.</p>
+      </div>
+    </div>
+  </body>
+</html>
