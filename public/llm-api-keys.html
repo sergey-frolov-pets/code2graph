@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>vuePlantUML — API keys for LLM (BYOK)</title>
+    <title>vuePlantUML — API keys for LLM</title>
     <style>
       :root {
         color-scheme: light dark;
@@ -92,10 +92,6 @@
         margin-left: 6px;
       }
       .lang-toggle {
-        margin-bottom: 20px;
-        font-size: 0.88rem;
-      }
-      .en-block {
         margin-top: 32px;
         padding-top: 24px;
         border-top: 1px solid var(--border);
@@ -104,44 +100,40 @@
   </head>
   <body>
     <div class="wrap">
-      <h1>vuePlantUML — ключи API для LLM (BYOK)</h1>
+      <h1>vuePlantUML — ключи API для LLM</h1>
       <p class="lead">
-        Ключ нужен только для провайдеров <strong>«свой ключ»</strong> в
-        <em>Настройки → AI</em>. Бесплатные провайдеры без ключа работают через
-        сервер приложения (<code>POST /api/llm/chat</code>).
+        Выберите провайдера в <em>Настройки → AI</em>, создайте API-ключ на сайте
+        провайдера и вставьте его в настройках.
       </p>
 
       <section id="google-gemini">
         <h2>Google Gemini <span class="badge">google-gemini</span></h2>
-        <p>Рекомендованный BYOK-провайдер. Модель по умолчанию: Gemini 2.0 Flash.</p>
+        <p>Рекомендованный провайдер. Модель по умолчанию: Gemini 2.0 Flash.</p>
         <ol>
           <li>Войдите в <a href="https://aistudio.google.com/" target="_blank" rel="noopener">Google AI Studio</a>.</li>
           <li>
             Создайте ключ:
             <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>
           </li>
-          <li>Free tier — лимиты Google (RPM / сутки). См. <a href="https://ai.google.dev/gemini-api/docs" target="_blank" rel="noopener">документацию</a>.</li>
-          <li>vuePlantUML: <strong>Настройки → AI → Google Gemini (свой ключ)</strong> → вставьте ключ.</li>
+          <li>vuePlantUML: <strong>Настройки → AI → Google Gemini</strong> → вставьте ключ.</li>
         </ol>
       </section>
 
       <section id="groq">
         <h2>Groq <span class="badge">groq</span></h2>
-        <p>Быстрые open-модели, free tier с лимитами RPM.</p>
         <ol>
           <li>Регистрация: <a href="https://console.groq.com/" target="_blank" rel="noopener">console.groq.com</a></li>
           <li>Ключ: <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a></li>
-          <li>Настройки → AI → Groq (свой ключ).</li>
+          <li>Настройки → AI → Groq.</li>
         </ol>
       </section>
 
       <section id="openrouter">
         <h2>OpenRouter <span class="badge">openrouter</span></h2>
-        <p>Агрегатор моделей, доступны free-модели с суффиксом <code>:free</code>.</p>
         <ol>
           <li><a href="https://openrouter.ai/" target="_blank" rel="noopener">openrouter.ai</a> → аккаунт</li>
           <li>Ключ: <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a></li>
-          <li>Настройки → AI → OpenRouter (свой ключ).</li>
+          <li>Настройки → AI → OpenRouter.</li>
         </ol>
       </section>
 
@@ -150,7 +142,47 @@
         <ol>
           <li><a href="https://console.mistral.ai/" target="_blank" rel="noopener">console.mistral.ai</a></li>
           <li>Ключ: <a href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener">API keys</a></li>
-          <li>Настройки → AI → Mistral (свой ключ).</li>
+          <li>Настройки → AI → Mistral.</li>
+        </ol>
+      </section>
+
+      <section id="deepseek">
+        <h2>DeepSeek <span class="badge">deepseek</span></h2>
+        <p>Китайский LLM. Модель по умолчанию: deepseek-chat.</p>
+        <ol>
+          <li><a href="https://platform.deepseek.com/" target="_blank" rel="noopener">platform.deepseek.com</a></li>
+          <li>Ключ: <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">platform.deepseek.com/api_keys</a></li>
+          <li>Настройки → AI → DeepSeek.</li>
+        </ol>
+      </section>
+
+      <section id="qwen">
+        <h2>Qwen (Alibaba) <span class="badge">qwen</span></h2>
+        <p>Китайский LLM от Alibaba. Модель по умолчанию: qwen-plus.</p>
+        <ol>
+          <li><a href="https://dashscope.console.aliyun.com/" target="_blank" rel="noopener">DashScope Console</a></li>
+          <li>Ключ: <a href="https://dashscope.console.aliyun.com/apiKey" target="_blank" rel="noopener">dashscope.console.aliyun.com/apiKey</a></li>
+          <li>Настройки → AI → Qwen.</li>
+        </ol>
+      </section>
+
+      <section id="zhipu">
+        <h2>Zhipu GLM <span class="badge">zhipu</span></h2>
+        <p>Китайский LLM от Zhipu AI. Модель по умолчанию: glm-4-flash.</p>
+        <ol>
+          <li><a href="https://open.bigmodel.cn/" target="_blank" rel="noopener">open.bigmodel.cn</a></li>
+          <li>Ключ: <a href="https://open.bigmodel.cn/usercenter/apikeys" target="_blank" rel="noopener">open.bigmodel.cn/usercenter/apikeys</a></li>
+          <li>Настройки → AI → Zhipu GLM.</li>
+        </ol>
+      </section>
+
+      <section id="moonshot">
+        <h2>Moonshot (Kimi) <span class="badge">moonshot</span></h2>
+        <p>Китайский LLM от Moonshot AI. Модель по умолчанию: moonshot-v1-8k.</p>
+        <ol>
+          <li><a href="https://platform.moonshot.cn/" target="_blank" rel="noopener">platform.moonshot.cn</a></li>
+          <li>Ключ: <a href="https://platform.moonshot.cn/console/api-keys" target="_blank" rel="noopener">platform.moonshot.cn/console/api-keys</a></li>
+          <li>Настройки → AI → Moonshot.</li>
         </ol>
       </section>
 
@@ -163,20 +195,30 @@
         </ol>
       </section>
 
-      <div class="en-block lang-toggle">
-        <h1>English — API keys for LLM (BYOK)</h1>
+      <div class="lang-toggle">
+        <h1>English — API keys for LLM</h1>
         <p class="lead">
-          Keys are required only for <strong>“your key”</strong> providers in
-          <em>Settings → AI</em>. Free providers without a key use the app server.
+          Choose a provider in <em>Settings → AI</em>, create an API key on the provider
+          website, and paste it in Settings.
         </p>
-        <section id="google-gemini-en">
-          <h2>Google Gemini</h2>
-          <ol>
-            <li><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Create API key</a></li>
-            <li>Paste in Settings → AI → Google Gemini (your key).</li>
-          </ol>
-        </section>
-        <p>Same steps for Groq, OpenRouter, and Mistral — use each provider’s console.</p>
+        <p>
+          Google Gemini:
+          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Create API key</a>
+          · Groq:
+          <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Keys</a>
+          · OpenRouter:
+          <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">Keys</a>
+          · Mistral:
+          <a href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener">Keys</a>
+          · DeepSeek:
+          <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">Keys</a>
+          · Qwen:
+          <a href="https://dashscope.console.aliyun.com/apiKey" target="_blank" rel="noopener">Keys</a>
+          · Zhipu:
+          <a href="https://open.bigmodel.cn/usercenter/apikeys" target="_blank" rel="noopener">Keys</a>
+          · Moonshot:
+          <a href="https://platform.moonshot.cn/console/api-keys" target="_blank" rel="noopener">Keys</a>
+        </p>
       </div>
     </div>
   </body>

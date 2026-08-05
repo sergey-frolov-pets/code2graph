@@ -2,10 +2,7 @@
 import { computed, ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import { APP_LINKS, LAYOUT_ENGINES, type LayoutEngine } from "@/constants";
-import {
-  ALL_LLM_PROVIDERS,
-  LLM_PROVIDER_KIND,
-} from "@/constants/llm-providers";
+import { ALL_LLM_PROVIDERS } from "@/constants/llm-providers";
 import {
   EDITOR_FONT_FAMILY_OPTIONS,
   EDITOR_FONT_SIZE_OPTIONS,
@@ -22,9 +19,6 @@ import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
 import { useLlmSettings } from "@/composables/useLlmSettings";
 import { useLocale } from "@/composables/useLocale";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
-import { useLlmProxyStatus } from "@/composables/useLlmProxyStatus";
-import { isFreeProviderConfiguredOnServer } from "@/services/llm/proxy-status";
-import { isLlmProxyConfigured } from "@/utils/llm-proxy";
 import { testLlmConnection } from "@/services/llm/llm-client";
 
 defineProps<{
@@ -54,13 +48,11 @@ const { openLlmKeysGuide } = useLlmKeysGuide();
 const {
   llmProviderId,
   llmConsent,
-  isActiveProviderByok,
-  isActiveProviderFree,
+  activeProvider,
   setLlmProviderId,
   setLlmConsent,
 } = useLlmSettings();
 const { hasLlmApiKey, setLlmApiKey, clearLlmApiKey } = useLlmApiKeys();
-const { proxyStatus, refreshProxyStatus } = useLlmProxyStatus();
 
 const libraryServerInput = ref(libraryApiUrl.value);
 const apiKeyInput = ref("");
@@ -101,41 +93,18 @@ const fontFamilyOptions = computed(() =>
 
 const llmProviderOptions = computed(() =>
   ALL_LLM_PROVIDERS.map((provider) => {
-    const kindBadge =
-      provider.kind === LLM_PROVIDER_KIND.FREE_BUILTIN
-        ? t("settings.llmFreeBadge")
-        : t("settings.llmByokBadge");
     const recommendedBadge = provider.recommended
       ? ` — ${t("settings.llmRecommendedBadge")}`
       : "";
 
-    let availabilityBadge = "";
-    if (provider.kind === LLM_PROVIDER_KIND.FREE_BUILTIN) {
-      if (!isLlmProxyConfigured()) {
-        availabilityBadge = ` — ${t("settings.llmProviderNeedsServer")}`;
-      } else {
-        const configuredOnServer = isFreeProviderConfiguredOnServer(
-          proxyStatus.value,
-          provider.id,
-        );
-        if (configuredOnServer === false) {
-          availabilityBadge = ` — ${t("settings.llmProviderUnavailableOnServer")}`;
-        }
-      }
-    }
-
     return {
       id: provider.id,
-      label: `${t(provider.nameKey)} ${kindBadge}${recommendedBadge}${availabilityBadge}`,
+      label: `${t(provider.nameKey)}${recommendedBadge}`,
     };
   }),
 );
 
 const hasActiveApiKey = computed(() => hasLlmApiKey(llmProviderId.value));
-
-const showNoProxyWarning = computed(
-  () => isActiveProviderFree.value && !isLlmProxyConfigured(),
-);
 
 function onProviderChange(event: Event): void {
   setLlmProviderId((event.target as HTMLSelectElement).value);
@@ -170,7 +139,7 @@ function clearApiKey(): void {
 }
 
 function openKeysGuideForActiveProvider(): void {
-  openLlmKeysGuide(isActiveProviderByok.value ? llmProviderId.value : undefined);
+  openLlmKeysGuide(llmProviderId.value);
 }
 
 async function onTestLlmConnection(): Promise<void> {
@@ -178,7 +147,6 @@ async function onTestLlmConnection(): Promise<void> {
   llmTestMessage.value = "";
   llmTestOk.value = false;
 
-  await refreshProxyStatus();
   const result = await testLlmConnection();
   llmTestOk.value = result.ok;
   llmTestMessage.value = result.message;
@@ -352,20 +320,11 @@ async function onTestLlmConnection(): Promise<void> {
         </select>
       </label>
 
-      <p v-if="isActiveProviderFree" class="settings-field__hint">
-        {{ t("settings.llmFreeHint") }}
+      <p v-if="activeProvider" class="settings-field__hint">
+        {{ t(activeProvider.descriptionKey) }}
       </p>
 
-      <p v-if="isActiveProviderByok" class="settings-field__hint">
-        {{ t("settings.llmByokHint") }}
-      </p>
-
-      <p v-if="showNoProxyWarning" class="settings-warning">
-        {{ t("settings.llmNoProxyWarning") }}
-      </p>
-
-      <template v-if="isActiveProviderByok">
-        <p class="settings-field__label settings-key-status">
+      <p class="settings-field__label settings-key-status">
           <span
             class="settings-key-status__badge"
             :class="hasActiveApiKey ? 'is-set' : 'is-missing'"
@@ -400,6 +359,25 @@ async function onTestLlmConnection(): Promise<void> {
             </button>
           </div>
           <span class="settings-field__hint">{{ t("settings.llmApiKeyHint") }}</span>
+          <p v-if="activeProvider?.keyUrl" class="settings-field__links">
+            <a
+              :href="activeProvider.keyUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ t("settings.llmGetApiKey") }}
+            </a>
+            <template v-if="activeProvider.docsUrl">
+              ·
+              <a
+                :href="activeProvider.docsUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {{ t("settings.llmProviderDocs") }}
+              </a>
+            </template>
+          </p>
           <span v-if="apiKeyError" class="settings-field__error">{{ apiKeyError }}</span>
         </label>
 
@@ -419,7 +397,6 @@ async function onTestLlmConnection(): Promise<void> {
             {{ t("settings.llmKeysGuide") }}
           </button>
         </div>
-      </template>
 
       <div class="settings-key-actions">
         <button
@@ -529,6 +506,15 @@ async function onTestLlmConnection(): Promise<void> {
   font-size: 0.8rem;
   color: var(--text-muted);
   line-height: 1.35;
+}
+
+.settings-field__links {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+}
+
+.settings-field__links a {
+  color: var(--accent);
 }
 
 .settings-field__error {

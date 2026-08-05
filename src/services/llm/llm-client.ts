@@ -4,7 +4,6 @@ import {
   buildLlmSystemPrompt,
   LLM_TEST_USER_PROMPT,
 } from "@/services/llm/llm-prompts";
-import { proxyLlmChat } from "@/services/llm/proxy-client";
 import {
   callGeminiChat,
   callOpenAiCompatibleChat,
@@ -31,43 +30,25 @@ async function dispatchByokChat(
   const model = provider.defaultModel;
   const jsonMode = options.jsonMode ?? true;
 
-  switch (providerId) {
-    case "google-gemini":
-      return callGeminiChat(apiKey, model, messages, jsonMode);
-    case "groq":
-      return callOpenAiCompatibleChat({
-        endpoint: "https://api.groq.com/openai/v1/chat/completions",
-        apiKey,
-        model,
-        messages,
-        jsonMode,
-      });
-    case "openrouter":
-      return callOpenAiCompatibleChat({
-        endpoint: "https://openrouter.ai/api/v1/chat/completions",
-        apiKey,
-        model,
-        messages,
-        jsonMode,
-        extraHeaders: {
-          "HTTP-Referer": "https://github.com/sergey-frolov-pets/vuePUML",
-          "X-Title": "vuePlantUML",
-        },
-      });
-    case "mistral":
-      return callOpenAiCompatibleChat({
-        endpoint: "https://api.mistral.ai/v1/chat/completions",
-        apiKey,
-        model,
-        messages,
-        jsonMode,
-      });
-    default:
-      throw new LlmClientError(
-        "provider_invalid",
-        `BYOK chat is not implemented for ${providerId}`,
-      );
+  if (providerId === "google-gemini") {
+    return callGeminiChat(apiKey, model, messages, jsonMode);
   }
+
+  if (!provider.apiEndpoint) {
+    throw new LlmClientError(
+      "provider_invalid",
+      `Chat endpoint is not configured for ${providerId}`,
+    );
+  }
+
+  return callOpenAiCompatibleChat({
+    endpoint: provider.apiEndpoint,
+    apiKey,
+    model,
+    messages,
+    jsonMode,
+    extraHeaders: provider.apiExtraHeaders,
+  });
 }
 
 async function dispatchGateChat(
@@ -77,15 +58,6 @@ async function dispatchGateChat(
 ): Promise<LlmChatResult> {
   const provider = getLlmProvider(gate.providerId);
   const model = provider?.defaultModel ?? "unknown";
-
-  if (gate.mode === "free") {
-    const content = await proxyLlmChat(gate.providerId, messages, options);
-    return {
-      content,
-      providerId: gate.providerId,
-      model,
-    };
-  }
 
   const content = await dispatchByokChat(
     gate.providerId,

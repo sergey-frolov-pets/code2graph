@@ -22,15 +22,6 @@ export function resolveLlmProxyBaseUrl(): string {
   return "";
 }
 
-export function resolveLlmStatusUrl(): string {
-  const base = resolveLlmProxyBaseUrl();
-  if (!base) {
-    return "";
-  }
-
-  return `${base}/llm/status`;
-}
-
 export function resolveLlmChatUrl(): string {
   const base = resolveLlmProxyBaseUrl();
   if (!base) {
