@@ -1,7 +1,7 @@
 import type { LocaleMessages } from "../types";
 
 export const appMessages: LocaleMessages = {
-  "app.subtitle": "Cross-platform offline PlantUML diagram generator",
+  "app.subtitle": "Cross-platform PlantUML editor with AI diagram generation",
   "app.aiNewDiagram": "New diagram (AI)",
   "app.settings": "Settings",
   "app.library": "Library",
