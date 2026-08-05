@@ -18,7 +18,9 @@ withDefaults(
       | "zoom-out"
       | "edit"
       | "close"
-      | "history";
+      | "history"
+      | "undo"
+      | "redo";
     size?: "default" | "large";
   }>(),
   {
@@ -304,6 +306,28 @@ withDefaults(
       />
       <path
         d="M12 7v5l3 2"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </template>
+
+    <template v-else-if="name === 'undo'">
+      <path
+        d="M9 7H5v4M5 11a7 7 0 1 0 1.6 4.4"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </template>
+
+    <template v-else-if="name === 'redo'">
+      <path
+        d="M15 7h4v4M19 11a7 7 0 1 1-1.6-4.4"
         fill="none"
         stroke="currentColor"
         stroke-width="1.8"

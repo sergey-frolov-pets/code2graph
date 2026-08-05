@@ -58,6 +58,8 @@ const props = defineProps<{
   canSave: boolean;
   isValidating: boolean;
   isRendering: boolean;
+  canUndo?: boolean;
+  canRedo?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -67,6 +69,8 @@ const emit = defineEmits<{
   openVersions: [];
   validateSyntax: [];
   cleared: [];
+  undo: [];
+  redo: [];
 }>();
 
 const fileInputRef = ref<HTMLInputElement | null>(null);
@@ -514,6 +518,23 @@ function onEditorKeydown(event: KeyboardEvent): void {
     isFullscreen.value = false;
     return;
   }
+
+  const isMeta = event.ctrlKey || event.metaKey;
+  if (isMeta && event.key.toLowerCase() === "z" && !event.shiftKey && props.canUndo) {
+    event.preventDefault();
+    emit("undo");
+    return;
+  }
+
+  if (
+    isMeta &&
+    (event.key.toLowerCase() === "y" ||
+      (event.key.toLowerCase() === "z" && event.shiftKey)) &&
+    props.canRedo
+  ) {
+    event.preventDefault();
+    emit("redo");
+  }
 }
 
 watch(
@@ -594,6 +615,20 @@ watch(
           @click="emit('validateSyntax')"
         >
           <ActionIcon name="check" />
+        </IconButton>
+        <IconButton
+          :label="t('editor.undo')"
+          :disabled="!props.canUndo"
+          @click="emit('undo')"
+        >
+          <ActionIcon name="undo" />
+        </IconButton>
+        <IconButton
+          :label="t('editor.redo')"
+          :disabled="!props.canRedo"
+          @click="emit('redo')"
+        >
+          <ActionIcon name="redo" />
         </IconButton>
         <IconButton
           :label="t('editor.clear')"
