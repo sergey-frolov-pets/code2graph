@@ -32,12 +32,16 @@ import {
 import {
   DEFAULT_EDITOR_FONT_FAMILY_ID,
   DEFAULT_EDITOR_FONT_SIZE,
+  DEFAULT_EDITOR_AUTOCOMPLETE,
+  DEFAULT_EDITOR_SYNTAX_HIGHLIGHT,
   DEFAULT_PREVIEW_BG,
   isEditorFontFamilyId,
   isEditorFontSize,
   resolveEditorFontFamily,
+  STORAGE_KEY_EDITOR_AUTOCOMPLETE,
   STORAGE_KEY_EDITOR_FONT_FAMILY,
   STORAGE_KEY_EDITOR_FONT_SIZE,
+  STORAGE_KEY_EDITOR_SYNTAX_HIGHLIGHT,
   STORAGE_KEY_PREVIEW_BG,
   type EditorFontFamilyId,
   type EditorFontSize,
@@ -105,6 +109,8 @@ const uiDarkMode = ref(readInitialUiDarkMode());
 const diagramDarkMode = ref(readInitialDiagramDarkMode());
 const editorFontSize = ref<EditorFontSize>(readInitialEditorFontSize());
 const editorFontFamilyId = ref<EditorFontFamilyId>(readInitialEditorFontFamilyId());
+const editorSyntaxHighlight = ref(readInitialEditorSyntaxHighlight());
+const editorAutocomplete = ref(readInitialEditorAutocomplete());
 const previewBackground = ref(readInitialPreviewBackground(diagramDarkMode.value));
 const editorFontFamily = computed(() =>
   resolveEditorFontFamily(editorFontFamilyId.value),
@@ -157,6 +163,14 @@ function readInitialEditorFontFamilyId(): EditorFontFamilyId {
   return DEFAULT_EDITOR_FONT_FAMILY_ID;
 }
 
+function readInitialEditorSyntaxHighlight(): boolean {
+  return readStoredBoolean(STORAGE_KEY_EDITOR_SYNTAX_HIGHLIGHT) ?? DEFAULT_EDITOR_SYNTAX_HIGHLIGHT;
+}
+
+function readInitialEditorAutocomplete(): boolean {
+  return readStoredBoolean(STORAGE_KEY_EDITOR_AUTOCOMPLETE) ?? DEFAULT_EDITOR_AUTOCOMPLETE;
+}
+
 function normalizeColor(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -192,6 +206,14 @@ function persistSettings(): void {
     localStorage.setItem(STORAGE_KEY_LAYOUT, layout.value);
     localStorage.setItem(STORAGE_KEY_EDITOR_FONT_SIZE, editorFontSize.value);
     localStorage.setItem(STORAGE_KEY_EDITOR_FONT_FAMILY, editorFontFamilyId.value);
+    localStorage.setItem(
+      STORAGE_KEY_EDITOR_SYNTAX_HIGHLIGHT,
+      String(editorSyntaxHighlight.value),
+    );
+    localStorage.setItem(
+      STORAGE_KEY_EDITOR_AUTOCOMPLETE,
+      String(editorAutocomplete.value),
+    );
     localStorage.setItem(STORAGE_KEY_PREVIEW_BG, previewBackground.value);
   } catch {
     // file:// может блокировать localStorage
@@ -430,7 +452,9 @@ watch([source, layout, diagramDarkMode], () => {
   scheduleRender();
 });
 
-watch([editorFontSize, editorFontFamilyId, previewBackground, uiDarkMode], () => {
+watch(
+  [editorFontSize, editorFontFamilyId, editorSyntaxHighlight, editorAutocomplete, previewBackground, uiDarkMode],
+  () => {
   persistSettings();
 });
 
@@ -561,6 +585,8 @@ onUnmounted(() => {
         :error-lines="syntaxErrorLines"
         :editor-font-size="editorFontSize"
         :editor-font-family="editorFontFamily"
+        :syntax-highlight-enabled="editorSyntaxHighlight"
+        :autocomplete-enabled="editorAutocomplete"
         :can-save="canSave"
         :is-validating="isValidating"
         :is-rendering="isRendering"
@@ -642,6 +668,8 @@ onUnmounted(() => {
       v-model:dark-mode="uiDarkMode"
       v-model:editor-font-size="editorFontSize"
       v-model:editor-font-family-id="editorFontFamilyId"
+      v-model:editor-syntax-highlight="editorSyntaxHighlight"
+      v-model:editor-autocomplete="editorAutocomplete"
       @close="isSettingsModalOpen = false"
       @open-about="openAboutFromSettings"
     />

@@ -29,6 +29,7 @@ export function useEditorAutocomplete(options: {
   folds: Ref<CodeFoldRegion[]>;
   textareaRef: Ref<HTMLTextAreaElement | null>;
   editorFontSize: Ref<string>;
+  enabled: Ref<boolean>;
 }) {
   const suggestions = ref<CompletionItem[]>([]);
   const activeIndex = ref(0);
@@ -113,6 +114,11 @@ export function useEditorAutocomplete(options: {
   }
 
   function refresh(): void {
+    if (!options.enabled.value) {
+      close();
+      return;
+    }
+
     const textarea = options.textareaRef.value;
     if (!textarea || document.activeElement !== textarea) {
       close();
@@ -198,6 +204,10 @@ export function useEditorAutocomplete(options: {
   }
 
   function handleKeydown(event: KeyboardEvent): boolean {
+    if (!options.enabled.value) {
+      return false;
+    }
+
     if (!isOpen.value || !hasSuggestions.value) {
       return false;
     }

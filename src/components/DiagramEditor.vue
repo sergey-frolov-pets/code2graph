@@ -53,6 +53,8 @@ const props = defineProps<{
   errorLines?: number[];
   editorFontSize: EditorFontSize;
   editorFontFamily: string;
+  syntaxHighlightEnabled: boolean;
+  autocompleteEnabled: boolean;
   canSave: boolean;
   isValidating: boolean;
   isRendering: boolean;
@@ -86,6 +88,7 @@ const autocomplete = useEditorAutocomplete({
   folds,
   textareaRef,
   editorFontSize: toRef(props, "editorFontSize"),
+  enabled: toRef(props, "autocompleteEnabled"),
 });
 
 function completionKindLabel(kind: CompletionKind): string {
@@ -173,7 +176,7 @@ const visibleEditorLines = computed(() =>
       sourceLine: item.sourceLine,
       text,
       html:
-        item.kind === "placeholder"
+        item.kind === "placeholder" || !props.syntaxHighlightEnabled
           ? undefined
           : renderHighlightedLine(rawLine || " "),
     };
@@ -513,6 +516,15 @@ function onEditorKeydown(event: KeyboardEvent): void {
   }
 }
 
+watch(
+  () => props.autocompleteEnabled,
+  (enabled) => {
+    if (!enabled) {
+      autocomplete.close();
+    }
+  },
+);
+
 watch(isFullscreen, (value) => {
   document.body.style.overflow = value ? "hidden" : "";
 });
@@ -684,6 +696,7 @@ watch(
           <div
             ref="highlightsRef"
             class="code-editor__highlights"
+            :class="{ 'is-syntax-disabled': !syntaxHighlightEnabled }"
             aria-hidden="true"
           >
             <div
@@ -697,17 +710,25 @@ watch(
               }"
             >
               <span
-                v-if="line.html"
+                v-if="syntaxHighlightEnabled && line.html"
                 class="code-editor__line-content"
                 v-html="line.html"
               />
-              <template v-else>{{ line.text }}</template>
+              <template v-else-if="syntaxHighlightEnabled">{{ line.text }}</template>
+              <span
+                v-else-if="line.kind === 'placeholder'"
+                class="code-editor__line-spacer"
+              >
+                {{ line.text }}
+              </span>
+              <span v-else class="code-editor__line-spacer" aria-hidden="true"> </span>
             </div>
           </div>
           <textarea
             ref="textareaRef"
             :value="displayText"
             class="code-editor__textarea"
+            :class="{ 'is-plain-text': !syntaxHighlightEnabled }"
             wrap="off"
             spellcheck="false"
             autocomplete="off"
@@ -721,7 +742,11 @@ watch(
             @scroll="syncScroll"
           />
           <ul
-            v-if="autocomplete.isOpen.value && autocomplete.hasSuggestions.value"
+            v-if="
+              autocompleteEnabled &&
+              autocomplete.isOpen.value &&
+              autocomplete.hasSuggestions.value
+            "
             class="code-editor__completions"
             role="listbox"
             :style="{
@@ -916,6 +941,10 @@ watch(
   background: color-mix(in srgb, var(--surface-muted) 70%, transparent);
 }
 
+.code-editor__highlights.is-syntax-disabled .code-editor__line-spacer {
+  visibility: hidden;
+}
+
 .code-editor__textarea {
   position: absolute;
   inset: 0;
@@ -927,6 +956,10 @@ watch(
   background: transparent;
   color: transparent;
   caret-color: var(--text);
+}
+
+.code-editor__textarea.is-plain-text {
+  color: var(--text);
 }
 
 .code-editor__textarea::selection {

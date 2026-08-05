@@ -1,5 +1,9 @@
 export const STORAGE_KEY_EDITOR_FONT_SIZE = "plantuml-smetana-editor-font-size";
 export const STORAGE_KEY_EDITOR_FONT_FAMILY = "plantuml-smetana-editor-font-family";
+export const STORAGE_KEY_EDITOR_SYNTAX_HIGHLIGHT =
+  "plantuml-smetana-editor-syntax-highlight";
+export const STORAGE_KEY_EDITOR_AUTOCOMPLETE =
+  "plantuml-smetana-editor-autocomplete";
 export const STORAGE_KEY_PREVIEW_BG = "plantuml-smetana-preview-bg";
 
 export const DEFAULT_PREVIEW_BG = {
@@ -51,6 +55,8 @@ export type EditorFontFamilyId =
 
 export const DEFAULT_EDITOR_FONT_SIZE: EditorFontSize = "14px";
 export const DEFAULT_EDITOR_FONT_FAMILY_ID: EditorFontFamilyId = "system";
+export const DEFAULT_EDITOR_SYNTAX_HIGHLIGHT = true;
+export const DEFAULT_EDITOR_AUTOCOMPLETE = true;
 
 export function resolveEditorFontFamily(id: EditorFontFamilyId): string {
   const option = EDITOR_FONT_FAMILY_OPTIONS.find((item) => item.id === id);

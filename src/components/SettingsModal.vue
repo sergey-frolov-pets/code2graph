@@ -22,6 +22,8 @@ defineProps<{
   darkMode: boolean;
   editorFontSize: EditorFontSize;
   editorFontFamilyId: EditorFontFamilyId;
+  editorSyntaxHighlight: boolean;
+  editorAutocomplete: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -30,6 +32,8 @@ const emit = defineEmits<{
   "update:darkMode": [value: boolean];
   "update:editorFontSize": [value: EditorFontSize];
   "update:editorFontFamilyId": [value: EditorFontFamilyId];
+  "update:editorSyntaxHighlight": [value: boolean];
+  "update:editorAutocomplete": [value: boolean];
   openAbout: [];
 }>();
 
@@ -106,6 +110,34 @@ const fontFamilyOptions = computed(() =>
             {{ option.label }}
           </option>
         </select>
+      </label>
+
+      <label class="settings-field settings-field--checkbox">
+        <input
+          type="checkbox"
+          :checked="editorSyntaxHighlight"
+          @change="
+            emit(
+              'update:editorSyntaxHighlight',
+              ($event.target as HTMLInputElement).checked,
+            )
+          "
+        />
+        <span>{{ t("settings.syntaxHighlight") }}</span>
+      </label>
+
+      <label class="settings-field settings-field--checkbox">
+        <input
+          type="checkbox"
+          :checked="editorAutocomplete"
+          @change="
+            emit(
+              'update:editorAutocomplete',
+              ($event.target as HTMLInputElement).checked,
+            )
+          "
+        />
+        <span>{{ t("settings.autocomplete") }}</span>
       </label>
     </div>
 
