@@ -13,6 +13,7 @@
 
 CI перед деплоем выполняет:
 
+- `npm run version:bump` — patch-версия в `package.json` (коммитится в `main` после успешного деплоя с `[skip ci]`)
 - `npm run typecheck` — проверка TypeScript фронтенда
 - `npm run test` — unit-тесты (Vitest)
 - `npm run check:i18n` — паритет ключей RU/EN

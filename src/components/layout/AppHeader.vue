@@ -17,7 +17,10 @@ const { t } = useLocale();
 <template>
   <header class="app-header">
     <div class="app-header__main">
-      <h1>{{ APP_META.name }}</h1>
+      <h1 class="app-header__title">
+        {{ APP_META.name }}
+        <span class="app-header__version">v{{ APP_META.version }}</span>
+      </h1>
       <p>{{ t("app.subtitle") }}</p>
     </div>
     <nav class="app-header__nav" :aria-label="t('app.settings')">
@@ -59,6 +62,20 @@ const { t } = useLocale();
 .app-header__main {
   flex: 1;
   min-width: 220px;
+}
+
+.app-header__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.app-header__version {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 .app-header__nav {
