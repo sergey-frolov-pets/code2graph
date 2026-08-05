@@ -9,6 +9,8 @@ import DiagramPreview from "@/components/DiagramPreview.vue";
 import InstallAppButton from "@/components/InstallAppButton.vue";
 import IconButton from "@/components/IconButton.vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
+import DiagramWizardModal from "@/components/DiagramWizardModal.vue";
+import LlmPatchModal from "@/components/LlmPatchModal.vue";
 import LlmKeysGuideModal from "@/components/LlmKeysGuideModal.vue";
 import SettingsModal from "@/components/SettingsModal.vue";
 import SyntaxResultModal from "@/components/SyntaxResultModal.vue";
@@ -87,6 +89,7 @@ const {
   undo: undoHistory,
   redo: redoHistory,
   clearHistory,
+  pushHistoryEntry,
 } = useEditorHistory();
 
 const source = ref(getDefaultSource(locale.value));
@@ -144,6 +147,10 @@ const isVersionsModalOpen = ref(false);
 const isSettingsModalOpen = ref(false);
 const isLibraryModalOpen = ref(false);
 const isAboutModalOpen = ref(false);
+const isPatchModalOpen = ref(false);
+const isWizardModalOpen = ref(false);
+const patchSelectionStart = ref(0);
+const patchSelectionEnd = ref(0);
 const statusBarRef = ref<HTMLElement | null>(null);
 
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -554,6 +561,34 @@ function openAboutFromSettings(): void {
   isAboutModalOpen.value = true;
 }
 
+function openWizardModal(): void {
+  isWizardModalOpen.value = true;
+}
+
+function onAiPatchRequest(payload: { start: number; end: number }): void {
+  patchSelectionStart.value = payload.start;
+  patchSelectionEnd.value = payload.end;
+  isPatchModalOpen.value = true;
+}
+
+function applyAiPlantUml(plantuml: string, label: string): void {
+  const before = source.value;
+  if (before === plantuml) {
+    return;
+  }
+
+  pushHistoryEntry({
+    before,
+    after: plantuml,
+    label,
+  });
+  source.value = plantuml;
+  syntaxErrorLines.value = [];
+  error.value = "";
+  persistSettings();
+  scheduleRender();
+}
+
 onMounted(() => {
   const updateStatusBarHeight = (): void => {
     const height = statusBarRef.value?.offsetHeight ?? 42;
@@ -603,6 +638,13 @@ onUnmounted(() => {
       </div>
       <nav class="app-header__nav" :aria-label="t('app.settings')">
         <IconButton
+          :label="t('app.aiNewDiagram')"
+          extra-class="app-header__icon-btn"
+          @click="openWizardModal"
+        >
+          <ActionIcon name="ai" />
+        </IconButton>
+        <IconButton
           :label="t('app.library')"
           extra-class="app-header__icon-btn"
           @click="openLibraryModal"
@@ -641,6 +683,7 @@ onUnmounted(() => {
         @cleared="onEditorCleared"
         @undo="applySourceUndo"
         @redo="applySourceRedo"
+        @ai-patch="onAiPatchRequest"
       />
 
       <DiagramPreview
@@ -722,6 +765,27 @@ onUnmounted(() => {
     <AboutModal
       :open="isAboutModalOpen"
       @close="isAboutModalOpen = false"
+    />
+
+    <LlmPatchModal
+      :open="isPatchModalOpen"
+      :source="source"
+      :selection-start="patchSelectionStart"
+      :selection-end="patchSelectionEnd"
+      :layout="layout"
+      :diagram-dark-mode="diagramDarkMode"
+      :open-settings="openSettingsModal"
+      @close="isPatchModalOpen = false"
+      @apply="(payload) => applyAiPlantUml(payload.plantuml, payload.label)"
+    />
+
+    <DiagramWizardModal
+      :open="isWizardModalOpen"
+      :layout="layout"
+      :diagram-dark-mode="diagramDarkMode"
+      :open-settings="openSettingsModal"
+      @close="isWizardModalOpen = false"
+      @apply="(payload) => applyAiPlantUml(payload.plantuml, payload.label)"
     />
 
     <LlmKeysGuideModal

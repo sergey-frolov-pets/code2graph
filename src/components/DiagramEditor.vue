@@ -71,6 +71,7 @@ const emit = defineEmits<{
   cleared: [];
   undo: [];
   redo: [];
+  aiPatch: [payload: { start: number; end: number }];
 }>();
 
 const fileInputRef = ref<HTMLInputElement | null>(null);
@@ -83,6 +84,8 @@ const snippetsOpen = ref(false);
 const folds = ref<CodeFoldRegion[]>([]);
 const foldDragStart = ref<number | null>(null);
 const foldDragEnd = ref<number | null>(null);
+const selectionStart = ref(0);
+const selectionEnd = ref(0);
 
 const { confirm } = useAppDialog();
 const { t, locale } = useLocale();
@@ -194,6 +197,34 @@ const canClear = computed(() => Boolean(source.value.trim()));
 const validateLabel = computed(() =>
   props.isValidating ? t("editor.validating") : t("editor.validate"),
 );
+
+const hasTextSelection = computed(
+  () => selectionEnd.value > selectionStart.value,
+);
+
+function updateSelectionState(): void {
+  const textarea = textareaRef.value;
+  if (!textarea) {
+    selectionStart.value = 0;
+    selectionEnd.value = 0;
+    return;
+  }
+
+  selectionStart.value = textarea.selectionStart;
+  selectionEnd.value = textarea.selectionEnd;
+}
+
+function requestAiPatch(): void {
+  updateSelectionState();
+  if (!hasTextSelection.value) {
+    return;
+  }
+
+  emit("aiPatch", {
+    start: selectionStart.value,
+    end: selectionEnd.value,
+  });
+}
 
 async function requestClear(): Promise<void> {
   if (!canClear.value) {
@@ -332,6 +363,7 @@ function onTextareaKeydown(event: KeyboardEvent): void {
 }
 
 function onTextareaKeyup(event: KeyboardEvent): void {
+  updateSelectionState();
   if (
     event.key === "ArrowLeft" ||
     event.key === "ArrowRight" ||
@@ -345,6 +377,7 @@ function onTextareaKeyup(event: KeyboardEvent): void {
 }
 
 function onTextareaClick(): void {
+  updateSelectionState();
   autocomplete.refresh();
 }
 
@@ -610,6 +643,13 @@ watch(
           <FileBadgeIcon format="PUML" />
         </IconButton>
         <IconButton
+          :label="t('editor.aiPatch')"
+          :disabled="!hasTextSelection"
+          @click="requestAiPatch"
+        >
+          <ActionIcon name="ai" />
+        </IconButton>
+        <IconButton
           :label="validateLabel"
           :disabled="isValidating || isRendering"
           @click="emit('validateSyntax')"
@@ -762,6 +802,8 @@ watch(
           <textarea
             ref="textareaRef"
             :value="displayText"
+            @select="updateSelectionState"
+            @mouseup="updateSelectionState"
             class="code-editor__textarea"
             :class="{ 'is-plain-text': !syntaxHighlightEnabled }"
             wrap="off"
