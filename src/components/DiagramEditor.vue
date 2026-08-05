@@ -11,6 +11,7 @@ import SnippetsPanel from "@/components/SnippetsPanel.vue";
 import EditorToolbar from "@/components/editor/EditorToolbar.vue";
 import EditorCodeGutter from "@/components/editor/EditorCodeGutter.vue";
 import EditorCodeSurface from "@/components/editor/EditorCodeSurface.vue";
+import EditorFoldRegionsModal from "@/components/editor/EditorFoldRegionsModal.vue";
 import { useLocale } from "@/composables/useLocale";
 import type { EditorFontSize } from "@/constants/editor-settings";
 import type { SampleDiagramId } from "@/constants/sample-diagrams";
@@ -54,6 +55,9 @@ const { t } = useLocale();
 const gutterComponentRef = ref<InstanceType<typeof EditorCodeGutter> | null>(
   null,
 );
+const regionsModalRef = ref<InstanceType<typeof EditorFoldRegionsModal> | null>(
+  null,
+);
 const codeSurfaceRef = ref<InstanceType<typeof EditorCodeSurface> | null>(null);
 const isFullscreen = ref(false);
 const snippetsOpen = ref(false);
@@ -82,13 +86,42 @@ function syncScroll(): void {
 
 const {
   folds,
+  sortedRegions,
+  lineCount,
+  regionsModalOpen,
   resetFolds,
   isLineInFoldSelection,
   onGutterMouseDown,
   onGutterMouseEnter,
   onFoldToggleClick,
   removeFold,
+  addRegion,
+  scrollToSourceLine,
 } = useCodeFolds({ source, textareaRef, syncScroll });
+
+const regionsButtonEl = computed(
+  () => gutterComponentRef.value?.regionsButtonEl ?? null,
+);
+
+function toggleRegionsModal(): void {
+  regionsModalOpen.value = !regionsModalOpen.value;
+}
+
+function onGutterLineTap(sourceLine: number): void {
+  regionsModalRef.value?.handleLineTap(sourceLine);
+}
+
+function onRegionSubmit(payload: {
+  fromLine: number;
+  toLine: number | null;
+  label?: string;
+}): void {
+  addRegion(payload);
+}
+
+function onRegionNavigate(line: number): void {
+  scrollToSourceLine(line);
+}
 
 const {
   displayText,
@@ -243,10 +276,13 @@ onUnmounted(() => {
           ref="gutterComponentRef"
           :gutter-rows="gutterRows"
           :is-line-in-fold-selection="isLineInFoldSelection"
+          :regions-modal-open="regionsModalOpen"
           @gutter-mouse-down="onGutterMouseDown"
           @gutter-mouse-enter="onGutterMouseEnter"
           @fold-toggle-click="onFoldToggleClick"
           @fold-remove="removeFold"
+          @gutter-line-tap="onGutterLineTap"
+          @open-regions-modal="toggleRegionsModal"
         />
 
         <EditorCodeSurface
@@ -274,6 +310,18 @@ onUnmounted(() => {
       :open="snippetsOpen"
       @close="snippetsOpen = false"
       @insert="insertSnippetAtCursor"
+    />
+
+    <EditorFoldRegionsModal
+      ref="regionsModalRef"
+      :open="regionsModalOpen"
+      :anchor-el="regionsButtonEl"
+      :regions="sortedRegions"
+      :line-count="lineCount"
+      @close="regionsModalOpen = false"
+      @submit="onRegionSubmit"
+      @remove="removeFold($event)"
+      @navigate="onRegionNavigate"
     />
   </section>
 </template>

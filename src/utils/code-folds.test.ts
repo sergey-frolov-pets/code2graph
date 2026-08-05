@@ -1,13 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
   buildDisplayText,
+  canAddBookmark,
   canAddFold,
+  canAddRegion,
   createFoldId,
   getHiddenSourceLines,
+  isBookmark,
   mapDisplayOffsetToSourceOffset,
   mapSourceOffsetToDisplayOffset,
   mergeDisplayTextIntoSource,
+  normalizeLineRange,
+  parseLineNumberInput,
   rangesNestOrSeparate,
+  sortRegions,
   type CodeFoldRegion,
 } from "@/utils/code-folds";
 
@@ -131,5 +137,60 @@ describe("getHiddenSourceLines", () => {
     expect(hidden.has(2)).toBe(false);
     expect(hidden.has(3)).toBe(true);
     expect(hidden.has(4)).toBe(true);
+  });
+
+  it("ignores bookmarks", () => {
+    const folds = [makeFold(5, 5)];
+    const hidden = getHiddenSourceLines(folds);
+
+    expect(hidden.size).toBe(0);
+  });
+});
+
+describe("bookmarks and regions", () => {
+  it("detects bookmarks by equal start and end lines", () => {
+    expect(isBookmark({ startLine: 4, endLine: 4 })).toBe(true);
+    expect(isBookmark({ startLine: 2, endLine: 5 })).toBe(false);
+  });
+
+  it("normalizes swapped line ranges", () => {
+    expect(normalizeLineRange(8, 3)).toEqual({ startLine: 3, endLine: 8 });
+    expect(normalizeLineRange(2, 6)).toEqual({ startLine: 2, endLine: 6 });
+  });
+
+  it("parses line number input", () => {
+    expect(parseLineNumberInput(" 12 ")).toBe(12);
+    expect(parseLineNumberInput("0")).toBeNull();
+    expect(parseLineNumberInput("x")).toBeNull();
+  });
+
+  it("allows bookmarks only once per line", () => {
+    const folds: CodeFoldRegion[] = [
+      { id: "b1", startLine: 3, endLine: 3, collapsed: false },
+    ];
+
+    expect(canAddBookmark(folds, 3, 10)).toBe(false);
+    expect(canAddBookmark(folds, 4, 10)).toBe(true);
+  });
+
+  it("validates region creation for bookmark and fold", () => {
+    expect(canAddRegion([], 5, null, 10)).toBe(true);
+    expect(canAddRegion([], 2, 7, 10)).toBe(true);
+    expect(canAddRegion([], 2, 2, 10)).toBe(true);
+    expect(canAddRegion([], 11, null, 10)).toBe(false);
+  });
+
+  it("sorts regions by start and end lines", () => {
+    const regions: CodeFoldRegion[] = [
+      { id: "a", startLine: 8, endLine: 10, collapsed: true },
+      { id: "b", startLine: 2, endLine: 2, collapsed: false },
+      { id: "c", startLine: 2, endLine: 5, collapsed: true },
+    ];
+
+    expect(sortRegions(regions).map((region) => region.id)).toEqual([
+      "b",
+      "c",
+      "a",
+    ]);
   });
 });

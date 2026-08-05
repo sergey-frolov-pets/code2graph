@@ -1,12 +1,18 @@
-import { nextTick, onMounted, onUnmounted, ref, watch, type Ref } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch, type Ref } from "vue";
 import {
   adjustFoldsAfterSourceChange,
+  canAddBookmark,
   canAddFold,
+  canAddRegion,
   createFoldId,
+  isBookmark,
+  normalizeLineRange,
+  sortRegions,
   type CodeFoldRegion,
   mapDisplayOffsetToSourceOffset,
   mapSourceOffsetToDisplayOffset,
 } from "@/utils/code-folds";
+import { EDITOR_LINE_HEIGHT } from "@/composables/editor/useEditorDisplayModel";
 
 export function useCodeFolds(options: {
   source: Ref<string>;
@@ -18,6 +24,13 @@ export function useCodeFolds(options: {
   const folds = ref<CodeFoldRegion[]>([]);
   const foldDragStart = ref<number | null>(null);
   const foldDragEnd = ref<number | null>(null);
+  const regionsModalOpen = ref(false);
+
+  const sortedRegions = computed(() => sortRegions(folds.value));
+
+  const lineCount = computed(() =>
+    Math.max(source.value.split(/\r?\n/).length, 1),
+  );
 
   function resetFolds(): void {
     folds.value = [];
@@ -35,7 +48,7 @@ export function useCodeFolds(options: {
   }
 
   function onGutterMouseDown(sourceLine: number, event: MouseEvent): void {
-    if (event.button !== 0 || event.shiftKey) {
+    if (regionsModalOpen.value || event.button !== 0 || event.shiftKey) {
       return;
     }
 
@@ -45,9 +58,11 @@ export function useCodeFolds(options: {
   }
 
   function onGutterMouseEnter(sourceLine: number): void {
-    if (foldDragStart.value !== null) {
-      foldDragEnd.value = sourceLine;
+    if (regionsModalOpen.value || foldDragStart.value === null) {
+      return;
     }
+
+    foldDragEnd.value = sourceLine;
   }
 
   function finishFoldDrag(): void {
@@ -77,6 +92,11 @@ export function useCodeFolds(options: {
   }
 
   function toggleFold(fold: CodeFoldRegion): void {
+    if (isBookmark(fold)) {
+      scrollToSourceLine(fold.startLine);
+      return;
+    }
+
     const textarea = textareaRef.value;
     const sourceCursor = textarea
       ? mapDisplayOffsetToSourceOffset(
@@ -105,9 +125,9 @@ export function useCodeFolds(options: {
     });
   }
 
-  function removeFold(foldId: string, event: MouseEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
+  function removeFold(foldId: string, event?: MouseEvent): void {
+    event?.preventDefault();
+    event?.stopPropagation();
     folds.value = folds.value.filter((fold) => fold.id !== foldId);
   }
 
@@ -118,6 +138,105 @@ export function useCodeFolds(options: {
     }
 
     toggleFold(fold);
+  }
+
+  function addRegion(payload: {
+    fromLine: number;
+    toLine: number | null;
+    label?: string;
+  }): boolean {
+    const trimmedLabel = payload.label?.trim();
+    const label = trimmedLabel ? trimmedLabel : undefined;
+
+    if (
+      !canAddRegion(
+        folds.value,
+        payload.fromLine,
+        payload.toLine,
+        lineCount.value,
+      )
+    ) {
+      return false;
+    }
+
+    if (payload.toLine === null) {
+      folds.value = [
+        ...folds.value,
+        {
+          id: createFoldId(),
+          startLine: payload.fromLine,
+          endLine: payload.fromLine,
+          collapsed: false,
+          label,
+        },
+      ];
+      return true;
+    }
+
+    const { startLine, endLine } = normalizeLineRange(
+      payload.fromLine,
+      payload.toLine,
+    );
+
+    if (isBookmark({ startLine, endLine })) {
+      folds.value = [
+        ...folds.value,
+        {
+          id: createFoldId(),
+          startLine,
+          endLine,
+          collapsed: false,
+          label,
+        },
+      ];
+      return true;
+    }
+
+    folds.value = [
+      ...folds.value,
+      {
+        id: createFoldId(),
+        startLine,
+        endLine,
+        collapsed: true,
+        label,
+      },
+    ];
+    return true;
+  }
+
+  function scrollToSourceLine(lineNumber: number): void {
+    const textarea = textareaRef.value;
+    if (!textarea) {
+      return;
+    }
+
+    const sourceLines = source.value.split(/\r?\n/);
+    const targetLine = Math.min(Math.max(lineNumber, 1), sourceLines.length);
+    const lineStartOffset = sourceLines
+      .slice(0, targetLine - 1)
+      .reduce((offset, line) => offset + line.length + 1, 0);
+
+    const displayOffset = mapSourceOffsetToDisplayOffset(
+      lineStartOffset,
+      source.value,
+      folds.value,
+    );
+
+    const computedStyle = getComputedStyle(textarea);
+    const fontSize = Number.parseFloat(computedStyle.fontSize);
+    const paddingTop = Number.parseFloat(computedStyle.paddingTop);
+    const lineHeight = fontSize * EDITOR_LINE_HEIGHT;
+    const displayTextBefore = source.value.slice(0, displayOffset);
+    const displayLineIndex = displayTextBefore.split(/\r?\n/).length - 1;
+
+    textarea.scrollTop = Math.max(
+      0,
+      displayLineIndex * lineHeight - textarea.clientHeight / 3 + paddingTop,
+    );
+    textarea.setSelectionRange(displayOffset, displayOffset);
+    textarea.focus();
+    syncScroll();
   }
 
   function adjustFoldsForSourceChange(
@@ -134,6 +253,14 @@ export function useCodeFolds(options: {
         newLines,
       );
     }
+
+    folds.value = folds.value.filter(
+      (fold) =>
+        fold.startLine >= 1 &&
+        fold.endLine >= 1 &&
+        fold.startLine <= newLines.length &&
+        fold.endLine <= newLines.length,
+    );
   }
 
   onMounted(() => {
@@ -154,12 +281,23 @@ export function useCodeFolds(options: {
 
   return {
     folds,
+    sortedRegions,
+    lineCount,
+    regionsModalOpen,
     resetFolds,
     isLineInFoldSelection,
     onGutterMouseDown,
     onGutterMouseEnter,
     onFoldToggleClick,
     removeFold,
+    addRegion,
+    scrollToSourceLine,
     adjustFoldsForSourceChange,
+    canAddRegion: (
+      fromLine: number,
+      toLine: number | null,
+    ) => canAddRegion(folds.value, fromLine, toLine, lineCount.value),
+    canAddBookmark: (line: number) =>
+      canAddBookmark(folds.value, line, lineCount.value),
   };
 }
