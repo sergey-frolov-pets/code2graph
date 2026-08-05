@@ -17,6 +17,11 @@ import {
 import { parseSvgSize } from "@/utils/export";
 
 type Size = { width: number; height: number };
+type ViewportPoint = { x: number; y: number };
+type TrackedPointer = ViewportPoint & {
+  clientX: number;
+  clientY: number;
+};
 
 const SCALE_EPSILON = 1e-6;
 
@@ -79,6 +84,36 @@ function getWheelZoomFactor(event: WheelEvent, viewportHeight: number): number {
   return Math.exp(-delta * PREVIEW_ZOOM_SENSITIVITY);
 }
 
+function getPointersDistance(
+  first: ViewportPoint,
+  second: ViewportPoint,
+): number {
+  return Math.hypot(first.x - second.x, first.y - second.y);
+}
+
+function getPointersMidpoint(
+  first: ViewportPoint,
+  second: ViewportPoint,
+): ViewportPoint {
+  return {
+    x: (first.x + second.x) / 2,
+    y: (first.y + second.y) / 2,
+  };
+}
+
+function toTrackedPointer(
+  event: PointerEvent,
+  viewport: HTMLElement,
+): TrackedPointer {
+  const rect = viewport.getBoundingClientRect();
+  return {
+    clientX: event.clientX,
+    clientY: event.clientY,
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top,
+  };
+}
+
 export function usePreviewPanZoom(
   viewportRef: Ref<HTMLElement | null>,
   contentRef: Ref<HTMLElement | null>,
@@ -90,14 +125,18 @@ export function usePreviewPanZoom(
   const imageWidth = ref(800);
   const imageHeight = ref(600);
   const isDragging = ref(false);
+  const isPinching = ref(false);
 
+  const activePointers = new Map<number, TrackedPointer>();
   let dragStartX = 0;
   let dragStartY = 0;
   let panStartX = 0;
   let panStartY = 0;
   let activePointerId: number | null = null;
+  let lastPinchDistance = 0;
   let resizeObserver: ResizeObserver | null = null;
   let wheelListener: ((event: WheelEvent) => void) | null = null;
+  let touchMoveListener: ((event: TouchEvent) => void) | null = null;
 
   function getScaledSize(): Size {
     return {
@@ -180,7 +219,7 @@ export function usePreviewPanZoom(
     fitToView();
   }
 
-  function getViewportCenter(): { x: number; y: number } {
+  function getViewportCenter(): ViewportPoint {
     const viewport = viewportRef.value;
     if (!viewport) {
       return { x: 0, y: 0 };
@@ -234,31 +273,90 @@ export function usePreviewPanZoom(
     zoomAt(cursorX, cursorY, zoomFactor);
   }
 
-  function onPointerDown(event: PointerEvent): void {
-    if (event.button !== 0) {
+  function beginSinglePointerDrag(pointer: TrackedPointer, pointerId: number): void {
+    isDragging.value = true;
+    activePointerId = pointerId;
+    dragStartX = pointer.clientX;
+    dragStartY = pointer.clientY;
+    panStartX = panX.value;
+    panStartY = panY.value;
+  }
+
+  function beginPinch(): void {
+    if (activePointers.size < 2) {
       return;
     }
 
-    activePointerId = event.pointerId;
-    isDragging.value = true;
-    dragStartX = event.clientX;
-    dragStartY = event.clientY;
-    panStartX = panX.value;
-    panStartY = panY.value;
-
-    const viewport = viewportRef.value;
-    if (viewport) {
-      viewport.setPointerCapture(event.pointerId);
-    }
+    const [first, second] = [...activePointers.values()];
+    isPinching.value = true;
+    isDragging.value = false;
+    activePointerId = null;
+    lastPinchDistance = getPointersDistance(first, second);
   }
 
-  function onPointerMove(event: PointerEvent): void {
-    if (!isDragging.value || activePointerId !== event.pointerId) {
+  function endPinch(): void {
+    isPinching.value = false;
+    lastPinchDistance = 0;
+  }
+
+  function handlePinchMove(): void {
+    if (!isPinching.value || activePointers.size < 2 || lastPinchDistance <= 0) {
+      return;
+    }
+
+    const [first, second] = [...activePointers.values()];
+    const distance = getPointersDistance(first, second);
+    const midpoint = getPointersMidpoint(first, second);
+    const zoomFactor = distance / lastPinchDistance;
+
+    if (Math.abs(zoomFactor - 1) > SCALE_EPSILON) {
+      zoomAt(midpoint.x, midpoint.y, zoomFactor);
+    }
+
+    lastPinchDistance = distance;
+  }
+
+  function onPointerDown(event: PointerEvent): void {
+    if (event.pointerType === "mouse" && event.button !== 0) {
       return;
     }
 
     const viewport = viewportRef.value;
     if (!viewport) {
+      return;
+    }
+
+    viewport.setPointerCapture(event.pointerId);
+    activePointers.set(event.pointerId, toTrackedPointer(event, viewport));
+
+    if (activePointers.size === 1) {
+      beginSinglePointerDrag(activePointers.get(event.pointerId)!, event.pointerId);
+      return;
+    }
+
+    if (activePointers.size >= 2) {
+      beginPinch();
+    }
+  }
+
+  function onPointerMove(event: PointerEvent): void {
+    const viewport = viewportRef.value;
+    if (!viewport || !activePointers.has(event.pointerId)) {
+      return;
+    }
+
+    activePointers.set(event.pointerId, toTrackedPointer(event, viewport));
+
+    if (isPinching.value && activePointers.size >= 2) {
+      handlePinchMove();
+      return;
+    }
+
+    if (
+      !isDragging.value
+      || activePointerId !== event.pointerId
+      || activePointers.size !== 1
+    ) {
       return;
     }
 
@@ -278,17 +376,29 @@ export function usePreviewPanZoom(
     panY.value = clamped.panY;
   }
 
-  function endPointerDrag(event: PointerEvent): void {
-    if (activePointerId !== event.pointerId) {
+  function endPointer(event: PointerEvent): void {
+    if (!activePointers.has(event.pointerId)) {
       return;
     }
 
-    isDragging.value = false;
-    activePointerId = null;
+    activePointers.delete(event.pointerId);
 
     const viewport = viewportRef.value;
     if (viewport?.hasPointerCapture(event.pointerId)) {
       viewport.releasePointerCapture(event.pointerId);
+    }
+
+    if (activePointers.size < 2) {
+      endPinch();
+    }
+
+    if (activePointerId === event.pointerId) {
+      isDragging.value = false;
+      activePointerId = null;
+    }
+
+    if (activePointers.size === 2) {
+      beginPinch();
     }
   }
 
@@ -312,6 +422,13 @@ export function usePreviewPanZoom(
     };
     viewport.addEventListener("wheel", wheelListener, { passive: false });
 
+    touchMoveListener = (event: TouchEvent) => {
+      if (event.touches.length >= 2 || activePointers.size >= 2) {
+        event.preventDefault();
+      }
+    };
+    viewport.addEventListener("touchmove", touchMoveListener, { passive: false });
+
     resizeObserver = new ResizeObserver(() => {
       applyClamp();
     });
@@ -325,20 +442,26 @@ export function usePreviewPanZoom(
     if (viewport && wheelListener) {
       viewport.removeEventListener("wheel", wheelListener);
     }
+    if (viewport && touchMoveListener) {
+      viewport.removeEventListener("touchmove", touchMoveListener);
+    }
     wheelListener = null;
+    touchMoveListener = null;
 
     resizeObserver?.disconnect();
     resizeObserver = null;
+    activePointers.clear();
   });
 
   return {
     contentStyle,
     isDragging,
+    isPinching,
     zoomIn,
     zoomOut,
     onPointerDown,
     onPointerMove,
-    onPointerUp: endPointerDrag,
-    onPointerCancel: endPointerDrag,
+    onPointerUp: endPointer,
+    onPointerCancel: endPointer,
   };
 }

@@ -437,6 +437,10 @@ a {
   cursor: grabbing;
 }
 
+.preview-viewport.is-pinching {
+  cursor: zoom-in;
+}
+
 .preview-content svg {
   display: block;
 }
