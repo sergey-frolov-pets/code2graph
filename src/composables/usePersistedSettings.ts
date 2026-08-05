@@ -39,6 +39,7 @@ import {
   removeStorageItem,
   writeStorageItem,
 } from "@/utils/safe-storage";
+import { migrateDeprecatedActivityColorSyntax } from "@/utils/plantuml-source";
 
 function migrateLegacyDarkStorage(): void {
   const legacyDark = readStorageBoolean(STORAGE_KEY_DARK);
@@ -179,7 +180,11 @@ export function usePersistedSettings() {
     const savedLayout = readStorageItem(STORAGE_KEY_LAYOUT);
 
     if (savedSource) {
-      source.value = savedSource;
+      const migrated = migrateDeprecatedActivityColorSyntax(savedSource);
+      source.value = migrated;
+      if (migrated !== savedSource) {
+        writeStorageItem(STORAGE_KEY_SOURCE, migrated);
+      }
     }
 
     if (savedLayout && savedLayout in LAYOUT_ENGINES) {
