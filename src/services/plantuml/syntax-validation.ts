@@ -1,4 +1,8 @@
 import type { LayoutEngine } from "@/constants";
+import {
+  DEFAULT_RENDER_MODE,
+  type RenderMode,
+} from "@/constants/render-settings";
 import { renderPlantUmlToSvg } from "@/services/plantuml/plantuml-engine";
 import {
   checkPlantUmlSyntax,
@@ -13,6 +17,7 @@ export async function validatePlantUmlSyntax(
   source: string,
   layout: LayoutEngine,
   darkMode = false,
+  renderMode: RenderMode = DEFAULT_RENDER_MODE,
 ): Promise<SyntaxCheckResult> {
   const staticCheck = checkPlantUmlSyntax(source);
   if (!staticCheck.valid) {
@@ -22,7 +27,11 @@ export async function validatePlantUmlSyntax(
   try {
     const prepared = await preparePlantUmlSource(source, layout);
     const lines = splitSourceLines(prepared);
-    const rendered = await renderPlantUmlToSvg(lines, { dark: darkMode });
+    const rendered = await renderPlantUmlToSvg(
+      lines,
+      { dark: darkMode },
+      renderMode,
+    );
     if (isPlantUmlErrorSvg(rendered)) {
       return {
         valid: false,

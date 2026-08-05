@@ -1,18 +1,20 @@
 import type { LayoutEngine } from "@/constants";
+import type { RenderMode } from "@/constants/render-settings";
+import { renderPlantUmlToSvg } from "@/composables/usePlantUml";
 import {
   preparePlantUmlSource,
   splitSourceLines,
 } from "@/utils/plantuml-source";
-import { renderPlantUmlToSvg } from "@/composables/usePlantUml";
 
 export async function renderPlantUmlPreviewSvg(
   plantuml: string,
   layout: LayoutEngine,
   darkMode: boolean,
+  renderMode: RenderMode,
 ): Promise<string> {
   const prepared = await preparePlantUmlSource(plantuml, layout);
   const lines = splitSourceLines(prepared);
-  return renderPlantUmlToSvg(lines, { dark: darkMode });
+  return renderPlantUmlToSvg(lines, { dark: darkMode }, renderMode);
 }
 
 export function extractSelectionFragment(

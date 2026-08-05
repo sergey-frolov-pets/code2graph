@@ -44,6 +44,7 @@ const {
 const {
   source,
   layout,
+  renderMode,
   uiDarkMode,
   diagramDarkMode,
   editorFontSize,
@@ -69,6 +70,7 @@ const {
   source,
   layout,
   diagramDarkMode,
+  renderMode,
   locale,
   t,
   onPersist: persistSettings,
@@ -95,7 +97,7 @@ const {
   syntaxResult,
   syntaxErrorLines,
   validateSyntax,
-} = useSyntaxValidation({ source, layout, diagramDarkMode });
+} = useSyntaxValidation({ source, layout, diagramDarkMode, renderMode });
 
 const {
   loadedFileName,
@@ -234,6 +236,7 @@ onMounted(() => {
     <AppStatusBar
       :loaded-file-name="loadedFileName"
       :layout="layout"
+      :render-mode="renderMode"
       :engine-ready="engineReady"
       :engine-status="engineStatus"
     />
@@ -264,6 +267,7 @@ onMounted(() => {
     <SettingsModal
       :open="isSettingsModalOpen"
       v-model:layout="layout"
+      v-model:render-mode="renderMode"
       v-model:dark-mode="uiDarkMode"
       v-model:editor-font-size="editorFontSize"
       v-model:editor-font-family-id="editorFontFamilyId"
@@ -284,6 +288,7 @@ onMounted(() => {
       :selection-start="patchSelectionStart"
       :selection-end="patchSelectionEnd"
       :layout="layout"
+      :render-mode="renderMode"
       :diagram-dark-mode="diagramDarkMode"
       :open-settings="openSettingsModal"
       @close="isPatchModalOpen = false"
@@ -293,6 +298,7 @@ onMounted(() => {
     <DiagramWizardModal
       :open="isWizardModalOpen"
       :layout="layout"
+      :render-mode="renderMode"
       :diagram-dark-mode="diagramDarkMode"
       :open-settings="openSettingsModal"
       @close="isWizardModalOpen = false"

@@ -1,4 +1,5 @@
 import type { LayoutEngine } from "@/constants";
+import type { RenderMode } from "@/constants/render-settings";
 import { llmChat } from "@/services/llm/llm-client";
 import { buildLlmSystemPrompt } from "@/services/llm/llm-prompts";
 import type { LlmChatMessage } from "@/services/llm/llm-types";
@@ -19,6 +20,7 @@ export async function generateValidPlantUml(
   userPrompt: string,
   layout: LayoutEngine,
   darkMode: boolean,
+  renderMode: RenderMode,
   handlers?: LlmGateHandlers,
   systemContext = "You generate PlantUML diagram source code.",
 ): Promise<GenerateValidPlantUmlResult> {
@@ -38,6 +40,7 @@ export async function generateValidPlantUml(
       chatResult.content,
       layout,
       darkMode,
+      renderMode,
     );
 
     if (validation.valid && validation.plantuml) {

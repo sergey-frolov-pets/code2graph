@@ -23,6 +23,8 @@ export const appMessages: LocaleMessages = {
   "app.engineReady": "Движок готов",
   "app.engineLoading": "Загрузка движка PlantUML…",
   "app.engineNotReady": "Движок PlantUML ещё не загружен",
+  "app.renderModeOnlineReady": "Онлайн-рендер готов",
+  "app.renderModeOnlineOffline": "Нет сети для онлайн-рендера",
   "app.importError": "Ошибка импорта",
   "app.exportError": "Ошибка экспорта",
   "app.savePuml": "Сохранить .puml",

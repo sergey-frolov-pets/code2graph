@@ -2,6 +2,10 @@
 import { computed, ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import { APP_LINKS, LAYOUT_ENGINES, type LayoutEngine } from "@/constants";
+import {
+  RENDER_MODES,
+  type RenderMode,
+} from "@/constants/render-settings";
 import { ALL_LLM_PROVIDERS } from "@/constants/llm-providers";
 import {
   EDITOR_FONT_FAMILY_OPTIONS,
@@ -24,6 +28,7 @@ import { testLlmConnection } from "@/services/llm/llm-client";
 defineProps<{
   open: boolean;
   layout: LayoutEngine;
+  renderMode: RenderMode;
   darkMode: boolean;
   editorFontSize: EditorFontSize;
   editorFontFamilyId: EditorFontFamilyId;
@@ -34,6 +39,7 @@ defineProps<{
 const emit = defineEmits<{
   close: [];
   "update:layout": [value: LayoutEngine];
+  "update:renderMode": [value: RenderMode];
   "update:darkMode": [value: boolean];
   "update:editorFontSize": [value: EditorFontSize];
   "update:editorFontFamilyId": [value: EditorFontFamilyId];
@@ -83,6 +89,17 @@ const layoutOptions = Object.entries(LAYOUT_ENGINES).map(([label, value]) => ({
   label,
   value,
 }));
+
+const renderModeOptions = [
+  {
+    value: RENDER_MODES.offline,
+    labelKey: "settings.renderModeOffline",
+  },
+  {
+    value: RENDER_MODES.online,
+    labelKey: "settings.renderModeOnline",
+  },
+] as const;
 
 const fontFamilyOptions = computed(() =>
   EDITOR_FONT_FAMILY_OPTIONS.map((option) => ({
@@ -234,6 +251,29 @@ async function onTestLlmConnection(): Promise<void> {
 
     <div class="settings-section">
       <h3 class="settings-section__title">{{ t("settings.rendering") }}</h3>
+
+      <label class="settings-field">
+        <span class="settings-field__label">{{ t("settings.renderMode") }}</span>
+        <select
+          class="select"
+          :value="renderMode"
+          @change="
+            emit(
+              'update:renderMode',
+              ($event.target as HTMLSelectElement).value as RenderMode,
+            )
+          "
+        >
+          <option
+            v-for="option in renderModeOptions"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ t(option.labelKey) }}
+          </option>
+        </select>
+        <span class="settings-field__hint">{{ t("settings.renderModeHint") }}</span>
+      </label>
 
       <label class="settings-field">
         <span class="settings-field__label">{{ t("settings.layoutEngine") }}</span>

@@ -2,6 +2,7 @@
 import { computed, ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import type { LayoutEngine } from "@/constants";
+import type { RenderMode } from "@/constants/render-settings";
 import { generateValidPlantUml } from "@/composables/useLlmPlantUmlGenerate";
 import { useLocale } from "@/composables/useLocale";
 import {
@@ -19,6 +20,7 @@ import { renderPlantUmlPreviewSvg } from "@/utils/llm-preview";
 const props = defineProps<{
   open: boolean;
   layout: LayoutEngine;
+  renderMode: RenderMode;
   diagramDarkMode: boolean;
   openSettings?: () => void;
 }>();
@@ -148,6 +150,7 @@ async function loadPreview(plantuml: string): Promise<void> {
       plantuml,
       props.layout,
       props.diagramDarkMode,
+      props.renderMode,
     );
   } catch (error) {
     previewSvg.value = "";
@@ -171,6 +174,7 @@ async function generateDiagram(): Promise<void> {
       wizardState.value.promptText,
       props.layout,
       props.diagramDarkMode,
+      props.renderMode,
       { openSettings: props.openSettings },
       "You create new PlantUML diagrams from structured wizard requirements.",
     );

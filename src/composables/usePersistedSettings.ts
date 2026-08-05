@@ -11,6 +11,12 @@ import {
   type LayoutEngine,
 } from "@/constants";
 import {
+  DEFAULT_RENDER_MODE,
+  isRenderMode,
+  STORAGE_KEY_RENDER_MODE,
+  type RenderMode,
+} from "@/constants/render-settings";
+import {
   findSampleDiagramIdAnyLocale,
   getSampleDiagramSource,
   isDefaultSource,
@@ -40,6 +46,15 @@ import {
   writeStorageItem,
 } from "@/utils/safe-storage";
 import { migrateDeprecatedActivityColorSyntax } from "@/utils/plantuml-source";
+
+function readInitialRenderMode(): RenderMode {
+  const saved = readStorageItem(STORAGE_KEY_RENDER_MODE);
+  if (saved && isRenderMode(saved)) {
+    return saved;
+  }
+
+  return DEFAULT_RENDER_MODE;
+}
 
 function migrateLegacyDarkStorage(): void {
   const legacyDark = readStorageBoolean(STORAGE_KEY_DARK);
@@ -129,6 +144,7 @@ export function usePersistedSettings() {
 
   const source = ref(getDefaultSource(locale.value));
   const layout = ref<LayoutEngine>(LAYOUT_ENGINES.smetana);
+  const renderMode = ref<RenderMode>(readInitialRenderMode());
   const uiDarkMode = ref(readInitialUiDarkMode());
   const diagramDarkMode = ref(readInitialDiagramDarkMode());
   const editorFontSize = ref<EditorFontSize>(readInitialEditorFontSize());
@@ -150,6 +166,7 @@ export function usePersistedSettings() {
     writeStorageItem(STORAGE_KEY_UI_DARK, String(uiDarkMode.value));
     writeStorageItem(STORAGE_KEY_DIAGRAM_DARK, String(diagramDarkMode.value));
     writeStorageItem(STORAGE_KEY_LAYOUT, layout.value);
+    writeStorageItem(STORAGE_KEY_RENDER_MODE, renderMode.value);
     writeStorageItem(STORAGE_KEY_EDITOR_FONT_SIZE, editorFontSize.value);
     writeStorageItem(STORAGE_KEY_EDITOR_FONT_FAMILY, editorFontFamilyId.value);
     writeStorageItem(
@@ -178,6 +195,7 @@ export function usePersistedSettings() {
   function restoreSettings(): void {
     const savedSource = readStorageItem(STORAGE_KEY_SOURCE);
     const savedLayout = readStorageItem(STORAGE_KEY_LAYOUT);
+    const savedRenderMode = readStorageItem(STORAGE_KEY_RENDER_MODE);
 
     if (savedSource) {
       const migrated = migrateDeprecatedActivityColorSyntax(savedSource);
@@ -189,6 +207,10 @@ export function usePersistedSettings() {
 
     if (savedLayout && savedLayout in LAYOUT_ENGINES) {
       layout.value = savedLayout as LayoutEngine;
+    }
+
+    if (savedRenderMode && isRenderMode(savedRenderMode)) {
+      renderMode.value = savedRenderMode;
     }
 
     applyLocaleToStoredSource();
@@ -228,6 +250,7 @@ export function usePersistedSettings() {
       editorAutocomplete,
       previewBackground,
       uiDarkMode,
+      renderMode,
     ],
     () => {
       persistSettings();
@@ -255,6 +278,7 @@ export function usePersistedSettings() {
   return {
     source,
     layout,
+    renderMode,
     uiDarkMode,
     diagramDarkMode,
     editorFontSize,
