@@ -8,5 +8,12 @@ export function buildLlmSystemPrompt(basePrompt: string): string {
   return `${basePrompt}\n\n${LLM_PLANTUML_RULES}\n\n${LLM_JSON_SYSTEM_APPENDIX}`;
 }
 
+export const LLM_PATCH_JSON_APPENDIX =
+  "Respond with a single JSON object only. No markdown fences. Required field: replacement (string) — the NEW PlantUML text that replaces ONLY the user-selected fragment. Optional: explanation (string). Do not return the full diagram unless the user explicitly asked to rewrite everything.";
+
+export function buildLlmPatchSystemPrompt(basePrompt: string): string {
+  return `${basePrompt}\n\n${LLM_PLANTUML_RULES}\n\n${LLM_PATCH_JSON_APPENDIX}`;
+}
+
 export const LLM_TEST_USER_PROMPT =
   "Reply with JSON only: {\"plantuml\":\"@startuml\\nAlice -> Bob : ping\\n@enduml\",\"explanation\":\"ok\"}";

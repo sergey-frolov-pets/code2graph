@@ -9,6 +9,7 @@ const props = defineProps<{
   primary?: boolean;
   format?: boolean;
   extraClass?: string;
+  preventMousedownDefault?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -32,6 +33,12 @@ const {
   onMouseLeave,
   consumeSuppressClick,
 } = useLongPressTooltip(rootRef);
+
+function onMousedown(event: MouseEvent): void {
+  if (props.preventMousedownDefault) {
+    event.preventDefault();
+  }
+}
 
 function onClick(event: MouseEvent): void {
   if (consumeSuppressClick()) {
@@ -69,6 +76,7 @@ function onClick(event: MouseEvent): void {
     @mouseenter="onMouseEnter"
     @mouseleave="onMouseLeave"
     @contextmenu.prevent
+    @mousedown="onMousedown"
     @click="onClick"
   >
     <slot />

@@ -23,6 +23,24 @@ export function useEditorSelection(options: {
     () => selectionEnd.value > selectionStart.value,
   );
 
+  function mapDisplaySelectionToSource(
+    displayStart: number,
+    displayEnd: number,
+  ): { start: number; end: number } {
+    return {
+      start: mapDisplayOffsetToSourceOffset(
+        displayStart,
+        source.value,
+        folds.value,
+      ),
+      end: mapDisplayOffsetToSourceOffset(
+        displayEnd,
+        source.value,
+        folds.value,
+      ),
+    };
+  }
+
   function updateSelectionState(): void {
     const textarea = textareaRef.value;
     if (!textarea) {
@@ -31,20 +49,40 @@ export function useEditorSelection(options: {
       return;
     }
 
-    selectionStart.value = textarea.selectionStart;
-    selectionEnd.value = textarea.selectionEnd;
+    const mapped = mapDisplaySelectionToSource(
+      textarea.selectionStart,
+      textarea.selectionEnd,
+    );
+    selectionStart.value = mapped.start;
+    selectionEnd.value = mapped.end;
   }
 
   function requestAiPatch(): void {
-    updateSelectionState();
-    if (!hasTextSelection.value) {
+    let start = selectionStart.value;
+    let end = selectionEnd.value;
+
+    const textarea = textareaRef.value;
+    if (textarea) {
+      const liveDisplayStart = textarea.selectionStart;
+      const liveDisplayEnd = textarea.selectionEnd;
+      if (liveDisplayEnd > liveDisplayStart) {
+        const mapped = mapDisplaySelectionToSource(
+          liveDisplayStart,
+          liveDisplayEnd,
+        );
+        start = mapped.start;
+        end = mapped.end;
+      }
+    }
+
+    if (end <= start) {
       return;
     }
 
-    onAiPatch({
-      start: selectionStart.value,
-      end: selectionEnd.value,
-    });
+    selectionStart.value = start;
+    selectionEnd.value = end;
+
+    onAiPatch({ start, end });
   }
 
   function insertSnippetAtCursor(content: string): void {

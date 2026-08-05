@@ -81,19 +81,46 @@ export function buildPatchPrompt(
   const endLine = fullSource.slice(0, selectionEnd).split(/\r?\n/).length;
 
   return [
-    "Edit the PlantUML source below according to the user request.",
-    "Return the FULL updated source in JSON field plantuml (not only the fragment).",
-    "Preserve parts outside the selection unless the user asks to change them.",
+    "Edit ONLY the selected PlantUML fragment according to the user request.",
+    "Return JSON with field replacement containing the NEW text for the selected region (not the full file).",
+    "You MUST apply the user request to the selection. Do not return text identical to the selected fragment.",
+    "Keep syntax valid within the fragment; the app will merge replacement into the full source.",
     "",
     `Selection range: lines ${startLine}-${endLine}`,
     "",
-    "=== FULL SOURCE ===",
+    "=== FULL SOURCE (context, do not repeat unchanged parts in replacement) ===",
     fullSource,
     "",
-    "=== SELECTED FRAGMENT ===",
+    "=== SELECTED FRAGMENT (replace this) ===",
     selectedFragment,
     "",
     "=== USER REQUEST ===",
     userPrompt.trim(),
   ].join("\n");
+}
+
+export function buildPatchNoChangeRetryPrompt(
+  userPrompt: string,
+  selectedFragment: string,
+  parsedMode: "replacement" | "full",
+): string {
+  const lines = [
+    "Your previous response did not change the selected fragment.",
+    `User request: ${userPrompt.trim()}`,
+    "",
+    "Return JSON with field replacement containing NEW text for the selected region.",
+    "The replacement MUST differ from the selected fragment and MUST satisfy the user request.",
+    "",
+    "=== SELECTED FRAGMENT (must change) ===",
+    selectedFragment,
+  ];
+
+  if (parsedMode === "full") {
+    lines.push(
+      "",
+      "Do not return the full plantuml file. Use only the replacement field for the selected fragment.",
+    );
+  }
+
+  return lines.join("\n");
 }

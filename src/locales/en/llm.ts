@@ -44,6 +44,9 @@ export const llmMessages: LocaleMessages = {
   "llm.patch.apply": "Apply",
   "llm.patch.preview": "Preview",
   "llm.patch.diff": "Changes",
+  "llm.patch.noChanges": "No changes — the LLM returned the same fragment.",
+  "llm.patch.noChangesHint":
+    "The request did not change the selection. Refine the prompt or select a different fragment.",
   "llm.patch.generateError": "Failed to generate diagram",
   "llm.patch.previewError": "Failed to render preview",
   "llm.patch.historyLabel": "AI: {prompt}",

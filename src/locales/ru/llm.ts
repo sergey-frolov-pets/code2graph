@@ -44,6 +44,9 @@ export const llmMessages: LocaleMessages = {
   "llm.patch.apply": "Применить",
   "llm.patch.preview": "Превью",
   "llm.patch.diff": "Изменения",
+  "llm.patch.noChanges": "Без изменений — LLM вернул тот же фрагмент.",
+  "llm.patch.noChangesHint":
+    "Запрос не изменил выделение. Уточните промт или выделите другой фрагмент.",
   "llm.patch.generateError": "Не удалось сгенерировать диаграмму",
   "llm.patch.previewError": "Не удалось отрисовать превью",
   "llm.patch.historyLabel": "AI: {prompt}",

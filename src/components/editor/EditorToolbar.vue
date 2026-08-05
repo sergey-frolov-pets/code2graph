@@ -78,6 +78,7 @@ const validateLabel = computed(() =>
       <IconButton
         :label="t('editor.aiPatch')"
         :disabled="!hasTextSelection"
+        prevent-mousedown-default
         @click="emit('aiPatch')"
       >
         <ActionIcon name="ai" />
