@@ -5,7 +5,7 @@ import {
   mapSourceOffsetToDisplayOffset,
 } from "@/utils/code-folds";
 import {
-  extractWordPrefix,
+  extractCompletionPrefix,
   getCompletions,
   type CompletionItem,
 } from "@/utils/plantuml-autocomplete";
@@ -127,13 +127,14 @@ export function useEditorAutocomplete(options: {
 
     const displayOffset = textarea.selectionStart ?? 0;
     const position = resolveSourcePosition(displayOffset);
-    const prefix = extractWordPrefix(position.lineText, position.column);
+    const prefixInfo = extractCompletionPrefix(position.lineText, position.column);
 
     const items = getCompletions({
       lines: options.source.value.split(/\r?\n/),
       lineNumber: position.sourceLine,
       column: position.column,
-      prefix,
+      prefix: prefixInfo.prefix,
+      prefixInfo,
     });
 
     if (items.length === 0) {
@@ -146,8 +147,8 @@ export function useEditorAutocomplete(options: {
     completionContext.value = {
       sourceLine: position.sourceLine,
       column: position.column,
-      prefix,
-      replaceStartColumn: position.column - prefix.length,
+      prefix: prefixInfo.prefix,
+      replaceStartColumn: prefixInfo.replaceStart,
     };
     caretCoords.value = measureCaretCoordinates(textarea, displayOffset);
     isOpen.value = true;

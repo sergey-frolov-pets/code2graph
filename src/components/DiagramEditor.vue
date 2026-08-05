@@ -1016,6 +1016,18 @@ watch(
   font-weight: 600;
 }
 
+.code-editor__completion-item.is-kind-color .code-editor__completion-label {
+  color: var(--syntax-color);
+}
+
+.code-editor__completion-item.is-kind-swimlane .code-editor__completion-label {
+  color: var(--syntax-keyword);
+}
+
+.code-editor__completion-item.is-kind-c4 .code-editor__completion-label {
+  color: var(--syntax-directive);
+}
+
 .drop-hint {
   flex-shrink: 0;
   margin: 8px 0 0;

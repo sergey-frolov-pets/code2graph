@@ -1,7 +1,21 @@
-export const MIN_COMPLETION_PREFIX_LENGTH = 2;
-export const MAX_COMPLETION_ITEMS = 12;
+import {
+  COLOR_WORD_PREFIXES,
+  PLANTUML_HEX_COLORS,
+  PLANTUML_NAMED_COLORS,
+} from "@/constants/plantuml-colors";
+import { C4_INCLUDE_PATHS } from "@/utils/plantuml-include";
 
-export type CompletionKind = "keyword" | "context" | "directive" | "preprocessor";
+export const MIN_COMPLETION_PREFIX_LENGTH = 2;
+export const MAX_COMPLETION_ITEMS = 15;
+
+export type CompletionKind =
+  | "keyword"
+  | "context"
+  | "directive"
+  | "preprocessor"
+  | "color"
+  | "swimlane"
+  | "c4";
 
 export interface CompletionItem {
   label: string;
@@ -15,6 +29,20 @@ export interface CompletionQuery {
   lineNumber: number;
   column: number;
   prefix: string;
+  prefixInfo: CompletionPrefixInfo;
+}
+
+export type CompletionPrefixMode =
+  | "word"
+  | "named-color"
+  | "hex"
+  | "swimlane"
+  | "swimlane-hex";
+
+export interface CompletionPrefixInfo {
+  prefix: string;
+  replaceStart: number;
+  mode: CompletionPrefixMode;
 }
 
 type BlockKind =
@@ -37,6 +65,53 @@ type BlockKind =
 interface BlockFrame {
   kind: BlockKind;
 }
+
+const SWIMLANE_COLOR_TEMPLATES = [
+  { label: "|#E3F2FD|Lane|", insertText: "|#E3F2FD|Lane|", detailKey: "editor.completion.swimlaneDeclare" },
+  { label: "|#E8F5E9|Lane|", insertText: "|#E8F5E9|Lane|", detailKey: "editor.completion.swimlaneDeclare" },
+  { label: "|#FFF3E0|Lane|", insertText: "|#FFF3E0|Lane|", detailKey: "editor.completion.swimlaneDeclare" },
+  { label: "|#FCE4EC|Lane|", insertText: "|#FCE4EC|Lane|", detailKey: "editor.completion.swimlaneDeclare" },
+  { label: "|Lane|", insertText: "|Lane|", detailKey: "editor.completion.swimlaneSwitch" },
+] as const;
+
+const C4_VOCABULARY: CompletionItem[] = [
+  { label: "!include C4_Context", insertText: `!include ${C4_INCLUDE_PATHS.context}`, kind: "c4", detailKey: "editor.completion.c4Include" },
+  { label: "!include C4_Container", insertText: `!include ${C4_INCLUDE_PATHS.container}`, kind: "c4", detailKey: "editor.completion.c4Include" },
+  { label: "!include C4_Component", insertText: `!include ${C4_INCLUDE_PATHS.component}`, kind: "c4", detailKey: "editor.completion.c4Include" },
+  { label: "!include C4_Deployment", insertText: `!include ${C4_INCLUDE_PATHS.deployment}`, kind: "c4", detailKey: "editor.completion.c4Include" },
+  { label: "Person", insertText: 'Person(alias, "Label", "Description")', kind: "c4", detailKey: "editor.completion.c4Element" },
+  { label: "Person_Ext", insertText: 'Person_Ext(alias, "Label", "Description")', kind: "c4", detailKey: "editor.completion.c4Element" },
+  { label: "System", insertText: 'System(alias, "Label", "Description")', kind: "c4", detailKey: "editor.completion.c4Element" },
+  { label: "System_Ext", insertText: 'System_Ext(alias, "Label", "Description")', kind: "c4", detailKey: "editor.completion.c4Element" },
+  { label: "System_Boundary", insertText: 'System_Boundary(alias, "Label") {', kind: "c4", detailKey: "editor.completion.c4Boundary" },
+  { label: "Enterprise_Boundary", insertText: 'Enterprise_Boundary(alias, "Label") {', kind: "c4", detailKey: "editor.completion.c4Boundary" },
+  { label: "Container", insertText: 'Container(alias, "Label", "Technology", "Description")', kind: "c4", detailKey: "editor.completion.c4Element" },
+  { label: "ContainerDb", insertText: 'ContainerDb(alias, "Label", "Technology", "Description")', kind: "c4", detailKey: "editor.completion.c4Element" },
+  { label: "ContainerQueue", insertText: 'ContainerQueue(alias, "Label", "Technology", "Description")', kind: "c4", detailKey: "editor.completion.c4Element" },
+  { label: "Container_Ext", insertText: 'Container_Ext(alias, "Label", "Technology", "Description")', kind: "c4", detailKey: "editor.completion.c4Element" },
+  { label: "ContainerDb_Ext", insertText: 'ContainerDb_Ext(alias, "Label", "Technology", "Description")', kind: "c4", detailKey: "editor.completion.c4Element" },
+  { label: "ContainerQueue_Ext", insertText: 'ContainerQueue_Ext(alias, "Label", "Technology", "Description")', kind: "c4", detailKey: "editor.completion.c4Element" },
+  { label: "Container_Boundary", insertText: 'Container_Boundary(alias, "Label") {', kind: "c4", detailKey: "editor.completion.c4Boundary" },
+  { label: "Component", insertText: 'Component(alias, "Label", "Technology", "Description")', kind: "c4", detailKey: "editor.completion.c4Element" },
+  { label: "ComponentDb", insertText: 'ComponentDb(alias, "Label", "Technology", "Description")', kind: "c4", detailKey: "editor.completion.c4Element" },
+  { label: "Rel", insertText: 'Rel(from, to, "Label", "Technology")', kind: "c4", detailKey: "editor.completion.c4Rel" },
+  { label: "Rel_Back", insertText: 'Rel_Back(from, to, "Label", "Technology")', kind: "c4", detailKey: "editor.completion.c4Rel" },
+  { label: "Rel_Down", insertText: 'Rel_Down(from, to, "Label", "Technology")', kind: "c4", detailKey: "editor.completion.c4Rel" },
+  { label: "Rel_Up", insertText: 'Rel_Up(from, to, "Label", "Technology")', kind: "c4", detailKey: "editor.completion.c4Rel" },
+  { label: "Rel_Left", insertText: 'Rel_Left(from, to, "Label", "Technology")', kind: "c4", detailKey: "editor.completion.c4Rel" },
+  { label: "Rel_Right", insertText: 'Rel_Right(from, to, "Label", "Technology")', kind: "c4", detailKey: "editor.completion.c4Rel" },
+  { label: "Rel_Neighbor", insertText: 'Rel_Neighbor(from, to, "Label", "Technology")', kind: "c4", detailKey: "editor.completion.c4Rel" },
+  { label: "AddElementTag", insertText: 'AddElementTag("tag", $bgColor="#335DA5")', kind: "c4", detailKey: "editor.completion.c4Tag" },
+  { label: "AddRelTag", insertText: 'AddRelTag("tag", $lineStyle=DashedLine())', kind: "c4", detailKey: "editor.completion.c4Tag" },
+  { label: "AddContainerTag", insertText: 'AddContainerTag("tag", $bgColor="#335DA5")', kind: "c4", detailKey: "editor.completion.c4Tag" },
+  { label: "UpdateElementStyle", insertText: "UpdateElementStyle(", kind: "c4", detailKey: "editor.completion.c4Style" },
+  { label: "UpdateRelStyle", insertText: "UpdateRelStyle(", kind: "c4", detailKey: "editor.completion.c4Style" },
+  { label: "SHOW_LEGEND", insertText: "SHOW_LEGEND()", kind: "c4", detailKey: "editor.completion.c4Legend" },
+  { label: "SHOW_PERSON_OUTLINE", insertText: "SHOW_PERSON_OUTLINE()", kind: "c4", detailKey: "editor.completion.c4Legend" },
+  { label: "HIDE_PERSON_OUTLINE", insertText: "HIDE_PERSON_OUTLINE()", kind: "c4", detailKey: "editor.completion.c4Legend" },
+  { label: "LAYOUT_LANDSCAPE", insertText: "LAYOUT_LANDSCAPE()", kind: "c4", detailKey: "editor.completion.c4Layout" },
+  { label: "LAYOUT_WITH_LEGEND", insertText: "LAYOUT_WITH_LEGEND()", kind: "c4", detailKey: "editor.completion.c4Layout" },
+];
 
 const VOCABULARY: CompletionItem[] = [
   { label: "@startuml", insertText: "@startuml", kind: "directive" },
@@ -68,8 +143,6 @@ const VOCABULARY: CompletionItem[] = [
   { label: "cloud", insertText: "cloud ", kind: "keyword" },
   { label: "collections", insertText: "collections ", kind: "keyword" },
   { label: "component", insertText: "component ", kind: "keyword" },
-  { label: "Container", insertText: "Container(", kind: "keyword" },
-  { label: "ContainerDb", insertText: "ContainerDb(", kind: "keyword" },
   { label: "control", insertText: "control ", kind: "keyword" },
   { label: "create", insertText: "create ", kind: "keyword" },
   { label: "critical", insertText: "critical ", kind: "keyword" },
@@ -104,22 +177,21 @@ const VOCABULARY: CompletionItem[] = [
   { label: "package", insertText: "package ", kind: "keyword" },
   { label: "par", insertText: "par ", kind: "keyword", detailKey: "editor.completion.par" },
   { label: "participant", insertText: "participant ", kind: "keyword" },
-  { label: "Person", insertText: "Person(", kind: "keyword" },
+  { label: "partition", insertText: "partition ", kind: "keyword", detailKey: "editor.completion.swimlanePartition" },
   { label: "queue", insertText: "queue ", kind: "keyword" },
   { label: "rectangle", insertText: "rectangle ", kind: "keyword" },
   { label: "ref", insertText: "ref ", kind: "keyword" },
-  { label: "Rel", insertText: "Rel(", kind: "keyword" },
   { label: "skinparam", insertText: "skinparam ", kind: "keyword" },
   { label: "split", insertText: "split", kind: "keyword", detailKey: "editor.completion.split" },
   { label: "split again", insertText: "split again", kind: "keyword", detailKey: "editor.completion.splitAgain" },
-  { label: "start", insertText: "start", kind: "keyword" },
+  { label: "start", insertText: "start", kind: "keyword", detailKey: "editor.completion.activityStart" },
   { label: "state", insertText: "state ", kind: "keyword" },
-  { label: "stop", insertText: "stop", kind: "keyword" },
-  { label: "System_Boundary", insertText: "System_Boundary(", kind: "keyword" },
+  { label: "stop", insertText: "stop", kind: "keyword", detailKey: "editor.completion.activityStop" },
   { label: "then", insertText: "then ()", kind: "keyword" },
   { label: "title", insertText: "title ", kind: "keyword" },
   { label: "usecase", insertText: "usecase ", kind: "keyword" },
   { label: "while", insertText: "while ()", kind: "keyword", detailKey: "editor.completion.while" },
+  ...C4_VOCABULARY,
 ];
 
 const CONTEXT_CLOSERS: Record<BlockKind, CompletionItem[]> = {
@@ -156,65 +228,352 @@ const CONTEXT_CLOSERS: Record<BlockKind, CompletionItem[]> = {
   ref: [{ label: "end ref", insertText: "end ref", kind: "context", detailKey: "editor.completion.end" }],
 };
 
-export function extractWordPrefix(line: string, column: number): string {
+export function extractCompletionPrefix(
+  line: string,
+  column: number,
+): CompletionPrefixInfo {
   const before = line.slice(0, column);
-  const match = before.match(/[@!]?[A-Za-z_][\w-]*$/);
-  return match?.[0] ?? "";
+
+  const swimlaneHex = before.match(/\|#([0-9a-fA-F]*)$/i);
+  if (swimlaneHex) {
+    return {
+      prefix: swimlaneHex[1] ?? "",
+      replaceStart: column - (swimlaneHex[1]?.length ?? 0),
+      mode: "swimlane-hex",
+    };
+  }
+
+  const namedColor = before.match(/#([A-Za-z][\w]*)$/);
+  if (namedColor) {
+    return {
+      prefix: namedColor[1] ?? "",
+      replaceStart: column - (namedColor[1]?.length ?? 0),
+      mode: "named-color",
+    };
+  }
+
+  const hexColor = before.match(/#([0-9a-fA-F]*)$/i);
+  if (hexColor) {
+    return {
+      prefix: hexColor[1] ?? "",
+      replaceStart: column - (hexColor[1]?.length ?? 0),
+      mode: "hex",
+    };
+  }
+
+  const swimlane = before.match(/\|([^|]*)$/);
+  if (swimlane && /^\s*\|/.test(line)) {
+    return {
+      prefix: swimlane[1] ?? "",
+      replaceStart: column - (swimlane[1]?.length ?? 0),
+      mode: "swimlane",
+    };
+  }
+
+  const word = before.match(/[@!]?[A-Za-z_][\w-]*$/);
+  return {
+    prefix: word?.[0] ?? "",
+    replaceStart: column - (word?.[0]?.length ?? 0),
+    mode: "word",
+  };
 }
 
-export function isNewLineContext(line: string, column: number, prefix: string): boolean {
-  const beforePrefix = line.slice(0, Math.max(0, column - prefix.length));
+/** @deprecated Use extractCompletionPrefix */
+export function extractWordPrefix(line: string, column: number): string {
+  return extractCompletionPrefix(line, column).prefix;
+}
+
+export function isNewLineContext(line: string, prefixInfo: CompletionPrefixInfo): boolean {
+  const beforePrefix = line.slice(0, prefixInfo.replaceStart);
   return beforePrefix.trim().length === 0;
 }
 
 export function getCompletions(query: CompletionQuery): CompletionItem[] {
   const results: CompletionItem[] = [];
   const seen = new Set<string>();
-  const normalizedPrefix = query.prefix.toLowerCase();
-  const onNewLine = isNewLineContext(
-    query.lines[query.lineNumber - 1] ?? "",
-    query.column,
-    query.prefix,
-  );
+  const normalizedPrefix = query.prefixInfo.prefix.toLowerCase();
+  const currentLine = query.lines[query.lineNumber - 1] ?? "";
+  const onNewLine = isNewLineContext(currentLine, query.prefixInfo);
+  const isActivity = detectActivityDiagram(query.lines);
+  const isC4 = detectC4Diagram(query.lines);
+
+  const addItems = (items: CompletionItem[]): void => {
+    for (const item of items) {
+      if (seen.has(item.label)) {
+        continue;
+      }
+      seen.add(item.label);
+      results.push(item);
+    }
+  };
 
   if (onNewLine) {
     const openBlocks = analyzeOpenBlocks(
       query.lines,
       query.lineNumber,
-      query.column - query.prefix.length,
+      query.prefixInfo.replaceStart,
     );
 
     for (let index = openBlocks.length - 1; index >= 0; index -= 1) {
-      for (const item of CONTEXT_CLOSERS[openBlocks[index].kind]) {
-        if (seen.has(item.label)) {
-          continue;
-        }
-
-        if (
+      const closers = CONTEXT_CLOSERS[openBlocks[index].kind].filter(
+        (item) =>
           normalizedPrefix.length === 0 ||
-          item.label.toLowerCase().startsWith(normalizedPrefix)
-        ) {
-          seen.add(item.label);
-          results.push(item);
-        }
-      }
+          item.label.toLowerCase().startsWith(normalizedPrefix),
+      );
+      addItems(closers);
+    }
+
+    if (isActivity) {
+      addItems(getSwimlaneContextCompletions(query.lines, normalizedPrefix));
+    }
+
+    if (isC4) {
+      addItems(getC4ContextCompletions(normalizedPrefix));
     }
   }
 
-  if (normalizedPrefix.length >= MIN_COMPLETION_PREFIX_LENGTH) {
-    for (const item of VOCABULARY) {
-      if (seen.has(item.label)) {
-        continue;
-      }
+  if (
+    query.prefixInfo.mode === "swimlane" ||
+    query.prefixInfo.mode === "swimlane-hex" ||
+    (onNewLine && isActivity && normalizedPrefix.length === 0)
+  ) {
+    addItems(getSwimlaneCompletions(query.lines, query.prefixInfo, normalizedPrefix));
+  }
 
-      if (item.label.toLowerCase().startsWith(normalizedPrefix)) {
-        seen.add(item.label);
-        results.push(item);
-      }
-    }
+  if (
+    query.prefixInfo.mode === "named-color" ||
+    query.prefixInfo.mode === "hex" ||
+    query.prefixInfo.mode === "swimlane-hex" ||
+    isColorWordPrefix(normalizedPrefix)
+  ) {
+    addItems(getColorCompletions(query.prefixInfo, normalizedPrefix));
+  }
+
+  if (
+    normalizedPrefix.length >= MIN_COMPLETION_PREFIX_LENGTH ||
+    (isC4 && normalizedPrefix.length >= 1 && /^[A-Z]/.test(query.prefixInfo.prefix))
+  ) {
+    const vocabulary = isC4
+      ? [...C4_VOCABULARY, ...VOCABULARY.filter((item) => item.kind !== "c4")]
+      : VOCABULARY;
+
+    const matched = vocabulary.filter((item) =>
+      item.label.toLowerCase().startsWith(normalizedPrefix),
+    );
+    addItems(matched);
   }
 
   return results.slice(0, MAX_COMPLETION_ITEMS);
+}
+
+function isColorWordPrefix(prefix: string): boolean {
+  return COLOR_WORD_PREFIXES.some(
+    (entry) => entry.startsWith(prefix) || prefix.startsWith(entry),
+  );
+}
+
+function getColorCompletions(
+  prefixInfo: CompletionPrefixInfo,
+  normalizedPrefix: string,
+): CompletionItem[] {
+  const results: CompletionItem[] = [];
+
+  if (
+    prefixInfo.mode === "named-color" ||
+    prefixInfo.mode === "word" ||
+    isColorWordPrefix(normalizedPrefix)
+  ) {
+    for (const color of PLANTUML_NAMED_COLORS) {
+      if (
+        normalizedPrefix.length === 0 ||
+        color.label.toLowerCase().startsWith(normalizedPrefix) ||
+        isColorWordPrefix(normalizedPrefix)
+      ) {
+        results.push({
+          label: color.label,
+          insertText:
+            prefixInfo.mode === "named-color" ? color.value : `#${color.value}`,
+          kind: "color",
+          detailKey: color.detailKey,
+        });
+      }
+    }
+  }
+
+  if (
+    prefixInfo.mode === "hex" ||
+    prefixInfo.mode === "swimlane-hex" ||
+    isColorWordPrefix(normalizedPrefix)
+  ) {
+    for (const color of PLANTUML_HEX_COLORS) {
+      if (
+        normalizedPrefix.length === 0 ||
+        color.value.toLowerCase().startsWith(normalizedPrefix) ||
+        color.label.toLowerCase().includes(normalizedPrefix) ||
+        isColorWordPrefix(normalizedPrefix)
+      ) {
+        const swimlaneSuffix =
+          prefixInfo.mode === "swimlane-hex" ? "|Lane|" : "";
+        results.push({
+          label: color.label,
+          insertText: `${color.value}${swimlaneSuffix}`,
+          kind: "color",
+          detailKey: color.detailKey,
+        });
+      }
+    }
+  }
+
+  return results;
+}
+
+function getSwimlaneCompletions(
+  lines: string[],
+  prefixInfo: CompletionPrefixInfo,
+  normalizedPrefix: string,
+): CompletionItem[] {
+  const results: CompletionItem[] = [];
+  const laneNames = collectSwimlaneNames(lines);
+
+  if (prefixInfo.mode === "swimlane" || prefixInfo.mode === "swimlane-hex") {
+    if (prefixInfo.mode === "swimlane") {
+      for (const template of SWIMLANE_COLOR_TEMPLATES) {
+        if (
+          normalizedPrefix.length === 0 ||
+          template.label.toLowerCase().includes(normalizedPrefix)
+        ) {
+          results.push({
+            label: template.label,
+            insertText: template.insertText,
+            kind: "swimlane",
+            detailKey: template.detailKey,
+          });
+        }
+      }
+    }
+
+    for (const lane of laneNames) {
+      if (
+        normalizedPrefix.length === 0 ||
+        lane.toLowerCase().startsWith(normalizedPrefix)
+      ) {
+        results.push({
+          label: `|${lane}|`,
+          insertText: `${lane}|`,
+          kind: "swimlane",
+          detailKey: "editor.completion.swimlaneSwitch",
+        });
+      }
+    }
+  }
+
+  return results;
+}
+
+function getSwimlaneContextCompletions(
+  lines: string[],
+  normalizedPrefix: string,
+): CompletionItem[] {
+  const laneNames = collectSwimlaneNames(lines);
+  const results: CompletionItem[] = [];
+
+  for (const template of SWIMLANE_COLOR_TEMPLATES) {
+    if (
+      normalizedPrefix.length === 0 ||
+      template.label.toLowerCase().includes(normalizedPrefix)
+    ) {
+      results.push({
+        label: template.label,
+        insertText: template.insertText,
+        kind: "swimlane",
+        detailKey: template.detailKey,
+      });
+    }
+  }
+
+  for (const lane of laneNames) {
+    if (
+      normalizedPrefix.length === 0 ||
+      lane.toLowerCase().startsWith(normalizedPrefix)
+    ) {
+      results.push({
+        label: `|${lane}|`,
+        insertText: `|${lane}|`,
+        kind: "swimlane",
+        detailKey: "editor.completion.swimlaneSwitch",
+      });
+    }
+  }
+
+  return results;
+}
+
+function getC4ContextCompletions(normalizedPrefix: string): CompletionItem[] {
+  const preferred = [
+    "Person",
+    "Person_Ext",
+    "System_Boundary",
+    "Container",
+    "ContainerDb",
+    "ContainerQueue",
+    "Rel",
+    "Rel_Back",
+    "SHOW_LEGEND",
+  ];
+
+  return C4_VOCABULARY.filter(
+    (item) =>
+      preferred.includes(item.label) &&
+      (normalizedPrefix.length === 0 ||
+        item.label.toLowerCase().startsWith(normalizedPrefix)),
+  );
+}
+
+function collectSwimlaneNames(lines: string[]): string[] {
+  const names = new Set<string>();
+
+  for (const line of lines) {
+    const declareMatch = line.match(/^\s*\|(?:#[0-9A-Fa-f]{3,8})?\|([^|]+)\|\s*$/);
+    if (declareMatch?.[1]) {
+      names.add(declareMatch[1].trim());
+      continue;
+    }
+
+    const switchMatch = line.match(/^\s*\|([^|#][^|]*)\|\s*$/);
+    if (switchMatch?.[1]) {
+      names.add(switchMatch[1].trim());
+    }
+  }
+
+  return [...names];
+}
+
+function detectActivityDiagram(lines: string[]): boolean {
+  return lines.some((line) => {
+    const trimmed = line.trim().toLowerCase();
+    return (
+      trimmed === "start" ||
+      trimmed === "stop" ||
+      /^\|[^|]+\|$/.test(trimmed) ||
+      /^\|#[0-9a-f]{3,8}\|[^|]+\|$/i.test(trimmed) ||
+      /^:.+;$/i.test(trimmed) ||
+      /^#[a-z].+:.+;$/i.test(trimmed)
+    );
+  });
+}
+
+function detectC4Diagram(lines: string[]): boolean {
+  return lines.some((line) => {
+    const trimmed = line.trim();
+    return (
+      /C4[_/]/i.test(trimmed) ||
+      /^Person(?:_Ext)?\s*\(/.test(trimmed) ||
+      /^System(?:_Ext|_Boundary)?\s*[\("(]/.test(trimmed) ||
+      /^Container(?:Db|Queue|_Ext|_Boundary)?\s*\(/.test(trimmed) ||
+      /^Rel(?:_[A-Za-z]+)?\s*\(/.test(trimmed) ||
+      /^Add(?:Element|Rel|Container)Tag\s*\(/.test(trimmed)
+    );
+  });
 }
 
 export function analyzeOpenBlocks(
