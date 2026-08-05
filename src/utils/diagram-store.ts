@@ -6,6 +6,7 @@ import type {
   LibraryExportBundle,
   SectionDto,
   UpdateDiagramPayload,
+  UpdateSectionPayload,
 } from "@/constants/diagram-library";
 import { resolvePumlFileName } from "@/utils/puml-files";
 
@@ -175,6 +176,32 @@ export function collectSectionSubtree(
   }
 
   return ids;
+}
+
+export async function updateLocalSection(
+  sectionId: string,
+  payload: UpdateSectionPayload,
+): Promise<SectionDto> {
+  const sections = await loadSectionsFromCache();
+  const existing = sections.find((section) => section.id === sectionId);
+  if (!existing) {
+    throw new Error("Section not found");
+  }
+
+  const updated: SectionDto = {
+    ...existing,
+    title: payload.title?.trim() || existing.title,
+    parentId:
+      payload.parentId !== undefined ? payload.parentId : existing.parentId,
+    sortOrder: payload.sortOrder ?? existing.sortOrder,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await runTransaction(STORE_SECTIONS, "readwrite", (stores) => {
+    stores[STORE_SECTIONS].put(updated);
+  });
+
+  return updated;
 }
 
 export async function createLocalSection(

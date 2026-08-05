@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
+import IconButton from "@/components/IconButton.vue";
+import ActionIcon from "@/components/icons/ActionIcon.vue";
 import LibraryTransferTab from "@/components/LibraryTransferTab.vue";
+import SectionEditModal from "@/components/SectionEditModal.vue";
 import {
   MAX_PUML_FILE_BYTES,
   type DiagramDto,
@@ -38,10 +41,6 @@ const {
   allTags,
   isLoading,
   isSyncing,
-  isOnline,
-  isLocalMode,
-  apiAvailable,
-  usingCache,
   errorMessage,
 } = library;
 
@@ -66,22 +65,22 @@ const transferDiagrams = ref<DiagramDto[]>([]);
 const importBundle = ref<LibraryExportBundle | null>(null);
 const isTransferProcessing = ref(false);
 
+const isSectionsEditMode = ref(false);
+const editingSectionId = ref<string | null>(null);
+const isSectionModalOpen = ref(false);
+
 const maxSizeKb = computed(() => Math.round(MAX_PUML_FILE_BYTES / 1024));
 
-const statusHint = computed(() => {
-  if (isLocalMode.value) {
-    return t("library.localMode");
+const editingSection = computed(() => {
+  if (!editingSectionId.value) {
+    return null;
   }
-  if (apiAvailable.value) {
-    return t("library.serverMode", { url: libraryApiUrl.value });
-  }
-  if (usingCache.value) {
-    return t("library.offlineCache");
-  }
-  if (isOnline.value) {
-    return t("library.apiUnavailable");
-  }
-  return t("library.offlineCache");
+
+  return (
+    flatSectionOptions.value.find(
+      (section) => section.id === editingSectionId.value,
+    ) ?? null
+  );
 });
 
 function formatDate(value: string): string {
@@ -95,10 +94,25 @@ function formatDate(value: string): string {
 function flattenSections(
   items: typeof sectionTree.value,
   depth = 0,
-): Array<{ id: string; title: string; depth: number }> {
-  const result: Array<{ id: string; title: string; depth: number }> = [];
+): Array<{
+  id: string;
+  title: string;
+  depth: number;
+  parentId: string | null;
+}> {
+  const result: Array<{
+    id: string;
+    title: string;
+    depth: number;
+    parentId: string | null;
+  }> = [];
   for (const item of items) {
-    result.push({ id: item.id, title: item.title, depth });
+    result.push({
+      id: item.id,
+      title: item.title,
+      depth,
+      parentId: item.parentId,
+    });
     if (item.children?.length) {
       result.push(...flattenSections(item.children, depth + 1));
     }
@@ -242,6 +256,49 @@ async function createSection(parentId: string | null): Promise<void> {
   }
 }
 
+function toggleSectionsEditMode(): void {
+  isSectionsEditMode.value = !isSectionsEditMode.value;
+}
+
+function openSectionEditor(sectionId: string): void {
+  editingSectionId.value = sectionId;
+  isSectionModalOpen.value = true;
+}
+
+function closeSectionEditor(): void {
+  isSectionModalOpen.value = false;
+  editingSectionId.value = null;
+}
+
+async function onSectionClick(sectionId: string): Promise<void> {
+  await library.selectSection(sectionId);
+  openSectionEditor(sectionId);
+}
+
+async function saveSectionEdit(payload: {
+  title: string;
+  parentId: string | null;
+}): Promise<void> {
+  if (!editingSectionId.value) {
+    return;
+  }
+
+  isSectionSaving.value = true;
+  uploadError.value = "";
+  try {
+    await library.editSection(editingSectionId.value, payload);
+    closeSectionEditor();
+    if (activeTab.value === "transfer") {
+      await loadTransferData();
+    }
+  } catch (error) {
+    uploadError.value =
+      error instanceof Error ? error.message : t("library.syncError");
+  } finally {
+    isSectionSaving.value = false;
+  }
+}
+
 async function onDeleteSection(sectionId: string, title: string): Promise<void> {
   const confirmed = await confirm({
     title: t("app.delete"),
@@ -366,6 +423,8 @@ watch(
       uploadSectionId.value = selectedSectionId.value ?? "";
       importBundle.value = null;
       resetEditForm();
+      isSectionsEditMode.value = false;
+      closeSectionEditor();
       void library.refresh();
     }
   },
@@ -377,6 +436,8 @@ watch(activeTab, (tab) => {
   }
   if (tab !== "browse") {
     resetEditForm();
+    isSectionsEditMode.value = false;
+    closeSectionEditor();
   }
 });
 
@@ -401,54 +462,37 @@ watch(libraryApiUrl, () => {
 <template>
   <AppModal :open="open" :title="t('library.title')" @close="emit('close')">
     <div class="library-toolbar">
-      <div class="library-status">
-        <span
-          class="status-pill"
-          :class="isOnline ? 'is-ready' : 'is-error'"
-        >
-          {{ isOnline ? t("app.online") : t("app.offline") }}
-        </span>
-        <span class="library-status__hint">{{ statusHint }}</span>
-        <span v-if="isSyncing" class="library-status__hint">
-          {{ t("app.loading") }}
-        </span>
-      </div>
-
       <div class="library-toolbar__actions">
-        <button
-          class="btn btn-icon"
-          type="button"
-          :title="t('library.refresh')"
+        <IconButton
+          :label="t('library.refresh')"
           :disabled="isSyncing"
           @click="library.refresh()"
         >
-          ↻
-        </button>
+          <ActionIcon name="refresh" />
+        </IconButton>
+
         <div class="library-tabs">
-          <button
-            class="btn"
-            :class="{ 'is-active': activeTab === 'browse' }"
-            type="button"
+          <IconButton
+            :label="t('library.browse')"
+            :pressed="activeTab === 'browse'"
             @click="activeTab = 'browse'"
           >
-            {{ t("library.browse") }}
-          </button>
-          <button
-            class="btn"
-            :class="{ 'is-active': activeTab === 'upload' }"
-            type="button"
+            <ActionIcon name="library" />
+          </IconButton>
+          <IconButton
+            :label="t('library.uploadDiagram')"
+            :pressed="activeTab === 'upload'"
             @click="activeTab = 'upload'"
           >
-            {{ t("library.uploadDiagram") }}
-          </button>
-          <button
-            class="btn"
-            :class="{ 'is-active': activeTab === 'transfer' }"
-            type="button"
+            <ActionIcon name="import" />
+          </IconButton>
+          <IconButton
+            :label="t('library.transfer')"
+            :pressed="activeTab === 'transfer'"
             @click="activeTab = 'transfer'"
           >
-            {{ t("library.transfer") }}
-          </button>
+            <ActionIcon name="export" />
+          </IconButton>
         </div>
       </div>
     </div>
@@ -460,14 +504,22 @@ watch(libraryApiUrl, () => {
       <aside class="library-sidebar">
         <div class="library-sidebar__header">
           <h3 class="library-sidebar__title">{{ t("library.sections") }}</h3>
-          <button
-            class="btn btn-icon"
-            type="button"
-            :title="t('library.addSection')"
-            @click="createSection(null)"
-          >
-            +
-          </button>
+          <div class="library-sidebar__header-actions">
+            <IconButton
+              :label="t('library.edit')"
+              :pressed="isSectionsEditMode"
+              @click="toggleSectionsEditMode"
+            >
+              <ActionIcon name="edit" />
+            </IconButton>
+            <IconButton
+              v-if="isSectionsEditMode"
+              :label="t('library.addSection')"
+              @click="createSection(null)"
+            >
+              <ActionIcon name="plus" />
+            </IconButton>
+          </div>
         </div>
 
         <button
@@ -489,27 +541,26 @@ watch(libraryApiUrl, () => {
             :class="{ 'is-active': selectedSectionId === section.id }"
             type="button"
             :style="{ paddingLeft: `${10 + section.depth * 12}px` }"
-            @click="library.selectSection(section.id)"
+            @click="onSectionClick(section.id)"
           >
             {{ section.title }}
           </button>
-          <div class="library-section-row__actions">
-            <button
-              class="btn btn-icon"
-              type="button"
-              :title="t('library.addSubsection')"
-              @click="createSection(section.id)"
+          <div
+            v-if="isSectionsEditMode"
+            class="library-section-row__actions"
+          >
+            <IconButton
+              :label="t('library.addSubsection')"
+              @click.stop="createSection(section.id)"
             >
-              +
-            </button>
-            <button
-              class="btn btn-icon"
-              type="button"
-              :title="t('app.delete')"
-              @click="onDeleteSection(section.id, section.title)"
+              <ActionIcon name="plus" />
+            </IconButton>
+            <IconButton
+              :label="t('app.delete')"
+              @click.stop="onDeleteSection(section.id, section.title)"
             >
-              ×
-            </button>
+              <ActionIcon name="trash" />
+            </IconButton>
           </div>
         </div>
       </aside>
@@ -749,14 +800,22 @@ watch(libraryApiUrl, () => {
       </button>
     </template>
   </AppModal>
+
+  <SectionEditModal
+    :open="isSectionModalOpen"
+    :section="editingSection"
+    :section-options="flatSectionOptions"
+    @close="closeSectionEditor"
+    @save="saveSectionEdit"
+  />
 </template>
 
 <style scoped>
 .library-toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: flex-end;
   gap: 10px;
   margin-bottom: 12px;
 }
@@ -769,29 +828,17 @@ watch(libraryApiUrl, () => {
   flex-wrap: wrap;
 }
 
-.library-status {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  min-width: 0;
-}
-
-.library-status__hint {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  overflow-wrap: anywhere;
-}
-
 .library-tabs {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
 }
 
-.library-tabs .btn.is-active {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+.library-sidebar__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .library-error {
@@ -841,13 +888,6 @@ watch(libraryApiUrl, () => {
   display: flex;
   gap: 2px;
   flex-shrink: 0;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.library-section-row:hover .library-section-row__actions,
-.library-section-row:focus-within .library-section-row__actions {
-  opacity: 1;
 }
 
 .library-section-item {
@@ -1036,10 +1076,17 @@ watch(libraryApiUrl, () => {
   color: var(--text-muted);
 }
 
+:deep(.modal-backdrop) {
+  padding: 0;
+  align-items: stretch;
+}
+
 :deep(.modal) {
-  width: min(720px, calc(100vw - 32px));
-  max-height: min(90dvh, 860px);
-  height: min(90dvh, 860px);
+  width: 100%;
+  max-width: 100vw;
+  max-height: 100dvh;
+  height: 100dvh;
+  border-radius: 0;
 }
 
 :deep(.modal-body) {
@@ -1062,25 +1109,9 @@ watch(libraryApiUrl, () => {
   .library-filters {
     grid-template-columns: 1fr;
   }
-
-  .library-section-row__actions {
-    opacity: 1;
-  }
 }
 
 @media (max-width: 480px) {
-  :deep(.modal-backdrop) {
-    padding: 0;
-    align-items: stretch;
-  }
-
-  :deep(.modal) {
-    width: 100%;
-    max-height: 100dvh;
-    height: 100dvh;
-    border-radius: 0;
-  }
-
   .library-toolbar {
     flex-direction: column;
     align-items: stretch;
