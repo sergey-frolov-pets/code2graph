@@ -3,14 +3,17 @@ import type { RenderMode } from "@/constants/render-settings";
 import {
   buildFullDiagramEditPrompt,
   buildFullDiagramNoChangeRetryPrompt,
+  buildFullDiagramRevertRetryPrompt,
   buildPatchNoChangeRetryPrompt,
   buildPatchPrompt,
+  requestsStructuralDiagramEdit,
 } from "@/constants/llm-wizard";
 import { llmChat } from "@/services/llm/llm-client";
 import { buildLlmPatchSystemPrompt, buildLlmSystemPrompt } from "@/services/llm/llm-prompts";
 import type { LlmChatMessage } from "@/services/llm/llm-types";
 import { LlmClientError } from "@/services/llm/llm-types";
 import type { LlmGateHandlers } from "@/composables/useLlmGate";
+import { plantUmlSourcesEqual } from "@/utils/plantuml-llm-compare";
 import {
   isPatchContentChanged,
   parsePlantUmlLlmPatchOutput,
@@ -106,6 +109,7 @@ export async function generateValidPlantUmlFullEdit(
   ];
 
   const maxRetries = getMaxLlmValidationRetries();
+  let sawDifferentInvalidPlantuml = false;
 
   for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
     const chatResult = await llmChat(messages, { jsonMode: true }, handlers);
@@ -116,10 +120,30 @@ export async function generateValidPlantUmlFullEdit(
       renderMode,
     );
 
+    if (
+      validation.plantuml &&
+      !plantUmlSourcesEqual(validation.plantuml, fullSource) &&
+      !validation.valid
+    ) {
+      sawDifferentInvalidPlantuml = true;
+    }
+
     if (validation.valid && validation.plantuml) {
-      const hasChanges = validation.plantuml !== fullSource;
+      const hasChanges = !plantUmlSourcesEqual(validation.plantuml, fullSource);
 
       if (!hasChanges) {
+        if (sawDifferentInvalidPlantuml && attempt < maxRetries) {
+          messages.push({ role: "assistant", content: chatResult.content });
+          messages.push({
+            role: "user",
+            content: buildFullDiagramRevertRetryPrompt(
+              userPrompt,
+              "Previous edits were rejected; do not revert to the original diagram.",
+            ),
+          });
+          continue;
+        }
+
         if (attempt >= maxRetries) {
           return {
             plantuml: validation.plantuml,
@@ -131,7 +155,7 @@ export async function generateValidPlantUmlFullEdit(
         messages.push({ role: "assistant", content: chatResult.content });
         messages.push({
           role: "user",
-          content: buildFullDiagramNoChangeRetryPrompt(userPrompt),
+          content: buildFullDiagramNoChangeRetryPrompt(userPrompt, fullSource),
         });
         continue;
       }
@@ -153,7 +177,12 @@ export async function generateValidPlantUmlFullEdit(
     messages.push({ role: "assistant", content: chatResult.content });
     messages.push({
       role: "user",
-      content: `Fix validation errors and return corrected JSON only:\n${formatLlmValidationIssuesForRetry(validation.issues)}`,
+      content: sawDifferentInvalidPlantuml
+        ? buildFullDiagramRevertRetryPrompt(
+            userPrompt,
+            formatLlmValidationIssuesForRetry(validation.issues),
+          )
+        : `Fix validation errors and return corrected JSON only:\n${formatLlmValidationIssuesForRetry(validation.issues)}`,
     });
   }
 
@@ -171,6 +200,16 @@ export async function generateValidPlantUmlPatch(
   renderMode: RenderMode,
   handlers?: LlmGateHandlers,
 ): Promise<GenerateValidPlantUmlPatchResult> {
+  if (requestsStructuralDiagramEdit(userPrompt)) {
+    return generateValidPlantUmlFullEdit(
+      fullSource,
+      userPrompt,
+      layout,
+      darkMode,
+      renderMode,
+      handlers,
+    );
+  }
   const patchUserPrompt = buildPatchPrompt(
     fullSource,
     selectedFragment,

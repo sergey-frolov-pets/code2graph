@@ -7,6 +7,7 @@ import {
   generateValidPlantUmlFullEdit,
   generateValidPlantUmlPatch,
 } from "@/composables/useLlmPlantUmlGenerate";
+import { requestsStructuralDiagramEdit } from "@/constants/llm-wizard";
 import { useLocale } from "@/composables/useLocale";
 import { LlmClientError } from "@/services/llm/llm-types";
 import {
@@ -49,6 +50,10 @@ const isFullDiagramMode = computed(
   () => props.selectionEnd <= props.selectionStart,
 );
 
+const useWholeDiagramEdit = computed(
+  () => isFullDiagramMode.value || requestsStructuralDiagramEdit(userPrompt.value),
+);
+
 const selectedFragment = computed(() =>
   extractSelectionFragment(props.source, props.selectionStart, props.selectionEnd),
 );
@@ -61,11 +66,11 @@ const hasSelection = computed(
 );
 
 const modalLead = computed(() =>
-  isFullDiagramMode.value ? t("llm.patch.leadFull") : t("llm.patch.lead"),
+  useWholeDiagramEdit.value ? t("llm.patch.leadFull") : t("llm.patch.lead"),
 );
 
 const selectionLabel = computed(() =>
-  isFullDiagramMode.value
+  useWholeDiagramEdit.value
     ? t("llm.patch.wholeDiagram")
     : selectedFragment.value || t("llm.patch.noSelection"),
 );
@@ -155,7 +160,7 @@ async function onGenerate(): Promise<void> {
 
   try {
     const handlers = { openSettings: props.openSettings };
-    const result = isFullDiagramMode.value
+    const result = useWholeDiagramEdit.value
       ? await generateValidPlantUmlFullEdit(
           props.source,
           userPrompt.value,
@@ -182,7 +187,7 @@ async function onGenerate(): Promise<void> {
     resultExplanation.value = result.explanation ?? "";
 
     if (!result.hasChanges) {
-      errorMessage.value = isFullDiagramMode.value
+      errorMessage.value = useWholeDiagramEdit.value
         ? t("llm.patch.noChangesHintFull")
         : t("llm.patch.noChangesHint");
     }

@@ -30,7 +30,7 @@ export interface LlmPlantUmlValidationResult {
   plantuml?: string;
 }
 
-const MAX_LLM_VALIDATION_RETRIES = 2;
+const MAX_LLM_VALIDATION_RETRIES = 3;
 
 export function getMaxLlmValidationRetries(): number {
   return MAX_LLM_VALIDATION_RETRIES;

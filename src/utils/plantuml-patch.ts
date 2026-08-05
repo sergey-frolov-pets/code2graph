@@ -5,6 +5,7 @@ import {
   stripJsonCodeFence,
   type PlantUmlLlmParseIssue,
 } from "@/schemas/plantuml-llm-output";
+import { plantUmlSourcesEqual } from "@/utils/plantuml-llm-compare";
 
 export const PlantUmlLlmPatchOutputSchema = z.object({
   replacement: z
@@ -109,7 +110,7 @@ export function isPatchContentChanged(
   mergedSource: string,
   parsed: PlantUmlLlmPatchParseResult & { ok: true },
 ): boolean {
-  if (mergedSource === source) {
+  if (plantUmlSourcesEqual(mergedSource, source)) {
     return false;
   }
 
@@ -118,5 +119,5 @@ export function isPatchContentChanged(
   }
 
   const before = source.slice(selectionStart, selectionEnd);
-  return before !== parsed.replacement;
+  return !plantUmlSourcesEqual(before, parsed.replacement);
 }
