@@ -22,6 +22,7 @@
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "check:i18n": "node scripts/check-i18n-keys.mjs",
+    "version:bump": "node scripts/bump-version.mjs",
     "postinstall": "node scripts/copy-vendor.mjs && node scripts/copy-c4-lib.mjs && node scripts/generate-pwa-icons.mjs"
   },
   "dependencies": {
