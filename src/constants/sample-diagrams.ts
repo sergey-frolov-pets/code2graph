@@ -336,11 +336,11 @@ start
 
 |Редактор|
 :Применить layout pragma;
-' if/then/else — ветвление; #цвет — подсветка действия
+' if/then/else — ветвление; <<#цвет>> после ';' — подсветка действия
 if (Синтаксис верный?) then (да)
   :Подготовить источник;
 else (нет)
-  #Pink:Показать ошибку;
+  :Показать ошибку;<<#Pink>>
   stop
 endif
 
@@ -354,7 +354,7 @@ end fork
 
 |Клиент|
 :Отобразить превью;
-#LightBlue:Экспорт PNG/SVG;
+:Экспорт PNG/SVG;<<#LightBlue>>
 
 stop
 @enduml`,
@@ -657,11 +657,11 @@ start
 
 |Editor|
 :Apply layout pragma;
-' if/then/else — branching; #color — action highlight
+' if/then/else — branching; <<#color>> after ';' — action highlight
 if (Syntax valid?) then (yes)
   :Prepare source;
 else (no)
-  #Pink:Show error;
+  :Show error;<<#Pink>>
   stop
 endif
 
@@ -675,7 +675,7 @@ end fork
 
 |Client|
 :Show preview;
-#LightBlue:Export PNG/SVG;
+:Export PNG/SVG;<<#LightBlue>>
 
 stop
 @enduml`,
