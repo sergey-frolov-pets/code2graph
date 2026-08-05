@@ -79,7 +79,7 @@ const BYOK_LLM_PROVIDERS: readonly LlmProviderDefinition[] = [
     defaultModel: "deepseek-chat",
     keyUrl: "https://platform.deepseek.com/api_keys",
     docsUrl: "https://api-docs.deepseek.com/",
-    apiEndpoint: "https://api.deepseek.com/chat/completions",
+    apiEndpoint: "https://api.deepseek.com/v1/chat/completions",
   },
   {
     id: "qwen",
