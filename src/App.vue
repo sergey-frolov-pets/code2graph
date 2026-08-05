@@ -14,59 +14,18 @@ import LlmPatchModal from "@/components/LlmPatchModal.vue";
 import LlmKeysGuideModal from "@/components/LlmKeysGuideModal.vue";
 import SettingsModal from "@/components/SettingsModal.vue";
 import SyntaxResultModal from "@/components/SyntaxResultModal.vue";
-import {
-  APP_META,
-  getDefaultSource,
-  LAYOUT_ENGINES,
-  RENDER_DEBOUNCE_MS,
-  STORAGE_KEY_DARK,
-  STORAGE_KEY_DIAGRAM_DARK,
-  STORAGE_KEY_LAYOUT,
-  STORAGE_KEY_UI_DARK,
-  STORAGE_KEY_SOURCE,
-  translateSourceForLocale,
-  type LayoutEngine,
-} from "@/constants";
-import {
-  findSampleDiagramIdAnyLocale,
-  getSampleDiagramSource,
-  isDefaultSource,
-} from "@/constants/sample-diagrams";
-import {
-  DEFAULT_EDITOR_FONT_FAMILY_ID,
-  DEFAULT_EDITOR_FONT_SIZE,
-  DEFAULT_EDITOR_AUTOCOMPLETE,
-  DEFAULT_EDITOR_SYNTAX_HIGHLIGHT,
-  DEFAULT_PREVIEW_BG,
-  isEditorFontFamilyId,
-  isEditorFontSize,
-  resolveEditorFontFamily,
-  STORAGE_KEY_EDITOR_AUTOCOMPLETE,
-  STORAGE_KEY_EDITOR_FONT_FAMILY,
-  STORAGE_KEY_EDITOR_FONT_SIZE,
-  STORAGE_KEY_EDITOR_SYNTAX_HIGHLIGHT,
-  STORAGE_KEY_PREVIEW_BG,
-  type EditorFontFamilyId,
-  type EditorFontSize,
-} from "@/constants/editor-settings";
-import {
-  isEngineReady,
-  renderPlantUmlToSvg,
-  validatePlantUmlSyntax,
-  waitForEngineReady,
-} from "@/composables/usePlantUml";
+import { APP_META } from "@/constants";
+import { useAppDialog } from "@/composables/useAppDialog";
+import { useDiagramRender } from "@/composables/useDiagramRender";
+import { useEditorHistory } from "@/composables/useEditorHistory";
+import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
+import { useLocale } from "@/composables/useLocale";
+import { usePersistedSettings } from "@/composables/usePersistedSettings";
+import { validatePlantUmlSyntax } from "@/composables/usePlantUml";
 import {
   consumeSharedLaunch,
   setupLaunchQueue,
 } from "@/composables/usePumlShare";
-import { useAppDialog } from "@/composables/useAppDialog";
-import { useEditorHistory } from "@/composables/useEditorHistory";
-import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
-import { useLocale } from "@/composables/useLocale";
-import {
-  preparePlantUmlSource,
-  splitSourceLines,
-} from "@/utils/plantuml-source";
 import {
   downloadBlob,
   downloadTextFile,
@@ -92,53 +51,40 @@ const {
   pushHistoryEntry,
 } = useEditorHistory();
 
-const source = ref(getDefaultSource(locale.value));
-const layout = ref<LayoutEngine>(LAYOUT_ENGINES.smetana);
-function readStoredBoolean(key: string): boolean | null {
-  try {
-    const saved = localStorage.getItem(key);
-    if (saved !== null) {
-      return saved === "true";
-    }
-  } catch {
-    // file:// может блокировать localStorage
-  }
+const {
+  source,
+  layout,
+  uiDarkMode,
+  diagramDarkMode,
+  editorFontSize,
+  editorFontFamilyId,
+  editorSyntaxHighlight,
+  editorAutocomplete,
+  previewBackground,
+  editorFontFamily,
+  persistSettings,
+  restoreSettings,
+} = usePersistedSettings();
 
-  return null;
-}
+const {
+  svg,
+  error,
+  isRendering,
+  engineReady,
+  engineStatus,
+  renderDiagram,
+  scheduleRender,
+  bootEngine,
+} = useDiagramRender({
+  source,
+  layout,
+  diagramDarkMode,
+  locale,
+  t,
+  onPersist: persistSettings,
+});
 
-function readInitialUiDarkMode(): boolean {
-  return (
-    readStoredBoolean(STORAGE_KEY_UI_DARK) ??
-    readStoredBoolean(STORAGE_KEY_DARK) ??
-    window.matchMedia("(prefers-color-scheme: dark)").matches
-  );
-}
-
-function readInitialDiagramDarkMode(): boolean {
-  return (
-    readStoredBoolean(STORAGE_KEY_DIAGRAM_DARK) ??
-    readStoredBoolean(STORAGE_KEY_DARK) ??
-    window.matchMedia("(prefers-color-scheme: dark)").matches
-  );
-}
-
-const uiDarkMode = ref(readInitialUiDarkMode());
-const diagramDarkMode = ref(readInitialDiagramDarkMode());
-const editorFontSize = ref<EditorFontSize>(readInitialEditorFontSize());
-const editorFontFamilyId = ref<EditorFontFamilyId>(readInitialEditorFontFamilyId());
-const editorSyntaxHighlight = ref(readInitialEditorSyntaxHighlight());
-const editorAutocomplete = ref(readInitialEditorAutocomplete());
-const previewBackground = ref(readInitialPreviewBackground(diagramDarkMode.value));
-const editorFontFamily = computed(() =>
-  resolveEditorFontFamily(editorFontFamilyId.value),
-);
-const svg = ref("");
-const error = ref("");
-const isRendering = ref(false);
 const isValidating = ref(false);
-const engineReady = ref(false);
-const engineStatus = ref(t("app.engineLoading"));
 const loadedFileName = ref("diagram.puml");
 const syntaxResult = ref<SyntaxCheckResult | null>(null);
 const syntaxErrorLines = ref<number[]>([]);
@@ -153,152 +99,12 @@ const patchSelectionStart = ref(0);
 const patchSelectionEnd = ref(0);
 const statusBarRef = ref<HTMLElement | null>(null);
 
-let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 let statusBarObserver: ResizeObserver | null = null;
 
-const canExport = computed(() => Boolean(svg.value) && !error.value && !isRendering.value);
+const canExport = computed(
+  () => Boolean(svg.value) && !error.value && !isRendering.value,
+);
 const canSave = computed(() => Boolean(source.value.trim()));
-
-function readInitialEditorFontSize(): EditorFontSize {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY_EDITOR_FONT_SIZE);
-    if (saved && isEditorFontSize(saved)) {
-      return saved;
-    }
-  } catch {
-    // file:// может блокировать localStorage
-  }
-
-  return DEFAULT_EDITOR_FONT_SIZE;
-}
-
-function readInitialEditorFontFamilyId(): EditorFontFamilyId {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY_EDITOR_FONT_FAMILY);
-    if (saved && isEditorFontFamilyId(saved)) {
-      return saved;
-    }
-  } catch {
-    // file:// может блокировать localStorage
-  }
-
-  return DEFAULT_EDITOR_FONT_FAMILY_ID;
-}
-
-function readInitialEditorSyntaxHighlight(): boolean {
-  return readStoredBoolean(STORAGE_KEY_EDITOR_SYNTAX_HIGHLIGHT) ?? DEFAULT_EDITOR_SYNTAX_HIGHLIGHT;
-}
-
-function readInitialEditorAutocomplete(): boolean {
-  return readStoredBoolean(STORAGE_KEY_EDITOR_AUTOCOMPLETE) ?? DEFAULT_EDITOR_AUTOCOMPLETE;
-}
-
-function normalizeColor(value: string): string {
-  return value.trim().toLowerCase();
-}
-
-function readInitialPreviewBackground(isDark: boolean): string {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY_PREVIEW_BG);
-    if (saved) {
-      const normalized = normalizeColor(saved);
-      if (isDark && normalized === normalizeColor(DEFAULT_PREVIEW_BG.light)) {
-        return DEFAULT_PREVIEW_BG.dark;
-      }
-      if (!isDark && normalized === normalizeColor(DEFAULT_PREVIEW_BG.dark)) {
-        return DEFAULT_PREVIEW_BG.light;
-      }
-      return saved;
-    }
-  } catch {
-    // file:// может блокировать localStorage
-  }
-
-  return isDark ? DEFAULT_PREVIEW_BG.dark : DEFAULT_PREVIEW_BG.light;
-}
-
-function persistSettings(): void {
-  try {
-    localStorage.setItem(STORAGE_KEY_SOURCE, source.value);
-    localStorage.setItem(STORAGE_KEY_UI_DARK, String(uiDarkMode.value));
-    localStorage.setItem(
-      STORAGE_KEY_DIAGRAM_DARK,
-      String(diagramDarkMode.value),
-    );
-    localStorage.setItem(STORAGE_KEY_LAYOUT, layout.value);
-    localStorage.setItem(STORAGE_KEY_EDITOR_FONT_SIZE, editorFontSize.value);
-    localStorage.setItem(STORAGE_KEY_EDITOR_FONT_FAMILY, editorFontFamilyId.value);
-    localStorage.setItem(
-      STORAGE_KEY_EDITOR_SYNTAX_HIGHLIGHT,
-      String(editorSyntaxHighlight.value),
-    );
-    localStorage.setItem(
-      STORAGE_KEY_EDITOR_AUTOCOMPLETE,
-      String(editorAutocomplete.value),
-    );
-    localStorage.setItem(STORAGE_KEY_PREVIEW_BG, previewBackground.value);
-  } catch {
-    // file:// может блокировать localStorage
-  }
-}
-
-function applyLocaleToStoredSource(): void {
-  if (isDefaultSource(source.value)) {
-    source.value = getDefaultSource(locale.value);
-    return;
-  }
-
-  const sampleId = findSampleDiagramIdAnyLocale(source.value);
-  if (sampleId) {
-    source.value = getSampleDiagramSource(sampleId, locale.value);
-  }
-}
-
-function restoreSettings(): void {
-  try {
-    const savedSource = localStorage.getItem(STORAGE_KEY_SOURCE);
-    const savedLayout = localStorage.getItem(STORAGE_KEY_LAYOUT);
-
-    if (savedSource) {
-      source.value = savedSource;
-    }
-
-    if (savedLayout && savedLayout in LAYOUT_ENGINES) {
-      layout.value = savedLayout as LayoutEngine;
-    }
-
-    applyLocaleToStoredSource();
-  } catch {
-    // file:// может блокировать localStorage
-  }
-}
-
-async function renderDiagram(): Promise<void> {
-  if (!engineReady.value) {
-    error.value = t("app.engineNotReady");
-    return;
-  }
-
-  isRendering.value = true;
-  error.value = "";
-
-  try {
-    const prepared = await preparePlantUmlSource(source.value, layout.value);
-    const lines = splitSourceLines(prepared);
-    const result = await renderPlantUmlToSvg(lines, {
-      dark: diagramDarkMode.value,
-    });
-    svg.value = result;
-  } catch (renderError) {
-    svg.value = "";
-    error.value =
-      renderError instanceof Error
-        ? resolveLocalizedErrorMessage(renderError, t, "app.unknownRenderError")
-        : t("app.unknownRenderError");
-  } finally {
-    isRendering.value = false;
-  }
-}
 
 function applyLoadedSource(content: string, fileName: string): void {
   source.value = content;
@@ -364,16 +170,6 @@ async function initializeIncomingSources(): Promise<void> {
   if (shared) {
     applyLoadedSource(shared.content, shared.fileName);
   }
-}
-
-function scheduleRender(): void {
-  if (debounceTimer) {
-    clearTimeout(debounceTimer);
-  }
-
-  debounceTimer = setTimeout(() => {
-    void renderDiagram();
-  }, RENDER_DEBOUNCE_MS);
 }
 
 function updateSyntaxHighlights(result: SyntaxCheckResult | null): void {
@@ -465,68 +261,10 @@ async function exportPng(): Promise<void> {
   }
 }
 
-watch(
-  uiDarkMode,
-  (isDark) => {
-    document.documentElement.dataset.theme = isDark ? "dark" : "light";
-  },
-  { immediate: true },
-);
-
-watch(
-  diagramDarkMode,
-  (isDark, wasDark) => {
-    if (wasDark === undefined || wasDark === isDark) {
-      return;
-    }
-
-    previewBackground.value = isDark
-      ? DEFAULT_PREVIEW_BG.dark
-      : DEFAULT_PREVIEW_BG.light;
-  },
-  { immediate: true },
-);
-
-watch(
-  previewBackground,
-  (value) => {
-    document.documentElement.style.setProperty("--preview-bg", value);
-  },
-  { immediate: true },
-);
-
-watch([source, layout, diagramDarkMode], () => {
-  persistSettings();
-  scheduleRender();
-});
-
-watch(
-  [editorFontSize, editorFontFamilyId, editorSyntaxHighlight, editorAutocomplete, previewBackground, uiDarkMode],
-  () => {
-  persistSettings();
-});
-
 watch(source, () => {
   if (syntaxErrorLines.value.length > 0) {
     syntaxErrorLines.value = [];
   }
-});
-
-watch(locale, (nextLocale, previousLocale) => {
-  if (previousLocale) {
-    const translated = translateSourceForLocale(
-      source.value,
-      previousLocale,
-      nextLocale,
-    );
-    if (translated) {
-      source.value = translated;
-    }
-  }
-
-  engineStatus.value = engineReady.value
-    ? t("app.engineReady")
-    : t("app.engineLoading");
 });
 
 function openVersionsModal(): void {
@@ -607,20 +345,7 @@ onMounted(() => {
 
   restoreSettings();
   void initializeIncomingSources();
-  void waitForEngineReady()
-    .then(() => {
-      engineReady.value = isEngineReady();
-      engineStatus.value = engineReady.value
-        ? t("app.engineReady")
-        : t("app.error");
-      scheduleRender();
-    })
-    .catch((bootError) => {
-      engineReady.value = false;
-      engineStatus.value =
-        resolveLocalizedErrorMessage(bootError, t, "app.engineLoadError");
-      error.value = engineStatus.value;
-    });
+  void bootEngine();
 });
 
 onUnmounted(() => {

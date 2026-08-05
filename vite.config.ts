@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import vue from "@vitejs/plugin-vue";
 
 const appRoot = fileURLToPath(new URL(".", import.meta.url));
@@ -35,5 +35,9 @@ export default defineConfig({
         entryFileNames: "assets/app.js",
       },
     },
+  },
+  test: {
+    environment: "node",
+    include: ["src/**/*.test.ts"],
   },
 });
