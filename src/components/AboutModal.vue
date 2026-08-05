@@ -71,6 +71,14 @@ const { t } = useLocale();
       </li>
     </ul>
 
+    <h3 class="about-subtitle">{{ t("about.ai") }}</h3>
+    <p class="about-meta">{{ t("about.aiLead") }}</p>
+    <p class="about-meta">
+      <a :href="APP_LINKS.llmApiKeysGuide" target="_blank" rel="noopener noreferrer">
+        {{ t("about.llmGuide") }}
+      </a>
+    </p>
+
     <template #footer>
       <button class="btn btn-primary" type="button" @click="emit('close')">
         {{ t("app.close") }}

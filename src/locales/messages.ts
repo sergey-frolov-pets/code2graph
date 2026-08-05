@@ -285,6 +285,9 @@ export const ruMessages: LocaleMessages = {
   "about.license": "Лицензия",
   "about.licenseText": "Распространяется под лицензией",
   "about.components": "Используемые компоненты",
+  "about.ai": "AI / LLM",
+  "about.aiLead": "Генерация и редактирование диаграмм через облачные LLM. Free-провайдер (Gemini) без ключа через сервер приложения, либо BYOK со своим ключом.",
+  "about.llmGuide": "Как получить API-ключ (BYOK)",
 
   "syntax.titleChecking": "Проверка синтаксиса",
   "syntax.titleValid": "Синтаксис корректен",
@@ -808,6 +811,9 @@ export const enMessages: LocaleMessages = {
   "about.license": "License",
   "about.licenseText": "Distributed under the",
   "about.components": "Third-party components",
+  "about.ai": "AI / LLM",
+  "about.aiLead": "Generate and edit diagrams via cloud LLMs. Free provider (Gemini) without a user key via the app server, or BYOK with your own key.",
+  "about.llmGuide": "How to get an API key (BYOK)",
 
   "syntax.titleChecking": "Syntax check",
   "syntax.titleValid": "Syntax is valid",

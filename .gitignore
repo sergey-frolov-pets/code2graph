@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-single/
+release/
 public/vendor/
 vendor/C4-PlantUML/
 data/
