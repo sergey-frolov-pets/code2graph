@@ -9,6 +9,7 @@ import DiagramPreview from "@/components/DiagramPreview.vue";
 import InstallAppButton from "@/components/InstallAppButton.vue";
 import IconButton from "@/components/IconButton.vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
+import LlmKeysGuideModal from "@/components/LlmKeysGuideModal.vue";
 import SettingsModal from "@/components/SettingsModal.vue";
 import SyntaxResultModal from "@/components/SyntaxResultModal.vue";
 import {
@@ -53,6 +54,7 @@ import {
   setupLaunchQueue,
 } from "@/composables/usePumlShare";
 import { useAppDialog } from "@/composables/useAppDialog";
+import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
 import { useLocale } from "@/composables/useLocale";
 import {
   preparePlantUmlSource,
@@ -69,6 +71,11 @@ import type { SyntaxCheckResult } from "@/utils/plantuml-syntax";
 
 const { prompt, alert } = useAppDialog();
 const { t, locale } = useLocale();
+const {
+  guideModalOpen,
+  guideProviderId,
+  closeLlmKeysGuide,
+} = useLlmKeysGuide();
 
 const source = ref(getDefaultSource(locale.value));
 const layout = ref<LayoutEngine>(LAYOUT_ENGINES.smetana);
@@ -649,6 +656,12 @@ onUnmounted(() => {
     <AboutModal
       :open="isAboutModalOpen"
       @close="isAboutModalOpen = false"
+    />
+
+    <LlmKeysGuideModal
+      :open="guideModalOpen"
+      :highlight-provider-id="guideProviderId"
+      @close="closeLlmKeysGuide"
     />
   </div>
 </template>

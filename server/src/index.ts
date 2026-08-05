@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import { SERVER_PORT } from "./config.js";
 import { getDb } from "./db.js";
 import { diagramsRouter, sectionsRouter } from "./routes/library.js";
+import { llmRouter } from "./routes/llm.js";
 
 const app = new Hono();
 
@@ -21,6 +22,7 @@ app.get("/api/health", (context) => {
 
 app.route("/api/sections", sectionsRouter);
 app.route("/api/diagrams", diagramsRouter);
+app.route("/api/llm", llmRouter);
 
 getDb();
 

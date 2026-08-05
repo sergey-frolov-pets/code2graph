@@ -15,6 +15,7 @@ import {
 } from "@/constants/i18n";
 import { useLocale } from "@/composables/useLocale";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
+import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
 
 defineProps<{
   open: boolean;
@@ -35,6 +36,7 @@ const emit = defineEmits<{
 
 const { locale, setLocale, t } = useLocale();
 const { libraryApiUrl, setLibraryApiUrl } = useLibraryApiUrl();
+const { openLlmKeysGuide } = useLlmKeysGuide();
 
 const libraryServerInput = ref(libraryApiUrl.value);
 
@@ -206,6 +208,13 @@ const fontFamilyOptions = computed(() =>
         >
           {{ t("settings.plantumlGuide") }}
         </a>
+        <button
+          class="btn settings-link-btn"
+          type="button"
+          @click="openLlmKeysGuide()"
+        >
+          {{ t("settings.llmKeysGuide") }}
+        </button>
         <button
           class="btn settings-link-btn"
           type="button"

@@ -18,6 +18,7 @@ export const APP_LINKS = {
   vue: "https://vuejs.org/",
   vite: "https://vite.dev/",
   mitLicense: "https://opensource.org/licenses/MIT",
+  llmApiKeysGuide: "./llm-api-keys.html",
 } as const;
 
 export const STORAGE_KEY_SOURCE = "plantuml-smetana-source";
