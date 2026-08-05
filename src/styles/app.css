@@ -21,6 +21,10 @@
   --preview-bg: #ffffff;
   --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
   --radius: 12px;
+  --z-modal: 1000;
+  --z-library: 1100;
+  --z-dialog: 1200;
+  --z-tooltip: 10000;
   --font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
   --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
   --syntax-comment: #6a737d;
@@ -534,7 +538,7 @@ a {
 
 .floating-tooltip {
   position: fixed;
-  z-index: 10000;
+  z-index: var(--z-tooltip);
   max-width: min(240px, calc(100vw - 16px));
   padding: 6px 10px;
   border-radius: 8px;

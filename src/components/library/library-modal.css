@@ -1,7 +1,7 @@
 .library-screen {
   position: fixed;
   inset: 0;
-  z-index: 1100;
+  z-index: var(--z-library);
   display: flex;
   flex-direction: column;
   background: var(--surface);
