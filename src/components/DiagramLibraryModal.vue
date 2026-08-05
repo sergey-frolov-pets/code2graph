@@ -283,7 +283,6 @@ async function saveSectionEdit(payload: {
     return;
   }
 
-  isSectionSaving.value = true;
   uploadError.value = "";
   try {
     await library.editSection(editingSectionId.value, payload);
@@ -294,8 +293,6 @@ async function saveSectionEdit(payload: {
   } catch (error) {
     uploadError.value =
       error instanceof Error ? error.message : t("library.syncError");
-  } finally {
-    isSectionSaving.value = false;
   }
 }
 
