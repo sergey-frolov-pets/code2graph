@@ -180,6 +180,17 @@
   font-size: 0.82rem;
 }
 
+.library-row__description {
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: break-word;
+}
+
 .library-row__tags {
   display: flex;
   flex-wrap: wrap;
@@ -223,38 +234,80 @@
   font-size: 0.75rem;
 }
 
+.library-step__content--padded {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.library-detail__open-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.library-detail__open-card:hover,
+.library-detail__open-card:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+  outline: none;
+}
+
 .library-detail__meta {
-  margin: 0 0 10px;
+  margin: 0;
   color: var(--text-muted);
   font-size: 0.85rem;
 }
 
 .library-detail__description {
-  margin: 0 0 12px;
+  margin: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
   white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.55;
+  font-size: 0.95rem;
+}
+
+.library-detail__description--empty {
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 .library-detail__tags {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 12px;
+  flex-shrink: 0;
 }
 
-.library-detail__source {
-  margin: 0 0 16px;
-  padding: 12px;
-  border-radius: 8px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  line-height: 1.45;
-  flex: 1;
-  min-height: 120px;
-  overflow: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
+.library-detail__open-hint {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  color: var(--accent);
+  font-size: 0.88rem;
+  font-weight: 500;
+  flex-shrink: 0;
 }
 
 .library-detail__actions {
@@ -262,6 +315,7 @@
   flex-wrap: wrap;
   gap: 8px;
   flex-shrink: 0;
+  padding-top: 4px;
 }
 
 .library-empty {
