@@ -120,7 +120,7 @@ watch(
 }
 
 :deep(.modal-backdrop) {
-  z-index: 1100;
+  z-index: var(--z-dialog);
 }
 
 .section-edit-form__error {

@@ -62,7 +62,7 @@ function onBackdropClick(event: MouseEvent): void {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--z-modal);
   display: grid;
   place-items: center;
   padding: 16px;
