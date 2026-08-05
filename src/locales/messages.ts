@@ -49,6 +49,10 @@ export const ruMessages: LocaleMessages = {
   "editor.placeholder": "@startuml\nAlice -> Bob : Hello\n@enduml",
   "editor.snippets": "Сниппеты",
   "editor.snippetsTooltip": "Вставить фрагмент PlantUML",
+  "editor.foldToggle": "Свернуть или развернуть блок",
+  "editor.foldRemove": "Удалить свёртку (Shift+клик)",
+  "editor.foldCreate": "Перетащите по номерам строк, чтобы создать свёртку",
+  "editor.foldHiddenLines": "{count} скрытых строк",
 
   "snippets.panelTitle": "Сниппеты PlantUML",
   "snippets.add": "Добавить сниппет",
@@ -453,6 +457,10 @@ export const enMessages: LocaleMessages = {
   "editor.placeholder": "@startuml\nAlice -> Bob : Hello\n@enduml",
   "editor.snippets": "Snippets",
   "editor.snippetsTooltip": "Insert PlantUML fragment",
+  "editor.foldToggle": "Collapse or expand block",
+  "editor.foldRemove": "Remove fold (Shift+click)",
+  "editor.foldCreate": "Drag across line numbers to create a fold",
+  "editor.foldHiddenLines": "{count} hidden lines",
 
   "snippets.panelTitle": "PlantUML snippets",
   "snippets.add": "Add snippet",
