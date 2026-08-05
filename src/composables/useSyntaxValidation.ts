@@ -1,5 +1,6 @@
 import { ref, watch, type Ref } from "vue";
 import type { LayoutEngine } from "@/constants";
+import type { RenderMode } from "@/constants/render-settings";
 import { validatePlantUmlSyntax } from "@/composables/usePlantUml";
 import type { SyntaxCheckResult } from "@/utils/plantuml-syntax";
 
@@ -7,10 +8,11 @@ export interface UseSyntaxValidationOptions {
   source: Ref<string>;
   layout: Ref<LayoutEngine>;
   diagramDarkMode: Ref<boolean>;
+  renderMode: Ref<RenderMode>;
 }
 
 export function useSyntaxValidation(options: UseSyntaxValidationOptions) {
-  const { source, layout, diagramDarkMode } = options;
+  const { source, layout, diagramDarkMode, renderMode } = options;
 
   const isValidating = ref(false);
   const syntaxResult = ref<SyntaxCheckResult | null>(null);
@@ -40,6 +42,7 @@ export function useSyntaxValidation(options: UseSyntaxValidationOptions) {
         source.value,
         layout.value,
         diagramDarkMode.value,
+        renderMode.value,
       );
       syntaxResult.value = result;
       updateSyntaxHighlights(result);

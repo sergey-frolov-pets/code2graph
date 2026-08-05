@@ -2,6 +2,7 @@
 import { computed, ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import type { LayoutEngine } from "@/constants";
+import type { RenderMode } from "@/constants/render-settings";
 import { generateValidPlantUml } from "@/composables/useLlmPlantUmlGenerate";
 import { useLocale } from "@/composables/useLocale";
 import { buildPatchPrompt } from "@/constants/llm-wizard";
@@ -18,6 +19,7 @@ const props = defineProps<{
   selectionStart: number;
   selectionEnd: number;
   layout: LayoutEngine;
+  renderMode: RenderMode;
   diagramDarkMode: boolean;
   openSettings?: () => void;
 }>();
@@ -79,6 +81,7 @@ async function loadPreview(plantuml: string): Promise<void> {
       plantuml,
       props.layout,
       props.diagramDarkMode,
+      props.renderMode,
     );
   } catch (error) {
     previewSvg.value = "";
@@ -113,6 +116,7 @@ async function onGenerate(): Promise<void> {
       prompt,
       props.layout,
       props.diagramDarkMode,
+      props.renderMode,
       { openSettings: props.openSettings },
       "You edit existing PlantUML diagrams based on user selection and instructions.",
     );

@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { APP_META } from "@/constants";
 import type { LayoutEngine } from "@/constants";
+import {
+  isOnlineRenderMode,
+  type RenderMode,
+} from "@/constants/render-settings";
 import { useLocale } from "@/composables/useLocale";
 
-defineProps<{
+const props = defineProps<{
   loadedFileName: string;
   layout: LayoutEngine;
+  renderMode: RenderMode;
   engineReady: boolean;
   engineStatus: string;
 }>();
@@ -14,6 +19,12 @@ defineProps<{
 const { t } = useLocale();
 const statusBarRef = ref<HTMLElement | null>(null);
 let statusBarObserver: ResizeObserver | null = null;
+
+const renderModeLabel = computed(() =>
+  isOnlineRenderMode(props.renderMode)
+    ? t("settings.renderModeOnline")
+    : t("settings.renderModeOffline"),
+);
 
 onMounted(() => {
   const updateStatusBarHeight = (): void => {
@@ -42,7 +53,7 @@ onUnmounted(() => {
   <footer ref="statusBarRef" class="status-bar">
     <span>{{ t("app.file") }}: {{ loadedFileName }}</span>
     <span class="status-bar__engine">
-      <span>{{ t("app.engine") }}: {{ layout }}</span>
+      <span>{{ t("app.engine") }}: {{ layout }} · {{ renderModeLabel }}</span>
       <span
         v-if="engineReady"
         class="status-bar__engine-ok"

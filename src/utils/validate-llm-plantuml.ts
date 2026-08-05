@@ -1,4 +1,8 @@
 import type { LayoutEngine } from "@/constants";
+import {
+  DEFAULT_RENDER_MODE,
+  type RenderMode,
+} from "@/constants/render-settings";
 import { validatePlantUmlSyntax } from "@/composables/usePlantUml";
 import {
   parsePlantUmlLlmOutput,
@@ -67,6 +71,7 @@ export async function validateLlmPlantUmlSource(
   plantuml: string,
   layout: LayoutEngine,
   darkMode = false,
+  renderMode: RenderMode = DEFAULT_RENDER_MODE,
 ): Promise<LlmPlantUmlValidationResult> {
   const includeIssues = checkPlantUmlIncludePolicy(plantuml);
   if (includeIssues.length > 0) {
@@ -90,7 +95,12 @@ export async function validateLlmPlantUmlSource(
     };
   }
 
-  const engineCheck = await validatePlantUmlSyntax(plantuml, layout, darkMode);
+  const engineCheck = await validatePlantUmlSyntax(
+    plantuml,
+    layout,
+    darkMode,
+    renderMode,
+  );
   if (!engineCheck.valid) {
     return {
       valid: false,
@@ -110,6 +120,7 @@ export async function validateLlmResponse(
   raw: string,
   layout: LayoutEngine,
   darkMode = false,
+  renderMode: RenderMode = DEFAULT_RENDER_MODE,
 ): Promise<LlmPlantUmlValidationResult> {
   const parsed = parseAndValidateLlmOutput(raw);
   if (!parsed.valid || !parsed.plantuml) {
@@ -120,6 +131,7 @@ export async function validateLlmResponse(
     parsed.plantuml,
     layout,
     darkMode,
+    renderMode,
   );
 
   if (!sourceValidation.valid) {
