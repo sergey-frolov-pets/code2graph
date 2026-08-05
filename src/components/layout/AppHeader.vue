@@ -17,8 +17,11 @@ const { t } = useLocale();
 <template>
   <header class="app-header">
     <div class="app-header__main">
-      <h1>{{ APP_META.name }}</h1>
-      <p class="app-header__version">v{{ APP_META.version }}</p>
+      <div class="app-header__title-row">
+        <h1>{{ APP_META.name }}</h1>
+        <span class="app-header__version">v{{ APP_META.version }}</span>
+      </div>
+      <p class="app-header__subtitle">{{ t("app.subtitle") }}</p>
     </div>
     <nav class="app-header__nav" :aria-label="t('app.settings')">
       <IconButton
@@ -59,6 +62,31 @@ const { t } = useLocale();
 .app-header__main {
   flex: 1;
   min-width: 220px;
+}
+
+.app-header__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.app-header__version {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.app-header__subtitle {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
 }
 
 .app-header__nav {
