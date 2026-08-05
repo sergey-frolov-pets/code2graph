@@ -233,6 +233,7 @@ onMounted(() => {
 
     <AppStatusBar
       :loaded-file-name="loadedFileName"
+      :layout="layout"
       :render-mode="renderMode"
     />
 
