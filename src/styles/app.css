@@ -23,6 +23,15 @@
   --radius: 12px;
   --font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
   --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --syntax-comment: #6a737d;
+  --syntax-directive: #8250df;
+  --syntax-preprocessor: #8250df;
+  --syntax-keyword: #0550ae;
+  --syntax-string: #0a3069;
+  --syntax-arrow: #cf222e;
+  --syntax-color: #953800;
+  --syntax-stereotype: #116329;
+  --syntax-number: #0550ae;
 }
 
 [data-theme="dark"] {
@@ -39,6 +48,62 @@
   --success: #3dd68c;
   --preview-bg: #171d24;
   --shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --syntax-comment: #8b949e;
+  --syntax-directive: #d2a8ff;
+  --syntax-preprocessor: #d2a8ff;
+  --syntax-keyword: #79c0ff;
+  --syntax-string: #a5d6ff;
+  --syntax-arrow: #ff7b72;
+  --syntax-color: #ffa657;
+  --syntax-stereotype: #7ee787;
+  --syntax-number: #79c0ff;
+}
+
+.code-editor__line-content :deep(.tok-comment) {
+  color: var(--syntax-comment);
+  font-style: italic;
+}
+
+.code-editor__line-content :deep(.tok-directive) {
+  color: var(--syntax-directive);
+  font-weight: 600;
+}
+
+.code-editor__line-content :deep(.tok-preprocessor) {
+  color: var(--syntax-preprocessor);
+}
+
+.code-editor__line-content :deep(.tok-keyword) {
+  color: var(--syntax-keyword);
+  font-weight: 600;
+}
+
+.code-editor__line-content :deep(.tok-string) {
+  color: var(--syntax-string);
+}
+
+.code-editor__line-content :deep(.tok-arrow) {
+  color: var(--syntax-arrow);
+}
+
+.code-editor__line-content :deep(.tok-color) {
+  color: var(--syntax-color);
+}
+
+.code-editor__line-content :deep(.tok-stereotype) {
+  color: var(--syntax-stereotype);
+}
+
+.code-editor__line-content :deep(.tok-number) {
+  color: var(--syntax-number);
+}
+
+.code-editor__line-content :deep(.tok-variable) {
+  color: var(--syntax-preprocessor);
+}
+
+.code-editor__line-content :deep(.tok-plain) {
+  color: var(--text);
 }
 
 html,

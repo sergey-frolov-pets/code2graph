@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, toRef, watch } from "vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import FileBadgeIcon from "@/components/icons/FileBadgeIcon.vue";
 import IconButton from "@/components/IconButton.vue";
@@ -38,6 +38,9 @@ import {
   mapDisplayOffsetToSourceOffset,
   mapSourceOffsetToDisplayOffset,
 } from "@/utils/code-folds";
+import { renderHighlightedLine } from "@/utils/plantuml-highlight";
+import { useEditorAutocomplete } from "@/composables/useEditorAutocomplete";
+import type { CompletionKind } from "@/utils/plantuml-autocomplete";
 
 const EDITOR_LINE_HEIGHT = 1.45;
 const FOLD_TOGGLE_WIDTH = "14px";
@@ -50,6 +53,8 @@ const props = defineProps<{
   errorLines?: number[];
   editorFontSize: EditorFontSize;
   editorFontFamily: string;
+  syntaxHighlightEnabled: boolean;
+  autocompleteEnabled: boolean;
   canSave: boolean;
   isValidating: boolean;
   isRendering: boolean;
@@ -77,6 +82,18 @@ const foldDragEnd = ref<number | null>(null);
 
 const { confirm } = useAppDialog();
 const { t, locale } = useLocale();
+
+const autocomplete = useEditorAutocomplete({
+  source,
+  folds,
+  textareaRef,
+  editorFontSize: toRef(props, "editorFontSize"),
+  enabled: toRef(props, "autocompleteEnabled"),
+});
+
+function completionKindLabel(kind: CompletionKind): string {
+  return t(`editor.completion.${kind}`);
+}
 
 const sampleOptions = computed(() =>
   SAMPLE_DIAGRAM_IDS.map((id) => ({
@@ -143,15 +160,27 @@ const gutterRows = computed<GutterRow[]>(() =>
 );
 
 const visibleEditorLines = computed(() =>
-  visibleLines.value.map((item, index) => ({
-    key: `${item.kind}-${item.sourceLine}-${index}`,
-    kind: item.kind,
-    sourceLine: item.sourceLine,
-    text:
+  visibleLines.value.map((item, index) => {
+    const rawLine =
+      item.kind === "placeholder"
+        ? ""
+        : (sourceLines.value[item.sourceLine - 1] ?? "");
+    const text =
       item.kind === "placeholder"
         ? buildFoldPlaceholder(item.hiddenLineCount ?? 0)
-        : sourceLines.value[item.sourceLine - 1] || " ",
-  })),
+        : rawLine || " ";
+
+    return {
+      key: `${item.kind}-${item.sourceLine}-${index}`,
+      kind: item.kind,
+      sourceLine: item.sourceLine,
+      text,
+      html:
+        item.kind === "placeholder" || !props.syntaxHighlightEnabled
+          ? undefined
+          : renderHighlightedLine(rawLine || " "),
+    };
+  }),
 );
 
 const errorLineSet = computed(() => new Set(props.errorLines ?? []));
@@ -269,6 +298,10 @@ function syncScroll(): void {
     highlightsRef.value.scrollTop = textarea.scrollTop;
     highlightsRef.value.scrollLeft = textarea.scrollLeft;
   }
+
+  if (autocomplete.isOpen.value) {
+    autocomplete.refresh();
+  }
 }
 
 function onDisplayInput(event: Event): void {
@@ -278,6 +311,41 @@ function onDisplayInput(event: Event): void {
     source.value,
     folds.value,
   );
+  void nextTick(() => {
+    autocomplete.refresh();
+  });
+}
+
+function onTextareaKeydown(event: KeyboardEvent): void {
+  if (autocomplete.handleKeydown(event)) {
+    return;
+  }
+
+  if (isSnippetsHotkey(event)) {
+    event.preventDefault();
+    snippetsOpen.value = !snippetsOpen.value;
+  }
+}
+
+function onTextareaKeyup(event: KeyboardEvent): void {
+  if (
+    event.key === "ArrowLeft" ||
+    event.key === "ArrowRight" ||
+    event.key === "ArrowUp" ||
+    event.key === "ArrowDown" ||
+    event.key === "Home" ||
+    event.key === "End"
+  ) {
+    autocomplete.refresh();
+  }
+}
+
+function onTextareaClick(): void {
+  autocomplete.refresh();
+}
+
+function onTextareaBlur(): void {
+  autocomplete.close();
 }
 
 function isLineInFoldSelection(sourceLine: number): boolean {
@@ -446,12 +514,16 @@ function onEditorKeydown(event: KeyboardEvent): void {
     isFullscreen.value = false;
     return;
   }
-
-  if (isSnippetsHotkey(event)) {
-    event.preventDefault();
-    snippetsOpen.value = !snippetsOpen.value;
-  }
 }
+
+watch(
+  () => props.autocompleteEnabled,
+  (enabled) => {
+    if (!enabled) {
+      autocomplete.close();
+    }
+  },
+);
 
 watch(isFullscreen, (value) => {
   document.body.style.overflow = value ? "hidden" : "";
@@ -624,6 +696,7 @@ watch(
           <div
             ref="highlightsRef"
             class="code-editor__highlights"
+            :class="{ 'is-syntax-disabled': !syntaxHighlightEnabled }"
             aria-hidden="true"
           >
             <div
@@ -636,21 +709,75 @@ watch(
                 'is-fold-placeholder': line.kind === 'placeholder',
               }"
             >
-              {{ line.text }}
+              <span
+                v-if="syntaxHighlightEnabled && line.html"
+                class="code-editor__line-content"
+                v-html="line.html"
+              />
+              <template v-else-if="syntaxHighlightEnabled">{{ line.text }}</template>
+              <span
+                v-else-if="line.kind === 'placeholder'"
+                class="code-editor__line-spacer"
+              >
+                {{ line.text }}
+              </span>
+              <span v-else class="code-editor__line-spacer" aria-hidden="true"> </span>
             </div>
           </div>
           <textarea
             ref="textareaRef"
             :value="displayText"
             class="code-editor__textarea"
+            :class="{ 'is-plain-text': !syntaxHighlightEnabled }"
             wrap="off"
             spellcheck="false"
             autocomplete="off"
             autocapitalize="off"
             :placeholder="t('editor.placeholder')"
             @input="onDisplayInput"
+            @keydown="onTextareaKeydown"
+            @keyup="onTextareaKeyup"
+            @click="onTextareaClick"
+            @blur="onTextareaBlur"
             @scroll="syncScroll"
           />
+          <ul
+            v-if="
+              autocompleteEnabled &&
+              autocomplete.isOpen.value &&
+              autocomplete.hasSuggestions.value
+            "
+            class="code-editor__completions"
+            role="listbox"
+            :style="{
+              top: `${autocomplete.caretCoords.value.top}px`,
+              left: `${autocomplete.caretCoords.value.left}px`,
+            }"
+          >
+            <li
+              v-for="(item, index) in autocomplete.suggestions.value"
+              :key="`${item.label}-${index}`"
+              class="code-editor__completion-item"
+              :class="{
+                'is-active': index === autocomplete.activeIndex.value,
+                [`is-kind-${item.kind}`]: true,
+              }"
+              role="option"
+              :aria-selected="index === autocomplete.activeIndex.value"
+              @mousedown.prevent="autocomplete.selectIndex(index)"
+            >
+              <span class="code-editor__completion-label">{{ item.label }}</span>
+              <span
+                v-if="item.detailKey"
+                class="code-editor__completion-detail"
+              >
+                {{ t(item.detailKey) }}
+              </span>
+              <span v-else class="code-editor__completion-detail">
+                {{ completionKindLabel(item.kind) }}
+              </span>
+            </li>
+          </ul>
         </div>
       </div>
 
@@ -797,7 +924,6 @@ watch(
   position: absolute;
   inset: 0;
   pointer-events: none;
-  color: transparent;
   background: transparent;
 }
 
@@ -815,6 +941,10 @@ watch(
   background: color-mix(in srgb, var(--surface-muted) 70%, transparent);
 }
 
+.code-editor__highlights.is-syntax-disabled .code-editor__line-spacer {
+  visibility: hidden;
+}
+
 .code-editor__textarea {
   position: absolute;
   inset: 0;
@@ -824,7 +954,78 @@ watch(
   min-height: 0;
   resize: none;
   background: transparent;
+  color: transparent;
+  caret-color: var(--text);
+}
+
+.code-editor__textarea.is-plain-text {
   color: var(--text);
+}
+
+.code-editor__textarea::selection {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.code-editor__completions {
+  position: absolute;
+  z-index: 3;
+  min-width: 180px;
+  max-width: min(360px, 100%);
+  max-height: 220px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.code-editor__completion-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: var(--editor-font-family, var(--font-mono));
+  font-size: calc(var(--editor-font-size) * 0.92);
+  line-height: 1.35;
+}
+
+.code-editor__completion-item.is-active,
+.code-editor__completion-item:hover {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.code-editor__completion-label {
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.code-editor__completion-detail {
+  color: var(--text-muted);
+  font-size: 0.82em;
+  white-space: nowrap;
+}
+
+.code-editor__completion-item.is-kind-context .code-editor__completion-label {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.code-editor__completion-item.is-kind-color .code-editor__completion-label {
+  color: var(--syntax-color);
+}
+
+.code-editor__completion-item.is-kind-swimlane .code-editor__completion-label {
+  color: var(--syntax-keyword);
+}
+
+.code-editor__completion-item.is-kind-c4 .code-editor__completion-label {
+  color: var(--syntax-directive);
 }
 
 .drop-hint {
