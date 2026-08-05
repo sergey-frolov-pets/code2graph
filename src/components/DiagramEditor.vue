@@ -51,6 +51,7 @@ const emit = defineEmits<{
   cleared: [];
   undo: [];
   redo: [];
+  aiPatch: [payload: { start: number; end: number }];
 }>();
 
 const fileInputRef = ref<HTMLInputElement | null>(null);
@@ -60,6 +61,8 @@ const highlightsRef = ref<HTMLDivElement | null>(null);
 const isDragOver = ref(false);
 const isFullscreen = ref(false);
 const snippetsOpen = ref(false);
+const selectionStart = ref(0);
+const selectionEnd = ref(0);
 
 const { confirm } = useAppDialog();
 const { t, locale } = useLocale();
@@ -100,6 +103,34 @@ const canClear = computed(() => Boolean(source.value.trim()));
 const validateLabel = computed(() =>
   props.isValidating ? t("editor.validating") : t("editor.validate"),
 );
+
+const hasTextSelection = computed(
+  () => selectionEnd.value > selectionStart.value,
+);
+
+function updateSelectionState(): void {
+  const textarea = textareaRef.value;
+  if (!textarea) {
+    selectionStart.value = 0;
+    selectionEnd.value = 0;
+    return;
+  }
+
+  selectionStart.value = textarea.selectionStart;
+  selectionEnd.value = textarea.selectionEnd;
+}
+
+function requestAiPatch(): void {
+  updateSelectionState();
+  if (!hasTextSelection.value) {
+    return;
+  }
+
+  emit("aiPatch", {
+    start: selectionStart.value,
+    end: selectionEnd.value,
+  });
+}
 
 async function requestClear(): Promise<void> {
   if (!canClear.value) {
@@ -324,6 +355,13 @@ watch(
           <FileBadgeIcon format="PUML" />
         </IconButton>
         <IconButton
+          :label="t('editor.aiPatch')"
+          :disabled="!hasTextSelection"
+          @click="requestAiPatch"
+        >
+          <ActionIcon name="ai" />
+        </IconButton>
+        <IconButton
           :label="validateLabel"
           :disabled="isValidating || isRendering"
           @click="emit('validateSyntax')"
@@ -423,6 +461,9 @@ watch(
           </div>
           <textarea
             ref="textareaRef"
+            @select="updateSelectionState"
+            @keyup="updateSelectionState"
+            @mouseup="updateSelectionState"
             v-model="source"
             class="code-editor__textarea"
             wrap="off"

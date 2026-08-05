@@ -17,7 +17,8 @@ withDefaults(
       | "zoom-in"
       | "zoom-out"
       | "undo"
-      | "redo";
+      | "redo"
+      | "ai";
     size?: "default" | "large";
   }>(),
   {
@@ -275,6 +276,23 @@ withDefaults(
         stroke="currentColor"
         stroke-width="1.8"
         stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </template>
+
+    <template v-else-if="name === 'ai'">
+      <path
+        d="M12 3l1.2 3.6L16 8l-2.8 1.4L12 13l-1.2-3.6L8 8l2.8-1.4L12 3Z"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M5 16l.8 2.2L8 19l-1.2.8L6 22l-.8-2.2L4 19l1.2-.8L5 16ZM19 14l.6 1.6L21 16l-1 .6L19 18l-.6-1.6L17 16l1-.6L19 14Z"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
         stroke-linejoin="round"
       />
     </template>

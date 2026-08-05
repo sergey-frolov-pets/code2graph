@@ -5,6 +5,7 @@ defineProps<{
   title: string;
   open: boolean;
   variant?: "default" | "success" | "error";
+  wide?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -30,6 +31,7 @@ function onBackdropClick(event: MouseEvent): void {
     >
       <div
         class="modal"
+        :class="{ 'modal--wide': wide }"
         role="dialog"
         :aria-labelledby="`modal-title-${title}`"
         aria-modal="true"
@@ -77,6 +79,11 @@ function onBackdropClick(event: MouseEvent): void {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   overflow: hidden;
+}
+
+.modal--wide {
+  width: min(760px, 100%);
+  max-height: min(90vh, 860px);
 }
 
 .modal-header {
