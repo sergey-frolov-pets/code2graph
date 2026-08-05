@@ -357,4 +357,4 @@ watch(libraryApiUrl, () => {
   />
 </template>
 
-<style scoped src="./library/library-modal.css"></style>
+<style src="./library/library-modal.css"></style>
