@@ -155,7 +155,7 @@ const {
   onCleared: () => emit("cleared"),
 });
 
-const { hasTextSelection, updateSelectionState, requestAiPatch, insertSnippetAtCursor } =
+const { updateSelectionState, requestAiPatch, insertSnippetAtCursor } =
   useEditorSelection({
     source,
     folds,
@@ -240,7 +240,7 @@ onUnmounted(() => {
       :can-undo="canUndo"
       :can-redo="canRedo"
       :can-clear="canClear"
-      :has-text-selection="hasTextSelection"
+      :can-ai-patch="canClear"
       :snippets-open="snippetsOpen"
       :is-fullscreen="isFullscreen"
       @open-file="openFilePicker"

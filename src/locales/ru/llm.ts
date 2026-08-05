@@ -33,9 +33,13 @@ export const llmMessages: LocaleMessages = {
   "llm.gate.openSettingsTitle": "Открыть настройки?",
   "llm.gate.openSettingsMessage": "Перейти в Настройки → AI / LLM?",
   "llm.gate.openSettingsConfirm": "Открыть настройки",
-  "llm.patch.title": "Изменить выделение с AI",
-  "llm.patch.lead": "Выделите фрагмент в редакторе, опишите изменение и примените результат после проверки.",
-  "llm.patch.selection": "Выделенный фрагмент",
+  "llm.patch.title": "Изменить с AI",
+  "llm.patch.lead":
+    "Выделите фрагмент в редакторе, опишите изменение и примените результат после проверки.",
+  "llm.patch.leadFull":
+    "Ничего не выделено — будет переработана вся диаграмма по вашему запросу.",
+  "llm.patch.selection": "Область изменения",
+  "llm.patch.wholeDiagram": "Вся диаграмма",
   "llm.patch.noSelection": "Ничего не выделено",
   "llm.patch.prompt": "Как изменить",
   "llm.patch.promptPlaceholder": "Например: добавь обработку ошибки, переведи подписи на EN…",
@@ -47,6 +51,8 @@ export const llmMessages: LocaleMessages = {
   "llm.patch.noChanges": "Без изменений — LLM вернул тот же фрагмент.",
   "llm.patch.noChangesHint":
     "Запрос не изменил выделение. Уточните промт или выделите другой фрагмент.",
+  "llm.patch.noChangesHintFull":
+    "Запрос не изменил диаграмму. Уточните промт или опишите изменение конкретнее.",
   "llm.patch.generateError": "Не удалось сгенерировать диаграмму",
   "llm.patch.previewError": "Не удалось отрисовать превью",
   "llm.patch.historyLabel": "AI: {prompt}",
