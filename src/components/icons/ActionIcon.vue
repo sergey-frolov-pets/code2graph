@@ -15,7 +15,9 @@ withDefaults(
       | "export"
       | "import"
       | "zoom-in"
-      | "zoom-out";
+      | "zoom-out"
+      | "undo"
+      | "redo";
     size?: "default" | "large";
   }>(),
   {
@@ -252,6 +254,28 @@ withDefaults(
         stroke="currentColor"
         stroke-width="1.8"
         stroke-linecap="round"
+      />
+    </template>
+
+    <template v-else-if="name === 'undo'">
+      <path
+        d="M9 7H5v4M5 11a7 7 0 1 0 1.6 4.4"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </template>
+
+    <template v-else-if="name === 'redo'">
+      <path
+        d="M15 7h4v4M19 11a7 7 0 1 1-1.6-4.4"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
       />
     </template>
   </svg>

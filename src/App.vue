@@ -53,6 +53,7 @@ import {
   setupLaunchQueue,
 } from "@/composables/usePumlShare";
 import { useAppDialog } from "@/composables/useAppDialog";
+import { useEditorHistory } from "@/composables/useEditorHistory";
 import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
 import { useLocale } from "@/composables/useLocale";
 import {
@@ -75,6 +76,13 @@ const {
   guideProviderId,
   closeLlmKeysGuide,
 } = useLlmKeysGuide();
+const {
+  canUndo,
+  canRedo,
+  undo: undoHistory,
+  redo: redoHistory,
+  clearHistory,
+} = useEditorHistory();
 
 const source = ref(getDefaultSource(locale.value));
 const layout = ref<LayoutEngine>(LAYOUT_ENGINES.smetana);
@@ -266,6 +274,31 @@ function applyLoadedSource(content: string, fileName: string): void {
   loadedFileName.value = fileName;
   error.value = "";
   syntaxErrorLines.value = [];
+  clearHistory();
+  persistSettings();
+  scheduleRender();
+}
+
+function applySourceUndo(): void {
+  const previous = undoHistory(source.value);
+  if (!previous) {
+    return;
+  }
+
+  source.value = previous;
+  syntaxErrorLines.value = [];
+  persistSettings();
+  scheduleRender();
+}
+
+function applySourceRedo(): void {
+  const next = redoHistory(source.value);
+  if (!next) {
+    return;
+  }
+
+  source.value = next;
+  syntaxErrorLines.value = [];
   persistSettings();
   scheduleRender();
 }
@@ -286,6 +319,7 @@ function onEditorCleared(): void {
   loadedFileName.value = "diagram.puml";
   syntaxErrorLines.value = [];
   error.value = "";
+  clearHistory();
   persistSettings();
   scheduleRender();
 }
@@ -557,11 +591,15 @@ onUnmounted(() => {
         :can-save="canSave"
         :is-validating="isValidating"
         :is-rendering="isRendering"
+        :can-undo="canUndo"
+        :can-redo="canRedo"
         @file-loaded="onFileLoaded"
         @import-error="onImportError"
         @save-puml="savePuml"
         @validate-syntax="validateSyntax"
         @cleared="onEditorCleared"
+        @undo="applySourceUndo"
+        @redo="applySourceRedo"
       />
 
       <DiagramPreview

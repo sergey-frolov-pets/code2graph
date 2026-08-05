@@ -23,6 +23,7 @@ import { useLlmSettings } from "@/composables/useLlmSettings";
 import { useLocale } from "@/composables/useLocale";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import { isLlmProxyConfigured } from "@/utils/llm-proxy";
+import { testLlmConnection } from "@/services/llm/llm-client";
 
 defineProps<{
   open: boolean;
@@ -58,6 +59,9 @@ const libraryServerInput = ref(libraryApiUrl.value);
 const apiKeyInput = ref("");
 const showApiKey = ref(false);
 const apiKeyError = ref("");
+const isTestingLlm = ref(false);
+const llmTestOk = ref(false);
+const llmTestMessage = ref("");
 
 watch(libraryApiUrl, (value) => {
   libraryServerInput.value = value;
@@ -145,6 +149,17 @@ function clearApiKey(): void {
 
 function openKeysGuideForActiveProvider(): void {
   openLlmKeysGuide(isActiveProviderByok.value ? llmProviderId.value : undefined);
+}
+
+async function onTestLlmConnection(): Promise<void> {
+  isTestingLlm.value = true;
+  llmTestMessage.value = "";
+  llmTestOk.value = false;
+
+  const result = await testLlmConnection();
+  llmTestOk.value = result.ok;
+  llmTestMessage.value = result.message;
+  isTestingLlm.value = false;
 }
 </script>
 
@@ -350,6 +365,28 @@ function openKeysGuideForActiveProvider(): void {
           </button>
         </div>
       </template>
+
+      <div class="settings-key-actions">
+        <button
+          class="btn btn-primary"
+          type="button"
+          :disabled="isTestingLlm"
+          @click="onTestLlmConnection"
+        >
+          {{
+            isTestingLlm ? t("settings.llmTestRunning") : t("settings.llmTestConnection")
+          }}
+        </button>
+      </div>
+
+      <p
+        v-if="llmTestMessage"
+        class="settings-test-result"
+        :class="llmTestOk ? 'is-success' : 'is-error'"
+      >
+        {{ llmTestOk ? t("settings.llmTestSuccess") : t("settings.llmTestFailed") }}:
+        {{ llmTestMessage }}
+      </p>
     </div>
 
     <div class="settings-section">
@@ -497,6 +534,25 @@ function openKeysGuideForActiveProvider(): void {
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 8px;
+}
+
+.settings-test-result {
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.settings-test-result.is-success {
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+  color: var(--success);
+}
+
+.settings-test-result.is-error {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
 }
 
 .settings-links {

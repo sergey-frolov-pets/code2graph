@@ -49,6 +49,8 @@ export const ruMessages: LocaleMessages = {
   "editor.placeholder": "@startuml\nAlice -> Bob : Hello\n@enduml",
   "editor.snippets": "Сниппеты",
   "editor.snippetsTooltip": "Вставить фрагмент PlantUML",
+  "editor.undo": "Отменить (Ctrl+Z)",
+  "editor.redo": "Повторить (Ctrl+Y)",
 
   "snippets.panelTitle": "Сниппеты PlantUML",
   "snippets.add": "Добавить сниппет",
@@ -392,6 +394,10 @@ export const ruMessages: LocaleMessages = {
   "settings.llmApiKeyStatusMissing": "Ключ не задан",
   "settings.llmApiKeyInvalid": "Некорректный ключ (минимум 8 символов).",
   "settings.llmConsent": "Согласен отправлять текст PlantUML в облачный LLM",
+  "settings.llmTestConnection": "Проверить подключение",
+  "settings.llmTestRunning": "Проверка…",
+  "settings.llmTestSuccess": "Подключение успешно",
+  "settings.llmTestFailed": "Ошибка подключения",
 
   "llm.gate.noConsentTitle": "Нужно согласие",
   "llm.gate.noConsentMessage": "Включите согласие в Настройки → AI / LLM, чтобы отправлять диаграммы в облачный LLM.",
@@ -508,6 +514,8 @@ export const enMessages: LocaleMessages = {
   "editor.placeholder": "@startuml\nAlice -> Bob : Hello\n@enduml",
   "editor.snippets": "Snippets",
   "editor.snippetsTooltip": "Insert PlantUML fragment",
+  "editor.undo": "Undo (Ctrl+Z)",
+  "editor.redo": "Redo (Ctrl+Y)",
 
   "snippets.panelTitle": "PlantUML snippets",
   "snippets.add": "Add snippet",
@@ -851,6 +859,10 @@ export const enMessages: LocaleMessages = {
   "settings.llmApiKeyStatusMissing": "Key is not set",
   "settings.llmApiKeyInvalid": "Invalid key (at least 8 characters).",
   "settings.llmConsent": "I agree to send PlantUML text to a cloud LLM",
+  "settings.llmTestConnection": "Test connection",
+  "settings.llmTestRunning": "Testing…",
+  "settings.llmTestSuccess": "Connection successful",
+  "settings.llmTestFailed": "Connection failed",
 
   "llm.gate.noConsentTitle": "Consent required",
   "llm.gate.noConsentMessage": "Enable consent in Settings → AI / LLM to send diagrams to a cloud LLM.",
