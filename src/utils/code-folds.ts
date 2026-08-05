@@ -3,6 +3,65 @@ export interface CodeFoldRegion {
   startLine: number;
   endLine: number;
   collapsed: boolean;
+  label?: string;
+}
+
+export function isBookmark(region: Pick<CodeFoldRegion, "startLine" | "endLine">): boolean {
+  return region.startLine === region.endLine;
+}
+
+export function normalizeLineRange(
+  fromLine: number,
+  toLine: number,
+): { startLine: number; endLine: number } {
+  if (toLine < fromLine) {
+    return { startLine: toLine, endLine: fromLine };
+  }
+
+  return { startLine: fromLine, endLine: toLine };
+}
+
+export function parseLineNumberInput(value: string): number | null {
+  const trimmed = value.trim();
+  if (!/^\d+$/.test(trimmed)) {
+    return null;
+  }
+
+  const parsed = Number.parseInt(trimmed, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+export function isLineInRange(line: number, maxLine: number): boolean {
+  return line >= 1 && line <= maxLine;
+}
+
+export function canAddBookmark(
+  folds: CodeFoldRegion[],
+  line: number,
+  maxLine: number,
+): boolean {
+  if (!isLineInRange(line, maxLine)) {
+    return false;
+  }
+
+  return !folds.some(
+    (fold) => fold.startLine === line && fold.endLine === line,
+  );
+}
+
+export function compareRegions(
+  a: Pick<CodeFoldRegion, "startLine" | "endLine">,
+  b: Pick<CodeFoldRegion, "startLine" | "endLine">,
+): number {
+  if (a.startLine !== b.startLine) {
+    return a.startLine - b.startLine;
+  }
+
+  return a.endLine - b.endLine;
+}
+
+export function sortRegions(regions: CodeFoldRegion[]): CodeFoldRegion[] {
+  return [...regions].sort(compareRegions);
 }
 
 export type VisibleLineKind = "source" | "placeholder";
@@ -52,6 +111,33 @@ export function canAddFold(
   return folds.every((fold) => rangesNestOrSeparate(fold, candidate));
 }
 
+export function canAddRegion(
+  folds: CodeFoldRegion[],
+  fromLine: number,
+  toLine: number | null,
+  maxLine: number,
+): boolean {
+  if (!isLineInRange(fromLine, maxLine)) {
+    return false;
+  }
+
+  if (toLine === null) {
+    return canAddBookmark(folds, fromLine, maxLine);
+  }
+
+  if (!isLineInRange(toLine, maxLine)) {
+    return false;
+  }
+
+  const { startLine, endLine } = normalizeLineRange(fromLine, toLine);
+
+  if (isBookmark({ startLine, endLine })) {
+    return canAddBookmark(folds, startLine, maxLine);
+  }
+
+  return canAddFold(folds, startLine, endLine);
+}
+
 export function buildFoldPlaceholder(hiddenLineCount: number): string {
   return `${FOLD_PLACEHOLDER_PREFIX}\u22EF ${hiddenLineCount}`;
 }
@@ -62,7 +148,7 @@ export function isFoldPlaceholderLine(line: string): boolean {
 
 export function getCollapsedFolds(folds: CodeFoldRegion[]): CodeFoldRegion[] {
   return folds.filter(
-    (fold) => fold.collapsed && fold.endLine > fold.startLine,
+    (fold) => fold.collapsed && !isBookmark(fold),
   );
 }
 

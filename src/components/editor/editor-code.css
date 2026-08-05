@@ -22,6 +22,20 @@
   background: var(--surface);
 }
 
+.code-editor__gutter-wrap {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  min-height: 0;
+  width: calc(
+    var(--fold-toggle-width) + var(--gutter-chars) * 1ch +
+      var(--gutter-padding-inline) * 2 + 4px
+  );
+  border-right: 1px solid var(--border);
+  background: var(--surface-muted);
+}
+
 .code-editor__gutter,
 .code-editor__highlights,
 .code-editor__textarea {
@@ -38,20 +52,44 @@
 }
 
 .code-editor__gutter {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   align-self: stretch;
-  width: calc(
-    var(--fold-toggle-width) + var(--gutter-chars) * 1ch +
-      var(--gutter-padding-inline) * 2 + 4px
-  );
+  width: 100%;
   min-height: 0;
   padding-block: var(--editor-padding);
   padding-inline: var(--gutter-padding-inline);
-  border-right: 1px solid var(--border);
-  background: var(--surface-muted);
   color: var(--text-muted);
   overflow: hidden;
   user-select: none;
+}
+
+.code-editor__gutter.is-line-pick-active .code-editor__gutter-line {
+  cursor: pointer;
+}
+
+.code-editor__gutter.is-line-pick-active .code-editor__gutter-number {
+  color: var(--text);
+}
+
+.code-editor__gutter-regions-btn {
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 36px;
+  margin: 0;
+  padding: 6px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-muted) 80%, var(--surface));
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.code-editor__gutter-regions-btn:hover,
+.code-editor__gutter-regions-btn[aria-expanded="true"] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-muted));
 }
 
 .code-editor__gutter-line {
