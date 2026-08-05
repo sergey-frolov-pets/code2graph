@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import ActionIcon from "@/components/icons/ActionIcon.vue";
+import IconButton from "@/components/IconButton.vue";
 import LibraryTransferTab from "@/components/LibraryTransferTab.vue";
+import SectionEditModal from "@/components/SectionEditModal.vue";
 import {
   MAX_PUML_FILE_BYTES,
   type DiagramDto,
@@ -67,6 +70,11 @@ const transferDiagrams = ref<DiagramDto[]>([]);
 const importBundle = ref<LibraryExportBundle | null>(null);
 const isTransferProcessing = ref(false);
 
+const isSectionsEditMode = ref(false);
+const editingSectionId = ref<string | null>(null);
+const isSectionModalOpen = ref(false);
+const isSectionSaving = ref(false);
+
 const maxSizeKb = computed(() => Math.round(MAX_PUML_FILE_BYTES / 1024));
 
 const statusHint = computed(() => {
@@ -111,12 +119,23 @@ function formatDate(value: string): string {
 function flattenSections(
   items: typeof sectionTree.value,
   depth = 0,
-): Array<{ id: string; title: string; depth: number }> {
-  const result: Array<{ id: string; title: string; depth: number }> = [];
+  parentId: string | null = null,
+): Array<{ id: string; title: string; depth: number; parentId: string | null }> {
+  const result: Array<{
+    id: string;
+    title: string;
+    depth: number;
+    parentId: string | null;
+  }> = [];
   for (const item of items) {
-    result.push({ id: item.id, title: item.title, depth });
+    result.push({
+      id: item.id,
+      title: item.title,
+      depth,
+      parentId: item.parentId ?? parentId,
+    });
     if (item.children?.length) {
-      result.push(...flattenSections(item.children, depth + 1));
+      result.push(...flattenSections(item.children, depth + 1, item.id));
     }
   }
   return result;
@@ -125,6 +144,18 @@ function flattenSections(
 const flatSectionOptions = computed(() =>
   flattenSections(sectionTree.value),
 );
+
+const editingSection = computed(() => {
+  if (!editingSectionId.value) {
+    return null;
+  }
+
+  return (
+    flatSectionOptions.value.find(
+      (section) => section.id === editingSectionId.value,
+    ) ?? null
+  );
+});
 
 function resetBrowseFlow(): void {
   browseStep.value = "sections";
@@ -266,6 +297,59 @@ async function createSection(parentId: string | null): Promise<void> {
   }
 }
 
+function toggleSectionsEditMode(): void {
+  isSectionsEditMode.value = !isSectionsEditMode.value;
+}
+
+function openSectionEditor(sectionId: string): void {
+  editingSectionId.value = sectionId;
+  isSectionModalOpen.value = true;
+}
+
+function closeSectionEditor(): void {
+  isSectionModalOpen.value = false;
+  editingSectionId.value = null;
+}
+
+async function onSectionRowClick(sectionId: string): Promise<void> {
+  if (isSectionsEditMode.value) {
+    openSectionEditor(sectionId);
+    return;
+  }
+  await onSectionPick(sectionId);
+}
+
+async function onAllSectionsClick(): Promise<void> {
+  if (isSectionsEditMode.value) {
+    return;
+  }
+  await onSectionPick(null);
+}
+
+async function saveSectionEdit(payload: {
+  title: string;
+  parentId: string | null;
+}): Promise<void> {
+  if (!editingSectionId.value) {
+    return;
+  }
+
+  isSectionSaving.value = true;
+  uploadError.value = "";
+  try {
+    await library.editSection(editingSectionId.value, payload);
+    closeSectionEditor();
+    if (activeTab.value === "transfer") {
+      await loadTransferData();
+    }
+  } catch (error) {
+    uploadError.value =
+      error instanceof Error ? error.message : t("library.syncError");
+  } finally {
+    isSectionSaving.value = false;
+  }
+}
+
 async function onDeleteSection(sectionId: string, title: string): Promise<void> {
   const confirmed = await confirm({
     title: t("app.delete"),
@@ -382,6 +466,8 @@ watch(
       importBundle.value = null;
       activeTab.value = "browse";
       resetBrowseFlow();
+      isSectionsEditMode.value = false;
+      closeSectionEditor();
       void library.refresh();
     }
   },
@@ -413,23 +499,16 @@ watch(libraryApiUrl, () => {
           </button>
           <h2 class="library-header__title">{{ headerTitle }}</h2>
           <div class="library-header__actions">
-            <button
-              class="btn btn-icon"
-              type="button"
-              :title="t('library.refresh')"
+            <IconButton
+              :label="t('library.refresh')"
               :disabled="isSyncing"
               @click="library.refresh()"
             >
-              ↻
-            </button>
-            <button
-              class="btn btn-icon library-header__close"
-              type="button"
-              :aria-label="t('app.close')"
-              @click="emit('close')"
-            >
-              ×
-            </button>
+              <ActionIcon name="refresh" />
+            </IconButton>
+            <IconButton :label="t('app.close')" @click="emit('close')">
+              <ActionIcon name="close" />
+            </IconButton>
           </div>
         </div>
 
@@ -476,13 +555,22 @@ watch(libraryApiUrl, () => {
             <span class="status-pill" :class="isOnline ? 'is-ready' : 'is-error'">
               {{ isOnline ? t("app.online") : t("app.offline") }}
             </span>
-            <button
-              class="btn"
-              type="button"
-              @click="createSection(null)"
-            >
-              + {{ t("library.addSection") }}
-            </button>
+            <div class="library-step__toolbar-actions">
+              <IconButton
+                :label="t('library.edit')"
+                :pressed="isSectionsEditMode"
+                @click="toggleSectionsEditMode"
+              >
+                <ActionIcon name="edit" />
+              </IconButton>
+              <IconButton
+                v-if="isSectionsEditMode"
+                :label="t('library.addSection')"
+                @click="createSection(null)"
+              >
+                <ActionIcon name="plus" />
+              </IconButton>
+            </div>
           </div>
 
           <div class="library-step__content">
@@ -490,7 +578,7 @@ watch(libraryApiUrl, () => {
               class="library-row"
               :class="{ 'is-active': selectedSectionId === null }"
               type="button"
-              @click="onSectionPick(null)"
+              @click="onAllSectionsClick"
             >
               <span class="library-row__title">{{ t("library.allSections") }}</span>
               <span class="library-row__chevron">›</span>
@@ -506,28 +594,24 @@ watch(libraryApiUrl, () => {
                 :class="{ 'is-active': selectedSectionId === section.id }"
                 type="button"
                 :style="{ paddingLeft: `${16 + section.depth * 16}px` }"
-                @click="onSectionPick(section.id)"
+                @click="onSectionRowClick(section.id)"
               >
                 <span class="library-row__title">{{ section.title }}</span>
-                <span class="library-row__chevron">›</span>
+                <span v-if="!isSectionsEditMode" class="library-row__chevron">›</span>
               </button>
-              <div class="library-section-row__actions">
-                <button
-                  class="btn btn-icon"
-                  type="button"
-                  :title="t('library.addSubsection')"
+              <div v-if="isSectionsEditMode" class="library-section-row__actions">
+                <IconButton
+                  :label="t('library.addSubsection')"
                   @click.stop="createSection(section.id)"
                 >
-                  +
-                </button>
-                <button
-                  class="btn btn-icon"
-                  type="button"
-                  :title="t('app.delete')"
+                  <ActionIcon name="plus" />
+                </IconButton>
+                <IconButton
+                  :label="t('app.delete')"
                   @click.stop="onDeleteSection(section.id, section.title)"
                 >
-                  ×
-                </button>
+                  <ActionIcon name="trash" />
+                </IconButton>
               </div>
             </div>
           </div>
@@ -748,6 +832,14 @@ watch(libraryApiUrl, () => {
       </div>
     </div>
   </Teleport>
+
+  <SectionEditModal
+    :open="isSectionModalOpen"
+    :section="editingSection"
+    :section-options="flatSectionOptions"
+    @close="closeSectionEditor"
+    @save="saveSectionEdit"
+  />
 </template>
 
 <style scoped>
@@ -844,6 +936,12 @@ watch(libraryApiUrl, () => {
   justify-content: space-between;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.library-step__toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .library-step__content {

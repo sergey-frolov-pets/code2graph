@@ -9,6 +9,7 @@ import {
   type LibraryExportBundle,
   type SectionDto,
   type UpdateDiagramPayload,
+  type UpdateSectionPayload,
 } from "@/constants/diagram-library";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import {
@@ -20,6 +21,7 @@ import {
   fetchDiagram,
   fetchDiagrams,
   fetchSections,
+  updateSection,
   uploadDiagramFile,
 } from "@/utils/diagram-api";
 import {
@@ -41,6 +43,7 @@ import {
   searchLocalLibrary,
   setCacheMeta,
   updateLocalDiagram,
+  updateLocalSection,
 } from "@/utils/diagram-store";
 import {
   buildLocalExportBundle,
@@ -304,6 +307,30 @@ export function useDiagramLibrary() {
     usingCache.value = true;
   }
 
+  async function editSection(
+    sectionId: string,
+    payload: UpdateSectionPayload,
+  ): Promise<SectionDto> {
+    if (shouldUseServer.value && apiAvailable.value) {
+      try {
+        const section = await updateSection(
+          sectionId,
+          payload,
+          libraryApiUrl.value,
+        );
+        await refresh();
+        return section;
+      } catch {
+        // fallback to local storage
+      }
+    }
+
+    const section = await updateLocalSection(sectionId, payload);
+    await applyLocalState();
+    usingCache.value = true;
+    return section;
+  }
+
   async function addDiagram(payload: CreateDiagramPayload): Promise<DiagramDto> {
     if (shouldUseServer.value) {
       try {
@@ -477,6 +504,7 @@ export function useDiagramLibrary() {
     selectDiagram,
     addSection,
     removeSection,
+    editSection,
     addDiagram,
     addDiagramFromFile,
     removeDiagram,

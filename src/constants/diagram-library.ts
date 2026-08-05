@@ -63,6 +63,12 @@ export interface CreateSectionPayload {
   sortOrder?: number;
 }
 
+export interface UpdateSectionPayload {
+  title?: string;
+  parentId?: string | null;
+  sortOrder?: number;
+}
+
 export interface UpdateDiagramPayload {
   title?: string;
   description?: string;

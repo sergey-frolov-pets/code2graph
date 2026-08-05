@@ -16,6 +16,8 @@ withDefaults(
       | "import"
       | "zoom-in"
       | "zoom-out"
+      | "edit"
+      | "close"
       | "history";
     size?: "default" | "large";
   }>(),
@@ -256,8 +258,34 @@ withDefaults(
       />
     </template>
 
+    <template v-else-if="name === 'edit'">
+      <path
+        d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M13.5 6.5l3 3"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+      />
+    </template>
+
+    <template v-else-if="name === 'close'">
+      <path
+        d="M6 6l12 12M18 6 6 18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.9"
+        stroke-linecap="round"
+      />
+    </template>
+
     <template v-else-if="name === 'history'">
-      <!-- Lucide history (ISC) https://lucide.dev/icons/history -->
       <path
         d="M3 3v5h5"
         fill="none"
