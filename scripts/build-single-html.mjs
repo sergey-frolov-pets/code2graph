@@ -130,6 +130,10 @@ ${escapeScriptContent(appJs)}
     path.join(appRoot, "public", "pwa-install-bootstrap.js"),
     path.join(distDir, "pwa-install-bootstrap.js"),
   );
+  copyFileSync(
+    path.join(appRoot, "public", "llm-api-keys.html"),
+    path.join(distDir, "llm-api-keys.html"),
+  );
   const cnamePath = path.join(appRoot, "public", "CNAME");
   if (existsSync(cnamePath)) {
     copyFileSync(cnamePath, path.join(distDir, "CNAME"));

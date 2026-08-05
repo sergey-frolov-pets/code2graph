@@ -451,13 +451,14 @@ async function onTestLlmConnection(): Promise<void> {
         >
           {{ t("settings.plantumlGuide") }}
         </a>
-        <button
+        <a
           class="btn settings-link-btn"
-          type="button"
-          @click="openLlmKeysGuide()"
+          :href="APP_LINKS.llmApiKeysGuide"
+          target="_blank"
+          rel="noopener noreferrer"
         >
           {{ t("settings.llmKeysGuide") }}
-        </button>
+        </a>
         <button
           class="btn settings-link-btn"
           type="button"

@@ -101,6 +101,10 @@ ${escapeScriptContent(appJs)}
   rmSync(singleDir, { recursive: true, force: true });
   mkdirSync(singleDir, { recursive: true });
   writeFileSync(path.join(singleDir, "index.html"), html, "utf8");
+  copyFileSync(
+    path.join(appRoot, "public", "llm-api-keys.html"),
+    path.join(singleDir, "llm-api-keys.html"),
+  );
   cpSync(
     path.join(appRoot, "public", "plantuml-lib"),
     path.join(singleDir, "plantuml-lib"),
