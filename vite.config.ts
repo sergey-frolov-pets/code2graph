@@ -1,11 +1,18 @@
 import path from "node:path";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import vue from "@vitejs/plugin-vue";
 
 const appRoot = fileURLToPath(new URL(".", import.meta.url));
+const packageJson = JSON.parse(
+  readFileSync(path.join(appRoot, "package.json"), "utf8"),
+) as { version: string };
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(packageJson.version),
+  },
   resolve: {
     alias: {
       "@": path.resolve(appRoot, "src"),
@@ -21,6 +28,10 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    host: "127.0.0.1",
+    port: 4173,
+  },
   build: {
     outDir: "dist",
     emptyOutDir: true,
@@ -35,5 +46,9 @@ export default defineConfig({
         entryFileNames: "assets/app.js",
       },
     },
+  },
+  test: {
+    environment: "node",
+    include: ["src/**/*.test.ts"],
   },
 });

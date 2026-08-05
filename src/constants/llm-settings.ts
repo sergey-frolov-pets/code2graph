@@ -1,6 +1,7 @@
 import {
   DEFAULT_LLM_PROVIDER_ID,
   isLlmProviderId,
+  resolveLlmProviderId,
 } from "@/constants/llm-providers";
 
 export const STORAGE_KEY_LLM_PROVIDER = "plantuml-smetana-llm-provider";
@@ -12,8 +13,11 @@ export const LLM_API_KEYS_GUIDE_FILE = "llm-api-keys.html";
 export function readStoredLlmProviderId(): string {
   try {
     const saved = localStorage.getItem(STORAGE_KEY_LLM_PROVIDER);
-    if (saved && isLlmProviderId(saved)) {
-      return saved;
+    if (saved) {
+      const resolved = resolveLlmProviderId(saved);
+      if (isLlmProviderId(resolved)) {
+        return resolved;
+      }
     }
   } catch {
     // file:// может блокировать localStorage

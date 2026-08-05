@@ -1,11 +1,7 @@
 import { ref, watch } from "vue";
-import {
-  DEFAULT_LOCALE,
-  isAppLocale,
-  STORAGE_KEY_LOCALE,
-  type AppLocale,
-} from "@/constants/i18n";
+import { DEFAULT_LOCALE, isAppLocale, STORAGE_KEY_LOCALE, type AppLocale } from "@/constants/i18n";
 import { formatMessage, messagesByLocale } from "@/locales/messages";
+import { readStorageItem, writeStorageItem } from "@/utils/safe-storage";
 
 export function translateForLocale(
   locale: AppLocale,
@@ -20,13 +16,9 @@ export function translateForLocale(
 const locale = ref<AppLocale>(readInitialLocale());
 
 export function readInitialLocale(): AppLocale {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY_LOCALE);
-    if (saved && isAppLocale(saved)) {
-      return saved;
-    }
-  } catch {
-    // file:// может блокировать localStorage
+  const saved = readStorageItem(STORAGE_KEY_LOCALE);
+  if (saved && isAppLocale(saved)) {
+    return saved;
   }
 
   const browserLang = navigator.language.slice(0, 2).toLowerCase();
@@ -38,11 +30,7 @@ export function readInitialLocale(): AppLocale {
 }
 
 function persistLocale(value: AppLocale): void {
-  try {
-    localStorage.setItem(STORAGE_KEY_LOCALE, value);
-  } catch {
-    // file:// может блокировать localStorage
-  }
+  writeStorageItem(STORAGE_KEY_LOCALE, value);
 }
 
 function applyDocumentLocale(value: AppLocale): void {

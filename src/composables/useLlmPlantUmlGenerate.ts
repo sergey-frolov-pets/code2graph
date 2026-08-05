@@ -1,4 +1,5 @@
 import type { LayoutEngine } from "@/constants";
+import type { RenderMode } from "@/constants/render-settings";
 import {
   buildPatchNoChangeRetryPrompt,
   buildPatchPrompt,
@@ -34,6 +35,7 @@ export async function generateValidPlantUml(
   userPrompt: string,
   layout: LayoutEngine,
   darkMode: boolean,
+  renderMode: RenderMode,
   handlers?: LlmGateHandlers,
   systemContext = "You generate PlantUML diagram source code.",
 ): Promise<GenerateValidPlantUmlResult> {
@@ -53,6 +55,7 @@ export async function generateValidPlantUml(
       chatResult.content,
       layout,
       darkMode,
+      renderMode,
     );
 
     if (validation.valid && validation.plantuml) {
@@ -87,6 +90,7 @@ export async function generateValidPlantUmlPatch(
   userPrompt: string,
   layout: LayoutEngine,
   darkMode: boolean,
+  renderMode: RenderMode,
   handlers?: LlmGateHandlers,
 ): Promise<GenerateValidPlantUmlPatchResult> {
   const patchUserPrompt = buildPatchPrompt(
@@ -144,7 +148,12 @@ export async function generateValidPlantUmlPatch(
       parsed,
     );
 
-    const validation = await validateLlmPlantUmlSource(mergedSource, layout, darkMode);
+    const validation = await validateLlmPlantUmlSource(
+      mergedSource,
+      layout,
+      darkMode,
+      renderMode,
+    );
 
     if (validation.valid) {
       if (!hasChanges) {

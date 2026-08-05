@@ -3,9 +3,10 @@ import { computed, ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import { APP_LINKS, LAYOUT_ENGINES, type LayoutEngine } from "@/constants";
 import {
-  ALL_LLM_PROVIDERS,
-  LLM_PROVIDER_KIND,
-} from "@/constants/llm-providers";
+  RENDER_MODES,
+  type RenderMode,
+} from "@/constants/render-settings";
+import { ALL_LLM_PROVIDERS } from "@/constants/llm-providers";
 import {
   EDITOR_FONT_FAMILY_OPTIONS,
   EDITOR_FONT_SIZE_OPTIONS,
@@ -22,23 +23,28 @@ import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
 import { useLlmSettings } from "@/composables/useLlmSettings";
 import { useLocale } from "@/composables/useLocale";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
-import { isLlmProxyConfigured } from "@/utils/llm-proxy";
 import { testLlmConnection } from "@/services/llm/llm-client";
 
 defineProps<{
   open: boolean;
   layout: LayoutEngine;
+  renderMode: RenderMode;
   darkMode: boolean;
   editorFontSize: EditorFontSize;
   editorFontFamilyId: EditorFontFamilyId;
+  editorSyntaxHighlight: boolean;
+  editorAutocomplete: boolean;
 }>();
 
 const emit = defineEmits<{
   close: [];
   "update:layout": [value: LayoutEngine];
+  "update:renderMode": [value: RenderMode];
   "update:darkMode": [value: boolean];
   "update:editorFontSize": [value: EditorFontSize];
   "update:editorFontFamilyId": [value: EditorFontFamilyId];
+  "update:editorSyntaxHighlight": [value: boolean];
+  "update:editorAutocomplete": [value: boolean];
   openAbout: [];
 }>();
 
@@ -48,8 +54,7 @@ const { openLlmKeysGuide } = useLlmKeysGuide();
 const {
   llmProviderId,
   llmConsent,
-  isActiveProviderByok,
-  isActiveProviderFree,
+  activeProvider,
   setLlmProviderId,
   setLlmConsent,
 } = useLlmSettings();
@@ -85,6 +90,17 @@ const layoutOptions = Object.entries(LAYOUT_ENGINES).map(([label, value]) => ({
   value,
 }));
 
+const renderModeOptions = [
+  {
+    value: RENDER_MODES.offline,
+    labelKey: "settings.renderModeOffline",
+  },
+  {
+    value: RENDER_MODES.online,
+    labelKey: "settings.renderModeOnline",
+  },
+] as const;
+
 const fontFamilyOptions = computed(() =>
   EDITOR_FONT_FAMILY_OPTIONS.map((option) => ({
     ...option,
@@ -94,26 +110,18 @@ const fontFamilyOptions = computed(() =>
 
 const llmProviderOptions = computed(() =>
   ALL_LLM_PROVIDERS.map((provider) => {
-    const kindBadge =
-      provider.kind === LLM_PROVIDER_KIND.FREE_BUILTIN
-        ? t("settings.llmFreeBadge")
-        : t("settings.llmByokBadge");
     const recommendedBadge = provider.recommended
       ? ` — ${t("settings.llmRecommendedBadge")}`
       : "";
 
     return {
       id: provider.id,
-      label: `${t(provider.nameKey)} ${kindBadge}${recommendedBadge}`,
+      label: `${t(provider.nameKey)}${recommendedBadge}`,
     };
   }),
 );
 
 const hasActiveApiKey = computed(() => hasLlmApiKey(llmProviderId.value));
-
-const showNoProxyWarning = computed(
-  () => isActiveProviderFree.value && !isLlmProxyConfigured(),
-);
 
 function onProviderChange(event: Event): void {
   setLlmProviderId((event.target as HTMLSelectElement).value);
@@ -148,7 +156,7 @@ function clearApiKey(): void {
 }
 
 function openKeysGuideForActiveProvider(): void {
-  openLlmKeysGuide(isActiveProviderByok.value ? llmProviderId.value : undefined);
+  openLlmKeysGuide(llmProviderId.value);
 }
 
 async function onTestLlmConnection(): Promise<void> {
@@ -211,10 +219,61 @@ async function onTestLlmConnection(): Promise<void> {
           </option>
         </select>
       </label>
+
+      <label class="settings-field settings-field--checkbox">
+        <input
+          type="checkbox"
+          :checked="editorSyntaxHighlight"
+          @change="
+            emit(
+              'update:editorSyntaxHighlight',
+              ($event.target as HTMLInputElement).checked,
+            )
+          "
+        />
+        <span>{{ t("settings.syntaxHighlight") }}</span>
+      </label>
+
+      <label class="settings-field settings-field--checkbox">
+        <input
+          type="checkbox"
+          :checked="editorAutocomplete"
+          @change="
+            emit(
+              'update:editorAutocomplete',
+              ($event.target as HTMLInputElement).checked,
+            )
+          "
+        />
+        <span>{{ t("settings.autocomplete") }}</span>
+      </label>
     </div>
 
     <div class="settings-section">
       <h3 class="settings-section__title">{{ t("settings.rendering") }}</h3>
+
+      <label class="settings-field">
+        <span class="settings-field__label">{{ t("settings.renderMode") }}</span>
+        <select
+          class="select"
+          :value="renderMode"
+          @change="
+            emit(
+              'update:renderMode',
+              ($event.target as HTMLSelectElement).value as RenderMode,
+            )
+          "
+        >
+          <option
+            v-for="option in renderModeOptions"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ t(option.labelKey) }}
+          </option>
+        </select>
+        <span class="settings-field__hint">{{ t("settings.renderModeHint") }}</span>
+      </label>
 
       <label class="settings-field">
         <span class="settings-field__label">{{ t("settings.layoutEngine") }}</span>
@@ -301,16 +360,11 @@ async function onTestLlmConnection(): Promise<void> {
         </select>
       </label>
 
-      <p v-if="isActiveProviderFree" class="settings-field__hint">
-        {{ t("settings.llmFreeHint") }}
+      <p v-if="activeProvider" class="settings-field__hint">
+        {{ t(activeProvider.descriptionKey) }}
       </p>
 
-      <p v-if="showNoProxyWarning" class="settings-warning">
-        {{ t("settings.llmNoProxyWarning") }}
-      </p>
-
-      <template v-if="isActiveProviderByok">
-        <p class="settings-field__label settings-key-status">
+      <p class="settings-field__label settings-key-status">
           <span
             class="settings-key-status__badge"
             :class="hasActiveApiKey ? 'is-set' : 'is-missing'"
@@ -345,6 +399,25 @@ async function onTestLlmConnection(): Promise<void> {
             </button>
           </div>
           <span class="settings-field__hint">{{ t("settings.llmApiKeyHint") }}</span>
+          <p v-if="activeProvider?.keyUrl" class="settings-field__links">
+            <a
+              :href="activeProvider.keyUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ t("settings.llmGetApiKey") }}
+            </a>
+            <template v-if="activeProvider.docsUrl">
+              ·
+              <a
+                :href="activeProvider.docsUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {{ t("settings.llmProviderDocs") }}
+              </a>
+            </template>
+          </p>
           <span v-if="apiKeyError" class="settings-field__error">{{ apiKeyError }}</span>
         </label>
 
@@ -364,7 +437,6 @@ async function onTestLlmConnection(): Promise<void> {
             {{ t("settings.llmKeysGuide") }}
           </button>
         </div>
-      </template>
 
       <div class="settings-key-actions">
         <button
@@ -474,6 +546,15 @@ async function onTestLlmConnection(): Promise<void> {
   font-size: 0.8rem;
   color: var(--text-muted);
   line-height: 1.35;
+}
+
+.settings-field__links {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+}
+
+.settings-field__links a {
+  color: var(--accent);
 }
 
 .settings-field__error {

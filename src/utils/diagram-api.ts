@@ -4,8 +4,9 @@ import type {
   DiagramDto,
   DiagramListItemDto,
   SectionDto,
+  UpdateSectionPayload,
 } from "@/constants/diagram-library";
-import { getLibraryApiBaseUrl } from "@/composables/useLibraryApiUrl";
+import { getLibraryApiBaseUrl } from "@/config/library-api";
 
 export class DiagramApiError extends Error {
   readonly status: number;
@@ -87,6 +88,22 @@ export async function deleteSection(
   baseUrl?: string,
 ): Promise<void> {
   await requestJson(`/sections/${sectionId}`, { method: "DELETE" }, baseUrl);
+}
+
+export async function updateSection(
+  sectionId: string,
+  payload: UpdateSectionPayload,
+  baseUrl?: string,
+): Promise<SectionDto> {
+  return requestJson(
+    `/sections/${sectionId}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    baseUrl,
+  );
 }
 
 export async function fetchDiagrams(

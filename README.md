@@ -36,6 +36,14 @@ npm ci
 npm run dev
 ```
 
+Проверки перед коммитом:
+
+```bash
+npm run typecheck:all
+npm run test
+npm run check:i18n
+```
+
 С API-сервером (библиотека + free LLM):
 
 ```bash
@@ -90,6 +98,8 @@ cd server && npm run dev
 ## Деплой на GitHub Pages
 
 Сайт публикуется автоматически при пуше в `main` (workflow `.github/workflows/deploy-pages.yml`).
+
+Подробности о таргетах деплоя (GitHub Pages vs Netlify): [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ### Настройка домена `puml.sergey-frolov.ru`
 

@@ -1,0 +1,92 @@
+<script setup lang="ts">
+import ActionIcon from "@/components/icons/ActionIcon.vue";
+import IconButton from "@/components/IconButton.vue";
+import { useLocale } from "@/composables/useLocale";
+import type { FlatSectionOption } from "@/shared/library/section-tree";
+
+defineProps<{
+  flatSectionOptions: FlatSectionOption[];
+  selectedSectionId: string | null;
+  isOnline: boolean;
+  isSectionsEditMode: boolean;
+}>();
+
+const emit = defineEmits<{
+  "all-sections-click": [];
+  "section-row-click": [sectionId: string];
+  "toggle-edit-mode": [];
+  "create-section": [parentId: string | null];
+  "delete-section": [sectionId: string, title: string];
+}>();
+
+const { t } = useLocale();
+</script>
+
+<template>
+  <div class="library-step">
+    <div class="library-step__toolbar">
+      <span class="status-pill" :class="isOnline ? 'is-ready' : 'is-error'">
+        {{ isOnline ? t("app.online") : t("app.offline") }}
+      </span>
+      <div class="library-step__toolbar-actions">
+        <IconButton
+          :label="t('library.edit')"
+          :pressed="isSectionsEditMode"
+          @click="emit('toggle-edit-mode')"
+        >
+          <ActionIcon name="edit" />
+        </IconButton>
+        <IconButton
+          v-if="isSectionsEditMode"
+          :label="t('library.addSection')"
+          @click="emit('create-section', null)"
+        >
+          <ActionIcon name="plus" />
+        </IconButton>
+      </div>
+    </div>
+
+    <div class="library-step__content">
+      <button
+        class="library-row"
+        :class="{ 'is-active': selectedSectionId === null }"
+        type="button"
+        @click="emit('all-sections-click')"
+      >
+        <span class="library-row__title">{{ t("library.allSections") }}</span>
+        <span class="library-row__chevron">›</span>
+      </button>
+
+      <div
+        v-for="section in flatSectionOptions"
+        :key="section.id"
+        class="library-section-row"
+      >
+        <button
+          class="library-row"
+          :class="{ 'is-active': selectedSectionId === section.id }"
+          type="button"
+          :style="{ paddingLeft: `${16 + section.depth * 16}px` }"
+          @click="emit('section-row-click', section.id)"
+        >
+          <span class="library-row__title">{{ section.title }}</span>
+          <span v-if="!isSectionsEditMode" class="library-row__chevron">›</span>
+        </button>
+        <div v-if="isSectionsEditMode" class="library-section-row__actions">
+          <IconButton
+            :label="t('library.addSubsection')"
+            @click.stop="emit('create-section', section.id)"
+          >
+            <ActionIcon name="plus" />
+          </IconButton>
+          <IconButton
+            :label="t('app.delete')"
+            @click.stop="emit('delete-section', section.id, section.title)"
+          >
+            <ActionIcon name="trash" />
+          </IconButton>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

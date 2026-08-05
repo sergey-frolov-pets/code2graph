@@ -23,6 +23,15 @@
   --radius: 12px;
   --font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
   --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --syntax-comment: #6a737d;
+  --syntax-directive: #8250df;
+  --syntax-preprocessor: #8250df;
+  --syntax-keyword: #0550ae;
+  --syntax-string: #0a3069;
+  --syntax-arrow: #cf222e;
+  --syntax-color: #953800;
+  --syntax-stereotype: #116329;
+  --syntax-number: #0550ae;
 }
 
 [data-theme="dark"] {
@@ -39,6 +48,62 @@
   --success: #3dd68c;
   --preview-bg: #171d24;
   --shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --syntax-comment: #8b949e;
+  --syntax-directive: #d2a8ff;
+  --syntax-preprocessor: #d2a8ff;
+  --syntax-keyword: #79c0ff;
+  --syntax-string: #a5d6ff;
+  --syntax-arrow: #ff7b72;
+  --syntax-color: #ffa657;
+  --syntax-stereotype: #7ee787;
+  --syntax-number: #79c0ff;
+}
+
+.code-editor__line-content .tok-comment {
+  color: var(--syntax-comment);
+  font-style: italic;
+}
+
+.code-editor__line-content .tok-directive {
+  color: var(--syntax-directive);
+  font-weight: 600;
+}
+
+.code-editor__line-content .tok-preprocessor {
+  color: var(--syntax-preprocessor);
+}
+
+.code-editor__line-content .tok-keyword {
+  color: var(--syntax-keyword);
+  font-weight: 600;
+}
+
+.code-editor__line-content .tok-string {
+  color: var(--syntax-string);
+}
+
+.code-editor__line-content .tok-arrow {
+  color: var(--syntax-arrow);
+}
+
+.code-editor__line-content .tok-color {
+  color: var(--syntax-color);
+}
+
+.code-editor__line-content .tok-stereotype {
+  color: var(--syntax-stereotype);
+}
+
+.code-editor__line-content .tok-number {
+  color: var(--syntax-number);
+}
+
+.code-editor__line-content .tok-variable {
+  color: var(--syntax-preprocessor);
+}
+
+.code-editor__line-content .tok-plain {
+  color: var(--text);
 }
 
 html,
@@ -321,32 +386,38 @@ a {
   font-size: 0.85rem;
 }
 
+.status-pill--inline {
+  padding: 2px 6px;
+  font-size: 0.78rem;
+}
+
 .status-bar__engine {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 6px;
 }
 
-.status-bar__engine-ok {
+.status-bar__mode-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
-  margin-top: 1px;
-  color: var(--success);
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
 }
 
-.status-bar__engine-ok svg {
+.status-bar__mode-icon svg {
   display: block;
   width: 14px;
   height: 14px;
 }
 
-.status-pill--inline {
-  padding: 2px 6px;
-  font-size: 0.78rem;
+.status-bar__mode-icon.is-online {
+  color: var(--success);
+}
+
+.status-bar__mode-icon.is-offline {
+  color: var(--danger);
 }
 
 .status-bar__copyright {

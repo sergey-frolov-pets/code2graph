@@ -1,30 +1,17 @@
-import { getLlmProvider, isByokLlmProvider } from "@/constants/llm-providers";
+import { getLlmProvider } from "@/constants/llm-providers";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useLlmApiKeys } from "@/composables/useLlmApiKeys";
 import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
 import { useLlmSettings } from "@/composables/useLlmSettings";
 import { useLocale } from "@/composables/useLocale";
-import { isLlmProxyConfigured, resolveLlmProxyBaseUrl } from "@/utils/llm-proxy";
 
-export type LlmGateFailureReason =
-  | "no_consent"
-  | "no_key"
-  | "no_proxy"
-  | "provider_invalid";
+export type LlmGateFailureReason = "no_consent" | "no_key" | "provider_invalid";
 
-export type LlmGateSuccess =
-  | {
-      ok: true;
-      mode: "free";
-      providerId: string;
-      proxyBaseUrl: string;
-    }
-  | {
-      ok: true;
-      mode: "byok";
-      providerId: string;
-      apiKey: string;
-    };
+export type LlmGateSuccess = {
+  ok: true;
+  providerId: string;
+  apiKey: string;
+};
 
 export type LlmGateFailure = {
   ok: false;
@@ -86,47 +73,26 @@ export function useLlmGate() {
       return { ok: false, reason: "provider_invalid" };
     }
 
-    if (isByokLlmProvider(providerId)) {
-      if (!hasLlmApiKey(providerId)) {
-        openLlmKeysGuide(providerId);
-        await alert({
-          title: t("llm.gate.noKeyTitle"),
-          message: t("llm.gate.noKeyMessage"),
-          variant: "error",
-        });
-        await promptOpenSettings(handlers);
-        return { ok: false, reason: "no_key" };
-      }
-
-      const apiKey = getLlmApiKey(providerId);
-      if (!apiKey) {
-        return { ok: false, reason: "no_key" };
-      }
-
-      return {
-        ok: true,
-        mode: "byok",
-        providerId,
-        apiKey,
-      };
-    }
-
-    const proxyBaseUrl = resolveLlmProxyBaseUrl();
-    if (!isLlmProxyConfigured() || !proxyBaseUrl) {
+    if (!hasLlmApiKey(providerId)) {
+      openLlmKeysGuide(providerId);
       await alert({
-        title: t("llm.gate.noProxyTitle"),
-        message: t("llm.gate.noProxyMessage"),
+        title: t("llm.gate.noKeyTitle"),
+        message: t("llm.gate.noKeyMessage"),
         variant: "error",
       });
       await promptOpenSettings(handlers);
-      return { ok: false, reason: "no_proxy" };
+      return { ok: false, reason: "no_key" };
+    }
+
+    const apiKey = getLlmApiKey(providerId);
+    if (!apiKey) {
+      return { ok: false, reason: "no_key" };
     }
 
     return {
       ok: true,
-      mode: "free",
       providerId,
-      proxyBaseUrl,
+      apiKey,
     };
   }
 

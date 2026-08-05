@@ -1,7 +1,7 @@
 export const APP_META = {
   name: "vuePlantUML",
   developer: "FSVibe",
-  version: "1.0.0",
+  version: __APP_VERSION__,
   copyright: "© 2026 FSVibe",
 } as const;
 

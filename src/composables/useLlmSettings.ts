@@ -2,9 +2,8 @@ import { computed, ref } from "vue";
 import {
   getDefaultLlmProviderId,
   getLlmProvider,
-  isByokLlmProvider,
-  isFreeBuiltinLlmProvider,
   isLlmProviderId,
+  resolveLlmProviderId,
 } from "@/constants/llm-providers";
 import {
   readStoredLlmProviderId,
@@ -46,21 +45,14 @@ export function getActiveLlmProviderId(): string {
 export function useLlmSettings() {
   const activeProvider = computed(() => getLlmProvider(llmProviderId.value));
 
-  const isActiveProviderFree = computed(() =>
-    isFreeBuiltinLlmProvider(llmProviderId.value),
-  );
-
-  const isActiveProviderByok = computed(() =>
-    isByokLlmProvider(llmProviderId.value),
-  );
-
   function setLlmProviderId(value: string): void {
-    if (!isLlmProviderId(value)) {
+    const resolved = resolveLlmProviderId(value);
+    if (!isLlmProviderId(resolved)) {
       return;
     }
 
-    llmProviderId.value = value;
-    persistProviderId(value);
+    llmProviderId.value = resolved;
+    persistProviderId(resolved);
   }
 
   function setLlmConsent(value: boolean): void {
@@ -76,8 +68,6 @@ export function useLlmSettings() {
     llmProviderId,
     llmConsent,
     activeProvider,
-    isActiveProviderFree,
-    isActiveProviderByok,
     setLlmProviderId,
     setLlmConsent,
     resetLlmProviderToDefault,

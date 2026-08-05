@@ -2,7 +2,6 @@ import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
 import { DB_PATH } from "./config.js";
-import type { DiagramRow, SectionRow } from "./types.js";
 
 let db: Database.Database | null = null;
 
@@ -123,8 +122,4 @@ export function parseTags(raw: string): string[] {
   } catch {
     return [];
   }
-}
-
-export function buildSectionTree(rows: SectionRow[]): SectionRow[] {
-  return rows;
 }

@@ -9,13 +9,14 @@ export function resolveLlmProxyBaseUrl(): string {
     return libraryApiUrl;
   }
 
-  if (window.location.protocol !== "file:") {
-    return normalizeLibraryApiUrl(new URL("./api", window.location.href).href);
-  }
-
   const envUrl = import.meta.env.VITE_API_BASE_URL;
   if (envUrl) {
     return normalizeLibraryApiUrl(envUrl);
+  }
+
+  // Same-origin /api works only in dev (Vite proxies to the local API server).
+  if (import.meta.env.DEV && window.location.protocol !== "file:") {
+    return normalizeLibraryApiUrl(new URL("./api", window.location.href).href);
   }
 
   return "";
