@@ -20,7 +20,7 @@ const props = defineProps<{
   canUndo?: boolean;
   canRedo?: boolean;
   canClear: boolean;
-  hasTextSelection: boolean;
+  canAiPatch: boolean;
   snippetsOpen: boolean;
   isFullscreen: boolean;
 }>();
@@ -77,7 +77,7 @@ const validateLabel = computed(() =>
       </IconButton>
       <IconButton
         :label="t('editor.aiPatch')"
-        :disabled="!hasTextSelection"
+        :disabled="!canAiPatch"
         prevent-mousedown-default
         @click="emit('aiPatch')"
       >

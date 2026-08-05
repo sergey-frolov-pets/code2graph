@@ -33,9 +33,13 @@ export const llmMessages: LocaleMessages = {
   "llm.gate.openSettingsTitle": "Open settings?",
   "llm.gate.openSettingsMessage": "Go to Settings → AI / LLM?",
   "llm.gate.openSettingsConfirm": "Open settings",
-  "llm.patch.title": "Edit selection with AI",
-  "llm.patch.lead": "Select a fragment in the editor, describe the change, and apply after review.",
-  "llm.patch.selection": "Selected fragment",
+  "llm.patch.title": "Edit with AI",
+  "llm.patch.lead":
+    "Select a fragment in the editor, describe the change, and apply after review.",
+  "llm.patch.leadFull":
+    "Nothing is selected — the entire diagram will be reworked according to your request.",
+  "llm.patch.selection": "Edit scope",
+  "llm.patch.wholeDiagram": "Entire diagram",
   "llm.patch.noSelection": "Nothing selected",
   "llm.patch.prompt": "How to change",
   "llm.patch.promptPlaceholder": "For example: add error handling, translate labels to EN…",
@@ -47,6 +51,8 @@ export const llmMessages: LocaleMessages = {
   "llm.patch.noChanges": "No changes — the LLM returned the same fragment.",
   "llm.patch.noChangesHint":
     "The request did not change the selection. Refine the prompt or select a different fragment.",
+  "llm.patch.noChangesHintFull":
+    "The request did not change the diagram. Refine the prompt or describe the change more specifically.",
   "llm.patch.generateError": "Failed to generate diagram",
   "llm.patch.previewError": "Failed to render preview",
   "llm.patch.historyLabel": "AI: {prompt}",

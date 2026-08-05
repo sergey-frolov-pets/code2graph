@@ -3,7 +3,10 @@ import { computed, ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
-import { generateValidPlantUmlPatch } from "@/composables/useLlmPlantUmlGenerate";
+import {
+  generateValidPlantUmlFullEdit,
+  generateValidPlantUmlPatch,
+} from "@/composables/useLlmPlantUmlGenerate";
 import { useLocale } from "@/composables/useLocale";
 import { LlmClientError } from "@/services/llm/llm-types";
 import {
@@ -40,12 +43,31 @@ const resultExplanation = ref("");
 const previewSvg = ref("");
 const isPreviewLoading = ref(false);
 
+const hasSource = computed(() => props.source.trim().length > 0);
+
+const isFullDiagramMode = computed(
+  () => props.selectionEnd <= props.selectionStart,
+);
+
 const selectedFragment = computed(() =>
   extractSelectionFragment(props.source, props.selectionStart, props.selectionEnd),
 );
 
 const hasSelection = computed(
-  () => props.selectionEnd > props.selectionStart && selectedFragment.value.length > 0,
+  () =>
+    !isFullDiagramMode.value &&
+    props.selectionEnd > props.selectionStart &&
+    selectedFragment.value.length > 0,
+);
+
+const modalLead = computed(() =>
+  isFullDiagramMode.value ? t("llm.patch.leadFull") : t("llm.patch.lead"),
+);
+
+const selectionLabel = computed(() =>
+  isFullDiagramMode.value
+    ? t("llm.patch.wholeDiagram")
+    : selectedFragment.value || t("llm.patch.noSelection"),
 );
 
 const diffPreview = computed(() => {
@@ -58,6 +80,7 @@ const diffPreview = computed(() => {
   }
 
   if (
+    hasSelection.value &&
     resultReplacement.value &&
     resultReplacement.value !== selectedFragment.value
   ) {
@@ -69,6 +92,10 @@ const diffPreview = computed(() => {
 
   return buildSimpleDiffPreview(props.source, resultPlantUml.value).slice(0, 2400);
 });
+
+const canGenerate = computed(
+  () => hasSource.value && userPrompt.value.trim().length > 0 && !isGenerating.value,
+);
 
 const canApplyPatch = computed(
   () => Boolean(resultPlantUml.value) && resultHasChanges.value && !isGenerating.value,
@@ -114,7 +141,7 @@ async function loadPreview(plantuml: string): Promise<void> {
 }
 
 async function onGenerate(): Promise<void> {
-  if (!hasSelection.value || !userPrompt.value.trim()) {
+  if (!canGenerate.value) {
     return;
   }
 
@@ -127,17 +154,27 @@ async function onGenerate(): Promise<void> {
   previewSvg.value = "";
 
   try {
-    const result = await generateValidPlantUmlPatch(
-      props.source,
-      props.selectionStart,
-      props.selectionEnd,
-      selectedFragment.value,
-      userPrompt.value,
-      props.layout,
-      props.diagramDarkMode,
-      props.renderMode,
-      { openSettings: props.openSettings },
-    );
+    const handlers = { openSettings: props.openSettings };
+    const result = isFullDiagramMode.value
+      ? await generateValidPlantUmlFullEdit(
+          props.source,
+          userPrompt.value,
+          props.layout,
+          props.diagramDarkMode,
+          props.renderMode,
+          handlers,
+        )
+      : await generateValidPlantUmlPatch(
+          props.source,
+          props.selectionStart,
+          props.selectionEnd,
+          selectedFragment.value,
+          userPrompt.value,
+          props.layout,
+          props.diagramDarkMode,
+          props.renderMode,
+          handlers,
+        );
 
     resultPlantUml.value = result.plantuml;
     resultReplacement.value = result.replacement ?? "";
@@ -145,7 +182,9 @@ async function onGenerate(): Promise<void> {
     resultExplanation.value = result.explanation ?? "";
 
     if (!result.hasChanges) {
-      errorMessage.value = t("llm.patch.noChangesHint");
+      errorMessage.value = isFullDiagramMode.value
+        ? t("llm.patch.noChangesHintFull")
+        : t("llm.patch.noChangesHint");
     }
 
     await loadPreview(result.plantuml);
@@ -181,11 +220,14 @@ function onApply(): void {
     :title="t('llm.patch.title')"
     @close="emit('close')"
   >
-    <p class="llm-modal-lead">{{ t("llm.patch.lead") }}</p>
+    <p class="llm-modal-lead">{{ modalLead }}</p>
 
     <label class="llm-field">
       <span class="llm-field__label">{{ t("llm.patch.selection") }}</span>
-      <pre class="llm-code-block">{{ selectedFragment || t("llm.patch.noSelection") }}</pre>
+      <pre
+        class="llm-code-block"
+        :class="{ 'llm-code-block--muted': isFullDiagramMode }"
+      >{{ selectionLabel }}</pre>
     </label>
 
     <label class="llm-field">
@@ -224,7 +266,7 @@ function onApply(): void {
       <button
         class="btn btn-primary"
         type="button"
-        :disabled="!hasSelection || !userPrompt.trim() || isGenerating"
+        :disabled="!canGenerate"
         @click="onGenerate"
       >
         {{ isGenerating ? t("llm.patch.generating") : t("llm.patch.generate") }}
@@ -284,6 +326,13 @@ function onApply(): void {
   max-height: 140px;
   overflow: auto;
   white-space: pre-wrap;
+}
+
+.llm-code-block--muted {
+  font-family: inherit;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  max-height: none;
 }
 
 .llm-code-block--diff {

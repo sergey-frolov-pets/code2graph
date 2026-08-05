@@ -99,6 +99,34 @@ export function buildPatchPrompt(
   ].join("\n");
 }
 
+export function buildFullDiagramEditPrompt(
+  fullSource: string,
+  userPrompt: string,
+): string {
+  return [
+    "Edit the ENTIRE PlantUML diagram according to the user request.",
+    "Return JSON with field plantuml containing the FULL updated source.",
+    "You MUST apply the user request. Do not return text identical to the current source.",
+    "Preserve parts of the diagram that the user did not ask to change unless the request implies a global rewrite.",
+    "",
+    "=== CURRENT DIAGRAM SOURCE ===",
+    fullSource,
+    "",
+    "=== USER REQUEST ===",
+    userPrompt.trim(),
+  ].join("\n");
+}
+
+export function buildFullDiagramNoChangeRetryPrompt(userPrompt: string): string {
+  return [
+    "Your previous response did not change the diagram source.",
+    `User request: ${userPrompt.trim()}`,
+    "",
+    "Return JSON with field plantuml containing a REVISED full diagram that satisfies the request.",
+    "The plantuml field MUST differ from the current source.",
+  ].join("\n");
+}
+
 export function buildPatchNoChangeRetryPrompt(
   userPrompt: string,
   selectedFragment: string,

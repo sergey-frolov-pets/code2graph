@@ -1,6 +1,8 @@
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
 import {
+  buildFullDiagramEditPrompt,
+  buildFullDiagramNoChangeRetryPrompt,
   buildPatchNoChangeRetryPrompt,
   buildPatchPrompt,
 } from "@/constants/llm-wizard";
@@ -80,6 +82,82 @@ export async function generateValidPlantUml(
   }
 
   throw new LlmClientError("validation_failed", "LLM validation failed");
+}
+
+export async function generateValidPlantUmlFullEdit(
+  fullSource: string,
+  userPrompt: string,
+  layout: LayoutEngine,
+  darkMode: boolean,
+  renderMode: RenderMode,
+  handlers?: LlmGateHandlers,
+): Promise<GenerateValidPlantUmlPatchResult> {
+  const messages: LlmChatMessage[] = [
+    {
+      role: "system",
+      content: buildLlmSystemPrompt(
+        "You edit an existing PlantUML diagram according to the user request.",
+      ),
+    },
+    {
+      role: "user",
+      content: buildFullDiagramEditPrompt(fullSource, userPrompt),
+    },
+  ];
+
+  const maxRetries = getMaxLlmValidationRetries();
+
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+    const chatResult = await llmChat(messages, { jsonMode: true }, handlers);
+    const validation = await validateLlmResponse(
+      chatResult.content,
+      layout,
+      darkMode,
+      renderMode,
+    );
+
+    if (validation.valid && validation.plantuml) {
+      const hasChanges = validation.plantuml !== fullSource;
+
+      if (!hasChanges) {
+        if (attempt >= maxRetries) {
+          return {
+            plantuml: validation.plantuml,
+            explanation: validation.output?.explanation,
+            hasChanges: false,
+          };
+        }
+
+        messages.push({ role: "assistant", content: chatResult.content });
+        messages.push({
+          role: "user",
+          content: buildFullDiagramNoChangeRetryPrompt(userPrompt),
+        });
+        continue;
+      }
+
+      return {
+        plantuml: validation.plantuml,
+        explanation: validation.output?.explanation,
+        hasChanges: true,
+      };
+    }
+
+    if (attempt >= maxRetries) {
+      throw new LlmClientError(
+        "validation_failed",
+        formatLlmValidationIssuesForRetry(validation.issues),
+      );
+    }
+
+    messages.push({ role: "assistant", content: chatResult.content });
+    messages.push({
+      role: "user",
+      content: `Fix validation errors and return corrected JSON only:\n${formatLlmValidationIssuesForRetry(validation.issues)}`,
+    });
+  }
+
+  throw new LlmClientError("validation_failed", "LLM full edit validation failed");
 }
 
 export async function generateValidPlantUmlPatch(

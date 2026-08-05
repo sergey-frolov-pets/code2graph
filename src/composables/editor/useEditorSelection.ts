@@ -76,6 +76,7 @@ export function useEditorSelection(options: {
     }
 
     if (end <= start) {
+      onAiPatch({ start: 0, end: 0 });
       return;
     }
 
