@@ -6,7 +6,7 @@ import type {
   SectionDto,
   UpdateSectionPayload,
 } from "@/constants/diagram-library";
-import { getLibraryApiBaseUrl } from "@/composables/useLibraryApiUrl";
+import { getLibraryApiBaseUrl } from "@/config/library-api";
 
 export class DiagramApiError extends Error {
   readonly status: number;

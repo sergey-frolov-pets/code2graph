@@ -7,3 +7,4 @@ vendor/C4-PlantUML/
 data/
 server/node_modules/
 server/dist/
+test-results/

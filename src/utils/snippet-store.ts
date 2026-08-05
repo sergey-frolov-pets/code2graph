@@ -1,4 +1,8 @@
 import type { CustomSnippet } from "@/types/snippets";
+import {
+  readStorageJson,
+  writeStorageJson,
+} from "@/utils/safe-storage";
 
 export const STORAGE_KEY_CUSTOM_SNIPPETS = "plantuml-smetana-custom-snippets";
 export const STORAGE_KEY_SNIPPETS_PANEL_POSITION =
@@ -30,29 +34,18 @@ function isCustomSnippet(value: unknown): value is CustomSnippet {
 }
 
 export function loadCustomSnippets(): CustomSnippet[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_CUSTOM_SNIPPETS);
-    if (!raw) {
-      return [];
-    }
-
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.filter(isCustomSnippet);
-  } catch {
-    return [];
-  }
+  return (
+    readStorageJson(STORAGE_KEY_CUSTOM_SNIPPETS, (parsed) => {
+      if (!Array.isArray(parsed)) {
+        return null;
+      }
+      return parsed.filter(isCustomSnippet);
+    }) ?? []
+  );
 }
 
 export function saveCustomSnippets(snippets: CustomSnippet[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY_CUSTOM_SNIPPETS, JSON.stringify(snippets));
-  } catch {
-    // file:// может блокировать localStorage
-  }
+  writeStorageJson(STORAGE_KEY_CUSTOM_SNIPPETS, snippets);
 }
 
 export function createCustomSnippetId(): string {
@@ -99,13 +92,7 @@ export interface SnippetsPanelPosition {
 }
 
 export function loadSnippetsPanelPosition(): SnippetsPanelPosition | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_SNIPPETS_PANEL_POSITION);
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw) as unknown;
+  return readStorageJson(STORAGE_KEY_SNIPPETS_PANEL_POSITION, (parsed) => {
     if (!parsed || typeof parsed !== "object") {
       return null;
     }
@@ -121,20 +108,11 @@ export function loadSnippetsPanelPosition(): SnippetsPanelPosition | null {
     }
 
     return { x: record.x, y: record.y };
-  } catch {
-    return null;
-  }
+  });
 }
 
 export function saveSnippetsPanelPosition(position: SnippetsPanelPosition): void {
-  try {
-    localStorage.setItem(
-      STORAGE_KEY_SNIPPETS_PANEL_POSITION,
-      JSON.stringify(position),
-    );
-  } catch {
-    // file:// может блокировать localStorage
-  }
+  writeStorageJson(STORAGE_KEY_SNIPPETS_PANEL_POSITION, position);
 }
 
 export function getDefaultSnippetsPanelPosition(
