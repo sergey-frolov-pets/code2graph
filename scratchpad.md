@@ -235,13 +235,13 @@ System prompt: JSON only, PlantUML rules, C4 include policy.
 
 ---
 
-## Этап 10 — i18n, polish, релиз
+## Этап 10 — i18n, polish, релиз ✅
 
-- `messages.ts`: AI, wizard, gate, guide, free vs BYOK labels
-- `APP_LINKS.llmApiKeysGuide`
-- CI: `llm-api-keys.html` в dist/publish/release zip
-- README: Free AI (default Gemini), BYOK, server env vars для proxy
-- `publish/README`: companion files + env для self-hosted API
+- `messages.ts`: about AI section
+- `APP_LINKS.llmApiKeysGuide` — используется в About и Settings
+- `build-single-html.mjs` / `build-single-only.mjs` — копируют `llm-api-keys.html`
+- `npm run build:release` → `release/vueplantuml.html` + companion files
+- `README.md`, `publish/README.md`, `server/README.md`
 
 ---
 

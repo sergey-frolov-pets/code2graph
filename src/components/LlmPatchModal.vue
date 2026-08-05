@@ -2,9 +2,8 @@
 import { computed, ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import type { LayoutEngine } from "@/constants";
-import { generateValidPlantUml } from "@/composables/useLlmPlantUmlGenerate";
+import { generateValidPlantUmlPatch } from "@/composables/useLlmPlantUmlGenerate";
 import { useLocale } from "@/composables/useLocale";
-import { buildPatchPrompt } from "@/constants/llm-wizard";
 import { LlmClientError } from "@/services/llm/llm-types";
 import {
   buildSimpleDiffPreview,
@@ -33,6 +32,8 @@ const userPrompt = ref("");
 const isGenerating = ref(false);
 const errorMessage = ref("");
 const resultPlantUml = ref("");
+const resultReplacement = ref("");
+const resultHasChanges = ref(false);
 const resultExplanation = ref("");
 const previewSvg = ref("");
 const isPreviewLoading = ref(false);
@@ -50,13 +51,33 @@ const diffPreview = computed(() => {
     return "";
   }
 
+  if (!resultHasChanges.value) {
+    return t("llm.patch.noChanges");
+  }
+
+  if (
+    resultReplacement.value &&
+    resultReplacement.value !== selectedFragment.value
+  ) {
+    return buildSimpleDiffPreview(
+      selectedFragment.value,
+      resultReplacement.value,
+    ).slice(0, 2400);
+  }
+
   return buildSimpleDiffPreview(props.source, resultPlantUml.value).slice(0, 2400);
 });
+
+const canApplyPatch = computed(
+  () => Boolean(resultPlantUml.value) && resultHasChanges.value && !isGenerating.value,
+);
 
 function resetState(): void {
   userPrompt.value = "";
   errorMessage.value = "";
   resultPlantUml.value = "";
+  resultReplacement.value = "";
+  resultHasChanges.value = false;
   resultExplanation.value = "";
   previewSvg.value = "";
   isGenerating.value = false;
@@ -97,28 +118,32 @@ async function onGenerate(): Promise<void> {
   isGenerating.value = true;
   errorMessage.value = "";
   resultPlantUml.value = "";
+  resultReplacement.value = "";
+  resultHasChanges.value = false;
   resultExplanation.value = "";
   previewSvg.value = "";
 
   try {
-    const prompt = buildPatchPrompt(
+    const result = await generateValidPlantUmlPatch(
       props.source,
-      selectedFragment.value,
       props.selectionStart,
       props.selectionEnd,
+      selectedFragment.value,
       userPrompt.value,
-    );
-
-    const result = await generateValidPlantUml(
-      prompt,
       props.layout,
       props.diagramDarkMode,
       { openSettings: props.openSettings },
-      "You edit existing PlantUML diagrams based on user selection and instructions.",
     );
 
     resultPlantUml.value = result.plantuml;
+    resultReplacement.value = result.replacement ?? "";
+    resultHasChanges.value = result.hasChanges;
     resultExplanation.value = result.explanation ?? "";
+
+    if (!result.hasChanges) {
+      errorMessage.value = t("llm.patch.noChangesHint");
+    }
+
     await loadPreview(result.plantuml);
   } catch (error) {
     errorMessage.value =
@@ -203,7 +228,7 @@ function onApply(): void {
       <button
         class="btn btn-primary"
         type="button"
-        :disabled="!resultPlantUml || isGenerating"
+        :disabled="!canApplyPatch"
         @click="onApply"
       >
         {{ t("llm.patch.apply") }}
