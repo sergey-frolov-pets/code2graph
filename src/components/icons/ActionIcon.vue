@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import type { Component } from "vue";
 import {
+  ArrowLeftRight,
   Braces,
   CircleCheck,
   Download,
@@ -44,7 +45,8 @@ export type ActionIconName =
   | "history"
   | "undo"
   | "redo"
-  | "ai";
+  | "ai"
+  | "transfer";
 
 const props = withDefaults(
   defineProps<{
@@ -77,6 +79,7 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   undo: Undo2,
   redo: Redo2,
   ai: Sparkles,
+  transfer: ArrowLeftRight,
 };
 
 const iconComponent = computed(() => ICON_MAP[props.name]);

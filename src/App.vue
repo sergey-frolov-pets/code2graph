@@ -61,8 +61,6 @@ const {
   svg,
   error,
   isRendering,
-  engineReady,
-  engineStatus,
   renderDiagram,
   scheduleRender,
   bootEngine,
@@ -235,10 +233,7 @@ onMounted(() => {
 
     <AppStatusBar
       :loaded-file-name="loadedFileName"
-      :layout="layout"
       :render-mode="renderMode"
-      :engine-ready="engineReady"
-      :engine-status="engineStatus"
     />
 
     <AppDialogHost />

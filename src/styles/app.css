@@ -386,29 +386,6 @@ a {
   font-size: 0.85rem;
 }
 
-.status-bar__engine {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.status-bar__engine-ok {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  margin-top: 1px;
-  color: var(--success);
-  flex-shrink: 0;
-}
-
-.status-bar__engine-ok svg {
-  display: block;
-  width: 14px;
-  height: 14px;
-}
-
 .status-pill--inline {
   padding: 2px 6px;
   font-size: 0.78rem;
