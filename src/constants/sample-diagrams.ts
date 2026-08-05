@@ -340,7 +340,7 @@ start
 if (Синтаксис верный?) then (да)
   :Подготовить источник;
 else (нет)
-  :Показать ошибку;<<#Pink>>
+  :Показать ошибку; <<#Pink>>
   stop
 endif
 
@@ -354,7 +354,7 @@ end fork
 
 |Клиент|
 :Отобразить превью;
-:Экспорт PNG/SVG;<<#LightBlue>>
+:Экспорт PNG/SVG; <<#LightBlue>>
 
 stop
 @enduml`,
@@ -661,7 +661,7 @@ start
 if (Syntax valid?) then (yes)
   :Prepare source;
 else (no)
-  :Show error;<<#Pink>>
+  :Show error; <<#Pink>>
   stop
 endif
 
@@ -675,7 +675,7 @@ end fork
 
 |Client|
 :Show preview;
-:Export PNG/SVG;<<#LightBlue>>
+:Export PNG/SVG; <<#LightBlue>>
 
 stop
 @enduml`,
