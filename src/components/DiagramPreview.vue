@@ -38,6 +38,7 @@ const previewMarkup = computed(() => {
 const {
   contentStyle,
   isDragging,
+  isPinching,
   zoomIn,
   zoomOut,
   onPointerDown,
@@ -104,7 +105,7 @@ watch(isFullscreen, (value) => {
         <div
           ref="viewportRef"
           class="preview-viewport"
-          :class="{ 'is-dragging': isDragging }"
+          :class="{ 'is-dragging': isDragging, 'is-pinching': isPinching }"
           @pointerdown="onPointerDown"
           @pointermove="onPointerMove"
           @pointerup="onPointerUp"
