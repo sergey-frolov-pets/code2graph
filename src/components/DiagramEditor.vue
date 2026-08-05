@@ -25,8 +25,22 @@ import {
   isSnippetsHotkey,
   SNIPPETS_KEYBOARD_SHORTCUT,
 } from "@/constants/snippets-settings";
+import {
+  adjustFoldsAfterSourceChange,
+  buildDisplayText,
+  buildFoldPlaceholder,
+  buildVisibleLines,
+  canAddFold,
+  createFoldId,
+  type CodeFoldRegion,
+  type VisibleLine,
+  mergeDisplayTextIntoSource,
+  mapDisplayOffsetToSourceOffset,
+  mapSourceOffsetToDisplayOffset,
+} from "@/utils/code-folds";
 
 const EDITOR_LINE_HEIGHT = 1.45;
+const FOLD_TOGGLE_WIDTH = "14px";
 const EDITOR_PADDING = "12px";
 const GUTTER_PADDING_INLINE = "6px";
 
@@ -45,17 +59,21 @@ const emit = defineEmits<{
   fileLoaded: [payload: { content: string; fileName: string }];
   importError: [message: string];
   savePuml: [];
+  openVersions: [];
   validateSyntax: [];
   cleared: [];
 }>();
 
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
-const gutterRef = ref<HTMLTextAreaElement | null>(null);
+const gutterRef = ref<HTMLDivElement | null>(null);
 const highlightsRef = ref<HTMLDivElement | null>(null);
 const isDragOver = ref(false);
 const isFullscreen = ref(false);
 const snippetsOpen = ref(false);
+const folds = ref<CodeFoldRegion[]>([]);
+const foldDragStart = ref<number | null>(null);
+const foldDragEnd = ref<number | null>(null);
 
 const { confirm } = useAppDialog();
 const { t, locale } = useLocale();
@@ -77,16 +95,63 @@ const editorStyle = computed(() => ({
   "--editor-padding": EDITOR_PADDING,
   "--gutter-chars": String(gutterDigitCount.value),
   "--gutter-padding-inline": GUTTER_PADDING_INLINE,
+  "--fold-toggle-width": FOLD_TOGGLE_WIDTH,
 }));
 
 const sourceLines = computed(() => source.value.split(/\r?\n/));
 
 const lineCount = computed(() => Math.max(sourceLines.value.length, 1));
 
-const lineNumbersText = computed(() =>
-  Array.from({ length: lineCount.value }, (_, index) => String(index + 1)).join(
-    "\n",
-  ),
+const displayText = computed(() =>
+  buildDisplayText(sourceLines.value, folds.value),
+);
+
+const visibleLines = computed(() =>
+  buildVisibleLines(lineCount.value, folds.value),
+);
+
+const foldsByStartLine = computed(() => {
+  const map = new Map<number, CodeFoldRegion>();
+
+  for (const fold of folds.value) {
+    map.set(fold.startLine, fold);
+  }
+
+  return map;
+});
+
+interface GutterRow {
+  key: string;
+  sourceLine: number;
+  lineNumber: number | null;
+  visibleLine: VisibleLine;
+  fold: CodeFoldRegion | null;
+}
+
+const gutterRows = computed<GutterRow[]>(() =>
+  visibleLines.value.map((visibleLine, index) => ({
+    key: `${visibleLine.kind}-${visibleLine.sourceLine}-${index}`,
+    sourceLine: visibleLine.sourceLine,
+    lineNumber:
+      visibleLine.kind === "source" ? visibleLine.sourceLine : null,
+    visibleLine,
+    fold:
+      visibleLine.kind === "source"
+        ? (foldsByStartLine.value.get(visibleLine.sourceLine) ?? null)
+        : null,
+  })),
+);
+
+const visibleEditorLines = computed(() =>
+  visibleLines.value.map((item, index) => ({
+    key: `${item.kind}-${item.sourceLine}-${index}`,
+    kind: item.kind,
+    sourceLine: item.sourceLine,
+    text:
+      item.kind === "placeholder"
+        ? buildFoldPlaceholder(item.hiddenLineCount ?? 0)
+        : sourceLines.value[item.sourceLine - 1] || " ",
+  })),
 );
 
 const errorLineSet = computed(() => new Set(props.errorLines ?? []));
@@ -121,11 +186,17 @@ async function requestClear(): Promise<void> {
 
 function clearEditor(): void {
   source.value = "";
+  folds.value = [];
   emit("cleared");
+}
+
+function resetFolds(): void {
+  folds.value = [];
 }
 
 function loadSample(id: SampleDiagramId): void {
   const sample = getSampleDiagramSource(id, locale.value);
+  resetFolds();
   source.value = sample;
   emit("fileLoaded", {
     content: sample,
@@ -152,6 +223,7 @@ async function handleSelectedFile(event: Event): Promise<void> {
 async function importFile(file: File): Promise<void> {
   try {
     const loaded = await loadPumlFromFile(file);
+    resetFolds();
     source.value = loaded.content;
     emit("fileLoaded", loaded);
   } catch (importError) {
@@ -199,6 +271,112 @@ function syncScroll(): void {
   }
 }
 
+function onDisplayInput(event: Event): void {
+  const textarea = event.target as HTMLTextAreaElement;
+  source.value = mergeDisplayTextIntoSource(
+    textarea.value,
+    source.value,
+    folds.value,
+  );
+}
+
+function isLineInFoldSelection(sourceLine: number): boolean {
+  if (foldDragStart.value === null || foldDragEnd.value === null) {
+    return false;
+  }
+
+  const start = Math.min(foldDragStart.value, foldDragEnd.value);
+  const end = Math.max(foldDragStart.value, foldDragEnd.value);
+
+  return sourceLine >= start && sourceLine <= end;
+}
+
+function onGutterMouseDown(sourceLine: number, event: MouseEvent): void {
+  if (event.button !== 0 || event.shiftKey) {
+    return;
+  }
+
+  event.preventDefault();
+  foldDragStart.value = sourceLine;
+  foldDragEnd.value = sourceLine;
+}
+
+function onGutterMouseEnter(sourceLine: number): void {
+  if (foldDragStart.value !== null) {
+    foldDragEnd.value = sourceLine;
+  }
+}
+
+function finishFoldDrag(): void {
+  if (foldDragStart.value === null || foldDragEnd.value === null) {
+    foldDragStart.value = null;
+    foldDragEnd.value = null;
+    return;
+  }
+
+  const start = Math.min(foldDragStart.value, foldDragEnd.value);
+  const end = Math.max(foldDragStart.value, foldDragEnd.value);
+
+  if (end > start && canAddFold(folds.value, start, end)) {
+    folds.value = [
+      ...folds.value,
+      {
+        id: createFoldId(),
+        startLine: start,
+        endLine: end,
+        collapsed: true,
+      },
+    ];
+  }
+
+  foldDragStart.value = null;
+  foldDragEnd.value = null;
+}
+
+function toggleFold(fold: CodeFoldRegion): void {
+  const textarea = textareaRef.value;
+  const sourceCursor = textarea
+    ? mapDisplayOffsetToSourceOffset(
+        textarea.selectionStart,
+        source.value,
+        folds.value,
+      )
+    : source.value.length;
+
+  folds.value = folds.value.map((entry) =>
+    entry.id === fold.id ? { ...entry, collapsed: !entry.collapsed } : entry,
+  );
+
+  void nextTick(() => {
+    if (!textareaRef.value) {
+      return;
+    }
+
+    const displayCursor = mapSourceOffsetToDisplayOffset(
+      sourceCursor,
+      source.value,
+      folds.value,
+    );
+    textareaRef.value.setSelectionRange(displayCursor, displayCursor);
+    syncScroll();
+  });
+}
+
+function removeFold(foldId: string, event: MouseEvent): void {
+  event.preventDefault();
+  event.stopPropagation();
+  folds.value = folds.value.filter((fold) => fold.id !== foldId);
+}
+
+function onFoldToggleClick(fold: CodeFoldRegion, event: MouseEvent): void {
+  if (event.shiftKey) {
+    removeFold(fold.id, event);
+    return;
+  }
+
+  toggleFold(fold);
+}
+
 function toggleFullscreen(): void {
   isFullscreen.value = !isFullscreen.value;
 }
@@ -214,8 +392,18 @@ function insertSnippetAtCursor(content: string): void {
     return;
   }
 
-  const start = textarea?.selectionStart ?? source.value.length;
-  const end = textarea?.selectionEnd ?? source.value.length;
+  const displayStart = textarea?.selectionStart ?? displayText.value.length;
+  const displayEnd = textarea?.selectionEnd ?? displayText.value.length;
+  const start = mapDisplayOffsetToSourceOffset(
+    displayStart,
+    source.value,
+    folds.value,
+  );
+  const end = mapDisplayOffsetToSourceOffset(
+    displayEnd,
+    source.value,
+    folds.value,
+  );
   const before = source.value.slice(0, start);
   const after = source.value.slice(end);
 
@@ -229,15 +417,22 @@ function insertSnippetAtCursor(content: string): void {
     (trimmed.endsWith("\n") ? "" : "\n") +
     (needsTrailingNewline ? "" : "");
 
-  source.value = before + snippetText + after;
+  const nextSource = before + snippetText + after;
+  source.value = nextSource;
 
-  const cursorPosition = before.length + snippetText.length;
+  const sourceCursor = before.length + snippetText.length;
   void nextTick(() => {
     if (!textareaRef.value) {
       return;
     }
+
+    const displayCursor = mapSourceOffsetToDisplayOffset(
+      sourceCursor,
+      source.value,
+      folds.value,
+    );
     textareaRef.value.focus();
-    textareaRef.value.setSelectionRange(cursorPosition, cursorPosition);
+    textareaRef.value.setSelectionRange(displayCursor, displayCursor);
     syncScroll();
   });
 }
@@ -264,18 +459,32 @@ watch(isFullscreen, (value) => {
 
 onMounted(() => {
   window.addEventListener("keydown", onEditorKeydown);
+  document.addEventListener("mouseup", finishFoldDrag);
 });
 
 onUnmounted(() => {
   window.removeEventListener("keydown", onEditorKeydown);
+  document.removeEventListener("mouseup", finishFoldDrag);
   document.body.style.overflow = "";
 });
 
 watch(
   () => source.value,
-  async () => {
-    await nextTick();
-    syncScroll();
+  (newSource, oldSource) => {
+    const newLines = newSource.split(/\r?\n/);
+    const oldLines = (oldSource ?? "").split(/\r?\n/);
+
+    if (newLines.length !== oldLines.length) {
+      folds.value = adjustFoldsAfterSourceChange(
+        folds.value,
+        oldLines,
+        newLines,
+      );
+    }
+
+    void nextTick(() => {
+      syncScroll();
+    });
   },
 );
 </script>
@@ -291,6 +500,12 @@ watch(
       <div class="panel-header__toolbar">
         <IconButton :label="t('editor.openPuml')" @click="openFilePicker">
           <ActionIcon name="folder-open" />
+        </IconButton>
+        <IconButton
+          :label="t('editor.versions')"
+          @click="emit('openVersions')"
+        >
+          <ActionIcon name="history" />
         </IconButton>
         <IconButton
           :label="t('app.savePuml')"
@@ -361,14 +576,49 @@ watch(
       />
 
       <div class="code-editor">
-        <textarea
+        <div
           ref="gutterRef"
           class="code-editor__gutter"
-          :value="lineNumbersText"
-          readonly
-          tabindex="-1"
+          :title="t('editor.foldCreate')"
           aria-hidden="true"
-        />
+        >
+          <div
+            v-for="row in gutterRows"
+            :key="row.key"
+            class="code-editor__gutter-line"
+            :class="{
+              'is-fold-selection': isLineInFoldSelection(row.sourceLine),
+              'is-placeholder': row.visibleLine.kind === 'placeholder',
+            }"
+            @mousedown="onGutterMouseDown(row.sourceLine, $event)"
+            @mouseenter="onGutterMouseEnter(row.sourceLine)"
+          >
+            <button
+              v-if="row.fold"
+              type="button"
+              class="code-editor__fold-toggle"
+              :title="
+                row.fold.collapsed
+                  ? `${t('editor.foldToggle')} · ${t('editor.foldRemove')}`
+                  : `${t('editor.foldToggle')} · ${t('editor.foldRemove')}`
+              "
+              :aria-label="t('editor.foldToggle')"
+              @mousedown.stop
+              @mouseup.stop
+              @click.stop="onFoldToggleClick(row.fold, $event)"
+              @contextmenu.prevent="removeFold(row.fold.id, $event)"
+            >
+              {{ row.fold.collapsed ? "\u25B6" : "\u25BC" }}
+            </button>
+            <span v-else class="code-editor__fold-spacer" aria-hidden="true" />
+            <span class="code-editor__gutter-number">
+              <template v-if="row.lineNumber !== null">
+                {{ row.lineNumber }}
+              </template>
+              <template v-else>⋯</template>
+            </span>
+          </div>
+        </div>
 
         <div class="code-editor__input-wrap">
           <div
@@ -377,23 +627,28 @@ watch(
             aria-hidden="true"
           >
             <div
-              v-for="(line, index) in sourceLines"
-              :key="index"
+              v-for="line in visibleEditorLines"
+              :key="line.key"
               class="code-editor__line"
-              :class="{ 'is-error': errorLineSet.has(index + 1) }"
+              :class="{
+                'is-error':
+                  line.kind === 'source' && errorLineSet.has(line.sourceLine),
+                'is-fold-placeholder': line.kind === 'placeholder',
+              }"
             >
-              {{ line || " " }}
+              {{ line.text }}
             </div>
           </div>
           <textarea
             ref="textareaRef"
-            v-model="source"
+            :value="displayText"
             class="code-editor__textarea"
             wrap="off"
             spellcheck="false"
             autocomplete="off"
             autocapitalize="off"
             :placeholder="t('editor.placeholder')"
+            @input="onDisplayInput"
             @scroll="syncScroll"
           />
         </div>
@@ -470,22 +725,65 @@ watch(
   flex: 0 0 auto;
   align-self: stretch;
   width: calc(
-    var(--gutter-chars) * 1ch + var(--gutter-padding-inline) * 2
+    var(--fold-toggle-width) + var(--gutter-chars) * 1ch +
+      var(--gutter-padding-inline) * 2 + 4px
   );
   min-height: 0;
+  padding-block: var(--editor-padding);
   padding-inline: var(--gutter-padding-inline);
   border-right: 1px solid var(--border);
   background: var(--surface-muted);
   color: var(--text-muted);
-  text-align: right;
-  resize: none;
   overflow: hidden;
-  pointer-events: none;
   user-select: none;
 }
 
-.code-editor__gutter:focus {
-  outline: none;
+.code-editor__gutter-line {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  min-height: calc(1em * var(--editor-line-height));
+  white-space: pre;
+  cursor: default;
+}
+
+.code-editor__gutter-line.is-fold-selection {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.code-editor__gutter-line.is-placeholder {
+  color: color-mix(in srgb, var(--text-muted) 80%, var(--accent));
+}
+
+.code-editor__fold-toggle {
+  flex: 0 0 var(--fold-toggle-width);
+  width: var(--fold-toggle-width);
+  height: 1em;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  line-height: inherit;
+  cursor: pointer;
+}
+
+.code-editor__fold-toggle:hover {
+  color: var(--text);
+}
+
+.code-editor__fold-spacer {
+  flex: 0 0 var(--fold-toggle-width);
+  width: var(--fold-toggle-width);
+}
+
+.code-editor__gutter-number {
+  flex: 1 1 auto;
+  text-align: right;
+  font-family: var(--editor-font-family, var(--font-mono));
+  font-size: var(--editor-font-size);
+  line-height: var(--editor-line-height);
 }
 
 .code-editor__input-wrap {
@@ -510,6 +808,11 @@ watch(
 
 .code-editor__line.is-error {
   background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+
+.code-editor__line.is-fold-placeholder {
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--surface-muted) 70%, transparent);
 }
 
 .code-editor__textarea {

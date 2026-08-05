@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import AboutModal from "@/components/AboutModal.vue";
 import AppDialogHost from "@/components/AppDialogHost.vue";
+import DiagramVersionsModal from "@/components/DiagramVersionsModal.vue";
 import DiagramEditor from "@/components/DiagramEditor.vue";
 import DiagramLibraryModal from "@/components/DiagramLibraryModal.vue";
 import DiagramPreview from "@/components/DiagramPreview.vue";
@@ -118,6 +119,7 @@ const loadedFileName = ref("diagram.puml");
 const syntaxResult = ref<SyntaxCheckResult | null>(null);
 const syntaxErrorLines = ref<number[]>([]);
 const isSyntaxModalOpen = ref(false);
+const isVersionsModalOpen = ref(false);
 const isSettingsModalOpen = ref(false);
 const isLibraryModalOpen = ref(false);
 const isAboutModalOpen = ref(false);
@@ -455,6 +457,18 @@ watch(locale, (nextLocale, previousLocale) => {
     : t("app.engineLoading");
 });
 
+function openVersionsModal(): void {
+  isVersionsModalOpen.value = true;
+}
+
+function onVersionRestore(content: string): void {
+  source.value = content;
+  syntaxErrorLines.value = [];
+  error.value = "";
+  persistSettings();
+  scheduleRender();
+}
+
 function openSettingsModal(): void {
   isSettingsModalOpen.value = true;
 }
@@ -553,6 +567,7 @@ onUnmounted(() => {
         @file-loaded="onFileLoaded"
         @import-error="onImportError"
         @save-puml="savePuml"
+        @open-versions="openVersionsModal"
         @validate-syntax="validateSyntax"
         @cleared="onEditorCleared"
       />
@@ -605,6 +620,14 @@ onUnmounted(() => {
       :result="syntaxResult"
       :is-validating="isValidating"
       @close="closeSyntaxModal"
+    />
+
+    <DiagramVersionsModal
+      :open="isVersionsModalOpen"
+      :document-key="loadedFileName"
+      :current-source="source"
+      @close="isVersionsModalOpen = false"
+      @restore="onVersionRestore"
     />
 
     <DiagramLibraryModal

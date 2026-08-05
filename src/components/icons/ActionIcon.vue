@@ -17,7 +17,8 @@ withDefaults(
       | "zoom-in"
       | "zoom-out"
       | "edit"
-      | "close";
+      | "close"
+      | "history";
     size?: "default" | "large";
   }>(),
   {
@@ -281,6 +282,33 @@ withDefaults(
         stroke="currentColor"
         stroke-width="1.9"
         stroke-linecap="round"
+      />
+    </template>
+
+    <template v-else-if="name === 'history'">
+      <path
+        d="M3 3v5h5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M3.05 13a9 9 0 1 0 .5-4"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M12 7v5l3 2"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
       />
     </template>
   </svg>
