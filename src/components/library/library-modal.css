@@ -119,12 +119,6 @@
   max-width: 560px;
 }
 
-.library-step__content--padded {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-}
-
 .library-filters {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(120px, 180px);
@@ -214,6 +208,8 @@
 }
 
 .library-section-row .library-row {
+  flex: 1;
+  min-width: 0;
   border-bottom: 0;
 }
 
@@ -365,5 +361,13 @@
 
   .library-body {
     padding: 10px 12px 12px;
+  }
+
+  .library-detail__actions {
+    flex-direction: column;
+  }
+
+  .library-detail__actions .btn {
+    width: 100%;
   }
 }
