@@ -1,5 +1,8 @@
 import type { LayoutEngine } from "@/constants";
-import { buildPatchPrompt } from "@/constants/llm-wizard";
+import {
+  buildPatchNoChangeRetryPrompt,
+  buildPatchPrompt,
+} from "@/constants/llm-wizard";
 import { llmChat } from "@/services/llm/llm-client";
 import { buildLlmPatchSystemPrompt, buildLlmSystemPrompt } from "@/services/llm/llm-prompts";
 import type { LlmChatMessage } from "@/services/llm/llm-types";
@@ -144,6 +147,29 @@ export async function generateValidPlantUmlPatch(
     const validation = await validateLlmPlantUmlSource(mergedSource, layout, darkMode);
 
     if (validation.valid) {
+      if (!hasChanges) {
+        if (attempt >= maxRetries) {
+          return {
+            plantuml: mergedSource,
+            explanation: parsed.explanation,
+            replacement:
+              parsed.mode === "replacement" ? parsed.replacement : undefined,
+            hasChanges: false,
+          };
+        }
+
+        messages.push({ role: "assistant", content: chatResult.content });
+        messages.push({
+          role: "user",
+          content: buildPatchNoChangeRetryPrompt(
+            userPrompt,
+            selectedFragment,
+            parsed.mode,
+          ),
+        });
+        continue;
+      }
+
       return {
         plantuml: mergedSource,
         explanation: parsed.explanation,

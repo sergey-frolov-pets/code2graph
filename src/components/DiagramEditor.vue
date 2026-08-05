@@ -121,14 +121,29 @@ function updateSelectionState(): void {
 }
 
 function requestAiPatch(): void {
-  updateSelectionState();
-  if (!hasTextSelection.value) {
+  const textarea = textareaRef.value;
+  let start = selectionStart.value;
+  let end = selectionEnd.value;
+
+  if (textarea) {
+    const liveStart = textarea.selectionStart;
+    const liveEnd = textarea.selectionEnd;
+    if (liveEnd > liveStart) {
+      start = liveStart;
+      end = liveEnd;
+    }
+  }
+
+  if (end <= start) {
     return;
   }
 
+  selectionStart.value = start;
+  selectionEnd.value = end;
+
   emit("aiPatch", {
-    start: selectionStart.value,
-    end: selectionEnd.value,
+    start,
+    end,
   });
 }
 
@@ -357,6 +372,7 @@ watch(
         <IconButton
           :label="t('editor.aiPatch')"
           :disabled="!hasTextSelection"
+          prevent-mousedown-default
           @click="requestAiPatch"
         >
           <ActionIcon name="ai" />

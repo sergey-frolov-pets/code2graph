@@ -98,3 +98,29 @@ export function buildPatchPrompt(
     userPrompt.trim(),
   ].join("\n");
 }
+
+export function buildPatchNoChangeRetryPrompt(
+  userPrompt: string,
+  selectedFragment: string,
+  parsedMode: "replacement" | "full",
+): string {
+  const lines = [
+    "Your previous response did not change the selected fragment.",
+    `User request: ${userPrompt.trim()}`,
+    "",
+    "Return JSON with field replacement containing NEW text for the selected region.",
+    "The replacement MUST differ from the selected fragment and MUST satisfy the user request.",
+    "",
+    "=== SELECTED FRAGMENT (must change) ===",
+    selectedFragment,
+  ];
+
+  if (parsedMode === "full") {
+    lines.push(
+      "",
+      "Do not return the full plantuml file. Use only the replacement field for the selected fragment.",
+    );
+  }
+
+  return lines.join("\n");
+}
