@@ -38,6 +38,7 @@ import {
   mapDisplayOffsetToSourceOffset,
   mapSourceOffsetToDisplayOffset,
 } from "@/utils/code-folds";
+import { renderHighlightedLine } from "@/utils/plantuml-highlight";
 
 const EDITOR_LINE_HEIGHT = 1.45;
 const FOLD_TOGGLE_WIDTH = "14px";
@@ -143,15 +144,27 @@ const gutterRows = computed<GutterRow[]>(() =>
 );
 
 const visibleEditorLines = computed(() =>
-  visibleLines.value.map((item, index) => ({
-    key: `${item.kind}-${item.sourceLine}-${index}`,
-    kind: item.kind,
-    sourceLine: item.sourceLine,
-    text:
+  visibleLines.value.map((item, index) => {
+    const rawLine =
+      item.kind === "placeholder"
+        ? ""
+        : (sourceLines.value[item.sourceLine - 1] ?? "");
+    const text =
       item.kind === "placeholder"
         ? buildFoldPlaceholder(item.hiddenLineCount ?? 0)
-        : sourceLines.value[item.sourceLine - 1] || " ",
-  })),
+        : rawLine || " ";
+
+    return {
+      key: `${item.kind}-${item.sourceLine}-${index}`,
+      kind: item.kind,
+      sourceLine: item.sourceLine,
+      text,
+      html:
+        item.kind === "placeholder"
+          ? undefined
+          : renderHighlightedLine(rawLine || " "),
+    };
+  }),
 );
 
 const errorLineSet = computed(() => new Set(props.errorLines ?? []));
@@ -636,7 +649,12 @@ watch(
                 'is-fold-placeholder': line.kind === 'placeholder',
               }"
             >
-              {{ line.text }}
+              <span
+                v-if="line.html"
+                class="code-editor__line-content"
+                v-html="line.html"
+              />
+              <template v-else>{{ line.text }}</template>
             </div>
           </div>
           <textarea
@@ -797,7 +815,6 @@ watch(
   position: absolute;
   inset: 0;
   pointer-events: none;
-  color: transparent;
   background: transparent;
 }
 
@@ -824,7 +841,12 @@ watch(
   min-height: 0;
   resize: none;
   background: transparent;
-  color: var(--text);
+  color: transparent;
+  caret-color: var(--text);
+}
+
+.code-editor__textarea::selection {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .drop-hint {
