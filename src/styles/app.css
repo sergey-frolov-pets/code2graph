@@ -595,3 +595,34 @@ a {
     height: auto;
   }
 }
+
+@media (max-width: 900px) and (orientation: portrait) {
+  .panel-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+    row-gap: 6px;
+    column-gap: 8px;
+  }
+
+  .panel-title {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .panel-header__fullscreen {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .panel-header__toolbar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    flex: none;
+    width: 100%;
+    flex-wrap: wrap;
+    overflow-x: visible;
+    touch-action: auto;
+  }
+}
