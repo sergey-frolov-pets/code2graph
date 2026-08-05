@@ -159,12 +159,6 @@ function onRemoveClick(regionId: string, event: MouseEvent): void {
   emit("remove", regionId);
 }
 
-function onBackdropClick(event: MouseEvent): void {
-  if (event.target === event.currentTarget) {
-    emit("close");
-  }
-}
-
 watch(
   () => props.open,
   (isOpen) => {
@@ -203,20 +197,14 @@ defineExpose({
 
 <template>
   <Teleport to="body">
-    <div
+    <section
       v-if="open"
-      class="fold-regions-backdrop"
-      role="presentation"
-      @click="onBackdropClick"
+      ref="panelRef"
+      class="fold-regions-panel"
+      role="dialog"
+      :aria-label="t('editor.regions.title')"
+      :style="panelStyle"
     >
-      <section
-        ref="panelRef"
-        class="fold-regions-panel"
-        role="dialog"
-        :aria-label="t('editor.regions.title')"
-        :style="panelStyle"
-        @click.stop
-      >
         <header class="fold-regions-panel__header">
           <h3 class="fold-regions-panel__title">{{ t("editor.regions.title") }}</h3>
           <button
@@ -318,22 +306,14 @@ defineExpose({
             {{ t("editor.regions.empty") }}
           </p>
         </div>
-      </section>
-    </div>
+    </section>
   </Teleport>
 </template>
 
 <style scoped>
-.fold-regions-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1100;
-  background: transparent;
-}
-
 .fold-regions-panel {
   position: fixed;
-  z-index: 1101;
+  z-index: 1100;
   width: min(280px, calc(100vw - 24px));
   max-height: min(70vh, 420px);
   display: flex;
