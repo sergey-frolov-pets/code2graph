@@ -22,6 +22,8 @@ import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
 import { useLlmSettings } from "@/composables/useLlmSettings";
 import { useLocale } from "@/composables/useLocale";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
+import { useLlmProxyStatus } from "@/composables/useLlmProxyStatus";
+import { isFreeProviderConfiguredOnServer } from "@/services/llm/proxy-status";
 import { isLlmProxyConfigured } from "@/utils/llm-proxy";
 import { testLlmConnection } from "@/services/llm/llm-client";
 
@@ -58,6 +60,7 @@ const {
   setLlmConsent,
 } = useLlmSettings();
 const { hasLlmApiKey, setLlmApiKey, clearLlmApiKey } = useLlmApiKeys();
+const { proxyStatus, refreshProxyStatus } = useLlmProxyStatus();
 
 const libraryServerInput = ref(libraryApiUrl.value);
 const apiKeyInput = ref("");
@@ -106,9 +109,24 @@ const llmProviderOptions = computed(() =>
       ? ` — ${t("settings.llmRecommendedBadge")}`
       : "";
 
+    let availabilityBadge = "";
+    if (provider.kind === LLM_PROVIDER_KIND.FREE_BUILTIN) {
+      if (!isLlmProxyConfigured()) {
+        availabilityBadge = ` — ${t("settings.llmProviderNeedsServer")}`;
+      } else {
+        const configuredOnServer = isFreeProviderConfiguredOnServer(
+          proxyStatus.value,
+          provider.id,
+        );
+        if (configuredOnServer === false) {
+          availabilityBadge = ` — ${t("settings.llmProviderUnavailableOnServer")}`;
+        }
+      }
+    }
+
     return {
       id: provider.id,
-      label: `${t(provider.nameKey)} ${kindBadge}${recommendedBadge}`,
+      label: `${t(provider.nameKey)} ${kindBadge}${recommendedBadge}${availabilityBadge}`,
     };
   }),
 );
@@ -160,6 +178,7 @@ async function onTestLlmConnection(): Promise<void> {
   llmTestMessage.value = "";
   llmTestOk.value = false;
 
+  await refreshProxyStatus();
   const result = await testLlmConnection();
   llmTestOk.value = result.ok;
   llmTestMessage.value = result.message;
@@ -335,6 +354,10 @@ async function onTestLlmConnection(): Promise<void> {
 
       <p v-if="isActiveProviderFree" class="settings-field__hint">
         {{ t("settings.llmFreeHint") }}
+      </p>
+
+      <p v-if="isActiveProviderByok" class="settings-field__hint">
+        {{ t("settings.llmByokHint") }}
       </p>
 
       <p v-if="showNoProxyWarning" class="settings-warning">

@@ -14,6 +14,7 @@ import {
   isLlmProxyConfigured,
   resolveLlmChatUrl,
   resolveLlmProxyBaseUrl,
+  resolveLlmStatusUrl,
 } from "@/utils/llm-proxy";
 
 describe("resolveLlmProxyBaseUrl", () => {
@@ -39,6 +40,7 @@ describe("resolveLlmProxyBaseUrl", () => {
     expect(resolveLlmProxyBaseUrl()).toBe("https://api.example.com/api");
     expect(isLlmProxyConfigured()).toBe(true);
     expect(resolveLlmChatUrl()).toBe("https://api.example.com/api/llm/chat");
+    expect(resolveLlmStatusUrl()).toBe("https://api.example.com/api/llm/status");
   });
 
   it("does not fall back to same-origin /api in production", () => {
