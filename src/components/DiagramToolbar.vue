@@ -17,6 +17,8 @@ const emit = defineEmits<{
   exportSvg: [];
   exportPng: [];
   renderNow: [];
+  zoomIn: [];
+  zoomOut: [];
   "update:previewBackground": [value: string];
   "update:diagramDarkMode": [value: boolean];
 }>();
@@ -50,6 +52,14 @@ function toggleDiagramTheme(): void {
         />
       </label>
     </TooltipWrap>
+
+    <IconButton :label="t('toolbar.zoomOut')" @click="emit('zoomOut')">
+      <ActionIcon name="zoom-out" />
+    </IconButton>
+
+    <IconButton :label="t('toolbar.zoomIn')" @click="emit('zoomIn')">
+      <ActionIcon name="zoom-in" />
+    </IconButton>
 
     <IconButton
       :label="themeToggleLabel"
