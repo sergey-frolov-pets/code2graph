@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { APP_META } from "@/constants";
-import type { LayoutEngine } from "@/constants";
 import {
   isOnlineRenderMode,
   type RenderMode,
@@ -10,10 +9,7 @@ import { useLocale } from "@/composables/useLocale";
 
 const props = defineProps<{
   loadedFileName: string;
-  layout: LayoutEngine;
   renderMode: RenderMode;
-  engineReady: boolean;
-  engineStatus: string;
 }>();
 
 const { t } = useLocale();
@@ -22,8 +18,8 @@ let statusBarObserver: ResizeObserver | null = null;
 
 const renderModeLabel = computed(() =>
   isOnlineRenderMode(props.renderMode)
-    ? t("settings.renderModeOnline")
-    : t("settings.renderModeOffline"),
+    ? t("app.online")
+    : t("app.offline"),
 );
 
 onMounted(() => {
@@ -52,28 +48,11 @@ onUnmounted(() => {
 <template>
   <footer ref="statusBarRef" class="status-bar">
     <span>{{ t("app.file") }}: {{ loadedFileName }}</span>
-    <span class="status-bar__engine">
-      <span>{{ t("app.engine") }}: {{ layout }} · {{ renderModeLabel }}</span>
-      <span
-        v-if="engineReady"
-        class="status-bar__engine-ok"
-        :aria-label="t('app.engineReady')"
-        :title="t('app.engineReady')"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M6 12.5 10 16.5 18 7.5"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </span>
-      <span v-else class="status-pill is-error status-pill--inline">{{
-        engineStatus
-      }}</span>
+    <span
+      class="status-pill status-pill--inline"
+      :class="isOnlineRenderMode(renderMode) ? 'is-ready' : 'is-error'"
+    >
+      {{ renderModeLabel }}
     </span>
     <span class="status-bar__copyright">{{ APP_META.copyright }}</span>
   </footer>

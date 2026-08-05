@@ -251,30 +251,30 @@ watch(libraryApiUrl, () => {
           class="library-modes"
           :aria-label="t('library.title')"
         >
-          <button
-            class="btn"
-            :class="{ 'is-active': activeTab === 'browse' }"
-            type="button"
+          <IconButton
+            :label="t('library.browse')"
+            extra-class="library-modes__btn"
+            :pressed="activeTab === 'browse'"
             @click="switchTab('browse')"
           >
-            {{ t("library.browse") }}
-          </button>
-          <button
-            class="btn"
-            :class="{ 'is-active': activeTab === 'upload' }"
-            type="button"
+            <ActionIcon name="library" />
+          </IconButton>
+          <IconButton
+            :label="t('library.uploadDiagram')"
+            extra-class="library-modes__btn"
+            :pressed="activeTab === 'upload'"
             @click="switchTab('upload')"
           >
-            {{ t("library.uploadDiagram") }}
-          </button>
-          <button
-            class="btn"
-            :class="{ 'is-active': activeTab === 'transfer' }"
-            type="button"
+            <ActionIcon name="export" />
+          </IconButton>
+          <IconButton
+            :label="t('library.transfer')"
+            extra-class="library-modes__btn"
+            :pressed="activeTab === 'transfer'"
             @click="switchTab('transfer')"
           >
-            {{ t("library.transfer") }}
-          </button>
+            <ActionIcon name="transfer" />
+          </IconButton>
         </nav>
       </header>
 
