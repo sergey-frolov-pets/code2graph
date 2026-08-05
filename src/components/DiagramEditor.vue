@@ -45,6 +45,7 @@ const emit = defineEmits<{
   fileLoaded: [payload: { content: string; fileName: string }];
   importError: [message: string];
   savePuml: [];
+  openVersions: [];
   validateSyntax: [];
   cleared: [];
 }>();
@@ -291,6 +292,12 @@ watch(
       <div class="panel-header__toolbar">
         <IconButton :label="t('editor.openPuml')" @click="openFilePicker">
           <ActionIcon name="folder-open" />
+        </IconButton>
+        <IconButton
+          :label="t('editor.versions')"
+          @click="emit('openVersions')"
+        >
+          <ActionIcon name="history" />
         </IconButton>
         <IconButton
           :label="t('app.savePuml')"
