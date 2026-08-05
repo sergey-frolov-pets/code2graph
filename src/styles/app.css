@@ -59,50 +59,50 @@
   --syntax-number: #79c0ff;
 }
 
-.code-editor__line-content :deep(.tok-comment) {
+.code-editor__line-content .tok-comment {
   color: var(--syntax-comment);
   font-style: italic;
 }
 
-.code-editor__line-content :deep(.tok-directive) {
+.code-editor__line-content .tok-directive {
   color: var(--syntax-directive);
   font-weight: 600;
 }
 
-.code-editor__line-content :deep(.tok-preprocessor) {
+.code-editor__line-content .tok-preprocessor {
   color: var(--syntax-preprocessor);
 }
 
-.code-editor__line-content :deep(.tok-keyword) {
+.code-editor__line-content .tok-keyword {
   color: var(--syntax-keyword);
   font-weight: 600;
 }
 
-.code-editor__line-content :deep(.tok-string) {
+.code-editor__line-content .tok-string {
   color: var(--syntax-string);
 }
 
-.code-editor__line-content :deep(.tok-arrow) {
+.code-editor__line-content .tok-arrow {
   color: var(--syntax-arrow);
 }
 
-.code-editor__line-content :deep(.tok-color) {
+.code-editor__line-content .tok-color {
   color: var(--syntax-color);
 }
 
-.code-editor__line-content :deep(.tok-stereotype) {
+.code-editor__line-content .tok-stereotype {
   color: var(--syntax-stereotype);
 }
 
-.code-editor__line-content :deep(.tok-number) {
+.code-editor__line-content .tok-number {
   color: var(--syntax-number);
 }
 
-.code-editor__line-content :deep(.tok-variable) {
+.code-editor__line-content .tok-variable {
   color: var(--syntax-preprocessor);
 }
 
-.code-editor__line-content :deep(.tok-plain) {
+.code-editor__line-content .tok-plain {
   color: var(--text);
 }
 
