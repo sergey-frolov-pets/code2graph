@@ -3,44 +3,35 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const messagesPath = path.join(root, "src/locales/messages.ts");
-const source = readFileSync(messagesPath, "utf8");
 
-function extractKeys(blockName) {
-  const start = source.indexOf(`export const ${blockName}`);
-  if (start < 0) {
-    throw new Error(`Block ${blockName} not found in messages.ts`);
-  }
-
-  const openBrace = source.indexOf("{", start);
-  let depth = 0;
-  let end = openBrace;
-
-  for (let index = openBrace; index < source.length; index += 1) {
-    const char = source[index];
-    if (char === "{") {
-      depth += 1;
-    } else if (char === "}") {
-      depth -= 1;
-      if (depth === 0) {
-        end = index;
-        break;
-      }
-    }
-  }
-
-  const block = source.slice(openBrace + 1, end);
+function extractKeysFromFile(filePath) {
+  const source = readFileSync(filePath, "utf8");
   const keys = new Set();
 
-  for (const match of block.matchAll(/^\s*"([^"]+)":/gm)) {
+  for (const match of source.matchAll(/^\s*"([^"]+)":/gm)) {
     keys.add(match[1]);
   }
 
   return keys;
 }
 
-const ruKeys = extractKeys("ruMessages");
-const enKeys = extractKeys("enMessages");
+function loadLocaleKeys(locale) {
+  const indexPath = path.join(root, "src/locales", locale, "index.ts");
+  const indexSource = readFileSync(indexPath, "utf8");
+  const keys = new Set();
+
+  for (const match of indexSource.matchAll(/from\s+"\.\/([^"]+)"/g)) {
+    const domainFile = path.join(root, "src/locales", locale, `${match[1]}.ts`);
+    for (const key of extractKeysFromFile(domainFile)) {
+      keys.add(key);
+    }
+  }
+
+  return keys;
+}
+
+const ruKeys = loadLocaleKeys("ru");
+const enKeys = loadLocaleKeys("en");
 
 const onlyRu = [...ruKeys].filter((key) => !enKeys.has(key)).sort();
 const onlyEn = [...enKeys].filter((key) => !ruKeys.has(key)).sort();

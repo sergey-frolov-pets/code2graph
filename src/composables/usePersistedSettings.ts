@@ -36,21 +36,37 @@ import { useLocale } from "@/composables/useLocale";
 import {
   readStorageBoolean,
   readStorageItem,
+  removeStorageItem,
   writeStorageItem,
 } from "@/utils/safe-storage";
 
+function migrateLegacyDarkStorage(): void {
+  const legacyDark = readStorageBoolean(STORAGE_KEY_DARK);
+  if (legacyDark === null) {
+    return;
+  }
+
+  if (readStorageBoolean(STORAGE_KEY_UI_DARK) === null) {
+    writeStorageItem(STORAGE_KEY_UI_DARK, String(legacyDark));
+  }
+  if (readStorageBoolean(STORAGE_KEY_DIAGRAM_DARK) === null) {
+    writeStorageItem(STORAGE_KEY_DIAGRAM_DARK, String(legacyDark));
+  }
+  removeStorageItem(STORAGE_KEY_DARK);
+}
+
 function readInitialUiDarkMode(): boolean {
+  migrateLegacyDarkStorage();
   return (
     readStorageBoolean(STORAGE_KEY_UI_DARK) ??
-    readStorageBoolean(STORAGE_KEY_DARK) ??
     window.matchMedia("(prefers-color-scheme: dark)").matches
   );
 }
 
 function readInitialDiagramDarkMode(): boolean {
+  migrateLegacyDarkStorage();
   return (
     readStorageBoolean(STORAGE_KEY_DIAGRAM_DARK) ??
-    readStorageBoolean(STORAGE_KEY_DARK) ??
     window.matchMedia("(prefers-color-scheme: dark)").matches
   );
 }

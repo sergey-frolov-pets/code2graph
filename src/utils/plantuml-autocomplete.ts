@@ -568,7 +568,7 @@ function detectC4Diagram(lines: string[]): boolean {
     return (
       /C4[_/]/i.test(trimmed) ||
       /^Person(?:_Ext)?\s*\(/.test(trimmed) ||
-      /^System(?:_Ext|_Boundary)?\s*[\("(]/.test(trimmed) ||
+      /^System(?:_Ext|_Boundary)?\s*["(]/.test(trimmed) ||
       /^Container(?:Db|Queue|_Ext|_Boundary)?\s*\(/.test(trimmed) ||
       /^Rel(?:_[A-Za-z]+)?\s*\(/.test(trimmed) ||
       /^Add(?:Element|Rel|Container)Tag\s*\(/.test(trimmed)

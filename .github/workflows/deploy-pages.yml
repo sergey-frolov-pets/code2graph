@@ -43,8 +43,17 @@ jobs:
       - name: Check i18n key parity
         run: npm run check:i18n
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+
       - name: Build
         run: npm run build
+
+      - name: E2E smoke test
+        run: npm run test:e2e
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

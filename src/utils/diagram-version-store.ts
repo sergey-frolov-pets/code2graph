@@ -2,50 +2,29 @@ import type {
   CreateDiagramVersionPayload,
   DiagramVersion,
 } from "@/types/diagram-versions";
-
-const DB_NAME = "vueplantuml-versions";
-const DB_VERSION = 1;
-const STORE_VERSIONS = "versions";
-const INDEX_DOCUMENT_KEY = "documentKey";
-
-function openDatabase(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(STORE_VERSIONS)) {
-        const store = db.createObjectStore(STORE_VERSIONS, { keyPath: "id" });
-        store.createIndex(INDEX_DOCUMENT_KEY, "documentKey", { unique: false });
-      }
-    };
-
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () =>
-      reject(request.error ?? new Error("IndexedDB open failed"));
-  });
-}
+import {
+  getFromObjectStore,
+  runIndexedTransaction,
+} from "@/storage/idb/idb-core";
+import {
+  upgradeVersionsDatabase,
+  VERSIONS_DB_NAME,
+  VERSIONS_DB_VERSION,
+  VERSIONS_INDEX_DOCUMENT_KEY,
+  VERSIONS_STORE,
+} from "@/storage/versions/versions-db";
 
 function runTransaction<T>(
   mode: IDBTransactionMode,
   callback: (store: IDBObjectStore) => Promise<T> | T,
 ): Promise<T> {
-  return openDatabase().then(
-    (db) =>
-      new Promise<T>((resolve, reject) => {
-        const transaction = db.transaction(STORE_VERSIONS, mode);
-        const store = transaction.objectStore(STORE_VERSIONS);
-
-        Promise.resolve(callback(store))
-          .then(resolve)
-          .catch(reject);
-
-        transaction.oncomplete = () => db.close();
-        transaction.onerror = () => {
-          db.close();
-          reject(transaction.error ?? new Error("IndexedDB transaction failed"));
-        };
-      }),
+  return runIndexedTransaction(
+    VERSIONS_DB_NAME,
+    VERSIONS_DB_VERSION,
+    upgradeVersionsDatabase,
+    VERSIONS_STORE,
+    mode,
+    (stores) => callback(stores[VERSIONS_STORE]),
   );
 }
 
@@ -54,7 +33,7 @@ function getVersionsByDocumentKey(
   documentKey: string,
 ): Promise<DiagramVersion[]> {
   return new Promise((resolve, reject) => {
-    const index = store.index(INDEX_DOCUMENT_KEY);
+    const index = store.index(VERSIONS_INDEX_DOCUMENT_KEY);
     const request = index.getAll(documentKey);
     request.onsuccess = () => resolve(request.result as DiagramVersion[]);
     request.onerror = () =>
@@ -66,7 +45,8 @@ function sortVersionsByNumber(
   versions: DiagramVersion[],
 ): DiagramVersion[] {
   return [...versions].sort(
-    (a, b) => b.versionNumber - a.versionNumber || b.createdAt.localeCompare(a.createdAt),
+    (a, b) =>
+      b.versionNumber - a.versionNumber || b.createdAt.localeCompare(a.createdAt),
   );
 }
 
@@ -147,12 +127,6 @@ export async function getDiagramVersion(
   versionId: string,
 ): Promise<DiagramVersion | null> {
   return runTransaction("readonly", (store) =>
-    new Promise((resolve, reject) => {
-      const request = store.get(versionId);
-      request.onsuccess = () =>
-        resolve((request.result as DiagramVersion) ?? null);
-      request.onerror = () =>
-        reject(request.error ?? new Error("IndexedDB get failed"));
-    }),
+    getFromObjectStore<DiagramVersion>(store, versionId),
   );
 }
