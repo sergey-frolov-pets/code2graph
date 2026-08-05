@@ -391,6 +391,35 @@ a {
   font-size: 0.78rem;
 }
 
+.status-bar__engine {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-bar__mode-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.status-bar__mode-icon svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+.status-bar__mode-icon.is-online {
+  color: var(--success);
+}
+
+.status-bar__mode-icon.is-offline {
+  color: var(--danger);
+}
+
 .status-bar__copyright {
   margin-left: auto;
 }
