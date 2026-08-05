@@ -52,6 +52,9 @@ const { t } = useLocale();
           <span class="library-row__meta">
             {{ t("library.bytes", { size: diagram.byteSize }) }}
           </span>
+          <span v-if="diagram.description" class="library-row__description">
+            {{ diagram.description }}
+          </span>
           <span v-if="diagram.tags.length" class="library-row__tags">
             <span v-for="tag in diagram.tags" :key="tag" class="library-tag">
               {{ tag }}

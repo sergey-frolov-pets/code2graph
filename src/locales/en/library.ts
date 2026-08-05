@@ -23,6 +23,7 @@ export const libraryMessages: LocaleMessages = {
   "library.noResults": "No diagrams found",
   "library.selectDiagram": "Select a diagram to view details",
   "library.openInEditor": "Open in editor",
+  "library.openInEditorHint": "Click to open the diagram source in the editor",
   "library.sizeLimit": "Maximum file size: {size} KB",
   "library.fileTooLarge": "File is too large. Maximum {size} KB",
   "library.uploadSuccess": "Diagram uploaded",

@@ -23,6 +23,7 @@ export const libraryMessages: LocaleMessages = {
   "library.noResults": "Диаграммы не найдены",
   "library.selectDiagram": "Выберите диаграмму для просмотра",
   "library.openInEditor": "Открыть в редакторе",
+  "library.openInEditorHint": "Нажмите, чтобы открыть код диаграммы в редакторе",
   "library.sizeLimit": "Максимальный размер файла: {size} КБ",
   "library.fileTooLarge": "Файл слишком большой. Максимум {size} КБ",
   "library.uploadSuccess": "Диаграмма загружена",

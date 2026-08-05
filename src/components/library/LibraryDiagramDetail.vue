@@ -57,7 +57,6 @@ const { t } = useLocale();
             </option>
           </select>
         </label>
-        <pre class="library-detail__source">{{ diagram.source }}</pre>
         <div class="library-detail__actions">
           <button
             class="btn btn-primary"
@@ -81,19 +80,29 @@ const { t } = useLocale();
 
     <template v-else>
       <div class="library-step__content library-step__content--padded">
-        <p class="library-detail__meta">
-          {{ diagram.fileName }} ·
-          {{ t("library.updatedAt", { date: formatDate(diagram.updatedAt) }) }}
-        </p>
-        <p v-if="diagram.description" class="library-detail__description">
-          {{ diagram.description }}
-        </p>
-        <div v-if="diagram.tags.length" class="library-detail__tags">
-          <span v-for="tag in diagram.tags" :key="tag" class="library-tag">
-            {{ tag }}
-          </span>
-        </div>
-        <pre class="library-detail__source">{{ diagram.source }}</pre>
+        <button
+          class="library-detail__open-card"
+          type="button"
+          :aria-label="t('library.openInEditor')"
+          @click="emit('open-in-editor')"
+        >
+          <p class="library-detail__meta">
+            {{ diagram.fileName }} ·
+            {{ t("library.updatedAt", { date: formatDate(diagram.updatedAt) }) }}
+          </p>
+          <p
+            class="library-detail__description"
+            :class="{ 'library-detail__description--empty': !diagram.description }"
+          >
+            {{ diagram.description || t("library.emptyDescription") }}
+          </p>
+          <div v-if="diagram.tags.length" class="library-detail__tags">
+            <span v-for="tag in diagram.tags" :key="tag" class="library-tag">
+              {{ tag }}
+            </span>
+          </div>
+          <span class="library-detail__open-hint">{{ t("library.openInEditorHint") }}</span>
+        </button>
         <div class="library-detail__actions">
           <button class="btn btn-primary" type="button" @click="emit('open-in-editor')">
             {{ t("library.openInEditor") }}
