@@ -35,7 +35,9 @@ export async function proxyLlmChat(
     const message =
       payload?.message ??
       payload?.error ??
-      `Proxy request failed with status ${response.status}`;
+      (response.status === 405
+        ? "LLM proxy is not available on this host (HTTP 405). Set the library server URL in Settings."
+        : `Proxy request failed with status ${response.status}`);
     throw new LlmClientError("proxy_error", message);
   }
 
