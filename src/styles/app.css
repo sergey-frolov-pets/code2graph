@@ -98,6 +98,10 @@
   color: var(--syntax-number);
 }
 
+.code-editor__line-content :deep(.tok-variable) {
+  color: var(--syntax-preprocessor);
+}
+
 .code-editor__line-content :deep(.tok-plain) {
   color: var(--text);
 }
