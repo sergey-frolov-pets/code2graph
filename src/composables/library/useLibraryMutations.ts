@@ -64,6 +64,9 @@ export function useLibraryMutations(
           sectionId: catalog.selectedSectionId.value,
           tag: catalog.tagFilter.value,
           language: catalog.languageFilter.value,
+          minRating: catalog.minRatingFilter.value,
+          minVotes: catalog.minVotesFilter.value,
+          sortBy: catalog.sortByFilter.value,
         }),
         catalog.libraryApiUrl.value,
       );

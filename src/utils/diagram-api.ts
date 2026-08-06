@@ -3,6 +3,8 @@ import type {
   CreateSectionPayload,
   DiagramDto,
   DiagramListItemDto,
+  DiagramRatingDto,
+  DiagramSortOption,
   LibraryUserDto,
   SectionAccessDto,
   SectionDto,
@@ -132,6 +134,9 @@ export async function fetchDiagrams(
     sectionId?: string;
     tag?: string;
     language?: string;
+    minRating?: number;
+    minVotes?: number;
+    sortBy?: DiagramSortOption;
   },
   baseUrl?: string,
 ): Promise<{ diagrams: DiagramListItemDto[]; total: number }> {
@@ -148,9 +153,80 @@ export async function fetchDiagrams(
   if (params.language) {
     searchParams.set("language", params.language);
   }
+  if (params.minRating !== undefined && params.minRating > 0) {
+    searchParams.set("minRating", String(params.minRating));
+  }
+  if (params.minVotes !== undefined && params.minVotes > 0) {
+    searchParams.set("minVotes", String(params.minVotes));
+  }
+  if (params.sortBy) {
+    searchParams.set("sortBy", params.sortBy);
+  }
 
   const query = searchParams.toString();
   return requestJson(`/diagrams${query ? `?${query}` : ""}`, undefined, baseUrl);
+}
+
+export async function addDiagramFavorite(
+  diagramId: string,
+  baseUrl?: string,
+): Promise<DiagramDto> {
+  return requestJson(
+    `/diagrams/${diagramId}/favorite`,
+    { method: "POST" },
+    baseUrl,
+  );
+}
+
+export async function removeDiagramFavorite(
+  diagramId: string,
+  baseUrl?: string,
+): Promise<DiagramDto> {
+  return requestJson(
+    `/diagrams/${diagramId}/favorite`,
+    { method: "DELETE" },
+    baseUrl,
+  );
+}
+
+export async function submitDiagramRating(
+  diagramId: string,
+  payload: { rating: number; comment?: string },
+  baseUrl?: string,
+): Promise<DiagramDto> {
+  return requestJson(
+    `/diagrams/${diagramId}/ratings`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    baseUrl,
+  );
+}
+
+export async function fetchDiagramRatings(
+  diagramId: string,
+  baseUrl?: string,
+): Promise<{ ratings: DiagramRatingDto[] }> {
+  return requestJson(`/diagrams/${diagramId}/ratings`, undefined, baseUrl);
+}
+
+export async function moderateDiagramRatingComment(
+  diagramId: string,
+  ratingUserId: string,
+  status: "approved" | "rejected",
+  baseUrl?: string,
+): Promise<void> {
+  await requestJson(
+    `/diagrams/${diagramId}/ratings/${ratingUserId}/moderate`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    },
+    baseUrl,
+  );
 }
 
 export async function fetchDiagram(

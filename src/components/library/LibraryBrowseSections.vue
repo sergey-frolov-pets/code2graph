@@ -2,6 +2,7 @@
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import { useLocale } from "@/composables/useLocale";
+import { FAVORITES_SECTION_ID } from "@/constants/diagram-library";
 import type { SectionDto } from "@/constants/diagram-library";
 import type { FlatSectionOption } from "@/shared/library/section-tree";
 
@@ -65,6 +66,16 @@ function canAdminSection(sectionId: string): boolean {
       >
         <span class="library-row__title">{{ t("library.allSections") }}</span>
         <span class="library-row__chevron">›</span>
+      </button>
+
+      <button
+        class="library-row"
+        :class="{ 'is-active': selectedSectionId === FAVORITES_SECTION_ID }"
+        type="button"
+        @click="emit('section-row-click', FAVORITES_SECTION_ID)"
+      >
+        <span class="library-row__title">{{ t("library.favorites") }}</span>
+        <span v-if="!isSectionsEditMode" class="library-row__chevron">›</span>
       </button>
 
       <div

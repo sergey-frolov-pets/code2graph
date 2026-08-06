@@ -82,12 +82,29 @@ export interface DiagramListItemDto {
   authorName?: string | null;
   visibility?: DiagramVisibility;
   canWrite?: boolean;
+  avgRating?: number | null;
+  voteCount?: number;
+  isFavorite?: boolean;
+  userRating?: number | null;
+  userCommentStatus?: RatingCommentStatus | null;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface DiagramDto extends DiagramListItemDto {
   source: string;
+}
+
+export interface DiagramRatingDto {
+  id: string;
+  diagramId: string;
+  userId: string;
+  username?: string;
+  rating: number;
+  comment?: string;
+  commentStatus: RatingCommentStatus;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateDiagramPayload {
@@ -136,6 +153,19 @@ export const SHARE_PERMISSIONS = ["view", "download"] as const;
 export type SharePermission = (typeof SHARE_PERMISSIONS)[number];
 
 export const DEFAULT_SHARE_MAX_DOWNLOADS = 5;
+
+export const FAVORITES_SECTION_ID = "__favorites__";
+
+export const RATING_COMMENT_STATUSES = [
+  "none",
+  "pending",
+  "approved",
+  "rejected",
+] as const;
+export type RatingCommentStatus = (typeof RATING_COMMENT_STATUSES)[number];
+
+export const DIAGRAM_SORT_OPTIONS = ["updated", "rating", "votes"] as const;
+export type DiagramSortOption = (typeof DIAGRAM_SORT_OPTIONS)[number];
 
 export interface ShareLinkDto {
   token: string;

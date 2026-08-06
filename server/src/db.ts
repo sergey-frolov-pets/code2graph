@@ -108,6 +108,37 @@ function runMigrations(database: Database.Database): void {
     `);
   }
 
+  if (!columnExists(database, "diagrams", "avg_rating")) {
+    database.exec(`
+      ALTER TABLE diagrams ADD COLUMN avg_rating REAL;
+      ALTER TABLE diagrams ADD COLUMN vote_count INTEGER NOT NULL DEFAULT 0;
+    `);
+  }
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS diagram_favorites (
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      diagram_id TEXT NOT NULL REFERENCES diagrams(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL,
+      PRIMARY KEY (user_id, diagram_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS diagram_ratings (
+      id TEXT PRIMARY KEY,
+      diagram_id TEXT NOT NULL REFERENCES diagrams(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+      comment TEXT NOT NULL DEFAULT '',
+      comment_status TEXT NOT NULL DEFAULT 'none',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      UNIQUE(diagram_id, user_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_diagram_favorites_user ON diagram_favorites(user_id);
+    CREATE INDEX IF NOT EXISTS idx_diagram_ratings_diagram ON diagram_ratings(diagram_id);
+  `);
+
   database
     .prepare("UPDATE sections SET kind = 'shared' WHERE kind IS NULL OR kind = ''")
     .run();

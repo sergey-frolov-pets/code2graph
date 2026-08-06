@@ -28,7 +28,7 @@ import { useLibrarySectionAdmin } from "@/composables/library/useLibrarySectionA
 import { useLibraryTransferHandlers } from "@/composables/library/useLibraryTransferHandlers";
 import { useLibraryAuth } from "@/composables/useLibraryAuth";
 import { useLibraryDiagramPreview } from "@/composables/useLibraryDiagramPreview";
-import { downloadShareResource, fetchShareDiagramPreview, fetchShareResource } from "@/utils/diagram-api";
+import { downloadShareResource, fetchShareDiagramPreview, fetchShareResource, addDiagramFavorite, removeDiagramFavorite } from "@/utils/diagram-api";
 
 const props = defineProps<{
   open: boolean;
@@ -85,6 +85,9 @@ const {
   flatSections,
   searchQuery,
   tagFilter,
+  minRatingFilter,
+  minVotesFilter,
+  sortByFilter,
   allTags,
   isLoading,
   isSyncing,
@@ -401,6 +404,37 @@ function onShareDiagram(): void {
   );
 }
 
+async function onToggleFavorite(): Promise<void> {
+  if (!selectedDiagram.value || !libraryApiUrl.value) {
+    return;
+  }
+
+  try {
+    const diagram = selectedDiagram.value.isFavorite
+      ? await removeDiagramFavorite(
+          selectedDiagram.value.id,
+          libraryApiUrl.value,
+        )
+      : await addDiagramFavorite(
+          selectedDiagram.value.id,
+          libraryApiUrl.value,
+        );
+    selectedDiagram.value = diagram;
+    void library.searchDiagrams();
+  } catch (error) {
+    uploadError.value =
+      error instanceof Error ? error.message : t("library.favoriteError");
+  }
+}
+
+function onRatingUpdated(diagram: typeof selectedDiagram.value): void {
+  if (!diagram) {
+    return;
+  }
+  selectedDiagram.value = diagram;
+  void library.searchDiagrams();
+}
+
 function closeSectionAccess(): void {
   isSectionAccessOpen.value = false;
   sectionAccessId.value = null;
@@ -465,6 +499,9 @@ watch(activeTab, (tab) => {
 
 watch(searchQuery, () => library.scheduleSearch());
 watch(tagFilter, () => void library.searchDiagrams());
+watch(minRatingFilter, () => void library.searchDiagrams());
+watch(minVotesFilter, () => void library.searchDiagrams());
+watch(sortByFilter, () => void library.searchDiagrams());
 watch(libraryApiUrl, () => {
   if (props.open) void library.refresh();
 });
@@ -580,10 +617,14 @@ watch(libraryTarget, () => {
           v-else-if="activeTab === 'browse' && browseStep === 'diagrams'"
           v-model:search-query="searchQuery"
           v-model:tag-filter="tagFilter"
+          v-model:min-rating-filter="minRatingFilter"
+          v-model:min-votes-filter="minVotesFilter"
+          v-model:sort-by-filter="sortByFilter"
           :diagrams="diagrams"
           :all-tags="allTags"
           :is-loading="isLoading"
           @diagram-pick="handleDiagramPick($event)"
+          @filters-change="library.searchDiagrams()"
         />
 
         <LibraryDiagramDetail
@@ -597,6 +638,7 @@ watch(libraryTarget, () => {
           :flat-section-options="flatSectionOptions"
           :is-editing="isEditing"
           :is-saving="isSaving"
+          :library-api-url="libraryApiUrl"
           @save="saveEdit()"
           @cancel="resetEditForm()"
           @start-edit="startEdit()"
@@ -604,6 +646,8 @@ watch(libraryTarget, () => {
           @share="onShareDiagram()"
           @preview="onPreviewDiagram()"
           @delete="onDeleteDiagram()"
+          @toggle-favorite="onToggleFavorite()"
+          @rating-updated="onRatingUpdated($event)"
         />
 
         <LibraryUploadForm

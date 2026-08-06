@@ -1,4 +1,5 @@
 import { parseTags, getUsernameMap } from "../db.js";
+import { enrichDiagramRowsWithSocial } from "../ratings.js";
 import {
   canAdminSection,
   canReadSection,
@@ -84,12 +85,19 @@ export function mapDiagramListItem(
     author_id: string | null;
     owner_id: string | null;
     visibility: string;
+    avg_rating?: number | null;
+    vote_count?: number;
     created_at: string;
     updated_at: string;
   },
   options?: {
     authorName?: string | null;
     canWrite?: boolean;
+    avgRating?: number | null;
+    voteCount?: number;
+    isFavorite?: boolean;
+    userRating?: number | null;
+    userCommentStatus?: string | null;
   },
 ): DiagramListItemDto {
   return {
@@ -106,6 +114,11 @@ export function mapDiagramListItem(
     authorName: options?.authorName ?? undefined,
     visibility: row.visibility as DiagramListItemDto["visibility"],
     canWrite: options?.canWrite,
+    avgRating: options?.avgRating ?? row.avg_rating ?? null,
+    voteCount: options?.voteCount ?? row.vote_count ?? 0,
+    isFavorite: options?.isFavorite,
+    userRating: options?.userRating ?? undefined,
+    userCommentStatus: options?.userCommentStatus as DiagramListItemDto["userCommentStatus"],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -125,12 +138,19 @@ export function mapDiagram(
     author_id: string | null;
     owner_id: string | null;
     visibility: string;
+    avg_rating?: number | null;
+    vote_count?: number;
     created_at: string;
     updated_at: string;
   },
   options?: {
     authorName?: string | null;
     canWrite?: boolean;
+    avgRating?: number | null;
+    voteCount?: number;
+    isFavorite?: boolean;
+    userRating?: number | null;
+    userCommentStatus?: string | null;
   },
 ): DiagramDto {
   return {
@@ -162,14 +182,27 @@ export function enrichDiagramListForUser(
     rows.map((row) => row.author_id ?? ""),
   );
 
-  return rows.map((row) =>
-    mapDiagramListItem(row, {
+  const socialRows = rows.map((row) => ({
+    id: row.id,
+    avg_rating: row.avg_rating ?? null,
+    vote_count: row.vote_count ?? 0,
+  }));
+  const socialData = enrichDiagramRowsWithSocial(database, user, socialRows);
+
+  return rows.map((row, index) => {
+    const social = socialData[index];
+    return mapDiagramListItem(row, {
       authorName: row.author_id
         ? usernameMap.get(row.author_id) ?? null
         : null,
       canWrite: false,
-    }),
-  );
+      avgRating: social.avgRating,
+      voteCount: social.voteCount,
+      isFavorite: social.isFavorite,
+      userRating: social.userRating,
+      userCommentStatus: social.userCommentStatus,
+    });
+  });
 }
 
 export function enrichDiagramForUser(
@@ -178,19 +211,24 @@ export function enrichDiagramForUser(
   row: Parameters<typeof mapDiagram>[0],
 ): DiagramDto {
   const usernameMap = getUsernameMap(database, [row.author_id ?? ""]);
-  const diagramAccess = {
-    id: row.id,
-    section_id: row.section_id,
-    author_id: row.author_id,
-    owner_id: row.owner_id,
-    visibility: row.visibility,
-  };
+  const social = enrichDiagramRowsWithSocial(database, user, [
+    {
+      id: row.id,
+      avg_rating: row.avg_rating ?? null,
+      vote_count: row.vote_count ?? 0,
+    },
+  ])[0];
 
   return mapDiagram(row, {
     authorName: row.author_id
       ? usernameMap.get(row.author_id) ?? null
       : null,
     canWrite: false,
+    avgRating: social.avgRating,
+    voteCount: social.voteCount,
+    isFavorite: social.isFavorite,
+    userRating: social.userRating,
+    userCommentStatus: social.userCommentStatus,
   });
 }
 

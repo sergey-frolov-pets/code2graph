@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import LibraryDiagramRatingPanel from "@/components/library/LibraryDiagramRatingPanel.vue";
+import LibraryStarRating from "@/components/library/LibraryStarRating.vue";
 import { useLocale } from "@/composables/useLocale";
 import { formatDate } from "@/shared/format-date";
 import { VISIBILITY_OPTIONS } from "@/constants/library-visibility";
@@ -10,6 +12,7 @@ defineProps<{
   flatSectionOptions: FlatSectionOption[];
   isEditing: boolean;
   isSaving: boolean;
+  libraryApiUrl?: string;
 }>();
 
 const editTitle = defineModel<string>("editTitle", { required: true });
@@ -29,6 +32,8 @@ const emit = defineEmits<{
   share: [];
   preview: [];
   "manage-access": [];
+  "toggle-favorite": [];
+  "rating-updated": [diagram: DiagramDto];
 }>();
 
 const { t } = useLocale();
@@ -108,6 +113,17 @@ const { t } = useLocale();
               · {{ t("library.author", { name: diagram.authorName }) }}
             </template>
             · {{ t(`library.visibility.${diagram.visibility ?? "all"}`) }}
+            <template v-if="diagram.voteCount">
+              · {{ t("library.ratingVotesShort", { votes: diagram.voteCount }) }}
+            </template>
+          </p>
+          <p v-if="diagram.avgRating" class="library-detail__rating">
+            <LibraryStarRating
+              :value="Math.round(diagram.avgRating)"
+              readonly
+              size="sm"
+            />
+            <span>{{ diagram.avgRating.toFixed(1) }}</span>
           </p>
           <p
             class="library-detail__description"
@@ -125,6 +141,13 @@ const { t } = useLocale();
         <div class="library-detail__actions">
           <button class="btn btn-primary" type="button" @click="emit('open-in-editor')">
             {{ t("library.openInEditor") }}
+          </button>
+          <button class="btn" type="button" @click="emit('toggle-favorite')">
+            {{
+              diagram.isFavorite
+                ? t("library.removeFavorite")
+                : t("library.addFavorite")
+            }}
           </button>
           <button class="btn" type="button" @click="emit('share')">
             {{ t("library.shareLink") }}
@@ -149,7 +172,21 @@ const { t } = useLocale();
             {{ t("app.delete") }}
           </button>
         </div>
+        <LibraryDiagramRatingPanel
+          :diagram="diagram"
+          :api-url="libraryApiUrl"
+          @updated="emit('rating-updated', $event)"
+        />
       </div>
     </template>
   </div>
 </template>
+
+<style scoped>
+.library-detail__rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+}
+</style>

@@ -17,6 +17,19 @@ export type SharePermission = (typeof SHARE_PERMISSIONS)[number];
 
 export const DEFAULT_SHARE_MAX_DOWNLOADS = 5;
 
+export const FAVORITES_SECTION_ID = "__favorites__";
+
+export const RATING_COMMENT_STATUSES = [
+  "none",
+  "pending",
+  "approved",
+  "rejected",
+] as const;
+export type RatingCommentStatus = (typeof RATING_COMMENT_STATUSES)[number];
+
+export const DIAGRAM_SORT_OPTIONS = ["updated", "rating", "votes"] as const;
+export type DiagramSortOption = (typeof DIAGRAM_SORT_OPTIONS)[number];
+
 export interface UserRow {
   id: string;
   username: string;
@@ -64,6 +77,8 @@ export interface DiagramRow {
   author_id: string | null;
   owner_id: string | null;
   visibility: DiagramVisibility;
+  avg_rating: number | null;
+  vote_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -107,25 +122,6 @@ export interface SectionDto {
   children?: SectionDto[];
 }
 
-export interface DiagramDto {
-  id: string;
-  sectionId: string | null;
-  title: string;
-  description: string;
-  tags: string[];
-  language: DiagramLanguage;
-  source: string;
-  fileName: string;
-  byteSize: number;
-  authorId: string | null;
-  ownerId: string | null;
-  authorName?: string | null;
-  visibility: DiagramVisibility;
-  canWrite?: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface DiagramListItemDto {
   id: string;
   sectionId: string | null;
@@ -140,6 +136,27 @@ export interface DiagramListItemDto {
   authorName?: string | null;
   visibility: DiagramVisibility;
   canWrite?: boolean;
+  avgRating?: number | null;
+  voteCount?: number;
+  isFavorite?: boolean;
+  userRating?: number | null;
+  userCommentStatus?: RatingCommentStatus | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DiagramDto extends DiagramListItemDto {
+  source: string;
+}
+
+export interface DiagramRatingDto {
+  id: string;
+  diagramId: string;
+  userId: string;
+  username?: string;
+  rating: number;
+  comment?: string;
+  commentStatus: RatingCommentStatus;
   createdAt: string;
   updatedAt: string;
 }
@@ -180,4 +197,12 @@ export function isSectionKind(value: string): value is SectionKind {
 
 export function isShareResourceType(value: string): value is ShareResourceType {
   return (SHARE_RESOURCE_TYPES as readonly string[]).includes(value);
+}
+
+export function isDiagramSortOption(value: string): value is DiagramSortOption {
+  return (DIAGRAM_SORT_OPTIONS as readonly string[]).includes(value);
+}
+
+export function isRatingCommentStatus(value: string): value is RatingCommentStatus {
+  return (RATING_COMMENT_STATUSES as readonly string[]).includes(value);
 }

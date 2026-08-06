@@ -26,22 +26,43 @@ import {
   listShareLinksForResource,
 } from "../share-links.js";
 import { mapShareLinkDto } from "../share-link-policy.js";
+import {
+  addDiagramFavorite,
+  removeDiagramFavorite,
+} from "../favorites.js";
+import {
+  listDiagramRatingsForViewer,
+  moderateDiagramRatingComment,
+  upsertDiagramRating,
+} from "../ratings.js";
 import type { DiagramVisibility } from "../types.js";
-import { isDiagramVisibility, isSharePermission } from "../types.js";
+import {
+  FAVORITES_SECTION_ID,
+  isDiagramSortOption,
+  isDiagramVisibility,
+  isSharePermission,
+} from "../types.js";
 
 export const diagramsRouter = new Hono<{ Variables: AuthVariables }>();
 
 const DIAGRAM_LIST_SELECT = `
   SELECT id, section_id, title, description, tags, language,
          file_name, byte_size, author_id, owner_id, visibility,
-         created_at, updated_at
+         avg_rating, vote_count, created_at, updated_at
   FROM diagrams
+`;
+
+const DIAGRAM_LIST_SELECT_ALIASED = `
+  SELECT d.id, d.section_id, d.title, d.description, d.tags, d.language,
+         d.file_name, d.byte_size, d.author_id, d.owner_id, d.visibility,
+         d.avg_rating, d.vote_count, d.created_at, d.updated_at
+  FROM diagrams d
 `;
 
 const DIAGRAM_FULL_SELECT = `
   SELECT id, section_id, title, description, tags, language,
          source, file_name, byte_size, author_id, owner_id, visibility,
-         created_at, updated_at
+         avg_rating, vote_count, created_at, updated_at
   FROM diagrams
 `;
 
@@ -53,9 +74,18 @@ diagramsRouter.get("/", (context) => {
 
   const database = getDb();
   const query = context.req.query("q")?.trim() ?? "";
-  const sectionId = context.req.query("sectionId")?.trim();
+  const sectionIdRaw = context.req.query("sectionId")?.trim();
+  const favoritesOnly = sectionIdRaw === FAVORITES_SECTION_ID;
+  const sectionId = favoritesOnly ? undefined : sectionIdRaw;
   const tag = context.req.query("tag")?.trim();
   const language = context.req.query("language")?.trim();
+  const minRatingRaw = context.req.query("minRating")?.trim();
+  const minVotesRaw = context.req.query("minVotes")?.trim();
+  const sortByRaw = context.req.query("sortBy")?.trim() ?? "updated";
+  const sortBy = isDiagramSortOption(sortByRaw) ? sortByRaw : "updated";
+
+  const minRating = minRatingRaw ? Number(minRatingRaw) : null;
+  const minVotes = minVotesRaw ? Number(minVotesRaw) : null;
 
   if (sectionId) {
     const section = getSectionRow(database, sectionId);
@@ -64,8 +94,15 @@ diagramsRouter.get("/", (context) => {
     }
   }
 
-  let sql = `${DIAGRAM_LIST_SELECT} WHERE 1=1`;
-  const params: unknown[] = [];
+  let sql = favoritesOnly
+    ? `${DIAGRAM_LIST_SELECT_ALIASED}
+       INNER JOIN diagram_favorites fav
+         ON fav.diagram_id = d.id AND fav.user_id = ?
+       WHERE 1=1`
+    : `${DIAGRAM_LIST_SELECT} WHERE 1=1`;
+  const params: unknown[] = favoritesOnly ? [user.id] : [];
+
+  const col = favoritesOnly ? "d." : "";
 
   if (sectionId) {
     const allSections = database
@@ -80,27 +117,45 @@ diagramsRouter.get("/", (context) => {
         })),
       ),
     ];
-    sql += ` AND section_id IN (${sectionIds.map(() => "?").join(", ")})`;
+    sql += ` AND ${col}section_id IN (${sectionIds.map(() => "?").join(", ")})`;
     params.push(...sectionIds);
   }
 
   if (language && isDiagramLanguage(language)) {
-    sql += " AND language = ?";
+    sql += ` AND ${col}language = ?`;
     params.push(language);
   }
 
   if (tag) {
-    sql += " AND tags LIKE ?";
+    sql += ` AND ${col}tags LIKE ?`;
     params.push(`%"${tag.replace(/"/g, "")}"%`);
   }
 
   if (query) {
-    sql += " AND (title LIKE ? OR description LIKE ? OR source LIKE ?)";
+    sql += ` AND (${col}title LIKE ? OR ${col}description LIKE ? OR ${col}source LIKE ?)`;
     const pattern = `%${query}%`;
     params.push(pattern, pattern, pattern);
   }
 
-  sql += " ORDER BY updated_at DESC, title ASC";
+  if (minRating !== null && !Number.isNaN(minRating) && minRating > 0) {
+    sql += ` AND ${col}avg_rating IS NOT NULL AND ${col}avg_rating >= ?`;
+    params.push(minRating);
+  }
+
+  if (minVotes !== null && !Number.isNaN(minVotes) && minVotes > 0) {
+    sql += ` AND ${col}vote_count >= ?`;
+    params.push(Math.floor(minVotes));
+  }
+
+  if (favoritesOnly) {
+    sql += " ORDER BY fav.created_at DESC";
+  } else if (sortBy === "rating") {
+    sql += ` ORDER BY ${col}avg_rating DESC, ${col}vote_count DESC, ${col}title ASC`;
+  } else if (sortBy === "votes") {
+    sql += ` ORDER BY ${col}vote_count DESC, ${col}avg_rating DESC, ${col}title ASC`;
+  } else {
+    sql += ` ORDER BY ${col}updated_at DESC, ${col}title ASC`;
+  }
 
   const rows = database.prepare(sql).all(...params) as Array<
     Parameters<typeof mapDiagram>[0]
@@ -569,4 +624,189 @@ diagramsRouter.post("/:id/share", async (context) => {
   return context.json({
     link: mapShareLinkDto(link),
   }, 201);
+});
+
+function getDiagramAccessContext(
+  database: ReturnType<typeof getDb>,
+  diagramId: string,
+): {
+  row: Parameters<typeof mapDiagram>[0];
+  access: {
+    id: string;
+    section_id: string | null;
+    author_id: string | null;
+    owner_id: string | null;
+    visibility: DiagramVisibility;
+  };
+} | null {
+  const row = database
+    .prepare(`${DIAGRAM_FULL_SELECT} WHERE id = ?`)
+    .get(diagramId) as Parameters<typeof mapDiagram>[0] | undefined;
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    row,
+    access: {
+      id: row.id,
+      section_id: row.section_id,
+      author_id: row.author_id,
+      owner_id: row.owner_id,
+      visibility: row.visibility as DiagramVisibility,
+    },
+  };
+}
+
+diagramsRouter.post("/:id/favorite", (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
+  const diagramId = context.req.param("id");
+  const database = getDb();
+  const contextRow = getDiagramAccessContext(database, diagramId);
+
+  if (!contextRow) {
+    return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  if (!canReadDiagram(database, user, contextRow.access)) {
+    return context.json({ error: "Диаграмма недоступна" }, 403);
+  }
+
+  addDiagramFavorite(database, user.id, diagramId);
+  const diagram = enrichDiagramForUser(database, user, contextRow.row);
+  diagram.canWrite = canWriteDiagram(database, user, contextRow.access);
+
+  return context.json(diagram);
+});
+
+diagramsRouter.delete("/:id/favorite", (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
+  const diagramId = context.req.param("id");
+  const database = getDb();
+  const contextRow = getDiagramAccessContext(database, diagramId);
+
+  if (!contextRow) {
+    return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  removeDiagramFavorite(database, user.id, diagramId);
+  const diagram = enrichDiagramForUser(database, user, contextRow.row);
+  diagram.canWrite = canWriteDiagram(database, user, contextRow.access);
+
+  return context.json(diagram);
+});
+
+diagramsRouter.get("/:id/ratings", (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
+  const diagramId = context.req.param("id");
+  const database = getDb();
+  const contextRow = getDiagramAccessContext(database, diagramId);
+
+  if (!contextRow) {
+    return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  if (!canReadDiagram(database, user, contextRow.access)) {
+    return context.json({ error: "Диаграмма недоступна" }, 403);
+  }
+
+  const ratings = listDiagramRatingsForViewer(database, {
+    id: contextRow.row.id,
+    author_id: contextRow.row.author_id,
+  }, user);
+
+  return context.json({ ratings });
+});
+
+diagramsRouter.post("/:id/ratings", async (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
+  const diagramId = context.req.param("id");
+  const body = await context.req.json<{ rating?: number; comment?: string }>();
+  const rating = Number(body.rating);
+
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return context.json({ error: "Оценка должна быть от 1 до 5" }, 400);
+  }
+
+  const database = getDb();
+  const contextRow = getDiagramAccessContext(database, diagramId);
+
+  if (!contextRow) {
+    return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  if (!canReadDiagram(database, user, contextRow.access)) {
+    return context.json({ error: "Диаграмма недоступна" }, 403);
+  }
+
+  upsertDiagramRating(database, diagramId, user.id, rating, body.comment);
+  const refreshed = getDiagramAccessContext(database, diagramId);
+  if (!refreshed) {
+    return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  const diagram = enrichDiagramForUser(database, user, refreshed.row);
+  diagram.canWrite = canWriteDiagram(database, user, refreshed.access);
+
+  return context.json(diagram);
+});
+
+diagramsRouter.put("/:id/ratings/:ratingUserId/moderate", async (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
+  const diagramId = context.req.param("id");
+  const ratingUserId = context.req.param("ratingUserId");
+  const body = await context.req.json<{ status?: string }>();
+  const status = body.status;
+
+  if (status !== "approved" && status !== "rejected") {
+    return context.json({ error: "Некорректный статус модерации" }, 400);
+  }
+
+  const database = getDb();
+  const contextRow = getDiagramAccessContext(database, diagramId);
+
+  if (!contextRow) {
+    return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  const isAuthor =
+    contextRow.row.author_id === user.id || user.role === "admin";
+
+  if (!isAuthor) {
+    return context.json({ error: "Модерация доступна автору диаграммы" }, 403);
+  }
+
+  const updated = moderateDiagramRatingComment(
+    database,
+    diagramId,
+    ratingUserId,
+    status,
+  );
+
+  if (!updated) {
+    return context.json({ error: "Комментарий не найден" }, 404);
+  }
+
+  return context.json({ ok: true });
 });

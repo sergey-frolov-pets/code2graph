@@ -1,6 +1,7 @@
 import {
   LIBRARY_CACHE_KEY,
   type DiagramListItemDto,
+  type DiagramSortOption,
   type SectionDto,
 } from "@/constants/diagram-library";
 import { buildSectionTree } from "@/shared/library/section-tree";
@@ -24,11 +25,21 @@ export interface LibraryFetchFilters {
   sectionId?: string | null;
   tag?: string;
   language?: string;
+  minRating?: number;
+  minVotes?: number;
+  sortBy?: DiagramSortOption;
 }
 
 function trimFilter(value: string): string | undefined {
   const trimmed = value.trim();
   return trimmed || undefined;
+}
+
+function positiveNumber(value: number | undefined): number | undefined {
+  if (value === undefined || value <= 0 || Number.isNaN(value)) {
+    return undefined;
+  }
+  return value;
 }
 
 export function buildServerFetchFilters(
@@ -38,12 +49,18 @@ export function buildServerFetchFilters(
   sectionId?: string;
   tag?: string;
   language?: string;
+  minRating?: number;
+  minVotes?: number;
+  sortBy?: DiagramSortOption;
 } {
   return {
     q: trimFilter(filters.q ?? ""),
     sectionId: filters.sectionId ?? undefined,
     tag: trimFilter(filters.tag ?? ""),
     language: trimFilter(filters.language ?? ""),
+    minRating: positiveNumber(filters.minRating),
+    minVotes: positiveNumber(filters.minVotes),
+    sortBy: filters.sortBy,
   };
 }
 
