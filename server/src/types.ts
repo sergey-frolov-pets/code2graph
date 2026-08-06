@@ -12,6 +12,11 @@ export type DiagramVisibility = (typeof DIAGRAM_VISIBILITIES)[number];
 export const SHARE_RESOURCE_TYPES = ["section", "diagram"] as const;
 export type ShareResourceType = (typeof SHARE_RESOURCE_TYPES)[number];
 
+export const SHARE_PERMISSIONS = ["view", "download"] as const;
+export type SharePermission = (typeof SHARE_PERMISSIONS)[number];
+
+export const DEFAULT_SHARE_MAX_DOWNLOADS = 5;
+
 export interface UserRow {
   id: string;
   username: string;
@@ -79,6 +84,9 @@ export interface ShareLinkRow {
   resource_id: string;
   created_by: string;
   expires_at: string | null;
+  permission: SharePermission;
+  max_downloads: number | null;
+  download_count: number;
   created_at: string;
 }
 
@@ -150,8 +158,16 @@ export interface ShareLinkDto {
   resourceId: string;
   expiresAt: string | null;
   permanent: boolean;
+  permission: SharePermission;
+  maxDownloads: number | null;
+  downloadCount: number;
+  downloadsRemaining: number | null;
   createdAt: string;
   urlPath: string;
+}
+
+export function isSharePermission(value: string): value is SharePermission {
+  return (SHARE_PERMISSIONS as readonly string[]).includes(value);
 }
 
 export function isDiagramVisibility(value: string): value is DiagramVisibility {

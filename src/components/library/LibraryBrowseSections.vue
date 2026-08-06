@@ -20,6 +20,8 @@ const emit = defineEmits<{
   "toggle-edit-mode": [];
   "create-section": [parentId: string | null];
   "delete-section": [sectionId: string, title: string];
+  "share-section": [sectionId: string, title: string];
+  "manage-access": [sectionId: string, title: string];
 }>();
 
 const { t } = useLocale();
@@ -80,7 +82,38 @@ function canAdminSection(sectionId: string): boolean {
           <span class="library-row__title">{{ section.title }}</span>
           <span v-if="!isSectionsEditMode" class="library-row__chevron">›</span>
         </button>
+        <div
+          v-if="!isSectionsEditMode"
+          class="library-section-row__actions library-section-row__actions--inline"
+        >
+          <IconButton
+            :label="t('library.shareLink')"
+            @click.stop="emit('share-section', section.id, section.title)"
+          >
+            <ActionIcon name="export" />
+          </IconButton>
+          <IconButton
+            v-if="canAdminSection(section.id)"
+            :label="t('library.sectionAccess')"
+            @click.stop="emit('manage-access', section.id, section.title)"
+          >
+            <ActionIcon name="edit" />
+          </IconButton>
+        </div>
         <div v-if="isSectionsEditMode" class="library-section-row__actions">
+          <IconButton
+            :label="t('library.shareLink')"
+            @click.stop="emit('share-section', section.id, section.title)"
+          >
+            <ActionIcon name="export" />
+          </IconButton>
+          <IconButton
+            v-if="canAdminSection(section.id)"
+            :label="t('library.sectionAccess')"
+            @click.stop="emit('manage-access', section.id, section.title)"
+          >
+            <ActionIcon name="edit" />
+          </IconButton>
           <IconButton
             v-if="canAdminSection(section.id)"
             :label="t('library.addSubsection')"

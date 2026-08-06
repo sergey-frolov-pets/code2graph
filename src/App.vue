@@ -26,7 +26,6 @@ import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
 import { useLocale } from "@/composables/useLocale";
 import { usePersistedSettings } from "@/composables/usePersistedSettings";
 import { useSyntaxValidation } from "@/composables/useSyntaxValidation";
-import { fetchShareResource } from "@/utils/diagram-api";
 import { getLibraryApiBaseUrl } from "@/config/library-api";
 
 const isSaveToLibraryModalOpen = ref(false);
@@ -205,6 +204,8 @@ function onAiPatchRequestOpen(payload: { start: number; end: number }): void {
   isPatchModalOpen.value = true;
 }
 
+const PENDING_SHARE_STORAGE_KEY = "plantuml-smetana-pending-share";
+
 async function handleShareLinkOnBoot(): Promise<void> {
   const token = new URLSearchParams(window.location.search).get("share");
   if (!token) {
@@ -216,14 +217,7 @@ async function handleShareLinkOnBoot(): Promise<void> {
   }
 
   try {
-    const payload = await fetchShareResource(token);
-    if (payload.resourceType === "diagram" && payload.diagram) {
-      onFileLoaded({
-        content: payload.diagram.source,
-        fileName: payload.diagram.fileName,
-        diagramId: payload.diagram.id,
-      });
-    }
+    sessionStorage.setItem(PENDING_SHARE_STORAGE_KEY, token);
     openLibraryModal();
   } catch (error) {
     void alert({

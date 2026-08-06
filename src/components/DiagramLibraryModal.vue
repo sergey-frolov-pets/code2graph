@@ -8,7 +8,10 @@ import LibraryBrowseSections from "@/components/library/LibraryBrowseSections.vu
 import LibraryBrowseDiagrams from "@/components/library/LibraryBrowseDiagrams.vue";
 import LibraryDiagramDetail from "@/components/library/LibraryDiagramDetail.vue";
 import LibraryAdminUsersPanel from "@/components/library/LibraryAdminUsersPanel.vue";
+import LibraryDiagramPreviewModal from "@/components/library/LibraryDiagramPreviewModal.vue";
+import LibraryShareLinkModal from "@/components/library/LibraryShareLinkModal.vue";
 import LibrarySectionAccessModal from "@/components/library/LibrarySectionAccessModal.vue";
+import LibraryUploadForm from "@/components/library/LibraryUploadForm.vue";
 import { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import { useLocale } from "@/composables/useLocale";
@@ -24,7 +27,8 @@ import { useLibraryDiagramEdit } from "@/composables/library/useLibraryDiagramEd
 import { useLibrarySectionAdmin } from "@/composables/library/useLibrarySectionAdmin";
 import { useLibraryTransferHandlers } from "@/composables/library/useLibraryTransferHandlers";
 import { useLibraryAuth } from "@/composables/useLibraryAuth";
-import { useLibraryShare } from "@/composables/useLibraryShare";
+import { useLibraryDiagramPreview } from "@/composables/useLibraryDiagramPreview";
+import { downloadShareResource, fetchShareDiagramPreview, fetchShareResource } from "@/utils/diagram-api";
 
 const props = defineProps<{
   open: boolean;
@@ -44,9 +48,34 @@ const { libraryTarget, canUseOnline, setLibraryTarget } = useLibraryTarget();
 
 const { isAdmin, refreshCurrentUser } = useLibraryAuth();
 const {
-  shareDiagram,
-  copyShareUrl,
-} = useLibraryShare();
+  previewMarkup,
+  isRendering: isPreviewRendering,
+  error: previewError,
+  watermark,
+  renderPreview,
+  resetPreview,
+  watermarkLabel,
+} = useLibraryDiagramPreview();
+
+const isShareModalOpen = ref(false);
+const shareResource = ref<{
+  type: "section" | "diagram";
+  id: string;
+  title: string;
+} | null>(null);
+const isPreviewModalOpen = ref(false);
+const previewTitle = ref("");
+const previewCanDownload = ref(false);
+const previewDownloadsRemaining = ref<number | null>(null);
+const isPreviewDownloading = ref(false);
+const activeShareToken = ref("");
+const activePreviewDiagramId = ref("");
+const shareBrowseContext = ref<{
+  token: string;
+  canDownload: boolean;
+  downloadsRemaining: number | null;
+} | null>(null);
+const PENDING_SHARE_STORAGE_KEY = "plantuml-smetana-pending-share";
 
 const library = useDiagramLibrary();
 const {
@@ -135,7 +164,7 @@ const {
   resetBrowseFlow,
   goBack,
   onSectionPick,
-  onDiagramPick,
+  onDiagramPick: browseDiagramPick,
 } = useLibraryBrowseFlow({
   library,
   activeTab,
@@ -229,21 +258,147 @@ async function onDeleteDiagram(): Promise<void> {
   );
 }
 
-async function onShareDiagram(): Promise<void> {
-  if (!selectedDiagram.value) return;
-  const link = await shareDiagram(selectedDiagram.value.id);
-  if (link) {
-    const url =
-      new URL(window.location.href).origin +
-      window.location.pathname +
-      link.urlPath;
-    const copied = await copyShareUrl(url);
-    uploadError.value = copied
-      ? t("library.shareCopied")
-      : `${t("library.shareReady")}: ${url}`;
-  } else if (!uploadError.value) {
-    uploadError.value = t("library.shareError");
+function openShareModal(
+  type: "section" | "diagram",
+  id: string,
+  title: string,
+): void {
+  shareResource.value = { type, id, title };
+  isShareModalOpen.value = true;
+}
+
+function closeShareModal(): void {
+  isShareModalOpen.value = false;
+  shareResource.value = null;
+}
+
+function clearShareBrowseContext(): void {
+  shareBrowseContext.value = null;
+  if (!isPreviewModalOpen.value) {
+    activeShareToken.value = "";
+    activePreviewDiagramId.value = "";
   }
+}
+
+async function openShareDiagramPreview(token: string, diagramId: string): Promise<void> {
+  const preview = await fetchShareDiagramPreview(token, diagramId);
+  previewTitle.value = preview.diagram.title;
+  previewCanDownload.value = preview.canDownload;
+  previewDownloadsRemaining.value = preview.link.downloadsRemaining;
+  activeShareToken.value = token;
+  activePreviewDiagramId.value = diagramId;
+  isPreviewModalOpen.value = true;
+  await renderPreview(preview.diagram.source, { watermarked: true });
+}
+
+async function handleDiagramPick(diagramId: string): Promise<void> {
+  if (shareBrowseContext.value) {
+    try {
+      await openShareDiagramPreview(shareBrowseContext.value.token, diagramId);
+    } catch (error) {
+      uploadError.value =
+        error instanceof Error ? error.message : t("library.shareOpenError");
+    }
+    return;
+  }
+
+  await browseDiagramPick(diagramId);
+}
+
+async function handleGoBack(): Promise<void> {
+  if (browseStep.value === "diagrams" && shareBrowseContext.value) {
+    clearShareBrowseContext();
+    browseStep.value = "sections";
+    resetEditForm();
+    void library.refresh();
+    return;
+  }
+
+  goBack();
+}
+
+function onShareCreated(url: string): void {
+  uploadError.value = `${t("library.shareReady")}: ${url}`;
+}
+
+function openSectionAccess(sectionId: string, title: string): void {
+  sectionAccessId.value = sectionId;
+  sectionAccessTitle.value = title;
+  isSectionAccessOpen.value = true;
+}
+
+async function onPreviewDiagram(): Promise<void> {
+  if (!selectedDiagram.value) {
+    return;
+  }
+
+  previewTitle.value = selectedDiagram.value.title;
+  previewCanDownload.value = true;
+  previewDownloadsRemaining.value = null;
+  activeShareToken.value = "";
+  activePreviewDiagramId.value = selectedDiagram.value.id;
+  isPreviewModalOpen.value = true;
+  await renderPreview(selectedDiagram.value.source, { watermarked: true });
+}
+
+function closePreviewModal(): void {
+  isPreviewModalOpen.value = false;
+  resetPreview();
+  activeShareToken.value = "";
+  activePreviewDiagramId.value = "";
+}
+
+async function onPreviewDownload(): Promise<void> {
+  const diagramId =
+    activePreviewDiagramId.value || selectedDiagram.value?.id;
+  if (!diagramId) {
+    return;
+  }
+
+  if (activeShareToken.value) {
+    isPreviewDownloading.value = true;
+    try {
+      const result = await downloadShareResource(
+        activeShareToken.value,
+        diagramId,
+      );
+      previewDownloadsRemaining.value = result.link.downloadsRemaining;
+      emit("open-diagram", {
+        content: result.diagram.source,
+        fileName: result.diagram.fileName,
+        diagramId: result.diagram.id,
+      });
+      closePreviewModal();
+      emit("close");
+    } catch (error) {
+      uploadError.value =
+        error instanceof Error ? error.message : t("library.downloadError");
+    } finally {
+      isPreviewDownloading.value = false;
+    }
+    return;
+  }
+
+  if (!selectedDiagram.value) {
+    return;
+  }
+
+  emit("open-diagram", {
+    content: selectedDiagram.value.source,
+    fileName: selectedDiagram.value.fileName,
+    diagramId: selectedDiagram.value.id,
+  });
+  closePreviewModal();
+  emit("close");
+}
+
+function onShareDiagram(): void {
+  if (!selectedDiagram.value) return;
+  openShareModal(
+    "diagram",
+    selectedDiagram.value.id,
+    selectedDiagram.value.title,
+  );
 }
 
 function closeSectionAccess(): void {
@@ -252,9 +407,40 @@ function closeSectionAccess(): void {
   sectionAccessTitle.value = "";
 }
 
+async function handleIncomingShareToken(token: string): Promise<void> {
+  try {
+    const payload = await fetchShareResource(token);
+    if (payload.resourceType === "diagram" && payload.diagram) {
+      await openShareDiagramPreview(token, payload.diagram.id);
+      return;
+    }
+
+    if (payload.resourceType === "section") {
+      uploadError.value = t("library.shareSectionHint");
+      shareBrowseContext.value = {
+        token,
+        canDownload: payload.canDownload ?? false,
+        downloadsRemaining: payload.link?.downloadsRemaining ?? null,
+      };
+      activeShareToken.value = token;
+      selectedSectionId.value = payload.sectionId ?? null;
+      diagrams.value = payload.diagrams ?? [];
+      browseStep.value = "diagrams";
+    }
+  } catch (error) {
+    uploadError.value =
+      error instanceof Error ? error.message : t("library.shareOpenError");
+  }
+}
+
 watch(
   () => props.open,
   (isOpen) => {
+    if (!isOpen) {
+      clearShareBrowseContext();
+      return;
+    }
+
     if (isOpen) {
       resetUploadSectionId();
       resetImportBundle();
@@ -263,6 +449,12 @@ watch(
       resetSectionAdmin();
       void refreshCurrentUser();
       void library.refresh();
+
+      const pendingShare = sessionStorage.getItem(PENDING_SHARE_STORAGE_KEY);
+      if (pendingShare) {
+        sessionStorage.removeItem(PENDING_SHARE_STORAGE_KEY);
+        void handleIncomingShareToken(pendingShare);
+      }
     }
   },
 );
@@ -291,7 +483,7 @@ watch(libraryTarget, () => {
             v-if="showBackButton"
             class="btn library-header__back"
             type="button"
-            @click="goBack()"
+            @click="handleGoBack()"
           >
             ← {{ t("library.back") }}
           </button>
@@ -380,6 +572,8 @@ watch(libraryTarget, () => {
           @toggle-edit-mode="toggleSectionsEditMode()"
           @create-section="createSection($event)"
           @delete-section="(id, title) => onDeleteSection(id, title)"
+          @share-section="(id, title) => openShareModal('section', id, title)"
+          @manage-access="(id, title) => openSectionAccess(id, title)"
         />
 
         <LibraryBrowseDiagrams
@@ -389,7 +583,7 @@ watch(libraryTarget, () => {
           :diagrams="diagrams"
           :all-tags="allTags"
           :is-loading="isLoading"
-          @diagram-pick="onDiagramPick($event)"
+          @diagram-pick="handleDiagramPick($event)"
         />
 
         <LibraryDiagramDetail
@@ -408,6 +602,7 @@ watch(libraryTarget, () => {
           @start-edit="startEdit()"
           @open-in-editor="openInEditor()"
           @share="onShareDiagram()"
+          @preview="onPreviewDiagram()"
           @delete="onDeleteDiagram()"
         />
 
@@ -465,6 +660,31 @@ watch(libraryTarget, () => {
     @close="closeSectionEditor()"
     @save="saveSectionEdit($event)"
   />
+  <LibraryShareLinkModal
+    v-if="shareResource"
+    :open="isShareModalOpen"
+    :resource-type="shareResource.type"
+    :resource-id="shareResource.id"
+    :resource-title="shareResource.title"
+    @close="closeShareModal()"
+    @created="onShareCreated($event)"
+  />
+
+  <LibraryDiagramPreviewModal
+    :open="isPreviewModalOpen"
+    :title="previewTitle"
+    :preview-markup="previewMarkup"
+    :is-rendering="isPreviewRendering"
+    :error="previewError"
+    :watermarked="watermark"
+    :watermark-label="watermarkLabel()"
+    :can-download="previewCanDownload"
+    :downloads-remaining="previewDownloadsRemaining"
+    :is-downloading="isPreviewDownloading"
+    @close="closePreviewModal()"
+    @download="onPreviewDownload()"
+  />
+
   <LibrarySectionAccessModal
     :open="isSectionAccessOpen"
     :section-id="sectionAccessId"

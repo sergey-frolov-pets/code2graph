@@ -25,8 +25,9 @@ import {
   createShareLink,
   listShareLinksForResource,
 } from "../share-links.js";
+import { mapShareLinkDto } from "../share-link-policy.js";
 import type { DiagramVisibility } from "../types.js";
-import { isDiagramVisibility } from "../types.js";
+import { isDiagramVisibility, isSharePermission } from "../types.js";
 
 export const diagramsRouter = new Hono<{ Variables: AuthVariables }>();
 
@@ -507,15 +508,9 @@ diagramsRouter.get("/:id/share", (context) => {
     return context.json({ error: "Недостаточно прав" }, 403);
   }
 
-  const links = listShareLinksForResource(database, "diagram", id).map((link) => ({
-    token: link.token,
-    resourceType: link.resource_type,
-    resourceId: link.resource_id,
-    expiresAt: link.expires_at,
-    permanent: !link.expires_at,
-    createdAt: link.created_at,
-    urlPath: `?share=${link.token}`,
-  }));
+  const links = listShareLinksForResource(database, "diagram", id).map((link) =>
+    mapShareLinkDto(link),
+  );
 
   return context.json({ links });
 });
@@ -530,6 +525,8 @@ diagramsRouter.post("/:id/share", async (context) => {
   const body = await context.req.json<{
     expiresAt?: string | null;
     permanent?: boolean;
+    permission?: string;
+    maxDownloads?: number | null;
   }>();
 
   const database = getDb();
@@ -558,17 +555,18 @@ diagramsRouter.post("/:id/share", async (context) => {
       ? null
       : body.expiresAt ?? null;
 
-  const link = createShareLink(database, "diagram", id, user.id, expiresAt);
+  const permission =
+    body.permission && isSharePermission(body.permission)
+      ? body.permission
+      : "view";
+
+  const link = createShareLink(database, "diagram", id, user.id, {
+    expiresAt,
+    permission,
+    maxDownloads: body.maxDownloads,
+  });
 
   return context.json({
-    link: {
-      token: link.token,
-      resourceType: link.resource_type,
-      resourceId: link.resource_id,
-      expiresAt: link.expires_at,
-      permanent: !link.expires_at,
-      createdAt: link.created_at,
-      urlPath: `?share=${link.token}`,
-    },
+    link: mapShareLinkDto(link),
   }, 201);
 });

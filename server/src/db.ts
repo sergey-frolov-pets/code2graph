@@ -100,6 +100,14 @@ function runMigrations(database: Database.Database): void {
     `);
   }
 
+  if (!columnExists(database, "share_links", "permission")) {
+    database.exec(`
+      ALTER TABLE share_links ADD COLUMN permission TEXT NOT NULL DEFAULT 'view';
+      ALTER TABLE share_links ADD COLUMN max_downloads INTEGER;
+      ALTER TABLE share_links ADD COLUMN download_count INTEGER NOT NULL DEFAULT 0;
+    `);
+  }
+
   database
     .prepare("UPDATE sections SET kind = 'shared' WHERE kind IS NULL OR kind = ''")
     .run();

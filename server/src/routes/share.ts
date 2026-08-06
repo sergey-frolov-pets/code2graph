@@ -1,11 +1,6 @@
 import { Hono } from "hono";
 import { resolveOptionalUser } from "../auth.js";
-import {
-  canReadDiagram,
-  canReadSection,
-  filterReadableSections,
-} from "../authz.js";
-import { getDb, parseTags } from "../db.js";
+import { getDb } from "../db.js";
 import { collectSectionSubtree } from "../shared/section-tree.js";
 import {
   enrichDiagramForUser,
@@ -14,10 +9,19 @@ import {
   mapDiagram,
   mapDiagramListItem,
 } from "../shared/diagram-mappers.js";
+import {
+  canDownloadFromShareLink,
+  mapShareLinkDto,
+  recordShareDownload,
+} from "../share-link-policy.js";
 import { getShareLinkByToken } from "../share-links.js";
 import type { SectionRow } from "../types.js";
 
 export const shareRouter = new Hono();
+
+function buildShareLinkResponse(link: NonNullable<ReturnType<typeof getShareLinkByToken>>) {
+  return mapShareLinkDto(link);
+}
 
 shareRouter.get("/:token", async (context) => {
   const token = context.req.param("token");
@@ -28,6 +32,7 @@ shareRouter.get("/:token", async (context) => {
     return context.json({ error: "Share link not found or expired" }, 404);
   }
 
+  const linkDto = buildShareLinkResponse(link);
   const optionalUser = await resolveOptionalUser(
     context.req.header("Authorization"),
   );
@@ -40,33 +45,22 @@ shareRouter.get("/:token", async (context) => {
                 created_at, updated_at
          FROM diagrams WHERE id = ?`,
       )
-      .get(link.resource_id) as
-      | {
-          id: string;
-          section_id: string | null;
-          title: string;
-          description: string;
-          tags: string;
-          language: string;
-          source: string;
-          file_name: string;
-          byte_size: number;
-          author_id: string | null;
-          owner_id: string | null;
-          visibility: string;
-          created_at: string;
-          updated_at: string;
-        }
-      | undefined;
+      .get(link.resource_id) as Parameters<typeof mapDiagram>[0] | undefined;
 
     if (!row) {
       return context.json({ error: "Diagram not found" }, 404);
     }
 
-  const diagram = mapDiagram(row);
+    const diagram = mapDiagram(row);
     return context.json({
       resourceType: "diagram",
-      diagram,
+      link: linkDto,
+      diagram: {
+        ...diagram,
+        source: "",
+      },
+      watermarkedPreview: true,
+      canDownload: canDownloadFromShareLink(link),
       readOnly: true,
     });
   }
@@ -134,23 +128,78 @@ shareRouter.get("/:token", async (context) => {
 
   return context.json({
     resourceType: "section",
+    link: linkDto,
     sectionId: link.resource_id,
     sections: sectionsDto,
     diagrams: diagramsDto,
+    watermarkedPreview: true,
+    canDownload: canDownloadFromShareLink(link),
     readOnly: true,
   });
 });
 
-shareRouter.get("/:token/diagrams/:id", async (context) => {
+shareRouter.get("/:token/diagrams/:id/preview", async (context) => {
   const token = context.req.param("token");
   const diagramId = context.req.param("id");
   const database = getDb();
   const link = getShareLinkByToken(database, token);
 
-  if (!link || link.resource_type !== "section") {
-    return context.json({ error: "Share link not found or invalid" }, 404);
+  if (!link) {
+    return context.json({ error: "Share link not found or expired" }, 404);
   }
 
+  const row = await resolveShareDiagramRow(database, link, diagramId);
+  if (!row) {
+    return context.json({ error: "Diagram not found" }, 404);
+  }
+
+  const diagram = mapDiagram(row);
+  return context.json({
+    link: buildShareLinkResponse(link),
+    diagram,
+    watermarkedPreview: true,
+    canDownload: canDownloadFromShareLink(link),
+  });
+});
+
+shareRouter.post("/:token/download", async (context) => {
+  const token = context.req.param("token");
+  const body = await context.req.json<{ diagramId?: string }>().catch(() => ({
+    diagramId: undefined,
+  }));
+
+  const database = getDb();
+  const updatedLink = recordShareDownload(database, token);
+  if (!updatedLink) {
+    return context.json({ error: "Download limit reached or link invalid" }, 403);
+  }
+
+  const diagramId =
+    body.diagramId ??
+    (updatedLink.resource_type === "diagram" ? updatedLink.resource_id : undefined);
+
+  if (!diagramId) {
+    return context.json({ error: "diagramId is required for section shares" }, 400);
+  }
+
+  const row = await resolveShareDiagramRow(database, updatedLink, diagramId);
+  if (!row) {
+    return context.json({ error: "Diagram not found" }, 404);
+  }
+
+  const diagram = mapDiagram(row);
+  return context.json({
+    link: buildShareLinkResponse(updatedLink),
+    diagram,
+    watermarkedPreview: false,
+  });
+});
+
+async function resolveShareDiagramRow(
+  database: ReturnType<typeof getDb>,
+  link: NonNullable<ReturnType<typeof getShareLinkByToken>>,
+  diagramId: string,
+): Promise<Parameters<typeof mapDiagram>[0] | null> {
   const row = database
     .prepare(
       `SELECT id, section_id, title, description, tags, language,
@@ -158,12 +207,14 @@ shareRouter.get("/:token/diagrams/:id", async (context) => {
               created_at, updated_at
        FROM diagrams WHERE id = ?`,
     )
-    .get(diagramId) as
-    | Parameters<typeof mapDiagram>[0]
-    | undefined;
+    .get(diagramId) as Parameters<typeof mapDiagram>[0] | undefined;
 
   if (!row) {
-    return context.json({ error: "Diagram not found" }, 404);
+    return null;
+  }
+
+  if (link.resource_type === "diagram") {
+    return link.resource_id === diagramId ? row : null;
   }
 
   const allSections = database
@@ -178,16 +229,8 @@ shareRouter.get("/:token/diagrams/:id", async (context) => {
   ];
 
   if (!row.section_id || !subtreeIds.includes(row.section_id)) {
-    return context.json({ error: "Diagram not in shared section" }, 403);
+    return null;
   }
 
-  const optionalUser = await resolveOptionalUser(
-    context.req.header("Authorization"),
-  );
-
-  const diagram = optionalUser
-    ? enrichDiagramForUser(database, optionalUser, row)
-    : mapDiagram(row);
-
-  return context.json({ diagram, readOnly: true });
-});
+  return row;
+}

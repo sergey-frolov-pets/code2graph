@@ -7,6 +7,7 @@ import type {
   SectionAccessDto,
   SectionDto,
   ShareLinkDto,
+  SharePermission,
   UpdateDiagramPayload,
   UpdateSectionPayload,
 } from "@/constants/diagram-library";
@@ -354,7 +355,12 @@ export async function revokeSectionAccess(
 
 export async function createSectionShareLink(
   sectionId: string,
-  payload: { permanent?: boolean; expiresAt?: string | null } = {},
+  payload: {
+    permanent?: boolean;
+    expiresAt?: string | null;
+    permission?: SharePermission;
+    maxDownloads?: number | null;
+  } = {},
   baseUrl?: string,
 ): Promise<{ link: ShareLinkDto }> {
   return requestJson(
@@ -370,7 +376,12 @@ export async function createSectionShareLink(
 
 export async function createDiagramShareLink(
   diagramId: string,
-  payload: { permanent?: boolean; expiresAt?: string | null } = {},
+  payload: {
+    permanent?: boolean;
+    expiresAt?: string | null;
+    permission?: SharePermission;
+    maxDownloads?: number | null;
+  } = {},
   baseUrl?: string,
 ): Promise<{ link: ShareLinkDto }> {
   return requestJson(
@@ -394,10 +405,13 @@ export async function fetchShareResource(
   baseUrl?: string,
 ): Promise<{
   resourceType: "section" | "diagram";
+  link?: ShareLinkDto;
   diagram?: DiagramDto;
   sectionId?: string;
   sections?: SectionDto[];
   diagrams?: DiagramListItemDto[];
+  watermarkedPreview?: boolean;
+  canDownload?: boolean;
   readOnly: boolean;
 }> {
   const shareBase = resolveShareApiBaseUrl(baseUrl);
@@ -411,10 +425,70 @@ export async function fetchShareResource(
 
   return (await response.json()) as {
     resourceType: "section" | "diagram";
+    link?: ShareLinkDto;
     diagram?: DiagramDto;
     sectionId?: string;
     sections?: SectionDto[];
     diagrams?: DiagramListItemDto[];
+    watermarkedPreview?: boolean;
+    canDownload?: boolean;
     readOnly: boolean;
+  };
+}
+
+export async function fetchShareDiagramPreview(
+  token: string,
+  diagramId: string,
+  baseUrl?: string,
+): Promise<{
+  link: ShareLinkDto;
+  diagram: DiagramDto;
+  watermarkedPreview: boolean;
+  canDownload: boolean;
+}> {
+  const shareBase = resolveShareApiBaseUrl(baseUrl);
+  const response = await fetch(`${shareBase}/${token}/diagrams/${diagramId}/preview`, {
+    headers: buildRequestHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new DiagramApiError(await parseError(response), response.status);
+  }
+
+  return (await response.json()) as {
+    link: ShareLinkDto;
+    diagram: DiagramDto;
+    watermarkedPreview: boolean;
+    canDownload: boolean;
+  };
+}
+
+export async function downloadShareResource(
+  token: string,
+  diagramId?: string,
+  baseUrl?: string,
+): Promise<{
+  link: ShareLinkDto;
+  diagram: DiagramDto;
+  watermarkedPreview: boolean;
+}> {
+  const shareBase = resolveShareApiBaseUrl(baseUrl);
+  const response = await fetch(`${shareBase}/${token}/download`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...buildLibraryAuthHeader(),
+    },
+    body: JSON.stringify({ diagramId }),
+  });
+
+  if (!response.ok) {
+    throw new DiagramApiError(await parseError(response), response.status);
+  }
+
+  return (await response.json()) as {
+    link: ShareLinkDto;
+    diagram: DiagramDto;
+    watermarkedPreview: boolean;
   };
 }

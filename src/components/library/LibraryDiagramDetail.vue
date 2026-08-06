@@ -27,6 +27,7 @@ const emit = defineEmits<{
   "open-in-editor": [];
   delete: [];
   share: [];
+  preview: [];
   "manage-access": [];
 }>();
 
@@ -127,6 +128,9 @@ const { t } = useLocale();
           </button>
           <button class="btn" type="button" @click="emit('share')">
             {{ t("library.shareLink") }}
+          </button>
+          <button class="btn" type="button" @click="emit('preview')">
+            {{ t("library.preview") }}
           </button>
           <button
             v-if="diagram.canWrite"

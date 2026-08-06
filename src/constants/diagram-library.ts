@@ -132,12 +132,21 @@ export interface SectionAccessDto {
   grantedAt: string;
 }
 
+export const SHARE_PERMISSIONS = ["view", "download"] as const;
+export type SharePermission = (typeof SHARE_PERMISSIONS)[number];
+
+export const DEFAULT_SHARE_MAX_DOWNLOADS = 5;
+
 export interface ShareLinkDto {
   token: string;
   resourceType: "section" | "diagram";
   resourceId: string;
   expiresAt: string | null;
   permanent: boolean;
+  permission: SharePermission;
+  maxDownloads: number | null;
+  downloadCount: number;
+  downloadsRemaining: number | null;
   createdAt: string;
   urlPath: string;
 }

@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import type Database from "better-sqlite3";
-import type { ShareLinkRow, ShareResourceType } from "./types.js";
+import { DEFAULT_SHARE_MAX_DOWNLOADS } from "./types.js";
+import type { ShareLinkRow, ShareResourceType, SharePermission } from "./types.js";
 
 const SHARE_TOKEN_BYTES = 8;
 
@@ -8,28 +9,51 @@ export function generateShareToken(): string {
   return crypto.randomBytes(SHARE_TOKEN_BYTES).toString("base64url");
 }
 
+export interface CreateShareLinkInput {
+  expiresAt: string | null;
+  permission?: SharePermission;
+  maxDownloads?: number | null;
+}
+
 export function createShareLink(
   database: Database.Database,
   resourceType: ShareResourceType,
   resourceId: string,
   createdBy: string,
-  expiresAt: string | null,
+  input: CreateShareLinkInput,
 ): ShareLinkRow {
   const now = new Date().toISOString();
   const id = crypto.randomUUID();
   const token = generateShareToken();
+  const permission = input.permission ?? "view";
+  const maxDownloads =
+    permission === "download"
+      ? input.maxDownloads ?? DEFAULT_SHARE_MAX_DOWNLOADS
+      : null;
 
   database
     .prepare(
       `INSERT INTO share_links (
-        id, token, resource_type, resource_id, created_by, expires_at, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        id, token, resource_type, resource_id, created_by, expires_at,
+        permission, max_downloads, download_count, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
     )
-    .run(id, token, resourceType, resourceId, createdBy, expiresAt, now);
+    .run(
+      id,
+      token,
+      resourceType,
+      resourceId,
+      createdBy,
+      input.expiresAt,
+      permission,
+      maxDownloads,
+      now,
+    );
 
   return database
     .prepare(
-      `SELECT id, token, resource_type, resource_id, created_by, expires_at, created_at
+      `SELECT id, token, resource_type, resource_id, created_by, expires_at,
+              permission, max_downloads, download_count, created_at
        FROM share_links WHERE id = ?`,
     )
     .get(id) as ShareLinkRow;
@@ -41,7 +65,8 @@ export function getShareLinkByToken(
 ): ShareLinkRow | null {
   const row = database
     .prepare(
-      `SELECT id, token, resource_type, resource_id, created_by, expires_at, created_at
+      `SELECT id, token, resource_type, resource_id, created_by, expires_at,
+              permission, max_downloads, download_count, created_at
        FROM share_links WHERE token = ?`,
     )
     .get(token) as ShareLinkRow | undefined;
@@ -74,7 +99,8 @@ export function listShareLinksForResource(
 ): ShareLinkRow[] {
   return database
     .prepare(
-      `SELECT id, token, resource_type, resource_id, created_by, expires_at, created_at
+      `SELECT id, token, resource_type, resource_id, created_by, expires_at,
+              permission, max_downloads, download_count, created_at
        FROM share_links
        WHERE resource_type = ? AND resource_id = ?
        ORDER BY created_at DESC`,
