@@ -5,9 +5,12 @@ import { useLocale } from "@/composables/useLocale";
 import { useLibraryAuth } from "@/composables/useLibraryAuth";
 import type { DiagramDto, DiagramRatingDto } from "@/constants/diagram-library";
 import {
+  deleteDiagramRating,
+  fetchDiagram,
   fetchDiagramRatings,
   moderateDiagramRatingComment,
-  submitDiagramRating,
+  submitDiagramRatingComment,
+  submitDiagramRatingStars,
 } from "@/utils/diagram-api";
 
 const props = defineProps<{
@@ -20,12 +23,14 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
-const { currentUser } = useLibraryAuth();
-const ratings = ref<DiagramRatingDto[]>([]);
+const { currentUser, isAdmin } = useLibraryAuth();
+const approvedComments = ref<DiagramRatingDto[]>([]);
+const pendingModeration = ref<DiagramRatingDto[]>([]);
 const ratingValue = ref<number | null>(props.diagram.userRating ?? null);
-const commentValue = ref("");
+const commentValue = ref(props.diagram.userComment ?? "");
 const isLoading = ref(false);
-const isSaving = ref(false);
+const isSavingComment = ref(false);
+const isSavingStars = ref(false);
 const errorMessage = ref("");
 
 const isAuthor = computed(
@@ -34,17 +39,7 @@ const isAuthor = computed(
       props.diagram.authorId &&
         currentUser.value &&
         props.diagram.authorId === currentUser.value.id,
-    ),
-);
-
-const pendingModeration = computed(() =>
-  ratings.value.filter((entry) => entry.commentStatus === "pending" && entry.comment),
-);
-
-const approvedComments = computed(() =>
-  ratings.value.filter(
-    (entry) => entry.commentStatus === "approved" && entry.comment,
-  ),
+    ) || isAdmin.value,
 );
 
 async function loadRatings(): Promise<void> {
@@ -56,13 +51,8 @@ async function loadRatings(): Promise<void> {
   errorMessage.value = "";
   try {
     const response = await fetchDiagramRatings(props.diagram.id, props.apiUrl);
-    ratings.value = response.ratings;
-    const own = currentUser.value
-      ? response.ratings.find((entry) => entry.userId === currentUser.value?.id)
-      : undefined;
-    if (own?.comment) {
-      commentValue.value = own.comment;
-    }
+    approvedComments.value = response.approved;
+    pendingModeration.value = response.pending;
   } catch (error) {
     errorMessage.value =
       error instanceof Error ? error.message : t("library.ratingLoadError");
@@ -71,20 +61,41 @@ async function loadRatings(): Promise<void> {
   }
 }
 
-async function saveRating(): Promise<void> {
+async function onStarsChange(stars: number): Promise<void> {
+  if (!props.apiUrl) {
+    ratingValue.value = stars;
+    return;
+  }
+
+  ratingValue.value = stars;
+  isSavingStars.value = true;
+  errorMessage.value = "";
+  try {
+    const diagram = await submitDiagramRatingStars(
+      props.diagram.id,
+      stars,
+      props.apiUrl,
+    );
+    emit("updated", diagram);
+  } catch (error) {
+    errorMessage.value =
+      error instanceof Error ? error.message : t("library.ratingSaveError");
+  } finally {
+    isSavingStars.value = false;
+  }
+}
+
+async function saveComment(): Promise<void> {
   if (!props.apiUrl || ratingValue.value === null) {
     return;
   }
 
-  isSaving.value = true;
+  isSavingComment.value = true;
   errorMessage.value = "";
   try {
-    const diagram = await submitDiagramRating(
+    const diagram = await submitDiagramRatingComment(
       props.diagram.id,
-      {
-        rating: ratingValue.value,
-        comment: commentValue.value.trim() || undefined,
-      },
+      commentValue.value.trim(),
       props.apiUrl,
     );
     emit("updated", diagram);
@@ -93,7 +104,7 @@ async function saveRating(): Promise<void> {
     errorMessage.value =
       error instanceof Error ? error.message : t("library.ratingSaveError");
   } finally {
-    isSaving.value = false;
+    isSavingComment.value = false;
   }
 }
 
@@ -119,11 +130,27 @@ async function moderate(
   }
 }
 
+async function removeRating(ratingUserId: string): Promise<void> {
+  if (!props.apiUrl) {
+    return;
+  }
+
+  try {
+    await deleteDiagramRating(props.diagram.id, ratingUserId, props.apiUrl);
+    const diagram = await fetchDiagram(props.diagram.id, props.apiUrl);
+    emit("updated", diagram);
+    await loadRatings();
+  } catch (error) {
+    errorMessage.value =
+      error instanceof Error ? error.message : t("library.ratingDeleteError");
+  }
+}
+
 watch(
   () => props.diagram.id,
   () => {
     ratingValue.value = props.diagram.userRating ?? null;
-    commentValue.value = "";
+    commentValue.value = props.diagram.userComment ?? "";
     void loadRatings();
   },
   { immediate: true },
@@ -133,6 +160,15 @@ watch(
   () => props.diagram.userRating,
   (value) => {
     ratingValue.value = value ?? null;
+  },
+);
+
+watch(
+  () => props.diagram.userComment,
+  (value) => {
+    if (value !== undefined) {
+      commentValue.value = value ?? "";
+    }
   },
 );
 </script>
@@ -152,11 +188,14 @@ watch(
           })
         }}
       </span>
+      <span v-if="isSavingStars" class="library-rating-panel__hint">
+        {{ t("app.loading") }}
+      </span>
     </div>
 
     <div class="library-rating-panel__form">
       <p class="library-rating-panel__label">{{ t("library.yourRating") }}</p>
-      <LibraryStarRating :value="ratingValue" @change="ratingValue = $event" />
+      <LibraryStarRating :value="ratingValue" @change="onStarsChange($event)" />
       <label class="settings-field">
         <span class="settings-field__label">{{ t("library.ratingComment") }}</span>
         <textarea
@@ -173,12 +212,12 @@ watch(
         {{ t("library.ratingCommentPending") }}
       </p>
       <button
-        class="btn btn-primary"
+        class="btn"
         type="button"
-        :disabled="isSaving || ratingValue === null"
-        @click="saveRating()"
+        :disabled="isSavingComment || ratingValue === null"
+        @click="saveComment()"
       >
-        {{ isSaving ? t("app.loading") : t("library.ratingSubmit") }}
+        {{ isSavingComment ? t("app.loading") : t("library.ratingCommentSubmit") }}
       </button>
     </div>
 
@@ -227,6 +266,13 @@ watch(
           >
             {{ t("library.ratingReject") }}
           </button>
+          <button
+            class="btn"
+            type="button"
+            @click="removeRating(entry.userId)"
+          >
+            {{ t("library.ratingDelete") }}
+          </button>
         </div>
       </article>
     </div>
@@ -246,6 +292,7 @@ watch(
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .library-rating-panel__meta {
@@ -283,5 +330,6 @@ watch(
   display: flex;
   gap: 8px;
   margin-top: 8px;
+  flex-wrap: wrap;
 }
 </style>

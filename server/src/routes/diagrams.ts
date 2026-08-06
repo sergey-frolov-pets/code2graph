@@ -9,7 +9,7 @@ import {
   defaultVisibilityForSectionKind,
   getSectionRow,
 } from "../authz.js";
-import { getDb, parseTags } from "../db.js";
+import { getDb, parseTags, getUsernameMap } from "../db.js";
 import { isDiagramLanguage, MAX_PUML_FILE_BYTES } from "../config.js";
 import {
   enrichDiagramForUser,
@@ -31,10 +31,24 @@ import {
   removeDiagramFavorite,
 } from "../favorites.js";
 import {
-  listDiagramRatingsForViewer,
+  canModerateDiagramRating,
+  deleteDiagramRating,
+  listApprovedRatingComments,
+  listPendingRatingCommentsForAuthor,
   moderateDiagramRatingComment,
-  upsertDiagramRating,
+  updateDiagramRatingByModerator,
+  upsertOwnDiagramRatingComment,
+  upsertOwnDiagramStars,
 } from "../ratings.js";
+import {
+  canManageDiagramVersions,
+  createDiagramVersion,
+  deleteDiagramVersion,
+  getDiagramVersion,
+  listDiagramVersions,
+  mapDiagramVersionDto,
+  snapshotDiagramSourceVersion,
+} from "../diagram-versions.js";
 import type { DiagramVisibility } from "../types.js";
 import {
   FAVORITES_SECTION_ID,
@@ -466,6 +480,16 @@ diagramsRouter.put("/:id", async (context) => {
     visibility = body.visibility;
   }
 
+  if (source !== current.source) {
+    snapshotDiagramSourceVersion(
+      database,
+      id,
+      user.id,
+      current.source,
+      "",
+    );
+  }
+
   const now = new Date().toISOString();
 
   database
@@ -723,22 +747,25 @@ diagramsRouter.get("/:id/ratings", (context) => {
     return context.json({ error: "Диаграмма недоступна" }, 403);
   }
 
-  const ratings = listDiagramRatingsForViewer(database, {
-    id: contextRow.row.id,
-    author_id: contextRow.row.author_id,
-  }, user);
+  const approved = listApprovedRatingComments(database, contextRow.row.id);
+  const pending = canModerateDiagramRating(
+    contextRow.row.author_id,
+    user,
+  )
+    ? listPendingRatingCommentsForAuthor(database, contextRow.row.id)
+    : [];
 
-  return context.json({ ratings });
+  return context.json({ approved, pending });
 });
 
-diagramsRouter.post("/:id/ratings", async (context) => {
+diagramsRouter.post("/:id/ratings/stars", async (context) => {
   const user = requireAuthenticatedUser(context);
   if (user instanceof Response) {
     return user;
   }
 
   const diagramId = context.req.param("id");
-  const body = await context.req.json<{ rating?: number; comment?: string }>();
+  const body = await context.req.json<{ rating?: number }>();
   const rating = Number(body.rating);
 
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
@@ -756,7 +783,7 @@ diagramsRouter.post("/:id/ratings", async (context) => {
     return context.json({ error: "Диаграмма недоступна" }, 403);
   }
 
-  upsertDiagramRating(database, diagramId, user.id, rating, body.comment);
+  upsertOwnDiagramStars(database, diagramId, user.id, rating);
   const refreshed = getDiagramAccessContext(database, diagramId);
   if (!refreshed) {
     return context.json({ error: "Диаграмма не найдена" }, 404);
@@ -766,6 +793,149 @@ diagramsRouter.post("/:id/ratings", async (context) => {
   diagram.canWrite = canWriteDiagram(database, user, refreshed.access);
 
   return context.json(diagram);
+});
+
+diagramsRouter.post("/:id/ratings/comment", async (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
+  const diagramId = context.req.param("id");
+  const body = await context.req.json<{ comment?: string }>();
+
+  const database = getDb();
+  const contextRow = getDiagramAccessContext(database, diagramId);
+
+  if (!contextRow) {
+    return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  if (!canReadDiagram(database, user, contextRow.access)) {
+    return context.json({ error: "Диаграмма недоступна" }, 403);
+  }
+
+  try {
+    upsertOwnDiagramRatingComment(
+      database,
+      diagramId,
+      user.id,
+      body.comment ?? "",
+    );
+  } catch (error) {
+    return context.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Сначала выберите оценку",
+      },
+      400,
+    );
+  }
+
+  const refreshed = getDiagramAccessContext(database, diagramId);
+  if (!refreshed) {
+    return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  const diagram = enrichDiagramForUser(database, user, refreshed.row);
+  diagram.canWrite = canWriteDiagram(database, user, refreshed.access);
+
+  return context.json(diagram);
+});
+
+diagramsRouter.put("/:id/ratings/:ratingUserId", async (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
+  const diagramId = context.req.param("id");
+  const ratingUserId = context.req.param("ratingUserId");
+  const body = await context.req.json<{
+    rating?: number;
+    comment?: string;
+    commentStatus?: string;
+  }>();
+
+  const database = getDb();
+  const contextRow = getDiagramAccessContext(database, diagramId);
+
+  if (!contextRow) {
+    return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  if (
+    !canModerateDiagramRating(contextRow.row.author_id, user)
+  ) {
+    return context.json({ error: "Изменение оценки доступно автору или админу" }, 403);
+  }
+
+  const rating = body.rating;
+  if (
+    rating !== undefined &&
+    (!Number.isInteger(rating) || rating < 1 || rating > 5)
+  ) {
+    return context.json({ error: "Оценка должна быть от 1 до 5" }, 400);
+  }
+
+  const updated = updateDiagramRatingByModerator(
+    database,
+    diagramId,
+    ratingUserId,
+    user.id,
+    {
+      rating,
+      comment: body.comment,
+      commentStatus:
+        body.commentStatus === "approved" ||
+        body.commentStatus === "rejected" ||
+        body.commentStatus === "pending" ||
+        body.commentStatus === "none"
+          ? body.commentStatus
+          : undefined,
+    },
+  );
+
+  if (!updated) {
+    return context.json({ error: "Оценка не найдена" }, 404);
+  }
+
+  return context.json({ ok: true });
+});
+
+diagramsRouter.delete("/:id/ratings/:ratingUserId", (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
+  const diagramId = context.req.param("id");
+  const ratingUserId = context.req.param("ratingUserId");
+  const database = getDb();
+  const contextRow = getDiagramAccessContext(database, diagramId);
+
+  if (!contextRow) {
+    return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  if (!canModerateDiagramRating(contextRow.row.author_id, user)) {
+    return context.json({ error: "Удаление оценки доступно автору или админу" }, 403);
+  }
+
+  const deleted = deleteDiagramRating(
+    database,
+    diagramId,
+    ratingUserId,
+    user.id,
+  );
+
+  if (!deleted) {
+    return context.json({ error: "Оценка не найдена" }, 404);
+  }
+
+  return context.json({ ok: true });
 });
 
 diagramsRouter.put("/:id/ratings/:ratingUserId/moderate", async (context) => {
@@ -791,7 +961,7 @@ diagramsRouter.put("/:id/ratings/:ratingUserId/moderate", async (context) => {
   }
 
   const isAuthor =
-    contextRow.row.author_id === user.id || user.role === "admin";
+    canModerateDiagramRating(contextRow.row.author_id, user);
 
   if (!isAuthor) {
     return context.json({ error: "Модерация доступна автору диаграммы" }, 403);
@@ -801,6 +971,7 @@ diagramsRouter.put("/:id/ratings/:ratingUserId/moderate", async (context) => {
     database,
     diagramId,
     ratingUserId,
+    user.id,
     status,
   );
 
@@ -809,4 +980,163 @@ diagramsRouter.put("/:id/ratings/:ratingUserId/moderate", async (context) => {
   }
 
   return context.json({ ok: true });
+});
+
+diagramsRouter.get("/:id/versions", (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
+  const diagramId = context.req.param("id");
+  const database = getDb();
+  const contextRow = getDiagramAccessContext(database, diagramId);
+
+  if (!contextRow) {
+    return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  if (!canReadDiagram(database, user, contextRow.access)) {
+    return context.json({ error: "Диаграмма недоступна" }, 403);
+  }
+
+  const rows = listDiagramVersions(database, diagramId);
+  const usernameMap = getUsernameMap(
+    database,
+    rows.map((row) => row.author_id),
+  );
+
+  return context.json({
+    versions: rows.map((row) =>
+      mapDiagramVersionDto(row, usernameMap.get(row.author_id)),
+    ),
+  });
+});
+
+diagramsRouter.post("/:id/versions", async (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
+  const diagramId = context.req.param("id");
+  const body = await context.req.json<{ source?: string; comment?: string }>();
+  const database = getDb();
+  const contextRow = getDiagramAccessContext(database, diagramId);
+
+  if (!contextRow) {
+    return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  const canWrite = canWriteDiagram(database, user, contextRow.access);
+  if (
+    !canManageDiagramVersions(user, {
+      author_id: contextRow.row.author_id,
+    }, canWrite)
+  ) {
+    return context.json({ error: "Недостаточно прав" }, 403);
+  }
+
+  const source = body.source?.trim() || contextRow.row.source;
+  if (!source) {
+    return context.json({ error: "Исходный код обязателен" }, 400);
+  }
+
+  const version = createDiagramVersion(
+    database,
+    diagramId,
+    user.id,
+    source,
+    body.comment ?? "",
+  );
+
+  return context.json({
+    version: mapDiagramVersionDto(version, user.username),
+  }, 201);
+});
+
+diagramsRouter.delete("/:id/versions/:versionId", (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
+  const diagramId = context.req.param("id");
+  const versionId = context.req.param("versionId");
+  const database = getDb();
+  const contextRow = getDiagramAccessContext(database, diagramId);
+
+  if (!contextRow) {
+    return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  const canWrite = canWriteDiagram(database, user, contextRow.access);
+  if (
+    !canManageDiagramVersions(user, {
+      author_id: contextRow.row.author_id,
+    }, canWrite)
+  ) {
+    return context.json({ error: "Недостаточно прав" }, 403);
+  }
+
+  const deleted = deleteDiagramVersion(database, diagramId, versionId);
+  if (!deleted) {
+    return context.json({ error: "Версия не найдена" }, 404);
+  }
+
+  return context.json({ ok: true });
+});
+
+diagramsRouter.post("/:id/versions/:versionId/restore", async (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
+  const diagramId = context.req.param("id");
+  const versionId = context.req.param("versionId");
+  const database = getDb();
+  const contextRow = getDiagramAccessContext(database, diagramId);
+
+  if (!contextRow) {
+    return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  if (!canWriteDiagram(database, user, contextRow.access)) {
+    return context.json({ error: "Недостаточно прав" }, 403);
+  }
+
+  const version = getDiagramVersion(database, diagramId, versionId);
+  if (!version) {
+    return context.json({ error: "Версия не найдена" }, 404);
+  }
+
+  snapshotDiagramSourceVersion(
+    database,
+    diagramId,
+    user.id,
+    contextRow.row.source,
+    `Before restore v${version.version_number}`,
+  );
+
+  const byteSize = Buffer.byteLength(version.source, "utf8");
+  const now = new Date().toISOString();
+
+  database
+    .prepare(
+      `UPDATE diagrams
+       SET source = ?, byte_size = ?, updated_at = ?
+       WHERE id = ?`,
+    )
+    .run(version.source, byteSize, now, diagramId);
+
+  const refreshed = getDiagramAccessContext(database, diagramId);
+  if (!refreshed) {
+    return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  const diagram = enrichDiagramForUser(database, user, refreshed.row);
+  diagram.canWrite = true;
+
+  return context.json(diagram);
 });

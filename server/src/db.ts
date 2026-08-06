@@ -137,6 +137,31 @@ function runMigrations(database: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_diagram_favorites_user ON diagram_favorites(user_id);
     CREATE INDEX IF NOT EXISTS idx_diagram_ratings_diagram ON diagram_ratings(diagram_id);
+
+    CREATE TABLE IF NOT EXISTS diagram_versions (
+      id TEXT PRIMARY KEY,
+      diagram_id TEXT NOT NULL REFERENCES diagrams(id) ON DELETE CASCADE,
+      version_number INTEGER NOT NULL,
+      comment TEXT NOT NULL DEFAULT '',
+      source TEXT NOT NULL,
+      author_id TEXT NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      UNIQUE(diagram_id, version_number)
+    );
+
+    CREATE TABLE IF NOT EXISTS diagram_rating_versions (
+      id TEXT PRIMARY KEY,
+      rating_id TEXT NOT NULL REFERENCES diagram_ratings(id) ON DELETE CASCADE,
+      version_number INTEGER NOT NULL,
+      rating INTEGER NOT NULL,
+      comment TEXT NOT NULL DEFAULT '',
+      comment_status TEXT NOT NULL,
+      edited_by TEXT NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_diagram_versions_diagram ON diagram_versions(diagram_id);
+    CREATE INDEX IF NOT EXISTS idx_diagram_rating_versions_rating ON diagram_rating_versions(rating_id);
   `);
 
   database

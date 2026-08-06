@@ -5,6 +5,7 @@ import type {
   DiagramListItemDto,
   DiagramRatingDto,
   DiagramSortOption,
+  DiagramVersionDto,
   LibraryUserDto,
   SectionAccessDto,
   SectionDto,
@@ -189,17 +190,33 @@ export async function removeDiagramFavorite(
   );
 }
 
-export async function submitDiagramRating(
+export async function submitDiagramRatingStars(
   diagramId: string,
-  payload: { rating: number; comment?: string },
+  rating: number,
   baseUrl?: string,
 ): Promise<DiagramDto> {
   return requestJson(
-    `/diagrams/${diagramId}/ratings`,
+    `/diagrams/${diagramId}/ratings/stars`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ rating }),
+    },
+    baseUrl,
+  );
+}
+
+export async function submitDiagramRatingComment(
+  diagramId: string,
+  comment: string,
+  baseUrl?: string,
+): Promise<DiagramDto> {
+  return requestJson(
+    `/diagrams/${diagramId}/ratings/comment`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comment }),
     },
     baseUrl,
   );
@@ -208,7 +225,7 @@ export async function submitDiagramRating(
 export async function fetchDiagramRatings(
   diagramId: string,
   baseUrl?: string,
-): Promise<{ ratings: DiagramRatingDto[] }> {
+): Promise<{ approved: DiagramRatingDto[]; pending: DiagramRatingDto[] }> {
   return requestJson(`/diagrams/${diagramId}/ratings`, undefined, baseUrl);
 }
 
@@ -225,6 +242,65 @@ export async function moderateDiagramRatingComment(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     },
+    baseUrl,
+  );
+}
+
+export async function deleteDiagramRating(
+  diagramId: string,
+  ratingUserId: string,
+  baseUrl?: string,
+): Promise<void> {
+  await requestJson(
+    `/diagrams/${diagramId}/ratings/${ratingUserId}`,
+    { method: "DELETE" },
+    baseUrl,
+  );
+}
+
+export async function fetchDiagramVersions(
+  diagramId: string,
+  baseUrl?: string,
+): Promise<{ versions: DiagramVersionDto[] }> {
+  return requestJson(`/diagrams/${diagramId}/versions`, undefined, baseUrl);
+}
+
+export async function createLibraryDiagramVersion(
+  diagramId: string,
+  payload: { source?: string; comment?: string },
+  baseUrl?: string,
+): Promise<{ version: DiagramVersionDto }> {
+  return requestJson(
+    `/diagrams/${diagramId}/versions`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    baseUrl,
+  );
+}
+
+export async function deleteLibraryDiagramVersion(
+  diagramId: string,
+  versionId: string,
+  baseUrl?: string,
+): Promise<void> {
+  await requestJson(
+    `/diagrams/${diagramId}/versions/${versionId}`,
+    { method: "DELETE" },
+    baseUrl,
+  );
+}
+
+export async function restoreLibraryDiagramVersion(
+  diagramId: string,
+  versionId: string,
+  baseUrl?: string,
+): Promise<DiagramDto> {
+  return requestJson(
+    `/diagrams/${diagramId}/versions/${versionId}/restore`,
+    { method: "POST" },
     baseUrl,
   );
 }

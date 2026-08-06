@@ -98,6 +98,7 @@ export function mapDiagramListItem(
     isFavorite?: boolean;
     userRating?: number | null;
     userCommentStatus?: string | null;
+    userComment?: string;
   },
 ): DiagramListItemDto {
   return {
@@ -119,6 +120,7 @@ export function mapDiagramListItem(
     isFavorite: options?.isFavorite,
     userRating: options?.userRating ?? undefined,
     userCommentStatus: options?.userCommentStatus as DiagramListItemDto["userCommentStatus"],
+    userComment: options?.userComment,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -151,6 +153,7 @@ export function mapDiagram(
     isFavorite?: boolean;
     userRating?: number | null;
     userCommentStatus?: string | null;
+    userComment?: string;
   },
 ): DiagramDto {
   return {
@@ -201,6 +204,7 @@ export function enrichDiagramListForUser(
       isFavorite: social.isFavorite,
       userRating: social.userRating,
       userCommentStatus: social.userCommentStatus,
+      userComment: social.userComment,
     });
   });
 }
@@ -229,6 +233,7 @@ export function enrichDiagramForUser(
     isFavorite: social.isFavorite,
     userRating: social.userRating,
     userCommentStatus: social.userCommentStatus,
+    userComment: social.userComment,
   });
 }
 

@@ -141,6 +141,7 @@ export interface DiagramListItemDto {
   isFavorite?: boolean;
   userRating?: number | null;
   userCommentStatus?: RatingCommentStatus | null;
+  userComment?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -159,6 +160,17 @@ export interface DiagramRatingDto {
   commentStatus: RatingCommentStatus;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface DiagramVersionDto {
+  id: string;
+  diagramId: string;
+  versionNumber: number;
+  comment: string;
+  source: string;
+  authorId: string;
+  authorName?: string | null;
+  createdAt: string;
 }
 
 export interface SectionAccessDto {

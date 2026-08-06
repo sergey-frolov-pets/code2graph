@@ -34,6 +34,7 @@ const emit = defineEmits<{
   "manage-access": [];
   "toggle-favorite": [];
   "rating-updated": [diagram: DiagramDto];
+  "open-versions": [];
 }>();
 
 const { t } = useLocale();
@@ -154,6 +155,14 @@ const { t } = useLocale();
           </button>
           <button class="btn" type="button" @click="emit('preview')">
             {{ t("library.preview") }}
+          </button>
+          <button
+            v-if="diagram.canWrite"
+            class="btn"
+            type="button"
+            @click="emit('open-versions')"
+          >
+            {{ t("library.versions") }}
           </button>
           <button
             v-if="diagram.canWrite"

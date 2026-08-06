@@ -162,4 +162,9 @@ export const libraryMessages: LocaleMessages = {
   "library.ratingSaveError": "Не удалось сохранить оценку",
   "library.ratingModerateError": "Не удалось обновить комментарий",
   "library.anonymousUser": "Пользователь",
+  "library.ratingCommentSubmit": "Отправить комментарий",
+  "library.ratingDelete": "Удалить оценку",
+  "library.ratingDeleteError": "Не удалось удалить оценку",
+  "library.versions": "Версии",
+  "library.versionsTitle": "Версии — {title}",
 };

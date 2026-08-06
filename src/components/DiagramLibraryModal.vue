@@ -8,7 +8,7 @@ import LibraryBrowseSections from "@/components/library/LibraryBrowseSections.vu
 import LibraryBrowseDiagrams from "@/components/library/LibraryBrowseDiagrams.vue";
 import LibraryDiagramDetail from "@/components/library/LibraryDiagramDetail.vue";
 import LibraryAdminUsersPanel from "@/components/library/LibraryAdminUsersPanel.vue";
-import LibraryDiagramPreviewModal from "@/components/library/LibraryDiagramPreviewModal.vue";
+import LibraryDiagramVersionsModal from "@/components/library/LibraryDiagramVersionsModal.vue";
 import LibraryShareLinkModal from "@/components/library/LibraryShareLinkModal.vue";
 import LibrarySectionAccessModal from "@/components/library/LibrarySectionAccessModal.vue";
 import LibraryUploadForm from "@/components/library/LibraryUploadForm.vue";
@@ -64,6 +64,7 @@ const shareResource = ref<{
   title: string;
 } | null>(null);
 const isPreviewModalOpen = ref(false);
+const isVersionsModalOpen = ref(false);
 const previewTitle = ref("");
 const previewCanDownload = ref(false);
 const previewDownloadsRemaining = ref<number | null>(null);
@@ -435,6 +436,11 @@ function onRatingUpdated(diagram: typeof selectedDiagram.value): void {
   void library.searchDiagrams();
 }
 
+function onVersionsRestored(diagram: NonNullable<typeof selectedDiagram.value>): void {
+  selectedDiagram.value = diagram;
+  void library.searchDiagrams();
+}
+
 function closeSectionAccess(): void {
   isSectionAccessOpen.value = false;
   sectionAccessId.value = null;
@@ -648,6 +654,7 @@ watch(libraryTarget, () => {
           @delete="onDeleteDiagram()"
           @toggle-favorite="onToggleFavorite()"
           @rating-updated="onRatingUpdated($event)"
+          @open-versions="isVersionsModalOpen = true"
         />
 
         <LibraryUploadForm
@@ -727,6 +734,14 @@ watch(libraryTarget, () => {
     :is-downloading="isPreviewDownloading"
     @close="closePreviewModal()"
     @download="onPreviewDownload()"
+  />
+
+  <LibraryDiagramVersionsModal
+    :open="isVersionsModalOpen"
+    :diagram="selectedDiagram"
+    :api-url="libraryApiUrl"
+    @close="isVersionsModalOpen = false"
+    @restored="onVersionsRestored($event)"
   />
 
   <LibrarySectionAccessModal

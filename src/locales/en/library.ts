@@ -162,4 +162,9 @@ export const libraryMessages: LocaleMessages = {
   "library.ratingSaveError": "Failed to save rating",
   "library.ratingModerateError": "Failed to moderate comment",
   "library.anonymousUser": "User",
+  "library.ratingCommentSubmit": "Submit comment",
+  "library.ratingDelete": "Delete rating",
+  "library.ratingDeleteError": "Failed to delete rating",
+  "library.versions": "Versions",
+  "library.versionsTitle": "Versions — {title}",
 };
