@@ -31,7 +31,8 @@ import {
   removeDiagramFavorite,
 } from "../favorites.js";
 import {
-  canModerateDiagramRating,
+  canModerateRatingComment,
+  canEditOrDeleteRating,
   deleteDiagramRating,
   listApprovedRatingComments,
   listPendingRatingCommentsForAuthor,
@@ -748,7 +749,7 @@ diagramsRouter.get("/:id/ratings", (context) => {
   }
 
   const approved = listApprovedRatingComments(database, contextRow.row.id);
-  const pending = canModerateDiagramRating(
+  const pending = canModerateRatingComment(
     contextRow.row.author_id,
     user,
   )
@@ -866,10 +867,11 @@ diagramsRouter.put("/:id/ratings/:ratingUserId", async (context) => {
     return context.json({ error: "Диаграмма не найдена" }, 404);
   }
 
-  if (
-    !canModerateDiagramRating(contextRow.row.author_id, user)
-  ) {
-    return context.json({ error: "Изменение оценки доступно автору или админу" }, 403);
+  if (!canEditOrDeleteRating(ratingUserId, user)) {
+    return context.json(
+      { error: "Изменение оценки доступно автору оценки или админу" },
+      403,
+    );
   }
 
   const rating = body.rating;
@@ -920,8 +922,11 @@ diagramsRouter.delete("/:id/ratings/:ratingUserId", (context) => {
     return context.json({ error: "Диаграмма не найдена" }, 404);
   }
 
-  if (!canModerateDiagramRating(contextRow.row.author_id, user)) {
-    return context.json({ error: "Удаление оценки доступно автору или админу" }, 403);
+  if (!canEditOrDeleteRating(ratingUserId, user)) {
+    return context.json(
+      { error: "Удаление оценки доступно автору оценки или админу" },
+      403,
+    );
   }
 
   const deleted = deleteDiagramRating(
@@ -961,7 +966,7 @@ diagramsRouter.put("/:id/ratings/:ratingUserId/moderate", async (context) => {
   }
 
   const isAuthor =
-    canModerateDiagramRating(contextRow.row.author_id, user);
+    canModerateRatingComment(contextRow.row.author_id, user);
 
   if (!isAuthor) {
     return context.json({ error: "Модерация доступна автору диаграммы" }, 403);

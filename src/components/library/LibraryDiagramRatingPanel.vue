@@ -33,13 +33,20 @@ const isSavingComment = ref(false);
 const isSavingStars = ref(false);
 const errorMessage = ref("");
 
-const isAuthor = computed(
+const isDiagramAuthor = computed(
   () =>
     Boolean(
       props.diagram.authorId &&
         currentUser.value &&
         props.diagram.authorId === currentUser.value.id,
     ) || isAdmin.value,
+);
+
+const canDeleteOwnRating = computed(
+  () =>
+    ratingValue.value !== null &&
+    Boolean(currentUser.value) &&
+    props.diagram.userRating !== null,
 );
 
 async function loadRatings(): Promise<void> {
@@ -130,15 +137,21 @@ async function moderate(
   }
 }
 
-async function removeRating(ratingUserId: string): Promise<void> {
-  if (!props.apiUrl) {
+async function removeOwnRating(): Promise<void> {
+  if (!props.apiUrl || !currentUser.value) {
     return;
   }
 
   try {
-    await deleteDiagramRating(props.diagram.id, ratingUserId, props.apiUrl);
+    await deleteDiagramRating(
+      props.diagram.id,
+      currentUser.value.id,
+      props.apiUrl,
+    );
     const diagram = await fetchDiagram(props.diagram.id, props.apiUrl);
     emit("updated", diagram);
+    ratingValue.value = null;
+    commentValue.value = "";
     await loadRatings();
   } catch (error) {
     errorMessage.value =
@@ -219,6 +232,14 @@ watch(
       >
         {{ isSavingComment ? t("app.loading") : t("library.ratingCommentSubmit") }}
       </button>
+      <button
+        v-if="canDeleteOwnRating"
+        class="btn"
+        type="button"
+        @click="removeOwnRating()"
+      >
+        {{ t("library.ratingDeleteOwn") }}
+      </button>
     </div>
 
     <p v-if="errorMessage" class="library-rating-panel__error">{{ errorMessage }}</p>
@@ -239,7 +260,7 @@ watch(
       </article>
     </div>
 
-    <div v-if="isAuthor && pendingModeration.length" class="library-rating-panel__moderation">
+    <div v-if="isDiagramAuthor && pendingModeration.length" class="library-rating-panel__moderation">
       <p class="library-rating-panel__label">{{ t("library.ratingModeration") }}</p>
       <article
         v-for="entry in pendingModeration"
@@ -265,13 +286,6 @@ watch(
             @click="moderate(entry.userId, 'rejected')"
           >
             {{ t("library.ratingReject") }}
-          </button>
-          <button
-            class="btn"
-            type="button"
-            @click="removeRating(entry.userId)"
-          >
-            {{ t("library.ratingDelete") }}
           </button>
         </div>
       </article>

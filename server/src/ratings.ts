@@ -249,11 +249,18 @@ export function moderateDiagramRatingComment(
   return getUserDiagramRating(database, diagramId, ratingUserId);
 }
 
-export function canModerateDiagramRating(
+export function canModerateRatingComment(
   diagramAuthorId: string | null,
   user: UserDto,
 ): boolean {
   return user.role === "admin" || diagramAuthorId === user.id;
+}
+
+export function canEditOrDeleteRating(
+  ratingUserId: string,
+  user: UserDto,
+): boolean {
+  return user.role === "admin" || ratingUserId === user.id;
 }
 
 export function mapRatingDto(

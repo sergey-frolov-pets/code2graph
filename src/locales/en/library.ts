@@ -164,6 +164,7 @@ export const libraryMessages: LocaleMessages = {
   "library.anonymousUser": "User",
   "library.ratingCommentSubmit": "Submit comment",
   "library.ratingDelete": "Delete rating",
+  "library.ratingDeleteOwn": "Delete my rating",
   "library.ratingDeleteError": "Failed to delete rating",
   "library.versions": "Versions",
   "library.versionsTitle": "Versions — {title}",
