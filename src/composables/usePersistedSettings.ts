@@ -17,8 +17,8 @@ import {
   type RenderMode,
 } from "@/constants/render-settings";
 import {
-  findSampleDiagramIdAnyLocale,
-  getSampleDiagramSource,
+  findAnySampleSelectionAnyLocale,
+  getSampleSource,
   isDefaultSource,
 } from "@/constants/sample-diagrams";
 import {
@@ -186,9 +186,9 @@ export function usePersistedSettings() {
       return;
     }
 
-    const sampleId = findSampleDiagramIdAnyLocale(source.value);
-    if (sampleId) {
-      source.value = getSampleDiagramSource(sampleId, locale.value);
+    const sampleSelection = findAnySampleSelectionAnyLocale(source.value);
+    if (sampleSelection) {
+      source.value = getSampleSource(sampleSelection, locale.value);
     }
   }
 

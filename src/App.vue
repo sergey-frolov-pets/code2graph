@@ -26,6 +26,7 @@ import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
 import { useLocale } from "@/composables/useLocale";
 import { usePersistedSettings } from "@/composables/usePersistedSettings";
 import { useSyntaxValidation } from "@/composables/useSyntaxValidation";
+import type { DiagramFormat } from "@/constants/diagram-formats";
 
 const isSaveToLibraryModalOpen = ref(false);
 const linkedLibraryDiagramId = ref<string | null>(null);
@@ -61,6 +62,8 @@ const {
   restoreSettings,
 } = usePersistedSettings();
 
+const diagramFormat = ref<DiagramFormat>("plantuml");
+
 const {
   svg,
   error,
@@ -70,6 +73,7 @@ const {
   bootEngine,
 } = useDiagramRender({
   source,
+  diagramFormat,
   layout,
   diagramDarkMode,
   renderMode,
@@ -99,7 +103,7 @@ const {
   syntaxResult,
   syntaxErrorLines,
   validateSyntax,
-} = useSyntaxValidation({ source, layout, diagramDarkMode, renderMode });
+} = useSyntaxValidation({ source, diagramFormat, layout, diagramDarkMode, renderMode });
 
 const {
   loadedFileName,
@@ -111,6 +115,7 @@ const {
   onVersionRestore,
 } = useDiagramDocument({
   source,
+  diagramFormat,
   error,
   syntaxErrorLines,
   persistSettings,
@@ -164,13 +169,18 @@ function applySourceRedo(): void {
 function onFileLoaded(payload: {
   content: string;
   fileName: string;
+  format?: DiagramFormat;
   diagramId?: string;
 }): void {
-  applyLoadedSource(payload.content, payload.fileName);
+  applyLoadedSource(payload.content, payload.fileName, payload.format);
   linkedLibraryDiagramId.value = payload.diagramId ?? null;
 }
 
-function onEditorFileLoaded(payload: { content: string; fileName: string }): void {
+function onEditorFileLoaded(payload: {
+  content: string;
+  fileName: string;
+  format: DiagramFormat;
+}): void {
   onFileLoaded(payload);
 }
 
@@ -221,6 +231,7 @@ onMounted(() => {
     <main class="app-main">
       <DiagramEditor
         v-model="source"
+        v-model:diagram-format="diagramFormat"
         :error-lines="syntaxErrorLines"
         :editor-font-size="editorFontSize"
         :editor-font-family="editorFontFamily"
@@ -289,6 +300,7 @@ onMounted(() => {
       :open="isSaveToLibraryModalOpen"
       :source="source"
       :file-name="loadedFileName"
+      :diagram-format="diagramFormat"
       :linked-diagram-id="linkedLibraryDiagramId"
       @close="isSaveToLibraryModalOpen = false"
     />

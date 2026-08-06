@@ -1,14 +1,15 @@
 import { computed, nextTick, ref, type Ref } from "vue";
+import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { CodeFoldRegion } from "@/utils/code-folds";
 import {
   mapDisplayOffsetToSourceOffset,
   mapSourceOffsetToDisplayOffset,
 } from "@/utils/code-folds";
 import {
-  extractCompletionPrefix,
-  getCompletions,
+  extractDiagramCompletionPrefix,
+  getDiagramCompletions,
   type CompletionItem,
-} from "@/utils/plantuml-autocomplete";
+} from "@/utils/diagram-autocomplete";
 
 const LINE_HEIGHT_RATIO = 1.45;
 
@@ -26,6 +27,7 @@ export interface CompletionContext {
 
 export function useEditorAutocomplete(options: {
   source: Ref<string>;
+  diagramFormat: Ref<DiagramFormat>;
   folds: Ref<CodeFoldRegion[]>;
   textareaRef: Ref<HTMLTextAreaElement | null>;
   editorFontSize: Ref<string>;
@@ -127,9 +129,13 @@ export function useEditorAutocomplete(options: {
 
     const displayOffset = textarea.selectionStart ?? 0;
     const position = resolveSourcePosition(displayOffset);
-    const prefixInfo = extractCompletionPrefix(position.lineText, position.column);
+    const prefixInfo = extractDiagramCompletionPrefix(
+      options.diagramFormat.value,
+      position.lineText,
+      position.column,
+    );
 
-    const items = getCompletions({
+    const items = getDiagramCompletions(options.diagramFormat.value, {
       lines: options.source.value.split(/\r?\n/),
       lineNumber: position.sourceLine,
       column: position.column,

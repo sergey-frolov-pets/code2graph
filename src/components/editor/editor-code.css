@@ -189,6 +189,11 @@
   color: var(--text);
 }
 
+.code-editor__textarea.is-read-only {
+  cursor: default;
+  opacity: 0.92;
+}
+
 .code-editor__textarea::selection {
   background: color-mix(in srgb, var(--accent) 28%, transparent);
 }

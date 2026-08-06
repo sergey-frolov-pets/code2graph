@@ -4,46 +4,23 @@ import {
   PLANTUML_NAMED_COLORS,
 } from "@/constants/plantuml-colors";
 import { C4_INCLUDE_PATHS } from "@/utils/plantuml-include";
+import type {
+  CompletionItem,
+  CompletionPrefixInfo,
+  CompletionQuery,
+} from "@/utils/completion-types";
+import {
+  MAX_COMPLETION_ITEMS,
+  MIN_COMPLETION_PREFIX_LENGTH,
+} from "@/utils/completion-types";
 
-export const MIN_COMPLETION_PREFIX_LENGTH = 2;
-export const MAX_COMPLETION_ITEMS = 15;
-
-export type CompletionKind =
-  | "keyword"
-  | "context"
-  | "directive"
-  | "preprocessor"
-  | "color"
-  | "swimlane"
-  | "c4";
-
-export interface CompletionItem {
-  label: string;
-  insertText: string;
-  kind: CompletionKind;
-  detailKey?: string;
-}
-
-export interface CompletionQuery {
-  lines: string[];
-  lineNumber: number;
-  column: number;
-  prefix: string;
-  prefixInfo: CompletionPrefixInfo;
-}
-
-export type CompletionPrefixMode =
-  | "word"
-  | "named-color"
-  | "hex"
-  | "swimlane"
-  | "swimlane-hex";
-
-export interface CompletionPrefixInfo {
-  prefix: string;
-  replaceStart: number;
-  mode: CompletionPrefixMode;
-}
+export type {
+  CompletionItem,
+  CompletionKind,
+  CompletionPrefixInfo,
+  CompletionPrefixMode,
+  CompletionQuery,
+} from "@/utils/completion-types";
 
 type BlockKind =
   | "brace"

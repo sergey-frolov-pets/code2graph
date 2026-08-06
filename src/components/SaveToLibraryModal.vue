@@ -6,12 +6,17 @@ import { useLibraryTarget } from "@/config/library-target";
 import { useLocale } from "@/composables/useLocale";
 import { flattenSections } from "@/shared/library/section-tree";
 import { parseTagsInput } from "@/utils/library-tags";
-import { resolvePumlFileName } from "@/utils/puml-files";
+import {
+  getDiagramFormatDefinition,
+  type DiagramFormat,
+} from "@/constants/diagram-formats";
+import { resolveDiagramFileName } from "@/utils/diagram-files";
 
 const props = defineProps<{
   open: boolean;
   source: string;
   fileName: string;
+  diagramFormat: DiagramFormat;
   linkedDiagramId: string | null;
 }>();
 
@@ -51,7 +56,10 @@ watch(
       void library.selectDiagram(props.linkedDiagramId);
     }
 
-    const baseName = props.fileName.replace(/\.(puml|plantuml|txt)$/i, "");
+    const baseName = props.fileName.replace(
+      /\.(puml|plantuml|txt|mmd|mermaid|graphml)$/i,
+      "",
+    );
     title.value = baseName || t("library.defaultDiagramTitle");
     description.value = "";
     tags.value = "";
@@ -83,7 +91,7 @@ async function onSave(): Promise<void> {
       tags: parseTagsInput(tags.value),
       sectionId: sectionId.value || null,
       source: props.source,
-      fileName: resolvePumlFileName(props.fileName),
+      fileName: resolveDiagramFileName(props.fileName, props.diagramFormat),
     };
 
     if (isUpdateMode.value && props.linkedDiagramId) {
@@ -91,7 +99,7 @@ async function onSave(): Promise<void> {
     } else {
       await library.addDiagram({
         ...payload,
-        language: "plantuml",
+        language: getDiagramFormatDefinition(props.diagramFormat).language,
       });
     }
 

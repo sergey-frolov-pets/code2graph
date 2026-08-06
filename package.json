@@ -28,15 +28,19 @@
   "dependencies": {
     "@lucide/vue": "^1.28.0",
     "@plantuml/core": "^1.2026.6",
+    "dagre": "^0.8.5",
+    "mermaid": "^11.16.1",
     "vue": "^3.5.13",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
     "@playwright/test": "^1.51.0",
+    "@types/dagre": "^0.7.54",
     "@types/node": "^22.10.5",
     "@vitejs/plugin-vue": "^5.2.1",
     "eslint": "^9.21.0",
+    "jsdom": "^29.1.1",
     "sharp": "^0.34.3",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.25.0",
