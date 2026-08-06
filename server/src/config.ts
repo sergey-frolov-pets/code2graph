@@ -35,6 +35,7 @@ export const DIAGRAM_LANGUAGES = [
   "plantuml",
   "mermaid",
   "graphviz",
+  "graphml",
   "ditaa",
   "other",
 ] as const;

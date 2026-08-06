@@ -3,6 +3,7 @@ import { getDb, parseTags } from "../db.js";
 import { isDiagramLanguage, MAX_PUML_FILE_BYTES } from "../config.js";
 import { mapDiagram, mapDiagramListItem } from "../shared/diagram-mappers.js";
 import {
+  detectLanguageFromFileName,
   detectLanguageFromSource,
   resolvePumlFileName,
 } from "../shared/puml-files.js";
@@ -154,8 +155,13 @@ diagramsRouter.post("/", async (context) => {
       }
       source = await file.text();
       fileName = resolvePumlFileName(file.name);
+      if (!languageRaw || !isDiagramLanguage(languageRaw)) {
+        language =
+          detectLanguageFromFileName(file.name) ??
+          detectLanguageFromSource(source);
+      }
       if (!title) {
-        title = fileName.replace(/\.(puml|plantuml|txt)$/i, "");
+        title = fileName.replace(/\.(puml|plantuml|txt|mmd|mermaid|graphml)$/i, "");
       }
     } else {
       const sourceField = formData.get("source");
@@ -201,11 +207,12 @@ diagramsRouter.post("/", async (context) => {
   }
 
   if (!title) {
-    title = fileName.replace(/\.(puml|plantuml|txt)$/i, "") || "Диаграмма";
+    title = fileName.replace(/\.(puml|plantuml|txt|mmd|mermaid|graphml)$/i, "") || "Диаграмма";
   }
 
   if (!isDiagramLanguage(language)) {
-    language = detectLanguageFromSource(source);
+    language =
+      detectLanguageFromFileName(fileName) ?? detectLanguageFromSource(source);
   }
 
   const database = getDb();

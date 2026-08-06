@@ -28,6 +28,7 @@ export const appMessages: LocaleMessages = {
   "app.importError": "Ошибка импорта",
   "app.exportError": "Ошибка экспорта",
   "app.savePuml": "Сохранить .puml",
+  "app.saveDiagram": "Сохранить файл",
   "app.fileName": "Имя файла",
   "app.ok": "OK",
   "app.wait": "Подождите…",

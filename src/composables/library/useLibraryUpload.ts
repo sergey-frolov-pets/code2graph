@@ -48,7 +48,10 @@ export function useLibraryUpload(options: {
     }
     uploadFile.value = file;
     if (!uploadTitle.value.trim()) {
-      uploadTitle.value = file.name.replace(/\.(puml|plantuml|txt)$/i, "");
+      uploadTitle.value = file.name.replace(
+        /\.(puml|plantuml|txt|mmd|mermaid|graphml)$/i,
+        "",
+      );
     }
   }
 

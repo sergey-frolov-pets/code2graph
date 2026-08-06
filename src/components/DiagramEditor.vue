@@ -15,7 +15,11 @@ import EditorFoldRegionsModal from "@/components/editor/EditorFoldRegionsModal.v
 import { useLocale } from "@/composables/useLocale";
 import type { EditorFontSize } from "@/constants/editor-settings";
 import type { SampleDiagramId } from "@/constants/sample-diagrams";
-import { PUML_FILE_ACCEPT } from "@/utils/puml-files";
+import {
+  DIAGRAM_FILE_ACCEPT,
+  getDiagramFormatDefinition,
+  type DiagramFormat,
+} from "@/constants/diagram-formats";
 import { useEditorAutocomplete } from "@/composables/useEditorAutocomplete";
 import { useCodeFolds } from "@/composables/editor/useCodeFolds";
 import { useEditorDisplayModel } from "@/composables/editor/useEditorDisplayModel";
@@ -24,6 +28,9 @@ import { useEditorSelection } from "@/composables/editor/useEditorSelection";
 import "./editor/editor-code.css";
 
 const source = defineModel<string>({ required: true });
+const diagramFormat = defineModel<DiagramFormat>("diagramFormat", {
+  required: true,
+});
 
 const props = defineProps<{
   errorLines?: number[];
@@ -39,7 +46,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  fileLoaded: [payload: { content: string; fileName: string }];
+  fileLoaded: [payload: { content: string; fileName: string; format: DiagramFormat }];
   importError: [message: string];
   savePuml: [];
   saveToLibrary: [];
@@ -52,6 +59,17 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
+
+const formatDefinition = computed(() =>
+  getDiagramFormatDefinition(diagramFormat.value),
+);
+const isReadOnly = computed(() => !formatDefinition.value.editable);
+const effectiveSyntaxHighlight = computed(
+  () => props.syntaxHighlightEnabled && diagramFormat.value === "plantuml",
+);
+const effectiveAutocomplete = computed(
+  () => props.autocompleteEnabled && diagramFormat.value === "plantuml",
+);
 
 const gutterComponentRef = ref<InstanceType<typeof EditorCodeGutter> | null>(
   null,
@@ -132,7 +150,7 @@ const {
 } = useEditorDisplayModel({
   source,
   folds,
-  syntaxHighlightEnabled: toRef(props, "syntaxHighlightEnabled"),
+  syntaxHighlightEnabled: effectiveSyntaxHighlight,
   editorFontSize: toRef(props, "editorFontSize"),
   editorFontFamily: toRef(props, "editorFontFamily"),
 });
@@ -150,6 +168,7 @@ const {
   requestClear,
 } = useEditorFileImport({
   source,
+  diagramFormat,
   resetFolds,
   onFileLoaded: (payload) => emit("fileLoaded", payload),
   onImportError: (message) => emit("importError", message),
@@ -171,7 +190,7 @@ const autocomplete = useEditorAutocomplete({
   folds,
   textareaRef,
   editorFontSize: toRef(props, "editorFontSize"),
-  enabled: toRef(props, "autocompleteEnabled"),
+  enabled: effectiveAutocomplete,
 });
 
 function onTextareaScroll(): void {
@@ -235,6 +254,7 @@ onUnmounted(() => {
     :style="editorStyle"
   >
     <EditorToolbar
+      :format-definition="formatDefinition"
       :can-save="canSave"
       :is-validating="isValidating"
       :is-rendering="isRendering"
@@ -269,7 +289,7 @@ onUnmounted(() => {
         ref="fileInputRef"
         class="sr-only"
         type="file"
-        :accept="PUML_FILE_ACCEPT"
+        :accept="DIAGRAM_FILE_ACCEPT"
         @change="handleSelectedFile"
       />
 
@@ -293,8 +313,9 @@ onUnmounted(() => {
           :folds="folds"
           :display-text="displayText"
           :visible-editor-lines="visibleEditorLines"
-          :syntax-highlight-enabled="syntaxHighlightEnabled"
-          :autocomplete-enabled="autocompleteEnabled"
+          :syntax-highlight-enabled="effectiveSyntaxHighlight"
+          :autocomplete-enabled="effectiveAutocomplete"
+          :read-only="isReadOnly"
           :error-lines="errorLines ?? []"
           :autocomplete="autocomplete"
           @update:source="source = $event"
@@ -305,7 +326,13 @@ onUnmounted(() => {
         />
       </div>
 
-      <p class="drop-hint">{{ t("editor.dropHint") }}</p>
+      <p class="drop-hint">
+        {{
+          isReadOnly
+            ? t("editor.dropHintViewOnly")
+            : t("editor.dropHint")
+        }}
+      </p>
     </div>
 
     <SnippetsPanel
