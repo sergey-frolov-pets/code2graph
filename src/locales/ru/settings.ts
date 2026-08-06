@@ -44,6 +44,11 @@ export const settingsMessages: LocaleMessages = {
   "settings.ai": "AI / LLM",
   "settings.llmProvider": "Провайдер AI",
   "settings.llmRecommendedBadge": "рекомендован",
+  "settings.llmFreeBuiltinBadge": "без ключа",
+  "settings.llmFreeBuiltinHint":
+    "Ключ провайдера хранится на сервере puml-api. Ваш личный API-ключ не нужен.",
+  "settings.llmProxyUnreachable":
+    "Сервер puml-api недоступен — варианты «без ключа» скрыты. Проверьте URL, логин и пароль в разделе «Библиотека».",
   "settings.llmGetApiKey": "Получить API-ключ на сайте провайдера",
   "settings.llmProviderDocs": "Документация",
   "settings.llmApiKey": "API-ключ",

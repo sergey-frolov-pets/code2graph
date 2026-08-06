@@ -10,10 +10,19 @@ export const llmMessages: LocaleMessages = {
   "llm.keysGuide.docsLink": "Документация провайдера",
   "llm.provider.googleGemini": "Google Gemini",
   "llm.provider.googleGeminiDesc": "Ключ из Google AI Studio. Модель: Gemini 2.0 Flash.",
+  "llm.provider.googleGeminiFree": "Google Gemini (без ключа)",
+  "llm.provider.googleGeminiFreeDesc":
+    "Бесплатный прокси через ваш сервер puml-api. Ключ задаётся на сервере (GEMINI_API_KEY).",
   "llm.provider.groq": "Groq",
   "llm.provider.groqDesc": "Ключ из консоли Groq. Быстрые open-модели.",
+  "llm.provider.groqFree": "Groq (без ключа)",
+  "llm.provider.groqFreeDesc":
+    "Бесплатный прокси через puml-api. Ключ задаётся на сервере (GROQ_API_KEY).",
   "llm.provider.openrouter": "OpenRouter",
   "llm.provider.openrouterDesc": "Ключ из OpenRouter. Агрегатор моделей.",
+  "llm.provider.openrouterFree": "OpenRouter (без ключа)",
+  "llm.provider.openrouterFreeDesc":
+    "Бесплатный прокси через puml-api. Ключ задаётся на сервере (OPENROUTER_API_KEY).",
   "llm.provider.mistral": "Mistral",
   "llm.provider.mistralDesc": "Ключ из консоли Mistral.",
   "llm.provider.deepseek": "DeepSeek",
@@ -28,6 +37,12 @@ export const llmMessages: LocaleMessages = {
   "llm.gate.noConsentMessage": "Включите согласие в Настройки → AI / LLM, чтобы отправлять диаграммы в облачный LLM.",
   "llm.gate.noKeyTitle": "API-ключ не задан",
   "llm.gate.noKeyMessage": "Создайте ключ на сайте провайдера и вставьте его в Настройки → AI.",
+  "llm.gate.noProxyTitle": "Сервер puml-api не настроен",
+  "llm.gate.noProxyMessage":
+    "Укажите адрес сервера библиотеки (puml-api) и учётные данные в Настройки → Библиотека.",
+  "llm.gate.providerUnavailableTitle": "Провайдер недоступен",
+  "llm.gate.providerUnavailableMessage":
+    "Сервер puml-api не отвечает или ключ провайдера не задан на сервере. Проверьте подключение и переменные окружения.",
   "llm.gate.providerInvalidTitle": "Провайдер не найден",
   "llm.gate.providerInvalidMessage": "Выберите провайдер AI в настройках.",
   "llm.gate.openSettingsTitle": "Открыть настройки?",

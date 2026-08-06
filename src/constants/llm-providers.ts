@@ -1,5 +1,6 @@
 export const LLM_PROVIDER_KIND = {
   BYOK: "byok",
+  FREE_BUILTIN: "free_builtin",
 } as const;
 
 export type LlmProviderKind =
@@ -20,6 +21,35 @@ export interface LlmProviderDefinition {
 }
 
 export const DEFAULT_LLM_PROVIDER_ID = "google-gemini";
+export const DEFAULT_FREE_LLM_PROVIDER_ID = "google-gemini-free";
+
+const FREE_BUILTIN_LLM_PROVIDERS: readonly LlmProviderDefinition[] = [
+  {
+    id: "google-gemini-free",
+    kind: LLM_PROVIDER_KIND.FREE_BUILTIN,
+    requiresUserKey: false,
+    nameKey: "llm.provider.googleGeminiFree",
+    descriptionKey: "llm.provider.googleGeminiFreeDesc",
+    defaultModel: "gemini-2.0-flash",
+    recommended: true,
+  },
+  {
+    id: "groq-free",
+    kind: LLM_PROVIDER_KIND.FREE_BUILTIN,
+    requiresUserKey: false,
+    nameKey: "llm.provider.groqFree",
+    descriptionKey: "llm.provider.groqFreeDesc",
+    defaultModel: "llama-3.3-70b-versatile",
+  },
+  {
+    id: "openrouter-free",
+    kind: LLM_PROVIDER_KIND.FREE_BUILTIN,
+    requiresUserKey: false,
+    nameKey: "llm.provider.openrouterFree",
+    descriptionKey: "llm.provider.openrouterFreeDesc",
+    defaultModel: "meta-llama/llama-3.3-70b-instruct:free",
+  },
+];
 
 const BYOK_LLM_PROVIDERS: readonly LlmProviderDefinition[] = [
   {
@@ -118,6 +148,7 @@ const BYOK_LLM_PROVIDERS: readonly LlmProviderDefinition[] = [
 ];
 
 export const ALL_LLM_PROVIDERS: readonly LlmProviderDefinition[] = [
+  ...FREE_BUILTIN_LLM_PROVIDERS,
   ...BYOK_LLM_PROVIDERS,
 ];
 
@@ -125,14 +156,8 @@ const PROVIDER_BY_ID = new Map(
   ALL_LLM_PROVIDERS.map((provider) => [provider.id, provider]),
 );
 
-const LEGACY_FREE_PROVIDER_IDS: Record<string, string> = {
-  "google-gemini-free": "google-gemini",
-  "groq-free": "groq",
-  "openrouter-free": "openrouter",
-};
-
 export function resolveLlmProviderId(providerId: string): string {
-  return LEGACY_FREE_PROVIDER_IDS[providerId] ?? providerId;
+  return providerId;
 }
 
 export function isLlmProviderId(value: string): boolean {
@@ -151,8 +176,18 @@ export function getByokLlmProviders(): readonly LlmProviderDefinition[] {
   return BYOK_LLM_PROVIDERS;
 }
 
+export function getFreeBuiltinLlmProviders(): readonly LlmProviderDefinition[] {
+  return FREE_BUILTIN_LLM_PROVIDERS;
+}
+
 export function isByokLlmProvider(providerId: string): boolean {
-  return Boolean(getLlmProvider(providerId));
+  const provider = getLlmProvider(providerId);
+  return provider?.kind === LLM_PROVIDER_KIND.BYOK;
+}
+
+export function isFreeBuiltinLlmProvider(providerId: string): boolean {
+  const provider = getLlmProvider(providerId);
+  return provider?.kind === LLM_PROVIDER_KIND.FREE_BUILTIN;
 }
 
 export function getRecommendedLlmProvider(): LlmProviderDefinition {

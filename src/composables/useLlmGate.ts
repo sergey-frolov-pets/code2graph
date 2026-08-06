@@ -1,17 +1,31 @@
-import { getLlmProvider } from "@/constants/llm-providers";
+import { getLlmProvider, isFreeBuiltinLlmProvider } from "@/constants/llm-providers";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useLlmApiKeys } from "@/composables/useLlmApiKeys";
 import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
+import { useLlmProxyAvailability } from "@/composables/useLlmProxyAvailability";
 import { useLlmSettings } from "@/composables/useLlmSettings";
 import { useLocale } from "@/composables/useLocale";
+import { isLlmProxyConfigured } from "@/utils/llm-proxy";
 
-export type LlmGateFailureReason = "no_consent" | "no_key" | "provider_invalid";
+export type LlmGateFailureReason =
+  | "no_consent"
+  | "no_key"
+  | "no_proxy"
+  | "provider_invalid"
+  | "provider_unavailable";
 
-export type LlmGateSuccess = {
-  ok: true;
-  providerId: string;
-  apiKey: string;
-};
+export type LlmGateSuccess =
+  | {
+      ok: true;
+      mode: "proxy";
+      providerId: string;
+    }
+  | {
+      ok: true;
+      mode: "byok";
+      providerId: string;
+      apiKey: string;
+    };
 
 export type LlmGateFailure = {
   ok: false;
@@ -30,6 +44,8 @@ export function useLlmGate() {
   const { openLlmKeysGuide } = useLlmKeysGuide();
   const { llmProviderId, llmConsent } = useLlmSettings();
   const { getLlmApiKey, hasLlmApiKey } = useLlmApiKeys();
+  const { availableFreeProviderIds, refreshLlmProxyAvailability } =
+    useLlmProxyAvailability();
 
   async function promptOpenSettings(handlers?: LlmGateHandlers): Promise<void> {
     if (!handlers?.openSettings) {
@@ -73,6 +89,36 @@ export function useLlmGate() {
       return { ok: false, reason: "provider_invalid" };
     }
 
+    if (isFreeBuiltinLlmProvider(providerId)) {
+      if (!isLlmProxyConfigured()) {
+        await alert({
+          title: t("llm.gate.noProxyTitle"),
+          message: t("llm.gate.noProxyMessage"),
+          variant: "error",
+        });
+        await promptOpenSettings(handlers);
+        return { ok: false, reason: "no_proxy" };
+      }
+
+      await refreshLlmProxyAvailability();
+
+      if (!availableFreeProviderIds.value.includes(providerId)) {
+        await alert({
+          title: t("llm.gate.providerUnavailableTitle"),
+          message: t("llm.gate.providerUnavailableMessage"),
+          variant: "error",
+        });
+        await promptOpenSettings(handlers);
+        return { ok: false, reason: "provider_unavailable" };
+      }
+
+      return {
+        ok: true,
+        mode: "proxy",
+        providerId,
+      };
+    }
+
     if (!hasLlmApiKey(providerId)) {
       openLlmKeysGuide(providerId);
       await alert({
@@ -91,6 +137,7 @@ export function useLlmGate() {
 
     return {
       ok: true,
+      mode: "byok",
       providerId,
       apiKey,
     };
