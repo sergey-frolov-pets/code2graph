@@ -4,6 +4,7 @@ import {
   buildLlmSystemPrompt,
   LLM_TEST_USER_PROMPT,
 } from "@/services/llm/llm-prompts";
+import { proxyLlmChat } from "@/services/llm/proxy-client";
 import {
   callGeminiChat,
   callOpenAiCompatibleChat,
@@ -58,6 +59,15 @@ async function dispatchGateChat(
 ): Promise<LlmChatResult> {
   const provider = getLlmProvider(gate.providerId);
   const model = provider?.defaultModel ?? "unknown";
+
+  if (gate.mode === "proxy") {
+    const content = await proxyLlmChat(gate.providerId, messages, options);
+    return {
+      content,
+      providerId: gate.providerId,
+      model,
+    };
+  }
 
   const content = await dispatchByokChat(
     gate.providerId,

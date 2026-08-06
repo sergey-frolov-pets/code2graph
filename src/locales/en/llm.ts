@@ -10,10 +10,19 @@ export const llmMessages: LocaleMessages = {
   "llm.keysGuide.docsLink": "Provider documentation",
   "llm.provider.googleGemini": "Google Gemini",
   "llm.provider.googleGeminiDesc": "Key from Google AI Studio. Model: Gemini 2.0 Flash.",
+  "llm.provider.googleGeminiFree": "Google Gemini (no key)",
+  "llm.provider.googleGeminiFreeDesc":
+    "Free proxy via your puml-api server. The key is set on the server (GEMINI_API_KEY).",
   "llm.provider.groq": "Groq",
   "llm.provider.groqDesc": "Key from Groq console. Fast open models.",
+  "llm.provider.groqFree": "Groq (no key)",
+  "llm.provider.groqFreeDesc":
+    "Free proxy via puml-api. The key is set on the server (GROQ_API_KEY).",
   "llm.provider.openrouter": "OpenRouter",
   "llm.provider.openrouterDesc": "Key from OpenRouter. Model aggregator.",
+  "llm.provider.openrouterFree": "OpenRouter (no key)",
+  "llm.provider.openrouterFreeDesc":
+    "Free proxy via puml-api. The key is set on the server (OPENROUTER_API_KEY).",
   "llm.provider.mistral": "Mistral",
   "llm.provider.mistralDesc": "Key from Mistral console.",
   "llm.provider.deepseek": "DeepSeek",
@@ -28,6 +37,12 @@ export const llmMessages: LocaleMessages = {
   "llm.gate.noConsentMessage": "Enable consent in Settings → AI / LLM to send diagrams to a cloud LLM.",
   "llm.gate.noKeyTitle": "API key is missing",
   "llm.gate.noKeyMessage": "Create a key on the provider website and paste it in Settings → AI.",
+  "llm.gate.noProxyTitle": "puml-api server is not configured",
+  "llm.gate.noProxyMessage":
+    "Set the library server URL (puml-api) and credentials in Settings → Library.",
+  "llm.gate.providerUnavailableTitle": "Provider unavailable",
+  "llm.gate.providerUnavailableMessage":
+    "The puml-api server is unreachable or the provider key is not set on the server. Check the connection and environment variables.",
   "llm.gate.providerInvalidTitle": "Provider not found",
   "llm.gate.providerInvalidMessage": "Choose an AI provider in Settings.",
   "llm.gate.openSettingsTitle": "Open settings?",
