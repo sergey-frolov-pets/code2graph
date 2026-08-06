@@ -23,7 +23,9 @@ import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
 import { useLlmSettings } from "@/composables/useLlmSettings";
 import { useLocale } from "@/composables/useLocale";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
+import { useLibraryCredentials } from "@/composables/useLibraryCredentials";
 import { testLlmConnection } from "@/services/llm/llm-client";
+import { checkApiHealth } from "@/utils/diagram-api";
 
 defineProps<{
   open: boolean;
@@ -50,6 +52,13 @@ const emit = defineEmits<{
 
 const { locale, setLocale, t } = useLocale();
 const { libraryApiUrl, setLibraryApiUrl } = useLibraryApiUrl();
+const {
+  libraryApiUsername,
+  hasCredentials,
+  setUsername,
+  setPassword,
+  clearCredentials,
+} = useLibraryCredentials();
 const { openLlmKeysGuide } = useLlmKeysGuide();
 const {
   llmProviderId,
@@ -61,6 +70,12 @@ const {
 const { hasLlmApiKey, setLlmApiKey, clearLlmApiKey } = useLlmApiKeys();
 
 const libraryServerInput = ref(libraryApiUrl.value);
+const libraryUsernameInput = ref(libraryApiUsername.value);
+const libraryPasswordInput = ref("");
+const showLibraryPassword = ref(false);
+const isTestingLibrary = ref(false);
+const libraryTestOk = ref(false);
+const libraryTestMessage = ref("");
 const apiKeyInput = ref("");
 const showApiKey = ref(false);
 const apiKeyError = ref("");
@@ -70,6 +85,10 @@ const llmTestMessage = ref("");
 
 watch(libraryApiUrl, (value) => {
   libraryServerInput.value = value;
+});
+
+watch(libraryApiUsername, (value) => {
+  libraryUsernameInput.value = value;
 });
 
 watch(
@@ -83,6 +102,54 @@ watch(
 
 function onLibraryServerBlur(): void {
   setLibraryApiUrl(libraryServerInput.value);
+}
+
+function onLibraryUsernameBlur(): void {
+  setUsername(libraryUsernameInput.value);
+}
+
+function onLibraryPasswordSave(): void {
+  if (libraryPasswordInput.value) {
+    setPassword(libraryPasswordInput.value);
+    libraryPasswordInput.value = "";
+    showLibraryPassword.value = false;
+  }
+}
+
+function onLibraryCredentialsClear(): void {
+  clearCredentials();
+  libraryUsernameInput.value = "";
+  libraryPasswordInput.value = "";
+  showLibraryPassword.value = false;
+  libraryTestMessage.value = "";
+}
+
+async function onLibraryTestConnection(): Promise<void> {
+  onLibraryServerBlur();
+  onLibraryUsernameBlur();
+  onLibraryPasswordSave();
+
+  if (!libraryApiUrl.value) {
+    libraryTestOk.value = false;
+    libraryTestMessage.value = t("settings.libraryTestNoUrl");
+    return;
+  }
+
+  isTestingLibrary.value = true;
+  libraryTestMessage.value = "";
+
+  try {
+    const ok = await checkApiHealth();
+    libraryTestOk.value = ok;
+    libraryTestMessage.value = ok
+      ? t("settings.libraryTestSuccessDetail")
+      : t("settings.libraryTestFailedDetail");
+  } catch {
+    libraryTestOk.value = false;
+    libraryTestMessage.value = t("settings.libraryTestFailedDetail");
+  } finally {
+    isTestingLibrary.value = false;
+  }
 }
 
 const layoutOptions = Object.entries(LAYOUT_ENGINES).map(([label, value]) => ({
@@ -478,6 +545,85 @@ async function onTestLlmConnection(): Promise<void> {
         />
         <span class="settings-field__hint">{{ t("settings.libraryServerHint") }}</span>
       </label>
+
+      <label class="settings-field">
+        <span class="settings-field__label">{{ t("settings.libraryUsername") }}</span>
+        <input
+          v-model="libraryUsernameInput"
+          class="select"
+          type="text"
+          autocomplete="username"
+          :placeholder="t('settings.libraryUsernamePlaceholder')"
+          @blur="onLibraryUsernameBlur"
+          @keydown.enter="onLibraryUsernameBlur"
+        />
+      </label>
+
+      <label class="settings-field">
+        <span class="settings-field__label">{{ t("settings.libraryPassword") }}</span>
+        <div class="settings-api-key-row">
+          <input
+            v-model="libraryPasswordInput"
+            class="select"
+            :type="showLibraryPassword ? 'text' : 'password'"
+            autocomplete="new-password"
+            :placeholder="t('settings.libraryPasswordPlaceholder')"
+            @keydown.enter="onLibraryPasswordSave"
+          />
+          <button
+            class="btn"
+            type="button"
+            @click="showLibraryPassword = !showLibraryPassword"
+          >
+            {{ showLibraryPassword ? t("settings.llmApiKeyHide") : t("settings.llmApiKeyShow") }}
+          </button>
+        </div>
+        <span class="settings-field__hint">{{ t("settings.libraryPasswordHint") }}</span>
+        <div class="settings-api-key-actions">
+          <button class="btn" type="button" @click="onLibraryPasswordSave">
+            {{ t("settings.libraryPasswordSave") }}
+          </button>
+          <button
+            class="btn"
+            type="button"
+            :disabled="!hasCredentials && !libraryPasswordInput"
+            @click="onLibraryCredentialsClear"
+          >
+            {{ t("settings.libraryPasswordClear") }}
+          </button>
+        </div>
+        <span class="settings-field__hint">
+          {{
+            hasCredentials
+              ? t("settings.libraryCredentialsStatusSet")
+              : t("settings.libraryCredentialsStatusMissing")
+          }}
+        </span>
+      </label>
+
+      <div class="settings-field">
+        <button
+          class="btn"
+          type="button"
+          :disabled="isTestingLibrary || !libraryServerInput"
+          @click="onLibraryTestConnection"
+        >
+          {{
+            isTestingLibrary
+              ? t("settings.libraryTestRunning")
+              : t("settings.libraryTestConnection")
+          }}
+        </button>
+      </div>
+
+      <p
+        v-if="libraryTestMessage"
+        class="settings-test-result"
+        :class="libraryTestOk ? 'is-success' : 'is-error'"
+      >
+        {{ libraryTestOk ? t("settings.libraryTestSuccess") : t("settings.libraryTestFailed") }}:
+        {{ libraryTestMessage }}
+      </p>
     </div>
 
     <div class="settings-section">

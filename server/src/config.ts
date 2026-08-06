@@ -21,6 +21,16 @@ export const LLM_RATE_LIMIT_PER_MINUTE = Number(
   process.env.LLM_RATE_LIMIT_PER_MINUTE ?? 20,
 );
 
+export const LIBRARY_AUTH_USERNAME =
+  process.env.LIBRARY_AUTH_USERNAME?.trim() || undefined;
+
+export const LIBRARY_AUTH_PASSWORD =
+  process.env.LIBRARY_AUTH_PASSWORD?.trim() || undefined;
+
+export function isLibraryAuthEnabled(): boolean {
+  return Boolean(LIBRARY_AUTH_USERNAME && LIBRARY_AUTH_PASSWORD);
+}
+
 export const DIAGRAM_LANGUAGES = [
   "plantuml",
   "mermaid",

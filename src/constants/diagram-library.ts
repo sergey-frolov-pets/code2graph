@@ -20,6 +20,12 @@ export const LIBRARY_CACHE_KEY = "plantuml-smetana-library-synced-at";
 
 export const STORAGE_KEY_LIBRARY_API_URL = "plantuml-smetana-library-api-url";
 
+export const STORAGE_KEY_LIBRARY_API_USERNAME =
+  "plantuml-smetana-library-api-username";
+
+export const STORAGE_KEY_LIBRARY_API_PASSWORD =
+  "plantuml-smetana-library-api-password";
+
 export interface SectionDto {
   id: string;
   parentId: string | null;
