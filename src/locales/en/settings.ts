@@ -45,6 +45,11 @@ export const settingsMessages: LocaleMessages = {
   "settings.ai": "AI / LLM",
   "settings.llmProvider": "AI provider",
   "settings.llmRecommendedBadge": "recommended",
+  "settings.llmFreeBuiltinBadge": "no key",
+  "settings.llmFreeBuiltinHint":
+    "The provider key is stored on the puml-api server. Your personal API key is not required.",
+  "settings.llmProxyUnreachable":
+    "puml-api server is unreachable — no-key options are hidden. Check the URL, username, and password in Library settings.",
   "settings.llmGetApiKey": "Get API key from provider website",
   "settings.llmProviderDocs": "Documentation",
   "settings.llmApiKey": "API key",

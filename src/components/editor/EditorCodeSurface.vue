@@ -3,7 +3,7 @@ import { computed, nextTick, ref } from "vue";
 import { useLocale } from "@/composables/useLocale";
 import type { VisibleEditorLine } from "@/composables/editor/useEditorDisplayModel";
 import type { useEditorAutocomplete } from "@/composables/useEditorAutocomplete";
-import type { CompletionKind } from "@/utils/plantuml-autocomplete";
+import type { CompletionKind } from "@/utils/completion-types";
 import type { CodeFoldRegion } from "@/utils/code-folds";
 import { mergeDisplayTextIntoSource } from "@/utils/code-folds";
 import { isSnippetsHotkey } from "@/constants/snippets-settings";
@@ -15,6 +15,7 @@ const props = defineProps<{
   visibleEditorLines: VisibleEditorLine[];
   syntaxHighlightEnabled: boolean;
   autocompleteEnabled: boolean;
+  readOnly: boolean;
   errorLines: number[];
   autocomplete: ReturnType<typeof useEditorAutocomplete>;
 }>();
@@ -134,12 +135,16 @@ function onTextareaScroll(): void {
       ref="textareaRef"
       :value="displayText"
       class="code-editor__textarea"
-      :class="{ 'is-plain-text': !syntaxHighlightEnabled }"
+      :class="{
+        'is-plain-text': !syntaxHighlightEnabled,
+        'is-read-only': readOnly,
+      }"
       wrap="off"
       spellcheck="false"
       autocomplete="off"
       autocapitalize="off"
-      :placeholder="t('editor.placeholder')"
+      :readonly="readOnly"
+      :placeholder="readOnly ? t('editor.placeholderViewOnly') : t('editor.placeholder')"
       @input="onDisplayInput"
       @keydown="onTextareaKeydown"
       @keyup="onTextareaKeyup"

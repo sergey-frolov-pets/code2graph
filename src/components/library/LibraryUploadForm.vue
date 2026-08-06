@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useLocale } from "@/composables/useLocale";
-import { PUML_FILE_ACCEPT } from "@/utils/puml-files";
+import { DIAGRAM_FILE_ACCEPT } from "@/constants/diagram-formats";
 import { VISIBILITY_OPTIONS } from "@/constants/library-visibility";
 import type { DiagramVisibility } from "@/constants/diagram-library";
 import type { FlatSectionOption } from "@/shared/library/section-tree";
@@ -40,7 +40,7 @@ const { t } = useLocale();
     </p>
     <label class="settings-field">
       <span class="settings-field__label">{{ t("library.selectFile") }}</span>
-      <input type="file" :accept="PUML_FILE_ACCEPT" @change="emit('file-change', $event)" />
+      <input type="file" :accept="DIAGRAM_FILE_ACCEPT" @change="emit('file-change', $event)" />
       <span class="library-upload__file-name">
         {{ uploadFile?.name ?? t("library.noFile") }}
       </span>

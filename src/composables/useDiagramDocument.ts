@@ -1,7 +1,15 @@
 import { computed, ref, type Ref } from "vue";
+import {
+  getDiagramFormatDefinition,
+  type DiagramFormat,
+} from "@/constants/diagram-formats";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useLocale } from "@/composables/useLocale";
-import { savePumlSource, resolvePumlFileName } from "@/utils/puml-files";
+import { detectDiagramFormat } from "@/utils/diagram-format";
+import {
+  resolveDiagramFileName,
+  saveDiagramSource,
+} from "@/utils/diagram-files";
 import {
   consumeSharedLaunch,
   setupLaunchQueue,
@@ -9,6 +17,7 @@ import {
 
 export interface UseDiagramDocumentOptions {
   source: Ref<string>;
+  diagramFormat: Ref<DiagramFormat>;
   error: Ref<string>;
   syntaxErrorLines: Ref<number[]>;
   persistSettings: () => void;
@@ -17,17 +26,43 @@ export interface UseDiagramDocumentOptions {
 }
 
 export function useDiagramDocument(options: UseDiagramDocumentOptions) {
-  const { source, error, syntaxErrorLines, persistSettings, scheduleRender, clearHistory } =
-    options;
+  const {
+    source,
+    diagramFormat,
+    error,
+    syntaxErrorLines,
+    persistSettings,
+    scheduleRender,
+    clearHistory,
+  } = options;
   const { prompt } = useAppDialog();
   const { t } = useLocale();
 
   const loadedFileName = ref("diagram.puml");
-  const canSave = computed(() => Boolean(source.value.trim()));
+  const canSave = computed(() => {
+    const definition = getDiagramFormatDefinition(diagramFormat.value);
+    return Boolean(source.value.trim()) && definition.supportsSaveSource;
+  });
 
-  function applyLoadedSource(content: string, fileName: string): void {
+  function applyDiagramFormat(
+    content: string,
+    fileName: string,
+    format?: DiagramFormat,
+  ): void {
+    diagramFormat.value = format ?? detectDiagramFormat(content, fileName);
+    loadedFileName.value = resolveDiagramFileName(
+      fileName,
+      diagramFormat.value,
+    );
+  }
+
+  function applyLoadedSource(
+    content: string,
+    fileName: string,
+    format?: DiagramFormat,
+  ): void {
     source.value = content;
-    loadedFileName.value = fileName;
+    applyDiagramFormat(content, fileName, format);
     error.value = "";
     syntaxErrorLines.value = [];
     clearHistory();
@@ -36,7 +71,8 @@ export function useDiagramDocument(options: UseDiagramDocumentOptions) {
   }
 
   function onEditorCleared(): void {
-    loadedFileName.value = "diagram.puml";
+    diagramFormat.value = "plantuml";
+    loadedFileName.value = getDiagramFormatDefinition("plantuml").defaultFileName;
     syntaxErrorLines.value = [];
     error.value = "";
     clearHistory();
@@ -55,30 +91,32 @@ export function useDiagramDocument(options: UseDiagramDocumentOptions) {
     }
   }
 
-  async function savePuml(): Promise<void> {
+  async function saveDiagram(): Promise<void> {
     if (!canSave.value) {
       return;
     }
 
+    const definition = getDiagramFormatDefinition(diagramFormat.value);
     const fileName = await prompt({
-      title: t("app.savePuml"),
+      title: t("app.saveDiagram"),
       message: t("app.fileName"),
       value: loadedFileName.value,
       confirmLabel: t("app.save"),
-      placeholder: "diagram.puml",
+      placeholder: definition.defaultFileName,
     });
 
     if (fileName === null) {
       return;
     }
 
-    const resolvedName = resolvePumlFileName(fileName);
+    const resolvedName = resolveDiagramFileName(fileName, diagramFormat.value);
     loadedFileName.value = resolvedName;
-    savePumlSource(source.value, resolvedName);
+    saveDiagramSource(source.value, resolvedName, diagramFormat.value);
   }
 
   function onVersionRestore(content: string): void {
     source.value = content;
+    diagramFormat.value = detectDiagramFormat(content, loadedFileName.value);
     syntaxErrorLines.value = [];
     error.value = "";
     persistSettings();
@@ -91,7 +129,7 @@ export function useDiagramDocument(options: UseDiagramDocumentOptions) {
     applyLoadedSource,
     onEditorCleared,
     initializeIncomingSources,
-    savePuml,
+    savePuml: saveDiagram,
     onVersionRestore,
   };
 }

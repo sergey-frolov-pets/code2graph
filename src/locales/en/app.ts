@@ -28,6 +28,7 @@ export const appMessages: LocaleMessages = {
   "app.importError": "Import error",
   "app.exportError": "Export error",
   "app.savePuml": "Save .puml",
+  "app.saveDiagram": "Save file",
   "app.fileName": "File name",
   "app.ok": "OK",
   "app.wait": "Please wait…",

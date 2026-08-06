@@ -1,5 +1,9 @@
-import { onUnmounted, ref, watch, type Ref } from "vue";
+import { computed, onUnmounted, ref, watch, type Ref } from "vue";
 import { RENDER_DEBOUNCE_MS, type LayoutEngine } from "@/constants";
+import {
+  getDiagramFormatDefinition,
+  type DiagramFormat,
+} from "@/constants/diagram-formats";
 import {
   isOnlineRenderMode,
   type RenderMode,
@@ -7,14 +11,14 @@ import {
 import type { AppLocale } from "@/constants/i18n";
 import {
   isEngineReady,
-  renderPlantUmlToSvg,
   waitForEngineReady,
 } from "@/composables/usePlantUml";
-import { resolveLocalizedErrorMessage } from "@/utils/localized-app-error";
+import { renderDiagramToSvg } from "@/services/diagram-render";
 import {
-  preparePlantUmlSource,
-  splitSourceLines,
-} from "@/utils/plantuml-source";
+  isMermaidReady,
+  waitForMermaidReady,
+} from "@/services/mermaid/mermaid-engine";
+import { resolveLocalizedErrorMessage } from "@/utils/localized-app-error";
 
 type TranslateFn = (
   key: string,
@@ -23,6 +27,7 @@ type TranslateFn = (
 
 export interface UseDiagramRenderOptions {
   source: Ref<string>;
+  diagramFormat: Ref<DiagramFormat>;
   layout: Ref<LayoutEngine>;
   diagramDarkMode: Ref<boolean>;
   renderMode: Ref<RenderMode>;
@@ -32,8 +37,16 @@ export interface UseDiagramRenderOptions {
 }
 
 export function useDiagramRender(options: UseDiagramRenderOptions) {
-  const { source, layout, diagramDarkMode, renderMode, locale, t, onPersist } =
-    options;
+  const {
+    source,
+    diagramFormat,
+    layout,
+    diagramDarkMode,
+    renderMode,
+    locale,
+    t,
+    onPersist,
+  } = options;
 
   const svg = ref("");
   const error = ref("");
@@ -42,6 +55,10 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
   const engineStatus = ref(t("app.engineLoading"));
 
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const formatDefinition = computed(() =>
+    getDiagramFormatDefinition(diagramFormat.value),
+  );
 
   function updateOnlineEngineStatus(): void {
     if (!isOnlineRenderMode(renderMode.value)) {
@@ -54,10 +71,25 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
       : t("app.renderModeOnlineOffline");
   }
 
+  function isFormatEngineReady(format: DiagramFormat): boolean {
+    const definition = getDiagramFormatDefinition(format);
+    if (!definition.usesPlantUmlEngine) {
+      return format === "mermaid" ? isMermaidReady() : true;
+    }
+
+    if (isOnlineRenderMode(renderMode.value)) {
+      return navigator.onLine;
+    }
+
+    return isEngineReady();
+  }
+
   async function renderDiagram(): Promise<void> {
     if (!engineReady.value) {
-      error.value = isOnlineRenderMode(renderMode.value)
-        ? t("app.renderModeOnlineOffline")
+      error.value = formatDefinition.value.usesPlantUmlEngine
+        ? isOnlineRenderMode(renderMode.value)
+          ? t("app.renderModeOnlineOffline")
+          : t("app.engineNotReady")
         : t("app.engineNotReady");
       return;
     }
@@ -66,14 +98,14 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     error.value = "";
 
     try {
-      const prepared = await preparePlantUmlSource(source.value, layout.value);
-      const lines = splitSourceLines(prepared);
-      const result = await renderPlantUmlToSvg(
-        lines,
+      const result = await renderDiagramToSvg(
+        source.value,
+        diagramFormat.value,
         {
           dark: diagramDarkMode.value,
+          layout: layout.value,
+          renderMode: renderMode.value,
         },
-        renderMode.value,
       );
       svg.value = result;
     } catch (renderError) {
@@ -102,7 +134,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
   }
 
   function updateEngineStatusLabel(): void {
-    if (isOnlineRenderMode(renderMode.value)) {
+    if (formatDefinition.value.usesPlantUmlEngine && isOnlineRenderMode(renderMode.value)) {
       updateOnlineEngineStatus();
       return;
     }
@@ -112,7 +144,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
       : t("app.engineLoading");
   }
 
-  async function bootOfflineEngine(): Promise<void> {
+  async function bootOfflinePlantUmlEngine(): Promise<void> {
     try {
       await waitForEngineReady();
       engineReady.value = isEngineReady();
@@ -131,17 +163,55 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     }
   }
 
+  async function bootMermaidEngine(): Promise<void> {
+    try {
+      await waitForMermaidReady(diagramDarkMode.value);
+      engineReady.value = isMermaidReady();
+      engineStatus.value = engineReady.value
+        ? t("app.engineReady")
+        : t("app.error");
+      scheduleRender();
+    } catch (bootError) {
+      engineReady.value = false;
+      engineStatus.value = resolveLocalizedErrorMessage(
+        bootError,
+        t,
+        "app.engineLoadError",
+      );
+      error.value = engineStatus.value;
+    }
+  }
+
   async function bootEngine(): Promise<void> {
+    const format = diagramFormat.value;
+    const definition = getDiagramFormatDefinition(format);
+
+    if (!definition.usesPlantUmlEngine) {
+      if (format === "mermaid") {
+        await bootMermaidEngine();
+        return;
+      }
+
+      engineReady.value = true;
+      engineStatus.value = t("app.engineReady");
+      scheduleRender();
+      return;
+    }
+
     if (isOnlineRenderMode(renderMode.value)) {
       updateOnlineEngineStatus();
       scheduleRender();
       return;
     }
 
-    await bootOfflineEngine();
+    await bootOfflinePlantUmlEngine();
   }
 
   function onNetworkStatusChange(): void {
+    if (!formatDefinition.value.usesPlantUmlEngine) {
+      return;
+    }
+
     if (!isOnlineRenderMode(renderMode.value)) {
       return;
     }
@@ -152,7 +222,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     }
   }
 
-  watch([source, layout, diagramDarkMode, renderMode], () => {
+  watch([source, layout, diagramDarkMode, renderMode, diagramFormat], () => {
     onPersist?.();
     scheduleRender();
   });
@@ -162,6 +232,12 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
   });
 
   watch(renderMode, () => {
+    void bootEngine();
+  });
+
+  watch(diagramFormat, () => {
+    engineReady.value = isFormatEngineReady(diagramFormat.value);
+    updateEngineStatusLabel();
     void bootEngine();
   });
 

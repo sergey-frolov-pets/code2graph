@@ -1,6 +1,11 @@
 import type { AppLocale } from "@/constants/i18n";
-
-export const SAMPLE_DIAGRAM_IDS = [
+import {
+  findMermaidSampleId,
+  getMermaidSampleSource,
+  isMermaidSampleSource,
+  type MermaidSampleId,
+} from "@/constants/mermaid-sample-diagrams";
+export const PLANTUML_SAMPLE_IDS = [
   "classes",
   "sequence",
   "components",
@@ -9,7 +14,17 @@ export const SAMPLE_DIAGRAM_IDS = [
   "c4",
 ] as const;
 
-export type SampleDiagramId = (typeof SAMPLE_DIAGRAM_IDS)[number];
+export const SAMPLE_DIAGRAM_IDS = PLANTUML_SAMPLE_IDS;
+
+export type PlantUmlSampleId = (typeof PLANTUML_SAMPLE_IDS)[number];
+export type SampleDiagramId = PlantUmlSampleId;
+
+export type SampleSelection =
+  | { format: "plantuml"; id: PlantUmlSampleId }
+  | { format: "mermaid"; id: MermaidSampleId };
+
+export type { MermaidSampleId };
+export { MERMAID_SAMPLE_IDS } from "@/constants/mermaid-sample-diagrams";
 
 const DEFAULT_SOURCE_RU = `@startuml
 ' Движок раскладки Smetana (по умолчанию в vuePlantUML)
@@ -743,16 +758,27 @@ export function getDefaultSource(locale: AppLocale): string {
 }
 
 export function getSampleDiagramSource(
-  id: SampleDiagramId,
+  id: PlantUmlSampleId,
   locale: AppLocale,
 ): string {
   return SOURCES_BY_LOCALE[locale][id];
 }
 
+export function getSampleSource(
+  selection: SampleSelection,
+  locale: AppLocale,
+): string {
+  if (selection.format === "mermaid") {
+    return getMermaidSampleSource(selection.id, locale);
+  }
+
+  return getSampleDiagramSource(selection.id, locale);
+}
+
 export function findSampleDiagramId(
   source: string,
   locale: AppLocale,
-): SampleDiagramId | null {
+): PlantUmlSampleId | null {
   const entries = Object.entries(SOURCES_BY_LOCALE[locale]) as Array<
     [SampleDiagramId, string]
   >;
@@ -761,7 +787,7 @@ export function findSampleDiagramId(
 
 export function findSampleDiagramIdAnyLocale(
   source: string,
-): SampleDiagramId | null {
+): PlantUmlSampleId | null {
   for (const locale of Object.keys(SOURCES_BY_LOCALE) as AppLocale[]) {
     const id = findSampleDiagramId(source, locale);
     if (id) {
@@ -776,7 +802,7 @@ export function isDefaultSource(source: string): boolean {
 }
 
 export function isSampleDiagramSource(source: string): boolean {
-  return ALL_SAMPLE_SOURCES.has(source);
+  return ALL_SAMPLE_SOURCES.has(source) || isMermaidSampleSource(source);
 }
 
 export function translateSourceForLocale(
@@ -797,7 +823,51 @@ export function translateSourceForLocale(
     return getSampleDiagramSource(sampleId, toLocale);
   }
 
+  const mermaidSampleId = findMermaidSampleId(source, fromLocale);
+  if (mermaidSampleId) {
+    return getMermaidSampleSource(mermaidSampleId, toLocale);
+  }
+
   return null;
+}
+
+export function findAnySampleSelection(
+  source: string,
+  locale: AppLocale,
+): SampleSelection | null {
+  const plantUmlId = findSampleDiagramId(source, locale);
+  if (plantUmlId) {
+    return { format: "plantuml", id: plantUmlId };
+  }
+
+  const mermaidId = findMermaidSampleId(source, locale);
+  if (mermaidId) {
+    return { format: "mermaid", id: mermaidId };
+  }
+
+  return null;
+}
+
+export function findAnySampleSelectionAnyLocale(
+  source: string,
+): SampleSelection | null {
+  for (const locale of Object.keys(SOURCES_BY_LOCALE) as AppLocale[]) {
+    const selection = findAnySampleSelection(source, locale);
+    if (selection) {
+      return selection;
+    }
+  }
+  return null;
+}
+
+export function getDefaultFileNameForSample(
+  selection: SampleSelection,
+  label: string,
+): string {
+  if (selection.format === "mermaid") {
+    return `${label}.mmd`;
+  }
+  return `${label}.puml`;
 }
 
 /** @deprecated Use getDefaultSource(locale) */

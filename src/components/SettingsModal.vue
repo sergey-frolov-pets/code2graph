@@ -6,7 +6,7 @@ import {
   RENDER_MODES,
   type RenderMode,
 } from "@/constants/render-settings";
-import { ALL_LLM_PROVIDERS } from "@/constants/llm-providers";
+import { ALL_LLM_PROVIDERS, LLM_PROVIDER_KIND } from "@/constants/llm-providers";
 import {
   EDITOR_FONT_FAMILY_OPTIONS,
   EDITOR_FONT_SIZE_OPTIONS,
@@ -21,6 +21,7 @@ import {
 import { useLlmApiKeys } from "@/composables/useLlmApiKeys";
 import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
 import { useLlmSettings } from "@/composables/useLlmSettings";
+import { useLlmProxyAvailability } from "@/composables/useLlmProxyAvailability";
 import { useLocale } from "@/composables/useLocale";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import { useLibraryCredentials } from "@/composables/useLibraryCredentials";
@@ -28,7 +29,7 @@ import { testLlmConnection } from "@/services/llm/llm-client";
 import { checkApiHealth } from "@/utils/diagram-api";
 import { useLibraryAuth } from "@/composables/useLibraryAuth";
 
-defineProps<{
+const props = defineProps<{
   open: boolean;
   layout: LayoutEngine;
   renderMode: RenderMode;
@@ -71,6 +72,12 @@ const {
   setLlmConsent,
 } = useLlmSettings();
 const { hasLlmApiKey, setLlmApiKey, clearLlmApiKey } = useLlmApiKeys();
+const {
+  proxyConfigured,
+  proxyReachable,
+  availableFreeProviderIds,
+  refreshLlmProxyAvailability,
+} = useLlmProxyAvailability();
 
 const libraryServerInput = ref(libraryApiUrl.value);
 const libraryUsernameInput = ref(libraryApiUsername.value);
@@ -93,6 +100,15 @@ watch(libraryApiUrl, (value) => {
 watch(libraryApiUsername, (value) => {
   libraryUsernameInput.value = value;
 });
+
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen) {
+      refreshLlmProxyAvailability();
+    }
+  },
+);
 
 watch(
   () => llmProviderId.value,
@@ -160,6 +176,10 @@ async function onLibraryTestConnection(): Promise<void> {
     libraryTestMessage.value = ok
       ? t("settings.libraryTestSuccessDetail")
       : t("settings.libraryTestFailedDetail");
+
+    if (ok) {
+      await refreshLlmProxyAvailability();
+    }
   } catch {
     libraryTestOk.value = false;
     libraryTestMessage.value = t("settings.libraryTestFailedDetail");
@@ -191,15 +211,29 @@ const fontFamilyOptions = computed(() =>
   })),
 );
 
+const isActiveProviderByok = computed(
+  () => activeProvider.value?.kind === LLM_PROVIDER_KIND.BYOK,
+);
+
 const llmProviderOptions = computed(() =>
-  ALL_LLM_PROVIDERS.map((provider) => {
+  ALL_LLM_PROVIDERS.filter((provider) => {
+    if (provider.kind === LLM_PROVIDER_KIND.BYOK) {
+      return true;
+    }
+
+    return availableFreeProviderIds.value.includes(provider.id);
+  }).map((provider) => {
     const recommendedBadge = provider.recommended
       ? ` — ${t("settings.llmRecommendedBadge")}`
       : "";
+    const freeBadge =
+      provider.kind === LLM_PROVIDER_KIND.FREE_BUILTIN
+        ? ` — ${t("settings.llmFreeBuiltinBadge")}`
+        : "";
 
     return {
       id: provider.id,
-      label: `${t(provider.nameKey)}${recommendedBadge}`,
+      label: `${t(provider.nameKey)}${freeBadge}${recommendedBadge}`,
     };
   }),
 );
@@ -447,7 +481,15 @@ async function onTestLlmConnection(): Promise<void> {
         {{ t(activeProvider.descriptionKey) }}
       </p>
 
-      <p class="settings-field__label settings-key-status">
+      <p
+        v-if="proxyConfigured && !proxyReachable"
+        class="settings-field__hint settings-field__error"
+      >
+        {{ t("settings.llmProxyUnreachable") }}
+      </p>
+
+      <template v-if="isActiveProviderByok">
+        <p class="settings-field__label settings-key-status">
           <span
             class="settings-key-status__badge"
             :class="hasActiveApiKey ? 'is-set' : 'is-missing'"
@@ -520,6 +562,14 @@ async function onTestLlmConnection(): Promise<void> {
             {{ t("settings.llmKeysGuide") }}
           </button>
         </div>
+      </template>
+
+      <p
+        v-else-if="activeProvider"
+        class="settings-field__hint"
+      >
+        {{ t("settings.llmFreeBuiltinHint") }}
+      </p>
 
       <div class="settings-key-actions">
         <button

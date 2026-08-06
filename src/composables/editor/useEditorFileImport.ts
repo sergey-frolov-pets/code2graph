@@ -1,25 +1,29 @@
 import { computed, ref, type Ref } from "vue";
 import {
-  getSampleDiagramSource,
+  getDefaultFileNameForSample,
+  getSampleSource,
   isSampleDiagramSource,
-  type SampleDiagramId,
+  type SampleSelection,
 } from "@/constants/sample-diagrams";
+import type { DiagramFormat } from "@/constants/diagram-formats";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useLocale } from "@/composables/useLocale";
 import { resolveLocalizedErrorMessage } from "@/utils/localized-app-error";
-import {
-  loadPumlFromFile,
-  resolvePumlFileName,
-} from "@/utils/puml-files";
+import { loadDiagramFromFile, resolveDiagramFileName } from "@/utils/diagram-files";
 
 export function useEditorFileImport(options: {
   source: Ref<string>;
+  diagramFormat: Ref<DiagramFormat>;
   resetFolds: () => void;
-  onFileLoaded: (payload: { content: string; fileName: string }) => void;
+  onFileLoaded: (payload: {
+    content: string;
+    fileName: string;
+    format: DiagramFormat;
+  }) => void;
   onImportError: (message: string) => void;
   onCleared: () => void;
 }) {
-  const { source, resetFolds, onFileLoaded, onImportError, onCleared } =
+  const { source, diagramFormat, resetFolds, onFileLoaded, onImportError, onCleared } =
     options;
 
   const { confirm } = useAppDialog();
@@ -36,9 +40,10 @@ export function useEditorFileImport(options: {
 
   async function importFile(file: File): Promise<void> {
     try {
-      const loaded = await loadPumlFromFile(file);
+      const loaded = await loadDiagramFromFile(file);
       resetFolds();
       source.value = loaded.content;
+      diagramFormat.value = loaded.format;
       onFileLoaded(loaded);
     } catch (importError) {
       onImportError(
@@ -80,18 +85,29 @@ export function useEditorFileImport(options: {
     await importFile(file);
   }
 
-  function loadSample(id: SampleDiagramId): void {
-    const sample = getSampleDiagramSource(id, locale.value);
+  function loadSample(selection: SampleSelection): void {
+    const sample = getSampleSource(selection, locale.value);
+    const labelKey =
+      selection.format === "mermaid"
+        ? `samples.mermaid.${selection.id}`
+        : `samples.plantuml.${selection.id}`;
+
     resetFolds();
     source.value = sample;
+    diagramFormat.value = selection.format;
     onFileLoaded({
       content: sample,
-      fileName: resolvePumlFileName(`${t(`samples.${id}`)}.puml`),
+      fileName: resolveDiagramFileName(
+        getDefaultFileNameForSample(selection, t(labelKey)),
+        selection.format,
+      ),
+      format: selection.format,
     });
   }
 
   function clearEditor(): void {
     source.value = "";
+    diagramFormat.value = "plantuml";
     resetFolds();
     onCleared();
   }

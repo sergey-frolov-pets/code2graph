@@ -31,7 +31,12 @@ import {
   updateLocalDiagram,
   updateLocalSection,
 } from "@/utils/diagram-store";
-import { assertPumlFileSize, readFileAsText as readPumlFile } from "@/utils/puml-files";
+import { getDiagramFormatDefinition } from "@/constants/diagram-formats";
+import { detectDiagramFormat } from "@/utils/diagram-format";
+import {
+  assertDiagramFileSize,
+  readFileAsText,
+} from "@/utils/diagram-files";
 import type { LibraryCatalog } from "./useLibraryCatalog";
 import type { LibrarySync } from "./useLibrarySync";
 
@@ -231,7 +236,7 @@ export function useLibraryMutations(
       visibility?: DiagramVisibility;
     },
   ): Promise<DiagramDto> {
-    assertPumlFileSize(file);
+    assertDiagramFileSize(file);
 
     if (catalog.shouldUseServer.value) {
       try {
@@ -247,11 +252,12 @@ export function useLibraryMutations(
       }
     }
 
-    const content = await readPumlFile(file);
+    const content = await readFileAsText(file);
+    const detectedFormat = detectDiagramFormat(content, file.name);
     const tags = metadata.tags ?? [];
     const title =
       metadata.title?.trim() ||
-      file.name.replace(/\.(puml|plantuml|txt)$/i, "") ||
+      file.name.replace(/\.(puml|plantuml|txt|mmd|mermaid|graphml)$/i, "") ||
       "Diagram";
 
     return addDiagram({
@@ -259,7 +265,8 @@ export function useLibraryMutations(
       description: metadata.description?.trim() ?? "",
       tags,
       language:
-        (metadata.language as CreateDiagramPayload["language"]) ?? "plantuml",
+        (metadata.language as CreateDiagramPayload["language"]) ??
+        getDiagramFormatDefinition(detectedFormat).language,
       sectionId: metadata.sectionId ?? null,
       source: content,
       fileName: file.name,
