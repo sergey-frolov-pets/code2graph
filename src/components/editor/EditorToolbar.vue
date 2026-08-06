@@ -7,9 +7,11 @@ import TooltipWrap from "@/components/TooltipWrap.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
 import { useLocale } from "@/composables/useLocale";
 import {
-  SAMPLE_DIAGRAM_IDS,
-  getSampleDiagramSource,
-  type SampleDiagramId,
+  MERMAID_SAMPLE_IDS,
+  PLANTUML_SAMPLE_IDS,
+  type MermaidSampleId,
+  type PlantUmlSampleId,
+  type SampleSelection,
 } from "@/constants/sample-diagrams";
 import type { DiagramFormatDefinition } from "@/constants/diagram-formats";
 import { SNIPPETS_KEYBOARD_SHORTCUT } from "@/constants/snippets-settings";
@@ -38,17 +40,23 @@ const emit = defineEmits<{
   redo: [];
   clear: [];
   toggleSnippets: [];
-  loadSample: [id: SampleDiagramId];
+  loadSample: [selection: SampleSelection];
   toggleFullscreen: [];
 }>();
 
-const { t, locale } = useLocale();
+const { t } = useLocale();
 
-const sampleOptions = computed(() =>
-  SAMPLE_DIAGRAM_IDS.map((id) => ({
-    id,
-    label: t(`samples.${id}`),
-    source: getSampleDiagramSource(id, locale.value),
+const plantUmlSampleOptions = computed(() =>
+  PLANTUML_SAMPLE_IDS.map((id) => ({
+    value: `plantuml:${id}`,
+    label: t(`samples.plantuml.${id}`),
+  })),
+);
+
+const mermaidSampleOptions = computed(() =>
+  MERMAID_SAMPLE_IDS.map((id) => ({
+    value: `mermaid:${id}`,
+    label: t(`samples.mermaid.${id}`),
   })),
 );
 
@@ -71,6 +79,42 @@ const openFileLabel = computed(() => {
   }
   return t("editor.openPuml");
 });
+
+function parseSampleSelection(value: string): SampleSelection | null {
+  const separatorIndex = value.indexOf(":");
+  if (separatorIndex < 0) {
+    return null;
+  }
+
+  const format = value.slice(0, separatorIndex);
+  const id = value.slice(separatorIndex + 1);
+
+  if (
+    format === "plantuml" &&
+    (PLANTUML_SAMPLE_IDS as readonly string[]).includes(id)
+  ) {
+    return { format: "plantuml", id: id as PlantUmlSampleId };
+  }
+
+  if (
+    format === "mermaid" &&
+    (MERMAID_SAMPLE_IDS as readonly string[]).includes(id)
+  ) {
+    return { format: "mermaid", id: id as MermaidSampleId };
+  }
+
+  return null;
+}
+
+function onSampleChange(event: Event): void {
+  const value = (event.target as HTMLSelectElement).value;
+  const selection = parseSampleSelection(value);
+  if (!selection) {
+    return;
+  }
+  emit("loadSample", selection);
+  (event.target as HTMLSelectElement).value = "";
+}
 </script>
 
 <template>
@@ -103,7 +147,7 @@ const openFileLabel = computed(() => {
         :disabled="!canSave"
         @click="emit('savePuml')"
       >
-        <FileBadgeIcon :format="formatDefinition.id === 'mermaid' ? 'PUML' : 'PUML'" />
+        <FileBadgeIcon format="PUML" />
       </IconButton>
       <IconButton
         v-if="formatDefinition.editable"
@@ -170,21 +214,27 @@ const openFileLabel = computed(() => {
           <select
             class="select sample-select"
             :title="t('editor.samplesTooltip')"
-            @change="
-              emit(
-                'loadSample',
-                ($event.target as HTMLSelectElement).value as SampleDiagramId,
-              )
-            "
+            @change="onSampleChange"
           >
             <option value="" selected disabled>{{ t("editor.samples") }}</option>
-            <option
-              v-for="sample in sampleOptions"
-              :key="sample.id"
-              :value="sample.id"
-            >
-              {{ sample.label }}
-            </option>
+            <optgroup :label="t('editor.samplesPlantUml')">
+              <option
+                v-for="sample in plantUmlSampleOptions"
+                :key="sample.value"
+                :value="sample.value"
+              >
+                {{ sample.label }}
+              </option>
+            </optgroup>
+            <optgroup :label="t('editor.samplesMermaid')">
+              <option
+                v-for="sample in mermaidSampleOptions"
+                :key="sample.value"
+                :value="sample.value"
+              >
+                {{ sample.label }}
+              </option>
+            </optgroup>
           </select>
         </label>
       </TooltipWrap>

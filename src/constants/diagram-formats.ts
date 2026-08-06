@@ -54,7 +54,7 @@ export const DIAGRAM_FORMAT_DEFINITIONS: Record<
     supportsSyntaxValidation: false,
     supportsAiPatch: false,
     supportsSnippets: false,
-    supportsSamples: false,
+    supportsSamples: true,
     supportsSaveSource: true,
     usesPlantUmlEngine: false,
   },

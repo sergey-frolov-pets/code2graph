@@ -14,7 +14,7 @@ import EditorCodeSurface from "@/components/editor/EditorCodeSurface.vue";
 import EditorFoldRegionsModal from "@/components/editor/EditorFoldRegionsModal.vue";
 import { useLocale } from "@/composables/useLocale";
 import type { EditorFontSize } from "@/constants/editor-settings";
-import type { SampleDiagramId } from "@/constants/sample-diagrams";
+import type { SampleSelection } from "@/constants/sample-diagrams";
 import {
   DIAGRAM_FILE_ACCEPT,
   getDiagramFormatDefinition,
@@ -68,7 +68,9 @@ const effectiveSyntaxHighlight = computed(
   () => props.syntaxHighlightEnabled && diagramFormat.value === "plantuml",
 );
 const effectiveAutocomplete = computed(
-  () => props.autocompleteEnabled && diagramFormat.value === "plantuml",
+  () =>
+    props.autocompleteEnabled &&
+    (diagramFormat.value === "plantuml" || diagramFormat.value === "mermaid"),
 );
 
 const gutterComponentRef = ref<InstanceType<typeof EditorCodeGutter> | null>(
@@ -187,6 +189,7 @@ const { updateSelectionState, requestAiPatch, insertSnippetAtCursor } =
 
 const autocomplete = useEditorAutocomplete({
   source,
+  diagramFormat,
   folds,
   textareaRef,
   editorFontSize: toRef(props, "editorFontSize"),
@@ -274,7 +277,7 @@ onUnmounted(() => {
       @redo="emit('redo')"
       @clear="requestClear"
       @toggle-snippets="snippetsOpen = !snippetsOpen"
-      @load-sample="loadSample($event as SampleDiagramId)"
+      @load-sample="loadSample($event as SampleSelection)"
       @toggle-fullscreen="isFullscreen = !isFullscreen"
     />
 

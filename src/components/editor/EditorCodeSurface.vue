@@ -3,7 +3,7 @@ import { computed, nextTick, ref } from "vue";
 import { useLocale } from "@/composables/useLocale";
 import type { VisibleEditorLine } from "@/composables/editor/useEditorDisplayModel";
 import type { useEditorAutocomplete } from "@/composables/useEditorAutocomplete";
-import type { CompletionKind } from "@/utils/plantuml-autocomplete";
+import type { CompletionKind } from "@/utils/completion-types";
 import type { CodeFoldRegion } from "@/utils/code-folds";
 import { mergeDisplayTextIntoSource } from "@/utils/code-folds";
 import { isSnippetsHotkey } from "@/constants/snippets-settings";
