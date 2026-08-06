@@ -29,6 +29,7 @@ const emit = defineEmits<{
   openFile: [];
   openVersions: [];
   savePuml: [];
+  saveToLibrary: [];
   aiPatch: [];
   validateSyntax: [];
   undo: [];
@@ -74,6 +75,13 @@ const validateLabel = computed(() =>
         @click="emit('savePuml')"
       >
         <FileBadgeIcon format="PUML" />
+      </IconButton>
+      <IconButton
+        :label="t('editor.saveToLibrary')"
+        :disabled="!canSave"
+        @click="emit('saveToLibrary')"
+      >
+        <ActionIcon name="library" />
       </IconButton>
       <IconButton
         :label="t('editor.aiPatch')"

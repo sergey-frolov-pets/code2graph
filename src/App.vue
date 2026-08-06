@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import AboutModal from "@/components/AboutModal.vue";
 import AppDialogHost from "@/components/AppDialogHost.vue";
 import DiagramVersionsModal from "@/components/DiagramVersionsModal.vue";
 import DiagramEditor from "@/components/DiagramEditor.vue";
 import DiagramLibraryModal from "@/components/DiagramLibraryModal.vue";
+import SaveToLibraryModal from "@/components/SaveToLibraryModal.vue";
 import DiagramPreview from "@/components/DiagramPreview.vue";
 import AppHeader from "@/components/layout/AppHeader.vue";
 import AppStatusBar from "@/components/layout/AppStatusBar.vue";
@@ -17,6 +18,7 @@ import { useAiSourceApply } from "@/composables/useAiSourceApply";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useAppModals } from "@/composables/useAppModals";
 import { useDiagramDocument } from "@/composables/useDiagramDocument";
+import { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import { useDiagramExport } from "@/composables/useDiagramExport";
 import { useDiagramRender } from "@/composables/useDiagramRender";
 import { useEditorHistory } from "@/composables/useEditorHistory";
@@ -25,6 +27,8 @@ import { useLocale } from "@/composables/useLocale";
 import { usePersistedSettings } from "@/composables/usePersistedSettings";
 import { useSyntaxValidation } from "@/composables/useSyntaxValidation";
 
+const isSaveToLibraryModalOpen = ref(false);
+const linkedLibraryDiagramId = ref<string | null>(null);
 const { alert } = useAppDialog();
 const { t, locale } = useLocale();
 const {
@@ -157,9 +161,29 @@ function applySourceRedo(): void {
   scheduleRender();
 }
 
-function onFileLoaded(payload: { content: string; fileName: string }): void {
+function onFileLoaded(payload: {
+  content: string;
+  fileName: string;
+  diagramId?: string;
+}): void {
   applyLoadedSource(payload.content, payload.fileName);
+  linkedLibraryDiagramId.value = payload.diagramId ?? null;
 }
+
+function onEditorFileLoaded(payload: { content: string; fileName: string }): void {
+  onFileLoaded(payload);
+}
+
+function openSaveToLibraryModal(): void {
+  void useDiagramLibrary().refresh();
+  isSaveToLibraryModalOpen.value = true;
+}
+
+function onEditorClearedWithLink(): void {
+  linkedLibraryDiagramId.value = null;
+  onEditorCleared();
+}
+
 
 function onImportError(message: string): void {
   void alert({
@@ -207,12 +231,13 @@ onMounted(() => {
         :is-rendering="isRendering"
         :can-undo="canUndo"
         :can-redo="canRedo"
-        @file-loaded="onFileLoaded"
+        @file-loaded="onEditorFileLoaded"
         @import-error="onImportError"
         @save-puml="savePuml"
+        @save-to-library="openSaveToLibraryModal"
         @open-versions="openVersionsModal"
         @validate-syntax="runSyntaxValidation"
-        @cleared="onEditorCleared"
+        @cleared="onEditorClearedWithLink"
         @undo="applySourceUndo"
         @redo="applySourceRedo"
         @ai-patch="onAiPatchRequestOpen"
@@ -258,6 +283,14 @@ onMounted(() => {
       :open="isLibraryModalOpen"
       @close="isLibraryModalOpen = false"
       @open-diagram="onFileLoaded"
+    />
+
+    <SaveToLibraryModal
+      :open="isSaveToLibraryModalOpen"
+      :source="source"
+      :file-name="loadedFileName"
+      :linked-diagram-id="linkedLibraryDiagramId"
+      @close="isSaveToLibraryModalOpen = false"
     />
 
     <SettingsModal

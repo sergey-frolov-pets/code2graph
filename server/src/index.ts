@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { libraryAuthMiddleware } from "./auth.js";
 import { SERVER_PORT } from "./config.js";
 import { getDb } from "./db.js";
 import { diagramsRouter, sectionsRouter } from "./routes/library.js";
@@ -13,16 +14,22 @@ app.use(
   cors({
     origin: "*",
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
-app.get("/api/health", (context) => {
+const protectedApi = new Hono();
+protectedApi.use("*", libraryAuthMiddleware);
+
+protectedApi.get("/health", (context) => {
   return context.json({ ok: true, service: "vueplantuml-library-api" });
 });
 
-app.route("/api/sections", sectionsRouter);
-app.route("/api/diagrams", diagramsRouter);
-app.route("/api/llm", llmRouter);
+protectedApi.route("/sections", sectionsRouter);
+protectedApi.route("/diagrams", diagramsRouter);
+protectedApi.route("/llm", llmRouter);
+
+app.route("/api", protectedApi);
 
 getDb();
 

@@ -62,6 +62,18 @@
   margin-top: 10px;
 }
 
+.library-target {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.library-target__btn.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .library-modes__btn {
   width: 36px;
   min-width: 36px;

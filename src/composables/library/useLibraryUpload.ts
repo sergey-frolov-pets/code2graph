@@ -1,6 +1,7 @@
 import { computed, ref, type Ref } from "vue";
 import { MAX_PUML_FILE_BYTES } from "@/constants/diagram-library";
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
+import { parseTagsInput } from "@/utils/library-tags";
 import type { LibraryTab } from "./useLibraryBrowseFlow";
 
 type DiagramLibrary = ReturnType<typeof useDiagramLibrary>;
@@ -23,6 +24,8 @@ export function useLibraryUpload(options: {
   } = options;
 
   const uploadTitle = ref("");
+  const uploadDescription = ref("");
+  const uploadTags = ref("");
   const uploadSectionId = ref("");
   const uploadFile = ref<File | null>(null);
   const isUploading = ref(false);
@@ -63,9 +66,13 @@ export function useLibraryUpload(options: {
     try {
       await library.addDiagramFromFile(uploadFile.value, {
         title: uploadTitle.value.trim() || undefined,
+        description: uploadDescription.value.trim() || undefined,
+        tags: parseTagsInput(uploadTags.value),
         sectionId: uploadSectionId.value || null,
       });
       uploadTitle.value = "";
+      uploadDescription.value = "";
+      uploadTags.value = "";
       uploadSectionId.value = selectedSectionId.value ?? "";
       uploadFile.value = null;
       activeTab.value = "browse";
@@ -84,6 +91,8 @@ export function useLibraryUpload(options: {
 
   return {
     uploadTitle,
+    uploadDescription,
+    uploadTags,
     uploadSectionId,
     uploadFile,
     isUploading,

@@ -4,9 +4,11 @@ import type {
   DiagramDto,
   DiagramListItemDto,
   SectionDto,
+  UpdateDiagramPayload,
   UpdateSectionPayload,
 } from "@/constants/diagram-library";
 import { getLibraryApiBaseUrl } from "@/config/library-api";
+import { buildLibraryAuthHeader } from "@/config/library-credentials";
 
 export class DiagramApiError extends Error {
   readonly status: number;
@@ -25,6 +27,17 @@ function resolveApiBaseUrl(baseUrl?: string): string {
   }
 
   return resolved;
+}
+
+function buildRequestHeaders(init?: RequestInit): Headers {
+  const headers = new Headers(init?.headers);
+  const authHeader = buildLibraryAuthHeader();
+
+  for (const [name, value] of Object.entries(authHeader)) {
+    headers.set(name, value);
+  }
+
+  return headers;
 }
 
 async function parseError(response: Response): Promise<string> {
@@ -46,7 +59,10 @@ async function requestJson<T>(
   baseUrl?: string,
 ): Promise<T> {
   const apiBaseUrl = resolveApiBaseUrl(baseUrl);
-  const response = await fetch(`${apiBaseUrl}${path}`, init);
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    ...init,
+    headers: buildRequestHeaders(init),
+  });
 
   if (!response.ok) {
     throw new DiagramApiError(await parseError(response), response.status);
@@ -194,6 +210,22 @@ export async function uploadDiagramFile(
   );
 }
 
+export async function updateDiagram(
+  diagramId: string,
+  payload: UpdateDiagramPayload,
+  baseUrl?: string,
+): Promise<DiagramDto> {
+  return requestJson(
+    `/diagrams/${diagramId}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    baseUrl,
+  );
+}
+
 export async function deleteDiagram(
   diagramId: string,
   baseUrl?: string,
@@ -208,7 +240,9 @@ export async function checkApiHealth(baseUrl?: string): Promise<boolean> {
   }
 
   try {
-    const response = await fetch(`${resolved}/health`);
+    const response = await fetch(`${resolved}/health`, {
+      headers: buildRequestHeaders(),
+    });
     return response.ok;
   } catch {
     return false;

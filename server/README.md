@@ -28,6 +28,12 @@ npm run dev
 | `GROQ_API_KEY` | Ключ Groq для `groq-free` | — |
 | `OPENROUTER_API_KEY` | Ключ OpenRouter для `openrouter-free` | — |
 | `LLM_RATE_LIMIT_PER_MINUTE` | Лимит запросов LLM на IP | `20` |
+| `LIBRARY_AUTH_USERNAME` | Логин Basic Auth для API | — |
+| `LIBRARY_AUTH_PASSWORD` | Пароль Basic Auth для API | — |
+
+Если `LIBRARY_AUTH_USERNAME` и `LIBRARY_AUTH_PASSWORD` заданы, все `/api/*` endpoints требуют заголовок `Authorization: Basic ...`. Без них API открыт (только для локальной разработки).
+
+Подробная инструкция развёртывания на VPS: `docs/LIBRARY_DEPLOY.md`.
 
 Минимум для free Gemini (рекомендованный default в приложении):
 
@@ -62,6 +68,8 @@ Body:
 ## Настройка в приложении
 
 **Настройки → Библиотека → Адрес сервера:** `http://localhost:3001` (или ваш хост).
+
+**Настройки → Библиотека → Логин и пароль:** учётные данные Basic Auth (если заданы на сервере).
 
 **Настройки → AI / LLM:** провайдер `Google Gemini (без ключа)` + consent.
 

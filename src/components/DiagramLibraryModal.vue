@@ -11,6 +11,7 @@ import LibraryUploadForm from "@/components/library/LibraryUploadForm.vue";
 import { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import { useLocale } from "@/composables/useLocale";
+import { useLibraryTarget } from "@/config/library-target";
 import { useAppDialog } from "@/composables/useAppDialog";
 import {
   useLibraryBrowseFlow,
@@ -28,12 +29,15 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
-  "open-diagram": [payload: { content: string; fileName: string }];
+  "open-diagram": [
+    payload: { content: string; fileName: string; diagramId?: string },
+  ];
 }>();
 
 const { t } = useLocale();
 const { confirm, prompt } = useAppDialog();
 const { libraryApiUrl } = useLibraryApiUrl();
+const { libraryTarget, canUseOnline, setLibraryTarget } = useLibraryTarget();
 
 const library = useDiagramLibrary();
 const {
@@ -130,12 +134,17 @@ onSectionPickRef.value = onSectionPick;
 const {
   transferSections,
   transferDiagrams,
+  serverTransferSections,
+  serverTransferDiagrams,
+  canSyncOnline,
   importBundle,
   isTransferProcessing,
   loadTransferData,
   onExportSelection,
   onImportFile,
   onImportSelection,
+  onPushToServer,
+  onPullFromServer,
   resetImportBundle,
 } = useLibraryTransferHandlers({
   library,
@@ -149,6 +158,8 @@ onTransferRefreshRef.value = () => loadTransferData();
 
 const {
   uploadTitle,
+  uploadDescription,
+  uploadTags,
   uploadSectionId,
   uploadFile,
   isUploading,
@@ -166,14 +177,24 @@ const {
 });
 
 const statusHint = computed(() => {
-  if (isLocalMode.value) return t("library.localMode");
+  if (libraryTarget.value === "online" && !libraryApiUrl.value) {
+    return t("library.configureServerHint");
+  }
+  if (isLocalMode.value) {
+    return t("library.localModeActive");
+  }
   if (apiAvailable.value) {
-    return t("library.serverMode", { url: libraryApiUrl.value });
+    return t("library.onlineModeActive", { url: libraryApiUrl.value });
   }
   if (usingCache.value) return t("library.offlineCache");
   if (isOnline.value) return t("library.apiUnavailable");
   return t("library.offlineCache");
 });
+
+function onTargetChange(target: "local" | "online"): void {
+  setLibraryTarget(target);
+  void library.refresh();
+}
 
 function switchTab(tab: LibraryTab): void {
   activeTab.value = tab;
@@ -214,6 +235,10 @@ watch(tagFilter, () => void library.searchDiagrams());
 watch(libraryApiUrl, () => {
   if (props.open) void library.refresh();
 });
+
+watch(libraryTarget, () => {
+  if (props.open) void library.refresh();
+});
 </script>
 
 <template>
@@ -245,6 +270,25 @@ watch(libraryApiUrl, () => {
         </div>
 
         <p v-if="showModeTabs" class="library-header__hint">{{ statusHint }}</p>
+
+        <div v-if="showModeTabs && canUseOnline" class="library-target">
+          <button
+            class="btn library-target__btn"
+            type="button"
+            :class="{ 'is-active': libraryTarget === 'local' }"
+            @click="onTargetChange('local')"
+          >
+            {{ t("library.targetLocal") }}
+          </button>
+          <button
+            class="btn library-target__btn"
+            type="button"
+            :class="{ 'is-active': libraryTarget === 'online' }"
+            @click="onTargetChange('online')"
+          >
+            {{ t("library.targetOnline") }}
+          </button>
+        </div>
 
         <nav
           v-if="showModeTabs"
@@ -325,6 +369,8 @@ watch(libraryApiUrl, () => {
         <LibraryUploadForm
           v-else-if="activeTab === 'upload'"
           v-model:upload-title="uploadTitle"
+          v-model:upload-description="uploadDescription"
+          v-model:upload-tags="uploadTags"
           v-model:upload-section-id="uploadSectionId"
           :flat-section-options="flatSectionOptions"
           :upload-file="uploadFile"
@@ -338,11 +384,16 @@ watch(libraryApiUrl, () => {
           v-else-if="activeTab === 'transfer'"
           :sections="transferSections"
           :diagrams="transferDiagrams"
+          :server-sections="serverTransferSections"
+          :server-diagrams="serverTransferDiagrams"
+          :can-sync-online="canSyncOnline"
           :import-bundle="importBundle"
           :is-processing="isTransferProcessing"
           @export="onExportSelection($event)"
           @import="onImportSelection($event)"
           @load-import-file="onImportFile($event)"
+          @push-to-server="onPushToServer($event)"
+          @pull-from-server="onPullFromServer($event)"
         />
       </div>
     </div>

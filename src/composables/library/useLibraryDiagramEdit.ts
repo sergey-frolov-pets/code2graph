@@ -1,5 +1,6 @@
 import { ref, type Ref } from "vue";
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
+import { parseTagsInput } from "@/utils/library-tags";
 import type { BrowseStep } from "./useLibraryBrowseFlow";
 
 type DiagramLibrary = ReturnType<typeof useDiagramLibrary>;
@@ -9,7 +10,11 @@ export function useLibraryDiagramEdit(options: {
   uploadError: Ref<string>;
   browseStep: Ref<BrowseStep>;
   t: (key: string, params?: Record<string, string | number>) => string;
-  onOpenDiagram: (payload: { content: string; fileName: string }) => void;
+  onOpenDiagram: (payload: {
+    content: string;
+    fileName: string;
+    diagramId?: string;
+  }) => void;
   onClose: () => void;
 }) {
   const { library, uploadError, browseStep, t, onOpenDiagram, onClose } =
@@ -44,10 +49,7 @@ export function useLibraryDiagramEdit(options: {
     isSaving.value = true;
     uploadError.value = "";
     try {
-      const tags = editTags.value
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean);
+      const tags = parseTagsInput(editTags.value);
       await library.updateDiagram(library.selectedDiagram.value.id, {
         title: editTitle.value.trim(),
         description: editDescription.value,
@@ -68,6 +70,7 @@ export function useLibraryDiagramEdit(options: {
     onOpenDiagram({
       content: library.selectedDiagram.value.source,
       fileName: library.selectedDiagram.value.fileName,
+      diagramId: library.selectedDiagram.value.id,
     });
     onClose();
   }

@@ -1,5 +1,6 @@
 import type { LlmChatMessage, LlmChatOptions } from "@/services/llm/llm-types";
 import { LlmClientError } from "@/services/llm/llm-types";
+import { buildLibraryAuthHeader } from "@/config/library-credentials";
 import { resolveLlmChatUrl } from "@/utils/llm-proxy";
 
 export async function proxyLlmChat(
@@ -19,6 +20,7 @@ export async function proxyLlmChat(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...buildLibraryAuthHeader(),
     },
     body: JSON.stringify({
       providerId,

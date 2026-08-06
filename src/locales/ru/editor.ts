@@ -34,6 +34,7 @@ export const editorMessages: LocaleMessages = {
   "editor.regions.remove": "Удалить интервал",
   "editor.regions.bookmarkLine": "Строка {line}",
   "editor.regions.rangeLines": "{from}–{to}",
+  "editor.saveToLibrary": "Сохранить в библиотеку",
   "editor.versions": "Версии",
   "editor.aiPatch": "Изменить с AI",
   "editor.undo": "Отменить (Ctrl+Z)",
