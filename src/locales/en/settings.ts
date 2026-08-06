@@ -39,6 +39,7 @@ export const settingsMessages: LocaleMessages = {
   "settings.libraryTestFailed": "Connection failed",
   "settings.libraryTestSuccessDetail": "Library server is reachable and credentials are valid",
   "settings.libraryTestFailedDetail": "Server is unreachable or login/password is invalid",
+  "settings.libraryLoginFailed": "Server is reachable but login failed. Check username and password.",
   "settings.libraryTestNoUrl": "Set the library server URL first",
   "settings.llmKeysGuide": "How to get an LLM API key",
   "settings.ai": "AI / LLM",

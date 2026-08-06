@@ -26,6 +26,8 @@ import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
 import { useLocale } from "@/composables/useLocale";
 import { usePersistedSettings } from "@/composables/usePersistedSettings";
 import { useSyntaxValidation } from "@/composables/useSyntaxValidation";
+import { fetchShareResource } from "@/utils/diagram-api";
+import { getLibraryApiBaseUrl } from "@/config/library-api";
 
 const isSaveToLibraryModalOpen = ref(false);
 const linkedLibraryDiagramId = ref<string | null>(null);
@@ -203,10 +205,41 @@ function onAiPatchRequestOpen(payload: { start: number; end: number }): void {
   isPatchModalOpen.value = true;
 }
 
+async function handleShareLinkOnBoot(): Promise<void> {
+  const token = new URLSearchParams(window.location.search).get("share");
+  if (!token) {
+    return;
+  }
+
+  if (!getLibraryApiBaseUrl()) {
+    return;
+  }
+
+  try {
+    const payload = await fetchShareResource(token);
+    if (payload.resourceType === "diagram" && payload.diagram) {
+      onFileLoaded({
+        content: payload.diagram.source,
+        fileName: payload.diagram.fileName,
+        diagramId: payload.diagram.id,
+      });
+    }
+    openLibraryModal();
+  } catch (error) {
+    void alert({
+      title: t("library.shareOpenErrorTitle"),
+      message:
+        error instanceof Error ? error.message : t("library.shareOpenError"),
+      variant: "error",
+    });
+  }
+}
+
 onMounted(() => {
   restoreSettings();
   void initializeIncomingSources();
   void bootEngine();
+  void handleShareLinkOnBoot();
 });
 </script>
 

@@ -7,7 +7,8 @@ import SectionEditModal from "@/components/SectionEditModal.vue";
 import LibraryBrowseSections from "@/components/library/LibraryBrowseSections.vue";
 import LibraryBrowseDiagrams from "@/components/library/LibraryBrowseDiagrams.vue";
 import LibraryDiagramDetail from "@/components/library/LibraryDiagramDetail.vue";
-import LibraryUploadForm from "@/components/library/LibraryUploadForm.vue";
+import LibraryAdminUsersPanel from "@/components/library/LibraryAdminUsersPanel.vue";
+import LibrarySectionAccessModal from "@/components/library/LibrarySectionAccessModal.vue";
 import { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import { useLocale } from "@/composables/useLocale";
@@ -22,6 +23,8 @@ import { useLibraryUpload } from "@/composables/library/useLibraryUpload";
 import { useLibraryDiagramEdit } from "@/composables/library/useLibraryDiagramEdit";
 import { useLibrarySectionAdmin } from "@/composables/library/useLibrarySectionAdmin";
 import { useLibraryTransferHandlers } from "@/composables/library/useLibraryTransferHandlers";
+import { useLibraryAuth } from "@/composables/useLibraryAuth";
+import { useLibraryShare } from "@/composables/useLibraryShare";
 
 const props = defineProps<{
   open: boolean;
@@ -39,11 +42,18 @@ const { confirm, prompt } = useAppDialog();
 const { libraryApiUrl } = useLibraryApiUrl();
 const { libraryTarget, canUseOnline, setLibraryTarget } = useLibraryTarget();
 
+const { isAdmin, refreshCurrentUser } = useLibraryAuth();
+const {
+  shareDiagram,
+  copyShareUrl,
+} = useLibraryShare();
+
 const library = useDiagramLibrary();
 const {
   diagrams,
   selectedDiagram,
   selectedSectionId,
+  flatSections,
   searchQuery,
   tagFilter,
   allTags,
@@ -59,6 +69,10 @@ const {
 const activeTab = ref<LibraryTab>("browse");
 const browseStep = ref<BrowseStep>("sections");
 const uploadError = ref("");
+const isSectionAccessOpen = ref(false);
+const sectionAccessId = ref<string | null>(null);
+const sectionAccessTitle = ref("");
+const isAdminPanelOpen = ref(false);
 
 const onSectionPickRef = ref<(sectionId: string | null) => Promise<void>>(
   async () => {},
@@ -72,6 +86,7 @@ const {
   editDescription,
   editTags,
   editSectionId,
+  editVisibility,
   resetEditForm,
   startEdit,
   saveEdit,
@@ -105,6 +120,7 @@ const {
   activeTab,
   browseStep,
   uploadError,
+  isAdmin,
   onSectionPick: (sectionId) => onSectionPickRef.value(sectionId),
   onTransferRefresh: () => onTransferRefreshRef.value(),
   t,
@@ -161,6 +177,7 @@ const {
   uploadDescription,
   uploadTags,
   uploadSectionId,
+  uploadVisibility,
   uploadFile,
   isUploading,
   maxSizeKb,
@@ -212,6 +229,29 @@ async function onDeleteDiagram(): Promise<void> {
   );
 }
 
+async function onShareDiagram(): Promise<void> {
+  if (!selectedDiagram.value) return;
+  const link = await shareDiagram(selectedDiagram.value.id);
+  if (link) {
+    const url =
+      new URL(window.location.href).origin +
+      window.location.pathname +
+      link.urlPath;
+    const copied = await copyShareUrl(url);
+    uploadError.value = copied
+      ? t("library.shareCopied")
+      : `${t("library.shareReady")}: ${url}`;
+  } else if (!uploadError.value) {
+    uploadError.value = t("library.shareError");
+  }
+}
+
+function closeSectionAccess(): void {
+  isSectionAccessOpen.value = false;
+  sectionAccessId.value = null;
+  sectionAccessTitle.value = "";
+}
+
 watch(
   () => props.open,
   (isOpen) => {
@@ -221,6 +261,7 @@ watch(
       activeTab.value = "browse";
       resetBrowseFlow();
       resetSectionAdmin();
+      void refreshCurrentUser();
       void library.refresh();
     }
   },
@@ -329,9 +370,11 @@ watch(libraryTarget, () => {
         <LibraryBrowseSections
           v-if="activeTab === 'browse' && browseStep === 'sections'"
           :flat-section-options="flatSectionOptions"
+          :flat-sections="flatSections"
           :selected-section-id="selectedSectionId"
           :is-online="isOnline"
           :is-sections-edit-mode="isSectionsEditMode"
+          :can-create-shared-section="isAdmin"
           @all-sections-click="onAllSectionsClick()"
           @section-row-click="onSectionRowClick($event)"
           @toggle-edit-mode="toggleSectionsEditMode()"
@@ -355,6 +398,7 @@ watch(libraryTarget, () => {
           v-model:edit-description="editDescription"
           v-model:edit-tags="editTags"
           v-model:edit-section-id="editSectionId"
+          v-model:edit-visibility="editVisibility"
           :diagram="selectedDiagram"
           :flat-section-options="flatSectionOptions"
           :is-editing="isEditing"
@@ -363,6 +407,7 @@ watch(libraryTarget, () => {
           @cancel="resetEditForm()"
           @start-edit="startEdit()"
           @open-in-editor="openInEditor()"
+          @share="onShareDiagram()"
           @delete="onDeleteDiagram()"
         />
 
@@ -372,6 +417,7 @@ watch(libraryTarget, () => {
           v-model:upload-description="uploadDescription"
           v-model:upload-tags="uploadTags"
           v-model:upload-section-id="uploadSectionId"
+          v-model:upload-visibility="uploadVisibility"
           :flat-section-options="flatSectionOptions"
           :upload-file="uploadFile"
           :max-size-kb="maxSizeKb"
@@ -380,21 +426,34 @@ watch(libraryTarget, () => {
           @submit="submitUpload()"
         />
 
-        <LibraryTransferTab
-          v-else-if="activeTab === 'transfer'"
-          :sections="transferSections"
-          :diagrams="transferDiagrams"
-          :server-sections="serverTransferSections"
-          :server-diagrams="serverTransferDiagrams"
-          :can-sync-online="canSyncOnline"
-          :import-bundle="importBundle"
-          :is-processing="isTransferProcessing"
-          @export="onExportSelection($event)"
-          @import="onImportSelection($event)"
-          @load-import-file="onImportFile($event)"
-          @push-to-server="onPushToServer($event)"
-          @pull-from-server="onPullFromServer($event)"
-        />
+        <div v-else-if="activeTab === 'transfer'">
+          <div v-if="isAdmin" class="library-step__toolbar">
+            <button class="btn" type="button" @click="isAdminPanelOpen = true">
+              {{ t("library.adminUsersTitle") }}
+            </button>
+          </div>
+
+          <LibraryAdminUsersPanel
+            v-if="isAdmin"
+            :open="isAdminPanelOpen"
+            @close="isAdminPanelOpen = false"
+          />
+
+          <LibraryTransferTab
+            :sections="transferSections"
+            :diagrams="transferDiagrams"
+            :server-sections="serverTransferSections"
+            :server-diagrams="serverTransferDiagrams"
+            :can-sync-online="canSyncOnline"
+            :import-bundle="importBundle"
+            :is-processing="isTransferProcessing"
+            @export="onExportSelection($event)"
+            @import="onImportSelection($event)"
+            @load-import-file="onImportFile($event)"
+            @push-to-server="onPushToServer($event)"
+            @pull-from-server="onPullFromServer($event)"
+          />
+        </div>
       </div>
     </div>
   </Teleport>
@@ -405,6 +464,12 @@ watch(libraryTarget, () => {
     :section-options="sectionOptionsForModal"
     @close="closeSectionEditor()"
     @save="saveSectionEdit($event)"
+  />
+  <LibrarySectionAccessModal
+    :open="isSectionAccessOpen"
+    :section-id="sectionAccessId"
+    :section-title="sectionAccessTitle"
+    @close="closeSectionAccess()"
   />
 </template>
 

@@ -1,5 +1,5 @@
 import { computed, ref, type Ref } from "vue";
-import { MAX_PUML_FILE_BYTES } from "@/constants/diagram-library";
+import { MAX_PUML_FILE_BYTES, type DiagramVisibility } from "@/constants/diagram-library";
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import { parseTagsInput } from "@/utils/library-tags";
 import type { LibraryTab } from "./useLibraryBrowseFlow";
@@ -27,6 +27,7 @@ export function useLibraryUpload(options: {
   const uploadDescription = ref("");
   const uploadTags = ref("");
   const uploadSectionId = ref("");
+  const uploadVisibility = ref<DiagramVisibility>("all");
   const uploadFile = ref<File | null>(null);
   const isUploading = ref(false);
 
@@ -69,6 +70,7 @@ export function useLibraryUpload(options: {
         description: uploadDescription.value.trim() || undefined,
         tags: parseTagsInput(uploadTags.value),
         sectionId: uploadSectionId.value || null,
+        visibility: uploadVisibility.value,
       });
       uploadTitle.value = "";
       uploadDescription.value = "";
@@ -94,6 +96,7 @@ export function useLibraryUpload(options: {
     uploadDescription,
     uploadTags,
     uploadSectionId,
+    uploadVisibility,
     uploadFile,
     isUploading,
     maxSizeKb,

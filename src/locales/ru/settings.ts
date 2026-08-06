@@ -39,6 +39,7 @@ export const settingsMessages: LocaleMessages = {
   "settings.libraryTestFailed": "Ошибка подключения",
   "settings.libraryTestSuccessDetail": "Сервер библиотеки доступен и учётные данные верны",
   "settings.libraryTestFailedDetail": "Сервер недоступен или неверный логин/пароль",
+  "settings.libraryLoginFailed": "Сервер доступен, но вход не выполнен. Проверьте логин и пароль.",
   "settings.libraryTestNoUrl": "Укажите адрес сервера библиотеки",
   "settings.llmKeysGuide": "Как получить API-ключ LLM",
   "settings.ai": "AI / LLM",

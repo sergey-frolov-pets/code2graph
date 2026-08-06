@@ -18,6 +18,7 @@ export function useLibrarySectionAdmin(options: {
   activeTab: Ref<LibraryTab>;
   browseStep: Ref<BrowseStep>;
   uploadError: Ref<string>;
+  isAdmin: Ref<boolean>;
   onSectionPick: (sectionId: string | null) => Promise<void>;
   onTransferRefresh?: () => Promise<void>;
   t: (key: string, params?: Record<string, string | number>) => string;
@@ -39,6 +40,7 @@ export function useLibrarySectionAdmin(options: {
     activeTab,
     browseStep,
     uploadError,
+    isAdmin,
     onSectionPick,
     onTransferRefresh,
     t,
@@ -92,6 +94,11 @@ export function useLibrarySectionAdmin(options: {
   }
 
   async function createSection(parentId: string | null): Promise<void> {
+    if (parentId === null && !isAdmin.value) {
+      uploadError.value = t("library.sharedSectionAdminOnly");
+      return;
+    }
+
     const title = await prompt({
       title: parentId ? t("library.addSubsection") : t("library.addSection"),
       message: t("library.sectionTitle"),

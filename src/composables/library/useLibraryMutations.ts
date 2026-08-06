@@ -3,6 +3,7 @@ import {
   type CreateDiagramPayload,
   type CreateSectionPayload,
   type DiagramDto,
+  type DiagramVisibility,
   type UpdateDiagramPayload,
   type UpdateSectionPayload,
 } from "@/constants/diagram-library";
@@ -224,6 +225,7 @@ export function useLibraryMutations(
       tags?: string[];
       language?: string;
       sectionId?: string | null;
+      visibility?: DiagramVisibility;
     },
   ): Promise<DiagramDto> {
     assertPumlFileSize(file);
@@ -258,6 +260,7 @@ export function useLibraryMutations(
       sectionId: metadata.sectionId ?? null,
       source: content,
       fileName: file.name,
+      visibility: metadata.visibility,
     });
   }
 

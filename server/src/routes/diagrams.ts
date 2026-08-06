@@ -1,28 +1,69 @@
 import { Hono } from "hono";
+import { requireAuthenticatedUser } from "../auth.js";
+import type { AuthVariables } from "../auth/context.js";
+import {
+  canReadDiagram,
+  canReadSection,
+  canWriteDiagram,
+  canWriteSection,
+  defaultVisibilityForSectionKind,
+  getSectionRow,
+} from "../authz.js";
 import { getDb, parseTags } from "../db.js";
 import { isDiagramLanguage, MAX_PUML_FILE_BYTES } from "../config.js";
-import { mapDiagram, mapDiagramListItem } from "../shared/diagram-mappers.js";
+import {
+  enrichDiagramForUser,
+  enrichDiagramListForUser,
+  mapDiagram,
+} from "../shared/diagram-mappers.js";
 import {
   detectLanguageFromSource,
   resolvePumlFileName,
 } from "../shared/puml-files.js";
 import { collectSectionSubtree } from "../shared/section-tree.js";
+import {
+  createShareLink,
+  listShareLinksForResource,
+} from "../share-links.js";
+import type { DiagramVisibility } from "../types.js";
+import { isDiagramVisibility } from "../types.js";
 
-export const diagramsRouter = new Hono();
+export const diagramsRouter = new Hono<{ Variables: AuthVariables }>();
+
+const DIAGRAM_LIST_SELECT = `
+  SELECT id, section_id, title, description, tags, language,
+         file_name, byte_size, author_id, owner_id, visibility,
+         created_at, updated_at
+  FROM diagrams
+`;
+
+const DIAGRAM_FULL_SELECT = `
+  SELECT id, section_id, title, description, tags, language,
+         source, file_name, byte_size, author_id, owner_id, visibility,
+         created_at, updated_at
+  FROM diagrams
+`;
 
 diagramsRouter.get("/", (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
   const database = getDb();
   const query = context.req.query("q")?.trim() ?? "";
   const sectionId = context.req.query("sectionId")?.trim();
   const tag = context.req.query("tag")?.trim();
   const language = context.req.query("language")?.trim();
 
-  let sql = `
-    SELECT id, section_id, title, description, tags, language,
-           file_name, byte_size, created_at, updated_at
-    FROM diagrams
-    WHERE 1=1
-  `;
+  if (sectionId) {
+    const section = getSectionRow(database, sectionId);
+    if (!section || !canReadSection(database, user, section)) {
+      return context.json({ error: "Раздел не найден или недоступен" }, 403);
+    }
+  }
+
+  let sql = `${DIAGRAM_LIST_SELECT} WHERE 1=1`;
   const params: unknown[] = [];
 
   if (sectionId) {
@@ -60,58 +101,85 @@ diagramsRouter.get("/", (context) => {
 
   sql += " ORDER BY updated_at DESC, title ASC";
 
-  const rows = database.prepare(sql).all(...params) as Array<{
-    id: string;
-    section_id: string | null;
-    title: string;
-    description: string;
-    tags: string;
-    language: string;
-    file_name: string;
-    byte_size: number;
-    created_at: string;
-    updated_at: string;
-  }>;
+  const rows = database.prepare(sql).all(...params) as Array<
+    Parameters<typeof mapDiagram>[0]
+  >;
+
+  const readable = rows.filter((row) =>
+    canReadDiagram(database, user, {
+      id: row.id,
+      section_id: row.section_id,
+      author_id: row.author_id,
+      owner_id: row.owner_id,
+      visibility: row.visibility as DiagramVisibility,
+    }),
+  );
+
+  const diagrams = enrichDiagramListForUser(database, user, readable).map(
+    (diagram, index) => ({
+      ...diagram,
+      canWrite: canWriteDiagram(database, user, {
+        id: readable[index].id,
+        section_id: readable[index].section_id,
+        author_id: readable[index].author_id,
+        owner_id: readable[index].owner_id,
+        visibility: readable[index].visibility as DiagramVisibility,
+      }),
+    }),
+  );
 
   return context.json({
-    diagrams: rows.map(mapDiagramListItem),
-    total: rows.length,
+    diagrams,
+    total: diagrams.length,
   });
 });
 
 diagramsRouter.get("/:id", (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
   const id = context.req.param("id");
   const database = getDb();
   const row = database
-    .prepare(
-      `SELECT id, section_id, title, description, tags, language,
-              source, file_name, byte_size, created_at, updated_at
-       FROM diagrams WHERE id = ?`,
-    )
-    .get(id) as
-    | {
-        id: string;
-        section_id: string | null;
-        title: string;
-        description: string;
-        tags: string;
-        language: string;
-        source: string;
-        file_name: string;
-        byte_size: number;
-        created_at: string;
-        updated_at: string;
-      }
-    | undefined;
+    .prepare(`${DIAGRAM_FULL_SELECT} WHERE id = ?`)
+    .get(id) as Parameters<typeof mapDiagram>[0] | undefined;
 
   if (!row) {
     return context.json({ error: "Диаграмма не найдена" }, 404);
   }
 
-  return context.json(mapDiagram(row));
+  if (
+    !canReadDiagram(database, user, {
+      id: row.id,
+      section_id: row.section_id,
+      author_id: row.author_id,
+      owner_id: row.owner_id,
+      visibility: row.visibility as DiagramVisibility,
+    })
+  ) {
+    return context.json({ error: "Диаграмма недоступна" }, 403);
+  }
+
+  const diagram = enrichDiagramForUser(database, user, row);
+  diagram.canWrite = canWriteDiagram(database, user, {
+    id: row.id,
+    section_id: row.section_id,
+    author_id: row.author_id,
+    owner_id: row.owner_id,
+    visibility: row.visibility as DiagramVisibility,
+  });
+
+  return context.json(diagram);
 });
 
 diagramsRouter.post("/", async (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
   const contentType = context.req.header("content-type") ?? "";
 
   let title = "";
@@ -121,6 +189,7 @@ diagramsRouter.post("/", async (context) => {
   let sectionId: string | null = null;
   let source = "";
   let fileName = "diagram.puml";
+  let visibility: DiagramVisibility = "all";
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await context.req.formData();
@@ -131,6 +200,7 @@ diagramsRouter.post("/", async (context) => {
     sectionId = String(formData.get("sectionId") ?? "").trim() || null;
     const tagsRaw = String(formData.get("tags") ?? "").trim();
     const languageRaw = String(formData.get("language") ?? "").trim();
+    const visibilityRaw = String(formData.get("visibility") ?? "").trim();
 
     if (tagsRaw) {
       tags = tagsRaw
@@ -141,6 +211,10 @@ diagramsRouter.post("/", async (context) => {
 
     if (languageRaw && isDiagramLanguage(languageRaw)) {
       language = languageRaw;
+    }
+
+    if (visibilityRaw && isDiagramVisibility(visibilityRaw)) {
+      visibility = visibilityRaw;
     }
 
     if (file instanceof File) {
@@ -172,6 +246,7 @@ diagramsRouter.post("/", async (context) => {
       sectionId?: string | null;
       source?: string;
       fileName?: string;
+      visibility?: string;
     }>();
 
     title = body.title?.trim() ?? "";
@@ -185,6 +260,10 @@ diagramsRouter.post("/", async (context) => {
 
     if (body.language && isDiagramLanguage(body.language)) {
       language = body.language;
+    }
+
+    if (body.visibility && isDiagramVisibility(body.visibility)) {
+      visibility = body.visibility;
     }
   }
 
@@ -210,11 +289,15 @@ diagramsRouter.post("/", async (context) => {
 
   const database = getDb();
   if (sectionId) {
-    const section = database
-      .prepare("SELECT id FROM sections WHERE id = ?")
-      .get(sectionId);
+    const section = getSectionRow(database, sectionId);
     if (!section) {
       return context.json({ error: "Раздел не найден" }, 404);
+    }
+    if (!canWriteSection(database, user, section)) {
+      return context.json({ error: "Недостаточно прав для раздела" }, 403);
+    }
+    if (!visibility || visibility === "all") {
+      visibility = defaultVisibilityForSectionKind(section.kind);
     }
   }
 
@@ -225,8 +308,9 @@ diagramsRouter.post("/", async (context) => {
     .prepare(
       `INSERT INTO diagrams (
         id, section_id, title, description, tags, language,
-        source, file_name, byte_size, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        source, file_name, byte_size, author_id, owner_id, visibility,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       id,
@@ -238,34 +322,29 @@ diagramsRouter.post("/", async (context) => {
       source,
       fileName,
       byteSize,
+      user.id,
+      user.id,
+      visibility,
       now,
       now,
     );
 
   const row = database
-    .prepare(
-      `SELECT id, section_id, title, description, tags, language,
-              source, file_name, byte_size, created_at, updated_at
-       FROM diagrams WHERE id = ?`,
-    )
-    .get(id) as {
-    id: string;
-    section_id: string | null;
-    title: string;
-    description: string;
-    tags: string;
-    language: string;
-    source: string;
-    file_name: string;
-    byte_size: number;
-    created_at: string;
-    updated_at: string;
-  };
+    .prepare(`${DIAGRAM_FULL_SELECT} WHERE id = ?`)
+    .get(id) as Parameters<typeof mapDiagram>[0];
 
-  return context.json(mapDiagram(row), 201);
+  const diagram = enrichDiagramForUser(database, user, row);
+  diagram.canWrite = true;
+
+  return context.json(diagram, 201);
 });
 
 diagramsRouter.put("/:id", async (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
   const id = context.req.param("id");
   const body = await context.req.json<{
     title?: string;
@@ -275,33 +354,28 @@ diagramsRouter.put("/:id", async (context) => {
     sectionId?: string | null;
     source?: string;
     fileName?: string;
+    visibility?: string;
   }>();
 
   const database = getDb();
   const current = database
-    .prepare(
-      `SELECT id, section_id, title, description, tags, language,
-              source, file_name, byte_size, created_at, updated_at
-       FROM diagrams WHERE id = ?`,
-    )
-    .get(id) as
-    | {
-        id: string;
-        section_id: string | null;
-        title: string;
-        description: string;
-        tags: string;
-        language: string;
-        source: string;
-        file_name: string;
-        byte_size: number;
-        created_at: string;
-        updated_at: string;
-      }
-    | undefined;
+    .prepare(`${DIAGRAM_FULL_SELECT} WHERE id = ?`)
+    .get(id) as Parameters<typeof mapDiagram>[0] | undefined;
 
   if (!current) {
     return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  const accessRow = {
+    id: current.id,
+    section_id: current.section_id,
+    author_id: current.author_id,
+    owner_id: current.owner_id,
+    visibility: current.visibility as DiagramVisibility,
+  };
+
+  if (!canWriteDiagram(database, user, accessRow)) {
+    return context.json({ error: "Недостаточно прав" }, 403);
   }
 
   const source = body.source ?? current.source;
@@ -317,11 +391,12 @@ diagramsRouter.put("/:id", async (context) => {
     body.sectionId !== undefined ? body.sectionId : current.section_id;
 
   if (sectionId) {
-    const section = database
-      .prepare("SELECT id FROM sections WHERE id = ?")
-      .get(sectionId);
+    const section = getSectionRow(database, sectionId);
     if (!section) {
       return context.json({ error: "Раздел не найден" }, 404);
+    }
+    if (!canWriteSection(database, user, section)) {
+      return context.json({ error: "Недостаточно прав для раздела" }, 403);
     }
   }
 
@@ -330,13 +405,18 @@ diagramsRouter.put("/:id", async (context) => {
       ? body.language
       : current.language;
 
+  let visibility = current.visibility as DiagramVisibility;
+  if (body.visibility && isDiagramVisibility(body.visibility)) {
+    visibility = body.visibility;
+  }
+
   const now = new Date().toISOString();
 
   database
     .prepare(
       `UPDATE diagrams
        SET section_id = ?, title = ?, description = ?, tags = ?, language = ?,
-           source = ?, file_name = ?, byte_size = ?, updated_at = ?
+           source = ?, file_name = ?, byte_size = ?, visibility = ?, updated_at = ?
        WHERE id = ?`,
     )
     .run(
@@ -352,39 +432,143 @@ diagramsRouter.put("/:id", async (context) => {
       source,
       body.fileName ? resolvePumlFileName(body.fileName) : current.file_name,
       byteSize,
+      visibility,
       now,
       id,
     );
 
   const row = database
-    .prepare(
-      `SELECT id, section_id, title, description, tags, language,
-              source, file_name, byte_size, created_at, updated_at
-       FROM diagrams WHERE id = ?`,
-    )
-    .get(id) as {
-    id: string;
-    section_id: string | null;
-    title: string;
-    description: string;
-    tags: string;
-    language: string;
-    source: string;
-    file_name: string;
-    byte_size: number;
-    created_at: string;
-    updated_at: string;
-  };
+    .prepare(`${DIAGRAM_FULL_SELECT} WHERE id = ?`)
+    .get(id) as Parameters<typeof mapDiagram>[0];
 
-  return context.json(mapDiagram(row));
+  const diagram = enrichDiagramForUser(database, user, row);
+  diagram.canWrite = true;
+
+  return context.json(diagram);
 });
 
 diagramsRouter.delete("/:id", (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
   const id = context.req.param("id");
   const database = getDb();
-  const result = database.prepare("DELETE FROM diagrams WHERE id = ?").run(id);
-  if (result.changes === 0) {
+  const current = database
+    .prepare(`${DIAGRAM_FULL_SELECT} WHERE id = ?`)
+    .get(id) as Parameters<typeof mapDiagram>[0] | undefined;
+
+  if (!current) {
     return context.json({ error: "Диаграмма не найдена" }, 404);
   }
+
+  if (
+    !canWriteDiagram(database, user, {
+      id: current.id,
+      section_id: current.section_id,
+      author_id: current.author_id,
+      owner_id: current.owner_id,
+      visibility: current.visibility as DiagramVisibility,
+    })
+  ) {
+    return context.json({ error: "Недостаточно прав" }, 403);
+  }
+
+  database.prepare("DELETE FROM diagrams WHERE id = ?").run(id);
   return context.json({ ok: true });
+});
+
+diagramsRouter.get("/:id/share", (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
+  const id = context.req.param("id");
+  const database = getDb();
+  const row = database
+    .prepare(`${DIAGRAM_FULL_SELECT} WHERE id = ?`)
+    .get(id) as Parameters<typeof mapDiagram>[0] | undefined;
+
+  if (!row) {
+    return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  if (
+    !canReadDiagram(database, user, {
+      id: row.id,
+      section_id: row.section_id,
+      author_id: row.author_id,
+      owner_id: row.owner_id,
+      visibility: row.visibility as DiagramVisibility,
+    })
+  ) {
+    return context.json({ error: "Недостаточно прав" }, 403);
+  }
+
+  const links = listShareLinksForResource(database, "diagram", id).map((link) => ({
+    token: link.token,
+    resourceType: link.resource_type,
+    resourceId: link.resource_id,
+    expiresAt: link.expires_at,
+    permanent: !link.expires_at,
+    createdAt: link.created_at,
+    urlPath: `?share=${link.token}`,
+  }));
+
+  return context.json({ links });
+});
+
+diagramsRouter.post("/:id/share", async (context) => {
+  const user = requireAuthenticatedUser(context);
+  if (user instanceof Response) {
+    return user;
+  }
+
+  const id = context.req.param("id");
+  const body = await context.req.json<{
+    expiresAt?: string | null;
+    permanent?: boolean;
+  }>();
+
+  const database = getDb();
+  const row = database
+    .prepare(`${DIAGRAM_FULL_SELECT} WHERE id = ?`)
+    .get(id) as Parameters<typeof mapDiagram>[0] | undefined;
+
+  if (!row) {
+    return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  if (
+    !canReadDiagram(database, user, {
+      id: row.id,
+      section_id: row.section_id,
+      author_id: row.author_id,
+      owner_id: row.owner_id,
+      visibility: row.visibility as DiagramVisibility,
+    })
+  ) {
+    return context.json({ error: "Недостаточно прав" }, 403);
+  }
+
+  const expiresAt =
+    body.permanent || body.expiresAt === null
+      ? null
+      : body.expiresAt ?? null;
+
+  const link = createShareLink(database, "diagram", id, user.id, expiresAt);
+
+  return context.json({
+    link: {
+      token: link.token,
+      resourceType: link.resource_type,
+      resourceId: link.resource_id,
+      expiresAt: link.expires_at,
+      permanent: !link.expires_at,
+      createdAt: link.created_at,
+      urlPath: `?share=${link.token}`,
+    },
+  }, 201);
 });

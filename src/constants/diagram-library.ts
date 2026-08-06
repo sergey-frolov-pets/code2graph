@@ -28,13 +28,41 @@ export const STORAGE_KEY_LIBRARY_API_PASSWORD =
 
 export const STORAGE_KEY_LIBRARY_TARGET = "plantuml-smetana-library-target";
 
+export const STORAGE_KEY_LIBRARY_AUTH_TOKEN = "plantuml-smetana-library-auth-token";
+
 export type LibraryTarget = "local" | "online";
+
+export const SECTION_KINDS = ["shared", "personal"] as const;
+export type SectionKind = (typeof SECTION_KINDS)[number];
+
+export const DIAGRAM_VISIBILITIES = ["all", "personal", "subscription"] as const;
+export type DiagramVisibility = (typeof DIAGRAM_VISIBILITIES)[number];
+
+export const USER_ROLES = ["admin", "user"] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
+export interface LibraryUserDto {
+  id: string;
+  username: string;
+  role: UserRole;
+  blocked: boolean;
+  subscriptionActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface SectionDto {
   id: string;
   parentId: string | null;
   title: string;
   sortOrder: number;
+  kind?: SectionKind;
+  ownerId?: string | null;
+  authorId?: string | null;
+  authorName?: string | null;
+  visibility?: DiagramVisibility;
+  canWrite?: boolean;
+  canAdmin?: boolean;
   createdAt: string;
   updatedAt: string;
   children?: SectionDto[];
@@ -49,6 +77,11 @@ export interface DiagramListItemDto {
   language: DiagramLanguage;
   fileName: string;
   byteSize: number;
+  authorId?: string | null;
+  ownerId?: string | null;
+  authorName?: string | null;
+  visibility?: DiagramVisibility;
+  canWrite?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -65,6 +98,7 @@ export interface CreateDiagramPayload {
   sectionId: string | null;
   source: string;
   fileName: string;
+  visibility?: DiagramVisibility;
 }
 
 export interface CreateSectionPayload {
@@ -77,6 +111,7 @@ export interface UpdateSectionPayload {
   title?: string;
   parentId?: string | null;
   sortOrder?: number;
+  visibility?: DiagramVisibility;
 }
 
 export interface UpdateDiagramPayload {
@@ -86,6 +121,25 @@ export interface UpdateDiagramPayload {
   sectionId?: string | null;
   source?: string;
   fileName?: string;
+  visibility?: DiagramVisibility;
+}
+
+export interface SectionAccessDto {
+  userId: string;
+  username: string;
+  expiresAt: string | null;
+  permanent: boolean;
+  grantedAt: string;
+}
+
+export interface ShareLinkDto {
+  token: string;
+  resourceType: "section" | "diagram";
+  resourceId: string;
+  expiresAt: string | null;
+  permanent: boolean;
+  createdAt: string;
+  urlPath: string;
 }
 
 export const LIBRARY_EXPORT_VERSION = 1;

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useLocale } from "@/composables/useLocale";
 import { formatDate } from "@/shared/format-date";
-import type { DiagramDto } from "@/constants/diagram-library";
+import { VISIBILITY_OPTIONS } from "@/constants/library-visibility";
+import type { DiagramDto, DiagramVisibility } from "@/constants/diagram-library";
 import type { FlatSectionOption } from "@/shared/library/section-tree";
 
 defineProps<{
@@ -15,6 +16,9 @@ const editTitle = defineModel<string>("editTitle", { required: true });
 const editDescription = defineModel<string>("editDescription", { required: true });
 const editTags = defineModel<string>("editTags", { required: true });
 const editSectionId = defineModel<string>("editSectionId", { required: true });
+const editVisibility = defineModel<DiagramVisibility>("editVisibility", {
+  required: true,
+});
 
 const emit = defineEmits<{
   save: [];
@@ -22,6 +26,8 @@ const emit = defineEmits<{
   "start-edit": [];
   "open-in-editor": [];
   delete: [];
+  share: [];
+  "manage-access": [];
 }>();
 
 const { t } = useLocale();
@@ -57,6 +63,14 @@ const { t } = useLocale();
             </option>
           </select>
         </label>
+        <label class="settings-field">
+          <span class="settings-field__label">{{ t("library.visibility") }}</span>
+          <select v-model="editVisibility" class="select">
+            <option v-for="option in VISIBILITY_OPTIONS" :key="option" :value="option">
+              {{ t(`library.visibility.${option}`) }}
+            </option>
+          </select>
+        </label>
         <div class="library-detail__actions">
           <button
             class="btn btn-primary"
@@ -89,6 +103,10 @@ const { t } = useLocale();
           <p class="library-detail__meta">
             {{ diagram.fileName }} ·
             {{ t("library.updatedAt", { date: formatDate(diagram.updatedAt) }) }}
+            <template v-if="diagram.authorName">
+              · {{ t("library.author", { name: diagram.authorName }) }}
+            </template>
+            · {{ t(`library.visibility.${diagram.visibility ?? "all"}`) }}
           </p>
           <p
             class="library-detail__description"
@@ -107,10 +125,23 @@ const { t } = useLocale();
           <button class="btn btn-primary" type="button" @click="emit('open-in-editor')">
             {{ t("library.openInEditor") }}
           </button>
-          <button class="btn" type="button" @click="emit('start-edit')">
+          <button class="btn" type="button" @click="emit('share')">
+            {{ t("library.shareLink") }}
+          </button>
+          <button
+            v-if="diagram.canWrite"
+            class="btn"
+            type="button"
+            @click="emit('start-edit')"
+          >
             {{ t("library.edit") }}
           </button>
-          <button class="btn" type="button" @click="emit('delete')">
+          <button
+            v-if="diagram.canWrite"
+            class="btn"
+            type="button"
+            @click="emit('delete')"
+          >
             {{ t("app.delete") }}
           </button>
         </div>

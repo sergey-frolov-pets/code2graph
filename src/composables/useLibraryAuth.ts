@@ -1,0 +1,68 @@
+import { computed, ref } from "vue";
+import type { LibraryUserDto } from "@/constants/diagram-library";
+import {
+  clearLibraryApiCredentials,
+  getLibraryAuthToken,
+  setLibraryAuthToken,
+} from "@/config/library-credentials";
+import { fetchLibraryMe, loginLibrary } from "@/utils/diagram-api";
+
+const currentUser = ref<LibraryUserDto | null>(null);
+let refreshPromise: Promise<LibraryUserDto | null> | null = null;
+
+export function useLibraryAuth() {
+  const isAdmin = computed(() => currentUser.value?.role === "admin");
+  const isAuthenticated = computed(() => Boolean(currentUser.value));
+
+  async function refreshCurrentUser(): Promise<LibraryUserDto | null> {
+    if (refreshPromise) {
+      return refreshPromise;
+    }
+
+    refreshPromise = (async () => {
+      if (!getLibraryAuthToken()) {
+        currentUser.value = null;
+        return null;
+      }
+
+      try {
+        const response = await fetchLibraryMe();
+        currentUser.value = response.user;
+        return response.user;
+      } catch {
+        currentUser.value = null;
+        return null;
+      }
+    })();
+
+    try {
+      return await refreshPromise;
+    } finally {
+      refreshPromise = null;
+    }
+  }
+
+  async function loginWithCredentials(
+    username: string,
+    password: string,
+  ): Promise<LibraryUserDto> {
+    const response = await loginLibrary(username, password);
+    setLibraryAuthToken(response.token);
+    currentUser.value = response.user;
+    return response.user;
+  }
+
+  function logoutLibraryAuth(): void {
+    currentUser.value = null;
+    clearLibraryApiCredentials();
+  }
+
+  return {
+    currentUser,
+    isAdmin,
+    isAuthenticated,
+    refreshCurrentUser,
+    loginWithCredentials,
+    logoutLibraryAuth,
+  };
+}

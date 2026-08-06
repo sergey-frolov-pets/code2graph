@@ -3,7 +3,10 @@ import type {
   CreateSectionPayload,
   DiagramDto,
   DiagramListItemDto,
+  LibraryUserDto,
+  SectionAccessDto,
   SectionDto,
+  ShareLinkDto,
   UpdateDiagramPayload,
   UpdateSectionPayload,
 } from "@/constants/diagram-library";
@@ -179,6 +182,7 @@ export async function uploadDiagramFile(
     tags?: string[];
     language?: string;
     sectionId?: string | null;
+    visibility?: string;
   },
   baseUrl?: string,
 ): Promise<DiagramDto> {
@@ -198,6 +202,9 @@ export async function uploadDiagramFile(
   }
   if (metadata.sectionId) {
     formData.append("sectionId", metadata.sectionId);
+  }
+  if (metadata.visibility) {
+    formData.append("visibility", metadata.visibility);
   }
 
   return requestJson(
@@ -247,4 +254,167 @@ export async function checkApiHealth(baseUrl?: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+export async function loginLibrary(
+  username: string,
+  password: string,
+  baseUrl?: string,
+): Promise<{ token: string; user: LibraryUserDto }> {
+  return requestJson(
+    "/auth/login",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    },
+    baseUrl,
+  );
+}
+
+export async function fetchLibraryMe(baseUrl?: string): Promise<{ user: LibraryUserDto }> {
+  return requestJson("/auth/me", undefined, baseUrl);
+}
+
+export async function fetchAdminUsers(baseUrl?: string): Promise<{ users: LibraryUserDto[] }> {
+  return requestJson("/admin/users", undefined, baseUrl);
+}
+
+export async function setUserBlocked(
+  userId: string,
+  blocked: boolean,
+  baseUrl?: string,
+): Promise<{ user: LibraryUserDto }> {
+  return requestJson(
+    `/admin/users/${userId}/block`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ blocked }),
+    },
+    baseUrl,
+  );
+}
+
+export async function setUserSubscription(
+  userId: string,
+  subscriptionActive: boolean,
+  baseUrl?: string,
+): Promise<{ user: LibraryUserDto }> {
+  return requestJson(
+    `/admin/users/${userId}/subscription`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subscriptionActive }),
+    },
+    baseUrl,
+  );
+}
+
+export async function fetchSectionAccess(
+  sectionId: string,
+  baseUrl?: string,
+): Promise<{ access: SectionAccessDto[] }> {
+  return requestJson(`/sections/${sectionId}/access`, undefined, baseUrl);
+}
+
+export async function grantSectionAccess(
+  sectionId: string,
+  payload: {
+    username?: string;
+    userId?: string;
+    permanent?: boolean;
+    expiresAt?: string | null;
+  },
+  baseUrl?: string,
+): Promise<{ ok: boolean }> {
+  return requestJson(
+    `/sections/${sectionId}/access`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    baseUrl,
+  );
+}
+
+export async function revokeSectionAccess(
+  sectionId: string,
+  userId: string,
+  baseUrl?: string,
+): Promise<{ ok: boolean }> {
+  return requestJson(
+    `/sections/${sectionId}/access/${userId}`,
+    { method: "DELETE" },
+    baseUrl,
+  );
+}
+
+export async function createSectionShareLink(
+  sectionId: string,
+  payload: { permanent?: boolean; expiresAt?: string | null } = {},
+  baseUrl?: string,
+): Promise<{ link: ShareLinkDto }> {
+  return requestJson(
+    `/sections/${sectionId}/share`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    baseUrl,
+  );
+}
+
+export async function createDiagramShareLink(
+  diagramId: string,
+  payload: { permanent?: boolean; expiresAt?: string | null } = {},
+  baseUrl?: string,
+): Promise<{ link: ShareLinkDto }> {
+  return requestJson(
+    `/diagrams/${diagramId}/share`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    baseUrl,
+  );
+}
+
+function resolveShareApiBaseUrl(baseUrl?: string): string {
+  const apiBase = resolveApiBaseUrl(baseUrl);
+  return apiBase.replace(/\/api$/, "") + "/api/share";
+}
+
+export async function fetchShareResource(
+  token: string,
+  baseUrl?: string,
+): Promise<{
+  resourceType: "section" | "diagram";
+  diagram?: DiagramDto;
+  sectionId?: string;
+  sections?: SectionDto[];
+  diagrams?: DiagramListItemDto[];
+  readOnly: boolean;
+}> {
+  const shareBase = resolveShareApiBaseUrl(baseUrl);
+  const response = await fetch(`${shareBase}/${token}`, {
+    headers: buildRequestHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new DiagramApiError(await parseError(response), response.status);
+  }
+
+  return (await response.json()) as {
+    resourceType: "section" | "diagram";
+    diagram?: DiagramDto;
+    sectionId?: string;
+    sections?: SectionDto[];
+    diagrams?: DiagramListItemDto[];
+    readOnly: boolean;
+  };
 }

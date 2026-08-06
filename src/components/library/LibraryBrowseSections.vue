@@ -2,13 +2,16 @@
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import { useLocale } from "@/composables/useLocale";
+import type { SectionDto } from "@/constants/diagram-library";
 import type { FlatSectionOption } from "@/shared/library/section-tree";
 
-defineProps<{
+const props = defineProps<{
   flatSectionOptions: FlatSectionOption[];
+  flatSections: SectionDto[];
   selectedSectionId: string | null;
   isOnline: boolean;
   isSectionsEditMode: boolean;
+  canCreateSharedSection: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -20,6 +23,11 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
+
+function canAdminSection(sectionId: string): boolean {
+  const section = props.flatSections.find((entry) => entry.id === sectionId);
+  return Boolean(section?.canAdmin);
+}
 </script>
 
 <template>
@@ -37,7 +45,7 @@ const { t } = useLocale();
           <ActionIcon name="edit" />
         </IconButton>
         <IconButton
-          v-if="isSectionsEditMode"
+          v-if="isSectionsEditMode && canCreateSharedSection"
           :label="t('library.addSection')"
           @click="emit('create-section', null)"
         >
@@ -74,12 +82,14 @@ const { t } = useLocale();
         </button>
         <div v-if="isSectionsEditMode" class="library-section-row__actions">
           <IconButton
+            v-if="canAdminSection(section.id)"
             :label="t('library.addSubsection')"
             @click.stop="emit('create-section', section.id)"
           >
             <ActionIcon name="plus" />
           </IconButton>
           <IconButton
+            v-if="canAdminSection(section.id)"
             :label="t('app.delete')"
             @click.stop="emit('delete-section', section.id, section.title)"
           >
