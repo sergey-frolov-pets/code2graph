@@ -5,10 +5,12 @@ import type {
   SectionDto,
 } from "@/constants/diagram-library";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
+import { getLibraryTargetRef } from "@/config/library-target";
 import { buildSectionTree } from "@/shared/library/section-tree";
 
 export function useLibraryCatalog() {
-  const { libraryApiUrl, isLocalMode } = useLibraryApiUrl();
+  const { libraryApiUrl } = useLibraryApiUrl();
+  const libraryTarget = getLibraryTargetRef();
 
   const sections = ref<SectionDto[]>([]);
   const flatSections = ref<SectionDto[]>([]);
@@ -28,8 +30,12 @@ export function useLibraryCatalog() {
 
   const sectionTree = computed(() => buildSectionTree(flatSections.value));
   const shouldUseServer = computed(
-    () => Boolean(libraryApiUrl.value) && isOnline.value,
+    () =>
+      libraryTarget.value === "online" &&
+      Boolean(libraryApiUrl.value) &&
+      isOnline.value,
   );
+  const isLocalMode = computed(() => !shouldUseServer.value);
 
   const allTags = computed(() => {
     const tags = new Set<string>();
@@ -43,6 +49,7 @@ export function useLibraryCatalog() {
 
   return {
     libraryApiUrl,
+    libraryTarget,
     isLocalMode,
     sections,
     flatSections,

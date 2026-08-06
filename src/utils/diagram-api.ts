@@ -4,6 +4,7 @@ import type {
   DiagramDto,
   DiagramListItemDto,
   SectionDto,
+  UpdateDiagramPayload,
   UpdateSectionPayload,
 } from "@/constants/diagram-library";
 import { getLibraryApiBaseUrl } from "@/config/library-api";
@@ -204,6 +205,22 @@ export async function uploadDiagramFile(
     {
       method: "POST",
       body: formData,
+    },
+    baseUrl,
+  );
+}
+
+export async function updateDiagram(
+  diagramId: string,
+  payload: UpdateDiagramPayload,
+  baseUrl?: string,
+): Promise<DiagramDto> {
+  return requestJson(
+    `/diagrams/${diagramId}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     },
     baseUrl,
   );

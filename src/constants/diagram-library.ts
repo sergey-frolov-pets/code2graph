@@ -26,6 +26,10 @@ export const STORAGE_KEY_LIBRARY_API_USERNAME =
 export const STORAGE_KEY_LIBRARY_API_PASSWORD =
   "plantuml-smetana-library-api-password";
 
+export const STORAGE_KEY_LIBRARY_TARGET = "plantuml-smetana-library-target";
+
+export type LibraryTarget = "local" | "online";
+
 export interface SectionDto {
   id: string;
   parentId: string | null;

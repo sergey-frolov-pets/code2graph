@@ -15,6 +15,7 @@ import {
   fetchDiagram,
   fetchDiagrams,
   updateSection,
+  updateDiagram as updateDiagramApi,
   uploadDiagramFile,
 } from "@/utils/diagram-api";
 import {
@@ -287,6 +288,24 @@ export function useLibraryMutations(
     diagramId: string,
     payload: UpdateDiagramPayload,
   ): Promise<DiagramDto> {
+    if (catalog.shouldUseServer.value && catalog.apiAvailable.value) {
+      try {
+        const diagram = await updateDiagramApi(
+          diagramId,
+          payload,
+          catalog.libraryApiUrl.value,
+        );
+        await saveDiagramDetailToCache(diagram);
+        if (catalog.selectedDiagram.value?.id === diagramId) {
+          catalog.selectedDiagram.value = diagram;
+        }
+        await sync.refresh();
+        return diagram;
+      } catch {
+        // fallback to local storage
+      }
+    }
+
     const diagram = await updateLocalDiagram(diagramId, payload);
     await sync.applyLocalState();
     await searchDiagrams();

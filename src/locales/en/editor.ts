@@ -34,6 +34,7 @@ export const editorMessages: LocaleMessages = {
   "editor.regions.remove": "Remove interval",
   "editor.regions.bookmarkLine": "Line {line}",
   "editor.regions.rangeLines": "{from}–{to}",
+  "editor.saveToLibrary": "Save to library",
   "editor.versions": "Versions",
   "editor.aiPatch": "Edit with AI",
   "editor.undo": "Undo (Ctrl+Z)",

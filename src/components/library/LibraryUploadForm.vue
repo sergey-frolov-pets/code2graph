@@ -11,6 +11,10 @@ defineProps<{
 }>();
 
 const uploadTitle = defineModel<string>("uploadTitle", { required: true });
+const uploadDescription = defineModel<string>("uploadDescription", {
+  required: true,
+});
+const uploadTags = defineModel<string>("uploadTags", { required: true });
 const uploadSectionId = defineModel<string>("uploadSectionId", { required: true });
 
 const emit = defineEmits<{
@@ -39,6 +43,14 @@ const { t } = useLocale();
     <label class="settings-field">
       <span class="settings-field__label">{{ t("library.diagramTitle") }}</span>
       <input v-model="uploadTitle" class="select" type="text" />
+    </label>
+    <label class="settings-field">
+      <span class="settings-field__label">{{ t("library.description") }}</span>
+      <textarea v-model="uploadDescription" class="textarea" rows="3" />
+    </label>
+    <label class="settings-field">
+      <span class="settings-field__label">{{ t("library.tags") }}</span>
+      <input v-model="uploadTags" class="select" type="text" />
     </label>
     <label class="settings-field">
       <span class="settings-field__label">{{ t("library.sections") }}</span>

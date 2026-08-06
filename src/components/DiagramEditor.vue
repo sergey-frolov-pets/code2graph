@@ -42,6 +42,7 @@ const emit = defineEmits<{
   fileLoaded: [payload: { content: string; fileName: string }];
   importError: [message: string];
   savePuml: [];
+  saveToLibrary: [];
   openVersions: [];
   validateSyntax: [];
   cleared: [];
@@ -246,6 +247,7 @@ onUnmounted(() => {
       @open-file="openFilePicker"
       @open-versions="emit('openVersions')"
       @save-puml="emit('savePuml')"
+      @save-to-library="emit('saveToLibrary')"
       @ai-patch="requestAiPatch"
       @validate-syntax="emit('validateSyntax')"
       @undo="emit('undo')"

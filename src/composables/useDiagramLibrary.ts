@@ -4,7 +4,9 @@ import { useLibraryMutations } from "./library/useLibraryMutations";
 import { useLibrarySync } from "./library/useLibrarySync";
 import { useLibraryTransfer } from "./library/useLibraryTransfer";
 
-export function useDiagramLibrary() {
+let libraryInstance: ReturnType<typeof createDiagramLibrary> | null = null;
+
+function createDiagramLibrary() {
   const catalog = useLibraryCatalog();
   const sync = useLibrarySync(catalog);
   const mutations = useLibraryMutations(catalog, sync);
@@ -29,6 +31,7 @@ export function useDiagramLibrary() {
     isSyncing: catalog.isSyncing,
     isOnline: catalog.isOnline,
     isLocalMode: catalog.isLocalMode,
+    libraryTarget: catalog.libraryTarget,
     apiAvailable: catalog.apiAvailable,
     usingCache: catalog.usingCache,
     lastSyncedAt: catalog.lastSyncedAt,
@@ -49,5 +52,16 @@ export function useDiagramLibrary() {
     exportLibrarySelection: transfer.exportLibrarySelection,
     parseImportBundle: transfer.parseImportBundle,
     importLibrarySelection: transfer.importLibrarySelection,
+    pushSelectionToServer: transfer.pushSelectionToServer,
+    pullSelectionFromServer: transfer.pullSelectionFromServer,
+    loadServerTransferData: transfer.loadServerTransferData,
   };
+}
+
+export function useDiagramLibrary() {
+  if (!libraryInstance) {
+    libraryInstance = createDiagramLibrary();
+  }
+
+  return libraryInstance;
 }
