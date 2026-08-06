@@ -3,7 +3,14 @@ import type {
   CreateSectionPayload,
   DiagramDto,
   DiagramListItemDto,
+  DiagramRatingDto,
+  DiagramSortOption,
+  DiagramVersionDto,
+  LibraryUserDto,
+  SectionAccessDto,
   SectionDto,
+  ShareLinkDto,
+  SharePermission,
   UpdateDiagramPayload,
   UpdateSectionPayload,
 } from "@/constants/diagram-library";
@@ -128,6 +135,9 @@ export async function fetchDiagrams(
     sectionId?: string;
     tag?: string;
     language?: string;
+    minRating?: number;
+    minVotes?: number;
+    sortBy?: DiagramSortOption;
   },
   baseUrl?: string,
 ): Promise<{ diagrams: DiagramListItemDto[]; total: number }> {
@@ -144,9 +154,155 @@ export async function fetchDiagrams(
   if (params.language) {
     searchParams.set("language", params.language);
   }
+  if (params.minRating !== undefined && params.minRating > 0) {
+    searchParams.set("minRating", String(params.minRating));
+  }
+  if (params.minVotes !== undefined && params.minVotes > 0) {
+    searchParams.set("minVotes", String(params.minVotes));
+  }
+  if (params.sortBy) {
+    searchParams.set("sortBy", params.sortBy);
+  }
 
   const query = searchParams.toString();
   return requestJson(`/diagrams${query ? `?${query}` : ""}`, undefined, baseUrl);
+}
+
+export async function addDiagramFavorite(
+  diagramId: string,
+  baseUrl?: string,
+): Promise<DiagramDto> {
+  return requestJson(
+    `/diagrams/${diagramId}/favorite`,
+    { method: "POST" },
+    baseUrl,
+  );
+}
+
+export async function removeDiagramFavorite(
+  diagramId: string,
+  baseUrl?: string,
+): Promise<DiagramDto> {
+  return requestJson(
+    `/diagrams/${diagramId}/favorite`,
+    { method: "DELETE" },
+    baseUrl,
+  );
+}
+
+export async function submitDiagramRatingStars(
+  diagramId: string,
+  rating: number,
+  baseUrl?: string,
+): Promise<DiagramDto> {
+  return requestJson(
+    `/diagrams/${diagramId}/ratings/stars`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rating }),
+    },
+    baseUrl,
+  );
+}
+
+export async function submitDiagramRatingComment(
+  diagramId: string,
+  comment: string,
+  baseUrl?: string,
+): Promise<DiagramDto> {
+  return requestJson(
+    `/diagrams/${diagramId}/ratings/comment`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comment }),
+    },
+    baseUrl,
+  );
+}
+
+export async function fetchDiagramRatings(
+  diagramId: string,
+  baseUrl?: string,
+): Promise<{ approved: DiagramRatingDto[]; pending: DiagramRatingDto[] }> {
+  return requestJson(`/diagrams/${diagramId}/ratings`, undefined, baseUrl);
+}
+
+export async function moderateDiagramRatingComment(
+  diagramId: string,
+  ratingUserId: string,
+  status: "approved" | "rejected",
+  baseUrl?: string,
+): Promise<void> {
+  await requestJson(
+    `/diagrams/${diagramId}/ratings/${ratingUserId}/moderate`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    },
+    baseUrl,
+  );
+}
+
+export async function deleteDiagramRating(
+  diagramId: string,
+  ratingUserId: string,
+  baseUrl?: string,
+): Promise<void> {
+  await requestJson(
+    `/diagrams/${diagramId}/ratings/${ratingUserId}`,
+    { method: "DELETE" },
+    baseUrl,
+  );
+}
+
+export async function fetchDiagramVersions(
+  diagramId: string,
+  baseUrl?: string,
+): Promise<{ versions: DiagramVersionDto[] }> {
+  return requestJson(`/diagrams/${diagramId}/versions`, undefined, baseUrl);
+}
+
+export async function createLibraryDiagramVersion(
+  diagramId: string,
+  payload: { source?: string; comment?: string },
+  baseUrl?: string,
+): Promise<{ version: DiagramVersionDto }> {
+  return requestJson(
+    `/diagrams/${diagramId}/versions`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    baseUrl,
+  );
+}
+
+export async function deleteLibraryDiagramVersion(
+  diagramId: string,
+  versionId: string,
+  baseUrl?: string,
+): Promise<void> {
+  await requestJson(
+    `/diagrams/${diagramId}/versions/${versionId}`,
+    { method: "DELETE" },
+    baseUrl,
+  );
+}
+
+export async function restoreLibraryDiagramVersion(
+  diagramId: string,
+  versionId: string,
+  baseUrl?: string,
+): Promise<DiagramDto> {
+  return requestJson(
+    `/diagrams/${diagramId}/versions/${versionId}/restore`,
+    { method: "POST" },
+    baseUrl,
+  );
 }
 
 export async function fetchDiagram(
@@ -179,6 +335,7 @@ export async function uploadDiagramFile(
     tags?: string[];
     language?: string;
     sectionId?: string | null;
+    visibility?: string;
   },
   baseUrl?: string,
 ): Promise<DiagramDto> {
@@ -198,6 +355,9 @@ export async function uploadDiagramFile(
   }
   if (metadata.sectionId) {
     formData.append("sectionId", metadata.sectionId);
+  }
+  if (metadata.visibility) {
+    formData.append("visibility", metadata.visibility);
   }
 
   return requestJson(
@@ -247,4 +407,240 @@ export async function checkApiHealth(baseUrl?: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+export async function loginLibrary(
+  username: string,
+  password: string,
+  baseUrl?: string,
+): Promise<{ token: string; user: LibraryUserDto }> {
+  return requestJson(
+    "/auth/login",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    },
+    baseUrl,
+  );
+}
+
+export async function fetchLibraryMe(baseUrl?: string): Promise<{ user: LibraryUserDto }> {
+  return requestJson("/auth/me", undefined, baseUrl);
+}
+
+export async function fetchAdminUsers(baseUrl?: string): Promise<{ users: LibraryUserDto[] }> {
+  return requestJson("/admin/users", undefined, baseUrl);
+}
+
+export async function setUserBlocked(
+  userId: string,
+  blocked: boolean,
+  baseUrl?: string,
+): Promise<{ user: LibraryUserDto }> {
+  return requestJson(
+    `/admin/users/${userId}/block`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ blocked }),
+    },
+    baseUrl,
+  );
+}
+
+export async function setUserSubscription(
+  userId: string,
+  subscriptionActive: boolean,
+  baseUrl?: string,
+): Promise<{ user: LibraryUserDto }> {
+  return requestJson(
+    `/admin/users/${userId}/subscription`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subscriptionActive }),
+    },
+    baseUrl,
+  );
+}
+
+export async function fetchSectionAccess(
+  sectionId: string,
+  baseUrl?: string,
+): Promise<{ access: SectionAccessDto[] }> {
+  return requestJson(`/sections/${sectionId}/access`, undefined, baseUrl);
+}
+
+export async function grantSectionAccess(
+  sectionId: string,
+  payload: {
+    username?: string;
+    userId?: string;
+    permanent?: boolean;
+    expiresAt?: string | null;
+  },
+  baseUrl?: string,
+): Promise<{ ok: boolean }> {
+  return requestJson(
+    `/sections/${sectionId}/access`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    baseUrl,
+  );
+}
+
+export async function revokeSectionAccess(
+  sectionId: string,
+  userId: string,
+  baseUrl?: string,
+): Promise<{ ok: boolean }> {
+  return requestJson(
+    `/sections/${sectionId}/access/${userId}`,
+    { method: "DELETE" },
+    baseUrl,
+  );
+}
+
+export async function createSectionShareLink(
+  sectionId: string,
+  payload: {
+    permanent?: boolean;
+    expiresAt?: string | null;
+    permission?: SharePermission;
+    maxDownloads?: number | null;
+  } = {},
+  baseUrl?: string,
+): Promise<{ link: ShareLinkDto }> {
+  return requestJson(
+    `/sections/${sectionId}/share`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    baseUrl,
+  );
+}
+
+export async function createDiagramShareLink(
+  diagramId: string,
+  payload: {
+    permanent?: boolean;
+    expiresAt?: string | null;
+    permission?: SharePermission;
+    maxDownloads?: number | null;
+  } = {},
+  baseUrl?: string,
+): Promise<{ link: ShareLinkDto }> {
+  return requestJson(
+    `/diagrams/${diagramId}/share`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    baseUrl,
+  );
+}
+
+function resolveShareApiBaseUrl(baseUrl?: string): string {
+  const apiBase = resolveApiBaseUrl(baseUrl);
+  return apiBase.replace(/\/api$/, "") + "/api/share";
+}
+
+export async function fetchShareResource(
+  token: string,
+  baseUrl?: string,
+): Promise<{
+  resourceType: "section" | "diagram";
+  link?: ShareLinkDto;
+  diagram?: DiagramDto;
+  sectionId?: string;
+  sections?: SectionDto[];
+  diagrams?: DiagramListItemDto[];
+  watermarkedPreview?: boolean;
+  canDownload?: boolean;
+  readOnly: boolean;
+}> {
+  const shareBase = resolveShareApiBaseUrl(baseUrl);
+  const response = await fetch(`${shareBase}/${token}`, {
+    headers: buildRequestHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new DiagramApiError(await parseError(response), response.status);
+  }
+
+  return (await response.json()) as {
+    resourceType: "section" | "diagram";
+    link?: ShareLinkDto;
+    diagram?: DiagramDto;
+    sectionId?: string;
+    sections?: SectionDto[];
+    diagrams?: DiagramListItemDto[];
+    watermarkedPreview?: boolean;
+    canDownload?: boolean;
+    readOnly: boolean;
+  };
+}
+
+export async function fetchShareDiagramPreview(
+  token: string,
+  diagramId: string,
+  baseUrl?: string,
+): Promise<{
+  link: ShareLinkDto;
+  diagram: DiagramDto;
+  watermarkedPreview: boolean;
+  canDownload: boolean;
+}> {
+  const shareBase = resolveShareApiBaseUrl(baseUrl);
+  const response = await fetch(`${shareBase}/${token}/diagrams/${diagramId}/preview`, {
+    headers: buildRequestHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new DiagramApiError(await parseError(response), response.status);
+  }
+
+  return (await response.json()) as {
+    link: ShareLinkDto;
+    diagram: DiagramDto;
+    watermarkedPreview: boolean;
+    canDownload: boolean;
+  };
+}
+
+export async function downloadShareResource(
+  token: string,
+  diagramId?: string,
+  baseUrl?: string,
+): Promise<{
+  link: ShareLinkDto;
+  diagram: DiagramDto;
+  watermarkedPreview: boolean;
+}> {
+  const shareBase = resolveShareApiBaseUrl(baseUrl);
+  const response = await fetch(`${shareBase}/${token}/download`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...buildLibraryAuthHeader(),
+    },
+    body: JSON.stringify({ diagramId }),
+  });
+
+  if (!response.ok) {
+    throw new DiagramApiError(await parseError(response), response.status);
+  }
+
+  return (await response.json()) as {
+    link: ShareLinkDto;
+    diagram: DiagramDto;
+    watermarkedPreview: boolean;
+  };
 }

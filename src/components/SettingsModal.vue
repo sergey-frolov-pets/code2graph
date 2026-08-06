@@ -27,6 +27,7 @@ import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import { useLibraryCredentials } from "@/composables/useLibraryCredentials";
 import { testLlmConnection } from "@/services/llm/llm-client";
 import { checkApiHealth } from "@/utils/diagram-api";
+import { useLibraryAuth } from "@/composables/useLibraryAuth";
 
 const props = defineProps<{
   open: boolean;
@@ -55,11 +56,13 @@ const { locale, setLocale, t } = useLocale();
 const { libraryApiUrl, setLibraryApiUrl } = useLibraryApiUrl();
 const {
   libraryApiUsername,
+  libraryApiPassword,
   hasCredentials,
   setUsername,
   setPassword,
   clearCredentials,
 } = useLibraryCredentials();
+const { loginWithCredentials } = useLibraryAuth();
 const { openLlmKeysGuide } = useLlmKeysGuide();
 const {
   llmProviderId,
@@ -156,6 +159,19 @@ async function onLibraryTestConnection(): Promise<void> {
 
   try {
     const ok = await checkApiHealth();
+    if (ok && libraryApiUsername.value && libraryApiPassword.value) {
+      try {
+        await loginWithCredentials(
+          libraryApiUsername.value,
+          libraryApiPassword.value,
+        );
+      } catch {
+        libraryTestOk.value = false;
+        libraryTestMessage.value = t("settings.libraryLoginFailed");
+        return;
+      }
+    }
+
     libraryTestOk.value = ok;
     libraryTestMessage.value = ok
       ? t("settings.libraryTestSuccessDetail")

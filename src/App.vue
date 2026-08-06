@@ -26,6 +26,7 @@ import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
 import { useLocale } from "@/composables/useLocale";
 import { usePersistedSettings } from "@/composables/usePersistedSettings";
 import { useSyntaxValidation } from "@/composables/useSyntaxValidation";
+import { getLibraryApiBaseUrl } from "@/config/library-api";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 
 const isSaveToLibraryModalOpen = ref(false);
@@ -213,10 +214,36 @@ function onAiPatchRequestOpen(payload: { start: number; end: number }): void {
   isPatchModalOpen.value = true;
 }
 
+const PENDING_SHARE_STORAGE_KEY = "plantuml-smetana-pending-share";
+
+async function handleShareLinkOnBoot(): Promise<void> {
+  const token = new URLSearchParams(window.location.search).get("share");
+  if (!token) {
+    return;
+  }
+
+  if (!getLibraryApiBaseUrl()) {
+    return;
+  }
+
+  try {
+    sessionStorage.setItem(PENDING_SHARE_STORAGE_KEY, token);
+    openLibraryModal();
+  } catch (error) {
+    void alert({
+      title: t("library.shareOpenErrorTitle"),
+      message:
+        error instanceof Error ? error.message : t("library.shareOpenError"),
+      variant: "error",
+    });
+  }
+}
+
 onMounted(() => {
   restoreSettings();
   void initializeIncomingSources();
   void bootEngine();
+  void handleShareLinkOnBoot();
 });
 </script>
 

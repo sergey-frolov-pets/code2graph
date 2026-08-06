@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useLocale } from "@/composables/useLocale";
 import { DIAGRAM_FILE_ACCEPT } from "@/constants/diagram-formats";
+import { VISIBILITY_OPTIONS } from "@/constants/library-visibility";
+import type { DiagramVisibility } from "@/constants/diagram-library";
 import type { FlatSectionOption } from "@/shared/library/section-tree";
 
 defineProps<{
@@ -16,6 +18,9 @@ const uploadDescription = defineModel<string>("uploadDescription", {
 });
 const uploadTags = defineModel<string>("uploadTags", { required: true });
 const uploadSectionId = defineModel<string>("uploadSectionId", { required: true });
+const uploadVisibility = defineModel<DiagramVisibility>("uploadVisibility", {
+  required: true,
+});
 
 const emit = defineEmits<{
   "file-change": [event: Event];
@@ -63,6 +68,14 @@ const { t } = useLocale();
         >
           {{ "—".repeat(section.depth) }}{{ section.depth > 0 ? " " : ""
           }}{{ section.title }}
+        </option>
+      </select>
+    </label>
+    <label class="settings-field">
+      <span class="settings-field__label">{{ t("library.visibility") }}</span>
+      <select v-model="uploadVisibility" class="select">
+        <option v-for="option in VISIBILITY_OPTIONS" :key="option" :value="option">
+          {{ t(`library.visibility.${option}`) }}
         </option>
       </select>
     </label>

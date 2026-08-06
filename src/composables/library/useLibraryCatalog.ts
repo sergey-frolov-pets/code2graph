@@ -2,6 +2,7 @@ import { computed, ref } from "vue";
 import type {
   DiagramDto,
   DiagramListItemDto,
+  DiagramSortOption,
   SectionDto,
 } from "@/constants/diagram-library";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
@@ -20,6 +21,9 @@ export function useLibraryCatalog() {
   const searchQuery = ref("");
   const tagFilter = ref("");
   const languageFilter = ref("");
+  const minRatingFilter = ref(0);
+  const minVotesFilter = ref(0);
+  const sortByFilter = ref<DiagramSortOption>("updated");
   const isLoading = ref(false);
   const isSyncing = ref(false);
   const isOnline = ref(navigator.onLine);
@@ -59,6 +63,9 @@ export function useLibraryCatalog() {
     searchQuery,
     tagFilter,
     languageFilter,
+    minRatingFilter,
+    minVotesFilter,
+    sortByFilter,
     isLoading,
     isSyncing,
     isOnline,

@@ -31,6 +31,14 @@ export function isLibraryAuthEnabled(): boolean {
   return Boolean(LIBRARY_AUTH_USERNAME && LIBRARY_AUTH_PASSWORD);
 }
 
+export const AUTH_TOKEN_SECRET =
+  process.env.AUTH_TOKEN_SECRET?.trim() ||
+  LIBRARY_AUTH_PASSWORD ||
+  "vueplantuml-dev-auth-secret-change-me";
+
+export const SHARED_SECTION_TITLE =
+  process.env.SHARED_SECTION_TITLE?.trim() || "Общие";
+
 export const DIAGRAM_LANGUAGES = [
   "plantuml",
   "mermaid",

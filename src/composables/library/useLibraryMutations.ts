@@ -3,6 +3,7 @@ import {
   type CreateDiagramPayload,
   type CreateSectionPayload,
   type DiagramDto,
+  type DiagramVisibility,
   type UpdateDiagramPayload,
   type UpdateSectionPayload,
 } from "@/constants/diagram-library";
@@ -68,6 +69,9 @@ export function useLibraryMutations(
           sectionId: catalog.selectedSectionId.value,
           tag: catalog.tagFilter.value,
           language: catalog.languageFilter.value,
+          minRating: catalog.minRatingFilter.value,
+          minVotes: catalog.minVotesFilter.value,
+          sortBy: catalog.sortByFilter.value,
         }),
         catalog.libraryApiUrl.value,
       );
@@ -229,6 +233,7 @@ export function useLibraryMutations(
       tags?: string[];
       language?: string;
       sectionId?: string | null;
+      visibility?: DiagramVisibility;
     },
   ): Promise<DiagramDto> {
     assertDiagramFileSize(file);
@@ -265,6 +270,7 @@ export function useLibraryMutations(
       sectionId: metadata.sectionId ?? null,
       source: content,
       fileName: file.name,
+      visibility: metadata.visibility,
     });
   }
 

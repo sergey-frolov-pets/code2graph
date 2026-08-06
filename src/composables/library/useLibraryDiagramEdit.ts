@@ -1,4 +1,5 @@
 import { ref, type Ref } from "vue";
+import type { DiagramVisibility } from "@/constants/diagram-library";
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import { parseTagsInput } from "@/utils/library-tags";
 import type { BrowseStep } from "./useLibraryBrowseFlow";
@@ -26,6 +27,7 @@ export function useLibraryDiagramEdit(options: {
   const editDescription = ref("");
   const editTags = ref("");
   const editSectionId = ref("");
+  const editVisibility = ref<DiagramVisibility>("all");
 
   function resetEditForm(): void {
     isEditing.value = false;
@@ -41,6 +43,7 @@ export function useLibraryDiagramEdit(options: {
     editDescription.value = library.selectedDiagram.value.description;
     editTags.value = library.selectedDiagram.value.tags.join(", ");
     editSectionId.value = library.selectedDiagram.value.sectionId ?? "";
+    editVisibility.value = library.selectedDiagram.value.visibility ?? "all";
     isEditing.value = true;
   }
 
@@ -55,6 +58,7 @@ export function useLibraryDiagramEdit(options: {
         description: editDescription.value,
         tags,
         sectionId: editSectionId.value || null,
+        visibility: editVisibility.value,
       });
       resetEditForm();
     } catch (error) {
@@ -111,6 +115,7 @@ export function useLibraryDiagramEdit(options: {
     editDescription,
     editTags,
     editSectionId,
+    editVisibility,
     resetEditForm,
     startEdit,
     saveEdit,
