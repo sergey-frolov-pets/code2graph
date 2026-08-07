@@ -3,7 +3,7 @@ import { computed, ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
-import { generateValidPlantUml } from "@/composables/useLlmPlantUmlGenerate";
+import { generateValidWizardDiagram } from "@/composables/useLlmPlantUmlGenerate";
 import { useLocale } from "@/composables/useLocale";
 import {
   buildManualScaffold,
@@ -24,6 +24,7 @@ import {
   type WizardState,
 } from "@/constants/llm-wizard";
 import { LlmClientError } from "@/services/llm/llm-types";
+import { renderGraphmlToSvg } from "@/services/graphml/graphml-engine";
 import { renderMermaidToSvg } from "@/services/mermaid/mermaid-engine";
 import { renderPlantUmlPreviewSvg } from "@/utils/llm-preview";
 
@@ -120,6 +121,15 @@ function syncLanguageForMode(): void {
   }
 }
 
+function syncModeForLanguage(): void {
+  if (
+    wizardState.value.language === "graphml" &&
+    wizardState.value.creationMode === "ai"
+  ) {
+    wizardState.value.creationMode = "manual";
+  }
+}
+
 function syncTypeForLanguage(): void {
   const allowed = getWizardTypesForLanguage(wizardState.value.language);
   if (!allowed.includes(wizardState.value.diagramType)) {
@@ -148,6 +158,7 @@ watch(
 watch(
   () => wizardState.value.language,
   () => {
+    syncModeForLanguage();
     syncTypeForLanguage();
     clampStepIndex();
   },
@@ -229,7 +240,12 @@ function goBack(): void {
 async function loadPreview(source: string): Promise<void> {
   isPreviewLoading.value = true;
   try {
-    if (wizardState.value.language === "mermaid") {
+    if (wizardState.value.language === "graphml") {
+      previewSvg.value = await renderGraphmlToSvg(source, {
+        dark: props.diagramDarkMode,
+        direction: wizardState.value.direction,
+      });
+    } else if (wizardState.value.language === "mermaid") {
       previewSvg.value = await renderMermaidToSvg(
         source,
         { dark: props.diagramDarkMode },
@@ -267,8 +283,9 @@ async function generateDiagram(): Promise<void> {
   previewSvg.value = "";
 
   try {
-    const result = await generateValidPlantUml(
+    const result = await generateValidWizardDiagram(
       wizardState.value.promptText,
+      wizardState.value.language,
       props.layout,
       props.diagramDarkMode,
       props.renderMode,
@@ -375,6 +392,9 @@ function onApply(): void {
         </select>
       </label>
       <p v-if="isAiMode" class="wizard-hint">{{ t("llm.wizard.languageAiHint") }}</p>
+      <p v-if="wizardState.language === 'graphml'" class="wizard-hint">
+        {{ t("llm.wizard.languageGraphmlHint") }}
+      </p>
     </div>
 
     <div v-else-if="currentStepId === 'type'" class="wizard-step">

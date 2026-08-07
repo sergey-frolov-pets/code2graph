@@ -8,6 +8,9 @@ export const WIZARD_DIAGRAM_TYPES = [
   "state",
   "c4_context",
   "c4_container",
+  "gantt",
+  "er",
+  "graph",
 ] as const;
 
 export type WizardDiagramType = (typeof WIZARD_DIAGRAM_TYPES)[number];
@@ -24,7 +27,7 @@ export const WIZARD_CREATION_MODES = ["ai", "manual"] as const;
 
 export type WizardCreationMode = (typeof WIZARD_CREATION_MODES)[number];
 
-export const WIZARD_LANGUAGES = ["plantuml", "mermaid"] as const;
+export const WIZARD_LANGUAGES = ["plantuml", "mermaid", "graphml"] as const;
 
 export type WizardLanguage = (typeof WIZARD_LANGUAGES)[number];
 
@@ -39,6 +42,9 @@ export const WIZARD_PARAM_IDS = [
   "externalSystems",
   "containers",
   "nodes",
+  "tasks",
+  "edges",
+  "entities",
 ] as const;
 
 export type WizardParamId = (typeof WIZARD_PARAM_IDS)[number];
@@ -101,15 +107,36 @@ export const WIZARD_TYPE_PARAM_FIELDS: Record<WizardDiagramType, WizardParamFiel
     { id: "externalSystems", min: 1, max: 8, default: 2 },
   ],
   c4_container: [{ id: "containers", min: 2, max: 12, default: 4 }],
+  gantt: [{ id: "tasks", min: 2, max: 20, default: 4 }],
+  er: [{ id: "entities", min: 2, max: 12, default: 3 }],
+  graph: [
+    { id: "nodes", min: 2, max: 15, default: 4 },
+    { id: "edges", min: 1, max: 20, default: 3 },
+  ],
 };
 
-const MERMAID_ONLY_TYPES: WizardDiagramType[] = [
+const PLANTUML_WIZARD_TYPES: WizardDiagramType[] = [
   "sequence",
   "class",
   "component",
   "activity",
   "state",
+  "c4_context",
+  "c4_container",
+  "gantt",
 ];
+
+const MERMAID_WIZARD_TYPES: WizardDiagramType[] = [
+  "sequence",
+  "class",
+  "component",
+  "activity",
+  "state",
+  "gantt",
+  "er",
+];
+
+const GRAPHML_WIZARD_TYPES: WizardDiagramType[] = ["graph"];
 
 const DIRECTION_SUPPORTED_TYPES: WizardDiagramType[] = [
   "class",
@@ -118,6 +145,7 @@ const DIRECTION_SUPPORTED_TYPES: WizardDiagramType[] = [
   "state",
   "c4_context",
   "c4_container",
+  "graph",
 ];
 
 export function createDefaultTypeParams(): Record<WizardParamId, number> {
@@ -161,15 +189,23 @@ export function isWizardLanguage(value: string): value is WizardLanguage {
 }
 
 export function getWizardLanguagesForMode(mode: WizardCreationMode): WizardLanguage[] {
-  return mode === "ai" ? ["plantuml"] : [...WIZARD_LANGUAGES];
+  return mode === "ai" ? ["plantuml", "mermaid"] : [...WIZARD_LANGUAGES];
 }
 
 export function getWizardTypesForLanguage(language: WizardLanguage): WizardDiagramType[] {
-  if (language === "mermaid") {
-    return [...MERMAID_ONLY_TYPES];
+  if (language === "graphml") {
+    return [...GRAPHML_WIZARD_TYPES];
   }
 
-  return [...WIZARD_DIAGRAM_TYPES];
+  if (language === "mermaid") {
+    return [...MERMAID_WIZARD_TYPES];
+  }
+
+  return [...PLANTUML_WIZARD_TYPES];
+}
+
+export function isWizardLanguageAiSupported(language: WizardLanguage): boolean {
+  return language === "plantuml" || language === "mermaid";
 }
 
 export function wizardTypeSupportsDirection(
@@ -178,6 +214,10 @@ export function wizardTypeSupportsDirection(
 ): boolean {
   if (language === "mermaid") {
     return ["class", "component", "activity", "state"].includes(diagramType);
+  }
+
+  if (language === "graphml") {
+    return diagramType === "graph";
   }
 
   return DIRECTION_SUPPORTED_TYPES.includes(diagramType);
@@ -208,9 +248,15 @@ export function getWizardStepTitleKey(stepId: WizardStepId): string {
 export function buildWizardPrompt(state: WizardState): string {
   const typeLabel = state.diagramType.replace(/_/g, " ");
   const paramLines = formatTypeParamsForPrompt(state);
+  const formatLabel =
+    state.language === "mermaid"
+      ? "Mermaid"
+      : state.language === "graphml"
+        ? "GraphML"
+        : "PlantUML";
 
   const lines = [
-    `Create a new ${state.language === "mermaid" ? "Mermaid" : "PlantUML"} ${typeLabel} diagram.`,
+    `Create a new ${formatLabel} ${typeLabel} diagram.`,
     `Output language/format: ${state.language}.`,
     `Layout direction: ${state.direction}.`,
     `Diagram theme preference: ${state.theme}.`,
@@ -590,6 +636,116 @@ function buildMermaidComponent(state: WizardState, locale: AppLocale): string {
   return buildMermaidFlowchart(state, locale);
 }
 
+function taskLabel(index: number, locale: AppLocale): string {
+  return locale === "ru" ? `Задача ${index}` : `Task ${index}`;
+}
+
+function entityLabel(index: number, locale: AppLocale): string {
+  return locale === "ru" ? `Сущность ${index}` : `Entity ${index}`;
+}
+
+function buildPlantUmlGantt(state: WizardState, locale: AppLocale): string {
+  const taskCount = state.typeParams.tasks;
+  const title = locale === "ru" ? "Диаграмма Ганта" : "Gantt chart";
+  const lines = [
+    "@startgantt",
+    `title ${title}`,
+    "project starts 2026-01-06",
+    "saturday are closed",
+    "sunday are closed",
+    "",
+  ];
+
+  for (let index = 1; index <= taskCount; index += 1) {
+    const label = taskLabel(index, locale);
+    if (index === 1) {
+      lines.push(`[${label}] lasts 3 days`);
+    } else {
+      const prev = taskLabel(index - 1, locale);
+      lines.push(`[${label}] lasts 3 days and starts at [${prev}]'s end`);
+    }
+  }
+
+  lines.push("@endgantt");
+  return lines.join("\n");
+}
+
+function buildMermaidGantt(state: WizardState, locale: AppLocale): string {
+  const taskCount = state.typeParams.tasks;
+  const title = locale === "ru" ? "План проекта" : "Project plan";
+  const section = locale === "ru" ? "Этапы" : "Stages";
+  const lines = [
+    "gantt",
+    `title ${title}`,
+    "dateFormat YYYY-MM-DD",
+    "excludes weekends",
+    "",
+    `section ${section}`,
+  ];
+
+  for (let index = 1; index <= taskCount; index += 1) {
+    const label = taskLabel(index, locale);
+    const id = `t${index}`;
+    if (index === 1) {
+      lines.push(`${label} :${id}, 2026-01-06, 3d`);
+    } else {
+      const prevId = `t${index - 1}`;
+      lines.push(`${label} :${id}, after ${prevId}, 3d`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+function buildMermaidEr(state: WizardState, locale: AppLocale): string {
+  const count = state.typeParams.entities;
+  const lines = ["erDiagram"];
+
+  for (let index = 1; index <= count; index += 1) {
+    const name = entityLabel(index, locale).replace(/\s+/g, "_");
+    lines.push(`  ${name} {`, `    int id PK`, `    string name`, "  }");
+  }
+
+  if (count >= 2) {
+    const from = entityLabel(1, locale).replace(/\s+/g, "_");
+    const to = entityLabel(2, locale).replace(/\s+/g, "_");
+    const rel = locale === "ru" ? "связан с" : "relates to";
+    lines.push(`  ${from} ||--o{ ${to} : "${rel}"`);
+  }
+
+  return lines.join("\n");
+}
+
+function buildGraphmlGraph(state: WizardState, locale: AppLocale): string {
+  const nodeCount = state.typeParams.nodes;
+  const edgeCount = Math.min(
+    state.typeParams.edges,
+    nodeCount > 1 ? nodeCount - 1 : 0,
+  );
+  const lines = [
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+    "<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\">",
+    "  <key id=\"d0\" for=\"node\" attr.name=\"label\" attr.type=\"string\"/>",
+    "  <graph edgedefault=\"directed\">",
+  ];
+
+  for (let index = 1; index <= nodeCount; index += 1) {
+    const label = nodeLabel(index, locale);
+    lines.push(
+      `    <node id="n${index}">`,
+      `      <data key="d0">${label}</data>`,
+      "    </node>",
+    );
+  }
+
+  for (let index = 1; index <= edgeCount; index += 1) {
+    lines.push(`    <edge source="n${index}" target="n${index + 1}"/>`);
+  }
+
+  lines.push("  </graph>", "</graphml>");
+  return lines.join("\n");
+}
+
 function buildMermaidState(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.states;
   const lines = ["stateDiagram-v2"];
@@ -610,6 +766,10 @@ function buildMermaidState(state: WizardState, locale: AppLocale): string {
 }
 
 export function buildManualScaffold(state: WizardState, locale: AppLocale): string {
+  if (state.language === "graphml") {
+    return buildGraphmlGraph(state, locale);
+  }
+
   if (state.language === "mermaid") {
     switch (state.diagramType) {
       case "sequence":
@@ -622,6 +782,10 @@ export function buildManualScaffold(state: WizardState, locale: AppLocale): stri
         return buildMermaidActivity(state, locale);
       case "state":
         return buildMermaidState(state, locale);
+      case "gantt":
+        return buildMermaidGantt(state, locale);
+      case "er":
+        return buildMermaidEr(state, locale);
       default:
         return buildMermaidFlowchart(state, locale);
     }
@@ -642,6 +806,8 @@ export function buildManualScaffold(state: WizardState, locale: AppLocale): stri
       return buildPlantUmlC4Context(state, locale);
     case "c4_container":
       return buildPlantUmlC4Container(state, locale);
+    case "gantt":
+      return buildPlantUmlGantt(state, locale);
     default:
       return buildPlantUmlSequence(state, locale);
   }

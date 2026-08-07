@@ -3,7 +3,9 @@ import {
   buildManualScaffold,
   buildWizardPrompt,
   createDefaultTypeParams,
+  getWizardLanguagesForMode,
   getWizardSteps,
+  getWizardTypesForLanguage,
   type WizardState,
 } from "@/constants/llm-wizard";
 
@@ -100,5 +102,87 @@ describe("llm-wizard", () => {
     expect(source.startsWith("flowchart LR")).toBe(true);
     expect(source).toContain("Node 1");
     expect(source).toContain("N3");
+  });
+
+  it("builds plantuml gantt scaffold", () => {
+    const source = buildManualScaffold(
+      createState({
+        diagramType: "gantt",
+        typeParams: {
+          ...createDefaultTypeParams(),
+          tasks: 3,
+        },
+      }),
+      "en",
+    );
+
+    expect(source).toContain("@startgantt");
+    expect(source).toContain("[Task 1]");
+    expect(source).toContain("[Task 3]");
+    expect(source).toContain("@endgantt");
+  });
+
+  it("builds mermaid er scaffold", () => {
+    const source = buildManualScaffold(
+      createState({
+        language: "mermaid",
+        diagramType: "er",
+        typeParams: {
+          ...createDefaultTypeParams(),
+          entities: 3,
+        },
+      }),
+      "en",
+    );
+
+    expect(source).toContain("erDiagram");
+    expect(source).toContain("Entity_1");
+    expect(source).toContain("Entity_2");
+  });
+
+  it("builds graphml scaffold with nodes and edges", () => {
+    const source = buildManualScaffold(
+      createState({
+        language: "graphml",
+        diagramType: "graph",
+        typeParams: {
+          ...createDefaultTypeParams(),
+          nodes: 3,
+          edges: 2,
+        },
+      }),
+      "en",
+    );
+
+    expect(source).toContain("<graphml");
+    expect(source).toContain("<node id=\"n1\">");
+    expect(source).toContain("<node id=\"n3\">");
+    expect(source).toContain("<edge source=\"n1\" target=\"n2\"/>");
+    expect(source).toContain("<edge source=\"n2\" target=\"n3\"/>");
+  });
+
+  it("exposes graphml only for manual mode", () => {
+    expect(getWizardLanguagesForMode("manual")).toContain("graphml");
+    expect(getWizardLanguagesForMode("ai")).not.toContain("graphml");
+  });
+
+  it("lists gantt for plantuml and mermaid", () => {
+    expect(getWizardTypesForLanguage("plantuml")).toContain("gantt");
+    expect(getWizardTypesForLanguage("mermaid")).toContain("gantt");
+    expect(getWizardTypesForLanguage("graphml")).toEqual(["graph"]);
+  });
+
+  it("mentions Mermaid in AI wizard prompt", () => {
+    const prompt = buildWizardPrompt(
+      createState({
+        creationMode: "ai",
+        language: "mermaid",
+        diagramType: "sequence",
+        contextText: "Chat app",
+      }),
+    );
+
+    expect(prompt).toContain("Mermaid");
+    expect(prompt).toContain("Chat app");
   });
 });
