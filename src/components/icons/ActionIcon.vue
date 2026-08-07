@@ -9,6 +9,7 @@ import {
   Download,
   Eye,
   FolderOpen,
+  Globe,
   History,
   Library,
   Moon,
@@ -23,6 +24,7 @@ import {
   Sun,
   Trash2,
   Undo2,
+  Unlink,
   Upload,
   X,
   ZoomIn,
@@ -54,7 +56,9 @@ export type ActionIconName =
   | "eye"
   | "star"
   | "cloud"
-  | "shield";
+  | "shield"
+  | "globe"
+  | "unlink";
 
 const props = withDefaults(
   defineProps<{
@@ -92,6 +96,8 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   star: Star,
   cloud: Cloud,
   shield: Shield,
+  globe: Globe,
+  unlink: Unlink,
 };
 
 const iconComponent = computed(() => ICON_MAP[props.name]);
