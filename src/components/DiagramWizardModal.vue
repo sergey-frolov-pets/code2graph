@@ -6,15 +6,25 @@ import type { RenderMode } from "@/constants/render-settings";
 import { generateValidPlantUml } from "@/composables/useLlmPlantUmlGenerate";
 import { useLocale } from "@/composables/useLocale";
 import {
+  buildManualScaffold,
   buildWizardPrompt,
+  createDefaultTypeParams,
   DEFAULT_WIZARD_STATE,
+  getWizardLanguagesForMode,
+  getWizardStepTitleKey,
+  getWizardSteps,
+  getWizardTypesForLanguage,
   isWizardDiagramType,
+  isWizardLanguage,
+  WIZARD_CREATION_MODES,
   WIZARD_DIAGRAM_DIRECTIONS,
   WIZARD_DIAGRAM_THEMES,
-  WIZARD_DIAGRAM_TYPES,
+  WIZARD_TYPE_PARAM_FIELDS,
+  type WizardParamField,
   type WizardState,
 } from "@/constants/llm-wizard";
 import { LlmClientError } from "@/services/llm/llm-types";
+import { renderMermaidToSvg } from "@/services/mermaid/mermaid-engine";
 import { renderPlantUmlPreviewSvg } from "@/utils/llm-preview";
 
 const props = defineProps<{
@@ -27,62 +37,94 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
-  apply: [payload: { plantuml: string; label: string }];
+  apply: [payload: { source: string; label: string }];
 }>();
 
-const { t } = useLocale();
+const { t, locale } = useLocale();
 
 const stepIndex = ref(0);
-const wizardState = ref<WizardState>({ ...DEFAULT_WIZARD_STATE });
+const wizardState = ref<WizardState>({ ...DEFAULT_WIZARD_STATE, typeParams: createDefaultTypeParams() });
 const isGenerating = ref(false);
 const errorMessage = ref("");
-const resultPlantUml = ref("");
+const resultSource = ref("");
 const resultExplanation = ref("");
 const previewSvg = ref("");
 const isPreviewLoading = ref(false);
 
-const totalSteps = 6;
+const wizardSteps = computed(() => getWizardSteps(wizardState.value));
+const currentStepId = computed(() => wizardSteps.value[stepIndex.value] ?? "mode");
+const totalSteps = computed(() => wizardSteps.value.length);
 
-const stepTitle = computed(() => {
-  const keys = [
-    "llm.wizard.step.type",
-    "llm.wizard.step.style",
-    "llm.wizard.step.context",
-    "llm.wizard.step.details",
-    "llm.wizard.step.prompt",
-    "llm.wizard.step.result",
-  ];
-  return t(keys[stepIndex.value] ?? "llm.wizard.title");
-});
+const stepTitle = computed(() => t(getWizardStepTitleKey(currentStepId.value)));
+
+const languageOptions = computed(() =>
+  getWizardLanguagesForMode(wizardState.value.creationMode).map((id) => ({
+    id,
+    label: t(`llm.wizard.language.${id}`),
+  })),
+);
 
 const typeOptions = computed(() =>
-  WIZARD_DIAGRAM_TYPES.map((id) => ({
+  getWizardTypesForLanguage(wizardState.value.language).map((id) => ({
     id,
     label: t(`llm.wizard.type.${id}`),
   })),
 );
 
+const paramFields = computed((): WizardParamField[] =>
+  WIZARD_TYPE_PARAM_FIELDS[wizardState.value.diagramType],
+);
+
+const isAiMode = computed(() => wizardState.value.creationMode === "ai");
+const isManualResultReady = computed(
+  () => !isAiMode.value && currentStepId.value === "result" && resultSource.value.length > 0,
+);
+
 const canGoNext = computed(() => {
-  if (stepIndex.value === 2) {
+  if (currentStepId.value === "context") {
     return wizardState.value.contextText.trim().length > 0;
   }
 
-  if (stepIndex.value === 4) {
+  if (currentStepId.value === "prompt") {
     return wizardState.value.promptText.trim().length > 0;
   }
 
-  return stepIndex.value < totalSteps - 1;
+  return stepIndex.value < totalSteps.value - 1;
 });
 
 function resetWizard(): void {
   stepIndex.value = 0;
-  wizardState.value = { ...DEFAULT_WIZARD_STATE };
+  wizardState.value = {
+    ...DEFAULT_WIZARD_STATE,
+    typeParams: createDefaultTypeParams(),
+  };
   isGenerating.value = false;
   errorMessage.value = "";
-  resultPlantUml.value = "";
+  resultSource.value = "";
   resultExplanation.value = "";
   previewSvg.value = "";
   isPreviewLoading.value = false;
+}
+
+function clampStepIndex(): void {
+  const maxIndex = Math.max(0, wizardSteps.value.length - 1);
+  if (stepIndex.value > maxIndex) {
+    stepIndex.value = maxIndex;
+  }
+}
+
+function syncLanguageForMode(): void {
+  const allowed = getWizardLanguagesForMode(wizardState.value.creationMode);
+  if (!allowed.includes(wizardState.value.language)) {
+    wizardState.value.language = allowed[0];
+  }
+}
+
+function syncTypeForLanguage(): void {
+  const allowed = getWizardTypesForLanguage(wizardState.value.language);
+  if (!allowed.includes(wizardState.value.diagramType)) {
+    wizardState.value.diagramType = allowed[0];
+  }
 }
 
 watch(
@@ -95,20 +137,63 @@ watch(
 );
 
 watch(
+  () => wizardState.value.creationMode,
+  () => {
+    syncLanguageForMode();
+    syncTypeForLanguage();
+    clampStepIndex();
+  },
+);
+
+watch(
+  () => wizardState.value.language,
+  () => {
+    syncTypeForLanguage();
+    clampStepIndex();
+  },
+);
+
+watch(
+  () => wizardState.value.diagramType,
+  () => {
+    clampStepIndex();
+  },
+);
+
+watch(
   () => [
+    wizardState.value.creationMode,
+    wizardState.value.language,
     wizardState.value.diagramType,
     wizardState.value.theme,
     wizardState.value.direction,
+    wizardState.value.typeParams,
     wizardState.value.contextText,
     wizardState.value.typeSpecificText,
   ],
   () => {
-    if (stepIndex.value < 4) {
-      wizardState.value.promptText = buildWizardPrompt(wizardState.value);
+    if (currentStepId.value === "prompt" || wizardSteps.value.includes("prompt")) {
+      const promptStepIndex = wizardSteps.value.indexOf("prompt");
+      if (promptStepIndex >= 0 && stepIndex.value <= promptStepIndex) {
+        wizardState.value.promptText = buildWizardPrompt(wizardState.value);
+      }
     }
   },
   { deep: true },
 );
+
+function onModeSelect(mode: string): void {
+  if (mode === "ai" || mode === "manual") {
+    wizardState.value.creationMode = mode;
+  }
+}
+
+function onLanguageChange(event: Event): void {
+  const value = (event.target as HTMLSelectElement).value;
+  if (isWizardLanguage(value)) {
+    wizardState.value.language = value;
+  }
+}
 
 function onTypeChange(event: Event): void {
   const value = (event.target as HTMLSelectElement).value;
@@ -125,33 +210,39 @@ function onDirectionChange(event: Event): void {
   wizardState.value.direction = (event.target as HTMLSelectElement).value as WizardState["direction"];
 }
 
+function onParamChange(paramId: WizardParamField["id"], event: Event): void {
+  const raw = Number((event.target as HTMLInputElement).value);
+  const field = paramFields.value.find((item) => item.id === paramId);
+  if (!field || Number.isNaN(raw)) {
+    return;
+  }
+
+  wizardState.value.typeParams[paramId] = Math.min(field.max, Math.max(field.min, raw));
+}
+
 function goBack(): void {
   if (stepIndex.value > 0) {
     stepIndex.value -= 1;
   }
 }
 
-function goNext(): void {
-  if (stepIndex.value === 4) {
-    wizardState.value.promptText = wizardState.value.promptText.trim() || buildWizardPrompt(wizardState.value);
-    void generateDiagram();
-    return;
-  }
-
-  if (canGoNext.value && stepIndex.value < totalSteps - 1) {
-    stepIndex.value += 1;
-  }
-}
-
-async function loadPreview(plantuml: string): Promise<void> {
+async function loadPreview(source: string): Promise<void> {
   isPreviewLoading.value = true;
   try {
-    previewSvg.value = await renderPlantUmlPreviewSvg(
-      plantuml,
-      props.layout,
-      props.diagramDarkMode,
-      props.renderMode,
-    );
+    if (wizardState.value.language === "mermaid") {
+      previewSvg.value = await renderMermaidToSvg(
+        source,
+        { dark: props.diagramDarkMode },
+        props.renderMode,
+      );
+    } else {
+      previewSvg.value = await renderPlantUmlPreviewSvg(
+        source,
+        props.layout,
+        props.diagramDarkMode,
+        props.renderMode,
+      );
+    }
   } catch (error) {
     previewSvg.value = "";
     errorMessage.value =
@@ -161,13 +252,19 @@ async function loadPreview(plantuml: string): Promise<void> {
   }
 }
 
+async function prepareManualResult(): Promise<void> {
+  errorMessage.value = "";
+  resultExplanation.value = "";
+  resultSource.value = buildManualScaffold(wizardState.value, locale.value);
+  await loadPreview(resultSource.value);
+}
+
 async function generateDiagram(): Promise<void> {
   isGenerating.value = true;
   errorMessage.value = "";
-  resultPlantUml.value = "";
+  resultSource.value = "";
   resultExplanation.value = "";
   previewSvg.value = "";
-  stepIndex.value = 5;
 
   try {
     const result = await generateValidPlantUml(
@@ -176,10 +273,10 @@ async function generateDiagram(): Promise<void> {
       props.diagramDarkMode,
       props.renderMode,
       { openSettings: props.openSettings },
-      "You create new PlantUML diagrams from structured wizard requirements.",
+      "You create new diagrams from structured wizard requirements.",
     );
 
-    resultPlantUml.value = result.plantuml;
+    resultSource.value = result.plantuml;
     resultExplanation.value = result.explanation ?? "";
     await loadPreview(result.plantuml);
   } catch (error) {
@@ -194,14 +291,40 @@ async function generateDiagram(): Promise<void> {
   }
 }
 
-function onApply(): void {
-  if (!resultPlantUml.value) {
+function goNext(): void {
+  if (currentStepId.value === "prompt") {
+    wizardState.value.promptText =
+      wizardState.value.promptText.trim() || buildWizardPrompt(wizardState.value);
+    stepIndex.value += 1;
+    void generateDiagram();
     return;
   }
 
+  if (currentStepId.value === "params" && !isAiMode.value) {
+    stepIndex.value += 1;
+    void prepareManualResult();
+    return;
+  }
+
+  if (canGoNext.value && stepIndex.value < totalSteps.value - 1) {
+    stepIndex.value += 1;
+  }
+}
+
+function onApply(): void {
+  if (!resultSource.value) {
+    return;
+  }
+
+  const modeLabel =
+    wizardState.value.creationMode === "ai"
+      ? t("llm.wizard.mode.ai")
+      : t("llm.wizard.mode.manual");
+
   emit("apply", {
-    plantuml: resultPlantUml.value,
+    source: resultSource.value,
     label: t("llm.wizard.historyLabel", {
+      mode: modeLabel,
       type: t(`llm.wizard.type.${wizardState.value.diagramType}`),
     }),
   });
@@ -221,7 +344,40 @@ function onApply(): void {
       {{ t("llm.wizard.stepCounter", { current: stepIndex + 1, total: totalSteps }) }}
     </p>
 
-    <div v-if="stepIndex === 0" class="wizard-step">
+    <div v-if="currentStepId === 'mode'" class="wizard-step">
+      <p class="wizard-hint">{{ t("llm.wizard.modeHint") }}</p>
+      <div class="wizard-mode-grid">
+        <button
+          v-for="mode in WIZARD_CREATION_MODES"
+          :key="mode"
+          class="wizard-mode-card"
+          :class="{ 'is-selected': wizardState.creationMode === mode }"
+          type="button"
+          @click="onModeSelect(mode)"
+        >
+          <span class="wizard-mode-card__title">{{ t(`llm.wizard.mode.${mode}`) }}</span>
+          <span class="wizard-mode-card__desc">{{ t(`llm.wizard.mode.${mode}Desc`) }}</span>
+        </button>
+      </div>
+    </div>
+
+    <div v-else-if="currentStepId === 'language'" class="wizard-step">
+      <label class="wizard-field">
+        <span class="wizard-field__label">{{ t("llm.wizard.diagramLanguage") }}</span>
+        <select
+          class="select"
+          :value="wizardState.language"
+          @change="onLanguageChange"
+        >
+          <option v-for="option in languageOptions" :key="option.id" :value="option.id">
+            {{ option.label }}
+          </option>
+        </select>
+      </label>
+      <p v-if="isAiMode" class="wizard-hint">{{ t("llm.wizard.languageAiHint") }}</p>
+    </div>
+
+    <div v-else-if="currentStepId === 'type'" class="wizard-step">
       <label class="wizard-field">
         <span class="wizard-field__label">{{ t("llm.wizard.diagramType") }}</span>
         <select
@@ -236,20 +392,7 @@ function onApply(): void {
       </label>
     </div>
 
-    <div v-else-if="stepIndex === 1" class="wizard-step">
-      <label class="wizard-field">
-        <span class="wizard-field__label">{{ t("llm.wizard.theme") }}</span>
-        <select class="select" :value="wizardState.theme" @change="onThemeChange">
-          <option
-            v-for="theme in WIZARD_DIAGRAM_THEMES"
-            :key="theme"
-            :value="theme"
-          >
-            {{ t(`llm.wizard.theme.${theme}`) }}
-          </option>
-        </select>
-      </label>
-
+    <div v-else-if="currentStepId === 'direction'" class="wizard-step">
       <label class="wizard-field">
         <span class="wizard-field__label">{{ t("llm.wizard.direction") }}</span>
         <select
@@ -262,13 +405,60 @@ function onApply(): void {
             :key="direction"
             :value="direction"
           >
-            {{ direction }}
+            {{ t(`llm.wizard.direction.${direction}`) }}
           </option>
         </select>
       </label>
     </div>
 
-    <div v-else-if="stepIndex === 2" class="wizard-step">
+    <div v-else-if="currentStepId === 'style'" class="wizard-step">
+      <label class="wizard-field">
+        <span class="wizard-field__label">{{ t("llm.wizard.theme") }}</span>
+        <select class="select" :value="wizardState.theme" @change="onThemeChange">
+          <option
+            v-for="theme in WIZARD_DIAGRAM_THEMES"
+            :key="theme"
+            :value="theme"
+          >
+            {{ t(`llm.wizard.theme.${theme}`) }}
+          </option>
+        </select>
+      </label>
+    </div>
+
+    <div v-else-if="currentStepId === 'params'" class="wizard-step">
+      <p class="wizard-hint">{{ t("llm.wizard.paramsHint") }}</p>
+      <label
+        v-for="field in paramFields"
+        :key="field.id"
+        class="wizard-field wizard-field--inline"
+      >
+        <span class="wizard-field__label">{{ t(`llm.wizard.param.${field.id}`) }}</span>
+        <input
+          class="wizard-input"
+          type="number"
+          :min="field.min"
+          :max="field.max"
+          :value="wizardState.typeParams[field.id]"
+          @change="onParamChange(field.id, $event)"
+        />
+        <span class="wizard-field__hint">
+          {{ t("llm.wizard.paramRange", { min: field.min, max: field.max }) }}
+        </span>
+      </label>
+
+      <label v-if="isAiMode" class="wizard-field">
+        <span class="wizard-field__label">{{ t("llm.wizard.details") }}</span>
+        <textarea
+          v-model="wizardState.typeSpecificText"
+          class="wizard-textarea"
+          rows="3"
+          :placeholder="t(`llm.wizard.detailsPlaceholder.${wizardState.diagramType}`)"
+        />
+      </label>
+    </div>
+
+    <div v-else-if="currentStepId === 'context'" class="wizard-step">
       <label class="wizard-field">
         <span class="wizard-field__label">{{ t("llm.wizard.context") }}</span>
         <textarea
@@ -280,19 +470,7 @@ function onApply(): void {
       </label>
     </div>
 
-    <div v-else-if="stepIndex === 3" class="wizard-step">
-      <label class="wizard-field">
-        <span class="wizard-field__label">{{ t("llm.wizard.details") }}</span>
-        <textarea
-          v-model="wizardState.typeSpecificText"
-          class="wizard-textarea"
-          rows="5"
-          :placeholder="t(`llm.wizard.detailsPlaceholder.${wizardState.diagramType}`)"
-        />
-      </label>
-    </div>
-
-    <div v-else-if="stepIndex === 4" class="wizard-step">
+    <div v-else-if="currentStepId === 'prompt'" class="wizard-step">
       <label class="wizard-field">
         <span class="wizard-field__label">{{ t("llm.wizard.prompt") }}</span>
         <textarea
@@ -307,6 +485,7 @@ function onApply(): void {
       <p v-if="isGenerating" class="wizard-status">{{ t("llm.wizard.generating") }}</p>
       <p v-if="errorMessage" class="wizard-error">{{ errorMessage }}</p>
       <p v-if="resultExplanation" class="wizard-explanation">{{ resultExplanation }}</p>
+      <p v-if="isManualResultReady" class="wizard-hint">{{ t("llm.wizard.manualResultHint") }}</p>
 
       <div v-if="previewSvg || isPreviewLoading" class="wizard-preview-wrap">
         <div class="wizard-preview" :class="{ 'is-loading': isPreviewLoading }">
@@ -329,16 +508,16 @@ function onApply(): void {
         {{ t("app.cancel") }}
       </button>
       <button
-        v-if="stepIndex < 4"
+        v-if="currentStepId !== 'result' && currentStepId !== 'prompt'"
         class="btn btn-primary"
         type="button"
-        :disabled="!canGoNext"
+        :disabled="!canGoNext || isGenerating"
         @click="goNext"
       >
         {{ t("llm.wizard.next") }}
       </button>
       <button
-        v-else-if="stepIndex === 4"
+        v-if="currentStepId === 'prompt'"
         class="btn btn-primary"
         type="button"
         :disabled="!canGoNext || isGenerating"
@@ -347,19 +526,27 @@ function onApply(): void {
         {{ isGenerating ? t("llm.wizard.generating") : t("llm.wizard.generate") }}
       </button>
       <button
-        v-else
+        v-if="currentStepId === 'result'"
         class="btn btn-primary"
         type="button"
-        :disabled="!resultPlantUml || isGenerating"
+        :disabled="!resultSource || isGenerating"
         @click="onApply"
       >
         {{ t("llm.wizard.apply") }}
       </button>
       <button
-        v-if="stepIndex === 5 && !isGenerating"
+        v-if="currentStepId === 'result' && isAiMode && !isGenerating"
         class="btn"
         type="button"
         @click="generateDiagram"
+      >
+        {{ t("llm.wizard.regenerate") }}
+      </button>
+      <button
+        v-if="currentStepId === 'result' && !isAiMode && !isGenerating"
+        class="btn"
+        type="button"
+        @click="prepareManualResult"
       >
         {{ t("llm.wizard.regenerate") }}
       </button>
@@ -383,6 +570,52 @@ function onApply(): void {
   min-height: 180px;
 }
 
+.wizard-hint {
+  margin: 0 0 12px;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.wizard-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.wizard-mode-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-muted);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.wizard-mode-card:hover {
+  border-color: var(--primary);
+}
+
+.wizard-mode-card.is-selected {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface-muted));
+}
+
+.wizard-mode-card__title {
+  font-weight: 600;
+}
+
+.wizard-mode-card__desc {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
 .wizard-field {
   display: flex;
   flex-direction: column;
@@ -390,9 +623,30 @@ function onApply(): void {
   margin-bottom: 12px;
 }
 
+.wizard-field--inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 .wizard-field__label {
   font-size: 0.86rem;
   color: var(--text-muted);
+  min-width: 140px;
+}
+
+.wizard-field__hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.wizard-input {
+  width: 80px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-muted);
+  color: var(--text);
 }
 
 .wizard-textarea {
