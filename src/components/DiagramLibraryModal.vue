@@ -8,6 +8,7 @@ import LibraryBrowseSections from "@/components/library/LibraryBrowseSections.vu
 import LibraryBrowseDiagrams from "@/components/library/LibraryBrowseDiagrams.vue";
 import LibraryDiagramDetail from "@/components/library/LibraryDiagramDetail.vue";
 import LibraryAdminUsersPanel from "@/components/library/LibraryAdminUsersPanel.vue";
+import LibrarySetupAdminPanel from "@/components/library/LibrarySetupAdminPanel.vue";
 import LibrarySetupAdminModal from "@/components/library/LibrarySetupAdminModal.vue";
 import LibraryDiagramVersionsModal from "@/components/library/LibraryDiagramVersionsModal.vue";
 import LibraryDiagramPreviewModal from "@/components/library/LibraryDiagramPreviewModal.vue";
@@ -783,9 +784,11 @@ watch(libraryTarget, () => {
         <p v-if="uploadError" class="library-error">{{ uploadError }}</p>
         <p v-if="errorMessage" class="library-error">{{ errorMessage }}</p>
 
-        <p v-if="isOnlineSetupPending" class="library-error">
-          {{ t("library.setupAdminPending") }}
-        </p>
+        <LibrarySetupAdminPanel
+          v-if="isOnlineSetupPending"
+          :api-url="libraryApiUrl"
+          @completed="onSetupCompleted()"
+        />
 
         <template v-if="!isOnlineSetupPending">
         <LibraryBrowseSections
