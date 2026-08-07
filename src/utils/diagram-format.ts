@@ -4,7 +4,7 @@ import {
   type DiagramFormat,
 } from "@/constants/diagram-formats";
 
-function detectDiagramFormatFromSource(source: string): DiagramFormat | null {
+export function detectDiagramFormatFromSource(source: string): DiagramFormat | null {
   const trimmed = source.trim();
   if (!trimmed) {
     return null;
