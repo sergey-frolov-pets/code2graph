@@ -2,7 +2,6 @@
 import { computed, ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import { APP_LINKS, LAYOUT_ENGINES, type LayoutEngine } from "@/constants";
-import type { DiagramFormat } from "@/constants/diagram-formats";
 import {
   RENDER_MODES,
   type RenderMode,
@@ -34,7 +33,6 @@ const props = defineProps<{
   open: boolean;
   layout: LayoutEngine;
   renderMode: RenderMode;
-  diagramFormat: DiagramFormat;
   darkMode: boolean;
   editorFontSize: EditorFontSize;
   editorFontFamilyId: EditorFontFamilyId;
@@ -195,41 +193,16 @@ const layoutOptions = Object.entries(LAYOUT_ENGINES).map(([label, value]) => ({
   value,
 }));
 
-const renderModeOptions = computed(() => {
-  const formatSuffix =
-    props.diagramFormat === "mermaid"
-      ? "Mermaid"
-      : props.diagramFormat === "plantuml"
-        ? "Plantuml"
-        : "";
-
-  return [
-    {
-      value: RENDER_MODES.offline,
-      labelKey: formatSuffix
-        ? `settings.renderModeOffline${formatSuffix}`
-        : "settings.renderModeOffline",
-    },
-    {
-      value: RENDER_MODES.online,
-      labelKey: formatSuffix
-        ? `settings.renderModeOnline${formatSuffix}`
-        : "settings.renderModeOnline",
-    },
-  ] as const;
-});
-
-const renderModeHintKey = computed(() => {
-  if (props.diagramFormat === "mermaid") {
-    return "settings.renderModeHintMermaid";
-  }
-
-  if (props.diagramFormat === "plantuml") {
-    return "settings.renderModeHintPlantuml";
-  }
-
-  return "settings.renderModeHint";
-});
+const renderModeOptions = [
+  {
+    value: RENDER_MODES.offline,
+    labelKey: "settings.renderModeOffline",
+  },
+  {
+    value: RENDER_MODES.online,
+    labelKey: "settings.renderModeOnline",
+  },
+] as const;
 
 const fontFamilyOptions = computed(() =>
   EDITOR_FONT_FAMILY_OPTIONS.map((option) => ({
@@ -416,7 +389,7 @@ async function onTestLlmConnection(): Promise<void> {
             {{ t(option.labelKey) }}
           </option>
         </select>
-        <span class="settings-field__hint">{{ t(renderModeHintKey) }}</span>
+        <span class="settings-field__hint">{{ t("settings.renderModeHint") }}</span>
       </label>
 
       <label class="settings-field">

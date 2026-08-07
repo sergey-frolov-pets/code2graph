@@ -29,9 +29,14 @@ import { useLibraryTransferHandlers } from "@/composables/library/useLibraryTran
 import { useLibraryAuth } from "@/composables/useLibraryAuth";
 import { useLibraryDiagramPreview } from "@/composables/useLibraryDiagramPreview";
 import { downloadShareResource, fetchShareDiagramPreview, fetchShareResource, addDiagramFavorite, removeDiagramFavorite } from "@/utils/diagram-api";
+import type { LayoutEngine } from "@/constants";
+import type { RenderMode } from "@/constants/render-settings";
 
 const props = defineProps<{
   open: boolean;
+  renderMode: RenderMode;
+  layout: LayoutEngine;
+  diagramDarkMode: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -296,6 +301,9 @@ async function openShareDiagramPreview(token: string, diagramId: string): Promis
     watermarked: true,
     fileName: preview.diagram.fileName,
     language: preview.diagram.language,
+    renderMode: props.renderMode,
+    dark: props.diagramDarkMode,
+    layout: props.layout,
   });
 }
 
@@ -350,6 +358,9 @@ async function onPreviewDiagram(): Promise<void> {
     watermarked: true,
     fileName: selectedDiagram.value.fileName,
     language: selectedDiagram.value.language,
+    renderMode: props.renderMode,
+    dark: props.diagramDarkMode,
+    layout: props.layout,
   });
 }
 

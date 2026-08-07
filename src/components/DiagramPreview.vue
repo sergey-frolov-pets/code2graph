@@ -5,6 +5,7 @@ import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
 import { useLocale } from "@/composables/useLocale";
 import { usePreviewPanZoom } from "@/composables/usePreviewPanZoom";
 import { sanitizeSvgForPreview } from "@/utils/export";
+import type { RenderMode } from "@/constants/render-settings";
 
 const props = defineProps<{
   svg: string;
@@ -13,6 +14,7 @@ const props = defineProps<{
   canExport: boolean;
   previewBackground: string;
   diagramDarkMode: boolean;
+  renderMode: RenderMode;
 }>();
 
 const emit = defineEmits<{
@@ -21,6 +23,7 @@ const emit = defineEmits<{
   exportPng: [];
   "update:previewBackground": [value: string];
   "update:diagramDarkMode": [value: boolean];
+  "update:renderMode": [value: RenderMode];
 }>();
 
 const { t } = useLocale();
@@ -86,6 +89,7 @@ watch(isFullscreen, (value) => {
           :can-export="canExport"
           :preview-background="previewBackground"
           :diagram-dark-mode="diagramDarkMode"
+          :render-mode="renderMode"
           @render-now="emit('renderNow')"
           @export-svg="emit('exportSvg')"
           @export-png="emit('exportPng')"
@@ -93,6 +97,7 @@ watch(isFullscreen, (value) => {
           @zoom-out="zoomOut"
           @update:preview-background="emit('update:previewBackground', $event)"
           @update:diagram-dark-mode="emit('update:diagramDarkMode', $event)"
+          @update:render-mode="emit('update:renderMode', $event)"
         />
         <span v-if="isRendering" class="status-pill status-pill--compact">…</span>
       </div>

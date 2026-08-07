@@ -48,7 +48,7 @@ export function detectDiagramFormat(
     return "mermaid";
   }
 
-  if (lower.includes("@startuml") || lower.includes("@enduml")) {
+  if (lower.includes("@startuml") || lower.includes("@enduml") || lower.includes("@startgantt")) {
     return "plantuml";
   }
 
