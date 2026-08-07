@@ -4,6 +4,7 @@ import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import LibraryTransferTab from "@/components/LibraryTransferTab.vue";
 import SectionEditModal from "@/components/SectionEditModal.vue";
+import LibrarySubscriptionsPanel from "@/components/library/LibrarySubscriptionsPanel.vue";
 import LibraryBrowseRatings from "@/components/library/LibraryBrowseRatings.vue";
 import LibraryRegisterModal from "@/components/library/LibraryRegisterModal.vue";
 import LibraryBrowseSections from "@/components/library/LibraryBrowseSections.vue";
@@ -198,12 +199,28 @@ const {
   confirm,
 });
 
+const personalAdminSectionOptions = computed(() =>
+  flatSectionOptions.value.filter((option) => {
+    const section = flatSections.value.find((entry) => entry.id === option.id);
+    return section?.canAdmin && section?.kind === "personal";
+  }),
+);
+
+const canManageSubscriptions = computed(
+  () =>
+    personalAdminSectionOptions.value.length > 0 &&
+    libraryTarget.value === "online" &&
+    Boolean(libraryApiUrl.value) &&
+    !needsSetup.value,
+);
+
 const {
   showBackButton,
   showModeTabs,
   headerTitle,
   resetBrowseFlow,
   goBack,
+  openSubscriptions,
   onSectionPick,
   onDiagramPick: browseDiagramPick,
 } = useLibraryBrowseFlow({
@@ -828,6 +845,7 @@ watch(libraryTarget, () => {
           :selected-section-id="selectedSectionId"
           :is-sections-edit-mode="isSectionsEditMode"
           :can-create-shared-section="isAdmin"
+          :can-manage-subscriptions="canManageSubscriptions"
           @all-sections-click="onAllSectionsClick()"
           @section-row-click="onSectionRowClick($event)"
           @toggle-edit-mode="toggleSectionsEditMode()"
@@ -836,6 +854,12 @@ watch(libraryTarget, () => {
           @share-section="(id, title) => openShareModal('section', id, title)"
           @manage-access="(id, title) => openSectionAccess(id, title)"
           @ratings-click="onRatingsClick()"
+          @subscriptions-click="openSubscriptions()"
+        />
+
+        <LibrarySubscriptionsPanel
+          v-else-if="activeTab === 'browse' && browseStep === 'subscriptions'"
+          :flat-section-options="personalAdminSectionOptions"
         />
 
         <LibraryBrowseRatings

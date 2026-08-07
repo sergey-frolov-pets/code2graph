@@ -178,6 +178,45 @@ export interface SectionAccessDto {
   grantedAt: string;
 }
 
+export interface SubscriptionSectionDto {
+  sectionId: string;
+  sectionTitle?: string;
+  includeDescendants: boolean;
+}
+
+export interface SubscriptionDto {
+  id: string;
+  ownerId: string;
+  title: string;
+  description: string;
+  permission: SectionAccessPermission;
+  sections: SubscriptionSectionDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserSubscriptionGrantDto {
+  userId: string;
+  username: string;
+  expiresAt: string | null;
+  permanent: boolean;
+  grantedAt: string;
+}
+
+export interface CreateSubscriptionPayload {
+  title: string;
+  description: string;
+  permission: SectionAccessPermission;
+  sections: SubscriptionSectionDto[];
+}
+
+export interface UpdateSubscriptionPayload {
+  title?: string;
+  description?: string;
+  permission?: SectionAccessPermission;
+  sections?: SubscriptionSectionDto[];
+}
+
 export interface RatingsLeaderboardDto {
   topDiagrams: DiagramListItemDto[];
   topSections: Array<{
@@ -204,6 +243,8 @@ export const DEFAULT_SHARE_MAX_DOWNLOADS = 5;
 export const FAVORITES_SECTION_ID = "__favorites__";
 
 export const RATINGS_SECTION_ID = "__ratings__";
+
+export const SUBSCRIPTIONS_BROWSE_STEP = "subscriptions" as const;
 
 export const SECTION_ACCESS_PERMISSIONS = [
   "view",

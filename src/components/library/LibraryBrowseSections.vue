@@ -13,12 +13,14 @@ const props = defineProps<{
   selectedSectionId: string | null;
   isSectionsEditMode: boolean;
   canCreateSharedSection: boolean;
+  canManageSubscriptions: boolean;
 }>();
 
 const emit = defineEmits<{
   "all-sections-click": [];
   "section-row-click": [sectionId: string];
   "ratings-click": [];
+  "subscriptions-click": [];
   "toggle-edit-mode": [];
   "create-section": [parentId: string | null];
   "delete-section": [sectionId: string, title: string];
@@ -43,6 +45,13 @@ function sectionIcon(sectionId: string): string {
   <div class="library-step">
     <div class="library-step__toolbar library-step__toolbar--actions-only">
       <div class="library-step__toolbar-actions">
+        <IconButton
+          v-if="canManageSubscriptions"
+          :label="t('library.subscriptionAddTitle')"
+          @click="emit('subscriptions-click')"
+        >
+          <ActionIcon name="plus" />
+        </IconButton>
         <IconButton
           :label="t('library.edit')"
           :pressed="isSectionsEditMode"

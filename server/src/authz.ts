@@ -1,4 +1,9 @@
 import type Database from "better-sqlite3";
+import {
+  getSubscriptionPermissionForSection,
+  higherPermission,
+  PERMISSION_RANK,
+} from "./subscriptions.js";
 import type {
   DiagramVisibility,
   SectionAccessPermission,
@@ -22,11 +27,7 @@ export interface DiagramAccessRow {
   visibility: DiagramVisibility;
 }
 
-const PERMISSION_RANK: Record<SectionAccessPermission, number> = {
-  view: 1,
-  download: 2,
-  contribute: 3,
-};
+export { PERMISSION_RANK };
 
 export function isAdmin(user: UserDto): boolean {
   return user.role === "admin";
@@ -81,6 +82,38 @@ export function getSectionAccessGrant(
   };
 }
 
+export function getEffectiveSectionPermission(
+  database: Database.Database,
+  sectionId: string,
+  userId: string,
+): SectionAccessPermission | null {
+  const directGrant = getSectionAccessGrant(database, sectionId, userId);
+  const subscriptionPermission = getSubscriptionPermissionForSection(
+    database,
+    sectionId,
+    userId,
+  );
+
+  if (directGrant && subscriptionPermission) {
+    return higherPermission(directGrant.permission, subscriptionPermission);
+  }
+
+  return directGrant?.permission ?? subscriptionPermission ?? null;
+}
+
+export function hasEffectiveSectionPermission(
+  database: Database.Database,
+  sectionId: string,
+  userId: string,
+  minPermission: SectionAccessPermission = "view",
+): boolean {
+  const effective = getEffectiveSectionPermission(database, sectionId, userId);
+  if (!effective) {
+    return false;
+  }
+  return PERMISSION_RANK[effective] >= PERMISSION_RANK[minPermission];
+}
+
 export function getSectionAccessGrants(
   database: Database.Database,
   sectionId: string,
@@ -94,17 +127,19 @@ export function getSectionAccessGrants(
     .all(sectionId) as SectionAccessGrant[];
 }
 
+/** @deprecated Используйте hasEffectiveSectionPermission */
 export function hasSectionAccessGrant(
   database: Database.Database,
   sectionId: string,
   userId: string,
   minPermission: SectionAccessPermission = "view",
 ): boolean {
-  const grant = getSectionAccessGrant(database, sectionId, userId);
-  if (!grant) {
-    return false;
-  }
-  return PERMISSION_RANK[grant.permission] >= PERMISSION_RANK[minPermission];
+  return hasEffectiveSectionPermission(
+    database,
+    sectionId,
+    userId,
+    minPermission,
+  );
 }
 
 export function getUserSectionAccessPermission(
@@ -112,7 +147,7 @@ export function getUserSectionAccessPermission(
   sectionId: string,
   userId: string,
 ): SectionAccessPermission | null {
-  return getSectionAccessGrant(database, sectionId, userId)?.permission ?? null;
+  return getEffectiveSectionPermission(database, sectionId, userId);
 }
 
 export function getSectionRow(
@@ -144,7 +179,7 @@ function canSeeSubscriptionContent(
     return false;
   }
 
-  return hasSectionAccessGrant(database, sectionId, user.id, "view");
+  return hasEffectiveSectionPermission(database, sectionId, user.id, "view");
 }
 
 export function canSeeVisibility(
@@ -186,7 +221,7 @@ export function canReadSection(
     return true;
   }
 
-  if (hasSectionAccessGrant(database, section.id, user.id, "view")) {
+  if (hasEffectiveSectionPermission(database, section.id, user.id, "view")) {
     return true;
   }
 
@@ -204,7 +239,7 @@ export function canReadSection(
 
   if (
     section.visibility === "subscription" &&
-    hasSectionAccessGrant(database, section.id, user.id, "view")
+    hasEffectiveSectionPermission(database, section.id, user.id, "view")
   ) {
     return true;
   }
@@ -225,7 +260,7 @@ export function canDownloadSection(
     return true;
   }
 
-  return hasSectionAccessGrant(database, section.id, user.id, "download");
+  return hasEffectiveSectionPermission(database, section.id, user.id, "download");
 }
 
 export function canWriteSection(
@@ -241,7 +276,7 @@ export function canWriteSection(
     return true;
   }
 
-  return hasSectionAccessGrant(database, section.id, user.id, "contribute");
+  return hasEffectiveSectionPermission(database, section.id, user.id, "contribute");
 }
 
 export function canAdminSection(
@@ -327,21 +362,25 @@ export function canDownloadDiagram(
     return false;
   }
 
-  if (diagram.visibility === "subscription" && diagram.section_id) {
-    const section = getSectionRow(database, diagram.section_id);
-    if (section) {
-      return canDownloadSection(database, user, section);
-    }
-    return false;
-  }
-
   if (diagram.section_id) {
     const section = getSectionRow(database, diagram.section_id);
     if (section && section.owner_id !== user.id) {
-      if (hasSectionAccessGrant(database, section.id, user.id)) {
-        return hasSectionAccessGrant(database, section.id, user.id, "download");
-      }
+      return hasEffectiveSectionPermission(
+        database,
+        section.id,
+        user.id,
+        "download",
+      );
     }
+  }
+
+  if (diagram.visibility === "subscription" && diagram.section_id) {
+    return hasEffectiveSectionPermission(
+      database,
+      diagram.section_id,
+      user.id,
+      "download",
+    );
   }
 
   return true;
@@ -369,7 +408,7 @@ export function canWriteDiagram(
     return false;
   }
 
-  if (!hasSectionAccessGrant(database, section.id, user.id, "contribute")) {
+  if (!hasEffectiveSectionPermission(database, section.id, user.id, "contribute")) {
     return false;
   }
 

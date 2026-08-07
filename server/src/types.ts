@@ -199,6 +199,31 @@ export interface SectionAccessDto {
   grantedAt: string;
 }
 
+export interface SubscriptionSectionDto {
+  sectionId: string;
+  sectionTitle?: string;
+  includeDescendants: boolean;
+}
+
+export interface SubscriptionDto {
+  id: string;
+  ownerId: string;
+  title: string;
+  description: string;
+  permission: SectionAccessPermission;
+  sections: SubscriptionSectionDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserSubscriptionGrantDto {
+  userId: string;
+  username: string;
+  expiresAt: string | null;
+  permanent: boolean;
+  grantedAt: string;
+}
+
 export interface RatingsLeaderboardDto {
   topDiagrams: DiagramListItemDto[];
   topSections: Array<{

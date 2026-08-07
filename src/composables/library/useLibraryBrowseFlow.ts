@@ -4,7 +4,7 @@ import { FAVORITES_SECTION_ID, RATINGS_SECTION_ID } from "@/constants/diagram-li
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 
 export type LibraryTab = "browse" | "upload" | "transfer" | "admin";
-export type BrowseStep = "sections" | "diagrams" | "detail";
+export type BrowseStep = "sections" | "diagrams" | "detail" | "subscriptions";
 
 type DiagramLibrary = ReturnType<typeof useDiagramLibrary>;
 
@@ -24,13 +24,17 @@ export function useLibraryBrowseFlow(options: {
   );
 
   const showModeTabs = computed(
-    () => activeTab.value !== "browse" || browseStep.value === "sections",
+    () =>
+      activeTab.value !== "browse" ||
+      browseStep.value === "sections" ||
+      browseStep.value === "subscriptions",
   );
 
   const headerTitle = computed(() => {
     if (activeTab.value === "upload") return t("library.uploadDiagram");
     if (activeTab.value === "transfer") return t("library.transfer");
     if (activeTab.value === "admin") return t("library.adminUsersTitle");
+    if (browseStep.value === "subscriptions") return t("library.subscriptionsTitle");
     if (browseStep.value === "sections") return t("library.chooseSection");
     if (browseStep.value === "diagrams") {
       if (library.selectedSectionId.value === FAVORITES_SECTION_ID) {
@@ -64,10 +68,15 @@ export function useLibraryBrowseFlow(options: {
       resetEditForm();
       return;
     }
-    if (browseStep.value === "diagrams") {
+    if (browseStep.value === "diagrams" || browseStep.value === "subscriptions") {
       browseStep.value = "sections";
       resetEditForm();
     }
+  }
+
+  function openSubscriptions(): void {
+    browseStep.value = "subscriptions";
+    resetEditForm();
   }
 
   async function onSectionPick(sectionId: string | null): Promise<void> {
@@ -87,6 +96,7 @@ export function useLibraryBrowseFlow(options: {
     headerTitle,
     resetBrowseFlow,
     goBack,
+    openSubscriptions,
     onSectionPick,
     onDiagramPick,
   };
