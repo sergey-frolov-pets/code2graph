@@ -7,6 +7,8 @@ import type { CompletionKind } from "@/utils/completion-types";
 import type { CodeFoldRegion } from "@/utils/code-folds";
 import { mergeDisplayTextIntoSource } from "@/utils/code-folds";
 import { isSnippetsHotkey } from "@/constants/snippets-settings";
+import { detectDiagramFormat } from "@/utils/diagram-format";
+import { isCompleteMermaidDiagram } from "@/utils/mermaid-source";
 
 const props = defineProps<{
   source: string;
@@ -46,6 +48,38 @@ const errorLineSet = computed(() => new Set(props.errorLines));
 
 function completionKindLabel(kind: CompletionKind): string {
   return t(`editor.completion.${kind}`);
+}
+
+function onPaste(event: ClipboardEvent): void {
+  const pasted = event.clipboardData?.getData("text/plain") ?? "";
+  if (!pasted.trim()) {
+    return;
+  }
+
+  const textarea = textareaRef.value;
+  if (!textarea) {
+    return;
+  }
+
+  const pastedFormat = detectDiagramFormat(pasted);
+  const currentFormat = detectDiagramFormat(props.source);
+  const hasFullSelection =
+    textarea.selectionStart === 0 &&
+    textarea.selectionEnd >= props.source.length;
+
+  if (
+    pastedFormat !== currentFormat &&
+    (pastedFormat === "mermaid"
+      ? isCompleteMermaidDiagram(pasted)
+      : pastedFormat === "plantuml" && /@start(uml|gantt)\b/i.test(pasted)) &&
+    !hasFullSelection
+  ) {
+    event.preventDefault();
+    emit("update:source", pasted.trim());
+    void nextTick(() => {
+      props.autocomplete.refresh();
+    });
+  }
 }
 
 function onDisplayInput(event: Event): void {
@@ -146,6 +180,7 @@ function onTextareaScroll(): void {
       :readonly="readOnly"
       :placeholder="readOnly ? t('editor.placeholderViewOnly') : t('editor.placeholder')"
       @input="onDisplayInput"
+      @paste="onPaste"
       @keydown="onTextareaKeydown"
       @keyup="onTextareaKeyup"
       @click="onTextareaClick"

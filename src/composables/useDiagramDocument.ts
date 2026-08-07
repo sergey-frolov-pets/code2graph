@@ -5,6 +5,7 @@ import {
 } from "@/constants/diagram-formats";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useLocale } from "@/composables/useLocale";
+import { extractLeadingMermaidDiagram } from "@/utils/mermaid-source";
 import { detectDiagramFormat } from "@/utils/diagram-format";
 import {
   resolveDiagramFileName,
@@ -128,7 +129,13 @@ export function useDiagramDocument(options: UseDiagramDocumentOptions) {
       return;
     }
 
-    const detected = detectDiagramFormat(content, loadedFileName.value);
+    const cleaned = extractLeadingMermaidDiagram(content);
+    if (cleaned !== content) {
+      source.value = cleaned;
+      return;
+    }
+
+    const detected = detectDiagramFormat(cleaned, loadedFileName.value);
     if (detected === diagramFormat.value) {
       return;
     }
