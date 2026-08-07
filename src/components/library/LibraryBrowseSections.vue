@@ -10,7 +10,6 @@ const props = defineProps<{
   flatSectionOptions: FlatSectionOption[];
   flatSections: SectionDto[];
   selectedSectionId: string | null;
-  isOnline: boolean;
   isSectionsEditMode: boolean;
   canCreateSharedSection: boolean;
 }>();
@@ -35,10 +34,7 @@ function canAdminSection(sectionId: string): boolean {
 
 <template>
   <div class="library-step">
-    <div class="library-step__toolbar">
-      <span class="status-pill" :class="isOnline ? 'is-ready' : 'is-error'">
-        {{ isOnline ? t("app.online") : t("app.offline") }}
-      </span>
+    <div class="library-step__toolbar library-step__toolbar--actions-only">
       <div class="library-step__toolbar-actions">
         <IconButton
           :label="t('library.edit')"
