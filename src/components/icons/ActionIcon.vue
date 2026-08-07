@@ -5,6 +5,7 @@ import {
   ArrowLeftRight,
   Braces,
   CircleCheck,
+  CircleHelp,
   Cloud,
   Download,
   Eye,
@@ -52,6 +53,7 @@ export type ActionIconName =
   | "undo"
   | "redo"
   | "ai"
+  | "syntax-help"
   | "transfer"
   | "eye"
   | "star"
@@ -91,6 +93,7 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   undo: Undo2,
   redo: Redo2,
   ai: Sparkles,
+  "syntax-help": CircleHelp,
   transfer: ArrowLeftRight,
   eye: Eye,
   star: Star,

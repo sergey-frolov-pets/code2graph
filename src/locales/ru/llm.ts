@@ -71,6 +71,17 @@ export const llmMessages: LocaleMessages = {
   "llm.patch.generateError": "Не удалось сгенерировать диаграмму",
   "llm.patch.previewError": "Не удалось отрисовать превью",
   "llm.patch.historyLabel": "AI: {prompt}",
+  "llm.syntaxAsk.title": "Вопрос по синтаксису",
+  "llm.syntaxAsk.lead":
+    "Задайте вопрос о синтаксисе PlantUML в контексте текущей диаграммы. AI объяснит, как выразить нужную логику, без изменения кода.",
+  "llm.syntaxAsk.question": "Ваш вопрос",
+  "llm.syntaxAsk.questionPlaceholder":
+    "Например: как сделать обработку нескольких условий в (a и (b или c)) или d?",
+  "llm.syntaxAsk.ask": "Спросить",
+  "llm.syntaxAsk.asking": "Ответ…",
+  "llm.syntaxAsk.answer": "Ответ",
+  "llm.syntaxAsk.askError": "Не удалось получить ответ",
+  "llm.syntaxAsk.fromValidation": "Спросить AI о синтаксисе",
   "llm.wizard.title": "Мастер новой диаграммы",
   "llm.wizard.stepCounter": "Шаг {current} из {total}",
   "llm.wizard.step.type": "Тип диаграммы",

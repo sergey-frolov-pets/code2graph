@@ -45,6 +45,7 @@ export const editorMessages: LocaleMessages = {
   "editor.saveToLibrary": "Сохранить в библиотеку",
   "editor.versions": "Версии",
   "editor.aiPatch": "Изменить с AI",
+  "editor.aiSyntaxAsk": "Спросить по синтаксису",
   "editor.undo": "Отменить (Ctrl+Z)",
   "editor.redo": "Повторить (Ctrl+Y)",
   "editor.completion.context": "контекст",

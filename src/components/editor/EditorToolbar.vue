@@ -25,6 +25,7 @@ const props = defineProps<{
   canRedo?: boolean;
   canClear: boolean;
   canAiPatch: boolean;
+  canAiSyntaxAsk: boolean;
   snippetsOpen: boolean;
   isFullscreen: boolean;
 }>();
@@ -35,6 +36,7 @@ const emit = defineEmits<{
   savePuml: [];
   saveToLibrary: [];
   aiPatch: [];
+  aiSyntaxAsk: [];
   validateSyntax: [];
   undo: [];
   redo: [];
@@ -171,6 +173,15 @@ function onSampleChange(event: Event): void {
         @click="emit('aiPatch')"
       >
         <ActionIcon name="ai" />
+      </IconButton>
+      <IconButton
+        v-if="formatDefinition.supportsAiSyntaxAsk"
+        :label="t('editor.aiSyntaxAsk')"
+        :disabled="!canAiSyntaxAsk"
+        prevent-mousedown-default
+        @click="emit('aiSyntaxAsk')"
+      >
+        <ActionIcon name="syntax-help" />
       </IconButton>
       <IconButton
         v-if="formatDefinition.supportsSyntaxValidation"

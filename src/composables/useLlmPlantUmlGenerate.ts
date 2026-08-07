@@ -9,7 +9,13 @@ import {
   requestsStructuralDiagramEdit,
 } from "@/constants/llm-wizard";
 import { llmChat } from "@/services/llm/llm-client";
-import { buildLlmPatchSystemPrompt, buildLlmSystemPrompt } from "@/services/llm/llm-prompts";
+import {
+  buildLlmPatchSystemPrompt,
+  buildLlmSyntaxAskSystemPrompt,
+  buildLlmSystemPrompt,
+  buildSyntaxAskUserPrompt,
+} from "@/services/llm/llm-prompts";
+import { parsePlantUmlSyntaxAskOutput } from "@/schemas/plantuml-llm-syntax-ask";
 import type { LlmChatMessage } from "@/services/llm/llm-types";
 import { LlmClientError } from "@/services/llm/llm-types";
 import type { LlmGateHandlers } from "@/composables/useLlmGate";
@@ -34,6 +40,10 @@ export interface GenerateValidPlantUmlResult {
 export interface GenerateValidPlantUmlPatchResult extends GenerateValidPlantUmlResult {
   replacement?: string;
   hasChanges: boolean;
+}
+
+export interface AskPlantUmlSyntaxResult {
+  answer: string;
 }
 
 export async function generateValidPlantUml(
@@ -319,4 +329,32 @@ export async function generateValidPlantUmlPatch(
   }
 
   throw new LlmClientError("validation_failed", "LLM patch validation failed");
+}
+
+export async function askPlantUmlSyntaxQuestion(
+  source: string,
+  question: string,
+  handlers?: LlmGateHandlers,
+): Promise<AskPlantUmlSyntaxResult> {
+  const messages: LlmChatMessage[] = [
+    {
+      role: "system",
+      content: buildLlmSyntaxAskSystemPrompt(
+        "You are a PlantUML syntax expert. Answer the user's question about how to express something in PlantUML, using their current diagram as context. Match the user's language in your answer.",
+      ),
+    },
+    { role: "user", content: buildSyntaxAskUserPrompt(source, question) },
+  ];
+
+  const chatResult = await llmChat(messages, { jsonMode: true }, handlers);
+  const parsed = parsePlantUmlSyntaxAskOutput(chatResult.content);
+
+  if (!parsed.ok) {
+    throw new LlmClientError(
+      "validation_failed",
+      parsed.issues.map((issue) => issue.message).join("\n"),
+    );
+  }
+
+  return { answer: parsed.data.answer };
 }

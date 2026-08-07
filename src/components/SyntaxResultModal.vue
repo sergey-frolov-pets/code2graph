@@ -12,10 +12,12 @@ const props = defineProps<{
   open: boolean;
   result: SyntaxCheckResult | null;
   isValidating: boolean;
+  showSyntaxAsk?: boolean;
 }>();
 
 const emit = defineEmits<{
   close: [];
+  askSyntax: [];
 }>();
 
 const { t } = useLocale();
@@ -94,6 +96,14 @@ const errorLines = computed(() => {
     </p>
 
     <template #footer>
+      <button
+        v-if="showSyntaxAsk && !isValidating && result && !result.valid"
+        class="btn"
+        type="button"
+        @click="emit('askSyntax')"
+      >
+        {{ t("llm.syntaxAsk.fromValidation") }}
+      </button>
       <button class="btn btn-primary" type="button" @click="emit('close')">
         {{ isValidating ? t("app.wait") : t("app.close") }}
       </button>

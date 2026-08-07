@@ -56,6 +56,7 @@ const emit = defineEmits<{
   undo: [];
   redo: [];
   aiPatch: [payload: { start: number; end: number }];
+  aiSyntaxAsk: [];
 }>();
 
 const { t } = useLocale();
@@ -265,6 +266,7 @@ onUnmounted(() => {
       :can-redo="canRedo"
       :can-clear="canClear"
       :can-ai-patch="canClear"
+      :can-ai-syntax-ask="canClear"
       :snippets-open="snippetsOpen"
       :is-fullscreen="isFullscreen"
       @open-file="openFilePicker"
@@ -272,6 +274,7 @@ onUnmounted(() => {
       @save-puml="emit('savePuml')"
       @save-to-library="emit('saveToLibrary')"
       @ai-patch="requestAiPatch"
+      @ai-syntax-ask="emit('aiSyntaxAsk')"
       @validate-syntax="emit('validateSyntax')"
       @undo="emit('undo')"
       @redo="emit('redo')"

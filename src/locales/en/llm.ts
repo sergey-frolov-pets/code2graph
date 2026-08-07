@@ -71,6 +71,17 @@ export const llmMessages: LocaleMessages = {
   "llm.patch.generateError": "Failed to generate diagram",
   "llm.patch.previewError": "Failed to render preview",
   "llm.patch.historyLabel": "AI: {prompt}",
+  "llm.syntaxAsk.title": "Syntax question",
+  "llm.syntaxAsk.lead":
+    "Ask about PlantUML syntax in the context of your current diagram. The AI explains how to express the logic without changing your source.",
+  "llm.syntaxAsk.question": "Your question",
+  "llm.syntaxAsk.questionPlaceholder":
+    "For example: how to handle multiple conditions in (a and (b or c)) or d?",
+  "llm.syntaxAsk.ask": "Ask",
+  "llm.syntaxAsk.asking": "Answering…",
+  "llm.syntaxAsk.answer": "Answer",
+  "llm.syntaxAsk.askError": "Failed to get an answer",
+  "llm.syntaxAsk.fromValidation": "Ask AI about syntax",
   "llm.wizard.title": "New diagram wizard",
   "llm.wizard.stepCounter": "Step {current} of {total}",
   "llm.wizard.step.type": "Diagram type",
