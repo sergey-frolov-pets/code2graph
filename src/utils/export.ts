@@ -25,25 +25,77 @@ function transparentizeLightBackground(root: Element): void {
   }
 }
 
+function parseViewBoxSize(viewBox: string | null): { width: number; height: number } | null {
+  if (!viewBox) {
+    return null;
+  }
+
+  const parts = viewBox.split(/\s+/).map(Number);
+  if (parts.length !== 4 || parts.some((value) => !Number.isFinite(value))) {
+    return null;
+  }
+
+  if (parts[2] <= 0 || parts[3] <= 0) {
+    return null;
+  }
+
+  return { width: parts[2], height: parts[3] };
+}
+
+function isPercentageOrMissingSvgLength(value: string | null): boolean {
+  if (!value) {
+    return true;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.endsWith("%")) {
+    return true;
+  }
+
+  const numeric = Number.parseFloat(trimmed);
+  return !Number.isFinite(numeric) || numeric <= 0;
+}
+
+/** Materialize percentage / missing SVG root size from viewBox for reliable layout. */
+export function normalizeSvgRootSize(root: Element): void {
+  const viewBoxSize = parseViewBoxSize(root.getAttribute("viewBox"));
+  if (!viewBoxSize) {
+    return;
+  }
+
+  if (isPercentageOrMissingSvgLength(root.getAttribute("width"))) {
+    root.setAttribute("width", String(viewBoxSize.width));
+  }
+
+  if (isPercentageOrMissingSvgLength(root.getAttribute("height"))) {
+    root.setAttribute("height", String(viewBoxSize.height));
+  }
+
+  const style = root.getAttribute("style") ?? "";
+  if (/max-width\s*:/i.test(style)) {
+    root.setAttribute(
+      "style",
+      style.replace(/max-width\s*:\s*[^;]+;?/gi, "").trim(),
+    );
+  }
+}
+
 export function parseSvgSize(svg: string): { width: number; height: number } {
   const parser = new DOMParser();
   const doc = parser.parseFromString(svg, "image/svg+xml");
   const root = doc.documentElement;
 
-  const viewBox = root.getAttribute("viewBox");
-  if (viewBox) {
-    const parts = viewBox.split(/\s+/).map(Number);
-    if (parts.length === 4 && parts.every((value) => Number.isFinite(value))) {
-      return { width: parts[2], height: parts[3] };
-    }
+  const viewBoxSize = parseViewBoxSize(root.getAttribute("viewBox"));
+  if (viewBoxSize) {
+    return viewBoxSize;
   }
 
   const width = Number.parseFloat(root.getAttribute("width") ?? "800");
   const height = Number.parseFloat(root.getAttribute("height") ?? "600");
 
   return {
-    width: Number.isFinite(width) ? width : 800,
-    height: Number.isFinite(height) ? height : 600,
+    width: Number.isFinite(width) && width > 0 ? width : 800,
+    height: Number.isFinite(height) && height > 0 ? height : 600,
   };
 }
 
@@ -135,6 +187,7 @@ export function sanitizeSvgForPreview(svg: string): string {
     root.setAttribute("xmlns", SVG_XMLNS);
   }
 
+  normalizeSvgRootSize(root);
   transparentizeLightBackground(root);
 
   return new XMLSerializer().serializeToString(root);
