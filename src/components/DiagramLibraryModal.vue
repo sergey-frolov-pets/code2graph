@@ -29,6 +29,7 @@ import { useLibraryTransferHandlers } from "@/composables/library/useLibraryTran
 import { useLibraryAuth } from "@/composables/useLibraryAuth";
 import { useLibraryDiagramPreview } from "@/composables/useLibraryDiagramPreview";
 import { downloadShareResource, fetchShareDiagramPreview, fetchShareResource, addDiagramFavorite, removeDiagramFavorite } from "@/utils/diagram-api";
+import { checkServerAvailability } from "@/services/library/library-sync-service";
 
 const props = defineProps<{
   open: boolean;
@@ -102,6 +103,8 @@ const {
 const activeTab = ref<LibraryTab>("browse");
 const browseStep = ref<BrowseStep>("sections");
 const uploadError = ref("");
+const onlineCheckFailed = ref(false);
+const isCheckingOnline = ref(false);
 const isSectionAccessOpen = ref(false);
 const sectionAccessId = ref<string | null>(null);
 const sectionAccessTitle = ref("");
@@ -241,9 +244,59 @@ const statusHint = computed(() => {
   return t("library.offlineCache");
 });
 
-function onTargetChange(target: "local" | "online"): void {
-  setLibraryTarget(target);
+const isOnlineButtonUnavailable = computed(() => {
+  if (libraryTarget.value === "online") {
+    return false;
+  }
+  if (!canUseOnline.value) {
+    return true;
+  }
+  if (!isOnline.value) {
+    return true;
+  }
+  return onlineCheckFailed.value;
+});
+
+function onLocalTargetClick(): void {
+  onlineCheckFailed.value = false;
+  setLibraryTarget("local");
   void library.refresh();
+}
+
+async function onOnlineTargetClick(): Promise<void> {
+  if (isCheckingOnline.value) {
+    return;
+  }
+
+  onlineCheckFailed.value = false;
+  uploadError.value = "";
+
+  if (!canUseOnline.value) {
+    uploadError.value = t("library.configureServerHint");
+    onlineCheckFailed.value = true;
+    return;
+  }
+
+  if (!navigator.onLine) {
+    uploadError.value = t("app.offline");
+    onlineCheckFailed.value = true;
+    return;
+  }
+
+  isCheckingOnline.value = true;
+  try {
+    const available = await checkServerAvailability(libraryApiUrl.value);
+    if (!available) {
+      uploadError.value = t("library.apiUnavailable");
+      onlineCheckFailed.value = true;
+      return;
+    }
+
+    setLibraryTarget("online");
+    void library.refresh();
+  } finally {
+    isCheckingOnline.value = false;
+  }
 }
 
 function switchTab(tab: LibraryTab): void {
@@ -555,55 +608,57 @@ watch(libraryTarget, () => {
 
         <p v-if="showModeTabs" class="library-header__hint">{{ statusHint }}</p>
 
-        <div v-if="showModeTabs && canUseOnline" class="library-target">
-          <button
-            class="btn library-target__btn"
-            type="button"
-            :class="{ 'is-active': libraryTarget === 'local' }"
-            @click="onTargetChange('local')"
-          >
-            {{ t("library.targetLocal") }}
-          </button>
-          <button
-            class="btn library-target__btn"
-            type="button"
-            :class="{ 'is-active': libraryTarget === 'online' }"
-            @click="onTargetChange('online')"
-          >
-            {{ t("library.targetOnline") }}
-          </button>
-        </div>
+        <div v-if="showModeTabs" class="library-header__modes">
+          <div class="library-target">
+            <button
+              class="btn library-target__btn"
+              type="button"
+              :class="{ 'is-active': libraryTarget === 'local' }"
+              @click="onLocalTargetClick()"
+            >
+              {{ t("library.targetLocal") }}
+            </button>
+            <button
+              class="btn library-target__btn"
+              type="button"
+              :class="{
+                'is-active': libraryTarget === 'online',
+                'is-unavailable': isOnlineButtonUnavailable,
+              }"
+              :disabled="isCheckingOnline"
+              @click="onOnlineTargetClick()"
+            >
+              {{ t("library.targetOnline") }}
+            </button>
+          </div>
 
-        <nav
-          v-if="showModeTabs"
-          class="library-modes"
-          :aria-label="t('library.title')"
-        >
-          <IconButton
-            :label="t('library.browse')"
-            extra-class="library-modes__btn"
-            :pressed="activeTab === 'browse'"
-            @click="switchTab('browse')"
-          >
-            <ActionIcon name="library" />
-          </IconButton>
-          <IconButton
-            :label="t('library.uploadDiagram')"
-            extra-class="library-modes__btn"
-            :pressed="activeTab === 'upload'"
-            @click="switchTab('upload')"
-          >
-            <ActionIcon name="export" />
-          </IconButton>
-          <IconButton
-            :label="t('library.transfer')"
-            extra-class="library-modes__btn"
-            :pressed="activeTab === 'transfer'"
-            @click="switchTab('transfer')"
-          >
-            <ActionIcon name="transfer" />
-          </IconButton>
-        </nav>
+          <nav class="library-modes" :aria-label="t('library.title')">
+            <IconButton
+              :label="t('library.browse')"
+              extra-class="library-modes__btn"
+              :pressed="activeTab === 'browse'"
+              @click="switchTab('browse')"
+            >
+              <ActionIcon name="library" />
+            </IconButton>
+            <IconButton
+              :label="t('library.uploadDiagram')"
+              extra-class="library-modes__btn"
+              :pressed="activeTab === 'upload'"
+              @click="switchTab('upload')"
+            >
+              <ActionIcon name="export" />
+            </IconButton>
+            <IconButton
+              :label="t('library.transfer')"
+              extra-class="library-modes__btn"
+              :pressed="activeTab === 'transfer'"
+              @click="switchTab('transfer')"
+            >
+              <ActionIcon name="transfer" />
+            </IconButton>
+          </nav>
+        </div>
       </header>
 
       <div class="library-body">
@@ -615,7 +670,6 @@ watch(libraryTarget, () => {
           :flat-section-options="flatSectionOptions"
           :flat-sections="flatSections"
           :selected-section-id="selectedSectionId"
-          :is-online="isOnline"
           :is-sections-edit-mode="isSectionsEditMode"
           :can-create-shared-section="isAdmin"
           @all-sections-click="onAllSectionsClick()"
