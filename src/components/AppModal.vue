@@ -6,6 +6,7 @@ defineProps<{
   open: boolean;
   variant?: "default" | "success" | "error";
   wide?: boolean;
+  layer?: "default" | "above-library";
 }>();
 
 const emit = defineEmits<{
@@ -26,6 +27,7 @@ function onBackdropClick(event: MouseEvent): void {
     <div
       v-if="open"
       class="modal-backdrop"
+      :class="{ 'is-above-library': layer === 'above-library' }"
       role="presentation"
       @click="onBackdropClick"
     >
@@ -67,6 +69,10 @@ function onBackdropClick(event: MouseEvent): void {
   place-items: center;
   padding: 16px;
   background: rgba(15, 23, 42, 0.55);
+}
+
+.modal-backdrop.is-above-library {
+  z-index: calc(var(--z-library) + 100);
 }
 
 .modal {

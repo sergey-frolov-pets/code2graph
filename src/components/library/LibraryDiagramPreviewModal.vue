@@ -24,7 +24,13 @@ const { t } = useLocale();
 </script>
 
 <template>
-  <AppModal :open="open" :title="title" @close="emit('close')">
+  <AppModal
+    :open="open"
+    :title="title"
+    layer="above-library"
+    wide
+    @close="emit('close')"
+  >
     <p v-if="error" class="library-preview-modal__error">{{ error }}</p>
     <p v-else-if="isRendering" class="library-preview-modal__hint">
       {{ t("library.previewLoading") }}
@@ -46,6 +52,10 @@ const { t } = useLocale();
         </span>
       </div>
     </div>
+
+    <p v-else class="library-preview-modal__hint">
+      {{ t("library.previewEmpty") }}
+    </p>
 
     <p v-if="watermarked" class="library-preview-modal__hint">
       {{ t("library.previewWatermarkHint") }}

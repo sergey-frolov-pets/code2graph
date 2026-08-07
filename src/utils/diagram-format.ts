@@ -4,32 +4,12 @@ import {
   type DiagramFormat,
 } from "@/constants/diagram-formats";
 
-export function resolveLibraryDiagramFormat(
-  source: string,
-  fileName?: string,
-  language?: DiagramLanguage,
-): DiagramFormat {
-  if (language === "mermaid") {
-    return "mermaid";
-  }
-
-  if (language === "graphml") {
-    return "graphml";
-  }
-
-  return detectDiagramFormat(source, fileName);
-}
-
-export function detectDiagramFormat(
-  source: string,
-  fileName?: string,
-): DiagramFormat {
-  const fromFileName = fileName ? detectFormatFromFileName(fileName) : null;
-  if (fromFileName) {
-    return fromFileName;
-  }
-
+function detectDiagramFormatFromSource(source: string): DiagramFormat | null {
   const trimmed = source.trim();
+  if (!trimmed) {
+    return null;
+  }
+
   const lower = trimmed.toLowerCase();
 
   if (
@@ -48,12 +28,52 @@ export function detectDiagramFormat(
     return "mermaid";
   }
 
-  if (lower.includes("@startuml") || lower.includes("@enduml") || lower.includes("@startgantt")) {
+  if (
+    lower.includes("@startuml") ||
+    lower.includes("@enduml") ||
+    lower.includes("@startgantt") ||
+    /^@start(mindmap|wbs|json|yaml|ditaa|salt|dot|chen|nwdiag|chronology|ebnf|regex|board|math|latex)\b/i.test(
+      trimmed,
+    )
+  ) {
     return "plantuml";
   }
 
   if (lower.startsWith("graph ") || lower.startsWith("digraph ")) {
     return "plantuml";
+  }
+
+  return null;
+}
+
+export function resolveLibraryDiagramFormat(
+  source: string,
+  fileName?: string,
+  language?: DiagramLanguage,
+): DiagramFormat {
+  if (source.trim()) {
+    return detectDiagramFormat(source, fileName);
+  }
+
+  if (language === "mermaid" || language === "graphml" || language === "plantuml") {
+    return language;
+  }
+
+  return detectDiagramFormat(source, fileName);
+}
+
+export function detectDiagramFormat(
+  source: string,
+  fileName?: string,
+): DiagramFormat {
+  const fromSource = detectDiagramFormatFromSource(source);
+  if (fromSource) {
+    return fromSource;
+  }
+
+  const fromFileName = fileName ? detectFormatFromFileName(fileName) : null;
+  if (fromFileName) {
+    return fromFileName;
   }
 
   return "plantuml";

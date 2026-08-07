@@ -5,10 +5,16 @@ import {
 } from "@/utils/diagram-format";
 
 describe("detectDiagramFormat", () => {
-  it("detects format from file extension", () => {
+  it("detects format from file extension when source is empty", () => {
     expect(detectDiagramFormat("", "flow.mmd")).toBe("mermaid");
     expect(detectDiagramFormat("", "graph.graphml")).toBe("graphml");
     expect(detectDiagramFormat("", "diagram.puml")).toBe("plantuml");
+  });
+
+  it("prefers source markers over file extension", () => {
+    expect(
+      detectDiagramFormat("gantt\ntitle Test", "diagram.puml"),
+    ).toBe("mermaid");
   });
 
   it("detects mermaid from source markers", () => {
@@ -32,11 +38,17 @@ describe("detectDiagramFormat", () => {
 });
 
 describe("resolveLibraryDiagramFormat", () => {
-  it("uses explicit language when supported", () => {
+  it("prefers source markers over stored language", () => {
     expect(
       resolveLibraryDiagramFormat("@startuml\n@enduml", "x.puml", "mermaid"),
+    ).toBe("plantuml");
+    expect(
+      resolveLibraryDiagramFormat("gantt\ntitle Test", "diagram.puml", "plantuml"),
     ).toBe("mermaid");
-    expect(resolveLibraryDiagramFormat("<graphml/>", "x.graphml", "graphml")).toBe(
+  });
+
+  it("uses explicit language for empty source", () => {
+    expect(resolveLibraryDiagramFormat("", "x.graphml", "graphml")).toBe(
       "graphml",
     );
   });

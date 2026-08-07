@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyLayoutPragma,
   migrateDeprecatedActivityColorSyntax,
   preparePlantUmlSource,
 } from "@/utils/plantuml-source";
@@ -33,6 +34,17 @@ endif
   it("leaves already migrated activity syntax unchanged", () => {
     const source = `:Show error; <<#Pink>>`;
     expect(migrateDeprecatedActivityColorSyntax(source)).toBe(source);
+  });
+});
+
+describe("applyLayoutPragma", () => {
+  it("keeps gantt diagrams untouched", () => {
+    const gantt = `@startgantt
+project starts 2026-01-01
+[Task A] lasts 3 days
+@endgantt`;
+
+    expect(applyLayoutPragma(gantt, "smetana")).toBe(gantt);
   });
 });
 

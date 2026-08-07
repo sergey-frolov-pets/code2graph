@@ -121,6 +121,7 @@ export const libraryMessages: LocaleMessages = {
   "library.sectionAccess": "Access",
   "library.preview": "Preview",
   "library.previewLoading": "Rendering preview…",
+  "library.previewEmpty": "Preview could not be rendered",
   "library.previewWatermarkHint": "Watermarked preview. Original download is available via a link with download permission.",
   "library.downloadOriginal": "Download original",
   "library.downloadsRemaining": "Downloads remaining: {count}",
