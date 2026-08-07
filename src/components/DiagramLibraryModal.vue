@@ -8,6 +8,7 @@ import LibraryBrowseSections from "@/components/library/LibraryBrowseSections.vu
 import LibraryBrowseDiagrams from "@/components/library/LibraryBrowseDiagrams.vue";
 import LibraryDiagramDetail from "@/components/library/LibraryDiagramDetail.vue";
 import LibraryAdminUsersPanel from "@/components/library/LibraryAdminUsersPanel.vue";
+import LibrarySetupAdminModal from "@/components/library/LibrarySetupAdminModal.vue";
 import LibraryDiagramVersionsModal from "@/components/library/LibraryDiagramVersionsModal.vue";
 import LibraryDiagramPreviewModal from "@/components/library/LibraryDiagramPreviewModal.vue";
 import LibraryShareLinkModal from "@/components/library/LibraryShareLinkModal.vue";
@@ -56,7 +57,7 @@ const { confirm, prompt } = useAppDialog();
 const { libraryApiUrl } = useLibraryApiUrl();
 const { libraryTarget, canUseOnline, setLibraryTarget } = useLibraryTarget();
 
-const { isAdmin, refreshCurrentUser } = useLibraryAuth();
+const { isAdmin, needsSetup, checkLibraryAuthStatus, refreshCurrentUser } = useLibraryAuth();
 const {
   previewMarkup,
   isRendering: isPreviewRendering,
@@ -119,7 +120,22 @@ const { notice: transientNotice, showNotice: showTransientNotice, clearNotice: c
 const isSectionAccessOpen = ref(false);
 const sectionAccessId = ref<string | null>(null);
 const sectionAccessTitle = ref("");
-const isAdminPanelOpen = ref(false);
+const isSetupModalOpen = ref(false);
+
+const showAdminTab = computed(
+  () =>
+    isAdmin.value &&
+    libraryTarget.value === "online" &&
+    !needsSetup.value &&
+    Boolean(libraryApiUrl.value),
+);
+
+const isOnlineSetupPending = computed(
+  () =>
+    needsSetup.value &&
+    libraryTarget.value === "online" &&
+    Boolean(libraryApiUrl.value),
+);
 
 const onSectionPickRef = ref<(sectionId: string | null) => Promise<void>>(
   async () => {},
@@ -316,6 +332,13 @@ async function onOnlineTargetClick(): Promise<void> {
     if (!available) {
       showApiUnavailableNotice();
       onlineCheckFailed.value = true;
+      return;
+    }
+
+    const status = await checkLibraryAuthStatus(libraryApiUrl.value);
+    if (status.needsSetup) {
+      isSetupModalOpen.value = true;
+      setLibraryTarget("online");
       return;
     }
 
@@ -579,6 +602,53 @@ async function handleIncomingShareToken(token: string): Promise<void> {
   }
 }
 
+async function initializeLibraryState(): Promise<void> {
+  if (!libraryApiUrl.value) {
+    void refreshCurrentUser();
+    void library.refresh();
+    return;
+  }
+
+  try {
+    const status = await checkLibraryAuthStatus(libraryApiUrl.value);
+    if (status.needsSetup) {
+      isSetupModalOpen.value = true;
+      if (libraryTarget.value === "online") {
+        return;
+      }
+    }
+  } catch {
+    // Server unreachable — refresh will surface cache/offline state.
+  }
+
+  void refreshCurrentUser();
+  void library.refresh().then(() => {
+    if (
+      libraryTarget.value === "online" &&
+      libraryApiUrl.value &&
+      !apiAvailable.value &&
+      !needsSetup.value
+    ) {
+      showApiUnavailableNotice();
+    }
+  });
+}
+
+async function onSetupCompleted(): Promise<void> {
+  isSetupModalOpen.value = false;
+  setLibraryTarget("online");
+  await refreshCurrentUser();
+  await library.refresh();
+}
+
+function onSetupClose(): void {
+  isSetupModalOpen.value = false;
+  if (needsSetup.value && libraryTarget.value === "online") {
+    setLibraryTarget("local");
+    void library.refresh();
+  }
+}
+
 watch(
   () => props.open,
   (isOpen) => {
@@ -594,18 +664,9 @@ watch(
       activeTab.value = "browse";
       resetBrowseFlow();
       resetSectionAdmin();
-      void refreshCurrentUser();
       void waitForEngineReady();
       void waitForMermaidReady(props.diagramDarkMode);
-      void library.refresh().then(() => {
-        if (
-          libraryTarget.value === "online" &&
-          libraryApiUrl.value &&
-          !apiAvailable.value
-        ) {
-          showApiUnavailableNotice();
-        }
-      });
+      void initializeLibraryState();
 
       const pendingShare = sessionStorage.getItem(PENDING_SHARE_STORAGE_KEY);
       if (pendingShare) {
@@ -706,12 +767,13 @@ watch(libraryTarget, () => {
               <ActionIcon name="export" />
             </IconButton>
             <IconButton
-              :label="t('library.transfer')"
+              v-if="showAdminTab"
+              :label="t('library.adminUsersTitle')"
               extra-class="library-modes__btn"
-              :pressed="activeTab === 'transfer'"
-              @click="switchTab('transfer')"
+              :pressed="activeTab === 'admin'"
+              @click="switchTab('admin')"
             >
-              <ActionIcon name="transfer" />
+              <ActionIcon name="shield" />
             </IconButton>
           </nav>
         </div>
@@ -721,6 +783,11 @@ watch(libraryTarget, () => {
         <p v-if="uploadError" class="library-error">{{ uploadError }}</p>
         <p v-if="errorMessage" class="library-error">{{ errorMessage }}</p>
 
+        <p v-if="isOnlineSetupPending" class="library-error">
+          {{ t("library.setupAdminPending") }}
+        </p>
+
+        <template v-if="!isOnlineSetupPending">
         <LibraryBrowseSections
           v-if="activeTab === 'browse' && browseStep === 'sections'"
           :flat-section-options="flatSectionOptions"
@@ -791,18 +858,6 @@ watch(libraryTarget, () => {
         />
 
         <div v-else-if="activeTab === 'transfer'">
-          <div v-if="isAdmin" class="library-step__toolbar">
-            <button class="btn" type="button" @click="isAdminPanelOpen = true">
-              {{ t("library.adminUsersTitle") }}
-            </button>
-          </div>
-
-          <LibraryAdminUsersPanel
-            v-if="isAdmin"
-            :open="isAdminPanelOpen"
-            @close="isAdminPanelOpen = false"
-          />
-
           <LibraryTransferTab
             :sections="transferSections"
             :diagrams="transferDiagrams"
@@ -818,9 +873,22 @@ watch(libraryTarget, () => {
             @pull-from-server="onPullFromServer($event)"
           />
         </div>
+
+        <LibraryAdminUsersPanel
+          v-else-if="activeTab === 'admin' && showAdminTab"
+          embedded
+        />
+        </template>
       </div>
     </div>
   </Teleport>
+
+  <LibrarySetupAdminModal
+    :open="isSetupModalOpen"
+    :api-url="libraryApiUrl"
+    @completed="onSetupCompleted()"
+    @close="onSetupClose()"
+  />
 
   <SectionEditModal
     :open="isSectionModalOpen"
