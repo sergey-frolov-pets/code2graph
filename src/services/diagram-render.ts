@@ -39,7 +39,7 @@ export async function renderDiagramToSvg(
       );
     }
     case "mermaid":
-      return renderMermaidToSvg(source, { dark: Boolean(options.dark) });
+      return renderMermaidToSvg(source, { dark: Boolean(options.dark) }, options.renderMode ?? DEFAULT_RENDER_MODE);
     case "graphml":
       return renderGraphmlToSvg(source, { dark: Boolean(options.dark) });
     default:

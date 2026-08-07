@@ -13,6 +13,12 @@ export const PLANTUML_ONLINE_SERVER_URL = "https://www.plantuml.com/plantuml";
 
 export const PLANTUML_ONLINE_ENCODE_PREFIX = "~1";
 
+export const MERMAID_ONLINE_SERVER_URL = "https://mermaid.ink";
+
+export const MERMAID_ONLINE_SVG_PATH = "/svg";
+
+export const MERMAID_LIVE_EDITOR_URL = "https://mermaid.live/edit";
+
 export function isRenderMode(value: string): value is RenderMode {
   return Object.values(RENDER_MODES).includes(value as RenderMode);
 }

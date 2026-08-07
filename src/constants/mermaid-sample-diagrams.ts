@@ -39,9 +39,9 @@ const MERMAID_SAMPLES_RU: Record<MermaidSampleId, string> = {
     actor User as Пользователь
     participant App as "Web App"
     participant API as "Library API"
-    database DB as "SQLite"
+    participant DB as "SQLite"
 
-    Пользователь->>App: Открыть диаграмму
+    User->>App: Открыть диаграмму
     activate App
     App->>API: GET /diagrams/:id
     activate API
@@ -54,7 +54,7 @@ const MERMAID_SAMPLES_RU: Record<MermaidSampleId, string> = {
         App->>API: sync library
         API-->>App: diagrams[]
     else Кэш актуален
-        App-->>Пользователь: показать из IndexedDB
+        App-->>User: показать из IndexedDB
     end
 
     loop каждый тег
@@ -62,10 +62,10 @@ const MERMAID_SAMPLES_RU: Record<MermaidSampleId, string> = {
     end
 
     opt Оффлайн
-        App-->>Пользователь: режим без сети
+        App-->>User: режим без сети
     end
 
-    App-->>Пользователь: Превью SVG
+    App-->>User: Превью SVG
     deactivate App`,
   classDiagram: `classDiagram
     %% Диаграмма классов: наследование, композиция, зависимости
@@ -190,7 +190,7 @@ const MERMAID_SAMPLES_EN: Record<MermaidSampleId, string> = {
     actor User
     participant App as "Web App"
     participant API as "Library API"
-    database DB as "SQLite"
+    participant DB as "SQLite"
 
     User->>App: Open diagram
     activate App
