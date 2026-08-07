@@ -201,7 +201,9 @@ const { t } = useLocale();
 
 <style scoped>
 .library-detail__file-name {
-  flex: 1;
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

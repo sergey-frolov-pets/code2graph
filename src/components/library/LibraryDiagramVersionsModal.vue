@@ -163,7 +163,7 @@ watch(
 </script>
 
 <template>
-  <AppModal :open="open" :title="modalTitle" @close="emit('close')">
+  <AppModal :open="open" :title="modalTitle" layer="above-library" @close="emit('close')">
     <div class="versions-panel">
       <section class="versions-save">
         <label class="field">

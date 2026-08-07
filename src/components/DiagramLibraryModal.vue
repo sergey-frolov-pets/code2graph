@@ -28,6 +28,9 @@ import { useLibrarySectionAdmin } from "@/composables/library/useLibrarySectionA
 import { useLibraryTransferHandlers } from "@/composables/library/useLibraryTransferHandlers";
 import { useLibraryAuth } from "@/composables/useLibraryAuth";
 import { useLibraryDiagramPreview } from "@/composables/useLibraryDiagramPreview";
+import { useTransientNotice } from "@/composables/useTransientNotice";
+import { waitForEngineReady } from "@/composables/usePlantUml";
+import { waitForMermaidReady } from "@/services/mermaid/mermaid-engine";
 import { downloadShareResource, fetchShareDiagramPreview, fetchShareResource, addDiagramFavorite, removeDiagramFavorite } from "@/utils/diagram-api";
 import { checkServerAvailability } from "@/services/library/library-sync-service";
 import type { LayoutEngine } from "@/constants";
@@ -110,6 +113,8 @@ const browseStep = ref<BrowseStep>("sections");
 const uploadError = ref("");
 const onlineCheckFailed = ref(false);
 const isCheckingOnline = ref(false);
+const { notice: transientNotice, showNotice: showTransientNotice, clearNotice: clearTransientNotice } =
+  useTransientNotice();
 const isSectionAccessOpen = ref(false);
 const sectionAccessId = ref<string | null>(null);
 const sectionAccessTitle = ref("");
@@ -245,9 +250,17 @@ const statusHint = computed(() => {
     return t("library.onlineModeActive", { url: libraryApiUrl.value });
   }
   if (usingCache.value) return t("library.offlineCache");
-  if (isOnline.value) return t("library.apiUnavailable");
   return t("library.offlineCache");
 });
+
+function showApiUnavailableNotice(): void {
+  if (!libraryApiUrl.value) {
+    return;
+  }
+  showTransientNotice(
+    t("library.apiUnavailable", { url: libraryApiUrl.value }),
+  );
+}
 
 const isOnlineButtonUnavailable = computed(() => {
   if (libraryTarget.value === "online") {
@@ -300,7 +313,7 @@ async function onOnlineTargetClick(): Promise<void> {
   try {
     const available = await checkServerAvailability(libraryApiUrl.value);
     if (!available) {
-      uploadError.value = t("library.apiUnavailable");
+      showApiUnavailableNotice();
       onlineCheckFailed.value = true;
       return;
     }
@@ -358,6 +371,7 @@ async function openShareDiagramPreview(token: string, diagramId: string): Promis
   activeShareToken.value = token;
   activePreviewDiagramId.value = diagramId;
   isPreviewModalOpen.value = true;
+  resetPreview();
   await renderPreview(preview.diagram.source, {
     watermarked: true,
     fileName: preview.diagram.fileName,
@@ -409,16 +423,27 @@ async function onPreviewDiagram(): Promise<void> {
     return;
   }
 
-  previewTitle.value = selectedDiagram.value.title;
+  let diagram = selectedDiagram.value;
+  if (!diagram.source?.trim()) {
+    await library.selectDiagram(diagram.id);
+    if (!selectedDiagram.value?.source?.trim()) {
+      uploadError.value = t("library.previewSourceMissing");
+      return;
+    }
+    diagram = selectedDiagram.value;
+  }
+
+  resetPreview();
+  previewTitle.value = diagram.title;
   previewCanDownload.value = true;
   previewDownloadsRemaining.value = null;
   activeShareToken.value = "";
-  activePreviewDiagramId.value = selectedDiagram.value.id;
+  activePreviewDiagramId.value = diagram.id;
   isPreviewModalOpen.value = true;
-  await renderPreview(selectedDiagram.value.source, {
+  await renderPreview(diagram.source, {
     watermarked: true,
-    fileName: selectedDiagram.value.fileName,
-    language: selectedDiagram.value.language,
+    fileName: diagram.fileName,
+    language: diagram.language,
     renderMode: props.renderMode,
     dark: props.diagramDarkMode,
     layout: props.layout,
@@ -558,6 +583,7 @@ watch(
   (isOpen) => {
     if (!isOpen) {
       clearShareBrowseContext();
+      clearTransientNotice();
       return;
     }
 
@@ -568,7 +594,17 @@ watch(
       resetBrowseFlow();
       resetSectionAdmin();
       void refreshCurrentUser();
-      void library.refresh();
+      void waitForEngineReady();
+      void waitForMermaidReady(props.diagramDarkMode);
+      void library.refresh().then(() => {
+        if (
+          libraryTarget.value === "online" &&
+          libraryApiUrl.value &&
+          !apiAvailable.value
+        ) {
+          showApiUnavailableNotice();
+        }
+      });
 
       const pendingShare = sessionStorage.getItem(PENDING_SHARE_STORAGE_KEY);
       if (pendingShare) {
@@ -626,6 +662,9 @@ watch(libraryTarget, () => {
         </div>
 
         <p v-if="showModeTabs" class="library-header__hint">{{ statusHint }}</p>
+        <p v-if="transientNotice" class="library-header__notice" role="status">
+          {{ transientNotice }}
+        </p>
 
         <div v-if="showModeTabs" class="library-header__modes">
           <div class="library-target">
