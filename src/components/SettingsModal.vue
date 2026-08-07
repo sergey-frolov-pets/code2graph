@@ -28,6 +28,16 @@ import { useLibraryCredentials } from "@/composables/useLibraryCredentials";
 import { testLlmConnection } from "@/services/llm/llm-client";
 import { checkApiHealth } from "@/utils/diagram-api";
 import { useLibraryAuth } from "@/composables/useLibraryAuth";
+import {
+  addLibraryProfile,
+  getActiveLibraryProfile,
+  getActiveLibraryProfileIdRef,
+  getLibraryProfilesRef,
+  removeLibraryProfile,
+  saveActiveProfileCredentials,
+  setActiveLibraryProfile,
+  updateLibraryProfile,
+} from "@/config/library-profiles";
 
 const props = defineProps<{
   open: boolean;
@@ -92,6 +102,9 @@ const apiKeyError = ref("");
 const isTestingLlm = ref(false);
 const llmTestOk = ref(false);
 const llmTestMessage = ref("");
+const libraryProfiles = getLibraryProfilesRef();
+const activeLibraryProfileId = getActiveLibraryProfileIdRef();
+const libraryProfileNameInput = ref(getActiveLibraryProfile()?.name ?? "");
 
 watch(libraryApiUrl, (value) => {
   libraryServerInput.value = value;
@@ -121,18 +134,70 @@ watch(
 
 function onLibraryServerBlur(): void {
   setLibraryApiUrl(libraryServerInput.value);
+  const profile = getActiveLibraryProfile();
+  if (profile) {
+    updateLibraryProfile(profile.id, { apiUrl: libraryServerInput.value });
+  }
 }
 
 function onLibraryUsernameBlur(): void {
   setUsername(libraryUsernameInput.value);
+  const profile = getActiveLibraryProfile();
+  if (profile) {
+    updateLibraryProfile(profile.id, { username: libraryUsernameInput.value });
+  }
 }
 
 function onLibraryPasswordSave(): void {
   if (libraryPasswordInput.value) {
     setPassword(libraryPasswordInput.value);
+    saveActiveProfileCredentials();
     libraryPasswordInput.value = "";
     showLibraryPassword.value = false;
   }
+}
+
+function onLibraryProfileSelect(profileId: string): void {
+  saveActiveProfileCredentials();
+  setActiveLibraryProfile(profileId);
+  const profile = getActiveLibraryProfile();
+  libraryServerInput.value = profile?.apiUrl ?? "";
+  libraryUsernameInput.value = profile?.username ?? "";
+  libraryProfileNameInput.value = profile?.name ?? "";
+  libraryPasswordInput.value = "";
+}
+
+function onLibraryProfileNameBlur(): void {
+  const profile = getActiveLibraryProfile();
+  if (!profile) {
+    return;
+  }
+  updateLibraryProfile(profile.id, { name: libraryProfileNameInput.value });
+}
+
+function onAddLibraryProfile(): void {
+  saveActiveProfileCredentials();
+  const profile = addLibraryProfile({
+    name: t("settings.libraryProfileName"),
+    apiUrl: "",
+    username: "",
+  });
+  setActiveLibraryProfile(profile.id);
+  libraryServerInput.value = "";
+  libraryUsernameInput.value = "";
+  libraryProfileNameInput.value = profile.name;
+}
+
+function onRemoveLibraryProfile(): void {
+  const profile = getActiveLibraryProfile();
+  if (!profile) {
+    return;
+  }
+  removeLibraryProfile(profile.id);
+  const next = getActiveLibraryProfile();
+  libraryServerInput.value = next?.apiUrl ?? "";
+  libraryUsernameInput.value = next?.username ?? "";
+  libraryProfileNameInput.value = next?.name ?? "";
 }
 
 function onLibraryCredentialsClear(): void {
@@ -596,6 +661,47 @@ async function onTestLlmConnection(): Promise<void> {
 
     <div class="settings-section">
       <h3 class="settings-section__title">{{ t("settings.library") }}</h3>
+
+      <label v-if="libraryProfiles.length > 0" class="settings-field">
+        <span class="settings-field__label">{{ t("settings.libraryProfileSelect") }}</span>
+        <select
+          class="select"
+          :value="activeLibraryProfileId"
+          @change="onLibraryProfileSelect(($event.target as HTMLSelectElement).value)"
+        >
+          <option
+            v-for="profile in libraryProfiles"
+            :key="profile.id"
+            :value="profile.id"
+          >
+            {{ profile.name }}
+          </option>
+        </select>
+      </label>
+
+      <div class="settings-key-actions">
+        <button class="btn" type="button" @click="onAddLibraryProfile()">
+          {{ t("settings.libraryProfileAdd") }}
+        </button>
+        <button
+          class="btn"
+          type="button"
+          :disabled="libraryProfiles.length <= 1"
+          @click="onRemoveLibraryProfile()"
+        >
+          {{ t("settings.libraryProfileRemove") }}
+        </button>
+      </div>
+
+      <label class="settings-field">
+        <span class="settings-field__label">{{ t("settings.libraryProfileName") }}</span>
+        <input
+          v-model="libraryProfileNameInput"
+          class="select"
+          type="text"
+          @blur="onLibraryProfileNameBlur()"
+        />
+      </label>
 
       <label class="settings-field">
         <span class="settings-field__label">{{ t("settings.libraryServer") }}</span>

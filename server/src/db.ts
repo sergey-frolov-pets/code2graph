@@ -46,6 +46,7 @@ function runMigrations(database: Database.Database): void {
       section_id TEXT NOT NULL REFERENCES sections(id) ON DELETE CASCADE,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       granted_by TEXT NOT NULL REFERENCES users(id),
+      permission TEXT NOT NULL DEFAULT 'contribute',
       expires_at TEXT,
       created_at TEXT NOT NULL,
       UNIQUE(section_id, user_id)
@@ -96,6 +97,18 @@ function runMigrations(database: Database.Database): void {
     database.exec(`
       ALTER TABLE diagrams ADD COLUMN avg_rating REAL;
       ALTER TABLE diagrams ADD COLUMN vote_count INTEGER NOT NULL DEFAULT 0;
+    `);
+  }
+
+  if (!columnExists(database, "section_access", "permission")) {
+    database.exec(`
+      ALTER TABLE section_access ADD COLUMN permission TEXT NOT NULL DEFAULT 'contribute';
+    `);
+  }
+
+  if (!columnExists(database, "diagrams", "content_locale")) {
+    database.exec(`
+      ALTER TABLE diagrams ADD COLUMN content_locale TEXT NOT NULL DEFAULT '';
     `);
   }
 

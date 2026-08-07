@@ -9,6 +9,7 @@ import { authRouter } from "./routes/auth.js";
 import { diagramsRouter, sectionsRouter } from "./routes/library.js";
 import { llmRouter } from "./routes/llm.js";
 import { publicAuthRouter } from "./routes/public-auth.js";
+import { ratingsRouter } from "./routes/ratings.js";
 import { shareRouter } from "./routes/share.js";
 
 const app = new Hono();
@@ -36,6 +37,7 @@ protectedApi.route("/auth", authRouter);
 protectedApi.route("/admin", adminRouter);
 protectedApi.route("/sections", sectionsRouter);
 protectedApi.route("/diagrams", diagramsRouter);
+protectedApi.route("/ratings", ratingsRouter);
 protectedApi.route("/llm", llmRouter);
 
 app.route("/api", protectedApi);

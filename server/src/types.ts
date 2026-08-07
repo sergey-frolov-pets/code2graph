@@ -15,6 +15,18 @@ export type ShareResourceType = (typeof SHARE_RESOURCE_TYPES)[number];
 export const SHARE_PERMISSIONS = ["view", "download"] as const;
 export type SharePermission = (typeof SHARE_PERMISSIONS)[number];
 
+/** Уровни подписки / доступа к разделу личной папки. */
+export const SECTION_ACCESS_PERMISSIONS = [
+  "view",
+  "download",
+  "contribute",
+] as const;
+export type SectionAccessPermission =
+  (typeof SECTION_ACCESS_PERMISSIONS)[number];
+
+export const CONTENT_LOCALES = ["", "ru", "en", "de", "fr", "es", "zh"] as const;
+export type ContentLocale = (typeof CONTENT_LOCALES)[number];
+
 export const DEFAULT_SHARE_MAX_DOWNLOADS = 5;
 
 export const FAVORITES_SECTION_ID = "__favorites__";
@@ -88,6 +100,7 @@ export interface SectionAccessRow {
   section_id: string;
   user_id: string;
   granted_by: string;
+  permission: SectionAccessPermission;
   expires_at: string | null;
   created_at: string;
 }
@@ -117,6 +130,8 @@ export interface SectionDto {
   visibility: DiagramVisibility;
   canWrite?: boolean;
   canAdmin?: boolean;
+  canDownload?: boolean;
+  userAccessPermission?: SectionAccessPermission | null;
   createdAt: string;
   updatedAt: string;
   children?: SectionDto[];
@@ -129,6 +144,7 @@ export interface DiagramListItemDto {
   description: string;
   tags: string[];
   language: DiagramLanguage;
+  contentLocale?: ContentLocale | string;
   fileName: string;
   byteSize: number;
   authorId: string | null;
@@ -136,6 +152,7 @@ export interface DiagramListItemDto {
   authorName?: string | null;
   visibility: DiagramVisibility;
   canWrite?: boolean;
+  canDownload?: boolean;
   avgRating?: number | null;
   voteCount?: number;
   isFavorite?: boolean;
@@ -176,9 +193,28 @@ export interface DiagramVersionDto {
 export interface SectionAccessDto {
   userId: string;
   username: string;
+  permission: SectionAccessPermission;
   expiresAt: string | null;
   permanent: boolean;
   grantedAt: string;
+}
+
+export interface RatingsLeaderboardDto {
+  topDiagrams: DiagramListItemDto[];
+  topSections: Array<{
+    sectionId: string;
+    title: string;
+    diagramCount: number;
+    totalVotes: number;
+    avgRating: number | null;
+  }>;
+  topAuthors: Array<{
+    authorId: string;
+    username: string;
+    diagramCount: number;
+    totalVotes: number;
+    avgRating: number | null;
+  }>;
 }
 
 export interface ShareLinkDto {
@@ -197,6 +233,16 @@ export interface ShareLinkDto {
 
 export function isSharePermission(value: string): value is SharePermission {
   return (SHARE_PERMISSIONS as readonly string[]).includes(value);
+}
+
+export function isSectionAccessPermission(
+  value: string,
+): value is SectionAccessPermission {
+  return (SECTION_ACCESS_PERMISSIONS as readonly string[]).includes(value);
+}
+
+export function isContentLocale(value: string): value is ContentLocale {
+  return (CONTENT_LOCALES as readonly string[]).includes(value);
 }
 
 export function isDiagramVisibility(value: string): value is DiagramVisibility {

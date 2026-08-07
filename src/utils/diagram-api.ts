@@ -7,7 +7,9 @@ import type {
   DiagramSortOption,
   DiagramVersionDto,
   LibraryUserDto,
+  RatingsLeaderboardDto,
   SectionAccessDto,
+  SectionAccessPermission,
   SectionDto,
   ShareLinkDto,
   SharePermission,
@@ -435,8 +437,24 @@ export async function checkApiHealth(baseUrl?: string): Promise<boolean> {
 
 export async function fetchLibraryAuthStatus(
   baseUrl?: string,
-): Promise<{ needsSetup: boolean }> {
+): Promise<{ needsSetup: boolean; registrationEnabled?: boolean }> {
   return requestJsonPublic("/auth/status", undefined, baseUrl);
+}
+
+export async function registerLibraryAccount(
+  username: string,
+  password: string,
+  baseUrl?: string,
+): Promise<{ token: string; user: LibraryUserDto }> {
+  return requestJsonPublic(
+    "/auth/register",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    },
+    baseUrl,
+  );
 }
 
 export async function setupLibraryAdmin(
@@ -574,6 +592,7 @@ export async function grantSectionAccess(
     userId?: string;
     permanent?: boolean;
     expiresAt?: string | null;
+    permission?: SectionAccessPermission;
   },
   baseUrl?: string,
 ): Promise<{ ok: boolean }> {
@@ -598,6 +617,12 @@ export async function revokeSectionAccess(
     { method: "DELETE" },
     baseUrl,
   );
+}
+
+export async function fetchRatingsLeaderboard(
+  baseUrl?: string,
+): Promise<RatingsLeaderboardDto> {
+  return requestJson("/ratings/leaderboard", undefined, baseUrl);
 }
 
 export async function createSectionShareLink(

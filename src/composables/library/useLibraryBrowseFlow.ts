@@ -1,6 +1,6 @@
 import { computed, type ComputedRef, type Ref } from "vue";
 import type { FlatSectionOption } from "@/shared/library/section-tree";
-import { FAVORITES_SECTION_ID } from "@/constants/diagram-library";
+import { FAVORITES_SECTION_ID, RATINGS_SECTION_ID } from "@/constants/diagram-library";
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 
 export type LibraryTab = "browse" | "upload" | "transfer" | "admin";
@@ -35,6 +35,9 @@ export function useLibraryBrowseFlow(options: {
     if (browseStep.value === "diagrams") {
       if (library.selectedSectionId.value === FAVORITES_SECTION_ID) {
         return t("library.favorites");
+      }
+      if (library.selectedSectionId.value === RATINGS_SECTION_ID) {
+        return t("library.ratings");
       }
       if (library.selectedSectionId.value === null) {
         return t("library.allSections");
