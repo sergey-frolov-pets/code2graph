@@ -135,6 +135,23 @@ function countUnbalancedBrackets(source: string): SyntaxIssue[] {
 }
 
 /** Быстрая статическая проверка без запуска движка PlantUML */
+export function getPlantUmlStartMarker(source: string): string | null {
+  const trimmed = source.trim().toLowerCase();
+
+  for (const marker of START_MARKERS) {
+    if (trimmed.startsWith(marker)) {
+      return marker;
+    }
+  }
+
+  return null;
+}
+
+export function usesStandalonePlantUmlStarter(source: string): boolean {
+  const marker = getPlantUmlStartMarker(source);
+  return marker !== null && marker !== "@startuml";
+}
+
 export function checkPlantUmlSyntax(source: string): SyntaxCheckResult {
   const trimmed = source.trim();
   const issues: SyntaxIssue[] = [];

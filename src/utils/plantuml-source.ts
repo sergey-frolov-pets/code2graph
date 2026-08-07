@@ -1,5 +1,9 @@
 import type { LayoutEngine } from "@/constants";
 import { resolvePlantUmlIncludes } from "@/utils/plantuml-include";
+import {
+  getPlantUmlStartMarker,
+  usesStandalonePlantUmlStarter,
+} from "@/utils/plantuml-syntax";
 
 const PRAGMA_LAYOUT_PATTERN = /^\s*!pragma\s+layout\s+\S+/im;
 
@@ -30,6 +34,10 @@ export function applyLayoutPragma(
     return `@startuml\n${pragmaLine}\n@enduml`;
   }
 
+  if (usesStandalonePlantUmlStarter(trimmed)) {
+    return trimmed;
+  }
+
   if (PRAGMA_LAYOUT_PATTERN.test(trimmed)) {
     return trimmed.replace(PRAGMA_LAYOUT_PATTERN, pragmaLine);
   }
@@ -56,7 +64,7 @@ export function ensureDiagramWrapper(source: string): string {
     return "@startuml\n@enduml";
   }
 
-  if (trimmed.startsWith("@startuml")) {
+  if (getPlantUmlStartMarker(trimmed)) {
     return trimmed;
   }
 

@@ -1,4 +1,4 @@
-import { computed, ref, type Ref } from "vue";
+import { computed, ref, watch, type Ref } from "vue";
 import {
   getDiagramFormatDefinition,
   type DiagramFormat,
@@ -122,6 +122,21 @@ export function useDiagramDocument(options: UseDiagramDocumentOptions) {
     persistSettings();
     scheduleRender();
   }
+
+  watch(source, (content) => {
+    if (!content.trim()) {
+      return;
+    }
+
+    const detected = detectDiagramFormat(content, loadedFileName.value);
+    if (detected === diagramFormat.value) {
+      return;
+    }
+
+    diagramFormat.value = detected;
+    loadedFileName.value = resolveDiagramFileName(loadedFileName.value, detected);
+    scheduleRender();
+  });
 
   return {
     loadedFileName,

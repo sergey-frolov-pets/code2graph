@@ -1,5 +1,5 @@
 import { computed, ref } from "vue";
-import type { LayoutEngine } from "@/constants";
+import { LAYOUT_ENGINES, type LayoutEngine } from "@/constants";
 import type { DiagramLanguage } from "@/constants/diagram-library";
 import {
   DEFAULT_RENDER_MODE,
@@ -97,7 +97,7 @@ export function useLibraryDiagramPreview() {
 
       svg.value = await renderDiagramToSvg(source, format, {
         dark,
-        layout: options?.layout,
+        layout: options?.layout ?? LAYOUT_ENGINES.smetana,
         renderMode,
       });
     } catch (renderError) {

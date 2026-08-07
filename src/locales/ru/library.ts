@@ -121,6 +121,7 @@ export const libraryMessages: LocaleMessages = {
   "library.sectionAccess": "Доступ",
   "library.preview": "Превью",
   "library.previewLoading": "Рендеринг превью…",
+  "library.previewEmpty": "Не удалось отобразить превью",
   "library.previewWatermarkHint": "Превью с водяным знаком. Скачивание оригинала доступно по ссылке с правом download.",
   "library.downloadOriginal": "Скачать оригинал",
   "library.downloadsRemaining": "Осталось скачиваний: {count}",
