@@ -76,31 +76,17 @@
 .library-target {
   display: flex;
   flex-wrap: nowrap;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
   min-width: 0;
 }
 
-.library-target__btn {
-  padding: 6px 10px;
-  min-height: 36px;
-  font-size: 0.88rem;
-  white-space: nowrap;
-}
-
-.library-target__btn.is-active {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.library-target__btn.is-unavailable:not(.is-active) {
-  color: var(--text-muted);
-  border-color: var(--border);
+.library-target__btn--unavailable:not(.icon-btn--pressed) {
   opacity: 0.65;
 }
 
-.library-target__btn.is-unavailable:not(.is-active):hover {
-  border-color: var(--border);
+.library-target__btn--unavailable:not(.icon-btn--pressed) .action-icon {
+  color: var(--text-muted);
 }
 
 .library-modes__btn {
@@ -421,10 +407,5 @@
   .library-step__toolbar-actions {
     width: 100%;
     justify-content: flex-start;
-  }
-
-  .library-target__btn {
-    padding: 6px 8px;
-    font-size: 0.82rem;
   }
 }

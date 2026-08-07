@@ -99,7 +99,7 @@ function toggleRenderMode(): void {
       :pressed="isOnlineMode"
       @click="toggleRenderMode"
     >
-      <ActionIcon :name="isOnlineMode ? 'cloud' : 'shield'" size="large" />
+      <ActionIcon :name="isOnlineMode ? 'globe' : 'unlink'" size="large" />
     </IconButton>
 
     <IconButton

@@ -262,6 +262,14 @@ const isOnlineButtonUnavailable = computed(() => {
   return onlineCheckFailed.value;
 });
 
+const onlineTargetButtonClass = computed(() => {
+  const classes = ["library-modes__btn"];
+  if (isOnlineButtonUnavailable.value && libraryTarget.value !== "online") {
+    classes.push("library-target__btn--unavailable");
+  }
+  return classes.join(" ");
+});
+
 function onLocalTargetClick(): void {
   onlineCheckFailed.value = false;
   setLibraryTarget("local");
@@ -621,26 +629,23 @@ watch(libraryTarget, () => {
 
         <div v-if="showModeTabs" class="library-header__modes">
           <div class="library-target">
-            <button
-              class="btn library-target__btn"
-              type="button"
-              :class="{ 'is-active': libraryTarget === 'local' }"
+            <IconButton
+              :label="t('library.targetLocal')"
+              extra-class="library-modes__btn"
+              :pressed="libraryTarget === 'local'"
               @click="onLocalTargetClick()"
             >
-              {{ t("library.targetLocal") }}
-            </button>
-            <button
-              class="btn library-target__btn"
-              type="button"
-              :class="{
-                'is-active': libraryTarget === 'online',
-                'is-unavailable': isOnlineButtonUnavailable,
-              }"
+              <ActionIcon name="unlink" />
+            </IconButton>
+            <IconButton
+              :label="t('library.targetOnline')"
+              :extra-class="onlineTargetButtonClass"
+              :pressed="libraryTarget === 'online'"
               :disabled="isCheckingOnline"
               @click="onOnlineTargetClick()"
             >
-              {{ t("library.targetOnline") }}
-            </button>
+              <ActionIcon name="globe" />
+            </IconButton>
           </div>
 
           <nav class="library-modes" :aria-label="t('library.title')">
