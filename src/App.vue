@@ -334,6 +334,7 @@ onMounted(() => {
 
     <SettingsModal
       :open="isSettingsModalOpen"
+      :diagram-format="diagramFormat"
       v-model:layout="layout"
       v-model:render-mode="renderMode"
       v-model:dark-mode="uiDarkMode"

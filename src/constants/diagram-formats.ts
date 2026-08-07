@@ -22,6 +22,7 @@ export interface DiagramFormatDefinition {
   supportsSamples: boolean;
   supportsSaveSource: boolean;
   usesPlantUmlEngine: boolean;
+  supportsOnlineRender: boolean;
 }
 
 export const DIAGRAM_FORMAT_DEFINITIONS: Record<
@@ -42,6 +43,7 @@ export const DIAGRAM_FORMAT_DEFINITIONS: Record<
     supportsSamples: true,
     supportsSaveSource: true,
     usesPlantUmlEngine: true,
+    supportsOnlineRender: true,
   },
   mermaid: {
     id: "mermaid",
@@ -57,6 +59,7 @@ export const DIAGRAM_FORMAT_DEFINITIONS: Record<
     supportsSamples: true,
     supportsSaveSource: true,
     usesPlantUmlEngine: false,
+    supportsOnlineRender: true,
   },
   graphml: {
     id: "graphml",
@@ -72,6 +75,7 @@ export const DIAGRAM_FORMAT_DEFINITIONS: Record<
     supportsSamples: false,
     supportsSaveSource: false,
     usesPlantUmlEngine: false,
+    supportsOnlineRender: false,
   },
 };
 

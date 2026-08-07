@@ -60,8 +60,14 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     getDiagramFormatDefinition(diagramFormat.value),
   );
 
+  const usesOnlineRender = computed(
+    () =>
+      formatDefinition.value.supportsOnlineRender &&
+      isOnlineRenderMode(renderMode.value),
+  );
+
   function updateOnlineEngineStatus(): void {
-    if (!isOnlineRenderMode(renderMode.value)) {
+    if (!usesOnlineRender.value) {
       return;
     }
 
@@ -73,23 +79,26 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
 
   function isFormatEngineReady(format: DiagramFormat): boolean {
     const definition = getDiagramFormatDefinition(format);
-    if (!definition.usesPlantUmlEngine) {
-      return format === "mermaid" ? isMermaidReady() : true;
-    }
 
-    if (isOnlineRenderMode(renderMode.value)) {
+    if (definition.supportsOnlineRender && isOnlineRenderMode(renderMode.value)) {
       return navigator.onLine;
     }
 
-    return isEngineReady();
+    if (definition.usesPlantUmlEngine) {
+      return isEngineReady();
+    }
+
+    if (format === "mermaid") {
+      return isMermaidReady();
+    }
+
+    return true;
   }
 
   async function renderDiagram(): Promise<void> {
     if (!engineReady.value) {
-      error.value = formatDefinition.value.usesPlantUmlEngine
-        ? isOnlineRenderMode(renderMode.value)
-          ? t("app.renderModeOnlineOffline")
-          : t("app.engineNotReady")
+      error.value = usesOnlineRender.value
+        ? t("app.renderModeOnlineOffline")
         : t("app.engineNotReady");
       return;
     }
@@ -134,7 +143,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
   }
 
   function updateEngineStatusLabel(): void {
-    if (formatDefinition.value.usesPlantUmlEngine && isOnlineRenderMode(renderMode.value)) {
+    if (usesOnlineRender.value) {
       updateOnlineEngineStatus();
       return;
     }
@@ -186,33 +195,29 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     const format = diagramFormat.value;
     const definition = getDiagramFormatDefinition(format);
 
-    if (!definition.usesPlantUmlEngine) {
-      if (format === "mermaid") {
-        await bootMermaidEngine();
-        return;
-      }
-
-      engineReady.value = true;
-      engineStatus.value = t("app.engineReady");
-      scheduleRender();
-      return;
-    }
-
-    if (isOnlineRenderMode(renderMode.value)) {
+    if (definition.supportsOnlineRender && isOnlineRenderMode(renderMode.value)) {
       updateOnlineEngineStatus();
       scheduleRender();
       return;
     }
 
-    await bootOfflinePlantUmlEngine();
-  }
-
-  function onNetworkStatusChange(): void {
-    if (!formatDefinition.value.usesPlantUmlEngine) {
+    if (definition.usesPlantUmlEngine) {
+      await bootOfflinePlantUmlEngine();
       return;
     }
 
-    if (!isOnlineRenderMode(renderMode.value)) {
+    if (format === "mermaid") {
+      await bootMermaidEngine();
+      return;
+    }
+
+    engineReady.value = true;
+    engineStatus.value = t("app.engineReady");
+    scheduleRender();
+  }
+
+  function onNetworkStatusChange(): void {
+    if (!usesOnlineRender.value) {
       return;
     }
 
