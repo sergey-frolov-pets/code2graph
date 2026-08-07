@@ -1,12 +1,12 @@
 import { computed, ref } from "vue";
-import { LAYOUT_ENGINES } from "@/constants";
+import type { LayoutEngine } from "@/constants";
 import type { DiagramLanguage } from "@/constants/diagram-library";
 import {
   DEFAULT_RENDER_MODE,
   isOnlineRenderMode,
   type RenderMode,
 } from "@/constants/render-settings";
-import { readInitialLocale } from "@/composables/useLocale";
+import { readInitialLocale, useLocale } from "@/composables/useLocale";
 import {
   isEngineReady,
   waitForEngineReady,
@@ -18,8 +18,10 @@ import {
 } from "@/services/mermaid/mermaid-engine";
 import { resolveLibraryDiagramFormat } from "@/utils/diagram-format";
 import { sanitizeSvgForPreview } from "@/utils/export";
+import { resolveLocalizedErrorMessage } from "@/utils/localized-app-error";
 
 export function useLibraryDiagramPreview() {
+  const { t } = useLocale();
   const svg = ref("");
   const error = ref("");
   const isRendering = ref(false);
@@ -32,11 +34,16 @@ export function useLibraryDiagramPreview() {
   async function ensureEngineReady(
     format: ReturnType<typeof resolveLibraryDiagramFormat>,
     dark: boolean,
+    renderMode: RenderMode,
   ): Promise<boolean> {
+    if (isOnlineRenderMode(renderMode)) {
+      return true;
+    }
+
     if (format === "mermaid") {
       await waitForMermaidReady(dark);
       if (!isMermaidReady()) {
-        error.value = "Engine not ready";
+        error.value = t("app.engineNotReady");
         return false;
       }
       return true;
@@ -45,7 +52,7 @@ export function useLibraryDiagramPreview() {
     if (format === "plantuml") {
       await waitForEngineReady();
       if (!isEngineReady()) {
-        error.value = "Engine not ready";
+        error.value = t("app.engineNotReady");
         return false;
       }
       return true;
@@ -60,6 +67,7 @@ export function useLibraryDiagramPreview() {
       watermarked?: boolean;
       renderMode?: RenderMode;
       dark?: boolean;
+      layout?: LayoutEngine;
       fileName?: string;
       language?: DiagramLanguage;
     },
@@ -78,24 +86,30 @@ export function useLibraryDiagramPreview() {
 
     try {
       if (isOnlineRenderMode(renderMode) && !navigator.onLine) {
-        error.value = "Offline";
+        error.value = t("app.renderModeOnlineOffline");
         return;
       }
 
-      const engineReady = await ensureEngineReady(format, dark);
+      const engineReady = await ensureEngineReady(format, dark, renderMode);
       if (!engineReady) {
         return;
       }
 
       svg.value = await renderDiagramToSvg(source, format, {
         dark,
-        layout: LAYOUT_ENGINES.elk,
+        layout: options?.layout,
         renderMode,
       });
     } catch (renderError) {
       svg.value = "";
       error.value =
-        renderError instanceof Error ? renderError.message : "Render failed";
+        renderError instanceof Error
+          ? resolveLocalizedErrorMessage(
+              renderError,
+              t,
+              "app.unknownRenderError",
+            )
+          : t("app.unknownRenderError");
     } finally {
       isRendering.value = false;
     }

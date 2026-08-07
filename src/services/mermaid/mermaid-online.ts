@@ -13,7 +13,7 @@ function buildOnlineSvgUrl(encodedState: string, dark: boolean): string {
 
   if (dark) {
     url.searchParams.set("theme", "dark");
-    url.searchParams.set("bgColor", "!1b1b1f");
+    url.searchParams.set("bgColor", "1b1b1f");
   }
 
   return url.toString();

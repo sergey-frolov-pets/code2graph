@@ -4,6 +4,11 @@ import ActionIcon from "@/components/icons/ActionIcon.vue";
 import FileBadgeIcon from "@/components/icons/FileBadgeIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import TooltipWrap from "@/components/TooltipWrap.vue";
+import {
+  RENDER_MODES,
+  isOnlineRenderMode,
+  type RenderMode,
+} from "@/constants/render-settings";
 import { useLocale } from "@/composables/useLocale";
 
 const props = defineProps<{
@@ -11,6 +16,7 @@ const props = defineProps<{
   canExport: boolean;
   previewBackground: string;
   diagramDarkMode: boolean;
+  renderMode: RenderMode;
 }>();
 
 const emit = defineEmits<{
@@ -21,16 +27,32 @@ const emit = defineEmits<{
   zoomOut: [];
   "update:previewBackground": [value: string];
   "update:diagramDarkMode": [value: boolean];
+  "update:renderMode": [value: RenderMode];
 }>();
 
 const { t } = useLocale();
+
+const isOnlineMode = computed(() => isOnlineRenderMode(props.renderMode));
 
 const themeToggleLabel = computed(() =>
   props.diagramDarkMode ? t("toolbar.themeToLight") : t("toolbar.themeToDark"),
 );
 
+const renderModeToggleLabel = computed(() =>
+  isOnlineMode.value
+    ? t("toolbar.renderModeToOffline")
+    : t("toolbar.renderModeToOnline"),
+);
+
 function toggleDiagramTheme(): void {
   emit("update:diagramDarkMode", !props.diagramDarkMode);
+}
+
+function toggleRenderMode(): void {
+  emit(
+    "update:renderMode",
+    isOnlineMode.value ? RENDER_MODES.offline : RENDER_MODES.online,
+  );
 }
 </script>
 
@@ -70,6 +92,14 @@ function toggleDiagramTheme(): void {
         :name="diagramDarkMode ? 'sun' : 'moon'"
         size="large"
       />
+    </IconButton>
+
+    <IconButton
+      :label="renderModeToggleLabel"
+      :pressed="isOnlineMode"
+      @click="toggleRenderMode"
+    >
+      <ActionIcon :name="isOnlineMode ? 'cloud' : 'shield'" size="large" />
     </IconButton>
 
     <IconButton

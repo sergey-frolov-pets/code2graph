@@ -142,24 +142,23 @@ const MERMAID_SAMPLES_RU: Record<MermaidSampleId, string> = {
         number price
     }`,
   gantt: `gantt
-    %% Диаграмма Ганта: секции, задачи и вехи
-    title План релиза vuePlantUML
-    dateFormat  YYYY-MM-DD
-    axisFormat  %d.%m
-    excludes    weekends
+title План релиза vuePlantUML
+dateFormat YYYY-MM-DD
+axisFormat %d.%m
+excludes weekends
 
-    section Подготовка
-    Анализ требований     :done,    a1, 2024-01-02, 5d
-    Прототип UI           :done,    a2, after a1, 4d
+section Подготовка
+Анализ требований     :done, a1, 2024-01-02, 5d
+Прототип UI           :done, a2, after a1, 4d
 
-    section Разработка
-    Mermaid поддержка     :active,  d1, 2024-01-15, 7d
-    GraphML просмотр      :         d2, after d1, 5d
-    Тесты и i18n          :         d3, after d2, 4d
+section Разработка
+Mermaid поддержка     :active, d1, 2024-01-15, 7d
+GraphML просмотр      :d2, after d1, 5d
+Тесты и i18n          :d3, after d2, 4d
 
-    section Релиз
-    Сборка single HTML    :         r1, after d3, 2d
-    Публикация            :milestone, m1, after r1, 0d`,
+section Релиз
+Сборка single HTML    :r1, after d3, 2d
+Публикация            :milestone, m1, after r1, 0d`,
 };
 
 const MERMAID_SAMPLES_EN: Record<MermaidSampleId, string> = {
@@ -293,24 +292,23 @@ const MERMAID_SAMPLES_EN: Record<MermaidSampleId, string> = {
         number price
     }`,
   gantt: `gantt
-    %% Gantt chart: sections, tasks, and milestones
-    title vuePlantUML release plan
-    dateFormat  YYYY-MM-DD
-    axisFormat  %m/%d
-    excludes    weekends
+title vuePlantUML release plan
+dateFormat YYYY-MM-DD
+axisFormat %m/%d
+excludes weekends
 
-    section Preparation
-    Requirements analysis :done,    a1, 2024-01-02, 5d
-    UI prototype          :done,    a2, after a1, 4d
+section Preparation
+Requirements analysis :done, a1, 2024-01-02, 5d
+UI prototype          :done, a2, after a1, 4d
 
-    section Development
-    Mermaid support       :active,  d1, 2024-01-15, 7d
-    GraphML view-only     :         d2, after d1, 5d
-    Tests and i18n        :         d3, after d2, 4d
+section Development
+Mermaid support       :active, d1, 2024-01-15, 7d
+GraphML view-only     :d2, after d1, 5d
+Tests and i18n        :d3, after d2, 4d
 
-    section Release
-    Single HTML build     :         r1, after d3, 2d
-    Publish               :milestone, m1, after r1, 0d`,
+section Release
+Single HTML build     :r1, after d3, 2d
+Publish               :milestone, m1, after r1, 0d`,
 };
 
 const MERMAID_SOURCES_BY_LOCALE: Record<

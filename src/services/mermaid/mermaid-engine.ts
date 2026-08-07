@@ -11,6 +11,25 @@ import { prepareMermaidSource } from "@/utils/mermaid-source";
 let initialized = false;
 let renderCounter = 0;
 
+const MERMAID_RENDER_CONTAINER_WIDTH_PX = 1200;
+const MERMAID_RENDER_CONTAINER_HEIGHT_PX = 800;
+
+function createMermaidRenderContainer(): HTMLDivElement {
+  const container = document.createElement("div");
+  container.setAttribute("aria-hidden", "true");
+  container.style.position = "fixed";
+  container.style.left = "0";
+  container.style.top = "0";
+  container.style.width = `${MERMAID_RENDER_CONTAINER_WIDTH_PX}px`;
+  container.style.height = `${MERMAID_RENDER_CONTAINER_HEIGHT_PX}px`;
+  container.style.visibility = "hidden";
+  container.style.pointerEvents = "none";
+  container.style.overflow = "hidden";
+  container.style.zIndex = "-1";
+  document.body.appendChild(container);
+  return container;
+}
+
 function ensureMermaidInitialized(dark: boolean): void {
   mermaid.initialize({
     startOnLoad: false,
@@ -44,13 +63,7 @@ async function renderMermaidOfflineToSvg(
 
   renderCounter += 1;
   const renderId = `mermaid-render-${renderCounter}`;
-  const container = document.createElement("div");
-  container.setAttribute("aria-hidden", "true");
-  container.style.position = "absolute";
-  container.style.left = "-10000px";
-  container.style.top = "0";
-  container.style.width = "1200px";
-  document.body.appendChild(container);
+  const container = createMermaidRenderContainer();
 
   try {
     const result = await mermaid.render(renderId, prepared, container);

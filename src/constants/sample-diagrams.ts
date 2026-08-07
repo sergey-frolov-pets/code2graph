@@ -12,6 +12,7 @@ export const PLANTUML_SAMPLE_IDS = [
   "state",
   "activity",
   "c4",
+  "gantt",
 ] as const;
 
 export const SAMPLE_DIAGRAM_IDS = PLANTUML_SAMPLE_IDS;
@@ -413,6 +414,18 @@ Rel(spa, cdn, "Статика", "HTTPS")
 
 SHOW_LEGEND()
 @enduml`,
+  gantt: `@startgantt
+' Диаграмма Ганта: задачи, зависимости и вехи
+project starts 2026-01-06
+saturday are closed
+sunday are closed
+
+[Анализ требований] lasts 5 days and is colored in LightGreen
+[Прототип UI] lasts 4 days and starts at [Анализ требований]'s end
+[Разработка] lasts 10 days and starts at [Прототип UI]'s end
+[Тестирование] lasts 5 days and starts at [Разработка]'s end
+[Релиз] happens at 2026-02-20 and is colored in Coral
+@endgantt`,
 };
 
 const SAMPLE_DIAGRAMS_EN: Record<SampleDiagramId, string> = {
@@ -734,6 +747,18 @@ Rel(spa, cdn, "Static assets", "HTTPS")
 
 SHOW_LEGEND()
 @enduml`,
+  gantt: `@startgantt
+' Gantt chart: tasks, dependencies, and milestones
+project starts 2026-01-06
+saturday are closed
+sunday are closed
+
+[Requirements analysis] lasts 5 days and is colored in LightGreen
+[UI prototype] lasts 4 days and starts at [Requirements analysis]'s end
+[Development] lasts 10 days and starts at [UI prototype]'s end
+[Testing] lasts 5 days and starts at [Development]'s end
+[Release] happens at 2026-02-20 and is colored in Coral
+@endgantt`,
 };
 
 const SOURCES_BY_LOCALE: Record<AppLocale, Record<SampleDiagramId, string>> = {

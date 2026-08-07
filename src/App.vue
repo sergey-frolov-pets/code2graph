@@ -288,6 +288,7 @@ onMounted(() => {
         :can-export="canExport"
         v-model:preview-background="previewBackground"
         v-model:diagram-dark-mode="diagramDarkMode"
+        v-model:render-mode="renderMode"
         @render-now="renderDiagram"
         @export-svg="exportSvg"
         @export-png="exportPng"
@@ -319,6 +320,9 @@ onMounted(() => {
 
     <DiagramLibraryModal
       :open="isLibraryModalOpen"
+      :render-mode="renderMode"
+      :layout="layout"
+      :diagram-dark-mode="diagramDarkMode"
       @close="isLibraryModalOpen = false"
       @open-diagram="onFileLoaded"
     />
@@ -334,7 +338,6 @@ onMounted(() => {
 
     <SettingsModal
       :open="isSettingsModalOpen"
-      :diagram-format="diagramFormat"
       v-model:layout="layout"
       v-model:render-mode="renderMode"
       v-model:dark-mode="uiDarkMode"
