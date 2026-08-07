@@ -5,14 +5,31 @@ import {
   getLibraryAuthToken,
   setLibraryAuthToken,
 } from "@/config/library-credentials";
-import { fetchLibraryMe, loginLibrary } from "@/utils/diagram-api";
+import {
+  fetchLibraryAuthStatus,
+  fetchLibraryMe,
+  loginLibrary,
+  setupLibraryAdmin,
+} from "@/utils/diagram-api";
 
 const currentUser = ref<LibraryUserDto | null>(null);
+const needsSetup = ref(false);
 let refreshPromise: Promise<LibraryUserDto | null> | null = null;
 
 export function useLibraryAuth() {
   const isAdmin = computed(() => currentUser.value?.role === "admin");
   const isAuthenticated = computed(() => Boolean(currentUser.value));
+
+  async function checkLibraryAuthStatus(
+    baseUrl?: string,
+  ): Promise<{ needsSetup: boolean }> {
+    const status = await fetchLibraryAuthStatus(baseUrl);
+    needsSetup.value = status.needsSetup;
+    if (status.needsSetup) {
+      currentUser.value = null;
+    }
+    return status;
+  }
 
   async function refreshCurrentUser(): Promise<LibraryUserDto | null> {
     if (refreshPromise) {
@@ -28,6 +45,7 @@ export function useLibraryAuth() {
       try {
         const response = await fetchLibraryMe();
         currentUser.value = response.user;
+        needsSetup.value = false;
         return response.user;
       } catch {
         currentUser.value = null;
@@ -49,6 +67,19 @@ export function useLibraryAuth() {
     const response = await loginLibrary(username, password);
     setLibraryAuthToken(response.token);
     currentUser.value = response.user;
+    needsSetup.value = false;
+    return response.user;
+  }
+
+  async function setupFirstAdmin(
+    username: string,
+    password: string,
+    baseUrl?: string,
+  ): Promise<LibraryUserDto> {
+    const response = await setupLibraryAdmin(username, password, baseUrl);
+    setLibraryAuthToken(response.token);
+    currentUser.value = response.user;
+    needsSetup.value = false;
     return response.user;
   }
 
@@ -59,10 +90,13 @@ export function useLibraryAuth() {
 
   return {
     currentUser,
+    needsSetup,
     isAdmin,
     isAuthenticated,
+    checkLibraryAuthStatus,
     refreshCurrentUser,
     loginWithCredentials,
+    setupFirstAdmin,
     logoutLibraryAuth,
   };
 }

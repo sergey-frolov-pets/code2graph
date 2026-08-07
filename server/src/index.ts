@@ -8,6 +8,7 @@ import { adminRouter } from "./routes/admin.js";
 import { authRouter } from "./routes/auth.js";
 import { diagramsRouter, sectionsRouter } from "./routes/library.js";
 import { llmRouter } from "./routes/llm.js";
+import { publicAuthRouter } from "./routes/public-auth.js";
 import { shareRouter } from "./routes/share.js";
 
 const app = new Hono();
@@ -22,6 +23,7 @@ app.use(
 );
 
 app.route("/api/share", shareRouter);
+app.route("/api/auth", publicAuthRouter);
 
 const protectedApi = new Hono();
 protectedApi.use("*", libraryAuthMiddleware);

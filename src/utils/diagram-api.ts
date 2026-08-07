@@ -60,6 +60,25 @@ async function parseError(response: Response): Promise<string> {
   return `HTTP ${response.status}`;
 }
 
+async function requestJsonPublic<T>(
+  path: string,
+  init?: RequestInit,
+  baseUrl?: string,
+): Promise<T> {
+  const apiBaseUrl = resolveApiBaseUrl(baseUrl);
+  const response = await fetch(`${apiBaseUrl}${path}`, init);
+
+  if (!response.ok) {
+    throw new DiagramApiError(await parseError(response), response.status);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return (await response.json()) as T;
+}
+
 async function requestJson<T>(
   path: string,
   init?: RequestInit,
@@ -400,13 +419,40 @@ export async function checkApiHealth(baseUrl?: string): Promise<boolean> {
   }
 
   try {
-    const response = await fetch(`${resolved}/health`, {
-      headers: buildRequestHeaders(),
-    });
-    return response.ok;
+    await fetchLibraryAuthStatus(resolved);
+    return true;
   } catch {
-    return false;
+    try {
+      const response = await fetch(`${resolved}/health`, {
+        headers: buildRequestHeaders(),
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
   }
+}
+
+export async function fetchLibraryAuthStatus(
+  baseUrl?: string,
+): Promise<{ needsSetup: boolean }> {
+  return requestJsonPublic("/auth/status", undefined, baseUrl);
+}
+
+export async function setupLibraryAdmin(
+  username: string,
+  password: string,
+  baseUrl?: string,
+): Promise<{ token: string; user: LibraryUserDto }> {
+  return requestJsonPublic(
+    "/auth/setup",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    },
+    baseUrl,
+  );
 }
 
 export async function loginLibrary(
@@ -463,6 +509,55 @@ export async function setUserSubscription(
     },
     baseUrl,
   );
+}
+
+export async function createAdminUser(
+  payload: {
+    username: string;
+    password: string;
+    role?: LibraryUserDto["role"];
+    subscriptionActive?: boolean;
+  },
+  baseUrl?: string,
+): Promise<{ user: LibraryUserDto }> {
+  return requestJson(
+    "/admin/users",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    baseUrl,
+  );
+}
+
+export async function updateAdminUser(
+  userId: string,
+  payload: {
+    username?: string;
+    password?: string;
+    role?: LibraryUserDto["role"];
+    blocked?: boolean;
+    subscriptionActive?: boolean;
+  },
+  baseUrl?: string,
+): Promise<{ user: LibraryUserDto }> {
+  return requestJson(
+    `/admin/users/${userId}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    baseUrl,
+  );
+}
+
+export async function deleteAdminUser(
+  userId: string,
+  baseUrl?: string,
+): Promise<{ ok: boolean }> {
+  return requestJson(`/admin/users/${userId}`, { method: "DELETE" }, baseUrl);
 }
 
 export async function fetchSectionAccess(

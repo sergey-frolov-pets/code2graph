@@ -1,9 +1,8 @@
 import { createMiddleware } from "hono/factory";
 import { getRequestUser, type AuthVariables } from "./auth/context.js";
 import { verifyAuthToken } from "./auth/token.js";
-import { isLibraryAuthEnabled } from "./config.js";
-import { ensureDbBootstrapped, getDb } from "./db.js";
-import { authenticateUser, getUserById } from "./users.js";
+import { getDb } from "./db.js";
+import { authenticateUser, getUserById, needsSetup } from "./users.js";
 
 function parseBasicAuth(header: string | undefined): {
   username: string;
@@ -65,26 +64,27 @@ async function resolveUserFromAuthorization(
 
 export const libraryAuthMiddleware = createMiddleware<{ Variables: AuthVariables }>(
   async (context, next) => {
-    await ensureDbBootstrapped();
-    let user = await resolveUserFromAuthorization(
+    const database = getDb();
+
+    if (needsSetup(database)) {
+      return context.json(
+        {
+          error: "Библиотека не настроена. Создайте администратора.",
+          needsSetup: true,
+        },
+        503,
+      );
+    }
+
+    const user = await resolveUserFromAuthorization(
       context.req.header("Authorization"),
     );
 
-    if (!user && !isLibraryAuthEnabled()) {
-      const database = getDb();
-      const adminRow = database
-        .prepare("SELECT id FROM users WHERE role = 'admin' ORDER BY created_at ASC LIMIT 1")
-        .get() as { id: string } | undefined;
-      if (adminRow) {
-        user = getUserById(database, adminRow.id);
-      }
-    }
-
-    if (isLibraryAuthEnabled() && !user) {
+    if (!user) {
       return context.json({ error: "Authentication required" }, 401);
     }
 
-    if (user?.blocked) {
+    if (user.blocked) {
       return context.json({ error: "Account blocked" }, 403);
     }
 
@@ -96,6 +96,11 @@ export const libraryAuthMiddleware = createMiddleware<{ Variables: AuthVariables
 export async function resolveOptionalUser(
   authorization: string | undefined,
 ): Promise<import("./types.js").UserDto | null> {
+  const database = getDb();
+  if (needsSetup(database)) {
+    return null;
+  }
+
   const user = await resolveUserFromAuthorization(authorization);
   if (user?.blocked) {
     return null;

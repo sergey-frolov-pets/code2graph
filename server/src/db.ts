@@ -1,26 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
-import {
-  AUTH_TOKEN_SECRET,
-  DB_PATH,
-  LIBRARY_AUTH_PASSWORD,
-  LIBRARY_AUTH_USERNAME,
-  SHARED_SECTION_TITLE,
-  isLibraryAuthEnabled,
-} from "./config.js";
-import { hashPassword } from "./auth/password.js";
+import { AUTH_TOKEN_SECRET, DB_PATH, SHARED_SECTION_TITLE } from "./config.js";
 import type { SectionRow } from "./types.js";
 
 let db: Database.Database | null = null;
-let bootstrapPromise: Promise<void> | null = null;
-
-async function ensureBootstrapped(database: Database.Database): Promise<void> {
-  if (!bootstrapPromise) {
-    bootstrapPromise = bootstrapAdminUser(database);
-  }
-  await bootstrapPromise;
-}
 
 function ensureDataDir(): void {
   const dir = path.dirname(DB_PATH);
@@ -187,46 +171,6 @@ function runMigrations(database: Database.Database): void {
   }
 }
 
-async function bootstrapAdminUser(database: Database.Database): Promise<void> {
-  const count = database
-    .prepare("SELECT COUNT(*) AS count FROM users")
-    .get() as { count: number };
-
-  if (count.count > 0) {
-    return;
-  }
-
-  if (!isLibraryAuthEnabled()) {
-    const now = new Date().toISOString();
-    const id = crypto.randomUUID();
-    const passwordHash = await hashPassword("admin");
-    database
-      .prepare(
-        `INSERT INTO users (
-          id, username, password_hash, role, blocked, subscription_active,
-          created_at, updated_at
-        ) VALUES (?, 'admin', ?, 'admin', 0, 1, ?, ?)`,
-      )
-      .run(id, passwordHash, now, now);
-    console.warn(
-      "[library-api] Created default admin user (username: admin, password: admin). Change immediately.",
-    );
-    return;
-  }
-
-  const now = new Date().toISOString();
-  const id = crypto.randomUUID();
-  const passwordHash = await hashPassword(LIBRARY_AUTH_PASSWORD!);
-  database
-    .prepare(
-      `INSERT INTO users (
-        id, username, password_hash, role, blocked, subscription_active,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, 'admin', 0, 1, ?, ?)`,
-    )
-    .run(id, LIBRARY_AUTH_USERNAME!, passwordHash, now, now);
-}
-
 function seedInitialData(database: Database.Database): void {
   const sectionCount = database
     .prepare("SELECT COUNT(*) AS count FROM sections")
@@ -331,8 +275,6 @@ export function getDb(): Database.Database {
   runMigrations(db);
   seedInitialData(db);
 
-  bootstrapPromise = bootstrapAdminUser(db);
-
   if (AUTH_TOKEN_SECRET === "vueplantuml-dev-auth-secret-change-me") {
     console.warn(
       "[library-api] Using default AUTH_TOKEN_SECRET. Set AUTH_TOKEN_SECRET in production.",
@@ -340,11 +282,6 @@ export function getDb(): Database.Database {
   }
 
   return db;
-}
-
-export async function ensureDbBootstrapped(): Promise<void> {
-  const database = getDb();
-  await ensureBootstrapped(database);
 }
 
 export function parseTags(raw: string): string[] {

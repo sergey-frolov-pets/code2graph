@@ -3,7 +3,7 @@ import type { FlatSectionOption } from "@/shared/library/section-tree";
 import { FAVORITES_SECTION_ID } from "@/constants/diagram-library";
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 
-export type LibraryTab = "browse" | "upload" | "transfer";
+export type LibraryTab = "browse" | "upload" | "transfer" | "admin";
 export type BrowseStep = "sections" | "diagrams" | "detail";
 
 type DiagramLibrary = ReturnType<typeof useDiagramLibrary>;
@@ -30,6 +30,7 @@ export function useLibraryBrowseFlow(options: {
   const headerTitle = computed(() => {
     if (activeTab.value === "upload") return t("library.uploadDiagram");
     if (activeTab.value === "transfer") return t("library.transfer");
+    if (activeTab.value === "admin") return t("library.adminUsersTitle");
     if (browseStep.value === "sections") return t("library.chooseSection");
     if (browseStep.value === "diagrams") {
       if (library.selectedSectionId.value === FAVORITES_SECTION_ID) {
