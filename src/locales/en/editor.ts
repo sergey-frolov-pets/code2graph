@@ -45,6 +45,7 @@ export const editorMessages: LocaleMessages = {
   "editor.saveToLibrary": "Save to library",
   "editor.versions": "Versions",
   "editor.aiPatch": "Edit with AI",
+  "editor.aiSyntaxAsk": "Ask about syntax",
   "editor.undo": "Undo (Ctrl+Z)",
   "editor.redo": "Redo (Ctrl+Y)",
   "editor.completion.context": "context",

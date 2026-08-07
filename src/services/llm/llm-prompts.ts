@@ -17,3 +17,22 @@ export function buildLlmPatchSystemPrompt(basePrompt: string): string {
 
 export const LLM_TEST_USER_PROMPT =
   "Reply with JSON only: {\"plantuml\":\"@startuml\\nAlice -> Bob : ping\\n@enduml\",\"explanation\":\"ok\"}";
+
+export const LLM_SYNTAX_ASK_JSON_APPENDIX =
+  "Respond with a single JSON object only. No markdown fences. Required field: answer (string) — explain PlantUML syntax for the user's question using their current diagram as context. Include concrete syntax snippets when helpful. Do not rewrite or return the full diagram source.";
+
+export function buildLlmSyntaxAskSystemPrompt(basePrompt: string): string {
+  return `${basePrompt}\n\n${LLM_PLANTUML_RULES}\n\n${LLM_SYNTAX_ASK_JSON_APPENDIX}`;
+}
+
+export function buildSyntaxAskUserPrompt(source: string, question: string): string {
+  return [
+    "Current diagram source:",
+    "```plantuml",
+    source,
+    "```",
+    "",
+    "User question about syntax:",
+    question,
+  ].join("\n");
+}
