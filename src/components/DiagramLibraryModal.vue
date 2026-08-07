@@ -9,6 +9,7 @@ import LibraryBrowseDiagrams from "@/components/library/LibraryBrowseDiagrams.vu
 import LibraryDiagramDetail from "@/components/library/LibraryDiagramDetail.vue";
 import LibraryAdminUsersPanel from "@/components/library/LibraryAdminUsersPanel.vue";
 import LibraryDiagramVersionsModal from "@/components/library/LibraryDiagramVersionsModal.vue";
+import LibraryDiagramPreviewModal from "@/components/library/LibraryDiagramPreviewModal.vue";
 import LibraryShareLinkModal from "@/components/library/LibraryShareLinkModal.vue";
 import LibrarySectionAccessModal from "@/components/library/LibrarySectionAccessModal.vue";
 import LibraryUploadForm from "@/components/library/LibraryUploadForm.vue";
