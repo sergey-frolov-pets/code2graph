@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { detectDiagramFormat } from "@/utils/diagram-format";
+import {
+  detectDiagramFormat,
+  resolveLibraryDiagramFormat,
+} from "@/utils/diagram-format";
 
 describe("detectDiagramFormat", () => {
   it("detects format from file extension", () => {
@@ -25,5 +28,26 @@ describe("detectDiagramFormat", () => {
 
   it("defaults to plantuml for classic source", () => {
     expect(detectDiagramFormat("@startuml\nA -> B\n@enduml")).toBe("plantuml");
+  });
+});
+
+describe("resolveLibraryDiagramFormat", () => {
+  it("uses explicit language when supported", () => {
+    expect(
+      resolveLibraryDiagramFormat("@startuml\n@enduml", "x.puml", "mermaid"),
+    ).toBe("mermaid");
+    expect(resolveLibraryDiagramFormat("<graphml/>", "x.graphml", "graphml")).toBe(
+      "graphml",
+    );
+  });
+
+  it("falls back to detection when language is generic", () => {
+    expect(
+      resolveLibraryDiagramFormat(
+        "flowchart TD\nA --> B",
+        "diagram.mmd",
+        "other",
+      ),
+    ).toBe("mermaid");
   });
 });

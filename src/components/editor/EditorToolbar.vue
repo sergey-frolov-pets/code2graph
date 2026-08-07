@@ -70,6 +70,10 @@ const saveLabel = computed(() =>
     : t("app.savePuml"),
 );
 
+const saveBadgeFormat = computed<"PUML" | "MMD">(() =>
+  props.formatDefinition.id === "mermaid" ? "MMD" : "PUML",
+);
+
 const openFileLabel = computed(() => {
   if (props.formatDefinition.id === "graphml") {
     return t("editor.openGraphml");
@@ -147,11 +151,13 @@ function onSampleChange(event: Event): void {
         :disabled="!canSave"
         @click="emit('savePuml')"
       >
-        <FileBadgeIcon format="PUML" />
+        <FileBadgeIcon :format="saveBadgeFormat" />
       </IconButton>
       <IconButton
         v-if="formatDefinition.editable"
         :label="t('editor.saveToLibrary')"
+        primary
+        format
         :disabled="!canSave"
         @click="emit('saveToLibrary')"
       >

@@ -1,16 +1,22 @@
 import { computed, ref } from "vue";
 import { LAYOUT_ENGINES } from "@/constants";
+import type { DiagramLanguage } from "@/constants/diagram-library";
 import {
+  DEFAULT_RENDER_MODE,
   isOnlineRenderMode,
   type RenderMode,
 } from "@/constants/render-settings";
 import { readInitialLocale } from "@/composables/useLocale";
 import {
   isEngineReady,
-  renderPlantUmlToSvg,
   waitForEngineReady,
 } from "@/composables/usePlantUml";
-import { preparePlantUmlSource, splitSourceLines } from "@/utils/plantuml-source";
+import { renderDiagramToSvg } from "@/services/diagram-render";
+import {
+  isMermaidReady,
+  waitForMermaidReady,
+} from "@/services/mermaid/mermaid-engine";
+import { resolveLibraryDiagramFormat } from "@/utils/diagram-format";
 import { sanitizeSvgForPreview } from "@/utils/export";
 
 export function useLibraryDiagramPreview() {
@@ -23,41 +29,69 @@ export function useLibraryDiagramPreview() {
     svg.value ? sanitizeSvgForPreview(svg.value) : "",
   );
 
+  async function ensureEngineReady(
+    format: ReturnType<typeof resolveLibraryDiagramFormat>,
+    dark: boolean,
+  ): Promise<boolean> {
+    if (format === "mermaid") {
+      await waitForMermaidReady(dark);
+      if (!isMermaidReady()) {
+        error.value = "Engine not ready";
+        return false;
+      }
+      return true;
+    }
+
+    if (format === "plantuml") {
+      await waitForEngineReady();
+      if (!isEngineReady()) {
+        error.value = "Engine not ready";
+        return false;
+      }
+      return true;
+    }
+
+    return true;
+  }
+
   async function renderPreview(
     source: string,
     options?: {
       watermarked?: boolean;
       renderMode?: RenderMode;
       dark?: boolean;
+      fileName?: string;
+      language?: DiagramLanguage;
     },
   ): Promise<void> {
     isRendering.value = true;
     error.value = "";
     watermark.value = options?.watermarked ?? true;
 
-    try {
-      await waitForEngineReady();
-      if (!isEngineReady()) {
-        error.value = "Engine not ready";
-        return;
-      }
+    const format = resolveLibraryDiagramFormat(
+      source,
+      options?.fileName,
+      options?.language,
+    );
+    const renderMode = options?.renderMode ?? DEFAULT_RENDER_MODE;
+    const dark = options?.dark ?? false;
 
-      const prepared = await preparePlantUmlSource(
-        source,
-        LAYOUT_ENGINES.elk,
-      );
-      const lines = splitSourceLines(prepared);
-      const renderMode = options?.renderMode ?? "offline";
+    try {
       if (isOnlineRenderMode(renderMode) && !navigator.onLine) {
         error.value = "Offline";
         return;
       }
 
-      svg.value = await renderPlantUmlToSvg(
-        lines,
-        { dark: options?.dark ?? false },
+      const engineReady = await ensureEngineReady(format, dark);
+      if (!engineReady) {
+        return;
+      }
+
+      svg.value = await renderDiagramToSvg(source, format, {
+        dark,
+        layout: LAYOUT_ENGINES.elk,
         renderMode,
-      );
+      });
     } catch (renderError) {
       svg.value = "";
       error.value =

@@ -1,7 +1,24 @@
+import type { DiagramLanguage } from "@/constants/diagram-library";
 import {
   detectFormatFromFileName,
   type DiagramFormat,
 } from "@/constants/diagram-formats";
+
+export function resolveLibraryDiagramFormat(
+  source: string,
+  fileName?: string,
+  language?: DiagramLanguage,
+): DiagramFormat {
+  if (language === "mermaid") {
+    return "mermaid";
+  }
+
+  if (language === "graphml") {
+    return "graphml";
+  }
+
+  return detectDiagramFormat(source, fileName);
+}
 
 export function detectDiagramFormat(
   source: string,

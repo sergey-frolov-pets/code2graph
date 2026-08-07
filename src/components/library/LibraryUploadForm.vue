@@ -31,10 +31,11 @@ const { t } = useLocale();
 </script>
 
 <template>
-  <form
-    class="library-step library-step__content library-step__content--form"
-    @submit.prevent="emit('submit')"
-  >
+  <div class="library-step">
+    <form
+      class="library-step__content library-step__content--form"
+      @submit.prevent="emit('submit')"
+    >
     <p class="library-upload__hint">
       {{ t("library.sizeLimit", { size: maxSizeKb }) }}
     </p>
@@ -86,5 +87,6 @@ const { t } = useLocale();
     >
       {{ isUploading ? t("app.loading") : t("app.upload") }}
     </button>
-  </form>
+    </form>
+  </div>
 </template>

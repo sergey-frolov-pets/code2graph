@@ -292,7 +292,11 @@ async function openShareDiagramPreview(token: string, diagramId: string): Promis
   activeShareToken.value = token;
   activePreviewDiagramId.value = diagramId;
   isPreviewModalOpen.value = true;
-  await renderPreview(preview.diagram.source, { watermarked: true });
+  await renderPreview(preview.diagram.source, {
+    watermarked: true,
+    fileName: preview.diagram.fileName,
+    language: preview.diagram.language,
+  });
 }
 
 async function handleDiagramPick(diagramId: string): Promise<void> {
@@ -342,7 +346,11 @@ async function onPreviewDiagram(): Promise<void> {
   activeShareToken.value = "";
   activePreviewDiagramId.value = selectedDiagram.value.id;
   isPreviewModalOpen.value = true;
-  await renderPreview(selectedDiagram.value.source, { watermarked: true });
+  await renderPreview(selectedDiagram.value.source, {
+    watermarked: true,
+    fileName: selectedDiagram.value.fileName,
+    language: selectedDiagram.value.language,
+  });
 }
 
 function closePreviewModal(): void {

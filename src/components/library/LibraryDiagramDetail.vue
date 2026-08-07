@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ActionIcon from "@/components/icons/ActionIcon.vue";
+import IconButton from "@/components/IconButton.vue";
 import LibraryDiagramRatingPanel from "@/components/library/LibraryDiagramRatingPanel.vue";
 import LibraryStarRating from "@/components/library/LibraryStarRating.vue";
 import { useLocale } from "@/composables/useLocale";
@@ -79,27 +81,76 @@ const { t } = useLocale();
           </select>
         </label>
         <div class="library-detail__actions">
-          <button
-            class="btn btn-primary"
-            type="button"
+          <IconButton
+            :label="isSaving ? t('app.loading') : t('library.saveChanges')"
+            primary
             :disabled="isSaving"
             @click="emit('save')"
           >
-            {{ isSaving ? t("app.loading") : t("library.saveChanges") }}
-          </button>
-          <button
-            class="btn"
-            type="button"
+            <ActionIcon name="save" />
+          </IconButton>
+          <IconButton
+            :label="t('app.cancel')"
             :disabled="isSaving"
             @click="emit('cancel')"
           >
-            {{ t("app.cancel") }}
-          </button>
+            <ActionIcon name="close" />
+          </IconButton>
         </div>
       </div>
     </template>
 
     <template v-else>
+      <div class="library-step__toolbar">
+        <span class="library-detail__file-name">{{ diagram.fileName }}</span>
+        <div class="library-step__toolbar-actions">
+          <IconButton
+            :label="t('library.openInEditor')"
+            @click="emit('open-in-editor')"
+          >
+            <ActionIcon name="folder-open" />
+          </IconButton>
+          <IconButton
+            :label="
+              diagram.isFavorite
+                ? t('library.removeFavorite')
+                : t('library.addFavorite')
+            "
+            :pressed="diagram.isFavorite"
+            @click="emit('toggle-favorite')"
+          >
+            <ActionIcon name="star" />
+          </IconButton>
+          <IconButton :label="t('library.shareLink')" @click="emit('share')">
+            <ActionIcon name="export" />
+          </IconButton>
+          <IconButton :label="t('library.preview')" @click="emit('preview')">
+            <ActionIcon name="eye" />
+          </IconButton>
+          <IconButton
+            v-if="diagram.canWrite"
+            :label="t('library.versions')"
+            @click="emit('open-versions')"
+          >
+            <ActionIcon name="history" />
+          </IconButton>
+          <IconButton
+            v-if="diagram.canWrite"
+            :label="t('library.edit')"
+            @click="emit('start-edit')"
+          >
+            <ActionIcon name="edit" />
+          </IconButton>
+          <IconButton
+            v-if="diagram.canWrite"
+            :label="t('app.delete')"
+            @click="emit('delete')"
+          >
+            <ActionIcon name="trash" />
+          </IconButton>
+        </div>
+      </div>
+
       <div class="library-step__content library-step__content--padded">
         <button
           class="library-detail__open-card"
@@ -108,7 +159,6 @@ const { t } = useLocale();
           @click="emit('open-in-editor')"
         >
           <p class="library-detail__meta">
-            {{ diagram.fileName }} ·
             {{ t("library.updatedAt", { date: formatDate(diagram.updatedAt) }) }}
             <template v-if="diagram.authorName">
               · {{ t("library.author", { name: diagram.authorName }) }}
@@ -139,48 +189,6 @@ const { t } = useLocale();
           </div>
           <span class="library-detail__open-hint">{{ t("library.openInEditorHint") }}</span>
         </button>
-        <div class="library-detail__actions">
-          <button class="btn btn-primary" type="button" @click="emit('open-in-editor')">
-            {{ t("library.openInEditor") }}
-          </button>
-          <button class="btn" type="button" @click="emit('toggle-favorite')">
-            {{
-              diagram.isFavorite
-                ? t("library.removeFavorite")
-                : t("library.addFavorite")
-            }}
-          </button>
-          <button class="btn" type="button" @click="emit('share')">
-            {{ t("library.shareLink") }}
-          </button>
-          <button class="btn" type="button" @click="emit('preview')">
-            {{ t("library.preview") }}
-          </button>
-          <button
-            v-if="diagram.canWrite"
-            class="btn"
-            type="button"
-            @click="emit('open-versions')"
-          >
-            {{ t("library.versions") }}
-          </button>
-          <button
-            v-if="diagram.canWrite"
-            class="btn"
-            type="button"
-            @click="emit('start-edit')"
-          >
-            {{ t("library.edit") }}
-          </button>
-          <button
-            v-if="diagram.canWrite"
-            class="btn"
-            type="button"
-            @click="emit('delete')"
-          >
-            {{ t("app.delete") }}
-          </button>
-        </div>
         <LibraryDiagramRatingPanel
           :diagram="diagram"
           :api-url="libraryApiUrl"
@@ -192,6 +200,16 @@ const { t } = useLocale();
 </template>
 
 <style scoped>
+.library-detail__file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .library-detail__rating {
   display: flex;
   align-items: center;

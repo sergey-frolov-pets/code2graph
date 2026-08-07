@@ -6,6 +6,7 @@ import {
   Braces,
   CircleCheck,
   Download,
+  Eye,
   FolderOpen,
   History,
   Library,
@@ -16,6 +17,7 @@ import {
   Save,
   Sparkles,
   SquarePen,
+  Star,
   Sun,
   Trash2,
   Undo2,
@@ -46,7 +48,9 @@ export type ActionIconName =
   | "undo"
   | "redo"
   | "ai"
-  | "transfer";
+  | "transfer"
+  | "eye"
+  | "star";
 
 const props = withDefaults(
   defineProps<{
@@ -80,6 +84,8 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   redo: Redo2,
   ai: Sparkles,
   transfer: ArrowLeftRight,
+  eye: Eye,
+  star: Star,
 };
 
 const iconComponent = computed(() => ICON_MAP[props.name]);
