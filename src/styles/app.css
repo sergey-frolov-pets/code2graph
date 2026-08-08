@@ -610,9 +610,11 @@ a {
     column-gap: 8px;
   }
 
-  .panel-title {
+  .panel-title,
+  .panel-title-group {
     grid-column: 1;
     grid-row: 1;
+    min-width: 0;
   }
 
   .panel-header__fullscreen {
