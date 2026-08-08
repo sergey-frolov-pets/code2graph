@@ -8,11 +8,13 @@ import { useLocale } from "@/composables/useLocale";
 import {
   buildManualScaffold,
   buildWizardPrompt,
+  createDefaultStructuralElements,
   createDefaultTypeParams,
   DEFAULT_WIZARD_STATE,
   getWizardLanguagesForMode,
   getWizardStepTitleKey,
   getWizardSteps,
+  getWizardStructuralElementsForType,
   getWizardTypesForLanguage,
   isWizardDiagramType,
   isWizardLanguage,
@@ -23,6 +25,7 @@ import {
   WIZARD_TYPE_PARAM_FIELDS,
   type WizardParamField,
   type WizardState,
+  type WizardStructuralElementId,
 } from "@/constants/llm-wizard";
 import { LlmClientError } from "@/services/llm/llm-types";
 import { renderGraphmlToSvg } from "@/services/graphml/graphml-engine";
@@ -45,7 +48,11 @@ const emit = defineEmits<{
 const { t, locale } = useLocale();
 
 const stepIndex = ref(0);
-const wizardState = ref<WizardState>({ ...DEFAULT_WIZARD_STATE, typeParams: createDefaultTypeParams() });
+const wizardState = ref<WizardState>({
+  ...DEFAULT_WIZARD_STATE,
+  typeParams: createDefaultTypeParams(),
+  structuralElements: createDefaultStructuralElements(),
+});
 const isGenerating = ref(false);
 const errorMessage = ref("");
 const resultSource = ref("");
@@ -57,7 +64,25 @@ const wizardSteps = computed(() => getWizardSteps(wizardState.value));
 const currentStepId = computed(() => wizardSteps.value[stepIndex.value] ?? "mode");
 const totalSteps = computed(() => wizardSteps.value.length);
 
-const stepTitle = computed(() => t(getWizardStepTitleKey(currentStepId.value)));
+const stepTitle = computed(() => {
+  if (currentStepId.value === "context" && isAiMode.value) {
+    return t("llm.wizard.step.description");
+  }
+
+  return t(getWizardStepTitleKey(currentStepId.value));
+});
+
+const structuralElementOptions = computed(() =>
+  getWizardStructuralElementsForType(
+    wizardState.value.diagramType,
+    wizardState.value.language,
+  ).map((id) => ({
+    id,
+    label: t(`llm.wizard.structural.${id}`),
+  })),
+);
+
+const showBackButton = computed(() => stepIndex.value > 0);
 
 const languageOptions = computed(() =>
   getWizardLanguagesForMode(wizardState.value.creationMode).map((id) => ({
@@ -101,6 +126,10 @@ const isManualResultReady = computed(
 );
 
 const canGoNext = computed(() => {
+  if (currentStepId.value === "context" && isAiMode.value) {
+    return wizardState.value.contextText.trim().length > 0;
+  }
+
   if (currentStepId.value === "context") {
     return wizardState.value.contextText.trim().length > 0;
   }
@@ -117,6 +146,7 @@ function resetWizard(): void {
   wizardState.value = {
     ...DEFAULT_WIZARD_STATE,
     typeParams: createDefaultTypeParams(),
+    structuralElements: createDefaultStructuralElements(),
   };
   isGenerating.value = false;
   errorMessage.value = "";
@@ -186,6 +216,7 @@ watch(
 watch(
   () => wizardState.value.diagramType,
   () => {
+    wizardState.value.structuralElements = createDefaultStructuralElements();
     clampStepIndex();
   },
 );
@@ -198,6 +229,7 @@ watch(
     wizardState.value.theme,
     wizardState.value.direction,
     wizardState.value.typeParams,
+    wizardState.value.structuralElements,
     wizardState.value.contextText,
     wizardState.value.typeSpecificText,
   ],
@@ -248,8 +280,14 @@ function onParamChange(paramId: WizardParamField["id"], event: Event): void {
   wizardState.value.typeParams[paramId] = Math.min(field.max, Math.max(field.min, raw));
 }
 
+function onStructuralToggle(elementId: WizardStructuralElementId, event: Event): void {
+  wizardState.value.structuralElements[elementId] = (
+    event.target as HTMLInputElement
+  ).checked;
+}
+
 function goBack(): void {
-  if (stepIndex.value > 0) {
+  if (stepIndex.value > 0 && !isGenerating.value) {
     stepIndex.value -= 1;
   }
 }
@@ -326,6 +364,13 @@ async function generateDiagram(): Promise<void> {
 }
 
 function goNext(): void {
+  if (currentStepId.value === "context" && isAiMode.value) {
+    wizardState.value.promptText = buildWizardPrompt(wizardState.value);
+    stepIndex.value += 1;
+    void generateDiagram();
+    return;
+  }
+
   if (currentStepId.value === "prompt") {
     wizardState.value.promptText =
       wizardState.value.promptText.trim() || buildWizardPrompt(wizardState.value);
@@ -534,7 +579,25 @@ function onTransferToEditor(): void {
         </span>
       </label>
 
-      <label v-if="isAiMode" class="wizard-field">
+      <div v-if="structuralElementOptions.length > 0" class="wizard-structural">
+        <p class="wizard-field__label">{{ t("llm.wizard.structuralElements") }}</p>
+        <div class="wizard-structural__grid">
+          <label
+            v-for="option in structuralElementOptions"
+            :key="option.id"
+            class="wizard-structural__item"
+          >
+            <input
+              type="checkbox"
+              :checked="wizardState.structuralElements[option.id]"
+              @change="onStructuralToggle(option.id, $event)"
+            />
+            <span>{{ option.label }}</span>
+          </label>
+        </div>
+      </div>
+
+      <label v-if="!isAiMode" class="wizard-field">
         <span class="wizard-field__label">{{ t("llm.wizard.details") }}</span>
         <textarea
           v-model="wizardState.typeSpecificText"
@@ -547,12 +610,18 @@ function onTransferToEditor(): void {
 
     <div v-else-if="currentStepId === 'context'" class="wizard-step">
       <label class="wizard-field">
-        <span class="wizard-field__label">{{ t("llm.wizard.context") }}</span>
+        <span class="wizard-field__label">
+          {{ isAiMode ? t("llm.wizard.description") : t("llm.wizard.context") }}
+        </span>
         <textarea
           v-model="wizardState.contextText"
           class="wizard-textarea"
           rows="6"
-          :placeholder="t('llm.wizard.contextPlaceholder')"
+          :placeholder="
+            isAiMode
+              ? t('llm.wizard.descriptionPlaceholder')
+              : t('llm.wizard.contextPlaceholder')
+          "
         />
       </label>
     </div>
@@ -584,7 +653,7 @@ function onTransferToEditor(): void {
 
     <template #footer>
       <button
-        v-if="currentStepId === 'result'"
+        v-if="showBackButton"
         class="btn"
         type="button"
         :disabled="isGenerating"
@@ -605,13 +674,22 @@ function onTransferToEditor(): void {
         {{ t("llm.wizard.transferToEditor") }}
       </button>
       <button
-        v-if="currentStepId !== 'result' && currentStepId !== 'prompt'"
+        v-if="currentStepId !== 'result' && currentStepId !== 'context'"
         class="btn btn-primary"
         type="button"
         :disabled="!canGoNext || isGenerating"
         @click="goNext"
       >
         {{ t("llm.wizard.next") }}
+      </button>
+      <button
+        v-if="currentStepId === 'context' && isAiMode"
+        class="btn btn-primary"
+        type="button"
+        :disabled="!canGoNext || isGenerating"
+        @click="goNext"
+      >
+        {{ isGenerating ? t("llm.wizard.generating") : t("llm.wizard.generate") }}
       </button>
       <button
         v-if="currentStepId === 'prompt'"
@@ -798,6 +876,26 @@ function onTransferToEditor(): void {
 .wizard-field__hint {
   font-size: 0.78rem;
   color: var(--text-muted);
+}
+
+.wizard-structural {
+  margin: 8px 0 12px;
+}
+
+.wizard-structural__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.wizard-structural__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.86rem;
+  color: var(--text);
+  cursor: pointer;
 }
 
 .wizard-input {

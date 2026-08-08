@@ -50,6 +50,30 @@ export const WIZARD_PARAM_IDS = [
 
 export type WizardParamId = (typeof WIZARD_PARAM_IDS)[number];
 
+export const WIZARD_STRUCTURAL_ELEMENT_IDS = [
+  "note",
+  "if",
+  "switch",
+  "package",
+  "alt",
+  "loop",
+  "opt",
+  "par",
+  "fork",
+  "interface",
+  "enum",
+  "abstract",
+  "artifact",
+  "choice",
+  "milestone",
+  "cluster",
+  "boundary",
+  "queue",
+  "section",
+] as const;
+
+export type WizardStructuralElementId = (typeof WIZARD_STRUCTURAL_ELEMENT_IDS)[number];
+
 export const WIZARD_STEP_IDS = [
   "mode",
   "language",
@@ -78,6 +102,7 @@ export interface WizardState {
   theme: WizardDiagramTheme;
   direction: WizardDiagramDirection;
   typeParams: Record<WizardParamId, number>;
+  structuralElements: Record<WizardStructuralElementId, boolean>;
   contextText: string;
   typeSpecificText: string;
   promptText: string;
@@ -119,6 +144,35 @@ export const WIZARD_TYPE_PARAM_FIELDS: Record<WizardDiagramType, WizardParamFiel
     { id: "edges", min: 1, max: 20, default: 3 },
   ],
 };
+
+export const WIZARD_TYPE_STRUCTURAL_ELEMENTS: Record<
+  WizardDiagramType,
+  WizardStructuralElementId[]
+> = {
+  sequence: ["note", "alt", "loop", "opt", "par"],
+  class: ["package", "interface", "enum", "abstract", "note"],
+  component: ["package", "interface", "note"],
+  activity: ["if", "switch", "fork", "note", "artifact"],
+  state: ["choice", "fork", "note"],
+  c4_context: ["boundary", "note"],
+  c4_container: ["boundary", "queue", "note"],
+  gantt: ["milestone", "section"],
+  mindmap: ["note"],
+  er: ["note"],
+  graph: ["cluster"],
+};
+
+const PLANTUML_ONLY_STRUCTURAL_ELEMENTS = new Set<WizardStructuralElementId>([
+  "artifact",
+  "switch",
+  "choice",
+  "boundary",
+  "queue",
+  "abstract",
+  "enum",
+]);
+
+const GRAPHML_STRUCTURAL_ELEMENTS = new Set<WizardStructuralElementId>(["cluster"]);
 
 const PLANTUML_WIZARD_TYPES: WizardDiagramType[] = [
   "sequence",
@@ -171,13 +225,52 @@ export function createDefaultTypeParams(): Record<WizardParamId, number> {
   return params;
 }
 
+export function createDefaultStructuralElements(): Record<
+  WizardStructuralElementId,
+  boolean
+> {
+  const elements = {} as Record<WizardStructuralElementId, boolean>;
+
+  for (const elementId of WIZARD_STRUCTURAL_ELEMENT_IDS) {
+    elements[elementId] = false;
+  }
+
+  return elements;
+}
+
+export function getWizardStructuralElementsForType(
+  diagramType: WizardDiagramType,
+  language: WizardLanguage,
+): WizardStructuralElementId[] {
+  const base = WIZARD_TYPE_STRUCTURAL_ELEMENTS[diagramType] ?? [];
+
+  if (language === "graphml") {
+    return base.filter((elementId) => GRAPHML_STRUCTURAL_ELEMENTS.has(elementId));
+  }
+
+  if (language === "mermaid") {
+    return base.filter((elementId) => !PLANTUML_ONLY_STRUCTURAL_ELEMENTS.has(elementId));
+  }
+
+  return base;
+}
+
+export function getSelectedStructuralElements(
+  state: WizardState,
+): WizardStructuralElementId[] {
+  return getWizardStructuralElementsForType(state.diagramType, state.language).filter(
+    (elementId) => state.structuralElements[elementId],
+  );
+}
+
 export const DEFAULT_WIZARD_STATE: WizardState = {
-  creationMode: "ai",
+  creationMode: "manual",
   language: "plantuml",
   diagramType: "sequence",
   theme: "default",
   direction: "TB",
   typeParams: createDefaultTypeParams(),
+  structuralElements: createDefaultStructuralElements(),
   contextText: "",
   typeSpecificText: "",
   promptText: "",
@@ -233,19 +326,28 @@ export function wizardTypeSupportsDirection(
 export function getWizardSteps(state: WizardState): WizardStepId[] {
   const steps: WizardStepId[] = ["mode", "language", "type"];
 
+  if (state.creationMode === "ai") {
+    steps.push("context", "result");
+    return steps;
+  }
+
   if (wizardTypeSupportsDirection(state.diagramType, state.language)) {
     steps.push("direction");
   }
 
-  steps.push("style", "params");
-
-  if (state.creationMode === "ai") {
-    steps.push("context", "prompt", "result");
-  } else {
-    steps.push("result");
-  }
+  steps.push("style", "params", "result");
 
   return steps;
+}
+
+export function wizardTypeHasStructureStep(
+  diagramType: WizardDiagramType,
+  language: WizardLanguage,
+): boolean {
+  return (
+    WIZARD_TYPE_PARAM_FIELDS[diagramType].length > 0 ||
+    getWizardStructuralElementsForType(diagramType, language).length > 0
+  );
 }
 
 export function getWizardStepTitleKey(stepId: WizardStepId): string {
@@ -274,11 +376,11 @@ export function resolveWizardStateWithDefaults(
     typeParams: visited.has("params")
       ? { ...state.typeParams }
       : createDefaultTypeParams(),
+    structuralElements: visited.has("params")
+      ? { ...state.structuralElements }
+      : createDefaultStructuralElements(),
     contextText: visited.has("context") ? state.contextText : "",
-    typeSpecificText:
-      visited.has("params") && state.creationMode === "ai"
-        ? state.typeSpecificText
-        : "",
+    typeSpecificText: visited.has("params") ? state.typeSpecificText : "",
     promptText: visited.has("prompt") ? state.promptText : "",
   };
 
@@ -330,9 +432,18 @@ export function buildWizardPrompt(state: WizardState): string {
     lines.push("", "Structural parameters:", ...paramLines);
   }
 
+  const structuralElements = getSelectedStructuralElements(state);
+  if (structuralElements.length > 0) {
+    lines.push(
+      "",
+      "Include these diagram constructs:",
+      ...structuralElements.map((elementId) => `- ${elementId}`),
+    );
+  }
+
   lines.push(
     "",
-    "System / domain context:",
+    "Description:",
     state.contextText.trim() || "(not specified)",
   );
 
@@ -470,6 +581,7 @@ function buildPlantUmlSequence(
     lines.push("", `${from} -> ${to}: ${message}`);
   }
 
+  appendPlantUmlSequenceStructure(lines, state, locale);
   lines.push("@enduml");
   return lines.join("\n");
 }
@@ -479,15 +591,25 @@ function buildPlantUmlClass(state: WizardState, locale: AppLocale): string {
   const title = locale === "ru" ? "Диаграмма классов" : "Class diagram";
   const lines = buildPlantUmlHeader(state, title, true);
 
+  if (hasStructural(state, "package")) {
+    const packageName = locale === "ru" ? "Домен" : "Domain";
+    lines.push(`package ${packageName} {`);
+  }
+
   for (let index = 1; index <= count; index += 1) {
     const name = classLabel(index, locale);
     lines.push(`class ${name} {`, `  +field${index}: String`, "}");
+  }
+
+  if (hasStructural(state, "package")) {
+    lines.push("}");
   }
 
   if (count >= 2) {
     lines.push("", `${classLabel(1, locale)} --> ${classLabel(2, locale)}`);
   }
 
+  appendPlantUmlClassStructure(lines, state, locale);
   lines.push("@enduml");
   return lines.join("\n");
 }
@@ -497,8 +619,17 @@ function buildPlantUmlComponent(state: WizardState, locale: AppLocale): string {
   const title = locale === "ru" ? "Диаграмма компонентов" : "Component diagram";
   const lines = buildPlantUmlHeader(state, title, true);
 
+  if (hasStructural(state, "package")) {
+    const packageName = locale === "ru" ? "Домен" : "Domain";
+    lines.push(`package "${packageName}" {`);
+  }
+
   for (let index = 1; index <= count; index += 1) {
-    lines.push(`[${componentLabel(index, locale)}]`);
+    lines.push(`  [${componentLabel(index, locale)}]`);
+  }
+
+  if (hasStructural(state, "package")) {
+    lines.push("}");
   }
 
   if (count >= 2) {
@@ -508,6 +639,7 @@ function buildPlantUmlComponent(state: WizardState, locale: AppLocale): string {
     );
   }
 
+  appendPlantUmlComponentStructure(lines, state, locale);
   lines.push("@enduml");
   return lines.join("\n");
 }
@@ -530,6 +662,7 @@ function buildPlantUmlActivity(state: WizardState, locale: AppLocale): string {
     lines.push(`|${laneLabel(laneIndex, locale)}|`, `:${stepLabel(stepIndex, locale)};`);
   }
 
+  appendPlantUmlActivityStructure(lines, state, locale);
   lines.push("stop", "@enduml");
   return lines.join("\n");
 }
@@ -545,7 +678,9 @@ function buildPlantUmlState(state: WizardState, locale: AppLocale): string {
     lines.push(`${stateLabel(index, locale)} --> ${stateLabel(index + 1, locale)}`);
   }
 
-  lines.push(stateLabel(count, locale) + " --> [*]", "@enduml");
+  lines.push(stateLabel(count, locale) + " --> [*]");
+  appendPlantUmlStateStructure(lines, state, locale);
+  lines.push("@enduml");
   return lines.join("\n");
 }
 
@@ -583,6 +718,16 @@ function buildPlantUmlC4Context(state: WizardState, locale: AppLocale): string {
     );
   }
 
+  if (hasStructural(state, "boundary")) {
+    const boundary = locale === "ru" ? "Граница" : "Boundary";
+    lines.push("", `System_Boundary(${boundary}, "${boundary}") {`, `  System(${systemName}, "${systemName}", "")`, "}");
+  }
+
+  if (hasStructural(state, "note")) {
+    const noteText = locale === "ru" ? "Примечание" : "Note";
+    lines.push("", `note right of ${systemName}: ${noteText}`);
+  }
+
   lines.push("@enduml");
   return lines.join("\n");
 }
@@ -617,6 +762,16 @@ function buildPlantUmlC4Container(state: WizardState, locale: AppLocale): string
     );
   }
 
+  if (hasStructural(state, "queue")) {
+    const queue = locale === "ru" ? "Очередь" : "Queue";
+    lines.push("", `ContainerQueue(${queue}, "${queue}", "")`);
+  }
+
+  if (hasStructural(state, "note")) {
+    const noteText = locale === "ru" ? "Примечание" : "Note";
+    lines.push("", `note right of ${containerLabel(1, locale).replace(/\s+/g, "_")}: ${noteText}`);
+  }
+
   lines.push("@enduml");
   return lines.join("\n");
 }
@@ -641,6 +796,7 @@ function buildMermaidSequence(state: WizardState, locale: AppLocale): string {
     lines.push(`  ${from}->>${to}: ${message}`);
   }
 
+  appendMermaidSequenceStructure(lines, state, locale);
   return lines.join("\n");
 }
 
@@ -649,13 +805,32 @@ function buildMermaidClass(state: WizardState, locale: AppLocale): string {
   const direction = state.direction === "LR" ? "LR" : "TB";
   const lines = ["classDiagram", `  direction ${direction}`];
 
+  if (hasStructural(state, "package")) {
+    const packageName = locale === "ru" ? "Домен" : "Domain";
+    lines.push(`  namespace ${packageName} {`);
+  }
+
   for (let index = 1; index <= count; index += 1) {
     const name = classLabel(index, locale);
     lines.push(`  class ${name}`);
   }
 
+  if (hasStructural(state, "package")) {
+    lines.push("  }");
+  }
+
   if (count >= 2) {
     lines.push(`  ${classLabel(1, locale)} --> ${classLabel(2, locale)}`);
+  }
+
+  if (hasStructural(state, "interface")) {
+    const iface = locale === "ru" ? "Интерфейс" : "Interface";
+    lines.push(`  class ${iface} {`, "    <<interface>>", "    +method()", "  }");
+  }
+
+  if (hasStructural(state, "note")) {
+    const noteText = locale === "ru" ? "Примечание" : "Note";
+    lines.push(`  note for ${classLabel(1, locale)} "${noteText}"`);
   }
 
   return lines.join("\n");
@@ -689,6 +864,7 @@ function buildMermaidFlowchart(
     lines.push("  A --> Z");
   }
 
+  appendMermaidFlowStructure(lines, state, locale);
   return lines.join("\n");
 }
 
@@ -716,6 +892,288 @@ function subBranchLabel(index: number, locale: AppLocale): string {
   return locale === "ru" ? `Подветка ${index}` : `Sub-branch ${index}`;
 }
 
+function hasStructural(
+  state: WizardState,
+  elementId: WizardStructuralElementId,
+): boolean {
+  return state.structuralElements[elementId] === true;
+}
+
+function appendPlantUmlSequenceStructure(
+  lines: string[],
+  state: WizardState,
+  locale: AppLocale,
+): void {
+  const from = participantLabel(1, locale).replace(/\s+/g, "_");
+  const to = participantLabel(2, locale).replace(/\s+/g, "_");
+  const ok = locale === "ru" ? "успех" : "success";
+  const fail = locale === "ru" ? "ошибка" : "failure";
+  const noteText = locale === "ru" ? "Примечание" : "Note";
+
+  if (hasStructural(state, "note")) {
+    lines.push("", `note right of ${from}: ${noteText}`);
+  }
+
+  if (hasStructural(state, "alt")) {
+    lines.push(
+      "",
+      `alt ${ok}`,
+      `  ${from} -> ${to}: ${ok}`,
+      "else " + fail,
+      `  ${from} -> ${to}: ${fail}`,
+      "end",
+    );
+  }
+
+  if (hasStructural(state, "loop")) {
+    const retry = locale === "ru" ? "повтор" : "retry";
+    lines.push("", `loop ${retry}`, `  ${from} -> ${to}: ${retry}`, "end");
+  }
+
+  if (hasStructural(state, "opt")) {
+    const optional = locale === "ru" ? "опционально" : "optional";
+    lines.push("", `opt ${optional}`, `  ${from} -> ${to}: ${optional}`, "end");
+  }
+
+  if (hasStructural(state, "par")) {
+    const parallel = locale === "ru" ? "параллельно" : "parallel";
+    lines.push(
+      "",
+      "par " + parallel,
+      `  ${from} -> ${to}: A`,
+      `  ${from} -> ${to}: B`,
+      "end",
+    );
+  }
+}
+
+function appendMermaidSequenceStructure(
+  lines: string[],
+  state: WizardState,
+  locale: AppLocale,
+): void {
+  const from = participantLabel(1, locale).replace(/\s+/g, "_");
+  const to = participantLabel(2, locale).replace(/\s+/g, "_");
+  const ok = locale === "ru" ? "успех" : "success";
+  const fail = locale === "ru" ? "ошибка" : "failure";
+
+  if (hasStructural(state, "note")) {
+    const noteText = locale === "ru" ? "Примечание" : "Note";
+    lines.push(`  Note right of ${from}: ${noteText}`);
+  }
+
+  if (hasStructural(state, "alt")) {
+    lines.push(
+      `  alt ${ok}`,
+      `    ${from}->>${to}: ${ok}`,
+      `  else ${fail}`,
+      `    ${from}->>${to}: ${fail}`,
+      "  end",
+    );
+  }
+
+  if (hasStructural(state, "loop")) {
+    const retry = locale === "ru" ? "повтор" : "retry";
+    lines.push(`  loop ${retry}`, `    ${from}->>${to}: ${retry}`, "  end");
+  }
+
+  if (hasStructural(state, "opt")) {
+    const optional = locale === "ru" ? "опционально" : "optional";
+    lines.push(`  opt ${optional}`, `    ${from}->>${to}: ${optional}`, "  end");
+  }
+
+  if (hasStructural(state, "par")) {
+    lines.push(
+      "  par",
+      `    ${from}->>${to}: A`,
+      `    ${from}->>${to}: B`,
+      "  end",
+    );
+  }
+}
+
+function appendPlantUmlClassStructure(
+  lines: string[],
+  state: WizardState,
+  locale: AppLocale,
+): void {
+  const noteText = locale === "ru" ? "Примечание" : "Note";
+
+  if (hasStructural(state, "interface")) {
+    const iface = locale === "ru" ? "Интерфейс" : "Interface";
+    lines.push("", `interface ${iface} {`, "  +method()", "}");
+  }
+
+  if (hasStructural(state, "enum")) {
+    const enumName = locale === "ru" ? "Статус" : "Status";
+    lines.push("", `enum ${enumName} {`, "  ACTIVE", "  INACTIVE", "}");
+  }
+
+  if (hasStructural(state, "abstract")) {
+    const abstractName = locale === "ru" ? "БазовыйКласс" : "BaseClass";
+    lines.push("", `abstract class ${abstractName} {`, "  +id: String", "}");
+  }
+
+  if (hasStructural(state, "note")) {
+    lines.push("", `note top of ${classLabel(1, locale)}: ${noteText}`);
+  }
+}
+
+function appendPlantUmlComponentStructure(
+  lines: string[],
+  state: WizardState,
+  locale: AppLocale,
+): void {
+  const noteText = locale === "ru" ? "Примечание" : "Note";
+
+  if (hasStructural(state, "interface")) {
+    const iface = locale === "ru" ? "Интерфейс" : "Interface";
+    lines.push("", `() ${iface}`, "");
+  }
+
+  if (hasStructural(state, "note")) {
+    lines.push(`note right of [${componentLabel(1, locale)}]: ${noteText}`);
+  }
+}
+
+function appendPlantUmlActivityStructure(
+  lines: string[],
+  state: WizardState,
+  locale: AppLocale,
+): void {
+  const noteText = locale === "ru" ? "Примечание" : "Note";
+  const yes = locale === "ru" ? "да" : "yes";
+  const no = locale === "ru" ? "нет" : "no";
+  const caseA = locale === "ru" ? "вариант A" : "case A";
+  const caseB = locale === "ru" ? "вариант B" : "case B";
+
+  if (hasStructural(state, "if")) {
+    lines.push("", `if (${yes}?) then (${yes})`, `  :${stepLabel(1, locale)};`, "else (" + no + ")", `  :${stepLabel(2, locale)};`, "endif");
+  }
+
+  if (hasStructural(state, "switch")) {
+    lines.push(
+      "",
+      "switch (" + caseA + ")",
+      "case (" + caseA + ")",
+      `  :${stepLabel(1, locale)};`,
+      "case (" + caseB + ")",
+      `  :${stepLabel(2, locale)};`,
+      "endswitch",
+    );
+  }
+
+  if (hasStructural(state, "fork")) {
+    lines.push("", "fork", `  :${stepLabel(1, locale)};`, "fork again", `  :${stepLabel(2, locale)};`, "end fork");
+  }
+
+  if (hasStructural(state, "note")) {
+    lines.push("", `floating note right: ${noteText}`);
+  }
+
+  if (hasStructural(state, "artifact")) {
+    const artifact = locale === "ru" ? "Артефакт" : "Artifact";
+    lines.push("", `:${artifact};`, "<<artifact>>");
+  }
+}
+
+function appendMermaidFlowStructure(
+  lines: string[],
+  state: WizardState,
+  locale: AppLocale,
+): void {
+  const yes = locale === "ru" ? "Да" : "Yes";
+  const no = locale === "ru" ? "Нет" : "No";
+
+  if (hasStructural(state, "if")) {
+    lines.push("  B{Decision?}", `  B -->|${yes}| N1`, `  B -->|${no}| Z`);
+  }
+
+  if (hasStructural(state, "fork")) {
+    lines.push("  F{{Fork}}", "  F --> N1", "  F --> N2");
+  }
+
+  if (hasStructural(state, "note")) {
+    const noteText = locale === "ru" ? "Примечание" : "Note";
+    lines.push(`  N1@{ shape: braces, label: "${noteText}" }`);
+  }
+}
+
+function appendPlantUmlStateStructure(
+  lines: string[],
+  state: WizardState,
+  locale: AppLocale,
+): void {
+  if (hasStructural(state, "choice")) {
+    lines.push("", stateLabel(1, locale) + " --> choice");
+    lines.push("choice --> " + stateLabel(2, locale));
+  }
+
+  if (hasStructural(state, "fork")) {
+    lines.push("", stateLabel(1, locale) + " --> fork");
+    lines.push("fork --> " + stateLabel(2, locale));
+  }
+
+  if (hasStructural(state, "note")) {
+    const noteText = locale === "ru" ? "Примечание" : "Note";
+    lines.push("", `note right of ${stateLabel(1, locale)}: ${noteText}`);
+  }
+}
+
+function appendPlantUmlGanttStructure(
+  lines: string[],
+  state: WizardState,
+  locale: AppLocale,
+): void {
+  if (hasStructural(state, "section")) {
+    const section = locale === "ru" ? "Этап 2" : "Phase 2";
+    lines.push("", "[" + section + "] lasts 2 days");
+  }
+
+  if (hasStructural(state, "milestone")) {
+    const milestone = locale === "ru" ? "Веха" : "Milestone";
+    lines.push("", `[${milestone}] happens at [${taskLabel(1, locale)}]'s end`);
+  }
+}
+
+function appendMermaidGanttStructure(
+  lines: string[],
+  state: WizardState,
+  locale: AppLocale,
+): void {
+  if (hasStructural(state, "section")) {
+    const section = locale === "ru" ? "Этап 2" : "Phase 2";
+    lines.push("", `section ${section}`, `${taskLabel(2, locale)} :t2, after t1, 2d`);
+  }
+
+  if (hasStructural(state, "milestone")) {
+    const milestone = locale === "ru" ? "Веха" : "Milestone";
+    lines.push("", `${milestone} :milestone, after t1, 0d`);
+  }
+}
+
+function appendGraphmlClusterStructure(
+  lines: string[],
+  state: WizardState,
+  locale: AppLocale,
+): void {
+  if (!hasStructural(state, "cluster")) {
+    return;
+  }
+
+  const clusterLabel = locale === "ru" ? "Группа" : "Cluster";
+  lines.splice(
+    lines.length - 2,
+    0,
+    `    <node id="cluster1">`,
+    `      <data key="d0">${clusterLabel}</data>`,
+    `      <graph id="cluster1_graph" edgedefault="directed">`,
+    `        <node id="n1"><data key="d0">${nodeLabel(1, locale)}</data></node>`,
+    `      </graph>`,
+    `    </node>`,
+  );
+}
+
 function buildPlantUmlGantt(state: WizardState, locale: AppLocale): string {
   const taskCount = state.typeParams.tasks;
   const title = locale === "ru" ? "Диаграмма Ганта" : "Gantt chart";
@@ -738,6 +1196,7 @@ function buildPlantUmlGantt(state: WizardState, locale: AppLocale): string {
     }
   }
 
+  appendPlantUmlGanttStructure(lines, state, locale);
   lines.push("@endgantt");
   return lines.join("\n");
 }
@@ -766,6 +1225,7 @@ function buildMermaidGantt(state: WizardState, locale: AppLocale): string {
     }
   }
 
+  appendMermaidGanttStructure(lines, state, locale);
   return lines.join("\n");
 }
 
@@ -790,6 +1250,11 @@ function buildPlantUmlMindmap(state: WizardState, locale: AppLocale): string {
     }
   }
 
+  if (hasStructural(state, "note")) {
+    const noteText = locale === "ru" ? "Примечание" : "Note";
+    lines.push(`** ${noteText}`);
+  }
+
   lines.push("@endmindmap");
   return lines.join("\n");
 }
@@ -805,6 +1270,11 @@ function buildMermaidMindmap(state: WizardState, locale: AppLocale): string {
     for (let subIndex = 1; subIndex <= subCount; subIndex += 1) {
       lines.push(`      ${subBranchLabel(subIndex, locale)}`);
     }
+  }
+
+  if (hasStructural(state, "note")) {
+    const noteText = locale === "ru" ? "Примечание" : "Note";
+    lines.push(`    ${noteText}`);
   }
 
   return lines.join("\n");
@@ -824,6 +1294,11 @@ function buildMermaidEr(state: WizardState, locale: AppLocale): string {
     const to = entityLabel(2, locale).replace(/\s+/g, "_");
     const rel = locale === "ru" ? "связан с" : "relates to";
     lines.push(`  ${from} ||--o{ ${to} : "${rel}"`);
+  }
+
+  if (hasStructural(state, "note")) {
+    const noteText = locale === "ru" ? "Примечание" : "Note";
+    lines.push(`  %% ${noteText}`);
   }
 
   return lines.join("\n");
@@ -855,6 +1330,7 @@ function buildGraphmlGraph(state: WizardState, locale: AppLocale): string {
     lines.push(`    <edge source="n${index}" target="n${index + 1}"/>`);
   }
 
+  appendGraphmlClusterStructure(lines, state, locale);
   lines.push("  </graph>", "</graphml>");
   return lines.join("\n");
 }
@@ -874,6 +1350,11 @@ function buildMermaidState(state: WizardState, locale: AppLocale): string {
   lines.push(
     `  ${stateLabel(count, locale).replace(/\s+/g, "_")} --> [*]`,
   );
+
+  if (hasStructural(state, "note")) {
+    const noteText = locale === "ru" ? "Примечание" : "Note";
+    lines.push(`  note right of ${stateLabel(1, locale).replace(/\s+/g, "_")}: ${noteText}`);
+  }
 
   return lines.join("\n");
 }
