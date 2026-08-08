@@ -2,7 +2,9 @@
 import { computed } from "vue";
 import type { Component } from "vue";
 import {
+  ArrowLeft,
   ArrowLeftRight,
+  ArrowRight,
   Braces,
   CircleCheck,
   CircleHelp,
@@ -33,6 +35,8 @@ import {
 } from "@lucide/vue";
 
 export type ActionIconName =
+  | "back"
+  | "next"
   | "folder-open"
   | "save"
   | "check"
@@ -73,6 +77,8 @@ const props = withDefaults(
 );
 
 const ICON_MAP: Record<ActionIconName, Component> = {
+  back: ArrowLeft,
+  next: ArrowRight,
   "folder-open": FolderOpen,
   save: Save,
   check: CircleCheck,

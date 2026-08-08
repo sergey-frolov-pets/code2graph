@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
+import IconButton from "@/components/IconButton.vue";
+import ActionIcon from "@/components/icons/ActionIcon.vue";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
 import { generateValidWizardDiagram } from "@/composables/useLlmPlantUmlGenerate";
@@ -652,79 +654,92 @@ function onTransferToEditor(): void {
     </div>
 
     <template #footer>
-      <button
-        v-if="showBackButton"
-        class="btn"
-        type="button"
-        :disabled="isGenerating"
-        @click="goBack"
-      >
-        {{ t("llm.wizard.back") }}
-      </button>
-      <button class="btn" type="button" @click="emit('close')">
-        {{ t("app.cancel") }}
-      </button>
-      <button
-        v-if="currentStepId !== 'result'"
-        class="btn"
-        type="button"
-        :disabled="isGenerating"
-        @click="onTransferToEditor"
-      >
-        {{ t("llm.wizard.transferToEditor") }}
-      </button>
-      <button
-        v-if="currentStepId !== 'result' && currentStepId !== 'context'"
-        class="btn btn-primary"
-        type="button"
-        :disabled="!canGoNext || isGenerating"
-        @click="goNext"
-      >
-        {{ t("llm.wizard.next") }}
-      </button>
-      <button
-        v-if="currentStepId === 'context' && isAiMode"
-        class="btn btn-primary"
-        type="button"
-        :disabled="!canGoNext || isGenerating"
-        @click="goNext"
-      >
-        {{ isGenerating ? t("llm.wizard.generating") : t("llm.wizard.generate") }}
-      </button>
-      <button
-        v-if="currentStepId === 'prompt'"
-        class="btn btn-primary"
-        type="button"
-        :disabled="!canGoNext || isGenerating"
-        @click="goNext"
-      >
-        {{ isGenerating ? t("llm.wizard.generating") : t("llm.wizard.generate") }}
-      </button>
-      <button
-        v-if="currentStepId === 'result'"
-        class="btn btn-primary"
-        type="button"
-        :disabled="!resultSource || isGenerating"
-        @click="onApply"
-      >
-        {{ t("llm.wizard.apply") }}
-      </button>
-      <button
-        v-if="currentStepId === 'result' && isAiMode && !isGenerating"
-        class="btn"
-        type="button"
-        @click="generateDiagram"
-      >
-        {{ t("llm.wizard.regenerate") }}
-      </button>
-      <button
-        v-if="currentStepId === 'result' && !isAiMode && !isGenerating"
-        class="btn"
-        type="button"
-        @click="prepareManualResult"
-      >
-        {{ t("llm.wizard.regenerate") }}
-      </button>
+      <div class="wizard-footer">
+        <div class="wizard-footer__start">
+          <IconButton
+            v-if="showBackButton"
+            :label="t('llm.wizard.back')"
+            extra-class="wizard-footer__btn"
+            :disabled="isGenerating"
+            @click="goBack"
+          >
+            <ActionIcon name="back" />
+          </IconButton>
+        </div>
+
+        <div class="wizard-footer__end">
+          <IconButton
+            :label="t('app.cancel')"
+            extra-class="wizard-footer__btn"
+            @click="emit('close')"
+          >
+            <ActionIcon name="close" />
+          </IconButton>
+
+          <IconButton
+            v-if="currentStepId !== 'result'"
+            :label="t('llm.wizard.transferToEditor')"
+            extra-class="wizard-footer__btn"
+            :disabled="isGenerating"
+            @click="onTransferToEditor"
+          >
+            <ActionIcon name="transfer" />
+          </IconButton>
+
+          <IconButton
+            v-if="currentStepId !== 'result' && currentStepId !== 'context'"
+            :label="t('llm.wizard.next')"
+            extra-class="wizard-footer__btn"
+            primary
+            :disabled="!canGoNext || isGenerating"
+            @click="goNext"
+          >
+            <ActionIcon name="next" />
+          </IconButton>
+
+          <IconButton
+            v-if="currentStepId === 'context' && isAiMode"
+            :label="isGenerating ? t('llm.wizard.generating') : t('llm.wizard.generate')"
+            extra-class="wizard-footer__btn"
+            primary
+            :disabled="!canGoNext || isGenerating"
+            @click="goNext"
+          >
+            <ActionIcon name="ai" />
+          </IconButton>
+
+          <IconButton
+            v-if="currentStepId === 'prompt'"
+            :label="isGenerating ? t('llm.wizard.generating') : t('llm.wizard.generate')"
+            extra-class="wizard-footer__btn"
+            primary
+            :disabled="!canGoNext || isGenerating"
+            @click="goNext"
+          >
+            <ActionIcon name="ai" />
+          </IconButton>
+
+          <IconButton
+            v-if="currentStepId === 'result'"
+            :label="t('llm.wizard.apply')"
+            extra-class="wizard-footer__btn"
+            primary
+            :disabled="!resultSource || isGenerating"
+            @click="onApply"
+          >
+            <ActionIcon name="check" />
+          </IconButton>
+
+          <IconButton
+            v-if="currentStepId === 'result' && !isGenerating"
+            :label="t('llm.wizard.regenerate')"
+            extra-class="wizard-footer__btn"
+            @click="isAiMode ? generateDiagram() : prepareManualResult()"
+          >
+            <ActionIcon name="refresh" />
+          </IconButton>
+        </div>
+      </div>
     </template>
   </AppModal>
 </template>
@@ -966,5 +981,26 @@ function onTransferToEditor(): void {
   display: block;
   max-width: 100%;
   height: auto;
+}
+
+.wizard-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.wizard-footer__start,
+.wizard-footer__end {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.wizard-footer__end {
+  justify-content: flex-end;
+  margin-left: auto;
 }
 </style>
