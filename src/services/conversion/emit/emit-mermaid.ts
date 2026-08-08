@@ -1,4 +1,9 @@
 import type { DiagramIR } from "@/services/conversion/diagram-ir";
+import {
+  escapeMermaidQuoted,
+  flattenMermaidLabel,
+  formatMermaidNodeLabel,
+} from "@/services/conversion/emit/mermaid-emit-utils";
 
 function flowDirection(ir: DiagramIR): string {
   return ir.direction === "LR" ? "LR" : "TD";
@@ -31,14 +36,16 @@ function emitMermaidFlowchart(ir: DiagramIR): string {
   for (const node of ir.nodes) {
     const shape =
       node.kind === "decision"
-        ? `{${node.label}}`
+        ? `{${escapeMermaidQuoted(node.label)}}`
         : node.kind === "start" || node.kind === "end"
-          ? `(["${node.label}"])`
-          : `[${node.label}]`;
+          ? `(["${escapeMermaidQuoted(node.label)}"])`
+          : formatMermaidNodeLabel(node.label);
     lines.push(`  ${node.id}${shape}`);
   }
   for (const edge of ir.edges) {
-    const label = edge.label ? `|${edge.label}|` : "";
+    const label = edge.label
+      ? `|${escapeMermaidQuoted(edge.label)}|`
+      : "";
     lines.push(`  ${edge.source} -->${label} ${edge.target}`);
   }
   return lines.join("\n");
@@ -67,10 +74,10 @@ function emitMermaidState(ir: DiagramIR): string {
 function emitMermaidSequence(ir: DiagramIR): string {
   const lines = ["sequenceDiagram"];
   for (const node of ir.nodes) {
-    lines.push(`  participant ${node.id} as "${node.label}"`);
+    lines.push(`  participant ${node.id} as "${escapeMermaidQuoted(node.label)}"`);
   }
   for (const edge of ir.edges) {
-    const label = edge.label ? `: ${edge.label}` : "";
+    const label = edge.label ? `: ${escapeMermaidQuoted(edge.label)}` : "";
     lines.push(`  ${edge.source}->>${edge.target}${label}`);
   }
   return lines.join("\n");
@@ -95,12 +102,13 @@ function emitMermaidGantt(ir: DiagramIR): string {
     "section Tasks",
   ];
   ir.nodes.forEach((node, index) => {
+    const label = flattenMermaidLabel(node.label) || node.id;
     if (index === 0) {
-      lines.push(`${node.label} :${node.id}, 2026-01-01, 3d`);
+      lines.push(`${label} :${node.id}, 2026-01-01, 3d`);
       return;
     }
     const prev = ir.nodes[index - 1];
-    lines.push(`${node.label} :${node.id}, after ${prev.id}, 3d`);
+    lines.push(`${label} :${node.id}, after ${prev.id}, 3d`);
   });
   return lines.join("\n");
 }

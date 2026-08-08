@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { describe, expect, it } from "vitest";
 import { convertDiagram } from "@/services/conversion/pipeline/convert-diagram";
 
@@ -78,5 +80,47 @@ describe("convertDiagram", () => {
     expect(result.targetSource).toContain("[Готово] as Z");
     expect(result.targetSource).not.toContain("[[Старт]]");
     expect(result.targetSource).not.toContain("[[Готово]]");
+  });
+
+  it("converts graphml with multiline node labels to valid plantuml", () => {
+    const result = convertDiagram({
+      source: `<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns">
+  <key id="d0" for="node" attr.name="label" attr.type="string"/>
+  <graph edgedefault="directed">
+    <node id="n0">
+      <data key="d0">Support
+required outside
+of RCA</data>
+    </node>
+    <node id="n1">
+      <data key="d0">Unconventional
+/ SDN</data>
+    </node>
+    <node id="n4">
+      <data key="d0">GO</data>
+    </node>
+    <edge source="n0" target="n4">
+      <data key="d0">Yes</data>
+    </edge>
+  </graph>
+</graphml>`,
+      sourceFormat: "graphml",
+      targetFormat: "plantuml",
+      mode: "source",
+      locale: "en",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.targetSource).toContain(
+      'rectangle "Support required outside of RCA" as n0',
+    );
+    expect(result.targetSource).toContain(
+      'rectangle "Unconventional / SDN" as n1',
+    );
+    expect(result.targetSource).toContain("[GO] as n4");
+    expect(result.targetSource).not.toMatch(
+      /\[(?:[^\]]*\n)+[^\]]*\] as /,
+    );
   });
 });

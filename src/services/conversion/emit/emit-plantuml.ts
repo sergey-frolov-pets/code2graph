@@ -1,4 +1,11 @@
 import type { DiagramIR } from "@/services/conversion/diagram-ir";
+import {
+  emitPlantUmlComponentNode,
+  escapePlantUmlQuoted,
+  flattenPlantUmlLabel,
+  formatPlantUmlActivityLabel,
+  formatPlantUmlEdgeSuffix,
+} from "@/services/conversion/emit/plantuml-emit-utils";
 
 export function emitPlantUmlFromIr(ir: DiagramIR): string {
   switch (ir.kind) {
@@ -34,11 +41,12 @@ function emitPlantUmlGraph(ir: DiagramIR): string {
     lines.push("left to right direction", "");
   }
   for (const node of ir.nodes) {
-    lines.push(`[${node.label}] as ${node.id}`);
+    lines.push(emitPlantUmlComponentNode(node.id, node.label));
   }
   for (const edge of ir.edges) {
-    const label = edge.label ? ` : ${edge.label}` : "";
-    lines.push(`${edge.source} --> ${edge.target}${label}`);
+    lines.push(
+      `${edge.source} --> ${edge.target}${formatPlantUmlEdgeSuffix(edge.label)}`,
+    );
   }
   return wrapPlantUml(lines.join("\n"));
 }
@@ -63,8 +71,9 @@ function emitPlantUmlState(ir: DiagramIR): string {
     lines.push("left to right direction", "");
   }
   for (const edge of ir.edges) {
-    const label = edge.label ? ` : ${edge.label}` : "";
-    lines.push(`${edge.source} --> ${edge.target}${label}`);
+    lines.push(
+      `${edge.source} --> ${edge.target}${formatPlantUmlEdgeSuffix(edge.label)}`,
+    );
   }
   return wrapPlantUml(lines.join("\n"));
 }
@@ -72,12 +81,13 @@ function emitPlantUmlState(ir: DiagramIR): string {
 function emitPlantUmlSequence(ir: DiagramIR): string {
   const lines: string[] = [];
   for (const node of ir.nodes) {
-    lines.push(`actor ${node.id} as "${node.label}"`);
+    lines.push(`actor ${node.id} as "${escapePlantUmlQuoted(node.label)}"`);
   }
   lines.push("");
   for (const edge of ir.edges) {
-    const label = edge.label ? ` : ${edge.label}` : "";
-    lines.push(`${edge.source} -> ${edge.target}${label}`);
+    lines.push(
+      `${edge.source} -> ${edge.target}${formatPlantUmlEdgeSuffix(edge.label)}`,
+    );
   }
   return wrapPlantUml(lines.join("\n"));
 }
@@ -85,7 +95,7 @@ function emitPlantUmlSequence(ir: DiagramIR): string {
 function emitPlantUmlActivity(ir: DiagramIR): string {
   const lines = ["start"];
   for (const node of ir.nodes) {
-    lines.push(`:${node.label};`);
+    lines.push(`:${formatPlantUmlActivityLabel(node.label)};`);
   }
   lines.push("stop");
   return wrapPlantUml(lines.join("\n"));
@@ -99,10 +109,14 @@ function emitPlantUmlC4(ir: DiagramIR): string {
   const lines = [include, ""];
   for (const node of ir.nodes) {
     const c4Type = String(node.semantic?.c4Type ?? "System");
-    lines.push(`${c4Type}(${node.id}, "${node.label}", "")`);
+    lines.push(
+      `${c4Type}(${node.id}, "${escapePlantUmlQuoted(node.label)}", "")`,
+    );
   }
   for (const edge of ir.edges) {
-    const label = edge.label ? `, "${edge.label}"` : ', ""';
+    const label = edge.label
+      ? `, "${escapePlantUmlQuoted(edge.label)}"`
+      : ', ""';
     lines.push(`Rel(${edge.source}, ${edge.target}${label})`);
   }
   return wrapPlantUml(lines.join("\n"));
@@ -116,12 +130,16 @@ function emitPlantUmlGantt(ir: DiagramIR): string {
     "",
   ];
   ir.nodes.forEach((node, index) => {
+    const label = flattenPlantUmlLabel(node.label) || node.id;
     if (index === 0) {
-      lines.push(`[${node.label}] lasts 3 days`);
+      lines.push(`[${label}] lasts 3 days`);
       return;
     }
     const prev = ir.nodes[index - 1];
-    lines.push(`[${node.label}] lasts 3 days and starts at [${prev.label}]'s end`);
+    const prevLabel = flattenPlantUmlLabel(prev.label) || prev.id;
+    lines.push(
+      `[${label}] lasts 3 days and starts at [${prevLabel}]'s end`,
+    );
   });
   lines.push("@endgantt");
   return lines.join("\n");
