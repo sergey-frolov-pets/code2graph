@@ -69,6 +69,7 @@ const typeOptions = computed(() =>
   getWizardTypesForLanguage(wizardState.value.language).map((id) => ({
     id,
     label: t(`llm.wizard.type.${id}`),
+    description: t(`llm.wizard.typeDesc.${id}`),
   })),
 );
 
@@ -435,14 +436,15 @@ function onApply(): void {
         <button
           v-for="option in typeOptions"
           :key="option.id"
-          class="wizard-radio-list__option"
+          class="wizard-radio-list__option wizard-radio-list__option--stacked"
           :class="{ 'is-active': wizardState.diagramType === option.id }"
           type="button"
           role="radio"
           :aria-checked="wizardState.diagramType === option.id"
           @click="onTypeSelect(option.id)"
         >
-          {{ option.label }}
+          <span class="wizard-radio-list__label">{{ option.label }}</span>
+          <span class="wizard-radio-list__desc">{{ option.description }}</span>
         </button>
       </div>
     </div>
@@ -710,6 +712,25 @@ function onApply(): void {
   transition: background 0.15s, color 0.15s, box-shadow 0.15s;
 }
 
+.wizard-radio-list__option--stacked {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 56px;
+}
+
+.wizard-radio-list__label {
+  font-weight: 600;
+}
+
+.wizard-radio-list__desc {
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+
 .wizard-radio-list__option:hover:not(.is-active) {
   color: var(--text);
   background: color-mix(in srgb, var(--text) 4%, transparent);
@@ -719,6 +740,10 @@ function onApply(): void {
   background: var(--accent);
   color: #fff;
   box-shadow: 0 1px 2px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.wizard-radio-list__option.is-active .wizard-radio-list__desc {
+  color: color-mix(in srgb, #fff 82%, transparent);
 }
 
 .wizard-field {
