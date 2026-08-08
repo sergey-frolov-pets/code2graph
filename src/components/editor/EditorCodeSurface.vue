@@ -9,6 +9,7 @@ import { mergeDisplayTextIntoSource } from "@/utils/code-folds";
 import { isSnippetsHotkey } from "@/constants/snippets-settings";
 import { detectDiagramFormat } from "@/utils/diagram-format";
 import { isCompleteMermaidDiagram } from "@/utils/mermaid-source";
+import { isCompleteGraphmlDocument } from "@/utils/graphml-source";
 
 const props = defineProps<{
   source: string;
@@ -18,6 +19,7 @@ const props = defineProps<{
   syntaxHighlightEnabled: boolean;
   autocompleteEnabled: boolean;
   readOnly: boolean;
+  placeholder?: string;
   errorLines: number[];
   autocomplete: ReturnType<typeof useEditorAutocomplete>;
 }>();
@@ -69,9 +71,12 @@ function onPaste(event: ClipboardEvent): void {
 
   if (
     pastedFormat !== currentFormat &&
-    (pastedFormat === "mermaid"
-      ? isCompleteMermaidDiagram(pasted)
-      : pastedFormat === "plantuml" && /@start(uml|gantt)\b/i.test(pasted)) &&
+    (pastedFormat === "graphml"
+      ? isCompleteGraphmlDocument(pasted)
+      : pastedFormat === "mermaid"
+        ? isCompleteMermaidDiagram(pasted)
+        : pastedFormat === "plantuml" &&
+          /@start(uml|gantt)\b/i.test(pasted)) &&
     !hasFullSelection
   ) {
     event.preventDefault();
@@ -178,7 +183,10 @@ function onTextareaScroll(): void {
       autocomplete="off"
       autocapitalize="off"
       :readonly="readOnly"
-      :placeholder="readOnly ? t('editor.placeholderViewOnly') : t('editor.placeholder')"
+      :placeholder="
+        placeholder ??
+        (readOnly ? t('editor.placeholderViewOnly') : t('editor.placeholder'))
+      "
       @input="onDisplayInput"
       @paste="onPaste"
       @keydown="onTextareaKeydown"

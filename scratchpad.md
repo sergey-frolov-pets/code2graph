@@ -317,3 +317,34 @@ I'll keep the dependency section clean in the file.
 - Автоматический fallback free → BYOK без уведомления пользователя
 - Вшивать proxy API keys в клиентский JS
 - Отправка user BYOK ключей на library server
+
+---
+
+# scratchpad: конвертер диаграмм «всё → всё»
+
+> Обновлено: 2026-08-08  
+> Полный план: [`docs/diagram-converter-plan.md`](docs/diagram-converter-plan.md)
+
+## Суть
+
+Три формата (`plantuml`, `mermaid`, `graphml`) × типы диаграмм, с **дисклеймером потерь**.
+
+Три слоя: **semantic (source)** + **visual (SVG)** + **metadata (embed в export SVG)** → merge → emit.
+
+## MVP (релиз 1)
+
+Фазы **0 + 1 + 2** из плана:
+
+1. `DiagramIR` + matrix потерь + i18n
+2. Graph triangle: component/flowchart ↔ все форматы
+3. Combo: source + live SVG → GraphML с x/y/fill
+
+## Заблокировано всегда
+
+- gantt → graphml
+- graphml → sequence / activity / gantt
+- visual-only sequence SVG
+
+## Следующий шаг в коде
+
+Фаза 0: `src/services/conversion/diagram-ir.ts` + `rules/conversion-matrix.ts`

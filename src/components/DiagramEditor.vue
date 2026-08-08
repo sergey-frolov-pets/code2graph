@@ -55,6 +55,7 @@ const emit = defineEmits<{
   cleared: [];
   undo: [];
   redo: [];
+  convert: [];
   aiPatch: [payload: { start: number; end: number }];
   aiSyntaxAsk: [];
 }>();
@@ -68,8 +69,19 @@ const isReadOnly = computed(() => !formatDefinition.value.editable);
 const effectiveSyntaxHighlight = computed(
   () =>
     props.syntaxHighlightEnabled &&
-    (diagramFormat.value === "plantuml" || diagramFormat.value === "mermaid"),
+    (diagramFormat.value === "plantuml" ||
+      diagramFormat.value === "mermaid" ||
+      diagramFormat.value === "graphml"),
 );
+const editorPlaceholder = computed(() => {
+  if (diagramFormat.value === "graphml") {
+    return t("editor.placeholderGraphml");
+  }
+  if (diagramFormat.value === "mermaid") {
+    return t("editor.placeholderMermaid");
+  }
+  return t("editor.placeholder");
+});
 const effectiveAutocomplete = computed(
   () =>
     props.autocompleteEnabled &&
@@ -268,6 +280,7 @@ onUnmounted(() => {
       :can-undo="canUndo"
       :can-redo="canRedo"
       :can-clear="canClear"
+      :can-convert="canClear"
       :can-ai-patch="canClear"
       :can-ai-syntax-ask="canClear"
       :snippets-open="snippetsOpen"
@@ -281,6 +294,7 @@ onUnmounted(() => {
       @validate-syntax="emit('validateSyntax')"
       @undo="emit('undo')"
       @redo="emit('redo')"
+      @convert="emit('convert')"
       @clear="requestClear"
       @toggle-snippets="snippetsOpen = !snippetsOpen"
       @load-sample="loadSample($event as SampleSelection)"
@@ -325,6 +339,7 @@ onUnmounted(() => {
           :syntax-highlight-enabled="effectiveSyntaxHighlight"
           :autocomplete-enabled="effectiveAutocomplete"
           :read-only="isReadOnly"
+          :placeholder="editorPlaceholder"
           :error-lines="errorLines ?? []"
           :autocomplete="autocomplete"
           @update:source="source = $event"

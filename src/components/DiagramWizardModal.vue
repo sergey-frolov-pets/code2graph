@@ -72,6 +72,20 @@ const typeOptions = computed(() =>
   })),
 );
 
+const directionOptions = computed(() =>
+  WIZARD_DIAGRAM_DIRECTIONS.map((id) => ({
+    id,
+    label: t(`llm.wizard.direction.${id}`),
+  })),
+);
+
+const themeOptions = computed(() =>
+  WIZARD_DIAGRAM_THEMES.map((id) => ({
+    id,
+    label: t(`llm.wizard.theme.${id}`),
+  })),
+);
+
 const paramFields = computed((): WizardParamField[] =>
   WIZARD_TYPE_PARAM_FIELDS[wizardState.value.diagramType],
 );
@@ -202,26 +216,24 @@ function onModeSelect(mode: string): void {
   }
 }
 
-function onLanguageChange(event: Event): void {
-  const value = (event.target as HTMLSelectElement).value;
-  if (isWizardLanguage(value)) {
-    wizardState.value.language = value;
+function onLanguageSelect(language: string): void {
+  if (isWizardLanguage(language)) {
+    wizardState.value.language = language;
   }
 }
 
-function onTypeChange(event: Event): void {
-  const value = (event.target as HTMLSelectElement).value;
-  if (isWizardDiagramType(value)) {
-    wizardState.value.diagramType = value;
+function onTypeSelect(diagramType: string): void {
+  if (isWizardDiagramType(diagramType)) {
+    wizardState.value.diagramType = diagramType;
   }
 }
 
-function onThemeChange(event: Event): void {
-  wizardState.value.theme = (event.target as HTMLSelectElement).value as WizardState["theme"];
+function onThemeSelect(theme: WizardState["theme"]): void {
+  wizardState.value.theme = theme;
 }
 
-function onDirectionChange(event: Event): void {
-  wizardState.value.direction = (event.target as HTMLSelectElement).value as WizardState["direction"];
+function onDirectionSelect(direction: WizardState["direction"]): void {
+  wizardState.value.direction = direction;
 }
 
 function onParamChange(paramId: WizardParamField["id"], event: Event): void {
@@ -388,18 +400,25 @@ function onApply(): void {
     </div>
 
     <div v-else-if="currentStepId === 'language'" class="wizard-step">
-      <label class="wizard-field">
-        <span class="wizard-field__label">{{ t("llm.wizard.diagramLanguage") }}</span>
-        <select
-          class="select"
-          :value="wizardState.language"
-          @change="onLanguageChange"
+      <p class="wizard-field__label">{{ t("llm.wizard.diagramLanguage") }}</p>
+      <div
+        class="wizard-radio-list"
+        role="radiogroup"
+        :aria-label="t('llm.wizard.diagramLanguage')"
+      >
+        <button
+          v-for="option in languageOptions"
+          :key="option.id"
+          class="wizard-radio-list__option"
+          :class="{ 'is-active': wizardState.language === option.id }"
+          type="button"
+          role="radio"
+          :aria-checked="wizardState.language === option.id"
+          @click="onLanguageSelect(option.id)"
         >
-          <option v-for="option in languageOptions" :key="option.id" :value="option.id">
-            {{ option.label }}
-          </option>
-        </select>
-      </label>
+          {{ option.label }}
+        </button>
+      </div>
       <p v-if="isAiMode" class="wizard-hint">{{ t("llm.wizard.languageAiHint") }}</p>
       <p v-if="wizardState.language === 'graphml'" class="wizard-hint">
         {{ t("llm.wizard.languageGraphmlHint") }}
@@ -407,52 +426,69 @@ function onApply(): void {
     </div>
 
     <div v-else-if="currentStepId === 'type'" class="wizard-step">
-      <label class="wizard-field">
-        <span class="wizard-field__label">{{ t("llm.wizard.diagramType") }}</span>
-        <select
-          class="select"
-          :value="wizardState.diagramType"
-          @change="onTypeChange"
+      <p class="wizard-field__label">{{ t("llm.wizard.diagramType") }}</p>
+      <div
+        class="wizard-radio-list wizard-radio-list--grid"
+        role="radiogroup"
+        :aria-label="t('llm.wizard.diagramType')"
+      >
+        <button
+          v-for="option in typeOptions"
+          :key="option.id"
+          class="wizard-radio-list__option"
+          :class="{ 'is-active': wizardState.diagramType === option.id }"
+          type="button"
+          role="radio"
+          :aria-checked="wizardState.diagramType === option.id"
+          @click="onTypeSelect(option.id)"
         >
-          <option v-for="option in typeOptions" :key="option.id" :value="option.id">
-            {{ option.label }}
-          </option>
-        </select>
-      </label>
+          {{ option.label }}
+        </button>
+      </div>
     </div>
 
     <div v-else-if="currentStepId === 'direction'" class="wizard-step">
-      <label class="wizard-field">
-        <span class="wizard-field__label">{{ t("llm.wizard.direction") }}</span>
-        <select
-          class="select"
-          :value="wizardState.direction"
-          @change="onDirectionChange"
+      <p class="wizard-field__label">{{ t("llm.wizard.direction") }}</p>
+      <div
+        class="wizard-mode-toggle"
+        role="radiogroup"
+        :aria-label="t('llm.wizard.direction')"
+      >
+        <button
+          v-for="option in directionOptions"
+          :key="option.id"
+          class="wizard-mode-toggle__option"
+          :class="{ 'is-active': wizardState.direction === option.id }"
+          type="button"
+          role="radio"
+          :aria-checked="wizardState.direction === option.id"
+          @click="onDirectionSelect(option.id)"
         >
-          <option
-            v-for="direction in WIZARD_DIAGRAM_DIRECTIONS"
-            :key="direction"
-            :value="direction"
-          >
-            {{ t(`llm.wizard.direction.${direction}`) }}
-          </option>
-        </select>
-      </label>
+          {{ option.label }}
+        </button>
+      </div>
     </div>
 
     <div v-else-if="currentStepId === 'style'" class="wizard-step">
-      <label class="wizard-field">
-        <span class="wizard-field__label">{{ t("llm.wizard.theme") }}</span>
-        <select class="select" :value="wizardState.theme" @change="onThemeChange">
-          <option
-            v-for="theme in WIZARD_DIAGRAM_THEMES"
-            :key="theme"
-            :value="theme"
-          >
-            {{ t(`llm.wizard.theme.${theme}`) }}
-          </option>
-        </select>
-      </label>
+      <p class="wizard-field__label">{{ t("llm.wizard.theme") }}</p>
+      <div
+        class="wizard-mode-toggle"
+        role="radiogroup"
+        :aria-label="t('llm.wizard.theme')"
+      >
+        <button
+          v-for="option in themeOptions"
+          :key="option.id"
+          class="wizard-mode-toggle__option"
+          :class="{ 'is-active': wizardState.theme === option.id }"
+          type="button"
+          role="radio"
+          :aria-checked="wizardState.theme === option.id"
+          @click="onThemeSelect(option.id)"
+        >
+          {{ option.label }}
+        </button>
+      </div>
     </div>
 
     <div v-else-if="currentStepId === 'params'" class="wizard-step">
@@ -644,6 +680,45 @@ function onApply(): void {
   font-size: 0.86rem;
   color: var(--text-muted);
   line-height: 1.4;
+}
+
+.wizard-radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-muted);
+}
+
+.wizard-radio-list--grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.wizard-radio-list__option {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.wizard-radio-list__option:hover:not(.is-active) {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+.wizard-radio-list__option.is-active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .wizard-field {

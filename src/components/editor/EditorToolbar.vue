@@ -24,6 +24,7 @@ const props = defineProps<{
   canUndo?: boolean;
   canRedo?: boolean;
   canClear: boolean;
+  canConvert: boolean;
   canAiPatch: boolean;
   canAiSyntaxAsk: boolean;
   snippetsOpen: boolean;
@@ -41,6 +42,7 @@ const emit = defineEmits<{
   undo: [];
   redo: [];
   clear: [];
+  convert: [];
   toggleSnippets: [];
   loadSample: [selection: SampleSelection];
   toggleFullscreen: [];
@@ -74,15 +76,25 @@ const titleTooltip = computed(() =>
   t(`editor.titleTooltip.${props.formatDefinition.id}`),
 );
 
-const saveLabel = computed(() =>
-  props.formatDefinition.id === "mermaid"
-    ? t("editor.saveMermaid")
-    : t("app.savePuml"),
-);
+const saveLabel = computed(() => {
+  if (props.formatDefinition.id === "mermaid") {
+    return t("editor.saveMermaid");
+  }
+  if (props.formatDefinition.id === "graphml") {
+    return t("editor.saveGraphml");
+  }
+  return t("app.savePuml");
+});
 
-const saveBadgeFormat = computed<"PUML" | "MMD">(() =>
-  props.formatDefinition.id === "mermaid" ? "MMD" : "PUML",
-);
+const saveBadgeFormat = computed<"PUML" | "MMD" | "GML">(() => {
+  if (props.formatDefinition.id === "mermaid") {
+    return "MMD";
+  }
+  if (props.formatDefinition.id === "graphml") {
+    return "GML";
+  }
+  return "PUML";
+});
 
 const openFileLabel = computed(() => {
   if (props.formatDefinition.id === "graphml") {
@@ -221,6 +233,13 @@ function onSampleChange(event: Event): void {
         <ActionIcon name="redo" />
       </IconButton>
       <IconButton
+        :label="t('editor.convertTooltip')"
+        :disabled="!canConvert"
+        @click="emit('convert')"
+      >
+        <ActionIcon name="transfer" />
+      </IconButton>
+      <IconButton
         :label="t('editor.clear')"
         :disabled="!canClear"
         @click="emit('clear')"
@@ -281,22 +300,25 @@ function onSampleChange(event: Event): void {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   min-width: 0;
-  max-width: min(100%, 240px);
+  overflow: visible;
 }
 
 .panel-title--editor {
   max-width: none;
+  overflow: visible;
   flex: 0 0 auto;
 }
 
 .panel-title__badge {
+  display: inline-flex;
+  align-items: center;
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 0.72rem;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.3;
   white-space: nowrap;
   flex-shrink: 0;
 }

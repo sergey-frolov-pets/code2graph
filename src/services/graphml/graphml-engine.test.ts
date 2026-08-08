@@ -23,6 +23,17 @@ describe("parseGraphml", () => {
     expect(graph.nodes).toHaveLength(2);
     expect(graph.edges).toHaveLength(1);
     expect(graph.nodes[0]?.label).toBe("Start");
+    expect(graph.direction).toBe("TB");
+  });
+
+  it("reads rankdir from graph element", () => {
+    const graph = parseGraphml(
+      SAMPLE_GRAPHML.replace(
+        '<graph edgedefault="directed">',
+        '<graph edgedefault="directed" rankdir="LR">',
+      ),
+    );
+    expect(graph.direction).toBe("LR");
   });
 });
 
@@ -32,5 +43,28 @@ describe("renderGraphmlToSvg", () => {
     expect(svg).toContain("<svg");
     expect(svg).toContain("Start");
     expect(svg).toContain("End");
+  });
+
+  it("lays out horizontally when rankdir is LR", async () => {
+    const tbSvg = await renderGraphmlToSvg(SAMPLE_GRAPHML, { dark: false });
+    const lrSource = SAMPLE_GRAPHML.replace(
+      '<graph edgedefault="directed">',
+      '<graph edgedefault="directed" rankdir="LR">',
+    );
+    const lrSvg = await renderGraphmlToSvg(lrSource, { dark: false });
+
+    const readSize = (svg: string) => {
+      const match = svg.match(/width="([\d.]+)" height="([\d.]+)"/);
+      return {
+        width: Number(match?.[1]),
+        height: Number(match?.[2]),
+      };
+    };
+
+    const tb = readSize(tbSvg);
+    const lr = readSize(lrSvg);
+
+    expect(lr.width).toBeGreaterThan(lr.height);
+    expect(lr.width).toBeGreaterThan(tb.width);
   });
 });

@@ -1,10 +1,18 @@
 import { computed, ref } from "vue";
+import type { DiagramFormat } from "@/constants/diagram-formats";
 
 export interface EditorHistoryEntry {
   before: string;
   after: string;
+  beforeFormat?: DiagramFormat;
+  afterFormat?: DiagramFormat;
   label: string;
   timestamp: number;
+}
+
+export interface EditorHistorySnapshot {
+  source: string;
+  format?: DiagramFormat;
 }
 
 const MAX_EDITOR_HISTORY_ENTRIES = 50;
@@ -19,7 +27,10 @@ export function useEditorHistory() {
   const lastRedoLabel = computed(() => redoStack.value.at(-1)?.label ?? "");
 
   function pushHistoryEntry(
-    entry: Pick<EditorHistoryEntry, "before" | "after" | "label">,
+    entry: Pick<
+      EditorHistoryEntry,
+      "before" | "after" | "label" | "beforeFormat" | "afterFormat"
+    >,
   ): void {
     undoStack.value = [
       ...undoStack.value,
@@ -32,7 +43,10 @@ export function useEditorHistory() {
     redoStack.value = [];
   }
 
-  function undo(currentSource: string): string | null {
+  function undo(
+    currentSource: string,
+    currentFormat?: DiagramFormat,
+  ): EditorHistorySnapshot | null {
     const entry = undoStack.value.at(-1);
     if (!entry) {
       return null;
@@ -42,21 +56,37 @@ export function useEditorHistory() {
       return null;
     }
 
+    if (
+      entry.afterFormat !== undefined &&
+      currentFormat !== undefined &&
+      currentFormat !== entry.afterFormat
+    ) {
+      return null;
+    }
+
     undoStack.value = undoStack.value.slice(0, -1);
     redoStack.value = [
       ...redoStack.value,
       {
         before: entry.after,
         after: entry.before,
+        beforeFormat: entry.afterFormat,
+        afterFormat: entry.beforeFormat,
         label: entry.label,
         timestamp: Date.now(),
       },
     ];
 
-    return entry.before;
+    return {
+      source: entry.before,
+      format: entry.beforeFormat,
+    };
   }
 
-  function redo(currentSource: string): string | null {
+  function redo(
+    currentSource: string,
+    currentFormat?: DiagramFormat,
+  ): EditorHistorySnapshot | null {
     const entry = redoStack.value.at(-1);
     if (!entry) {
       return null;
@@ -66,18 +96,31 @@ export function useEditorHistory() {
       return null;
     }
 
+    if (
+      entry.beforeFormat !== undefined &&
+      currentFormat !== undefined &&
+      currentFormat !== entry.beforeFormat
+    ) {
+      return null;
+    }
+
     redoStack.value = redoStack.value.slice(0, -1);
     undoStack.value = [
       ...undoStack.value,
       {
         before: entry.before,
         after: entry.after,
+        beforeFormat: entry.beforeFormat,
+        afterFormat: entry.afterFormat,
         label: entry.label,
         timestamp: Date.now(),
       },
     ];
 
-    return entry.after;
+    return {
+      source: entry.after,
+      format: entry.afterFormat,
+    };
   }
 
   function clearHistory(): void {

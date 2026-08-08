@@ -183,6 +183,24 @@ describe("llm-wizard", () => {
     expect(source).toContain("<edge source=\"n2\" target=\"n3\"/>");
   });
 
+  it("embeds rankdir when direction is LR", () => {
+    const source = buildManualScaffold(
+      createState({
+        language: "graphml",
+        diagramType: "graph",
+        direction: "LR",
+        typeParams: {
+          ...createDefaultTypeParams(),
+          nodes: 2,
+          edges: 1,
+        },
+      }),
+      "en",
+    );
+
+    expect(source).toContain('rankdir="LR"');
+  });
+
   it("exposes graphml only for manual mode", () => {
     expect(getWizardLanguagesForMode("manual")).toContain("graphml");
     expect(getWizardLanguagesForMode("ai")).not.toContain("graphml");

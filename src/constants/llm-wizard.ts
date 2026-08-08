@@ -735,7 +735,7 @@ function buildGraphmlGraph(state: WizardState, locale: AppLocale): string {
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
     "<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\">",
     "  <key id=\"d0\" for=\"node\" attr.name=\"label\" attr.type=\"string\"/>",
-    "  <graph edgedefault=\"directed\">",
+    `  <graph edgedefault="directed"${state.direction === "LR" ? ' rankdir="LR"' : ""}>`,
   ];
 
   for (let index = 1; index <= nodeCount; index += 1) {
