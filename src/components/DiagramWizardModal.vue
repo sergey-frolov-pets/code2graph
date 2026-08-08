@@ -684,7 +684,7 @@ function onTransferToEditor(): void {
             :disabled="isGenerating"
             @click="onTransferToEditor"
           >
-            <ActionIcon name="transfer" />
+            <ActionIcon name="arrow-down" />
           </IconButton>
 
           <IconButton
