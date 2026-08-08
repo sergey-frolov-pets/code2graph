@@ -21,6 +21,7 @@ interface GraphmlEdge {
 interface ParsedGraphml {
   nodes: GraphmlNode[];
   edges: GraphmlEdge[];
+  direction: "TB" | "LR";
 }
 
 function escapeXml(value: string): string {
@@ -164,7 +165,13 @@ export function parseGraphml(source: string): ParsedGraphml {
     throw new LocalizedAppError("graphml.noNodes");
   }
 
-  return { nodes, edges };
+  const rankdir = graphElement.getAttribute("rankdir");
+  const direction: "TB" | "LR" =
+    rankdir?.toUpperCase() === "LR" || rankdir?.toUpperCase() === "RL"
+      ? "LR"
+      : "TB";
+
+  return { nodes, edges, direction };
 }
 
 function layoutGraph(
@@ -299,7 +306,8 @@ export async function renderGraphmlToSvg(
   options: { dark?: boolean; direction?: "TB" | "LR" } = {},
 ): Promise<string> {
   const graph = parseGraphml(source);
-  const rankdir = options.direction === "LR" ? "LR" : "TB";
+  const rankdir =
+    options.direction === "LR" || graph.direction === "LR" ? "LR" : "TB";
   const dagreGraph = layoutGraph(graph, rankdir);
   return renderGraphmlSvg(graph, dagreGraph, Boolean(options.dark));
 }

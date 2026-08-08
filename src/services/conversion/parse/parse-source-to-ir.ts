@@ -38,7 +38,7 @@ function graphmlToIr(source: string, format: DiagramFormat): DiagramIR {
   return {
     version: CONVERSION_IR_VERSION,
     kind: "graph",
-    direction: detectDiagramDirection(source, format),
+    direction: parsed.direction ?? detectDiagramDirection(source, format),
     nodes,
     edges,
     metadata: { sourceFormat: format },
