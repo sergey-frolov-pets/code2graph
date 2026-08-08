@@ -69,8 +69,19 @@ const isReadOnly = computed(() => !formatDefinition.value.editable);
 const effectiveSyntaxHighlight = computed(
   () =>
     props.syntaxHighlightEnabled &&
-    (diagramFormat.value === "plantuml" || diagramFormat.value === "mermaid"),
+    (diagramFormat.value === "plantuml" ||
+      diagramFormat.value === "mermaid" ||
+      diagramFormat.value === "graphml"),
 );
+const editorPlaceholder = computed(() => {
+  if (diagramFormat.value === "graphml") {
+    return t("editor.placeholderGraphml");
+  }
+  if (diagramFormat.value === "mermaid") {
+    return t("editor.placeholderMermaid");
+  }
+  return t("editor.placeholder");
+});
 const effectiveAutocomplete = computed(
   () =>
     props.autocompleteEnabled &&
@@ -328,6 +339,7 @@ onUnmounted(() => {
           :syntax-highlight-enabled="effectiveSyntaxHighlight"
           :autocomplete-enabled="effectiveAutocomplete"
           :read-only="isReadOnly"
+          :placeholder="editorPlaceholder"
           :error-lines="errorLines ?? []"
           :autocomplete="autocomplete"
           @update:source="source = $event"
