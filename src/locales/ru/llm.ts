@@ -149,6 +149,7 @@ export const llmMessages: LocaleMessages = {
   "llm.wizard.type.c4_context": "C4 Context",
   "llm.wizard.type.c4_container": "C4 Container",
   "llm.wizard.type.gantt": "Gantt",
+  "llm.wizard.type.mindmap": "Mind map",
   "llm.wizard.type.er": "ER (сущности)",
   "llm.wizard.type.graph": "Граф",
   "llm.wizard.typeDesc.sequence": "Обмен сообщениями между участниками во времени",
@@ -159,6 +160,7 @@ export const llmMessages: LocaleMessages = {
   "llm.wizard.typeDesc.c4_context": "Ландшафт системы: пользователи и внешние системы",
   "llm.wizard.typeDesc.c4_container": "Контейнеры, технологии и потоки данных",
   "llm.wizard.typeDesc.gantt": "Задачи, сроки и вехи",
+  "llm.wizard.typeDesc.mindmap": "Иерархия идей от центральной темы",
   "llm.wizard.typeDesc.er": "Сущности, атрибуты и связи",
   "llm.wizard.typeDesc.graph": "Узлы и направленные связи",
   "llm.wizard.detailsPlaceholder.sequence": "Синхронные/асинхронные вызовы, alt/else…",
@@ -169,6 +171,7 @@ export const llmMessages: LocaleMessages = {
   "llm.wizard.detailsPlaceholder.c4_context": "Система, пользователи, внешние системы…",
   "llm.wizard.detailsPlaceholder.c4_container": "Контейнеры, технологии, связи…",
   "llm.wizard.detailsPlaceholder.gantt": "Задачи, длительность, вехи, секции…",
+  "llm.wizard.detailsPlaceholder.mindmap": "Ветки, подтемы, цвета, стили…",
   "llm.wizard.detailsPlaceholder.er": "Сущности, атрибуты, связи…",
   "llm.wizard.detailsPlaceholder.graph": "Узлы, связи, иерархия…",
 };

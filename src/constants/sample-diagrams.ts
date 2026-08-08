@@ -13,6 +13,7 @@ export const PLANTUML_SAMPLE_IDS = [
   "activity",
   "c4",
   "gantt",
+  "mindmap",
 ] as const;
 
 export const SAMPLE_DIAGRAM_IDS = PLANTUML_SAMPLE_IDS;
@@ -426,6 +427,87 @@ sunday are closed
 [Тестирование] lasts 5 days and starts at [Разработка]'s end
 [Релиз] happens at 2026-02-20 and is colored in Coral
 @endgantt`,
+  mindmap: `@startmindmap
+' Mind map — полный пример возможностей PlantUML
+top to bottom direction
+
+title vuePlantUML — mind map
+header Редактор диаграмм
+footer Офлайн · SVG · PNG
+caption Рис. 1 — демонстрация синтаксиса
+legend right
+  * — OrgMode
+  +/-- — арифметика
+  _ — без рамки
+endlegend
+
+' Стили узлов через mindmapDiagram и стереотипы
+mindmapDiagram {
+  .editor { BackgroundColor #E3F2FD }
+  .render { BackgroundColor #E8F5E9 }
+  .export { BackgroundColor #FFF3E0 }
+  node { MaximumWidth 120 }
+}
+
+' Корневой узел: иконка OpenIconic + цвет
+*[#1565C0] <&code> vuePlantUML
+
+' Ветка справа (+) — арифметическая нотация
++[#2E7D32] Редактор <<editor>>
+++ Monaco
++++_ Подсветка синтаксиса
++++_ Автодополнение
++++_ Складки кода
+++:Многострочный узел
+Редактор и превью
+в одном окне;
+++ Темы оформления
+
+' Ветка слева (--) — арифметическая нотация
+--[#E65100] Форматы
+--- PlantUML
+---- @startuml
+---- @startgantt
+---- @startmindmap
+--- Mermaid
+---- flowchart
+---- sequenceDiagram
+---- mindmap
+--- GraphML
+
+left side
+
+' Переключение на левую сторону (left side)
+--[#6A1B9A] Рендер
+--- @plantuml/core
+--- Smetana layout
+---:Превью
+SVG в браузере
+без сервера;
+
+' OrgMode-синтаксис (*) с inline-цветами
+*[#C62828] Экспорт <<export>>
+** SVG
+** PNG
+**_:Библиотека
+Сохранение в IndexedDB
+и синхронизация;
+
+' Многострочный узел с Creole-разметкой
+**:==Возможности
+**жирный** и //курсив//
+Моноширинный: ""code""
+--разделитель--
+• список
+• пункты
+;
+
+' Второй корень — multiroot mindmap
+*[#455A64] PWA
+** Service Worker
+** Оффлайн-режим
+** Установка на устройство
+@endmindmap`,
 };
 
 const SAMPLE_DIAGRAMS_EN: Record<SampleDiagramId, string> = {
@@ -759,6 +841,87 @@ sunday are closed
 [Testing] lasts 5 days and starts at [Development]'s end
 [Release] happens at 2026-02-20 and is colored in Coral
 @endgantt`,
+  mindmap: `@startmindmap
+' Mind map — full PlantUML feature showcase
+top to bottom direction
+
+title vuePlantUML — mind map
+header Diagram editor
+footer Offline · SVG · PNG
+caption Fig. 1 — syntax demonstration
+legend right
+  * — OrgMode
+  +/-- — arithmetic
+  _ — boxless
+endlegend
+
+' Node styles via mindmapDiagram and stereotypes
+mindmapDiagram {
+  .editor { BackgroundColor #E3F2FD }
+  .render { BackgroundColor #E8F5E9 }
+  .export { BackgroundColor #FFF3E0 }
+  node { MaximumWidth 120 }
+}
+
+' Root node: OpenIconic icon + inline color
+*[#1565C0] <&code> vuePlantUML
+
+' Right branch (+) — arithmetic notation
++[#2E7D32] Editor <<editor>>
+++ Monaco
++++_ Syntax highlighting
++++_ Autocomplete
++++_ Code folding
+++:Multiline node
+Editor and preview
+in one window;
+++ Themes
+
+' Left branch (--) — arithmetic notation
+--[#E65100] Formats
+--- PlantUML
+---- @startuml
+---- @startgantt
+---- @startmindmap
+--- Mermaid
+---- flowchart
+---- sequenceDiagram
+---- mindmap
+--- GraphML
+
+left side
+
+' Switch to left side (left side keyword)
+--[#6A1B9A] Render
+--- @plantuml/core
+--- Smetana layout
+---:Preview
+SVG in browser
+without a server;
+
+' OrgMode syntax (*) with inline colors
+*[#C62828] Export <<export>>
+** SVG
+** PNG
+**_:Library
+Save to IndexedDB
+and sync;
+
+' Multiline node with Creole markup
+**:==Features
+**bold** and //italic//
+Monospace: ""code""
+--separator--
+• list
+• items
+;
+
+' Second root — multiroot mindmap
+*[#455A64] PWA
+** Service Worker
+** Offline mode
+** Install on device
+@endmindmap`,
 };
 
 const SOURCES_BY_LOCALE: Record<AppLocale, Record<SampleDiagramId, string>> = {

@@ -24,6 +24,7 @@ export const miscMessages: LocaleMessages = {
   "samples.plantuml.activity": "Activity (swimlane)",
   "samples.plantuml.c4": "C4 (контейнеры)",
   "samples.plantuml.gantt": "Ганта",
+  "samples.plantuml.mindmap": "Mind map",
   "samples.mermaid.flowchart": "Блок-схема",
   "samples.mermaid.sequence": "Последовательность",
   "samples.mermaid.classDiagram": "Классы",

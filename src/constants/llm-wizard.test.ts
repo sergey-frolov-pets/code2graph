@@ -239,6 +239,64 @@ describe("llm-wizard", () => {
     expect(getWizardTypesForLanguage("graphml")).toEqual(["graph"]);
   });
 
+  it("lists mindmap for plantuml and mermaid", () => {
+    expect(getWizardTypesForLanguage("plantuml")).toContain("mindmap");
+    expect(getWizardTypesForLanguage("mermaid")).toContain("mindmap");
+  });
+
+  it("builds plantuml mindmap scaffold with branches and sub-branches", () => {
+    const source = buildManualScaffold(
+      createState({
+        diagramType: "mindmap",
+        direction: "TB",
+        typeParams: {
+          ...createDefaultTypeParams(),
+          nodes: 2,
+          steps: 2,
+        },
+      }),
+      "en",
+    );
+
+    expect(source).toContain("@startmindmap");
+    expect(source).toContain("top to bottom direction");
+    expect(source).toContain("* Root topic");
+    expect(source).toContain("** Branch 1");
+    expect(source).toContain("*** Sub-branch 2");
+    expect(source).toContain("@endmindmap");
+  });
+
+  it("builds mermaid mindmap scaffold", () => {
+    const source = buildManualScaffold(
+      createState({
+        language: "mermaid",
+        diagramType: "mindmap",
+        typeParams: {
+          ...createDefaultTypeParams(),
+          nodes: 2,
+          steps: 1,
+        },
+      }),
+      "ru",
+    );
+
+    expect(source).toContain("mindmap");
+    expect(source).toContain("root((Корневая тема))");
+    expect(source).toContain("Ветка 1");
+    expect(source).toContain("Подветка 1");
+  });
+
+  it("includes direction step for plantuml mindmap diagrams", () => {
+    const steps = getWizardSteps(
+      createState({
+        diagramType: "mindmap",
+        language: "plantuml",
+      }),
+    );
+
+    expect(steps).toContain("direction");
+  });
+
   it("mentions Mermaid in AI wizard prompt", () => {
     const prompt = buildWizardPrompt(
       createState({
