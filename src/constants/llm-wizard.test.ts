@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   buildManualScaffold,
   buildWizardPrompt,
+  createDefaultStructuralElements,
   createDefaultTypeParams,
   DEFAULT_WIZARD_STATE,
   getWizardLanguagesForMode,
   getWizardSteps,
+  getWizardStructuralElementsForType,
   getWizardTypesForLanguage,
   resolveWizardStateWithDefaults,
   type WizardState,
@@ -19,6 +21,7 @@ function createState(overrides: Partial<WizardState> = {}): WizardState {
     theme: "default",
     direction: "TB",
     typeParams: createDefaultTypeParams(),
+    structuralElements: createDefaultStructuralElements(),
     contextText: "",
     typeSpecificText: "",
     promptText: "",
@@ -83,6 +86,7 @@ describe("llm-wizard", () => {
 
     expect(prompt).toContain("participants: 4");
     expect(prompt).toContain("Order API");
+    expect(prompt).toContain("Description:");
     expect(prompt).toContain("PlantUML sequence");
   });
 
@@ -99,14 +103,43 @@ describe("llm-wizard", () => {
     expect(steps).toContain("params");
   });
 
-  it("adds context and prompt steps only for AI mode", () => {
+  it("adds context and result steps only for AI mode (no prompt step)", () => {
     const manualSteps = getWizardSteps(createState({ creationMode: "manual" }));
     const aiSteps = getWizardSteps(createState({ creationMode: "ai" }));
 
     expect(manualSteps).not.toContain("context");
     expect(manualSteps).not.toContain("prompt");
-    expect(aiSteps).toContain("context");
-    expect(aiSteps).toContain("prompt");
+    expect(aiSteps).toEqual(["mode", "language", "type", "context", "result"]);
+    expect(aiSteps).not.toContain("prompt");
+    expect(aiSteps).not.toContain("params");
+    expect(aiSteps).not.toContain("style");
+  });
+
+  it("defaults to manual creation mode", () => {
+    expect(DEFAULT_WIZARD_STATE.creationMode).toBe("manual");
+  });
+
+  it("adds structural elements to manual scaffold when selected", () => {
+    const elements = createDefaultStructuralElements();
+    elements.alt = true;
+    elements.note = true;
+
+    const source = buildManualScaffold(
+      createState({
+        diagramType: "sequence",
+        structuralElements: elements,
+      }),
+      "en",
+    );
+
+    expect(source).toContain("alt success");
+    expect(source).toContain("note right of Participant_1");
+  });
+
+  it("exposes structural elements per diagram type and language", () => {
+    expect(getWizardStructuralElementsForType("activity", "plantuml")).toContain("switch");
+    expect(getWizardStructuralElementsForType("activity", "mermaid")).not.toContain("switch");
+    expect(getWizardStructuralElementsForType("graph", "graphml")).toEqual(["cluster"]);
   });
 
   it("builds mermaid flowchart scaffold with LR direction", () => {
