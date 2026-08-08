@@ -9,7 +9,7 @@ import {
   checkApiHealth,
   fetchDiagrams,
   fetchSections,
-} from "@/utils/diagram-api";
+} from "@/services/library/api";
 import {
   getCacheMeta,
   loadDiagramsFromCache,

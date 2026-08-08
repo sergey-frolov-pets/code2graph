@@ -15,7 +15,7 @@ import {
   enrichSectionsForUser,
   filterReadableSectionRows,
 } from "../shared/diagram-mappers.js";
-import { buildTree } from "../shared/section-tree.js";
+import { buildSectionTree, collectSectionSubtree } from "../shared/section-tree.js";
 import {
   createShareLink,
   listShareLinksForResource,
@@ -45,7 +45,7 @@ sectionsRouter.get("/", (context) => {
 
   const readable = filterReadableSectionRows(database, user, rows);
   const flat = enrichSectionsForUser(database, user, readable);
-  const tree = buildTree(flat);
+  const tree = buildSectionTree(flat);
 
   return context.json({ sections: tree, flat });
 });

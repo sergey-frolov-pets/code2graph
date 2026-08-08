@@ -36,6 +36,34 @@
   white-space: nowrap;
 }
 
+.library-breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  margin-top: 6px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.library-breadcrumbs__link {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.library-breadcrumbs__current {
+  color: var(--text);
+}
+
+.library-breadcrumbs__sep {
+  color: var(--text-muted);
+}
+
 .library-header__actions {
   display: flex;
   gap: 4px;

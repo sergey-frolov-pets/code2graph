@@ -38,7 +38,7 @@ import { RATINGS_SECTION_ID } from "@/constants/diagram-library";
 import { useTransientNotice } from "@/composables/useTransientNotice";
 import { waitForEngineReady } from "@/composables/usePlantUml";
 import { waitForMermaidReady } from "@/services/mermaid/mermaid-engine";
-import { downloadShareResource, fetchShareDiagramPreview, fetchShareResource, addDiagramFavorite, removeDiagramFavorite } from "@/utils/diagram-api";
+import { downloadShareResource, fetchShareDiagramPreview, fetchShareResource, addDiagramFavorite, removeDiagramFavorite } from "@/services/library/api";
 import { checkServerAvailability } from "@/services/library/library-sync-service";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
@@ -218,6 +218,7 @@ const {
   showBackButton,
   showModeTabs,
   headerTitle,
+  breadcrumbItems,
   resetBrowseFlow,
   goBack,
   openSubscriptions,
@@ -750,6 +751,30 @@ watch(libraryTarget, () => {
             ← {{ t("library.back") }}
           </button>
           <h2 class="library-header__title">{{ headerTitle }}</h2>
+          <nav
+            v-if="breadcrumbItems.length > 1"
+            class="library-breadcrumbs"
+            :aria-label="t('library.sections')"
+          >
+            <template v-for="(item, index) in breadcrumbItems" :key="`${item.label}-${index}`">
+              <button
+                v-if="item.action"
+                type="button"
+                class="library-breadcrumbs__link"
+                @click="item.action?.()"
+              >
+                {{ item.label }}
+              </button>
+              <span v-else class="library-breadcrumbs__current">{{ item.label }}</span>
+              <span
+                v-if="index < breadcrumbItems.length - 1"
+                class="library-breadcrumbs__sep"
+                aria-hidden="true"
+              >
+                ›
+              </span>
+            </template>
+          </nav>
           <div class="library-header__actions">
             <IconButton
               v-if="libraryTarget === 'online' && registrationEnabled && !isAuthenticated"

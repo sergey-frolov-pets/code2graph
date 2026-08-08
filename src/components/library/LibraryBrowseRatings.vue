@@ -3,7 +3,7 @@ import { onMounted, ref } from "vue";
 import LibraryStarRating from "@/components/library/LibraryStarRating.vue";
 import { useLocale } from "@/composables/useLocale";
 import type { RatingsLeaderboardDto } from "@/constants/diagram-library";
-import { fetchRatingsLeaderboard } from "@/utils/diagram-api";
+import { fetchRatingsLeaderboard } from "@/services/library/api";
 import { getDiagramFormatLabel } from "@/utils/library-display";
 
 const emit = defineEmits<{

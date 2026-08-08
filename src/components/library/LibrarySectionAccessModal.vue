@@ -8,7 +8,7 @@ import {
   fetchSectionAccess,
   grantSectionAccess,
   revokeSectionAccess,
-} from "@/utils/diagram-api";
+} from "@/services/library/api";
 
 const props = defineProps<{
   open: boolean;

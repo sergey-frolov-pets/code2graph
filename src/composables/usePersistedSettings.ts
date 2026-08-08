@@ -2,7 +2,6 @@ import { computed, ref, watch } from "vue";
 import {
   getDefaultSource,
   LAYOUT_ENGINES,
-  STORAGE_KEY_DARK,
   STORAGE_KEY_DIAGRAM_DARK,
   STORAGE_KEY_LAYOUT,
   STORAGE_KEY_SOURCE,
@@ -47,6 +46,8 @@ import {
 } from "@/utils/safe-storage";
 import { migrateDeprecatedActivityColorSyntax } from "@/utils/plantuml-source";
 
+const LEGACY_STORAGE_KEY_DARK = "plantuml-smetana-dark";
+
 function readInitialRenderMode(): RenderMode {
   const saved = readStorageItem(STORAGE_KEY_RENDER_MODE);
   if (saved && isRenderMode(saved)) {
@@ -57,7 +58,7 @@ function readInitialRenderMode(): RenderMode {
 }
 
 function migrateLegacyDarkStorage(): void {
-  const legacyDark = readStorageBoolean(STORAGE_KEY_DARK);
+  const legacyDark = readStorageBoolean(LEGACY_STORAGE_KEY_DARK);
   if (legacyDark === null) {
     return;
   }
@@ -68,7 +69,7 @@ function migrateLegacyDarkStorage(): void {
   if (readStorageBoolean(STORAGE_KEY_DIAGRAM_DARK) === null) {
     writeStorageItem(STORAGE_KEY_DIAGRAM_DARK, String(legacyDark));
   }
-  removeStorageItem(STORAGE_KEY_DARK);
+  removeStorageItem(LEGACY_STORAGE_KEY_DARK);
 }
 
 function readInitialUiDarkMode(): boolean {

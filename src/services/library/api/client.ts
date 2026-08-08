@@ -10,10 +10,6 @@ export class LibraryApiError extends Error {
     this.status = status;
   }
 }
-
-/** @deprecated Use LibraryApiError */
-export const DiagramApiError = LibraryApiError;
-
 export function resolveApiBaseUrl(baseUrl?: string): string {
   const resolved = baseUrl ?? getLibraryApiBaseUrl();
   if (!resolved) {

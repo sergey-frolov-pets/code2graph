@@ -22,7 +22,6 @@ import {
   detectLanguageFromSource,
   resolvePumlFileName,
 } from "../shared/puml-files.js";
-import { collectSectionSubtree } from "../shared/section-tree.js";
 import {
   createShareLink,
   listShareLinksForResource,
@@ -52,37 +51,20 @@ import {
   mapDiagramVersionDto,
   snapshotDiagramSourceVersion,
 } from "../diagram-versions.js";
+import {
+  buildDiagramListQuery,
+  DIAGRAM_FULL_SELECT,
+  isFavoritesList,
+  parseDiagramListQuery,
+} from "../services/diagrams-list-query.js";
 import type { DiagramVisibility } from "../types.js";
 import {
-  FAVORITES_SECTION_ID,
-  isDiagramSortOption,
   isDiagramVisibility,
   isContentLocale,
   isSharePermission,
 } from "../types.js";
 
 export const diagramsRouter = new Hono<{ Variables: AuthVariables }>();
-
-const DIAGRAM_LIST_SELECT = `
-  SELECT id, section_id, title, description, tags, language, content_locale,
-         file_name, byte_size, author_id, owner_id, visibility,
-         avg_rating, vote_count, created_at, updated_at
-  FROM diagrams
-`;
-
-const DIAGRAM_LIST_SELECT_ALIASED = `
-  SELECT d.id, d.section_id, d.title, d.description, d.tags, d.language, d.content_locale,
-         d.file_name, d.byte_size, d.author_id, d.owner_id, d.visibility,
-         d.avg_rating, d.vote_count, d.created_at, d.updated_at
-  FROM diagrams d
-`;
-
-const DIAGRAM_FULL_SELECT = `
-  SELECT id, section_id, title, description, tags, language, content_locale,
-         source, file_name, byte_size, author_id, owner_id, visibility,
-         avg_rating, vote_count, created_at, updated_at
-  FROM diagrams
-`;
 
 function toDiagramAccessRow(row: {
   id: string;
@@ -124,89 +106,25 @@ diagramsRouter.get("/", (context) => {
   }
 
   const database = getDb();
-  const query = context.req.query("q")?.trim() ?? "";
-  const sectionIdRaw = context.req.query("sectionId")?.trim();
-  const favoritesOnly = sectionIdRaw === FAVORITES_SECTION_ID;
-  const sectionId = favoritesOnly ? undefined : sectionIdRaw;
-  const tag = context.req.query("tag")?.trim();
-  const language = context.req.query("language")?.trim();
-  const minRatingRaw = context.req.query("minRating")?.trim();
-  const minVotesRaw = context.req.query("minVotes")?.trim();
-  const sortByRaw = context.req.query("sortBy")?.trim() ?? "updated";
-  const sortBy = isDiagramSortOption(sortByRaw) ? sortByRaw : "updated";
+  const url = new URL(context.req.url);
+  const listParams = parseDiagramListQuery(url.searchParams);
+  const favoritesOnly = isFavoritesList(url.searchParams.get("sectionId")?.trim());
 
-  const minRating = minRatingRaw ? Number(minRatingRaw) : null;
-  const minVotes = minVotesRaw ? Number(minVotesRaw) : null;
-
-  if (sectionId) {
-    const section = getSectionRow(database, sectionId);
+  if (listParams.sectionId) {
+    const section = getSectionRow(database, listParams.sectionId);
     if (!section || !canReadSection(database, user, section)) {
       return context.json({ error: "Раздел не найден или недоступен" }, 403);
     }
   }
 
-  let sql = favoritesOnly
-    ? `${DIAGRAM_LIST_SELECT_ALIASED}
-       INNER JOIN diagram_favorites fav
-         ON fav.diagram_id = d.id AND fav.user_id = ?
-       WHERE 1=1`
-    : `${DIAGRAM_LIST_SELECT} WHERE 1=1`;
-  const params: unknown[] = favoritesOnly ? [user.id] : [];
-
-  const col = favoritesOnly ? "d." : "";
-
-  if (sectionId) {
-    const allSections = database
-      .prepare("SELECT id, parent_id FROM sections")
-      .all() as Array<{ id: string; parent_id: string | null }>;
-    const sectionIds = [
-      ...collectSectionSubtree(
-        sectionId,
-        allSections.map((section) => ({
-          id: section.id,
-          parentId: section.parent_id,
-        })),
-      ),
-    ];
-    sql += ` AND ${col}section_id IN (${sectionIds.map(() => "?").join(", ")})`;
-    params.push(...sectionIds);
-  }
-
-  if (language && isDiagramLanguage(language)) {
-    sql += ` AND ${col}language = ?`;
-    params.push(language);
-  }
-
-  if (tag) {
-    sql += ` AND ${col}tags LIKE ?`;
-    params.push(`%"${tag.replace(/"/g, "")}"%`);
-  }
-
-  if (query) {
-    sql += ` AND (${col}title LIKE ? OR ${col}description LIKE ? OR ${col}source LIKE ?)`;
-    const pattern = `%${query}%`;
-    params.push(pattern, pattern, pattern);
-  }
-
-  if (minRating !== null && !Number.isNaN(minRating) && minRating > 0) {
-    sql += ` AND ${col}avg_rating IS NOT NULL AND ${col}avg_rating >= ?`;
-    params.push(minRating);
-  }
-
-  if (minVotes !== null && !Number.isNaN(minVotes) && minVotes > 0) {
-    sql += ` AND ${col}vote_count >= ?`;
-    params.push(Math.floor(minVotes));
-  }
-
-  if (favoritesOnly) {
-    sql += " ORDER BY fav.created_at DESC";
-  } else if (sortBy === "rating") {
-    sql += ` ORDER BY ${col}avg_rating DESC, ${col}vote_count DESC, ${col}title ASC`;
-  } else if (sortBy === "votes") {
-    sql += ` ORDER BY ${col}vote_count DESC, ${col}avg_rating DESC, ${col}title ASC`;
-  } else {
-    sql += ` ORDER BY ${col}updated_at DESC, ${col}title ASC`;
-  }
+  const { sql, params } = buildDiagramListQuery(
+    {
+      database,
+      userId: user.id,
+      params: listParams,
+    },
+    favoritesOnly,
+  );
 
   const rows = database.prepare(sql).all(...params) as Array<
     Parameters<typeof mapDiagram>[0]

@@ -69,9 +69,6 @@ export function buildSectionTree<T extends SectionNodeBase>(
   return roots;
 }
 
-/** @deprecated Use buildSectionTree */
-export const buildTree = buildSectionTree;
-
 export function flattenSections<T extends SectionNodeBase>(
   sections: SectionTreeNode<T>[],
   depth = 0,

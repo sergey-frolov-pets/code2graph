@@ -11,7 +11,7 @@ import {
   createDiagram,
   createSection,
   fetchDiagram,
-} from "@/utils/diagram-api";
+} from "@/services/library/api";
 import {
   buildLocalExportBundle,
   downloadLibraryBundle,

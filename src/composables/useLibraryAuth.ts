@@ -11,7 +11,7 @@ import {
   loginLibrary,
   registerLibraryAccount,
   setupLibraryAdmin,
-} from "@/utils/diagram-api";
+} from "@/services/library/api";
 
 const currentUser = ref<LibraryUserDto | null>(null);
 const needsSetup = ref(false);

@@ -26,7 +26,7 @@ import { useLocale } from "@/composables/useLocale";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import { useLibraryCredentials } from "@/composables/useLibraryCredentials";
 import { testLlmConnection } from "@/services/llm/llm-client";
-import { checkApiHealth } from "@/utils/diagram-api";
+import { checkApiHealth } from "@/services/library/api";
 import { useLibraryAuth } from "@/composables/useLibraryAuth";
 import {
   addLibraryProfile,

@@ -8,7 +8,7 @@ import {
 } from "@/constants/diagram-library";
 import type { FlatSectionOption } from "@/shared/library/section-tree";
 import { useLocale } from "@/composables/useLocale";
-import { createSubscription, updateSubscription } from "@/utils/diagram-api";
+import { createSubscription, updateSubscription } from "@/services/library/api";
 
 export interface SectionSelectionState {
   selected: boolean;

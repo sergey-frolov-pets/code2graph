@@ -13,7 +13,7 @@ import {
   fetchSubscriptions,
   grantSubscription,
   revokeSubscriptionGrant,
-} from "@/utils/diagram-api";
+} from "@/services/library/api";
 
 const props = defineProps<{
   flatSectionOptions: FlatSectionOption[];

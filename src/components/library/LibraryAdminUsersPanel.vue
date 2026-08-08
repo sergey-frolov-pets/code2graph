@@ -13,7 +13,7 @@ import {
   setUserBlocked,
   setUserSubscription,
   updateAdminUser,
-} from "@/utils/diagram-api";
+} from "@/services/library/api";
 
 const { embedded = true } = defineProps<{
   embedded?: boolean;

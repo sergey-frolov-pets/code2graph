@@ -1041,11 +1041,3 @@ export function getDefaultFileNameForSample(
   }
   return `${label}.puml`;
 }
-
-/** @deprecated Use getDefaultSource(locale) */
-export const DEFAULT_SOURCE = DEFAULT_SOURCE_RU;
-
-/** @deprecated Use getSampleDiagramSource with locale */
-export const SAMPLE_DIAGRAMS: Record<string, string> = Object.fromEntries(
-  SAMPLE_DIAGRAM_IDS.map((id) => [id, SAMPLE_DIAGRAMS_RU[id]]),
-);

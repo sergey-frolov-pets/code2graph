@@ -11,7 +11,7 @@ import {
   moderateDiagramRatingComment,
   submitDiagramRatingComment,
   submitDiagramRatingStars,
-} from "@/utils/diagram-api";
+} from "@/services/library/api";
 
 const props = defineProps<{
   diagram: DiagramDto;

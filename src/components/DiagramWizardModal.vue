@@ -441,6 +441,19 @@ function onTransferToEditor(): void {
     @close="emit('close')"
   >
     <p class="wizard-step-title">{{ stepTitle }}</p>
+    <div
+      class="wizard-progress"
+      role="progressbar"
+      :aria-valuenow="stepIndex + 1"
+      :aria-valuemin="1"
+      :aria-valuemax="totalSteps"
+      :aria-label="t('llm.wizard.stepCounter', { current: stepIndex + 1, total: totalSteps })"
+    >
+      <div
+        class="wizard-progress__bar"
+        :style="{ width: `${((stepIndex + 1) / totalSteps) * 100}%` }"
+      />
+    </div>
     <p class="wizard-step-meta">
       {{ t("llm.wizard.stepCounter", { current: stepIndex + 1, total: totalSteps }) }}
     </p>
@@ -749,6 +762,20 @@ function onTransferToEditor(): void {
 .wizard-step-title {
   margin: 0 0 4px;
   font-weight: 600;
+}
+
+.wizard-progress {
+  height: 6px;
+  margin: 0 0 8px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  overflow: hidden;
+}
+
+.wizard-progress__bar {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s ease;
 }
 
 .wizard-step-meta {

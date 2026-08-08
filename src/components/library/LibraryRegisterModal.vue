@@ -2,7 +2,7 @@
 import { ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import { useLocale } from "@/composables/useLocale";
-import { registerLibraryAccount } from "@/utils/diagram-api";
+import { registerLibraryAccount } from "@/services/library/api";
 import { setLibraryAuthToken } from "@/config/library-credentials";
 
 const props = defineProps<{

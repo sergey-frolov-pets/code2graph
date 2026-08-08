@@ -9,7 +9,7 @@ import { useLocale } from "@/composables/useLocale";
 import {
   createDiagramShareLink,
   createSectionShareLink,
-} from "@/utils/diagram-api";
+} from "@/services/library/api";
 
 const props = defineProps<{
   open: boolean;

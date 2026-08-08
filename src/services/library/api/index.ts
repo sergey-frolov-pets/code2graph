@@ -1,5 +1,4 @@
 export {
-  DiagramApiError,
   LibraryApiError,
   buildRequestHeaders,
   parseError,

@@ -19,7 +19,7 @@ import {
   updateSection,
   updateDiagram as updateDiagramApi,
   uploadDiagramFile,
-} from "@/utils/diagram-api";
+} from "@/services/library/api";
 import {
   createLocalDiagram,
   createLocalSection,

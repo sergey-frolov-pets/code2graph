@@ -1,9 +1,5 @@
 import type { SectionDto } from "../types.js";
 
-export function buildTree(sections: SectionDto[]): SectionDto[] {
-  return buildSectionTree(sections);
-}
-
 export function buildSectionTree(flatSections: SectionDto[]): SectionDto[] {
   const byId = new Map(
     flatSections.map((section) => [
