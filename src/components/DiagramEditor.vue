@@ -55,6 +55,7 @@ const emit = defineEmits<{
   cleared: [];
   undo: [];
   redo: [];
+  convert: [];
   aiPatch: [payload: { start: number; end: number }];
   aiSyntaxAsk: [];
 }>();
@@ -268,6 +269,7 @@ onUnmounted(() => {
       :can-undo="canUndo"
       :can-redo="canRedo"
       :can-clear="canClear"
+      :can-convert="canClear"
       :can-ai-patch="canClear"
       :can-ai-syntax-ask="canClear"
       :snippets-open="snippetsOpen"
@@ -281,6 +283,7 @@ onUnmounted(() => {
       @validate-syntax="emit('validateSyntax')"
       @undo="emit('undo')"
       @redo="emit('redo')"
+      @convert="emit('convert')"
       @clear="requestClear"
       @toggle-snippets="snippetsOpen = !snippetsOpen"
       @load-sample="loadSample($event as SampleSelection)"

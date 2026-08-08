@@ -13,7 +13,9 @@ import {
   isEngineReady,
   waitForEngineReady,
 } from "@/composables/usePlantUml";
+import { useDiagramIrCache } from "@/composables/useDiagramIrCache";
 import { renderDiagramToSvg } from "@/services/diagram-render";
+import { buildDiagramIrForCache } from "@/services/conversion/pipeline/convert-diagram";
 import {
   isMermaidReady,
   waitForMermaidReady,
@@ -53,6 +55,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
   const isRendering = ref(false);
   const engineReady = ref(false);
   const engineStatus = ref(t("app.engineLoading"));
+  const { setLastDiagramIr } = useDiagramIrCache();
 
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -117,8 +120,12 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
         },
       );
       svg.value = result;
+      setLastDiagramIr(
+        buildDiagramIrForCache(source.value, diagramFormat.value, result),
+      );
     } catch (renderError) {
       svg.value = "";
+      setLastDiagramIr(null);
       error.value =
         renderError instanceof Error
           ? resolveLocalizedErrorMessage(

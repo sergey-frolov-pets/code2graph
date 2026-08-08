@@ -1,6 +1,8 @@
 import { computed, type Ref } from "vue";
 import { useAppDialog } from "@/composables/useAppDialog";
+import { useDiagramIrCache } from "@/composables/useDiagramIrCache";
 import { useLocale } from "@/composables/useLocale";
+import { embedSvgMetadata } from "@/services/conversion/metadata/svg-metadata";
 import {
   downloadBlob,
   downloadTextFile,
@@ -19,6 +21,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
   const { svg, error, isRendering, previewBackground } = options;
   const { alert } = useAppDialog();
   const { t } = useLocale();
+  const { getLastDiagramIr } = useDiagramIrCache();
 
   const canExport = computed(
     () => Boolean(svg.value) && !error.value && !isRendering.value,
@@ -28,7 +31,10 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     if (!svg.value) {
       return;
     }
-    downloadTextFile(svg.value, "diagram.svg", "image/svg+xml;charset=utf-8");
+
+    const ir = getLastDiagramIr();
+    const payload = ir ? embedSvgMetadata(svg.value, ir) : svg.value;
+    downloadTextFile(payload, "diagram.svg", "image/svg+xml;charset=utf-8");
   }
 
   async function exportPng(): Promise<void> {

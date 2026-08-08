@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from "vue";
 import AboutModal from "@/components/AboutModal.vue";
 import AppDialogHost from "@/components/AppDialogHost.vue";
 import DiagramVersionsModal from "@/components/DiagramVersionsModal.vue";
+import ConvertDiagramModal from "@/components/ConvertDiagramModal.vue";
 import DiagramEditor from "@/components/DiagramEditor.vue";
 import DiagramLibraryModal from "@/components/DiagramLibraryModal.vue";
 import SaveToLibraryModal from "@/components/SaveToLibraryModal.vue";
@@ -32,6 +33,7 @@ import type { DiagramFormat } from "@/constants/diagram-formats";
 import { getDiagramFormatDefinition } from "@/constants/diagram-formats";
 
 const isSaveToLibraryModalOpen = ref(false);
+const isConvertModalOpen = ref(false);
 const linkedLibraryDiagramId = ref<string | null>(null);
 const { alert } = useAppDialog();
 const { t, locale } = useLocale();
@@ -155,23 +157,54 @@ const {
 });
 
 function applySourceUndo(): void {
-  const previous = undoHistory(source.value);
+  const previous = undoHistory(source.value, diagramFormat.value);
   if (!previous) {
     return;
   }
-  source.value = previous;
+  source.value = previous.source;
+  if (previous.format !== undefined) {
+    diagramFormat.value = previous.format;
+  }
   syntaxErrorLines.value = [];
   persistSettings();
   scheduleRender();
 }
 
 function applySourceRedo(): void {
-  const next = redoHistory(source.value);
+  const next = redoHistory(source.value, diagramFormat.value);
   if (!next) {
     return;
   }
-  source.value = next;
+  source.value = next.source;
+  if (next.format !== undefined) {
+    diagramFormat.value = next.format;
+  }
   syntaxErrorLines.value = [];
+  persistSettings();
+  scheduleRender();
+}
+
+function onConvertApply(payload: { source: string; format: DiagramFormat }): void {
+  const before = source.value;
+  const beforeFormat = diagramFormat.value;
+
+  source.value = payload.source;
+  diagramFormat.value = payload.format;
+  loadedFileName.value = getDiagramFormatDefinition(payload.format).defaultFileName;
+  syntaxErrorLines.value = [];
+  error.value = "";
+
+  if (before === source.value && beforeFormat === diagramFormat.value) {
+    return;
+  }
+
+  pushHistoryEntry({
+    before,
+    after: source.value,
+    beforeFormat,
+    afterFormat: diagramFormat.value,
+    label: t("conversion.historyLabel"),
+  });
   persistSettings();
   scheduleRender();
 }
@@ -297,6 +330,7 @@ onMounted(() => {
         @cleared="onEditorClearedWithLink"
         @undo="applySourceUndo"
         @redo="applySourceRedo"
+        @convert="isConvertModalOpen = true"
         @ai-patch="onAiPatchRequestOpen"
         @ai-syntax-ask="onAiSyntaxAskOpen()"
       />
@@ -405,6 +439,15 @@ onMounted(() => {
       :open-settings="openSettingsModal"
       @close="isWizardModalOpen = false"
       @apply="(payload) => applyAiPlantUml(payload.source, payload.label)"
+    />
+
+    <ConvertDiagramModal
+      :open="isConvertModalOpen"
+      :source="source"
+      :source-format="diagramFormat"
+      :preview-svg="svg"
+      @close="isConvertModalOpen = false"
+      @apply="onConvertApply"
     />
 
     <LlmKeysGuideModal

@@ -10,11 +10,15 @@ export function detectDiagramFormatFromSource(source: string): DiagramFormat | n
     return null;
   }
 
-  const lower = trimmed.toLowerCase();
+  const withoutMermaidComments = trimmed
+    .replace(/^(?:%%[^\n]*\n)+/m, "")
+    .trim();
+  const lower = withoutMermaidComments.toLowerCase();
+  const fullLower = trimmed.toLowerCase();
 
   if (
-    lower.startsWith("<?xml") &&
-    (lower.includes("<graphml") || lower.includes(":graphml"))
+    fullLower.startsWith("<?xml") &&
+    (fullLower.includes("<graphml") || fullLower.includes(":graphml"))
   ) {
     return "graphml";
   }
@@ -22,17 +26,17 @@ export function detectDiagramFormatFromSource(source: string): DiagramFormat | n
   if (
     lower.startsWith("```mermaid") ||
     /^(graph|flowchart|sequencediagram|classdiagram|statediagram|erdiagram|journey|gantt|pie|mindmap|timeline|gitgraph|sankey-beta|xychart-beta|block-beta)\b/i.test(
-      trimmed,
+      withoutMermaidComments,
     )
   ) {
     return "mermaid";
   }
 
   if (
-    lower.includes("@startuml") ||
-    lower.includes("@enduml") ||
-    lower.includes("@startgantt") ||
-    /^@start(mindmap|wbs|json|yaml|ditaa|salt|dot|chen|nwdiag|chronology|ebnf|regex|board|math|latex)\b/i.test(
+    fullLower.includes("@startuml") ||
+    fullLower.includes("@enduml") ||
+    fullLower.includes("@startgantt") ||
+    /^@start(mindmap|wbs|json|yaml|ditaa|salt|dot|chen|nwdiag|chronology|ebnf|regex|board|math|latex)\b/im.test(
       trimmed,
     )
   ) {

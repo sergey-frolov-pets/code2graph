@@ -3,6 +3,8 @@ import type { LocaleMessages } from "../types";
 export const editorMessages: LocaleMessages = {
   "editor.title": "Code",
   "editor.titleTooltip": "PlantUML source code",
+  "editor.convert": "Convert",
+  "editor.convertTooltip": "Convert diagram to another format",
   "editor.openPuml": "Open .puml",
   "editor.openMermaid": "Open Mermaid",
   "editor.openGraphml": "Open GraphML",
