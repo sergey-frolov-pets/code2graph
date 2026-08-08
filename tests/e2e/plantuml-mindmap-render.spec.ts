@@ -11,4 +11,9 @@ test("plantuml mindmap sample renders offline in preview", async ({ page }) => {
   await expect(page.locator(".preview-content svg")).toBeVisible({
     timeout: 60_000,
   });
+  await expect(page.locator(".preview-error")).toHaveCount(0);
+
+  const previewText = await page.locator(".preview-content").innerText();
+  expect(previewText).not.toMatch(/Syntax Error/i);
+  expect(previewText).toContain("vuePlantUML");
 });

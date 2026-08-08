@@ -428,7 +428,7 @@ sunday are closed
 [Релиз] happens at 2026-02-20 and is colored in Coral
 @endgantt`,
   mindmap: `@startmindmap
-' Mind map — полный пример возможностей PlantUML
+' Mind map — полный пример возможностей PlantUML (офлайн-движок)
 top to bottom direction
 
 title vuePlantUML — mind map
@@ -441,24 +441,16 @@ legend right
   _ — без рамки
 endlegend
 
-' Стили узлов через mindmapDiagram и стереотипы
-mindmapDiagram {
-  .editor { BackgroundColor #E3F2FD }
-  .render { BackgroundColor #E8F5E9 }
-  .export { BackgroundColor #FFF3E0 }
-  node { MaximumWidth 120 }
-}
-
-' Корневой узел: иконка OpenIconic + цвет
-*[#1565C0] <&code> vuePlantUML
+' Корневой узел с inline-цветом
+*[#1565C0] vuePlantUML
 
 ' Ветка справа (+) — арифметическая нотация
-+[#2E7D32] Редактор <<editor>>
++[#2E7D32] Редактор
 ++ Monaco
 +++_ Подсветка синтаксиса
 +++_ Автодополнение
 +++_ Складки кода
-++:Многострочный узел
+**:Многострочный узел
 Редактор и превью
 в одном окне;
 ++ Темы оформления
@@ -466,9 +458,9 @@ mindmapDiagram {
 ' Ветка слева (--) — арифметическая нотация
 --[#E65100] Форматы
 --- PlantUML
----- @startuml
----- @startgantt
----- @startmindmap
+---- startuml
+---- startgantt
+---- startmindmap
 --- Mermaid
 ---- flowchart
 ---- sequenceDiagram
@@ -479,14 +471,14 @@ left side
 
 ' Переключение на левую сторону (left side)
 --[#6A1B9A] Рендер
---- @plantuml/core
+--- plantuml/core
 --- Smetana layout
----:Превью
+**:Превью
 SVG в браузере
 без сервера;
 
 ' OrgMode-синтаксис (*) с inline-цветами
-*[#C62828] Экспорт <<export>>
+*[#C62828] Экспорт
 ** SVG
 ** PNG
 **_:Библиотека
@@ -497,7 +489,7 @@ SVG в браузере
 **:==Возможности
 **жирный** и //курсив//
 Моноширинный: ""code""
---разделитель--
+разделитель
 • список
 • пункты
 ;
@@ -842,7 +834,7 @@ sunday are closed
 [Release] happens at 2026-02-20 and is colored in Coral
 @endgantt`,
   mindmap: `@startmindmap
-' Mind map — full PlantUML feature showcase
+' Mind map — full PlantUML feature showcase (offline engine)
 top to bottom direction
 
 title vuePlantUML — mind map
@@ -855,24 +847,16 @@ legend right
   _ — boxless
 endlegend
 
-' Node styles via mindmapDiagram and stereotypes
-mindmapDiagram {
-  .editor { BackgroundColor #E3F2FD }
-  .render { BackgroundColor #E8F5E9 }
-  .export { BackgroundColor #FFF3E0 }
-  node { MaximumWidth 120 }
-}
-
-' Root node: OpenIconic icon + inline color
-*[#1565C0] <&code> vuePlantUML
+' Root node with inline color
+*[#1565C0] vuePlantUML
 
 ' Right branch (+) — arithmetic notation
-+[#2E7D32] Editor <<editor>>
++[#2E7D32] Editor
 ++ Monaco
 +++_ Syntax highlighting
 +++_ Autocomplete
 +++_ Code folding
-++:Multiline node
+**:Multiline node
 Editor and preview
 in one window;
 ++ Themes
@@ -880,9 +864,9 @@ in one window;
 ' Left branch (--) — arithmetic notation
 --[#E65100] Formats
 --- PlantUML
----- @startuml
----- @startgantt
----- @startmindmap
+---- startuml
+---- startgantt
+---- startmindmap
 --- Mermaid
 ---- flowchart
 ---- sequenceDiagram
@@ -893,14 +877,14 @@ left side
 
 ' Switch to left side (left side keyword)
 --[#6A1B9A] Render
---- @plantuml/core
+--- plantuml/core
 --- Smetana layout
----:Preview
+**:Preview
 SVG in browser
 without a server;
 
 ' OrgMode syntax (*) with inline colors
-*[#C62828] Export <<export>>
+*[#C62828] Export
 ** SVG
 ** PNG
 **_:Library
@@ -911,7 +895,7 @@ and sync;
 **:==Features
 **bold** and //italic//
 Monospace: ""code""
---separator--
+separator
 • list
 • items
 ;
