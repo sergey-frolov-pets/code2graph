@@ -52,4 +52,31 @@ describe("convertDiagram", () => {
     expect(result.ok).toBe(false);
     expect(result.blocked).toBe(true);
   });
+
+  it("converts mermaid flowchart with stadium nodes to plantuml", () => {
+    const result = convertDiagram({
+      source: `flowchart TD
+  A([Старт])
+  N1[Узел 1]
+  N2[Узел 2]
+  N3[Узел 3]
+  N4[Узел 4]
+  Z([Готово])
+  A --> N1
+  N1 --> N2
+  N2 --> N3
+  N3 --> N4
+  N4 --> Z`,
+      sourceFormat: "mermaid",
+      targetFormat: "plantuml",
+      mode: "source",
+      locale: "ru",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.targetSource).toContain("[Старт] as A");
+    expect(result.targetSource).toContain("[Готово] as Z");
+    expect(result.targetSource).not.toContain("[[Старт]]");
+    expect(result.targetSource).not.toContain("[[Готово]]");
+  });
 });
