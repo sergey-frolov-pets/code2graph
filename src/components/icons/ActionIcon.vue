@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import type { Component } from "vue";
 import {
+  ArrowDown,
   ArrowLeft,
   ArrowLeftRight,
   ArrowRight,
@@ -37,6 +38,7 @@ import {
 export type ActionIconName =
   | "back"
   | "next"
+  | "arrow-down"
   | "folder-open"
   | "save"
   | "check"
@@ -79,6 +81,7 @@ const props = withDefaults(
 const ICON_MAP: Record<ActionIconName, Component> = {
   back: ArrowLeft,
   next: ArrowRight,
+  "arrow-down": ArrowDown,
   "folder-open": FolderOpen,
   save: Save,
   check: CircleCheck,
