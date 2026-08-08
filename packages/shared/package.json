@@ -1,0 +1,11 @@
+{
+  "name": "@vueplantuml/shared",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./section-tree": "./src/section-tree.ts",
+    "./puml-files": "./src/puml-files.ts"
+  }
+}

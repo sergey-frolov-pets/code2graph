@@ -21,6 +21,8 @@ export const libraryMessages: LocaleMessages = {
   "library.filterByLanguage": "Language",
   "library.anyLanguage": "Any",
   "library.noResults": "No diagrams found",
+  "library.ratingOutOfFive": "{value} of 5",
+  "library.starLabel": "Star {star}",
   "library.selectDiagram": "Select a diagram to view details",
   "library.openInEditor": "Open in editor",
   "library.openInEditorHint": "Click to open the diagram source in the editor",

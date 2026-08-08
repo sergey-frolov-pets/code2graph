@@ -25,6 +25,11 @@
   --z-library: 1100;
   --z-dialog: 1200;
   --z-tooltip: 10000;
+  --overlay: color-mix(in srgb, var(--text) 55%, transparent);
+  --star-active: #f5a623;
+  --btn-sm: 32px;
+  --btn-md: 40px;
+  --btn-touch: 44px;
   --font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
   --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
   --syntax-comment: #6a737d;
@@ -590,13 +595,49 @@ a {
     overflow: visible;
   }
 
+  .mobile-panel-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 0 12px 8px;
+  }
+
+  .mobile-panel-tabs__btn {
+    flex: 1;
+    min-height: var(--btn-touch);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-muted);
+    color: var(--text);
+  }
+
+  .mobile-panel-tabs__btn.is-active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
   .app-main {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
   }
 
+  .app-main.mobile-panel--editor :deep(.preview-panel) {
+    display: none;
+  }
+
+  .app-main.mobile-panel--preview :deep(.editor-panel) {
+    display: none;
+  }
+
   .panel {
     height: auto;
+    min-height: 40vh;
+  }
+}
+
+@media (min-width: 901px) {
+  .mobile-panel-tabs {
+    display: none;
   }
 }
 

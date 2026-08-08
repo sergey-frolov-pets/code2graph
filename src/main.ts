@@ -4,6 +4,7 @@ import App from "./App.vue";
 import { initInstallPromptCapture } from "./pwa/installPromptState";
 import "@/config/library-profiles";
 import "./styles/app.css";
+import "./styles/utilities.css";
 
 initInstallPromptCapture();
 void registerShareSupport();

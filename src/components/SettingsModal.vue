@@ -351,11 +351,50 @@ async function onTestLlmConnection(): Promise<void> {
   llmTestMessage.value = result.message;
   isTestingLlm.value = false;
 }
+
+type SettingsTabId = "editor" | "render" | "theme" | "locale" | "ai" | "library";
+
+const activeSettingsTab = ref<SettingsTabId>("editor");
+
+const settingsTabs = computed(() => [
+  { id: "editor" as const, label: t("settings.tabEditor") },
+  { id: "render" as const, label: t("settings.tabRender") },
+  { id: "theme" as const, label: t("settings.tabTheme") },
+  { id: "locale" as const, label: t("settings.tabLocale") },
+  { id: "ai" as const, label: t("settings.tabAi") },
+  { id: "library" as const, label: t("settings.tabLibrary") },
+]);
+
+const showLlmKeyBanner = computed(
+  () =>
+    activeSettingsTab.value === "ai" &&
+    isActiveProviderByok.value &&
+    !hasActiveApiKey.value,
+);
 </script>
 
 <template>
   <AppModal :open="open" :title="t('settings.title')" @close="emit('close')">
-    <div class="settings-section">
+    <nav class="settings-tabs" role="tablist" :aria-label="t('settings.title')">
+      <button
+        v-for="tab in settingsTabs"
+        :key="tab.id"
+        type="button"
+        class="settings-tabs__btn"
+        :class="{ 'is-active': activeSettingsTab === tab.id }"
+        role="tab"
+        :aria-selected="activeSettingsTab === tab.id"
+        @click="activeSettingsTab = tab.id"
+      >
+        {{ tab.label }}
+      </button>
+    </nav>
+
+    <p v-if="showLlmKeyBanner" class="settings-banner settings-banner--warning">
+      {{ t("settings.llmApiKeyMissing") }}
+    </p>
+
+    <div v-show="activeSettingsTab === 'editor'" class="settings-section">
       <h3 class="settings-section__title">{{ t("settings.editor") }}</h3>
 
       <label class="settings-field">
@@ -431,7 +470,7 @@ async function onTestLlmConnection(): Promise<void> {
       </label>
     </div>
 
-    <div class="settings-section">
+    <div v-show="activeSettingsTab === 'render'" class="settings-section">
       <h3 class="settings-section__title">{{ t("settings.rendering") }}</h3>
 
       <label class="settings-field">
@@ -480,7 +519,7 @@ async function onTestLlmConnection(): Promise<void> {
       </label>
     </div>
 
-    <div class="settings-section">
+    <div v-show="activeSettingsTab === 'theme'" class="settings-section">
       <h3 class="settings-section__title">{{ t("settings.theme") }}</h3>
 
       <label class="settings-field settings-field--checkbox">
@@ -498,7 +537,7 @@ async function onTestLlmConnection(): Promise<void> {
       </label>
     </div>
 
-    <div class="settings-section">
+    <div v-show="activeSettingsTab === 'locale'" class="settings-section">
       <h3 class="settings-section__title">{{ t("settings.language") }}</h3>
 
       <label class="settings-field">
@@ -519,9 +558,38 @@ async function onTestLlmConnection(): Promise<void> {
           </option>
         </select>
       </label>
+
+      <h3 class="settings-section__title settings-section__title--nested">
+        {{ t("settings.help") }}
+      </h3>
+      <div class="settings-links">
+        <a
+          class="btn settings-link-btn"
+          :href="APP_LINKS.plantumlGuide"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ t("settings.plantumlGuide") }}
+        </a>
+        <a
+          class="btn settings-link-btn"
+          :href="APP_LINKS.llmApiKeysGuide"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ t("settings.llmKeysGuide") }}
+        </a>
+        <button
+          class="btn settings-link-btn"
+          type="button"
+          @click="emit('openAbout')"
+        >
+          {{ t("settings.about") }}
+        </button>
+      </div>
     </div>
 
-    <div class="settings-section">
+    <div v-show="activeSettingsTab === 'ai'" class="settings-section">
       <h3 class="settings-section__title">{{ t("settings.ai") }}</h3>
 
       <label class="settings-field settings-field--checkbox">
@@ -659,7 +727,7 @@ async function onTestLlmConnection(): Promise<void> {
       </p>
     </div>
 
-    <div class="settings-section">
+    <div v-show="activeSettingsTab === 'library'" class="settings-section">
       <h3 class="settings-section__title">{{ t("settings.library") }}</h3>
 
       <label v-if="libraryProfiles.length > 0" class="settings-field">
@@ -798,35 +866,6 @@ async function onTestLlmConnection(): Promise<void> {
       </p>
     </div>
 
-    <div class="settings-section">
-      <h3 class="settings-section__title">{{ t("settings.help") }}</h3>
-      <div class="settings-links">
-        <a
-          class="btn settings-link-btn"
-          :href="APP_LINKS.plantumlGuide"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {{ t("settings.plantumlGuide") }}
-        </a>
-        <a
-          class="btn settings-link-btn"
-          :href="APP_LINKS.llmApiKeysGuide"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {{ t("settings.llmKeysGuide") }}
-        </a>
-        <button
-          class="btn settings-link-btn"
-          type="button"
-          @click="emit('openAbout')"
-        >
-          {{ t("settings.about") }}
-        </button>
-      </div>
-    </div>
-
     <template #footer>
       <button class="btn btn-primary" type="button" @click="emit('close')">
         {{ t("app.done") }}
@@ -846,6 +885,51 @@ async function onTestLlmConnection(): Promise<void> {
   margin: 0 0 12px;
   font-size: 0.92rem;
   font-weight: 600;
+}
+
+.settings-section__title--nested {
+  margin-top: 16px;
+}
+
+.settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
+  padding-bottom: 8px;
+}
+
+.settings-tabs__btn {
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  min-height: var(--btn-sm);
+}
+
+.settings-tabs__btn.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.settings-banner {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  font-size: 0.88rem;
+}
+
+.settings-banner--warning {
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border));
+  color: var(--text);
 }
 
 .settings-field {

@@ -83,7 +83,7 @@ function onFiltersChange(): void {
       <button
         v-for="diagram in diagrams"
         :key="diagram.id"
-        class="library-row"
+        class="library-row list-virtual-row"
         type="button"
         @click="emit('diagram-pick', diagram.id)"
       >

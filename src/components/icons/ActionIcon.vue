@@ -21,6 +21,7 @@ import {
   Redo2,
   RefreshCw,
   Save,
+  Settings,
   Shield,
   Sparkles,
   SquarePen,
@@ -54,6 +55,7 @@ export type ActionIconName =
   | "zoom-in"
   | "zoom-out"
   | "edit"
+  | "settings"
   | "close"
   | "history"
   | "undo"
@@ -97,6 +99,7 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   "zoom-in": ZoomIn,
   "zoom-out": ZoomOut,
   edit: SquarePen,
+  settings: Settings,
   close: X,
   history: History,
   undo: Undo2,

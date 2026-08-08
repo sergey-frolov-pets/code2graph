@@ -1,21 +1,34 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, defineAsyncComponent } from "vue";
 import AboutModal from "@/components/AboutModal.vue";
 import AppDialogHost from "@/components/AppDialogHost.vue";
 import DiagramVersionsModal from "@/components/DiagramVersionsModal.vue";
-import ConvertDiagramModal from "@/components/ConvertDiagramModal.vue";
 import DiagramEditor from "@/components/DiagramEditor.vue";
-import DiagramLibraryModal from "@/components/DiagramLibraryModal.vue";
-import SaveToLibraryModal from "@/components/SaveToLibraryModal.vue";
 import DiagramPreview from "@/components/DiagramPreview.vue";
 import AppHeader from "@/components/layout/AppHeader.vue";
 import AppStatusBar from "@/components/layout/AppStatusBar.vue";
-import DiagramWizardModal from "@/components/DiagramWizardModal.vue";
 import LlmPatchModal from "@/components/LlmPatchModal.vue";
 import LlmSyntaxAskModal from "@/components/LlmSyntaxAskModal.vue";
-import LlmKeysGuideModal from "@/components/LlmKeysGuideModal.vue";
-import SettingsModal from "@/components/SettingsModal.vue";
 import SyntaxResultModal from "@/components/SyntaxResultModal.vue";
+
+const ConvertDiagramModal = defineAsyncComponent(
+  () => import("@/components/ConvertDiagramModal.vue"),
+);
+const DiagramLibraryModal = defineAsyncComponent(
+  () => import("@/components/DiagramLibraryModal.vue"),
+);
+const SaveToLibraryModal = defineAsyncComponent(
+  () => import("@/components/SaveToLibraryModal.vue"),
+);
+const DiagramWizardModal = defineAsyncComponent(
+  () => import("@/components/DiagramWizardModal.vue"),
+);
+const LlmKeysGuideModal = defineAsyncComponent(
+  () => import("@/components/LlmKeysGuideModal.vue"),
+);
+const SettingsModal = defineAsyncComponent(
+  () => import("@/components/SettingsModal.vue"),
+);
 import { useAiSourceApply } from "@/composables/useAiSourceApply";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useAppModals } from "@/composables/useAppModals";
@@ -35,6 +48,7 @@ import { getDiagramFormatDefinition } from "@/constants/diagram-formats";
 const isSaveToLibraryModalOpen = ref(false);
 const isConvertModalOpen = ref(false);
 const linkedLibraryDiagramId = ref<string | null>(null);
+const activeMobilePanel = ref<"editor" | "preview">("editor");
 const { alert } = useAppDialog();
 const { t, locale } = useLocale();
 const {
@@ -300,6 +314,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <a class="skip-link" href="#app-main">{{ t("app.mobilePanelEditor") }}</a>
   <div class="app-shell">
     <AppHeader
       @open-wizard="openWizardModal"
@@ -307,7 +322,34 @@ onMounted(() => {
       @open-settings="openSettingsModal"
     />
 
-    <main class="app-main">
+    <div class="mobile-panel-tabs" role="tablist" :aria-label="t('app.mainNav')">
+      <button
+        type="button"
+        class="mobile-panel-tabs__btn"
+        :class="{ 'is-active': activeMobilePanel === 'editor' }"
+        role="tab"
+        :aria-selected="activeMobilePanel === 'editor'"
+        @click="activeMobilePanel = 'editor'"
+      >
+        {{ t("app.mobilePanelEditor") }}
+      </button>
+      <button
+        type="button"
+        class="mobile-panel-tabs__btn"
+        :class="{ 'is-active': activeMobilePanel === 'preview' }"
+        role="tab"
+        :aria-selected="activeMobilePanel === 'preview'"
+        @click="activeMobilePanel = 'preview'"
+      >
+        {{ t("app.mobilePanelPreview") }}
+      </button>
+    </div>
+
+    <main
+      id="app-main"
+      class="app-main"
+      :class="`mobile-panel--${activeMobilePanel}`"
+    >
       <DiagramEditor
         v-model="source"
         v-model:diagram-format="diagramFormat"
@@ -375,6 +417,7 @@ onMounted(() => {
     />
 
     <DiagramLibraryModal
+      v-if="isLibraryModalOpen"
       :open="isLibraryModalOpen"
       :render-mode="renderMode"
       :layout="layout"
@@ -384,6 +427,7 @@ onMounted(() => {
     />
 
     <SaveToLibraryModal
+      v-if="isSaveToLibraryModalOpen"
       :open="isSaveToLibraryModalOpen"
       :source="source"
       :file-name="loadedFileName"
@@ -393,6 +437,7 @@ onMounted(() => {
     />
 
     <SettingsModal
+      v-if="isSettingsModalOpen"
       :open="isSettingsModalOpen"
       v-model:layout="layout"
       v-model:render-mode="renderMode"
@@ -432,6 +477,7 @@ onMounted(() => {
     />
 
     <DiagramWizardModal
+      v-if="isWizardModalOpen"
       :open="isWizardModalOpen"
       :layout="layout"
       :render-mode="renderMode"
@@ -442,6 +488,7 @@ onMounted(() => {
     />
 
     <ConvertDiagramModal
+      v-if="isConvertModalOpen"
       :open="isConvertModalOpen"
       :source="source"
       :source-format="diagramFormat"
@@ -451,6 +498,7 @@ onMounted(() => {
     />
 
     <LlmKeysGuideModal
+      v-if="guideModalOpen"
       :open="guideModalOpen"
       :highlight-provider-id="guideProviderId"
       @close="closeLlmKeysGuide"

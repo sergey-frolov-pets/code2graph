@@ -23,7 +23,7 @@ const { t } = useLocale();
       </div>
       <p class="app-header__subtitle">{{ t("app.subtitle") }}</p>
     </div>
-    <nav class="app-header__nav" :aria-label="t('app.settings')">
+    <nav class="app-header__nav" :aria-label="t('app.mainNav')">
       <IconButton
         :label="t('app.aiNewDiagram')"
         extra-class="app-header__icon-btn"
@@ -44,7 +44,7 @@ const { t } = useLocale();
         extra-class="app-header__icon-btn"
         @click="emit('openSettings')"
       >
-        <span class="app-header__gear-icon" aria-hidden="true">⚙</span>
+        <ActionIcon name="settings" />
       </IconButton>
     </nav>
   </header>

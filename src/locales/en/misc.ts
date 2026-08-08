@@ -51,6 +51,7 @@ export const miscMessages: LocaleMessages = {
   "preview.title": "Preview",
   "preview.titleTooltip": "Diagram preview",
   "preview.placeholder": "Enter PlantUML code on the left — the diagram will appear here.",
+  "preview.rendering": "Rendering diagram…",
   "fullscreen.expand": "Full screen",
   "fullscreen.collapse": "Exit full screen",
   "toolbar.previewBackground": "Preview background",

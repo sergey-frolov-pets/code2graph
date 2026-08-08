@@ -16,6 +16,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(appRoot, "src"),
+      "@shared": path.resolve(appRoot, "packages/shared/src"),
     },
   },
   plugins: [vue()],
@@ -49,6 +50,6 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "packages/shared/src/**/*.test.ts"],
   },
 });

@@ -21,6 +21,8 @@ export const libraryMessages: LocaleMessages = {
   "library.filterByLanguage": "Язык",
   "library.anyLanguage": "Любой",
   "library.noResults": "Диаграммы не найдены",
+  "library.ratingOutOfFive": "{value} из 5",
+  "library.starLabel": "Звезда {star}",
   "library.selectDiagram": "Выберите диаграмму для просмотра",
   "library.openInEditor": "Открыть в редакторе",
   "library.openInEditorHint": "Нажмите, чтобы открыть код диаграммы в редакторе",

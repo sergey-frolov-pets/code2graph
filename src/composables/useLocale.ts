@@ -1,11 +1,12 @@
 import { ref, watch } from "vue";
 import { DEFAULT_LOCALE, isAppLocale, STORAGE_KEY_LOCALE, type AppLocale } from "@/constants/i18n";
+import type { LocaleKey } from "@/locales/types";
 import { formatMessage, messagesByLocale } from "@/locales/messages";
 import { readStorageItem, writeStorageItem } from "@/utils/safe-storage";
 
 export function translateForLocale(
   locale: AppLocale,
-  key: string,
+  key: LocaleKey,
   params?: Record<string, string | number>,
 ): string {
   const template =
@@ -54,7 +55,7 @@ watch(
 );
 
 export function useLocale() {
-  function t(key: string, params?: Record<string, string | number>): string {
+  function t(key: LocaleKey, params?: Record<string, string | number>): string {
     return translateForLocale(locale.value, key, params);
   }
 
