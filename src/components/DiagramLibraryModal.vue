@@ -4,6 +4,9 @@ import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import LibraryTransferTab from "@/components/LibraryTransferTab.vue";
 import SectionEditModal from "@/components/SectionEditModal.vue";
+import LibrarySubscriptionsPanel from "@/components/library/LibrarySubscriptionsPanel.vue";
+import LibraryBrowseRatings from "@/components/library/LibraryBrowseRatings.vue";
+import LibraryRegisterModal from "@/components/library/LibraryRegisterModal.vue";
 import LibraryBrowseSections from "@/components/library/LibraryBrowseSections.vue";
 import LibraryBrowseDiagrams from "@/components/library/LibraryBrowseDiagrams.vue";
 import LibraryDiagramDetail from "@/components/library/LibraryDiagramDetail.vue";
@@ -31,6 +34,7 @@ import { useLibrarySectionAdmin } from "@/composables/library/useLibrarySectionA
 import { useLibraryTransferHandlers } from "@/composables/library/useLibraryTransferHandlers";
 import { useLibraryAuth } from "@/composables/useLibraryAuth";
 import { useLibraryDiagramPreview } from "@/composables/useLibraryDiagramPreview";
+import { RATINGS_SECTION_ID } from "@/constants/diagram-library";
 import { useTransientNotice } from "@/composables/useTransientNotice";
 import { waitForEngineReady } from "@/composables/usePlantUml";
 import { waitForMermaidReady } from "@/services/mermaid/mermaid-engine";
@@ -58,7 +62,7 @@ const { confirm, prompt } = useAppDialog();
 const { libraryApiUrl } = useLibraryApiUrl();
 const { libraryTarget, canUseOnline, setLibraryTarget } = useLibraryTarget();
 
-const { isAdmin, needsSetup, checkLibraryAuthStatus, refreshCurrentUser } = useLibraryAuth();
+const { isAdmin, needsSetup, registrationEnabled, isAuthenticated, checkLibraryAuthStatus, refreshCurrentUser } = useLibraryAuth();
 const {
   previewMarkup,
   isRendering: isPreviewRendering,
@@ -122,6 +126,7 @@ const isSectionAccessOpen = ref(false);
 const sectionAccessId = ref<string | null>(null);
 const sectionAccessTitle = ref("");
 const isSetupModalOpen = ref(false);
+const isRegisterModalOpen = ref(false);
 
 const showAdminTab = computed(
   () =>
@@ -151,6 +156,8 @@ const {
   editTags,
   editSectionId,
   editVisibility,
+  editLanguage,
+  editContentLocale,
   resetEditForm,
   startEdit,
   saveEdit,
@@ -192,12 +199,28 @@ const {
   confirm,
 });
 
+const personalAdminSectionOptions = computed(() =>
+  flatSectionOptions.value.filter((option) => {
+    const section = flatSections.value.find((entry) => entry.id === option.id);
+    return section?.canAdmin && section?.kind === "personal";
+  }),
+);
+
+const canManageSubscriptions = computed(
+  () =>
+    personalAdminSectionOptions.value.length > 0 &&
+    libraryTarget.value === "online" &&
+    Boolean(libraryApiUrl.value) &&
+    !needsSetup.value,
+);
+
 const {
   showBackButton,
   showModeTabs,
   headerTitle,
   resetBrowseFlow,
   goBack,
+  openSubscriptions,
   onSectionPick,
   onDiagramPick: browseDiagramPick,
 } = useLibraryBrowseFlow({
@@ -235,6 +258,23 @@ const {
 });
 
 onTransferRefreshRef.value = () => loadTransferData();
+
+async function onRatingsClick(): Promise<void> {
+  await onSectionPick(RATINGS_SECTION_ID);
+}
+
+async function onRatingsDiagramPick(diagramId: string): Promise<void> {
+  await browseDiagramPick(diagramId);
+}
+
+async function onRatingsSectionPick(sectionId: string): Promise<void> {
+  await onSectionPick(sectionId);
+}
+
+async function onRegisterCompleted(): Promise<void> {
+  await refreshCurrentUser();
+  showTransientNotice(t("library.registerSuccess"));
+}
 
 const {
   uploadTitle,
@@ -712,6 +752,13 @@ watch(libraryTarget, () => {
           <h2 class="library-header__title">{{ headerTitle }}</h2>
           <div class="library-header__actions">
             <IconButton
+              v-if="libraryTarget === 'online' && registrationEnabled && !isAuthenticated"
+              :label="t('library.registerTitle')"
+              @click="isRegisterModalOpen = true"
+            >
+              <ActionIcon name="plus" />
+            </IconButton>
+            <IconButton
               :label="t('library.refresh')"
               :disabled="isSyncing"
               @click="library.refresh()"
@@ -798,6 +845,7 @@ watch(libraryTarget, () => {
           :selected-section-id="selectedSectionId"
           :is-sections-edit-mode="isSectionsEditMode"
           :can-create-shared-section="isAdmin"
+          :can-manage-subscriptions="canManageSubscriptions"
           @all-sections-click="onAllSectionsClick()"
           @section-row-click="onSectionRowClick($event)"
           @toggle-edit-mode="toggleSectionsEditMode()"
@@ -805,6 +853,23 @@ watch(libraryTarget, () => {
           @delete-section="(id, title) => onDeleteSection(id, title)"
           @share-section="(id, title) => openShareModal('section', id, title)"
           @manage-access="(id, title) => openSectionAccess(id, title)"
+          @ratings-click="onRatingsClick()"
+          @subscriptions-click="openSubscriptions()"
+        />
+
+        <LibrarySubscriptionsPanel
+          v-else-if="activeTab === 'browse' && browseStep === 'subscriptions'"
+          :flat-section-options="personalAdminSectionOptions"
+        />
+
+        <LibraryBrowseRatings
+          v-else-if="
+            activeTab === 'browse' &&
+            browseStep === 'diagrams' &&
+            selectedSectionId === RATINGS_SECTION_ID
+          "
+          @diagram-pick="onRatingsDiagramPick($event)"
+          @section-pick="onRatingsSectionPick($event)"
         />
 
         <LibraryBrowseDiagrams
@@ -828,6 +893,8 @@ watch(libraryTarget, () => {
           v-model:edit-tags="editTags"
           v-model:edit-section-id="editSectionId"
           v-model:edit-visibility="editVisibility"
+          v-model:edit-language="editLanguage"
+          v-model:edit-content-locale="editContentLocale"
           :diagram="selectedDiagram"
           :flat-section-options="flatSectionOptions"
           :is-editing="isEditing"
@@ -938,6 +1005,13 @@ watch(libraryTarget, () => {
     :section-id="sectionAccessId"
     :section-title="sectionAccessTitle"
     @close="closeSectionAccess()"
+  />
+
+  <LibraryRegisterModal
+    :open="isRegisterModalOpen"
+    :api-url="libraryApiUrl"
+    @close="isRegisterModalOpen = false"
+    @registered="onRegisterCompleted()"
   />
 </template>
 

@@ -46,6 +46,7 @@ function runMigrations(database: Database.Database): void {
       section_id TEXT NOT NULL REFERENCES sections(id) ON DELETE CASCADE,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       granted_by TEXT NOT NULL REFERENCES users(id),
+      permission TEXT NOT NULL DEFAULT 'contribute',
       expires_at TEXT,
       created_at TEXT NOT NULL,
       UNIQUE(section_id, user_id)
@@ -98,6 +99,53 @@ function runMigrations(database: Database.Database): void {
       ALTER TABLE diagrams ADD COLUMN vote_count INTEGER NOT NULL DEFAULT 0;
     `);
   }
+
+  if (!columnExists(database, "section_access", "permission")) {
+    database.exec(`
+      ALTER TABLE section_access ADD COLUMN permission TEXT NOT NULL DEFAULT 'contribute';
+    `);
+  }
+
+  if (!columnExists(database, "diagrams", "content_locale")) {
+    database.exec(`
+      ALTER TABLE diagrams ADD COLUMN content_locale TEXT NOT NULL DEFAULT '';
+    `);
+  }
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS subscriptions (
+      id TEXT PRIMARY KEY,
+      owner_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      permission TEXT NOT NULL DEFAULT 'view',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS subscription_sections (
+      id TEXT PRIMARY KEY,
+      subscription_id TEXT NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
+      section_id TEXT NOT NULL REFERENCES sections(id) ON DELETE CASCADE,
+      include_descendants INTEGER NOT NULL DEFAULT 0,
+      UNIQUE(subscription_id, section_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS user_subscriptions (
+      id TEXT PRIMARY KEY,
+      subscription_id TEXT NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      granted_by TEXT NOT NULL REFERENCES users(id),
+      expires_at TEXT,
+      created_at TEXT NOT NULL,
+      UNIQUE(subscription_id, user_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_subscriptions_owner ON subscriptions(owner_id);
+    CREATE INDEX IF NOT EXISTS idx_subscription_sections_sub ON subscription_sections(subscription_id);
+    CREATE INDEX IF NOT EXISTS idx_user_subscriptions_user ON user_subscriptions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_user_subscriptions_sub ON user_subscriptions(subscription_id);
+  `);
 
   database.exec(`
     CREATE TABLE IF NOT EXISTS diagram_favorites (

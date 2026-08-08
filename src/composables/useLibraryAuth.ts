@@ -9,11 +9,13 @@ import {
   fetchLibraryAuthStatus,
   fetchLibraryMe,
   loginLibrary,
+  registerLibraryAccount,
   setupLibraryAdmin,
 } from "@/utils/diagram-api";
 
 const currentUser = ref<LibraryUserDto | null>(null);
 const needsSetup = ref(false);
+const registrationEnabled = ref(false);
 let refreshPromise: Promise<LibraryUserDto | null> | null = null;
 
 export function useLibraryAuth() {
@@ -25,6 +27,7 @@ export function useLibraryAuth() {
   ): Promise<{ needsSetup: boolean }> {
     const status = await fetchLibraryAuthStatus(baseUrl);
     needsSetup.value = status.needsSetup;
+    registrationEnabled.value = Boolean(status.registrationEnabled);
     if (status.needsSetup) {
       currentUser.value = null;
     }
@@ -88,15 +91,29 @@ export function useLibraryAuth() {
     clearLibraryApiCredentials();
   }
 
+  async function registerAccount(
+    username: string,
+    password: string,
+    baseUrl?: string,
+  ): Promise<LibraryUserDto> {
+    const response = await registerLibraryAccount(username, password, baseUrl);
+    setLibraryAuthToken(response.token);
+    currentUser.value = response.user;
+    needsSetup.value = false;
+    return response.user;
+  }
+
   return {
     currentUser,
     needsSetup,
+    registrationEnabled,
     isAdmin,
     isAuthenticated,
     checkLibraryAuthStatus,
     refreshCurrentUser,
     loginWithCredentials,
     setupFirstAdmin,
+    registerAccount,
     logoutLibraryAuth,
   };
 }

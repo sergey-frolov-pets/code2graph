@@ -7,10 +7,16 @@ import type {
   DiagramSortOption,
   DiagramVersionDto,
   LibraryUserDto,
+  RatingsLeaderboardDto,
   SectionAccessDto,
+  SectionAccessPermission,
   SectionDto,
   ShareLinkDto,
   SharePermission,
+  SubscriptionDto,
+  CreateSubscriptionPayload,
+  UpdateSubscriptionPayload,
+  UserSubscriptionGrantDto,
   UpdateDiagramPayload,
   UpdateSectionPayload,
 } from "@/constants/diagram-library";
@@ -435,8 +441,24 @@ export async function checkApiHealth(baseUrl?: string): Promise<boolean> {
 
 export async function fetchLibraryAuthStatus(
   baseUrl?: string,
-): Promise<{ needsSetup: boolean }> {
+): Promise<{ needsSetup: boolean; registrationEnabled?: boolean }> {
   return requestJsonPublic("/auth/status", undefined, baseUrl);
+}
+
+export async function registerLibraryAccount(
+  username: string,
+  password: string,
+  baseUrl?: string,
+): Promise<{ token: string; user: LibraryUserDto }> {
+  return requestJsonPublic(
+    "/auth/register",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    },
+    baseUrl,
+  );
 }
 
 export async function setupLibraryAdmin(
@@ -574,6 +596,7 @@ export async function grantSectionAccess(
     userId?: string;
     permanent?: boolean;
     expiresAt?: string | null;
+    permission?: SectionAccessPermission;
   },
   baseUrl?: string,
 ): Promise<{ ok: boolean }> {
@@ -595,6 +618,96 @@ export async function revokeSectionAccess(
 ): Promise<{ ok: boolean }> {
   return requestJson(
     `/sections/${sectionId}/access/${userId}`,
+    { method: "DELETE" },
+    baseUrl,
+  );
+}
+
+export async function fetchRatingsLeaderboard(
+  baseUrl?: string,
+): Promise<RatingsLeaderboardDto> {
+  return requestJson("/ratings/leaderboard", undefined, baseUrl);
+}
+
+export async function fetchSubscriptions(
+  baseUrl?: string,
+): Promise<{ subscriptions: SubscriptionDto[] }> {
+  return requestJson("/subscriptions", undefined, baseUrl);
+}
+
+export async function createSubscription(
+  payload: CreateSubscriptionPayload,
+  baseUrl?: string,
+): Promise<{ subscription: SubscriptionDto }> {
+  return requestJson(
+    "/subscriptions",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    baseUrl,
+  );
+}
+
+export async function updateSubscription(
+  subscriptionId: string,
+  payload: UpdateSubscriptionPayload,
+  baseUrl?: string,
+): Promise<{ subscription: SubscriptionDto }> {
+  return requestJson(
+    `/subscriptions/${subscriptionId}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    baseUrl,
+  );
+}
+
+export async function deleteSubscription(
+  subscriptionId: string,
+  baseUrl?: string,
+): Promise<{ ok: boolean }> {
+  return requestJson(`/subscriptions/${subscriptionId}`, { method: "DELETE" }, baseUrl);
+}
+
+export async function fetchSubscriptionGrants(
+  subscriptionId: string,
+  baseUrl?: string,
+): Promise<{ grants: UserSubscriptionGrantDto[] }> {
+  return requestJson(`/subscriptions/${subscriptionId}/grants`, undefined, baseUrl);
+}
+
+export async function grantSubscription(
+  subscriptionId: string,
+  payload: {
+    username?: string;
+    userId?: string;
+    permanent?: boolean;
+    expiresAt?: string | null;
+  },
+  baseUrl?: string,
+): Promise<{ ok: boolean }> {
+  return requestJson(
+    `/subscriptions/${subscriptionId}/grants`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    baseUrl,
+  );
+}
+
+export async function revokeSubscriptionGrant(
+  subscriptionId: string,
+  userId: string,
+  baseUrl?: string,
+): Promise<{ ok: boolean }> {
+  return requestJson(
+    `/subscriptions/${subscriptionId}/grants/${userId}`,
     { method: "DELETE" },
     baseUrl,
   );

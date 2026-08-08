@@ -28,6 +28,9 @@ export const AUTH_TOKEN_SECRET =
 export const SHARED_SECTION_TITLE =
   process.env.SHARED_SECTION_TITLE?.trim() || "Общие";
 
+export const REGISTRATION_ENABLED =
+  process.env.REGISTRATION_ENABLED?.trim() !== "false";
+
 export const DIAGRAM_LANGUAGES = [
   "plantuml",
   "mermaid",

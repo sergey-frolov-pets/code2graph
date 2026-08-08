@@ -2,9 +2,10 @@
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import { useLocale } from "@/composables/useLocale";
-import { FAVORITES_SECTION_ID } from "@/constants/diagram-library";
+import { FAVORITES_SECTION_ID, RATINGS_SECTION_ID } from "@/constants/diagram-library";
 import type { SectionDto } from "@/constants/diagram-library";
 import type { FlatSectionOption } from "@/shared/library/section-tree";
+import { getSectionAccessIcon } from "@/utils/library-display";
 
 const props = defineProps<{
   flatSectionOptions: FlatSectionOption[];
@@ -12,11 +13,14 @@ const props = defineProps<{
   selectedSectionId: string | null;
   isSectionsEditMode: boolean;
   canCreateSharedSection: boolean;
+  canManageSubscriptions: boolean;
 }>();
 
 const emit = defineEmits<{
   "all-sections-click": [];
   "section-row-click": [sectionId: string];
+  "ratings-click": [];
+  "subscriptions-click": [];
   "toggle-edit-mode": [];
   "create-section": [parentId: string | null];
   "delete-section": [sectionId: string, title: string];
@@ -30,12 +34,24 @@ function canAdminSection(sectionId: string): boolean {
   const section = props.flatSections.find((entry) => entry.id === sectionId);
   return Boolean(section?.canAdmin);
 }
+
+function sectionIcon(sectionId: string): string {
+  const section = props.flatSections.find((entry) => entry.id === sectionId);
+  return section ? getSectionAccessIcon(section) : "📁";
+}
 </script>
 
 <template>
   <div class="library-step">
     <div class="library-step__toolbar library-step__toolbar--actions-only">
       <div class="library-step__toolbar-actions">
+        <IconButton
+          v-if="canManageSubscriptions"
+          :label="t('library.subscriptionAddTitle')"
+          @click="emit('subscriptions-click')"
+        >
+          <ActionIcon name="plus" />
+        </IconButton>
         <IconButton
           :label="t('library.edit')"
           :pressed="isSectionsEditMode"
@@ -70,7 +86,17 @@ function canAdminSection(sectionId: string): boolean {
         type="button"
         @click="emit('section-row-click', FAVORITES_SECTION_ID)"
       >
-        <span class="library-row__title">{{ t("library.favorites") }}</span>
+        <span class="library-row__title">⭐ {{ t("library.favorites") }}</span>
+        <span v-if="!isSectionsEditMode" class="library-row__chevron">›</span>
+      </button>
+
+      <button
+        class="library-row"
+        :class="{ 'is-active': selectedSectionId === RATINGS_SECTION_ID }"
+        type="button"
+        @click="emit('ratings-click')"
+      >
+        <span class="library-row__title">🏆 {{ t("library.ratings") }}</span>
         <span v-if="!isSectionsEditMode" class="library-row__chevron">›</span>
       </button>
 
@@ -86,7 +112,10 @@ function canAdminSection(sectionId: string): boolean {
           :style="{ paddingLeft: `${16 + section.depth * 16}px` }"
           @click="emit('section-row-click', section.id)"
         >
-          <span class="library-row__title">{{ section.title }}</span>
+          <span class="library-row__title">
+            <span class="library-section-icon" aria-hidden="true">{{ sectionIcon(section.id) }}</span>
+            {{ section.title }}
+          </span>
           <span v-if="!isSectionsEditMode" class="library-row__chevron">›</span>
         </button>
         <div
@@ -140,3 +169,12 @@ function canAdminSection(sectionId: string): boolean {
     </div>
   </div>
 </template>
+
+<style scoped>
+.library-section-icon {
+  display: inline-block;
+  width: 1.25rem;
+  margin-right: 4px;
+  text-align: center;
+}
+</style>

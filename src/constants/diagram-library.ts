@@ -29,6 +29,14 @@ export const STORAGE_KEY_LIBRARY_API_PASSWORD =
 
 export const STORAGE_KEY_LIBRARY_TARGET = "plantuml-smetana-library-target";
 
+export const STORAGE_KEY_LIBRARY_PROFILES = "plantuml-smetana-library-profiles";
+
+export const STORAGE_KEY_ACTIVE_LIBRARY_PROFILE_ID =
+  "plantuml-smetana-active-library-profile-id";
+
+export const STORAGE_KEY_LIBRARY_PROFILE_SECRETS =
+  "plantuml-smetana-library-profile-secrets";
+
 export const STORAGE_KEY_LIBRARY_AUTH_TOKEN = "plantuml-smetana-library-auth-token";
 
 export type LibraryTarget = "local" | "online";
@@ -64,6 +72,8 @@ export interface SectionDto {
   visibility?: DiagramVisibility;
   canWrite?: boolean;
   canAdmin?: boolean;
+  canDownload?: boolean;
+  userAccessPermission?: SectionAccessPermission | null;
   createdAt: string;
   updatedAt: string;
   children?: SectionDto[];
@@ -76,6 +86,7 @@ export interface DiagramListItemDto {
   description: string;
   tags: string[];
   language: DiagramLanguage;
+  contentLocale?: ContentLocale | string;
   fileName: string;
   byteSize: number;
   authorId?: string | null;
@@ -83,6 +94,7 @@ export interface DiagramListItemDto {
   authorName?: string | null;
   visibility?: DiagramVisibility;
   canWrite?: boolean;
+  canDownload?: boolean;
   avgRating?: number | null;
   voteCount?: number;
   isFavorite?: boolean;
@@ -125,6 +137,7 @@ export interface CreateDiagramPayload {
   description: string;
   tags: string[];
   language: DiagramLanguage;
+  contentLocale?: ContentLocale | string;
   sectionId: string | null;
   source: string;
   fileName: string;
@@ -148,6 +161,8 @@ export interface UpdateDiagramPayload {
   title?: string;
   description?: string;
   tags?: string[];
+  language?: DiagramLanguage;
+  contentLocale?: ContentLocale | string;
   sectionId?: string | null;
   source?: string;
   fileName?: string;
@@ -157,9 +172,67 @@ export interface UpdateDiagramPayload {
 export interface SectionAccessDto {
   userId: string;
   username: string;
+  permission: SectionAccessPermission;
   expiresAt: string | null;
   permanent: boolean;
   grantedAt: string;
+}
+
+export interface SubscriptionSectionDto {
+  sectionId: string;
+  sectionTitle?: string;
+  includeDescendants: boolean;
+}
+
+export interface SubscriptionDto {
+  id: string;
+  ownerId: string;
+  title: string;
+  description: string;
+  permission: SectionAccessPermission;
+  sections: SubscriptionSectionDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserSubscriptionGrantDto {
+  userId: string;
+  username: string;
+  expiresAt: string | null;
+  permanent: boolean;
+  grantedAt: string;
+}
+
+export interface CreateSubscriptionPayload {
+  title: string;
+  description: string;
+  permission: SectionAccessPermission;
+  sections: SubscriptionSectionDto[];
+}
+
+export interface UpdateSubscriptionPayload {
+  title?: string;
+  description?: string;
+  permission?: SectionAccessPermission;
+  sections?: SubscriptionSectionDto[];
+}
+
+export interface RatingsLeaderboardDto {
+  topDiagrams: DiagramListItemDto[];
+  topSections: Array<{
+    sectionId: string;
+    title: string;
+    diagramCount: number;
+    totalVotes: number;
+    avgRating: number | null;
+  }>;
+  topAuthors: Array<{
+    authorId: string;
+    username: string;
+    diagramCount: number;
+    totalVotes: number;
+    avgRating: number | null;
+  }>;
 }
 
 export const SHARE_PERMISSIONS = ["view", "download"] as const;
@@ -168,6 +241,21 @@ export type SharePermission = (typeof SHARE_PERMISSIONS)[number];
 export const DEFAULT_SHARE_MAX_DOWNLOADS = 5;
 
 export const FAVORITES_SECTION_ID = "__favorites__";
+
+export const RATINGS_SECTION_ID = "__ratings__";
+
+export const SUBSCRIPTIONS_BROWSE_STEP = "subscriptions" as const;
+
+export const SECTION_ACCESS_PERMISSIONS = [
+  "view",
+  "download",
+  "contribute",
+] as const;
+export type SectionAccessPermission =
+  (typeof SECTION_ACCESS_PERMISSIONS)[number];
+
+export const CONTENT_LOCALES = ["", "ru", "en", "de", "fr", "es", "zh"] as const;
+export type ContentLocale = (typeof CONTENT_LOCALES)[number];
 
 export const RATING_COMMENT_STATUSES = [
   "none",
