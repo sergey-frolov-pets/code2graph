@@ -1,2 +1,2 @@
 export { sectionsRouter } from "./sections.js";
-export { diagramsRouter } from "./diagrams.js";
+export { diagramsRouter } from "./diagrams/index.js";

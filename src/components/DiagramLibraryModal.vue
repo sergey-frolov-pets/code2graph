@@ -1,23 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import ActionIcon from "@/components/icons/ActionIcon.vue";
-import IconButton from "@/components/IconButton.vue";
-import LibraryTransferTab from "@/components/LibraryTransferTab.vue";
+import LibraryModalHeader from "@/components/library/LibraryModalHeader.vue";
+import LibraryModalContent from "@/components/library/LibraryModalContent.vue";
 import SectionEditModal from "@/components/SectionEditModal.vue";
-import LibrarySubscriptionsPanel from "@/components/library/LibrarySubscriptionsPanel.vue";
-import LibraryBrowseRatings from "@/components/library/LibraryBrowseRatings.vue";
 import LibraryRegisterModal from "@/components/library/LibraryRegisterModal.vue";
-import LibraryBrowseSections from "@/components/library/LibraryBrowseSections.vue";
-import LibraryBrowseDiagrams from "@/components/library/LibraryBrowseDiagrams.vue";
-import LibraryDiagramDetail from "@/components/library/LibraryDiagramDetail.vue";
-import LibraryAdminUsersPanel from "@/components/library/LibraryAdminUsersPanel.vue";
-import LibrarySetupAdminPanel from "@/components/library/LibrarySetupAdminPanel.vue";
 import LibrarySetupAdminModal from "@/components/library/LibrarySetupAdminModal.vue";
 import LibraryDiagramVersionsModal from "@/components/library/LibraryDiagramVersionsModal.vue";
 import LibraryDiagramPreviewModal from "@/components/library/LibraryDiagramPreviewModal.vue";
 import LibraryShareLinkModal from "@/components/library/LibraryShareLinkModal.vue";
 import LibrarySectionAccessModal from "@/components/library/LibrarySectionAccessModal.vue";
-import LibraryUploadForm from "@/components/library/LibraryUploadForm.vue";
 import { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import { useLocale } from "@/composables/useLocale";
@@ -397,6 +388,14 @@ function switchTab(tab: LibraryTab): void {
   if (tab !== "browse") resetEditForm();
 }
 
+function onShareSection(sectionId: string, title: string): void {
+  openShareModal("section", sectionId, title);
+}
+
+function onManageSectionAccess(sectionId: string, title: string): void {
+  openSectionAccess(sectionId, title);
+}
+
 async function onDeleteDiagram(): Promise<void> {
   if (!selectedDiagram.value) return;
   await deleteDiagram(
@@ -740,241 +739,127 @@ watch(libraryTarget, () => {
 <template>
   <Teleport to="body">
     <div v-if="open" class="library-screen" role="dialog" aria-modal="true">
-      <header class="library-header">
-        <div class="library-header__row">
-          <button
-            v-if="showBackButton"
-            class="btn library-header__back"
-            type="button"
-            @click="handleGoBack()"
-          >
-            ← {{ t("library.back") }}
-          </button>
-          <h2 class="library-header__title">{{ headerTitle }}</h2>
-          <nav
-            v-if="breadcrumbItems.length > 1"
-            class="library-breadcrumbs"
-            :aria-label="t('library.sections')"
-          >
-            <template v-for="(item, index) in breadcrumbItems" :key="`${item.label}-${index}`">
-              <button
-                v-if="item.action"
-                type="button"
-                class="library-breadcrumbs__link"
-                @click="item.action?.()"
-              >
-                {{ item.label }}
-              </button>
-              <span v-else class="library-breadcrumbs__current">{{ item.label }}</span>
-              <span
-                v-if="index < breadcrumbItems.length - 1"
-                class="library-breadcrumbs__sep"
-                aria-hidden="true"
-              >
-                ›
-              </span>
-            </template>
-          </nav>
-          <div class="library-header__actions">
-            <IconButton
-              v-if="libraryTarget === 'online' && registrationEnabled && !isAuthenticated"
-              :label="t('library.registerTitle')"
-              @click="isRegisterModalOpen = true"
-            >
-              <ActionIcon name="plus" />
-            </IconButton>
-            <IconButton
-              :label="t('library.refresh')"
-              :disabled="isSyncing"
-              @click="library.refresh()"
-            >
-              <ActionIcon name="refresh" />
-            </IconButton>
-            <IconButton :label="t('app.close')" @click="emit('close')">
-              <ActionIcon name="close" />
-            </IconButton>
-          </div>
-        </div>
+      <LibraryModalHeader
+        :show-back-button="showBackButton"
+        :header-title="headerTitle"
+        :breadcrumb-items="breadcrumbItems"
+        :show-mode-tabs="showModeTabs"
+        :status-hint="statusHint"
+        :transient-notice="transientNotice"
+        :library-target="libraryTarget"
+        :registration-enabled="registrationEnabled"
+        :is-authenticated="isAuthenticated"
+        :is-syncing="isSyncing"
+        :is-checking-online="isCheckingOnline"
+        :online-target-button-class="onlineTargetButtonClass"
+        :show-admin-tab="showAdminTab"
+        :active-tab="activeTab"
+        @back="handleGoBack()"
+        @close="emit('close')"
+        @refresh="library.refresh()"
+        @register="isRegisterModalOpen = true"
+        @local-target="onLocalTargetClick()"
+        @online-target="onOnlineTargetClick()"
+        @switch-tab="switchTab($event)"
+      />
 
-        <p v-if="showModeTabs" class="library-header__hint">{{ statusHint }}</p>
-        <p v-if="transientNotice" class="library-header__notice" role="status">
-          {{ transientNotice }}
-        </p>
-
-        <div v-if="showModeTabs" class="library-header__modes">
-          <div class="library-target">
-            <IconButton
-              :label="t('library.targetLocal')"
-              extra-class="library-modes__btn"
-              :pressed="libraryTarget === 'local'"
-              @click="onLocalTargetClick()"
-            >
-              <ActionIcon name="unlink" />
-            </IconButton>
-            <IconButton
-              :label="t('library.targetOnline')"
-              :extra-class="onlineTargetButtonClass"
-              :pressed="libraryTarget === 'online'"
-              :disabled="isCheckingOnline"
-              @click="onOnlineTargetClick()"
-            >
-              <ActionIcon name="globe" />
-            </IconButton>
-          </div>
-
-          <nav class="library-modes" :aria-label="t('library.title')">
-            <IconButton
-              :label="t('library.browse')"
-              extra-class="library-modes__btn"
-              :pressed="activeTab === 'browse'"
-              @click="switchTab('browse')"
-            >
-              <ActionIcon name="library" />
-            </IconButton>
-            <IconButton
-              :label="t('library.uploadDiagram')"
-              extra-class="library-modes__btn"
-              :pressed="activeTab === 'upload'"
-              @click="switchTab('upload')"
-            >
-              <ActionIcon name="export" />
-            </IconButton>
-            <IconButton
-              v-if="showAdminTab"
-              :label="t('library.adminUsersTitle')"
-              extra-class="library-modes__btn"
-              :pressed="activeTab === 'admin'"
-              @click="switchTab('admin')"
-            >
-              <ActionIcon name="shield" />
-            </IconButton>
-          </nav>
-        </div>
-      </header>
-
-      <div class="library-body">
-        <p v-if="uploadError" class="library-error">{{ uploadError }}</p>
-        <p v-if="errorMessage" class="library-error">{{ errorMessage }}</p>
-
-        <LibrarySetupAdminPanel
-          v-if="isOnlineSetupPending"
-          :api-url="libraryApiUrl"
-          @completed="onSetupCompleted()"
-        />
-
-        <template v-if="!isOnlineSetupPending">
-        <LibraryBrowseSections
-          v-if="activeTab === 'browse' && browseStep === 'sections'"
-          :flat-section-options="flatSectionOptions"
-          :flat-sections="flatSections"
-          :selected-section-id="selectedSectionId"
-          :is-sections-edit-mode="isSectionsEditMode"
-          :can-create-shared-section="isAdmin"
-          :can-manage-subscriptions="canManageSubscriptions"
-          @all-sections-click="onAllSectionsClick()"
-          @section-row-click="onSectionRowClick($event)"
-          @toggle-edit-mode="toggleSectionsEditMode()"
-          @create-section="createSection($event)"
-          @delete-section="(id, title) => onDeleteSection(id, title)"
-          @share-section="(id, title) => openShareModal('section', id, title)"
-          @manage-access="(id, title) => openSectionAccess(id, title)"
-          @ratings-click="onRatingsClick()"
-          @subscriptions-click="openSubscriptions()"
-        />
-
-        <LibrarySubscriptionsPanel
-          v-else-if="activeTab === 'browse' && browseStep === 'subscriptions'"
-          :flat-section-options="personalAdminSectionOptions"
-        />
-
-        <LibraryBrowseRatings
-          v-else-if="
-            activeTab === 'browse' &&
-            browseStep === 'diagrams' &&
-            selectedSectionId === RATINGS_SECTION_ID
-          "
-          @diagram-pick="onRatingsDiagramPick($event)"
-          @section-pick="onRatingsSectionPick($event)"
-        />
-
-        <LibraryBrowseDiagrams
-          v-else-if="activeTab === 'browse' && browseStep === 'diagrams'"
-          v-model:search-query="searchQuery"
-          v-model:tag-filter="tagFilter"
-          v-model:min-rating-filter="minRatingFilter"
-          v-model:min-votes-filter="minVotesFilter"
-          v-model:sort-by-filter="sortByFilter"
-          :diagrams="diagrams"
-          :all-tags="allTags"
-          :is-loading="isLoading"
-          @diagram-pick="handleDiagramPick($event)"
-          @filters-change="library.searchDiagrams()"
-        />
-
-        <LibraryDiagramDetail
-          v-else-if="activeTab === 'browse' && browseStep === 'detail' && selectedDiagram"
-          v-model:edit-title="editTitle"
-          v-model:edit-description="editDescription"
-          v-model:edit-tags="editTags"
-          v-model:edit-section-id="editSectionId"
-          v-model:edit-visibility="editVisibility"
-          v-model:edit-language="editLanguage"
-          v-model:edit-content-locale="editContentLocale"
-          :diagram="selectedDiagram"
-          :flat-section-options="flatSectionOptions"
-          :is-editing="isEditing"
-          :is-saving="isSaving"
-          :library-api-url="libraryApiUrl"
-          @save="saveEdit()"
-          @cancel="resetEditForm()"
-          @start-edit="startEdit()"
-          @open-in-editor="openInEditor()"
-          @share="onShareDiagram()"
-          @preview="onPreviewDiagram()"
-          @delete="onDeleteDiagram()"
-          @toggle-favorite="onToggleFavorite()"
-          @rating-updated="onRatingUpdated($event)"
-          @open-versions="isVersionsModalOpen = true"
-        />
-
-        <LibraryUploadForm
-          v-else-if="activeTab === 'upload'"
-          v-model:upload-title="uploadTitle"
-          v-model:upload-description="uploadDescription"
-          v-model:upload-tags="uploadTags"
-          v-model:upload-section-id="uploadSectionId"
-          v-model:upload-visibility="uploadVisibility"
-          :flat-section-options="flatSectionOptions"
-          :upload-file="uploadFile"
-          :max-size-kb="maxSizeKb"
-          :is-uploading="isUploading"
-          @file-change="onFileChange($event)"
-          @submit="submitUpload()"
-        />
-
-        <div v-else-if="activeTab === 'transfer'">
-          <LibraryTransferTab
-            :sections="transferSections"
-            :diagrams="transferDiagrams"
-            :server-sections="serverTransferSections"
-            :server-diagrams="serverTransferDiagrams"
-            :can-sync-online="canSyncOnline"
-            :import-bundle="importBundle"
-            :is-processing="isTransferProcessing"
-            @export="onExportSelection($event)"
-            @import="onImportSelection($event)"
-            @load-import-file="onImportFile($event)"
-            @push-to-server="onPushToServer($event)"
-            @pull-from-server="onPullFromServer($event)"
-          />
-        </div>
-
-        <LibraryAdminUsersPanel
-          v-else-if="activeTab === 'admin' && showAdminTab"
-          embedded
-        />
-        </template>
-      </div>
+      <LibraryModalContent
+        :is-online-setup-pending="isOnlineSetupPending"
+        :library-api-url="libraryApiUrl"
+        :upload-error="uploadError"
+        :error-message="errorMessage"
+        :active-tab="activeTab"
+        :browse-step="browseStep"
+        :flat-section-options="flatSectionOptions"
+        :flat-sections="flatSections"
+        :selected-section-id="selectedSectionId"
+        :is-sections-edit-mode="isSectionsEditMode"
+        :is-admin="isAdmin"
+        :can-manage-subscriptions="canManageSubscriptions"
+        :personal-admin-section-options="personalAdminSectionOptions"
+        :diagrams="diagrams"
+        :all-tags="allTags"
+        :is-loading="isLoading"
+        :search-query="searchQuery"
+        :tag-filter="tagFilter"
+        :min-rating-filter="minRatingFilter"
+        :min-votes-filter="minVotesFilter"
+        :sort-by-filter="sortByFilter"
+        :selected-diagram="selectedDiagram"
+        :edit-title="editTitle"
+        :edit-description="editDescription"
+        :edit-tags="editTags"
+        :edit-section-id="editSectionId"
+        :edit-visibility="editVisibility"
+        :edit-language="editLanguage"
+        :edit-content-locale="editContentLocale"
+        :is-editing="isEditing"
+        :is-saving="isSaving"
+        :upload-title="uploadTitle"
+        :upload-description="uploadDescription"
+        :upload-tags="uploadTags"
+        :upload-section-id="uploadSectionId"
+        :upload-visibility="uploadVisibility"
+        :upload-file="uploadFile"
+        :max-size-kb="maxSizeKb"
+        :is-uploading="isUploading"
+        :transfer-sections="transferSections"
+        :transfer-diagrams="transferDiagrams"
+        :server-transfer-sections="serverTransferSections"
+        :server-transfer-diagrams="serverTransferDiagrams"
+        :can-sync-online="canSyncOnline"
+        :import-bundle="importBundle"
+        :is-transfer-processing="isTransferProcessing"
+        :show-admin-tab="showAdminTab"
+        @setup-completed="onSetupCompleted()"
+        @all-sections-click="onAllSectionsClick()"
+        @section-row-click="onSectionRowClick($event)"
+        @toggle-edit-mode="toggleSectionsEditMode()"
+        @create-section="createSection($event)"
+        @delete-section="onDeleteSection"
+        @share-section="onShareSection"
+        @manage-access="onManageSectionAccess"
+        @ratings-click="onRatingsClick()"
+        @subscriptions-click="openSubscriptions()"
+        @diagram-pick="handleDiagramPick($event)"
+        @filters-change="library.searchDiagrams()"
+        @save-edit="saveEdit()"
+        @cancel-edit="resetEditForm()"
+        @start-edit="startEdit()"
+        @open-in-editor="openInEditor()"
+        @share="onShareDiagram()"
+        @preview="onPreviewDiagram()"
+        @delete="onDeleteDiagram()"
+        @toggle-favorite="onToggleFavorite()"
+        @rating-updated="onRatingUpdated($event)"
+        @open-versions="isVersionsModalOpen = true"
+        @file-change="onFileChange($event)"
+        @submit-upload="submitUpload()"
+        @export="onExportSelection($event)"
+        @import="onImportSelection($event)"
+        @load-import-file="onImportFile($event)"
+        @push-to-server="onPushToServer($event)"
+        @pull-from-server="onPullFromServer($event)"
+        @ratings-diagram-pick="onRatingsDiagramPick($event)"
+        @ratings-section-pick="onRatingsSectionPick($event)"
+        @update:search-query="searchQuery = $event"
+        @update:tag-filter="tagFilter = $event"
+        @update:min-rating-filter="minRatingFilter = $event"
+        @update:min-votes-filter="minVotesFilter = $event"
+        @update:sort-by-filter="sortByFilter = $event"
+        @update:edit-title="editTitle = $event"
+        @update:edit-description="editDescription = $event"
+        @update:edit-tags="editTags = $event"
+        @update:edit-section-id="editSectionId = $event"
+        @update:edit-visibility="editVisibility = $event"
+        @update:edit-language="editLanguage = $event"
+        @update:edit-content-locale="editContentLocale = $event"
+        @update:upload-title="uploadTitle = $event"
+        @update:upload-description="uploadDescription = $event"
+        @update:upload-tags="uploadTags = $event"
+        @update:upload-section-id="uploadSectionId = $event"
+        @update:upload-visibility="uploadVisibility = $event"
+      />
     </div>
   </Teleport>
 

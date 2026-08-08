@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
-import IconButton from "@/components/IconButton.vue";
-import ActionIcon from "@/components/icons/ActionIcon.vue";
+import WizardStepContent from "@/components/wizard/WizardStepContent.vue";
+import WizardModalFooter from "@/components/wizard/WizardModalFooter.vue";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
 import { generateValidWizardDiagram } from "@/composables/useLlmPlantUmlGenerate";
@@ -21,7 +21,6 @@ import {
   isWizardDiagramType,
   isWizardLanguage,
   resolveWizardStateWithDefaults,
-  WIZARD_CREATION_MODES,
   WIZARD_DIAGRAM_DIRECTIONS,
   WIZARD_DIAGRAM_THEMES,
   WIZARD_TYPE_PARAM_FIELDS,
@@ -458,302 +457,47 @@ function onTransferToEditor(): void {
       {{ t("llm.wizard.stepCounter", { current: stepIndex + 1, total: totalSteps }) }}
     </p>
 
-    <div v-if="currentStepId === 'mode'" class="wizard-step">
-      <p class="wizard-hint">{{ t("llm.wizard.modeHint") }}</p>
-      <div
-        class="wizard-mode-toggle"
-        role="radiogroup"
-        :aria-label="t('llm.wizard.step.mode')"
-      >
-        <button
-          v-for="mode in WIZARD_CREATION_MODES"
-          :key="mode"
-          class="wizard-mode-toggle__option"
-          :class="{ 'is-active': wizardState.creationMode === mode }"
-          type="button"
-          role="radio"
-          :aria-checked="wizardState.creationMode === mode"
-          @click="onModeSelect(mode)"
-        >
-          {{ t(`llm.wizard.mode.${mode}`) }}
-        </button>
-      </div>
-      <p class="wizard-mode-toggle__desc">{{ selectedModeDescription }}</p>
-    </div>
-
-    <div v-else-if="currentStepId === 'language'" class="wizard-step">
-      <p class="wizard-field__label">{{ t("llm.wizard.diagramLanguage") }}</p>
-      <div
-        class="wizard-radio-list"
-        role="radiogroup"
-        :aria-label="t('llm.wizard.diagramLanguage')"
-      >
-        <button
-          v-for="option in languageOptions"
-          :key="option.id"
-          class="wizard-radio-list__option"
-          :class="{ 'is-active': wizardState.language === option.id }"
-          type="button"
-          role="radio"
-          :aria-checked="wizardState.language === option.id"
-          @click="onLanguageSelect(option.id)"
-        >
-          {{ option.label }}
-        </button>
-      </div>
-      <p v-if="isAiMode" class="wizard-hint">{{ t("llm.wizard.languageAiHint") }}</p>
-      <p v-if="wizardState.language === 'graphml'" class="wizard-hint">
-        {{ t("llm.wizard.languageGraphmlHint") }}
-      </p>
-    </div>
-
-    <div v-else-if="currentStepId === 'type'" class="wizard-step">
-      <p class="wizard-field__label">{{ t("llm.wizard.diagramType") }}</p>
-      <div
-        class="wizard-radio-list wizard-radio-list--grid"
-        role="radiogroup"
-        :aria-label="t('llm.wizard.diagramType')"
-      >
-        <button
-          v-for="option in typeOptions"
-          :key="option.id"
-          class="wizard-radio-list__option wizard-radio-list__option--stacked"
-          :class="{ 'is-active': wizardState.diagramType === option.id }"
-          type="button"
-          role="radio"
-          :aria-checked="wizardState.diagramType === option.id"
-          @click="onTypeSelect(option.id)"
-        >
-          <span class="wizard-radio-list__label">{{ option.label }}</span>
-          <span class="wizard-radio-list__desc">{{ option.description }}</span>
-        </button>
-      </div>
-    </div>
-
-    <div v-else-if="currentStepId === 'direction'" class="wizard-step">
-      <p class="wizard-field__label">{{ t("llm.wizard.direction") }}</p>
-      <div
-        class="wizard-mode-toggle"
-        role="radiogroup"
-        :aria-label="t('llm.wizard.direction')"
-      >
-        <button
-          v-for="option in directionOptions"
-          :key="option.id"
-          class="wizard-mode-toggle__option"
-          :class="{ 'is-active': wizardState.direction === option.id }"
-          type="button"
-          role="radio"
-          :aria-checked="wizardState.direction === option.id"
-          @click="onDirectionSelect(option.id)"
-        >
-          {{ option.label }}
-        </button>
-      </div>
-    </div>
-
-    <div v-else-if="currentStepId === 'style'" class="wizard-step">
-      <p class="wizard-field__label">{{ t("llm.wizard.theme") }}</p>
-      <div
-        class="wizard-mode-toggle"
-        role="radiogroup"
-        :aria-label="t('llm.wizard.theme')"
-      >
-        <button
-          v-for="option in themeOptions"
-          :key="option.id"
-          class="wizard-mode-toggle__option"
-          :class="{ 'is-active': wizardState.theme === option.id }"
-          type="button"
-          role="radio"
-          :aria-checked="wizardState.theme === option.id"
-          @click="onThemeSelect(option.id)"
-        >
-          {{ option.label }}
-        </button>
-      </div>
-    </div>
-
-    <div v-else-if="currentStepId === 'params'" class="wizard-step">
-      <p class="wizard-hint">{{ t("llm.wizard.paramsHint") }}</p>
-      <label
-        v-for="field in paramFields"
-        :key="field.id"
-        class="wizard-field wizard-field--inline"
-      >
-        <span class="wizard-field__label">{{ t(`llm.wizard.param.${field.id}`) }}</span>
-        <input
-          class="wizard-input"
-          type="number"
-          :min="field.min"
-          :max="field.max"
-          :value="wizardState.typeParams[field.id]"
-          @change="onParamChange(field.id, $event)"
-        />
-        <span class="wizard-field__hint">
-          {{ t("llm.wizard.paramRange", { min: field.min, max: field.max }) }}
-        </span>
-      </label>
-
-      <div v-if="structuralElementOptions.length > 0" class="wizard-structural">
-        <p class="wizard-field__label">{{ t("llm.wizard.structuralElements") }}</p>
-        <div class="wizard-structural__grid">
-          <label
-            v-for="option in structuralElementOptions"
-            :key="option.id"
-            class="wizard-structural__item"
-          >
-            <input
-              type="checkbox"
-              :checked="wizardState.structuralElements[option.id]"
-              @change="onStructuralToggle(option.id, $event)"
-            />
-            <span>{{ option.label }}</span>
-          </label>
-        </div>
-      </div>
-
-      <label v-if="!isAiMode" class="wizard-field">
-        <span class="wizard-field__label">{{ t("llm.wizard.details") }}</span>
-        <textarea
-          v-model="wizardState.typeSpecificText"
-          class="wizard-textarea"
-          rows="3"
-          :placeholder="t(`llm.wizard.detailsPlaceholder.${wizardState.diagramType}`)"
-        />
-      </label>
-    </div>
-
-    <div v-else-if="currentStepId === 'context'" class="wizard-step">
-      <label class="wizard-field">
-        <span class="wizard-field__label">
-          {{ isAiMode ? t("llm.wizard.description") : t("llm.wizard.context") }}
-        </span>
-        <textarea
-          v-model="wizardState.contextText"
-          class="wizard-textarea"
-          rows="6"
-          :placeholder="
-            isAiMode
-              ? t('llm.wizard.descriptionPlaceholder')
-              : t('llm.wizard.contextPlaceholder')
-          "
-        />
-      </label>
-    </div>
-
-    <div v-else-if="currentStepId === 'prompt'" class="wizard-step">
-      <label class="wizard-field">
-        <span class="wizard-field__label">{{ t("llm.wizard.prompt") }}</span>
-        <textarea
-          v-model="wizardState.promptText"
-          class="wizard-textarea"
-          rows="10"
-        />
-      </label>
-    </div>
-
-    <div v-else class="wizard-step">
-      <p v-if="isGenerating" class="wizard-status">{{ t("llm.wizard.generating") }}</p>
-      <p v-if="errorMessage" class="wizard-error">{{ errorMessage }}</p>
-      <p v-if="resultExplanation" class="wizard-explanation">{{ resultExplanation }}</p>
-      <p v-if="isManualResultReady" class="wizard-hint">{{ t("llm.wizard.manualResultHint") }}</p>
-
-      <div v-if="previewSvg || isPreviewLoading" class="wizard-preview-wrap">
-        <div class="wizard-preview" :class="{ 'is-loading': isPreviewLoading }">
-          <div v-if="isPreviewLoading">{{ t("app.loading") }}</div>
-          <div v-else class="wizard-preview__svg" v-html="previewSvg" />
-        </div>
-      </div>
-    </div>
+    <WizardStepContent
+      v-model:wizard-state="wizardState"
+      :current-step-id="currentStepId"
+      :is-ai-mode="isAiMode"
+      :is-generating="isGenerating"
+      :is-manual-result-ready="isManualResultReady"
+      :error-message="errorMessage"
+      :result-explanation="resultExplanation"
+      :preview-svg="previewSvg"
+      :is-preview-loading="isPreviewLoading"
+      :selected-mode-description="selectedModeDescription"
+      :language-options="languageOptions"
+      :type-options="typeOptions"
+      :direction-options="directionOptions"
+      :theme-options="themeOptions"
+      :param-fields="paramFields"
+      :structural-element-options="structuralElementOptions"
+      @mode-select="onModeSelect($event)"
+      @language-select="onLanguageSelect($event)"
+      @type-select="onTypeSelect($event)"
+      @direction-select="onDirectionSelect($event)"
+      @theme-select="onThemeSelect($event)"
+      @param-change="onParamChange"
+      @structural-toggle="onStructuralToggle"
+    />
 
     <template #footer>
-      <div class="wizard-footer">
-        <div class="wizard-footer__start">
-          <IconButton
-            v-if="showBackButton"
-            :label="t('llm.wizard.back')"
-            extra-class="wizard-footer__btn"
-            :disabled="isGenerating"
-            @click="goBack"
-          >
-            <ActionIcon name="back" />
-          </IconButton>
-        </div>
-
-        <div class="wizard-footer__end">
-          <IconButton
-            :label="t('app.cancel')"
-            extra-class="wizard-footer__btn"
-            @click="emit('close')"
-          >
-            <ActionIcon name="close" />
-          </IconButton>
-
-          <IconButton
-            v-if="currentStepId !== 'result'"
-            :label="t('llm.wizard.transferToEditor')"
-            extra-class="wizard-footer__btn"
-            :disabled="isGenerating"
-            @click="onTransferToEditor"
-          >
-            <ActionIcon name="arrow-down" />
-          </IconButton>
-
-          <IconButton
-            v-if="currentStepId !== 'result' && currentStepId !== 'context'"
-            :label="t('llm.wizard.next')"
-            extra-class="wizard-footer__btn"
-            primary
-            :disabled="!canGoNext || isGenerating"
-            @click="goNext"
-          >
-            <ActionIcon name="next" />
-          </IconButton>
-
-          <IconButton
-            v-if="currentStepId === 'context' && isAiMode"
-            :label="isGenerating ? t('llm.wizard.generating') : t('llm.wizard.generate')"
-            extra-class="wizard-footer__btn"
-            primary
-            :disabled="!canGoNext || isGenerating"
-            @click="goNext"
-          >
-            <ActionIcon name="ai" />
-          </IconButton>
-
-          <IconButton
-            v-if="currentStepId === 'prompt'"
-            :label="isGenerating ? t('llm.wizard.generating') : t('llm.wizard.generate')"
-            extra-class="wizard-footer__btn"
-            primary
-            :disabled="!canGoNext || isGenerating"
-            @click="goNext"
-          >
-            <ActionIcon name="ai" />
-          </IconButton>
-
-          <IconButton
-            v-if="currentStepId === 'result'"
-            :label="t('llm.wizard.apply')"
-            extra-class="wizard-footer__btn"
-            primary
-            :disabled="!resultSource || isGenerating"
-            @click="onApply"
-          >
-            <ActionIcon name="check" />
-          </IconButton>
-
-          <IconButton
-            v-if="currentStepId === 'result' && !isGenerating"
-            :label="t('llm.wizard.regenerate')"
-            extra-class="wizard-footer__btn"
-            @click="isAiMode ? generateDiagram() : prepareManualResult()"
-          >
-            <ActionIcon name="refresh" />
-          </IconButton>
-        </div>
-      </div>
+      <WizardModalFooter
+        :current-step-id="currentStepId"
+        :is-ai-mode="isAiMode"
+        :is-generating="isGenerating"
+        :can-go-next="canGoNext"
+        :show-back-button="showBackButton"
+        :result-source="resultSource"
+        @back="goBack"
+        @close="emit('close')"
+        @transfer-to-editor="onTransferToEditor"
+        @next="goNext"
+        @apply="onApply"
+        @regenerate="isAiMode ? generateDiagram() : prepareManualResult()"
+      />
     </template>
   </AppModal>
 </template>
