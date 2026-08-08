@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { requireAuthenticatedUser } from "../auth.js";
 import type { AuthVariables } from "../auth/context.js";
 import {
+  canDownloadDiagram,
   canReadDiagram,
   canReadSection,
   canWriteDiagram,
@@ -56,31 +57,65 @@ import {
   FAVORITES_SECTION_ID,
   isDiagramSortOption,
   isDiagramVisibility,
+  isContentLocale,
   isSharePermission,
 } from "../types.js";
 
 export const diagramsRouter = new Hono<{ Variables: AuthVariables }>();
 
 const DIAGRAM_LIST_SELECT = `
-  SELECT id, section_id, title, description, tags, language,
+  SELECT id, section_id, title, description, tags, language, content_locale,
          file_name, byte_size, author_id, owner_id, visibility,
          avg_rating, vote_count, created_at, updated_at
   FROM diagrams
 `;
 
 const DIAGRAM_LIST_SELECT_ALIASED = `
-  SELECT d.id, d.section_id, d.title, d.description, d.tags, d.language,
+  SELECT d.id, d.section_id, d.title, d.description, d.tags, d.language, d.content_locale,
          d.file_name, d.byte_size, d.author_id, d.owner_id, d.visibility,
          d.avg_rating, d.vote_count, d.created_at, d.updated_at
   FROM diagrams d
 `;
 
 const DIAGRAM_FULL_SELECT = `
-  SELECT id, section_id, title, description, tags, language,
+  SELECT id, section_id, title, description, tags, language, content_locale,
          source, file_name, byte_size, author_id, owner_id, visibility,
          avg_rating, vote_count, created_at, updated_at
   FROM diagrams
 `;
+
+function toDiagramAccessRow(row: {
+  id: string;
+  section_id: string | null;
+  author_id: string | null;
+  owner_id: string | null;
+  visibility: string;
+}): {
+  id: string;
+  section_id: string | null;
+  author_id: string | null;
+  owner_id: string | null;
+  visibility: DiagramVisibility;
+} {
+  return {
+    id: row.id,
+    section_id: row.section_id,
+    author_id: row.author_id,
+    owner_id: row.owner_id,
+    visibility: row.visibility as DiagramVisibility,
+  };
+}
+
+function applyDiagramPermissions(
+  database: ReturnType<typeof getDb>,
+  user: Parameters<typeof canWriteDiagram>[1],
+  row: Parameters<typeof toDiagramAccessRow>[0],
+  diagram: { canWrite?: boolean; canDownload?: boolean },
+): void {
+  const access = toDiagramAccessRow(row);
+  diagram.canWrite = canWriteDiagram(database, user, access);
+  diagram.canDownload = canDownloadDiagram(database, user, access);
+}
 
 diagramsRouter.get("/", (context) => {
   const user = requireAuthenticatedUser(context);
@@ -188,16 +223,11 @@ diagramsRouter.get("/", (context) => {
   );
 
   const diagrams = enrichDiagramListForUser(database, user, readable).map(
-    (diagram, index) => ({
-      ...diagram,
-      canWrite: canWriteDiagram(database, user, {
-        id: readable[index].id,
-        section_id: readable[index].section_id,
-        author_id: readable[index].author_id,
-        owner_id: readable[index].owner_id,
-        visibility: readable[index].visibility as DiagramVisibility,
-      }),
-    }),
+    (diagram, index) => {
+      const enriched = { ...diagram };
+      applyDiagramPermissions(database, user, readable[index], enriched);
+      return enriched;
+    },
   );
 
   return context.json({
@@ -235,13 +265,7 @@ diagramsRouter.get("/:id", (context) => {
   }
 
   const diagram = enrichDiagramForUser(database, user, row);
-  diagram.canWrite = canWriteDiagram(database, user, {
-    id: row.id,
-    section_id: row.section_id,
-    author_id: row.author_id,
-    owner_id: row.owner_id,
-    visibility: row.visibility as DiagramVisibility,
-  });
+  applyDiagramPermissions(database, user, row, diagram);
 
   return context.json(diagram);
 });
@@ -262,6 +286,7 @@ diagramsRouter.post("/", async (context) => {
   let source = "";
   let fileName = "diagram.puml";
   let visibility: DiagramVisibility = "all";
+  let contentLocale = "";
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await context.req.formData();
@@ -273,6 +298,11 @@ diagramsRouter.post("/", async (context) => {
     const tagsRaw = String(formData.get("tags") ?? "").trim();
     const languageRaw = String(formData.get("language") ?? "").trim();
     const visibilityRaw = String(formData.get("visibility") ?? "").trim();
+    const contentLocaleRaw = String(formData.get("contentLocale") ?? "").trim();
+
+    if (contentLocaleRaw && isContentLocale(contentLocaleRaw)) {
+      contentLocale = contentLocaleRaw;
+    }
 
     if (tagsRaw) {
       tags = tagsRaw
@@ -324,6 +354,7 @@ diagramsRouter.post("/", async (context) => {
       source?: string;
       fileName?: string;
       visibility?: string;
+      contentLocale?: string;
     }>();
 
     title = body.title?.trim() ?? "";
@@ -341,6 +372,10 @@ diagramsRouter.post("/", async (context) => {
 
     if (body.visibility && isDiagramVisibility(body.visibility)) {
       visibility = body.visibility;
+    }
+
+    if (body.contentLocale && isContentLocale(body.contentLocale)) {
+      contentLocale = body.contentLocale;
     }
   }
 
@@ -385,10 +420,10 @@ diagramsRouter.post("/", async (context) => {
   database
     .prepare(
       `INSERT INTO diagrams (
-        id, section_id, title, description, tags, language,
+        id, section_id, title, description, tags, language, content_locale,
         source, file_name, byte_size, author_id, owner_id, visibility,
         created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       id,
@@ -397,6 +432,7 @@ diagramsRouter.post("/", async (context) => {
       description,
       JSON.stringify(tags),
       language,
+      contentLocale,
       source,
       fileName,
       byteSize,
@@ -413,6 +449,7 @@ diagramsRouter.post("/", async (context) => {
 
   const diagram = enrichDiagramForUser(database, user, row);
   diagram.canWrite = true;
+  diagram.canDownload = true;
 
   return context.json(diagram, 201);
 });
@@ -433,6 +470,7 @@ diagramsRouter.put("/:id", async (context) => {
     source?: string;
     fileName?: string;
     visibility?: string;
+    contentLocale?: string;
   }>();
 
   const database = getDb();
@@ -488,6 +526,11 @@ diagramsRouter.put("/:id", async (context) => {
     visibility = body.visibility;
   }
 
+  const contentLocale =
+    body.contentLocale !== undefined && isContentLocale(body.contentLocale)
+      ? body.contentLocale
+      : (current.content_locale ?? "");
+
   if (source !== current.source) {
     snapshotDiagramSourceVersion(
       database,
@@ -504,7 +547,8 @@ diagramsRouter.put("/:id", async (context) => {
     .prepare(
       `UPDATE diagrams
        SET section_id = ?, title = ?, description = ?, tags = ?, language = ?,
-           source = ?, file_name = ?, byte_size = ?, visibility = ?, updated_at = ?
+           content_locale = ?, source = ?, file_name = ?, byte_size = ?,
+           visibility = ?, updated_at = ?
        WHERE id = ?`,
     )
     .run(
@@ -517,6 +561,7 @@ diagramsRouter.put("/:id", async (context) => {
           : parseTags(current.tags),
       ),
       language,
+      contentLocale,
       source,
       body.fileName ? resolvePumlFileName(body.fileName) : current.file_name,
       byteSize,

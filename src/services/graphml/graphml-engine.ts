@@ -167,10 +167,13 @@ export function parseGraphml(source: string): ParsedGraphml {
   return { nodes, edges };
 }
 
-function layoutGraph(graph: ParsedGraphml): dagre.graphlib.Graph {
+function layoutGraph(
+  graph: ParsedGraphml,
+  rankdir: "TB" | "LR" = "TB",
+): dagre.graphlib.Graph {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setGraph({
-    rankdir: "TB",
+    rankdir,
     marginx: GRAPH_MARGIN,
     marginy: GRAPH_MARGIN,
     nodesep: 40,
@@ -293,9 +296,10 @@ function renderGraphmlSvg(
 
 export async function renderGraphmlToSvg(
   source: string,
-  options: { dark?: boolean } = {},
+  options: { dark?: boolean; direction?: "TB" | "LR" } = {},
 ): Promise<string> {
   const graph = parseGraphml(source);
-  const dagreGraph = layoutGraph(graph);
+  const rankdir = options.direction === "LR" ? "LR" : "TB";
+  const dagreGraph = layoutGraph(graph, rankdir);
   return renderGraphmlSvg(graph, dagreGraph, Boolean(options.dark));
 }

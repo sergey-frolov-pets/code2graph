@@ -5,10 +5,12 @@ import {
   ArrowLeftRight,
   Braces,
   CircleCheck,
+  CircleHelp,
   Cloud,
   Download,
   Eye,
   FolderOpen,
+  Globe,
   History,
   Library,
   Moon,
@@ -23,6 +25,7 @@ import {
   Sun,
   Trash2,
   Undo2,
+  Unlink,
   Upload,
   X,
   ZoomIn,
@@ -50,11 +53,14 @@ export type ActionIconName =
   | "undo"
   | "redo"
   | "ai"
+  | "syntax-help"
   | "transfer"
   | "eye"
   | "star"
   | "cloud"
-  | "shield";
+  | "shield"
+  | "globe"
+  | "unlink";
 
 const props = withDefaults(
   defineProps<{
@@ -87,11 +93,14 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   undo: Undo2,
   redo: Redo2,
   ai: Sparkles,
+  "syntax-help": CircleHelp,
   transfer: ArrowLeftRight,
   eye: Eye,
   star: Star,
   cloud: Cloud,
   shield: Shield,
+  globe: Globe,
+  unlink: Unlink,
 };
 
 const iconComponent = computed(() => ICON_MAP[props.name]);

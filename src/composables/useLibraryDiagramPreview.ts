@@ -61,6 +61,31 @@ export function useLibraryDiagramPreview() {
     return true;
   }
 
+  async function renderWithMode(
+    source: string,
+    format: ReturnType<typeof resolveLibraryDiagramFormat>,
+    options: {
+      dark: boolean;
+      layout: LayoutEngine;
+      renderMode: RenderMode;
+    },
+  ): Promise<string> {
+    const engineReady = await ensureEngineReady(
+      format,
+      options.dark,
+      options.renderMode,
+    );
+    if (!engineReady) {
+      return "";
+    }
+
+    return renderDiagramToSvg(source, format, {
+      dark: options.dark,
+      layout: options.layout,
+      renderMode: options.renderMode,
+    });
+  }
+
   async function renderPreview(
     source: string,
     options?: {
@@ -76,13 +101,21 @@ export function useLibraryDiagramPreview() {
     error.value = "";
     watermark.value = options?.watermarked ?? true;
 
+    const trimmedSource = source.trim();
+    if (!trimmedSource) {
+      error.value = t("library.previewSourceMissing");
+      isRendering.value = false;
+      return;
+    }
+
     const format = resolveLibraryDiagramFormat(
-      source,
+      trimmedSource,
       options?.fileName,
       options?.language,
     );
     const renderMode = options?.renderMode ?? DEFAULT_RENDER_MODE;
     const dark = options?.dark ?? false;
+    const layout = options?.layout ?? LAYOUT_ENGINES.smetana;
 
     try {
       if (isOnlineRenderMode(renderMode) && !navigator.onLine) {
@@ -90,17 +123,48 @@ export function useLibraryDiagramPreview() {
         return;
       }
 
-      const engineReady = await ensureEngineReady(format, dark, renderMode);
-      if (!engineReady) {
+      let rendered = await renderWithMode(trimmedSource, format, {
+        dark,
+        layout,
+        renderMode,
+      });
+
+      if (
+        !rendered.trim() &&
+        isOnlineRenderMode(renderMode) &&
+        format !== "graphml"
+      ) {
+        rendered = await renderWithMode(trimmedSource, format, {
+          dark,
+          layout,
+          renderMode: "offline",
+        });
+      }
+
+      if (!rendered.trim()) {
+        svg.value = "";
+        error.value = t("library.previewEmpty");
         return;
       }
 
-      svg.value = await renderDiagramToSvg(source, format, {
-        dark,
-        layout: options?.layout ?? LAYOUT_ENGINES.smetana,
-        renderMode,
-      });
+      svg.value = rendered;
     } catch (renderError) {
+      if (isOnlineRenderMode(renderMode) && format !== "graphml") {
+        try {
+          const offlineRendered = await renderWithMode(trimmedSource, format, {
+            dark,
+            layout,
+            renderMode: "offline",
+          });
+          if (offlineRendered.trim()) {
+            svg.value = offlineRendered;
+            return;
+          }
+        } catch {
+          // fall through to the original error below
+        }
+      }
+
       svg.value = "";
       error.value =
         renderError instanceof Error

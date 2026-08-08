@@ -105,6 +105,7 @@ watch(
   <AppModal
     :open="open"
     :title="t('library.shareModalTitle', { title: resourceTitle })"
+    layer="above-library"
     @close="emit('close')"
   >
     <p class="settings-field__hint">{{ t("library.shareModalHint") }}</p>

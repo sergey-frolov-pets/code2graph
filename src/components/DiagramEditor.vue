@@ -56,6 +56,7 @@ const emit = defineEmits<{
   undo: [];
   redo: [];
   aiPatch: [payload: { start: number; end: number }];
+  aiSyntaxAsk: [];
 }>();
 
 const { t } = useLocale();
@@ -65,7 +66,9 @@ const formatDefinition = computed(() =>
 );
 const isReadOnly = computed(() => !formatDefinition.value.editable);
 const effectiveSyntaxHighlight = computed(
-  () => props.syntaxHighlightEnabled && diagramFormat.value === "plantuml",
+  () =>
+    props.syntaxHighlightEnabled &&
+    (diagramFormat.value === "plantuml" || diagramFormat.value === "mermaid"),
 );
 const effectiveAutocomplete = computed(
   () =>
@@ -153,6 +156,7 @@ const {
   source,
   folds,
   syntaxHighlightEnabled: effectiveSyntaxHighlight,
+  diagramFormat,
   editorFontSize: toRef(props, "editorFontSize"),
   editorFontFamily: toRef(props, "editorFontFamily"),
 });
@@ -265,6 +269,7 @@ onUnmounted(() => {
       :can-redo="canRedo"
       :can-clear="canClear"
       :can-ai-patch="canClear"
+      :can-ai-syntax-ask="canClear"
       :snippets-open="snippetsOpen"
       :is-fullscreen="isFullscreen"
       @open-file="openFilePicker"
@@ -272,6 +277,7 @@ onUnmounted(() => {
       @save-puml="emit('savePuml')"
       @save-to-library="emit('saveToLibrary')"
       @ai-patch="requestAiPatch"
+      @ai-syntax-ask="emit('aiSyntaxAsk')"
       @validate-syntax="emit('validateSyntax')"
       @undo="emit('undo')"
       @redo="emit('redo')"

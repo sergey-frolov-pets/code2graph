@@ -1,6 +1,12 @@
 import type Database from "better-sqlite3";
+import {
+  getSubscriptionPermissionForSection,
+  higherPermission,
+  PERMISSION_RANK,
+} from "./subscriptions.js";
 import type {
   DiagramVisibility,
+  SectionAccessPermission,
   SectionKind,
   SectionRow,
   UserDto,
@@ -10,6 +16,7 @@ export interface SectionAccessGrant {
   section_id: string;
   user_id: string;
   expires_at: string | null;
+  permission: SectionAccessPermission;
 }
 
 export interface DiagramAccessRow {
@@ -20,33 +27,10 @@ export interface DiagramAccessRow {
   visibility: DiagramVisibility;
 }
 
+export { PERMISSION_RANK };
+
 export function isAdmin(user: UserDto): boolean {
   return user.role === "admin";
-}
-
-export function isSubscriptionActive(user: UserDto): boolean {
-  return user.subscriptionActive;
-}
-
-export function canSeeVisibility(
-  user: UserDto,
-  visibility: DiagramVisibility,
-  ownerId: string | null,
-): boolean {
-  if (isAdmin(user)) {
-    return true;
-  }
-
-  switch (visibility) {
-    case "all":
-      return true;
-    case "personal":
-      return ownerId === user.id;
-    case "subscription":
-      return isSubscriptionActive(user);
-    default:
-      return false;
-  }
 }
 
 function isGrantActive(expiresAt: string | null): boolean {
@@ -56,36 +40,114 @@ function isGrantActive(expiresAt: string | null): boolean {
   return new Date(expiresAt).getTime() > Date.now();
 }
 
+export function getSectionAccessGrant(
+  database: Database.Database,
+  sectionId: string,
+  userId: string,
+): SectionAccessGrant | null {
+  const row = database
+    .prepare(
+      `SELECT section_id, user_id, expires_at, permission
+       FROM section_access
+       WHERE section_id = ? AND user_id = ?`,
+    )
+    .get(sectionId, userId) as
+    | {
+        section_id: string;
+        user_id: string;
+        expires_at: string | null;
+        permission: string;
+      }
+    | undefined;
+
+  if (!row || !isGrantActive(row.expires_at)) {
+    return null;
+  }
+
+  const permission = row.permission as SectionAccessPermission;
+  if (!PERMISSION_RANK[permission]) {
+    return {
+      section_id: row.section_id,
+      user_id: row.user_id,
+      expires_at: row.expires_at,
+      permission: "view",
+    };
+  }
+
+  return {
+    section_id: row.section_id,
+    user_id: row.user_id,
+    expires_at: row.expires_at,
+    permission,
+  };
+}
+
+export function getEffectiveSectionPermission(
+  database: Database.Database,
+  sectionId: string,
+  userId: string,
+): SectionAccessPermission | null {
+  const directGrant = getSectionAccessGrant(database, sectionId, userId);
+  const subscriptionPermission = getSubscriptionPermissionForSection(
+    database,
+    sectionId,
+    userId,
+  );
+
+  if (directGrant && subscriptionPermission) {
+    return higherPermission(directGrant.permission, subscriptionPermission);
+  }
+
+  return directGrant?.permission ?? subscriptionPermission ?? null;
+}
+
+export function hasEffectiveSectionPermission(
+  database: Database.Database,
+  sectionId: string,
+  userId: string,
+  minPermission: SectionAccessPermission = "view",
+): boolean {
+  const effective = getEffectiveSectionPermission(database, sectionId, userId);
+  if (!effective) {
+    return false;
+  }
+  return PERMISSION_RANK[effective] >= PERMISSION_RANK[minPermission];
+}
+
 export function getSectionAccessGrants(
   database: Database.Database,
   sectionId: string,
 ): SectionAccessGrant[] {
   return database
     .prepare(
-      `SELECT section_id, user_id, expires_at
+      `SELECT section_id, user_id, expires_at, permission
        FROM section_access
        WHERE section_id = ?`,
     )
     .all(sectionId) as SectionAccessGrant[];
 }
 
+/** @deprecated Используйте hasEffectiveSectionPermission */
 export function hasSectionAccessGrant(
   database: Database.Database,
   sectionId: string,
   userId: string,
+  minPermission: SectionAccessPermission = "view",
 ): boolean {
-  const row = database
-    .prepare(
-      `SELECT expires_at FROM section_access
-       WHERE section_id = ? AND user_id = ?`,
-    )
-    .get(sectionId, userId) as { expires_at: string | null } | undefined;
+  return hasEffectiveSectionPermission(
+    database,
+    sectionId,
+    userId,
+    minPermission,
+  );
+}
 
-  if (!row) {
-    return false;
-  }
-
-  return isGrantActive(row.expires_at);
+export function getUserSectionAccessPermission(
+  database: Database.Database,
+  sectionId: string,
+  userId: string,
+): SectionAccessPermission | null {
+  return getEffectiveSectionPermission(database, sectionId, userId);
 }
 
 export function getSectionRow(
@@ -103,6 +165,49 @@ export function getSectionRow(
   return row ?? null;
 }
 
+function canSeeSubscriptionContent(
+  database: Database.Database,
+  user: UserDto,
+  sectionId: string | null,
+  ownerId: string | null,
+): boolean {
+  if (ownerId === user.id) {
+    return true;
+  }
+
+  if (!sectionId) {
+    return false;
+  }
+
+  return hasEffectiveSectionPermission(database, sectionId, user.id, "view");
+}
+
+export function canSeeVisibility(
+  user: UserDto,
+  visibility: DiagramVisibility,
+  ownerId: string | null,
+  database?: Database.Database,
+  sectionId?: string | null,
+): boolean {
+  if (isAdmin(user)) {
+    return true;
+  }
+
+  switch (visibility) {
+    case "all":
+      return true;
+    case "personal":
+      return ownerId === user.id;
+    case "subscription":
+      if (!database) {
+        return false;
+      }
+      return canSeeSubscriptionContent(database, user, sectionId ?? null, ownerId);
+    default:
+      return false;
+  }
+}
+
 export function canReadSection(
   database: Database.Database,
   user: UserDto,
@@ -116,7 +221,7 @@ export function canReadSection(
     return true;
   }
 
-  if (hasSectionAccessGrant(database, section.id, user.id)) {
+  if (hasEffectiveSectionPermission(database, section.id, user.id, "view")) {
     return true;
   }
 
@@ -127,12 +232,35 @@ export function canReadSection(
   if (
     section.kind === "personal" &&
     section.owner_id === user.id &&
-    canSeeVisibility(user, section.visibility, section.owner_id)
+    canSeeVisibility(user, section.visibility, section.owner_id, database, section.id)
+  ) {
+    return true;
+  }
+
+  if (
+    section.visibility === "subscription" &&
+    hasEffectiveSectionPermission(database, section.id, user.id, "view")
   ) {
     return true;
   }
 
   return false;
+}
+
+export function canDownloadSection(
+  database: Database.Database,
+  user: UserDto,
+  section: SectionRow,
+): boolean {
+  if (isAdmin(user)) {
+    return true;
+  }
+
+  if (section.owner_id === user.id) {
+    return true;
+  }
+
+  return hasEffectiveSectionPermission(database, section.id, user.id, "download");
 }
 
 export function canWriteSection(
@@ -148,7 +276,7 @@ export function canWriteSection(
     return true;
   }
 
-  return hasSectionAccessGrant(database, section.id, user.id);
+  return hasEffectiveSectionPermission(database, section.id, user.id, "contribute");
 }
 
 export function canAdminSection(
@@ -208,7 +336,54 @@ export function canReadDiagram(
     }
   }
 
-  return canSeeVisibility(user, diagram.visibility, diagram.owner_id);
+  return canSeeVisibility(
+    user,
+    diagram.visibility,
+    diagram.owner_id,
+    database,
+    diagram.section_id,
+  );
+}
+
+export function canDownloadDiagram(
+  database: Database.Database,
+  user: UserDto,
+  diagram: DiagramAccessRow,
+): boolean {
+  if (isAdmin(user)) {
+    return true;
+  }
+
+  if (diagram.owner_id === user.id || diagram.author_id === user.id) {
+    return true;
+  }
+
+  if (!canReadDiagram(database, user, diagram)) {
+    return false;
+  }
+
+  if (diagram.section_id) {
+    const section = getSectionRow(database, diagram.section_id);
+    if (section && section.owner_id !== user.id) {
+      return hasEffectiveSectionPermission(
+        database,
+        section.id,
+        user.id,
+        "download",
+      );
+    }
+  }
+
+  if (diagram.visibility === "subscription" && diagram.section_id) {
+    return hasEffectiveSectionPermission(
+      database,
+      diagram.section_id,
+      user.id,
+      "download",
+    );
+  }
+
+  return true;
 }
 
 export function canWriteDiagram(
@@ -233,7 +408,11 @@ export function canWriteDiagram(
     return false;
   }
 
-  return canWriteSection(database, user, section);
+  if (!hasEffectiveSectionPermission(database, section.id, user.id, "contribute")) {
+    return false;
+  }
+
+  return diagram.author_id === user.id;
 }
 
 export function filterReadableSections(

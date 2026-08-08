@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
+import ActionIcon from "@/components/icons/ActionIcon.vue";
 import { APP_META, type LayoutEngine } from "@/constants";
 import {
   isOnlineRenderMode,
@@ -55,32 +56,11 @@ onUnmounted(() => {
       :aria-label="`${layout}, ${renderModeLabel}`"
     >
       <span>{{ layout }}</span>
-      <span
+      <ActionIcon
+        :name="isOnlineMode ? 'globe' : 'unlink'"
         class="status-bar__mode-icon"
         :class="isOnlineMode ? 'is-online' : 'is-offline'"
-        aria-hidden="true"
-      >
-        <svg v-if="isOnlineMode" viewBox="0 0 24 24">
-          <path
-            d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-        <svg v-else viewBox="0 0 24 24">
-          <path
-            d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </span>
+      />
     </span>
     <span class="status-bar__copyright">{{ APP_META.copyright }}</span>
   </footer>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
+import ActionIcon from "@/components/icons/ActionIcon.vue";
+import IconButton from "@/components/IconButton.vue";
 import { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import { useLibraryTarget } from "@/config/library-target";
 import { useLocale } from "@/composables/useLocale";
@@ -125,22 +127,22 @@ async function onSave(): Promise<void> {
 
     <div v-if="canUseOnline" class="save-library__target">
       <span class="save-library__target-label">{{ t("library.targetLabel") }}</span>
-      <button
-        class="btn"
-        type="button"
-        :class="{ 'is-active': libraryTarget === 'local' }"
+      <IconButton
+        :label="t('library.targetLocal')"
+        extra-class="save-library__target-btn"
+        :pressed="libraryTarget === 'local'"
         @click="setLibraryTarget('local')"
       >
-        {{ t("library.targetLocal") }}
-      </button>
-      <button
-        class="btn"
-        type="button"
-        :class="{ 'is-active': libraryTarget === 'online' }"
+        <ActionIcon name="unlink" />
+      </IconButton>
+      <IconButton
+        :label="t('library.targetOnline')"
+        extra-class="save-library__target-btn"
+        :pressed="libraryTarget === 'online'"
         @click="setLibraryTarget('online')"
       >
-        {{ t("library.targetOnline") }}
-      </button>
+        <ActionIcon name="globe" />
+      </IconButton>
     </div>
 
     <p v-if="isUpdateMode" class="save-library__hint">
@@ -215,9 +217,12 @@ async function onSave(): Promise<void> {
   color: var(--text-muted);
 }
 
-.save-library__target .btn.is-active {
-  border-color: var(--accent);
-  color: var(--accent);
+.save-library__target-btn {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
 }
 
 .library-error {

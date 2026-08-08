@@ -405,12 +405,12 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
 }
 
-.status-bar__mode-icon svg {
+.status-bar__mode-icon :is(svg, .action-icon) {
   display: block;
   width: 14px;
   height: 14px;

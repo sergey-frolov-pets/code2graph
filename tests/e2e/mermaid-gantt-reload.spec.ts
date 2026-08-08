@@ -15,6 +15,11 @@ test("mermaid gantt sample renders from dropdown", async ({ page }) => {
     timeout: 30_000,
   });
   await expect(page.locator(".preview-error")).toHaveCount(0);
+
+  const box = await page.locator(".preview-content svg").boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.width).toBeGreaterThan(120);
+  expect(box!.height).toBeGreaterThan(40);
 });
 
 test("mixed gantt and plantuml source is cleaned and renders", async ({

@@ -1,5 +1,5 @@
 import { ref, type Ref } from "vue";
-import type { DiagramVisibility } from "@/constants/diagram-library";
+import type { DiagramLanguage, DiagramVisibility } from "@/constants/diagram-library";
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import { parseTagsInput } from "@/utils/library-tags";
 import type { BrowseStep } from "./useLibraryBrowseFlow";
@@ -28,6 +28,8 @@ export function useLibraryDiagramEdit(options: {
   const editTags = ref("");
   const editSectionId = ref("");
   const editVisibility = ref<DiagramVisibility>("all");
+  const editLanguage = ref<DiagramLanguage>("plantuml");
+  const editContentLocale = ref("");
 
   function resetEditForm(): void {
     isEditing.value = false;
@@ -35,6 +37,8 @@ export function useLibraryDiagramEdit(options: {
     editDescription.value = "";
     editTags.value = "";
     editSectionId.value = "";
+    editLanguage.value = "plantuml";
+    editContentLocale.value = "";
   }
 
   function startEdit(): void {
@@ -44,6 +48,8 @@ export function useLibraryDiagramEdit(options: {
     editTags.value = library.selectedDiagram.value.tags.join(", ");
     editSectionId.value = library.selectedDiagram.value.sectionId ?? "";
     editVisibility.value = library.selectedDiagram.value.visibility ?? "all";
+    editLanguage.value = library.selectedDiagram.value.language ?? "plantuml";
+    editContentLocale.value = library.selectedDiagram.value.contentLocale ?? "";
     isEditing.value = true;
   }
 
@@ -57,6 +63,8 @@ export function useLibraryDiagramEdit(options: {
         title: editTitle.value.trim(),
         description: editDescription.value,
         tags,
+        language: editLanguage.value,
+        contentLocale: editContentLocale.value,
         sectionId: editSectionId.value || null,
         visibility: editVisibility.value,
       });
@@ -71,6 +79,7 @@ export function useLibraryDiagramEdit(options: {
 
   function openInEditor(): void {
     if (!library.selectedDiagram.value) return;
+    if (library.selectedDiagram.value.canDownload === false) return;
     onOpenDiagram({
       content: library.selectedDiagram.value.source,
       fileName: library.selectedDiagram.value.fileName,
@@ -116,6 +125,8 @@ export function useLibraryDiagramEdit(options: {
     editTags,
     editSectionId,
     editVisibility,
+    editLanguage,
+    editContentLocale,
     resetEditForm,
     startEdit,
     saveEdit,

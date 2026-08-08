@@ -18,6 +18,7 @@ export interface DiagramFormatDefinition {
   editable: boolean;
   supportsSyntaxValidation: boolean;
   supportsAiPatch: boolean;
+  supportsAiSyntaxAsk: boolean;
   supportsSnippets: boolean;
   supportsSamples: boolean;
   supportsSaveSource: boolean;
@@ -39,6 +40,7 @@ export const DIAGRAM_FORMAT_DEFINITIONS: Record<
     editable: true,
     supportsSyntaxValidation: true,
     supportsAiPatch: true,
+    supportsAiSyntaxAsk: true,
     supportsSnippets: true,
     supportsSamples: true,
     supportsSaveSource: true,
@@ -53,8 +55,9 @@ export const DIAGRAM_FORMAT_DEFINITIONS: Record<
     accept: ".mmd,.mermaid",
     defaultFileName: "diagram.mmd",
     editable: true,
-    supportsSyntaxValidation: false,
+    supportsSyntaxValidation: true,
     supportsAiPatch: false,
+    supportsAiSyntaxAsk: false,
     supportsSnippets: false,
     supportsSamples: true,
     supportsSaveSource: true,
@@ -71,6 +74,7 @@ export const DIAGRAM_FORMAT_DEFINITIONS: Record<
     editable: false,
     supportsSyntaxValidation: false,
     supportsAiPatch: false,
+    supportsAiSyntaxAsk: false,
     supportsSnippets: false,
     supportsSamples: false,
     supportsSaveSource: false,

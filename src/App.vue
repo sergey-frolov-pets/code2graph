@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import AboutModal from "@/components/AboutModal.vue";
 import AppDialogHost from "@/components/AppDialogHost.vue";
 import DiagramVersionsModal from "@/components/DiagramVersionsModal.vue";
@@ -11,6 +11,7 @@ import AppHeader from "@/components/layout/AppHeader.vue";
 import AppStatusBar from "@/components/layout/AppStatusBar.vue";
 import DiagramWizardModal from "@/components/DiagramWizardModal.vue";
 import LlmPatchModal from "@/components/LlmPatchModal.vue";
+import LlmSyntaxAskModal from "@/components/LlmSyntaxAskModal.vue";
 import LlmKeysGuideModal from "@/components/LlmKeysGuideModal.vue";
 import SettingsModal from "@/components/SettingsModal.vue";
 import SyntaxResultModal from "@/components/SyntaxResultModal.vue";
@@ -28,6 +29,7 @@ import { usePersistedSettings } from "@/composables/usePersistedSettings";
 import { useSyntaxValidation } from "@/composables/useSyntaxValidation";
 import { getLibraryApiBaseUrl } from "@/config/library-api";
 import type { DiagramFormat } from "@/constants/diagram-formats";
+import { getDiagramFormatDefinition } from "@/constants/diagram-formats";
 
 const isSaveToLibraryModalOpen = ref(false);
 const linkedLibraryDiagramId = ref<string | null>(null);
@@ -64,6 +66,11 @@ const {
 } = usePersistedSettings();
 
 const diagramFormat = ref<DiagramFormat>("plantuml");
+const syntaxAskInitialQuestion = ref("");
+
+const formatDefinition = computed(() =>
+  getDiagramFormatDefinition(diagramFormat.value),
+);
 
 const {
   svg,
@@ -90,11 +97,13 @@ const {
   isLibraryModalOpen,
   isAboutModalOpen,
   isPatchModalOpen,
+  isSyntaxAskModalOpen,
   isWizardModalOpen,
   openVersionsModal,
   openSettingsModal,
   openLibraryModal,
   openWizardModal,
+  openSyntaxAskModal,
   openAboutFromSettings,
   closeSyntaxModal,
 } = useAppModals();
@@ -214,6 +223,16 @@ function onAiPatchRequestOpen(payload: { start: number; end: number }): void {
   isPatchModalOpen.value = true;
 }
 
+function onAiSyntaxAskOpen(initialQuestion = ""): void {
+  syntaxAskInitialQuestion.value = initialQuestion;
+  openSyntaxAskModal();
+}
+
+function onSyntaxAskFromValidation(): void {
+  closeSyntaxModal();
+  onAiSyntaxAskOpen();
+}
+
 const PENDING_SHARE_STORAGE_KEY = "plantuml-smetana-pending-share";
 
 async function handleShareLinkOnBoot(): Promise<void> {
@@ -279,6 +298,7 @@ onMounted(() => {
         @undo="applySourceUndo"
         @redo="applySourceRedo"
         @ai-patch="onAiPatchRequestOpen"
+        @ai-syntax-ask="onAiSyntaxAskOpen()"
       />
 
       <DiagramPreview
@@ -307,7 +327,9 @@ onMounted(() => {
       :open="isSyntaxModalOpen"
       :result="syntaxResult"
       :is-validating="isValidating"
+      :show-syntax-ask="formatDefinition.supportsAiSyntaxAsk"
       @close="closeSyntaxModal"
+      @ask-syntax="onSyntaxAskFromValidation"
     />
 
     <DiagramVersionsModal
@@ -367,6 +389,14 @@ onMounted(() => {
       @apply="(payload) => applyAiPlantUml(payload.plantuml, payload.label)"
     />
 
+    <LlmSyntaxAskModal
+      :open="isSyntaxAskModalOpen"
+      :source="source"
+      :initial-question="syntaxAskInitialQuestion"
+      :open-settings="openSettingsModal"
+      @close="isSyntaxAskModalOpen = false"
+    />
+
     <DiagramWizardModal
       :open="isWizardModalOpen"
       :layout="layout"
@@ -374,7 +404,7 @@ onMounted(() => {
       :diagram-dark-mode="diagramDarkMode"
       :open-settings="openSettingsModal"
       @close="isWizardModalOpen = false"
-      @apply="(payload) => applyAiPlantUml(payload.plantuml, payload.label)"
+      @apply="(payload) => applyAiPlantUml(payload.source, payload.label)"
     />
 
     <LlmKeysGuideModal

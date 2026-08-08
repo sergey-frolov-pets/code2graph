@@ -6,8 +6,15 @@ import LibraryStarRating from "@/components/library/LibraryStarRating.vue";
 import { useLocale } from "@/composables/useLocale";
 import { formatDate } from "@/shared/format-date";
 import { VISIBILITY_OPTIONS } from "@/constants/library-visibility";
-import type { DiagramDto, DiagramVisibility } from "@/constants/diagram-library";
+import {
+  CONTENT_LOCALES,
+  DIAGRAM_LANGUAGES,
+  type DiagramDto,
+  type DiagramLanguage,
+  type DiagramVisibility,
+} from "@/constants/diagram-library";
 import type { FlatSectionOption } from "@/shared/library/section-tree";
+import { getDiagramFormatLabel } from "@/utils/library-display";
 
 defineProps<{
   diagram: DiagramDto;
@@ -24,6 +31,8 @@ const editSectionId = defineModel<string>("editSectionId", { required: true });
 const editVisibility = defineModel<DiagramVisibility>("editVisibility", {
   required: true,
 });
+const editLanguage = defineModel<DiagramLanguage>("editLanguage", { required: true });
+const editContentLocale = defineModel<string>("editContentLocale", { required: true });
 
 const emit = defineEmits<{
   save: [];
@@ -40,6 +49,13 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
+
+function contentLocaleLabel(locale: string): string {
+  if (!locale) {
+    return t("library.contentLocaleAny");
+  }
+  return t(`library.contentLocale.${locale}`);
+}
 </script>
 
 <template>
@@ -57,6 +73,22 @@ const { t } = useLocale();
         <label class="settings-field">
           <span class="settings-field__label">{{ t("library.tags") }}</span>
           <input v-model="editTags" class="select" type="text" />
+        </label>
+        <label class="settings-field">
+          <span class="settings-field__label">{{ t("library.diagramFormat") }}</span>
+          <select v-model="editLanguage" class="select">
+            <option v-for="lang in DIAGRAM_LANGUAGES" :key="lang" :value="lang">
+              {{ getDiagramFormatLabel(lang) }}
+            </option>
+          </select>
+        </label>
+        <label class="settings-field">
+          <span class="settings-field__label">{{ t("library.contentLocaleLabel") }}</span>
+          <select v-model="editContentLocale" class="select">
+            <option v-for="locale in CONTENT_LOCALES" :key="locale || 'any'" :value="locale">
+              {{ contentLocaleLabel(locale) }}
+            </option>
+          </select>
         </label>
         <label class="settings-field">
           <span class="settings-field__label">{{ t("library.sections") }}</span>
@@ -102,10 +134,22 @@ const { t } = useLocale();
 
     <template v-else>
       <div class="library-step__toolbar">
+        <div class="library-detail__badges">
+          <span class="library-badge library-badge--format">
+            {{ getDiagramFormatLabel(diagram.language) }}
+          </span>
+          <span
+            v-if="diagram.contentLocale"
+            class="library-badge library-badge--locale"
+          >
+            {{ diagram.contentLocale.toUpperCase() }}
+          </span>
+        </div>
         <span class="library-detail__file-name">{{ diagram.fileName }}</span>
         <div class="library-step__toolbar-actions">
           <IconButton
             :label="t('library.openInEditor')"
+            :disabled="diagram.canDownload === false"
             @click="emit('open-in-editor')"
           >
             <ActionIcon name="folder-open" />
@@ -156,6 +200,7 @@ const { t } = useLocale();
           class="library-detail__open-card"
           type="button"
           :aria-label="t('library.openInEditor')"
+          :disabled="diagram.canDownload === false"
           @click="emit('open-in-editor')"
         >
           <p class="library-detail__meta">
@@ -164,6 +209,9 @@ const { t } = useLocale();
               · {{ t("library.author", { name: diagram.authorName }) }}
             </template>
             · {{ t(`library.visibility.${diagram.visibility ?? "all"}`) }}
+            <template v-if="diagram.contentLocale">
+              · {{ contentLocaleLabel(diagram.contentLocale) }}
+            </template>
             <template v-if="diagram.voteCount">
               · {{ t("library.ratingVotesShort", { votes: diagram.voteCount }) }}
             </template>
@@ -187,7 +235,15 @@ const { t } = useLocale();
               {{ tag }}
             </span>
           </div>
-          <span class="library-detail__open-hint">{{ t("library.openInEditorHint") }}</span>
+          <span
+            v-if="diagram.canDownload !== false"
+            class="library-detail__open-hint"
+          >
+            {{ t("library.openInEditorHint") }}
+          </span>
+          <span v-else class="library-detail__open-hint library-detail__open-hint--muted">
+            {{ t("library.downloadRestricted") }}
+          </span>
         </button>
         <LibraryDiagramRatingPanel
           :diagram="diagram"
@@ -200,8 +256,37 @@ const { t } = useLocale();
 </template>
 
 <style scoped>
+.library-detail__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}
+
+.library-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.library-badge--format {
+  background: var(--accent-muted, #e8f0fe);
+  color: var(--accent-color, #1a56db);
+}
+
+.library-badge--locale {
+  background: var(--surface-muted, #f3f4f6);
+  color: var(--text-muted, #4b5563);
+}
+
 .library-detail__file-name {
-  flex: 1;
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -215,5 +300,9 @@ const { t } = useLocale();
   align-items: center;
   gap: 8px;
   margin: 8px 0 0;
+}
+
+.library-detail__open-hint--muted {
+  color: var(--text-muted, #666);
 }
 </style>

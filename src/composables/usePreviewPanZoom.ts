@@ -182,26 +182,39 @@ export function usePreviewPanZoom(
   }
 
   function measureImageSize(): void {
-    const content = contentRef.value;
-    const svg = content?.querySelector("svg");
-
-    if (svg) {
-      try {
-        const box = svg.getBBox();
-        if (box.width > 0 && box.height > 0) {
-          imageWidth.value = box.width;
-          imageHeight.value = box.height;
-          return;
-        }
-      } catch {
-        // getBBox may fail before the SVG is painted.
-      }
+    if (!svgMarkup.value) {
+      return;
     }
 
-    if (svgMarkup.value) {
-      const parsed = parseSvgSize(svgMarkup.value);
-      imageWidth.value = parsed.width;
-      imageHeight.value = parsed.height;
+    // Prefer viewBox / declared size. Mermaid Gantt getBBox() can return
+    // huge overflow widths (tens of thousands of px), which collapses fit zoom.
+    const parsed = parseSvgSize(svgMarkup.value);
+    imageWidth.value = parsed.width;
+    imageHeight.value = parsed.height;
+
+    const content = contentRef.value;
+    const svg = content?.querySelector("svg");
+    if (!svg) {
+      return;
+    }
+
+    try {
+      const box = svg.getBBox();
+      if (box.width <= 0 || box.height <= 0) {
+        return;
+      }
+
+      const overflowRatio = Math.max(
+        box.width / parsed.width,
+        box.height / parsed.height,
+      );
+      // Only trust getBBox when it roughly matches the declared diagram size.
+      if (overflowRatio <= 1.5) {
+        imageWidth.value = box.width;
+        imageHeight.value = box.height;
+      }
+    } catch {
+      // getBBox may fail before the SVG is painted.
     }
   }
 

@@ -22,7 +22,7 @@ import {
 } from "../share-links.js";
 import { mapShareLinkDto } from "../share-link-policy.js";
 import type { DiagramVisibility, SectionRow } from "../types.js";
-import { isDiagramVisibility, isSharePermission } from "../types.js";
+import { isDiagramVisibility, isSectionAccessPermission, isSharePermission } from "../types.js";
 
 export const sectionsRouter = new Hono<{ Variables: AuthVariables }>();
 
@@ -240,7 +240,7 @@ sectionsRouter.get("/:id/access", (context) => {
 
   const rows = database
     .prepare(
-      `SELECT sa.user_id, sa.expires_at, sa.created_at, u.username
+      `SELECT sa.user_id, sa.expires_at, sa.created_at, sa.permission, u.username
        FROM section_access sa
        JOIN users u ON u.id = sa.user_id
        WHERE sa.section_id = ?
@@ -250,6 +250,7 @@ sectionsRouter.get("/:id/access", (context) => {
     user_id: string;
     expires_at: string | null;
     created_at: string;
+    permission: string;
     username: string;
   }>;
 
@@ -257,6 +258,7 @@ sectionsRouter.get("/:id/access", (context) => {
     access: rows.map((row) => ({
       userId: row.user_id,
       username: row.username,
+      permission: row.permission,
       expiresAt: row.expires_at,
       permanent: !row.expires_at,
       grantedAt: row.created_at,
@@ -276,6 +278,7 @@ sectionsRouter.post("/:id/access", async (context) => {
     username?: string;
     expiresAt?: string | null;
     permanent?: boolean;
+    permission?: string;
   }>();
 
   const database = getDb();
@@ -305,18 +308,24 @@ sectionsRouter.post("/:id/access", async (context) => {
       ? null
       : body.expiresAt ?? null;
 
+  const permission =
+    body.permission && isSectionAccessPermission(body.permission)
+      ? body.permission
+      : "view";
+
   const now = new Date().toISOString();
   const grantId = crypto.randomUUID();
 
   database
     .prepare(
-      `INSERT INTO section_access (id, section_id, user_id, granted_by, expires_at, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)
+      `INSERT INTO section_access (id, section_id, user_id, granted_by, permission, expires_at, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(section_id, user_id) DO UPDATE SET
          granted_by = excluded.granted_by,
+         permission = excluded.permission,
          expires_at = excluded.expires_at`,
     )
-    .run(grantId, id, targetUserId, user.id, expiresAt, now);
+    .run(grantId, id, targetUserId, user.id, permission, expiresAt, now);
 
   return context.json({ ok: true });
 });

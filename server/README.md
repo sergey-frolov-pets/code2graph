@@ -28,10 +28,12 @@ npm run dev
 | `GROQ_API_KEY` | Ключ Groq для `groq-free` | — |
 | `OPENROUTER_API_KEY` | Ключ OpenRouter для `openrouter-free` | — |
 | `LLM_RATE_LIMIT_PER_MINUTE` | Лимит запросов LLM на IP | `20` |
-| `LIBRARY_AUTH_USERNAME` | Логин Basic Auth для API | — |
-| `LIBRARY_AUTH_PASSWORD` | Пароль Basic Auth для API | — |
+| `AUTH_TOKEN_SECRET` | Секрет для Bearer-токенов API | dev-значение (задайте в продакшене) |
 
-Если `LIBRARY_AUTH_USERNAME` и `LIBRARY_AUTH_PASSWORD` заданы, все `/api/*` endpoints требуют заголовок `Authorization: Basic ...`. Без них API открыт (только для локальной разработки).
+Первый администратор создаётся через приложение при открытии библиотеки (`POST /api/auth/setup`), если в SQLite ещё нет пользователей. Публичный статус: `GET /api/auth/status`.
+
+Все `/api/*` endpoints (кроме `/api/auth/status` и `/api/auth/setup` при пустой БД) требуют `Authorization: Bearer …` или `Basic …`.
+
 
 Подробная инструкция развёртывания на VPS: `docs/LIBRARY_DEPLOY.md`.
 

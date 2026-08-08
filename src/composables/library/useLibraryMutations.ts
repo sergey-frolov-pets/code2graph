@@ -1,5 +1,6 @@
 import {
   LIBRARY_SEARCH_DEBOUNCE_MS,
+  RATINGS_SECTION_ID,
   type CreateDiagramPayload,
   type CreateSectionPayload,
   type DiagramDto,
@@ -107,6 +108,10 @@ export function useLibraryMutations(
   async function selectSection(sectionId: string | null): Promise<void> {
     catalog.selectedSectionId.value = sectionId;
     catalog.selectedDiagram.value = null;
+    if (sectionId === RATINGS_SECTION_ID) {
+      catalog.diagrams.value = [];
+      return;
+    }
     await searchDiagrams();
   }
 

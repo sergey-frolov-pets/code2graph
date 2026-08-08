@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
-import type { SectionAccessDto } from "@/constants/diagram-library";
+import type { SectionAccessDto, SectionAccessPermission } from "@/constants/diagram-library";
+import { SECTION_ACCESS_PERMISSIONS } from "@/constants/diagram-library";
 import { useLocale } from "@/composables/useLocale";
 import {
   fetchSectionAccess,
@@ -22,7 +23,9 @@ const emit = defineEmits<{
 const { t } = useLocale();
 const accessList = ref<SectionAccessDto[]>([]);
 const usernameInput = ref("");
-const permanentGrant = ref(true);
+const permissionInput = ref<SectionAccessPermission>("view");
+const permanentGrant = ref(false);
+const expiresAtInput = ref("");
 const isLoading = ref(false);
 const isSaving = ref(false);
 const errorMessage = ref("");
@@ -56,6 +59,8 @@ async function onGrant(): Promise<void> {
     await grantSectionAccess(props.sectionId, {
       username: usernameInput.value.trim(),
       permanent: permanentGrant.value,
+      expiresAt: permanentGrant.value ? null : expiresAtInput.value || null,
+      permission: permissionInput.value,
     });
     usernameInput.value = "";
     await loadAccess();
@@ -99,6 +104,7 @@ watch(
   <AppModal
     :open="open"
     :title="t('library.sectionAccessTitle', { title: sectionTitle })"
+    layer="above-library"
     @close="emit('close')"
   >
     <p class="settings-field__hint">{{ t("library.sectionAccessHint") }}</p>
@@ -108,9 +114,30 @@ watch(
       <input v-model="usernameInput" class="select" type="text" />
     </label>
 
+    <label class="settings-field">
+      <span class="settings-field__label">{{ t("library.accessPermission") }}</span>
+      <select v-model="permissionInput" class="select">
+        <option
+          v-for="permission in SECTION_ACCESS_PERMISSIONS"
+          :key="permission"
+          :value="permission"
+        >
+          {{ t(`library.accessPermission.${permission}`) }}
+        </option>
+      </select>
+      <span class="settings-field__hint">
+        {{ t(`library.accessPermission.${permissionInput}Desc`) }}
+      </span>
+    </label>
+
     <label class="settings-field settings-field--checkbox">
       <input v-model="permanentGrant" type="checkbox" />
       <span>{{ t("library.accessPermanent") }}</span>
+    </label>
+
+    <label v-if="!permanentGrant" class="settings-field">
+      <span class="settings-field__label">{{ t("library.accessExpiresAt") }}</span>
+      <input v-model="expiresAtInput" class="select" type="datetime-local" />
     </label>
 
     <button
@@ -130,6 +157,8 @@ watch(
       <li v-for="entry in accessList" :key="entry.userId" class="library-access-list__item">
         <span>{{ entry.username }}</span>
         <span class="library-access-list__meta">
+          {{ t(`library.accessPermission.${entry.permission}`) }}
+          ·
           {{
             entry.permanent
               ? t("library.accessPermanentBadge")

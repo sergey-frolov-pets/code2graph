@@ -95,9 +95,9 @@ const { t } = useLocale();
   min-height: 240px;
   max-height: 60vh;
   overflow: auto;
-  border: 1px solid var(--border-color, #ddd);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--preview-bg, #fff);
+  background: var(--surface);
 }
 
 .library-preview-modal__content {

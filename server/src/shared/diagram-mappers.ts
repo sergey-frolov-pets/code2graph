@@ -2,8 +2,10 @@ import { parseTags, getUsernameMap } from "../db.js";
 import { enrichDiagramRowsWithSocial } from "../ratings.js";
 import {
   canAdminSection,
+  canDownloadSection,
   canReadSection,
   canWriteSection,
+  getUserSectionAccessPermission,
 } from "../authz.js";
 import type Database from "better-sqlite3";
 import type {
@@ -30,6 +32,8 @@ export function mapSection(
     authorName?: string | null;
     canWrite?: boolean;
     canAdmin?: boolean;
+    canDownload?: boolean;
+    userAccessPermission?: string | null;
   },
 ): SectionDto {
   return {
@@ -44,6 +48,8 @@ export function mapSection(
     visibility: row.visibility as SectionDto["visibility"],
     canWrite: options?.canWrite,
     canAdmin: options?.canAdmin,
+    canDownload: options?.canDownload,
+    userAccessPermission: options?.userAccessPermission as SectionDto["userAccessPermission"],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -69,6 +75,12 @@ export function mapSectionForUser(
       : null,
     canWrite: canWriteSection(database, user, sectionRow as never),
     canAdmin: canAdminSection(database, user, sectionRow as never),
+    canDownload: canDownloadSection(database, user, sectionRow as never),
+    userAccessPermission: getUserSectionAccessPermission(
+      database,
+      row.id,
+      user.id,
+    ),
   });
 }
 
@@ -80,6 +92,7 @@ export function mapDiagramListItem(
     description: string;
     tags: string;
     language: string;
+    content_locale?: string;
     file_name: string;
     byte_size: number;
     author_id: string | null;
@@ -93,6 +106,7 @@ export function mapDiagramListItem(
   options?: {
     authorName?: string | null;
     canWrite?: boolean;
+    canDownload?: boolean;
     avgRating?: number | null;
     voteCount?: number;
     isFavorite?: boolean;
@@ -108,6 +122,7 @@ export function mapDiagramListItem(
     description: row.description,
     tags: parseTags(row.tags),
     language: row.language as DiagramListItemDto["language"],
+    contentLocale: row.content_locale ?? "",
     fileName: row.file_name,
     byteSize: row.byte_size,
     authorId: row.author_id,
@@ -115,6 +130,7 @@ export function mapDiagramListItem(
     authorName: options?.authorName ?? undefined,
     visibility: row.visibility as DiagramListItemDto["visibility"],
     canWrite: options?.canWrite,
+    canDownload: options?.canDownload,
     avgRating: options?.avgRating ?? row.avg_rating ?? null,
     voteCount: options?.voteCount ?? row.vote_count ?? 0,
     isFavorite: options?.isFavorite,
@@ -134,6 +150,7 @@ export function mapDiagram(
     description: string;
     tags: string;
     language: string;
+    content_locale?: string;
     source: string;
     file_name: string;
     byte_size: number;
@@ -148,6 +165,7 @@ export function mapDiagram(
   options?: {
     authorName?: string | null;
     canWrite?: boolean;
+    canDownload?: boolean;
     avgRating?: number | null;
     voteCount?: number;
     isFavorite?: boolean;

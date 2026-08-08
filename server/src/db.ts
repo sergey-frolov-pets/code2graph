@@ -1,26 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
-import {
-  AUTH_TOKEN_SECRET,
-  DB_PATH,
-  LIBRARY_AUTH_PASSWORD,
-  LIBRARY_AUTH_USERNAME,
-  SHARED_SECTION_TITLE,
-  isLibraryAuthEnabled,
-} from "./config.js";
-import { hashPassword } from "./auth/password.js";
+import { AUTH_TOKEN_SECRET, DB_PATH, SHARED_SECTION_TITLE } from "./config.js";
 import type { SectionRow } from "./types.js";
 
 let db: Database.Database | null = null;
-let bootstrapPromise: Promise<void> | null = null;
-
-async function ensureBootstrapped(database: Database.Database): Promise<void> {
-  if (!bootstrapPromise) {
-    bootstrapPromise = bootstrapAdminUser(database);
-  }
-  await bootstrapPromise;
-}
 
 function ensureDataDir(): void {
   const dir = path.dirname(DB_PATH);
@@ -62,6 +46,7 @@ function runMigrations(database: Database.Database): void {
       section_id TEXT NOT NULL REFERENCES sections(id) ON DELETE CASCADE,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       granted_by TEXT NOT NULL REFERENCES users(id),
+      permission TEXT NOT NULL DEFAULT 'contribute',
       expires_at TEXT,
       created_at TEXT NOT NULL,
       UNIQUE(section_id, user_id)
@@ -114,6 +99,53 @@ function runMigrations(database: Database.Database): void {
       ALTER TABLE diagrams ADD COLUMN vote_count INTEGER NOT NULL DEFAULT 0;
     `);
   }
+
+  if (!columnExists(database, "section_access", "permission")) {
+    database.exec(`
+      ALTER TABLE section_access ADD COLUMN permission TEXT NOT NULL DEFAULT 'contribute';
+    `);
+  }
+
+  if (!columnExists(database, "diagrams", "content_locale")) {
+    database.exec(`
+      ALTER TABLE diagrams ADD COLUMN content_locale TEXT NOT NULL DEFAULT '';
+    `);
+  }
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS subscriptions (
+      id TEXT PRIMARY KEY,
+      owner_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      permission TEXT NOT NULL DEFAULT 'view',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS subscription_sections (
+      id TEXT PRIMARY KEY,
+      subscription_id TEXT NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
+      section_id TEXT NOT NULL REFERENCES sections(id) ON DELETE CASCADE,
+      include_descendants INTEGER NOT NULL DEFAULT 0,
+      UNIQUE(subscription_id, section_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS user_subscriptions (
+      id TEXT PRIMARY KEY,
+      subscription_id TEXT NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      granted_by TEXT NOT NULL REFERENCES users(id),
+      expires_at TEXT,
+      created_at TEXT NOT NULL,
+      UNIQUE(subscription_id, user_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_subscriptions_owner ON subscriptions(owner_id);
+    CREATE INDEX IF NOT EXISTS idx_subscription_sections_sub ON subscription_sections(subscription_id);
+    CREATE INDEX IF NOT EXISTS idx_user_subscriptions_user ON user_subscriptions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_user_subscriptions_sub ON user_subscriptions(subscription_id);
+  `);
 
   database.exec(`
     CREATE TABLE IF NOT EXISTS diagram_favorites (
@@ -185,46 +217,6 @@ function runMigrations(database: Database.Database): void {
   if (!versionRow) {
     database.prepare("INSERT INTO schema_version (version) VALUES (1)").run();
   }
-}
-
-async function bootstrapAdminUser(database: Database.Database): Promise<void> {
-  const count = database
-    .prepare("SELECT COUNT(*) AS count FROM users")
-    .get() as { count: number };
-
-  if (count.count > 0) {
-    return;
-  }
-
-  if (!isLibraryAuthEnabled()) {
-    const now = new Date().toISOString();
-    const id = crypto.randomUUID();
-    const passwordHash = await hashPassword("admin");
-    database
-      .prepare(
-        `INSERT INTO users (
-          id, username, password_hash, role, blocked, subscription_active,
-          created_at, updated_at
-        ) VALUES (?, 'admin', ?, 'admin', 0, 1, ?, ?)`,
-      )
-      .run(id, passwordHash, now, now);
-    console.warn(
-      "[library-api] Created default admin user (username: admin, password: admin). Change immediately.",
-    );
-    return;
-  }
-
-  const now = new Date().toISOString();
-  const id = crypto.randomUUID();
-  const passwordHash = await hashPassword(LIBRARY_AUTH_PASSWORD!);
-  database
-    .prepare(
-      `INSERT INTO users (
-        id, username, password_hash, role, blocked, subscription_active,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, 'admin', 0, 1, ?, ?)`,
-    )
-    .run(id, LIBRARY_AUTH_USERNAME!, passwordHash, now, now);
 }
 
 function seedInitialData(database: Database.Database): void {
@@ -331,8 +323,6 @@ export function getDb(): Database.Database {
   runMigrations(db);
   seedInitialData(db);
 
-  bootstrapPromise = bootstrapAdminUser(db);
-
   if (AUTH_TOKEN_SECRET === "vueplantuml-dev-auth-secret-change-me") {
     console.warn(
       "[library-api] Using default AUTH_TOKEN_SECRET. Set AUTH_TOKEN_SECRET in production.",
@@ -340,11 +330,6 @@ export function getDb(): Database.Database {
   }
 
   return db;
-}
-
-export async function ensureDbBootstrapped(): Promise<void> {
-  const database = getDb();
-  await ensureBootstrapped(database);
 }
 
 export function parseTags(raw: string): string[] {
