@@ -3,6 +3,7 @@ import {
   applyLayoutPragma,
   migrateDeprecatedActivityColorSyntax,
   preparePlantUmlSource,
+  stripUnsupportedActivityDirection,
 } from "@/utils/plantuml-source";
 
 describe("migrateDeprecatedActivityColorSyntax", () => {
@@ -48,6 +49,34 @@ project starts 2026-01-01
   });
 });
 
+describe("stripUnsupportedActivityDirection", () => {
+  it("removes direction directives from activity diagrams", () => {
+    const source = `@startuml
+top to bottom direction
+|Lane|
+start
+:Step;
+stop
+@enduml`;
+
+    expect(stripUnsupportedActivityDirection(source)).not.toContain(
+      "top to bottom direction",
+    );
+    expect(stripUnsupportedActivityDirection(source)).toContain("start");
+  });
+
+  it("keeps direction directives for class diagrams", () => {
+    const source = `@startuml
+top to bottom direction
+class A
+@enduml`;
+
+    expect(stripUnsupportedActivityDirection(source)).toContain(
+      "top to bottom direction",
+    );
+  });
+});
+
 describe("preparePlantUmlSource", () => {
   it("migrates deprecated activity colors before rendering", async () => {
     const prepared = await preparePlantUmlSource(
@@ -57,5 +86,20 @@ describe("preparePlantUmlSource", () => {
 
     expect(prepared).toContain(":Show error; <<#Pink>>");
     expect(prepared).not.toContain("#Pink:Show error;");
+  });
+
+  it("strips unsupported direction directives from activity diagrams", async () => {
+    const prepared = await preparePlantUmlSource(
+      `@startuml
+top to bottom direction
+start
+:Step;
+stop
+@enduml`,
+      "smetana",
+    );
+
+    expect(prepared).not.toContain("top to bottom direction");
+    expect(prepared).toContain("start");
   });
 });

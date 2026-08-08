@@ -141,7 +141,6 @@ const GRAPHML_WIZARD_TYPES: WizardDiagramType[] = ["graph"];
 const DIRECTION_SUPPORTED_TYPES: WizardDiagramType[] = [
   "class",
   "component",
-  "activity",
   "state",
   "c4_context",
   "c4_container",
@@ -258,9 +257,19 @@ export function buildWizardPrompt(state: WizardState): string {
   const lines = [
     `Create a new ${formatLabel} ${typeLabel} diagram.`,
     `Output language/format: ${state.language}.`,
-    `Layout direction: ${state.direction}.`,
     `Diagram theme preference: ${state.theme}.`,
   ];
+
+  if (
+    state.language === "plantuml" &&
+    state.diagramType === "activity"
+  ) {
+    lines.push(
+      "Layout: activity diagrams use the default top-to-bottom flow. Do not use top to bottom direction or left to right direction directives.",
+    );
+  } else if (wizardTypeSupportsDirection(state.diagramType, state.language)) {
+    lines.push(`Layout direction: ${state.direction}.`);
+  }
 
   if (paramLines.length > 0) {
     lines.push("", "Structural parameters:", ...paramLines);
@@ -452,7 +461,7 @@ function buildPlantUmlActivity(state: WizardState, locale: AppLocale): string {
   const laneCount = state.typeParams.lanes;
   const stepCount = state.typeParams.steps;
   const title = locale === "ru" ? "Диаграмма активности" : "Activity diagram";
-  const lines = buildPlantUmlHeader(state, title, true);
+  const lines = buildPlantUmlHeader(state, title, false);
 
   for (let laneIndex = 1; laneIndex <= laneCount; laneIndex += 1) {
     const color = SWIMLANE_COLORS[(laneIndex - 1) % SWIMLANE_COLORS.length];

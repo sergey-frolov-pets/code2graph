@@ -11,6 +11,38 @@ const PRAGMA_LAYOUT_PATTERN = /^\s*!pragma\s+layout\s+\S+/im;
 const DEPRECATED_ACTIVITY_COLOR_LINE_PATTERN =
   /^(\s*)#([A-Za-z][A-Za-z0-9]*):(.+;)\s*$/gm;
 
+/** Activity-диаграммы не поддерживают direction; директива даёт Syntax Error */
+const ACTIVITY_DIRECTION_LINE_PATTERN =
+  /^\s*(?:top to bottom|left to right) direction\s*$/gim;
+
+export function looksLikePlantUmlActivityDiagram(source: string): boolean {
+  if (!/^\s*@startuml/im.test(source)) {
+    return false;
+  }
+
+  if (/^\s*(class|interface|enum|actor|participant|state)\b/im.test(source)) {
+    return false;
+  }
+
+  if (/^\s*\[\*\]/m.test(source)) {
+    return false;
+  }
+
+  const hasStart = /^\s*start\s*$/im.test(source);
+  const hasActivityAction = /^\s*:[^;]+;\s*$/m.test(source);
+  const hasSwimlane = /^\s*\|[^|]+\|/m.test(source);
+
+  return hasStart && (hasActivityAction || hasSwimlane);
+}
+
+export function stripUnsupportedActivityDirection(source: string): string {
+  if (!looksLikePlantUmlActivityDiagram(source)) {
+    return source;
+  }
+
+  return source.replace(ACTIVITY_DIRECTION_LINE_PATTERN, "");
+}
+
 export function migrateDeprecatedActivityColorSyntax(source: string): string {
   return source.replace(
     DEPRECATED_ACTIVITY_COLOR_LINE_PATTERN,
@@ -54,7 +86,8 @@ export async function preparePlantUmlSource(
   layout: LayoutEngine,
 ): Promise<string> {
   const migrated = migrateDeprecatedActivityColorSyntax(source);
-  const withLayout = applyLayoutPragma(migrated, layout);
+  const withoutDirection = stripUnsupportedActivityDirection(migrated);
+  const withLayout = applyLayoutPragma(withoutDirection, layout);
   return resolvePlantUmlIncludes(withLayout);
 }
 
