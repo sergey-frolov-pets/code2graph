@@ -101,6 +101,10 @@ export function detectDiagramDirection(
 ): "TB" | "LR" | undefined {
   const text = stripCommentsAndFences(source);
 
+  if (format === "graphml" && /rankdir\s*=\s*["']?lr["']?/i.test(text)) {
+    return "LR";
+  }
+
   if (/left\s+to\s+right\s+direction/i.test(text)) {
     return "LR";
   }
