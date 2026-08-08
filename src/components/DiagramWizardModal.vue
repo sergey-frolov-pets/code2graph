@@ -111,8 +111,6 @@ const canGoNext = computed(() => {
   return stepIndex.value < totalSteps.value - 1;
 });
 
-const canGoBack = computed(() => stepIndex.value > 0 && !isGenerating.value);
-
 function resetWizard(): void {
   stepIndex.value = 0;
   wizardState.value = {
@@ -374,22 +372,10 @@ function onApply(): void {
     :title="t('llm.wizard.title')"
     @close="emit('close')"
   >
-    <div class="wizard-step-header">
-      <button
-        v-if="canGoBack"
-        class="btn wizard-step-back"
-        type="button"
-        @click="goBack"
-      >
-        {{ t("llm.wizard.back") }}
-      </button>
-      <div class="wizard-step-header__main">
-        <p class="wizard-step-title">{{ stepTitle }}</p>
-        <p class="wizard-step-meta">
-          {{ t("llm.wizard.stepCounter", { current: stepIndex + 1, total: totalSteps }) }}
-        </p>
-      </div>
-    </div>
+    <p class="wizard-step-title">{{ stepTitle }}</p>
+    <p class="wizard-step-meta">
+      {{ t("llm.wizard.stepCounter", { current: stepIndex + 1, total: totalSteps }) }}
+    </p>
 
     <div v-if="currentStepId === 'mode'" class="wizard-step">
       <p class="wizard-hint">{{ t("llm.wizard.modeHint") }}</p>
@@ -577,85 +563,73 @@ function onApply(): void {
     </div>
 
     <template #footer>
-      <div class="wizard-footer">
-        <div class="wizard-footer__actions">
-          <button class="btn" type="button" @click="emit('close')">
-            {{ t("app.cancel") }}
-          </button>
-          <button
-            v-if="currentStepId !== 'result' && currentStepId !== 'prompt'"
-            class="btn btn-primary"
-            type="button"
-            :disabled="!canGoNext || isGenerating"
-            @click="goNext"
-          >
-            {{ t("llm.wizard.next") }}
-          </button>
-          <button
-            v-if="currentStepId === 'prompt'"
-            class="btn btn-primary"
-            type="button"
-            :disabled="!canGoNext || isGenerating"
-            @click="goNext"
-          >
-            {{ isGenerating ? t("llm.wizard.generating") : t("llm.wizard.generate") }}
-          </button>
-          <button
-            v-if="currentStepId === 'result'"
-            class="btn btn-primary"
-            type="button"
-            :disabled="!resultSource || isGenerating"
-            @click="onApply"
-          >
-            {{ t("llm.wizard.apply") }}
-          </button>
-          <button
-            v-if="currentStepId === 'result' && isAiMode && !isGenerating"
-            class="btn"
-            type="button"
-            @click="generateDiagram"
-          >
-            {{ t("llm.wizard.regenerate") }}
-          </button>
-          <button
-            v-if="currentStepId === 'result' && !isAiMode && !isGenerating"
-            class="btn"
-            type="button"
-            @click="prepareManualResult"
-          >
-            {{ t("llm.wizard.regenerate") }}
-          </button>
-        </div>
-      </div>
+      <button
+        v-if="currentStepId === 'result'"
+        class="btn"
+        type="button"
+        :disabled="isGenerating"
+        @click="goBack"
+      >
+        {{ t("llm.wizard.back") }}
+      </button>
+      <button class="btn" type="button" @click="emit('close')">
+        {{ t("app.cancel") }}
+      </button>
+      <button
+        v-if="currentStepId !== 'result' && currentStepId !== 'prompt'"
+        class="btn btn-primary"
+        type="button"
+        :disabled="!canGoNext || isGenerating"
+        @click="goNext"
+      >
+        {{ t("llm.wizard.next") }}
+      </button>
+      <button
+        v-if="currentStepId === 'prompt'"
+        class="btn btn-primary"
+        type="button"
+        :disabled="!canGoNext || isGenerating"
+        @click="goNext"
+      >
+        {{ isGenerating ? t("llm.wizard.generating") : t("llm.wizard.generate") }}
+      </button>
+      <button
+        v-if="currentStepId === 'result'"
+        class="btn btn-primary"
+        type="button"
+        :disabled="!resultSource || isGenerating"
+        @click="onApply"
+      >
+        {{ t("llm.wizard.apply") }}
+      </button>
+      <button
+        v-if="currentStepId === 'result' && isAiMode && !isGenerating"
+        class="btn"
+        type="button"
+        @click="generateDiagram"
+      >
+        {{ t("llm.wizard.regenerate") }}
+      </button>
+      <button
+        v-if="currentStepId === 'result' && !isAiMode && !isGenerating"
+        class="btn"
+        type="button"
+        @click="prepareManualResult"
+      >
+        {{ t("llm.wizard.regenerate") }}
+      </button>
     </template>
   </AppModal>
 </template>
 
 <style scoped>
-.wizard-step-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.wizard-step-header__main {
-  flex: 1;
-  min-width: 0;
-}
-
-.wizard-step-back {
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
 .wizard-step-title {
   margin: 0 0 4px;
   font-weight: 600;
 }
 
 .wizard-step-meta {
-  margin: 0;
+  margin: 0 0 14px;
   font-size: 0.84rem;
   color: var(--text-muted);
 }
@@ -865,18 +839,5 @@ function onApply(): void {
   display: block;
   max-width: 100%;
   height: auto;
-}
-
-.wizard-footer {
-  display: flex;
-  width: 100%;
-  justify-content: flex-end;
-}
-
-.wizard-footer__actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
 }
 </style>
