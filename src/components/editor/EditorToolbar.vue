@@ -24,6 +24,7 @@ const props = defineProps<{
   canUndo?: boolean;
   canRedo?: boolean;
   canClear: boolean;
+  canConvert: boolean;
   canAiPatch: boolean;
   canAiSyntaxAsk: boolean;
   snippetsOpen: boolean;
@@ -41,6 +42,7 @@ const emit = defineEmits<{
   undo: [];
   redo: [];
   clear: [];
+  convert: [];
   toggleSnippets: [];
   loadSample: [selection: SampleSelection];
   toggleFullscreen: [];
@@ -206,6 +208,13 @@ function onSampleChange(event: Event): void {
         @click="emit('redo')"
       >
         <ActionIcon name="redo" />
+      </IconButton>
+      <IconButton
+        :label="t('editor.convertTooltip')"
+        :disabled="!canConvert"
+        @click="emit('convert')"
+      >
+        <ActionIcon name="transfer" />
       </IconButton>
       <IconButton
         :label="t('editor.clear')"
