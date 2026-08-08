@@ -341,6 +341,7 @@ async function generateDiagram(): Promise<void> {
     const result = await generateValidWizardDiagram(
       wizardState.value.promptText,
       wizardState.value.language,
+      wizardState.value.diagramType,
       props.layout,
       props.diagramDarkMode,
       props.renderMode,
