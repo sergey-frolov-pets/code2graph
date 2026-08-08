@@ -335,13 +335,19 @@ function parseFlowchartMermaid(source: string, format: DiagramFormat): DiagramIR
   ir.metadata = { sourceFormat: format };
   const usedIds = new Set<string>();
 
-  const nodePatterns = [
-    /(\w+)\s*\[([^\]]+)\]/g,
-    /(\w+)\s*\(([^)]+)\)/g,
-    /(\w+)\s*\{([^}]+)\}/g,
+  const nodePatterns: Array<{
+    pattern: RegExp;
+    kind: DiagramNode["kind"];
+  }> = [
+    { pattern: /(\w+)\s*\(\[([^\]]+)\]\)/g, kind: "default" },
+    { pattern: /(\w+)\s*\(\(([^)]+)\)\)/g, kind: "default" },
+    { pattern: /(\w+)\s*\[\[([^\]]+)\]\]/g, kind: "default" },
+    { pattern: /(\w+)\s*\[(?!\[)([^\]]+)\]/g, kind: "default" },
+    { pattern: /(\w+)\s*\((?!\[)([^)]+)\)/g, kind: "default" },
+    { pattern: /(\w+)\s*\{([^}]+)\}/g, kind: "decision" },
   ];
 
-  for (const pattern of nodePatterns) {
+  for (const { pattern, kind } of nodePatterns) {
     for (const match of source.matchAll(pattern)) {
       const id = match[1];
       const label = match[2].trim();
@@ -352,7 +358,7 @@ function parseFlowchartMermaid(source: string, format: DiagramFormat): DiagramIR
       ir.nodes.push({
         id,
         label,
-        kind: pattern.source.includes("{") ? "decision" : "default",
+        kind,
         matchConfidence: 1,
       });
     }
