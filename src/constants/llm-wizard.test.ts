@@ -41,7 +41,29 @@ describe("llm-wizard", () => {
     expect(source).toContain("|#E8F5E9|Дорожка 2|");
     expect(source).toContain(":Шаг 1;");
     expect(source).toContain(":Шаг 3;");
-    expect(source).toContain("top to bottom direction");
+    expect(source).not.toContain("top to bottom direction");
+  });
+
+  it("skips direction step for plantuml activity diagrams", () => {
+    const steps = getWizardSteps(
+      createState({
+        diagramType: "activity",
+        language: "plantuml",
+      }),
+    );
+
+    expect(steps).not.toContain("direction");
+  });
+
+  it("keeps direction step for mermaid activity diagrams", () => {
+    const steps = getWizardSteps(
+      createState({
+        diagramType: "activity",
+        language: "mermaid",
+      }),
+    );
+
+    expect(steps).toContain("direction");
   });
 
   it("includes structural parameters in AI prompt", () => {
