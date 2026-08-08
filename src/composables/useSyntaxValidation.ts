@@ -6,6 +6,7 @@ import {
 } from "@/constants/diagram-formats";
 import type { RenderMode } from "@/constants/render-settings";
 import { validatePlantUmlSyntax } from "@/composables/usePlantUml";
+import { validateMermaidSyntax } from "@/services/mermaid/syntax-validation";
 import type { SyntaxCheckResult } from "@/utils/plantuml-syntax";
 
 export interface UseSyntaxValidationOptions {
@@ -58,12 +59,19 @@ export function useSyntaxValidation(options: UseSyntaxValidationOptions) {
     syntaxResult.value = null;
 
     try {
-      const result = await validatePlantUmlSyntax(
-        source.value,
-        layout.value,
-        diagramDarkMode.value,
-        renderMode.value,
-      );
+      const result =
+        diagramFormat.value === "mermaid"
+          ? await validateMermaidSyntax(
+              source.value,
+              diagramDarkMode.value,
+              renderMode.value,
+            )
+          : await validatePlantUmlSyntax(
+              source.value,
+              layout.value,
+              diagramDarkMode.value,
+              renderMode.value,
+            );
       syntaxResult.value = result;
       updateSyntaxHighlights(result);
       return result;
