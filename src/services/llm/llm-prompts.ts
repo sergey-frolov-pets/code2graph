@@ -2,7 +2,10 @@ export const LLM_JSON_SYSTEM_APPENDIX =
   "Respond with a single JSON object only. No markdown fences. Required field: plantuml (string with valid @startuml/@enduml). Optional: explanation (string).";
 
 export const LLM_MERMAID_RULES =
-  "Mermaid rules: return valid Mermaid diagram source. Use diagram-type keywords such as flowchart, sequenceDiagram, classDiagram, stateDiagram-v2, gantt, or erDiagram. Do not use markdown code fences inside the plantuml JSON field.";
+  "Mermaid rules: return valid Mermaid diagram source. Use diagram-type keywords such as flowchart, sequenceDiagram, classDiagram, stateDiagram-v2, gantt, erDiagram, or mindmap. Do not use markdown code fences inside the plantuml JSON field.";
+
+export const LLM_JSON_WIZARD_PLANTUML_APPENDIX =
+  "Respond with a single JSON object only. No markdown fences. Required field: plantuml (string with complete PlantUML source using the correct @start* / @end* pair for the requested diagram type). Optional: explanation (string).";
 
 export const LLM_JSON_MERMAID_APPENDIX =
   "Respond with a single JSON object only. No markdown fences. Required field: plantuml (string with complete Mermaid source — field name plantuml for API compatibility). Optional: explanation (string).";
@@ -16,6 +19,18 @@ export function buildLlmSystemPrompt(basePrompt: string): string {
 
 export function buildLlmMermaidSystemPrompt(basePrompt: string): string {
   return `${basePrompt}\n\n${LLM_MERMAID_RULES}\n\n${LLM_JSON_MERMAID_APPENDIX}`;
+}
+
+export function buildWizardLlmSystemPrompt(
+  basePrompt: string,
+  formatRules: string,
+  language: "plantuml" | "mermaid",
+): string {
+  if (language === "mermaid") {
+    return `${basePrompt}\n\n${LLM_MERMAID_RULES}\n\n${formatRules}\n\n${LLM_JSON_MERMAID_APPENDIX}`;
+  }
+
+  return `${basePrompt}\n\n${formatRules}\n\n${LLM_JSON_WIZARD_PLANTUML_APPENDIX}`;
 }
 
 export const LLM_PATCH_JSON_APPENDIX =

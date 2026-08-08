@@ -6,6 +6,7 @@ import {
   createDefaultTypeParams,
   DEFAULT_WIZARD_STATE,
   getWizardLanguagesForMode,
+  getWizardDiagramFormatRules,
   getWizardSteps,
   getWizardStructuralElementsForType,
   getWizardTypesForLanguage,
@@ -342,5 +343,28 @@ describe("llm-wizard", () => {
 
     expect(prompt).toContain("Mermaid");
     expect(prompt).toContain("Chat app");
+  });
+
+  it("includes mindmap format rules in PlantUML AI wizard prompt", () => {
+    const prompt = buildWizardPrompt(
+      createState({
+        creationMode: "ai",
+        language: "plantuml",
+        diagramType: "mindmap",
+        contextText: "Project planning topics",
+      }),
+    );
+
+    expect(prompt).toContain("@startmindmap");
+    expect(prompt).toContain("@endmindmap");
+    expect(prompt).toContain("do NOT use @startuml/@enduml");
+    expect(prompt).toContain("Project planning topics");
+  });
+
+  it("includes mindmap format rules for mermaid wizard prompt", () => {
+    const rules = getWizardDiagramFormatRules("mermaid", "mindmap");
+
+    expect(rules).toContain("mindmap");
+    expect(rules).not.toContain("@startuml");
   });
 });

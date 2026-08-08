@@ -10,17 +10,18 @@ import {
 } from "@/constants/llm-wizard";
 import { llmChat } from "@/services/llm/llm-client";
 import {
-  buildLlmMermaidSystemPrompt,
   buildLlmPatchSystemPrompt,
   buildLlmSyntaxAskSystemPrompt,
   buildLlmSystemPrompt,
+  buildWizardLlmSystemPrompt,
   buildSyntaxAskUserPrompt,
 } from "@/services/llm/llm-prompts";
 import { parsePlantUmlSyntaxAskOutput } from "@/schemas/plantuml-llm-syntax-ask";
 import type { LlmChatMessage } from "@/services/llm/llm-types";
 import { LlmClientError } from "@/services/llm/llm-types";
 import type { LlmGateHandlers } from "@/composables/useLlmGate";
-import type { WizardLanguage } from "@/constants/llm-wizard";
+import type { WizardDiagramType, WizardLanguage } from "@/constants/llm-wizard";
+import { getWizardDiagramFormatRules } from "@/constants/llm-wizard";
 import { plantUmlSourcesEqual } from "@/utils/plantuml-llm-compare";
 import {
   isPatchContentChanged,
@@ -103,6 +104,7 @@ export async function generateValidPlantUml(
 export async function generateValidWizardDiagram(
   userPrompt: string,
   language: WizardLanguage,
+  diagramType: WizardDiagramType,
   layout: LayoutEngine,
   darkMode: boolean,
   renderMode: RenderMode,
@@ -116,10 +118,12 @@ export async function generateValidWizardDiagram(
     );
   }
 
-  const systemPrompt =
-    language === "mermaid"
-      ? buildLlmMermaidSystemPrompt(systemContext)
-      : buildLlmSystemPrompt(systemContext);
+  const formatRules = getWizardDiagramFormatRules(language, diagramType);
+  const systemPrompt = buildWizardLlmSystemPrompt(
+    systemContext,
+    formatRules,
+    language,
+  );
 
   const messages: LlmChatMessage[] = [
     { role: "system", content: systemPrompt },
