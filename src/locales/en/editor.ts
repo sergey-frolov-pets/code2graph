@@ -2,7 +2,12 @@ import type { LocaleMessages } from "../types";
 
 export const editorMessages: LocaleMessages = {
   "editor.title": "Code",
-  "editor.titleTooltip": "PlantUML source code",
+  "editor.titleTooltip.plantuml": "PlantUML source code",
+  "editor.titleTooltip.mermaid": "Mermaid source code",
+  "editor.titleTooltip.graphml": "GraphML (view only)",
+  "editor.format.plantuml": "PlantUML",
+  "editor.format.mermaid": "Mermaid",
+  "editor.format.graphml": "GraphML",
   "editor.openPuml": "Open .puml",
   "editor.openMermaid": "Open Mermaid",
   "editor.openGraphml": "Open GraphML",

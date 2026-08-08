@@ -66,6 +66,14 @@ const validateLabel = computed(() =>
   props.isValidating ? t("editor.validating") : t("editor.validate"),
 );
 
+const formatBadgeLabel = computed(() =>
+  t(`editor.format.${props.formatDefinition.id}`),
+);
+
+const titleTooltip = computed(() =>
+  t(`editor.titleTooltip.${props.formatDefinition.id}`),
+);
+
 const saveLabel = computed(() =>
   props.formatDefinition.id === "mermaid"
     ? t("editor.saveMermaid")
@@ -125,15 +133,20 @@ function onSampleChange(event: Event): void {
 
 <template>
   <header class="panel-header">
-    <h2 class="panel-title" :title="t('editor.titleTooltip')">
-      {{ t("editor.title") }}
+    <div class="panel-title-group">
+      <h2 class="panel-title panel-title--editor" :title="titleTooltip">
+        {{ t("editor.title") }}
+      </h2>
+      <span class="panel-title__badge panel-title__badge--format" :title="titleTooltip">
+        {{ formatBadgeLabel }}
+      </span>
       <span
         v-if="!formatDefinition.editable"
-        class="panel-title__badge"
+        class="panel-title__badge panel-title__badge--muted"
       >
         {{ t("editor.viewOnly") }}
       </span>
-    </h2>
+    </div>
     <div class="panel-header__toolbar">
       <IconButton :label="openFileLabel" @click="emit('openFile')">
         <ActionIcon name="folder-open" />
@@ -264,15 +277,39 @@ function onSampleChange(event: Event): void {
 </template>
 
 <style scoped>
+.panel-title-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: min(100%, 240px);
+}
+
+.panel-title--editor {
+  max-width: none;
+  flex: 0 0 auto;
+}
+
 .panel-title__badge {
-  margin-left: 8px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
-  color: var(--accent);
   font-size: 0.72rem;
   font-weight: 600;
-  vertical-align: middle;
+  line-height: 1.2;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.panel-title__badge--format {
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
+  color: var(--text-muted);
+}
+
+.panel-title__badge--muted {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
 }
 
 .sample-select-wrap {
