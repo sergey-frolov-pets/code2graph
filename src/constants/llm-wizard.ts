@@ -244,6 +244,53 @@ export function getWizardStepTitleKey(stepId: WizardStepId): string {
   return `llm.wizard.step.${stepId}`;
 }
 
+export function resolveWizardStateWithDefaults(
+  state: WizardState,
+  visitedStepIds: readonly WizardStepId[],
+): WizardState {
+  const visited = new Set(visitedStepIds);
+  const resolved: WizardState = {
+    creationMode: visited.has("mode")
+      ? state.creationMode
+      : DEFAULT_WIZARD_STATE.creationMode,
+    language: visited.has("language")
+      ? state.language
+      : DEFAULT_WIZARD_STATE.language,
+    diagramType: visited.has("type")
+      ? state.diagramType
+      : DEFAULT_WIZARD_STATE.diagramType,
+    theme: visited.has("style") ? state.theme : DEFAULT_WIZARD_STATE.theme,
+    direction: visited.has("direction")
+      ? state.direction
+      : DEFAULT_WIZARD_STATE.direction,
+    typeParams: visited.has("params")
+      ? { ...state.typeParams }
+      : createDefaultTypeParams(),
+    contextText: visited.has("context") ? state.contextText : "",
+    typeSpecificText:
+      visited.has("params") && state.creationMode === "ai"
+        ? state.typeSpecificText
+        : "",
+    promptText: visited.has("prompt") ? state.promptText : "",
+  };
+
+  const allowedLanguages = getWizardLanguagesForMode(resolved.creationMode);
+  if (!allowedLanguages.includes(resolved.language)) {
+    resolved.language = allowedLanguages[0];
+  }
+
+  const allowedTypes = getWizardTypesForLanguage(resolved.language);
+  if (!allowedTypes.includes(resolved.diagramType)) {
+    resolved.diagramType = allowedTypes[0];
+  }
+
+  if (!wizardTypeSupportsDirection(resolved.diagramType, resolved.language)) {
+    resolved.direction = DEFAULT_WIZARD_STATE.direction;
+  }
+
+  return resolved;
+}
+
 export function buildWizardPrompt(state: WizardState): string {
   const typeLabel = state.diagramType.replace(/_/g, " ");
   const paramLines = formatTypeParamsForPrompt(state);
@@ -614,7 +661,7 @@ function buildMermaidFlowchart(
   const flow = mermaidFlowDirection(state.direction);
   const startLabel = locale === "ru" ? "Старт" : "Start";
   const endLabel = locale === "ru" ? "Готово" : "Done";
-  const lines = [`flowchart ${flow}`, `  A([${startLabel})]`];
+  const lines = [`flowchart ${flow}`, `  A([${startLabel}])`];
 
   for (let index = 1; index <= nodeCount; index += 1) {
     const label = nodeLabel(index, locale);
@@ -622,7 +669,7 @@ function buildMermaidFlowchart(
     lines.push(`  ${nodeId}[${label}]`);
   }
 
-  lines.push(`  Z([${endLabel})]`);
+  lines.push(`  Z([${endLabel}])`);
 
   if (nodeCount >= 1) {
     lines.push(`  A --> N1`);
