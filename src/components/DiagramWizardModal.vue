@@ -77,6 +77,9 @@ const paramFields = computed((): WizardParamField[] =>
 );
 
 const isAiMode = computed(() => wizardState.value.creationMode === "ai");
+const selectedModeDescription = computed(() =>
+  t(`llm.wizard.mode.${wizardState.value.creationMode}Desc`),
+);
 const isManualResultReady = computed(
   () => !isAiMode.value && currentStepId.value === "result" && resultSource.value.length > 0,
 );
@@ -363,19 +366,25 @@ function onApply(): void {
 
     <div v-if="currentStepId === 'mode'" class="wizard-step">
       <p class="wizard-hint">{{ t("llm.wizard.modeHint") }}</p>
-      <div class="wizard-mode-grid">
+      <div
+        class="wizard-mode-toggle"
+        role="radiogroup"
+        :aria-label="t('llm.wizard.step.mode')"
+      >
         <button
           v-for="mode in WIZARD_CREATION_MODES"
           :key="mode"
-          class="wizard-mode-card"
-          :class="{ 'is-selected': wizardState.creationMode === mode }"
+          class="wizard-mode-toggle__option"
+          :class="{ 'is-active': wizardState.creationMode === mode }"
           type="button"
+          role="radio"
+          :aria-checked="wizardState.creationMode === mode"
           @click="onModeSelect(mode)"
         >
-          <span class="wizard-mode-card__title">{{ t(`llm.wizard.mode.${mode}`) }}</span>
-          <span class="wizard-mode-card__desc">{{ t(`llm.wizard.mode.${mode}Desc`) }}</span>
+          {{ t(`llm.wizard.mode.${mode}`) }}
         </button>
       </div>
+      <p class="wizard-mode-toggle__desc">{{ selectedModeDescription }}</p>
     </div>
 
     <div v-else-if="currentStepId === 'language'" class="wizard-step">
@@ -597,43 +606,44 @@ function onApply(): void {
   line-height: 1.4;
 }
 
-.wizard-mode-grid {
+.wizard-mode-toggle {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 10px;
-}
-
-.wizard-mode-card {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 14px 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface-muted);
-  color: var(--text);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
 }
 
-.wizard-mode-card:hover {
-  border-color: var(--primary);
-}
-
-.wizard-mode-card.is-selected {
-  border-color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 8%, var(--surface-muted));
-}
-
-.wizard-mode-card__title {
-  font-weight: 600;
-}
-
-.wizard-mode-card__desc {
-  font-size: 0.84rem;
+.wizard-mode-toggle__option {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
   color: var(--text-muted);
-  line-height: 1.35;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.wizard-mode-toggle__option:hover:not(.is-active) {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+.wizard-mode-toggle__option.is-active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.wizard-mode-toggle__desc {
+  margin: 12px 0 0;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  line-height: 1.4;
 }
 
 .wizard-field {
