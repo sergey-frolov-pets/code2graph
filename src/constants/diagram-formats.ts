@@ -55,7 +55,7 @@ export const DIAGRAM_FORMAT_DEFINITIONS: Record<
     accept: ".mmd,.mermaid",
     defaultFileName: "diagram.mmd",
     editable: true,
-    supportsSyntaxValidation: false,
+    supportsSyntaxValidation: true,
     supportsAiPatch: false,
     supportsAiSyntaxAsk: false,
     supportsSnippets: false,

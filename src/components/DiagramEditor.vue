@@ -66,7 +66,9 @@ const formatDefinition = computed(() =>
 );
 const isReadOnly = computed(() => !formatDefinition.value.editable);
 const effectiveSyntaxHighlight = computed(
-  () => props.syntaxHighlightEnabled && diagramFormat.value === "plantuml",
+  () =>
+    props.syntaxHighlightEnabled &&
+    (diagramFormat.value === "plantuml" || diagramFormat.value === "mermaid"),
 );
 const effectiveAutocomplete = computed(
   () =>
@@ -154,6 +156,7 @@ const {
   source,
   folds,
   syntaxHighlightEnabled: effectiveSyntaxHighlight,
+  diagramFormat,
   editorFontSize: toRef(props, "editorFontSize"),
   editorFontFamily: toRef(props, "editorFontFamily"),
 });

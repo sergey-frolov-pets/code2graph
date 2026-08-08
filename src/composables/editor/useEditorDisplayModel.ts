@@ -7,6 +7,8 @@ import {
   type VisibleLine,
 } from "@/utils/code-folds";
 import { renderHighlightedLine } from "@/utils/plantuml-highlight";
+import { renderMermaidHighlightedLine } from "@/utils/mermaid-highlight";
+import type { DiagramFormat } from "@/constants/diagram-formats";
 
 export const EDITOR_LINE_HEIGHT = 1.45;
 export const FOLD_TOGGLE_WIDTH = "14px";
@@ -33,11 +35,18 @@ export function useEditorDisplayModel(options: {
   source: Ref<string>;
   folds: Ref<CodeFoldRegion[]>;
   syntaxHighlightEnabled: Ref<boolean>;
+  diagramFormat: Ref<DiagramFormat>;
   editorFontSize: Ref<string>;
   editorFontFamily: Ref<string>;
 }) {
-  const { source, folds, syntaxHighlightEnabled, editorFontSize, editorFontFamily } =
-    options;
+  const {
+    source,
+    folds,
+    syntaxHighlightEnabled,
+    diagramFormat,
+    editorFontSize,
+    editorFontFamily,
+  } = options;
 
   const sourceLines = computed(() => source.value.split(/\r?\n/));
 
@@ -75,6 +84,14 @@ export function useEditorDisplayModel(options: {
     })),
   );
 
+  const renderLineHighlight = (line: string): string => {
+    if (diagramFormat.value === "mermaid") {
+      return renderMermaidHighlightedLine(line);
+    }
+
+    return renderHighlightedLine(line);
+  };
+
   const visibleEditorLines = computed<VisibleEditorLine[]>(() =>
     visibleLines.value.map((item, index) => {
       const rawLine =
@@ -94,7 +111,7 @@ export function useEditorDisplayModel(options: {
         html:
           item.kind === "placeholder" || !syntaxHighlightEnabled.value
             ? undefined
-            : renderHighlightedLine(rawLine || " "),
+            : renderLineHighlight(rawLine || " "),
       };
     }),
   );

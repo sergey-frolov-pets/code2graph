@@ -67,7 +67,7 @@ function bracketDetailKey(count: number, missingCloseKey: string, extraCloseKey:
   return count > 0 ? missingCloseKey : extraCloseKey;
 }
 
-function countUnbalancedBrackets(source: string): SyntaxIssue[] {
+export function countUnbalancedBrackets(source: string): SyntaxIssue[] {
   const issues: SyntaxIssue[] = [];
   let round = 0;
   let square = 0;
