@@ -9,6 +9,7 @@ export const WIZARD_DIAGRAM_TYPES = [
   "c4_context",
   "c4_container",
   "gantt",
+  "mindmap",
   "er",
   "graph",
 ] as const;
@@ -108,6 +109,10 @@ export const WIZARD_TYPE_PARAM_FIELDS: Record<WizardDiagramType, WizardParamFiel
   ],
   c4_container: [{ id: "containers", min: 2, max: 12, default: 4 }],
   gantt: [{ id: "tasks", min: 2, max: 20, default: 4 }],
+  mindmap: [
+    { id: "nodes", min: 2, max: 12, default: 4 },
+    { id: "steps", min: 1, max: 8, default: 2 },
+  ],
   er: [{ id: "entities", min: 2, max: 12, default: 3 }],
   graph: [
     { id: "nodes", min: 2, max: 15, default: 4 },
@@ -124,6 +129,7 @@ const PLANTUML_WIZARD_TYPES: WizardDiagramType[] = [
   "c4_context",
   "c4_container",
   "gantt",
+  "mindmap",
 ];
 
 const MERMAID_WIZARD_TYPES: WizardDiagramType[] = [
@@ -133,6 +139,7 @@ const MERMAID_WIZARD_TYPES: WizardDiagramType[] = [
   "activity",
   "state",
   "gantt",
+  "mindmap",
   "er",
 ];
 
@@ -144,6 +151,7 @@ const DIRECTION_SUPPORTED_TYPES: WizardDiagramType[] = [
   "state",
   "c4_context",
   "c4_container",
+  "mindmap",
   "graph",
 ];
 
@@ -700,6 +708,14 @@ function entityLabel(index: number, locale: AppLocale): string {
   return locale === "ru" ? `Сущность ${index}` : `Entity ${index}`;
 }
 
+function branchLabel(index: number, locale: AppLocale): string {
+  return locale === "ru" ? `Ветка ${index}` : `Branch ${index}`;
+}
+
+function subBranchLabel(index: number, locale: AppLocale): string {
+  return locale === "ru" ? `Подветка ${index}` : `Sub-branch ${index}`;
+}
+
 function buildPlantUmlGantt(state: WizardState, locale: AppLocale): string {
   const taskCount = state.typeParams.tasks;
   const title = locale === "ru" ? "Диаграмма Ганта" : "Gantt chart";
@@ -747,6 +763,47 @@ function buildMermaidGantt(state: WizardState, locale: AppLocale): string {
     } else {
       const prevId = `t${index - 1}`;
       lines.push(`${label} :${id}, after ${prevId}, 3d`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+function buildPlantUmlMindmap(state: WizardState, locale: AppLocale): string {
+  const branchCount = state.typeParams.nodes;
+  const subCount = state.typeParams.steps;
+  const root = locale === "ru" ? "Корневая тема" : "Root topic";
+  const title = locale === "ru" ? "Mind map" : "Mind map";
+  const lines = ["@startmindmap"];
+
+  const directionLine = buildPlantUmlDirectionLine(state.direction);
+  if (directionLine) {
+    lines.push(directionLine);
+  }
+
+  lines.push("", `title ${title}`, "", ...buildPlantUmlThemeBlock(state.theme), `* ${root}`);
+
+  for (let branchIndex = 1; branchIndex <= branchCount; branchIndex += 1) {
+    lines.push(`** ${branchLabel(branchIndex, locale)}`);
+    for (let subIndex = 1; subIndex <= subCount; subIndex += 1) {
+      lines.push(`*** ${subBranchLabel(subIndex, locale)}`);
+    }
+  }
+
+  lines.push("@endmindmap");
+  return lines.join("\n");
+}
+
+function buildMermaidMindmap(state: WizardState, locale: AppLocale): string {
+  const branchCount = state.typeParams.nodes;
+  const subCount = state.typeParams.steps;
+  const root = locale === "ru" ? "Корневая тема" : "Root topic";
+  const lines = ["mindmap", `  root((${root}))`];
+
+  for (let branchIndex = 1; branchIndex <= branchCount; branchIndex += 1) {
+    lines.push(`    ${branchLabel(branchIndex, locale)}`);
+    for (let subIndex = 1; subIndex <= subCount; subIndex += 1) {
+      lines.push(`      ${subBranchLabel(subIndex, locale)}`);
     }
   }
 
@@ -840,6 +897,8 @@ export function buildManualScaffold(state: WizardState, locale: AppLocale): stri
         return buildMermaidState(state, locale);
       case "gantt":
         return buildMermaidGantt(state, locale);
+      case "mindmap":
+        return buildMermaidMindmap(state, locale);
       case "er":
         return buildMermaidEr(state, locale);
       default:
@@ -864,6 +923,8 @@ export function buildManualScaffold(state: WizardState, locale: AppLocale): stri
       return buildPlantUmlC4Container(state, locale);
     case "gantt":
       return buildPlantUmlGantt(state, locale);
+    case "mindmap":
+      return buildPlantUmlMindmap(state, locale);
     default:
       return buildPlantUmlSequence(state, locale);
   }

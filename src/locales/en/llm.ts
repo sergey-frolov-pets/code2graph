@@ -149,6 +149,7 @@ export const llmMessages: LocaleMessages = {
   "llm.wizard.type.c4_context": "C4 Context",
   "llm.wizard.type.c4_container": "C4 Container",
   "llm.wizard.type.gantt": "Gantt",
+  "llm.wizard.type.mindmap": "Mind map",
   "llm.wizard.type.er": "ER (entities)",
   "llm.wizard.type.graph": "Graph",
   "llm.wizard.typeDesc.sequence": "Message exchange between participants over time",
@@ -159,6 +160,7 @@ export const llmMessages: LocaleMessages = {
   "llm.wizard.typeDesc.c4_context": "System landscape: users and external systems",
   "llm.wizard.typeDesc.c4_container": "Containers, technologies, and data flows",
   "llm.wizard.typeDesc.gantt": "Tasks, timelines, and milestones",
+  "llm.wizard.typeDesc.mindmap": "Idea hierarchy from a central topic",
   "llm.wizard.typeDesc.er": "Entities, attributes, and relationships",
   "llm.wizard.typeDesc.graph": "Nodes and directed connections",
   "llm.wizard.detailsPlaceholder.sequence": "Sync/async calls, alt/else…",
@@ -169,6 +171,7 @@ export const llmMessages: LocaleMessages = {
   "llm.wizard.detailsPlaceholder.c4_context": "System, users, external systems…",
   "llm.wizard.detailsPlaceholder.c4_container": "Containers, technologies, links…",
   "llm.wizard.detailsPlaceholder.gantt": "Tasks, duration, milestones, sections…",
+  "llm.wizard.detailsPlaceholder.mindmap": "Branches, subtopics, colors, styles…",
   "llm.wizard.detailsPlaceholder.er": "Entities, attributes, relations…",
   "llm.wizard.detailsPlaceholder.graph": "Nodes, edges, hierarchy…",
 };
