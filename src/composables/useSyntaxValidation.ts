@@ -7,6 +7,7 @@ import {
 import type { RenderMode } from "@/constants/render-settings";
 import { validatePlantUmlSyntax } from "@/composables/usePlantUml";
 import { validateMermaidSyntax } from "@/services/mermaid/syntax-validation";
+import { validateGraphmlSyntax } from "@/services/graphml/syntax-validation";
 import type { SyntaxCheckResult } from "@/utils/plantuml-syntax";
 
 export interface UseSyntaxValidationOptions {
@@ -66,12 +67,14 @@ export function useSyntaxValidation(options: UseSyntaxValidationOptions) {
               diagramDarkMode.value,
               renderMode.value,
             )
-          : await validatePlantUmlSyntax(
-              source.value,
-              layout.value,
-              diagramDarkMode.value,
-              renderMode.value,
-            );
+          : diagramFormat.value === "graphml"
+            ? validateGraphmlSyntax(source.value)
+            : await validatePlantUmlSyntax(
+                source.value,
+                layout.value,
+                diagramDarkMode.value,
+                renderMode.value,
+              );
       syntaxResult.value = result;
       updateSyntaxHighlights(result);
       return result;

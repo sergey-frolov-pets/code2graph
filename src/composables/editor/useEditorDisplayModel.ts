@@ -8,6 +8,7 @@ import {
 } from "@/utils/code-folds";
 import { renderHighlightedLine } from "@/utils/plantuml-highlight";
 import { renderMermaidHighlightedLine } from "@/utils/mermaid-highlight";
+import { renderGraphmlHighlightedLine } from "@/utils/graphml-highlight";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 
 export const EDITOR_LINE_HEIGHT = 1.45;
@@ -87,6 +88,10 @@ export function useEditorDisplayModel(options: {
   const renderLineHighlight = (line: string): string => {
     if (diagramFormat.value === "mermaid") {
       return renderMermaidHighlightedLine(line);
+    }
+
+    if (diagramFormat.value === "graphml") {
+      return renderGraphmlHighlightedLine(line);
     }
 
     return renderHighlightedLine(line);

@@ -66,15 +66,25 @@ const validateLabel = computed(() =>
   props.isValidating ? t("editor.validating") : t("editor.validate"),
 );
 
-const saveLabel = computed(() =>
-  props.formatDefinition.id === "mermaid"
-    ? t("editor.saveMermaid")
-    : t("app.savePuml"),
-);
+const saveLabel = computed(() => {
+  if (props.formatDefinition.id === "mermaid") {
+    return t("editor.saveMermaid");
+  }
+  if (props.formatDefinition.id === "graphml") {
+    return t("editor.saveGraphml");
+  }
+  return t("app.savePuml");
+});
 
-const saveBadgeFormat = computed<"PUML" | "MMD">(() =>
-  props.formatDefinition.id === "mermaid" ? "MMD" : "PUML",
-);
+const saveBadgeFormat = computed<"PUML" | "MMD" | "GML">(() => {
+  if (props.formatDefinition.id === "mermaid") {
+    return "MMD";
+  }
+  if (props.formatDefinition.id === "graphml") {
+    return "GML";
+  }
+  return "PUML";
+});
 
 const openFileLabel = computed(() => {
   if (props.formatDefinition.id === "graphml") {
