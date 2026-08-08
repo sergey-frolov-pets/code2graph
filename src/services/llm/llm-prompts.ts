@@ -1,11 +1,21 @@
 export const LLM_JSON_SYSTEM_APPENDIX =
   "Respond with a single JSON object only. No markdown fences. Required field: plantuml (string with valid @startuml/@enduml). Optional: explanation (string).";
 
+export const LLM_MERMAID_RULES =
+  "Mermaid rules: return valid Mermaid diagram source. Use diagram-type keywords such as flowchart, sequenceDiagram, classDiagram, stateDiagram-v2, gantt, or erDiagram. Do not use markdown code fences inside the plantuml JSON field.";
+
+export const LLM_JSON_MERMAID_APPENDIX =
+  "Respond with a single JSON object only. No markdown fences. Required field: plantuml (string with complete Mermaid source — field name plantuml for API compatibility). Optional: explanation (string).";
+
 export const LLM_PLANTUML_RULES =
   "PlantUML rules: use @startuml and @enduml. For C4 diagrams only use !include from ./plantuml-lib/C4/ or stdlib <...> includes. Do not use !includeurl or external URLs.";
 
 export function buildLlmSystemPrompt(basePrompt: string): string {
   return `${basePrompt}\n\n${LLM_PLANTUML_RULES}\n\n${LLM_JSON_SYSTEM_APPENDIX}`;
+}
+
+export function buildLlmMermaidSystemPrompt(basePrompt: string): string {
+  return `${basePrompt}\n\n${LLM_MERMAID_RULES}\n\n${LLM_JSON_MERMAID_APPENDIX}`;
 }
 
 export const LLM_PATCH_JSON_APPENDIX =

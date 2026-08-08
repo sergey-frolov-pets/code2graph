@@ -404,7 +404,7 @@ onMounted(() => {
       :diagram-dark-mode="diagramDarkMode"
       :open-settings="openSettingsModal"
       @close="isWizardModalOpen = false"
-      @apply="(payload) => applyAiPlantUml(payload.plantuml, payload.label)"
+      @apply="(payload) => applyAiPlantUml(payload.source, payload.label)"
     />
 
     <LlmKeysGuideModal

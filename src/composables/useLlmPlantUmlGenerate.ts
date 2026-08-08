@@ -10,6 +10,7 @@ import {
 } from "@/constants/llm-wizard";
 import { llmChat } from "@/services/llm/llm-client";
 import {
+  buildLlmMermaidSystemPrompt,
   buildLlmPatchSystemPrompt,
   buildLlmSyntaxAskSystemPrompt,
   buildLlmSystemPrompt,
@@ -19,6 +20,7 @@ import { parsePlantUmlSyntaxAskOutput } from "@/schemas/plantuml-llm-syntax-ask"
 import type { LlmChatMessage } from "@/services/llm/llm-types";
 import { LlmClientError } from "@/services/llm/llm-types";
 import type { LlmGateHandlers } from "@/composables/useLlmGate";
+import type { WizardLanguage } from "@/constants/llm-wizard";
 import { plantUmlSourcesEqual } from "@/utils/plantuml-llm-compare";
 import {
   isPatchContentChanged,
@@ -31,6 +33,7 @@ import {
   validateLlmPlantUmlSource,
   validateLlmResponse,
 } from "@/utils/validate-llm-plantuml";
+import { validateLlmMermaidResponse } from "@/utils/validate-llm-mermaid";
 
 export interface GenerateValidPlantUmlResult {
   plantuml: string;
@@ -95,6 +98,74 @@ export async function generateValidPlantUml(
   }
 
   throw new LlmClientError("validation_failed", "LLM validation failed");
+}
+
+export async function generateValidWizardDiagram(
+  userPrompt: string,
+  language: WizardLanguage,
+  layout: LayoutEngine,
+  darkMode: boolean,
+  renderMode: RenderMode,
+  handlers?: LlmGateHandlers,
+  systemContext = "You generate diagram source code from structured wizard requirements.",
+): Promise<GenerateValidPlantUmlResult> {
+  if (language === "graphml") {
+    throw new LlmClientError(
+      "validation_failed",
+      "GraphML is not supported for AI wizard generation",
+    );
+  }
+
+  const systemPrompt =
+    language === "mermaid"
+      ? buildLlmMermaidSystemPrompt(systemContext)
+      : buildLlmSystemPrompt(systemContext);
+
+  const messages: LlmChatMessage[] = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: userPrompt },
+  ];
+
+  const maxRetries = getMaxLlmValidationRetries();
+
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+    const chatResult = await llmChat(messages, { jsonMode: true }, handlers);
+    const validation =
+      language === "mermaid"
+        ? await validateLlmMermaidResponse(
+            chatResult.content,
+            darkMode,
+            renderMode,
+          )
+        : await validateLlmResponse(
+            chatResult.content,
+            layout,
+            darkMode,
+            renderMode,
+          );
+
+    if (validation.valid && validation.plantuml) {
+      return {
+        plantuml: validation.plantuml,
+        explanation: validation.output?.explanation,
+      };
+    }
+
+    if (attempt >= maxRetries) {
+      throw new LlmClientError(
+        "validation_failed",
+        formatLlmValidationIssuesForRetry(validation.issues),
+      );
+    }
+
+    messages.push({ role: "assistant", content: chatResult.content });
+    messages.push({
+      role: "user",
+      content: `Fix validation errors and return corrected JSON only:\n${formatLlmValidationIssuesForRetry(validation.issues)}`,
+    });
+  }
+
+  throw new LlmClientError("validation_failed", "LLM wizard validation failed");
 }
 
 export async function generateValidPlantUmlFullEdit(

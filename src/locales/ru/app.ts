@@ -2,7 +2,7 @@ import type { LocaleMessages } from "../types";
 
 export const appMessages: LocaleMessages = {
   "app.subtitle": "Кроссплатформенный PlantUML-редактор с ИИ-генерацией диаграмм",
-  "app.aiNewDiagram": "Новая диаграмма (AI)",
+  "app.aiNewDiagram": "Новая диаграмма",
   "app.settings": "Настройки",
   "app.library": "Библиотека",
   "app.close": "Закрыть",
