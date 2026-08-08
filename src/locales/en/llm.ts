@@ -135,6 +135,7 @@ export const llmMessages: LocaleMessages = {
   "llm.wizard.generating": "Generating…",
   "llm.wizard.regenerate": "Generate again",
   "llm.wizard.apply": "Apply to editor",
+  "llm.wizard.transferToEditor": "Transfer to editor",
   "llm.wizard.generateError": "Failed to create diagram",
   "llm.wizard.previewError": "Failed to render preview",
   "llm.wizard.historyLabel": "Wizard: {mode} — {type}",

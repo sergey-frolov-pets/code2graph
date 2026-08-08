@@ -16,6 +16,7 @@ import {
   getWizardTypesForLanguage,
   isWizardDiagramType,
   isWizardLanguage,
+  resolveWizardStateWithDefaults,
   WIZARD_CREATION_MODES,
   WIZARD_DIAGRAM_DIRECTIONS,
   WIZARD_DIAGRAM_THEMES,
@@ -344,22 +345,41 @@ function goNext(): void {
   }
 }
 
+function buildApplyLabel(state: WizardState): string {
+  const modeLabel =
+    state.creationMode === "ai"
+      ? t("llm.wizard.mode.ai")
+      : t("llm.wizard.mode.manual");
+
+  return t("llm.wizard.historyLabel", {
+    mode: modeLabel,
+    type: t(`llm.wizard.type.${state.diagramType}`),
+  });
+}
+
 function onApply(): void {
   if (!resultSource.value) {
     return;
   }
 
-  const modeLabel =
-    wizardState.value.creationMode === "ai"
-      ? t("llm.wizard.mode.ai")
-      : t("llm.wizard.mode.manual");
-
   emit("apply", {
     source: resultSource.value,
-    label: t("llm.wizard.historyLabel", {
-      mode: modeLabel,
-      type: t(`llm.wizard.type.${wizardState.value.diagramType}`),
-    }),
+    label: buildApplyLabel(wizardState.value),
+  });
+  emit("close");
+}
+
+function onTransferToEditor(): void {
+  const visitedSteps = wizardSteps.value.slice(0, stepIndex.value + 1);
+  const resolved = resolveWizardStateWithDefaults(
+    wizardState.value,
+    visitedSteps,
+  );
+  const source = buildManualScaffold(resolved, locale.value);
+
+  emit("apply", {
+    source,
+    label: buildApplyLabel(resolved),
   });
   emit("close");
 }
@@ -574,6 +594,15 @@ function onApply(): void {
       </button>
       <button class="btn" type="button" @click="emit('close')">
         {{ t("app.cancel") }}
+      </button>
+      <button
+        v-if="currentStepId !== 'result'"
+        class="btn"
+        type="button"
+        :disabled="isGenerating"
+        @click="onTransferToEditor"
+      >
+        {{ t("llm.wizard.transferToEditor") }}
       </button>
       <button
         v-if="currentStepId !== 'result' && currentStepId !== 'prompt'"

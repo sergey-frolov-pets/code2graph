@@ -3,9 +3,11 @@ import {
   buildManualScaffold,
   buildWizardPrompt,
   createDefaultTypeParams,
+  DEFAULT_WIZARD_STATE,
   getWizardLanguagesForMode,
   getWizardSteps,
   getWizardTypesForLanguage,
+  resolveWizardStateWithDefaults,
   type WizardState,
 } from "@/constants/llm-wizard";
 
@@ -124,6 +126,31 @@ describe("llm-wizard", () => {
     expect(source.startsWith("flowchart LR")).toBe(true);
     expect(source).toContain("Node 1");
     expect(source).toContain("N3");
+    expect(source).toContain("A([Start])");
+    expect(source).toContain("Z([Done])");
+    expect(source).not.toContain("([Start})]");
+  });
+
+  it("uses defaults for wizard steps not yet visited", () => {
+    const resolved = resolveWizardStateWithDefaults(
+      createState({
+        creationMode: "manual",
+        language: "mermaid",
+        diagramType: "component",
+        direction: "LR",
+        theme: "dark",
+      }),
+      ["mode", "language", "type"],
+    );
+
+    expect(resolved.creationMode).toBe("manual");
+    expect(resolved.language).toBe("mermaid");
+    expect(resolved.diagramType).toBe("component");
+    expect(resolved.direction).toBe(DEFAULT_WIZARD_STATE.direction);
+    expect(resolved.theme).toBe(DEFAULT_WIZARD_STATE.theme);
+    expect(resolved.typeParams.components).toBe(
+      createDefaultTypeParams().components,
+    );
   });
 
   it("builds plantuml gantt scaffold", () => {
