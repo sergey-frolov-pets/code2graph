@@ -160,7 +160,6 @@ const { guideModalOpen, guideProviderId, closeLlmKeysGuide } = llmKeysGuide;
     :layout="layout"
     :render-mode="renderMode"
     :diagram-dark-mode="diagramDarkMode"
-    :open-settings="openSettingsModal"
     @close="isWizardModalOpen = false"
     @apply="(payload) => applyAiPlantUml(payload.source, payload.label)"
   />

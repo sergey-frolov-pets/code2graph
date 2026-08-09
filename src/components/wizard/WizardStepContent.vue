@@ -112,7 +112,5 @@ const emit = defineEmits<{
     :is-manual-result-ready="isManualResultReady"
     :error-message="errorMessage"
     :result-explanation="resultExplanation"
-    :preview-svg="previewSvg"
-    :is-preview-loading="isPreviewLoading"
   />
 </template>

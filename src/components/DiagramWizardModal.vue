@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { toRef } from "vue";
 import AppModal from "@/components/AppModal.vue";
+import WizardAiSetupPanel from "@/components/wizard/WizardAiSetupPanel.vue";
+import WizardLivePreview from "@/components/wizard/WizardLivePreview.vue";
+import WizardProgressSteps from "@/components/wizard/WizardProgressSteps.vue";
 import WizardStepContent from "@/components/wizard/WizardStepContent.vue";
 import WizardModalFooter from "@/components/wizard/WizardModalFooter.vue";
 import { useDiagramWizardFlow } from "@/composables/wizard/useDiagramWizardFlow";
@@ -13,7 +16,6 @@ const props = defineProps<{
   layout: LayoutEngine;
   renderMode: RenderMode;
   diagramDarkMode: boolean;
-  openSettings?: () => void;
 }>();
 
 const emit = defineEmits<{
@@ -32,6 +34,9 @@ const {
   resultExplanation,
   previewSvg,
   isPreviewLoading,
+  aiSetupVisible,
+  aiSetupReason,
+  showLivePreviewPanel,
   currentStepId,
   totalSteps,
   stepTitle,
@@ -46,6 +51,7 @@ const {
   selectedModeDescription,
   isManualResultReady,
   canGoNext,
+  wizardSteps,
   onModeSelect,
   onLanguageSelect,
   onTypeSelect,
@@ -58,12 +64,12 @@ const {
   handleApply,
   handleTransferToEditor,
   handleRegenerate,
+  handleAiSetupRetry,
 } = useDiagramWizardFlow({
   open: toRef(props, "open"),
   layout: toRef(props, "layout"),
   renderMode: toRef(props, "renderMode"),
   diagramDarkMode: toRef(props, "diagramDarkMode"),
-  openSettings: props.openSettings,
   locale,
   t,
   onApply: (payload) => emit("apply", payload),
@@ -92,35 +98,55 @@ const {
         :style="{ width: `${((stepIndex + 1) / totalSteps) * 100}%` }"
       />
     </div>
+    <WizardProgressSteps :steps="wizardSteps" :step-index="stepIndex" />
     <p class="wizard-step-meta">
       {{ t("llm.wizard.stepCounter", { current: stepIndex + 1, total: totalSteps }) }}
     </p>
 
-    <WizardStepContent
-      v-model:wizard-state="wizardState"
-      :current-step-id="currentStepId"
-      :is-ai-mode="isAiMode"
-      :is-generating="isGenerating"
-      :is-manual-result-ready="isManualResultReady"
-      :error-message="errorMessage"
-      :result-explanation="resultExplanation"
-      :preview-svg="previewSvg"
-      :is-preview-loading="isPreviewLoading"
-      :selected-mode-description="selectedModeDescription"
-      :language-options="languageOptions"
-      :type-options="typeOptions"
-      :direction-options="directionOptions"
-      :theme-options="themeOptions"
-      :param-fields="paramFields"
-      :structural-element-options="structuralElementOptions"
-      @mode-select="onModeSelect($event)"
-      @language-select="onLanguageSelect($event)"
-      @type-select="onTypeSelect($event)"
-      @direction-select="onDirectionSelect($event)"
-      @theme-select="onThemeSelect($event)"
-      @param-change="onParamChange"
-      @structural-toggle="onStructuralToggle"
+    <WizardAiSetupPanel
+      v-if="aiSetupVisible && isAiMode"
+      :reason="aiSetupReason"
+      @retry="handleAiSetupRetry"
     />
+
+    <div
+      class="wizard-body"
+      :class="{ 'wizard-body--with-preview': showLivePreviewPanel && !aiSetupVisible }"
+    >
+      <div class="wizard-body__main">
+        <WizardStepContent
+          v-model:wizard-state="wizardState"
+          :current-step-id="currentStepId"
+          :is-ai-mode="isAiMode"
+          :is-generating="isGenerating"
+          :is-manual-result-ready="isManualResultReady"
+          :error-message="errorMessage"
+          :result-explanation="resultExplanation"
+          :preview-svg="previewSvg"
+          :is-preview-loading="isPreviewLoading"
+          :selected-mode-description="selectedModeDescription"
+          :language-options="languageOptions"
+          :type-options="typeOptions"
+          :direction-options="directionOptions"
+          :theme-options="themeOptions"
+          :param-fields="paramFields"
+          :structural-element-options="structuralElementOptions"
+          @mode-select="onModeSelect($event)"
+          @language-select="onLanguageSelect($event)"
+          @type-select="onTypeSelect($event)"
+          @direction-select="onDirectionSelect($event)"
+          @theme-select="onThemeSelect($event)"
+          @param-change="onParamChange"
+          @structural-toggle="onStructuralToggle"
+        />
+      </div>
+
+      <WizardLivePreview
+        v-if="showLivePreviewPanel && !aiSetupVisible"
+        :preview-svg="previewSvg"
+        :is-preview-loading="isPreviewLoading"
+      />
+    </div>
 
     <template #footer>
       <WizardModalFooter

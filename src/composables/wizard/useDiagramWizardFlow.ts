@@ -22,6 +22,7 @@ import {
   WIZARD_TYPE_PARAM_FIELDS,
   type WizardParamField,
   type WizardState,
+  type WizardStepId,
   type WizardStructuralElementId,
 } from "@/constants/llm-wizard";
 import { LlmClientError } from "@/services/llm/llm-types";
@@ -29,13 +30,22 @@ import { renderGraphmlToSvg } from "@/services/graphml/graphml-engine";
 import { renderMermaidToSvg } from "@/services/mermaid/mermaid-engine";
 import { renderPlantUmlPreviewSvg } from "@/utils/llm-preview";
 import type { AppLocale } from "@/constants/i18n";
+import {
+  useLlmGate,
+  type LlmGateFailureReason,
+} from "@/composables/useLlmGate";
+
+const MANUAL_LIVE_PREVIEW_STEPS = new Set<WizardStepId>([
+  "direction",
+  "style",
+  "params",
+]);
 
 export interface UseDiagramWizardFlowOptions {
   open: Ref<boolean>;
   layout: Ref<LayoutEngine>;
   renderMode: Ref<RenderMode>;
   diagramDarkMode: Ref<boolean>;
-  openSettings?: () => void;
   locale: Ref<AppLocale>;
   t: TranslateFn;
   onApply: (payload: { source: string; label: string }) => void;
@@ -48,7 +58,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     layout,
     renderMode,
     diagramDarkMode,
-    openSettings,
     locale,
     t,
     onApply,
@@ -67,6 +76,9 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   const resultExplanation = ref("");
   const previewSvg = ref("");
   const isPreviewLoading = ref(false);
+  const aiSetupVisible = ref(false);
+  const aiSetupReason = ref<LlmGateFailureReason | null>(null);
+  let stepPreviewTimer: ReturnType<typeof setTimeout> | null = null;
 
   const wizardSteps = computed(() => getWizardSteps(wizardState.value));
   const currentStepId = computed(() => wizardSteps.value[stepIndex.value] ?? "mode");
@@ -136,6 +148,20 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
       resultSource.value.length > 0,
   );
 
+  const showLivePreviewPanel = computed(() => {
+    if (
+      !isAiMode.value &&
+      MANUAL_LIVE_PREVIEW_STEPS.has(currentStepId.value as WizardStepId)
+    ) {
+      return true;
+    }
+
+    return (
+      currentStepId.value === "result" &&
+      (previewSvg.value.length > 0 || isPreviewLoading.value)
+    );
+  });
+
   const canGoNext = computed(() => {
     if (currentStepId.value === "context") {
       return wizardState.value.contextText.trim().length > 0;
@@ -161,6 +187,8 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     resultExplanation.value = "";
     previewSvg.value = "";
     isPreviewLoading.value = false;
+    aiSetupVisible.value = false;
+    aiSetupReason.value = null;
   }
 
   function clampStepIndex(): void {
@@ -223,6 +251,74 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
       wizardState.value.structuralElements = createDefaultStructuralElements();
       clampStepIndex();
     },
+  );
+
+  async function checkAiAccess(): Promise<boolean> {
+    const { requireLlmAccess } = useLlmGate();
+    const gate = await requireLlmAccess({ silent: true });
+
+    if (!gate.ok) {
+      aiSetupReason.value = gate.reason;
+      aiSetupVisible.value = true;
+      return false;
+    }
+
+    aiSetupVisible.value = false;
+    aiSetupReason.value = null;
+    return true;
+  }
+
+  function scheduleStepPreview(): void {
+    if (stepPreviewTimer) {
+      clearTimeout(stepPreviewTimer);
+    }
+
+    stepPreviewTimer = setTimeout(() => {
+      void refreshStepPreview();
+    }, 200);
+  }
+
+  async function refreshStepPreview(): Promise<void> {
+    if (currentStepId.value === "result") {
+      return;
+    }
+
+    if (
+      isAiMode.value ||
+      !MANUAL_LIVE_PREVIEW_STEPS.has(currentStepId.value as WizardStepId)
+    ) {
+      previewSvg.value = "";
+      return;
+    }
+
+    const visitedSteps = wizardSteps.value.slice(0, stepIndex.value + 1);
+    const resolved = resolveWizardStateWithDefaults(
+      wizardState.value,
+      visitedSteps,
+    );
+    const source = buildManualScaffold(resolved, locale.value);
+    await loadPreview(source);
+  }
+
+  watch(currentStepId, (step) => {
+    if (isAiMode.value && step === "context") {
+      void checkAiAccess();
+    }
+
+    scheduleStepPreview();
+  });
+
+  watch(
+    () => [
+      wizardState.value.diagramType,
+      wizardState.value.direction,
+      wizardState.value.theme,
+      wizardState.value.typeParams,
+      wizardState.value.structuralElements,
+      wizardState.value.language,
+    ],
+    scheduleStepPreview,
+    { deep: true },
   );
 
   watch(
@@ -347,6 +443,11 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     resultExplanation.value = "";
     previewSvg.value = "";
 
+    if (!(await checkAiAccess())) {
+      isGenerating.value = false;
+      return;
+    }
+
     try {
       const result = await generateValidWizardDiagram(
         wizardState.value.promptText,
@@ -355,7 +456,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
         layout.value,
         diagramDarkMode.value,
         renderMode.value,
-        { openSettings },
+        { silent: true },
         "You create new diagrams from structured wizard requirements.",
       );
 
@@ -363,6 +464,20 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
       resultExplanation.value = result.explanation ?? "";
       await loadPreview(result.plantuml);
     } catch (error) {
+      if (error instanceof LlmClientError && error.code === "access_denied") {
+        aiSetupVisible.value = true;
+        const reason = error.message.replace(/^LLM access denied:\s*/, "");
+        if (
+          reason === "no_consent" ||
+          reason === "no_key" ||
+          reason === "no_proxy" ||
+          reason === "provider_invalid" ||
+          reason === "provider_unavailable"
+        ) {
+          aiSetupReason.value = reason;
+        }
+      }
+
       errorMessage.value =
         error instanceof LlmClientError
           ? error.message
@@ -450,6 +565,22 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     void prepareManualResult();
   }
 
+  async function handleAiSetupRetry(): Promise<void> {
+    const hasAccess = await checkAiAccess();
+    if (!hasAccess) {
+      return;
+    }
+
+    if (
+      isAiMode.value &&
+      currentStepId.value === "result" &&
+      !resultSource.value &&
+      !isGenerating.value
+    ) {
+      void generateDiagram();
+    }
+  }
+
   return {
     stepIndex,
     wizardState,
@@ -459,6 +590,9 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     resultExplanation,
     previewSvg,
     isPreviewLoading,
+    aiSetupVisible,
+    aiSetupReason,
+    showLivePreviewPanel,
     wizardSteps,
     currentStepId,
     totalSteps,
@@ -486,5 +620,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     handleApply,
     handleTransferToEditor,
     handleRegenerate,
+    handleAiSetupRetry,
   };
 }
