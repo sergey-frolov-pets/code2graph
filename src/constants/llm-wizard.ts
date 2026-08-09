@@ -1957,6 +1957,9 @@ function buildPlantUmlTiming(state: WizardState, locale: AppLocale): string {
   }
 
   lines.push("");
+  const noteText = locale === "ru" ? "Примечание" : "Note";
+  const includeNote = hasStructural(state, "note");
+
   for (let stepIndex = 0; stepIndex <= stepCount; stepIndex += 1) {
     const time = stepIndex * 100;
     lines.push(`@${time}`);
@@ -1964,11 +1967,9 @@ function buildPlantUmlTiming(state: WizardState, locale: AppLocale): string {
       const stateName = stepIndex % 2 === 0 ? "Idle" : "Active";
       lines.push(`S${signalIndex} is ${stateName}`);
     }
-  }
-
-  if (hasStructural(state, "note")) {
-    const noteText = locale === "ru" ? "Примечание" : "Note";
-    lines.push("", `note over S1: ${noteText}`);
+    if (includeNote && stepIndex === 0) {
+      lines.push(`note top of S1: ${noteText}`);
+    }
   }
 
   lines.push("@enduml");
