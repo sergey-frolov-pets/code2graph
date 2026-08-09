@@ -762,9 +762,17 @@ function stateLabel(index: number, locale: AppLocale): string {
   return locale === "ru" ? `Состояние ${index}` : `State ${index}`;
 }
 
-function plantUmlStateRef(index: number, locale: AppLocale): string {
+function plantUmlStateAlias(index: number): string {
+  return `wizard_state_${index}`;
+}
+
+function plantUmlStateDeclaration(index: number, locale: AppLocale): string {
   const label = stateLabel(index, locale);
-  return `"${label.replace(/"/g, '\\"')}"`;
+  return `state "${label.replace(/"/g, '\\"')}" as ${plantUmlStateAlias(index)}`;
+}
+
+function plantUmlStateRef(index: number, _locale?: AppLocale): string {
+  return plantUmlStateAlias(index);
 }
 
 function actorLabel(index: number, locale: AppLocale): string {
@@ -893,7 +901,11 @@ function buildPlantUmlState(state: WizardState, locale: AppLocale): string {
   const title = locale === "ru" ? "Диаграмма состояний" : "State diagram";
   const lines = buildPlantUmlHeader(state, title, true);
 
-  lines.push("[*] --> " + plantUmlStateRef(1, locale));
+  for (let index = 1; index <= count; index += 1) {
+    lines.push(plantUmlStateDeclaration(index, locale));
+  }
+
+  lines.push("", "[*] --> " + plantUmlStateRef(1, locale));
 
   for (let index = 1; index < count; index += 1) {
     lines.push(

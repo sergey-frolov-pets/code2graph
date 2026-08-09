@@ -87,9 +87,17 @@ export function stateLabel(index: number, locale: AppLocale): string {
   return locale === "ru" ? `Состояние ${index}` : `State ${index}`;
 }
 
-export function plantUmlStateRef(index: number, locale: AppLocale): string {
+export function plantUmlStateAlias(index: number): string {
+  return `wizard_state_${index}`;
+}
+
+export function plantUmlStateDeclaration(index: number, locale: AppLocale): string {
   const label = stateLabel(index, locale);
-  return `"${label.replace(/"/g, '\\"')}"`;
+  return `state "${label.replace(/"/g, '\\"')}" as ${plantUmlStateAlias(index)}`;
+}
+
+export function plantUmlStateRef(index: number, _locale?: AppLocale): string {
+  return plantUmlStateAlias(index);
 }
 
 export function actorLabel(index: number, locale: AppLocale): string {
