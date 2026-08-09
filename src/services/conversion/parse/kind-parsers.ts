@@ -325,7 +325,7 @@ export function parseMindmapMermaid(source: string, format: DiagramFormat): Diag
   }
 
   const lines = source.split(/\r?\n/);
-  let parentStack: Array<{ level: number; id: string }> = [];
+  const parentStack: Array<{ level: number; id: string }> = [];
 
   for (const line of lines) {
     const trimmed = line.trim();

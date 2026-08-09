@@ -2,7 +2,6 @@ import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { ConversionQualityLevel } from "@/services/conversion/conversion-report";
 import type { DiagramKind } from "@/services/conversion/diagram-ir";
 import {
-  getDiagramKindFamily,
   isMermaidNativeKind,
   isPlantUmlNativeKind,
 } from "@/services/conversion/diagram-kind-families";
@@ -327,15 +326,12 @@ export function getConversionRouteRule(
     };
   }
 
-  const family = getDiagramKindFamily(kind);
   const extraLosses: string[] = [];
   if (targetFormat === "mermaid" && !isMermaidNativeKind(kind)) {
     extraLosses.push("loss.mermaidOnlySyntax");
   }
   if (targetFormat === "plantuml" && !isPlantUmlNativeKind(kind)) {
     extraLosses.push("loss.plantumlOnlySyntax");
-  }
-  if (family === "chart" && targetFormat === "graphml") {
   }
 
   if (extraLosses.length === 0) {

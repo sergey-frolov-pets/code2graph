@@ -114,7 +114,7 @@ export function parseClassPlantUml(source: string, format: DiagramFormat): Diagr
   }
 
   const idByLabel = new Map(ir.nodes.map((node) => [node.label, node.id]));
-  const classRelationPattern = /(\w+)\s+([<|*o.\-]+)\s+(\w+)/g;
+  const classRelationPattern = /(\w+)\s+([<|*o.-]+)\s+(\w+)/g;
   let edgeIndex = 0;
   for (const match of source.matchAll(classRelationPattern)) {
     const from = match[1];
