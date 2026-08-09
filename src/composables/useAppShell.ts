@@ -202,6 +202,7 @@ export function useAppShell(): AppShellContext {
     applyLoadedSource,
     onEditorCleared,
     initializeIncomingSources,
+    restoreDocumentMetadata,
     prepareRestoredSource,
     savePuml,
     onVersionRestore,
@@ -412,6 +413,7 @@ export function useAppShell(): AppShellContext {
   }
 
   function boot(): void {
+    restoreDocumentMetadata();
     restoreSettings();
     prepareRestoredSource();
     void initializeIncomingSources();

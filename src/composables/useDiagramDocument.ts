@@ -1,12 +1,22 @@
 import { computed, ref, watch, type Ref } from "vue";
 import {
+  detectFormatFromFileName,
   getDiagramFormatDefinition,
+  isDiagramFormat,
   type DiagramFormat,
 } from "@/constants/diagram-formats";
+import {
+  STORAGE_KEY_DIAGRAM_FORMAT,
+  STORAGE_KEY_FILE_NAME,
+} from "@/constants";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useLocale } from "@/composables/useLocale";
+import { readStorageItem, writeStorageItem } from "@/core/safe-storage";
 import { extractLeadingMermaidDiagram } from "@/utils/mermaid-source";
-import { detectDiagramFormat } from "@/utils/diagram-format";
+import {
+  detectDiagramFormat,
+  detectDiagramFormatFromSource,
+} from "@/utils/diagram-format";
 import {
   resolveDiagramFileName,
   saveDiagramSource,
@@ -24,6 +34,38 @@ export interface UseDiagramDocumentOptions {
   persistSettings: () => void;
   scheduleRender: () => void;
   clearHistory: () => void;
+}
+
+function readPersistedDiagramFormat(): DiagramFormat | null {
+  const saved = readStorageItem(STORAGE_KEY_DIAGRAM_FORMAT);
+  if (saved && isDiagramFormat(saved)) {
+    return saved;
+  }
+
+  return null;
+}
+
+function readPersistedFileName(): string | null {
+  const saved = readStorageItem(STORAGE_KEY_FILE_NAME);
+  return saved?.trim() ? saved : null;
+}
+
+function reconcileDiagramFormat(
+  content: string,
+  fileName: string,
+  currentFormat: DiagramFormat,
+): DiagramFormat {
+  const fromSource = detectDiagramFormatFromSource(content);
+  if (fromSource) {
+    return fromSource;
+  }
+
+  const fromFileName = detectFormatFromFileName(fileName);
+  if (fromFileName === "mermaid" || fromFileName === "graphml") {
+    return fromFileName;
+  }
+
+  return currentFormat;
 }
 
 export function useDiagramDocument(options: UseDiagramDocumentOptions) {
@@ -45,12 +87,23 @@ export function useDiagramDocument(options: UseDiagramDocumentOptions) {
     return Boolean(source.value.trim()) && definition.supportsSaveSource;
   });
 
+  function persistDocumentMetadata(): void {
+    writeStorageItem(STORAGE_KEY_DIAGRAM_FORMAT, diagramFormat.value);
+    writeStorageItem(STORAGE_KEY_FILE_NAME, loadedFileName.value);
+  }
+
+  function persistAll(): void {
+    persistSettings();
+    persistDocumentMetadata();
+  }
+
   function applyDiagramFormat(
     content: string,
     fileName: string,
     format?: DiagramFormat,
   ): void {
-    diagramFormat.value = format ?? detectDiagramFormat(content, fileName);
+    diagramFormat.value =
+      format ?? detectDiagramFormat(content, fileName);
     loadedFileName.value = resolveDiagramFileName(
       fileName,
       diagramFormat.value,
@@ -67,7 +120,7 @@ export function useDiagramDocument(options: UseDiagramDocumentOptions) {
     error.value = "";
     syntaxErrorLines.value = [];
     clearHistory();
-    persistSettings();
+    persistAll();
     scheduleRender();
   }
 
@@ -77,8 +130,24 @@ export function useDiagramDocument(options: UseDiagramDocumentOptions) {
     syntaxErrorLines.value = [];
     error.value = "";
     clearHistory();
-    persistSettings();
+    persistAll();
     scheduleRender();
+  }
+
+  function restoreDocumentMetadata(): void {
+    const savedFormat = readPersistedDiagramFormat();
+    const savedFileName = readPersistedFileName();
+
+    if (savedFormat) {
+      diagramFormat.value = savedFormat;
+    }
+
+    if (savedFileName) {
+      loadedFileName.value = resolveDiagramFileName(
+        savedFileName,
+        diagramFormat.value,
+      );
+    }
   }
 
   async function initializeIncomingSources(): Promise<void> {
@@ -113,14 +182,23 @@ export function useDiagramDocument(options: UseDiagramDocumentOptions) {
     const resolvedName = resolveDiagramFileName(fileName, diagramFormat.value);
     loadedFileName.value = resolvedName;
     saveDiagramSource(source.value, resolvedName, diagramFormat.value);
+    persistDocumentMetadata();
   }
 
   function onVersionRestore(content: string): void {
     source.value = content;
-    diagramFormat.value = detectDiagramFormat(content, loadedFileName.value);
+    diagramFormat.value = reconcileDiagramFormat(
+      content,
+      loadedFileName.value,
+      diagramFormat.value,
+    );
+    loadedFileName.value = resolveDiagramFileName(
+      loadedFileName.value,
+      diagramFormat.value,
+    );
     syntaxErrorLines.value = [];
     error.value = "";
-    persistSettings();
+    persistAll();
     scheduleRender();
   }
 
@@ -135,13 +213,20 @@ export function useDiagramDocument(options: UseDiagramDocumentOptions) {
       source.value = cleaned;
     }
 
-    const detected = detectDiagramFormat(source.value, loadedFileName.value);
-    if (detected === diagramFormat.value) {
-      return;
+    const reconciled = reconcileDiagramFormat(
+      source.value,
+      loadedFileName.value,
+      diagramFormat.value,
+    );
+    if (reconciled !== diagramFormat.value) {
+      diagramFormat.value = reconciled;
     }
 
-    diagramFormat.value = detected;
-    loadedFileName.value = resolveDiagramFileName(loadedFileName.value, detected);
+    loadedFileName.value = resolveDiagramFileName(
+      loadedFileName.value,
+      diagramFormat.value,
+    );
+    persistDocumentMetadata();
   }
 
   watch(source, (content) => {
@@ -155,14 +240,21 @@ export function useDiagramDocument(options: UseDiagramDocumentOptions) {
       return;
     }
 
-    const detected = detectDiagramFormat(cleaned, loadedFileName.value);
-    if (detected === diagramFormat.value) {
+    const fromSource = detectDiagramFormatFromSource(cleaned);
+    if (!fromSource || fromSource === diagramFormat.value) {
       return;
     }
 
-    diagramFormat.value = detected;
-    loadedFileName.value = resolveDiagramFileName(loadedFileName.value, detected);
+    diagramFormat.value = fromSource;
+    loadedFileName.value = resolveDiagramFileName(
+      loadedFileName.value,
+      fromSource,
+    );
     scheduleRender();
+  });
+
+  watch([diagramFormat, loadedFileName], () => {
+    persistDocumentMetadata();
   });
 
   return {
@@ -171,6 +263,7 @@ export function useDiagramDocument(options: UseDiagramDocumentOptions) {
     applyLoadedSource,
     onEditorCleared,
     initializeIncomingSources,
+    restoreDocumentMetadata,
     prepareRestoredSource,
     savePuml: saveDiagram,
     onVersionRestore,

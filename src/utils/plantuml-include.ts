@@ -47,20 +47,41 @@ export function mapStdlibIncludePath(includePath: string): string {
   return `./plantuml-lib/${withExtension}`;
 }
 
-function resolveIncludeUrl(includePath: string, parentUrl?: string): string {
+const PLANTUML_LIB_PREFIX = "./plantuml-lib/";
+
+function isPlantUmlLibPath(path: string): boolean {
+  return (
+    path.startsWith(PLANTUML_LIB_PREFIX) ||
+    path.startsWith("plantuml-lib/")
+  );
+}
+
+export function resolvePlantUmlIncludeUrl(
+  includePath: string,
+  parentUrl?: string,
+  appBaseUrl: string = typeof window !== "undefined"
+    ? window.location.href
+    : "http://localhost/",
+): string {
   const mappedPath = mapStdlibIncludePath(includePath);
 
   if (/^https?:\/\//i.test(mappedPath)) {
     return mappedPath;
   }
 
-  const baseUrl = parentUrl ?? window.location.href;
+  const baseUrl = isPlantUmlLibPath(mappedPath)
+    ? appBaseUrl
+    : (parentUrl ?? appBaseUrl);
 
   if (mappedPath.startsWith("./") || mappedPath.startsWith("../")) {
     return new URL(mappedPath, baseUrl).href;
   }
 
   return new URL(`./${mappedPath}`, baseUrl).href;
+}
+
+function resolveIncludeUrl(includePath: string, parentUrl?: string): string {
+  return resolvePlantUmlIncludeUrl(includePath, parentUrl);
 }
 
 async function fetchIncludeContent(url: string): Promise<string> {

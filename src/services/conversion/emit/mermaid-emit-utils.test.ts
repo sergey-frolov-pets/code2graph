@@ -5,6 +5,8 @@ import {
   formatMermaidSankeyCsvField,
   parseMermaidRequirementText,
   parseMermaidSankeyCsvLine,
+  sanitizeMermaidArchitectureLabel,
+  toMermaidArchitectureServiceId,
 } from "@/services/conversion/emit/mermaid-emit-utils";
 
 describe("formatMermaidRequirementText", () => {
@@ -58,9 +60,16 @@ describe("formatMermaidSankeyCsvField", () => {
     expect(formatMermaidSankeyCsvField("Target")).toBe("Target");
   });
 
-  it("quotes labels with spaces or Cyrillic", () => {
-    expect(formatMermaidSankeyCsvField("Node 1")).toBe('"Node 1"');
-    expect(formatMermaidSankeyCsvField("Узел 1")).toBe('"Узел 1"');
+  it("keeps spaced ASCII labels unquoted", () => {
+    expect(formatMermaidSankeyCsvField("Node 1")).toBe("Node 1");
+  });
+
+  it("transliterates Cyrillic sankey labels to ASCII", () => {
+    expect(formatMermaidSankeyCsvField("Узел 1")).toBe("Uzel 1");
+  });
+
+  it("quotes labels with commas", () => {
+    expect(formatMermaidSankeyCsvField("Heating, homes")).toBe('"Heating, homes"');
   });
 
   it("escapes embedded double quotes CSV-style", () => {
@@ -84,10 +93,39 @@ describe("parseMermaidSankeyCsvLine", () => {
 });
 
 describe("sankey wizard sample", () => {
-  it("quotes spaced node labels in Russian sample", () => {
+  it("uses ASCII sankey labels in Russian sample", () => {
     const source = buildWizardDiagramSample("sankey", "mermaid", "ru");
 
-    expect(source).toContain('"Узел 1","Узел 2",10');
-    expect(source).not.toMatch(/Узел 1,Узел 2/);
+    expect(source).toContain("Uzel 1,Uzel 2,10");
+    expect(source).not.toContain('"Узел 1"');
+    expect(source).not.toContain("Узел 1");
+  });
+});
+
+describe("sanitizeMermaidArchitectureLabel", () => {
+  it("transliterates Cyrillic component labels to ASCII", () => {
+    expect(sanitizeMermaidArchitectureLabel("Компонент 1")).toBe("Komponent 1");
+  });
+
+  it("keeps ASCII labels unchanged", () => {
+    expect(sanitizeMermaidArchitectureLabel("Component 1")).toBe("Component 1");
+  });
+});
+
+describe("toMermaidArchitectureServiceId", () => {
+  it("normalizes labels to lowercase ASCII ids", () => {
+    expect(toMermaidArchitectureServiceId("Component 1")).toBe("component_1");
+    expect(toMermaidArchitectureServiceId("Компонент 1")).toBe("komponent_1");
+  });
+});
+
+describe("architecture wizard sample", () => {
+  it("uses ASCII labels, service ids, and valid edge syntax in Russian sample", () => {
+    const source = buildWizardDiagramSample("architecture", "mermaid", "ru");
+
+    expect(source).toContain("service component_1(server)[Komponent 1] in api");
+    expect(source).toContain("component_1:R -- L:component_2");
+    expect(source).not.toContain("Компонент");
+    expect(source).not.toContain("-->");
   });
 });

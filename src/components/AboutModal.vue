@@ -44,7 +44,7 @@ const { t } = useLocale();
       </li>
       <li>
         <a :href="APP_LINKS.yEd" target="_blank" rel="noopener noreferrer">
-          {{ t("settings.yEdGuide") }}
+          {{ t("settings.yedEditor") }}
         </a>
       </li>
     </ul>
@@ -90,11 +90,11 @@ const { t } = useLocale();
       </li>
       <li>
         <a :href="APP_LINKS.mermaid" target="_blank" rel="noopener noreferrer">
-          Mermaid
+          Mermaid.js
         </a>
       </li>
       <li>
-        <a :href="APP_LINKS.graphmlGuide" target="_blank" rel="noopener noreferrer">
+        <a :href="APP_LINKS.graphml" target="_blank" rel="noopener noreferrer">
           GraphML
         </a>
       </li>
@@ -111,6 +111,26 @@ const { t } = useLocale();
         <a :href="APP_LINKS.vite" target="_blank" rel="noopener noreferrer">Vite</a>
       </li>
     </ul>
+
+    <h3 class="about-subtitle">{{ t("about.mermaid") }}</h3>
+    <p class="about-meta">{{ t("about.mermaidLead") }}</p>
+    <p class="about-meta">
+      <a :href="APP_LINKS.mermaidGuide" target="_blank" rel="noopener noreferrer">
+        {{ t("about.mermaidGuide") }}
+      </a>
+    </p>
+
+    <h3 class="about-subtitle">{{ t("about.graphml") }}</h3>
+    <p class="about-meta">{{ t("about.graphmlLead") }}</p>
+    <p class="about-meta">
+      <a :href="APP_LINKS.graphml" target="_blank" rel="noopener noreferrer">
+        {{ t("about.graphmlSpec") }}
+      </a>
+      ·
+      <a :href="APP_LINKS.yEd" target="_blank" rel="noopener noreferrer">
+        {{ t("about.yedEditor") }}
+      </a>
+    </p>
 
     <h3 class="about-subtitle">{{ t("about.ai") }}</h3>
     <p class="about-meta">{{ t("about.aiLead") }}</p>

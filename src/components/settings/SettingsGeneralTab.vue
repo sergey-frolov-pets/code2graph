@@ -249,7 +249,7 @@ const fontFamilyOptions = computed(() =>
         target="_blank"
         rel="noopener noreferrer"
       >
-        {{ t("settings.yEdGuide") }}
+        {{ t("settings.yedEditor") }}
       </a>
       <a
         class="btn settings-link-btn"

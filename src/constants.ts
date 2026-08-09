@@ -19,6 +19,7 @@ export const APP_LINKS = {
   mermaid: "https://mermaid.js.org/",
   mermaidInk: "https://mermaid.ink/",
   graphmlGuide: "http://graphml.graphdrawing.org/primer/graphml-primer.html",
+  graphml: "http://graphml.graphdrawing.org/",
   yEd: "https://www.yworks.com/products/yed",
   dagre: "https://github.com/dagrejs/dagre",
   vue: "https://vuejs.org/",
@@ -28,6 +29,8 @@ export const APP_LINKS = {
 } as const;
 
 export const STORAGE_KEY_SOURCE = "plantuml-smetana-source";
+export const STORAGE_KEY_DIAGRAM_FORMAT = "plantuml-smetana-diagram-format";
+export const STORAGE_KEY_FILE_NAME = "plantuml-smetana-file-name";
 export const STORAGE_KEY_UI_DARK = "plantuml-smetana-ui-dark";
 export const STORAGE_KEY_DIAGRAM_DARK = "plantuml-smetana-diagram-dark";
 export const STORAGE_KEY_LAYOUT = "plantuml-smetana-layout";
