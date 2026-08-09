@@ -541,7 +541,7 @@ export function getWizardDiagramFormatRules(
       case "timeline":
         return "Format: Mermaid timeline with title and dated events.";
       case "sankey":
-        return "Format: Mermaid sankey-beta with comma-separated source,target,value lines.";
+        return "Format: Mermaid sankey-beta with ASCII source,target,value CSV lines (quote only when labels contain commas).";
       case "xychart":
         return "Format: Mermaid xychart-beta with title, x-axis, y-axis, and bar or line data.";
       case "block":

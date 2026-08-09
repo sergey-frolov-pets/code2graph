@@ -90,16 +90,31 @@ export function toMermaidArchitectureServiceId(
 }
 
 function needsQuotedMermaidSankeyCsvField(value: string): boolean {
-  return /[,"\s]/.test(value) || /[^\x20-\x7E]/.test(value);
+  return /[",]/.test(value);
 }
 
 function escapeMermaidSankeyCsvField(value: string): string {
   return flattenMermaidLabel(value).replace(/"/g, '""');
 }
 
+/** Mermaid sankey parser (v11.x) accepts ASCII-only unquoted labels. */
+export function sanitizeMermaidSankeyLabel(value: string): string {
+  const label = flattenMermaidLabel(value);
+  if (!/[^\x20-\x7E]/.test(label)) {
+    return label;
+  }
+
+  const transliterated = label.replace(/Узел\s*(\d+)/gi, "Uzel $1");
+  if (!/[^\x20-\x7E]/.test(transliterated)) {
+    return transliterated;
+  }
+
+  return label.replace(/[^\x20-\x7E]/g, "").trim() || "Node";
+}
+
 /** Форматирует поле CSV для Mermaid sankey-beta (RFC 4180). */
 export function formatMermaidSankeyCsvField(value: string): string {
-  const label = flattenMermaidLabel(value);
+  const label = sanitizeMermaidSankeyLabel(value);
   if (!needsQuotedMermaidSankeyCsvField(label)) {
     return label;
   }
