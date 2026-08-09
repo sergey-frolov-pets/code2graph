@@ -13,6 +13,12 @@ import {
   uniqueDiagramId,
 } from "@/services/conversion/diagram-ir";
 import { stripSourceComments } from "@/services/conversion/parse/parse-utils";
+import {
+  parseErMermaid,
+  parseSequenceMermaid,
+  parseStateMermaid,
+} from "@/services/conversion/parse/parse-mermaid";
+import { parseSequencePlantUml } from "@/services/conversion/parse/parse-plantuml";
 import { parseGraphml } from "@/services/graphml/graphml-engine";
 import {
   parseActivityMermaid,
@@ -248,58 +254,6 @@ function parseStatePlantUml(source: string, format: DiagramFormat): DiagramIR {
       id: `e${edgeIndex}`,
       source: sourceId,
       target: targetId,
-      matchConfidence: 1,
-    });
-  }
-
-  return ir;
-}
-
-function parseSequencePlantUml(source: string, format: DiagramFormat): DiagramIR {
-  const ir = createEmptyDiagramIR("sequence");
-  ir.metadata = { sourceFormat: format };
-  const usedIds = new Set<string>();
-
-  const participantPattern =
-    /\b(?:actor|participant|boundary|control|entity|database|queue|collections)\s+(?:"([^"]+)"|(\S+))/gi;
-  for (const match of source.matchAll(participantPattern)) {
-    const label = (match[1] || match[2]).trim();
-    ir.nodes.push({
-      id: uniqueDiagramId(label, usedIds),
-      label,
-      kind: "actor",
-      matchConfidence: 1,
-    });
-  }
-
-  const idByLabel = new Map(ir.nodes.map((node) => [node.label, node.id]));
-  const aliasPattern =
-    /\b(?:actor|participant)\s+(\S+)\s+as\s+"([^"]+)"/gi;
-  for (const match of source.matchAll(aliasPattern)) {
-    const alias = match[1];
-    const label = match[2];
-    const node = ir.nodes.find((item) => item.label === label);
-    if (node) {
-      idByLabel.set(alias, node.id);
-    }
-  }
-
-  let edgeIndex = 0;
-  for (const match of source.matchAll(
-    /(\S+)\s*(?:->>|->)\s*(\S+)\s*:\s*(.+)$/gm,
-  )) {
-    const sourceId = idByLabel.get(match[1]) ?? idByLabel.get(match[1].replace(/"/g, ""));
-    const targetId = idByLabel.get(match[2]) ?? idByLabel.get(match[2].replace(/"/g, ""));
-    if (!sourceId || !targetId) {
-      continue;
-    }
-    edgeIndex += 1;
-    ir.edges.push({
-      id: `e${edgeIndex}`,
-      source: sourceId,
-      target: targetId,
-      label: match[3].trim(),
-      kind: "message",
       matchConfidence: 1,
     });
   }
@@ -576,121 +530,6 @@ function parseClassMermaid(source: string, format: DiagramFormat): DiagramIR {
   for (const match of source.matchAll(/(\w+)\s*([<|]+--[>|]+)\s*(\w+)/g)) {
     const from = idByLabel.get(match[1]);
     const to = idByLabel.get(match[3]);
-    if (!from || !to) {
-      continue;
-    }
-    edgeIndex += 1;
-    ir.edges.push({
-      id: `e${edgeIndex}`,
-      source: from,
-      target: to,
-      kind: "relation",
-      matchConfidence: 1,
-    });
-  }
-
-  return ir;
-}
-
-function parseStateMermaid(source: string, format: DiagramFormat): DiagramIR {
-  const ir = createEmptyDiagramIR("state");
-  ir.metadata = { sourceFormat: format };
-  const usedIds = new Set<string>();
-
-  for (const match of source.matchAll(/\b(\w+)\s*:/g)) {
-    const label = match[1];
-    if (label === "stateDiagram" || label === "stateDiagram-v2") {
-      continue;
-    }
-    ir.nodes.push({
-      id: uniqueDiagramId(label, usedIds),
-      label,
-      matchConfidence: 1,
-    });
-  }
-
-  const idByLabel = new Map(ir.nodes.map((node) => [node.label, node.id]));
-  let edgeIndex = 0;
-  for (const match of source.matchAll(/(\w+)\s*-->\s*(\w+)/g)) {
-    const from = idByLabel.get(match[1]);
-    const to = idByLabel.get(match[2]);
-    if (!from || !to) {
-      continue;
-    }
-    edgeIndex += 1;
-    ir.edges.push({
-      id: `e${edgeIndex}`,
-      source: from,
-      target: to,
-      matchConfidence: 1,
-    });
-  }
-
-  return ir;
-}
-
-function parseSequenceMermaid(source: string, format: DiagramFormat): DiagramIR {
-  const ir = createEmptyDiagramIR("sequence");
-  ir.metadata = { sourceFormat: format };
-  const usedIds = new Set<string>();
-
-  for (const match of source.matchAll(
-    /\b(?:participant|actor)\s+(\w+)(?:\s+as\s+"([^"]+)")?/gi,
-  )) {
-    const alias = match[1];
-    const label = match[2]?.trim() || alias;
-    ir.nodes.push({
-      id: uniqueDiagramId(alias, usedIds),
-      label,
-      kind: "actor",
-      matchConfidence: 1,
-    });
-  }
-
-  const idByAlias = new Map(ir.nodes.map((node) => [node.id, node.id]));
-  let edgeIndex = 0;
-  for (const match of source.matchAll(/(\w+)\s*-+>>?\s*(\w+)\s*:\s*(.+)$/gm)) {
-    const sourceId = idByAlias.get(match[1]);
-    const targetId = idByAlias.get(match[2]);
-    if (!sourceId || !targetId) {
-      continue;
-    }
-    edgeIndex += 1;
-    ir.edges.push({
-      id: `e${edgeIndex}`,
-      source: sourceId,
-      target: targetId,
-      label: match[3].trim(),
-      kind: "message",
-      matchConfidence: 1,
-    });
-  }
-
-  return ir;
-}
-
-function parseErMermaid(source: string, format: DiagramFormat): DiagramIR {
-  const ir = createEmptyDiagramIR("er");
-  ir.metadata = { sourceFormat: format };
-  const usedIds = new Set<string>();
-
-  for (const match of source.matchAll(/\b(\w+)\s*\{/g)) {
-    const label = match[1];
-    if (label === "erDiagram") {
-      continue;
-    }
-    ir.nodes.push({
-      id: uniqueDiagramId(label, usedIds),
-      label,
-      matchConfidence: 1,
-    });
-  }
-
-  const idByLabel = new Map(ir.nodes.map((node) => [node.label, node.id]));
-  let edgeIndex = 0;
-  for (const match of source.matchAll(/(\w+)\s*[|o}{]+--[|o}{]+\s*(\w+)/g)) {
-    const from = idByLabel.get(match[1]);
-    const to = idByLabel.get(match[2]);
     if (!from || !to) {
       continue;
     }

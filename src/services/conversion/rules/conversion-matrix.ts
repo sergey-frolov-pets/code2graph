@@ -170,7 +170,11 @@ const ROUTE_RULES: Record<
     },
     graphml: {
       mermaid: { level: "C", blocked: false, lossIds: ["loss.attributes", "loss.keys", ...BASE_GRAPH_LOSSES] },
-      plantuml: { level: "B", blocked: false, lossIds: ["loss.attributes", "loss.cardinality"] },
+      plantuml: {
+        level: "D",
+        blocked: true,
+        lossIds: ["loss.attributes", "loss.keys", "loss.unsupportedKind"],
+      },
     },
   },
   activity: {
@@ -187,7 +191,44 @@ const ROUTE_RULES: Record<
       mermaid: { level: "D", blocked: true, lossIds: ["loss.controlFlow", "loss.unsupportedKind"] },
     },
   },
-  sequence: temporalRoutes(["loss.activate"]),
+  sequence: {
+    plantuml: {
+      mermaid: {
+        level: "B",
+        blocked: false,
+        lossIds: ["loss.messageOrder", "loss.blocks", "loss.activate"],
+      },
+      graphml: {
+        level: "C",
+        blocked: false,
+        lossIds: ["loss.temporalOrder", "loss.sequenceSemantics", ...BASE_GRAPH_LOSSES],
+      },
+    },
+    mermaid: {
+      plantuml: {
+        level: "B",
+        blocked: false,
+        lossIds: ["loss.messageOrder", "loss.blocks", "loss.activate"],
+      },
+      graphml: {
+        level: "C",
+        blocked: false,
+        lossIds: ["loss.temporalOrder", "loss.sequenceSemantics", ...BASE_GRAPH_LOSSES],
+      },
+    },
+    graphml: {
+      plantuml: {
+        level: "D",
+        blocked: true,
+        lossIds: ["loss.sequenceSemantics", "loss.unsupportedKind"],
+      },
+      mermaid: {
+        level: "D",
+        blocked: true,
+        lossIds: ["loss.sequenceSemantics", "loss.unsupportedKind"],
+      },
+    },
+  },
   timing: temporalRoutes(["loss.timingSignals"]),
   journey: temporalRoutes(["loss.journeyScores"]),
   gitgraph: mermaidOnlyRoutes(),
