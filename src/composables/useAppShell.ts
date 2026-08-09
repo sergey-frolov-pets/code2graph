@@ -25,6 +25,7 @@ import { getLibraryApiBaseUrl } from "@/config/library-api";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import { getDiagramFormatDefinition } from "@/constants/diagram-formats";
 import { PENDING_SHARE_STORAGE_KEY } from "@/constants/library-share";
+import { PENDING_SUBSCRIPTION_STORAGE_KEY } from "@/constants/library-subscription";
 
 export interface AppShellContext {
   t: TranslateFn;
@@ -379,14 +380,25 @@ export function useAppShell(): AppShellContext {
   }
 
   async function handleShareLinkOnBoot(): Promise<void> {
-    const token = new URLSearchParams(window.location.search).get("share");
-    if (!token || !getLibraryApiBaseUrl()) {
+    const params = new URLSearchParams(window.location.search);
+    const shareToken = params.get("share");
+    const subscriptionToken = params.get("sub");
+
+    if (!getLibraryApiBaseUrl()) {
       return;
     }
 
     try {
-      sessionStorage.setItem(PENDING_SHARE_STORAGE_KEY, token);
-      modals.openLibraryModal();
+      if (shareToken) {
+        sessionStorage.setItem(PENDING_SHARE_STORAGE_KEY, shareToken);
+        modals.openLibraryModal();
+        return;
+      }
+
+      if (subscriptionToken) {
+        sessionStorage.setItem(PENDING_SUBSCRIPTION_STORAGE_KEY, subscriptionToken);
+        modals.openLibraryModal();
+      }
     } catch (bootError) {
       void alert({
         title: t("library.shareOpenErrorTitle"),
