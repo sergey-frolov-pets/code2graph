@@ -5,6 +5,8 @@ import {
   formatMermaidNodeLabel,
   formatMermaidRequirementText,
   formatMermaidSankeyCsvField,
+  sanitizeMermaidArchitectureLabel,
+  toMermaidArchitectureServiceId,
 } from "@/services/conversion/emit/mermaid-emit-utils";
 import { formatMermaidGitRef } from "@/utils/mermaid-gitgraph";
 import {
@@ -227,22 +229,31 @@ export function emitMermaidQuadrant(ir: DiagramIR): string {
 export function emitMermaidArchitecture(ir: DiagramIR): string {
   const lines = ["architecture-beta"];
   const group = ir.groups?.[0];
-  if (group) {
-    lines.push(`    group ${group.id}(cloud)[${group.label ?? group.id}]`);
-  } else {
-    lines.push("    group api(cloud)[API]");
-  }
+  const groupId = group?.id && /^[a-zA-Z][\w]*$/.test(group.id) ? group.id : "api";
+  const groupLabel = sanitizeMermaidArchitectureLabel(group?.label ?? "API");
+  lines.push(`    group ${groupId}(cloud)[${groupLabel}]`);
+
   const services = ir.extras?.architectureServices ?? ir.nodes.map((node) => ({
     id: node.id,
     label: node.label,
     icon: String(node.semantic?.icon ?? "server"),
   }));
-  for (const service of services) {
-    lines.push(`        service ${service.id}(${service.icon ?? "server"})[${service.label}]`);
+
+  for (let index = 0; index < services.length; index += 1) {
+    const service = services[index];
+    const serviceId = toMermaidArchitectureServiceId(service.id, index + 1);
+    const label = sanitizeMermaidArchitectureLabel(service.label);
+    lines.push(
+      `        service ${serviceId}(${service.icon ?? "server"})[${label}] in ${groupId}`,
+    );
   }
+
   for (const edge of ir.edges) {
-    lines.push(`    ${edge.source}:R --> ${edge.target}:L`);
+    const source = toMermaidArchitectureServiceId(edge.source);
+    const target = toMermaidArchitectureServiceId(edge.target);
+    lines.push(`    ${source}:R -- L:${target}`);
   }
+
   return lines.join("\n");
 }
 

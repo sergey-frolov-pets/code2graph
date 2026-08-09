@@ -2,6 +2,7 @@ import type { AppLocale } from "@/constants/i18n";
 import {
   formatMermaidRequirementText,
   formatMermaidSankeyCsvField,
+  sanitizeMermaidArchitectureLabel,
 } from "@/services/conversion/emit/mermaid-emit-utils";
 import { formatMermaidGitRef } from "@/utils/mermaid-gitgraph";
 
@@ -552,7 +553,7 @@ export function getWizardDiagramFormatRules(
       case "quadrant":
         return "Format: Mermaid quadrantChart with x-axis, y-axis, quadrant labels, and item coordinates.";
       case "architecture":
-        return "Format: Mermaid architecture-beta with group, service, and directional links.";
+        return "Format: Mermaid architecture-beta with ASCII group/service ids, bracket labels, and side links (e.g. a:R -- L:b).";
       case "packet":
         return "Format: Mermaid packet-beta with title and bit-range field definitions.";
       case "activity":
@@ -1798,22 +1799,21 @@ function buildMermaidQuadrant(state: WizardState, locale: AppLocale): string {
 
 function buildMermaidArchitecture(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.components;
-  const groupLabel = locale === "ru" ? "API" : "API";
+  const groupId = "api";
+  const groupLabel = "API";
   const lines = [
     "architecture-beta",
-    `    group ${groupLabel.toLowerCase()}(cloud)[${groupLabel}]`,
+    `    group ${groupId}(cloud)[${groupLabel}]`,
   ];
 
   for (let index = 1; index <= count; index += 1) {
-    const label = componentLabel(index, locale).replace(/\s+/g, "_");
-    const display = componentLabel(index, locale);
-    lines.push(`        service ${label}(server)[${display}]`);
+    const serviceId = `component_${index}`;
+    const display = sanitizeMermaidArchitectureLabel(componentLabel(index, locale));
+    lines.push(`        service ${serviceId}(server)[${display}] in ${groupId}`);
   }
 
   if (count >= 2) {
-    const from = componentLabel(1, locale).replace(/\s+/g, "_");
-    const to = componentLabel(2, locale).replace(/\s+/g, "_");
-    lines.push(`    ${from}:R --> ${to}:L`);
+    lines.push("    component_1:R -- L:component_2");
   }
 
   return lines.join("\n");

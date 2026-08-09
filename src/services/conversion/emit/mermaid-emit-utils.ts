@@ -57,6 +57,38 @@ export function parseMermaidRequirementText(raw: string): string {
   return trimmed;
 }
 
+/** Mermaid architecture-beta bracket labels are ASCII-only (v11.x). */
+export function sanitizeMermaidArchitectureLabel(value: string): string {
+  const label = flattenMermaidLabel(value);
+  if (!/[^\x20-\x7E]/.test(label)) {
+    return label;
+  }
+
+  const transliterated = label.replace(/Компонент\s*(\d+)/gi, "Komponent $1");
+  if (!/[^\x20-\x7E]/.test(transliterated)) {
+    return transliterated;
+  }
+
+  return label.replace(/[^\x20-\x7E]/g, "").trim() || "Service";
+}
+
+/** Normalizes architecture service ids to ASCII identifiers accepted by Mermaid. */
+export function toMermaidArchitectureServiceId(
+  value: string,
+  fallbackIndex?: number,
+): string {
+  const sanitized = sanitizeMermaidArchitectureLabel(value)
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_]/g, "");
+
+  if (sanitized) {
+    return sanitized;
+  }
+
+  return fallbackIndex !== undefined ? `service_${fallbackIndex}` : "service";
+}
+
 function needsQuotedMermaidSankeyCsvField(value: string): boolean {
   return /[,"\s]/.test(value) || /[^\x20-\x7E]/.test(value);
 }
