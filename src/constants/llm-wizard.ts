@@ -1,5 +1,9 @@
 import type { AppLocale } from "@/constants/i18n";
-import { formatMermaidLabelToken } from "@/services/conversion/emit/mermaid-emit-utils";
+import {
+  formatMermaidRequirementText,
+  formatMermaidSankeyCsvField,
+} from "@/services/conversion/emit/mermaid-emit-utils";
+import { formatMermaidGitRef } from "@/utils/mermaid-gitgraph";
 
 export const WIZARD_DIAGRAM_TYPES = [
   "sequence",
@@ -714,15 +718,15 @@ function buildPlantUmlHeader(
   state: WizardState,
   title: string,
   includeDirection: boolean,
+  includeLayoutPragma = true,
 ): string[] {
-  const lines = [
-    "@startuml",
-    "!pragma layout smetana",
-    "",
-    `title ${title}`,
-    "",
-    ...buildPlantUmlThemeBlock(state.theme),
-  ];
+  const lines = ["@startuml"];
+
+  if (includeLayoutPragma) {
+    lines.push("!pragma layout smetana", "");
+  }
+
+  lines.push(`title ${title}`, "", ...buildPlantUmlThemeBlock(state.theme));
 
   if (includeDirection) {
     const directionLine = buildPlantUmlDirectionLine(state.direction);
@@ -780,7 +784,7 @@ function buildPlantUmlSequence(
 ): string {
   const count = state.typeParams.participants;
   const title = locale === "ru" ? "Диаграмма последовательности" : "Sequence diagram";
-  const lines = buildPlantUmlHeader(state, title, false);
+  const lines = buildPlantUmlHeader(state, title, false, false);
 
   for (let index = 1; index <= count; index += 1) {
     lines.push(`actor ${participantLabel(index, locale).replace(/\s+/g, "_")}`);
@@ -860,7 +864,7 @@ function buildPlantUmlActivity(state: WizardState, locale: AppLocale): string {
   const laneCount = state.typeParams.lanes;
   const stepCount = state.typeParams.steps;
   const title = locale === "ru" ? "Диаграмма активности" : "Activity diagram";
-  const lines = buildPlantUmlHeader(state, title, false);
+  const lines = buildPlantUmlHeader(state, title, false, false);
 
   for (let laneIndex = 1; laneIndex <= laneCount; laneIndex += 1) {
     const color = SWIMLANE_COLORS[(laneIndex - 1) % SWIMLANE_COLORS.length];
@@ -1638,17 +1642,18 @@ function buildMermaidJourney(state: WizardState, locale: AppLocale): string {
 function buildMermaidGitgraph(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.steps;
   const branch = locale === "ru" ? "разработка" : "develop";
+  const branchRef = formatMermaidGitRef(branch);
   const lines = ["gitGraph"];
 
   lines.push(`    commit id: "${commitLabel(1, locale)}"`);
-  lines.push(`    branch ${branch}`);
+  lines.push(`    branch ${branchRef}`);
 
   for (let index = 2; index <= count; index += 1) {
     lines.push(`    commit id: "${commitLabel(index, locale)}"`);
   }
 
   if (count >= 2) {
-    lines.push("    checkout main", `    merge ${branch}`);
+    lines.push("    checkout main", `    merge ${branchRef}`);
   }
 
   return lines.join("\n");
@@ -1678,7 +1683,9 @@ function buildMermaidSankey(state: WizardState, locale: AppLocale): string {
   for (let index = 1; index <= edgeCount; index += 1) {
     const from = nodeLabel(index, locale);
     const to = nodeLabel(index + 1, locale);
-    lines.push(`    ${from},${to},${index * 10}`);
+    lines.push(
+      `    ${formatMermaidSankeyCsvField(from)},${formatMermaidSankeyCsvField(to)},${index * 10}`,
+    );
   }
 
   return lines.join("\n");
@@ -1756,7 +1763,7 @@ function buildMermaidRequirement(state: WizardState, locale: AppLocale): string 
     lines.push(
       `    requirement ${reqId} {`,
       `      id: ${index}`,
-      `      text: ${text}`,
+      `      text: ${formatMermaidRequirementText(text)}`,
       "    }",
     );
   }
@@ -1773,17 +1780,17 @@ function buildMermaidQuadrant(state: WizardState, locale: AppLocale): string {
   const quadrantLabel = locale === "ru" ? "Высокий приоритет" : "High priority";
   const lines = [
     "quadrantChart",
-    `    title ${formatMermaidLabelToken(title)}`,
+    `    title ${formatMermaidRequirementText(title)}`,
     "    x-axis Low --> High",
     "    y-axis Low --> High",
-    `    quadrant-1 ${formatMermaidLabelToken(quadrantLabel)}`,
+    `    quadrant-1 ${formatMermaidRequirementText(quadrantLabel)}`,
   ];
 
   for (let index = 1; index <= count; index += 1) {
     const label = nodeLabel(index, locale);
     const x = (0.2 + index * 0.15).toFixed(1);
     const y = (0.3 + index * 0.1).toFixed(1);
-    lines.push(`    ${formatMermaidLabelToken(label)}: [${x}, ${y}]`);
+    lines.push(`    ${formatMermaidRequirementText(label)}: [${x}, ${y}]`);
   }
 
   return lines.join("\n");
@@ -1942,7 +1949,7 @@ function buildPlantUmlTiming(state: WizardState, locale: AppLocale): string {
   const signalCount = state.typeParams.participants;
   const stepCount = state.typeParams.steps;
   const title = locale === "ru" ? "Диаграмма синхронизации" : "Timing diagram";
-  const lines = buildPlantUmlHeader(state, title, false);
+  const lines = buildPlantUmlHeader(state, title, false, false);
 
   for (let index = 1; index <= signalCount; index += 1) {
     const label = signalLabel(index, locale);

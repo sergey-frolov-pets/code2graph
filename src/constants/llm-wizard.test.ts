@@ -11,8 +11,11 @@ import {
   getWizardStructuralElementsForType,
   getWizardTypesForLanguage,
   resolveWizardStateWithDefaults,
+  WIZARD_DIAGRAM_TYPES,
   type WizardState,
 } from "@/constants/llm-wizard";
+import { enMessages } from "@/locales/en";
+import { ruMessages } from "@/locales/ru";
 
 function createState(overrides: Partial<WizardState> = {}): WizardState {
   return {
@@ -442,5 +445,17 @@ describe("llm-wizard", () => {
     expect(source).toContain("* Project");
     expect(source).toContain("** Branch 1");
     expect(source).toContain("@endwbs");
+  });
+});
+
+describe("wizard diagram type i18n", () => {
+  it.each(["ru", "en"] as const)("covers all diagram types in %s locale", (locale) => {
+    const messages = locale === "ru" ? ruMessages : enMessages;
+
+    for (const type of WIZARD_DIAGRAM_TYPES) {
+      expect(messages[`llm.wizard.type.${type}`]).toBeTruthy();
+      expect(messages[`llm.wizard.typeDesc.${type}`]).toBeTruthy();
+      expect(messages[`llm.wizard.detailsPlaceholder.${type}`]).toBeTruthy();
+    }
   });
 });
