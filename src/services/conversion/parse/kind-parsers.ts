@@ -7,6 +7,7 @@ import {
   uniqueDiagramId,
 } from "@/services/conversion/diagram-ir";
 import { detectDiagramDirection } from "@/services/conversion/classify-diagram-kind";
+import { parseMermaidSankeyCsvLine } from "@/services/conversion/emit/mermaid-emit-utils";
 import { parseMermaidGitRefToken } from "@/utils/mermaid-gitgraph";
 
 function addEdge(
@@ -505,10 +506,13 @@ export function parseSankeyMermaid(source: string, format: DiagramFormat): Diagr
   const usedIds = new Set<string>();
   const sankeyFlows: Array<{ source: string; target: string; value: number }> = [];
 
-  for (const match of source.matchAll(/^\s*([^,\n]+),([^,\n]+),(\d+(?:\.\d+)?)/gm)) {
-    const sourceLabel = match[1].trim();
-    const targetLabel = match[2].trim();
-    const value = Number.parseFloat(match[3]);
+  for (const line of source.split(/\r?\n/)) {
+    const flow = parseMermaidSankeyCsvLine(line);
+    if (!flow) {
+      continue;
+    }
+
+    const { source: sourceLabel, target: targetLabel, value } = flow;
     sankeyFlows.push({ source: sourceLabel, target: targetLabel, value });
 
     const ensureNode = (label: string): string => {

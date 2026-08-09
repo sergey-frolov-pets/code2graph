@@ -1,4 +1,5 @@
 import type { AppLocale } from "@/constants/i18n";
+import { formatMermaidSankeyCsvField } from "@/services/conversion/emit/mermaid-emit-utils";
 import { formatMermaidGitRef } from "@/utils/mermaid-gitgraph";
 
 export const WIZARD_DIAGRAM_TYPES = [
@@ -1679,7 +1680,9 @@ function buildMermaidSankey(state: WizardState, locale: AppLocale): string {
   for (let index = 1; index <= edgeCount; index += 1) {
     const from = nodeLabel(index, locale);
     const to = nodeLabel(index + 1, locale);
-    lines.push(`    ${from},${to},${index * 10}`);
+    lines.push(
+      `    ${formatMermaidSankeyCsvField(from)},${formatMermaidSankeyCsvField(to)},${index * 10}`,
+    );
   }
 
   return lines.join("\n");

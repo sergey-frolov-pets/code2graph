@@ -3,6 +3,7 @@ import {
   escapeMermaidQuoted,
   flattenMermaidLabel,
   formatMermaidNodeLabel,
+  formatMermaidSankeyCsvField,
 } from "@/services/conversion/emit/mermaid-emit-utils";
 import { formatMermaidGitRef } from "@/utils/mermaid-gitgraph";
 import {
@@ -127,7 +128,9 @@ export function emitMermaidSankey(ir: DiagramIR): string {
     value: Number(edge.label ?? 10),
   }));
   for (const flow of flows) {
-    lines.push(`    ${flow.source},${flow.target},${flow.value}`);
+    lines.push(
+      `    ${formatMermaidSankeyCsvField(flow.source)},${formatMermaidSankeyCsvField(flow.target)},${flow.value}`,
+    );
   }
   return lines.join("\n");
 }
