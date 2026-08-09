@@ -3,9 +3,11 @@ import type { TranslateFn } from "@/locales/types";
 import { downloadShareResource } from "@/services/library/api";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
+import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import type { useLibraryDiagramPreview } from "@/composables/useLibraryDiagramPreview";
 import { loadShareDiagramPreview } from "@/composables/library/useLibraryShareFlow";
+import { resolveLibraryDiagramFormat } from "@/utils/diagram-format";
 
 type DiagramLibrary = ReturnType<typeof useDiagramLibrary>;
 type LibraryDiagramPreview = ReturnType<typeof useLibraryDiagramPreview>;
@@ -21,6 +23,7 @@ export function useLibraryPreviewFlow(options: {
   onOpenDiagram: (payload: {
     content: string;
     fileName: string;
+    format?: DiagramFormat;
     diagramId?: string;
   }) => void;
   onCloseLibrary: () => void;
@@ -126,6 +129,11 @@ export function useLibraryPreviewFlow(options: {
         onOpenDiagram({
           content: result.diagram.source,
           fileName: result.diagram.fileName,
+          format: resolveLibraryDiagramFormat(
+            result.diagram.source,
+            result.diagram.fileName,
+            result.diagram.language,
+          ),
           diagramId: result.diagram.id,
         });
         closePreviewModal();
@@ -146,6 +154,11 @@ export function useLibraryPreviewFlow(options: {
     onOpenDiagram({
       content: library.selectedDiagram.value.source,
       fileName: library.selectedDiagram.value.fileName,
+      format: resolveLibraryDiagramFormat(
+        library.selectedDiagram.value.source,
+        library.selectedDiagram.value.fileName,
+        library.selectedDiagram.value.language,
+      ),
       diagramId: library.selectedDiagram.value.id,
     });
     closePreviewModal();

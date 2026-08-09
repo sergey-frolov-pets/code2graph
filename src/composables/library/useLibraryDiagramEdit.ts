@@ -2,6 +2,8 @@ import { ref, type Ref } from "vue";
 import type { TranslateFn } from "@/locales/types";
 import type { DiagramLanguage, DiagramVisibility } from "@/constants/diagram-library";
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
+import type { DiagramFormat } from "@/constants/diagram-formats";
+import { resolveLibraryDiagramFormat } from "@/utils/diagram-format";
 import { parseTagsInput } from "@/utils/library-tags";
 import type { BrowseStep } from "./useLibraryBrowseFlow";
 
@@ -15,6 +17,7 @@ export function useLibraryDiagramEdit(options: {
   onOpenDiagram: (payload: {
     content: string;
     fileName: string;
+    format?: DiagramFormat;
     diagramId?: string;
   }) => void;
   onClose: () => void;
@@ -81,10 +84,16 @@ export function useLibraryDiagramEdit(options: {
   function openInEditor(): void {
     if (!library.selectedDiagram.value) return;
     if (library.selectedDiagram.value.canDownload === false) return;
+    const diagram = library.selectedDiagram.value;
     onOpenDiagram({
-      content: library.selectedDiagram.value.source,
-      fileName: library.selectedDiagram.value.fileName,
-      diagramId: library.selectedDiagram.value.id,
+      content: diagram.source,
+      fileName: diagram.fileName,
+      format: resolveLibraryDiagramFormat(
+        diagram.source,
+        diagram.fileName,
+        diagram.language,
+      ),
+      diagramId: diagram.id,
     });
     onClose();
   }

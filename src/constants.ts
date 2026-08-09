@@ -22,6 +22,8 @@ export const APP_LINKS = {
 } as const;
 
 export const STORAGE_KEY_SOURCE = "plantuml-smetana-source";
+export const STORAGE_KEY_DIAGRAM_FORMAT = "plantuml-smetana-diagram-format";
+export const STORAGE_KEY_FILE_NAME = "plantuml-smetana-file-name";
 export const STORAGE_KEY_UI_DARK = "plantuml-smetana-ui-dark";
 export const STORAGE_KEY_DIAGRAM_DARK = "plantuml-smetana-diagram-dark";
 export const STORAGE_KEY_LAYOUT = "plantuml-smetana-layout";
