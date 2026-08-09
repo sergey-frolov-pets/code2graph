@@ -46,27 +46,6 @@ export function useLibraryModalTarget(options: {
     return t("library.offlineCache");
   });
 
-  const isOnlineButtonUnavailable = computed(() => {
-    if (libraryTarget.value === "online") {
-      return false;
-    }
-    if (!canUseOnline.value) {
-      return true;
-    }
-    if (!library.isOnline.value) {
-      return true;
-    }
-    return onlineCheckFailed.value;
-  });
-
-  const onlineTargetButtonClass = computed(() => {
-    const classes = ["library-modes__btn", "library-modes__btn--labeled"];
-    if (isOnlineButtonUnavailable.value && libraryTarget.value !== "online") {
-      classes.push("library-target__btn--unavailable");
-    }
-    return classes.join(" ");
-  });
-
   function showApiUnavailableNotice(): void {
     if (!libraryApiUrl.value) {
       return;
@@ -81,6 +60,15 @@ export function useLibraryModalTarget(options: {
     onlineCheckFailed.value = false;
     setLibraryTarget("local");
     void library.refresh();
+  }
+
+  async function toggleLibraryTarget(): Promise<void> {
+    if (libraryTarget.value === "online") {
+      onLocalTargetClick();
+      return;
+    }
+
+    await onOnlineTargetClick();
   }
 
   async function onOnlineTargetClick(): Promise<void> {
@@ -132,11 +120,10 @@ export function useLibraryModalTarget(options: {
     onlineCheckFailed,
     isCheckingOnline,
     statusHint,
-    isOnlineButtonUnavailable,
-    onlineTargetButtonClass,
     setLibraryTarget,
     showApiUnavailableNotice,
     onLocalTargetClick,
     onOnlineTargetClick,
+    toggleLibraryTarget,
   };
 }

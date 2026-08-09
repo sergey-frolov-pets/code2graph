@@ -60,15 +60,13 @@ const flow = reactive(
         :is-authenticated="flow.isAuthenticated"
         :is-syncing="flow.isSyncing"
         :is-checking-online="flow.isCheckingOnline"
-        :online-target-button-class="flow.onlineTargetButtonClass"
         :show-admin-tab="flow.showAdminTab"
         :active-tab="flow.activeTab"
         @back="flow.handleGoBack()"
         @close="emit('close')"
         @refresh="flow.refreshLibrary()"
         @register="flow.isRegisterModalOpen = true"
-        @local-target="flow.onLocalTargetClick()"
-        @online-target="flow.onOnlineTargetClick()"
+        @toggle-target="flow.toggleLibraryTarget()"
         @switch-tab="flow.switchTab($event)"
       />
 

@@ -112,23 +112,7 @@
   flex-shrink: 0;
 }
 
-.library-target {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  flex-shrink: 0;
-  min-width: 0;
-}
-
-.library-target__btn--unavailable:not(.icon-btn--pressed) {
-  opacity: 0.65;
-}
-
-.library-target__btn--unavailable:not(.icon-btn--pressed) .action-icon {
-  color: var(--text-muted);
-}
-
-.library-modes__btn {
+.library-modes {
   width: 36px;
   min-width: 36px;
   height: 36px;
