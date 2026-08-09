@@ -7,6 +7,10 @@ const STDLIB_INCLUDE_PATTERN = /^<([^>]+)>$/;
 
 export const PLANTUML_LIB_C4_BASE = "./plantuml-lib/C4/";
 
+export const PLANTUML_LIB_ARCHIMATE_BASE = "./plantuml-lib/archimate/";
+
+export const ARCHIMATE_INCLUDE_PATH = `${PLANTUML_LIB_ARCHIMATE_BASE}Archimate.puml`;
+
 export const C4_INCLUDE_PATHS = {
   context: `${PLANTUML_LIB_C4_BASE}C4_Context.puml`,
   container: `${PLANTUML_LIB_C4_BASE}C4_Container.puml`,
@@ -29,13 +33,18 @@ function stripIncludeQuotes(value: string): string {
   return trimmed;
 }
 
-function mapStdlibIncludePath(includePath: string): string {
+export function mapStdlibIncludePath(includePath: string): string {
   const stdlibMatch = STDLIB_INCLUDE_PATTERN.exec(includePath);
   if (!stdlibMatch) {
     return includePath;
   }
 
-  return `./plantuml-lib/${stdlibMatch[1]}`;
+  const relativePath = stdlibMatch[1];
+  const withExtension = relativePath.endsWith(".puml")
+    ? relativePath
+    : `${relativePath}.puml`;
+
+  return `./plantuml-lib/${withExtension}`;
 }
 
 function resolveIncludeUrl(includePath: string, parentUrl?: string): string {
