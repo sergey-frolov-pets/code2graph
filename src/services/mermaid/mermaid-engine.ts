@@ -10,6 +10,11 @@ import { prepareMermaidSource } from "@/utils/mermaid-source";
 
 let initialized = false;
 let renderCounter = 0;
+let lastRenderUsedOnlineInk = false;
+
+export function didLastMermaidRenderUseOnlineInk(): boolean {
+  return lastRenderUsedOnlineInk;
+}
 
 const MERMAID_RENDER_CONTAINER_WIDTH_PX = 1200;
 const MERMAID_RENDER_CONTAINER_HEIGHT_PX = 800;
@@ -88,15 +93,20 @@ export async function renderMermaidToSvg(
 ): Promise<string> {
   if (isOnlineRenderMode(renderMode)) {
     try {
-      return await renderMermaidOnlineToSvg(source, options);
+      const svg = await renderMermaidOnlineToSvg(source, options);
+      lastRenderUsedOnlineInk = true;
+      return svg;
     } catch (onlineError) {
       try {
-        return await renderMermaidOfflineToSvg(source, options);
+        const svg = await renderMermaidOfflineToSvg(source, options);
+        lastRenderUsedOnlineInk = false;
+        return svg;
       } catch {
         throw onlineError;
       }
     }
   }
 
+  lastRenderUsedOnlineInk = false;
   return renderMermaidOfflineToSvg(source, options);
 }

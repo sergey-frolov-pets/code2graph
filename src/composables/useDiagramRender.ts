@@ -23,6 +23,7 @@ import {
   probeMermaidInkConnectivity,
   resetMermaidInkConnectivity,
 } from "@/services/mermaid/mermaid-online";
+import { didLastMermaidRenderUseOnlineInk } from "@/services/mermaid/mermaid-engine";
 import { isFileProtocol } from "@/pwa/installPromptState";
 
 export interface UseDiagramRenderOptions {
@@ -141,6 +142,13 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
       setLastDiagramIr(
         buildDiagramIrForCache(source.value, diagramFormat.value, result),
       );
+      if (
+        usesOnlineRender.value &&
+        diagramFormat.value === "mermaid" &&
+        !didLastMermaidRenderUseOnlineInk()
+      ) {
+        engineStatus.value = t("engine.mermaidOnlineOfflineFallback");
+      }
     } catch (renderError) {
       svg.value = "";
       setLastDiagramIr(null);
