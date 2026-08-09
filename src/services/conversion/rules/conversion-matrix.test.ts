@@ -23,6 +23,28 @@ describe("conversion-matrix", () => {
     expect(isConversionBlocked("sequence", "graphml", "plantuml")).toBe(true);
   });
 
+  it("blocks graphml to er plantuml", () => {
+    expect(isConversionBlocked("er", "graphml", "plantuml")).toBe(true);
+  });
+
+  it("allows class plantuml to mermaid", () => {
+    const rule = getConversionRouteRule("class", "plantuml", "mermaid");
+    expect(rule.blocked).toBe(false);
+    expect(rule.level).toBe("B");
+  });
+
+  it("allows state mermaid to plantuml", () => {
+    const rule = getConversionRouteRule("state", "mermaid", "plantuml");
+    expect(rule.blocked).toBe(false);
+    expect(rule.level).toBe("B");
+  });
+
+  it("allows er mermaid to graphml", () => {
+    const rule = getConversionRouteRule("er", "mermaid", "graphml");
+    expect(rule.blocked).toBe(false);
+    expect(rule.level).toBe("B");
+  });
+
   it("blocks same format conversion", () => {
     expect(getConversionRouteRule("graph", "plantuml", "plantuml").blocked).toBe(
       true,

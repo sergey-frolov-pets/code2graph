@@ -83,20 +83,30 @@ export function emitMermaidFromIr(ir: DiagramIR): string {
 
 function emitMermaidClass(ir: DiagramIR): string {
   const lines = ["classDiagram"];
+  const labelById = new Map(ir.nodes.map((node) => [node.id, node.label]));
   for (const node of ir.nodes) {
-    lines.push(`  class ${node.id}`);
+    lines.push(`  class ${node.label}`);
   }
   for (const edge of ir.edges) {
-    lines.push(`  ${edge.source} --> ${edge.target}`);
+    const from = labelById.get(edge.source) ?? edge.source;
+    const to = labelById.get(edge.target) ?? edge.target;
+    lines.push(`  ${from} --> ${to}`);
   }
   return lines.join("\n");
 }
 
 function emitMermaidState(ir: DiagramIR): string {
   const lines = ["stateDiagram-v2"];
+  const labelById = new Map(ir.nodes.map((node) => [node.id, node.label]));
+  if (ir.edges.length > 0) {
+    const firstTarget = labelById.get(ir.edges[0]!.target) ?? ir.edges[0]!.target;
+    lines.push(`  [*] --> ${firstTarget}`);
+  }
   for (const edge of ir.edges) {
+    const from = labelById.get(edge.source) ?? edge.source;
+    const to = labelById.get(edge.target) ?? edge.target;
     const label = edge.label ? ` : ${edge.label}` : "";
-    lines.push(`  ${edge.source} --> ${edge.target}${label}`);
+    lines.push(`  ${from} --> ${to}${label}`);
   }
   return lines.join("\n");
 }
