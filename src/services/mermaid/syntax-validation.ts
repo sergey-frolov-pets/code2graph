@@ -1,5 +1,5 @@
-import mermaid from "mermaid";
 import type { RenderMode } from "@/constants/render-settings";
+import { loadMermaid } from "@/services/mermaid/mermaid-loader";
 import { waitForMermaidReady } from "@/services/mermaid/mermaid-engine";
 import {
   checkMermaidSyntax,
@@ -9,7 +9,8 @@ import {
 import { prepareMermaidSource } from "@/utils/mermaid-source";
 import type { SyntaxCheckResult } from "@/utils/plantuml-syntax";
 
-function ensureMermaidParserInitialized(dark: boolean): void {
+async function ensureMermaidParserInitialized(dark: boolean): Promise<void> {
+  const mermaid = await loadMermaid();
   mermaid.initialize({
     startOnLoad: false,
     theme: dark ? "dark" : "default",
@@ -37,7 +38,8 @@ export async function validateMermaidSyntax(
 
   try {
     await waitForMermaidReady(darkMode);
-    ensureMermaidParserInitialized(darkMode);
+    await ensureMermaidParserInitialized(darkMode);
+    const mermaid = await loadMermaid();
     await mermaid.parse(prepared);
     return { valid: true, issues: [] };
   } catch (error) {
