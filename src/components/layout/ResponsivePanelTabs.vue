@@ -20,19 +20,21 @@ const tabs: { id: MobilePanelId; labelKey: "app.mobilePanelEditor" | "app.mobile
     role="tablist"
     :aria-label="t('app.mainNav')"
   >
-    <button
-      v-for="tab in tabs"
-      :key="tab.id"
-      type="button"
-      class="responsive-panel-tabs__tab"
-      :class="{ 'is-active': activePanel === tab.id }"
-      role="tab"
-      :aria-selected="activePanel === tab.id"
-      :tabindex="activePanel === tab.id ? 0 : -1"
-      @click="activePanel = tab.id"
-    >
-      {{ t(tab.labelKey) }}
-    </button>
+    <div class="responsive-panel-tabs__bar">
+      <button
+        v-for="tab in tabs"
+        :key="tab.id"
+        type="button"
+        class="responsive-panel-tabs__tab"
+        :class="{ 'is-active': activePanel === tab.id }"
+        role="tab"
+        :aria-selected="activePanel === tab.id"
+        :tabindex="activePanel === tab.id ? 0 : -1"
+        @click="activePanel = tab.id"
+      >
+        <span class="responsive-panel-tabs__label">{{ t(tab.labelKey) }}</span>
+      </button>
+    </div>
   </nav>
 </template>
 
@@ -43,38 +45,84 @@ const tabs: { id: MobilePanelId; labelKey: "app.mobilePanelEditor" | "app.mobile
 
 @media (max-width: 900px) {
   .responsive-panel-tabs {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 4px;
-    margin: 0 12px 8px;
-    padding: 4px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
+    display: block;
+    flex-shrink: 0;
+    padding: 0 12px;
     background: var(--surface-muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .responsive-panel-tabs__bar {
+    display: flex;
+    align-items: flex-end;
+    gap: 0;
+    min-height: 34px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    touch-action: manipulation;
+  }
+
+  .responsive-panel-tabs__bar::-webkit-scrollbar {
+    display: none;
   }
 
   .responsive-panel-tabs__tab {
-    min-height: var(--btn-touch);
-    padding: 8px 12px;
-    border: 0;
-    border-radius: 8px;
-    background: transparent;
+    position: relative;
+    flex: 0 0 auto;
+    min-width: 88px;
+    max-width: 160px;
+    min-height: 30px;
+    margin: 0;
+    padding: 0 14px;
+    border: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    border-radius: 6px 6px 0 0;
+    background: color-mix(in srgb, var(--surface-muted) 55%, var(--border));
     color: var(--text-muted);
-    font-size: 0.9rem;
-    font-weight: 600;
-    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    font-size: 0.82rem;
+    font-weight: 500;
+    line-height: 1.2;
     touch-action: manipulation;
+    transition:
+      background 0.12s ease,
+      color 0.12s ease,
+      border-color 0.12s ease;
+  }
+
+  .responsive-panel-tabs__tab + .responsive-panel-tabs__tab {
+    margin-left: -1px;
   }
 
   .responsive-panel-tabs__tab:hover:not(.is-active) {
     color: var(--text);
-    background: color-mix(in srgb, var(--text) 4%, transparent);
+    background: color-mix(in srgb, var(--surface-muted) 35%, var(--surface));
+  }
+
+  .responsive-panel-tabs__tab:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+    z-index: 2;
   }
 
   .responsive-panel-tabs__tab.is-active {
-    background: var(--accent);
-    color: #fff;
-    box-shadow: 0 1px 2px color-mix(in srgb, var(--accent) 35%, transparent);
+    z-index: 1;
+    border-bottom-color: var(--surface);
+    margin-bottom: -1px;
+    padding-bottom: 1px;
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 600;
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent),
+      0 -1px 0 var(--surface);
+  }
+
+  .responsive-panel-tabs__label {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 </style>
