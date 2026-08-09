@@ -38,15 +38,11 @@ export type LayoutEngine = (typeof LAYOUT_ENGINES)[keyof typeof LAYOUT_ENGINES];
 
 export {
   getDefaultSource,
-  getSampleDiagramSource,
   getSampleSource,
   isDefaultSource,
-  isSampleDiagramSource,
   translateSourceForLocale,
-  SAMPLE_DIAGRAM_IDS,
   PLANTUML_SAMPLE_IDS,
   MERMAID_SAMPLE_IDS,
-  type SampleDiagramId,
   type PlantUmlSampleId,
   type MermaidSampleId,
   type SampleSelection,

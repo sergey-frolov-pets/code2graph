@@ -16,10 +16,7 @@ export const PLANTUML_SAMPLE_IDS = [
   "mindmap",
 ] as const;
 
-export const SAMPLE_DIAGRAM_IDS = PLANTUML_SAMPLE_IDS;
-
 export type PlantUmlSampleId = (typeof PLANTUML_SAMPLE_IDS)[number];
-export type SampleDiagramId = PlantUmlSampleId;
 
 export type SampleSelection =
   | { format: "plantuml"; id: PlantUmlSampleId }
@@ -96,7 +93,7 @@ User ..|> Authenticatable
 User "1" --> "*" Order : creates
 @enduml`;
 
-const SAMPLE_DIAGRAMS_RU: Record<SampleDiagramId, string> = {
+const SAMPLE_DIAGRAMS_RU: Record<PlantUmlSampleId, string> = {
   classes: `@startuml
 ' Полный пример диаграммы классов: пакеты, наследование, стереотипы
 !pragma layout smetana
@@ -502,7 +499,7 @@ SVG в браузере
 @endmindmap`,
 };
 
-const SAMPLE_DIAGRAMS_EN: Record<SampleDiagramId, string> = {
+const SAMPLE_DIAGRAMS_EN: Record<PlantUmlSampleId, string> = {
   classes: `@startuml
 ' Full class diagram example: packages, inheritance, stereotypes
 !pragma layout smetana
@@ -908,7 +905,7 @@ separator
 @endmindmap`,
 };
 
-const SOURCES_BY_LOCALE: Record<AppLocale, Record<SampleDiagramId, string>> = {
+const SOURCES_BY_LOCALE: Record<AppLocale, Record<PlantUmlSampleId, string>> = {
   ru: SAMPLE_DIAGRAMS_RU,
   en: SAMPLE_DIAGRAMS_EN,
 };
@@ -929,7 +926,7 @@ export function getDefaultSource(locale: AppLocale): string {
   return DEFAULT_SOURCE_BY_LOCALE[locale];
 }
 
-export function getSampleDiagramSource(
+function getPlantUmlSampleSource(
   id: PlantUmlSampleId,
   locale: AppLocale,
 ): string {
@@ -944,29 +941,17 @@ export function getSampleSource(
     return getMermaidSampleSource(selection.id, locale);
   }
 
-  return getSampleDiagramSource(selection.id, locale);
+  return getPlantUmlSampleSource(selection.id, locale);
 }
 
-export function findSampleDiagramId(
+function findPlantUmlSampleId(
   source: string,
   locale: AppLocale,
 ): PlantUmlSampleId | null {
   const entries = Object.entries(SOURCES_BY_LOCALE[locale]) as Array<
-    [SampleDiagramId, string]
+    [PlantUmlSampleId, string]
   >;
   return entries.find(([, value]) => value === source)?.[0] ?? null;
-}
-
-export function findSampleDiagramIdAnyLocale(
-  source: string,
-): PlantUmlSampleId | null {
-  for (const locale of Object.keys(SOURCES_BY_LOCALE) as AppLocale[]) {
-    const id = findSampleDiagramId(source, locale);
-    if (id) {
-      return id;
-    }
-  }
-  return null;
 }
 
 export function isDefaultSource(source: string): boolean {
@@ -990,9 +975,9 @@ export function translateSourceForLocale(
     return getDefaultSource(toLocale);
   }
 
-  const sampleId = findSampleDiagramId(source, fromLocale);
+  const sampleId = findPlantUmlSampleId(source, fromLocale);
   if (sampleId) {
-    return getSampleDiagramSource(sampleId, toLocale);
+    return getPlantUmlSampleSource(sampleId, toLocale);
   }
 
   const mermaidSampleId = findMermaidSampleId(source, fromLocale);
@@ -1007,7 +992,7 @@ export function findAnySampleSelection(
   source: string,
   locale: AppLocale,
 ): SampleSelection | null {
-  const plantUmlId = findSampleDiagramId(source, locale);
+  const plantUmlId = findPlantUmlSampleId(source, locale);
   if (plantUmlId) {
     return { format: "plantuml", id: plantUmlId };
   }

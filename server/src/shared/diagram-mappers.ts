@@ -5,7 +5,7 @@ import {
   canDownloadSection,
   canReadSection,
   canWriteSection,
-  getUserSectionAccessPermission,
+  getEffectiveSectionPermission,
 } from "../authz.js";
 import type Database from "better-sqlite3";
 import type {
@@ -76,7 +76,7 @@ export function mapSectionForUser(
     canWrite: canWriteSection(database, user, sectionRow as never),
     canAdmin: canAdminSection(database, user, sectionRow as never),
     canDownload: canDownloadSection(database, user, sectionRow as never),
-    userAccessPermission: getUserSectionAccessPermission(
+    userAccessPermission: getEffectiveSectionPermission(
       database,
       row.id,
       user.id,
