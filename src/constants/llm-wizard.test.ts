@@ -420,6 +420,22 @@ describe("llm-wizard", () => {
     expect(prompt).toContain("Project planning topics");
   });
 
+  it("includes exhaustive mindmap rules when description asks for all cities", () => {
+    const prompt = buildWizardPrompt(
+      createState({
+        creationMode: "ai",
+        language: "plantuml",
+        diagramType: "mindmap",
+        contextText:
+          "Интеллект-карта по всем городам Подмосковья по направлениям и районам",
+      }),
+    );
+
+    expect(prompt).toContain("Exhaustive coverage (critical");
+    expect(prompt).toContain("Hierarchy depth (critical)");
+    expect(prompt).toContain("Интеллект-карта по всем городам Подмосковья");
+  });
+
   it("includes mindmap format rules for mermaid wizard prompt", () => {
     const rules = getWizardDiagramFormatRules("mermaid", "mindmap");
 

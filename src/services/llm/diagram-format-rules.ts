@@ -6,10 +6,90 @@ import type {
 
 export type DiagramFormatTypeParams = Partial<Record<WizardParamId, number>>;
 
+export type DiagramFormatPromptContext = {
+  description?: string;
+  additionalRequirements?: string;
+};
+
+const EXHAUSTIVE_COVERAGE_PATTERN =
+  /(?:\bвсе\b|\bвсех\b|\bкажд\w*\b|\bполн\w*\b|по всем|целиком|\ball\b|\bevery\b|\bcomplete\b|\bfull\b|\bexhaustive\b|\bentire\b)/i;
+
+const HIERARCHICAL_TAXONOMY_PATTERN =
+  /район|district|направлен|direction|категор|групп|иерарх|hierarch|sub-?branch|подветк/i;
+
+function combinePromptContextText(context?: DiagramFormatPromptContext): string {
+  if (!context) {
+    return "";
+  }
+
+  return [context.description, context.additionalRequirements]
+    .filter((part) => part && part.trim().length > 0)
+    .join("\n");
+}
+
+function detectsExhaustiveCoverage(text: string): boolean {
+  return EXHAUSTIVE_COVERAGE_PATTERN.test(text);
+}
+
+function detectsHierarchicalTaxonomy(text: string): boolean {
+  return HIERARCHICAL_TAXONOMY_PATTERN.test(text);
+}
+
+function buildExhaustiveCoverageRules(
+  diagramType: WizardDiagramType,
+  promptText: string,
+): string[] {
+  if (!detectsExhaustiveCoverage(promptText)) {
+    return [];
+  }
+
+  const lines = [
+    "Exhaustive coverage (critical — overrides numeric floors):",
+    "- The user asked for ALL items in a set. Include EVERY matching entity from the description — never sample, abbreviate, or show only 2–4 examples per group.",
+    "- Structural parameter minimums are floors only, NOT caps. Exceed them whenever the description lists or implies more items.",
+  ];
+
+  if (diagramType === "mindmap" || diagramType === "wbs") {
+    lines.push(
+      "- For geographic or administrative breakdowns: cover every direction/region branch, every city/settlement under its direction, and every district/sub-area when the user mentioned districts.",
+      "- Omitting districts or listing only a few cities per direction is an incomplete response.",
+    );
+  }
+
+  return lines;
+}
+
+function buildHierarchicalTaxonomyRules(
+  diagramType: WizardDiagramType,
+  promptText: string,
+): string[] {
+  if (!detectsHierarchicalTaxonomy(promptText)) {
+    return [];
+  }
+
+  if (diagramType === "mindmap") {
+    return [
+      "Hierarchy depth (critical):",
+      "- Map each organizational level to a deeper mindmap level (* root, ** direction/category, *** city/item, **** district/sub-item when districts are requested).",
+      "- Do not flatten districts into city labels or skip intermediate levels the user asked for.",
+    ];
+  }
+
+  if (diagramType === "wbs") {
+    return [
+      "Hierarchy depth (critical):",
+      "- Reflect every requested breakdown level in the WBS tree; do not collapse child groups into parent labels.",
+    ];
+  }
+
+  return [];
+}
+
 const SHARED_COMPLETENESS_RULES = [
   "Completeness (critical):",
   "- Build a FULL diagram from the user's Description and Additional requirements — not a minimal valid sketch.",
   "- Include EVERY named entity, step, actor, branch, or concept from the user text; do not abbreviate or omit details to save space.",
+  "- Numeric structural minimums are floors, not targets or maximums — include more items when the description requires it.",
   "- Match the user's language for all labels and titles.",
   "- Use short node labels (≤8 words); put organizing rationale in the optional explanation field.",
   "- Balance structure — avoid one dominant branch and empty stubs.",
@@ -31,7 +111,7 @@ function paramAtLeast(
     return undefined;
   }
 
-  return `Include at least ${value} ${label}.`;
+  return `Minimum floor: ${value} ${label} — exceed when the description lists or implies more.`;
 }
 
 function buildTypeParamCompleteness(
@@ -95,6 +175,12 @@ function buildTypeParamCompleteness(
         paramAtLeast(typeParams, "steps", "sub-branches under EACH main branch (level 2+)") ?? "",
       );
       lines.push("Use the user's central topic as the root label, not a generic placeholder.");
+      lines.push(
+        "For direction → city → district trees: ** = direction, *** = city, **** = district (add ***** only when needed).",
+      );
+      lines.push(
+        "Every main branch that the user named must have its full child list — not a partial sample.",
+      );
       break;
     case "wbs":
       lines.push(paramAtLeast(typeParams, "nodes", "top-level work branches") ?? "");
@@ -363,6 +449,7 @@ export function buildDiagramFormatRules(
   language: WizardLanguage,
   diagramType: WizardDiagramType,
   typeParams: DiagramFormatTypeParams = {},
+  promptContext?: DiagramFormatPromptContext,
 ): string {
   const syntax =
     language === "mermaid"
@@ -370,12 +457,17 @@ export function buildDiagramFormatRules(
       : buildPlantUmlSyntaxRules(diagramType);
 
   const typeCompleteness = buildTypeParamCompleteness(diagramType, typeParams);
+  const promptText = combinePromptContextText(promptContext);
+  const exhaustiveRules = buildExhaustiveCoverageRules(diagramType, promptText);
+  const taxonomyRules = buildHierarchicalTaxonomyRules(diagramType, promptText);
 
   return [
     ...syntax,
     "",
     ...SHARED_COMPLETENESS_RULES,
     ...typeCompleteness,
+    ...(exhaustiveRules.length > 0 ? ["", ...exhaustiveRules] : []),
+    ...(taxonomyRules.length > 0 ? ["", ...taxonomyRules] : []),
     "",
     ...SHARED_GUARDRAILS,
   ].join("\n");
@@ -385,8 +477,14 @@ export function getWizardDiagramFormatRules(
   language: WizardLanguage,
   diagramType: WizardDiagramType,
   typeParams?: DiagramFormatTypeParams,
+  promptContext?: DiagramFormatPromptContext,
 ): string {
-  return buildDiagramFormatRules(language, diagramType, typeParams ?? {});
+  return buildDiagramFormatRules(
+    language,
+    diagramType,
+    typeParams ?? {},
+    promptContext,
+  );
 }
 
 export const LLM_WIZARD_ROLE_PROMPT =

@@ -20,6 +20,7 @@ import type {
   WizardLanguage,
   WizardParamId,
 } from "@/constants/llm-wizard";
+import type { DiagramFormatPromptContext } from "@/services/llm/diagram-format-rules";
 import { getWizardDiagramFormatRules } from "@/constants/llm-wizard";
 import { runLlmJsonValidationLoop } from "@/services/llm/llm-validation-loop";
 import { validateLlmResponse } from "@/utils/validate-llm-plantuml";
@@ -104,6 +105,7 @@ export async function generateValidWizardDiagram(
   systemContext = "Generate a complete diagram from structured wizard requirements.",
   typeParams?: Partial<Record<WizardParamId, number>>,
   priorMessages?: LlmChatMessage[],
+  formatPromptContext?: DiagramFormatPromptContext,
 ): Promise<GenerateValidPlantUmlResult> {
   if (language === "graphml") {
     throw new LlmClientError(
@@ -116,6 +118,7 @@ export async function generateValidWizardDiagram(
     language,
     diagramType,
     typeParams,
+    formatPromptContext ?? { description: userPrompt },
   );
   const systemPrompt = buildWizardLlmSystemPrompt(
     systemContext,

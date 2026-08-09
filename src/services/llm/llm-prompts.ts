@@ -22,7 +22,7 @@ export const LLM_PLANTUML_RULES =
   "PlantUML rules: For standard diagrams use @startuml and @enduml. For C4 diagrams only use !include from ./plantuml-lib/C4/ or stdlib <...> includes. Do not use !includeurl or external URLs.";
 
 export const LLM_COMPLETENESS_APPENDIX =
-  "Completeness: Include all entities, steps, branches, and relationships from the user request. Never return a minimal toy diagram when the user asked for a rich structure. Match the user's language in labels.";
+  "Completeness: Include all entities, steps, branches, and relationships from the user request. Never return a minimal toy diagram when the user asked for a rich structure. When the user asks for ALL items (e.g. all cities, all directions), list every item — numeric wizard parameters are minimum floors, not caps. Match the user's language in labels.";
 
 export const LLM_CLARIFICATION_JSON_APPENDIX =
   "If the user request is ambiguous or missing critical details, respond with JSON only: {\"clarificationQuestion\":\"your question\"} and optional \"explanation\". Do not change the diagram until the user answers. Otherwise return the normal response shape for this task.";
@@ -122,8 +122,8 @@ export const LLM_TEMPERATURE_GENERATION = 0.6;
 /** Temperature for patch, validation retries, and connection tests. */
 export const LLM_TEMPERATURE_PRECISE = 0.2;
 
-/** Default max output tokens for diagram generation. */
-export const LLM_MAX_TOKENS_GENERATION = 4096;
+/** Default max output tokens for diagram generation (large mindmaps / WBS need headroom). */
+export const LLM_MAX_TOKENS_GENERATION = 8192;
 
 /** Max output tokens for syntax Q&A and patches. */
 export const LLM_MAX_TOKENS_PRECISE = 2048;

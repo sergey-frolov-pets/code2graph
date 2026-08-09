@@ -1,7 +1,6 @@
 import { computed, ref, watch, type Ref } from "vue";
 import type { TranslateFn } from "@/locales/types";
 import { generateValidWizardDiagram } from "@/services/llm/llm-plantuml-generate";
-import { generateValidPlantUmlFullEdit } from "@/services/llm/llm-plantuml-edit";
 import {
   buildWizardPromptWithChatContext,
   sendWizardPlanningChat,
@@ -524,6 +523,10 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
         "Generate a complete diagram from the wizard Description and Additional requirements.",
         wizardState.value.typeParams,
         planningMessages,
+        {
+          description: wizardState.value.contextText,
+          additionalRequirements: wizardState.value.typeSpecificText,
+        },
       );
 
       resultSource.value = result.plantuml;
@@ -617,47 +620,29 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
       let updatedSource = resultSource.value;
       let explanation: string | undefined;
 
-      if (wizardState.value.language === "plantuml") {
-        const result = await generateValidPlantUmlFullEdit(
-          resultSource.value,
-          content,
-          layout.value,
-          diagramDarkMode.value,
-          renderMode.value,
-          { silent: true },
-          priorMessages,
-        );
+      const refineFormatContext = {
+        description: wizardState.value.contextText,
+        additionalRequirements: content.trim(),
+      };
 
-        if (result.needsClarification && result.clarificationQuestion) {
-          assistantContent = result.clarificationQuestion;
-        } else {
-          updatedSource = result.plantuml;
-          explanation = result.explanation;
-          assistantContent =
-            result.explanation?.trim() ||
-            (result.hasChanges
-              ? t("llm.wizard.refineApplied")
-              : t("llm.wizard.refineNoChanges"));
-        }
-      } else {
-        const result = await generateValidWizardDiagram(
-          refinePrompt,
-          wizardState.value.language,
-          wizardState.value.diagramType,
-          layout.value,
-          diagramDarkMode.value,
-          renderMode.value,
-          { silent: true },
-          "Refine the wizard-generated diagram according to the user request.",
-          wizardState.value.typeParams,
-          priorMessages,
-        );
+      const result = await generateValidWizardDiagram(
+        refinePrompt,
+        wizardState.value.language,
+        wizardState.value.diagramType,
+        layout.value,
+        diagramDarkMode.value,
+        renderMode.value,
+        { silent: true },
+        "Refine the wizard-generated diagram according to the user request. Expand incomplete branches when the user asks for missing items.",
+        wizardState.value.typeParams,
+        priorMessages,
+        refineFormatContext,
+      );
 
-        updatedSource = result.plantuml;
-        explanation = result.explanation;
-        assistantContent =
-          result.explanation?.trim() || t("llm.wizard.refineApplied");
-      }
+      updatedSource = result.plantuml;
+      explanation = result.explanation;
+      assistantContent =
+        result.explanation?.trim() || t("llm.wizard.refineApplied");
 
       await refineConversation.appendTurn(content, assistantContent);
 

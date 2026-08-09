@@ -14,9 +14,26 @@ describe("diagram-format-rules", () => {
     expect(rules).toContain("@startmindmap");
     expect(rules).toContain("@endmindmap");
     expect(rules).toContain("Completeness (critical)");
-    expect(rules).toContain("Include at least 4 main branches");
-    expect(rules).toContain("Include at least 2 sub-branches under EACH main branch");
+    expect(rules).toContain("Minimum floor: 4 main branches");
+    expect(rules).toContain(
+      "Minimum floor: 2 sub-branches under EACH main branch (level 2+)",
+    );
     expect(rules).toContain("Guardrails:");
+  });
+
+  it("adds exhaustive and hierarchy rules for full geographic mindmaps", () => {
+    const rules = getWizardDiagramFormatRules("plantuml", "mindmap", {
+      nodes: 8,
+      steps: 6,
+    }, {
+      description:
+        "Mind map по всем городам Подмосковья с разделением по направлениям и районам",
+    });
+
+    expect(rules).toContain("Exhaustive coverage (critical");
+    expect(rules).toContain("every direction/region branch");
+    expect(rules).toContain("Hierarchy depth (critical)");
+    expect(rules).toContain("**** = district");
   });
 
   it("includes mermaid sequence format and participant minimums", () => {
@@ -25,7 +42,7 @@ describe("diagram-format-rules", () => {
     });
 
     expect(rules).toContain("sequenceDiagram");
-    expect(rules).toContain("Include at least 5 distinct participants");
+    expect(rules).toContain("Minimum floor: 5 distinct participants");
     expect(rules).not.toContain("@startuml");
   });
 
@@ -36,8 +53,8 @@ describe("diagram-format-rules", () => {
     });
 
     expect(rules).toContain("swimlanes");
-    expect(rules).toContain("Include at least 3 swimlanes");
-    expect(rules).toContain("Include at least 6 activity steps");
+    expect(rules).toContain("Minimum floor: 3 swimlanes");
+    expect(rules).toContain("Minimum floor: 6 activity steps");
   });
 
   it("covers plantuml types without dedicated switch default", () => {
@@ -46,6 +63,6 @@ describe("diagram-format-rules", () => {
     });
 
     expect(rules).toContain("sequence diagram");
-    expect(rules).toContain("Include at least 3 distinct participants");
+    expect(rules).toContain("Minimum floor: 3 distinct participants");
   });
 });

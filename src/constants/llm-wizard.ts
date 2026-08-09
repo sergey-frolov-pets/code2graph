@@ -160,8 +160,8 @@ export const WIZARD_TYPE_PARAM_FIELDS: Record<WizardDiagramType, WizardParamFiel
   c4_container: [{ id: "containers", min: 2, max: 12, default: 4 }],
   gantt: [{ id: "tasks", min: 2, max: 20, default: 4 }],
   mindmap: [
-    { id: "nodes", min: 2, max: 12, default: 4 },
-    { id: "steps", min: 1, max: 8, default: 2 },
+    { id: "nodes", min: 2, max: 24, default: 8 },
+    { id: "steps", min: 1, max: 24, default: 6 },
   ],
   er: [{ id: "entities", min: 2, max: 12, default: 3 }],
   graph: [
@@ -526,6 +526,10 @@ export function buildWizardPrompt(state: WizardState): string {
       state.language,
       state.diagramType,
       state.typeParams,
+      {
+        description: state.contextText,
+        additionalRequirements: state.typeSpecificText,
+      },
     ),
     `Diagram theme preference: ${state.theme}.`,
   ];
