@@ -32,7 +32,7 @@ export function buildPlantUmlSequence(
 ): string {
   const count = state.typeParams.participants;
   const title = locale === "ru" ? "Диаграмма последовательности" : "Sequence diagram";
-  const lines = buildPlantUmlHeader(state, title, false);
+  const lines = buildPlantUmlHeader(state, title, false, false);
 
   for (let index = 1; index <= count; index += 1) {
     lines.push(`actor ${participantLabel(index, locale).replace(/\s+/g, "_")}`);
@@ -112,7 +112,7 @@ export function buildPlantUmlActivity(state: WizardState, locale: AppLocale): st
   const laneCount = state.typeParams.lanes;
   const stepCount = state.typeParams.steps;
   const title = locale === "ru" ? "Диаграмма активности" : "Activity diagram";
-  const lines = buildPlantUmlHeader(state, title, false);
+  const lines = buildPlantUmlHeader(state, title, false, false);
 
   for (let laneIndex = 1; laneIndex <= laneCount; laneIndex += 1) {
     const color = SWIMLANE_COLORS[(laneIndex - 1) % SWIMLANE_COLORS.length];

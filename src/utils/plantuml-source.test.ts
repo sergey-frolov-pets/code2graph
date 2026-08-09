@@ -47,6 +47,60 @@ project starts 2026-01-01
 
     expect(applyLayoutPragma(gantt, "smetana")).toBe(gantt);
   });
+
+  it("strips layout pragma from timing diagrams", () => {
+    const timing = `@startuml
+!pragma layout smetana
+
+title Диаграмма синхронизации
+concise "Сигнал 1" as S1
+@0
+S1 is Idle
+@enduml`;
+
+    const result = applyLayoutPragma(timing, "dot");
+
+    expect(result).not.toContain("!pragma layout");
+    expect(result).toContain("concise");
+    expect(result).toContain("Диаграмма синхронизации");
+  });
+
+  it("strips layout pragma from sequence diagrams", () => {
+    const sequence = `@startuml
+!pragma layout smetana
+actor A
+actor B
+A -> B: hello
+@enduml`;
+
+    const result = applyLayoutPragma(sequence, "dot");
+
+    expect(result).not.toContain("!pragma layout");
+    expect(result).toContain("A -> B: hello");
+  });
+
+  it("strips layout pragma from activity diagrams", () => {
+    const activity = `@startuml
+!pragma layout smetana
+start
+:Step;
+stop
+@enduml`;
+
+    const result = applyLayoutPragma(activity, "dot");
+
+    expect(result).not.toContain("!pragma layout");
+    expect(result).toContain("start");
+  });
+
+  it("replaces layout pragma for class diagrams", () => {
+    const source = `@startuml
+!pragma layout smetana
+class A
+@enduml`;
+
+    expect(applyLayoutPragma(source, "dot")).toContain("!pragma layout dot");
+  });
 });
 
 describe("stripUnsupportedActivityDirection", () => {

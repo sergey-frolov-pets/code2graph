@@ -15,6 +15,59 @@ const DEPRECATED_ACTIVITY_COLOR_LINE_PATTERN =
 const ACTIVITY_DIRECTION_LINE_PATTERN =
   /^\s*(?:top to bottom|left to right) direction\s*$/gim;
 
+export function looksLikePlantUmlTimingDiagram(source: string): boolean {
+  if (!/^\s*@startuml/im.test(source)) {
+    return false;
+  }
+
+  return (
+    /\b(?:concise|robust)\s+"/i.test(source) ||
+    (/@\d+\b/.test(source) && /\b\w+\s+is\s+\w+/i.test(source))
+  );
+}
+
+export function looksLikePlantUmlSequenceDiagram(source: string): boolean {
+  if (!/^\s*@startuml/im.test(source)) {
+    return false;
+  }
+
+  return (
+    /\b(?:actor|participant|boundary|control|entity|database|queue|collections)\b/i.test(
+      source,
+    ) && /->>?/.test(source)
+  );
+}
+
+export function supportsLayoutPragma(source: string): boolean {
+  const trimmed = source.trim();
+
+  if (!trimmed) {
+    return true;
+  }
+
+  if (usesStandalonePlantUmlStarter(trimmed)) {
+    return false;
+  }
+
+  if (looksLikePlantUmlTimingDiagram(trimmed)) {
+    return false;
+  }
+
+  if (looksLikePlantUmlSequenceDiagram(trimmed)) {
+    return false;
+  }
+
+  if (looksLikePlantUmlActivityDiagram(trimmed)) {
+    return false;
+  }
+
+  return true;
+}
+
+function stripLayoutPragma(source: string): string {
+  return source.replace(PRAGMA_LAYOUT_PATTERN, "").replace(/\n{3,}/g, "\n\n");
+}
+
 export function looksLikePlantUmlActivityDiagram(source: string): boolean {
   if (!/^\s*@startuml/im.test(source)) {
     return false;
@@ -63,11 +116,17 @@ export function applyLayoutPragma(
   const trimmed = source.trim();
 
   if (!trimmed) {
-    return `@startuml\n${pragmaLine}\n@enduml`;
+    return supportsLayoutPragma("@startuml\n@enduml")
+      ? `@startuml\n${pragmaLine}\n@enduml`
+      : "@startuml\n@enduml";
   }
 
   if (usesStandalonePlantUmlStarter(trimmed)) {
     return trimmed;
+  }
+
+  if (!supportsLayoutPragma(trimmed)) {
+    return stripLayoutPragma(trimmed);
   }
 
   if (PRAGMA_LAYOUT_PATTERN.test(trimmed)) {
