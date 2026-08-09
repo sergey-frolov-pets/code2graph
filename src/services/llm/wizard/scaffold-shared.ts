@@ -43,15 +43,15 @@ export function buildPlantUmlHeader(
   state: WizardState,
   title: string,
   includeDirection: boolean,
+  includeLayoutPragma = true,
 ): string[] {
-  const lines = [
-    "@startuml",
-    "!pragma layout smetana",
-    "",
-    `title ${title}`,
-    "",
-    ...buildPlantUmlThemeBlock(state.theme),
-  ];
+  const lines = ["@startuml"];
+
+  if (includeLayoutPragma) {
+    lines.push("!pragma layout smetana", "");
+  }
+
+  lines.push(`title ${title}`, "", ...buildPlantUmlThemeBlock(state.theme));
 
   if (includeDirection) {
     const directionLine = buildPlantUmlDirectionLine(state.direction);

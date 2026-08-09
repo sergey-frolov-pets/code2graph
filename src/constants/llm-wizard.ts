@@ -713,15 +713,15 @@ function buildPlantUmlHeader(
   state: WizardState,
   title: string,
   includeDirection: boolean,
+  includeLayoutPragma = true,
 ): string[] {
-  const lines = [
-    "@startuml",
-    "!pragma layout smetana",
-    "",
-    `title ${title}`,
-    "",
-    ...buildPlantUmlThemeBlock(state.theme),
-  ];
+  const lines = ["@startuml"];
+
+  if (includeLayoutPragma) {
+    lines.push("!pragma layout smetana", "");
+  }
+
+  lines.push(`title ${title}`, "", ...buildPlantUmlThemeBlock(state.theme));
 
   if (includeDirection) {
     const directionLine = buildPlantUmlDirectionLine(state.direction);
@@ -779,7 +779,7 @@ function buildPlantUmlSequence(
 ): string {
   const count = state.typeParams.participants;
   const title = locale === "ru" ? "Диаграмма последовательности" : "Sequence diagram";
-  const lines = buildPlantUmlHeader(state, title, false);
+  const lines = buildPlantUmlHeader(state, title, false, false);
 
   for (let index = 1; index <= count; index += 1) {
     lines.push(`actor ${participantLabel(index, locale).replace(/\s+/g, "_")}`);
@@ -859,7 +859,7 @@ function buildPlantUmlActivity(state: WizardState, locale: AppLocale): string {
   const laneCount = state.typeParams.lanes;
   const stepCount = state.typeParams.steps;
   const title = locale === "ru" ? "Диаграмма активности" : "Activity diagram";
-  const lines = buildPlantUmlHeader(state, title, false);
+  const lines = buildPlantUmlHeader(state, title, false, false);
 
   for (let laneIndex = 1; laneIndex <= laneCount; laneIndex += 1) {
     const color = SWIMLANE_COLORS[(laneIndex - 1) % SWIMLANE_COLORS.length];
@@ -1940,7 +1940,7 @@ function buildPlantUmlTiming(state: WizardState, locale: AppLocale): string {
   const signalCount = state.typeParams.participants;
   const stepCount = state.typeParams.steps;
   const title = locale === "ru" ? "Диаграмма синхронизации" : "Timing diagram";
-  const lines = buildPlantUmlHeader(state, title, false);
+  const lines = buildPlantUmlHeader(state, title, false, false);
 
   for (let index = 1; index <= signalCount; index += 1) {
     const label = signalLabel(index, locale);
