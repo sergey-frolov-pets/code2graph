@@ -146,7 +146,7 @@ describe("llm-wizard", () => {
     expect(getWizardStructuralElementsForType("graph", "graphml")).toEqual(["cluster"]);
   });
 
-  it("builds mermaid flowchart scaffold with LR direction", () => {
+  it("builds mermaid component scaffold with component nodes", () => {
     const source = buildManualScaffold(
       createState({
         language: "mermaid",
@@ -161,11 +161,48 @@ describe("llm-wizard", () => {
     );
 
     expect(source.startsWith("flowchart LR")).toBe(true);
-    expect(source).toContain("Node 1");
-    expect(source).toContain("N3");
-    expect(source).toContain("A([Start])");
-    expect(source).toContain("Z([Done])");
-    expect(source).not.toContain("([Start})]");
+    expect(source).toContain("C1[[Component 1]]");
+    expect(source).toContain("C3[[Component 3]]");
+    expect(source).toContain("C1 --> C2");
+    expect(source).not.toContain("([Start])");
+    expect(source).not.toContain("Шаг");
+  });
+
+  it("builds mermaid activity scaffold with steps instead of generic nodes", () => {
+    const source = buildManualScaffold(
+      createState({
+        language: "mermaid",
+        diagramType: "activity",
+        typeParams: {
+          ...createDefaultTypeParams(),
+          steps: 3,
+        },
+      }),
+      "ru",
+    );
+
+    expect(source).toContain("start([Старт])");
+    expect(source).toContain("S1[Шаг 1]");
+    expect(source).toContain("S3[Шаг 3]");
+    expect(source).not.toContain("[[Компонент");
+  });
+
+  it("builds plantuml component scaffold with component title", () => {
+    const source = buildManualScaffold(
+      createState({
+        diagramType: "component",
+        typeParams: {
+          ...createDefaultTypeParams(),
+          components: 2,
+        },
+      }),
+      "ru",
+    );
+
+    expect(source).toContain("title Диаграмма компонентов");
+    expect(source).toContain("[Компонент 1]");
+    expect(source).not.toContain("Диаграмма активности");
+    expect(source).not.toContain("|#E3F2FD|");
   });
 
   it("uses defaults for wizard steps not yet visited", () => {
