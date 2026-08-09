@@ -39,6 +39,8 @@ export default defineConfig({
     sourcemap: false,
     target: "es2018",
     cssCodeSplit: false,
+    // Single-file IIFE bundles the full app (incl. mermaid); size warning is expected.
+    chunkSizeWarningLimit: 6000,
     rollupOptions: {
       output: {
         format: "iife",

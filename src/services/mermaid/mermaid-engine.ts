@@ -1,9 +1,9 @@
-import mermaid from "mermaid";
 import {
   DEFAULT_RENDER_MODE,
   isOnlineRenderMode,
   type RenderMode,
 } from "@/constants/render-settings";
+import { loadMermaid } from "@/services/mermaid/mermaid-loader";
 import { renderMermaidOnlineToSvg } from "@/services/mermaid/mermaid-online";
 import { LocalizedAppError } from "@/utils/localized-app-error";
 import { prepareMermaidSource } from "@/utils/mermaid-source";
@@ -30,7 +30,8 @@ function createMermaidRenderContainer(): HTMLDivElement {
   return container;
 }
 
-function ensureMermaidInitialized(dark: boolean): void {
+async function ensureMermaidInitialized(dark: boolean): Promise<void> {
+  const mermaid = await loadMermaid();
   mermaid.initialize({
     startOnLoad: false,
     theme: dark ? "dark" : "default",
@@ -47,7 +48,7 @@ export function isMermaidReady(): boolean {
 }
 
 export async function waitForMermaidReady(dark: boolean): Promise<void> {
-  ensureMermaidInitialized(dark);
+  await ensureMermaidInitialized(dark);
 }
 
 async function renderMermaidOfflineToSvg(
@@ -59,7 +60,8 @@ async function renderMermaidOfflineToSvg(
     throw new LocalizedAppError("mermaid.emptySource");
   }
 
-  ensureMermaidInitialized(Boolean(options.dark));
+  const mermaid = await loadMermaid();
+  await ensureMermaidInitialized(Boolean(options.dark));
 
   renderCounter += 1;
   const renderId = `mermaid-render-${renderCounter}`;
