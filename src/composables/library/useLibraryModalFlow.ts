@@ -28,6 +28,11 @@ import { RATINGS_SECTION_ID } from "@/constants/diagram-library";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
 import type { DiagramDto } from "@/constants/diagram-library";
+import {
+  readLibraryBrowseSession,
+  restoreLibraryBrowseSession,
+  saveLibraryBrowseSession,
+} from "@/composables/library/library-browse-session";
 
 export interface UseLibraryModalFlowOptions {
   open: Ref<boolean>;
@@ -413,6 +418,12 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
 
   watch(open, (isOpen) => {
     if (!isOpen) {
+      saveLibraryBrowseSession({
+        activeTab: activeTab.value,
+        browseStep: browseStep.value,
+        selectedSectionId: library.selectedSectionId.value,
+        selectedDiagramId: library.selectedDiagram.value?.id ?? null,
+      });
       shareFlow.clearShareBrowseContext(!previewFlow.isPreviewModalOpen.value);
       clearTransientNotice();
       return;
@@ -420,9 +431,21 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
 
     resetUploadSectionId();
     resetImportBundle();
-    activeTab.value = "browse";
-    resetBrowseFlow();
     resetSectionAdmin();
+
+    const savedSession = readLibraryBrowseSession();
+    if (savedSession) {
+      void restoreLibraryBrowseSession(savedSession, {
+        library,
+        activeTab,
+        browseStep,
+        resetBrowseFlow,
+      });
+    } else {
+      activeTab.value = "browse";
+      resetBrowseFlow();
+    }
+
     void waitForEngineReady();
     void waitForMermaidReady(diagramDarkMode.value);
     void initializeLibraryState();

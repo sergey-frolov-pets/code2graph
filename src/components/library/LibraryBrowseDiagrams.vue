@@ -1,12 +1,14 @@
 <script setup lang="ts">
+import { computed, ref, watch } from "vue";
 import LibraryStarRating from "@/components/library/LibraryStarRating.vue";
 import EmptyState from "@/components/ui/EmptyState.vue";
 import LoadingState from "@/components/ui/LoadingState.vue";
 import { useLocale } from "@/composables/useLocale";
+import { LIBRARY_DIAGRAM_PAGE_SIZE } from "@/constants/library-browse";
 import type { DiagramListItemDto, DiagramSortOption } from "@/constants/diagram-library";
 import { DIAGRAM_SORT_OPTIONS } from "@/constants/diagram-library";
 
-defineProps<{
+const props = defineProps<{
   diagrams: DiagramListItemDto[];
   allTags: string[];
   isLoading: boolean;
@@ -25,9 +27,39 @@ const emit = defineEmits<{
 
 const { t } = useLocale();
 
+const visibleCount = ref(LIBRARY_DIAGRAM_PAGE_SIZE);
+
+const visibleDiagrams = computed(() =>
+  props.diagrams.slice(0, visibleCount.value),
+);
+
+const hasMoreDiagrams = computed(
+  () => props.diagrams.length > visibleCount.value,
+);
+
+const remainingDiagramCount = computed(
+  () => props.diagrams.length - visibleCount.value,
+);
+
+function resetPagination(): void {
+  visibleCount.value = LIBRARY_DIAGRAM_PAGE_SIZE;
+}
+
+function loadMoreDiagrams(): void {
+  visibleCount.value += LIBRARY_DIAGRAM_PAGE_SIZE;
+}
+
 function onFiltersChange(): void {
+  resetPagination();
   emit("filters-change");
 }
+
+watch(
+  () => props.diagrams,
+  () => {
+    resetPagination();
+  },
+);
 </script>
 
 <template>
@@ -85,7 +117,7 @@ function onFiltersChange(): void {
         :description="t('library.noResultsHint')"
       />
       <button
-        v-for="diagram in diagrams"
+        v-for="diagram in visibleDiagrams"
         :key="diagram.id"
         class="library-row list-virtual-row"
         type="button"
@@ -121,6 +153,14 @@ function onFiltersChange(): void {
         </span>
         <span class="library-row__chevron">›</span>
       </button>
+      <button
+        v-if="hasMoreDiagrams"
+        class="btn library-load-more"
+        type="button"
+        @click="loadMoreDiagrams"
+      >
+        {{ t("library.loadMore", { count: remainingDiagramCount }) }}
+      </button>
     </div>
   </div>
 </template>
@@ -138,5 +178,10 @@ function onFiltersChange(): void {
   align-items: center;
   gap: 6px;
   margin-top: 4px;
+}
+
+.library-load-more {
+  width: 100%;
+  margin-top: 8px;
 }
 </style>

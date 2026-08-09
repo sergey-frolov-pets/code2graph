@@ -22,6 +22,7 @@ export const libraryMessages: LocaleMessages = {
   "library.anyLanguage": "Any",
   "library.noResults": "No diagrams found",
   "library.noResultsHint": "Try adjusting search or filters, or upload a new diagram",
+  "library.loadMore": "Load {count} more",
   "library.ratingOutOfFive": "{value} of 5",
   "library.starLabel": "Star {star}",
   "library.selectDiagram": "Select a diagram to view details",

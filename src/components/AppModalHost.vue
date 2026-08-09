@@ -79,6 +79,7 @@ const { guideModalOpen, guideProviderId, closeLlmKeysGuide } = llmKeysGuide;
 
 <template>
   <SyntaxResultModal
+    v-if="isSyntaxModalOpen"
     :open="isSyntaxModalOpen"
     :result="syntaxResult"
     :is-validating="isValidating"
@@ -88,6 +89,7 @@ const { guideModalOpen, guideProviderId, closeLlmKeysGuide } = llmKeysGuide;
   />
 
   <DiagramVersionsModal
+    v-if="isVersionsModalOpen"
     :open="isVersionsModalOpen"
     :document-key="loadedFileName"
     :current-source="source"
@@ -130,11 +132,13 @@ const { guideModalOpen, guideProviderId, closeLlmKeysGuide } = llmKeysGuide;
   />
 
   <AboutModal
+    v-if="isAboutModalOpen"
     :open="isAboutModalOpen"
     @close="isAboutModalOpen = false"
   />
 
   <LlmPatchModal
+    v-if="isPatchModalOpen"
     :open="isPatchModalOpen"
     :source="source"
     :selection-start="patchSelectionStart"
@@ -148,6 +152,7 @@ const { guideModalOpen, guideProviderId, closeLlmKeysGuide } = llmKeysGuide;
   />
 
   <LlmSyntaxAskModal
+    v-if="isSyntaxAskModalOpen"
     :open="isSyntaxAskModalOpen"
     :source="source"
     :initial-question="syntaxAskInitialQuestion"

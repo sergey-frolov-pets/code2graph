@@ -106,11 +106,12 @@ const { t } = useLocale();
       <div class="library-target">
         <IconButton
           :label="t('library.targetLocal')"
-          extra-class="library-modes__btn"
+          extra-class="library-modes__btn library-modes__btn--labeled"
           :pressed="libraryTarget === 'local'"
           @click="emit('local-target')"
         >
           <ActionIcon name="unlink" />
+          <span class="library-modes__label">{{ t("library.targetLocal") }}</span>
         </IconButton>
         <IconButton
           :label="t('library.targetOnline')"
@@ -120,34 +121,38 @@ const { t } = useLocale();
           @click="emit('online-target')"
         >
           <ActionIcon name="globe" />
+          <span class="library-modes__label">{{ t("library.targetOnline") }}</span>
         </IconButton>
       </div>
 
       <nav class="library-modes" :aria-label="t('library.title')">
         <IconButton
           :label="t('library.browse')"
-          extra-class="library-modes__btn"
+          extra-class="library-modes__btn library-modes__btn--labeled"
           :pressed="activeTab === 'browse'"
           @click="emit('switch-tab', 'browse')"
         >
           <ActionIcon name="library" />
+          <span class="library-modes__label">{{ t("library.browse") }}</span>
         </IconButton>
         <IconButton
           :label="t('library.uploadDiagram')"
-          extra-class="library-modes__btn"
+          extra-class="library-modes__btn library-modes__btn--labeled"
           :pressed="activeTab === 'upload'"
           @click="emit('switch-tab', 'upload')"
         >
           <ActionIcon name="export" />
+          <span class="library-modes__label">{{ t("library.uploadDiagram") }}</span>
         </IconButton>
         <IconButton
           v-if="showAdminTab"
           :label="t('library.adminUsersTitle')"
-          extra-class="library-modes__btn"
+          extra-class="library-modes__btn library-modes__btn--labeled"
           :pressed="activeTab === 'admin'"
           @click="emit('switch-tab', 'admin')"
         >
           <ActionIcon name="shield" />
+          <span class="library-modes__label">{{ t("library.adminUsersTitle") }}</span>
         </IconButton>
       </nav>
     </div>

@@ -60,7 +60,7 @@ export function useLibraryModalTarget(options: {
   });
 
   const onlineTargetButtonClass = computed(() => {
-    const classes = ["library-modes__btn"];
+    const classes = ["library-modes__btn", "library-modes__btn--labeled"];
     if (isOnlineButtonUnavailable.value && libraryTarget.value !== "online") {
       classes.push("library-target__btn--unavailable");
     }

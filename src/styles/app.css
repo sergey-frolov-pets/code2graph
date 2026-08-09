@@ -224,7 +224,7 @@ a {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  touch-action: pan-x;
+  touch-action: manipulation;
 }
 
 .panel-header__toolbar::-webkit-scrollbar {

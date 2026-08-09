@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import EmptyState from "@/components/ui/EmptyState.vue";
 import type {
   DiagramDto,
   LibraryExportBundle,
@@ -321,12 +322,11 @@ watch(
           <div class="library-transfer__lists">
             <div class="library-transfer__list-block">
               <h4 class="library-transfer__subtitle">{{ t("library.sections") }}</h4>
-              <p
+              <EmptyState
                 v-if="pullFlatSections.length === 0"
-                class="library-transfer__empty"
-              >
-                {{ t("library.noSections") }}
-              </p>
+                class="library-transfer__empty-state"
+                :title="t('library.noSections')"
+              />
               <label
                 v-for="section in pullFlatSections"
                 :key="section.id"
@@ -349,12 +349,11 @@ watch(
             </div>
             <div class="library-transfer__list-block">
               <h4 class="library-transfer__subtitle">{{ t("library.diagrams") }}</h4>
-              <p
+              <EmptyState
                 v-if="serverDiagrams.length === 0"
-                class="library-transfer__empty"
-              >
-                {{ t("library.noResults") }}
-              </p>
+                class="library-transfer__empty-state"
+                :title="t('library.noResults')"
+              />
               <label
                 v-for="diagram in serverDiagrams"
                 :key="diagram.id"
@@ -401,9 +400,11 @@ watch(
       <div class="library-transfer__lists">
         <div class="library-transfer__list-block">
           <h4 class="library-transfer__subtitle">{{ t("library.sections") }}</h4>
-          <p v-if="exportFlatSections.length === 0" class="library-transfer__empty">
-            {{ t("library.noSections") }}
-          </p>
+          <EmptyState
+            v-if="exportFlatSections.length === 0"
+            class="library-transfer__empty-state"
+            :title="t('library.noSections')"
+          />
           <label
             v-for="section in exportFlatSections"
             :key="section.id"
@@ -427,9 +428,11 @@ watch(
 
         <div class="library-transfer__list-block">
           <h4 class="library-transfer__subtitle">{{ t("library.diagrams") }}</h4>
-          <p v-if="diagrams.length === 0" class="library-transfer__empty">
-            {{ t("library.noResults") }}
-          </p>
+          <EmptyState
+            v-if="diagrams.length === 0"
+            class="library-transfer__empty-state"
+            :title="t('library.noResults')"
+          />
           <label
             v-for="diagram in diagrams"
             :key="diagram.id"
@@ -490,12 +493,11 @@ watch(
         <div class="library-transfer__lists">
           <div class="library-transfer__list-block">
             <h4 class="library-transfer__subtitle">{{ t("library.sections") }}</h4>
-            <p
+            <EmptyState
               v-if="importFlatSections.length === 0"
-              class="library-transfer__empty"
-            >
-              {{ t("library.noSections") }}
-            </p>
+              class="library-transfer__empty-state"
+              :title="t('library.noSections')"
+            />
             <label
               v-for="section in importFlatSections"
               :key="section.id"
@@ -519,9 +521,11 @@ watch(
 
           <div class="library-transfer__list-block">
             <h4 class="library-transfer__subtitle">{{ t("library.diagrams") }}</h4>
-            <p v-if="importDiagrams.length === 0" class="library-transfer__empty">
-              {{ t("library.noResults") }}
-            </p>
+            <EmptyState
+              v-if="importDiagrams.length === 0"
+              class="library-transfer__empty-state"
+              :title="t('library.noResults')"
+            />
             <label
               v-for="diagram in importDiagrams"
               :key="diagram.id"
@@ -623,9 +627,11 @@ watch(
   cursor: pointer;
 }
 
-.library-transfer__empty {
-  margin: 0;
-  color: var(--text-muted);
+.library-transfer__empty-state {
+  padding: 12px 8px;
+}
+
+.library-transfer__empty-state :deep(.empty-state__title) {
   font-size: 0.85rem;
 }
 
