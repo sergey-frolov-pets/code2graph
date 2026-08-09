@@ -3,6 +3,7 @@ import {
   escapeMermaidQuoted,
   flattenMermaidLabel,
   formatMermaidNodeLabel,
+  formatMermaidRequirementText,
   formatMermaidSankeyCsvField,
 } from "@/services/conversion/emit/mermaid-emit-utils";
 import { formatMermaidGitRef } from "@/utils/mermaid-gitgraph";
@@ -190,7 +191,7 @@ export function emitMermaidRequirement(ir: DiagramIR): string {
     lines.push(
       `    requirement ${req.id} {`,
       `      id: ${req.numericId ?? 1}`,
-      `      text: ${req.text}`,
+      `      text: ${formatMermaidRequirementText(req.text)}`,
       "    }",
     );
   }

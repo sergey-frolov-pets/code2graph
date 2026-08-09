@@ -7,7 +7,10 @@ import {
   uniqueDiagramId,
 } from "@/services/conversion/diagram-ir";
 import { detectDiagramDirection } from "@/services/conversion/classify-diagram-kind";
-import { parseMermaidSankeyCsvLine } from "@/services/conversion/emit/mermaid-emit-utils";
+import {
+  parseMermaidRequirementText,
+  parseMermaidSankeyCsvLine,
+} from "@/services/conversion/emit/mermaid-emit-utils";
 import { parseMermaidGitRefToken } from "@/utils/mermaid-gitgraph";
 
 function addEdge(
@@ -660,7 +663,9 @@ export function parseRequirementMermaid(source: string, format: DiagramFormat): 
     const body = match[2];
     const textMatch = body.match(/text:\s*(.+)/i);
     const idMatch = body.match(/id:\s*(\d+)/i);
-    const text = textMatch?.[1]?.trim() ?? id;
+    const text = textMatch?.[1]
+      ? parseMermaidRequirementText(textMatch[1])
+      : id;
     requirements.push({ id, numericId: idMatch ? Number.parseInt(idMatch[1], 10) : undefined, text });
     ir.nodes.push({
       id: uniqueDiagramId(id, usedIds),

@@ -1,5 +1,8 @@
 import type { AppLocale } from "@/constants/i18n";
-import { formatMermaidSankeyCsvField } from "@/services/conversion/emit/mermaid-emit-utils";
+import {
+  formatMermaidRequirementText,
+  formatMermaidSankeyCsvField,
+} from "@/services/conversion/emit/mermaid-emit-utils";
 import { formatMermaidGitRef } from "@/utils/mermaid-gitgraph";
 
 export const WIZARD_DIAGRAM_TYPES = [
@@ -1760,7 +1763,7 @@ function buildMermaidRequirement(state: WizardState, locale: AppLocale): string 
     lines.push(
       `    requirement ${reqId} {`,
       `      id: ${index}`,
-      `      text: ${text}`,
+      `      text: ${formatMermaidRequirementText(text)}`,
       "    }",
     );
   }
