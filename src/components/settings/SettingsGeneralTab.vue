@@ -242,6 +242,30 @@ const fontFamilyOptions = computed(() =>
       </a>
       <a
         class="btn settings-link-btn"
+        :href="APP_LINKS.mermaidIntro"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {{ t("settings.mermaidGuide") }}
+      </a>
+      <a
+        class="btn settings-link-btn"
+        :href="APP_LINKS.graphml"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {{ t("settings.graphmlGuide") }}
+      </a>
+      <a
+        class="btn settings-link-btn"
+        :href="APP_LINKS.yEd"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {{ t("settings.yedEditor") }}
+      </a>
+      <a
+        class="btn settings-link-btn"
         :href="APP_LINKS.llmApiKeysGuide"
         target="_blank"
         rel="noopener noreferrer"
