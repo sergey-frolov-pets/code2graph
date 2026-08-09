@@ -45,6 +45,7 @@ import { useSyntaxValidation } from "@/composables/useSyntaxValidation";
 import { getLibraryApiBaseUrl } from "@/config/library-api";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import { getDiagramFormatDefinition } from "@/constants/diagram-formats";
+import { PENDING_SHARE_STORAGE_KEY } from "@/constants/library-share";
 
 const isSaveToLibraryModalOpen = ref(false);
 const isConvertModalOpen = ref(false);
@@ -281,8 +282,6 @@ function onSyntaxAskFromValidation(): void {
   closeSyntaxModal();
   onAiSyntaxAskOpen();
 }
-
-const PENDING_SHARE_STORAGE_KEY = "plantuml-smetana-pending-share";
 
 async function handleShareLinkOnBoot(): Promise<void> {
   const token = new URLSearchParams(window.location.search).get("share");
