@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { useLocale } from "@/composables/useLocale";
 import { usePwaInstall } from "@/composables/usePwaInstall";
 import { STORAGE_KEY_PWA_BANNER_DISMISSED } from "@/constants/pwa-settings";
-import { readStorageBoolean, writeStorageItem } from "@/utils/safe-storage";
+import { readStorageBoolean, writeStorageItem } from "@/core/safe-storage";
 
 const { t } = useLocale();
 const {

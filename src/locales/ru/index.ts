@@ -6,9 +6,7 @@ import { llmMessages } from "./llm";
 import { settingsMessages } from "./settings";
 import { miscMessages } from "./misc";
 import { conversionMessages } from "./conversion";
-import type { LocaleMessages } from "../types";
-
-export const ruMessages: LocaleMessages = {
+export const ruMessages = {
   ...appMessages,
   ...editorMessages,
   ...snippetsMessages,
@@ -17,4 +15,4 @@ export const ruMessages: LocaleMessages = {
   ...settingsMessages,
   ...miscMessages,
   ...conversionMessages,
-};
+} as const;
