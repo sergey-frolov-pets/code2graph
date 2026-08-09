@@ -87,6 +87,11 @@ export function stateLabel(index: number, locale: AppLocale): string {
   return locale === "ru" ? `Состояние ${index}` : `State ${index}`;
 }
 
+export function plantUmlStateRef(index: number, locale: AppLocale): string {
+  const label = stateLabel(index, locale);
+  return `"${label.replace(/"/g, '\\"')}"`;
+}
+
 export function actorLabel(index: number, locale: AppLocale): string {
   return locale === "ru" ? `Актор ${index}` : `Actor ${index}`;
 }
@@ -332,18 +337,26 @@ export function appendPlantUmlStateStructure(
   locale: AppLocale,
 ): void {
   if (hasStructural(state, "choice")) {
-    lines.push("", stateLabel(1, locale) + " --> choice");
-    lines.push("choice --> " + stateLabel(2, locale));
+    lines.push(
+      "",
+      "state wizard_choice <<choice>>",
+      `${plantUmlStateRef(1, locale)} --> wizard_choice`,
+      `wizard_choice --> ${plantUmlStateRef(2, locale)}`,
+    );
   }
 
   if (hasStructural(state, "fork")) {
-    lines.push("", stateLabel(1, locale) + " --> fork");
-    lines.push("fork --> " + stateLabel(2, locale));
+    lines.push(
+      "",
+      "state wizard_fork <<fork>>",
+      `${plantUmlStateRef(1, locale)} --> wizard_fork`,
+      `wizard_fork --> ${plantUmlStateRef(2, locale)}`,
+    );
   }
 
   if (hasStructural(state, "note")) {
     const noteText = locale === "ru" ? "Примечание" : "Note";
-    lines.push("", `note right of ${stateLabel(1, locale)}: ${noteText}`);
+    lines.push("", `note right of ${plantUmlStateRef(1, locale)}: ${noteText}`);
   }
 }
 
