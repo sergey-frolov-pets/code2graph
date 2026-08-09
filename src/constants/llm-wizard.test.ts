@@ -446,6 +446,29 @@ describe("llm-wizard", () => {
     expect(source).toContain("** Branch 1");
     expect(source).toContain("@endwbs");
   });
+
+  it("builds plantuml timing scaffold with note top of at time marker", () => {
+    const source = buildManualScaffold(
+      createState({
+        diagramType: "timing",
+        typeParams: {
+          ...createDefaultTypeParams(),
+          participants: 2,
+          steps: 2,
+        },
+        structuralElements: {
+          ...createDefaultStructuralElements(),
+          note: true,
+        },
+      }),
+      "ru",
+    );
+
+    expect(source).toContain('concise "Сигнал 1" as S1');
+    expect(source).toContain("@0");
+    expect(source).toContain("note top of S1: Примечание");
+    expect(source).not.toContain("note over");
+  });
 });
 
 describe("wizard diagram type i18n", () => {
