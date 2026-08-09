@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { reactive, toRef } from "vue";
+import { provide, reactive, toRef } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import SettingsGeneralTab from "@/components/settings/SettingsGeneralTab.vue";
 import SettingsLlmTab from "@/components/settings/SettingsLlmTab.vue";
 import SettingsLibraryTab from "@/components/settings/SettingsLibraryTab.vue";
 import { useSettingsTabs } from "@/composables/settings/useSettingsTabs";
-import { useSettingsLlmForm } from "@/composables/settings/useSettingsLlmForm";
-import { useSettingsLibraryForm } from "@/composables/settings/useSettingsLibraryForm";
+import { useSettingsLibraryForm, SETTINGS_LIBRARY_FORM_KEY } from "@/composables/settings/useSettingsLibraryForm";
+import { useSettingsLlmForm, SETTINGS_LLM_FORM_KEY } from "@/composables/settings/useSettingsLlmForm";
 import { useLocale } from "@/composables/useLocale";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
@@ -42,6 +42,9 @@ const { t } = useLocale();
 const llmForm = useSettingsLlmForm(t);
 const library = reactive(useSettingsLibraryForm(t, llmForm));
 const llm = reactive(llmForm);
+
+provide(SETTINGS_LLM_FORM_KEY, llm);
+provide(SETTINGS_LIBRARY_FORM_KEY, library);
 const { activeTab, tabs, showLlmKeyBanner } = useSettingsTabs({
   open: toRef(props, "open"),
   refreshLlmProxyAvailability: llmForm.refreshLlmProxyAvailability,
@@ -91,9 +94,9 @@ const { activeTab, tabs, showLlmKeyBanner } = useSettingsTabs({
       @open-about="emit('openAbout')"
     />
 
-    <SettingsLlmTab v-show="activeTab === 'llm'" :llm="llm" />
+    <SettingsLlmTab v-show="activeTab === 'llm'" />
 
-    <SettingsLibraryTab v-show="activeTab === 'library'" :library="library" />
+    <SettingsLibraryTab v-show="activeTab === 'library'" />
 
     <template #footer>
       <button class="btn btn-primary" type="button" @click="emit('close')">

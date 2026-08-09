@@ -10,7 +10,6 @@ import { getDb, parseTags } from "../../db.js";
 import { isDiagramLanguage, MAX_PUML_FILE_BYTES } from "../../config.js";
 import {
   enrichDiagramForUser,
-  mapDiagram,
 } from "../../shared/diagram-mappers.js";
 import {
   detectLanguageFromFileName,
@@ -18,8 +17,14 @@ import {
   resolvePumlFileName,
 } from "../../shared/puml-files.js";
 import { snapshotDiagramSourceVersion } from "../../diagram-versions.js";
-import { DIAGRAM_FULL_SELECT } from "../../services/diagrams-list-query.js";
 import { applyDiagramPermissions } from "../../services/diagrams-access.js";
+import {
+  deleteDiagramById,
+  findDiagramById,
+  insertDiagram,
+  updateDiagramRecord,
+} from "../../services/diagrams-service.js";
+import { parseCreateDiagramBody, parseUpdateDiagramBody } from "../../schemas/diagram-body.js";
 import type { DiagramVisibility } from "../../types.js";
 import {
   isDiagramVisibility,
@@ -36,9 +41,7 @@ export function registerDiagramCrudRoutes(router: DiagramsRouter): void {
 
     const id = context.req.param("id");
     const database = getDb();
-    const row = database
-      .prepare(`${DIAGRAM_FULL_SELECT} WHERE id = ?`)
-      .get(id) as Parameters<typeof mapDiagram>[0] | undefined;
+    const row = findDiagramById(database, id);
 
     if (!row) {
       return context.json({ error: "Диаграмма не найдена" }, 404);
@@ -137,36 +140,29 @@ export function registerDiagramCrudRoutes(router: DiagramsRouter): void {
         }
       }
     } else {
-      const body = await context.req.json<{
-        title?: string;
-        description?: string;
-        tags?: string[];
-        language?: string;
-        sectionId?: string | null;
-        source?: string;
-        fileName?: string;
-        visibility?: string;
-        contentLocale?: string;
-      }>();
+      const rawBody = await context.req.json();
+      const parsed = parseCreateDiagramBody(rawBody);
+      if (!parsed.ok) {
+        return context.json({ error: parsed.error }, 400);
+      }
 
-      title = body.title?.trim() ?? "";
-      description = body.description?.trim() ?? "";
-      tags = Array.isArray(body.tags)
-        ? body.tags.map((tag) => tag.trim()).filter(Boolean)
-        : [];
+      const body = parsed.data;
+      title = body.title ?? "";
+      description = body.description ?? "";
+      tags = body.tags ?? [];
       sectionId = body.sectionId ?? null;
       source = body.source ?? "";
       fileName = resolvePumlFileName(body.fileName ?? "diagram.puml");
 
-      if (body.language && isDiagramLanguage(body.language)) {
+      if (body.language) {
         language = body.language;
       }
 
-      if (body.visibility && isDiagramVisibility(body.visibility)) {
+      if (body.visibility) {
         visibility = body.visibility;
       }
 
-      if (body.contentLocale && isContentLocale(body.contentLocale)) {
+      if (body.contentLocale !== undefined) {
         contentLocale = body.contentLocale;
       }
     }
@@ -209,35 +205,23 @@ export function registerDiagramCrudRoutes(router: DiagramsRouter): void {
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
 
-    database
-      .prepare(
-        `INSERT INTO diagrams (
-        id, section_id, title, description, tags, language, content_locale,
-        source, file_name, byte_size, author_id, owner_id, visibility,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      )
-      .run(
-        id,
-        sectionId,
-        title,
-        description,
-        JSON.stringify(tags),
-        language,
-        contentLocale,
-        source,
-        fileName,
-        byteSize,
-        user.id,
-        user.id,
-        visibility,
-        now,
-        now,
-      );
-
-    const row = database
-      .prepare(`${DIAGRAM_FULL_SELECT} WHERE id = ?`)
-      .get(id) as Parameters<typeof mapDiagram>[0];
+    const row = insertDiagram(database, {
+      id,
+      sectionId,
+      title,
+      description,
+      tags,
+      language,
+      contentLocale,
+      source,
+      fileName,
+      byteSize,
+      authorId: user.id,
+      ownerId: user.id,
+      visibility,
+      createdAt: now,
+      updatedAt: now,
+    });
 
     const diagram = enrichDiagramForUser(database, user, row);
     diagram.canWrite = true;
@@ -253,22 +237,15 @@ export function registerDiagramCrudRoutes(router: DiagramsRouter): void {
     }
 
     const id = context.req.param("id");
-    const body = await context.req.json<{
-      title?: string;
-      description?: string;
-      tags?: string[];
-      language?: string;
-      sectionId?: string | null;
-      source?: string;
-      fileName?: string;
-      visibility?: string;
-      contentLocale?: string;
-    }>();
+    const rawBody = await context.req.json();
+    const parsed = parseUpdateDiagramBody(rawBody);
+    if (!parsed.ok) {
+      return context.json({ error: parsed.error }, 400);
+    }
+    const body = parsed.data;
 
     const database = getDb();
-    const current = database
-      .prepare(`${DIAGRAM_FULL_SELECT} WHERE id = ?`)
-      .get(id) as Parameters<typeof mapDiagram>[0] | undefined;
+    const current = findDiagramById(database, id);
 
     if (!current) {
       return context.json({ error: "Диаграмма не найдена" }, 404);
@@ -314,12 +291,12 @@ export function registerDiagramCrudRoutes(router: DiagramsRouter): void {
         : current.language;
 
     let visibility = current.visibility as DiagramVisibility;
-    if (body.visibility && isDiagramVisibility(body.visibility)) {
+    if (body.visibility) {
       visibility = body.visibility;
     }
 
     const contentLocale =
-      body.contentLocale !== undefined && isContentLocale(body.contentLocale)
+      body.contentLocale !== undefined
         ? body.contentLocale
         : (current.content_locale ?? "");
 
@@ -335,36 +312,23 @@ export function registerDiagramCrudRoutes(router: DiagramsRouter): void {
 
     const now = new Date().toISOString();
 
-    database
-      .prepare(
-        `UPDATE diagrams
-       SET section_id = ?, title = ?, description = ?, tags = ?, language = ?,
-           content_locale = ?, source = ?, file_name = ?, byte_size = ?,
-           visibility = ?, updated_at = ?
-       WHERE id = ?`,
-      )
-      .run(
-        sectionId,
-        body.title?.trim() || current.title,
-        body.description !== undefined ? body.description.trim() : current.description,
-        JSON.stringify(
-          Array.isArray(body.tags)
-            ? body.tags.map((tag) => tag.trim()).filter(Boolean)
-            : parseTags(current.tags),
-        ),
-        language,
-        contentLocale,
-        source,
-        body.fileName ? resolvePumlFileName(body.fileName) : current.file_name,
-        byteSize,
-        visibility,
-        now,
-        id,
-      );
+    const row = updateDiagramRecord(database, id, {
+      sectionId,
+      title: body.title ?? current.title,
+      description: body.description ?? current.description,
+      tags: body.tags ?? parseTags(current.tags),
+      language,
+      contentLocale,
+      source,
+      fileName: body.fileName ? resolvePumlFileName(body.fileName) : current.file_name,
+      byteSize,
+      visibility,
+      updatedAt: now,
+    });
 
-    const row = database
-      .prepare(`${DIAGRAM_FULL_SELECT} WHERE id = ?`)
-      .get(id) as Parameters<typeof mapDiagram>[0];
+    if (!row) {
+      return context.json({ error: "Диаграмма не найдена" }, 404);
+    }
 
     const diagram = enrichDiagramForUser(database, user, row);
     diagram.canWrite = true;
@@ -380,9 +344,7 @@ export function registerDiagramCrudRoutes(router: DiagramsRouter): void {
 
     const id = context.req.param("id");
     const database = getDb();
-    const current = database
-      .prepare(`${DIAGRAM_FULL_SELECT} WHERE id = ?`)
-      .get(id) as Parameters<typeof mapDiagram>[0] | undefined;
+    const current = findDiagramById(database, id);
 
     if (!current) {
       return context.json({ error: "Диаграмма не найдена" }, 404);
@@ -400,7 +362,7 @@ export function registerDiagramCrudRoutes(router: DiagramsRouter): void {
       return context.json({ error: "Недостаточно прав" }, 403);
     }
 
-    database.prepare("DELETE FROM diagrams WHERE id = ?").run(id);
+    deleteDiagramById(database, id);
     return context.json({ ok: true });
   });
 }

@@ -14,21 +14,28 @@ export interface ValidationResult {
   errorLines?: number[];
 }
 
-export interface SyntaxValidationContext {
+export interface FormatContext {
   layout: LayoutEngine;
   diagramDarkMode: boolean;
   renderMode: RenderMode;
 }
 
+/** @deprecated Use FormatContext */
+export type SyntaxValidationContext = FormatContext;
+
 export interface FormatHandler {
   id: DiagramFormat;
   supportsSyntaxValidation: boolean;
+  supportsOnlineRender: boolean;
   validate(source: string): ValidationResult;
   validateSyntax(
     source: string,
-    context: SyntaxValidationContext,
+    context: FormatContext,
   ): Promise<SyntaxCheckResult>;
   highlightLine(line: string): string;
   extractCompletionPrefix(line: string, column: number): CompletionPrefixInfo;
   getCompletions(query: CompletionQuery): CompletionItem[];
+  isEngineReady(context: FormatContext): boolean;
+  bootEngine(context: FormatContext): Promise<void>;
+  render(source: string, context: FormatContext): Promise<string>;
 }

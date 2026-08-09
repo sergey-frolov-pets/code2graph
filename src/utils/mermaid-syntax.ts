@@ -1,7 +1,7 @@
 import { countUnbalancedBrackets, type SyntaxCheckResult, type SyntaxIssue } from "@/utils/plantuml-syntax";
 
 const MERMAID_DIAGRAM_DECLARATION_PATTERN =
-  /^(graph|flowchart|sequencediagram|classdiagram|statediagram(?:-v2)?|erdiagram|journey|gantt|pie|mindmap|timeline|gitgraph|sankey-beta|xychart-beta|block-beta)\b/i;
+  /^(graph|flowchart|sequencediagram|classdiagram|statediagram(?:-v2)?|erdiagram|journey|gantt|pie|mindmap|timeline|gitgraph|sankey-beta|xychart-beta|block-beta|c4context|requirementdiagram|quadrantchart|architecture(?:-beta)?|packet(?:-beta)?)\b/i;
 
 const FENCED_MERMAID_START_PATTERN = /^```mermaid\b/i;
 

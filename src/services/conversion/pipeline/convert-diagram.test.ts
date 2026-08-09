@@ -140,6 +140,78 @@ A --> B`,
     expect(result.targetSource).toContain(":Process;");
   });
 
+  it("converts mermaid pie to plantuml with loss", async () => {
+    const result = await convertDiagram({
+      source: `pie showData
+    title Distribution
+    "Slice A" : 40
+    "Slice B" : 30
+    "Slice C" : 30`,
+      sourceFormat: "mermaid",
+      targetFormat: "plantuml",
+      mode: "source",
+      locale: "en",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.targetSource).toContain("@startuml");
+    expect(result.targetSource).toContain("Slice A");
+  });
+
+  it("converts plantuml mindmap to mermaid mindmap", async () => {
+    const result = await convertDiagram({
+      source: `@startmindmap
+* Root topic
+** Branch 1
+*** Sub 1
+@endmindmap`,
+      sourceFormat: "plantuml",
+      targetFormat: "mermaid",
+      mode: "source",
+      locale: "en",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.targetSource).toContain("mindmap");
+    expect(result.targetSource).toContain("Root topic");
+    expect(result.targetSource).toContain("Branch 1");
+  });
+
+  it("converts plantuml er to mermaid er", async () => {
+    const result = await convertDiagram({
+      source: `@startuml
+entity Customer {
+  * id : int
+}
+entity Order
+Customer ||--o{ Order
+@enduml`,
+      sourceFormat: "plantuml",
+      targetFormat: "mermaid",
+      mode: "source",
+      locale: "en",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.targetSource).toContain("erDiagram");
+    expect(result.targetSource).toContain("Customer");
+    expect(result.targetSource).toContain("Order");
+  });
+
+  it("blocks same-format conversion for sankey", async () => {
+    const result = await convertDiagram({
+      source: `sankey-beta
+    Source,Target,10
+    Target,End,5`,
+      sourceFormat: "mermaid",
+      targetFormat: "mermaid",
+      mode: "source",
+      locale: "en",
+    });
+
+    expect(result.blocked).toBe(true);
+  });
+
   it("blocks invalid graphml input safely", async () => {
     const result = await convertDiagram({
       source: "<graphml><broken>",

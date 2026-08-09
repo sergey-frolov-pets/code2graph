@@ -18,6 +18,18 @@ type MermaidDiagramKind =
   | "er"
   | "gantt"
   | "pie"
+  | "journey"
+  | "gitgraph"
+  | "timeline"
+  | "sankey"
+  | "xychart"
+  | "block"
+  | "c4"
+  | "requirement"
+  | "quadrant"
+  | "architecture"
+  | "packet"
+  | "mindmap"
   | "unknown";
 
 const DIAGRAM_DECLARATIONS: CompletionItem[] = [
@@ -30,6 +42,17 @@ const DIAGRAM_DECLARATIONS: CompletionItem[] = [
   { label: "gantt", insertText: "gantt", kind: "mermaid", detailKey: "editor.completion.mermaidGantt" },
   { label: "pie", insertText: "pie showData", kind: "mermaid", detailKey: "editor.completion.mermaidPie" },
   { label: "mindmap", insertText: "mindmap", kind: "mermaid", detailKey: "editor.completion.mermaidMindmap" },
+  { label: "journey", insertText: "journey", kind: "mermaid", detailKey: "editor.completion.mermaidJourney" },
+  { label: "timeline", insertText: "timeline", kind: "mermaid", detailKey: "editor.completion.mermaidTimeline" },
+  { label: "gitGraph", insertText: "gitGraph", kind: "mermaid", detailKey: "editor.completion.mermaidGitgraph" },
+  { label: "sankey-beta", insertText: "sankey-beta", kind: "mermaid", detailKey: "editor.completion.mermaidSankey" },
+  { label: "xychart-beta", insertText: "xychart-beta", kind: "mermaid", detailKey: "editor.completion.mermaidXychart" },
+  { label: "block-beta", insertText: "block-beta", kind: "mermaid", detailKey: "editor.completion.mermaidBlock" },
+  { label: "C4Context", insertText: "C4Context", kind: "mermaid", detailKey: "editor.completion.mermaidC4" },
+  { label: "requirementDiagram", insertText: "requirementDiagram", kind: "mermaid", detailKey: "editor.completion.mermaidRequirement" },
+  { label: "quadrantChart", insertText: "quadrantChart", kind: "mermaid", detailKey: "editor.completion.mermaidQuadrant" },
+  { label: "architecture-beta", insertText: "architecture-beta", kind: "mermaid", detailKey: "editor.completion.mermaidArchitecture" },
+  { label: "packet-beta", insertText: "packet-beta", kind: "mermaid", detailKey: "editor.completion.mermaidPacket" },
 ];
 
 const COMMON_VOCABULARY: CompletionItem[] = [
@@ -109,6 +132,71 @@ const PIE_VOCABULARY: CompletionItem[] = [
   { label: "title", insertText: "title Distribution", kind: "mermaid" },
 ];
 
+const JOURNEY_VOCABULARY: CompletionItem[] = [
+  { label: "section", insertText: "section Browse", kind: "mermaid", detailKey: "editor.completion.mermaidSection" },
+  { label: "task", insertText: "Visit page: 5: User", kind: "mermaid", detailKey: "editor.completion.mermaidJourneyTask" },
+];
+
+const GITGRAPH_VOCABULARY: CompletionItem[] = [
+  { label: "commit", insertText: "commit", kind: "mermaid", detailKey: "editor.completion.mermaidCommit" },
+  { label: "branch", insertText: "branch develop", kind: "mermaid", detailKey: "editor.completion.mermaidBranch" },
+  { label: "checkout", insertText: "checkout develop", kind: "mermaid" },
+  { label: "merge", insertText: "merge develop", kind: "mermaid" },
+];
+
+const TIMELINE_VOCABULARY: CompletionItem[] = [
+  { label: "title", insertText: "title History", kind: "mermaid" },
+  { label: "section", insertText: "section Events", kind: "mermaid", detailKey: "editor.completion.mermaidSection" },
+];
+
+const SANKEY_VOCABULARY: CompletionItem[] = [
+  { label: "flow", insertText: "Source,Target,10", kind: "mermaid", detailKey: "editor.completion.mermaidSankeyFlow" },
+];
+
+const XYCHART_VOCABULARY: CompletionItem[] = [
+  { label: "x-axis", insertText: 'x-axis [Jan, Feb, Mar]', kind: "mermaid" },
+  { label: "y-axis", insertText: 'y-axis "Value" 0 --> 100', kind: "mermaid" },
+  { label: "bar", insertText: "bar [25, 50, 75]", kind: "mermaid", detailKey: "editor.completion.mermaidBar" },
+  { label: "line", insertText: "line [25, 50, 75]", kind: "mermaid", detailKey: "editor.completion.mermaidLine" },
+];
+
+const BLOCK_VOCABULARY: CompletionItem[] = [
+  { label: "columns", insertText: "columns 3", kind: "mermaid" },
+  { label: "block", insertText: "block:group", kind: "mermaid", detailKey: "editor.completion.mermaidBlockGroup" },
+];
+
+const C4_VOCABULARY: CompletionItem[] = [
+  { label: "Person", insertText: 'Person(user, "User", "")', kind: "mermaid" },
+  { label: "System", insertText: 'System(system, "System", "")', kind: "mermaid" },
+  { label: "System_Ext", insertText: 'System_Ext(ext, "External", "")', kind: "mermaid" },
+  { label: "Rel", insertText: 'Rel(user, system, "Uses")', kind: "mermaid", detailKey: "editor.completion.mermaidRelation" },
+];
+
+const REQUIREMENT_VOCABULARY: CompletionItem[] = [
+  { label: "requirement", insertText: "requirement req1 {\n  id: 1\n  text: Requirement\n}", kind: "mermaid" },
+  { label: "element", insertText: "element comp1 {\n  type: component\n}", kind: "mermaid" },
+  { label: "satisfies", insertText: "comp1 - satisfies -> req1", kind: "mermaid", detailKey: "editor.completion.mermaidRelation" },
+];
+
+const QUADRANT_VOCABULARY: CompletionItem[] = [
+  { label: "x-axis", insertText: "x-axis Low --> High", kind: "mermaid" },
+  { label: "y-axis", insertText: "y-axis Low --> High", kind: "mermaid" },
+  { label: "quadrant-1", insertText: "quadrant-1 High Impact", kind: "mermaid" },
+];
+
+const ARCHITECTURE_VOCABULARY: CompletionItem[] = [
+  { label: "group", insertText: "group api(cloud)[API]", kind: "mermaid" },
+  { label: "service", insertText: "service svc(server)[Service]", kind: "mermaid" },
+];
+
+const PACKET_VOCABULARY: CompletionItem[] = [
+  { label: "field", insertText: '0-15: "Field name"', kind: "mermaid", detailKey: "editor.completion.mermaidPacketField" },
+];
+
+const MINDMAP_VOCABULARY: CompletionItem[] = [
+  { label: "root", insertText: "root((Central topic))", kind: "mermaid" },
+];
+
 const CONTEXT_CLOSERS: Record<string, CompletionItem[]> = {
   alt: [
     { label: "else", insertText: "else ", kind: "context", detailKey: "editor.completion.else" },
@@ -163,7 +251,40 @@ function detectMermaidDiagramKind(lines: string[]): MermaidDiagramKind {
       return "pie";
     }
     if (trimmed.startsWith("mindmap")) {
-      return "unknown";
+      return "mindmap";
+    }
+    if (trimmed.startsWith("journey")) {
+      return "journey";
+    }
+    if (trimmed.startsWith("gitgraph")) {
+      return "gitgraph";
+    }
+    if (trimmed.startsWith("timeline")) {
+      return "timeline";
+    }
+    if (trimmed.startsWith("sankey-beta")) {
+      return "sankey";
+    }
+    if (trimmed.startsWith("xychart-beta")) {
+      return "xychart";
+    }
+    if (trimmed.startsWith("block-beta")) {
+      return "block";
+    }
+    if (trimmed.startsWith("c4context")) {
+      return "c4";
+    }
+    if (trimmed.startsWith("requirementdiagram")) {
+      return "requirement";
+    }
+    if (trimmed.startsWith("quadrantchart")) {
+      return "quadrant";
+    }
+    if (trimmed.startsWith("architecture-beta") || trimmed.startsWith("architecture ")) {
+      return "architecture";
+    }
+    if (trimmed.startsWith("packet-beta")) {
+      return "packet";
     }
     break;
   }
@@ -187,6 +308,30 @@ function getVocabularyForKind(kind: MermaidDiagramKind): CompletionItem[] {
       return [...COMMON_VOCABULARY, ...GANTT_VOCABULARY];
     case "pie":
       return [...COMMON_VOCABULARY, ...PIE_VOCABULARY];
+    case "journey":
+      return [...COMMON_VOCABULARY, ...JOURNEY_VOCABULARY];
+    case "gitgraph":
+      return [...COMMON_VOCABULARY, ...GITGRAPH_VOCABULARY];
+    case "timeline":
+      return [...COMMON_VOCABULARY, ...TIMELINE_VOCABULARY];
+    case "sankey":
+      return [...COMMON_VOCABULARY, ...SANKEY_VOCABULARY];
+    case "xychart":
+      return [...COMMON_VOCABULARY, ...XYCHART_VOCABULARY];
+    case "block":
+      return [...COMMON_VOCABULARY, ...BLOCK_VOCABULARY];
+    case "c4":
+      return [...COMMON_VOCABULARY, ...C4_VOCABULARY];
+    case "requirement":
+      return [...COMMON_VOCABULARY, ...REQUIREMENT_VOCABULARY];
+    case "quadrant":
+      return [...COMMON_VOCABULARY, ...QUADRANT_VOCABULARY];
+    case "architecture":
+      return [...COMMON_VOCABULARY, ...ARCHITECTURE_VOCABULARY];
+    case "packet":
+      return [...COMMON_VOCABULARY, ...PACKET_VOCABULARY];
+    case "mindmap":
+      return [...COMMON_VOCABULARY, ...MINDMAP_VOCABULARY];
     default:
       return [...COMMON_VOCABULARY, ...DIAGRAM_DECLARATIONS];
   }

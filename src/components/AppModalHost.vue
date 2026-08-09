@@ -1,30 +1,9 @@
 <script setup lang="ts">
-import { defineAsyncComponent } from "vue";
-import AboutModal from "@/components/AboutModal.vue";
-import DiagramVersionsModal from "@/components/DiagramVersionsModal.vue";
-import LlmPatchModal from "@/components/LlmPatchModal.vue";
-import LlmSyntaxAskModal from "@/components/LlmSyntaxAskModal.vue";
-import SyntaxResultModal from "@/components/SyntaxResultModal.vue";
+import {
+  APP_MODAL_COMPONENTS,
+  LLM_KEYS_GUIDE_MODAL,
+} from "@/app/app-modal-registry";
 import { useAppShellContext } from "@/composables/useAppShell";
-
-const ConvertDiagramModal = defineAsyncComponent(
-  () => import("@/components/ConvertDiagramModal.vue"),
-);
-const DiagramLibraryModal = defineAsyncComponent(
-  () => import("@/components/DiagramLibraryModal.vue"),
-);
-const SaveToLibraryModal = defineAsyncComponent(
-  () => import("@/components/SaveToLibraryModal.vue"),
-);
-const DiagramWizardModal = defineAsyncComponent(
-  () => import("@/components/DiagramWizardModal.vue"),
-);
-const LlmKeysGuideModal = defineAsyncComponent(
-  () => import("@/components/LlmKeysGuideModal.vue"),
-);
-const SettingsModal = defineAsyncComponent(
-  () => import("@/components/SettingsModal.vue"),
-);
 
 const {
   source,
@@ -75,10 +54,19 @@ const {
 } = modals;
 
 const { guideModalOpen, guideProviderId, closeLlmKeysGuide } = llmKeysGuide;
+
+function onPatchApply(payload: { plantuml: string; label: string }) {
+  applyAiPlantUml(payload.plantuml, payload.label);
+}
+
+function onWizardApply(payload: { source: string; label: string }) {
+  applyWizardDiagram(payload.source, payload.label);
+}
 </script>
 
 <template>
-  <SyntaxResultModal
+  <component
+    :is="APP_MODAL_COMPONENTS.syntax"
     v-if="isSyntaxModalOpen"
     :open="isSyntaxModalOpen"
     :result="syntaxResult"
@@ -88,7 +76,8 @@ const { guideModalOpen, guideProviderId, closeLlmKeysGuide } = llmKeysGuide;
     @ask-syntax="onSyntaxAskFromValidation"
   />
 
-  <DiagramVersionsModal
+  <component
+    :is="APP_MODAL_COMPONENTS.versions"
     v-if="isVersionsModalOpen"
     :open="isVersionsModalOpen"
     :document-key="loadedFileName"
@@ -97,7 +86,8 @@ const { guideModalOpen, guideProviderId, closeLlmKeysGuide } = llmKeysGuide;
     @restore="onVersionRestore"
   />
 
-  <DiagramLibraryModal
+  <component
+    :is="APP_MODAL_COMPONENTS.library"
     v-if="isLibraryModalOpen"
     :open="isLibraryModalOpen"
     :render-mode="renderMode"
@@ -107,7 +97,8 @@ const { guideModalOpen, guideProviderId, closeLlmKeysGuide } = llmKeysGuide;
     @open-diagram="onFileLoaded"
   />
 
-  <SaveToLibraryModal
+  <component
+    :is="APP_MODAL_COMPONENTS.saveToLibrary"
     v-if="isSaveToLibraryModalOpen"
     :open="isSaveToLibraryModalOpen"
     :source="source"
@@ -117,7 +108,8 @@ const { guideModalOpen, guideProviderId, closeLlmKeysGuide } = llmKeysGuide;
     @close="closeSaveToLibraryModal"
   />
 
-  <SettingsModal
+  <component
+    :is="APP_MODAL_COMPONENTS.settings"
     v-if="isSettingsModalOpen"
     :open="isSettingsModalOpen"
     v-model:layout="layout"
@@ -131,13 +123,15 @@ const { guideModalOpen, guideProviderId, closeLlmKeysGuide } = llmKeysGuide;
     @open-about="openAboutFromSettings"
   />
 
-  <AboutModal
+  <component
+    :is="APP_MODAL_COMPONENTS.about"
     v-if="isAboutModalOpen"
     :open="isAboutModalOpen"
     @close="isAboutModalOpen = false"
   />
 
-  <LlmPatchModal
+  <component
+    :is="APP_MODAL_COMPONENTS.patch"
     v-if="isPatchModalOpen"
     :open="isPatchModalOpen"
     :source="source"
@@ -148,10 +142,11 @@ const { guideModalOpen, guideProviderId, closeLlmKeysGuide } = llmKeysGuide;
     :diagram-dark-mode="diagramDarkMode"
     :open-settings="openSettingsModal"
     @close="isPatchModalOpen = false"
-    @apply="(payload) => applyAiPlantUml(payload.plantuml, payload.label)"
+    @apply="onPatchApply"
   />
 
-  <LlmSyntaxAskModal
+  <component
+    :is="APP_MODAL_COMPONENTS.syntaxAsk"
     v-if="isSyntaxAskModalOpen"
     :open="isSyntaxAskModalOpen"
     :source="source"
@@ -160,17 +155,19 @@ const { guideModalOpen, guideProviderId, closeLlmKeysGuide } = llmKeysGuide;
     @close="isSyntaxAskModalOpen = false"
   />
 
-  <DiagramWizardModal
+  <component
+    :is="APP_MODAL_COMPONENTS.wizard"
     v-if="isWizardModalOpen"
     :open="isWizardModalOpen"
     :layout="layout"
     :render-mode="renderMode"
     :diagram-dark-mode="diagramDarkMode"
     @close="isWizardModalOpen = false"
-    @apply="(payload) => applyWizardDiagram(payload.source, payload.label)"
+    @apply="onWizardApply"
   />
 
-  <ConvertDiagramModal
+  <component
+    :is="APP_MODAL_COMPONENTS.convert"
     v-if="isConvertModalOpen"
     :open="isConvertModalOpen"
     :source="source"
@@ -180,7 +177,8 @@ const { guideModalOpen, guideProviderId, closeLlmKeysGuide } = llmKeysGuide;
     @apply="onConvertApply"
   />
 
-  <LlmKeysGuideModal
+  <component
+    :is="LLM_KEYS_GUIDE_MODAL"
     v-if="guideModalOpen"
     :open="guideModalOpen"
     :highlight-provider-id="guideProviderId"

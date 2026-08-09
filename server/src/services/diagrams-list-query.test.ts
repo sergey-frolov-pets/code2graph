@@ -16,7 +16,7 @@ describe("diagrams-list-query", () => {
       {
         database: { prepare: () => ({ all: () => [] }) } as never,
         userId: "u1",
-        params: { q: "api" },
+        params: { q: "api", sortBy: "updated" },
       },
       false,
     );

@@ -42,7 +42,7 @@ import {
   readStorageBoolean,
   readStorageItem,
   writeStorageItem,
-} from "@/utils/safe-storage";
+} from "@/core/safe-storage";
 import { migrateDeprecatedActivityColorSyntax } from "@/utils/plantuml-source";
 
 function readInitialRenderMode(): RenderMode {

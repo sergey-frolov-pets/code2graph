@@ -8,7 +8,7 @@ import {
   readStorageItem,
   removeStorageItem,
   writeStorageItem,
-} from "@/utils/safe-storage";
+} from "@/core/safe-storage";
 
 function readInitialUsername(): string {
   return readStorageItem(STORAGE_KEY_LIBRARY_API_USERNAME) ?? "";

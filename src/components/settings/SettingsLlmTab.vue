@@ -1,12 +1,8 @@
 <script setup lang="ts">
-import type { UnwrapNestedRefs } from "vue";
 import { useLocale } from "@/composables/useLocale";
-import type { useSettingsLlmForm } from "@/composables/settings/useSettingsLlmForm";
+import { useSettingsLlmFormContext } from "@/composables/settings/useSettingsLlmForm";
 
-defineProps<{
-  llm: UnwrapNestedRefs<ReturnType<typeof useSettingsLlmForm>>;
-}>();
-
+const llm = useSettingsLlmFormContext();
 const { t } = useLocale();
 </script>
 

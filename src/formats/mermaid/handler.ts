@@ -1,3 +1,9 @@
+import { isOnlineRenderMode } from "@/constants/render-settings";
+import {
+  isMermaidReady,
+  renderMermaidToSvg,
+  waitForMermaidReady,
+} from "@/services/mermaid/mermaid-engine";
 import { validateMermaidSyntax } from "@/services/mermaid/syntax-validation";
 import { checkMermaidSyntax } from "@/utils/mermaid-syntax";
 import { renderMermaidHighlightedLine } from "@/utils/mermaid-highlight";
@@ -10,6 +16,7 @@ import type { FormatHandler } from "../types";
 export const mermaidFormatHandler: FormatHandler = {
   id: "mermaid",
   supportsSyntaxValidation: true,
+  supportsOnlineRender: true,
   validate(source: string) {
     const result = checkMermaidSyntax(source);
     return {
@@ -37,5 +44,26 @@ export const mermaidFormatHandler: FormatHandler = {
   },
   getCompletions(query) {
     return getMermaidCompletions(query);
+  },
+  isEngineReady(context) {
+    if (isOnlineRenderMode(context.renderMode)) {
+      return navigator.onLine;
+    }
+
+    return isMermaidReady();
+  },
+  async bootEngine(context) {
+    if (isOnlineRenderMode(context.renderMode)) {
+      return;
+    }
+
+    await waitForMermaidReady(context.diagramDarkMode);
+  },
+  async render(source, context) {
+    return renderMermaidToSvg(
+      source,
+      { dark: context.diagramDarkMode },
+      context.renderMode,
+    );
   },
 };

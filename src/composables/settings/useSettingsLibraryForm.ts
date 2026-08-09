@@ -1,4 +1,5 @@
-import { ref, watch } from "vue";
+import type { InjectionKey, UnwrapNestedRefs } from "vue";
+import { inject, ref, watch } from "vue";
 import type { TranslateFn } from "@/locales/types";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import { useLibraryCredentials } from "@/composables/useLibraryCredentials";
@@ -17,6 +18,21 @@ import {
 import type { useLlmProxyAvailability } from "@/composables/useLlmProxyAvailability";
 
 type LlmProxyAvailability = ReturnType<typeof useLlmProxyAvailability>;
+
+export const SETTINGS_LIBRARY_FORM_KEY: InjectionKey<
+  UnwrapNestedRefs<ReturnType<typeof useSettingsLibraryForm>>
+> = Symbol("settings-library-form");
+
+export function useSettingsLibraryFormContext(): UnwrapNestedRefs<
+  ReturnType<typeof useSettingsLibraryForm>
+> {
+  const library = inject(SETTINGS_LIBRARY_FORM_KEY);
+  if (!library) {
+    throw new Error("useSettingsLibraryFormContext must be used within SettingsModal");
+  }
+
+  return library;
+}
 
 export function useSettingsLibraryForm(
   t: TranslateFn,

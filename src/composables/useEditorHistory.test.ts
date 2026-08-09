@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { useEditorHistory } from "@/composables/useEditorHistory";
+import {
+  MIN_EDITOR_HISTORY_ENTRIES,
+  useEditorHistory,
+} from "@/composables/useEditorHistory";
 
 describe("useEditorHistory", () => {
+  it("keeps at least the minimum number of history entries", () => {
+    expect(MIN_EDITOR_HISTORY_ENTRIES).toBeGreaterThanOrEqual(10);
+  });
+
   it("restores source and format on undo after conversion", () => {
     const { pushHistoryEntry, undo, clearHistory } = useEditorHistory();
 

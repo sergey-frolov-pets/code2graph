@@ -1,50 +1,9 @@
 import type { DiagramFormat } from "@/constants/diagram-formats";
-import { validateGraphmlSyntax } from "@/services/graphml/syntax-validation";
-import { renderGraphmlHighlightedLine } from "@/utils/graphml-highlight";
-import type {
-  CompletionItem,
-  CompletionPrefixInfo,
-  CompletionQuery,
-} from "@/utils/completion-types";
+import { graphmlFormatHandler } from "./graphml/handler";
 import { mermaidFormatHandler } from "./mermaid/handler";
 import { plantUmlFormatHandler } from "./plantuml/handler";
-import type { FormatHandler, SyntaxValidationContext } from "./types";
+import type { FormatContext, FormatHandler } from "./types";
 import type { SyntaxCheckResult } from "@/utils/plantuml-syntax";
-
-const emptyCompletionPrefix = (column: number): CompletionPrefixInfo => ({
-  prefix: "",
-  replaceStart: column,
-  mode: "word",
-});
-
-const graphmlFormatHandler: FormatHandler = {
-  id: "graphml",
-  supportsSyntaxValidation: true,
-  validate(source: string) {
-    const result = validateGraphmlSyntax(source);
-    return {
-      valid: result.valid,
-      errors: result.issues
-        .map((issue) => issue.message)
-        .filter((message): message is string => Boolean(message)),
-      errorLines: result.issues
-        .map((issue) => issue.line)
-        .filter((line): line is number => line !== undefined),
-    };
-  },
-  async validateSyntax(source) {
-    return validateGraphmlSyntax(source);
-  },
-  highlightLine(line: string) {
-    return renderGraphmlHighlightedLine(line);
-  },
-  extractCompletionPrefix(_line, column) {
-    return emptyCompletionPrefix(column);
-  },
-  getCompletions(): CompletionItem[] {
-    return [];
-  },
-};
 
 const handlers: Record<DiagramFormat, FormatHandler> = {
   plantuml: plantUmlFormatHandler,
@@ -59,7 +18,7 @@ export function getFormatHandler(format: DiagramFormat): FormatHandler {
 export async function validateDiagramSyntax(
   format: DiagramFormat,
   source: string,
-  context: SyntaxValidationContext,
+  context: FormatContext,
 ): Promise<SyntaxCheckResult> {
   const handler = getFormatHandler(format);
   if (!handler.supportsSyntaxValidation) {
@@ -73,20 +32,47 @@ export function extractDiagramCompletionPrefix(
   format: DiagramFormat,
   line: string,
   column: number,
-): CompletionPrefixInfo {
+) {
   return getFormatHandler(format).extractCompletionPrefix(line, column);
 }
 
 export function getDiagramCompletions(
   format: DiagramFormat,
-  query: CompletionQuery,
-): CompletionItem[] {
+  query: Parameters<FormatHandler["getCompletions"]>[0],
+) {
   return getFormatHandler(format).getCompletions(query);
 }
 
-export { plantUmlFormatHandler, mermaidFormatHandler, graphmlFormatHandler };
+export async function renderDiagram(
+  format: DiagramFormat,
+  source: string,
+  context: FormatContext,
+): Promise<string> {
+  return getFormatHandler(format).render(source, context);
+}
+
+export async function bootFormatEngine(
+  format: DiagramFormat,
+  context: FormatContext,
+): Promise<void> {
+  await getFormatHandler(format).bootEngine(context);
+}
+
+export function isFormatEngineReady(
+  format: DiagramFormat,
+  context: FormatContext,
+): boolean {
+  return getFormatHandler(format).isEngineReady(context);
+}
+
+export {
+  plantUmlFormatHandler,
+  mermaidFormatHandler,
+  graphmlFormatHandler,
+};
 export type {
   FormatHandler,
+  FormatContext,
   SyntaxValidationContext,
   ValidationResult,
 } from "./types";

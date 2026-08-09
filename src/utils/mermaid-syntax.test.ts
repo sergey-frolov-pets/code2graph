@@ -24,6 +24,21 @@ describe("checkMermaidSyntax", () => {
     expect(result.issues).toEqual([]);
   });
 
+  it("accepts new diagram declaration types", () => {
+    const types = [
+      "C4Context\n    title Test",
+      "requirementDiagram\n    requirement req1 { id: 1 text: test }",
+      "quadrantChart\n    title Test",
+      "architecture-beta\n    service svc(server)[Svc]",
+      "packet-beta\n    title Test\n    0-7: field",
+    ];
+
+    for (const source of types) {
+      const result = checkMermaidSyntax(source);
+      expect(result.valid).toBe(true);
+    }
+  });
+
   it("reports unclosed fenced block", () => {
     const result = checkMermaidSyntax("```mermaid\nflowchart TD\nA --> B");
     expect(result.valid).toBe(false);

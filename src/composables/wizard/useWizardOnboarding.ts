@@ -6,7 +6,7 @@ import {
 import {
   readStorageBoolean,
   writeStorageItem,
-} from "@/utils/safe-storage";
+} from "@/core/safe-storage";
 
 export function useWizardOnboarding() {
   const showWizardBanner = ref(
