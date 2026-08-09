@@ -420,6 +420,23 @@ describe("llm-wizard", () => {
     expect(prompt).toContain("Project planning topics");
   });
 
+  it("includes type structure guide in mindmap AI wizard prompt", () => {
+    const prompt = buildWizardPrompt(
+      createState({
+        creationMode: "ai",
+        language: "plantuml",
+        diagramType: "mindmap",
+        contextText: "Подмосковье",
+      }),
+      "ru",
+    );
+
+    expect(prompt).toContain("Type structure guide:");
+    expect(prompt).toContain("Подмосковье");
+    expect(prompt).toContain("все города");
+    expect(prompt).toContain("все районы");
+  });
+
   it("includes exhaustive mindmap rules when description asks for all cities", () => {
     const prompt = buildWizardPrompt(
       createState({

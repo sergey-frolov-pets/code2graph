@@ -1,4 +1,6 @@
+import type { AppLocale } from "@/constants/i18n";
 import type { WizardState } from "@/constants/llm-wizard";
+import { getWizardTypePromptHint } from "@/constants/wizard-prompt-hints";
 import { llmChat } from "@/services/llm/llm-client";
 import {
   LLM_MAX_TOKENS_PRECISE,
@@ -27,7 +29,11 @@ export type WizardPlanningChatResult =
       message: string;
     };
 
-function buildWizardPlanningContext(state: WizardState): string {
+function buildWizardPlanningContext(
+  state: WizardState,
+  locale: AppLocale = "en",
+): string {
+  const typeHint = getWizardTypePromptHint(state.diagramType, locale);
   const typeLabel = state.diagramType.replace(/_/g, " ");
   return [
     `Planned diagram: ${state.language} ${typeLabel}.`,
@@ -38,6 +44,7 @@ function buildWizardPlanningContext(state: WizardState): string {
     state.typeSpecificText.trim()
       ? `Additional requirements: ${state.typeSpecificText.trim()}`
       : "",
+    typeHint.trim() ? `Type structure guide: ${typeHint.trim()}` : "",
   ]
     .filter(Boolean)
     .join("\n");
@@ -48,13 +55,14 @@ export async function sendWizardPlanningChat(
   wizardState: WizardState,
   priorMessages: LlmChatMessage[] = [],
   handlers?: LlmGateHandlers,
+  locale: AppLocale = "en",
 ): Promise<WizardPlanningChatResult> {
   const messages: LlmChatMessage[] = [
     {
       role: "system",
       content: [
         "You are a diagram planning assistant before AI generation.",
-        buildWizardPlanningContext(wizardState),
+        buildWizardPlanningContext(wizardState, locale),
         LLM_WIZARD_PLANNING_APPENDIX,
       ].join("\n\n"),
     },

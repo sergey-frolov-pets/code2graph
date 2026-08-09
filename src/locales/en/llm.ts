@@ -309,4 +309,65 @@ export const llmMessages: LocaleMessages = {
   "llm.wizard.detailsPlaceholder.wbs": "Root task, branches, sub-tasks…",
   "llm.wizard.detailsPlaceholder.nwdiag": "Servers, groups, addresses…",
   "llm.wizard.detailsPlaceholder.archimate": "Layers, elements, relations…",
+  "llm.wizard.promptHintLabel": "Type structure guide for this diagram:",
+  "llm.wizard.promptHint.sequence":
+    "Participants (e.g. User, Web App, API, Database). Messages in order: request → processing → response. Add alt/else for errors and returns (-->) where needed.",
+  "llm.wizard.promptHint.class":
+    "Classes with attributes and methods. Inheritance, interfaces, associations. Group by package/domain. No empty stub classes.",
+  "llm.wizard.promptHint.component":
+    "Components [Module], interfaces, dependency arrows. Show every major module and how they connect.",
+  "llm.wizard.promptHint.activity":
+    "Swimlanes per actor. Steps from start to end. if/else for branches, fork for parallel paths. Every process step from your description.",
+  "llm.wizard.promptHint.state":
+    "States with clear names. Transitions with triggers. Entry [*] and terminal states. Every state and transition from your description.",
+  "llm.wizard.promptHint.c4_context":
+    "Central System in focus. Person actors, System_Ext externals, Rel() between all elements. Every actor and system you name.",
+  "llm.wizard.promptHint.c4_container":
+    "Containers with technology labels inside the system boundary. Data flows between containers. Every container and link.",
+  "llm.wizard.promptHint.gantt":
+    "Sections to group work. Tasks with duration. Milestones on key dates. Every task and timeline item.",
+  "llm.wizard.promptHint.mindmap":
+    "Root — central topic (e.g. Moscow Oblast). Branches — level-1 categories (e.g. directions: north, north-east, east…). Under each direction — every city. Under each city — every district/borough. Do not shorten lists; when user asks for all, include every item.",
+  "llm.wizard.promptHint.er":
+    "Entities with attributes. Relationships with cardinalities (||--o{ etc.). Every entity and relationship.",
+  "llm.wizard.promptHint.graph":
+    "Named nodes. Directed edges with labels. Every node and edge from your description.",
+  "llm.wizard.promptHint.flowchart":
+    "Start and end nodes. Process steps, decision nodes (yes/no). Every branch from your description.",
+  "llm.wizard.promptHint.pie":
+    "Slices with numeric values and labels. showData. Every category and share.",
+  "llm.wizard.promptHint.journey":
+    "Sections per stage. Tasks with score and actor. Every step in the user journey.",
+  "llm.wizard.promptHint.gitgraph":
+    "Commits on main. branch, checkout, merge for feature flows. Full branch history you describe.",
+  "llm.wizard.promptHint.timeline":
+    "Title. Sections with dated events. Every event and date.",
+  "llm.wizard.promptHint.sankey":
+    "source,target,value lines for each flow. Every flow and weight.",
+  "llm.wizard.promptHint.xychart":
+    "title, x-axis categories, y-axis range, bar or line data series. Every series and data point.",
+  "llm.wizard.promptHint.block":
+    "columns layout, blocks with ids, directional links. Every block and connection.",
+  "llm.wizard.promptHint.requirement":
+    "requirement and element blocks, satisfies links. Every requirement and element.",
+  "llm.wizard.promptHint.quadrant":
+    "x-axis, y-axis, quadrant labels, item coordinates. Every item with position.",
+  "llm.wizard.promptHint.architecture":
+    "groups, services, side links (a:R -- L:b). Every service and link.",
+  "llm.wizard.promptHint.packet":
+    "title, bit-range fields (e.g. 0-15: Port). Every packet field.",
+  "llm.wizard.promptHint.usecase":
+    "actors, use cases inside system boundary, include/extend where needed. Every actor and use case.",
+  "llm.wizard.promptHint.deployment":
+    "nodes, artifacts, databases, deployment links. Every node and component.",
+  "llm.wizard.promptHint.object":
+    "object instances with fields, links between instances. Every object you name.",
+  "llm.wizard.promptHint.timing":
+    "signals/participants, states at @time markers. Every signal and interval.",
+  "llm.wizard.promptHint.wbs":
+    "Root — project. ** — phases/branches, *** — sub-tasks, **** — details. Full hierarchy without shortcuts.",
+  "llm.wizard.promptHint.nwdiag":
+    "network blocks, servers with addresses, connections. Every server and link.",
+  "llm.wizard.promptHint.archimate":
+    "ArchiMate layers, elements (!include archimate), relationships. Every element from your description.",
 };

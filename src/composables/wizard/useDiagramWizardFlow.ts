@@ -380,7 +380,10 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
       if (currentStepId.value === "prompt" || wizardSteps.value.includes("prompt")) {
         const promptStepIndex = wizardSteps.value.indexOf("prompt");
         if (promptStepIndex >= 0 && stepIndex.value <= promptStepIndex) {
-          wizardState.value.promptText = buildWizardPrompt(wizardState.value);
+          wizardState.value.promptText = buildWizardPrompt(
+            wizardState.value,
+            locale.value,
+          );
         }
       }
     },
@@ -502,7 +505,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     }
 
     try {
-      const basePrompt = buildWizardPrompt(wizardState.value);
+      const basePrompt = buildWizardPrompt(wizardState.value, locale.value);
       const planningMessages = toLlmChatMessages(
         planningConversation.messages.value,
       );
@@ -573,6 +576,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
         wizardState.value,
         priorMessages,
         { silent: true },
+        locale.value,
       );
 
       const assistantContent =
@@ -664,7 +668,10 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
 
   function goNext(): void {
     if (currentStepId.value === "context" && isAiMode.value) {
-      wizardState.value.promptText = buildWizardPrompt(wizardState.value);
+      wizardState.value.promptText = buildWizardPrompt(
+        wizardState.value,
+        locale.value,
+      );
       stepIndex.value += 1;
       void generateDiagram();
       return;
@@ -673,7 +680,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     if (currentStepId.value === "prompt") {
       wizardState.value.promptText =
         wizardState.value.promptText.trim() ||
-        buildWizardPrompt(wizardState.value);
+        buildWizardPrompt(wizardState.value, locale.value);
       stepIndex.value += 1;
       void generateDiagram();
       return;
