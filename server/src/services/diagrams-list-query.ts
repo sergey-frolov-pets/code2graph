@@ -1,7 +1,11 @@
 import type Database from "better-sqlite3";
 import { isDiagramLanguage } from "../config.js";
+import {
+  isFavoritesSectionQuery,
+  parseDiagramListQueryFromSearchParams,
+  type DiagramListQueryInput,
+} from "../schemas/diagram-list-query.js";
 import { collectSectionSubtree } from "../shared/section-tree.js";
-import { FAVORITES_SECTION_ID, isDiagramSortOption } from "../types.js";
 
 export const DIAGRAM_LIST_SELECT = `
   SELECT id, section_id, title, description, tags, language, content_locale,
@@ -24,15 +28,7 @@ export const DIAGRAM_FULL_SELECT = `
   FROM diagrams
 `;
 
-export interface DiagramListQueryParams {
-  q?: string;
-  sectionId?: string;
-  tag?: string;
-  language?: string;
-  minRating?: number | null;
-  minVotes?: number | null;
-  sortBy?: string;
-}
+export type DiagramListQueryParams = DiagramListQueryInput;
 
 export interface DiagramListQueryContext {
   database: Database.Database;
@@ -43,25 +39,11 @@ export interface DiagramListQueryContext {
 export function parseDiagramListQuery(
   searchParams: URLSearchParams,
 ): DiagramListQueryParams {
-  const sectionIdRaw = searchParams.get("sectionId")?.trim();
-  const favoritesOnly = sectionIdRaw === FAVORITES_SECTION_ID;
-  const sortByRaw = searchParams.get("sortBy")?.trim() ?? "updated";
-  const minRatingRaw = searchParams.get("minRating")?.trim();
-  const minVotesRaw = searchParams.get("minVotes")?.trim();
-
-  return {
-    q: searchParams.get("q")?.trim() ?? "",
-    sectionId: favoritesOnly ? undefined : sectionIdRaw,
-    tag: searchParams.get("tag")?.trim(),
-    language: searchParams.get("language")?.trim(),
-    minRating: minRatingRaw ? Number(minRatingRaw) : null,
-    minVotes: minVotesRaw ? Number(minVotesRaw) : null,
-    sortBy: isDiagramSortOption(sortByRaw) ? sortByRaw : "updated",
-  };
+  return parseDiagramListQueryFromSearchParams(searchParams);
 }
 
 export function isFavoritesList(sectionIdRaw?: string): boolean {
-  return sectionIdRaw === FAVORITES_SECTION_ID;
+  return isFavoritesSectionQuery(sectionIdRaw);
 }
 
 export function buildDiagramListQuery(
