@@ -19,6 +19,7 @@ import {
   hasStructural,
   laneLabel,
   participantLabel,
+  plantUmlStateDeclaration,
   plantUmlStateRef,
   stepLabel,
   subBranchLabel,
@@ -136,7 +137,11 @@ export function buildPlantUmlState(state: WizardState, locale: AppLocale): strin
   const title = locale === "ru" ? "Диаграмма состояний" : "State diagram";
   const lines = buildPlantUmlHeader(state, title, true);
 
-  lines.push("[*] --> " + plantUmlStateRef(1, locale));
+  for (let index = 1; index <= count; index += 1) {
+    lines.push(plantUmlStateDeclaration(index, locale));
+  }
+
+  lines.push("", "[*] --> " + plantUmlStateRef(1, locale));
 
   for (let index = 1; index < count; index += 1) {
     lines.push(
