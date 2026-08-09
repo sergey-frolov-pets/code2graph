@@ -4,6 +4,7 @@ dist-single/
 release/
 public/vendor/
 vendor/C4-PlantUML/
+vendor/Archimate-PlantUML/
 data/
 server/node_modules/
 server/dist/

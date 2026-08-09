@@ -4,7 +4,9 @@ import {
   flattenMermaidLabel,
   formatMermaidNodeLabel,
   formatMermaidRequirementText,
+  formatMermaidSankeyCsvField,
 } from "@/services/conversion/emit/mermaid-emit-utils";
+import { formatMermaidGitRef } from "@/utils/mermaid-gitgraph";
 import {
   emitPlantUmlComponentNode,
   escapePlantUmlQuoted,
@@ -80,13 +82,13 @@ export function emitMermaidGitgraph(ir: DiagramIR): string {
           lines.push(action.id ? `    commit id: "${escapeMermaidQuoted(action.id)}"` : "    commit");
           break;
         case "branch":
-          lines.push(`    branch ${action.branch}`);
+          lines.push(`    branch ${formatMermaidGitRef(action.branch ?? "")}`);
           break;
         case "checkout":
-          lines.push(`    checkout ${action.branch}`);
+          lines.push(`    checkout ${formatMermaidGitRef(action.branch ?? "")}`);
           break;
         case "merge":
-          lines.push(`    merge ${action.branch}`);
+          lines.push(`    merge ${formatMermaidGitRef(action.branch ?? "")}`);
           break;
       }
     }
@@ -127,7 +129,9 @@ export function emitMermaidSankey(ir: DiagramIR): string {
     value: Number(edge.label ?? 10),
   }));
   for (const flow of flows) {
-    lines.push(`    ${flow.source},${flow.target},${flow.value}`);
+    lines.push(
+      `    ${formatMermaidSankeyCsvField(flow.source)},${formatMermaidSankeyCsvField(flow.target)},${flow.value}`,
+    );
   }
   return lines.join("\n");
 }

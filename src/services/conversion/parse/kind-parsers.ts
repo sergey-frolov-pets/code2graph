@@ -7,7 +7,11 @@ import {
   uniqueDiagramId,
 } from "@/services/conversion/diagram-ir";
 import { detectDiagramDirection } from "@/services/conversion/classify-diagram-kind";
-import { parseMermaidRequirementText } from "@/services/conversion/emit/mermaid-emit-utils";
+import {
+  parseMermaidRequirementText,
+  parseMermaidSankeyCsvLine,
+} from "@/services/conversion/emit/mermaid-emit-utils";
+import { parseMermaidGitRefToken } from "@/utils/mermaid-gitgraph";
 
 function addEdge(
   ir: DiagramIR,
@@ -439,19 +443,19 @@ export function parseGitgraphMermaid(source: string, format: DiagramFormat): Dia
       ir.nodes.push({ id: `c${ir.nodes.length + 1}`, label, kind: "event", matchConfidence: 1 });
       continue;
     }
-    const branchMatch = trimmed.match(/^branch\s+(\S+)/i);
+    const branchMatch = trimmed.match(/^branch\s+(.+)$/i);
     if (branchMatch) {
-      gitActions.push({ type: "branch", branch: branchMatch[1] });
+      gitActions.push({ type: "branch", branch: parseMermaidGitRefToken(branchMatch[1]) });
       continue;
     }
-    const checkoutMatch = trimmed.match(/^checkout\s+(\S+)/i);
+    const checkoutMatch = trimmed.match(/^checkout\s+(.+)$/i);
     if (checkoutMatch) {
-      gitActions.push({ type: "checkout", branch: checkoutMatch[1] });
+      gitActions.push({ type: "checkout", branch: parseMermaidGitRefToken(checkoutMatch[1]) });
       continue;
     }
-    const mergeMatch = trimmed.match(/^merge\s+(\S+)/i);
+    const mergeMatch = trimmed.match(/^merge\s+(.+)$/i);
     if (mergeMatch) {
-      gitActions.push({ type: "merge", branch: mergeMatch[1] });
+      gitActions.push({ type: "merge", branch: parseMermaidGitRefToken(mergeMatch[1]) });
     }
   }
 
@@ -505,10 +509,13 @@ export function parseSankeyMermaid(source: string, format: DiagramFormat): Diagr
   const usedIds = new Set<string>();
   const sankeyFlows: Array<{ source: string; target: string; value: number }> = [];
 
-  for (const match of source.matchAll(/^\s*([^,\n]+),([^,\n]+),(\d+(?:\.\d+)?)/gm)) {
-    const sourceLabel = match[1].trim();
-    const targetLabel = match[2].trim();
-    const value = Number.parseFloat(match[3]);
+  for (const line of source.split(/\r?\n/)) {
+    const flow = parseMermaidSankeyCsvLine(line);
+    if (!flow) {
+      continue;
+    }
+
+    const { source: sourceLabel, target: targetLabel, value } = flow;
     sankeyFlows.push({ source: sourceLabel, target: targetLabel, value });
 
     const ensureNode = (label: string): string => {

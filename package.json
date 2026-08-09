@@ -8,7 +8,7 @@
     "dev": "vite",
     "dev:api": "npm --prefix server run dev",
     "dev:all": "npm run dev:api & npm run dev",
-    "prebuild": "node scripts/copy-vendor.mjs && node scripts/copy-c4-lib.mjs && node scripts/generate-pwa-icons.mjs",
+    "prebuild": "node scripts/copy-vendor.mjs && node scripts/copy-c4-lib.mjs && node scripts/copy-archimate-lib.mjs && node scripts/generate-pwa-icons.mjs",
     "build": "vue-tsc --noEmit && vite build && node scripts/build-single-html.mjs",
     "build:minimal": "vue-tsc --noEmit && vite build && node scripts/build-minimal.mjs",
     "build:single": "vue-tsc --noEmit && vite build && node scripts/build-single-only.mjs",
@@ -25,7 +25,7 @@
     "metrics:refactor": "node scripts/refactor-metrics.mjs",
     "check:i18n": "node scripts/check-i18n-keys.mjs",
     "version:bump": "node scripts/bump-version.mjs",
-    "postinstall": "node scripts/copy-vendor.mjs && node scripts/copy-c4-lib.mjs && node scripts/generate-pwa-icons.mjs"
+    "postinstall": "node scripts/copy-vendor.mjs && node scripts/copy-c4-lib.mjs && node scripts/copy-archimate-lib.mjs && node scripts/generate-pwa-icons.mjs"
   },
   "dependencies": {
     "@lucide/vue": "^1.28.0",
