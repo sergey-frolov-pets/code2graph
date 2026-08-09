@@ -87,7 +87,15 @@ export async function renderMermaidToSvg(
   renderMode: RenderMode = DEFAULT_RENDER_MODE,
 ): Promise<string> {
   if (isOnlineRenderMode(renderMode)) {
-    return renderMermaidOnlineToSvg(source, options);
+    try {
+      return await renderMermaidOnlineToSvg(source, options);
+    } catch (onlineError) {
+      try {
+        return await renderMermaidOfflineToSvg(source, options);
+      } catch {
+        throw onlineError;
+      }
+    }
   }
 
   return renderMermaidOfflineToSvg(source, options);

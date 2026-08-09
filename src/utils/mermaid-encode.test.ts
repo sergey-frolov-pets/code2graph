@@ -27,5 +27,6 @@ describe("encodeMermaidStateForInk", () => {
   it("uses dark theme in live state", () => {
     const state = buildMermaidLiveState("graph TD\nA-->B", { dark: true });
     expect(state.mermaid).toContain("dark");
+    expect(state.rough).toBe(false);
   });
 });

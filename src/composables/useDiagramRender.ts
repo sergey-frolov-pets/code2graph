@@ -19,6 +19,11 @@ import {
 import { buildDiagramIrForCache } from "@/services/conversion/pipeline/convert-diagram";
 import type { TranslateFn } from "@/locales/types";
 import { resolveLocalizedErrorMessage } from "@/utils/localized-app-error";
+import {
+  probeMermaidInkConnectivity,
+  resetMermaidInkConnectivity,
+} from "@/services/mermaid/mermaid-online";
+import { isFileProtocol } from "@/pwa/installPromptState";
 
 export interface UseDiagramRenderOptions {
   source: Ref<string>;
@@ -70,20 +75,39 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     };
   }
 
-  function updateOnlineEngineStatus(): void {
+  function resolveOnlineEngineNotReadyMessage(): string {
+    if (isFileProtocol()) {
+      return diagramFormat.value === "mermaid"
+        ? t("engine.mermaidOnlineFileProtocol")
+        : t("engine.onlineFileProtocol");
+    }
+
+    return t("app.renderModeOnlineOffline");
+  }
+
+  async function updateOnlineEngineStatus(): Promise<void> {
     if (!usesOnlineRender.value) {
+      return;
+    }
+
+    if (diagramFormat.value === "mermaid") {
+      const reachable = await probeMermaidInkConnectivity();
+      engineReady.value = true;
+      engineStatus.value = reachable
+        ? t("app.renderModeOnlineReady")
+        : resolveOnlineEngineNotReadyMessage();
       return;
     }
 
     engineReady.value = navigator.onLine;
     engineStatus.value = navigator.onLine
       ? t("app.renderModeOnlineReady")
-      : t("app.renderModeOnlineOffline");
+      : resolveOnlineEngineNotReadyMessage();
   }
 
   function resolveEngineNotReadyMessage(): string {
     if (usesOnlineRender.value) {
-      return t("app.renderModeOnlineOffline");
+      return resolveOnlineEngineNotReadyMessage();
     }
 
     const definition = formatDefinition.value;
@@ -145,7 +169,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
 
   function updateEngineStatusLabel(): void {
     if (usesOnlineRender.value) {
-      updateOnlineEngineStatus();
+      void updateOnlineEngineStatus();
       return;
     }
 
@@ -192,7 +216,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     const definition = getDiagramFormatDefinition(format);
 
     if (definition.supportsOnlineRender && isOnlineRenderMode(renderMode.value)) {
-      updateOnlineEngineStatus();
+      await updateOnlineEngineStatus();
       scheduleRender();
       return;
     }
@@ -207,12 +231,16 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     scheduleRender();
   }
 
-  function onNetworkStatusChange(): void {
+  async function onNetworkStatusChange(): Promise<void> {
     if (!usesOnlineRender.value) {
       return;
     }
 
-    updateOnlineEngineStatus();
+    if (diagramFormat.value === "mermaid") {
+      resetMermaidInkConnectivity();
+    }
+
+    await updateOnlineEngineStatus();
     if (engineReady.value) {
       scheduleRender();
     }

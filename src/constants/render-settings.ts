@@ -17,6 +17,10 @@ export const MERMAID_ONLINE_SERVER_URL = "https://mermaid.ink";
 
 export const MERMAID_ONLINE_SVG_PATH = "/svg";
 
+export const MERMAID_ONLINE_MAX_URL_LENGTH = 7500;
+
+export const MERMAID_ONLINE_PROBE_TIMEOUT_MS = 15000;
+
 export const MERMAID_LIVE_EDITOR_URL = "https://mermaid.live/edit";
 
 export function isRenderMode(value: string): value is RenderMode {
