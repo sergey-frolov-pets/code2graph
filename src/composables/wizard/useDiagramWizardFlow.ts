@@ -18,7 +18,6 @@ import {
   isWizardLanguage,
   resolveWizardStateWithDefaults,
   WIZARD_DIAGRAM_DIRECTIONS,
-  WIZARD_DIAGRAM_THEMES,
   WIZARD_TYPE_PARAM_FIELDS,
   type WizardParamField,
   type WizardState,
@@ -39,7 +38,6 @@ import { useLlmSettings } from "@/composables/useLlmSettings";
 
 const MANUAL_LIVE_PREVIEW_STEPS = new Set<WizardStepId>([
   "direction",
-  "style",
   "params",
 ]);
 
@@ -139,13 +137,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     WIZARD_DIAGRAM_DIRECTIONS.map((id) => ({
       id,
       label: t(`llm.wizard.direction.${id}`),
-    })),
-  );
-
-  const themeOptions = computed(() =>
-    WIZARD_DIAGRAM_THEMES.map((id) => ({
-      id,
-      label: t(`llm.wizard.theme.${id}`),
     })),
   );
 
@@ -388,10 +379,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     if (isWizardDiagramType(diagramType)) {
       wizardState.value.diagramType = diagramType;
     }
-  }
-
-  function onThemeSelect(theme: WizardState["theme"]): void {
-    wizardState.value.theme = theme;
   }
 
   function onDirectionSelect(direction: WizardState["direction"]): void {
@@ -644,7 +631,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     languageOptions,
     typeOptions,
     directionOptions,
-    themeOptions,
     paramFields,
     isAiMode,
     selectedModeDescription,
@@ -653,7 +639,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     onModeSelect,
     onLanguageSelect,
     onTypeSelect,
-    onThemeSelect,
     onDirectionSelect,
     onParamChange,
     onStructuralToggle,

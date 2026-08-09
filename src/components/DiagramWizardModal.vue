@@ -48,7 +48,6 @@ const {
   languageOptions,
   typeOptions,
   directionOptions,
-  themeOptions,
   paramFields,
   isAiMode,
   selectedModeDescription,
@@ -58,7 +57,6 @@ const {
   onModeSelect,
   onLanguageSelect,
   onTypeSelect,
-  onThemeSelect,
   onDirectionSelect,
   onParamChange,
   onStructuralToggle,
@@ -136,14 +134,12 @@ const {
           :language-options="languageOptions"
           :type-options="typeOptions"
           :direction-options="directionOptions"
-          :theme-options="themeOptions"
           :param-fields="paramFields"
           :structural-element-options="structuralElementOptions"
           @mode-select="onModeSelect($event)"
           @language-select="onLanguageSelect($event)"
           @type-select="onTypeSelect($event)"
           @direction-select="onDirectionSelect($event)"
-          @theme-select="onThemeSelect($event)"
           @param-change="onParamChange"
           @structural-toggle="onStructuralToggle"
         />

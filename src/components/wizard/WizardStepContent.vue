@@ -3,14 +3,12 @@ import WizardModeStep from "@/components/wizard/steps/WizardModeStep.vue";
 import WizardLanguageStep from "@/components/wizard/steps/WizardLanguageStep.vue";
 import WizardTypeStep from "@/components/wizard/steps/WizardTypeStep.vue";
 import WizardDirectionStep from "@/components/wizard/steps/WizardDirectionStep.vue";
-import WizardStyleStep from "@/components/wizard/steps/WizardStyleStep.vue";
 import WizardParamsStep from "@/components/wizard/steps/WizardParamsStep.vue";
 import WizardContextStep from "@/components/wizard/steps/WizardContextStep.vue";
 import WizardPromptStep from "@/components/wizard/steps/WizardPromptStep.vue";
 import WizardResultStep from "@/components/wizard/steps/WizardResultStep.vue";
 import type {
   WizardDiagramDirection,
-  WizardDiagramTheme,
   WizardParamField,
   WizardState,
   WizardStepId,
@@ -32,7 +30,6 @@ defineProps<{
   languageOptions: Array<{ id: string; label: string }>;
   typeOptions: Array<{ id: string; label: string; description: string }>;
   directionOptions: Array<{ id: WizardDiagramDirection; label: string }>;
-  themeOptions: Array<{ id: WizardDiagramTheme; label: string }>;
   paramFields: WizardParamField[];
   structuralElementOptions: Array<{ id: WizardStructuralElementId; label: string }>;
 }>();
@@ -42,7 +39,6 @@ const emit = defineEmits<{
   "language-select": [language: string];
   "type-select": [diagramType: string];
   "direction-select": [direction: WizardState["direction"]];
-  "theme-select": [theme: WizardState["theme"]];
   "param-change": [paramId: WizardParamField["id"], event: Event];
   "structural-toggle": [elementId: WizardStructuralElementId, event: Event];
 }>();
@@ -76,13 +72,6 @@ const emit = defineEmits<{
     :wizard-state="wizardState"
     :direction-options="directionOptions"
     @direction-select="emit('direction-select', $event)"
-  />
-
-  <WizardStyleStep
-    v-else-if="currentStepId === 'style'"
-    :wizard-state="wizardState"
-    :theme-options="themeOptions"
-    @theme-select="emit('theme-select', $event)"
   />
 
   <WizardParamsStep

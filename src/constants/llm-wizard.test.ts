@@ -116,7 +116,6 @@ describe("llm-wizard", () => {
     expect(aiSteps).toEqual(["mode", "language", "type", "context", "result"]);
     expect(aiSteps).not.toContain("prompt");
     expect(aiSteps).not.toContain("params");
-    expect(aiSteps).not.toContain("style");
   });
 
   it("defaults to manual creation mode", () => {

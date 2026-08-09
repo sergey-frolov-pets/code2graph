@@ -104,7 +104,6 @@ export const WIZARD_STEP_IDS = [
   "language",
   "type",
   "direction",
-  "style",
   "params",
   "context",
   "prompt",
@@ -441,7 +440,7 @@ export function getWizardSteps(state: WizardState): WizardStepId[] {
     steps.push("direction");
   }
 
-  steps.push("style", "params", "result");
+  steps.push("params", "result");
 
   return steps;
 }
@@ -475,7 +474,7 @@ export function resolveWizardStateWithDefaults(
     diagramType: visited.has("type")
       ? state.diagramType
       : DEFAULT_WIZARD_STATE.diagramType,
-    theme: visited.has("style") ? state.theme : DEFAULT_WIZARD_STATE.theme,
+    theme: DEFAULT_WIZARD_STATE.theme,
     direction: visited.has("direction")
       ? state.direction
       : DEFAULT_WIZARD_STATE.direction,
