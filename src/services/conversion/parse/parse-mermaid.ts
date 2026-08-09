@@ -216,7 +216,7 @@ export function parseClassMermaid(source: string, format: DiagramFormat): Diagra
   }
 
   const idByLabel = new Map(ir.nodes.map((node) => [node.label, node.id]));
-  const classRelationPattern = /(\w+)\s+([<|*o.\-]+)\s+(\w+)/g;
+  const classRelationPattern = /(\w+)\s+([<|*o.-]+)\s+(\w+)/g;
   let edgeIndex = 0;
   for (const match of source.matchAll(classRelationPattern)) {
     const from = idByLabel.get(match[1]);
@@ -368,7 +368,7 @@ export function parseErMermaid(source: string, format: DiagramFormat): DiagramIR
     }
     const lineStart = source.lastIndexOf("\n", match.index ?? 0) + 1;
     const line = source.slice(lineStart, (match.index ?? 0) + match[0].length);
-    if (/[|o{}.\-]+-+[|o{}.\-]+/.test(line)) {
+    if (/[|o{}.-]+-+[|o{}.-]+/.test(line)) {
       continue;
     }
     ensureEntity(label);
@@ -376,7 +376,7 @@ export function parseErMermaid(source: string, format: DiagramFormat): DiagramIR
 
   let edgeIndex = 0;
   for (const match of source.matchAll(
-    /(\w+)\s+[|o{}.\-]+-+[|o{}.\-]+\s+(\w+)/g,
+    /(\w+)\s+[|o{}.-]+-+[|o{}.-]+\s+(\w+)/g,
   )) {
     const from = ensureEntity(match[1]);
     const to = ensureEntity(match[2]);
