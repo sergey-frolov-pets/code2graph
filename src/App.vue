@@ -8,6 +8,7 @@ import DiagramPreview from "@/components/DiagramPreview.vue";
 import AppHeader from "@/components/layout/AppHeader.vue";
 import AppStatusBar from "@/components/layout/AppStatusBar.vue";
 import PreviewFab from "@/components/layout/PreviewFab.vue";
+import ResponsivePanelTabs from "@/components/layout/ResponsivePanelTabs.vue";
 import PwaInstallBanner from "@/components/layout/PwaInstallBanner.vue";
 import { useMediaQuery } from "@/composables/useMediaQuery";
 import { useResizableSplit } from "@/composables/useResizableSplit";
@@ -75,28 +76,7 @@ onMounted(shell.boot);
       @open-settings="modals.openSettingsModal"
     />
 
-    <div class="mobile-panel-tabs" role="tablist" :aria-label="t('app.mainNav')">
-      <button
-        type="button"
-        class="mobile-panel-tabs__btn"
-        :class="{ 'is-active': activeMobilePanel === 'editor' }"
-        role="tab"
-        :aria-selected="activeMobilePanel === 'editor'"
-        @click="activeMobilePanel = 'editor'"
-      >
-        {{ t("app.mobilePanelEditor") }}
-      </button>
-      <button
-        type="button"
-        class="mobile-panel-tabs__btn"
-        :class="{ 'is-active': activeMobilePanel === 'preview' }"
-        role="tab"
-        :aria-selected="activeMobilePanel === 'preview'"
-        @click="activeMobilePanel = 'preview'"
-      >
-        {{ t("app.mobilePanelPreview") }}
-      </button>
-    </div>
+    <ResponsivePanelTabs v-model="activeMobilePanel" />
 
     <main
       ref="mainRef"
