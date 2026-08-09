@@ -18,7 +18,7 @@ import {
   saveDiagramsToCache,
   saveSectionsToCache,
   setCacheMeta,
-} from "@/utils/diagram-store";
+} from "@/storage/diagram-store";
 
 export interface LibraryFetchFilters {
   q?: string;

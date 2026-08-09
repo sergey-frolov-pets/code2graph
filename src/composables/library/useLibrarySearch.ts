@@ -7,7 +7,7 @@ import { fetchDiagrams } from "@/services/library/api";
 import {
   saveDiagramsToCache,
   searchLocalLibrary,
-} from "@/utils/diagram-store";
+} from "@/storage/diagram-store";
 import type { LibraryCatalog } from "./useLibraryCatalog";
 
 export function useLibrarySearch(catalog: LibraryCatalog) {

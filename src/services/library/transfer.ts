@@ -22,7 +22,7 @@ import {
   loadAllDiagramDetailsFromCache,
   loadSectionsFromCache,
   saveDiagramDetailToCache,
-} from "@/utils/diagram-store";
+} from "@/storage/diagram-store";
 import type { LibraryCatalog } from "@/composables/library/useLibraryCatalog";
 import type { LibrarySync } from "@/composables/library/useLibrarySync";
 

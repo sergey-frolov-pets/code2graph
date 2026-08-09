@@ -13,7 +13,7 @@ import {
   parseSnippetsExportPayload,
   saveCustomSnippets,
   SNIPPETS_EXPORT_FILE_NAME,
-} from "@/utils/snippet-store";
+} from "@/storage/snippets";
 import { downloadTextFile } from "@/utils/export";
 
 export type SnippetsImportMode = "merge" | "replace";

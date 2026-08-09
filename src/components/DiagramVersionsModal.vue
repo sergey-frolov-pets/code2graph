@@ -10,7 +10,7 @@ import {
   createDiagramVersion,
   deleteDiagramVersion,
   listDiagramVersions,
-} from "@/utils/diagram-version-store";
+} from "@/storage/diagram-versions";
 
 const props = defineProps<{
   open: boolean;
