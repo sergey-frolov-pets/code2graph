@@ -4,6 +4,7 @@ export interface CodeFoldRegion {
   endLine: number;
   collapsed: boolean;
   label?: string;
+  auto?: boolean;
 }
 
 export function isBookmark(region: Pick<CodeFoldRegion, "startLine" | "endLine">): boolean {

@@ -1,4 +1,5 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch, type Ref } from "vue";
+import type { DiagramFormat } from "@/constants/diagram-formats";
 import {
   adjustFoldsAfterSourceChange,
   canAddBookmark,
@@ -12,19 +13,52 @@ import {
   mapDisplayOffsetToSourceOffset,
   mapSourceOffsetToDisplayOffset,
 } from "@/utils/code-folds";
+import {
+  applyAutoFoldCollapsedState,
+  detectAutoFoldRegions,
+  getAutoFoldStateKey,
+} from "@/utils/auto-fold-regions";
 import { EDITOR_LINE_HEIGHT } from "@/composables/editor/useEditorDisplayModel";
+
+function mergeManualAndAutoFolds(
+  manualFolds: CodeFoldRegion[],
+  autoFolds: CodeFoldRegion[],
+): CodeFoldRegion[] {
+  const merged = [...manualFolds];
+
+  for (const autoFold of autoFolds) {
+    if (canAddFold(merged, autoFold.startLine, autoFold.endLine)) {
+      merged.push(autoFold);
+    }
+  }
+
+  return sortRegions(merged);
+}
 
 export function useCodeFolds(options: {
   source: Ref<string>;
+  diagramFormat: Ref<DiagramFormat>;
   textareaRef: Ref<HTMLTextAreaElement | null>;
   syncScroll: () => void;
 }) {
-  const { source, textareaRef, syncScroll } = options;
+  const { source, diagramFormat, textareaRef, syncScroll } = options;
 
-  const folds = ref<CodeFoldRegion[]>([]);
+  const manualFolds = ref<CodeFoldRegion[]>([]);
+  const autoFoldCollapsedState = ref(new Map<string, boolean>());
   const foldDragStart = ref<number | null>(null);
   const foldDragEnd = ref<number | null>(null);
   const regionsModalOpen = ref(false);
+
+  const autoFolds = computed(() =>
+    applyAutoFoldCollapsedState(
+      detectAutoFoldRegions(source.value, diagramFormat.value),
+      autoFoldCollapsedState.value,
+    ),
+  );
+
+  const folds = computed(() =>
+    mergeManualAndAutoFolds(manualFolds.value, autoFolds.value),
+  );
 
   const sortedRegions = computed(() => sortRegions(folds.value));
 
@@ -33,7 +67,8 @@ export function useCodeFolds(options: {
   );
 
   function resetFolds(): void {
-    folds.value = [];
+    manualFolds.value = [];
+    autoFoldCollapsedState.value = new Map();
   }
 
   function isLineInFoldSelection(sourceLine: number): boolean {
@@ -75,9 +110,9 @@ export function useCodeFolds(options: {
     const start = Math.min(foldDragStart.value, foldDragEnd.value);
     const end = Math.max(foldDragStart.value, foldDragEnd.value);
 
-    if (end > start && canAddFold(folds.value, start, end)) {
-      folds.value = [
-        ...folds.value,
+    if (end > start && canAddFold(manualFolds.value, start, end)) {
+      manualFolds.value = [
+        ...manualFolds.value,
         {
           id: createFoldId(),
           startLine: start,
@@ -89,6 +124,12 @@ export function useCodeFolds(options: {
 
     foldDragStart.value = null;
     foldDragEnd.value = null;
+  }
+
+  function rememberAutoFoldState(fold: CodeFoldRegion, collapsed: boolean): void {
+    const nextState = new Map(autoFoldCollapsedState.value);
+    nextState.set(getAutoFoldStateKey(fold), collapsed);
+    autoFoldCollapsedState.value = nextState;
   }
 
   function toggleFold(fold: CodeFoldRegion): void {
@@ -106,9 +147,13 @@ export function useCodeFolds(options: {
         )
       : source.value.length;
 
-    folds.value = folds.value.map((entry) =>
-      entry.id === fold.id ? { ...entry, collapsed: !entry.collapsed } : entry,
-    );
+    if (fold.auto) {
+      rememberAutoFoldState(fold, !fold.collapsed);
+    } else {
+      manualFolds.value = manualFolds.value.map((entry) =>
+        entry.id === fold.id ? { ...entry, collapsed: !entry.collapsed } : entry,
+      );
+    }
 
     void nextTick(() => {
       if (!textareaRef.value) {
@@ -128,11 +173,15 @@ export function useCodeFolds(options: {
   function removeFold(foldId: string, event?: MouseEvent): void {
     event?.preventDefault();
     event?.stopPropagation();
-    folds.value = folds.value.filter((fold) => fold.id !== foldId);
+    manualFolds.value = manualFolds.value.filter((fold) => fold.id !== foldId);
   }
 
   function onFoldToggleClick(fold: CodeFoldRegion, event: MouseEvent): void {
     if (event.shiftKey) {
+      if (fold.auto) {
+        return;
+      }
+
       removeFold(fold.id, event);
       return;
     }
@@ -150,7 +199,7 @@ export function useCodeFolds(options: {
 
     if (
       !canAddRegion(
-        folds.value,
+        manualFolds.value,
         payload.fromLine,
         payload.toLine,
         lineCount.value,
@@ -160,8 +209,8 @@ export function useCodeFolds(options: {
     }
 
     if (payload.toLine === null) {
-      folds.value = [
-        ...folds.value,
+      manualFolds.value = [
+        ...manualFolds.value,
         {
           id: createFoldId(),
           startLine: payload.fromLine,
@@ -179,8 +228,8 @@ export function useCodeFolds(options: {
     );
 
     if (isBookmark({ startLine, endLine })) {
-      folds.value = [
-        ...folds.value,
+      manualFolds.value = [
+        ...manualFolds.value,
         {
           id: createFoldId(),
           startLine,
@@ -192,8 +241,8 @@ export function useCodeFolds(options: {
       return true;
     }
 
-    folds.value = [
-      ...folds.value,
+    manualFolds.value = [
+      ...manualFolds.value,
       {
         id: createFoldId(),
         startLine,
@@ -247,14 +296,14 @@ export function useCodeFolds(options: {
     const oldLines = (oldSource ?? "").split(/\r?\n/);
 
     if (newLines.length !== oldLines.length) {
-      folds.value = adjustFoldsAfterSourceChange(
-        folds.value,
+      manualFolds.value = adjustFoldsAfterSourceChange(
+        manualFolds.value,
         oldLines,
         newLines,
       );
     }
 
-    folds.value = folds.value.filter(
+    manualFolds.value = manualFolds.value.filter(
       (fold) =>
         fold.startLine >= 1 &&
         fold.endLine >= 1 &&
@@ -296,8 +345,8 @@ export function useCodeFolds(options: {
     canAddRegion: (
       fromLine: number,
       toLine: number | null,
-    ) => canAddRegion(folds.value, fromLine, toLine, lineCount.value),
+    ) => canAddRegion(manualFolds.value, fromLine, toLine, lineCount.value),
     canAddBookmark: (line: number) =>
-      canAddBookmark(folds.value, line, lineCount.value),
+      canAddBookmark(manualFolds.value, line, lineCount.value),
   };
 }
