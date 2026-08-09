@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, toRef, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
+import LlmChatPanel from "@/components/llm/LlmChatPanel.vue";
 import { askPlantUmlSyntaxQuestion } from "@/services/llm/llm-plantuml-generate";
+import { useLlmConversation } from "@/composables/useLlmConversation";
 import { useLocale } from "@/composables/useLocale";
 import { LlmClientError } from "@/services/llm/llm-types";
+import { toLlmChatMessages } from "@/utils/llm-edit-conversation";
 
 const props = defineProps<{
   open: boolean;
   source: string;
+  documentKey: string;
   initialQuestion?: string;
   openSettings?: () => void;
 }>();
@@ -18,29 +22,27 @@ const emit = defineEmits<{
 
 const { t } = useLocale();
 
-const userQuestion = ref("");
+const documentKeyRef = toRef(props, "documentKey");
+const conversation = useLlmConversation(documentKeyRef, "syntax-ask");
+
 const isAsking = ref(false);
 const errorMessage = ref("");
-const answer = ref("");
+const pendingInitialQuestion = ref("");
 
 const hasSource = computed(() => props.source.trim().length > 0);
 
-const canAsk = computed(
-  () => hasSource.value && userQuestion.value.trim().length > 0 && !isAsking.value,
-);
-
-function resetState(): void {
-  userQuestion.value = props.initialQuestion ?? "";
+function resetTransientState(): void {
   errorMessage.value = "";
-  answer.value = "";
   isAsking.value = false;
+  pendingInitialQuestion.value = props.initialQuestion?.trim() ?? "";
 }
 
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
-      resetState();
+      resetTransientState();
+      void conversation.load();
     }
   },
 );
@@ -48,28 +50,37 @@ watch(
 watch(
   () => props.initialQuestion,
   (question) => {
-    if (props.open && question) {
-      userQuestion.value = question;
+    if (props.open && question?.trim()) {
+      pendingInitialQuestion.value = question.trim();
     }
   },
 );
 
-async function onAsk(): Promise<void> {
-  if (!canAsk.value) {
+async function onChatSend(question: string): Promise<void> {
+  if (!hasSource.value || isAsking.value) {
     return;
   }
 
   isAsking.value = true;
   errorMessage.value = "";
-  answer.value = "";
 
   try {
+    const priorMessages = toLlmChatMessages(conversation.messages.value);
     const result = await askPlantUmlSyntaxQuestion(
       props.source,
-      userQuestion.value,
+      question,
       { openSettings: props.openSettings },
+      priorMessages,
     );
-    answer.value = result.answer;
+
+    const assistantContent =
+      result.clarificationQuestion?.trim() || result.answer?.trim() || "";
+
+    if (!assistantContent) {
+      throw new LlmClientError("validation_failed", t("llm.syntaxAsk.askError"));
+    }
+
+    await conversation.appendTurn(question, assistantContent);
   } catch (error) {
     errorMessage.value =
       error instanceof LlmClientError
@@ -81,6 +92,21 @@ async function onAsk(): Promise<void> {
     isAsking.value = false;
   }
 }
+
+watch(
+  [() => props.open, () => conversation.isLoading.value],
+  ([isOpen, loading]) => {
+    if (!isOpen || loading || isAsking.value) {
+      return;
+    }
+
+    const initial = pendingInitialQuestion.value.trim();
+    if (initial && conversation.messages.value.length === 0) {
+      pendingInitialQuestion.value = "";
+      void onChatSend(initial);
+    }
+  },
+);
 </script>
 
 <template>
@@ -92,34 +118,20 @@ async function onAsk(): Promise<void> {
   >
     <p class="llm-modal-lead">{{ t("llm.syntaxAsk.lead") }}</p>
 
-    <label class="llm-field">
-      <span class="llm-field__label">{{ t("llm.syntaxAsk.question") }}</span>
-      <textarea
-        v-model="userQuestion"
-        class="llm-textarea"
-        rows="4"
-        :placeholder="t('llm.syntaxAsk.questionPlaceholder')"
-      />
-    </label>
+    <LlmChatPanel
+      :messages="conversation.messages.value"
+      :is-busy="isAsking"
+      :placeholder="t('llm.syntaxAsk.questionPlaceholder')"
+      show-clear
+      @send="onChatSend"
+      @clear="conversation.clear()"
+    />
 
     <p v-if="errorMessage" class="llm-error">{{ errorMessage }}</p>
-
-    <div v-if="answer" class="llm-field">
-      <span class="llm-field__label">{{ t("llm.syntaxAsk.answer") }}</span>
-      <pre class="llm-code-block llm-code-block--answer">{{ answer }}</pre>
-    </div>
 
     <template #footer>
       <button class="btn" type="button" @click="emit('close')">
         {{ t("app.close") }}
-      </button>
-      <button
-        class="btn btn-primary"
-        type="button"
-        :disabled="!canAsk"
-        @click="onAsk"
-      >
-        {{ isAsking ? t("llm.syntaxAsk.asking") : t("llm.syntaxAsk.ask") }}
       </button>
     </template>
   </AppModal>
@@ -131,48 +143,6 @@ async function onAsk(): Promise<void> {
   color: var(--text-muted);
   font-size: 0.9rem;
   line-height: 1.4;
-}
-
-.llm-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-.llm-field__label {
-  font-size: 0.86rem;
-  color: var(--text-muted);
-}
-
-.llm-textarea {
-  width: 100%;
-  min-height: 88px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-muted);
-  color: var(--text);
-  resize: vertical;
-}
-
-.llm-code-block {
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--surface-muted);
-  border: 1px solid var(--border);
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  line-height: 1.45;
-  max-height: 360px;
-  overflow: auto;
-  white-space: pre-wrap;
-}
-
-.llm-code-block--answer {
-  font-family: inherit;
-  font-size: 0.9rem;
 }
 
 .llm-error {

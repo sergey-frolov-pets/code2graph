@@ -1,6 +1,13 @@
 import { computed, ref, watch, type Ref } from "vue";
 import type { TranslateFn } from "@/locales/types";
 import { generateValidWizardDiagram } from "@/services/llm/llm-plantuml-generate";
+import { generateValidPlantUmlFullEdit } from "@/services/llm/llm-plantuml-edit";
+import {
+  buildWizardPromptWithChatContext,
+  sendWizardPlanningChat,
+} from "@/services/llm/llm-wizard-chat";
+import { useLlmConversation } from "@/composables/useLlmConversation";
+import { toLlmChatMessages } from "@/utils/llm-edit-conversation";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
 import {
@@ -54,6 +61,7 @@ function isLivePreviewStep(
 
 export interface UseDiagramWizardFlowOptions {
   open: Ref<boolean>;
+  documentKey: Ref<string>;
   layout: Ref<LayoutEngine>;
   renderMode: Ref<RenderMode>;
   diagramDarkMode: Ref<boolean>;
@@ -66,6 +74,7 @@ export interface UseDiagramWizardFlowOptions {
 export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   const {
     open,
+    documentKey,
     layout,
     renderMode,
     diagramDarkMode,
@@ -93,6 +102,10 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   let previewGeneration = 0;
   const { llmConsent, llmProviderId } = useLlmSettings();
   const { hasLlmApiKey } = useLlmApiKeys();
+  const planningConversation = useLlmConversation(documentKey, "wizard-plan");
+  const refineConversation = useLlmConversation(documentKey, "wizard-refine");
+  const isPlanningChatBusy = ref(false);
+  const isRefineChatBusy = ref(false);
 
   const wizardSteps = computed(() => getWizardSteps(wizardState.value));
   const currentStepId = computed(() => wizardSteps.value[stepIndex.value] ?? "mode");
@@ -155,6 +168,13 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
       resultSource.value.length > 0,
   );
 
+  const showRefineChat = computed(
+    () =>
+      isAiMode.value &&
+      currentStepId.value === "result" &&
+      resultSource.value.trim().length > 0,
+  );
+
   const showLivePreviewPanel = computed(() => {
     const step = currentStepId.value as WizardStepId;
     if (isLivePreviewStep(step, isAiMode.value)) {
@@ -169,7 +189,10 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
 
   const canGoNext = computed(() => {
     if (currentStepId.value === "context") {
-      return wizardState.value.contextText.trim().length > 0;
+      return (
+        wizardState.value.contextText.trim().length > 0 ||
+        planningConversation.messages.value.length > 0
+      );
     }
 
     if (currentStepId.value === "prompt") {
@@ -195,6 +218,8 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     previewGeneration += 1;
     aiSetupVisible.value = false;
     aiSetupReason.value = null;
+    void planningConversation.clear();
+    void refineConversation.clear();
   }
 
   function clampStepIndex(): void {
@@ -478,8 +503,18 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     }
 
     try {
+      const basePrompt = buildWizardPrompt(wizardState.value);
+      const planningMessages = toLlmChatMessages(
+        planningConversation.messages.value,
+      );
+      const userPrompt = buildWizardPromptWithChatContext(
+        basePrompt,
+        planningMessages,
+      );
+      wizardState.value.promptText = userPrompt;
+
       const result = await generateValidWizardDiagram(
-        wizardState.value.promptText,
+        userPrompt,
         wizardState.value.language,
         wizardState.value.diagramType,
         layout.value,
@@ -488,6 +523,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
         { silent: true },
         "Generate a complete diagram from the wizard Description and Additional requirements.",
         wizardState.value.typeParams,
+        planningMessages,
       );
 
       resultSource.value = result.plantuml;
@@ -516,6 +552,129 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
             : t("llm.wizard.generateError");
     } finally {
       isGenerating.value = false;
+    }
+  }
+
+  async function sendPlanningChatMessage(content: string): Promise<void> {
+    if (!(await checkAiAccess())) {
+      return;
+    }
+
+    isPlanningChatBusy.value = true;
+    errorMessage.value = "";
+
+    try {
+      const priorMessages = toLlmChatMessages(planningConversation.messages.value);
+      const result = await sendWizardPlanningChat(
+        content,
+        wizardState.value,
+        priorMessages,
+        { silent: true },
+      );
+
+      const assistantContent =
+        result.kind === "clarification"
+          ? result.clarificationQuestion
+          : result.message;
+
+      await planningConversation.appendTurn(content, assistantContent);
+
+      if (!wizardState.value.contextText.trim()) {
+        wizardState.value.contextText = content;
+      }
+    } catch (error) {
+      errorMessage.value =
+        error instanceof LlmClientError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : t("llm.wizard.planningChatError");
+    } finally {
+      isPlanningChatBusy.value = false;
+    }
+  }
+
+  async function sendRefineChatMessage(content: string): Promise<void> {
+    if (!resultSource.value.trim() || !(await checkAiAccess())) {
+      return;
+    }
+
+    isRefineChatBusy.value = true;
+    errorMessage.value = "";
+
+    try {
+      const priorMessages = toLlmChatMessages(refineConversation.messages.value);
+      const refinePrompt = [
+        "Refine the generated diagram below according to the user message.",
+        "=== CURRENT SOURCE ===",
+        resultSource.value,
+        "",
+        "=== USER REQUEST ===",
+        content.trim(),
+      ].join("\n");
+
+      let assistantContent = "";
+      let updatedSource = resultSource.value;
+      let explanation: string | undefined;
+
+      if (wizardState.value.language === "plantuml") {
+        const result = await generateValidPlantUmlFullEdit(
+          resultSource.value,
+          content,
+          layout.value,
+          diagramDarkMode.value,
+          renderMode.value,
+          { silent: true },
+          priorMessages,
+        );
+
+        if (result.needsClarification && result.clarificationQuestion) {
+          assistantContent = result.clarificationQuestion;
+        } else {
+          updatedSource = result.plantuml;
+          explanation = result.explanation;
+          assistantContent =
+            result.explanation?.trim() ||
+            (result.hasChanges
+              ? t("llm.wizard.refineApplied")
+              : t("llm.wizard.refineNoChanges"));
+        }
+      } else {
+        const result = await generateValidWizardDiagram(
+          refinePrompt,
+          wizardState.value.language,
+          wizardState.value.diagramType,
+          layout.value,
+          diagramDarkMode.value,
+          renderMode.value,
+          { silent: true },
+          "Refine the wizard-generated diagram according to the user request.",
+          wizardState.value.typeParams,
+          priorMessages,
+        );
+
+        updatedSource = result.plantuml;
+        explanation = result.explanation;
+        assistantContent =
+          result.explanation?.trim() || t("llm.wizard.refineApplied");
+      }
+
+      await refineConversation.appendTurn(content, assistantContent);
+
+      if (updatedSource !== resultSource.value) {
+        resultSource.value = updatedSource;
+        resultExplanation.value = explanation ?? "";
+        await loadPreview(updatedSource);
+      }
+    } catch (error) {
+      errorMessage.value =
+        error instanceof LlmClientError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : t("llm.wizard.refineChatError");
+    } finally {
+      isRefineChatBusy.value = false;
     }
   }
 
@@ -649,5 +808,14 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     handleTransferToEditor,
     handleRegenerate,
     handleAiSetupRetry,
+    planningMessages: planningConversation.messages,
+    isPlanningChatBusy,
+    sendPlanningChatMessage,
+    clearPlanningChat: planningConversation.clear,
+    refineMessages: refineConversation.messages,
+    isRefineChatBusy,
+    sendRefineChatMessage,
+    clearRefineChat: refineConversation.clear,
+    showRefineChat,
   };
 }

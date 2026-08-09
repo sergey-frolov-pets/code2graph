@@ -31,7 +31,8 @@ export interface GenerateValidPlantUmlResult {
 }
 
 export interface AskPlantUmlSyntaxResult {
-  answer: string;
+  answer?: string;
+  clarificationQuestion?: string;
 }
 
 const GENERATION_CHAT_OPTIONS = {
@@ -102,6 +103,7 @@ export async function generateValidWizardDiagram(
   handlers?: LlmGateHandlers,
   systemContext = "Generate a complete diagram from structured wizard requirements.",
   typeParams?: Partial<Record<WizardParamId, number>>,
+  priorMessages?: LlmChatMessage[],
 ): Promise<GenerateValidPlantUmlResult> {
   if (language === "graphml") {
     throw new LlmClientError(
@@ -123,6 +125,7 @@ export async function generateValidWizardDiagram(
 
   const messages: LlmChatMessage[] = [
     { role: "system", content: systemPrompt },
+    ...(priorMessages ?? []),
     { role: "user", content: userPrompt },
   ];
 
@@ -160,7 +163,13 @@ export async function askPlantUmlSyntaxQuestion(
   source: string,
   question: string,
   handlers?: LlmGateHandlers,
+  priorMessages?: LlmChatMessage[],
 ): Promise<AskPlantUmlSyntaxResult> {
+  const isFollowUp = (priorMessages?.length ?? 0) > 0;
+  const userContent = isFollowUp
+    ? question.trim()
+    : buildSyntaxAskUserPrompt(source, question);
+
   const messages: LlmChatMessage[] = [
     {
       role: "system",
@@ -168,7 +177,8 @@ export async function askPlantUmlSyntaxQuestion(
         "You are a PlantUML syntax expert. Answer the user's question about how to express something in PlantUML, using their current diagram as context. Match the user's language in your answer.",
       ),
     },
-    { role: "user", content: buildSyntaxAskUserPrompt(source, question) },
+    ...(priorMessages ?? []),
+    { role: "user", content: userContent },
   ];
 
   const chatResult = await llmChat(
@@ -183,6 +193,12 @@ export async function askPlantUmlSyntaxQuestion(
       "validation_failed",
       parsed.issues.map((issue) => issue.message).join("\n"),
     );
+  }
+
+  if (parsed.kind === "clarification") {
+    return {
+      clarificationQuestion: parsed.clarificationQuestion,
+    };
   }
 
   return { answer: parsed.data.answer };

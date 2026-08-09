@@ -17,6 +17,7 @@ import type { RenderMode } from "@/constants/render-settings";
 
 const props = defineProps<{
   open: boolean;
+  documentKey: string;
   layout: LayoutEngine;
   renderMode: RenderMode;
   diagramDarkMode: boolean;
@@ -69,8 +70,18 @@ const {
   handleTransferToEditor,
   handleRegenerate,
   handleAiSetupRetry,
+  planningMessages,
+  isPlanningChatBusy,
+  sendPlanningChatMessage,
+  clearPlanningChat,
+  refineMessages,
+  isRefineChatBusy,
+  sendRefineChatMessage,
+  clearRefineChat,
+  showRefineChat,
 } = useDiagramWizardFlow({
   open: toRef(props, "open"),
+  documentKey: toRef(props, "documentKey"),
   layout: toRef(props, "layout"),
   renderMode: toRef(props, "renderMode"),
   diagramDarkMode: toRef(props, "diagramDarkMode"),
@@ -147,12 +158,21 @@ const {
           :direction-options="directionOptions"
           :param-fields="paramFields"
           :structural-element-options="structuralElementOptions"
+          :planning-messages="planningMessages"
+          :is-planning-chat-busy="isPlanningChatBusy"
+          :show-refine-chat="showRefineChat"
+          :refine-messages="refineMessages"
+          :is-refine-chat-busy="isRefineChatBusy"
           @mode-select="onModeSelect($event)"
           @language-select="onLanguageSelect($event)"
           @type-select="onTypeSelect($event)"
           @direction-select="onDirectionSelect($event)"
           @param-change="onParamChange"
           @structural-toggle="onStructuralToggle"
+          @planning-send="sendPlanningChatMessage"
+          @planning-clear="clearPlanningChat"
+          @refine-send="sendRefineChatMessage"
+          @refine-clear="clearRefineChat"
         />
       </div>
 

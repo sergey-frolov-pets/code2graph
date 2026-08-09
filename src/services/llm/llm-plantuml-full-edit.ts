@@ -2,10 +2,12 @@ import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
 import {
   buildFullDiagramEditPrompt,
+  buildFullDiagramFollowUpPrompt,
   buildFullDiagramNoChangeRetryPrompt,
   buildFullDiagramRevertRetryPrompt,
 } from "@/constants/llm-wizard";
 import { llmChat } from "@/services/llm/llm-client";
+import { parseLlmClarificationQuestion } from "@/schemas/llm-clarification";
 import {
   buildLlmSystemPrompt,
   LLM_MAX_TOKENS_PRECISE,
@@ -41,7 +43,10 @@ export async function generateValidPlantUmlFullEdit(
     ...(priorMessages ?? []),
     {
       role: "user",
-      content: buildFullDiagramEditPrompt(fullSource, userPrompt),
+      content:
+        (priorMessages?.length ?? 0) > 0
+          ? buildFullDiagramFollowUpPrompt(userPrompt)
+          : buildFullDiagramEditPrompt(fullSource, userPrompt),
     },
   ];
 
@@ -58,6 +63,18 @@ export async function generateValidPlantUmlFullEdit(
       },
       handlers,
     );
+
+    const clarification = parseLlmClarificationQuestion(chatResult.content);
+    if (clarification.ok) {
+      return {
+        plantuml: fullSource,
+        explanation: clarification.data.explanation,
+        hasChanges: false,
+        needsClarification: true,
+        clarificationQuestion: clarification.data.clarificationQuestion,
+      };
+    }
+
     const validation = await validateLlmResponse(
       chatResult.content,
       layout,

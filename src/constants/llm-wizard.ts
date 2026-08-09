@@ -2162,6 +2162,16 @@ export function buildPatchPrompt(
   ].join("\n");
 }
 
+export function buildPatchFollowUpPrompt(userPrompt: string): string {
+  return [
+    "Follow-up message in the edit chat. Apply it to the diagram edit.",
+    "Return JSON with field replacement containing the NEW text for the selected fragment.",
+    "",
+    "User follow-up:",
+    userPrompt.trim(),
+  ].join("\n");
+}
+
 export function buildFullDiagramEditPrompt(
   fullSource: string,
   userPrompt: string,
@@ -2187,6 +2197,17 @@ export function buildFullDiagramEditPrompt(
   );
 
   return lines.join("\n");
+}
+
+export function buildFullDiagramFollowUpPrompt(userPrompt: string): string {
+  return [
+    "Follow-up message in the edit chat. Revise the FULL diagram accordingly.",
+    "Return JSON with field plantuml containing the complete updated source.",
+    "The plantuml field MUST differ from the current source when changes are requested.",
+    "",
+    "User follow-up:",
+    userPrompt.trim(),
+  ].join("\n");
 }
 
 export function buildFullDiagramNoChangeRetryPrompt(
