@@ -8,6 +8,7 @@ export interface LlmChatMessage {
 export interface LlmChatOptions {
   jsonMode?: boolean;
   temperature?: number;
+  maxTokens?: number;
 }
 
 export interface LlmChatResult {

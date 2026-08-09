@@ -1,4 +1,5 @@
 import type { AppLocale } from "@/constants/i18n";
+import { getWizardDiagramFormatRules } from "@/services/llm/diagram-format-rules";
 import {
   formatMermaidRequirementText,
   formatMermaidSankeyCsvField,
@@ -506,115 +507,7 @@ export function resolveWizardStateWithDefaults(
   return resolved;
 }
 
-export function getWizardDiagramFormatRules(
-  language: WizardLanguage,
-  diagramType: WizardDiagramType,
-): string {
-  if (language === "mermaid") {
-    switch (diagramType) {
-      case "mindmap":
-        return [
-          "Format: Mermaid mindmap.",
-          "Start with the `mindmap` keyword.",
-          "Use root((Central topic)) for the root node and indent child branches.",
-          "Do not use flowchart or graph syntax.",
-        ].join(" ");
-      case "gantt":
-        return "Format: Mermaid gantt with title, dateFormat, section blocks, and task definitions.";
-      case "sequence":
-        return "Format: Mermaid sequenceDiagram with participants and messages.";
-      case "class":
-        return "Format: Mermaid classDiagram with classes and relationships.";
-      case "state":
-        return "Format: Mermaid stateDiagram-v2 with states and transitions.";
-      case "er":
-        return "Format: Mermaid erDiagram with entities and relationships.";
-      case "flowchart":
-        return "Format: Mermaid flowchart with nodes and directed edges.";
-      case "pie":
-        return "Format: Mermaid pie chart with showData, title, and slice labels with values.";
-      case "journey":
-        return "Format: Mermaid journey with title, section blocks, and task lines (action: score: actor).";
-      case "gitgraph":
-        return "Format: Mermaid gitGraph with commit, branch, checkout, and merge statements.";
-      case "timeline":
-        return "Format: Mermaid timeline with title and dated events.";
-      case "sankey":
-        return "Format: Mermaid sankey-beta with ASCII source,target,value CSV lines (quote only when labels contain commas).";
-      case "xychart":
-        return "Format: Mermaid xychart-beta with title, x-axis, y-axis, and bar or line data.";
-      case "block":
-        return "Format: Mermaid block-beta with columns and block layout.";
-      case "c4_context":
-        return "Format: Mermaid C4Context with Person, System, System_Ext, and Rel elements.";
-      case "requirement":
-        return "Format: Mermaid requirementDiagram with requirement and element blocks and satisfies links.";
-      case "quadrant":
-        return "Format: Mermaid quadrantChart with x-axis, y-axis, quadrant labels, and item coordinates.";
-      case "architecture":
-        return "Format: Mermaid architecture-beta with ASCII group/service ids, bracket labels, and side links (e.g. a:R -- L:b).";
-      case "packet":
-        return "Format: Mermaid packet-beta with title and bit-range field definitions.";
-      case "activity":
-      case "component":
-        return "Format: Mermaid flowchart with nodes and directed edges.";
-      default:
-        return "Format: valid Mermaid diagram for the requested type.";
-    }
-  }
-
-  switch (diagramType) {
-    case "mindmap":
-      return [
-        "Format: PlantUML mindmap.",
-        "Use @startmindmap and @endmindmap — do NOT use @startuml/@enduml.",
-        "Root topic with *, branches with **, sub-branches with ***.",
-        "Optional layout: top to bottom direction or left to right direction.",
-      ].join(" ");
-    case "gantt":
-      return [
-        "Format: PlantUML Gantt chart.",
-        "Use @startgantt and @endgantt — do NOT use @startuml/@enduml.",
-        "Define tasks with [Task name] lasts N days.",
-      ].join(" ");
-    case "wbs":
-      return [
-        "Format: PlantUML WBS diagram.",
-        "Use @startwbs and @endwbs — do NOT use @startuml/@enduml.",
-        "Hierarchy with *, **, *** for levels.",
-      ].join(" ");
-    case "nwdiag":
-      return [
-        "Format: PlantUML nwdiag network diagram.",
-        "Use @startnwdiag and @endnwdiag — do NOT use @startuml/@enduml.",
-        "Define network blocks with addresses and connections.",
-      ].join(" ");
-    case "er":
-      return "Format: PlantUML ER diagram with @startuml/@enduml, entity blocks, and relationship notation.";
-    case "usecase":
-      return "Format: PlantUML use case diagram with actors, use cases in rectangles, and associations.";
-    case "deployment":
-      return "Format: PlantUML deployment diagram with nodes, artifacts, and databases.";
-    case "object":
-      return "Format: PlantUML object diagram with object instances and links.";
-    case "timing":
-      return "Format: PlantUML timing diagram with concise/robust signals and @time markers.";
-    case "archimate":
-      return "Format: PlantUML ArchiMate diagram with !include <archimate/Archimate> and ArchiMate element macros.";
-    case "c4_context":
-      return [
-        "Format: PlantUML C4 Context diagram with @startuml/@enduml.",
-        "Use !include ./plantuml-lib/C4/C4_Context.puml and C4 Person/System/System_Ext elements.",
-      ].join(" ");
-    case "c4_container":
-      return [
-        "Format: PlantUML C4 Container diagram with @startuml/@enduml.",
-        "Use !include ./plantuml-lib/C4/C4_Container.puml and C4 Container elements.",
-      ].join(" ");
-    default:
-      return "Format: PlantUML diagram with @startuml and @enduml.";
-  }
-}
+export { getWizardDiagramFormatRules };
 
 export function buildWizardPrompt(state: WizardState): string {
   const typeLabel = state.diagramType.replace(/_/g, " ");
@@ -629,7 +522,11 @@ export function buildWizardPrompt(state: WizardState): string {
   const lines = [
     `Create a new ${formatLabel} ${typeLabel} diagram.`,
     `Output language/format: ${state.language}.`,
-    getWizardDiagramFormatRules(state.language, state.diagramType),
+    getWizardDiagramFormatRules(
+      state.language,
+      state.diagramType,
+      state.typeParams,
+    ),
     `Diagram theme preference: ${state.theme}.`,
   ];
 
@@ -676,9 +573,11 @@ export function buildWizardPrompt(state: WizardState): string {
 
   lines.push(
     "",
+    "Output requirement:",
     state.language === "mermaid"
-      ? "Return the complete Mermaid source in JSON field plantuml (same field name as PlantUML responses)."
-      : "Return the complete PlantUML source in JSON field plantuml.",
+      ? "Return the COMPLETE Mermaid source in JSON field plantuml (same field name as PlantUML responses). Include every element from Description and Additional requirements."
+      : "Return the COMPLETE PlantUML source in JSON field plantuml. Include every element from Description and Additional requirements.",
+    "Optional explanation field: summarize how you organized main themes (1–3 sentences).",
   );
 
   return lines.join("\n");
@@ -2246,7 +2145,8 @@ export function buildPatchPrompt(
   return [
     "Edit ONLY the selected PlantUML fragment according to the user request.",
     "Return JSON with field replacement containing the NEW text for the selected region (not the full file).",
-    "You MUST apply the user request to the selection. Do not return text identical to the selected fragment.",
+    "You MUST apply the user request fully to the selection — substantive changes, not token-sized edits.",
+    "Do not return text identical to the selected fragment.",
     "Keep syntax valid within the fragment; the app will merge replacement into the full source.",
     "",
     `Selection range: lines ${startLine}-${endLine}`,
@@ -2269,8 +2169,8 @@ export function buildFullDiagramEditPrompt(
   const lines = [
     "Edit the ENTIRE PlantUML diagram according to the user request.",
     "Return JSON with field plantuml containing the FULL updated source.",
-    "You MUST apply the user request. Do not return text identical to the current source.",
-    "Preserve parts of the diagram that the user did not ask to change unless the request implies a global rewrite.",
+    "You MUST apply the user request completely. Do not return text identical to the current source.",
+    "Include all elements the user asked to add or change; preserve unrelated parts unless the request implies a global rewrite.",
   ];
 
   if (isActivitySwimlaneDiagram(fullSource)) {

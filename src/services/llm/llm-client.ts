@@ -3,6 +3,8 @@ import type { LlmGateSuccess } from "@/composables/useLlmGate";
 import {
   buildLlmSystemPrompt,
   LLM_TEST_USER_PROMPT,
+  LLM_MAX_TOKENS_PRECISE,
+  LLM_TEMPERATURE_PRECISE,
 } from "@/services/llm/llm-prompts";
 import { proxyLlmChat } from "@/services/llm/proxy-client";
 import {
@@ -32,7 +34,14 @@ async function dispatchByokChat(
   const jsonMode = options.jsonMode ?? true;
 
   if (providerId === "google-gemini") {
-    return callGeminiChat(apiKey, model, messages, jsonMode);
+    return callGeminiChat(
+      apiKey,
+      model,
+      messages,
+      jsonMode,
+      options.temperature,
+      options.maxTokens,
+    );
   }
 
   if (!provider.apiEndpoint) {
@@ -48,6 +57,8 @@ async function dispatchByokChat(
     model,
     messages,
     jsonMode,
+    temperature: options.temperature,
+    maxTokens: options.maxTokens,
     extraHeaders: provider.apiExtraHeaders,
   });
 }
@@ -110,7 +121,7 @@ export async function testLlmConnection(
         },
         { role: "user", content: LLM_TEST_USER_PROMPT },
       ],
-      { jsonMode: true },
+      { jsonMode: true, temperature: LLM_TEMPERATURE_PRECISE, maxTokens: LLM_MAX_TOKENS_PRECISE },
       handlers,
     );
 

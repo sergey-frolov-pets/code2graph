@@ -486,7 +486,8 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
         diagramDarkMode.value,
         renderMode.value,
         { silent: true },
-        "You create new diagrams from structured wizard requirements.",
+        "Generate a complete diagram from the wizard Description and Additional requirements.",
+        wizardState.value.typeParams,
       );
 
       resultSource.value = result.plantuml;

@@ -1,6 +1,6 @@
 import type { LlmGateHandlers } from "@/composables/useLlmGate";
 import { llmChat } from "@/services/llm/llm-client";
-import type { LlmChatMessage } from "@/services/llm/llm-types";
+import type { LlmChatMessage, LlmChatOptions } from "@/services/llm/llm-types";
 import { LlmClientError } from "@/services/llm/llm-types";
 import {
   formatLlmValidationIssuesForRetry,
@@ -29,11 +29,16 @@ export async function runLlmJsonValidationLoop<T>(
   }>,
   handlers?: LlmGateHandlers,
   failureMessage = "LLM validation failed",
+  chatOptions: LlmChatOptions = {},
 ): Promise<T> {
   const maxRetries = getMaxLlmValidationRetries();
 
   for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-    const chatResult = await llmChat(messages, { jsonMode: true }, handlers);
+    const chatResult = await llmChat(
+      messages,
+      { jsonMode: true, ...chatOptions },
+      handlers,
+    );
     const validation = await validate(chatResult.content);
 
     if (validation.valid && validation.result !== undefined) {

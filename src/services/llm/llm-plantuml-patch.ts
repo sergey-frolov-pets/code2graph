@@ -6,7 +6,11 @@ import {
   requestsStructuralDiagramEdit,
 } from "@/constants/llm-wizard";
 import { llmChat } from "@/services/llm/llm-client";
-import { buildLlmPatchSystemPrompt } from "@/services/llm/llm-prompts";
+import {
+  buildLlmPatchSystemPrompt,
+  LLM_MAX_TOKENS_PRECISE,
+  LLM_TEMPERATURE_PRECISE,
+} from "@/services/llm/llm-prompts";
 import type { LlmChatMessage } from "@/services/llm/llm-types";
 import { LlmClientError } from "@/services/llm/llm-types";
 import type { LlmGateHandlers } from "@/composables/useLlmGate";
@@ -62,7 +66,7 @@ export async function generateValidPlantUmlPatch(
     {
       role: "system",
       content: buildLlmPatchSystemPrompt(
-        "You edit existing PlantUML by replacing only the user-selected fragment.",
+        "You edit existing PlantUML by replacing only the user-selected fragment with a complete, request-satisfying replacement.",
       ),
     },
     { role: "user", content: patchUserPrompt },
@@ -71,7 +75,15 @@ export async function generateValidPlantUmlPatch(
   const maxRetries = getMaxLlmValidationRetries();
 
   for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-    const chatResult = await llmChat(messages, { jsonMode: true }, handlers);
+    const chatResult = await llmChat(
+      messages,
+      {
+        jsonMode: true,
+        temperature: LLM_TEMPERATURE_PRECISE,
+        maxTokens: LLM_MAX_TOKENS_PRECISE,
+      },
+      handlers,
+    );
     const parsed = parsePlantUmlLlmPatchOutput(chatResult.content);
 
     if (!parsed.ok) {
