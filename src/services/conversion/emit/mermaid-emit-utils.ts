@@ -32,3 +32,75 @@ export function formatMermaidNodeLabel(rawLabel: string): string {
 
   return `[${label}]`;
 }
+
+function needsQuotedMermaidSankeyCsvField(value: string): boolean {
+  return /[,"\s]/.test(value) || /[^\x20-\x7E]/.test(value);
+}
+
+function escapeMermaidSankeyCsvField(value: string): string {
+  return flattenMermaidLabel(value).replace(/"/g, '""');
+}
+
+/** Форматирует поле CSV для Mermaid sankey-beta (RFC 4180). */
+export function formatMermaidSankeyCsvField(value: string): string {
+  const label = flattenMermaidLabel(value);
+  if (!needsQuotedMermaidSankeyCsvField(label)) {
+    return label;
+  }
+
+  return `"${escapeMermaidSankeyCsvField(label)}"`;
+}
+
+/** Разбирает строку sankey-beta: source,target,value */
+export function parseMermaidSankeyCsvLine(
+  line: string,
+): { source: string; target: string; value: number } | null {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith("%%")) {
+    return null;
+  }
+
+  const fields: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let index = 0; index < trimmed.length; index += 1) {
+    const char = trimmed[index];
+    if (inQuotes) {
+      if (char === '"' && trimmed[index + 1] === '"') {
+        current += '"';
+        index += 1;
+      } else if (char === '"') {
+        inQuotes = false;
+      } else {
+        current += char;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inQuotes = true;
+    } else if (char === ",") {
+      fields.push(current);
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+
+  fields.push(current);
+  if (fields.length !== 3) {
+    return null;
+  }
+
+  const value = Number.parseFloat(fields[2].trim());
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+
+  return {
+    source: fields[0].trim(),
+    target: fields[1].trim(),
+    value,
+  };
+}
