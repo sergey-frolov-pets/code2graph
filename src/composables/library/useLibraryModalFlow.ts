@@ -234,6 +234,7 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
     preview,
     uploadError,
     activeShareToken,
+    libraryApiUrl,
     renderMode,
     layout,
     diagramDarkMode,
@@ -513,6 +514,7 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
         selectedDiagramId: library.selectedDiagram.value?.id ?? null,
       });
       shareFlow.clearShareBrowseContext(!previewFlow.isPreviewModalOpen.value);
+      clearSubscriptionBrowseContext();
       clearTransientNotice();
       return;
     }
@@ -571,6 +573,62 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
     }
   });
 
+  async function handleDiagramPick(diagramId: string): Promise<void> {
+    if (subscriptionBrowseContext.value) {
+      try {
+        await previewFlow.openSubscriptionDiagramPreview(
+          subscriptionBrowseContext.value.token,
+          diagramId,
+        );
+      } catch (error) {
+        uploadError.value =
+          error instanceof Error
+            ? error.message
+            : t("library.subscriptionOpenError");
+      }
+      return;
+    }
+
+    await shareFlow.handleDiagramPick(diagramId);
+  }
+
+  async function handleGoBack(): Promise<void> {
+    if (browseStep.value === "diagrams" && subscriptionBrowseContext.value) {
+      clearSubscriptionBrowseContext();
+      browseStep.value = "sections";
+      resetEditForm();
+      void library.refresh();
+      return;
+    }
+
+    if (browseStep.value === "detail" && subscriptionBrowseContext.value) {
+      browseStep.value = "diagrams";
+      resetEditForm();
+      return;
+    }
+
+    await shareFlow.handleGoBack();
+  }
+
+  async function onPreviewDiagram(): Promise<void> {
+    if (subscriptionBrowseContext.value && library.selectedDiagram.value) {
+      try {
+        await previewFlow.openSubscriptionDiagramPreview(
+          subscriptionBrowseContext.value.token,
+          library.selectedDiagram.value.id,
+        );
+      } catch (error) {
+        uploadError.value =
+          error instanceof Error
+            ? error.message
+            : t("library.subscriptionOpenError");
+      }
+      return;
+    }
+
+    await previewFlow.onPreviewDiagram();
+  }
+
   function onShareCreated(url: string): void {
     shareFlow.onShareCreated(url, (message) => {
       uploadError.value = message;
@@ -594,14 +652,14 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
     isShareModalOpen: shareFlow.isShareModalOpen,
     shareResource: shareFlow.shareResource,
     closeShareModal: shareFlow.closeShareModal,
-    handleDiagramPick: shareFlow.handleDiagramPick,
-    handleGoBack: shareFlow.handleGoBack,
+    handleDiagramPick,
+    handleGoBack,
     isPreviewModalOpen: previewFlow.isPreviewModalOpen,
     previewTitle: previewFlow.previewTitle,
     previewCanDownload: previewFlow.previewCanDownload,
     previewDownloadsRemaining: previewFlow.previewDownloadsRemaining,
     isPreviewDownloading: previewFlow.isPreviewDownloading,
-    onPreviewDiagram: previewFlow.onPreviewDiagram,
+    onPreviewDiagram,
     closePreviewModal: previewFlow.closePreviewModal,
     onPreviewDownload: previewFlow.onPreviewDownload,
     diagrams: library.diagrams,

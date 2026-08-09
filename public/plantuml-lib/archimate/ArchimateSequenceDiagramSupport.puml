@@ -3,7 +3,6 @@
 ' [1] - https://smileham.co.uk/2019/04/23/archimate-plantuml-sequence-diagram-joy/
 
 !global $ARCH_DEBUG ?= %false()
-
 !include themes/shared_style.puml
 
 <style>
