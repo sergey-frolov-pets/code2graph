@@ -5,10 +5,6 @@ import FileBadgeIcon from "@/components/icons/FileBadgeIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import TooltipWrap from "@/components/TooltipWrap.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
-import ToolbarOverflowMenu, {
-  type ToolbarMenuGroup,
-} from "@/components/ui/ToolbarOverflowMenu.vue";
-import { useMediaQuery } from "@/composables/useMediaQuery";
 import { useLocale } from "@/composables/useLocale";
 import {
   MERMAID_SAMPLE_IDS,
@@ -19,8 +15,6 @@ import {
 } from "@/constants/sample-diagrams";
 import type { DiagramFormatDefinition } from "@/constants/diagram-formats";
 import { SNIPPETS_KEYBOARD_SHORTCUT } from "@/constants/snippets-settings";
-
-const COMPACT_TOOLBAR_MEDIA_QUERY = "(max-width: 900px)";
 
 const props = defineProps<{
   formatDefinition: DiagramFormatDefinition;
@@ -55,7 +49,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
-const isCompactToolbar = useMediaQuery(COMPACT_TOOLBAR_MEDIA_QUERY);
 
 const plantUmlSampleOptions = computed(() =>
   PLANTUML_SAMPLE_IDS.map((id) => ({
@@ -113,144 +106,6 @@ const openFileLabel = computed(() => {
   return t("editor.openPuml");
 });
 
-const overflowGroups = computed((): ToolbarMenuGroup[] => {
-  const groups: ToolbarMenuGroup[] = [];
-
-  const fileActions = [
-    props.formatDefinition.editable
-      ? {
-          id: "openVersions",
-          label: t("editor.versions"),
-          icon: "history" as const,
-        }
-      : null,
-    props.formatDefinition.supportsSaveSource && isCompactToolbar.value
-      ? {
-          id: "saveToLibrary",
-          label: t("editor.saveToLibrary"),
-          icon: "library" as const,
-          disabled: !props.canSave,
-        }
-      : null,
-  ].filter((action) => action !== null);
-
-  if (fileActions.length > 0) {
-    groups.push({
-      id: "file",
-      label: t("editor.toolbar.group.file"),
-      actions: fileActions,
-    });
-  }
-
-  const editActions = [
-    props.formatDefinition.editable
-      ? {
-          id: "undo",
-          label: t("editor.undo"),
-          icon: "undo" as const,
-          disabled: !props.canUndo,
-        }
-      : null,
-    props.formatDefinition.editable
-      ? {
-          id: "redo",
-          label: t("editor.redo"),
-          icon: "redo" as const,
-          disabled: !props.canRedo,
-        }
-      : null,
-    {
-      id: "clear",
-      label: t("editor.clear"),
-      icon: "trash" as const,
-      disabled: !props.canClear,
-    },
-    props.formatDefinition.supportsSnippets
-      ? {
-          id: "toggleSnippets",
-          label: `${t("editor.snippets")} (${SNIPPETS_KEYBOARD_SHORTCUT})`,
-          icon: "snippets" as const,
-          pressed: props.snippetsOpen,
-        }
-      : null,
-  ].filter((action) => action !== null);
-
-  if (editActions.length > 0) {
-    groups.push({
-      id: "edit",
-      label: t("editor.toolbar.group.edit"),
-      actions: editActions,
-    });
-  }
-
-  const aiActions = [
-    props.formatDefinition.supportsAiPatch
-      ? {
-          id: "aiPatch",
-          label: t("editor.aiPatch"),
-          icon: "ai" as const,
-          disabled: !props.canAiPatch,
-        }
-      : null,
-    props.formatDefinition.supportsAiSyntaxAsk
-      ? {
-          id: "aiSyntaxAsk",
-          label: t("editor.aiSyntaxAsk"),
-          icon: "syntax-help" as const,
-          disabled: !props.canAiSyntaxAsk,
-        }
-      : null,
-    props.formatDefinition.supportsSyntaxValidation
-      ? {
-          id: "validateSyntax",
-          label: validateLabel.value,
-          icon: "check" as const,
-          disabled: props.isValidating || props.isRendering,
-        }
-      : null,
-  ].filter((action) => action !== null);
-
-  if (aiActions.length > 0) {
-    groups.push({
-      id: "ai",
-      label: t("editor.toolbar.group.ai"),
-      actions: aiActions,
-    });
-  }
-
-  groups.push({
-    id: "tools",
-    label: t("editor.toolbar.group.tools"),
-    actions: [
-      {
-        id: "convert",
-        label: t("editor.convertTooltip"),
-        icon: "transfer",
-        disabled: !props.canConvert,
-      },
-    ],
-  });
-
-  if (props.formatDefinition.supportsSamples) {
-    groups.push({
-      id: "samples",
-      label: t("editor.toolbar.group.samples"),
-      actions: [
-        ...plantUmlSampleOptions.value.map((sample) => ({
-          id: `sample:${sample.value}`,
-          label: sample.label,
-        })),
-        ...mermaidSampleOptions.value.map((sample) => ({
-          id: `sample:${sample.value}`,
-          label: sample.label,
-        })),
-      ],
-    });
-  }
-
-  return groups;
-});
-
 function parseSampleSelection(value: string): SampleSelection | null {
   const separatorIndex = value.indexOf(":");
   if (separatorIndex < 0) {
@@ -286,51 +141,6 @@ function onSampleChange(event: Event): void {
   emit("loadSample", selection);
   (event.target as HTMLSelectElement).value = "";
 }
-
-function onOverflowAction(actionId: string): void {
-  if (actionId.startsWith("sample:")) {
-    const selection = parseSampleSelection(actionId.slice("sample:".length));
-    if (selection) {
-      emit("loadSample", selection);
-    }
-    return;
-  }
-
-  switch (actionId) {
-    case "openVersions":
-      emit("openVersions");
-      break;
-    case "saveToLibrary":
-      emit("saveToLibrary");
-      break;
-    case "undo":
-      emit("undo");
-      break;
-    case "redo":
-      emit("redo");
-      break;
-    case "clear":
-      emit("clear");
-      break;
-    case "toggleSnippets":
-      emit("toggleSnippets");
-      break;
-    case "aiPatch":
-      emit("aiPatch");
-      break;
-    case "aiSyntaxAsk":
-      emit("aiSyntaxAsk");
-      break;
-    case "validateSyntax":
-      emit("validateSyntax");
-      break;
-    case "convert":
-      emit("convert");
-      break;
-    default:
-      break;
-  }
-}
 </script>
 
 <template>
@@ -350,160 +160,134 @@ function onOverflowAction(actionId: string): void {
       </span>
     </div>
 
-    <div
-      class="panel-header__toolbar"
-      :class="{ 'panel-header__toolbar--compact': isCompactToolbar }"
-    >
-      <template v-if="isCompactToolbar">
-        <IconButton :label="openFileLabel" @click="emit('openFile')">
-          <ActionIcon name="folder-open" />
-        </IconButton>
-        <IconButton
-          v-if="formatDefinition.supportsSaveSource"
-          :label="saveLabel"
-          primary
-          format
-          :disabled="!canSave"
-          @click="emit('savePuml')"
-        >
-          <FileBadgeIcon :format="saveBadgeFormat" />
-        </IconButton>
-        <ToolbarOverflowMenu
-          :label="t('editor.toolbar.overflow')"
-          :groups="overflowGroups"
-          @action="onOverflowAction"
-        />
-      </template>
-
-      <template v-else>
-        <IconButton :label="openFileLabel" @click="emit('openFile')">
-          <ActionIcon name="folder-open" />
-        </IconButton>
-        <IconButton
-          v-if="formatDefinition.editable"
-          :label="t('editor.versions')"
-          @click="emit('openVersions')"
-        >
-          <ActionIcon name="history" />
-        </IconButton>
-        <IconButton
-          v-if="formatDefinition.supportsSaveSource"
-          :label="saveLabel"
-          primary
-          format
-          :disabled="!canSave"
-          @click="emit('savePuml')"
-        >
-          <FileBadgeIcon :format="saveBadgeFormat" />
-        </IconButton>
-        <IconButton
-          v-if="formatDefinition.editable"
-          :label="t('editor.saveToLibrary')"
-          primary
-          format
-          :disabled="!canSave"
-          @click="emit('saveToLibrary')"
-        >
-          <ActionIcon name="library" />
-        </IconButton>
-        <IconButton
-          v-if="formatDefinition.supportsAiPatch"
-          :label="t('editor.aiPatch')"
-          :disabled="!canAiPatch"
-          prevent-mousedown-default
-          @click="emit('aiPatch')"
-        >
-          <ActionIcon name="ai" />
-        </IconButton>
-        <IconButton
-          v-if="formatDefinition.supportsAiSyntaxAsk"
-          :label="t('editor.aiSyntaxAsk')"
-          :disabled="!canAiSyntaxAsk"
-          prevent-mousedown-default
-          @click="emit('aiSyntaxAsk')"
-        >
-          <ActionIcon name="syntax-help" />
-        </IconButton>
-        <IconButton
-          v-if="formatDefinition.supportsSyntaxValidation"
-          :label="validateLabel"
-          :disabled="isValidating || isRendering"
-          @click="emit('validateSyntax')"
-        >
-          <ActionIcon name="check" />
-        </IconButton>
-        <IconButton
-          v-if="formatDefinition.editable"
-          :label="t('editor.undo')"
-          :disabled="!canUndo"
-          @click="emit('undo')"
-        >
-          <ActionIcon name="undo" />
-        </IconButton>
-        <IconButton
-          v-if="formatDefinition.editable"
-          :label="t('editor.redo')"
-          :disabled="!canRedo"
-          @click="emit('redo')"
-        >
-          <ActionIcon name="redo" />
-        </IconButton>
-        <IconButton
-          :label="t('editor.convertTooltip')"
-          :disabled="!canConvert"
-          @click="emit('convert')"
-        >
-          <ActionIcon name="transfer" />
-        </IconButton>
-        <IconButton
-          :label="t('editor.clear')"
-          :disabled="!canClear"
-          @click="emit('clear')"
-        >
-          <ActionIcon name="trash" />
-        </IconButton>
-        <IconButton
-          v-if="formatDefinition.supportsSnippets"
-          :label="`${t('editor.snippets')} (${SNIPPETS_KEYBOARD_SHORTCUT})`"
-          :pressed="snippetsOpen"
-          @click="emit('toggleSnippets')"
-        >
-          <ActionIcon name="snippets" />
-        </IconButton>
-        <TooltipWrap
-          v-if="formatDefinition.supportsSamples"
-          :label="t('editor.samplesTooltip')"
-        >
-          <label class="sample-select-wrap">
-            <span class="sr-only">{{ t("editor.sampleOption") }}</span>
-            <select
-              class="select sample-select"
-              :title="t('editor.samplesTooltip')"
-              @change="onSampleChange"
-            >
-              <option value="" selected disabled>{{ t("editor.samples") }}</option>
-              <optgroup :label="t('editor.samplesPlantUml')">
-                <option
-                  v-for="sample in plantUmlSampleOptions"
-                  :key="sample.value"
-                  :value="sample.value"
-                >
-                  {{ sample.label }}
-                </option>
-              </optgroup>
-              <optgroup :label="t('editor.samplesMermaid')">
-                <option
-                  v-for="sample in mermaidSampleOptions"
-                  :key="sample.value"
-                  :value="sample.value"
-                >
-                  {{ sample.label }}
-                </option>
-              </optgroup>
-            </select>
-          </label>
-        </TooltipWrap>
-      </template>
+    <div class="panel-header__toolbar">
+      <IconButton :label="openFileLabel" @click="emit('openFile')">
+        <ActionIcon name="folder-open" />
+      </IconButton>
+      <IconButton
+        v-if="formatDefinition.editable"
+        :label="t('editor.versions')"
+        @click="emit('openVersions')"
+      >
+        <ActionIcon name="history" />
+      </IconButton>
+      <IconButton
+        v-if="formatDefinition.supportsSaveSource"
+        :label="saveLabel"
+        primary
+        format
+        :disabled="!canSave"
+        @click="emit('savePuml')"
+      >
+        <FileBadgeIcon :format="saveBadgeFormat" />
+      </IconButton>
+      <IconButton
+        v-if="formatDefinition.editable"
+        :label="t('editor.saveToLibrary')"
+        primary
+        format
+        :disabled="!canSave"
+        @click="emit('saveToLibrary')"
+      >
+        <ActionIcon name="library" />
+      </IconButton>
+      <IconButton
+        v-if="formatDefinition.supportsAiPatch"
+        :label="t('editor.aiPatch')"
+        :disabled="!canAiPatch"
+        prevent-mousedown-default
+        @click="emit('aiPatch')"
+      >
+        <ActionIcon name="ai" />
+      </IconButton>
+      <IconButton
+        v-if="formatDefinition.supportsAiSyntaxAsk"
+        :label="t('editor.aiSyntaxAsk')"
+        :disabled="!canAiSyntaxAsk"
+        prevent-mousedown-default
+        @click="emit('aiSyntaxAsk')"
+      >
+        <ActionIcon name="syntax-help" />
+      </IconButton>
+      <IconButton
+        v-if="formatDefinition.supportsSyntaxValidation"
+        :label="validateLabel"
+        :disabled="isValidating || isRendering"
+        @click="emit('validateSyntax')"
+      >
+        <ActionIcon name="check" />
+      </IconButton>
+      <IconButton
+        v-if="formatDefinition.editable"
+        :label="t('editor.undo')"
+        :disabled="!canUndo"
+        @click="emit('undo')"
+      >
+        <ActionIcon name="undo" />
+      </IconButton>
+      <IconButton
+        v-if="formatDefinition.editable"
+        :label="t('editor.redo')"
+        :disabled="!canRedo"
+        @click="emit('redo')"
+      >
+        <ActionIcon name="redo" />
+      </IconButton>
+      <IconButton
+        :label="t('editor.convertTooltip')"
+        :disabled="!canConvert"
+        @click="emit('convert')"
+      >
+        <ActionIcon name="transfer" />
+      </IconButton>
+      <IconButton
+        :label="t('editor.clear')"
+        :disabled="!canClear"
+        @click="emit('clear')"
+      >
+        <ActionIcon name="trash" />
+      </IconButton>
+      <IconButton
+        v-if="formatDefinition.supportsSnippets"
+        :label="`${t('editor.snippets')} (${SNIPPETS_KEYBOARD_SHORTCUT})`"
+        :pressed="snippetsOpen"
+        @click="emit('toggleSnippets')"
+      >
+        <ActionIcon name="snippets" />
+      </IconButton>
+      <TooltipWrap
+        v-if="formatDefinition.supportsSamples"
+        :label="t('editor.samplesTooltip')"
+      >
+        <label class="sample-select-wrap">
+          <span class="sr-only">{{ t("editor.sampleOption") }}</span>
+          <select
+            class="select sample-select"
+            :title="t('editor.samplesTooltip')"
+            @change="onSampleChange"
+          >
+            <option value="" selected disabled>{{ t("editor.samples") }}</option>
+            <optgroup :label="t('editor.samplesPlantUml')">
+              <option
+                v-for="sample in plantUmlSampleOptions"
+                :key="sample.value"
+                :value="sample.value"
+              >
+                {{ sample.label }}
+              </option>
+            </optgroup>
+            <optgroup :label="t('editor.samplesMermaid')">
+              <option
+                v-for="sample in mermaidSampleOptions"
+                :key="sample.value"
+                :value="sample.value"
+              >
+                {{ sample.label }}
+              </option>
+            </optgroup>
+          </select>
+        </label>
+      </TooltipWrap>
     </div>
 
     <PanelFullscreenButton
@@ -550,10 +334,6 @@ function onOverflowAction(actionId: string): void {
 .panel-title__badge--muted {
   background: color-mix(in srgb, var(--accent) 18%, transparent);
   color: var(--accent);
-}
-
-.panel-header__toolbar--compact {
-  justify-content: flex-end;
 }
 
 .sample-select-wrap {
