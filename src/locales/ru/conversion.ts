@@ -57,4 +57,11 @@ export const conversionMessages: LocaleMessages = {
   "conversion.loss.packages": "Пакеты PlantUML",
   "conversion.loss.stereotype": "Стереотипы PlantUML",
   "conversion.loss.members": "Члены классов Mermaid",
+  "conversion.loss.truncatedNodes": "Диаграмма обрезана по лимиту узлов",
+  "conversion.loss.truncatedEdges": "Диаграмма обрезана по лимиту рёбер",
+  "conversion.error.parseFailed": "Не удалось разобрать исходную диаграмму",
+  "conversion.error.emptyNodeId": "В диаграмме есть пустой id узла",
+  "conversion.error.duplicateNodeId": "В диаграмме есть повторяющиеся id узлов",
+  "conversion.error.danglingEdge": "В диаграмме есть рёбра с отсутствующими узлами",
+  "conversion.warning.visualEdgesMerged": "Часть рёбер восстановлена из SVG превью",
 };

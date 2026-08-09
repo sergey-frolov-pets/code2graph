@@ -9,6 +9,56 @@ function flowDirection(ir: DiagramIR): string {
   return ir.direction === "LR" ? "LR" : "TD";
 }
 
+function formatMermaidNodeLine(node: DiagramIR["nodes"][number]): string {
+  const shape =
+    node.kind === "decision"
+      ? `{${escapeMermaidQuoted(node.label)}}`
+      : node.kind === "start" || node.kind === "end"
+        ? `(["${escapeMermaidQuoted(node.label)}"])`
+        : formatMermaidNodeLabel(node.label);
+  return `  ${node.id}${shape}`;
+}
+
+function emitMermaidFlowchart(ir: DiagramIR): string {
+  const lines = [`flowchart ${flowDirection(ir)}`];
+  const groupedNodeIds = new Set<string>();
+  const groupIds = new Set((ir.groups ?? []).map((group) => group.id));
+
+  for (const group of ir.groups ?? []) {
+    const groupNodes = ir.nodes.filter(
+      (node) => node.groupId === group.id && !groupIds.has(node.id),
+    );
+    if (groupNodes.length === 0) {
+      continue;
+    }
+
+    const labelSuffix = group.label
+      ? ` [${escapeMermaidQuoted(group.label)}]`
+      : "";
+    lines.push(`  subgraph ${group.id}${labelSuffix}`);
+    for (const node of groupNodes) {
+      lines.push(formatMermaidNodeLine(node));
+      groupedNodeIds.add(node.id);
+    }
+    lines.push("  end");
+  }
+
+  for (const node of ir.nodes) {
+    if (groupedNodeIds.has(node.id) || groupIds.has(node.id)) {
+      continue;
+    }
+    lines.push(formatMermaidNodeLine(node));
+  }
+
+  for (const edge of ir.edges) {
+    const label = edge.label
+      ? `|${escapeMermaidQuoted(edge.label)}|`
+      : "";
+    lines.push(`  ${edge.source} -->${label} ${edge.target}`);
+  }
+  return lines.join("\n");
+}
+
 export function emitMermaidFromIr(ir: DiagramIR): string {
   switch (ir.kind) {
     case "class":
@@ -29,26 +79,6 @@ export function emitMermaidFromIr(ir: DiagramIR): string {
     default:
       return emitMermaidFlowchart(ir);
   }
-}
-
-function emitMermaidFlowchart(ir: DiagramIR): string {
-  const lines = [`flowchart ${flowDirection(ir)}`];
-  for (const node of ir.nodes) {
-    const shape =
-      node.kind === "decision"
-        ? `{${escapeMermaidQuoted(node.label)}}`
-        : node.kind === "start" || node.kind === "end"
-          ? `(["${escapeMermaidQuoted(node.label)}"])`
-          : formatMermaidNodeLabel(node.label);
-    lines.push(`  ${node.id}${shape}`);
-  }
-  for (const edge of ir.edges) {
-    const label = edge.label
-      ? `|${escapeMermaidQuoted(edge.label)}|`
-      : "";
-    lines.push(`  ${edge.source} -->${label} ${edge.target}`);
-  }
-  return lines.join("\n");
 }
 
 function emitMermaidClass(ir: DiagramIR): string {
@@ -86,7 +116,16 @@ function emitMermaidSequence(ir: DiagramIR): string {
 function emitMermaidEr(ir: DiagramIR): string {
   const lines = ["erDiagram"];
   for (const node of ir.nodes) {
-    lines.push(`  ${node.id} {`, "    int id PK", "    string name", "  }");
+    const attributes = Array.isArray(node.semantic?.attributes)
+      ? (node.semantic!.attributes as string[])
+      : null;
+    lines.push(`  ${node.id} {`);
+    if (attributes && attributes.length > 0) {
+      for (const attribute of attributes) {
+        lines.push(`    ${attribute}`);
+      }
+    }
+    lines.push("  }");
   }
   for (const edge of ir.edges) {
     lines.push(`  ${edge.source} ||--o{ ${edge.target} : relates`);
@@ -103,12 +142,20 @@ function emitMermaidGantt(ir: DiagramIR): string {
   ];
   ir.nodes.forEach((node, index) => {
     const label = flattenMermaidLabel(node.label) || node.id;
+    const startDate =
+      typeof node.semantic?.startDate === "string"
+        ? node.semantic.startDate
+        : "2026-01-01";
+    const duration =
+      typeof node.semantic?.duration === "string"
+        ? node.semantic.duration
+        : "3d";
     if (index === 0) {
-      lines.push(`${label} :${node.id}, 2026-01-01, 3d`);
+      lines.push(`${label} :${node.id}, ${startDate}, ${duration}`);
       return;
     }
     const prev = ir.nodes[index - 1];
-    lines.push(`${label} :${node.id}, after ${prev.id}, 3d`);
+    lines.push(`${label} :${node.id}, after ${prev.id}, ${duration}`);
   });
   return lines.join("\n");
 }

@@ -57,4 +57,11 @@ export const conversionMessages: LocaleMessages = {
   "conversion.loss.packages": "PlantUML packages",
   "conversion.loss.stereotype": "PlantUML stereotypes",
   "conversion.loss.members": "Mermaid class members",
+  "conversion.loss.truncatedNodes": "Diagram was truncated to the node limit",
+  "conversion.loss.truncatedEdges": "Diagram was truncated to the edge limit",
+  "conversion.error.parseFailed": "Failed to parse source diagram",
+  "conversion.error.emptyNodeId": "Diagram contains an empty node id",
+  "conversion.error.duplicateNodeId": "Diagram contains duplicate node ids",
+  "conversion.error.danglingEdge": "Diagram contains edges with missing nodes",
+  "conversion.warning.visualEdgesMerged": "Some edges were recovered from preview SVG",
 };

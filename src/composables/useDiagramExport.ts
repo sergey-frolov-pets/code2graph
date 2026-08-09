@@ -27,13 +27,13 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     () => Boolean(svg.value) && !error.value && !isRendering.value,
   );
 
-  function exportSvg(): void {
+  async function exportSvg(): Promise<void> {
     if (!svg.value) {
       return;
     }
 
     const ir = getLastDiagramIr();
-    const payload = ir ? embedSvgMetadata(svg.value, ir) : svg.value;
+    const payload = ir ? await embedSvgMetadata(svg.value, ir) : svg.value;
     downloadTextFile(payload, "diagram.svg", "image/svg+xml;charset=utf-8");
   }
 

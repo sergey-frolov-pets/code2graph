@@ -14,6 +14,11 @@ export interface AnalyzeConversionLossesInput {
   visualOnly?: boolean;
   metadataPresent?: boolean;
   unmatchedVisualNodes?: number;
+  mergedVisualEdges?: number;
+  truncatedNodes?: number;
+  truncatedEdges?: number;
+  parseError?: string | null;
+  validationErrors?: string[];
 }
 
 export function analyzeConversionLosses(
@@ -44,9 +49,29 @@ export function analyzeConversionLosses(
     }
   }
 
+  if (input.truncatedNodes && input.truncatedNodes > 0) {
+    lossIds.push("loss.truncatedNodes");
+  }
+
+  if (input.truncatedEdges && input.truncatedEdges > 0) {
+    lossIds.push("loss.truncatedEdges");
+  }
+
   const warnings: string[] = [];
   if (rule.blocked) {
     warnings.push("conversion.warning.blocked");
+  }
+
+  if (input.parseError) {
+    warnings.push(input.parseError);
+  }
+
+  for (const error of input.validationErrors ?? []) {
+    warnings.push(error);
+  }
+
+  if (input.mergedVisualEdges && input.mergedVisualEdges > 0) {
+    warnings.push("conversion.warning.visualEdgesMerged");
   }
 
   return createConversionReport({
@@ -54,7 +79,7 @@ export function analyzeConversionLosses(
     targetFormat: input.targetFormat,
     kind: input.kind,
     level: rule.level,
-    blocked: rule.blocked,
+    blocked: rule.blocked || Boolean(input.parseError),
     lossIds: [...new Set(lossIds)],
     warnings,
     mode: input.mode,

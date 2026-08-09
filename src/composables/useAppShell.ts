@@ -84,7 +84,7 @@ export interface AppShellContext {
   savePuml: () => Promise<void>;
   onVersionRestore: (source: string) => void;
   renderDiagram: () => Promise<void>;
-  exportSvg: () => void;
+  exportSvg: () => Promise<void>;
   exportPng: () => void;
   boot: () => void;
 }
