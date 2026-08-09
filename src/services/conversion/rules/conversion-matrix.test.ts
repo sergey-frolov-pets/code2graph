@@ -28,4 +28,20 @@ describe("conversion-matrix", () => {
       true,
     );
   });
+
+  it("allows plantuml er to mermaid er", () => {
+    const rule = getConversionRouteRule("er", "plantuml", "mermaid");
+    expect(rule.blocked).toBe(false);
+    expect(rule.level).toBe("B");
+  });
+
+  it("blocks pie to graphml", () => {
+    expect(isConversionBlocked("pie", "mermaid", "graphml")).toBe(true);
+  });
+
+  it("allows mindmap cross-format conversion", () => {
+    const rule = getConversionRouteRule("mindmap", "plantuml", "mermaid");
+    expect(rule.blocked).toBe(false);
+    expect(rule.level).toBe("B");
+  });
 });

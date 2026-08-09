@@ -11,6 +11,25 @@ export const DIAGRAM_KINDS = [
   "c4_context",
   "c4_container",
   "gantt",
+  "mindmap",
+  "pie",
+  "journey",
+  "gitgraph",
+  "timeline",
+  "sankey",
+  "xychart",
+  "block",
+  "requirement",
+  "quadrant",
+  "architecture",
+  "packet",
+  "usecase",
+  "deployment",
+  "object",
+  "timing",
+  "wbs",
+  "nwdiag",
+  "archimate",
   "unknown",
 ] as const;
 
@@ -33,7 +52,12 @@ export type DiagramNodeSemanticKind =
   | "actor"
   | "system"
   | "container"
-  | "task";
+  | "task"
+  | "usecase"
+  | "artifact"
+  | "slice"
+  | "event"
+  | "field";
 
 export interface DiagramNodeVisual {
   x?: number;
@@ -60,7 +84,7 @@ export interface DiagramEdge {
   source: string;
   target: string;
   label?: string;
-  kind?: "arrow" | "dashed" | "inherit" | "message" | "relation";
+  kind?: "arrow" | "dashed" | "inherit" | "message" | "relation" | "flow" | "satisfies";
   semantic?: Record<string, unknown>;
   matchConfidence: number;
 }
@@ -69,6 +93,117 @@ export interface DiagramGroup {
   id: string;
   label?: string;
   parentId?: string;
+}
+
+export interface DiagramSlice {
+  label: string;
+  value: number;
+}
+
+export interface DiagramJourneyTask {
+  section?: string;
+  action: string;
+  score: number;
+  actor: string;
+}
+
+export interface DiagramTimelineEvent {
+  date: string;
+  event: string;
+  section?: string;
+}
+
+export interface DiagramGitAction {
+  type: "commit" | "branch" | "checkout" | "merge";
+  id?: string;
+  branch?: string;
+}
+
+export interface DiagramSankeyFlow {
+  source: string;
+  target: string;
+  value: number;
+}
+
+export interface DiagramChartData {
+  xLabels: string[];
+  yAxis?: string;
+  yMin?: number;
+  yMax?: number;
+  bar?: number[];
+  line?: number[];
+}
+
+export interface DiagramPacketField {
+  start: number;
+  end: number;
+  label: string;
+}
+
+export interface DiagramRequirementItem {
+  id: string;
+  numericId?: number;
+  text: string;
+}
+
+export interface DiagramElementItem {
+  id: string;
+  type: string;
+}
+
+export interface DiagramQuadrantItem {
+  label: string;
+  x: number;
+  y: number;
+}
+
+export interface DiagramArchitectureService {
+  id: string;
+  label: string;
+  group?: string;
+  icon?: string;
+}
+
+export interface DiagramWbsItem {
+  level: number;
+  label: string;
+}
+
+export interface DiagramNetworkNode {
+  id: string;
+  address?: string;
+}
+
+export interface DiagramTimingSignal {
+  name: string;
+  states: Array<{ time: number; state: string }>;
+}
+
+export interface DiagramObjectField {
+  name: string;
+  value: string;
+}
+
+export interface DiagramIRExtras {
+  title?: string;
+  slices?: DiagramSlice[];
+  journeyTasks?: DiagramJourneyTask[];
+  timelineEvents?: DiagramTimelineEvent[];
+  gitActions?: DiagramGitAction[];
+  sankeyFlows?: DiagramSankeyFlow[];
+  chartData?: DiagramChartData;
+  packetFields?: DiagramPacketField[];
+  requirements?: DiagramRequirementItem[];
+  elements?: DiagramElementItem[];
+  quadrantItems?: DiagramQuadrantItem[];
+  architectureServices?: DiagramArchitectureService[];
+  wbsItems?: DiagramWbsItem[];
+  networkNodes?: DiagramNetworkNode[];
+  timingSignals?: DiagramTimingSignal[];
+  objectFields?: Record<string, DiagramObjectField[]>;
+  systemBoundary?: string;
+  quadrantAxes?: { xFrom?: string; xTo?: string; yFrom?: string; yTo?: string };
+  blockColumns?: number;
 }
 
 export type ConversionModeKind =
@@ -90,6 +225,7 @@ export interface DiagramIR {
   nodes: DiagramNode[];
   edges: DiagramEdge[];
   groups?: DiagramGroup[];
+  extras?: DiagramIRExtras;
   metadata?: DiagramIRMetadata;
 }
 
@@ -102,6 +238,7 @@ export function createEmptyDiagramIR(
     nodes: [],
     edges: [],
     groups: [],
+    extras: {},
     metadata: {},
   };
 }
