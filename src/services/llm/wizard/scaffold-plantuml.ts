@@ -19,7 +19,7 @@ import {
   hasStructural,
   laneLabel,
   participantLabel,
-  stateLabel,
+  plantUmlStateRef,
   stepLabel,
   subBranchLabel,
   SWIMLANE_COLORS,
@@ -136,13 +136,15 @@ export function buildPlantUmlState(state: WizardState, locale: AppLocale): strin
   const title = locale === "ru" ? "Диаграмма состояний" : "State diagram";
   const lines = buildPlantUmlHeader(state, title, true);
 
-  lines.push("[*] --> " + stateLabel(1, locale));
+  lines.push("[*] --> " + plantUmlStateRef(1, locale));
 
   for (let index = 1; index < count; index += 1) {
-    lines.push(`${stateLabel(index, locale)} --> ${stateLabel(index + 1, locale)}`);
+    lines.push(
+      `${plantUmlStateRef(index, locale)} --> ${plantUmlStateRef(index + 1, locale)}`,
+    );
   }
 
-  lines.push(stateLabel(count, locale) + " --> [*]");
+  lines.push(plantUmlStateRef(count, locale) + " --> [*]");
   appendPlantUmlStateStructure(lines, state, locale);
   lines.push("@enduml");
   return lines.join("\n");
