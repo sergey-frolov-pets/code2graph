@@ -7,12 +7,25 @@ type OpenAiCompatibleOptions = {
   model: string;
   messages: LlmChatMessage[];
   jsonMode?: boolean;
+  temperature?: number;
+  maxTokens?: number;
   extraHeaders?: Record<string, string>;
 };
 
 export async function callOpenAiCompatibleChat(
   options: OpenAiCompatibleOptions,
 ): Promise<string> {
+  const body: Record<string, unknown> = {
+    model: options.model,
+    messages: options.messages,
+    temperature: options.temperature ?? 0.2,
+    response_format: options.jsonMode ? { type: "json_object" } : undefined,
+  };
+
+  if (options.maxTokens !== undefined) {
+    body.max_tokens = options.maxTokens;
+  }
+
   const response = await fetch(options.endpoint, {
     method: "POST",
     headers: {
@@ -20,12 +33,7 @@ export async function callOpenAiCompatibleChat(
       Authorization: `Bearer ${options.apiKey}`,
       ...options.extraHeaders,
     },
-    body: JSON.stringify({
-      model: options.model,
-      messages: options.messages,
-      temperature: 0.2,
-      response_format: options.jsonMode ? { type: "json_object" } : undefined,
-    }),
+    body: JSON.stringify(body),
   });
 
   const payload = (await response.json().catch(() => null)) as
@@ -55,6 +63,8 @@ export async function callGeminiChat(
   model: string,
   messages: LlmChatMessage[],
   jsonMode = true,
+  temperature = 0.2,
+  maxTokens?: number,
 ): Promise<string> {
   const systemMessage = messages.find((message) => message.role === "system");
   const contents = messages
@@ -66,6 +76,14 @@ export async function callGeminiChat(
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
+  const generationConfig: Record<string, unknown> = jsonMode
+    ? { responseMimeType: "application/json", temperature }
+    : { temperature };
+
+  if (maxTokens !== undefined) {
+    generationConfig.maxOutputTokens = maxTokens;
+  }
+
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -74,9 +92,7 @@ export async function callGeminiChat(
         ? { parts: [{ text: systemMessage.content }] }
         : undefined,
       contents,
-      generationConfig: jsonMode
-        ? { responseMimeType: "application/json", temperature: 0.2 }
-        : { temperature: 0.2 },
+      generationConfig,
     }),
   });
 
