@@ -6,12 +6,14 @@ import {
   canManageDiagramVersions,
   createDiagramVersion,
   deleteDiagramVersion,
-  getDiagramVersion,
-  listDiagramVersions,
   mapDiagramVersionDto,
-  snapshotDiagramSourceVersion,
 } from "../../diagram-versions.js";
+import { parseCreateDiagramVersionBody } from "../../schemas/diagram-body.js";
 import { getDiagramAccessContext } from "../../services/diagrams-access.js";
+import {
+  listDiagramVersions,
+  restoreDiagramVersion,
+} from "../../services/diagram-versions-service.js";
 import type { DiagramsRouter } from "./types.js";
 
 export function registerDiagramVersionRoutes(router: DiagramsRouter): void {
@@ -53,7 +55,13 @@ export function registerDiagramVersionRoutes(router: DiagramsRouter): void {
     }
 
     const diagramId = context.req.param("id");
-    const body = await context.req.json<{ source?: string; comment?: string }>();
+    const rawBody = await context.req.json();
+    const parsed = parseCreateDiagramVersionBody(rawBody);
+    if (!parsed.ok) {
+      return context.json({ error: parsed.error }, 400);
+    }
+    const body = parsed.data;
+
     const database = getDb();
     const contextRow = getDiagramAccessContext(database, diagramId);
 
@@ -142,36 +150,18 @@ export function registerDiagramVersionRoutes(router: DiagramsRouter): void {
       return context.json({ error: "Недостаточно прав" }, 403);
     }
 
-    const version = getDiagramVersion(database, diagramId, versionId);
-    if (!version) {
+    const restored = restoreDiagramVersion(
+      database,
+      diagramId,
+      versionId,
+      user.id,
+    );
+
+    if (!restored) {
       return context.json({ error: "Версия не найдена" }, 404);
     }
 
-    snapshotDiagramSourceVersion(
-      database,
-      diagramId,
-      user.id,
-      contextRow.row.source,
-      `Before restore v${version.version_number}`,
-    );
-
-    const byteSize = Buffer.byteLength(version.source, "utf8");
-    const now = new Date().toISOString();
-
-    database
-      .prepare(
-        `UPDATE diagrams
-       SET source = ?, byte_size = ?, updated_at = ?
-       WHERE id = ?`,
-      )
-      .run(version.source, byteSize, now, diagramId);
-
-    const refreshed = getDiagramAccessContext(database, diagramId);
-    if (!refreshed) {
-      return context.json({ error: "Диаграмма не найдена" }, 404);
-    }
-
-    const diagram = enrichDiagramForUser(database, user, refreshed.row);
+    const diagram = enrichDiagramForUser(database, user, restored.diagram);
     diagram.canWrite = true;
 
     return context.json(diagram);

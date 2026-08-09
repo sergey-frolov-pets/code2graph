@@ -147,6 +147,27 @@ function runMigrations(database: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_user_subscriptions_sub ON user_subscriptions(subscription_id);
   `);
 
+  if (!columnExists(database, "subscriptions", "share_token")) {
+    database.exec(`
+      ALTER TABLE subscriptions ADD COLUMN share_token TEXT;
+      ALTER TABLE subscriptions ADD COLUMN distribution_mode TEXT NOT NULL DEFAULT 'users';
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_share_token
+        ON subscriptions(share_token) WHERE share_token IS NOT NULL;
+    `);
+  }
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS subscription_diagrams (
+      id TEXT PRIMARY KEY,
+      subscription_id TEXT NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
+      diagram_id TEXT NOT NULL REFERENCES diagrams(id) ON DELETE CASCADE,
+      UNIQUE(subscription_id, diagram_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_subscription_diagrams_sub
+      ON subscription_diagrams(subscription_id);
+  `);
+
   database.exec(`
     CREATE TABLE IF NOT EXISTS diagram_favorites (
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

@@ -2,7 +2,7 @@ import type { CustomSnippet } from "@/types/snippets";
 import {
   readStorageJson,
   writeStorageJson,
-} from "@/utils/safe-storage";
+} from "@/core/safe-storage";
 
 export const STORAGE_KEY_CUSTOM_SNIPPETS = "plantuml-smetana-custom-snippets";
 export const STORAGE_KEY_SNIPPETS_PANEL_POSITION =

@@ -184,15 +184,39 @@ export interface SubscriptionSectionDto {
   includeDescendants: boolean;
 }
 
+export interface SubscriptionDiagramDto {
+  diagramId: string;
+  diagramTitle?: string;
+}
+
+export const SUBSCRIPTION_DISTRIBUTION_MODES = [
+  "users",
+  "link",
+  "both",
+] as const;
+export type SubscriptionDistributionMode =
+  (typeof SUBSCRIPTION_DISTRIBUTION_MODES)[number];
+
 export interface SubscriptionDto {
   id: string;
   ownerId: string;
   title: string;
   description: string;
   permission: SectionAccessPermission;
+  distributionMode: SubscriptionDistributionMode;
+  shareToken: string | null;
+  urlPath: string | null;
   sections: SubscriptionSectionDto[];
+  diagrams: SubscriptionDiagramDto[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface GrantedSubscriptionDto extends SubscriptionDto {
+  ownerUsername: string;
+  grantExpiresAt: string | null;
+  grantPermanent: boolean;
+  grantedAt: string;
 }
 
 export interface UserSubscriptionGrantDto {
@@ -207,14 +231,18 @@ export interface CreateSubscriptionPayload {
   title: string;
   description: string;
   permission: SectionAccessPermission;
-  sections: SubscriptionSectionDto[];
+  distributionMode?: SubscriptionDistributionMode;
+  sections?: SubscriptionSectionDto[];
+  diagrams?: SubscriptionDiagramDto[];
 }
 
 export interface UpdateSubscriptionPayload {
   title?: string;
   description?: string;
   permission?: SectionAccessPermission;
+  distributionMode?: SubscriptionDistributionMode;
   sections?: SubscriptionSectionDto[];
+  diagrams?: SubscriptionDiagramDto[];
 }
 
 export interface RatingsLeaderboardDto {

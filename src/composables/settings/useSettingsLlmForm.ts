@@ -1,4 +1,4 @@
-import { computed, ref, watch } from "vue";
+import { computed, type InjectionKey, inject, ref, watch, type UnwrapNestedRefs } from "vue";
 import type { TranslateFn } from "@/locales/types";
 import { ALL_LLM_PROVIDERS, LLM_PROVIDER_KIND } from "@/constants/llm-providers";
 import { useLlmApiKeys } from "@/composables/useLlmApiKeys";
@@ -6,6 +6,21 @@ import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
 import { useLlmSettings } from "@/composables/useLlmSettings";
 import { useLlmProxyAvailability } from "@/composables/useLlmProxyAvailability";
 import { testLlmConnection } from "@/services/llm/llm-client";
+
+export const SETTINGS_LLM_FORM_KEY: InjectionKey<
+  UnwrapNestedRefs<ReturnType<typeof useSettingsLlmForm>>
+> = Symbol("settings-llm-form");
+
+export function useSettingsLlmFormContext(): UnwrapNestedRefs<
+  ReturnType<typeof useSettingsLlmForm>
+> {
+  const llm = inject(SETTINGS_LLM_FORM_KEY);
+  if (!llm) {
+    throw new Error("useSettingsLlmFormContext must be used within SettingsModal");
+  }
+
+  return llm;
+}
 
 export function useSettingsLlmForm(t: TranslateFn) {
   const { openLlmKeysGuide } = useLlmKeysGuide();

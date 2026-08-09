@@ -130,6 +130,7 @@ const flow = reactive(
         @manage-access="flow.onManageSectionAccess"
         @ratings-click="flow.onRatingsClick()"
         @subscriptions-click="flow.openSubscriptions()"
+        @open-subscription-target="flow.onOpenSubscriptionTarget($event)"
         @diagram-pick="flow.handleDiagramPick($event)"
         @filters-change="flow.searchDiagrams()"
         @save-edit="flow.saveEdit()"

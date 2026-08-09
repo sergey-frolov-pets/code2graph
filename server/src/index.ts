@@ -11,6 +11,7 @@ import { llmRouter } from "./routes/llm.js";
 import { publicAuthRouter } from "./routes/public-auth.js";
 import { ratingsRouter } from "./routes/ratings.js";
 import { shareRouter } from "./routes/share.js";
+import { subscriptionAccessRouter } from "./routes/subscription-access.js";
 import { subscriptionsRouter } from "./routes/subscriptions.js";
 
 const app = new Hono();
@@ -25,6 +26,7 @@ app.use(
 );
 
 app.route("/api/share", shareRouter);
+app.route("/api/subscriptions/access", subscriptionAccessRouter);
 app.route("/api/auth", publicAuthRouter);
 
 const protectedApi = new Hono();

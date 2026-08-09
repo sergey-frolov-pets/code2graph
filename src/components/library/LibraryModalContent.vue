@@ -82,6 +82,13 @@ const emit = defineEmits<{
   "manage-access": [sectionId: string, title: string];
   "ratings-click": [];
   "subscriptions-click": [];
+  "open-subscription-target": [
+    payload: {
+      type: "section" | "diagram";
+      id: string;
+      subscription?: import("@/constants/diagram-library").GrantedSubscriptionDto | import("@/constants/diagram-library").SubscriptionDto;
+    },
+  ];
   "diagram-pick": [diagramId: string];
   "filters-change": [];
   "save-edit": [];
@@ -157,6 +164,9 @@ const emit = defineEmits<{
       <LibrarySubscriptionsPanel
         v-else-if="activeTab === 'browse' && browseStep === 'subscriptions'"
         :flat-section-options="personalAdminSectionOptions"
+        :can-manage="canManageSubscriptions"
+        :library-api-url="libraryApiUrl"
+        @open-subscription-target="emit('open-subscription-target', $event)"
       />
 
       <LibraryBrowseRatings

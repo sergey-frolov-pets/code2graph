@@ -4,7 +4,7 @@ import {
   type LibraryTarget,
 } from "@/constants/diagram-library";
 import { getLibraryApiBaseUrl } from "@/config/library-api";
-import { readStorageItem, writeStorageItem } from "@/utils/safe-storage";
+import { readStorageItem, writeStorageItem } from "@/core/safe-storage";
 
 function readInitialLibraryTarget(): LibraryTarget {
   const saved = readStorageItem(STORAGE_KEY_LIBRARY_TARGET);

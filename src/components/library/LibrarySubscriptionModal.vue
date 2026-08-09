@@ -3,12 +3,19 @@ import { computed, ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import {
   SECTION_ACCESS_PERMISSIONS,
+  SUBSCRIPTION_DISTRIBUTION_MODES,
+  type DiagramListItemDto,
   type SectionAccessPermission,
+  type SubscriptionDistributionMode,
   type SubscriptionDto,
 } from "@/constants/diagram-library";
 import type { FlatSectionOption } from "@/shared/library/section-tree";
 import { useLocale } from "@/composables/useLocale";
-import { createSubscription, updateSubscription } from "@/services/library/api";
+import {
+  createSubscription,
+  updateSubscription,
+} from "@/services/library/api/subscriptions";
+import { fetchDiagrams } from "@/services/library/api/diagrams";
 
 export interface SectionSelectionState {
   selected: boolean;
@@ -19,6 +26,7 @@ const props = defineProps<{
   open: boolean;
   subscription: SubscriptionDto | null;
   flatSectionOptions: FlatSectionOption[];
+  libraryApiUrl: string;
 }>();
 
 const emit = defineEmits<{
@@ -30,8 +38,12 @@ const { t } = useLocale();
 const titleInput = ref("");
 const descriptionInput = ref("");
 const permissionInput = ref<SectionAccessPermission>("view");
+const distributionModeInput = ref<SubscriptionDistributionMode>("users");
 const sectionStates = ref<Record<string, SectionSelectionState>>({});
+const selectedDiagramIds = ref<string[]>([]);
+const diagramOptions = ref<DiagramListItemDto[]>([]);
 const isSaving = ref(false);
+const isLoadingDiagrams = ref(false);
 const errorMessage = ref("");
 
 const isEditMode = computed(() => Boolean(props.subscription));
@@ -40,10 +52,38 @@ const selectedSectionCount = computed(
   () => Object.values(sectionStates.value).filter((entry) => entry.selected).length,
 );
 
+const selectedTargetCount = computed(
+  () => selectedSectionCount.value + selectedDiagramIds.value.length,
+);
+
+async function loadDiagramOptions(): Promise<void> {
+  isLoadingDiagrams.value = true;
+  try {
+    const collected = new Map<string, DiagramListItemDto>();
+    for (const section of props.flatSectionOptions) {
+      const response = await fetchDiagrams(
+        { sectionId: section.id },
+        props.libraryApiUrl,
+      );
+      for (const diagram of response.diagrams) {
+        collected.set(diagram.id, diagram);
+      }
+    }
+    diagramOptions.value = [...collected.values()].sort((a, b) =>
+      a.title.localeCompare(b.title),
+    );
+  } catch {
+    diagramOptions.value = [];
+  } finally {
+    isLoadingDiagrams.value = false;
+  }
+}
+
 function resetForm(): void {
   titleInput.value = props.subscription?.title ?? "";
   descriptionInput.value = props.subscription?.description ?? "";
   permissionInput.value = props.subscription?.permission ?? "view";
+  distributionModeInput.value = props.subscription?.distributionMode ?? "users";
 
   const next: Record<string, SectionSelectionState> = {};
   for (const section of props.flatSectionOptions) {
@@ -56,6 +96,8 @@ function resetForm(): void {
     };
   }
   sectionStates.value = next;
+  selectedDiagramIds.value =
+    props.subscription?.diagrams.map((entry) => entry.diagramId) ?? [];
   errorMessage.value = "";
 }
 
@@ -88,6 +130,16 @@ function toggleDescendants(sectionId: string): void {
   };
 }
 
+function toggleDiagram(diagramId: string): void {
+  if (selectedDiagramIds.value.includes(diagramId)) {
+    selectedDiagramIds.value = selectedDiagramIds.value.filter(
+      (entry) => entry !== diagramId,
+    );
+    return;
+  }
+  selectedDiagramIds.value = [...selectedDiagramIds.value, diagramId];
+}
+
 function buildSectionsPayload() {
   return Object.entries(sectionStates.value)
     .filter(([, state]) => state.selected)
@@ -95,6 +147,10 @@ function buildSectionsPayload() {
       sectionId,
       includeDescendants: state.includeDescendants,
     }));
+}
+
+function buildDiagramsPayload() {
+  return selectedDiagramIds.value.map((diagramId) => ({ diagramId }));
 }
 
 async function onSave(): Promise<void> {
@@ -105,29 +161,33 @@ async function onSave(): Promise<void> {
   }
 
   const sections = buildSectionsPayload();
-  if (sections.length === 0) {
-    errorMessage.value = t("library.subscriptionSectionsRequired");
+  const diagrams = buildDiagramsPayload();
+  if (sections.length === 0 && diagrams.length === 0) {
+    errorMessage.value = t("library.subscriptionTargetsRequired");
     return;
   }
 
   isSaving.value = true;
   errorMessage.value = "";
   try {
+    const payload = {
+      title,
+      description: descriptionInput.value,
+      permission: permissionInput.value,
+      distributionMode: distributionModeInput.value,
+      sections,
+      diagrams,
+    };
+
     if (props.subscription) {
-      const response = await updateSubscription(props.subscription.id, {
-        title,
-        description: descriptionInput.value,
-        permission: permissionInput.value,
-        sections,
-      });
+      const response = await updateSubscription(
+        props.subscription.id,
+        payload,
+        props.libraryApiUrl,
+      );
       emit("saved", response.subscription);
     } else {
-      const response = await createSubscription({
-        title,
-        description: descriptionInput.value,
-        permission: permissionInput.value,
-        sections,
-      });
+      const response = await createSubscription(payload, props.libraryApiUrl);
       emit("saved", response.subscription);
     }
     emit("close");
@@ -144,6 +204,7 @@ watch(
   (isOpen) => {
     if (isOpen) {
       resetForm();
+      void loadDiagramOptions();
     }
   },
 );
@@ -189,6 +250,22 @@ watch(
       <span class="settings-field__hint">{{ t("library.subscriptionPermissionMergeHint") }}</span>
     </label>
 
+    <label class="settings-field">
+      <span class="settings-field__label">{{ t("library.subscriptionDistributionMode") }}</span>
+      <select v-model="distributionModeInput" class="select">
+        <option
+          v-for="mode in SUBSCRIPTION_DISTRIBUTION_MODES"
+          :key="mode"
+          :value="mode"
+        >
+          {{ t(`library.subscriptionDistributionMode.${mode}`) }}
+        </option>
+      </select>
+      <span class="settings-field__hint">
+        {{ t(`library.subscriptionDistributionMode.${distributionModeInput}Desc`) }}
+      </span>
+    </label>
+
     <div class="settings-field">
       <span class="settings-field__label">
         {{ t("library.subscriptionSections") }}
@@ -224,6 +301,36 @@ watch(
       </ul>
     </div>
 
+    <div class="settings-field">
+      <span class="settings-field__label">
+        {{ t("library.subscriptionDiagrams") }}
+        ({{ selectedDiagramIds.length }})
+      </span>
+      <p v-if="isLoadingDiagrams" class="settings-field__hint">{{ t("app.loading") }}</p>
+      <p v-else-if="diagramOptions.length === 0" class="settings-field__hint">
+        {{ t("library.subscriptionDiagramsEmpty") }}
+      </p>
+      <ul v-else class="subscription-section-list">
+        <li
+          v-for="diagram in diagramOptions"
+          :key="diagram.id"
+          class="subscription-section-list__item"
+        >
+          <label class="subscription-section-list__row">
+            <input
+              type="checkbox"
+              :checked="selectedDiagramIds.includes(diagram.id)"
+              @change="toggleDiagram(diagram.id)"
+            />
+            <span>{{ diagram.title }}</span>
+          </label>
+        </li>
+      </ul>
+      <span class="settings-field__hint">
+        {{ t("library.subscriptionTargetsHint", { count: selectedTargetCount }) }}
+      </span>
+    </div>
+
     <button
       class="btn btn-primary"
       type="button"
@@ -244,13 +351,13 @@ watch(
   padding: 0;
   max-height: 240px;
   overflow-y: auto;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color, #ddd);
   border-radius: 6px;
 }
 
 .subscription-section-list__item {
   padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-color, #eee);
 }
 
 .subscription-section-list__item:last-child {

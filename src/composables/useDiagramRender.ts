@@ -11,18 +11,20 @@ import {
 import type { AppLocale } from "@/constants/i18n";
 import { useDiagramIrCache } from "@/composables/useDiagramIrCache";
 import {
+<<<<<<< HEAD
   bootFormatEngine,
   getFormatHandler,
   isFormatEngineReady,
   renderDiagram,
 } from "@/formats";
 import { buildDiagramIrForCache } from "@/services/conversion/pipeline/convert-diagram";
+=======
+  isMermaidReady,
+  waitForMermaidReady,
+} from "@/services/mermaid/mermaid-engine";
+import type { TranslateFn } from "@/locales/types";
+>>>>>>> origin/main
 import { resolveLocalizedErrorMessage } from "@/utils/localized-app-error";
-
-type TranslateFn = (
-  key: string,
-  params?: Record<string, string | number>,
-) => string;
 
 export interface UseDiagramRenderOptions {
   source: Ref<string>;

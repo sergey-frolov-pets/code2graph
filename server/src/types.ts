@@ -24,6 +24,14 @@ export const SECTION_ACCESS_PERMISSIONS = [
 export type SectionAccessPermission =
   (typeof SECTION_ACCESS_PERMISSIONS)[number];
 
+export const SUBSCRIPTION_DISTRIBUTION_MODES = [
+  "users",
+  "link",
+  "both",
+] as const;
+export type SubscriptionDistributionMode =
+  (typeof SUBSCRIPTION_DISTRIBUTION_MODES)[number];
+
 export const CONTENT_LOCALES = ["", "ru", "en", "de", "fr", "es", "zh"] as const;
 export type ContentLocale = (typeof CONTENT_LOCALES)[number];
 
@@ -205,15 +213,31 @@ export interface SubscriptionSectionDto {
   includeDescendants: boolean;
 }
 
+export interface SubscriptionDiagramDto {
+  diagramId: string;
+  diagramTitle?: string;
+}
+
 export interface SubscriptionDto {
   id: string;
   ownerId: string;
   title: string;
   description: string;
   permission: SectionAccessPermission;
+  distributionMode: SubscriptionDistributionMode;
+  shareToken: string | null;
+  urlPath: string | null;
   sections: SubscriptionSectionDto[];
+  diagrams: SubscriptionDiagramDto[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface GrantedSubscriptionDto extends SubscriptionDto {
+  ownerUsername: string;
+  grantExpiresAt: string | null;
+  grantPermanent: boolean;
+  grantedAt: string;
 }
 
 export interface UserSubscriptionGrantDto {
@@ -264,6 +288,12 @@ export function isSectionAccessPermission(
   value: string,
 ): value is SectionAccessPermission {
   return (SECTION_ACCESS_PERMISSIONS as readonly string[]).includes(value);
+}
+
+export function isSubscriptionDistributionMode(
+  value: string,
+): value is SubscriptionDistributionMode {
+  return (SUBSCRIPTION_DISTRIBUTION_MODES as readonly string[]).includes(value);
 }
 
 export function isContentLocale(value: string): value is ContentLocale {

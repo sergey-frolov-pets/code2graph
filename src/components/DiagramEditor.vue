@@ -148,7 +148,7 @@ const {
   removeFold,
   addRegion,
   scrollToSourceLine,
-} = useCodeFolds({ source, textareaRef, syncScroll });
+} = useCodeFolds({ source, diagramFormat, textareaRef, syncScroll });
 
 const regionsButtonEl = computed(
   () => gutterComponentRef.value?.regionsButtonEl ?? null,
