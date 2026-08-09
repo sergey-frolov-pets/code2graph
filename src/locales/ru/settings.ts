@@ -28,6 +28,8 @@ export const settingsMessages: LocaleMessages = {
   "settings.tabTheme": "Тема",
   "settings.tabLocale": "Язык",
   "settings.tabAi": "AI",
+  "settings.tabGeneral": "Общие",
+  "settings.tabLlm": "AI / LLM",
   "settings.tabLibrary": "Библиотека",
   "settings.help": "Справка",
   "settings.plantumlGuide": "Справка PlantUML",
