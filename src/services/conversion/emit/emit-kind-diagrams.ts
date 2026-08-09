@@ -2,6 +2,7 @@ import type { DiagramIR } from "@/services/conversion/diagram-ir";
 import {
   escapeMermaidQuoted,
   flattenMermaidLabel,
+  formatMermaidLabelToken,
   formatMermaidNodeLabel,
 } from "@/services/conversion/emit/mermaid-emit-utils";
 import {
@@ -200,12 +201,13 @@ export function emitMermaidRequirement(ir: DiagramIR): string {
 
 export function emitMermaidQuadrant(ir: DiagramIR): string {
   const axes = ir.extras?.quadrantAxes;
+  const title = ir.extras?.title ?? "Priorities";
   const lines = [
     "quadrantChart",
-    ir.extras?.title ? `    title ${ir.extras.title}` : "    title Priorities",
+    `    title ${formatMermaidLabelToken(title)}`,
     `    x-axis ${axes?.xFrom ?? "Low"} --> ${axes?.xTo ?? "High"}`,
     `    y-axis ${axes?.yFrom ?? "Low"} --> ${axes?.yTo ?? "High"}`,
-    "    quadrant-1 High priority",
+    `    quadrant-1 ${formatMermaidLabelToken("High priority")}`,
   ];
   const items = ir.extras?.quadrantItems ?? ir.nodes.map((node, index) => ({
     label: node.label,
@@ -213,7 +215,7 @@ export function emitMermaidQuadrant(ir: DiagramIR): string {
     y: Number(node.semantic?.y ?? 0.3 + index * 0.1),
   }));
   for (const item of items) {
-    lines.push(`    ${item.label}: [${item.x}, ${item.y}]`);
+    lines.push(`    ${formatMermaidLabelToken(item.label)}: [${item.x}, ${item.y}]`);
   }
   return lines.join("\n");
 }
