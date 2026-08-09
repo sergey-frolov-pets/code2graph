@@ -67,6 +67,7 @@ const fontFamilyOptions = computed(() =>
 </script>
 
 <template>
+  <div class="settings-tab-panel">
   <div class="settings-section">
     <h3 class="settings-section__title">{{ t("settings.editor") }}</h3>
 
@@ -267,6 +268,7 @@ const fontFamilyOptions = computed(() =>
         {{ t("settings.about") }}
       </button>
     </div>
+  </div>
   </div>
 </template>
 
