@@ -32,6 +32,7 @@ import {
 } from "@/services/library/api/subscriptions";
 import { RATINGS_SECTION_ID } from "@/constants/diagram-library";
 import type { LayoutEngine } from "@/constants";
+import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { RenderMode } from "@/constants/render-settings";
 import type {
   DiagramDto,
@@ -52,6 +53,7 @@ export interface UseLibraryModalFlowOptions {
   onOpenDiagram: (payload: {
     content: string;
     fileName: string;
+    format?: DiagramFormat;
     diagramId?: string;
   }) => void;
   onClose: () => void;
