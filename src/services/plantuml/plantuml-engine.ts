@@ -8,15 +8,16 @@ import { enqueueRender } from "@/services/plantuml/render-queue";
 import { loadEngine } from "@/services/plantuml/vendor-loader";
 import type { PlantUmlRenderOptions } from "@/types/plantuml";
 
-export async function renderPlantUmlToSvg(
+let lastRenderUsedOnlineServer = false;
+
+export function didLastPlantUmlRenderUseOnlineServer(): boolean {
+  return lastRenderUsedOnlineServer;
+}
+
+async function renderPlantUmlOfflineToSvg(
   lines: string[],
   options: PlantUmlRenderOptions = {},
-  renderMode: RenderMode = DEFAULT_RENDER_MODE,
 ): Promise<string> {
-  if (isOnlineRenderMode(renderMode)) {
-    return renderPlantUmlOnlineToSvg(lines, options);
-  }
-
   const engine = await loadEngine();
 
   return enqueueRender(
@@ -30,6 +31,31 @@ export async function renderPlantUmlToSvg(
         );
       }),
   );
+}
+
+export async function renderPlantUmlToSvg(
+  lines: string[],
+  options: PlantUmlRenderOptions = {},
+  renderMode: RenderMode = DEFAULT_RENDER_MODE,
+): Promise<string> {
+  if (isOnlineRenderMode(renderMode)) {
+    try {
+      const svg = await renderPlantUmlOnlineToSvg(lines, options);
+      lastRenderUsedOnlineServer = true;
+      return svg;
+    } catch (onlineError) {
+      try {
+        const svg = await renderPlantUmlOfflineToSvg(lines, options);
+        lastRenderUsedOnlineServer = false;
+        return svg;
+      } catch {
+        throw onlineError;
+      }
+    }
+  }
+
+  lastRenderUsedOnlineServer = false;
+  return renderPlantUmlOfflineToSvg(lines, options);
 }
 
 export function isVizGlobalReady(): boolean {
