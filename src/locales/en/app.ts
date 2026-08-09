@@ -30,6 +30,8 @@ export const appMessages: LocaleMessages = {
   "app.mainNav": "Main navigation",
   "app.mobilePanelEditor": "Editor",
   "app.mobilePanelPreview": "Preview",
+  "app.showPreview": "Show preview",
+  "app.resizePanels": "Resize editor and preview panels",
   "app.editorRegion": "Diagram source editor",
   "app.previewRegion": "Diagram preview",
   "app.exportError": "Export error",

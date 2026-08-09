@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import AppDialogHost from "@/components/AppDialogHost.vue";
 import AppModalHost from "@/components/AppModalHost.vue";
 import TooltipProvider from "@/components/ui/TooltipProvider.vue";
@@ -7,10 +7,28 @@ import DiagramEditor from "@/components/DiagramEditor.vue";
 import DiagramPreview from "@/components/DiagramPreview.vue";
 import AppHeader from "@/components/layout/AppHeader.vue";
 import AppStatusBar from "@/components/layout/AppStatusBar.vue";
+import PreviewFab from "@/components/layout/PreviewFab.vue";
+import PwaInstallBanner from "@/components/layout/PwaInstallBanner.vue";
+import { useMediaQuery } from "@/composables/useMediaQuery";
+import { useResizableSplit } from "@/composables/useResizableSplit";
 import { provideAppShell, useAppShell } from "@/composables/useAppShell";
 
 const shell = useAppShell();
 provideAppShell(shell);
+
+const mainRef = ref<HTMLElement | null>(null);
+const editorFocused = ref(false);
+const isDesktopLayout = useMediaQuery("(min-width: 901px)");
+
+const {
+  splitRatio,
+  isDragging,
+  editorPaneStyle,
+  previewPaneStyle,
+  onDividerPointerDown,
+  onDividerPointerMove,
+  onDividerPointerUp,
+} = useResizableSplit(mainRef);
 
 const {
   t,
@@ -37,6 +55,13 @@ const {
   canRedo,
   modals,
 } = shell;
+
+const showPreviewFab = computed(
+  () =>
+    !isDesktopLayout.value &&
+    activeMobilePanel.value === "editor" &&
+    editorFocused.value,
+);
 
 onMounted(shell.boot);
 </script>
@@ -74,11 +99,17 @@ onMounted(shell.boot);
     </div>
 
     <main
+      ref="mainRef"
       id="app-main"
       class="app-main"
-      :class="`mobile-panel--${activeMobilePanel}`"
+      :class="[
+        `mobile-panel--${activeMobilePanel}`,
+        { 'app-main--split-dragging': isDragging },
+      ]"
     >
       <DiagramEditor
+        class="split-pane split-pane--editor"
+        :style="isDesktopLayout ? editorPaneStyle : undefined"
         v-model="source"
         v-model:diagram-format="diagramFormat"
         :error-lines="syntaxErrorLines"
@@ -103,9 +134,29 @@ onMounted(shell.boot);
         @convert="modals.openConvertModal"
         @ai-patch="shell.onAiPatchRequestOpen"
         @ai-syntax-ask="shell.onAiSyntaxAskOpen()"
+        @editor-focus="editorFocused = true"
+        @editor-blur="editorFocused = false"
+      />
+
+      <div
+        v-if="isDesktopLayout"
+        class="app-split-divider"
+        role="separator"
+        aria-orientation="vertical"
+        :aria-valuenow="Math.round(splitRatio * 100)"
+        aria-valuemin="25"
+        aria-valuemax="75"
+        :aria-label="t('app.resizePanels')"
+        tabindex="0"
+        @pointerdown="onDividerPointerDown"
+        @pointermove="onDividerPointerMove"
+        @pointerup="onDividerPointerUp"
+        @pointercancel="onDividerPointerUp"
       />
 
       <DiagramPreview
+        class="split-pane split-pane--preview"
+        :style="isDesktopLayout ? previewPaneStyle : undefined"
         :svg="svg"
         :error="error"
         :is-rendering="isRendering"
@@ -118,6 +169,9 @@ onMounted(shell.boot);
         @export-png="shell.exportPng"
       />
     </main>
+
+    <PreviewFab :visible="showPreviewFab" @show-preview="activeMobilePanel = 'preview'" />
+    <PwaInstallBanner />
 
     <AppStatusBar
       :loaded-file-name="loadedFileName"

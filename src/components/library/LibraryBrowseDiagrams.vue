@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
+import { useVirtualizer } from "@tanstack/vue-virtual";
 import LibraryStarRating from "@/components/library/LibraryStarRating.vue";
 import EmptyState from "@/components/ui/EmptyState.vue";
 import LoadingState from "@/components/ui/LoadingState.vue";
 import { useLocale } from "@/composables/useLocale";
-import { LIBRARY_DIAGRAM_PAGE_SIZE } from "@/constants/library-browse";
+import { LIBRARY_ROW_ESTIMATE_HEIGHT } from "@/constants/library-browse";
 import type { DiagramListItemDto, DiagramSortOption } from "@/constants/diagram-library";
 import { DIAGRAM_SORT_OPTIONS } from "@/constants/diagram-library";
 
@@ -26,40 +27,26 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
+const listRef = ref<HTMLElement | null>(null);
 
-const visibleCount = ref(LIBRARY_DIAGRAM_PAGE_SIZE);
-
-const visibleDiagrams = computed(() =>
-  props.diagrams.slice(0, visibleCount.value),
+const rowVirtualizer = useVirtualizer(
+  computed(() => ({
+    count: props.diagrams.length,
+    getScrollElement: () => listRef.value,
+    estimateSize: () => LIBRARY_ROW_ESTIMATE_HEIGHT,
+    overscan: 8,
+  })),
 );
 
-const hasMoreDiagrams = computed(
-  () => props.diagrams.length > visibleCount.value,
-);
-
-const remainingDiagramCount = computed(
-  () => props.diagrams.length - visibleCount.value,
-);
-
-function resetPagination(): void {
-  visibleCount.value = LIBRARY_DIAGRAM_PAGE_SIZE;
-}
-
-function loadMoreDiagrams(): void {
-  visibleCount.value += LIBRARY_DIAGRAM_PAGE_SIZE;
-}
+const virtualRows = computed(() => rowVirtualizer.value.getVirtualItems());
 
 function onFiltersChange(): void {
-  resetPagination();
   emit("filters-change");
 }
 
-watch(
-  () => props.diagrams,
-  () => {
-    resetPagination();
-  },
-);
+function diagramAt(index: number): DiagramListItemDto {
+  return props.diagrams[index]!;
+}
 </script>
 
 <template>
@@ -109,58 +96,80 @@ watch(
       </label>
     </div>
 
-    <div class="library-step__content">
+    <div ref="listRef" class="library-step__content library-step__content--virtual">
       <LoadingState v-if="isLoading" :message="t('app.loading')" />
       <EmptyState
         v-else-if="diagrams.length === 0"
         :title="t('library.noResults')"
         :description="t('library.noResultsHint')"
       />
-      <button
-        v-for="diagram in visibleDiagrams"
-        :key="diagram.id"
-        class="library-row list-virtual-row"
-        type="button"
-        @click="emit('diagram-pick', diagram.id)"
+      <div
+        v-else
+        class="library-virtual-list"
+        :style="{ height: `${rowVirtualizer.getTotalSize()}px` }"
       >
-        <span class="library-row__main">
-          <span class="library-row__title">{{ diagram.title }}</span>
-          <span class="library-row__meta">
-            {{ t("library.bytes", { size: diagram.byteSize }) }}
-            <template v-if="diagram.voteCount">
-              · {{ t("library.ratingVotesShort", { votes: diagram.voteCount }) }}
-            </template>
-          </span>
-          <span
-            v-if="diagram.avgRating"
-            class="library-row__rating"
+        <div
+          v-for="virtualRow in virtualRows"
+          :key="String(virtualRow.key)"
+          class="library-virtual-list__row"
+          :style="{
+            transform: `translateY(${virtualRow.start}px)`,
+          }"
+        >
+          <button
+            class="library-row list-virtual-row"
+            type="button"
+            @click="emit('diagram-pick', diagramAt(virtualRow.index).id)"
           >
-            <LibraryStarRating
-              :value="Math.round(diagram.avgRating)"
-              readonly
-              size="sm"
-            />
-            <span>{{ diagram.avgRating.toFixed(1) }}</span>
-          </span>
-          <span v-if="diagram.description" class="library-row__description">
-            {{ diagram.description }}
-          </span>
-          <span v-if="diagram.tags.length" class="library-row__tags">
-            <span v-for="tag in diagram.tags" :key="tag" class="library-tag">
-              {{ tag }}
+            <span class="library-row__main">
+              <span class="library-row__title">
+                {{ diagramAt(virtualRow.index).title }}
+              </span>
+              <span class="library-row__meta">
+                {{ t("library.bytes", { size: diagramAt(virtualRow.index).byteSize }) }}
+                <template v-if="(diagramAt(virtualRow.index).voteCount ?? 0) > 0">
+                  ·
+                  {{
+                    t("library.ratingVotesShort", {
+                      votes: diagramAt(virtualRow.index).voteCount ?? 0,
+                    })
+                  }}
+                </template>
+              </span>
+              <span
+                v-if="diagramAt(virtualRow.index).avgRating"
+                class="library-row__rating"
+              >
+                <LibraryStarRating
+                  :value="Math.round(diagramAt(virtualRow.index).avgRating!)"
+                  readonly
+                  size="sm"
+                />
+                <span>{{ diagramAt(virtualRow.index).avgRating!.toFixed(1) }}</span>
+              </span>
+              <span
+                v-if="diagramAt(virtualRow.index).description"
+                class="library-row__description"
+              >
+                {{ diagramAt(virtualRow.index).description }}
+              </span>
+              <span
+                v-if="diagramAt(virtualRow.index).tags.length"
+                class="library-row__tags"
+              >
+                <span
+                  v-for="tag in diagramAt(virtualRow.index).tags"
+                  :key="tag"
+                  class="library-tag"
+                >
+                  {{ tag }}
+                </span>
+              </span>
             </span>
-          </span>
-        </span>
-        <span class="library-row__chevron">›</span>
-      </button>
-      <button
-        v-if="hasMoreDiagrams"
-        class="btn library-load-more"
-        type="button"
-        @click="loadMoreDiagrams"
-      >
-        {{ t("library.loadMore", { count: remainingDiagramCount }) }}
-      </button>
+            <span class="library-row__chevron">›</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -180,8 +189,15 @@ watch(
   margin-top: 4px;
 }
 
-.library-load-more {
+.library-virtual-list {
+  position: relative;
   width: 100%;
-  margin-top: 8px;
+}
+
+.library-virtual-list__row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
 }
 </style>
