@@ -98,7 +98,14 @@ export const miscMessages: LocaleMessages = {
   "install.alreadyInstalled": "App is already installed",
   "install.manual": "Manual install — click for instructions",
   "about.title": "About",
-  "about.lead": "{name} — offline editor and generator for PlantUML diagrams in SVG and PNG formats.",
+  "about.lead":
+    "{name} — cross-platform offline editor for PlantUML, Mermaid, and GraphML diagrams with SVG and PNG export.",
+  "about.formats": "Supported formats",
+  "about.formatsPlantuml": "PlantUML — textual UML diagrams with offline rendering via @plantuml/core (Smetana).",
+  "about.formatsMermaid":
+    "Mermaid — text-based diagrams (flowchart, sequence, class, etc.) with offline rendering via mermaid.js or online via mermaid.ink.",
+  "about.formatsGraphml":
+    "GraphML — XML graph format; view and edit in the app, visual design in",
   "about.developedBy": "Developed by {developer}",
   "about.version": "Version {version}",
   "about.site": "Website",

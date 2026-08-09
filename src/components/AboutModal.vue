@@ -24,6 +24,16 @@ const { t } = useLocale();
     </p>
     <p class="about-meta">{{ t("about.version", { version: APP_META.version }) }}</p>
 
+    <h3 class="about-subtitle">{{ t("about.formats") }}</h3>
+    <ul class="about-formats">
+      <li>{{ t("about.formatsPlantuml") }}</li>
+      <li>{{ t("about.formatsMermaid") }}</li>
+      <li>
+        {{ t("about.formatsGraphml") }}
+        <a :href="APP_LINKS.yEd" target="_blank" rel="noopener noreferrer">yEd</a>.
+      </li>
+    </ul>
+
     <h3 class="about-subtitle">{{ t("about.site") }}</h3>
     <p class="about-meta">
       <a :href="APP_LINKS.site" target="_blank" rel="noopener noreferrer">
@@ -62,6 +72,22 @@ const { t } = useLocale();
         <a :href="APP_LINKS.smetana" target="_blank" rel="noopener noreferrer">
           Smetana layout engine
         </a>
+      </li>
+      <li>
+        <a :href="APP_LINKS.mermaid" target="_blank" rel="noopener noreferrer">
+          Mermaid
+        </a>
+      </li>
+      <li>
+        <a :href="APP_LINKS.graphmlGuide" target="_blank" rel="noopener noreferrer">
+          GraphML
+        </a>
+      </li>
+      <li>
+        <a :href="APP_LINKS.yEd" target="_blank" rel="noopener noreferrer">yEd</a>
+      </li>
+      <li>
+        <a :href="APP_LINKS.dagre" target="_blank" rel="noopener noreferrer">dagre</a>
       </li>
       <li>
         <a :href="APP_LINKS.vue" target="_blank" rel="noopener noreferrer">Vue.js</a>
@@ -110,6 +136,16 @@ const { t } = useLocale();
 }
 
 .about-links a {
+  color: var(--accent);
+}
+
+.about-formats {
+  margin: 0;
+  padding-left: 1.2rem;
+  line-height: 1.6;
+}
+
+.about-formats a {
   color: var(--accent);
 }
 </style>
