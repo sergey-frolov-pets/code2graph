@@ -652,27 +652,6 @@ a {
     overflow: visible;
   }
 
-  .mobile-panel-tabs {
-    display: flex;
-    gap: 8px;
-    padding: 0 12px 8px;
-  }
-
-  .mobile-panel-tabs__btn {
-    flex: 1;
-    min-height: var(--btn-touch);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--surface-muted);
-    color: var(--text);
-  }
-
-  .mobile-panel-tabs__btn.is-active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-  }
-
   .app-main {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
@@ -689,12 +668,6 @@ a {
   .panel {
     height: auto;
     min-height: 40vh;
-  }
-}
-
-@media (min-width: 901px) {
-  .mobile-panel-tabs {
-    display: none;
   }
 }
 
