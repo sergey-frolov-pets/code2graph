@@ -52,7 +52,7 @@ export const plantUmlFormatHandler: FormatHandler = {
   },
   isEngineReady(context) {
     if (isOnlineRenderMode(context.renderMode)) {
-      return navigator.onLine;
+      return true;
     }
 
     return isEngineReady();

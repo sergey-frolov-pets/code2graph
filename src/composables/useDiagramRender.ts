@@ -24,6 +24,10 @@ import {
   resetMermaidInkConnectivity,
 } from "@/services/mermaid/mermaid-online";
 import { didLastMermaidRenderUseOnlineInk } from "@/services/mermaid/mermaid-engine";
+import {
+  probePlantUmlServerConnectivity,
+  resetPlantUmlServerConnectivity,
+} from "@/services/plantuml/plantuml-online";
 import { didLastPlantUmlRenderUseOnlineServer } from "@/services/plantuml/plantuml-engine";
 import { isFileProtocol } from "@/pwa/installPromptState";
 
@@ -94,6 +98,15 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
 
     if (diagramFormat.value === "mermaid") {
       const reachable = await probeMermaidInkConnectivity();
+      engineReady.value = true;
+      engineStatus.value = reachable
+        ? t("app.renderModeOnlineReady")
+        : resolveOnlineEngineNotReadyMessage();
+      return;
+    }
+
+    if (diagramFormat.value === "plantuml") {
+      const reachable = await probePlantUmlServerConnectivity();
       engineReady.value = true;
       engineStatus.value = reachable
         ? t("app.renderModeOnlineReady")
@@ -254,6 +267,10 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
 
     if (diagramFormat.value === "mermaid") {
       resetMermaidInkConnectivity();
+    }
+
+    if (diagramFormat.value === "plantuml") {
+      resetPlantUmlServerConnectivity();
     }
 
     await updateOnlineEngineStatus();

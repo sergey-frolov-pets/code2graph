@@ -13,6 +13,13 @@ export const PLANTUML_ONLINE_SERVER_URL = "https://www.plantuml.com/plantuml";
 
 export const PLANTUML_ONLINE_ENCODE_PREFIX = "~1";
 
+export const PLANTUML_ONLINE_MAX_URL_LENGTH = 8000;
+
+export const PLANTUML_ONLINE_PROBE_TIMEOUT_MS = 15000;
+
+export const PLANTUML_ONLINE_PROBE_ENCODED =
+  "U9npA2v9B2efpStXSip9J4vLqBLJSCfFibB8ICt9oUToICrBAStD0G3mjmoW";
+
 export const MERMAID_ONLINE_SERVER_URL = "https://mermaid.ink";
 
 export const MERMAID_ONLINE_SVG_PATH = "/svg";
