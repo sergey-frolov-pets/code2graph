@@ -7,6 +7,7 @@ import {
 import { LocalizedAppError } from "@/utils/localized-app-error";
 import { prepareMermaidSource } from "@/utils/mermaid-source";
 import { encodeMermaidStateForInk } from "@/utils/mermaid-encode";
+import { createFetchTimeoutSignal } from "@/utils/fetch-timeout";
 import { isFileProtocol } from "@/pwa/installPromptState";
 
 const MERMAID_INK_PROBE_ENCODED =
@@ -78,7 +79,7 @@ export async function probeMermaidInkConnectivity(): Promise<boolean> {
         method: "GET",
         mode: "cors",
         cache: "no-store",
-        signal: AbortSignal.timeout(MERMAID_ONLINE_PROBE_TIMEOUT_MS),
+        signal: createFetchTimeoutSignal(MERMAID_ONLINE_PROBE_TIMEOUT_MS),
       });
       const body = await response.text();
       inkReachable =
@@ -120,7 +121,7 @@ export async function renderMermaidOnlineToSvg(
       method: "GET",
       mode: "cors",
       cache: "no-store",
-      signal: AbortSignal.timeout(MERMAID_ONLINE_PROBE_TIMEOUT_MS),
+      signal: createFetchTimeoutSignal(MERMAID_ONLINE_PROBE_TIMEOUT_MS),
     });
   } catch {
     throw new LocalizedAppError("engine.mermaidOnlineNetworkError");

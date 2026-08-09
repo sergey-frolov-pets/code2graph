@@ -73,6 +73,7 @@ export const miscMessages: LocaleMessages = {
   "engine.mermaidOnlineRenderInvalid": "Mermaid server returned an invalid response",
   "engine.mermaidOnlineFileProtocol": "Online Mermaid is unavailable over file:// — using offline rendering",
   "engine.mermaidOnlineUrlTooLong": "Diagram is too large for mermaid.ink — using offline rendering",
+  "engine.mermaidOnlineOfflineFallback": "mermaid.ink unavailable — preview via offline Mermaid",
   "engine.onlineFileProtocol": "Online rendering is unavailable over file:// — use the hosted site or PWA",
   "include.fetchFailed": "Failed to load include: {path}",
   "preview.title": "Preview",

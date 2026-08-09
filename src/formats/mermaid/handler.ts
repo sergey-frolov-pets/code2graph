@@ -54,6 +54,7 @@ export const mermaidFormatHandler: FormatHandler = {
   },
   async bootEngine(context) {
     if (isOnlineRenderMode(context.renderMode)) {
+      void waitForMermaidReady(context.diagramDarkMode);
       return;
     }
 
