@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import LoadingState from "@/components/ui/LoadingState.vue";
+import { useActiveLlmLabel } from "@/composables/useActiveLlmLabel";
 import { useLocale } from "@/composables/useLocale";
 
 defineProps<{
@@ -10,6 +11,7 @@ defineProps<{
 }>();
 
 const { t } = useLocale();
+const { activeLlmDetail } = useActiveLlmLabel();
 </script>
 
 <template>
@@ -18,6 +20,7 @@ const { t } = useLocale();
       v-if="isGenerating"
       class="wizard-step__loading"
       :message="t('llm.wizard.generating')"
+      :detail="activeLlmDetail"
     />
     <p v-if="errorMessage" class="wizard-error">{{ errorMessage }}</p>
     <p v-if="resultExplanation" class="wizard-explanation">{{ resultExplanation }}</p>

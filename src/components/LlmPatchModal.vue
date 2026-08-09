@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
+import LoadingState from "@/components/ui/LoadingState.vue";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
 import {
@@ -8,6 +9,7 @@ import {
   generateValidPlantUmlPatch,
 } from "@/services/llm/llm-plantuml-edit";
 import { requestsStructuralDiagramEdit } from "@/constants/llm-wizard";
+import { useActiveLlmLabel } from "@/composables/useActiveLlmLabel";
 import { useLocale } from "@/composables/useLocale";
 import { LlmClientError } from "@/services/llm/llm-types";
 import {
@@ -33,6 +35,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
+const { activeLlmDetail, generatingLabel } = useActiveLlmLabel();
 
 const userPrompt = ref("");
 const isGenerating = ref(false);
@@ -247,6 +250,13 @@ function onApply(): void {
 
     <p v-if="errorMessage" class="llm-error">{{ errorMessage }}</p>
 
+    <LoadingState
+      v-if="isGenerating"
+      compact
+      :message="t('llm.patch.generating')"
+      :detail="activeLlmDetail"
+    />
+
     <div v-if="resultExplanation" class="llm-explanation">
       {{ resultExplanation }}
     </div>
@@ -274,7 +284,7 @@ function onApply(): void {
         :disabled="!canGenerate"
         @click="onGenerate"
       >
-        {{ isGenerating ? t("llm.patch.generating") : t("llm.patch.generate") }}
+        {{ isGenerating ? generatingLabel : t("llm.patch.generate") }}
       </button>
       <button
         class="btn btn-primary"

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import IconButton from "@/components/IconButton.vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
+import { useActiveLlmLabel } from "@/composables/useActiveLlmLabel";
 import { useLocale } from "@/composables/useLocale";
 import type { WizardStepId } from "@/constants/llm-wizard";
 
@@ -23,6 +24,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
+const { generatingLabel } = useActiveLlmLabel();
 </script>
 
 <template>
@@ -71,7 +73,7 @@ const { t } = useLocale();
 
       <IconButton
         v-if="currentStepId === 'context' && isAiMode"
-        :label="isGenerating ? t('llm.wizard.generating') : t('llm.wizard.generate')"
+        :label="isGenerating ? generatingLabel : t('llm.wizard.generate')"
         extra-class="wizard-footer__btn"
         primary
         :disabled="!canGoNext || isGenerating"
@@ -82,7 +84,7 @@ const { t } = useLocale();
 
       <IconButton
         v-if="currentStepId === 'prompt'"
-        :label="isGenerating ? t('llm.wizard.generating') : t('llm.wizard.generate')"
+        :label="isGenerating ? generatingLabel : t('llm.wizard.generate')"
         extra-class="wizard-footer__btn"
         primary
         :disabled="!canGoNext || isGenerating"

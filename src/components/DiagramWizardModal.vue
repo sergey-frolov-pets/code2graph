@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { toRef } from "vue";
 import AppModal from "@/components/AppModal.vue";
+import LoadingState from "@/components/ui/LoadingState.vue";
 import WizardOnboardingBanner from "@/components/wizard/WizardOnboardingBanner.vue";
 import WizardAiSetupPanel from "@/components/wizard/WizardAiSetupPanel.vue";
 import WizardLivePreview from "@/components/wizard/WizardLivePreview.vue";
@@ -8,6 +9,7 @@ import WizardProgressSteps from "@/components/wizard/WizardProgressSteps.vue";
 import WizardStepContent from "@/components/wizard/WizardStepContent.vue";
 import WizardModalFooter from "@/components/wizard/WizardModalFooter.vue";
 import { useDiagramWizardFlow } from "@/composables/wizard/useDiagramWizardFlow";
+import { useActiveLlmLabel } from "@/composables/useActiveLlmLabel";
 import { useWizardOnboarding } from "@/composables/wizard/useWizardOnboarding";
 import { useLocale } from "@/composables/useLocale";
 import type { LayoutEngine } from "@/constants";
@@ -27,6 +29,7 @@ const emit = defineEmits<{
 
 const { t, locale } = useLocale();
 const { showWizardBanner, dismissWizardBanner } = useWizardOnboarding();
+const { activeLlmDetail } = useActiveLlmLabel();
 
 const {
   stepIndex,
@@ -113,6 +116,14 @@ const {
       v-if="aiSetupVisible && isAiMode"
       :reason="aiSetupReason"
       @retry="handleAiSetupRetry"
+    />
+
+    <LoadingState
+      v-if="isGenerating && isAiMode && currentStepId !== 'result'"
+      compact
+      class="wizard-generating-banner"
+      :message="t('llm.wizard.generating')"
+      :detail="activeLlmDetail"
     />
 
     <div

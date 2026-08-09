@@ -3,6 +3,10 @@
   font-weight: 600;
 }
 
+.wizard-generating-banner {
+  margin-bottom: 12px;
+}
+
 .wizard-progress {
   height: 6px;
   margin: 0 0 8px;
