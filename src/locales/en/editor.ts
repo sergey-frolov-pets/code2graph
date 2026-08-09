@@ -64,6 +64,7 @@ export const editorMessages: LocaleMessages = {
   "editor.aiSyntaxAsk": "Ask about syntax",
   "editor.undo": "Undo (Ctrl+Z)",
   "editor.redo": "Redo (Ctrl+Y)",
+  "editor.history.edit": "Edit",
   "editor.completion.context": "context",
   "editor.completion.keyword": "keyword",
   "editor.completion.directive": "directive",

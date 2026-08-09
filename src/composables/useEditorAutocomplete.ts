@@ -6,6 +6,9 @@ import {
   mapSourceOffsetToDisplayOffset,
 } from "@/utils/code-folds";
 import {
+  MIN_COMPLETION_PREFIX_LENGTH,
+} from "@/utils/completion-types";
+import {
   extractDiagramCompletionPrefix,
   getDiagramCompletions,
   type CompletionItem,
@@ -135,6 +138,11 @@ export function useEditorAutocomplete(options: {
       position.column,
     );
 
+    if (prefixInfo.prefix.length < MIN_COMPLETION_PREFIX_LENGTH) {
+      close();
+      return;
+    }
+
     const items = getDiagramCompletions(options.diagramFormat.value, {
       lines: options.source.value.split(/\r?\n/),
       lineNumber: position.sourceLine,
@@ -216,6 +224,12 @@ export function useEditorAutocomplete(options: {
     }
 
     if (!isOpen.value || !hasSuggestions.value) {
+      return false;
+    }
+
+    const context = completionContext.value;
+    if (!context || context.prefix.length < MIN_COMPLETION_PREFIX_LENGTH) {
+      close();
       return false;
     }
 

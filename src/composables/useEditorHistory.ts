@@ -15,6 +15,7 @@ export interface EditorHistorySnapshot {
   format?: DiagramFormat;
 }
 
+export const MIN_EDITOR_HISTORY_ENTRIES = 10;
 const MAX_EDITOR_HISTORY_ENTRIES = 50;
 
 const undoStack = ref<EditorHistoryEntry[]>([]);
@@ -38,7 +39,7 @@ export function useEditorHistory() {
         ...entry,
         timestamp: Date.now(),
       },
-    ].slice(-MAX_EDITOR_HISTORY_ENTRIES);
+    ].slice(-Math.max(MIN_EDITOR_HISTORY_ENTRIES, MAX_EDITOR_HISTORY_ENTRIES));
 
     redoStack.value = [];
   }

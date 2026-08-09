@@ -16,6 +16,7 @@ import { useDiagramExport } from "@/composables/useDiagramExport";
 import { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import { useDiagramRender } from "@/composables/useDiagramRender";
 import { useEditorHistory } from "@/composables/useEditorHistory";
+import { useEditorSourceHistory } from "@/composables/useEditorSourceHistory";
 import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
 import { useLocale } from "@/composables/useLocale";
 import { usePersistedSettings } from "@/composables/usePersistedSettings";
@@ -109,6 +110,7 @@ export function useAppShell(): AppShellContext {
   const activeMobilePanel = ref<"editor" | "preview">("editor");
   const diagramFormat = ref<DiagramFormat>("plantuml");
   const syntaxAskInitialQuestion = ref("");
+  const suppressSourceHistory = ref(0);
 
   const { alert } = useAppDialog();
   const { t, locale } = useLocale();
@@ -123,6 +125,17 @@ export function useAppShell(): AppShellContext {
     clearHistory,
     pushHistoryEntry,
   } = useEditorHistory();
+
+  const historyEditLabel = computed(() => t("editor.history.edit"));
+
+  function withSuppressedSourceHistory(action: () => void): void {
+    suppressSourceHistory.value += 1;
+    try {
+      action();
+    } finally {
+      suppressSourceHistory.value -= 1;
+    }
+  }
 
   const {
     source,
@@ -139,6 +152,19 @@ export function useAppShell(): AppShellContext {
     persistSettings,
     restoreSettings,
   } = usePersistedSettings();
+
+  const { flushPendingHistory, cancelPendingHistory } = useEditorSourceHistory({
+    source,
+    diagramFormat,
+    pushHistoryEntry,
+    historyEditLabel,
+    isSuppressed: computed(() => suppressSourceHistory.value > 0),
+  });
+
+  function clearEditorHistory(): void {
+    cancelPendingHistory();
+    clearHistory();
+  }
 
   const formatDefinition = computed(() =>
     getDiagramFormatDefinition(diagramFormat.value),
@@ -185,7 +211,7 @@ export function useAppShell(): AppShellContext {
     syntaxErrorLines,
     persistSettings,
     scheduleRender,
-    clearHistory,
+    clearHistory: clearEditorHistory,
   });
 
   const { canExport, exportSvg, exportPng } = useDiagramExport({
@@ -211,42 +237,51 @@ export function useAppShell(): AppShellContext {
   });
 
   function applySourceUndo(): void {
-    const previous = undoHistory(source.value, diagramFormat.value);
-    if (!previous) {
-      return;
-    }
-    source.value = previous.source;
-    if (previous.format !== undefined) {
-      diagramFormat.value = previous.format;
-    }
-    syntaxErrorLines.value = [];
-    persistSettings();
-    scheduleRender();
+    flushPendingHistory();
+    withSuppressedSourceHistory(() => {
+      const previous = undoHistory(source.value, diagramFormat.value);
+      if (!previous) {
+        return;
+      }
+      source.value = previous.source;
+      if (previous.format !== undefined) {
+        diagramFormat.value = previous.format;
+      }
+      syntaxErrorLines.value = [];
+      persistSettings();
+      scheduleRender();
+    });
   }
 
   function applySourceRedo(): void {
-    const next = redoHistory(source.value, diagramFormat.value);
-    if (!next) {
-      return;
-    }
-    source.value = next.source;
-    if (next.format !== undefined) {
-      diagramFormat.value = next.format;
-    }
-    syntaxErrorLines.value = [];
-    persistSettings();
-    scheduleRender();
+    flushPendingHistory();
+    withSuppressedSourceHistory(() => {
+      const next = redoHistory(source.value, diagramFormat.value);
+      if (!next) {
+        return;
+      }
+      source.value = next.source;
+      if (next.format !== undefined) {
+        diagramFormat.value = next.format;
+      }
+      syntaxErrorLines.value = [];
+      persistSettings();
+      scheduleRender();
+    });
   }
 
   function onConvertApply(payload: { source: string; format: DiagramFormat }): void {
+    flushPendingHistory();
     const before = source.value;
     const beforeFormat = diagramFormat.value;
 
-    source.value = payload.source;
-    diagramFormat.value = payload.format;
-    loadedFileName.value = getDiagramFormatDefinition(payload.format).defaultFileName;
-    syntaxErrorLines.value = [];
-    error.value = "";
+    withSuppressedSourceHistory(() => {
+      source.value = payload.source;
+      diagramFormat.value = payload.format;
+      loadedFileName.value = getDiagramFormatDefinition(payload.format).defaultFileName;
+      syntaxErrorLines.value = [];
+      error.value = "";
+    });
 
     if (before === source.value && beforeFormat === diagramFormat.value) {
       return;
@@ -269,7 +304,10 @@ export function useAppShell(): AppShellContext {
     format?: DiagramFormat;
     diagramId?: string;
   }): void {
-    applyLoadedSource(payload.content, payload.fileName, payload.format);
+    flushPendingHistory();
+    withSuppressedSourceHistory(() => {
+      applyLoadedSource(payload.content, payload.fileName, payload.format);
+    });
     linkedLibraryDiagramId.value = payload.diagramId ?? null;
   }
 
@@ -317,6 +355,27 @@ export function useAppShell(): AppShellContext {
   function onSyntaxAskFromValidation(): void {
     modals.closeSyntaxModal();
     onAiSyntaxAskOpen();
+  }
+
+  function applyAiPlantUmlWithHistory(plantuml: string, label: string): void {
+    flushPendingHistory();
+    withSuppressedSourceHistory(() => {
+      applyAiPlantUml(plantuml, label);
+    });
+  }
+
+  function applyWizardDiagramWithHistory(wizardSource: string, label: string): void {
+    flushPendingHistory();
+    withSuppressedSourceHistory(() => {
+      applyWizardDiagram(wizardSource, label);
+    });
+  }
+
+  function onVersionRestoreWithHistory(content: string): void {
+    flushPendingHistory();
+    withSuppressedSourceHistory(() => {
+      onVersionRestore(content);
+    });
   }
 
   async function handleShareLinkOnBoot(): Promise<void> {
@@ -393,10 +452,10 @@ export function useAppShell(): AppShellContext {
     onAiPatchRequestOpen,
     onAiSyntaxAskOpen,
     onSyntaxAskFromValidation,
-    applyAiPlantUml,
-    applyWizardDiagram,
+    applyAiPlantUml: applyAiPlantUmlWithHistory,
+    applyWizardDiagram: applyWizardDiagramWithHistory,
     savePuml,
-    onVersionRestore,
+    onVersionRestore: onVersionRestoreWithHistory,
     renderDiagram,
     exportSvg,
     exportPng,
