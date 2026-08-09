@@ -114,8 +114,9 @@ export function parseClassPlantUml(source: string, format: DiagramFormat): Diagr
   }
 
   const idByLabel = new Map(ir.nodes.map((node) => [node.label, node.id]));
+  const classRelationPattern = /(\w+)\s+([<|*o.\-]+)\s+(\w+)/g;
   let edgeIndex = 0;
-  for (const match of source.matchAll(/(\w+)\s+([-.]+)\s+(\w+)/g)) {
+  for (const match of source.matchAll(classRelationPattern)) {
     const from = match[1];
     const to = match[3];
     if (!idByLabel.has(from) || !idByLabel.has(to)) {
@@ -215,14 +216,34 @@ export function parseSequencePlantUml(source: string, format: DiagramFormat): Di
     }
   }
 
+  function ensureParticipant(name: string): string {
+    const clean = name.replace(/"/g, "").trim();
+    if (!clean) {
+      return "";
+    }
+
+    const existing = idByLabel.get(clean);
+    if (existing) {
+      return existing;
+    }
+
+    const id = uniqueDiagramId(clean, usedIds);
+    ir.nodes.push({
+      id,
+      label: clean,
+      kind: "actor",
+      matchConfidence: 0.8,
+    });
+    idByLabel.set(clean, id);
+    return id;
+  }
+
   let edgeIndex = 0;
   for (const match of source.matchAll(
     /(\S+)\s*(?:->>|->)\s*(\S+)\s*:\s*(.+)$/gm,
   )) {
-    const sourceId =
-      idByLabel.get(match[1]) ?? idByLabel.get(match[1].replace(/"/g, ""));
-    const targetId =
-      idByLabel.get(match[2]) ?? idByLabel.get(match[2].replace(/"/g, ""));
+    const sourceId = ensureParticipant(match[1]);
+    const targetId = ensureParticipant(match[2]);
     if (!sourceId || !targetId) {
       continue;
     }

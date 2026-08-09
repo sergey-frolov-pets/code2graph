@@ -216,8 +216,9 @@ export function parseClassMermaid(source: string, format: DiagramFormat): Diagra
   }
 
   const idByLabel = new Map(ir.nodes.map((node) => [node.label, node.id]));
+  const classRelationPattern = /(\w+)\s+([<|*o.\-]+)\s+(\w+)/g;
   let edgeIndex = 0;
-  for (const match of source.matchAll(/(\w+)\s*([<|]+--[>|]+)\s*(\w+)/g)) {
+  for (const match of source.matchAll(classRelationPattern)) {
     const from = idByLabel.get(match[1]);
     const to = idByLabel.get(match[3]);
     if (!from || !to) {
@@ -240,24 +241,47 @@ export function parseStateMermaid(source: string, format: DiagramFormat): Diagra
   const ir = createEmptyDiagramIR("state");
   ir.metadata = { sourceFormat: format };
   const usedIds = new Set<string>();
+  const stateNames = new Set<string>();
 
   for (const match of source.matchAll(/\b(\w+)\s*:/g)) {
     const label = match[1];
     if (label === "stateDiagram" || label === "stateDiagram-v2") {
       continue;
     }
+    stateNames.add(label);
+  }
+
+  for (const match of source.matchAll(
+    /(\[\*\]|\w+)\s*-->\s*(\[\*\]|\w+)/g,
+  )) {
+    const from = match[1];
+    const to = match[2];
+    if (from !== "[*]") {
+      stateNames.add(from);
+    }
+    if (to !== "[*]") {
+      stateNames.add(to);
+    }
+  }
+
+  for (const name of stateNames) {
     ir.nodes.push({
-      id: uniqueDiagramId(label, usedIds),
-      label,
+      id: uniqueDiagramId(name, usedIds),
+      label: name,
       matchConfidence: 1,
     });
   }
 
   const idByLabel = new Map(ir.nodes.map((node) => [node.label, node.id]));
   let edgeIndex = 0;
-  for (const match of source.matchAll(/(\w+)\s*-->\s*(\w+)/g)) {
-    const from = idByLabel.get(match[1]);
-    const to = idByLabel.get(match[2]);
+  for (const match of source.matchAll(/(\[\*\]|\w+)\s*-->\s*(\[\*\]|\w+)/g)) {
+    const fromLabel = match[1];
+    const toLabel = match[2];
+    if (fromLabel === "[*]" || toLabel === "[*]") {
+      continue;
+    }
+    const from = idByLabel.get(fromLabel);
+    const to = idByLabel.get(toLabel);
     if (!from || !to) {
       continue;
     }
@@ -277,21 +301,23 @@ export function parseSequenceMermaid(source: string, format: DiagramFormat): Dia
   const ir = createEmptyDiagramIR("sequence");
   ir.metadata = { sourceFormat: format };
   const usedIds = new Set<string>();
+  const idByAlias = new Map<string, string>();
 
   for (const match of source.matchAll(
     /\b(?:participant|actor)\s+(\w+)(?:\s+as\s+"([^"]+)")?/gi,
   )) {
     const alias = match[1];
     const label = match[2]?.trim() || alias;
+    const id = uniqueDiagramId(alias, usedIds);
+    idByAlias.set(alias, id);
     ir.nodes.push({
-      id: uniqueDiagramId(alias, usedIds),
+      id,
       label,
       kind: "actor",
       matchConfidence: 1,
     });
   }
 
-  const idByAlias = new Map(ir.nodes.map((node) => [node.id, node.id]));
   let edgeIndex = 0;
   for (const match of source.matchAll(/(\w+)\s*-+>>?\s*(\w+)\s*:\s*(.+)$/gm)) {
     const sourceId = idByAlias.get(match[1]);
@@ -317,27 +343,43 @@ export function parseErMermaid(source: string, format: DiagramFormat): DiagramIR
   const ir = createEmptyDiagramIR("er");
   ir.metadata = { sourceFormat: format };
   const usedIds = new Set<string>();
+  const idByLabel = new Map<string, string>();
+
+  function ensureEntity(label: string): string {
+    const existing = idByLabel.get(label);
+    if (existing) {
+      return existing;
+    }
+
+    const id = uniqueDiagramId(label, usedIds);
+    ir.nodes.push({
+      id,
+      label,
+      matchConfidence: 1,
+    });
+    idByLabel.set(label, id);
+    return id;
+  }
 
   for (const match of source.matchAll(/\b(\w+)\s*\{/g)) {
     const label = match[1];
     if (label === "erDiagram") {
       continue;
     }
-    ir.nodes.push({
-      id: uniqueDiagramId(label, usedIds),
-      label,
-      matchConfidence: 1,
-    });
-  }
-
-  const idByLabel = new Map(ir.nodes.map((node) => [node.label, node.id]));
-  let edgeIndex = 0;
-  for (const match of source.matchAll(/(\w+)\s*[|o}{]+--[|o}{]+\s*(\w+)/g)) {
-    const from = idByLabel.get(match[1]);
-    const to = idByLabel.get(match[2]);
-    if (!from || !to) {
+    const lineStart = source.lastIndexOf("\n", match.index ?? 0) + 1;
+    const line = source.slice(lineStart, (match.index ?? 0) + match[0].length);
+    if (/[|o{}.\-]+-+[|o{}.\-]+/.test(line)) {
       continue;
     }
+    ensureEntity(label);
+  }
+
+  let edgeIndex = 0;
+  for (const match of source.matchAll(
+    /(\w+)\s+[|o{}.\-]+-+[|o{}.\-]+\s+(\w+)/g,
+  )) {
+    const from = ensureEntity(match[1]);
+    const to = ensureEntity(match[2]);
     edgeIndex += 1;
     ir.edges.push({
       id: `e${edgeIndex}`,
