@@ -27,6 +27,10 @@ function buildSingleHtmlOnly() {
     path.join(appRoot, "public", "llm-api-keys.html"),
     path.join(singleDir, "llm-api-keys.html"),
   );
+  copyFileSync(
+    path.join(appRoot, "public", "llm-api-keys.en.html"),
+    path.join(singleDir, "llm-api-keys.en.html"),
+  );
   copyPlantumlLib(singleDir);
 
   const outputSize = Buffer.byteLength(html, "utf8");

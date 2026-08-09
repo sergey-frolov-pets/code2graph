@@ -6,7 +6,19 @@ export const llmMessages: LocaleMessages = {
   "llm.keysGuide.stepRegister": "Sign in or register at the provider console.",
   "llm.keysGuide.stepCreateKey": "Create an API key:",
   "llm.keysGuide.stepPaste": "In vuePlantUML: Settings → AI → choose a provider → paste and save.",
-  "llm.keysGuide.stepSecurity": "Do not commit the key to git or share it in chats.",
+  "llm.keysGuide.securityTitle": "Security of keys, passwords, and tokens",
+  "llm.keysGuide.securityLead":
+    "Secrets are not sent to third-party app servers — only stored locally in your browser (localStorage):",
+  "llm.keysGuide.securityApiKeys":
+    "LLM API keys (Settings → AI) are stored only in your browser; the input field is cleared after save.",
+  "llm.keysGuide.securityLibraryCredentials":
+    "Library server login and password (Settings → Library) — only in your browser; the password is not shown after save.",
+  "llm.keysGuide.securityAuthToken":
+    "Library auth token after sign-in is stored locally and used only for requests to your server.",
+  "llm.keysGuide.securityNoGit": "Do not commit keys, passwords, or tokens to git or publish them in issues.",
+  "llm.keysGuide.securityNoShareUrl": "Do not put secrets in diagram share URLs or public chats.",
+  "llm.keysGuide.securitySharedComputer":
+    "On a shared computer, remove credentials in Settings when you are done.",
   "llm.keysGuide.docsLink": "Provider documentation",
   "llm.provider.googleGemini": "Google Gemini",
   "llm.provider.googleGeminiDesc": "Key from Google AI Studio. Model: Gemini 2.0 Flash.",

@@ -1,6 +1,7 @@
 # Инструкция: API-ключи для LLM (BYOK)
 
-Источник для `public/llm-api-keys.html`. Обновляйте оба файла синхронно.
+Источник для `public/llm-api-keys.html` (рус.) и `public/llm-api-keys.en.html` (англ.).
+Обновляйте все три файла синхронно.
 
 ## vuePlantUML — Bring Your Own Key
 
@@ -34,24 +35,24 @@
 2. Ключ: [console.mistral.ai/api-keys](https://console.mistral.ai/api-keys).
 3. Настройки → AI → Mistral (свой ключ).
 
-### Безопасность
+### Безопасность ключей, паролей и токенов
 
-- Не коммитьте ключи в git.
-- Не вставляйте ключи в чаты и issue.
-- Ключ хранится только в `localStorage` вашего браузера.
+vuePlantUML не отправляет секреты на сторонние серверы приложения. Всё хранится
+только локально в браузере (`localStorage`):
+
+- **API-ключи LLM** (Настройки → AI)
+- **Логин и пароль** сервера библиотеки (Настройки → Библиотека)
+- **Токен авторизации** библиотеки после входа
+
+Рекомендации:
+
+- Не коммитьте ключи, пароли и токены в git.
+- Не вставляйте секреты в чаты, issue и share-URL диаграммы.
+- На общем компьютере удаляйте учётные данные в настройках после работы.
 
 ---
 
-## English
+## English (`llm-api-keys.en.html`)
 
-### Google Gemini
-
-1. Sign in at [Google AI Studio](https://aistudio.google.com/).
-2. Create a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
-3. Paste in **Settings → AI → Google Gemini (your key)**.
-
-### Groq / OpenRouter / Mistral
-
-Same flow: provider console → API keys → paste in vuePlantUML Settings → AI.
-
-Do not commit or share your API keys.
+Полная английская версия — отдельный файл `public/llm-api-keys.en.html`.
+Ссылка «English version» / «Русская версия» внизу каждой страницы.

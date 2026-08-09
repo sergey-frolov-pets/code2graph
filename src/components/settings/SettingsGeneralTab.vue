@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { FORMAT_GUIDE_LINKS } from "@/constants/help-guides";
 import { APP_LINKS, LAYOUT_ENGINES, type LayoutEngine } from "@/constants";
+import { getLlmApiKeysGuideHref } from "@/constants/llm-settings";
 import {
   RENDER_MODES,
   type RenderMode,
@@ -64,6 +65,8 @@ const fontFamilyOptions = computed(() =>
     label: option.id === "system" ? t("settings.fontSystem") : option.label,
   })),
 );
+
+const llmApiKeysGuideHref = computed(() => getLlmApiKeysGuideHref(locale.value));
 </script>
 
 <template>
@@ -254,7 +257,7 @@ const fontFamilyOptions = computed(() =>
       </a>
       <a
         class="btn settings-link-btn"
-        :href="APP_LINKS.llmApiKeysGuide"
+        :href="llmApiKeysGuideHref"
         target="_blank"
         rel="noopener noreferrer"
       >

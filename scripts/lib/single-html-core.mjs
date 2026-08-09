@@ -157,6 +157,10 @@ export function copyPwaDistAssets(targetDir = distDir) {
     path.join(appRoot, "public", "llm-api-keys.html"),
     path.join(targetDir, "llm-api-keys.html"),
   );
+  copyFileSync(
+    path.join(appRoot, "public", "llm-api-keys.en.html"),
+    path.join(targetDir, "llm-api-keys.en.html"),
+  );
   const cnamePath = path.join(appRoot, "public", "CNAME");
   if (existsSync(cnamePath)) {
     copyFileSync(cnamePath, path.join(targetDir, "CNAME"));

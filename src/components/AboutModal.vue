@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import { useLocale } from "@/composables/useLocale";
 import { FORMAT_GUIDE_LINKS } from "@/constants/help-guides";
 import { APP_LINKS, APP_META } from "@/constants";
+import { getLlmApiKeysGuideHref } from "@/constants/llm-settings";
 
 defineProps<{
   open: boolean;
@@ -12,7 +14,9 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-const { t } = useLocale();
+const { locale, t } = useLocale();
+
+const llmApiKeysGuideHref = computed(() => getLlmApiKeysGuideHref(locale.value));
 </script>
 
 <template>
@@ -135,7 +139,7 @@ const { t } = useLocale();
     <h3 class="about-subtitle">{{ t("about.ai") }}</h3>
     <p class="about-meta">{{ t("about.aiLead") }}</p>
     <p class="about-meta">
-      <a :href="APP_LINKS.llmApiKeysGuide" target="_blank" rel="noopener noreferrer">
+      <a :href="llmApiKeysGuideHref" target="_blank" rel="noopener noreferrer">
         {{ t("about.llmGuide") }}
       </a>
     </p>

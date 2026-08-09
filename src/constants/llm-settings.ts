@@ -3,12 +3,22 @@ import {
   isLlmProviderId,
   resolveLlmProviderId,
 } from "@/constants/llm-providers";
+import { DEFAULT_LOCALE, type AppLocale } from "@/constants/i18n";
 
 export const STORAGE_KEY_LLM_PROVIDER = "plantuml-smetana-llm-provider";
 export const STORAGE_KEY_LLM_API_KEYS = "plantuml-smetana-llm-api-keys";
 export const STORAGE_KEY_LLM_CONSENT = "plantuml-smetana-llm-consent";
 
 export const LLM_API_KEYS_GUIDE_FILE = "llm-api-keys.html";
+export const LLM_API_KEYS_GUIDE_FILE_EN = "llm-api-keys.en.html";
+
+export function getLlmApiKeysGuideFile(locale: AppLocale = DEFAULT_LOCALE): string {
+  return locale === "en" ? LLM_API_KEYS_GUIDE_FILE_EN : LLM_API_KEYS_GUIDE_FILE;
+}
+
+export function getLlmApiKeysGuideHref(locale: AppLocale = DEFAULT_LOCALE): string {
+  return `./${getLlmApiKeysGuideFile(locale)}`;
+}
 
 export function readStoredLlmProviderId(): string {
   try {

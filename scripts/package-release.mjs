@@ -23,6 +23,10 @@ function packageRelease() {
     path.join(publicDir, "llm-api-keys.html"),
     path.join(releaseDir, "llm-api-keys.html"),
   );
+  copyFileSync(
+    path.join(publicDir, "llm-api-keys.en.html"),
+    path.join(releaseDir, "llm-api-keys.en.html"),
+  );
   cpSync(path.join(singleDir, "plantuml-lib"), path.join(releaseDir, "plantuml-lib"), {
     recursive: true,
   });
@@ -31,7 +35,9 @@ function packageRelease() {
     path.join(releaseDir, "README.md"),
   );
 
-  console.log("Release package: release/vueplantuml.html, llm-api-keys.html, plantuml-lib/, README.md");
+  console.log(
+    "Release package: release/vueplantuml.html, llm-api-keys.html, llm-api-keys.en.html, plantuml-lib/, README.md",
+  );
 }
 
 packageRelease();

@@ -6,7 +6,19 @@ export const llmMessages: LocaleMessages = {
   "llm.keysGuide.stepRegister": "Зарегистрируйтесь или войдите в консоль провайдера.",
   "llm.keysGuide.stepCreateKey": "Создайте API-ключ:",
   "llm.keysGuide.stepPaste": "В vuePlantUML: Настройки → AI → выберите провайдера → вставьте ключ и сохраните.",
-  "llm.keysGuide.stepSecurity": "Не коммитьте ключ в git и не делитесь им в чатах.",
+  "llm.keysGuide.securityTitle": "Безопасность ключей, паролей и токенов",
+  "llm.keysGuide.securityLead":
+    "Секреты не отправляются на сторонние серверы приложения — только локально в браузере (localStorage):",
+  "llm.keysGuide.securityApiKeys":
+    "API-ключи LLM (Настройки → AI) хранятся только в вашем браузере; поле ввода очищается после сохранения.",
+  "llm.keysGuide.securityLibraryCredentials":
+    "Логин и пароль сервера библиотеки (Настройки → Библиотека) — только в браузере; пароль не показывается после сохранения.",
+  "llm.keysGuide.securityAuthToken":
+    "Токен авторизации библиотеки после входа хранится локально и используется только для запросов к вашему серверу.",
+  "llm.keysGuide.securityNoGit": "Не коммитьте ключи, пароли и токены в git и не публикуйте в issue.",
+  "llm.keysGuide.securityNoShareUrl": "Не вставляйте секреты в share-URL диаграммы и публичные чаты.",
+  "llm.keysGuide.securitySharedComputer":
+    "На общем компьютере удаляйте учётные данные в настройках после работы.",
   "llm.keysGuide.docsLink": "Документация провайдера",
   "llm.provider.googleGemini": "Google Gemini",
   "llm.provider.googleGeminiDesc": "Ключ из Google AI Studio. Модель: Gemini 2.0 Flash.",
