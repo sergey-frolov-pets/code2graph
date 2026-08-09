@@ -11,15 +11,22 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
+
+function onShowPreview(event: Event): void {
+  event.preventDefault();
+  emit("show-preview");
+}
 </script>
 
 <template>
   <button
-    v-if="visible"
+    v-show="visible"
     class="preview-fab"
     type="button"
     :aria-label="t('app.showPreview')"
-    @click="emit('show-preview')"
+    :aria-hidden="!visible"
+    @pointerdown="onShowPreview"
+    @click="onShowPreview"
   >
     <ActionIcon name="eye" />
     <span class="preview-fab__label">{{ t("app.showPreview") }}</span>
@@ -43,6 +50,10 @@ const { t } = useLocale();
   color: #fff;
   box-shadow: var(--shadow);
   touch-action: manipulation;
+}
+
+.preview-fab[aria-hidden="true"] {
+  pointer-events: none;
 }
 
 .preview-fab__label {
