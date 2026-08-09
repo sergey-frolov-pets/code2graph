@@ -1,17 +1,68 @@
 import type { AppLocale } from "@/constants/i18n";
+import { buildWizardDiagramSample } from "@/constants/wizard-sample-sources";
 
 export const MERMAID_SAMPLE_IDS = [
+  "flowchart",
+  "sequence",
+  "classDiagram",
+  "component",
+  "activity",
+  "state",
+  "er",
+  "gantt",
+  "mindmap",
+  "pie",
+  "journey",
+  "gitgraph",
+  "timeline",
+  "sankey",
+  "xychart",
+  "block",
+  "c4_context",
+  "requirement",
+  "quadrant",
+  "architecture",
+  "packet",
+] as const;
+
+export type MermaidSampleId = (typeof MERMAID_SAMPLE_IDS)[number];
+
+export const HANDCRAFTED_MERMAID_SAMPLE_IDS = [
   "flowchart",
   "sequence",
   "classDiagram",
   "state",
   "er",
   "gantt",
-] as const;
+] as const satisfies readonly MermaidSampleId[];
 
-export type MermaidSampleId = (typeof MERMAID_SAMPLE_IDS)[number];
+type HandcraftedMermaidSampleId = (typeof HANDCRAFTED_MERMAID_SAMPLE_IDS)[number];
 
-const MERMAID_SAMPLES_RU: Record<MermaidSampleId, string> = {
+export const MERMAID_SAMPLE_WIZARD_TYPES: Record<MermaidSampleId, import("@/constants/llm-wizard").WizardDiagramType> = {
+  flowchart: "flowchart",
+  sequence: "sequence",
+  classDiagram: "class",
+  component: "component",
+  activity: "activity",
+  state: "state",
+  er: "er",
+  gantt: "gantt",
+  mindmap: "mindmap",
+  pie: "pie",
+  journey: "journey",
+  gitgraph: "gitgraph",
+  timeline: "timeline",
+  sankey: "sankey",
+  xychart: "xychart",
+  block: "block",
+  c4_context: "c4_context",
+  requirement: "requirement",
+  quadrant: "quadrant",
+  architecture: "architecture",
+  packet: "packet",
+};
+
+const MERMAID_SAMPLES_RU: Record<HandcraftedMermaidSampleId, string> = {
   flowchart: `flowchart TD
     %% Блок-схема: условия, подграфы и стили
     A([Старт]) --> B{Валидно?}
@@ -161,7 +212,7 @@ section Релиз
 Публикация            :milestone, m1, after r1, 0d`,
 };
 
-const MERMAID_SAMPLES_EN: Record<MermaidSampleId, string> = {
+const MERMAID_SAMPLES_EN: Record<HandcraftedMermaidSampleId, string> = {
   flowchart: `flowchart TD
     %% Flowchart: conditions, subgraphs, and styles
     A([Start]) --> B{Valid?}
@@ -313,32 +364,55 @@ Publish               :milestone, m1, after r1, 0d`,
 
 const MERMAID_SOURCES_BY_LOCALE: Record<
   AppLocale,
-  Record<MermaidSampleId, string>
+  Record<HandcraftedMermaidSampleId, string>
 > = {
   ru: MERMAID_SAMPLES_RU,
   en: MERMAID_SAMPLES_EN,
 };
 
-const ALL_MERMAID_SAMPLE_SOURCES = new Set([
-  ...Object.values(MERMAID_SAMPLES_RU),
-  ...Object.values(MERMAID_SAMPLES_EN),
-]);
+function isHandcraftedMermaidSampleId(
+  id: MermaidSampleId,
+): id is HandcraftedMermaidSampleId {
+  return (HANDCRAFTED_MERMAID_SAMPLE_IDS as readonly string[]).includes(id);
+}
+
+function buildMermaidSampleSource(id: MermaidSampleId, locale: AppLocale): string {
+  if (isHandcraftedMermaidSampleId(id)) {
+    return MERMAID_SOURCES_BY_LOCALE[locale][id];
+  }
+
+  return buildWizardDiagramSample(
+    MERMAID_SAMPLE_WIZARD_TYPES[id],
+    "mermaid",
+    locale,
+  );
+}
+
+const ALL_MERMAID_SAMPLE_SOURCES = new Set<string>();
+for (const locale of ["ru", "en"] as AppLocale[]) {
+  for (const id of MERMAID_SAMPLE_IDS) {
+    ALL_MERMAID_SAMPLE_SOURCES.add(buildMermaidSampleSource(id, locale));
+  }
+}
 
 export function getMermaidSampleSource(
   id: MermaidSampleId,
   locale: AppLocale,
 ): string {
-  return MERMAID_SOURCES_BY_LOCALE[locale][id];
+  return buildMermaidSampleSource(id, locale);
 }
 
 export function findMermaidSampleId(
   source: string,
   locale: AppLocale,
 ): MermaidSampleId | null {
-  const entries = Object.entries(MERMAID_SOURCES_BY_LOCALE[locale]) as Array<
-    [MermaidSampleId, string]
-  >;
-  return entries.find(([, value]) => value === source)?.[0] ?? null;
+  for (const id of MERMAID_SAMPLE_IDS) {
+    if (buildMermaidSampleSource(id, locale) === source) {
+      return id;
+    }
+  }
+
+  return null;
 }
 
 export function findMermaidSampleIdAnyLocale(

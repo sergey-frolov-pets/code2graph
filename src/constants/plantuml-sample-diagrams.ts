@@ -1,6 +1,29 @@
 import type { AppLocale } from "@/constants/i18n";
+import { buildWizardDiagramSample } from "@/constants/wizard-sample-sources";
 
 export const PLANTUML_SAMPLE_IDS = [
+  "classes",
+  "sequence",
+  "components",
+  "state",
+  "activity",
+  "c4_context",
+  "c4",
+  "er",
+  "usecase",
+  "deployment",
+  "object",
+  "timing",
+  "gantt",
+  "mindmap",
+  "wbs",
+  "nwdiag",
+  "archimate",
+] as const;
+
+export type PlantUmlSampleId = (typeof PLANTUML_SAMPLE_IDS)[number];
+
+export const HANDCRAFTED_PLANTUML_SAMPLE_IDS = [
   "classes",
   "sequence",
   "components",
@@ -9,9 +32,29 @@ export const PLANTUML_SAMPLE_IDS = [
   "c4",
   "gantt",
   "mindmap",
-] as const;
+] as const satisfies readonly PlantUmlSampleId[];
 
-export type PlantUmlSampleId = (typeof PLANTUML_SAMPLE_IDS)[number];
+type HandcraftedPlantUmlSampleId = (typeof HANDCRAFTED_PLANTUML_SAMPLE_IDS)[number];
+
+export const PLANTUML_SAMPLE_WIZARD_TYPES: Record<PlantUmlSampleId, import("@/constants/llm-wizard").WizardDiagramType> = {
+  classes: "class",
+  sequence: "sequence",
+  components: "component",
+  state: "state",
+  activity: "activity",
+  c4_context: "c4_context",
+  c4: "c4_container",
+  er: "er",
+  usecase: "usecase",
+  deployment: "deployment",
+  object: "object",
+  timing: "timing",
+  gantt: "gantt",
+  mindmap: "mindmap",
+  wbs: "wbs",
+  nwdiag: "nwdiag",
+  archimate: "archimate",
+};
 
 const DEFAULT_SOURCE_RU = `@startuml
 ' Движок раскладки Smetana (по умолчанию в vuePlantUML)
@@ -81,7 +124,7 @@ User ..|> Authenticatable
 User "1" --> "*" Order : creates
 @enduml`;
 
-const SAMPLE_DIAGRAMS_RU: Record<PlantUmlSampleId, string> = {
+const SAMPLE_DIAGRAMS_RU: Record<HandcraftedPlantUmlSampleId, string> = {
   classes: `@startuml
 ' Полный пример диаграммы классов: пакеты, наследование, стереотипы
 !pragma layout smetana
@@ -487,7 +530,7 @@ SVG в браузере
 @endmindmap`,
 };
 
-const SAMPLE_DIAGRAMS_EN: Record<PlantUmlSampleId, string> = {
+const SAMPLE_DIAGRAMS_EN: Record<HandcraftedPlantUmlSampleId, string> = {
   classes: `@startuml
 ' Full class diagram example: packages, inheritance, stereotypes
 !pragma layout smetana
@@ -893,10 +936,28 @@ separator
 @endmindmap`,
 };
 
-const SOURCES_BY_LOCALE: Record<AppLocale, Record<PlantUmlSampleId, string>> = {
+const SOURCES_BY_LOCALE: Record<AppLocale, Record<HandcraftedPlantUmlSampleId, string>> = {
   ru: SAMPLE_DIAGRAMS_RU,
   en: SAMPLE_DIAGRAMS_EN,
 };
+
+function isHandcraftedPlantUmlSampleId(
+  id: PlantUmlSampleId,
+): id is HandcraftedPlantUmlSampleId {
+  return (HANDCRAFTED_PLANTUML_SAMPLE_IDS as readonly string[]).includes(id);
+}
+
+function buildPlantUmlSampleSource(id: PlantUmlSampleId, locale: AppLocale): string {
+  if (isHandcraftedPlantUmlSampleId(id)) {
+    return SOURCES_BY_LOCALE[locale][id];
+  }
+
+  return buildWizardDiagramSample(
+    PLANTUML_SAMPLE_WIZARD_TYPES[id],
+    "plantuml",
+    locale,
+  );
+}
 
 const DEFAULT_SOURCE_BY_LOCALE: Record<AppLocale, string> = {
   ru: DEFAULT_SOURCE_RU,
@@ -911,17 +972,20 @@ export function getPlantUmlSampleSource(
   id: PlantUmlSampleId,
   locale: AppLocale,
 ): string {
-  return SOURCES_BY_LOCALE[locale][id];
+  return buildPlantUmlSampleSource(id, locale);
 }
 
 export function findPlantUmlSampleId(
   source: string,
   locale: AppLocale,
 ): PlantUmlSampleId | null {
-  const entries = Object.entries(SOURCES_BY_LOCALE[locale]) as Array<
-    [PlantUmlSampleId, string]
-  >;
-  return entries.find(([, value]) => value === source)?.[0] ?? null;
+  for (const id of PLANTUML_SAMPLE_IDS) {
+    if (buildPlantUmlSampleSource(id, locale) === source) {
+      return id;
+    }
+  }
+
+  return null;
 }
 
 export function isPlantUmlDefaultSource(source: string): boolean {
@@ -929,10 +993,13 @@ export function isPlantUmlDefaultSource(source: string): boolean {
 }
 
 export function getAllPlantUmlSampleSources(): string[] {
-  return [
-    ...Object.values(SAMPLE_DIAGRAMS_RU),
-    ...Object.values(SAMPLE_DIAGRAMS_EN),
-    DEFAULT_SOURCE_RU,
-    DEFAULT_SOURCE_EN,
-  ];
+  const sources = new Set<string>([DEFAULT_SOURCE_RU, DEFAULT_SOURCE_EN]);
+
+  for (const locale of ["ru", "en"] as AppLocale[]) {
+    for (const id of PLANTUML_SAMPLE_IDS) {
+      sources.add(buildPlantUmlSampleSource(id, locale));
+    }
+  }
+
+  return [...sources];
 }
