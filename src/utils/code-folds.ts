@@ -36,6 +36,13 @@ export function isLineInRange(line: number, maxLine: number): boolean {
   return line >= 1 && line <= maxLine;
 }
 
+export function hasRegionStartingAtLine(
+  folds: CodeFoldRegion[],
+  startLine: number,
+): boolean {
+  return folds.some((fold) => fold.startLine === startLine);
+}
+
 export function canAddBookmark(
   folds: CodeFoldRegion[],
   line: number,
@@ -45,9 +52,7 @@ export function canAddBookmark(
     return false;
   }
 
-  return !folds.some(
-    (fold) => fold.startLine === line && fold.endLine === line,
-  );
+  return !hasRegionStartingAtLine(folds, line);
 }
 
 export function compareRegions(
@@ -134,6 +139,10 @@ export function canAddRegion(
 
   if (isBookmark({ startLine, endLine })) {
     return canAddBookmark(folds, startLine, maxLine);
+  }
+
+  if (hasRegionStartingAtLine(folds, startLine)) {
+    return false;
   }
 
   return canAddFold(folds, startLine, endLine);
