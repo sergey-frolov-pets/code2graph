@@ -1,4 +1,5 @@
 import type { AppLocale } from "@/constants/i18n";
+import { formatMermaidGitRef } from "@/utils/mermaid-gitgraph";
 
 export const WIZARD_DIAGRAM_TYPES = [
   "sequence",
@@ -1637,17 +1638,18 @@ function buildMermaidJourney(state: WizardState, locale: AppLocale): string {
 function buildMermaidGitgraph(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.steps;
   const branch = locale === "ru" ? "разработка" : "develop";
+  const branchRef = formatMermaidGitRef(branch);
   const lines = ["gitGraph"];
 
   lines.push(`    commit id: "${commitLabel(1, locale)}"`);
-  lines.push(`    branch ${branch}`);
+  lines.push(`    branch ${branchRef}`);
 
   for (let index = 2; index <= count; index += 1) {
     lines.push(`    commit id: "${commitLabel(index, locale)}"`);
   }
 
   if (count >= 2) {
-    lines.push("    checkout main", `    merge ${branch}`);
+    lines.push("    checkout main", `    merge ${branchRef}`);
   }
 
   return lines.join("\n");
