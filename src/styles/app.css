@@ -678,11 +678,11 @@ a {
     grid-template-rows: auto;
   }
 
-  .app-main.mobile-panel--editor :deep(.preview-panel) {
+  .app-main.mobile-panel--editor .preview-panel {
     display: none;
   }
 
-  .app-main.mobile-panel--preview :deep(.editor-panel) {
+  .app-main.mobile-panel--preview .editor-panel {
     display: none;
   }
 
