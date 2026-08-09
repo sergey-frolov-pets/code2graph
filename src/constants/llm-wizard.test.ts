@@ -367,4 +367,80 @@ describe("llm-wizard", () => {
     expect(rules).toContain("mindmap");
     expect(rules).not.toContain("@startuml");
   });
+
+  it("lists new mermaid diagram types in wizard", () => {
+    const types = getWizardTypesForLanguage("mermaid");
+    expect(types).toContain("flowchart");
+    expect(types).toContain("pie");
+    expect(types).toContain("journey");
+    expect(types).toContain("gitgraph");
+    expect(types).toContain("c4_context");
+    expect(types).toContain("requirement");
+    expect(types).toContain("architecture");
+    expect(types).toContain("packet");
+  });
+
+  it("lists new plantuml diagram types in wizard", () => {
+    const types = getWizardTypesForLanguage("plantuml");
+    expect(types).toContain("er");
+    expect(types).toContain("usecase");
+    expect(types).toContain("deployment");
+    expect(types).toContain("wbs");
+    expect(types).toContain("nwdiag");
+    expect(types).toContain("archimate");
+  });
+
+  it("builds mermaid pie scaffold", () => {
+    const source = buildManualScaffold(
+      createState({
+        language: "mermaid",
+        diagramType: "pie",
+        typeParams: {
+          ...createDefaultTypeParams(),
+          nodes: 3,
+        },
+      }),
+      "en",
+    );
+
+    expect(source).toContain("pie showData");
+    expect(source).toContain('"Slice 1"');
+  });
+
+  it("builds plantuml usecase scaffold", () => {
+    const source = buildManualScaffold(
+      createState({
+        diagramType: "usecase",
+        typeParams: {
+          ...createDefaultTypeParams(),
+          actors: 2,
+          components: 3,
+        },
+      }),
+      "en",
+    );
+
+    expect(source).toContain("@startuml");
+    expect(source).toContain('usecase "Use case 1"');
+    expect(source).toContain("Actor_1 --> UC1");
+  });
+
+  it("builds plantuml wbs scaffold", () => {
+    const source = buildManualScaffold(
+      createState({
+        diagramType: "wbs",
+        typeParams: {
+          ...createDefaultTypeParams(),
+          nodes: 2,
+          steps: 2,
+        },
+      }),
+      "en",
+    );
+
+    expect(source).toContain("@startwbs");
+    expect(source).toContain("* Project");
+    expect(source).toContain("** Branch 1");
+    expect(source).toContain("@endwbs");
+  });
 });
