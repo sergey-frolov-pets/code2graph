@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import AppDialogHost from "@/components/AppDialogHost.vue";
 import AppModalHost from "@/components/AppModalHost.vue";
 import TooltipProvider from "@/components/ui/TooltipProvider.vue";
@@ -20,6 +20,28 @@ provideAppShell(shell);
 const mainRef = ref<HTMLElement | null>(null);
 const editorFocused = ref(false);
 const isDesktopLayout = useMediaQuery("(min-width: 901px)");
+
+const PREVIEW_FAB_BLUR_DELAY_MS = 250;
+let previewFabBlurTimer: ReturnType<typeof setTimeout> | undefined;
+
+function onEditorFocus(): void {
+  if (previewFabBlurTimer) {
+    clearTimeout(previewFabBlurTimer);
+    previewFabBlurTimer = undefined;
+  }
+  editorFocused.value = true;
+}
+
+function onEditorBlur(): void {
+  if (previewFabBlurTimer) {
+    clearTimeout(previewFabBlurTimer);
+  }
+
+  previewFabBlurTimer = setTimeout(() => {
+    editorFocused.value = false;
+    previewFabBlurTimer = undefined;
+  }, PREVIEW_FAB_BLUR_DELAY_MS);
+}
 
 const {
   splitRatio,
@@ -57,6 +79,16 @@ const {
   modals,
 } = shell;
 
+function showMobilePreview(): void {
+  if (previewFabBlurTimer) {
+    clearTimeout(previewFabBlurTimer);
+    previewFabBlurTimer = undefined;
+  }
+
+  editorFocused.value = false;
+  activeMobilePanel.value = "preview";
+}
+
 const showPreviewFab = computed(
   () =>
     !isDesktopLayout.value &&
@@ -65,6 +97,13 @@ const showPreviewFab = computed(
 );
 
 onMounted(shell.boot);
+
+onUnmounted(() => {
+  if (previewFabBlurTimer) {
+    clearTimeout(previewFabBlurTimer);
+    previewFabBlurTimer = undefined;
+  }
+});
 </script>
 
 <template>
@@ -114,8 +153,8 @@ onMounted(shell.boot);
         @convert="modals.openConvertModal"
         @ai-patch="shell.onAiPatchRequestOpen"
         @ai-syntax-ask="shell.onAiSyntaxAskOpen()"
-        @editor-focus="editorFocused = true"
-        @editor-blur="editorFocused = false"
+        @editor-focus="onEditorFocus"
+        @editor-blur="onEditorBlur"
       />
 
       <div
@@ -150,7 +189,7 @@ onMounted(shell.boot);
       />
     </main>
 
-    <PreviewFab :visible="showPreviewFab" @show-preview="activeMobilePanel = 'preview'" />
+    <PreviewFab :visible="showPreviewFab" @show-preview="showMobilePreview" />
     <PwaInstallBanner />
 
     <AppStatusBar
