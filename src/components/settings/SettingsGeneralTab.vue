@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { FORMAT_GUIDE_LINKS } from "@/constants/help-guides";
 import { APP_LINKS, LAYOUT_ENGINES, type LayoutEngine } from "@/constants";
 import {
   RENDER_MODES,
@@ -233,28 +234,14 @@ const fontFamilyOptions = computed(() =>
     </h3>
     <div class="settings-links">
       <a
+        v-for="guide in FORMAT_GUIDE_LINKS"
+        :key="guide.id"
         class="btn settings-link-btn"
-        :href="APP_LINKS.plantumlGuide"
+        :href="guide.href"
         target="_blank"
         rel="noopener noreferrer"
       >
-        {{ t("settings.plantumlGuide") }}
-      </a>
-      <a
-        class="btn settings-link-btn"
-        :href="APP_LINKS.mermaidIntro"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {{ t("settings.mermaidGuide") }}
-      </a>
-      <a
-        class="btn settings-link-btn"
-        :href="APP_LINKS.graphml"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {{ t("settings.graphmlGuide") }}
+        {{ t(guide.labelKey) }}
       </a>
       <a
         class="btn settings-link-btn"

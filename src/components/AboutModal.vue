@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppModal from "@/components/AppModal.vue";
 import { useLocale } from "@/composables/useLocale";
+import { FORMAT_GUIDE_LINKS } from "@/constants/help-guides";
 import { APP_LINKS, APP_META } from "@/constants";
 
 defineProps<{
@@ -23,6 +24,30 @@ const { t } = useLocale();
       {{ t("about.developedBy", { developer: APP_META.developer }) }}
     </p>
     <p class="about-meta">{{ t("about.version", { version: APP_META.version }) }}</p>
+
+    <h3 class="about-subtitle">{{ t("about.formats") }}</h3>
+    <ul class="about-formats">
+      <li>{{ t("about.formatsPlantuml") }}</li>
+      <li>{{ t("about.formatsMermaid") }}</li>
+      <li>
+        {{ t("about.formatsGraphml") }}
+        <a :href="APP_LINKS.yEd" target="_blank" rel="noopener noreferrer">yEd</a>.
+      </li>
+    </ul>
+
+    <h3 class="about-subtitle">{{ t("settings.help") }}</h3>
+    <ul class="about-links">
+      <li v-for="guide in FORMAT_GUIDE_LINKS" :key="guide.id">
+        <a :href="guide.href" target="_blank" rel="noopener noreferrer">
+          {{ t(guide.labelKey) }}
+        </a>
+      </li>
+      <li>
+        <a :href="APP_LINKS.yEd" target="_blank" rel="noopener noreferrer">
+          {{ t("settings.yedEditor") }}
+        </a>
+      </li>
+    </ul>
 
     <h3 class="about-subtitle">{{ t("about.site") }}</h3>
     <p class="about-meta">
@@ -69,6 +94,17 @@ const { t } = useLocale();
         </a>
       </li>
       <li>
+        <a :href="APP_LINKS.graphml" target="_blank" rel="noopener noreferrer">
+          GraphML
+        </a>
+      </li>
+      <li>
+        <a :href="APP_LINKS.yEd" target="_blank" rel="noopener noreferrer">yEd</a>
+      </li>
+      <li>
+        <a :href="APP_LINKS.dagre" target="_blank" rel="noopener noreferrer">dagre</a>
+      </li>
+      <li>
         <a :href="APP_LINKS.vue" target="_blank" rel="noopener noreferrer">Vue.js</a>
       </li>
       <li>
@@ -79,7 +115,7 @@ const { t } = useLocale();
     <h3 class="about-subtitle">{{ t("about.mermaid") }}</h3>
     <p class="about-meta">{{ t("about.mermaidLead") }}</p>
     <p class="about-meta">
-      <a :href="APP_LINKS.mermaidIntro" target="_blank" rel="noopener noreferrer">
+      <a :href="APP_LINKS.mermaidGuide" target="_blank" rel="noopener noreferrer">
         {{ t("about.mermaidGuide") }}
       </a>
     </p>
@@ -135,6 +171,16 @@ const { t } = useLocale();
 }
 
 .about-links a {
+  color: var(--accent);
+}
+
+.about-formats {
+  margin: 0;
+  padding-left: 1.2rem;
+  line-height: 1.6;
+}
+
+.about-formats a {
   color: var(--accent);
 }
 </style>
