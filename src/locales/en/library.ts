@@ -5,6 +5,7 @@ export const libraryMessages: LocaleMessages = {
   "library.browse": "Browse",
   "library.refresh": "Refresh",
   "library.sections": "Sections",
+  "library.breadcrumbs": "Library navigation",
   "library.allSections": "All diagrams",
   "library.addSection": "Add section",
   "library.addSubsection": "Add subsection",

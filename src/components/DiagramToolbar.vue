@@ -159,6 +159,8 @@ function onOverflowAction(actionId: string): void {
       <span
         v-if="zoomPercent !== undefined"
         class="preview-toolbar__zoom-level"
+        aria-live="polite"
+        aria-atomic="true"
         :aria-label="t('toolbar.zoomLevel', { percent: zoomPercent })"
       >
         {{ zoomPercent }}%
@@ -200,6 +202,8 @@ function onOverflowAction(actionId: string): void {
       <span
         v-if="zoomPercent !== undefined"
         class="preview-toolbar__zoom-level"
+        aria-live="polite"
+        aria-atomic="true"
         :aria-label="t('toolbar.zoomLevel', { percent: zoomPercent })"
       >
         {{ zoomPercent }}%
