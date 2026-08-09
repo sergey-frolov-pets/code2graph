@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
-import { askPlantUmlSyntaxQuestion } from "@/composables/useLlmPlantUmlGenerate";
+import { askPlantUmlSyntaxQuestion } from "@/services/llm/llm-plantuml-generate";
 import { useLocale } from "@/composables/useLocale";
 import { LlmClientError } from "@/services/llm/llm-types";
 

@@ -6,7 +6,7 @@ import type { RenderMode } from "@/constants/render-settings";
 import {
   generateValidPlantUmlFullEdit,
   generateValidPlantUmlPatch,
-} from "@/composables/useLlmPlantUmlGenerate";
+} from "@/services/llm/llm-plantuml-edit";
 import { requestsStructuralDiagramEdit } from "@/constants/llm-wizard";
 import { useLocale } from "@/composables/useLocale";
 import { LlmClientError } from "@/services/llm/llm-types";
