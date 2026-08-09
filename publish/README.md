@@ -7,7 +7,8 @@
 | Файл | Описание |
 |------|----------|
 | `vueplantuml.html` | Приложение (открыть в браузере) |
-| `llm-api-keys.html` | Как получить API-ключи для BYOK-провайдеров |
+| `llm-api-keys.html` | Как получить API-ключи для BYOK-провайдеров (рус.) |
+| `llm-api-keys.en.html` | How to get LLM API keys (English) |
 | `plantuml-lib/` | C4 PlantUML stdlib (`!include`) |
 
 **Важно:** для `file://` все файлы должны быть в **одной папке**.

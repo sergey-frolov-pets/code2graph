@@ -75,13 +75,27 @@ watch(
           </a>
         </li>
         <li>{{ t("llm.keysGuide.stepPaste") }}</li>
-        <li>{{ t("llm.keysGuide.stepSecurity") }}</li>
       </ol>
       <p v-if="section.docsUrl" class="guide-section__links">
         <a :href="section.docsUrl" target="_blank" rel="noopener noreferrer">
           {{ t("llm.keysGuide.docsLink") }}
         </a>
       </p>
+    </section>
+
+    <section class="guide-section guide-section--security">
+      <h3 class="guide-section__title">{{ t("llm.keysGuide.securityTitle") }}</h3>
+      <p class="guide-section__text">{{ t("llm.keysGuide.securityLead") }}</p>
+      <ul class="guide-security-list">
+        <li>{{ t("llm.keysGuide.securityApiKeys") }}</li>
+        <li>{{ t("llm.keysGuide.securityLibraryCredentials") }}</li>
+        <li>{{ t("llm.keysGuide.securityAuthToken") }}</li>
+      </ul>
+      <ul class="guide-security-list">
+        <li>{{ t("llm.keysGuide.securityNoGit") }}</li>
+        <li>{{ t("llm.keysGuide.securityNoShareUrl") }}</li>
+        <li>{{ t("llm.keysGuide.securitySharedComputer") }}</li>
+      </ul>
     </section>
 
     <template #footer>
@@ -139,5 +153,18 @@ watch(
 .guide-section__links {
   margin: 0;
   font-size: 0.88rem;
+}
+
+.guide-section--security {
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+  padding-top: 16px;
+}
+
+.guide-security-list {
+  margin: 0 0 8px;
+  padding-left: 1.25rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
 }
 </style>

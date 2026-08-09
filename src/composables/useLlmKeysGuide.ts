@@ -1,13 +1,21 @@
 import { ref } from "vue";
-import { LLM_API_KEYS_GUIDE_FILE } from "@/constants/llm-settings";
+import {
+  getLlmApiKeysGuideFile,
+} from "@/constants/llm-settings";
 import { getByokLlmProviders } from "@/constants/llm-providers";
+import { readInitialLocale } from "@/composables/useLocale";
+import type { AppLocale } from "@/constants/i18n";
 
 const guideModalOpen = ref(false);
 const guideProviderId = ref<string | undefined>(undefined);
 
-export function getLlmApiKeysGuideUrl(providerId?: string): string {
+export function getLlmApiKeysGuideUrl(
+  providerId?: string,
+  locale: AppLocale = readInitialLocale(),
+): string {
   const hash = providerId ? `#${providerId}` : "";
-  return new URL(`${LLM_API_KEYS_GUIDE_FILE}${hash}`, window.location.href).href;
+  const file = getLlmApiKeysGuideFile(locale);
+  return new URL(`${file}${hash}`, window.location.href).href;
 }
 
 export function openLlmKeysGuide(providerId?: string): void {
