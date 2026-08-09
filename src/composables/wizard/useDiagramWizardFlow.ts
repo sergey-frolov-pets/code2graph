@@ -618,7 +618,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
 
       let assistantContent = "";
       let updatedSource = resultSource.value;
-      let explanation: string | undefined;
 
       const refineFormatContext = {
         description: wizardState.value.contextText,
@@ -640,7 +639,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
       );
 
       updatedSource = result.plantuml;
-      explanation = result.explanation;
+      const explanation = result.explanation;
       assistantContent =
         result.explanation?.trim() || t("llm.wizard.refineApplied");
 
