@@ -571,11 +571,18 @@ export function emitPlantUmlClass(ir: DiagramIR): string {
 
 export function emitPlantUmlState(ir: DiagramIR): string {
   const lines: string[] = [];
+  const labelById = new Map(ir.nodes.map((node) => [node.id, node.label]));
   if (ir.direction === "LR") {
     lines.push("left to right direction", "");
   }
+  if (ir.edges.length > 0) {
+    const firstTarget = labelById.get(ir.edges[0]!.target) ?? ir.edges[0]!.target;
+    lines.push(`[*] --> ${firstTarget}`);
+  }
   for (const edge of ir.edges) {
-    lines.push(`${edge.source} --> ${edge.target}${formatPlantUmlEdgeSuffix(edge.label)}`);
+    const from = labelById.get(edge.source) ?? edge.source;
+    const to = labelById.get(edge.target) ?? edge.target;
+    lines.push(`${from} --> ${to}${formatPlantUmlEdgeSuffix(edge.label)}`);
   }
   return wrapPlantUml(lines.join("\n"));
 }
