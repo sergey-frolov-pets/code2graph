@@ -11,6 +11,7 @@ import {
   CircleHelp,
   Cloud,
   Download,
+  Ellipsis,
   Eye,
   FolderOpen,
   Globe,
@@ -68,7 +69,8 @@ export type ActionIconName =
   | "cloud"
   | "shield"
   | "globe"
-  | "unlink";
+  | "unlink"
+  | "more";
 
 const props = withDefaults(
   defineProps<{
@@ -113,6 +115,7 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   shield: Shield,
   globe: Globe,
   unlink: Unlink,
+  more: Ellipsis,
 };
 
 const iconComponent = computed(() => ICON_MAP[props.name]);
