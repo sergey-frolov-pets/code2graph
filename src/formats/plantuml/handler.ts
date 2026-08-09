@@ -1,9 +1,15 @@
+import { validatePlantUmlSyntax } from "@/services/plantuml/syntax-validation";
 import { checkPlantUmlSyntax } from "@/utils/plantuml-syntax";
 import { renderHighlightedLine } from "@/utils/plantuml-highlight";
+import {
+  extractCompletionPrefix,
+  getCompletions as getPlantUmlCompletions,
+} from "@/utils/plantuml-autocomplete";
 import type { FormatHandler } from "../types";
 
 export const plantUmlFormatHandler: FormatHandler = {
   id: "plantuml",
+  supportsSyntaxValidation: true,
   validate(source: string) {
     const result = checkPlantUmlSyntax(source);
     return {
@@ -16,10 +22,21 @@ export const plantUmlFormatHandler: FormatHandler = {
         .filter((line): line is number => line !== undefined),
     };
   },
-  highlight(source: string) {
-    return source
-      .split("\n")
-      .map((line) => renderHighlightedLine(line))
-      .join("\n");
+  validateSyntax(source, context) {
+    return validatePlantUmlSyntax(
+      source,
+      context.layout,
+      context.diagramDarkMode,
+      context.renderMode,
+    );
+  },
+  highlightLine(line: string) {
+    return renderHighlightedLine(line);
+  },
+  extractCompletionPrefix(line, column) {
+    return extractCompletionPrefix(line, column);
+  },
+  getCompletions(query) {
+    return getPlantUmlCompletions(query);
   },
 };

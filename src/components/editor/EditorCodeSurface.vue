@@ -16,6 +16,7 @@ const props = defineProps<{
   folds: CodeFoldRegion[];
   displayText: string;
   visibleEditorLines: VisibleEditorLine[];
+  useLineVirtualization: boolean;
   syntaxHighlightEnabled: boolean;
   autocompleteEnabled: boolean;
   readOnly: boolean;
@@ -153,6 +154,7 @@ function onTextareaScroll(): void {
           'is-error':
             line.kind === 'source' && errorLineSet.has(line.sourceLine),
           'is-fold-placeholder': line.kind === 'placeholder',
+          'editor-virtual-line': useLineVirtualization,
         }"
       >
         <span

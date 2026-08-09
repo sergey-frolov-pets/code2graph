@@ -59,6 +59,9 @@ export const DEFAULT_EDITOR_SYNTAX_HIGHLIGHT = true;
 
 /** Debounce delay before recomputing syntax highlight HTML in the editor. */
 export const EDITOR_HIGHLIGHT_DEBOUNCE_MS = 50;
+
+/** Enable content-visibility optimization when the document exceeds this line count. */
+export const EDITOR_VIRTUAL_LINE_THRESHOLD = 200;
 export const DEFAULT_EDITOR_AUTOCOMPLETE = true;
 
 export function resolveEditorFontFamily(id: EditorFontFamilyId): string {

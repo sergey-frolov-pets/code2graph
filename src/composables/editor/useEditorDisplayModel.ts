@@ -6,10 +6,8 @@ import {
   type CodeFoldRegion,
   type VisibleLine,
 } from "@/utils/code-folds";
-import { EDITOR_HIGHLIGHT_DEBOUNCE_MS } from "@/constants/editor-settings";
-import { renderHighlightedLine } from "@/utils/plantuml-highlight";
-import { renderMermaidHighlightedLine } from "@/utils/mermaid-highlight";
-import { renderGraphmlHighlightedLine } from "@/utils/graphml-highlight";
+import { EDITOR_HIGHLIGHT_DEBOUNCE_MS, EDITOR_VIRTUAL_LINE_THRESHOLD } from "@/constants/editor-settings";
+import { getFormatHandler } from "@/formats";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 
 export const EDITOR_LINE_HEIGHT = 1.45;
@@ -77,6 +75,10 @@ export function useEditorDisplayModel(options: {
 
   const lineCount = computed(() => Math.max(sourceLines.value.length, 1));
 
+  const useLineVirtualization = computed(
+    () => lineCount.value > EDITOR_VIRTUAL_LINE_THRESHOLD,
+  );
+
   const displayText = computed(() =>
     buildDisplayText(sourceLines.value, folds.value),
   );
@@ -109,17 +111,8 @@ export function useEditorDisplayModel(options: {
     })),
   );
 
-  const renderLineHighlight = (line: string): string => {
-    if (diagramFormat.value === "mermaid") {
-      return renderMermaidHighlightedLine(line);
-    }
-
-    if (diagramFormat.value === "graphml") {
-      return renderGraphmlHighlightedLine(line);
-    }
-
-    return renderHighlightedLine(line);
-  };
+  const renderLineHighlight = (line: string): string =>
+    getFormatHandler(diagramFormat.value).highlightLine(line);
 
   const visibleEditorLines = computed<VisibleEditorLine[]>(() => {
     void highlightRevision.value;
@@ -165,5 +158,6 @@ export function useEditorDisplayModel(options: {
     gutterRows,
     visibleEditorLines,
     editorStyle,
+    useLineVirtualization,
   };
 }

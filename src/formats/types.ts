@@ -1,4 +1,12 @@
+import type { LayoutEngine } from "@/constants";
 import type { DiagramFormat } from "@/constants/diagram-formats";
+import type { RenderMode } from "@/constants/render-settings";
+import type {
+  CompletionItem,
+  CompletionPrefixInfo,
+  CompletionQuery,
+} from "@/utils/completion-types";
+import type { SyntaxCheckResult } from "@/utils/plantuml-syntax";
 
 export interface ValidationResult {
   valid: boolean;
@@ -6,25 +14,21 @@ export interface ValidationResult {
   errorLines?: number[];
 }
 
-export interface HighlightToken {
-  text: string;
-  className?: string;
-}
-
-export interface CompletionItem {
-  label: string;
-  insertText: string;
-  detail?: string;
-}
-
-export interface RenderOptions {
-  layout: string;
-  renderMode: string;
+export interface SyntaxValidationContext {
+  layout: LayoutEngine;
   diagramDarkMode: boolean;
+  renderMode: RenderMode;
 }
 
 export interface FormatHandler {
   id: DiagramFormat;
-  validate(source: string): Promise<ValidationResult> | ValidationResult;
-  highlight(source: string): string;
+  supportsSyntaxValidation: boolean;
+  validate(source: string): ValidationResult;
+  validateSyntax(
+    source: string,
+    context: SyntaxValidationContext,
+  ): Promise<SyntaxCheckResult>;
+  highlightLine(line: string): string;
+  extractCompletionPrefix(line: string, column: number): CompletionPrefixInfo;
+  getCompletions(query: CompletionQuery): CompletionItem[];
 }

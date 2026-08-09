@@ -18,6 +18,7 @@ defineExpose({
 
 defineProps<{
   gutterRows: GutterRow[];
+  useLineVirtualization: boolean;
   isLineInFoldSelection: (sourceLine: number) => boolean;
   regionsModalOpen: boolean;
 }>();
@@ -75,6 +76,7 @@ function onGutterLineClick(
         :class="{
           'is-fold-selection': isLineInFoldSelection(row.sourceLine),
           'is-placeholder': row.visibleLine.kind === 'placeholder',
+          'editor-virtual-line': useLineVirtualization,
         }"
         @mousedown="onGutterLinePointerDown(row.sourceLine, $event)"
         @mouseenter="emit('gutterMouseEnter', row.sourceLine)"

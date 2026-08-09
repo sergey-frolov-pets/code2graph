@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed, nextTick, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { useAppDialog } from "@/composables/useAppDialog";
+import { useModalStackEntry } from "@/composables/useModalStackEntry";
 import { useLocale } from "@/composables/useLocale";
+
+const APP_DIALOG_MODAL_ID = "app-dialog-host";
 
 const {
   dialogState,
@@ -17,6 +20,13 @@ const { t } = useLocale();
 const inputRef = ref<HTMLInputElement | null>(null);
 
 const isOpen = computed(() => dialogState.value !== null);
+
+useModalStackEntry(
+  APP_DIALOG_MODAL_ID,
+  isOpen,
+  () => cancelDialog(),
+  "default",
+);
 
 const title = computed(() => dialogState.value?.options.title ?? "");
 
@@ -65,24 +75,7 @@ function onBackdropClick(event: MouseEvent): void {
   }
 }
 
-function onKeydown(event: KeyboardEvent): void {
-  if (!isOpen.value) {
-    return;
-  }
-
-  if (event.key === "Escape") {
-    event.preventDefault();
-    cancelDialog();
-  }
-}
-
 watch(isOpen, async (open) => {
-  if (open) {
-    window.addEventListener("keydown", onKeydown);
-  } else {
-    window.removeEventListener("keydown", onKeydown);
-  }
-
   if (!open) {
     return;
   }
@@ -92,10 +85,6 @@ watch(isOpen, async (open) => {
     inputRef.value?.focus();
     inputRef.value?.select();
   }
-});
-
-onUnmounted(() => {
-  window.removeEventListener("keydown", onKeydown);
 });
 </script>
 

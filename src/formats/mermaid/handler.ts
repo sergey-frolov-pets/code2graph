@@ -1,9 +1,15 @@
+import { validateMermaidSyntax } from "@/services/mermaid/syntax-validation";
 import { checkMermaidSyntax } from "@/utils/mermaid-syntax";
 import { renderMermaidHighlightedLine } from "@/utils/mermaid-highlight";
+import {
+  extractMermaidCompletionPrefix,
+  getMermaidCompletions,
+} from "@/utils/mermaid-autocomplete";
 import type { FormatHandler } from "../types";
 
 export const mermaidFormatHandler: FormatHandler = {
   id: "mermaid",
+  supportsSyntaxValidation: true,
   validate(source: string) {
     const result = checkMermaidSyntax(source);
     return {
@@ -16,10 +22,20 @@ export const mermaidFormatHandler: FormatHandler = {
         .filter((line): line is number => line !== undefined),
     };
   },
-  highlight(source: string) {
-    return source
-      .split("\n")
-      .map((line) => renderMermaidHighlightedLine(line))
-      .join("\n");
+  validateSyntax(source, context) {
+    return validateMermaidSyntax(
+      source,
+      context.diagramDarkMode,
+      context.renderMode,
+    );
+  },
+  highlightLine(line: string) {
+    return renderMermaidHighlightedLine(line);
+  },
+  extractCompletionPrefix(line, column) {
+    return extractMermaidCompletionPrefix(line, column);
+  },
+  getCompletions(query) {
+    return getMermaidCompletions(query);
   },
 };

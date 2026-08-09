@@ -164,6 +164,7 @@ const {
   gutterRows,
   visibleEditorLines,
   editorStyle,
+  useLineVirtualization,
 } = useEditorDisplayModel({
   source,
   folds,
@@ -320,6 +321,7 @@ onUnmounted(() => {
         <EditorCodeGutter
           ref="gutterComponentRef"
           :gutter-rows="gutterRows"
+          :use-line-virtualization="useLineVirtualization"
           :is-line-in-fold-selection="isLineInFoldSelection"
           :regions-modal-open="regionsModalOpen"
           @gutter-mouse-down="onGutterMouseDown"
@@ -336,6 +338,7 @@ onUnmounted(() => {
           :folds="folds"
           :display-text="displayText"
           :visible-editor-lines="visibleEditorLines"
+          :use-line-virtualization="useLineVirtualization"
           :syntax-highlight-enabled="effectiveSyntaxHighlight"
           :autocomplete-enabled="effectiveAutocomplete"
           :read-only="isReadOnly"
