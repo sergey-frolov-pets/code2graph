@@ -31,6 +31,22 @@ export function useLibraryBrowseFlow(options: {
       browseStep.value === "subscriptions",
   );
 
+  const sectionTitle = computed(() => {
+    if (library.selectedSectionId.value === FAVORITES_SECTION_ID) {
+      return t("library.favorites");
+    }
+    if (library.selectedSectionId.value === RATINGS_SECTION_ID) {
+      return t("library.ratings");
+    }
+    if (library.selectedSectionId.value === null) {
+      return t("library.allSections");
+    }
+    const section = flatSectionOptions.value.find(
+      (item) => item.id === library.selectedSectionId.value,
+    );
+    return section?.title ?? t("library.chooseDiagram");
+  });
+
   const headerTitle = computed(() => {
     if (activeTab.value === "upload") return t("library.uploadDiagram");
     if (activeTab.value === "transfer") return t("library.transfer");
@@ -38,19 +54,7 @@ export function useLibraryBrowseFlow(options: {
     if (browseStep.value === "subscriptions") return t("library.subscriptionsTitle");
     if (browseStep.value === "sections") return t("library.chooseSection");
     if (browseStep.value === "diagrams") {
-      if (library.selectedSectionId.value === FAVORITES_SECTION_ID) {
-        return t("library.favorites");
-      }
-      if (library.selectedSectionId.value === RATINGS_SECTION_ID) {
-        return t("library.ratings");
-      }
-      if (library.selectedSectionId.value === null) {
-        return t("library.allSections");
-      }
-      const section = flatSectionOptions.value.find(
-        (item) => item.id === library.selectedSectionId.value,
-      );
-      return section?.title ?? t("library.chooseDiagram");
+      return sectionTitle.value;
     }
     if (library.selectedDiagram.value) {
       return library.selectedDiagram.value.title;
@@ -75,7 +79,7 @@ export function useLibraryBrowseFlow(options: {
     }
 
     items.push({
-      label: headerTitle.value,
+      label: sectionTitle.value,
       action:
         browseStep.value === "detail"
           ? () => {

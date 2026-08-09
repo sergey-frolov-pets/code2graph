@@ -55,7 +55,7 @@ const { t } = useLocale();
       <nav
         v-if="breadcrumbItems.length > 1"
         class="library-breadcrumbs"
-        :aria-label="t('library.sections')"
+        :aria-label="t('library.breadcrumbs')"
       >
         <template v-for="(item, index) in breadcrumbItems" :key="`${item.label}-${index}`">
           <button
