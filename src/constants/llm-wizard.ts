@@ -1089,11 +1089,69 @@ function buildMermaidFlowchart(
 }
 
 function buildMermaidActivity(state: WizardState, locale: AppLocale): string {
-  return buildMermaidFlowchart(state, locale);
+  const stepCount = state.typeParams.steps;
+  const flow = mermaidFlowDirection(state.direction);
+  const startLabel = locale === "ru" ? "Старт" : "Start";
+  const endLabel = locale === "ru" ? "Готово" : "Done";
+  const lines = [`flowchart ${flow}`, `  start([${startLabel}])`];
+
+  for (let index = 1; index <= stepCount; index += 1) {
+    const label = stepLabel(index, locale);
+    lines.push(`  S${index}[${label}]`);
+  }
+
+  lines.push(`  stop([${endLabel}])`, `  start --> S1`);
+
+  for (let index = 1; index < stepCount; index += 1) {
+    lines.push(`  S${index} --> S${index + 1}`);
+  }
+
+  if (stepCount >= 1) {
+    lines.push(`  S${stepCount} --> stop`);
+  } else {
+    lines.push("  start --> stop");
+  }
+
+  appendMermaidFlowStructure(lines, state, locale);
+  return lines.join("\n");
 }
 
 function buildMermaidComponent(state: WizardState, locale: AppLocale): string {
-  return buildMermaidFlowchart(state, locale);
+  const count = state.typeParams.components;
+  const flow = mermaidFlowDirection(state.direction);
+  const lines = [`flowchart ${flow}`];
+  const indent = hasStructural(state, "package") ? "    " : "  ";
+
+  if (hasStructural(state, "package")) {
+    const packageName = locale === "ru" ? "Домен" : "Domain";
+    lines.push(`  subgraph ${packageName.replace(/\s+/g, "_")}["${packageName}"]`);
+  }
+
+  for (let index = 1; index <= count; index += 1) {
+    const label = componentLabel(index, locale);
+    lines.push(`${indent}C${index}[[${label}]]`);
+  }
+
+  if (hasStructural(state, "package")) {
+    lines.push("  end");
+  }
+
+  if (count >= 2) {
+    lines.push("  C1 --> C2");
+  }
+
+  if (hasStructural(state, "interface")) {
+    const iface = locale === "ru" ? "Интерфейс" : "Interface";
+    lines.push(`  IF(["${iface}"])`);
+    lines.push("  IF -.-> C1");
+  }
+
+  if (hasStructural(state, "note")) {
+    const noteText = locale === "ru" ? "Примечание" : "Note";
+    lines.push(`  C1@{ shape: braces, label: "${noteText}" }`);
+  }
+
+  return lines.join("\n");
 }
 
 function taskLabel(index: number, locale: AppLocale): string {

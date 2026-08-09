@@ -92,6 +92,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   const aiSetupVisible = ref(false);
   const aiSetupReason = ref<LlmGateFailureReason | null>(null);
   let stepPreviewTimer: ReturnType<typeof setTimeout> | null = null;
+  let previewGeneration = 0;
   const { llmConsent, llmProviderId } = useLlmSettings();
   const { hasLlmApiKey } = useLlmApiKeys();
 
@@ -200,6 +201,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     resultExplanation.value = "";
     previewSvg.value = "";
     isPreviewLoading.value = false;
+    previewGeneration += 1;
     aiSetupVisible.value = false;
     aiSetupReason.value = null;
   }
@@ -425,33 +427,47 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   }
 
   async function loadPreview(source: string): Promise<void> {
+    const generation = ++previewGeneration;
     isPreviewLoading.value = true;
     try {
+      let svg = "";
       if (wizardState.value.language === "graphml") {
-        previewSvg.value = await renderGraphmlToSvg(source, {
+        svg = await renderGraphmlToSvg(source, {
           dark: diagramDarkMode.value,
           direction: wizardState.value.direction,
         });
       } else if (wizardState.value.language === "mermaid") {
-        previewSvg.value = await renderMermaidToSvg(
+        svg = await renderMermaidToSvg(
           source,
           { dark: diagramDarkMode.value },
           renderMode.value,
         );
       } else {
-        previewSvg.value = await renderPlantUmlPreviewSvg(
+        svg = await renderPlantUmlPreviewSvg(
           source,
           layout.value,
           diagramDarkMode.value,
           renderMode.value,
         );
       }
+
+      if (generation !== previewGeneration) {
+        return;
+      }
+
+      previewSvg.value = svg;
     } catch (error) {
+      if (generation !== previewGeneration) {
+        return;
+      }
+
       previewSvg.value = "";
       errorMessage.value =
         error instanceof Error ? error.message : t("llm.wizard.previewError");
     } finally {
-      isPreviewLoading.value = false;
+      if (generation === previewGeneration) {
+        isPreviewLoading.value = false;
+      }
     }
   }
 
