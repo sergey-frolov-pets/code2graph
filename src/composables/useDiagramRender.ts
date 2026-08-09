@@ -24,6 +24,7 @@ import {
   resetMermaidInkConnectivity,
 } from "@/services/mermaid/mermaid-online";
 import { didLastMermaidRenderUseOnlineInk } from "@/services/mermaid/mermaid-engine";
+import { didLastPlantUmlRenderUseOnlineServer } from "@/services/plantuml/plantuml-engine";
 import { isFileProtocol } from "@/pwa/installPromptState";
 
 export interface UseDiagramRenderOptions {
@@ -148,6 +149,13 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
         !didLastMermaidRenderUseOnlineInk()
       ) {
         engineStatus.value = t("engine.mermaidOnlineOfflineFallback");
+      }
+      if (
+        usesOnlineRender.value &&
+        diagramFormat.value === "plantuml" &&
+        !didLastPlantUmlRenderUseOnlineServer()
+      ) {
+        engineStatus.value = t("engine.plantumlOnlineOfflineFallback");
       }
     } catch (renderError) {
       svg.value = "";

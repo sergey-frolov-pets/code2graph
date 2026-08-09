@@ -74,6 +74,7 @@ export const miscMessages: LocaleMessages = {
   "engine.mermaidOnlineFileProtocol": "Онлайн Mermaid недоступен при открытии через file:// — используется оффлайн-рендер",
   "engine.mermaidOnlineUrlTooLong": "Диаграмма слишком большая для mermaid.ink — используется оффлайн-рендер",
   "engine.mermaidOnlineOfflineFallback": "mermaid.ink недоступен — превью через оффлайн Mermaid",
+  "engine.plantumlOnlineOfflineFallback": "plantuml.com недоступен — превью через оффлайн PlantUML",
   "engine.onlineFileProtocol": "Онлайн-рендер недоступен при открытии через file:// — используйте сайт или PWA",
   "include.fetchFailed": "Не удалось загрузить include: {path}",
   "preview.title": "Просмотр",
