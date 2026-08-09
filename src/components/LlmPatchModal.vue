@@ -39,7 +39,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
-const { activeLlmDetail, generatingLabel } = useActiveLlmLabel();
+const { activeLlmDetail } = useActiveLlmLabel();
 
 const documentKeyRef = computed(() => props.documentKey);
 const conversation = useLlmConversation(documentKeyRef, "patch");

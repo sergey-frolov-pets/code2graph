@@ -112,12 +112,16 @@ export function resolvePatchMergedSource(
     return parsed.plantuml;
   }
 
-  return mergePatchIntoSource(
-    source,
-    selectionStart,
-    selectionEnd,
-    parsed.replacement,
-  );
+  if (parsed.mode === "replacement") {
+    return mergePatchIntoSource(
+      source,
+      selectionStart,
+      selectionEnd,
+      parsed.replacement,
+    );
+  }
+
+  return source;
 }
 
 export function isPatchContentChanged(
@@ -135,6 +139,10 @@ export function isPatchContentChanged(
     return true;
   }
 
-  const before = source.slice(selectionStart, selectionEnd);
-  return !plantUmlSourcesEqual(before, parsed.replacement);
+  if (parsed.mode === "replacement") {
+    const before = source.slice(selectionStart, selectionEnd);
+    return !plantUmlSourcesEqual(before, parsed.replacement);
+  }
+
+  return false;
 }
