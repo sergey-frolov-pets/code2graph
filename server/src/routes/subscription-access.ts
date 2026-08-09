@@ -47,6 +47,45 @@ subscriptionAccessRouter.get("/:token", (context) => {
   });
 });
 
+subscriptionAccessRouter.get("/:token/diagrams/:id/preview", (context) => {
+  const token = context.req.param("token");
+  const diagramId = context.req.param("id");
+  const database = getDb();
+  const row = getSubscriptionByShareToken(database, token);
+
+  if (!row) {
+    return context.json({ error: "Подписка не найдена или ссылка недоступна" }, 404);
+  }
+
+  if (!subscriptionIncludesDiagram(database, row.id, diagramId)) {
+    return context.json({ error: "Диаграмма не входит в подписку" }, 403);
+  }
+
+  const diagramRow = database
+    .prepare(
+      `SELECT id, section_id, title, description, tags, language,
+              source, file_name, byte_size, author_id, owner_id, visibility,
+              created_at, updated_at
+       FROM diagrams WHERE id = ?`,
+    )
+    .get(diagramId) as Parameters<typeof mapDiagram>[0] | undefined;
+
+  if (!diagramRow) {
+    return context.json({ error: "Диаграмма не найдена" }, 404);
+  }
+
+  const permission = mapSubscriptionDto(database, row).permission;
+  const diagram = mapDiagram(diagramRow);
+
+  return context.json({
+    subscription: mapSubscriptionDto(database, row),
+    diagram,
+    watermarkedPreview: true,
+    canDownload: canDownloadFromPermission(permission),
+    readOnly: permission !== "contribute",
+  });
+});
+
 subscriptionAccessRouter.get("/:token/diagrams/:id", (context) => {
   const token = context.req.param("token");
   const diagramId = context.req.param("id");

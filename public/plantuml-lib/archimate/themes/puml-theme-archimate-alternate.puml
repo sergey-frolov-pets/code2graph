@@ -16,4 +16,6 @@
 !global $ARCH_RELATIONSHIP_LINECOLOR = "#Black"
 !global $ARCH_RELATIONSHIP_FONTCOLOR = "#Black"
 
+!global $ARCH_LOCAL ?= %false()
+
 !include shared_style.puml

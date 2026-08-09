@@ -19,6 +19,7 @@ import { getLibraryApiBaseUrl } from "@/config/library-api";
 import {
   createSubscription,
   deleteSubscription,
+  fetchSubscriptionAccessDiagramPreview,
   fetchSubscriptions,
   grantSubscription,
 } from "./subscriptions";
@@ -75,5 +76,30 @@ describe("library api subscriptions", () => {
     await grantSubscription("sub-1", { username: "bob" }, TEST_API_BASE);
     expectFetchUrl(fetchMock, 0, `${TEST_API_BASE}/subscriptions/sub-1/grants`);
     expectFetchMethod(fetchMock, 0, "POST");
+  });
+
+  it("fetches subscription diagram preview via access token", async () => {
+    const fetchMock = createFetchMock();
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        subscription: { id: "sub-1", title: "Pro" },
+        diagram: { id: "diag-1", title: "Flow", source: "@startuml\nA\n@enduml" },
+        watermarkedPreview: true,
+        canDownload: false,
+        readOnly: true,
+      }),
+    );
+
+    const result = await fetchSubscriptionAccessDiagramPreview(
+      "share-token",
+      "diag-1",
+      TEST_API_BASE,
+    );
+    expect(result.diagram.source).toContain("@startuml");
+    expectFetchUrl(
+      fetchMock,
+      0,
+      `${TEST_API_BASE}/subscriptions/access/share-token/diagrams/diag-1/preview`,
+    );
   });
 });

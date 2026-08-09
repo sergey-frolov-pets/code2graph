@@ -138,6 +138,38 @@ export async function fetchSubscriptionAccess(
   };
 }
 
+export async function fetchSubscriptionAccessDiagramPreview(
+  token: string,
+  diagramId: string,
+  baseUrl?: string,
+): Promise<{
+  subscription: SubscriptionDto;
+  diagram: DiagramDto;
+  watermarkedPreview: boolean;
+  canDownload: boolean;
+  readOnly: boolean;
+}> {
+  const accessBase = resolveSubscriptionAccessApiBaseUrl(baseUrl);
+  const response = await fetch(
+    `${accessBase}/${token}/diagrams/${diagramId}/preview`,
+    {
+      headers: buildRequestHeaders(),
+    },
+  );
+
+  if (!response.ok) {
+    throw new LibraryApiError(await parseError(response), response.status);
+  }
+
+  return (await response.json()) as {
+    subscription: SubscriptionDto;
+    diagram: DiagramDto;
+    watermarkedPreview: boolean;
+    canDownload: boolean;
+    readOnly: boolean;
+  };
+}
+
 export async function fetchSubscriptionAccessDiagram(
   token: string,
   diagramId: string,
