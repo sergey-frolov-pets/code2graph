@@ -4,13 +4,7 @@ import {
   DEFAULT_RENDER_MODE,
   type RenderMode,
 } from "@/constants/render-settings";
-import { renderPlantUmlToSvg } from "@/services/plantuml/plantuml-engine";
-import { renderMermaidToSvg } from "@/services/mermaid/mermaid-engine";
-import { renderGraphmlToSvg } from "@/services/graphml/graphml-engine";
-import {
-  preparePlantUmlSource,
-  splitSourceLines,
-} from "@/utils/plantuml-source";
+import { renderDiagram } from "@/formats";
 
 export interface DiagramRenderOptions {
   dark?: boolean;
@@ -23,26 +17,14 @@ export async function renderDiagramToSvg(
   format: DiagramFormat,
   options: DiagramRenderOptions = {},
 ): Promise<string> {
-  switch (format) {
-    case "plantuml": {
-      const layout = options.layout;
-      if (!layout) {
-        throw new Error("PlantUML layout is required");
-      }
-
-      const prepared = await preparePlantUmlSource(source, layout);
-      const lines = splitSourceLines(prepared);
-      return renderPlantUmlToSvg(
-        lines,
-        { dark: Boolean(options.dark) },
-        options.renderMode ?? DEFAULT_RENDER_MODE,
-      );
-    }
-    case "mermaid":
-      return renderMermaidToSvg(source, { dark: Boolean(options.dark) }, options.renderMode ?? DEFAULT_RENDER_MODE);
-    case "graphml":
-      return renderGraphmlToSvg(source, { dark: Boolean(options.dark) });
-    default:
-      throw new Error(`Unsupported diagram format: ${format satisfies never}`);
+  const layout = options.layout;
+  if (format === "plantuml" && !layout) {
+    throw new Error("PlantUML layout is required");
   }
+
+  return renderDiagram(format, source, {
+    layout: layout ?? ("smetana" as LayoutEngine),
+    diagramDarkMode: Boolean(options.dark),
+    renderMode: options.renderMode ?? DEFAULT_RENDER_MODE,
+  });
 }
