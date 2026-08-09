@@ -710,7 +710,7 @@ export function parseQuadrantMermaid(source: string, format: DiagramFormat): Dia
 
   const titleMatch = source.match(/title\s+(.+)$/im);
   if (titleMatch) {
-    ir.extras = { title: titleMatch[1].trim() };
+    ir.extras = { title: parseMermaidRequirementText(titleMatch[1]) };
   }
 
   const xAxisMatch = source.match(/x-axis\s+(\S+)\s*-->\s*(\S+)/i);
@@ -728,7 +728,7 @@ export function parseQuadrantMermaid(source: string, format: DiagramFormat): Dia
   }
 
   for (const match of source.matchAll(/^\s*([^:]+):\s*\[([0-9.]+)\s*,\s*([0-9.]+)\]/gm)) {
-    const label = match[1].trim();
+    const label = parseMermaidRequirementText(match[1]);
     const x = Number.parseFloat(match[2]);
     const y = Number.parseFloat(match[3]);
     quadrantItems.push({ label, x, y });

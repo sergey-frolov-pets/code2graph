@@ -10,18 +10,25 @@ import {
 describe("formatMermaidRequirementText", () => {
   it("keeps simple ASCII text unquoted", () => {
     expect(formatMermaidRequirementText("Requirement")).toBe("Requirement");
+    expect(formatMermaidRequirementText("Priorities")).toBe("Priorities");
+    expect(formatMermaidRequirementText("Low")).toBe("Low");
   });
 
   it("quotes text with spaces or Cyrillic", () => {
     expect(formatMermaidRequirementText("Requirement 1")).toBe('"Requirement 1"');
     expect(formatMermaidRequirementText("Требование 1")).toBe('"Требование 1"');
+    expect(formatMermaidRequirementText("High priority")).toBe('"High priority"');
+    expect(formatMermaidRequirementText("Узел 1")).toBe('"Узел 1"');
+    expect(formatMermaidRequirementText("Приоритеты")).toBe('"Приоритеты"');
   });
 });
 
 describe("parseMermaidRequirementText", () => {
   it("parses quoted and plain values", () => {
     expect(parseMermaidRequirementText('"Требование 1"')).toBe("Требование 1");
+    expect(parseMermaidRequirementText('"Узел 1"')).toBe("Узел 1");
     expect(parseMermaidRequirementText("Requirement")).toBe("Requirement");
+    expect(parseMermaidRequirementText("Priorities")).toBe("Priorities");
   });
 });
 
@@ -31,6 +38,17 @@ describe("requirement wizard sample", () => {
 
     expect(source).toContain('text: "Требование 1"');
     expect(source).not.toMatch(/text: Требование 1/);
+  });
+});
+
+describe("quadrant wizard sample", () => {
+  it("quotes Cyrillic labels in Russian sample", () => {
+    const source = buildWizardDiagramSample("quadrant", "mermaid", "ru");
+
+    expect(source).toContain('title "Приоритеты"');
+    expect(source).toContain('quadrant-1 "Высокий приоритет"');
+    expect(source).toContain('"Узел 1": [0.3, 0.4]');
+    expect(source).not.toMatch(/^\s*Узел 1:/m);
   });
 });
 

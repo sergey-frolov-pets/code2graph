@@ -1777,19 +1777,20 @@ function buildMermaidRequirement(state: WizardState, locale: AppLocale): string 
 function buildMermaidQuadrant(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.nodes;
   const title = locale === "ru" ? "Приоритеты" : "Priorities";
+  const quadrantLabel = locale === "ru" ? "Высокий приоритет" : "High priority";
   const lines = [
     "quadrantChart",
-    `    title ${title}`,
+    `    title ${formatMermaidRequirementText(title)}`,
     "    x-axis Low --> High",
     "    y-axis Low --> High",
-    `    quadrant-1 ${locale === "ru" ? "Высокий приоритет" : "High priority"}`,
+    `    quadrant-1 ${formatMermaidRequirementText(quadrantLabel)}`,
   ];
 
   for (let index = 1; index <= count; index += 1) {
     const label = nodeLabel(index, locale);
     const x = (0.2 + index * 0.15).toFixed(1);
     const y = (0.3 + index * 0.1).toFixed(1);
-    lines.push(`    ${label}: [${x}, ${y}]`);
+    lines.push(`    ${formatMermaidRequirementText(label)}: [${x}, ${y}]`);
   }
 
   return lines.join("\n");
