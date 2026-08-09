@@ -9,6 +9,7 @@ import {
 } from "@/constants/snippets-settings";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useLocale } from "@/composables/useLocale";
+import { useMediaQuery } from "@/composables/useMediaQuery";
 import { useSnippets } from "@/composables/useSnippets";
 import type { CustomSnippet, SnippetListItem } from "@/types/snippets";
 import {
@@ -30,6 +31,7 @@ const emit = defineEmits<{
 
 const { t } = useLocale();
 const { confirm, alert } = useAppDialog();
+const isMobileSheet = useMediaQuery("(max-width: 900px)");
 
 const snippets = useSnippets();
 
@@ -82,6 +84,10 @@ function persistPanelPosition(): void {
 }
 
 function onHeaderPointerDown(event: PointerEvent): void {
+  if (isMobileSheet.value) {
+    return;
+  }
+
   if ((event.target as Element).closest("button")) {
     return;
   }
@@ -298,11 +304,19 @@ async function onImportFileSelected(event: Event): Promise<void> {
 <template>
   <Teleport to="body">
     <div
+      v-if="open && isMobileSheet"
+      class="snippets-sheet-backdrop"
+      @click="emit('close')"
+    />
+    <div
       v-if="open"
       ref="panelRef"
       class="snippets-panel"
-      :class="{ 'is-dragging': isDragging }"
-      :style="panelStyle"
+      :class="{
+        'snippets-panel--sheet': isMobileSheet,
+        'is-dragging': isDragging && !isMobileSheet,
+      }"
+      :style="isMobileSheet ? undefined : panelStyle"
       role="dialog"
       aria-labelledby="snippets-panel-title"
       @keydown="onPanelKeydown"
@@ -338,7 +352,9 @@ async function onImportFileSelected(event: Event): Promise<void> {
         </div>
       </header>
 
-      <div class="snippets-panel__drag-hint">{{ t("snippets.dragHint") }}</div>
+      <div v-if="!isMobileSheet" class="snippets-panel__drag-hint">
+        {{ t("snippets.dragHint") }}
+      </div>
 
       <div class="snippets-panel__search">
         <input
@@ -438,6 +454,13 @@ async function onImportFileSelected(event: Event): Promise<void> {
 </template>
 
 <style scoped>
+.snippets-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 899;
+  background: var(--overlay);
+}
+
 .snippets-panel {
   position: fixed;
   z-index: 900;
@@ -616,8 +639,23 @@ async function onImportFileSelected(event: Event): Promise<void> {
   border: 0;
 }
 
-@media (max-width: 720px) {
-  .snippets-panel {
+.snippets-panel--sheet {
+  left: 0 !important;
+  right: 0 !important;
+  top: auto !important;
+  bottom: 0;
+  width: 100% !important;
+  max-height: min(85vh, 720px);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.snippets-panel--sheet .snippets-panel__header {
+  cursor: default;
+}
+
+@media (max-width: 900px) {
+  .snippets-panel:not(.snippets-panel--sheet) {
     max-height: 55vh;
   }
 }

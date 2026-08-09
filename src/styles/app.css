@@ -186,6 +186,62 @@ a {
   align-items: stretch;
 }
 
+.split-pane {
+  min-height: 0;
+  min-width: 0;
+}
+
+.app-split-divider {
+  display: none;
+  width: 8px;
+  margin: 0 -4px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  touch-action: none;
+  position: relative;
+  align-self: stretch;
+}
+
+.app-split-divider::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: var(--border);
+  transition: background 0.15s ease;
+}
+
+.app-split-divider:hover::before,
+.app-main--split-dragging .app-split-divider::before {
+  background: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+
+@media (min-width: 901px) {
+  .app-main {
+    display: flex;
+    gap: 0;
+  }
+
+  .split-pane {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .app-split-divider {
+    display: block;
+  }
+
+  .app-main--split-dragging {
+    cursor: col-resize;
+    user-select: none;
+  }
+}
+
 .panel {
   display: flex;
   flex-direction: column;

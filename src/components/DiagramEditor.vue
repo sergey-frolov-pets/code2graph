@@ -60,6 +60,8 @@ const emit = defineEmits<{
   convert: [];
   aiPatch: [payload: { start: number; end: number }];
   aiSyntaxAsk: [];
+  "editor-focus": [];
+  "editor-blur": [];
 }>();
 
 const { t } = useLocale();
@@ -104,6 +106,16 @@ const snippetsOpen = ref(false);
 const textareaRef = computed(
   () => codeSurfaceRef.value?.textareaEl ?? null,
 );
+
+function onEditorFocusOut(event: FocusEvent): void {
+  const section = event.currentTarget as HTMLElement;
+  const related = event.relatedTarget as Node | null;
+  if (related && section.contains(related)) {
+    return;
+  }
+
+  emit("editor-blur");
+}
 
 function syncScroll(): void {
   const textarea = textareaRef.value;
@@ -281,6 +293,8 @@ onUnmounted(() => {
     :class="{ 'is-fullscreen': isFullscreen }"
     :style="editorStyle"
     :aria-label="t('app.editorRegion')"
+    @focusin="emit('editor-focus')"
+    @focusout="onEditorFocusOut"
   >
     <EditorFoldOnboardingBanner
       :open="showFoldOnboarding"

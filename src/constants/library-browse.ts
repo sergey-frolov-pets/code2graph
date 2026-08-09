@@ -1,3 +1,3 @@
 export const LIBRARY_BROWSE_SESSION_KEY = "plantuml-smetana-library-browse";
 
-export const LIBRARY_DIAGRAM_PAGE_SIZE = 50;
+export const LIBRARY_ROW_ESTIMATE_HEIGHT = 96;
