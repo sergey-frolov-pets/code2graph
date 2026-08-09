@@ -1,4 +1,5 @@
 import { ref, type Ref } from "vue";
+import { useEditorFoldOnboarding } from "@/composables/wizard/useWizardOnboarding";
 
 export interface UseAiSourceApplyOptions {
   source: Ref<string>;
@@ -25,6 +26,7 @@ export function useAiSourceApply(options: UseAiSourceApplyOptions) {
 
   const patchSelectionStart = ref(0);
   const patchSelectionEnd = ref(0);
+  const { maybeShowAfterWizardApply } = useEditorFoldOnboarding();
 
   function onAiPatchRequest(payload: { start: number; end: number }): void {
     patchSelectionStart.value = payload.start;
@@ -45,10 +47,16 @@ export function useAiSourceApply(options: UseAiSourceApplyOptions) {
     scheduleRender();
   }
 
+  function applyWizardDiagram(source: string, label: string): void {
+    applyAiPlantUml(source, label);
+    maybeShowAfterWizardApply();
+  }
+
   return {
     patchSelectionStart,
     patchSelectionEnd,
     onAiPatchRequest,
     applyAiPlantUml,
+    applyWizardDiagram,
   };
 }

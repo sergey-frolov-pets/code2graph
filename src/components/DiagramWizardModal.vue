@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { toRef } from "vue";
 import AppModal from "@/components/AppModal.vue";
+import WizardOnboardingBanner from "@/components/wizard/WizardOnboardingBanner.vue";
 import WizardAiSetupPanel from "@/components/wizard/WizardAiSetupPanel.vue";
 import WizardLivePreview from "@/components/wizard/WizardLivePreview.vue";
 import WizardProgressSteps from "@/components/wizard/WizardProgressSteps.vue";
 import WizardStepContent from "@/components/wizard/WizardStepContent.vue";
 import WizardModalFooter from "@/components/wizard/WizardModalFooter.vue";
 import { useDiagramWizardFlow } from "@/composables/wizard/useDiagramWizardFlow";
+import { useWizardOnboarding } from "@/composables/wizard/useWizardOnboarding";
 import { useLocale } from "@/composables/useLocale";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
@@ -24,6 +26,7 @@ const emit = defineEmits<{
 }>();
 
 const { t, locale } = useLocale();
+const { showWizardBanner, dismissWizardBanner } = useWizardOnboarding();
 
 const {
   stepIndex,
@@ -84,6 +87,11 @@ const {
     :title="t('llm.wizard.title')"
     @close="emit('close')"
   >
+    <WizardOnboardingBanner
+      :open="showWizardBanner"
+      @dismiss="dismissWizardBanner"
+    />
+
     <p class="wizard-step-title">{{ stepTitle }}</p>
     <div
       class="wizard-progress"

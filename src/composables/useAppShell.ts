@@ -80,6 +80,7 @@ export interface AppShellContext {
   onAiSyntaxAskOpen: (initialQuestion?: string) => void;
   onSyntaxAskFromValidation: () => void;
   applyAiPlantUml: (source: string, label: string) => void;
+  applyWizardDiagram: (source: string, label: string) => void;
   savePuml: () => Promise<void>;
   onVersionRestore: (source: string) => void;
   renderDiagram: () => Promise<void>;
@@ -199,6 +200,7 @@ export function useAppShell(): AppShellContext {
     patchSelectionEnd,
     onAiPatchRequest,
     applyAiPlantUml,
+    applyWizardDiagram,
   } = useAiSourceApply({
     source,
     error,
@@ -392,6 +394,7 @@ export function useAppShell(): AppShellContext {
     onAiSyntaxAskOpen,
     onSyntaxAskFromValidation,
     applyAiPlantUml,
+    applyWizardDiagram,
     savePuml,
     onVersionRestore,
     renderDiagram,

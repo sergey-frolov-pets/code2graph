@@ -52,6 +52,7 @@ const {
   onFileLoaded,
   onSyntaxAskFromValidation,
   applyAiPlantUml,
+  applyWizardDiagram,
   onVersionRestore,
 } = useAppShellContext();
 
@@ -161,7 +162,7 @@ const { guideModalOpen, guideProviderId, closeLlmKeysGuide } = llmKeysGuide;
     :render-mode="renderMode"
     :diagram-dark-mode="diagramDarkMode"
     @close="isWizardModalOpen = false"
-    @apply="(payload) => applyAiPlantUml(payload.source, payload.label)"
+    @apply="(payload) => applyWizardDiagram(payload.source, payload.label)"
   />
 
   <ConvertDiagramModal

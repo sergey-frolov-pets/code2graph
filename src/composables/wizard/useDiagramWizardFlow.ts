@@ -34,12 +34,25 @@ import {
   useLlmGate,
   type LlmGateFailureReason,
 } from "@/composables/useLlmGate";
+import { useLlmApiKeys } from "@/composables/useLlmApiKeys";
+import { useLlmSettings } from "@/composables/useLlmSettings";
 
 const MANUAL_LIVE_PREVIEW_STEPS = new Set<WizardStepId>([
   "direction",
   "style",
   "params",
 ]);
+
+function isLivePreviewStep(
+  step: WizardStepId,
+  aiMode: boolean,
+): boolean {
+  if (step === "type") {
+    return true;
+  }
+
+  return !aiMode && MANUAL_LIVE_PREVIEW_STEPS.has(step);
+}
 
 export interface UseDiagramWizardFlowOptions {
   open: Ref<boolean>;
@@ -79,6 +92,8 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   const aiSetupVisible = ref(false);
   const aiSetupReason = ref<LlmGateFailureReason | null>(null);
   let stepPreviewTimer: ReturnType<typeof setTimeout> | null = null;
+  const { llmConsent, llmProviderId } = useLlmSettings();
+  const { hasLlmApiKey } = useLlmApiKeys();
 
   const wizardSteps = computed(() => getWizardSteps(wizardState.value));
   const currentStepId = computed(() => wizardSteps.value[stepIndex.value] ?? "mode");
@@ -149,15 +164,13 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   );
 
   const showLivePreviewPanel = computed(() => {
-    if (
-      !isAiMode.value &&
-      MANUAL_LIVE_PREVIEW_STEPS.has(currentStepId.value as WizardStepId)
-    ) {
+    const step = currentStepId.value as WizardStepId;
+    if (isLivePreviewStep(step, isAiMode.value)) {
       return true;
     }
 
     return (
-      currentStepId.value === "result" &&
+      step === "result" &&
       (previewSvg.value.length > 0 || isPreviewLoading.value)
     );
   });
@@ -283,10 +296,8 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
       return;
     }
 
-    if (
-      isAiMode.value ||
-      !MANUAL_LIVE_PREVIEW_STEPS.has(currentStepId.value as WizardStepId)
-    ) {
+    const step = currentStepId.value as WizardStepId;
+    if (!isLivePreviewStep(step, isAiMode.value)) {
       previewSvg.value = "";
       return;
     }
@@ -299,6 +310,21 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     const source = buildManualScaffold(resolved, locale.value);
     await loadPreview(source);
   }
+
+  watch([llmConsent, llmProviderId], () => {
+    if (aiSetupVisible.value) {
+      void checkAiAccess();
+    }
+  });
+
+  watch(
+    () => hasLlmApiKey(llmProviderId.value),
+    () => {
+      if (aiSetupVisible.value) {
+        void checkAiAccess();
+      }
+    },
+  );
 
   watch(currentStepId, (step) => {
     if (isAiMode.value && step === "context") {

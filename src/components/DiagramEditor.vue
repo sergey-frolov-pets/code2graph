@@ -11,6 +11,7 @@ import SnippetsPanel from "@/components/SnippetsPanel.vue";
 import EditorToolbar from "@/components/editor/EditorToolbar.vue";
 import EditorCodeGutter from "@/components/editor/EditorCodeGutter.vue";
 import EditorCodeSurface from "@/components/editor/EditorCodeSurface.vue";
+import EditorFoldOnboardingBanner from "@/components/editor/EditorFoldOnboardingBanner.vue";
 import EditorFoldRegionsModal from "@/components/editor/EditorFoldRegionsModal.vue";
 import { useLocale } from "@/composables/useLocale";
 import type { EditorFontSize } from "@/constants/editor-settings";
@@ -20,6 +21,7 @@ import {
   getDiagramFormatDefinition,
   type DiagramFormat,
 } from "@/constants/diagram-formats";
+import { useEditorFoldOnboarding } from "@/composables/wizard/useWizardOnboarding";
 import { useEditorAutocomplete } from "@/composables/useEditorAutocomplete";
 import { useCodeFolds } from "@/composables/editor/useCodeFolds";
 import { useEditorDisplayModel } from "@/composables/editor/useEditorDisplayModel";
@@ -61,6 +63,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
+const { showFoldOnboarding, dismissFoldOnboarding } = useEditorFoldOnboarding();
 
 const formatDefinition = computed(() =>
   getDiagramFormatDefinition(diagramFormat.value),
@@ -141,6 +144,11 @@ const regionsButtonEl = computed(
 
 function toggleRegionsModal(): void {
   regionsModalOpen.value = !regionsModalOpen.value;
+}
+
+function openRegionsModalFromOnboarding(): void {
+  regionsModalOpen.value = true;
+  dismissFoldOnboarding();
 }
 
 function onGutterLineTap(sourceLine: number): void {
@@ -274,6 +282,12 @@ onUnmounted(() => {
     :style="editorStyle"
     :aria-label="t('app.editorRegion')"
   >
+    <EditorFoldOnboardingBanner
+      :open="showFoldOnboarding"
+      @dismiss="dismissFoldOnboarding"
+      @open-regions="openRegionsModalFromOnboarding"
+    />
+
     <EditorToolbar
       :format-definition="formatDefinition"
       :can-save="canSave"
