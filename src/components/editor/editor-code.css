@@ -168,6 +168,11 @@
   background: color-mix(in srgb, var(--surface-muted) 70%, transparent);
 }
 
+.editor-virtual-line {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1.45em;
+}
+
 .code-editor__highlights.is-syntax-disabled .code-editor__line-spacer {
   visibility: hidden;
 }

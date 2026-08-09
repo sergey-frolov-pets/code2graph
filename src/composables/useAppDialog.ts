@@ -1,4 +1,5 @@
 import { ref } from "vue";
+import type { TranslateFn } from "@/locales/types";
 
 export type DialogVariant = "default" | "danger";
 
@@ -162,7 +163,7 @@ export function useAppDialog() {
 
   function getCancelLabel(
     dialog: DialogState,
-    t: (key: string) => string,
+    t: TranslateFn,
   ): string {
     if (dialog.type === "alert") {
       return t(DEFAULT_CANCEL_LABEL_KEY);
@@ -173,7 +174,7 @@ export function useAppDialog() {
 
   function getConfirmLabel(
     dialog: DialogState,
-    t: (key: string) => string,
+    t: TranslateFn,
   ): string {
     if (dialog.type === "alert") {
       return dialog.options.confirmLabel ?? t(DEFAULT_CONFIRM_LABEL_KEY);

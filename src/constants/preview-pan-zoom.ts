@@ -12,3 +12,6 @@ export const PREVIEW_WHEEL_LINE_PIXELS = 16;
 
 /** Fraction of the viewport used when fitting the diagram on load. */
 export const PREVIEW_FIT_MARGIN_RATIO = 0.95;
+
+/** Maximum delay between taps to treat as double-tap fit gesture. */
+export const PREVIEW_DOUBLE_TAP_MS = 300;

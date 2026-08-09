@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import DiagramToolbar from "@/components/DiagramToolbar.vue";
+import LoadingState from "@/components/ui/LoadingState.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
 import { useLocale } from "@/composables/useLocale";
 import { usePreviewPanZoom } from "@/composables/usePreviewPanZoom";
@@ -42,6 +43,7 @@ const {
   contentStyle,
   isDragging,
   isPinching,
+  zoomPercent,
   zoomIn,
   zoomOut,
   onPointerDown,
@@ -78,6 +80,7 @@ watch(isFullscreen, (value) => {
   <section
     class="panel preview-panel"
     :class="{ 'is-fullscreen': isFullscreen }"
+    :aria-label="t('app.previewRegion')"
   >
     <header class="panel-header">
       <h2 class="panel-title" :title="t('preview.titleTooltip')">
@@ -90,6 +93,7 @@ watch(isFullscreen, (value) => {
           :preview-background="previewBackground"
           :diagram-dark-mode="diagramDarkMode"
           :render-mode="renderMode"
+          :zoom-percent="zoomPercent"
           @render-now="emit('renderNow')"
           @export-svg="emit('exportSvg')"
           @export-png="emit('exportPng')"
@@ -106,6 +110,9 @@ watch(isFullscreen, (value) => {
 
     <div class="panel-body">
       <div v-if="error" class="preview-error">{{ error }}</div>
+      <div v-else-if="isRendering && !previewMarkup" class="preview-frame preview-frame--loading">
+        <LoadingState :message="t('preview.rendering')" />
+      </div>
       <div v-else-if="previewMarkup" class="preview-frame">
         <div
           ref="viewportRef"
@@ -120,9 +127,13 @@ watch(isFullscreen, (value) => {
           <div
             ref="contentRef"
             class="preview-content"
+            :data-preview-ready="Boolean(previewMarkup)"
             :style="contentStyle"
             v-html="previewMarkup"
           />
+        </div>
+        <div v-if="isRendering" class="preview-loading-overlay">
+          <LoadingState compact :message="t('preview.rendering')" />
         </div>
       </div>
       <div v-else class="preview-placeholder">
@@ -139,5 +150,27 @@ watch(isFullscreen, (value) => {
   padding: 0 8px;
   font-size: 0.9rem;
   line-height: 32px;
+}
+
+.preview-frame {
+  position: relative;
+}
+
+.preview-frame--loading {
+  display: grid;
+  place-items: center;
+  min-height: 240px;
+}
+
+.preview-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+
+.preview-content {
+  will-change: transform;
 }
 </style>

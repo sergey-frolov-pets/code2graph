@@ -1,18 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, toRef } from 'vue';
 import { useLongPressTooltip } from '@/composables/useLongPressTooltip';
 
-defineProps<{
+const props = defineProps<{
   label: string;
 }>();
 
 const rootRef = ref<HTMLElement | null>(null);
 
 const {
-  tooltipVisible,
-  tooltipPosition,
-  tooltipPlacement,
-  tooltipRef,
   onPointerDown,
   onPointerUp,
   onPointerCancel,
@@ -21,7 +17,7 @@ const {
   onTouchCancel,
   onMouseEnter,
   onMouseLeave,
-} = useLongPressTooltip(rootRef);
+} = useLongPressTooltip(rootRef, toRef(props, 'label'));
 </script>
 
 <template>
@@ -40,22 +36,6 @@ const {
   >
     <slot />
   </span>
-
-  <Teleport to="body">
-    <span
-      v-if="tooltipVisible"
-      ref="tooltipRef"
-      class="floating-tooltip"
-      :class="`floating-tooltip--${tooltipPlacement}`"
-      :style="{
-        top: `${tooltipPosition.top}px`,
-        left: `${tooltipPosition.left}px`,
-      }"
-      role="tooltip"
-    >
-      {{ label }}
-    </span>
-  </Teleport>
 </template>
 
 <style scoped>

@@ -9,7 +9,7 @@ import {
   checkApiHealth,
   fetchDiagrams,
   fetchSections,
-} from "@/utils/diagram-api";
+} from "@/services/library/api";
 import {
   getCacheMeta,
   loadDiagramsFromCache,
@@ -18,7 +18,7 @@ import {
   saveDiagramsToCache,
   saveSectionsToCache,
   setCacheMeta,
-} from "@/utils/diagram-store";
+} from "@/storage/diagram-store";
 
 export interface LibraryFetchFilters {
   q?: string;

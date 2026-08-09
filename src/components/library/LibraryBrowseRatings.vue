@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import LibraryStarRating from "@/components/library/LibraryStarRating.vue";
+import EmptyState from "@/components/ui/EmptyState.vue";
+import LoadingState from "@/components/ui/LoadingState.vue";
 import { useLocale } from "@/composables/useLocale";
 import type { RatingsLeaderboardDto } from "@/constants/diagram-library";
-import { fetchRatingsLeaderboard } from "@/utils/diagram-api";
+import { fetchRatingsLeaderboard } from "@/services/library/api";
 import { getDiagramFormatLabel } from "@/utils/library-display";
 
 const emit = defineEmits<{
@@ -37,14 +39,15 @@ onMounted(() => {
 <template>
   <div class="library-step">
     <div class="library-step__content library-step__content--padded">
-      <p v-if="isLoading" class="library-empty">{{ t("app.loading") }}</p>
+      <LoadingState v-if="isLoading" :message="t('app.loading')" />
       <p v-else-if="errorMessage" class="library-empty">{{ errorMessage }}</p>
       <template v-else-if="leaderboard">
         <section class="library-ratings-block">
           <h3 class="library-ratings-block__title">{{ t("library.ratingsTopDiagrams") }}</h3>
-          <p v-if="leaderboard.topDiagrams.length === 0" class="library-empty">
-            {{ t("library.ratingsEmpty") }}
-          </p>
+          <EmptyState
+            v-if="leaderboard.topDiagrams.length === 0"
+            :title="t('library.ratingsEmpty')"
+          />
           <button
             v-for="diagram in leaderboard.topDiagrams"
             :key="diagram.id"
@@ -75,9 +78,10 @@ onMounted(() => {
 
         <section class="library-ratings-block">
           <h3 class="library-ratings-block__title">{{ t("library.ratingsTopSections") }}</h3>
-          <p v-if="leaderboard.topSections.length === 0" class="library-empty">
-            {{ t("library.ratingsEmpty") }}
-          </p>
+          <EmptyState
+            v-if="leaderboard.topSections.length === 0"
+            :title="t('library.ratingsEmpty')"
+          />
           <button
             v-for="section in leaderboard.topSections"
             :key="section.sectionId"
@@ -100,9 +104,10 @@ onMounted(() => {
 
         <section class="library-ratings-block">
           <h3 class="library-ratings-block__title">{{ t("library.ratingsTopAuthors") }}</h3>
-          <p v-if="leaderboard.topAuthors.length === 0" class="library-empty">
-            {{ t("library.ratingsEmpty") }}
-          </p>
+          <EmptyState
+            v-if="leaderboard.topAuthors.length === 0"
+            :title="t('library.ratingsEmpty')"
+          />
           <div
             v-for="author in leaderboard.topAuthors"
             :key="author.authorId"

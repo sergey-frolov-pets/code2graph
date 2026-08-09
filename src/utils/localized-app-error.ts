@@ -1,9 +1,11 @@
+import type { LocaleKey, TranslateFn } from "@/locales/types";
+
 export class LocalizedAppError extends Error {
-  readonly messageKey: string;
+  readonly messageKey: LocaleKey;
   readonly messageParams?: Record<string, string | number>;
 
   constructor(
-    messageKey: string,
+    messageKey: LocaleKey,
     messageParams?: Record<string, string | number>,
   ) {
     super(messageKey);
@@ -15,8 +17,8 @@ export class LocalizedAppError extends Error {
 
 export function resolveLocalizedErrorMessage(
   error: unknown,
-  t: (key: string, params?: Record<string, string | number>) => string,
-  fallbackKey: string,
+  t: TranslateFn,
+  fallbackKey: LocaleKey,
 ): string {
   if (error instanceof LocalizedAppError) {
     return t(error.messageKey, error.messageParams);

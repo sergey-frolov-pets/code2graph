@@ -1,4 +1,5 @@
 import { computed, type ComputedRef, type Ref } from "vue";
+import type { TranslateFn } from "@/locales/types";
 import type { FlatSectionOption } from "@/shared/library/section-tree";
 import { FAVORITES_SECTION_ID, RATINGS_SECTION_ID } from "@/constants/diagram-library";
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
@@ -14,7 +15,7 @@ export function useLibraryBrowseFlow(options: {
   browseStep: Ref<BrowseStep>;
   flatSectionOptions: ComputedRef<FlatSectionOption[]>;
   resetEditForm: () => void;
-  t: (key: string, params?: Record<string, string | number>) => string;
+  t: TranslateFn;
 }) {
   const { library, activeTab, browseStep, flatSectionOptions, resetEditForm, t } =
     options;
@@ -57,6 +58,40 @@ export function useLibraryBrowseFlow(options: {
     return t("library.title");
   });
 
+  const breadcrumbItems = computed(() => {
+    if (activeTab.value !== "browse") {
+      return [] as Array<{ label: string; action?: () => void }>;
+    }
+
+    const items: Array<{ label: string; action?: () => void }> = [
+      {
+        label: t("library.allSections"),
+        action: browseStep.value === "sections" ? undefined : resetBrowseFlow,
+      },
+    ];
+
+    if (browseStep.value === "sections" || browseStep.value === "subscriptions") {
+      return items;
+    }
+
+    items.push({
+      label: headerTitle.value,
+      action:
+        browseStep.value === "detail"
+          ? () => {
+              browseStep.value = "diagrams";
+              resetEditForm();
+            }
+          : undefined,
+    });
+
+    if (browseStep.value === "detail" && library.selectedDiagram.value) {
+      items.push({ label: library.selectedDiagram.value.title });
+    }
+
+    return items;
+  });
+
   function resetBrowseFlow(): void {
     browseStep.value = "sections";
     resetEditForm();
@@ -94,6 +129,7 @@ export function useLibraryBrowseFlow(options: {
     showBackButton,
     showModeTabs,
     headerTitle,
+    breadcrumbItems,
     resetBrowseFlow,
     goBack,
     openSubscriptions,

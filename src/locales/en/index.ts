@@ -6,9 +6,8 @@ import { llmMessages } from "./llm";
 import { settingsMessages } from "./settings";
 import { miscMessages } from "./misc";
 import { conversionMessages } from "./conversion";
-import type { LocaleMessages } from "../types";
 
-export const enMessages: LocaleMessages = {
+export const enMessages = {
   ...appMessages,
   ...editorMessages,
   ...snippetsMessages,
@@ -17,4 +16,4 @@ export const enMessages: LocaleMessages = {
   ...settingsMessages,
   ...miscMessages,
   ...conversionMessages,
-};
+} as const;

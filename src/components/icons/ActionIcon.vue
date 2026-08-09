@@ -11,6 +11,7 @@ import {
   CircleHelp,
   Cloud,
   Download,
+  Ellipsis,
   Eye,
   FolderOpen,
   Globe,
@@ -21,6 +22,7 @@ import {
   Redo2,
   RefreshCw,
   Save,
+  Settings,
   Shield,
   Sparkles,
   SquarePen,
@@ -54,6 +56,7 @@ export type ActionIconName =
   | "zoom-in"
   | "zoom-out"
   | "edit"
+  | "settings"
   | "close"
   | "history"
   | "undo"
@@ -66,7 +69,8 @@ export type ActionIconName =
   | "cloud"
   | "shield"
   | "globe"
-  | "unlink";
+  | "unlink"
+  | "more";
 
 const props = withDefaults(
   defineProps<{
@@ -97,6 +101,7 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   "zoom-in": ZoomIn,
   "zoom-out": ZoomOut,
   edit: SquarePen,
+  settings: Settings,
   close: X,
   history: History,
   undo: Undo2,
@@ -110,6 +115,7 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   shield: Shield,
   globe: Globe,
   unlink: Unlink,
+  more: Ellipsis,
 };
 
 const iconComponent = computed(() => ICON_MAP[props.name]);

@@ -34,10 +34,6 @@ const installTitle = computed(() => {
 const rootRef = ref<HTMLElement | null>(null);
 
 const {
-  tooltipVisible,
-  tooltipPosition,
-  tooltipPlacement,
-  tooltipRef,
   onPointerDown,
   onPointerUp,
   onPointerCancel,
@@ -47,7 +43,7 @@ const {
   onMouseEnter,
   onMouseLeave,
   consumeSuppressClick,
-} = useLongPressTooltip(rootRef);
+} = useLongPressTooltip(rootRef, installTitle);
 
 function onClick(event: MouseEvent): void {
   if (consumeSuppressClick()) {
@@ -108,22 +104,6 @@ function onClick(event: MouseEvent): void {
     </svg>
     <span class="install-app-btn__label">{{ t("install.label") }}</span>
   </button>
-
-  <Teleport to="body">
-    <span
-      v-if="tooltipVisible"
-      ref="tooltipRef"
-      class="floating-tooltip"
-      :class="`floating-tooltip--${tooltipPlacement}`"
-      :style="{
-        top: `${tooltipPosition.top}px`,
-        left: `${tooltipPosition.left}px`,
-      }"
-      role="tooltip"
-    >
-      {{ installTitle }}
-    </span>
-  </Teleport>
 </template>
 
 <style scoped>

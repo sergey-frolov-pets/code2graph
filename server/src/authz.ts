@@ -127,29 +127,6 @@ export function getSectionAccessGrants(
     .all(sectionId) as SectionAccessGrant[];
 }
 
-/** @deprecated Используйте hasEffectiveSectionPermission */
-export function hasSectionAccessGrant(
-  database: Database.Database,
-  sectionId: string,
-  userId: string,
-  minPermission: SectionAccessPermission = "view",
-): boolean {
-  return hasEffectiveSectionPermission(
-    database,
-    sectionId,
-    userId,
-    minPermission,
-  );
-}
-
-export function getUserSectionAccessPermission(
-  database: Database.Database,
-  sectionId: string,
-  userId: string,
-): SectionAccessPermission | null {
-  return getEffectiveSectionPermission(database, sectionId, userId);
-}
-
 export function getSectionRow(
   database: Database.Database,
   sectionId: string,

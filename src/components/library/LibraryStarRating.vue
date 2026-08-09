@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { useLocale } from "@/composables/useLocale";
+
 const props = withDefaults(
   defineProps<{
     value: number | null;
@@ -15,11 +18,21 @@ const emit = defineEmits<{
   change: [rating: number];
 }>();
 
+const { t } = useLocale();
+
+const ariaLabel = computed(() =>
+  t("library.ratingOutOfFive", { value: props.value ?? 0 }),
+);
+
 function onPick(star: number): void {
   if (props.readonly) {
     return;
   }
   emit("change", star);
+}
+
+function starLabel(star: number): string {
+  return t("library.starLabel", { star });
 }
 </script>
 
@@ -28,7 +41,7 @@ function onPick(star: number): void {
     class="library-stars"
     :class="`library-stars--${size}`"
     role="img"
-    :aria-label="value ? `${value}/5` : '0/5'"
+    :aria-label="ariaLabel"
   >
     <button
       v-for="star in 5"
@@ -37,7 +50,7 @@ function onPick(star: number): void {
       type="button"
       :class="{ 'is-active': value !== null && star <= value }"
       :disabled="readonly"
-      :aria-label="`${star}`"
+      :aria-label="starLabel(star)"
       @click="onPick(star)"
     >
       ★
@@ -62,14 +75,14 @@ function onPick(star: number): void {
 .library-stars__star {
   border: 0;
   background: transparent;
-  color: var(--text-muted, #bbb);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 0;
   line-height: 1;
 }
 
 .library-stars__star.is-active {
-  color: #f5a623;
+  color: var(--star-active);
 }
 
 .library-stars__star:disabled {

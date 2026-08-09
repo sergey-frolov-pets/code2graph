@@ -7,7 +7,7 @@ import {
 import {
   loadAllDiagramDetailsFromCache,
   loadSectionsFromCache,
-} from "@/utils/diagram-store";
+} from "@/storage/diagram-store";
 import { downloadTextFile } from "@/utils/export";
 
 const EXPORT_FILE_NAME = "vueplantuml-library.json";

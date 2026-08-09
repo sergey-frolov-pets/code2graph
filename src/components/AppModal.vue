@@ -1,7 +1,12 @@
 <script setup lang="ts">
+import { computed, ref, toRef, useId } from "vue";
+import ActionIcon from "@/components/icons/ActionIcon.vue";
+import { useModalA11y } from "@/composables/useModalA11y";
+import { useModalStackEntry } from "@/composables/useModalStackEntry";
+import { useModalStack } from "@/composables/useModalStack";
 import { useLocale } from "@/composables/useLocale";
 
-defineProps<{
+const props = defineProps<{
   title: string;
   open: boolean;
   variant?: "default" | "success" | "error";
@@ -14,6 +19,20 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
+const titleId = useId();
+const modalId = useId();
+const dialogRef = ref<HTMLElement | null>(null);
+const { getStackZIndex } = useModalStack();
+
+useModalStackEntry(
+  modalId,
+  toRef(props, "open"),
+  () => emit("close"),
+  props.layer ?? "default",
+);
+useModalA11y(toRef(props, "open"), dialogRef);
+
+const modalZIndex = computed(() => getStackZIndex(modalId));
 
 function onBackdropClick(event: MouseEvent): void {
   if (event.target === event.currentTarget) {
@@ -28,25 +47,28 @@ function onBackdropClick(event: MouseEvent): void {
       v-if="open"
       class="modal-backdrop"
       :class="{ 'is-above-library': layer === 'above-library' }"
+      :style="modalZIndex ? { zIndex: modalZIndex } : undefined"
       role="presentation"
       @click="onBackdropClick"
     >
       <div
+        ref="dialogRef"
         class="modal"
         :class="{ 'modal--wide': wide }"
         role="dialog"
-        :aria-labelledby="`modal-title-${title}`"
+        :aria-labelledby="titleId"
         aria-modal="true"
+        tabindex="-1"
       >
         <header class="modal-header" :class="variant ? `is-${variant}` : ''">
-          <h2 :id="`modal-title-${title}`" class="modal-title">{{ title }}</h2>
+          <h2 :id="titleId" class="modal-title">{{ title }}</h2>
           <button
             class="modal-close"
             type="button"
             :aria-label="t('modal.closeAria')"
             @click="emit('close')"
           >
-            ×
+            <ActionIcon name="close" />
           </button>
         </header>
         <div class="modal-body">
@@ -68,7 +90,8 @@ function onBackdropClick(event: MouseEvent): void {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(15, 23, 42, 0.55);
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  background: var(--overlay);
 }
 
 .modal-backdrop.is-above-library {
@@ -117,13 +140,15 @@ function onBackdropClick(event: MouseEvent): void {
 }
 
 .modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--btn-touch, 44px);
+  height: var(--btn-touch, 44px);
   border: 0;
   background: transparent;
   color: var(--text-muted);
-  font-size: 1.5rem;
-  line-height: 1;
-  padding: 0 4px;
-  min-height: auto;
+  padding: 0;
 }
 
 .modal-body {

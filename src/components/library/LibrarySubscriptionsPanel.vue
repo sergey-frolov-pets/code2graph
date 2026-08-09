@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from "vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import LibrarySubscriptionModal from "@/components/library/LibrarySubscriptionModal.vue";
+import EmptyState from "@/components/ui/EmptyState.vue";
+import LoadingState from "@/components/ui/LoadingState.vue";
 import type { SubscriptionDto } from "@/constants/diagram-library";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useLocale } from "@/composables/useLocale";
@@ -13,7 +15,7 @@ import {
   fetchSubscriptions,
   grantSubscription,
   revokeSubscriptionGrant,
-} from "@/utils/diagram-api";
+} from "@/services/library/api";
 
 const props = defineProps<{
   flatSectionOptions: FlatSectionOption[];
@@ -178,11 +180,12 @@ onMounted(() => {
     </div>
 
     <div class="library-step__content library-step__content--padded">
-      <p v-if="isLoading" class="library-empty">{{ t("app.loading") }}</p>
+      <LoadingState v-if="isLoading" :message="t('app.loading')" />
       <p v-else-if="errorMessage" class="library-empty">{{ errorMessage }}</p>
-      <p v-else-if="subscriptions.length === 0" class="library-empty">
-        {{ t("library.subscriptionEmpty") }}
-      </p>
+      <EmptyState
+        v-else-if="subscriptions.length === 0"
+        :title="t('library.subscriptionEmpty')"
+      />
 
       <article
         v-for="subscription in subscriptions"
@@ -288,7 +291,7 @@ onMounted(() => {
 
 <style scoped>
 .subscription-card {
-  border: 1px solid var(--border-color, #ddd);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 12px;
@@ -337,7 +340,7 @@ onMounted(() => {
 .subscription-card__grants {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid var(--border-color, #eee);
+  border-top: 1px solid var(--border);
 }
 
 .subscription-grants-list {

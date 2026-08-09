@@ -11,6 +11,7 @@ import SnippetsPanel from "@/components/SnippetsPanel.vue";
 import EditorToolbar from "@/components/editor/EditorToolbar.vue";
 import EditorCodeGutter from "@/components/editor/EditorCodeGutter.vue";
 import EditorCodeSurface from "@/components/editor/EditorCodeSurface.vue";
+import EditorFoldOnboardingBanner from "@/components/editor/EditorFoldOnboardingBanner.vue";
 import EditorFoldRegionsModal from "@/components/editor/EditorFoldRegionsModal.vue";
 import { useLocale } from "@/composables/useLocale";
 import type { EditorFontSize } from "@/constants/editor-settings";
@@ -20,6 +21,7 @@ import {
   getDiagramFormatDefinition,
   type DiagramFormat,
 } from "@/constants/diagram-formats";
+import { useEditorFoldOnboarding } from "@/composables/wizard/useWizardOnboarding";
 import { useEditorAutocomplete } from "@/composables/useEditorAutocomplete";
 import { useCodeFolds } from "@/composables/editor/useCodeFolds";
 import { useEditorDisplayModel } from "@/composables/editor/useEditorDisplayModel";
@@ -61,6 +63,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
+const { showFoldOnboarding, dismissFoldOnboarding } = useEditorFoldOnboarding();
 
 const formatDefinition = computed(() =>
   getDiagramFormatDefinition(diagramFormat.value),
@@ -143,6 +146,11 @@ function toggleRegionsModal(): void {
   regionsModalOpen.value = !regionsModalOpen.value;
 }
 
+function openRegionsModalFromOnboarding(): void {
+  regionsModalOpen.value = true;
+  dismissFoldOnboarding();
+}
+
 function onGutterLineTap(sourceLine: number): void {
   regionsModalRef.value?.handleLineTap(sourceLine);
 }
@@ -164,6 +172,7 @@ const {
   gutterRows,
   visibleEditorLines,
   editorStyle,
+  useLineVirtualization,
 } = useEditorDisplayModel({
   source,
   folds,
@@ -271,7 +280,14 @@ onUnmounted(() => {
     class="panel editor-panel"
     :class="{ 'is-fullscreen': isFullscreen }"
     :style="editorStyle"
+    :aria-label="t('app.editorRegion')"
   >
+    <EditorFoldOnboardingBanner
+      :open="showFoldOnboarding"
+      @dismiss="dismissFoldOnboarding"
+      @open-regions="openRegionsModalFromOnboarding"
+    />
+
     <EditorToolbar
       :format-definition="formatDefinition"
       :can-save="canSave"
@@ -320,6 +336,7 @@ onUnmounted(() => {
         <EditorCodeGutter
           ref="gutterComponentRef"
           :gutter-rows="gutterRows"
+          :use-line-virtualization="useLineVirtualization"
           :is-line-in-fold-selection="isLineInFoldSelection"
           :regions-modal-open="regionsModalOpen"
           @gutter-mouse-down="onGutterMouseDown"
@@ -336,6 +353,7 @@ onUnmounted(() => {
           :folds="folds"
           :display-text="displayText"
           :visible-editor-lines="visibleEditorLines"
+          :use-line-virtualization="useLineVirtualization"
           :syntax-highlight-enabled="effectiveSyntaxHighlight"
           :autocomplete-enabled="effectiveAutocomplete"
           :read-only="isReadOnly"

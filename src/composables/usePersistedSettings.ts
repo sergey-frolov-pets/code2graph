@@ -2,7 +2,6 @@ import { computed, ref, watch } from "vue";
 import {
   getDefaultSource,
   LAYOUT_ENGINES,
-  STORAGE_KEY_DARK,
   STORAGE_KEY_DIAGRAM_DARK,
   STORAGE_KEY_LAYOUT,
   STORAGE_KEY_SOURCE,
@@ -42,7 +41,6 @@ import { useLocale } from "@/composables/useLocale";
 import {
   readStorageBoolean,
   readStorageItem,
-  removeStorageItem,
   writeStorageItem,
 } from "@/utils/safe-storage";
 import { migrateDeprecatedActivityColorSyntax } from "@/utils/plantuml-source";
@@ -56,23 +54,7 @@ function readInitialRenderMode(): RenderMode {
   return DEFAULT_RENDER_MODE;
 }
 
-function migrateLegacyDarkStorage(): void {
-  const legacyDark = readStorageBoolean(STORAGE_KEY_DARK);
-  if (legacyDark === null) {
-    return;
-  }
-
-  if (readStorageBoolean(STORAGE_KEY_UI_DARK) === null) {
-    writeStorageItem(STORAGE_KEY_UI_DARK, String(legacyDark));
-  }
-  if (readStorageBoolean(STORAGE_KEY_DIAGRAM_DARK) === null) {
-    writeStorageItem(STORAGE_KEY_DIAGRAM_DARK, String(legacyDark));
-  }
-  removeStorageItem(STORAGE_KEY_DARK);
-}
-
 function readInitialUiDarkMode(): boolean {
-  migrateLegacyDarkStorage();
   return (
     readStorageBoolean(STORAGE_KEY_UI_DARK) ??
     window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -80,7 +62,6 @@ function readInitialUiDarkMode(): boolean {
 }
 
 function readInitialDiagramDarkMode(): boolean {
-  migrateLegacyDarkStorage();
   return (
     readStorageBoolean(STORAGE_KEY_DIAGRAM_DARK) ??
     window.matchMedia("(prefers-color-scheme: dark)").matches

@@ -4,7 +4,7 @@ import { useLocale } from "@/composables/useLocale";
 import {
   createDiagramShareLink,
   createSectionShareLink,
-} from "@/utils/diagram-api";
+} from "@/services/library/api";
 
 export function useLibraryShare() {
   const { t } = useLocale();

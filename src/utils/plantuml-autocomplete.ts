@@ -255,11 +255,6 @@ export function extractCompletionPrefix(
   };
 }
 
-/** @deprecated Use extractCompletionPrefix */
-export function extractWordPrefix(line: string, column: number): string {
-  return extractCompletionPrefix(line, column).prefix;
-}
-
 export function isNewLineContext(line: string, prefixInfo: CompletionPrefixInfo): boolean {
   const beforePrefix = line.slice(0, prefixInfo.replaceStart);
   return beforePrefix.trim().length === 0;

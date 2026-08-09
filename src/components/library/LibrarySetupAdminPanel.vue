@@ -86,7 +86,7 @@ async function onSubmit(): Promise<void> {
   max-width: 420px;
   margin: 8px 0 16px;
   padding: 16px;
-  border: 1px solid var(--border-color, var(--border));
+  border: 1px solid var(--border);
   border-radius: var(--radius, 8px);
   background: var(--surface-muted, #f8fafc);
 }

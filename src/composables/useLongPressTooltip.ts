@@ -1,20 +1,23 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, type Ref } from 'vue';
+import { useTooltipRegistry } from '@/composables/useTooltipRegistry';
 
 const LONG_PRESS_MS = 400;
 const TOOLTIP_HIDE_MS = 2200;
 const TOOLTIP_OFFSET_PX = 8;
 const VIEWPORT_MARGIN_PX = 8;
-const TOOLTIP_ESTIMATED_WIDTH_PX = 200;
 const TOOLTIP_ESTIMATED_HEIGHT_PX = 40;
 
 export type TooltipPlacement = 'top' | 'bottom';
 type TooltipMode = 'none' | 'hover' | 'press';
 
-export function useLongPressTooltip(rootRef: Ref<HTMLElement | null>) {
+export function useLongPressTooltip(
+  rootRef: Ref<HTMLElement | null>,
+  label: Ref<string>,
+) {
+  const { show: showTooltipEntry, hide: hideTooltipEntry } = useTooltipRegistry();
+  const tooltipId = Symbol('tooltip');
   const tooltipVisible = ref(false);
-  const tooltipPosition = ref({ top: 0, left: 0 });
   const tooltipPlacement = ref<TooltipPlacement>('top');
-  const tooltipRef = ref<HTMLElement | null>(null);
   const suppressNextClick = ref(false);
 
   let pressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -50,37 +53,40 @@ export function useLongPressTooltip(rootRef: Ref<HTMLElement | null>) {
     }
   }
 
+  function publishRegistryEntry(): void {
+    const anchor = rootRef.value;
+    if (!anchor || !tooltipVisible.value) {
+      return;
+    }
+
+    showTooltipEntry({
+      id: tooltipId,
+      label: label.value,
+      anchor,
+      placement: tooltipPlacement.value,
+    });
+  }
+
   function clampTooltipPosition(): void {
     const anchor = rootRef.value;
     if (!anchor) return;
 
     const anchorRect = anchor.getBoundingClientRect();
-    const tooltip = tooltipRef.value;
-    const tooltipWidth = tooltip?.offsetWidth ?? TOOLTIP_ESTIMATED_WIDTH_PX;
-    const tooltipHeight = tooltip?.offsetHeight ?? TOOLTIP_ESTIMATED_HEIGHT_PX;
-    const halfWidth = tooltipWidth / 2;
-
-    let left = anchorRect.left + anchorRect.width / 2;
-    left = Math.max(
-      VIEWPORT_MARGIN_PX + halfWidth,
-      Math.min(window.innerWidth - VIEWPORT_MARGIN_PX - halfWidth, left),
-    );
+    const tooltipHeight = TOOLTIP_ESTIMATED_HEIGHT_PX;
 
     const spaceAbove = anchorRect.top - VIEWPORT_MARGIN_PX;
     const spaceBelow = window.innerHeight - anchorRect.bottom - VIEWPORT_MARGIN_PX;
     let placement: TooltipPlacement = 'top';
-    let top = anchorRect.top - TOOLTIP_OFFSET_PX;
 
     if (
       spaceAbove < tooltipHeight + TOOLTIP_OFFSET_PX &&
       spaceBelow > spaceAbove
     ) {
       placement = 'bottom';
-      top = anchorRect.bottom + TOOLTIP_OFFSET_PX;
     }
 
-    tooltipPosition.value = { top, left };
     tooltipPlacement.value = placement;
+    publishRegistryEntry();
   }
 
   function schedulePositionUpdate(): void {
@@ -93,6 +99,7 @@ export function useLongPressTooltip(rootRef: Ref<HTMLElement | null>) {
 
   function hideTooltip(): void {
     tooltipVisible.value = false;
+    hideTooltipEntry(tooltipId);
     tooltipMode = 'none';
     clearPressTimer();
     clearHideTimer();
@@ -103,6 +110,11 @@ export function useLongPressTooltip(rootRef: Ref<HTMLElement | null>) {
   }
 
   function showTooltip(mode: 'hover' | 'press'): void {
+    const anchor = rootRef.value;
+    if (!anchor) {
+      return;
+    }
+
     tooltipMode = mode;
     tooltipVisible.value = true;
     clearHideTimer();
@@ -121,14 +133,19 @@ export function useLongPressTooltip(rootRef: Ref<HTMLElement | null>) {
       suppressNextClick.value = false;
     }
 
+    showTooltipEntry({
+      id: tooltipId,
+      label: label.value,
+      anchor,
+      placement: tooltipPlacement.value,
+    });
     schedulePositionUpdate();
   }
 
   function startPressTimer(): void {
     clearPressTimer();
     if (tooltipMode === 'hover') {
-      tooltipVisible.value = false;
-      tooltipMode = 'none';
+      hideTooltip();
     }
     clearHideTimer();
 
@@ -240,9 +257,6 @@ export function useLongPressTooltip(rootRef: Ref<HTMLElement | null>) {
 
   return {
     tooltipVisible,
-    tooltipPosition,
-    tooltipPlacement,
-    tooltipRef,
     onMouseEnter,
     onMouseLeave,
     onPointerDown,

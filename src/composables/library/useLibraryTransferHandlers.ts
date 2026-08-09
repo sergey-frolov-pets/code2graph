@@ -1,4 +1,5 @@
 import { computed, ref, type Ref } from "vue";
+import type { TranslateFn } from "@/locales/types";
 import type {
   DiagramDto,
   LibraryExportBundle,
@@ -15,7 +16,7 @@ export function useLibraryTransferHandlers(options: {
   activeTab: Ref<LibraryTab>;
   uploadError: Ref<string>;
   resetBrowseFlow: () => void;
-  t: (key: string, params?: Record<string, string | number>) => string;
+  t: TranslateFn;
 }) {
   const { library, activeTab, uploadError, resetBrowseFlow, t } = options;
 

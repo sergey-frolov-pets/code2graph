@@ -36,6 +36,8 @@ export type LlmGateResult = LlmGateSuccess | LlmGateFailure;
 
 export type LlmGateHandlers = {
   openSettings?: () => void;
+  /** When true, skip alert/confirm dialogs (wizard inline setup). */
+  silent?: boolean;
 };
 
 export function useLlmGate() {
@@ -48,7 +50,7 @@ export function useLlmGate() {
     useLlmProxyAvailability();
 
   async function promptOpenSettings(handlers?: LlmGateHandlers): Promise<void> {
-    if (!handlers?.openSettings) {
+    if (handlers?.silent || !handlers?.openSettings) {
       return;
     }
 
@@ -67,13 +69,17 @@ export function useLlmGate() {
   async function requireLlmAccess(
     handlers?: LlmGateHandlers,
   ): Promise<LlmGateResult> {
+    const silent = handlers?.silent ?? false;
+
     if (!llmConsent.value) {
-      await alert({
-        title: t("llm.gate.noConsentTitle"),
-        message: t("llm.gate.noConsentMessage"),
-        variant: "error",
-      });
-      await promptOpenSettings(handlers);
+      if (!silent) {
+        await alert({
+          title: t("llm.gate.noConsentTitle"),
+          message: t("llm.gate.noConsentMessage"),
+          variant: "error",
+        });
+        await promptOpenSettings(handlers);
+      }
       return { ok: false, reason: "no_consent" };
     }
 
@@ -81,34 +87,40 @@ export function useLlmGate() {
     const provider = getLlmProvider(providerId);
 
     if (!provider) {
-      await alert({
-        title: t("llm.gate.providerInvalidTitle"),
-        message: t("llm.gate.providerInvalidMessage"),
-        variant: "error",
-      });
+      if (!silent) {
+        await alert({
+          title: t("llm.gate.providerInvalidTitle"),
+          message: t("llm.gate.providerInvalidMessage"),
+          variant: "error",
+        });
+      }
       return { ok: false, reason: "provider_invalid" };
     }
 
     if (isFreeBuiltinLlmProvider(providerId)) {
       if (!isLlmProxyConfigured()) {
-        await alert({
-          title: t("llm.gate.noProxyTitle"),
-          message: t("llm.gate.noProxyMessage"),
-          variant: "error",
-        });
-        await promptOpenSettings(handlers);
+        if (!silent) {
+          await alert({
+            title: t("llm.gate.noProxyTitle"),
+            message: t("llm.gate.noProxyMessage"),
+            variant: "error",
+          });
+          await promptOpenSettings(handlers);
+        }
         return { ok: false, reason: "no_proxy" };
       }
 
       await refreshLlmProxyAvailability();
 
       if (!availableFreeProviderIds.value.includes(providerId)) {
-        await alert({
-          title: t("llm.gate.providerUnavailableTitle"),
-          message: t("llm.gate.providerUnavailableMessage"),
-          variant: "error",
-        });
-        await promptOpenSettings(handlers);
+        if (!silent) {
+          await alert({
+            title: t("llm.gate.providerUnavailableTitle"),
+            message: t("llm.gate.providerUnavailableMessage"),
+            variant: "error",
+          });
+          await promptOpenSettings(handlers);
+        }
         return { ok: false, reason: "provider_unavailable" };
       }
 
@@ -120,13 +132,15 @@ export function useLlmGate() {
     }
 
     if (!hasLlmApiKey(providerId)) {
-      openLlmKeysGuide(providerId);
-      await alert({
-        title: t("llm.gate.noKeyTitle"),
-        message: t("llm.gate.noKeyMessage"),
-        variant: "error",
-      });
-      await promptOpenSettings(handlers);
+      if (!silent) {
+        openLlmKeysGuide(providerId);
+        await alert({
+          title: t("llm.gate.noKeyTitle"),
+          message: t("llm.gate.noKeyMessage"),
+          variant: "error",
+        });
+        await promptOpenSettings(handlers);
+      }
       return { ok: false, reason: "no_key" };
     }
 

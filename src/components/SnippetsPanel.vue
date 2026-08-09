@@ -17,7 +17,7 @@ import {
   loadSnippetsPanelPosition,
   saveSnippetsPanelPosition,
   SNIPPETS_IMPORT_ACCEPT,
-} from "@/utils/snippet-store";
+} from "@/storage/snippets";
 
 const props = defineProps<{
   open: boolean;
