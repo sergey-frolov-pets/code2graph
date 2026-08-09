@@ -47,7 +47,7 @@ export const mermaidFormatHandler: FormatHandler = {
   },
   isEngineReady(context) {
     if (isOnlineRenderMode(context.renderMode)) {
-      return navigator.onLine;
+      return true;
     }
 
     return isMermaidReady();

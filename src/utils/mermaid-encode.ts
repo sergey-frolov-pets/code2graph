@@ -1,9 +1,10 @@
+import { deflate } from "pako";
+
 export interface MermaidLiveState {
   code: string;
   mermaid: string;
-  updateEditor: boolean;
-  autoSync: boolean;
   updateDiagram: boolean;
+  rough: boolean;
 }
 
 export function buildMermaidLiveState(
@@ -15,20 +16,12 @@ export function buildMermaidLiveState(
   return {
     code: source,
     mermaid: JSON.stringify({ theme }),
-    updateEditor: false,
-    autoSync: true,
     updateDiagram: true,
+    rough: false,
   };
 }
 
-async function deflateToBase64Url(input: string): Promise<string> {
-  const data = new TextEncoder().encode(input);
-  const stream = new Blob([data])
-    .stream()
-    .pipeThrough(new CompressionStream("deflate"));
-  const buffer = await new Response(stream).arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-
+function bytesToBase64Url(bytes: Uint8Array): string {
   let binary = "";
   for (const byte of bytes) {
     binary += String.fromCharCode(byte);
@@ -37,11 +30,17 @@ async function deflateToBase64Url(input: string): Promise<string> {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_");
 }
 
+function deflateToBase64Url(input: string): string {
+  const data = new TextEncoder().encode(input);
+  const compressed = deflate(data, { level: 9 });
+  return bytesToBase64Url(compressed);
+}
+
 export async function encodeMermaidStateForInk(
   source: string,
   options: { dark?: boolean } = {},
 ): Promise<string> {
   const state = buildMermaidLiveState(source, options);
-  const serialized = await deflateToBase64Url(JSON.stringify(state));
+  const serialized = deflateToBase64Url(JSON.stringify(state));
   return `pako:${serialized}`;
 }
