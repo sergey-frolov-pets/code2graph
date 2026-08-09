@@ -8,14 +8,10 @@ import {
 } from "@/constants/render-settings";
 import { readInitialLocale, useLocale } from "@/composables/useLocale";
 import {
-  isEngineReady,
-  waitForEngineReady,
-} from "@/composables/usePlantUml";
-import { renderDiagramToSvg } from "@/services/diagram-render";
-import {
-  isMermaidReady,
-  waitForMermaidReady,
-} from "@/services/mermaid/mermaid-engine";
+  bootFormatEngine,
+  getFormatHandler,
+  renderDiagram,
+} from "@/formats";
 import { resolveLibraryDiagramFormat } from "@/utils/diagram-format";
 import { sanitizeSvgForPreview } from "@/utils/export";
 import { resolveLocalizedErrorMessage } from "@/utils/localized-app-error";
@@ -34,28 +30,25 @@ export function useLibraryDiagramPreview() {
   async function ensureEngineReady(
     format: ReturnType<typeof resolveLibraryDiagramFormat>,
     dark: boolean,
+    layout: LayoutEngine,
     renderMode: RenderMode,
   ): Promise<boolean> {
+    const context = {
+      layout,
+      diagramDarkMode: dark,
+      renderMode,
+    };
+
     if (isOnlineRenderMode(renderMode)) {
       return true;
     }
 
-    if (format === "mermaid") {
-      await waitForMermaidReady(dark);
-      if (!isMermaidReady()) {
-        error.value = t("app.engineNotReady");
-        return false;
-      }
-      return true;
-    }
+    const handler = getFormatHandler(format);
+    await bootFormatEngine(format, context);
 
-    if (format === "plantuml") {
-      await waitForEngineReady();
-      if (!isEngineReady()) {
-        error.value = t("app.engineNotReady");
-        return false;
-      }
-      return true;
+    if (!handler.isEngineReady(context)) {
+      error.value = t("app.engineNotReady");
+      return false;
     }
 
     return true;
@@ -73,15 +66,16 @@ export function useLibraryDiagramPreview() {
     const engineReady = await ensureEngineReady(
       format,
       options.dark,
+      options.layout,
       options.renderMode,
     );
     if (!engineReady) {
       return "";
     }
 
-    return renderDiagramToSvg(source, format, {
-      dark: options.dark,
+    return renderDiagram(format, source, {
       layout: options.layout,
+      diagramDarkMode: options.dark,
       renderMode: options.renderMode,
     });
   }

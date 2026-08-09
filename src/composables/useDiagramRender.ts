@@ -9,18 +9,21 @@ import {
   type RenderMode,
 } from "@/constants/render-settings";
 import type { AppLocale } from "@/constants/i18n";
-import {
-  isEngineReady,
-  waitForEngineReady,
-} from "@/composables/usePlantUml";
 import { useDiagramIrCache } from "@/composables/useDiagramIrCache";
-import { renderDiagramToSvg } from "@/services/diagram-render";
-import { buildDiagramIrForCache } from "@/services/conversion/pipeline/convert-diagram";
 import {
+<<<<<<< HEAD
+  bootFormatEngine,
+  getFormatHandler,
+  isFormatEngineReady,
+  renderDiagram,
+} from "@/formats";
+import { buildDiagramIrForCache } from "@/services/conversion/pipeline/convert-diagram";
+=======
   isMermaidReady,
   waitForMermaidReady,
 } from "@/services/mermaid/mermaid-engine";
 import type { TranslateFn } from "@/locales/types";
+>>>>>>> origin/main
 import { resolveLocalizedErrorMessage } from "@/utils/localized-app-error";
 
 export interface UseDiagramRenderOptions {
@@ -65,6 +68,14 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
       isOnlineRenderMode(renderMode.value),
   );
 
+  function buildFormatContext() {
+    return {
+      layout: layout.value,
+      diagramDarkMode: diagramDarkMode.value,
+      renderMode: renderMode.value,
+    };
+  }
+
   function updateOnlineEngineStatus(): void {
     if (!usesOnlineRender.value) {
       return;
@@ -74,24 +85,6 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     engineStatus.value = navigator.onLine
       ? t("app.renderModeOnlineReady")
       : t("app.renderModeOnlineOffline");
-  }
-
-  function isFormatEngineReady(format: DiagramFormat): boolean {
-    const definition = getDiagramFormatDefinition(format);
-
-    if (definition.supportsOnlineRender && isOnlineRenderMode(renderMode.value)) {
-      return navigator.onLine;
-    }
-
-    if (definition.usesPlantUmlEngine) {
-      return isEngineReady();
-    }
-
-    if (format === "mermaid") {
-      return isMermaidReady();
-    }
-
-    return true;
   }
 
   function resolveEngineNotReadyMessage(): string {
@@ -111,7 +104,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     return t("app.engineNotReady");
   }
 
-  async function renderDiagram(): Promise<void> {
+  async function renderDiagramView(): Promise<void> {
     if (!engineReady.value) {
       error.value = resolveEngineNotReadyMessage();
       return;
@@ -121,14 +114,10 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     error.value = "";
 
     try {
-      const result = await renderDiagramToSvg(
-        source.value,
+      const result = await renderDiagram(
         diagramFormat.value,
-        {
-          dark: diagramDarkMode.value,
-          layout: layout.value,
-          renderMode: renderMode.value,
-        },
+        source.value,
+        buildFormatContext(),
       );
       svg.value = result;
       setLastDiagramIr(
@@ -156,7 +145,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     }
 
     debounceTimer = setTimeout(() => {
-      void renderDiagram();
+      void renderDiagramView();
     }, RENDER_DEBOUNCE_MS);
   }
 
@@ -175,43 +164,16 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     return diagramFormat.value !== expectedFormat;
   }
 
-  async function bootOfflinePlantUmlEngine(
-    expectedFormat: DiagramFormat,
-  ): Promise<void> {
+  async function bootOfflineEngine(expectedFormat: DiagramFormat): Promise<void> {
+    const handler = getFormatHandler(expectedFormat);
+
     try {
-      await waitForEngineReady();
+      await bootFormatEngine(expectedFormat, buildFormatContext());
       if (isStaleBoot(expectedFormat)) {
         return;
       }
 
-      engineReady.value = isEngineReady();
-      engineStatus.value = engineReady.value
-        ? t("app.engineReady")
-        : t("app.error");
-      scheduleRender();
-    } catch (bootError) {
-      if (isStaleBoot(expectedFormat)) {
-        return;
-      }
-
-      engineReady.value = false;
-      engineStatus.value = resolveLocalizedErrorMessage(
-        bootError,
-        t,
-        "app.engineLoadError",
-      );
-      error.value = engineStatus.value;
-    }
-  }
-
-  async function bootMermaidEngine(expectedFormat: DiagramFormat): Promise<void> {
-    try {
-      await waitForMermaidReady(diagramDarkMode.value);
-      if (isStaleBoot(expectedFormat)) {
-        return;
-      }
-
-      engineReady.value = isMermaidReady();
+      engineReady.value = handler.isEngineReady(buildFormatContext());
       engineStatus.value = engineReady.value
         ? t("app.engineReady")
         : t("app.error");
@@ -241,13 +203,8 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
       return;
     }
 
-    if (definition.usesPlantUmlEngine) {
-      await bootOfflinePlantUmlEngine(format);
-      return;
-    }
-
-    if (format === "mermaid") {
-      await bootMermaidEngine(format);
+    if (definition.usesPlantUmlEngine || format === "mermaid") {
+      await bootOfflineEngine(format);
       return;
     }
 
@@ -281,7 +238,10 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
   });
 
   watch(diagramFormat, () => {
-    engineReady.value = isFormatEngineReady(diagramFormat.value);
+    engineReady.value = isFormatEngineReady(
+      diagramFormat.value,
+      buildFormatContext(),
+    );
     updateEngineStatusLabel();
     void bootEngine();
   });
@@ -304,7 +264,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     isRendering,
     engineReady,
     engineStatus,
-    renderDiagram,
+    renderDiagram: renderDiagramView,
     scheduleRender,
     bootEngine,
   };
