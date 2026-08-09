@@ -1,6 +1,6 @@
 import { computed, ref, watch, type Ref } from "vue";
 import type { TranslateFn } from "@/locales/types";
-import { generateValidWizardDiagram } from "@/composables/useLlmPlantUmlGenerate";
+import { generateValidWizardDiagram } from "@/services/llm/llm-plantuml-generate";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
 import {
