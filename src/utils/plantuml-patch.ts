@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { MAX_PUML_FILE_BYTES } from "@/constants/diagram-library";
+import { parseLlmClarificationQuestion } from "@/schemas/llm-clarification";
 import {
   PlantUmlLlmOutputSchema,
   stripJsonCodeFence,
@@ -20,6 +21,12 @@ export type PlantUmlLlmPatchOutput = z.infer<typeof PlantUmlLlmPatchOutputSchema
 export type PlantUmlLlmPatchParseResult =
   | {
       ok: true;
+      mode: "clarification";
+      clarificationQuestion: string;
+      explanation?: string;
+    }
+  | {
+      ok: true;
       mode: "replacement";
       replacement: string;
       explanation?: string;
@@ -36,6 +43,16 @@ export type PlantUmlLlmPatchParseResult =
     };
 
 export function parsePlantUmlLlmPatchOutput(raw: string): PlantUmlLlmPatchParseResult {
+  const clarification = parseLlmClarificationQuestion(raw);
+  if (clarification.ok) {
+    return {
+      ok: true,
+      mode: "clarification",
+      clarificationQuestion: clarification.data.clarificationQuestion,
+      explanation: clarification.data.explanation,
+    };
+  }
+
   const normalized = stripJsonCodeFence(raw);
 
   try {

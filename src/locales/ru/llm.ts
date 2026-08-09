@@ -92,6 +92,15 @@ export const llmMessages: LocaleMessages = {
   "llm.patch.chatRoleAssistant": "AI",
   "llm.patch.assistantApplied": "Изменения сгенерированы.",
   "llm.patch.assistantNoChanges": "Изменений в результате нет.",
+  "llm.chat.title": "Чат",
+  "llm.chat.clear": "Очистить чат",
+  "llm.chat.empty": "Опишите задачу — AI может задать уточняющие вопросы перед ответом.",
+  "llm.chat.roleUser": "Вы",
+  "llm.chat.roleAssistant": "AI",
+  "llm.chat.inputPlaceholder": "Введите сообщение…",
+  "llm.chat.send": "Отправить",
+  "llm.chat.sending": "Отправка…",
+  "llm.chat.thinking": "AI думает…",
   "llm.syntaxAsk.title": "Вопрос по синтаксису",
   "llm.syntaxAsk.lead":
     "Задайте вопрос о синтаксисе PlantUML в контексте текущей диаграммы. AI объяснит, как выразить нужную логику, без изменения кода.",
@@ -194,6 +203,18 @@ export const llmMessages: LocaleMessages = {
   "llm.wizard.apply": "Применить в редактор",
   "llm.wizard.transferToEditor": "Перенести в редактор",
   "llm.wizard.generateError": "Не удалось создать диаграмму",
+  "llm.wizard.planningChatLead":
+    "Обсудите задачу с AI перед генерацией — можно уточнить детали в чате. Поле описания тоже учитывается.",
+  "llm.wizard.planningChatPlaceholder":
+    "Например: добавить дорожки для клиента и API, показать обработку ошибок…",
+  "llm.wizard.planningChatError": "Не удалось отправить сообщение в чат планирования",
+  "llm.wizard.refineChatLead":
+    "Уточните результат в чате — попросите изменения или ответьте на вопросы AI.",
+  "llm.wizard.refineChatPlaceholder":
+    "Например: добавить note на шаг оплаты, перевести акторы на русский…",
+  "llm.wizard.refineChatError": "Не удалось уточнить диаграмму в чате",
+  "llm.wizard.refineApplied": "Диаграмма обновлена.",
+  "llm.wizard.refineNoChanges": "В этом ответе изменений диаграммы нет.",
   "llm.wizard.previewError": "Не удалось отрисовать превью",
   "llm.wizard.historyLabel": "Мастер: {mode} — {type}",
   "llm.wizard.theme.default": "Светлая",

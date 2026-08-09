@@ -1,6 +1,7 @@
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
 import {
+  buildPatchFollowUpPrompt,
   buildPatchNoChangeRetryPrompt,
   buildPatchPrompt,
   requestsStructuralDiagramEdit,
@@ -30,6 +31,8 @@ import {
 export interface GenerateValidPlantUmlPatchResult extends GenerateValidPlantUmlResult {
   replacement?: string;
   hasChanges: boolean;
+  needsClarification?: boolean;
+  clarificationQuestion?: string;
 }
 
 export async function generateValidPlantUmlPatch(
@@ -56,13 +59,16 @@ export async function generateValidPlantUmlPatch(
     );
   }
 
-  const patchUserPrompt = buildPatchPrompt(
-    fullSource,
-    selectedFragment,
-    selectionStart,
-    selectionEnd,
-    userPrompt,
-  );
+  const patchUserPrompt =
+    (priorMessages?.length ?? 0) > 0
+      ? buildPatchFollowUpPrompt(userPrompt)
+      : buildPatchPrompt(
+          fullSource,
+          selectedFragment,
+          selectionStart,
+          selectionEnd,
+          userPrompt,
+        );
 
   const messages: LlmChatMessage[] = [
     {
@@ -88,6 +94,16 @@ export async function generateValidPlantUmlPatch(
       handlers,
     );
     const parsed = parsePlantUmlLlmPatchOutput(chatResult.content);
+
+    if (parsed.ok && parsed.mode === "clarification") {
+      return {
+        plantuml: fullSource,
+        explanation: parsed.explanation,
+        hasChanges: false,
+        needsClarification: true,
+        clarificationQuestion: parsed.clarificationQuestion,
+      };
+    }
 
     if (!parsed.ok) {
       if (attempt >= maxRetries) {

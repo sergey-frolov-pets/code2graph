@@ -160,8 +160,8 @@ export const WIZARD_TYPE_PARAM_FIELDS: Record<WizardDiagramType, WizardParamFiel
   c4_container: [{ id: "containers", min: 2, max: 12, default: 4 }],
   gantt: [{ id: "tasks", min: 2, max: 20, default: 4 }],
   mindmap: [
-    { id: "nodes", min: 2, max: 12, default: 4 },
-    { id: "steps", min: 1, max: 8, default: 2 },
+    { id: "nodes", min: 2, max: 24, default: 8 },
+    { id: "steps", min: 1, max: 24, default: 6 },
   ],
   er: [{ id: "entities", min: 2, max: 12, default: 3 }],
   graph: [
@@ -526,6 +526,10 @@ export function buildWizardPrompt(state: WizardState): string {
       state.language,
       state.diagramType,
       state.typeParams,
+      {
+        description: state.contextText,
+        additionalRequirements: state.typeSpecificText,
+      },
     ),
     `Diagram theme preference: ${state.theme}.`,
   ];
@@ -2162,6 +2166,16 @@ export function buildPatchPrompt(
   ].join("\n");
 }
 
+export function buildPatchFollowUpPrompt(userPrompt: string): string {
+  return [
+    "Follow-up message in the edit chat. Apply it to the diagram edit.",
+    "Return JSON with field replacement containing the NEW text for the selected fragment.",
+    "",
+    "User follow-up:",
+    userPrompt.trim(),
+  ].join("\n");
+}
+
 export function buildFullDiagramEditPrompt(
   fullSource: string,
   userPrompt: string,
@@ -2187,6 +2201,17 @@ export function buildFullDiagramEditPrompt(
   );
 
   return lines.join("\n");
+}
+
+export function buildFullDiagramFollowUpPrompt(userPrompt: string): string {
+  return [
+    "Follow-up message in the edit chat. Revise the FULL diagram accordingly.",
+    "Return JSON with field plantuml containing the complete updated source.",
+    "The plantuml field MUST differ from the current source when changes are requested.",
+    "",
+    "User follow-up:",
+    userPrompt.trim(),
+  ].join("\n");
 }
 
 export function buildFullDiagramNoChangeRetryPrompt(

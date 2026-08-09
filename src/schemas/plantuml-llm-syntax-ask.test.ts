@@ -10,8 +10,24 @@ describe("parsePlantUmlSyntaxAskOutput", () => {
     );
 
     expect(result.ok).toBe(true);
-    if (result.ok) {
+    if (result.ok && result.kind === "answer") {
       expect(result.data.answer).toContain("if");
+    }
+  });
+
+  it("parses clarification question", () => {
+    const result = parsePlantUmlSyntaxAskOutput(
+      JSON.stringify({
+        clarificationQuestion: "Which actor should own the note?",
+      }),
+    );
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.kind).toBe("clarification");
+      if (result.kind === "clarification") {
+        expect(result.clarificationQuestion).toContain("actor");
+      }
     }
   });
 
@@ -21,7 +37,7 @@ describe("parsePlantUmlSyntaxAskOutput", () => {
     );
 
     expect(result.ok).toBe(true);
-    if (result.ok) {
+    if (result.ok && result.kind === "answer") {
       expect(result.data.answer).toBe("Use fork again.");
     }
   });

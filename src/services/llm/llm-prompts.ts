@@ -22,7 +22,16 @@ export const LLM_PLANTUML_RULES =
   "PlantUML rules: For standard diagrams use @startuml and @enduml. For C4 diagrams only use !include from ./plantuml-lib/C4/ or stdlib <...> includes. Do not use !includeurl or external URLs.";
 
 export const LLM_COMPLETENESS_APPENDIX =
-  "Completeness: Include all entities, steps, branches, and relationships from the user request. Never return a minimal toy diagram when the user asked for a rich structure. Match the user's language in labels.";
+  "Completeness: Include all entities, steps, branches, and relationships from the user request. Never return a minimal toy diagram when the user asked for a rich structure. When the user asks for ALL items (e.g. all cities, all directions), list every item — numeric wizard parameters are minimum floors, not caps. Match the user's language in labels.";
+
+export const LLM_CLARIFICATION_JSON_APPENDIX =
+  "If the user request is ambiguous or missing critical details, respond with JSON only: {\"clarificationQuestion\":\"your question\"} and optional \"explanation\". Do not change the diagram until the user answers. Otherwise return the normal response shape for this task.";
+
+export const LLM_SYNTAX_ASK_CLARIFICATION_APPENDIX =
+  "If the question is unclear, respond with JSON {\"clarificationQuestion\":\"...\"}. Otherwise respond with {\"answer\":\"...\"} (thorough answer with syntax examples).";
+
+export const LLM_WIZARD_PLANNING_APPENDIX =
+  "You help plan a diagram before generation. If requirements are unclear, respond with JSON {\"clarificationQuestion\":\"...\"}. Otherwise respond with JSON {\"message\":\"brief acknowledgment or summary\"}. Do not generate diagram source yet.";
 
 export function buildLlmSystemPrompt(basePrompt: string): string {
   return [
@@ -70,7 +79,7 @@ export function buildWizardLlmSystemPrompt(
 export const LLM_PATCH_COMPLETENESS_APPENDIX =
   "Apply the user's request fully within the selected fragment or full diagram. Do not make token-sized edits when the request implies substantive changes.";
 
-export const LLM_PATCH_JSON_APPENDIX = `${LLM_JSON_OUTPUT_PREFIX} Required field: replacement (string) — the NEW PlantUML text that replaces ONLY the user-selected fragment. Optional: explanation (string). Do not return the full diagram unless the user explicitly asked to rewrite everything.`;
+export const LLM_PATCH_JSON_APPENDIX = `${LLM_JSON_OUTPUT_PREFIX} Required field: replacement (string) — the NEW PlantUML text that replaces ONLY the user-selected fragment. Optional: explanation (string). Do not return the full diagram unless the user explicitly asked to rewrite everything. ${LLM_CLARIFICATION_JSON_APPENDIX}`;
 
 export function buildLlmPatchSystemPrompt(basePrompt: string): string {
   return [
@@ -85,7 +94,7 @@ export function buildLlmPatchSystemPrompt(basePrompt: string): string {
 export const LLM_TEST_USER_PROMPT =
   "Reply with JSON only: {\"plantuml\":\"@startuml\\nAlice -> Bob : ping\\n@enduml\",\"explanation\":\"Connection test: simple sequence message.\"}";
 
-export const LLM_SYNTAX_ASK_JSON_APPENDIX = `${LLM_JSON_OUTPUT_PREFIX} Required field: answer (string) — a thorough explanation (at least 3 sentences) of PlantUML syntax for the user's question, using their current diagram as context. Always include concrete syntax snippets and examples. Match the user's language. Do not rewrite or return the full diagram source unless the user explicitly asked for a full rewrite.`;
+export const LLM_SYNTAX_ASK_JSON_APPENDIX = `${LLM_JSON_OUTPUT_PREFIX} ${LLM_SYNTAX_ASK_CLARIFICATION_APPENDIX} Match the user's language. Do not rewrite or return the full diagram source unless the user explicitly asked for a full rewrite.`;
 
 export function buildLlmSyntaxAskSystemPrompt(basePrompt: string): string {
   return [
@@ -113,8 +122,8 @@ export const LLM_TEMPERATURE_GENERATION = 0.6;
 /** Temperature for patch, validation retries, and connection tests. */
 export const LLM_TEMPERATURE_PRECISE = 0.2;
 
-/** Default max output tokens for diagram generation. */
-export const LLM_MAX_TOKENS_GENERATION = 4096;
+/** Default max output tokens for diagram generation (large mindmaps / WBS need headroom). */
+export const LLM_MAX_TOKENS_GENERATION = 8192;
 
 /** Max output tokens for syntax Q&A and patches. */
 export const LLM_MAX_TOKENS_PRECISE = 2048;

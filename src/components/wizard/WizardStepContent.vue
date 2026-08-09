@@ -14,6 +14,7 @@ import type {
   WizardStepId,
   WizardStructuralElementId,
 } from "@/constants/llm-wizard";
+import type { LlmEditConversationMessage } from "@/types/llm-edit-conversation";
 
 const wizardState = defineModel<WizardState>("wizardState", { required: true });
 
@@ -32,6 +33,11 @@ defineProps<{
   directionOptions: Array<{ id: WizardDiagramDirection; label: string }>;
   paramFields: WizardParamField[];
   structuralElementOptions: Array<{ id: WizardStructuralElementId; label: string }>;
+  planningMessages: LlmEditConversationMessage[];
+  isPlanningChatBusy: boolean;
+  showRefineChat: boolean;
+  refineMessages: LlmEditConversationMessage[];
+  isRefineChatBusy: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -41,6 +47,10 @@ const emit = defineEmits<{
   "direction-select": [direction: WizardState["direction"]];
   "param-change": [paramId: WizardParamField["id"], event: Event];
   "structural-toggle": [elementId: WizardStructuralElementId, event: Event];
+  "planning-send": [content: string];
+  "planning-clear": [];
+  "refine-send": [content: string];
+  "refine-clear": [];
 }>();
 </script>
 
@@ -88,6 +98,10 @@ const emit = defineEmits<{
     v-else-if="currentStepId === 'context'"
     v-model:wizard-state="wizardState"
     :is-ai-mode="isAiMode"
+    :planning-messages="planningMessages"
+    :is-planning-chat-busy="isPlanningChatBusy"
+    @planning-send="emit('planning-send', $event)"
+    @planning-clear="emit('planning-clear')"
   />
 
   <WizardPromptStep
@@ -101,5 +115,10 @@ const emit = defineEmits<{
     :is-manual-result-ready="isManualResultReady"
     :error-message="errorMessage"
     :result-explanation="resultExplanation"
+    :show-refine-chat="showRefineChat"
+    :refine-messages="refineMessages"
+    :is-refine-chat-busy="isRefineChatBusy"
+    @refine-send="emit('refine-send', $event)"
+    @refine-clear="emit('refine-clear')"
   />
 </template>

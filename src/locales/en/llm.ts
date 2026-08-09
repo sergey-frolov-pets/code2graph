@@ -92,6 +92,15 @@ export const llmMessages: LocaleMessages = {
   "llm.patch.chatRoleAssistant": "AI",
   "llm.patch.assistantApplied": "Changes generated.",
   "llm.patch.assistantNoChanges": "No changes in the result.",
+  "llm.chat.title": "Chat",
+  "llm.chat.clear": "Clear chat",
+  "llm.chat.empty": "Describe what you need — the AI can ask clarifying questions before answering.",
+  "llm.chat.roleUser": "You",
+  "llm.chat.roleAssistant": "AI",
+  "llm.chat.inputPlaceholder": "Type a message…",
+  "llm.chat.send": "Send",
+  "llm.chat.sending": "Sending…",
+  "llm.chat.thinking": "AI is thinking…",
   "llm.syntaxAsk.title": "Syntax question",
   "llm.syntaxAsk.lead":
     "Ask about PlantUML syntax in the context of your current diagram. The AI explains how to express the logic without changing your source.",
@@ -194,6 +203,18 @@ export const llmMessages: LocaleMessages = {
   "llm.wizard.apply": "Apply to editor",
   "llm.wizard.transferToEditor": "Transfer to editor",
   "llm.wizard.generateError": "Failed to create diagram",
+  "llm.wizard.planningChatLead":
+    "Chat with AI to clarify requirements before generation. You can also add details in the description field.",
+  "llm.wizard.planningChatPlaceholder":
+    "For example: add swimlanes for client and API, show error handling…",
+  "llm.wizard.planningChatError": "Planning chat failed",
+  "llm.wizard.refineChatLead":
+    "Refine the generated diagram in chat — ask for changes or answer clarifying questions.",
+  "llm.wizard.refineChatPlaceholder":
+    "For example: add a note on the payment step, rename actors to Russian…",
+  "llm.wizard.refineChatError": "Refine chat failed",
+  "llm.wizard.refineApplied": "Diagram updated.",
+  "llm.wizard.refineNoChanges": "No diagram changes in this reply.",
   "llm.wizard.previewError": "Failed to render preview",
   "llm.wizard.historyLabel": "Wizard: {mode} — {type}",
   "llm.wizard.theme.default": "Light",
