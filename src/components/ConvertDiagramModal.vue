@@ -6,9 +6,15 @@ import {
   DIAGRAM_FORMATS,
   type DiagramFormat,
 } from "@/constants/diagram-formats";
+import { createConversionReport } from "@/services/conversion/conversion-report";
+import {
+  isTargetFormatBlocked,
+  isVisualModeBlocked,
+} from "@/services/conversion/conversion-route";
 import {
   convertDiagram,
   type ConversionMode,
+  type ConvertDiagramResult,
 } from "@/services/conversion/pipeline/convert-diagram";
 
 const props = defineProps<{
@@ -28,26 +34,71 @@ const { t, locale } = useLocale();
 const targetFormat = ref<DiagramFormat>("mermaid");
 const mode = ref<ConversionMode>("auto");
 const acceptedLosses = ref(false);
-
-const conversionResult = computed(() =>
-  convertDiagram({
-    source: props.source,
+const conversionResult = ref<ConvertDiagramResult>({
+  ok: false,
+  blocked: false,
+  report: createConversionReport({
     sourceFormat: props.sourceFormat,
-    targetFormat: targetFormat.value,
-    mode: mode.value,
-    previewSvg: props.previewSvg,
-    locale: locale.value,
+    targetFormat: "mermaid",
+    kind: "unknown",
+    level: "D",
+    blocked: false,
+    mode: "source",
   }),
-);
+});
 
 const availableTargets = computed(() =>
   DIAGRAM_FORMATS.filter((format) => format !== props.sourceFormat),
+);
+
+function isFormatBlocked(format: DiagramFormat): boolean {
+  return isTargetFormatBlocked(props.source, props.sourceFormat, format);
+}
+
+const visualModeBlocked = computed(() =>
+  isVisualModeBlocked(
+    props.source,
+    props.sourceFormat,
+    targetFormat.value,
+    mode.value,
+  ),
+);
+
+watch(
+  [
+    () => props.source,
+    () => props.sourceFormat,
+    () => props.previewSvg,
+    targetFormat,
+    mode,
+    locale,
+  ],
+  async () => {
+    conversionResult.value = await convertDiagram({
+      source: props.source,
+      sourceFormat: props.sourceFormat,
+      targetFormat: targetFormat.value,
+      mode: mode.value,
+      previewSvg: props.previewSvg,
+      locale: locale.value,
+    });
+  },
+  { immediate: true },
 );
 
 const lossItems = computed(() =>
   conversionResult.value.report.lossIds.map((lossId) => ({
     id: lossId,
     label: t(`conversion.${lossId}`),
+  })),
+);
+
+const warningItems = computed(() =>
+  conversionResult.value.report.warnings.map((warningId) => ({
+    id: warningId,
+    label: warningId.startsWith("conversion.")
+      ? t(warningId as `conversion.${string}`)
+      : warningId,
   })),
 );
 
@@ -65,12 +116,25 @@ watch(
     if (!isOpen) {
       return;
     }
-    targetFormat.value =
-      availableTargets.value[0] ?? ("mermaid" as DiagramFormat);
+    const firstAvailable = availableTargets.value.find(
+      (format) => !isTargetFormatBlocked(props.source, props.sourceFormat, format),
+    );
+    targetFormat.value = firstAvailable ?? availableTargets.value[0] ?? "mermaid";
     mode.value = "auto";
     acceptedLosses.value = false;
   },
 );
+
+watch(targetFormat, (format) => {
+  if (isTargetFormatBlocked(props.source, props.sourceFormat, format)) {
+    const fallback = availableTargets.value.find(
+      (entry) => !isTargetFormatBlocked(props.source, props.sourceFormat, entry),
+    );
+    if (fallback) {
+      targetFormat.value = fallback;
+    }
+  }
+});
 
 function onApply(): void {
   if (!conversionResult.value.targetSource || !canApply.value) {
@@ -100,8 +164,9 @@ function onApply(): void {
             v-for="format in availableTargets"
             :key="format"
             :value="format"
+            :disabled="isFormatBlocked(format)"
           >
-            {{ format }}
+            {{ format }}{{ isFormatBlocked(format) ? ` — ${t('conversion.blocked')}` : '' }}
           </option>
         </select>
       </label>
@@ -112,7 +177,12 @@ function onApply(): void {
           <option value="auto">{{ t("conversion.mode.auto") }}</option>
           <option value="combo">{{ t("conversion.mode.combo") }}</option>
           <option value="source">{{ t("conversion.mode.source") }}</option>
-          <option value="visual">{{ t("conversion.mode.visual") }}</option>
+          <option
+            value="visual"
+            :disabled="visualModeBlocked"
+          >
+            {{ t("conversion.mode.visual") }}
+          </option>
         </select>
       </label>
 
@@ -128,6 +198,9 @@ function onApply(): void {
         <h3 class="convert-losses__title">{{ t("conversion.lossesTitle") }}</h3>
         <ul class="convert-losses__list">
           <li v-for="item in lossItems" :key="item.id">{{ item.label }}</li>
+        </ul>
+        <ul v-if="warningItems.length" class="convert-warnings__list">
+          <li v-for="item in warningItems" :key="item.id">{{ item.label }}</li>
         </ul>
       </div>
 
@@ -204,11 +277,17 @@ function onApply(): void {
   font-size: 0.9rem;
 }
 
-.convert-losses__list {
+.convert-losses__list,
+.convert-warnings__list {
   margin: 0;
   padding-left: 18px;
   color: var(--text-muted);
   font-size: 0.84rem;
+}
+
+.convert-warnings__list {
+  margin-top: 8px;
+  color: var(--danger);
 }
 
 .convert-accept {

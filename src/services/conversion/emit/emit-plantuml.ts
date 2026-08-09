@@ -40,9 +40,33 @@ function emitPlantUmlGraph(ir: DiagramIR): string {
   if (ir.direction === "LR") {
     lines.push("left to right direction", "");
   }
+
+  const groupedNodeIds = new Set<string>();
+  const groupIds = new Set((ir.groups ?? []).map((group) => group.id));
+
+  for (const group of ir.groups ?? []) {
+    const groupNodes = ir.nodes.filter(
+      (node) => node.groupId === group.id && !groupIds.has(node.id),
+    );
+    if (groupNodes.length === 0) {
+      continue;
+    }
+
+    lines.push(`package "${escapePlantUmlQuoted(group.label ?? group.id)}" {`);
+    for (const node of groupNodes) {
+      lines.push(`  ${emitPlantUmlComponentNode(node.id, node.label)}`);
+      groupedNodeIds.add(node.id);
+    }
+    lines.push("}", "");
+  }
+
   for (const node of ir.nodes) {
+    if (groupedNodeIds.has(node.id) || groupIds.has(node.id)) {
+      continue;
+    }
     lines.push(emitPlantUmlComponentNode(node.id, node.label));
   }
+
   for (const edge of ir.edges) {
     lines.push(
       `${edge.source} --> ${edge.target}${formatPlantUmlEdgeSuffix(edge.label)}`,
@@ -131,14 +155,18 @@ function emitPlantUmlGantt(ir: DiagramIR): string {
   ];
   ir.nodes.forEach((node, index) => {
     const label = flattenPlantUmlLabel(node.label) || node.id;
+    const duration =
+      typeof node.semantic?.duration === "string"
+        ? node.semantic.duration
+        : "3 days";
     if (index === 0) {
-      lines.push(`[${label}] lasts 3 days`);
+      lines.push(`[${label}] lasts ${duration}`);
       return;
     }
     const prev = ir.nodes[index - 1];
     const prevLabel = flattenPlantUmlLabel(prev.label) || prev.id;
     lines.push(
-      `[${label}] lasts 3 days and starts at [${prevLabel}]'s end`,
+      `[${label}] lasts ${duration} and starts at [${prevLabel}]'s end`,
     );
   });
   lines.push("@endgantt");

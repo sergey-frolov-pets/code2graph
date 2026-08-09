@@ -40,12 +40,59 @@ function findVisualMatch(
   return null;
 }
 
+function findNodeIdByLabel(
+  ir: DiagramIR,
+  label: string | undefined,
+): string | null {
+  if (!label) {
+    return null;
+  }
+
+  const normalized = normalizeLabel(label);
+  const node = ir.nodes.find(
+    (entry) => normalizeLabel(entry.label) === normalized || entry.id === label,
+  );
+  return node?.id ?? null;
+}
+
+function mergeVisualEdges(ir: DiagramIR, visual: VisualHints): number {
+  let mergedCount = 0;
+
+  for (const hint of visual.edges) {
+    const sourceId = findNodeIdByLabel(ir, hint.sourceLabel);
+    const targetId = findNodeIdByLabel(ir, hint.targetLabel);
+    if (!sourceId || !targetId) {
+      continue;
+    }
+
+    const exists = ir.edges.some(
+      (edge) =>
+        edge.source === sourceId &&
+        edge.target === targetId &&
+        normalizeLabel(edge.label ?? "") === normalizeLabel(hint.label ?? ""),
+    );
+    if (exists) {
+      continue;
+    }
+
+    ir.edges.push({
+      id: `ve${ir.edges.length + 1}`,
+      source: sourceId,
+      target: targetId,
+      label: hint.label,
+      matchConfidence: 0.5,
+    });
+    mergedCount += 1;
+  }
+
+  return mergedCount;
+}
+
 export function mergeDiagramIrWithVisualHints(
   semantic: DiagramIR,
   visual: VisualHints,
-): { ir: DiagramIR; unmatchedVisualNodes: number } {
+): { ir: DiagramIR; unmatchedVisualNodes: number; mergedVisualEdges: number } {
   const usedHints = new Set<VisualNodeHint>();
-  let unmatchedVisualNodes = 0;
 
   const nodes = semantic.nodes.map((node) => {
     const hint = findVisualMatch(node, visual.nodes, usedHints);
@@ -69,18 +116,23 @@ export function mergeDiagramIrWithVisualHints(
     };
   });
 
-  unmatchedVisualNodes = visual.nodes.length - usedHints.size;
+  const unmatchedVisualNodes = visual.nodes.length - usedHints.size;
+  const mergedIr: DiagramIR = {
+    ...semantic,
+    nodes,
+    edges: [...semantic.edges],
+    metadata: {
+      ...semantic.metadata,
+      conversionMode:
+        visual.source === "metadata" ? "metadata" : semantic.metadata?.conversionMode,
+    },
+  };
+
+  const mergedVisualEdges = mergeVisualEdges(mergedIr, visual);
 
   return {
-    ir: {
-      ...semantic,
-      nodes,
-      metadata: {
-        ...semantic.metadata,
-        conversionMode:
-          visual.source === "metadata" ? "metadata" : semantic.metadata?.conversionMode,
-      },
-    },
+    ir: mergedIr,
     unmatchedVisualNodes,
+    mergedVisualEdges,
   };
 }

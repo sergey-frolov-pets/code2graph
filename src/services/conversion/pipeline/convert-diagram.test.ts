@@ -2,17 +2,16 @@
 
 import { describe, expect, it } from "vitest";
 import { convertDiagram } from "@/services/conversion/pipeline/convert-diagram";
-
-const PLANTUML_GRAPH = `@startuml
-[Alice] --> [Bob]
-@enduml`;
-
-const MERMAID_GRAPH = `flowchart LR
-  Alice --> Bob`;
+import { safeParseSourceToIr } from "@/services/conversion/parse/parse-source-to-ir";
+import {
+  MERMAID_GRAPH,
+  MERMAID_SUBGRAPH,
+  PLANTUML_GRAPH,
+} from "@/services/conversion/__fixtures__/graph-samples";
 
 describe("convertDiagram", () => {
-  it("converts plantuml graph to mermaid", () => {
-    const result = convertDiagram({
+  it("converts plantuml graph to mermaid", async () => {
+    const result = await convertDiagram({
       source: PLANTUML_GRAPH,
       sourceFormat: "plantuml",
       targetFormat: "mermaid",
@@ -27,8 +26,8 @@ describe("convertDiagram", () => {
     expect(result.targetSource).toContain("Bob");
   });
 
-  it("converts mermaid graph to plantuml", () => {
-    const result = convertDiagram({
+  it("converts mermaid graph to plantuml", async () => {
+    const result = await convertDiagram({
       source: MERMAID_GRAPH,
       sourceFormat: "mermaid",
       targetFormat: "plantuml",
@@ -42,8 +41,8 @@ describe("convertDiagram", () => {
     expect(result.targetSource).toContain("Bob");
   });
 
-  it("blocks gantt to graphml", () => {
-    const result = convertDiagram({
+  it("blocks gantt to graphml", async () => {
+    const result = await convertDiagram({
       source: "@startgantt\n[Task] lasts 1 day\n@endgantt",
       sourceFormat: "plantuml",
       targetFormat: "graphml",
@@ -55,8 +54,8 @@ describe("convertDiagram", () => {
     expect(result.blocked).toBe(true);
   });
 
-  it("converts mermaid flowchart with stadium nodes to plantuml", () => {
-    const result = convertDiagram({
+  it("converts mermaid flowchart with stadium nodes to plantuml", async () => {
+    const result = await convertDiagram({
       source: `flowchart TD
   A([Старт])
   N1[Узел 1]
@@ -82,8 +81,8 @@ describe("convertDiagram", () => {
     expect(result.targetSource).not.toContain("[[Готово]]");
   });
 
-  it("converts graphml with multiline node labels to valid plantuml", () => {
-    const result = convertDiagram({
+  it("converts graphml with multiline node labels to valid plantuml", async () => {
+    const result = await convertDiagram({
       source: `<?xml version="1.0" encoding="UTF-8"?>
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
   <key id="d0" for="node" attr.name="label" attr.type="string"/>
@@ -122,5 +121,100 @@ of RCA</data>
     expect(result.targetSource).not.toMatch(
       /\[(?:[^\]]*\n)+[^\]]*\] as /,
     );
+  });
+
+  it("converts mermaid activity diagram to plantuml", async () => {
+    const result = await convertDiagram({
+      source: `|Lane|
+A[Start]
+B[Process]
+A --> B`,
+      sourceFormat: "mermaid",
+      targetFormat: "plantuml",
+      mode: "source",
+      locale: "en",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.targetSource).toContain(":Start;");
+    expect(result.targetSource).toContain(":Process;");
+  });
+
+  it("blocks invalid graphml input safely", async () => {
+    const result = await convertDiagram({
+      source: "<graphml><broken>",
+      sourceFormat: "graphml",
+      targetFormat: "plantuml",
+      mode: "source",
+      locale: "en",
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.blocked).toBe(true);
+  });
+
+  it("blocks visual-only conversion for sequence diagrams", async () => {
+    const result = await convertDiagram({
+      source: "@startuml\nactor A\nA -> B: hi\n@enduml",
+      sourceFormat: "plantuml",
+      targetFormat: "mermaid",
+      mode: "visual",
+      previewSvg: "<svg></svg>",
+      locale: "en",
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.blocked).toBe(true);
+  });
+});
+
+describe("graph triangle round-trip", () => {
+  const routes = [
+    { source: PLANTUML_GRAPH, sourceFormat: "plantuml" as const, targetFormat: "mermaid" as const },
+    { source: PLANTUML_GRAPH, sourceFormat: "plantuml" as const, targetFormat: "graphml" as const },
+    { source: MERMAID_GRAPH, sourceFormat: "mermaid" as const, targetFormat: "plantuml" as const },
+    { source: MERMAID_GRAPH, sourceFormat: "mermaid" as const, targetFormat: "graphml" as const },
+  ];
+
+  for (const route of routes) {
+    it(`converts ${route.sourceFormat} → ${route.targetFormat} and back to nodes`, async () => {
+      const forward = await convertDiagram({
+        source: route.source,
+        sourceFormat: route.sourceFormat,
+        targetFormat: route.targetFormat,
+        mode: "source",
+        locale: "en",
+      });
+
+      expect(forward.ok).toBe(true);
+      expect(forward.targetSource).toBeTruthy();
+
+      const parsed = safeParseSourceToIr(
+        forward.targetSource!,
+        route.targetFormat,
+      );
+      expect(parsed.ir?.nodes.some((node) => node.label.includes("Alice"))).toBe(
+        true,
+      );
+      expect(parsed.ir?.nodes.some((node) => node.label.includes("Bob"))).toBe(
+        true,
+      );
+      expect(parsed.ir?.edges.length).toBeGreaterThanOrEqual(1);
+    });
+  }
+
+  it("preserves subgraph groups when converting mermaid to plantuml", async () => {
+    const result = await convertDiagram({
+      source: MERMAID_SUBGRAPH,
+      sourceFormat: "mermaid",
+      targetFormat: "plantuml",
+      mode: "source",
+      locale: "en",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.targetSource).toContain('package "Backend"');
+    expect(result.targetSource).toContain("API");
+    expect(result.targetSource).toContain("Database");
   });
 });

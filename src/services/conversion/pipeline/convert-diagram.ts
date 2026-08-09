@@ -1,9 +1,9 @@
 import type { DiagramFormat } from "@/constants/diagram-formats";
-import type { AppLocale } from "@/constants/i18n";
 import {
   CONVERSION_MAX_EDGES,
   CONVERSION_MAX_NODES,
 } from "@/constants/conversion-settings";
+import type { AppLocale } from "@/constants/i18n";
 import { classifyDiagramKind } from "@/services/conversion/classify-diagram-kind";
 import type { ConversionReport } from "@/services/conversion/conversion-report";
 import type { DiagramIR } from "@/services/conversion/diagram-ir";
@@ -13,10 +13,11 @@ import { emitMermaidFromIr } from "@/services/conversion/emit/emit-mermaid";
 import { emitPlantUmlFromIr } from "@/services/conversion/emit/emit-plantuml";
 import { readSvgMetadata } from "@/services/conversion/metadata/svg-metadata";
 import { mergeDiagramIrWithVisualHints } from "@/services/conversion/merge/merge-diagram-ir";
-import { parseSourceToIr } from "@/services/conversion/parse/parse-source-to-ir";
+import { safeParseSourceToIr } from "@/services/conversion/parse/parse-source-to-ir";
 import { analyzeConversionLosses } from "@/services/conversion/rules/loss-analyzer";
 import { isConversionBlocked } from "@/services/conversion/rules/conversion-matrix";
 import { extractVisualHintsFromSvg } from "@/services/conversion/visual/svg-extractor";
+import { validateDiagramIr } from "@/services/conversion/validate-diagram-ir";
 
 export type ConversionMode = "source" | "visual" | "combo" | "auto";
 
@@ -70,11 +71,24 @@ function emitIrToSource(ir: DiagramIR, targetFormat: DiagramFormat): string {
   }
 }
 
-function enforceLimits(ir: DiagramIR): DiagramIR {
+interface LimitResult {
+  ir: DiagramIR;
+  truncatedNodes: number;
+  truncatedEdges: number;
+}
+
+function enforceLimits(ir: DiagramIR): LimitResult {
+  const truncatedNodes = Math.max(0, ir.nodes.length - CONVERSION_MAX_NODES);
+  const truncatedEdges = Math.max(0, ir.edges.length - CONVERSION_MAX_EDGES);
+
   return {
-    ...ir,
-    nodes: ir.nodes.slice(0, CONVERSION_MAX_NODES),
-    edges: ir.edges.slice(0, CONVERSION_MAX_EDGES),
+    ir: {
+      ...ir,
+      nodes: ir.nodes.slice(0, CONVERSION_MAX_NODES),
+      edges: ir.edges.slice(0, CONVERSION_MAX_EDGES),
+    },
+    truncatedNodes,
+    truncatedEdges,
   };
 }
 
@@ -84,8 +98,18 @@ export function buildDiagramIrForCache(
   previewSvg?: string,
 ): DiagramIR {
   const kind = classifyDiagramKind(source, sourceFormat);
-  let semantic = parseSourceToIr(source, sourceFormat);
-  semantic = enforceLimits({ ...semantic, kind });
+  const parsed = safeParseSourceToIr(source, sourceFormat);
+  let semantic =
+    parsed.ir ??
+    ({
+      version: 1,
+      kind,
+      nodes: [],
+      edges: [],
+      groups: [],
+      metadata: { sourceFormat },
+    } satisfies DiagramIR);
+  semantic = enforceLimits({ ...semantic, kind }).ir;
 
   if (!previewSvg) {
     return semantic;
@@ -95,10 +119,14 @@ export function buildDiagramIrForCache(
   return mergeDiagramIrWithVisualHints(semantic, visual).ir;
 }
 
-export function convertDiagram(input: ConvertDiagramInput): ConvertDiagramResult {
+export async function convertDiagram(
+  input: ConvertDiagramInput,
+): Promise<ConvertDiagramResult> {
   const mode = resolveMode(input);
   const kind = classifyDiagramKind(input.source, input.sourceFormat);
-  const metadataIr = input.previewSvg ? readSvgMetadata(input.previewSvg) : null;
+  const metadataIr = input.previewSvg
+    ? await readSvgMetadata(input.previewSvg)
+    : null;
 
   const preliminaryReport = analyzeConversionLosses({
     kind,
@@ -111,7 +139,8 @@ export function convertDiagram(input: ConvertDiagramInput): ConvertDiagramResult
 
   if (
     preliminaryReport.blocked ||
-    isConversionBlocked(kind, input.sourceFormat, input.targetFormat)
+    isConversionBlocked(kind, input.sourceFormat, input.targetFormat) ||
+    (mode === "visual" && kind === "sequence")
   ) {
     return {
       ok: false,
@@ -121,6 +150,10 @@ export function convertDiagram(input: ConvertDiagramInput): ConvertDiagramResult
   }
 
   let semantic: DiagramIR;
+  let parseError: string | null = null;
+  let truncatedNodes = 0;
+  let truncatedEdges = 0;
+
   if (metadataIr && (mode === "metadata" || mode === "combo")) {
     semantic = metadataIr;
   } else if (mode === "visual" && input.previewSvg) {
@@ -143,24 +176,43 @@ export function convertDiagram(input: ConvertDiagramInput): ConvertDiagramResult
         matchConfidence: 0.4,
       })),
       edges: [],
+      groups: [],
       metadata: { sourceFormat: input.sourceFormat, conversionMode: "visual" },
     };
   } else {
-    semantic = parseSourceToIr(input.source, input.sourceFormat);
+    const parsed = safeParseSourceToIr(input.source, input.sourceFormat);
+    if (!parsed.ir) {
+      parseError = parsed.error ?? "conversion.error.parseFailed";
+      semantic = {
+        version: 1,
+        kind,
+        nodes: [],
+        edges: [],
+        groups: [],
+        metadata: { sourceFormat: input.sourceFormat },
+      };
+    } else {
+      semantic = parsed.ir;
+    }
   }
 
-  semantic = enforceLimits(semantic);
-  let unmatchedVisualNodes = 0;
+  const limited = enforceLimits(semantic);
+  semantic = limited.ir;
+  truncatedNodes += limited.truncatedNodes;
+  truncatedEdges += limited.truncatedEdges;
 
-  if (
-    (mode === "combo" || mode === "metadata") &&
-    input.previewSvg
-  ) {
+  let unmatchedVisualNodes = 0;
+  let mergedVisualEdges = 0;
+
+  if ((mode === "combo" || mode === "metadata") && input.previewSvg) {
     const visual = extractVisualHintsFromSvg(input.previewSvg, input.sourceFormat);
     const merged = mergeDiagramIrWithVisualHints(semantic, visual);
     semantic = merged.ir;
     unmatchedVisualNodes = merged.unmatchedVisualNodes;
+    mergedVisualEdges = merged.mergedVisualEdges;
   }
+
+  const validation = validateDiagramIr(semantic);
 
   const report = analyzeConversionLosses({
     kind: semantic.kind,
@@ -170,7 +222,21 @@ export function convertDiagram(input: ConvertDiagramInput): ConvertDiagramResult
     visualOnly: mode === "visual",
     metadataPresent: Boolean(metadataIr),
     unmatchedVisualNodes,
+    mergedVisualEdges,
+    truncatedNodes,
+    truncatedEdges,
+    parseError,
+    validationErrors: validation.errors,
   });
+
+  if (parseError || !validation.valid) {
+    return {
+      ok: false,
+      blocked: true,
+      report,
+      ir: semantic,
+    };
+  }
 
   const rawTarget = emitIrToSource(semantic, input.targetFormat);
   if (!rawTarget.trim()) {
