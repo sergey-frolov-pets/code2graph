@@ -18,7 +18,7 @@ export const APP_LINKS = {
   mermaidGuide: "https://mermaid.js.org/intro/",
   mermaid: "https://mermaid.js.org/",
   mermaidInk: "https://mermaid.ink/",
-  graphmlGuide: "http://graphml.graphdrawing.org/",
+  graphmlGuide: "http://graphml.graphdrawing.org/primer/graphml-primer.html",
   yEd: "https://www.yworks.com/products/yed",
   dagre: "https://github.com/dagrejs/dagre",
   vue: "https://vuejs.org/",

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppModal from "@/components/AppModal.vue";
 import { useLocale } from "@/composables/useLocale";
+import { FORMAT_GUIDE_LINKS } from "@/constants/help-guides";
 import { APP_LINKS, APP_META } from "@/constants";
 
 defineProps<{
@@ -31,6 +32,20 @@ const { t } = useLocale();
       <li>
         {{ t("about.formatsGraphml") }}
         <a :href="APP_LINKS.yEd" target="_blank" rel="noopener noreferrer">yEd</a>.
+      </li>
+    </ul>
+
+    <h3 class="about-subtitle">{{ t("settings.help") }}</h3>
+    <ul class="about-links">
+      <li v-for="guide in FORMAT_GUIDE_LINKS" :key="guide.id">
+        <a :href="guide.href" target="_blank" rel="noopener noreferrer">
+          {{ t(guide.labelKey) }}
+        </a>
+      </li>
+      <li>
+        <a :href="APP_LINKS.yEd" target="_blank" rel="noopener noreferrer">
+          {{ t("settings.yEdGuide") }}
+        </a>
       </li>
     </ul>
 
