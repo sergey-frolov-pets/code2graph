@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LAYOUT_ENGINES } from "@/constants";
 import { DEFAULT_RENDER_MODE } from "@/constants/render-settings";
 
@@ -23,6 +23,10 @@ import { generateValidPlantUmlPatch } from "@/services/llm/llm-plantuml-patch";
 import { validateLlmPlantUmlSource } from "@/utils/validate-llm-plantuml";
 
 describe("llm-plantuml-patch", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("delegates structural edits to full edit flow", async () => {
     vi.mocked(generateValidPlantUmlFullEdit).mockResolvedValueOnce({
       plantuml: "@startuml\nclass X\n@enduml",
@@ -72,5 +76,45 @@ describe("llm-plantuml-patch", () => {
 
     expect(result.hasChanges).toBe(true);
     expect(result.plantuml).toContain("Alice -> Bob");
+  });
+
+  it("includes prior conversation messages before the current user prompt", async () => {
+    vi.mocked(llmChat).mockResolvedValueOnce({
+      content: '{"replacement":"Alice -> Bob","explanation":"updated"}',
+      providerId: "test",
+      model: "test-model",
+    });
+    vi.mocked(validateLlmPlantUmlSource).mockResolvedValueOnce({
+      valid: true,
+      issues: [],
+    });
+
+    const source = "@startuml\nAlice -> Charlie\n@enduml";
+    const fragment = "Alice -> Charlie";
+    const start = source.indexOf(fragment);
+
+    await generateValidPlantUmlPatch(
+      source,
+      start,
+      start + fragment.length,
+      fragment,
+      "rename target to Bob",
+      LAYOUT_ENGINES.smetana,
+      false,
+      DEFAULT_RENDER_MODE,
+      undefined,
+      [
+        { role: "user", content: "previous request" },
+        { role: "assistant", content: "previous answer" },
+      ],
+    );
+
+    const messages = vi.mocked(llmChat).mock.calls[0]?.[0];
+    expect(messages).toEqual([
+      expect.objectContaining({ role: "system" }),
+      { role: "user", content: "previous request" },
+      { role: "assistant", content: "previous answer" },
+      expect.objectContaining({ role: "user" }),
+    ]);
   });
 });

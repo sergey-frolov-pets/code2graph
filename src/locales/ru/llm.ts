@@ -71,6 +71,12 @@ export const llmMessages: LocaleMessages = {
   "llm.patch.generateError": "Не удалось сгенерировать диаграмму",
   "llm.patch.previewError": "Не удалось отрисовать превью",
   "llm.patch.historyLabel": "AI: {prompt}",
+  "llm.patch.chatHistory": "Чат редактирования",
+  "llm.patch.clearChatHistory": "Очистить чат",
+  "llm.patch.chatRoleUser": "Вы",
+  "llm.patch.chatRoleAssistant": "AI",
+  "llm.patch.assistantApplied": "Изменения сгенерированы.",
+  "llm.patch.assistantNoChanges": "Изменений в результате нет.",
   "llm.syntaxAsk.title": "Вопрос по синтаксису",
   "llm.syntaxAsk.lead":
     "Задайте вопрос о синтаксисе PlantUML в контексте текущей диаграммы. AI объяснит, как выразить нужную логику, без изменения кода.",

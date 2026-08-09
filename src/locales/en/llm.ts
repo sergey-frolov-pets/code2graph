@@ -71,6 +71,12 @@ export const llmMessages: LocaleMessages = {
   "llm.patch.generateError": "Failed to generate diagram",
   "llm.patch.previewError": "Failed to render preview",
   "llm.patch.historyLabel": "AI: {prompt}",
+  "llm.patch.chatHistory": "Edit chat",
+  "llm.patch.clearChatHistory": "Clear chat",
+  "llm.patch.chatRoleUser": "You",
+  "llm.patch.chatRoleAssistant": "AI",
+  "llm.patch.assistantApplied": "Changes generated.",
+  "llm.patch.assistantNoChanges": "No changes in the result.",
   "llm.syntaxAsk.title": "Syntax question",
   "llm.syntaxAsk.lead":
     "Ask about PlantUML syntax in the context of your current diagram. The AI explains how to express the logic without changing your source.",
