@@ -34,7 +34,7 @@ export const settingsMessages: LocaleMessages = {
   "settings.help": "Справка",
   "settings.plantumlGuide": "Справка PlantUML",
   "settings.mermaidGuide": "Справка Mermaid",
-  "settings.graphmlGuide": "Спецификация GraphML",
+  "settings.graphmlGuide": "Справка GraphML",
   "settings.yedEditor": "yEd Graph Editor",
   "settings.about": "О программе",
   "settings.library": "Библиотека",

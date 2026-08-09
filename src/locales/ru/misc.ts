@@ -98,7 +98,14 @@ export const miscMessages: LocaleMessages = {
   "install.alreadyInstalled": "Приложение уже установлено",
   "install.manual": "Установка вручную — нажмите для инструкции",
   "about.title": "О программе",
-  "about.lead": "{name} — оффлайн-редактор диаграмм PlantUML, Mermaid и GraphML с экспортом в SVG и PNG.",
+  "about.lead":
+    "{name} — кроссплатформенный оффлайн-редактор диаграмм PlantUML, Mermaid и GraphML с экспортом в SVG и PNG.",
+  "about.formats": "Поддерживаемые форматы",
+  "about.formatsPlantuml": "PlantUML — текстовый язык UML-диаграмм с оффлайн-рендерингом через @plantuml/core (Smetana).",
+  "about.formatsMermaid":
+    "Mermaid — диаграммы из текста (flowchart, sequence, class и др.) с оффлайн-рендерингом через mermaid.js или онлайн через mermaid.ink.",
+  "about.formatsGraphml":
+    "GraphML — XML-формат графов; просмотр и редактирование в приложении, визуальное проектирование — в",
   "about.developedBy": "Разработана {developer}",
   "about.version": "Версия {version}",
   "about.site": "Сайт",
