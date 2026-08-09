@@ -13,6 +13,16 @@ import { useActiveLlmLabel } from "@/composables/useActiveLlmLabel";
 import { useLocale } from "@/composables/useLocale";
 import { LlmClientError } from "@/services/llm/llm-types";
 import {
+  appendLlmEditConversationMessages,
+  clearLlmEditConversation,
+  getLlmEditConversation,
+} from "@/storage/llm-edit-conversation";
+import type { LlmEditConversationMessage } from "@/types/llm-edit-conversation";
+import {
+  createLlmEditConversationMessage,
+  toLlmChatMessages,
+} from "@/utils/llm-edit-conversation";
+import {
   buildSimpleDiffPreview,
   extractSelectionFragment,
   renderPlantUmlPreviewSvg,
@@ -21,6 +31,7 @@ import {
 const props = defineProps<{
   open: boolean;
   source: string;
+  documentKey: string;
   selectionStart: number;
   selectionEnd: number;
   layout: LayoutEngine;
@@ -38,6 +49,7 @@ const { t } = useLocale();
 const { activeLlmDetail, generatingLabel } = useActiveLlmLabel();
 
 const userPrompt = ref("");
+const chatHistory = ref<LlmEditConversationMessage[]>([]);
 const isGenerating = ref(false);
 const errorMessage = ref("");
 const resultPlantUml = ref("");
@@ -78,6 +90,8 @@ const selectionLabel = computed(() =>
     : selectedFragment.value || t("llm.patch.noSelection"),
 );
 
+const hasChatHistory = computed(() => chatHistory.value.length > 0);
+
 const diffPreview = computed(() => {
   if (!resultPlantUml.value) {
     return "";
@@ -109,7 +123,7 @@ const canApplyPatch = computed(
   () => Boolean(resultPlantUml.value) && resultHasChanges.value && !isGenerating.value,
 );
 
-function resetState(): void {
+function resetGenerationState(): void {
   userPrompt.value = "";
   errorMessage.value = "";
   resultPlantUml.value = "";
@@ -121,14 +135,61 @@ function resetState(): void {
   isPreviewLoading.value = false;
 }
 
+async function loadConversationHistory(): Promise<void> {
+  const documentKey = props.documentKey.trim();
+  if (!documentKey) {
+    chatHistory.value = [];
+    return;
+  }
+
+  const conversation = await getLlmEditConversation(documentKey);
+  chatHistory.value = conversation?.messages ?? [];
+}
+
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
-      resetState();
+      resetGenerationState();
+      void loadConversationHistory();
     }
   },
 );
+
+async function persistConversationTurn(
+  prompt: string,
+  explanation: string | undefined,
+  hasChanges: boolean,
+): Promise<void> {
+  const documentKey = props.documentKey.trim();
+  if (!documentKey) {
+    return;
+  }
+
+  const assistantContent =
+    explanation?.trim() ||
+    (hasChanges
+      ? t("llm.patch.assistantApplied")
+      : t("llm.patch.assistantNoChanges"));
+
+  const updated = await appendLlmEditConversationMessages(documentKey, [
+    createLlmEditConversationMessage("user", prompt),
+    createLlmEditConversationMessage("assistant", assistantContent),
+  ]);
+
+  chatHistory.value = updated.messages;
+}
+
+async function onClearChatHistory(): Promise<void> {
+  const documentKey = props.documentKey.trim();
+  if (!documentKey) {
+    chatHistory.value = [];
+    return;
+  }
+
+  await clearLlmEditConversation(documentKey);
+  chatHistory.value = [];
+}
 
 async function loadPreview(plantuml: string): Promise<void> {
   isPreviewLoading.value = true;
@@ -153,6 +214,9 @@ async function onGenerate(): Promise<void> {
     return;
   }
 
+  const prompt = userPrompt.value.trim();
+  const priorMessages = toLlmChatMessages(chatHistory.value);
+
   isGenerating.value = true;
   errorMessage.value = "";
   resultPlantUml.value = "";
@@ -166,28 +230,32 @@ async function onGenerate(): Promise<void> {
     const result = useWholeDiagramEdit.value
       ? await generateValidPlantUmlFullEdit(
           props.source,
-          userPrompt.value,
+          prompt,
           props.layout,
           props.diagramDarkMode,
           props.renderMode,
           handlers,
+          priorMessages,
         )
       : await generateValidPlantUmlPatch(
           props.source,
           props.selectionStart,
           props.selectionEnd,
           selectedFragment.value,
-          userPrompt.value,
+          prompt,
           props.layout,
           props.diagramDarkMode,
           props.renderMode,
           handlers,
+          priorMessages,
         );
 
     resultPlantUml.value = result.plantuml;
     resultReplacement.value = result.replacement ?? "";
     resultHasChanges.value = result.hasChanges;
     resultExplanation.value = result.explanation ?? "";
+
+    await persistConversationTurn(prompt, result.explanation, result.hasChanges);
 
     if (!result.hasChanges) {
       errorMessage.value = useWholeDiagramEdit.value
@@ -229,6 +297,36 @@ function onApply(): void {
     @close="emit('close')"
   >
     <p class="llm-modal-lead">{{ modalLead }}</p>
+
+    <div v-if="hasChatHistory" class="llm-chat-history">
+      <div class="llm-chat-history__header">
+        <span class="llm-field__label">{{ t("llm.patch.chatHistory") }}</span>
+        <button
+          class="llm-chat-history__clear"
+          type="button"
+          @click="onClearChatHistory"
+        >
+          {{ t("llm.patch.clearChatHistory") }}
+        </button>
+      </div>
+      <div class="llm-chat-history__messages">
+        <div
+          v-for="(message, index) in chatHistory"
+          :key="`${message.createdAt}-${index}`"
+          class="llm-chat-history__message"
+          :class="`llm-chat-history__message--${message.role}`"
+        >
+          <span class="llm-chat-history__role">
+            {{
+              message.role === "user"
+                ? t("llm.patch.chatRoleUser")
+                : t("llm.patch.chatRoleAssistant")
+            }}
+          </span>
+          <p class="llm-chat-history__content">{{ message.content }}</p>
+        </div>
+      </div>
+    </div>
 
     <label class="llm-field">
       <span class="llm-field__label">{{ t("llm.patch.selection") }}</span>
@@ -304,6 +402,63 @@ function onApply(): void {
   color: var(--text-muted);
   font-size: 0.9rem;
   line-height: 1.4;
+}
+
+.llm-chat-history {
+  margin-bottom: 12px;
+}
+
+.llm-chat-history__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.llm-chat-history__clear {
+  border: none;
+  padding: 0;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.llm-chat-history__clear:hover {
+  color: var(--text);
+}
+
+.llm-chat-history__messages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 180px;
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-muted);
+}
+
+.llm-chat-history__message {
+  margin: 0;
+}
+
+.llm-chat-history__role {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.llm-chat-history__content {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
 }
 
 .llm-field {

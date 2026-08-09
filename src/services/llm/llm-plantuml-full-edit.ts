@@ -25,6 +25,7 @@ export async function generateValidPlantUmlFullEdit(
   darkMode: boolean,
   renderMode: RenderMode,
   handlers?: LlmGateHandlers,
+  priorMessages?: LlmChatMessage[],
 ): Promise<GenerateValidPlantUmlPatchResult> {
   const messages: LlmChatMessage[] = [
     {
@@ -33,6 +34,7 @@ export async function generateValidPlantUmlFullEdit(
         "You edit an existing PlantUML diagram according to the user request.",
       ),
     },
+    ...(priorMessages ?? []),
     {
       role: "user",
       content: buildFullDiagramEditPrompt(fullSource, userPrompt),

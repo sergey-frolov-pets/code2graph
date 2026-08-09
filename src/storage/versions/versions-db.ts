@@ -1,6 +1,7 @@
 export const VERSIONS_DB_NAME = "vueplantuml-versions";
-export const VERSIONS_DB_VERSION = 1;
+export const VERSIONS_DB_VERSION = 2;
 export const VERSIONS_STORE = "versions";
+export const LLM_EDIT_CONVERSATIONS_STORE = "llmEditConversations";
 export const VERSIONS_INDEX_DOCUMENT_KEY = "documentKey";
 
 export function upgradeVersionsDatabase(db: IDBDatabase): void {
@@ -9,5 +10,9 @@ export function upgradeVersionsDatabase(db: IDBDatabase): void {
     store.createIndex(VERSIONS_INDEX_DOCUMENT_KEY, "documentKey", {
       unique: false,
     });
+  }
+
+  if (!db.objectStoreNames.contains(LLM_EDIT_CONVERSATIONS_STORE)) {
+    db.createObjectStore(LLM_EDIT_CONVERSATIONS_STORE, { keyPath: "documentKey" });
   }
 }

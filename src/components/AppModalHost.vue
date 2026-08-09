@@ -135,6 +135,7 @@ function onWizardApply(payload: { source: string; label: string }) {
     v-if="isPatchModalOpen"
     :open="isPatchModalOpen"
     :source="source"
+    :document-key="loadedFileName"
     :selection-start="patchSelectionStart"
     :selection-end="patchSelectionEnd"
     :layout="layout"

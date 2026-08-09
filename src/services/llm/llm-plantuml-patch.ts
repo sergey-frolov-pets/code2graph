@@ -38,6 +38,7 @@ export async function generateValidPlantUmlPatch(
   darkMode: boolean,
   renderMode: RenderMode,
   handlers?: LlmGateHandlers,
+  priorMessages?: LlmChatMessage[],
 ): Promise<GenerateValidPlantUmlPatchResult> {
   if (requestsStructuralDiagramEdit(userPrompt)) {
     return generateValidPlantUmlFullEdit(
@@ -47,6 +48,7 @@ export async function generateValidPlantUmlPatch(
       darkMode,
       renderMode,
       handlers,
+      priorMessages,
     );
   }
 
@@ -65,6 +67,7 @@ export async function generateValidPlantUmlPatch(
         "You edit existing PlantUML by replacing only the user-selected fragment.",
       ),
     },
+    ...(priorMessages ?? []),
     { role: "user", content: patchUserPrompt },
   ];
 
