@@ -1,6 +1,4 @@
 import {
-  LIBRARY_SEARCH_DEBOUNCE_MS,
-  RATINGS_SECTION_ID,
   type CreateDiagramPayload,
   type CreateSectionPayload,
   type DiagramDto,
@@ -8,14 +6,12 @@ import {
   type UpdateDiagramPayload,
   type UpdateSectionPayload,
 } from "@/constants/diagram-library";
-import { buildServerFetchFilters } from "@/services/library/library-sync-service";
 import {
   createDiagram,
   createSection,
   deleteDiagram,
   deleteSection,
   fetchDiagram,
-  fetchDiagrams,
   updateSection,
   updateDiagram as updateDiagramApi,
   uploadDiagramFile,
@@ -27,8 +23,6 @@ import {
   deleteLocalSection,
   loadDiagramDetailFromCache,
   saveDiagramDetailToCache,
-  saveDiagramsToCache,
-  searchLocalLibrary,
   updateLocalDiagram,
   updateLocalSection,
 } from "@/utils/diagram-store";
@@ -40,80 +34,18 @@ import {
 } from "@/utils/diagram-files";
 import type { LibraryCatalog } from "./useLibraryCatalog";
 import type { LibrarySync } from "./useLibrarySync";
+import { useLibrarySearch } from "./useLibrarySearch";
 
 export function useLibraryMutations(
   catalog: LibraryCatalog,
   sync: Pick<LibrarySync, "applyLocalState" | "refresh">,
 ) {
-  let searchDebounceTimer: ReturnType<typeof setTimeout> | undefined;
-
-  async function searchDiagrams(): Promise<void> {
-    if (
-      catalog.isLocalMode.value ||
-      !catalog.shouldUseServer.value ||
-      !catalog.apiAvailable.value
-    ) {
-      catalog.diagrams.value = await searchLocalLibrary({
-        q: catalog.searchQuery.value,
-        sectionId: catalog.selectedSectionId.value,
-        tag: catalog.tagFilter.value,
-        language: catalog.languageFilter.value,
-      });
-      catalog.usingCache.value = true;
-      return;
-    }
-
-    try {
-      const response = await fetchDiagrams(
-        buildServerFetchFilters({
-          q: catalog.searchQuery.value,
-          sectionId: catalog.selectedSectionId.value,
-          tag: catalog.tagFilter.value,
-          language: catalog.languageFilter.value,
-          minRating: catalog.minRatingFilter.value,
-          minVotes: catalog.minVotesFilter.value,
-          sortBy: catalog.sortByFilter.value,
-        }),
-        catalog.libraryApiUrl.value,
-      );
-      catalog.diagrams.value = response.diagrams;
-      await saveDiagramsToCache(response.diagrams);
-      catalog.usingCache.value = false;
-    } catch {
-      catalog.diagrams.value = await searchLocalLibrary({
-        q: catalog.searchQuery.value,
-        sectionId: catalog.selectedSectionId.value,
-        tag: catalog.tagFilter.value,
-        language: catalog.languageFilter.value,
-      });
-      catalog.usingCache.value = true;
-    }
-  }
-
-  function scheduleSearch(): void {
-    if (searchDebounceTimer) {
-      clearTimeout(searchDebounceTimer);
-    }
-    searchDebounceTimer = setTimeout(() => {
-      void searchDiagrams();
-    }, LIBRARY_SEARCH_DEBOUNCE_MS);
-  }
-
-  function teardownSearchDebounce(): void {
-    if (searchDebounceTimer) {
-      clearTimeout(searchDebounceTimer);
-    }
-  }
-
-  async function selectSection(sectionId: string | null): Promise<void> {
-    catalog.selectedSectionId.value = sectionId;
-    catalog.selectedDiagram.value = null;
-    if (sectionId === RATINGS_SECTION_ID) {
-      catalog.diagrams.value = [];
-      return;
-    }
-    await searchDiagrams();
-  }
+  const {
+    searchDiagrams,
+    scheduleSearch,
+    teardownSearchDebounce,
+    selectSection,
+  } = useLibrarySearch(catalog);
 
   async function selectDiagram(diagramId: string): Promise<void> {
     catalog.isLoading.value = true;

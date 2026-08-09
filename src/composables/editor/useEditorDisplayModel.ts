@@ -1,4 +1,4 @@
-import { computed, type Ref } from "vue";
+import { computed, onUnmounted, ref, watch, type Ref } from "vue";
 import {
   buildDisplayText,
   buildFoldPlaceholder,
@@ -6,6 +6,7 @@ import {
   type CodeFoldRegion,
   type VisibleLine,
 } from "@/utils/code-folds";
+import { EDITOR_HIGHLIGHT_DEBOUNCE_MS } from "@/constants/editor-settings";
 import { renderHighlightedLine } from "@/utils/plantuml-highlight";
 import { renderMermaidHighlightedLine } from "@/utils/mermaid-highlight";
 import { renderGraphmlHighlightedLine } from "@/utils/graphml-highlight";
@@ -50,6 +51,29 @@ export function useEditorDisplayModel(options: {
   } = options;
 
   const sourceLines = computed(() => source.value.split(/\r?\n/));
+
+  const highlightRevision = ref(0);
+  let highlightTimer: ReturnType<typeof setTimeout> | undefined;
+
+  watch(
+    [source, folds, syntaxHighlightEnabled, diagramFormat],
+    () => {
+      if (highlightTimer) {
+        clearTimeout(highlightTimer);
+      }
+
+      highlightTimer = setTimeout(() => {
+        highlightRevision.value += 1;
+      }, EDITOR_HIGHLIGHT_DEBOUNCE_MS);
+    },
+    { immediate: true },
+  );
+
+  onUnmounted(() => {
+    if (highlightTimer) {
+      clearTimeout(highlightTimer);
+    }
+  });
 
   const lineCount = computed(() => Math.max(sourceLines.value.length, 1));
 
@@ -97,8 +121,10 @@ export function useEditorDisplayModel(options: {
     return renderHighlightedLine(line);
   };
 
-  const visibleEditorLines = computed<VisibleEditorLine[]>(() =>
-    visibleLines.value.map((item, index) => {
+  const visibleEditorLines = computed<VisibleEditorLine[]>(() => {
+    void highlightRevision.value;
+
+    return visibleLines.value.map((item, index) => {
       const rawLine =
         item.kind === "placeholder"
           ? ""
@@ -118,8 +144,8 @@ export function useEditorDisplayModel(options: {
             ? undefined
             : renderLineHighlight(rawLine || " "),
       };
-    }),
-  );
+    });
+  });
 
   const gutterDigitCount = computed(() => String(lineCount.value).length);
 

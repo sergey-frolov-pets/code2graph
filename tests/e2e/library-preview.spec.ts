@@ -82,7 +82,7 @@ test("library local preview modal opens with rendered svg", async ({
   await page.getByRole("button", { name: "Library", exact: true }).click();
   await page.getByRole("button", { name: /All diagrams|Все диаграммы/i }).click();
   await page.getByText("E2E Preview Diagram").click();
-  await page.getByRole("button", { name: /Preview|Превью/i }).click();
+  await page.getByRole("button", { name: "Preview", exact: true }).click();
 
   const modal = page.locator(".modal-backdrop.is-above-library");
   await expect(modal).toBeVisible({ timeout: 15_000 });

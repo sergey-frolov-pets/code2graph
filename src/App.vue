@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, defineAsyncComponent } from "vue";
 import AboutModal from "@/components/AboutModal.vue";
 import AppDialogHost from "@/components/AppDialogHost.vue";
+import TooltipProvider from "@/components/ui/TooltipProvider.vue";
 import DiagramVersionsModal from "@/components/DiagramVersionsModal.vue";
 import DiagramEditor from "@/components/DiagramEditor.vue";
 import DiagramPreview from "@/components/DiagramPreview.vue";
@@ -137,6 +138,7 @@ const {
   applyLoadedSource,
   onEditorCleared,
   initializeIncomingSources,
+  prepareRestoredSource,
   savePuml,
   onVersionRestore,
 } = useDiagramDocument({
@@ -307,6 +309,7 @@ async function handleShareLinkOnBoot(): Promise<void> {
 
 onMounted(() => {
   restoreSettings();
+  prepareRestoredSource();
   void initializeIncomingSources();
   void bootEngine();
   void handleShareLinkOnBoot();
@@ -503,5 +506,7 @@ onMounted(() => {
       :highlight-provider-id="guideProviderId"
       @close="closeLlmKeysGuide"
     />
+
+    <TooltipProvider />
   </div>
 </template>

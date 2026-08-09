@@ -56,6 +56,9 @@ export type EditorFontFamilyId =
 export const DEFAULT_EDITOR_FONT_SIZE: EditorFontSize = "14px";
 export const DEFAULT_EDITOR_FONT_FAMILY_ID: EditorFontFamilyId = "system";
 export const DEFAULT_EDITOR_SYNTAX_HIGHLIGHT = true;
+
+/** Debounce delay before recomputing syntax highlight HTML in the editor. */
+export const EDITOR_HIGHLIGHT_DEBOUNCE_MS = 50;
 export const DEFAULT_EDITOR_AUTOCOMPLETE = true;
 
 export function resolveEditorFontFamily(id: EditorFontFamilyId): string {

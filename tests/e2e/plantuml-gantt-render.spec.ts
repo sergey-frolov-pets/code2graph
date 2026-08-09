@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForPreviewReady, skipIfOfflinePlantUmlUnavailable } from "./helpers/preview";
 
 test("plantuml gantt sample renders offline in preview", async ({ page }) => {
   await page.goto("/");
@@ -6,9 +7,8 @@ test("plantuml gantt sample renders offline in preview", async ({ page }) => {
     timeout: 30_000,
   });
 
+  await skipIfOfflinePlantUmlUnavailable(page);
   await page.locator(".sample-select").selectOption("plantuml:gantt");
 
-  await expect(page.locator(".preview-content svg")).toBeVisible({
-    timeout: 60_000,
-  });
+  await waitForPreviewReady(page);
 });

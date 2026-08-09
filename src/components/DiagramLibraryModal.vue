@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, toRef } from "vue";
 import LibraryModalHeader from "@/components/library/LibraryModalHeader.vue";
 import LibraryModalContent from "@/components/library/LibraryModalContent.vue";
+import { useModalStackEntry } from "@/composables/useModalStackEntry";
 import SectionEditModal from "@/components/SectionEditModal.vue";
 import LibraryRegisterModal from "@/components/library/LibraryRegisterModal.vue";
 import LibrarySetupAdminModal from "@/components/library/LibrarySetupAdminModal.vue";
@@ -47,6 +48,13 @@ const emit = defineEmits<{
     payload: { content: string; fileName: string; diagramId?: string },
   ];
 }>();
+
+useModalStackEntry(
+  "diagram-library",
+  toRef(props, "open"),
+  () => emit("close"),
+  "default",
+);
 
 const { t } = useLocale();
 const { confirm, prompt } = useAppDialog();

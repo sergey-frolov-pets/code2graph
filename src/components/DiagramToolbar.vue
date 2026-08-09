@@ -17,6 +17,7 @@ const props = defineProps<{
   previewBackground: string;
   diagramDarkMode: boolean;
   renderMode: RenderMode;
+  zoomPercent?: number;
 }>();
 
 const emit = defineEmits<{
@@ -78,6 +79,14 @@ function toggleRenderMode(): void {
     <IconButton :label="t('toolbar.zoomOut')" @click="emit('zoomOut')">
       <ActionIcon name="zoom-out" />
     </IconButton>
+
+    <span
+      v-if="zoomPercent !== undefined"
+      class="preview-toolbar__zoom-level"
+      :aria-label="t('toolbar.zoomLevel', { percent: zoomPercent })"
+    >
+      {{ zoomPercent }}%
+    </span>
 
     <IconButton :label="t('toolbar.zoomIn')" @click="emit('zoomIn')">
       <ActionIcon name="zoom-in" />
@@ -145,6 +154,15 @@ function toggleRenderMode(): void {
 .preview-toolbar__color-field {
   display: inline-flex;
   margin: 0;
+  flex-shrink: 0;
+}
+
+.preview-toolbar__zoom-level {
+  min-width: 3.2rem;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 

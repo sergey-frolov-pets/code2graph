@@ -124,6 +124,26 @@ export function useDiagramDocument(options: UseDiagramDocumentOptions) {
     scheduleRender();
   }
 
+  function prepareRestoredSource(): void {
+    const content = source.value;
+    if (!content.trim()) {
+      return;
+    }
+
+    const cleaned = extractLeadingMermaidDiagram(content);
+    if (cleaned !== content) {
+      source.value = cleaned;
+    }
+
+    const detected = detectDiagramFormat(source.value, loadedFileName.value);
+    if (detected === diagramFormat.value) {
+      return;
+    }
+
+    diagramFormat.value = detected;
+    loadedFileName.value = resolveDiagramFileName(loadedFileName.value, detected);
+  }
+
   watch(source, (content) => {
     if (!content.trim()) {
       return;
@@ -151,6 +171,7 @@ export function useDiagramDocument(options: UseDiagramDocumentOptions) {
     applyLoadedSource,
     onEditorCleared,
     initializeIncomingSources,
+    prepareRestoredSource,
     savePuml: saveDiagram,
     onVersionRestore,
   };

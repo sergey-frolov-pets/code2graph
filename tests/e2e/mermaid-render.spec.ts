@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForPreviewReady } from "./helpers/preview";
 
 test("mermaid gantt sample renders in preview", async ({ page }) => {
   await page.goto("/");
@@ -8,8 +9,8 @@ test("mermaid gantt sample renders in preview", async ({ page }) => {
 
   await page.locator(".sample-select").selectOption("mermaid:gantt");
 
+  await waitForPreviewReady(page);
   const svg = page.locator(".preview-content svg");
-  await expect(svg).toBeVisible({ timeout: 30_000 });
 
   const box = await svg.boundingBox();
   expect(box).not.toBeNull();

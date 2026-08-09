@@ -98,11 +98,26 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     return true;
   }
 
+  function resolveEngineNotReadyMessage(): string {
+    if (usesOnlineRender.value) {
+      return t("app.renderModeOnlineOffline");
+    }
+
+    const definition = formatDefinition.value;
+    if (definition.usesPlantUmlEngine) {
+      return t("app.engineNotReady");
+    }
+
+    if (diagramFormat.value === "mermaid") {
+      return t("app.mermaidEngineNotReady");
+    }
+
+    return t("app.engineNotReady");
+  }
+
   async function renderDiagram(): Promise<void> {
     if (!engineReady.value) {
-      error.value = usesOnlineRender.value
-        ? t("app.renderModeOnlineOffline")
-        : t("app.engineNotReady");
+      error.value = resolveEngineNotReadyMessage();
       return;
     }
 
@@ -160,15 +175,29 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
       : t("app.engineLoading");
   }
 
-  async function bootOfflinePlantUmlEngine(): Promise<void> {
+  function isStaleBoot(expectedFormat: DiagramFormat): boolean {
+    return diagramFormat.value !== expectedFormat;
+  }
+
+  async function bootOfflinePlantUmlEngine(
+    expectedFormat: DiagramFormat,
+  ): Promise<void> {
     try {
       await waitForEngineReady();
+      if (isStaleBoot(expectedFormat)) {
+        return;
+      }
+
       engineReady.value = isEngineReady();
       engineStatus.value = engineReady.value
         ? t("app.engineReady")
         : t("app.error");
       scheduleRender();
     } catch (bootError) {
+      if (isStaleBoot(expectedFormat)) {
+        return;
+      }
+
       engineReady.value = false;
       engineStatus.value = resolveLocalizedErrorMessage(
         bootError,
@@ -179,15 +208,23 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     }
   }
 
-  async function bootMermaidEngine(): Promise<void> {
+  async function bootMermaidEngine(expectedFormat: DiagramFormat): Promise<void> {
     try {
       await waitForMermaidReady(diagramDarkMode.value);
+      if (isStaleBoot(expectedFormat)) {
+        return;
+      }
+
       engineReady.value = isMermaidReady();
       engineStatus.value = engineReady.value
         ? t("app.engineReady")
         : t("app.error");
       scheduleRender();
     } catch (bootError) {
+      if (isStaleBoot(expectedFormat)) {
+        return;
+      }
+
       engineReady.value = false;
       engineStatus.value = resolveLocalizedErrorMessage(
         bootError,
@@ -209,12 +246,12 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     }
 
     if (definition.usesPlantUmlEngine) {
-      await bootOfflinePlantUmlEngine();
+      await bootOfflinePlantUmlEngine(format);
       return;
     }
 
     if (format === "mermaid") {
-      await bootMermaidEngine();
+      await bootMermaidEngine(format);
       return;
     }
 

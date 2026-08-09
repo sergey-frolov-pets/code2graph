@@ -29,6 +29,9 @@ import {
   resolvePatchMergedSource,
 } from "@/utils/plantuml-patch";
 import {
+  runLlmJsonValidationLoop,
+} from "@/services/llm/llm-validation-loop";
+import {
   formatLlmValidationIssuesForRetry,
   getMaxLlmValidationRetries,
   validateLlmPlantUmlSource,
@@ -66,39 +69,34 @@ export async function generateValidPlantUml(
     { role: "user", content: userPrompt },
   ];
 
-  const maxRetries = getMaxLlmValidationRetries();
-
-  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-    const chatResult = await llmChat(messages, { jsonMode: true }, handlers);
-    const validation = await validateLlmResponse(
-      chatResult.content,
-      layout,
-      darkMode,
-      renderMode,
-    );
-
-    if (validation.valid && validation.plantuml) {
-      return {
-        plantuml: validation.plantuml,
-        explanation: validation.output?.explanation,
-      };
-    }
-
-    if (attempt >= maxRetries) {
-      throw new LlmClientError(
-        "validation_failed",
-        formatLlmValidationIssuesForRetry(validation.issues),
+  return runLlmJsonValidationLoop(
+    messages,
+    async (content) => {
+      const validation = await validateLlmResponse(
+        content,
+        layout,
+        darkMode,
+        renderMode,
       );
-    }
 
-    messages.push({ role: "assistant", content: chatResult.content });
-    messages.push({
-      role: "user",
-      content: `Fix validation errors and return corrected JSON only:\n${formatLlmValidationIssuesForRetry(validation.issues)}`,
-    });
-  }
+      if (validation.valid && validation.plantuml) {
+        return {
+          valid: true,
+          result: {
+            plantuml: validation.plantuml,
+            explanation: validation.output?.explanation,
+          },
+          issues: [],
+        };
+      }
 
-  throw new LlmClientError("validation_failed", "LLM validation failed");
+      return {
+        valid: false,
+        issues: validation.issues,
+      };
+    },
+    handlers,
+  );
 }
 
 export async function generateValidWizardDiagram(
@@ -130,46 +128,33 @@ export async function generateValidWizardDiagram(
     { role: "user", content: userPrompt },
   ];
 
-  const maxRetries = getMaxLlmValidationRetries();
+  return runLlmJsonValidationLoop(
+    messages,
+    async (content) => {
+      const validation =
+        language === "mermaid"
+          ? await validateLlmMermaidResponse(content, darkMode, renderMode)
+          : await validateLlmResponse(content, layout, darkMode, renderMode);
 
-  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-    const chatResult = await llmChat(messages, { jsonMode: true }, handlers);
-    const validation =
-      language === "mermaid"
-        ? await validateLlmMermaidResponse(
-            chatResult.content,
-            darkMode,
-            renderMode,
-          )
-        : await validateLlmResponse(
-            chatResult.content,
-            layout,
-            darkMode,
-            renderMode,
-          );
+      if (validation.valid && validation.plantuml) {
+        return {
+          valid: true,
+          result: {
+            plantuml: validation.plantuml,
+            explanation: validation.output?.explanation,
+          },
+          issues: [],
+        };
+      }
 
-    if (validation.valid && validation.plantuml) {
       return {
-        plantuml: validation.plantuml,
-        explanation: validation.output?.explanation,
+        valid: false,
+        issues: validation.issues,
       };
-    }
-
-    if (attempt >= maxRetries) {
-      throw new LlmClientError(
-        "validation_failed",
-        formatLlmValidationIssuesForRetry(validation.issues),
-      );
-    }
-
-    messages.push({ role: "assistant", content: chatResult.content });
-    messages.push({
-      role: "user",
-      content: `Fix validation errors and return corrected JSON only:\n${formatLlmValidationIssuesForRetry(validation.issues)}`,
-    });
-  }
-
-  throw new LlmClientError("validation_failed", "LLM wizard validation failed");
+    },
+    handlers,
+    "LLM wizard validation failed",
+  );
 }
 
 export async function generateValidPlantUmlFullEdit(

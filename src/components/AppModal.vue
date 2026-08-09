@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, toRef, useId } from "vue";
+import { computed, ref, toRef, useId } from "vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import { useModalA11y } from "@/composables/useModalA11y";
+import { useModalStackEntry } from "@/composables/useModalStackEntry";
+import { useModalStack } from "@/composables/useModalStack";
 import { useLocale } from "@/composables/useLocale";
 
 const props = defineProps<{
@@ -18,9 +20,19 @@ const emit = defineEmits<{
 
 const { t } = useLocale();
 const titleId = useId();
+const modalId = useId();
 const dialogRef = ref<HTMLElement | null>(null);
+const { getStackZIndex } = useModalStack();
 
-useModalA11y(toRef(props, "open"), dialogRef, () => emit("close"));
+useModalStackEntry(
+  modalId,
+  toRef(props, "open"),
+  () => emit("close"),
+  props.layer ?? "default",
+);
+useModalA11y(toRef(props, "open"), dialogRef);
+
+const modalZIndex = computed(() => getStackZIndex(modalId));
 
 function onBackdropClick(event: MouseEvent): void {
   if (event.target === event.currentTarget) {
@@ -35,6 +47,7 @@ function onBackdropClick(event: MouseEvent): void {
       v-if="open"
       class="modal-backdrop"
       :class="{ 'is-above-library': layer === 'above-library' }"
+      :style="modalZIndex ? { zIndex: modalZIndex } : undefined"
       role="presentation"
       @click="onBackdropClick"
     >

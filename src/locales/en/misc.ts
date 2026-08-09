@@ -60,6 +60,7 @@ export const miscMessages: LocaleMessages = {
   "toolbar.refresh": "Refresh",
   "toolbar.zoomIn": "Zoom in",
   "toolbar.zoomOut": "Zoom out",
+  "toolbar.zoomLevel": "Zoom level {percent}%",
   "toolbar.exportSvg": "Export SVG",
   "toolbar.exportPng": "Export PNG",
   "toolbar.renderModeToOnline": "Switch to online rendering",

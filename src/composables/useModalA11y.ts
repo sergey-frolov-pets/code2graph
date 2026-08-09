@@ -12,18 +12,8 @@ function getFocusableElements(root: HTMLElement): HTMLElement[] {
 export function useModalA11y(
   open: Ref<boolean>,
   dialogRef: Ref<HTMLElement | null>,
-  onClose: () => void,
 ): void {
   let previousFocus: HTMLElement | null = null;
-
-  function onKeyDown(event: KeyboardEvent): void {
-    if (!open.value || event.key !== "Escape") {
-      return;
-    }
-
-    event.preventDefault();
-    onClose();
-  }
 
   function onFocusTrap(event: KeyboardEvent): void {
     if (!open.value || event.key !== "Tab" || !dialogRef.value) {
@@ -58,8 +48,6 @@ export function useModalA11y(
     (isOpen) => {
       if (isOpen) {
         previousFocus = document.activeElement as HTMLElement | null;
-        document.body.style.overflow = "hidden";
-        document.addEventListener("keydown", onKeyDown);
         document.addEventListener("keydown", onFocusTrap);
 
         requestAnimationFrame(() => {
@@ -79,8 +67,6 @@ export function useModalA11y(
         return;
       }
 
-      document.body.style.overflow = "";
-      document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("keydown", onFocusTrap);
       previousFocus?.focus();
       previousFocus = null;
@@ -89,8 +75,6 @@ export function useModalA11y(
   );
 
   onUnmounted(() => {
-    document.body.style.overflow = "";
-    document.removeEventListener("keydown", onKeyDown);
     document.removeEventListener("keydown", onFocusTrap);
   });
 }

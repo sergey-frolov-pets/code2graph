@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, toRef } from 'vue';
 import { useLongPressTooltip } from '@/composables/useLongPressTooltip';
 
 const props = defineProps<{
@@ -19,10 +19,6 @@ const emit = defineEmits<{
 const rootRef = ref<HTMLElement | null>(null);
 
 const {
-  tooltipVisible,
-  tooltipPosition,
-  tooltipPlacement,
-  tooltipRef,
   onPointerDown,
   onPointerUp,
   onPointerCancel,
@@ -32,7 +28,7 @@ const {
   onMouseEnter,
   onMouseLeave,
   consumeSuppressClick,
-} = useLongPressTooltip(rootRef);
+} = useLongPressTooltip(rootRef, toRef(props, 'label'));
 
 function onMousedown(event: MouseEvent): void {
   if (props.preventMousedownDefault) {
@@ -81,22 +77,6 @@ function onClick(event: MouseEvent): void {
   >
     <slot />
   </button>
-
-  <Teleport to="body">
-    <span
-      v-if="tooltipVisible"
-      ref="tooltipRef"
-      class="floating-tooltip"
-      :class="`floating-tooltip--${tooltipPlacement}`"
-      :style="{
-        top: `${tooltipPosition.top}px`,
-        left: `${tooltipPosition.left}px`,
-      }"
-      role="tooltip"
-    >
-      {{ label }}
-    </span>
-  </Teleport>
 </template>
 
 <style scoped>

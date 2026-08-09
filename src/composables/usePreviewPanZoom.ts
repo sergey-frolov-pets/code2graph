@@ -8,6 +8,7 @@ import {
   type Ref,
 } from "vue";
 import {
+  PREVIEW_DOUBLE_TAP_MS,
   PREVIEW_FIT_MARGIN_RATIO,
   PREVIEW_MIN_ZOOM,
   PREVIEW_ZOOM_STEP,
@@ -48,6 +49,8 @@ export function usePreviewPanZoom(
   let panStartY = 0;
   let activePointerId: number | null = null;
   let lastPinchDistance = 0;
+  let lastTapAt = 0;
+  let didDragThisPointer = false;
   let resizeObserver: ResizeObserver | null = null;
   let wheelListener: ((event: WheelEvent) => void) | null = null;
   let touchMoveListener: ((event: TouchEvent) => void) | null = null;
@@ -202,6 +205,7 @@ export function usePreviewPanZoom(
 
   function beginSinglePointerDrag(pointer: TrackedPointer, pointerId: number): void {
     isDragging.value = true;
+    didDragThisPointer = false;
     activePointerId = pointerId;
     dragStartX = pointer.clientX;
     dragStartY = pointer.clientY;
@@ -289,6 +293,9 @@ export function usePreviewPanZoom(
 
     const dx = event.clientX - dragStartX;
     const dy = event.clientY - dragStartY;
+    if (Math.hypot(dx, dy) > 5) {
+      didDragThisPointer = true;
+    }
     const { width: cw, height: ch } = readViewportSize(viewport);
     const { width: sw, height: sh } = getScaledSize();
     const clamped = clampPan(
@@ -320,6 +327,16 @@ export function usePreviewPanZoom(
     }
 
     if (activePointerId === event.pointerId) {
+      if (!didDragThisPointer && !isPinching.value && activePointers.size === 0) {
+        const now = Date.now();
+        if (now - lastTapAt <= PREVIEW_DOUBLE_TAP_MS) {
+          fitToView();
+          lastTapAt = 0;
+        } else {
+          lastTapAt = now;
+        }
+      }
+
       isDragging.value = false;
       activePointerId = null;
     }
@@ -333,6 +350,8 @@ export function usePreviewPanZoom(
     transform: `translate(${panX.value}px, ${panY.value}px) scale(${scale.value})`,
     transformOrigin: "0 0",
   }));
+
+  const zoomPercent = computed(() => Math.round(scale.value * 100));
 
   watch(svgMarkup, () => {
     syncFromMarkup();
@@ -384,8 +403,10 @@ export function usePreviewPanZoom(
     contentStyle,
     isDragging,
     isPinching,
+    zoomPercent,
     zoomIn,
     zoomOut,
+    fitToView,
     onPointerDown,
     onPointerMove,
     onPointerUp: endPointer,

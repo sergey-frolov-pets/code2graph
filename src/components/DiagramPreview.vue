@@ -43,6 +43,7 @@ const {
   contentStyle,
   isDragging,
   isPinching,
+  zoomPercent,
   zoomIn,
   zoomOut,
   onPointerDown,
@@ -91,6 +92,7 @@ watch(isFullscreen, (value) => {
           :preview-background="previewBackground"
           :diagram-dark-mode="diagramDarkMode"
           :render-mode="renderMode"
+          :zoom-percent="zoomPercent"
           @render-now="emit('renderNow')"
           @export-svg="emit('exportSvg')"
           @export-png="emit('exportPng')"
@@ -124,6 +126,7 @@ watch(isFullscreen, (value) => {
           <div
             ref="contentRef"
             class="preview-content"
+            :data-preview-ready="Boolean(previewMarkup)"
             :style="contentStyle"
             v-html="previewMarkup"
           />
