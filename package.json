@@ -1,6 +1,6 @@
 {
   "name": "vueplantuml-app",
-  "version": "1.0.55",
+  "version": "1.0.56",
   "private": true,
   "type": "module",
   "description": "Vue.js PlantUML diagram generator with Smetana layout — works offline via file:// on Android",
