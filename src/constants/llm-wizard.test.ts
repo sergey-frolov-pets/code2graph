@@ -122,6 +122,26 @@ describe("llm-wizard", () => {
     expect(DEFAULT_WIZARD_STATE.creationMode).toBe("manual");
   });
 
+  it("builds PlantUML state scaffold with state aliases instead of quoted transitions", () => {
+    const source = buildManualScaffold(
+      createState({
+        diagramType: "state",
+        typeParams: {
+          ...createDefaultTypeParams(),
+          states: 4,
+        },
+      }),
+      "ru",
+    );
+
+    expect(source).toContain('state "Состояние 1" as wizard_state_1');
+    expect(source).toContain("[*] --> wizard_state_1");
+    expect(source).toContain("wizard_state_1 --> wizard_state_2");
+    expect(source).toContain("wizard_state_4 --> [*]");
+    expect(source).not.toMatch(/\[\*\] --> "/);
+    expect(source).not.toMatch(/ --> "Состояние/);
+  });
+
   it("adds structural elements to manual scaffold when selected", () => {
     const elements = createDefaultStructuralElements();
     elements.alt = true;
