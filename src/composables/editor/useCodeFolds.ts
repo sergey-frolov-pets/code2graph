@@ -110,7 +110,10 @@ export function useCodeFolds(options: {
     const start = Math.min(foldDragStart.value, foldDragEnd.value);
     const end = Math.max(foldDragStart.value, foldDragEnd.value);
 
-    if (end > start && canAddFold(manualFolds.value, start, end)) {
+    if (
+      end > start &&
+      canAddRegion(manualFolds.value, start, end, lineCount.value)
+    ) {
       manualFolds.value = [
         ...manualFolds.value,
         {

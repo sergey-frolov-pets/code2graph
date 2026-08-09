@@ -6,6 +6,7 @@ import {
   canAddRegion,
   createFoldId,
   getHiddenSourceLines,
+  hasRegionStartingAtLine,
   isBookmark,
   mapDisplayOffsetToSourceOffset,
   mapSourceOffsetToDisplayOffset,
@@ -171,6 +172,25 @@ describe("bookmarks and regions", () => {
 
     expect(canAddBookmark(folds, 3, 10)).toBe(false);
     expect(canAddBookmark(folds, 4, 10)).toBe(true);
+  });
+
+  it("rejects a bookmark when another interval starts on the same line", () => {
+    const folds: CodeFoldRegion[] = [
+      { id: "f1", startLine: 3, endLine: 8, collapsed: true },
+    ];
+
+    expect(hasRegionStartingAtLine(folds, 3)).toBe(true);
+    expect(canAddBookmark(folds, 3, 10)).toBe(false);
+    expect(canAddRegion(folds, 3, null, 10)).toBe(false);
+  });
+
+  it("rejects two intervals that start on the same line", () => {
+    const folds: CodeFoldRegion[] = [
+      { id: "f1", startLine: 2, endLine: 10, collapsed: true },
+    ];
+
+    expect(canAddRegion(folds, 2, 5, 12)).toBe(false);
+    expect(canAddRegion(folds, 5, 8, 12)).toBe(true);
   });
 
   it("validates region creation for bookmark and fold", () => {

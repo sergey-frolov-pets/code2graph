@@ -58,6 +58,7 @@ export const editorMessages: LocaleMessages = {
   "editor.regions.remove": "Remove interval",
   "editor.regions.bookmarkLine": "Line {line}",
   "editor.regions.rangeLines": "{from}–{to}",
+  "editor.regions.duplicateStart": "An interval starting at line {line} already exists. Two intervals cannot start on the same line.",
   "editor.saveToLibrary": "Save to library",
   "editor.versions": "Versions",
   "editor.aiPatch": "Edit with AI",

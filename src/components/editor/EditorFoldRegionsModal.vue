@@ -10,7 +10,9 @@ import {
 import { useLocale } from "@/composables/useLocale";
 import {
   canAddRegion,
+  hasRegionStartingAtLine,
   isBookmark,
+  normalizeLineRange,
   parseLineNumberInput,
   type CodeFoldRegion,
 } from "@/utils/code-folds";
@@ -50,6 +52,30 @@ const canSubmit = computed(() => {
   }
 
   return canAddRegion(props.regions, fromLine, toLine, props.lineCount);
+});
+
+const duplicateStartError = computed(() => {
+  const fromLine = parseLineNumberInput(fromInput.value);
+  if (fromLine === null) {
+    return "";
+  }
+
+  const toRaw = toInput.value.trim();
+  const toLine = toRaw ? parseLineNumberInput(toInput.value) : null;
+  if (toRaw && toLine === null) {
+    return "";
+  }
+
+  const startLine =
+    toLine === null
+      ? fromLine
+      : normalizeLineRange(fromLine, toLine).startLine;
+
+  if (!hasRegionStartingAtLine(props.regions, startLine)) {
+    return "";
+  }
+
+  return t("editor.regions.duplicateStart", { line: startLine });
 });
 
 function resetForm(): void {
@@ -256,6 +282,14 @@ defineExpose({
             </label>
           </div>
 
+          <p
+            v-if="duplicateStartError"
+            class="fold-regions-panel__error"
+            role="alert"
+          >
+            {{ duplicateStartError }}
+          </p>
+
           <button
             type="button"
             class="btn btn-primary fold-regions-panel__submit"
@@ -359,6 +393,13 @@ defineExpose({
 .fold-regions-panel__hint {
   margin: 0 0 10px;
   color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.fold-regions-panel__error {
+  margin: 0 0 10px;
+  color: var(--danger);
   font-size: 0.78rem;
   line-height: 1.35;
 }

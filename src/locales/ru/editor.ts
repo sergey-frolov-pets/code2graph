@@ -58,6 +58,7 @@ export const editorMessages: LocaleMessages = {
   "editor.regions.remove": "Удалить интервал",
   "editor.regions.bookmarkLine": "Строка {line}",
   "editor.regions.rangeLines": "{from}–{to}",
+  "editor.regions.duplicateStart": "Интервал с строки {line} уже существует. Два интервала не могут начинаться с одной строки.",
   "editor.saveToLibrary": "Сохранить в библиотеку",
   "editor.versions": "Версии",
   "editor.aiPatch": "Изменить с AI",
