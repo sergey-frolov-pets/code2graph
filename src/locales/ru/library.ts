@@ -69,6 +69,8 @@ export const libraryMessages: LocaleMessages = {
   "library.exportError": "Не удалось экспортировать библиотеку",
   "library.targetLocal": "Локальная",
   "library.targetOnline": "Онлайн",
+  "library.targetToOnline": "Переключить на онлайн-библиотеку",
+  "library.targetToLocal": "Переключить на локальную библиотеку",
   "library.targetLabel": "Сохранить в",
   "library.localModeActive": "Локальная библиотека",
   "library.onlineModeActive": "Онлайн библиотека: {url}",

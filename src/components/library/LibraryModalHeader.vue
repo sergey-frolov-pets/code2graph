@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import type { LibraryTab } from "@/composables/library/useLibraryBrowseFlow";
@@ -10,7 +11,7 @@ export type LibraryBreadcrumbItem = {
   action?: () => void;
 };
 
-defineProps<{
+const props = defineProps<{
   showBackButton: boolean;
   headerTitle: string;
   breadcrumbItems: LibraryBreadcrumbItem[];
@@ -22,7 +23,6 @@ defineProps<{
   isAuthenticated: boolean;
   isSyncing: boolean;
   isCheckingOnline: boolean;
-  onlineTargetButtonClass: string;
   showAdminTab: boolean;
   activeTab: LibraryTab;
 }>();
@@ -32,12 +32,19 @@ const emit = defineEmits<{
   close: [];
   refresh: [];
   register: [];
-  "local-target": [];
-  "online-target": [];
+  "toggle-target": [];
   "switch-tab": [tab: LibraryTab];
 }>();
 
 const { t } = useLocale();
+
+const isOnlineTarget = computed(() => props.libraryTarget === "online");
+
+const targetToggleLabel = computed(() =>
+  isOnlineTarget.value
+    ? t("library.targetToLocal")
+    : t("library.targetToOnline"),
+);
 </script>
 
 <template>
@@ -78,6 +85,15 @@ const { t } = useLocale();
       </nav>
       <div class="library-header__actions">
         <IconButton
+          v-if="showModeTabs"
+          :label="targetToggleLabel"
+          :pressed="isOnlineTarget"
+          :disabled="isCheckingOnline"
+          @click="emit('toggle-target')"
+        >
+          <ActionIcon :name="isOnlineTarget ? 'globe' : 'unlink'" size="large" />
+        </IconButton>
+        <IconButton
           v-if="libraryTarget === 'online' && registrationEnabled && !isAuthenticated"
           :label="t('library.registerTitle')"
           @click="emit('register')"
@@ -103,28 +119,6 @@ const { t } = useLocale();
     </p>
 
     <div v-if="showModeTabs" class="library-header__modes">
-      <div class="library-target">
-        <IconButton
-          :label="t('library.targetLocal')"
-          extra-class="library-modes__btn library-modes__btn--labeled"
-          :pressed="libraryTarget === 'local'"
-          @click="emit('local-target')"
-        >
-          <ActionIcon name="unlink" />
-          <span class="library-modes__label">{{ t("library.targetLocal") }}</span>
-        </IconButton>
-        <IconButton
-          :label="t('library.targetOnline')"
-          :extra-class="onlineTargetButtonClass"
-          :pressed="libraryTarget === 'online'"
-          :disabled="isCheckingOnline"
-          @click="emit('online-target')"
-        >
-          <ActionIcon name="globe" />
-          <span class="library-modes__label">{{ t("library.targetOnline") }}</span>
-        </IconButton>
-      </div>
-
       <nav class="library-modes" :aria-label="t('library.title')">
         <IconButton
           :label="t('library.browse')"
