@@ -389,6 +389,7 @@ a {
   gap: 8px 16px;
   align-items: center;
   padding: 10px 16px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--border);
   background: var(--surface);
   color: var(--text-muted);

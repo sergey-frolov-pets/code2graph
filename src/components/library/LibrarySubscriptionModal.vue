@@ -244,13 +244,13 @@ watch(
   padding: 0;
   max-height: 240px;
   overflow-y: auto;
-  border: 1px solid var(--border-color, #ddd);
+  border: 1px solid var(--border);
   border-radius: 6px;
 }
 
 .subscription-section-list__item {
   padding: 8px 12px;
-  border-bottom: 1px solid var(--border-color, #eee);
+  border-bottom: 1px solid var(--border);
 }
 
 .subscription-section-list__item:last-child {

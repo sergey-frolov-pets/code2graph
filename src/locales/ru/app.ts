@@ -30,6 +30,8 @@ export const appMessages: LocaleMessages = {
   "app.mainNav": "Основная навигация",
   "app.mobilePanelEditor": "Редактор",
   "app.mobilePanelPreview": "Превью",
+  "app.editorRegion": "Редактор исходного кода диаграммы",
+  "app.previewRegion": "Предпросмотр диаграммы",
   "app.exportError": "Ошибка экспорта",
   "app.savePuml": "Сохранить .puml",
   "app.saveDiagram": "Сохранить файл",

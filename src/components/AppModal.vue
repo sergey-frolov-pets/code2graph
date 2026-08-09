@@ -90,6 +90,7 @@ function onBackdropClick(event: MouseEvent): void {
   display: grid;
   place-items: center;
   padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   background: var(--overlay);
 }
 

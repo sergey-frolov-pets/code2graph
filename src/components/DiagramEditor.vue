@@ -272,6 +272,7 @@ onUnmounted(() => {
     class="panel editor-panel"
     :class="{ 'is-fullscreen': isFullscreen }"
     :style="editorStyle"
+    :aria-label="t('app.editorRegion')"
   >
     <EditorToolbar
       :format-definition="formatDefinition"

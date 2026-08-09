@@ -340,7 +340,7 @@ onMounted(() => {
 .library-admin-form {
   margin: 16px 0;
   padding: 12px;
-  border: 1px solid var(--border-color, #ddd);
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
 
@@ -372,7 +372,7 @@ onMounted(() => {
 
 .library-admin-table th,
 .library-admin-table td {
-  border: 1px solid var(--border-color, #ddd);
+  border: 1px solid var(--border);
   padding: 8px;
   text-align: left;
   vertical-align: top;

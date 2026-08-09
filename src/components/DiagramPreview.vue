@@ -80,6 +80,7 @@ watch(isFullscreen, (value) => {
   <section
     class="panel preview-panel"
     :class="{ 'is-fullscreen': isFullscreen }"
+    :aria-label="t('app.previewRegion')"
   >
     <header class="panel-header">
       <h2 class="panel-title" :title="t('preview.titleTooltip')">

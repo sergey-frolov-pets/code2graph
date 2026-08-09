@@ -299,7 +299,7 @@ watch(
   flex-direction: column;
   gap: 12px;
   padding-top: 8px;
-  border-top: 1px solid var(--border-color, #ddd);
+  border-top: 1px solid var(--border);
 }
 
 .library-rating-panel__summary {
@@ -330,7 +330,7 @@ watch(
 
 .library-rating-panel__comment {
   padding: 8px 0;
-  border-bottom: 1px solid var(--border-color, #eee);
+  border-bottom: 1px solid var(--border);
 }
 
 .library-rating-panel__comment-head {

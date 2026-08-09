@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import LibraryStarRating from "@/components/library/LibraryStarRating.vue";
+import EmptyState from "@/components/ui/EmptyState.vue";
+import LoadingState from "@/components/ui/LoadingState.vue";
 import { useLocale } from "@/composables/useLocale";
 import type { DiagramListItemDto, DiagramSortOption } from "@/constants/diagram-library";
 import { DIAGRAM_SORT_OPTIONS } from "@/constants/diagram-library";
@@ -76,10 +78,12 @@ function onFiltersChange(): void {
     </div>
 
     <div class="library-step__content">
-      <p v-if="isLoading" class="library-empty">{{ t("app.loading") }}</p>
-      <p v-else-if="diagrams.length === 0" class="library-empty">
-        {{ t("library.noResults") }}
-      </p>
+      <LoadingState v-if="isLoading" :message="t('app.loading')" />
+      <EmptyState
+        v-else-if="diagrams.length === 0"
+        :title="t('library.noResults')"
+        :description="t('library.noResultsHint')"
+      />
       <button
         v-for="diagram in diagrams"
         :key="diagram.id"
