@@ -7,7 +7,7 @@ import {
   SPLIT_DIVIDER_WIDTH_PX,
   STORAGE_KEY_SPLIT_RATIO,
 } from "@/constants/layout-settings";
-import { readStorageJson, writeStorageJson } from "@/utils/safe-storage";
+import { readStorageJson, writeStorageJson } from "@/core/safe-storage";
 
 export function useResizableSplit(containerRef: Ref<HTMLElement | null>) {
   const splitRatio = ref(DEFAULT_SPLIT_RATIO);

@@ -20,12 +20,8 @@ import {
   isMermaidReady,
   waitForMermaidReady,
 } from "@/services/mermaid/mermaid-engine";
+import type { TranslateFn } from "@/locales/types";
 import { resolveLocalizedErrorMessage } from "@/utils/localized-app-error";
-
-type TranslateFn = (
-  key: string,
-  params?: Record<string, string | number>,
-) => string;
 
 export interface UseDiagramRenderOptions {
   source: Ref<string>;

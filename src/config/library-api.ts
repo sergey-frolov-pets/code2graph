@@ -1,6 +1,6 @@
 import { ref } from "vue";
 import { STORAGE_KEY_LIBRARY_API_URL } from "@/constants/diagram-library";
-import { readStorageItem, writeStorageItem } from "@/utils/safe-storage";
+import { readStorageItem, writeStorageItem } from "@/core/safe-storage";
 
 export function normalizeLibraryApiUrl(input: string): string {
   const trimmed = input.trim();

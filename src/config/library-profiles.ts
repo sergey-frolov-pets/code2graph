@@ -22,7 +22,7 @@ import {
   readStorageJson,
   writeStorageItem,
   writeStorageJson,
-} from "@/utils/safe-storage";
+} from "@/core/safe-storage";
 
 export interface LibraryProfile {
   id: string;

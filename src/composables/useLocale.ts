@@ -2,7 +2,7 @@ import { ref, watch } from "vue";
 import { DEFAULT_LOCALE, isAppLocale, STORAGE_KEY_LOCALE, type AppLocale } from "@/constants/i18n";
 import type { LocaleKey } from "@/locales/types";
 import { formatMessage, messagesByLocale } from "@/locales/messages";
-import { readStorageItem, writeStorageItem } from "@/utils/safe-storage";
+import { readStorageItem, writeStorageItem } from "@/core/safe-storage";
 
 export function translateForLocale(
   locale: AppLocale,
