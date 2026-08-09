@@ -1,4 +1,5 @@
 import { computed, type ComputedRef, type Ref } from "vue";
+import type { TranslateFn } from "@/locales/types";
 import type { FlatSectionOption } from "@/shared/library/section-tree";
 import { FAVORITES_SECTION_ID, RATINGS_SECTION_ID } from "@/constants/diagram-library";
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
@@ -14,7 +15,7 @@ export function useLibraryBrowseFlow(options: {
   browseStep: Ref<BrowseStep>;
   flatSectionOptions: ComputedRef<FlatSectionOption[]>;
   resetEditForm: () => void;
-  t: (key: string, params?: Record<string, string | number>) => string;
+  t: TranslateFn;
 }) {
   const { library, activeTab, browseStep, flatSectionOptions, resetEditForm, t } =
     options;

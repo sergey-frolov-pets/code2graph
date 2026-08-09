@@ -1,4 +1,5 @@
 import { computed, ref, watch, type Ref } from "vue";
+import type { TranslateFn } from "@/locales/types";
 import { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import { useAppDialog } from "@/composables/useAppDialog";
@@ -39,7 +40,7 @@ export interface UseLibraryModalFlowOptions {
     diagramId?: string;
   }) => void;
   onClose: () => void;
-  t: (key: string, params?: Record<string, string | number>) => string;
+  t: TranslateFn;
 }
 
 export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {

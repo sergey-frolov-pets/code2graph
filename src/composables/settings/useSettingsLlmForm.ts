@@ -1,4 +1,5 @@
 import { computed, ref, watch } from "vue";
+import type { TranslateFn } from "@/locales/types";
 import { ALL_LLM_PROVIDERS, LLM_PROVIDER_KIND } from "@/constants/llm-providers";
 import { useLlmApiKeys } from "@/composables/useLlmApiKeys";
 import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
@@ -6,7 +7,7 @@ import { useLlmSettings } from "@/composables/useLlmSettings";
 import { useLlmProxyAvailability } from "@/composables/useLlmProxyAvailability";
 import { testLlmConnection } from "@/services/llm/llm-client";
 
-export function useSettingsLlmForm(t: (key: string) => string) {
+export function useSettingsLlmForm(t: TranslateFn) {
   const { openLlmKeysGuide } = useLlmKeysGuide();
   const {
     llmProviderId,

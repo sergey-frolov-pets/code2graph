@@ -1,4 +1,5 @@
 import { computed, ref, type Ref } from "vue";
+import type { TranslateFn } from "@/locales/types";
 import { MAX_PUML_FILE_BYTES, type DiagramVisibility } from "@/constants/diagram-library";
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import { parseTagsInput } from "@/utils/library-tags";
@@ -12,7 +13,7 @@ export function useLibraryUpload(options: {
   uploadError: Ref<string>;
   selectedSectionId: Ref<string | null>;
   resetBrowseFlow: () => void;
-  t: (key: string, params?: Record<string, string | number>) => string;
+  t: TranslateFn;
 }) {
   const {
     library,

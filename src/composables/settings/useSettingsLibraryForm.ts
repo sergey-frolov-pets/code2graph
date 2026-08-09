@@ -1,4 +1,5 @@
 import { ref, watch } from "vue";
+import type { TranslateFn } from "@/locales/types";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import { useLibraryCredentials } from "@/composables/useLibraryCredentials";
 import { useLibraryAuth } from "@/composables/useLibraryAuth";
@@ -18,7 +19,7 @@ import type { useLlmProxyAvailability } from "@/composables/useLlmProxyAvailabil
 type LlmProxyAvailability = ReturnType<typeof useLlmProxyAvailability>;
 
 export function useSettingsLibraryForm(
-  t: (key: string) => string,
+  t: TranslateFn,
   llmProxy: Pick<LlmProxyAvailability, "refreshLlmProxyAvailability">,
 ) {
   const { libraryApiUrl, setLibraryApiUrl } = useLibraryApiUrl();

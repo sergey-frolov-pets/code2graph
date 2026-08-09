@@ -15,7 +15,7 @@ export interface CompletionItem {
   label: string;
   insertText: string;
   kind: CompletionKind;
-  detailKey?: string;
+  detailKey?: import("@/locales/types").LocaleKey;
 }
 
 export type CompletionPrefixMode =

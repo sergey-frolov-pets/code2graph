@@ -1,4 +1,5 @@
 import { computed, ref, type ComputedRef, type Ref } from "vue";
+import type { TranslateFn } from "@/locales/types";
 import { flattenSections } from "@/shared/library/section-tree";
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import type { LibraryTab } from "./useLibraryBrowseFlow";
@@ -21,7 +22,7 @@ export function useLibrarySectionAdmin(options: {
   isAdmin: Ref<boolean>;
   onSectionPick: (sectionId: string | null) => Promise<void>;
   onTransferRefresh?: () => Promise<void>;
-  t: (key: string, params?: Record<string, string | number>) => string;
+  t: TranslateFn;
   prompt: (options: {
     title: string;
     message: string;

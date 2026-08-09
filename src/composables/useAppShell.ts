@@ -7,6 +7,7 @@ import {
   type InjectionKey,
   type Ref,
 } from "vue";
+import type { TranslateFn } from "@/locales/types";
 import { useAiSourceApply } from "@/composables/useAiSourceApply";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useAppModals } from "@/composables/useAppModals";
@@ -25,7 +26,7 @@ import { getDiagramFormatDefinition } from "@/constants/diagram-formats";
 import { PENDING_SHARE_STORAGE_KEY } from "@/constants/library-share";
 
 export interface AppShellContext {
-  t: (key: string, params?: Record<string, string | number>) => string;
+  t: TranslateFn;
   source: Ref<string>;
   diagramFormat: Ref<DiagramFormat>;
   layout: Ref<import("@/constants").LayoutEngine>;

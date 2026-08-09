@@ -1,4 +1,5 @@
 import { APP_LINKS } from "@/constants";
+import type { TranslateFn } from "@/locales/types";
 
 export type PwaInstallPlatform = "ios" | "android" | "desktop" | "unknown";
 
@@ -97,7 +98,7 @@ function isSslCertificateError(error: string | null | undefined): boolean {
 
 export function buildManualInstallMessage(
   status: PwaInstallStatus,
-  t: (key: string, params?: Record<string, string | number>) => string,
+  t: TranslateFn,
 ): string {
   if (!status.secureContext) {
     return t("pwa.httpOnly");

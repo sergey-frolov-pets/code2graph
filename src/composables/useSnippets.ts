@@ -1,4 +1,5 @@
 import { computed, ref } from "vue";
+import type { TranslateFn } from "@/locales/types";
 import { BUILTIN_SNIPPETS } from "@/constants/builtin-snippets";
 import {
   SNIPPET_CATEGORY_IDS,
@@ -48,7 +49,7 @@ export function useSnippets() {
   function matchesSearch(
     item: SnippetListItem,
     query: string,
-    t: (key: string) => string,
+    t: TranslateFn,
   ): boolean {
     if (!query.trim()) {
       return true;
@@ -93,7 +94,7 @@ export function useSnippets() {
     return item.snippet.categoryId === activeCategory.value;
   }
 
-  function filterItems(t: (key: string) => string): SnippetListItem[] {
+  function filterItems(t: TranslateFn): SnippetListItem[] {
     return allItems.value.filter(
       (item) =>
         matchesCategory(item) && matchesSearch(item, searchQuery.value, t),

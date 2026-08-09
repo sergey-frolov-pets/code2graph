@@ -1,4 +1,5 @@
 import { ref, type Ref } from "vue";
+import type { TranslateFn } from "@/locales/types";
 import { PENDING_SHARE_STORAGE_KEY } from "@/constants/library-share";
 import {
   fetchShareDiagramPreview,
@@ -23,7 +24,7 @@ export function useLibraryShareFlow(options: {
   browseDiagramPick: (diagramId: string) => Promise<void>;
   goBack: () => void;
   openShareDiagramPreview: (token: string, diagramId: string) => Promise<void>;
-  t: (key: string) => string;
+  t: TranslateFn;
 }) {
   const {
     library,

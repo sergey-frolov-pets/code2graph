@@ -1,4 +1,5 @@
 import { ref, type Ref } from "vue";
+import type { TranslateFn } from "@/locales/types";
 import { downloadShareResource } from "@/services/library/api";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
@@ -23,7 +24,7 @@ export function useLibraryPreviewFlow(options: {
     diagramId?: string;
   }) => void;
   onCloseLibrary: () => void;
-  t: (key: string) => string;
+  t: TranslateFn;
 }) {
   const {
     library,

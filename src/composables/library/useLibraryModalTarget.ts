@@ -1,4 +1,5 @@
 import { computed, ref, type Ref } from "vue";
+import type { TranslateFn } from "@/locales/types";
 import { useLibraryTarget } from "@/config/library-target";
 import { checkServerAvailability } from "@/services/library/library-sync-service";
 import { useLibraryAuth } from "@/composables/useLibraryAuth";
@@ -12,7 +13,7 @@ export function useLibraryModalTarget(options: {
   uploadError: Ref<string>;
   showTransientNotice: (message: string) => void;
   onNeedsSetup: () => void;
-  t: (key: string, params?: Record<string, string | number>) => string;
+  t: TranslateFn;
 }) {
   const {
     library,

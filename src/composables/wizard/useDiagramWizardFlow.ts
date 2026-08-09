@@ -1,4 +1,5 @@
 import { computed, ref, watch, type Ref } from "vue";
+import type { TranslateFn } from "@/locales/types";
 import { generateValidWizardDiagram } from "@/composables/useLlmPlantUmlGenerate";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
@@ -36,7 +37,7 @@ export interface UseDiagramWizardFlowOptions {
   diagramDarkMode: Ref<boolean>;
   openSettings?: () => void;
   locale: Ref<AppLocale>;
-  t: (key: string, params?: Record<string, string | number>) => string;
+  t: TranslateFn;
   onApply: (payload: { source: string; label: string }) => void;
   onClose: () => void;
 }

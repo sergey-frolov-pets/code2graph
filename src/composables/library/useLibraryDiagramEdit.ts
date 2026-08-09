@@ -1,4 +1,5 @@
 import { ref, type Ref } from "vue";
+import type { TranslateFn } from "@/locales/types";
 import type { DiagramLanguage, DiagramVisibility } from "@/constants/diagram-library";
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import { parseTagsInput } from "@/utils/library-tags";
@@ -10,7 +11,7 @@ export function useLibraryDiagramEdit(options: {
   library: DiagramLibrary;
   uploadError: Ref<string>;
   browseStep: Ref<BrowseStep>;
-  t: (key: string, params?: Record<string, string | number>) => string;
+  t: TranslateFn;
   onOpenDiagram: (payload: {
     content: string;
     fileName: string;

@@ -81,6 +81,7 @@ export const editorMessages: LocaleMessages = {
   "editor.completion.endSplit": "close split",
   "editor.completion.while": "while loop",
   "editor.completion.note": "note",
+  "editor.completion.endNote": "close note",
   "editor.completion.color": "color",
   "editor.completion.colorNamed": "named color",
   "editor.completion.colorHex": "hex color",
