@@ -7,6 +7,7 @@ import {
   uniqueDiagramId,
 } from "@/services/conversion/diagram-ir";
 import { detectDiagramDirection } from "@/services/conversion/classify-diagram-kind";
+import { parseMermaidRequirementText } from "@/services/conversion/emit/mermaid-emit-utils";
 
 function addEdge(
   ir: DiagramIR,
@@ -655,7 +656,9 @@ export function parseRequirementMermaid(source: string, format: DiagramFormat): 
     const body = match[2];
     const textMatch = body.match(/text:\s*(.+)/i);
     const idMatch = body.match(/id:\s*(\d+)/i);
-    const text = textMatch?.[1]?.trim() ?? id;
+    const text = textMatch?.[1]
+      ? parseMermaidRequirementText(textMatch[1])
+      : id;
     requirements.push({ id, numericId: idMatch ? Number.parseInt(idMatch[1], 10) : undefined, text });
     ir.nodes.push({
       id: uniqueDiagramId(id, usedIds),

@@ -32,3 +32,27 @@ export function formatMermaidNodeLabel(rawLabel: string): string {
 
   return `[${label}]`;
 }
+
+function needsQuotedMermaidRequirementText(value: string): boolean {
+  return /[\s"']/.test(value) || /[^\x20-\x7E]/.test(value);
+}
+
+/** Форматирует значение поля text в requirementDiagram. */
+export function formatMermaidRequirementText(value: string): string {
+  const label = flattenMermaidLabel(value);
+  if (!needsQuotedMermaidRequirementText(label)) {
+    return label;
+  }
+
+  return `"${escapeMermaidQuoted(label)}"`;
+}
+
+/** Разбирает значение поля text из requirementDiagram. */
+export function parseMermaidRequirementText(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+    return trimmed.slice(1, -1).replace(/\\"/g, '"');
+  }
+
+  return trimmed;
+}

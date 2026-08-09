@@ -1,4 +1,5 @@
 import type { AppLocale } from "@/constants/i18n";
+import { formatMermaidRequirementText } from "@/services/conversion/emit/mermaid-emit-utils";
 
 export const WIZARD_DIAGRAM_TYPES = [
   "sequence",
@@ -1755,7 +1756,7 @@ function buildMermaidRequirement(state: WizardState, locale: AppLocale): string 
     lines.push(
       `    requirement ${reqId} {`,
       `      id: ${index}`,
-      `      text: ${text}`,
+      `      text: ${formatMermaidRequirementText(text)}`,
       "    }",
     );
   }

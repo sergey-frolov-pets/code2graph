@@ -3,6 +3,7 @@ import {
   escapeMermaidQuoted,
   flattenMermaidLabel,
   formatMermaidNodeLabel,
+  formatMermaidRequirementText,
 } from "@/services/conversion/emit/mermaid-emit-utils";
 import {
   emitPlantUmlComponentNode,
@@ -186,7 +187,7 @@ export function emitMermaidRequirement(ir: DiagramIR): string {
     lines.push(
       `    requirement ${req.id} {`,
       `      id: ${req.numericId ?? 1}`,
-      `      text: ${req.text}`,
+      `      text: ${formatMermaidRequirementText(req.text)}`,
       "    }",
     );
   }
