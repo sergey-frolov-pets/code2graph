@@ -1,5 +1,6 @@
 import type { AppLocale } from "@/constants/i18n";
 import { getWizardDiagramFormatRules } from "@/services/llm/diagram-format-rules";
+import { getWizardTypePromptHint } from "@/constants/wizard-prompt-hints";
 import {
   formatMermaidRequirementText,
   formatMermaidSankeyCsvField,
@@ -509,9 +510,10 @@ export function resolveWizardStateWithDefaults(
 
 export { getWizardDiagramFormatRules };
 
-export function buildWizardPrompt(state: WizardState): string {
+export function buildWizardPrompt(state: WizardState, locale: AppLocale = "en"): string {
   const typeLabel = state.diagramType.replace(/_/g, " ");
   const paramLines = formatTypeParamsForPrompt(state);
+  const typePromptHint = getWizardTypePromptHint(state.diagramType, locale);
   const formatLabel =
     state.language === "mermaid"
       ? "Mermaid"
@@ -563,6 +565,10 @@ export function buildWizardPrompt(state: WizardState): string {
     "Description:",
     state.contextText.trim() || "(not specified)",
   );
+
+  if (typePromptHint.trim()) {
+    lines.push("", "Type structure guide:", typePromptHint.trim());
+  }
 
   if (state.typeSpecificText.trim()) {
     lines.push("", "Additional requirements:", state.typeSpecificText.trim());
