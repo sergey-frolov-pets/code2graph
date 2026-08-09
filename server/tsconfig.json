@@ -13,5 +13,10 @@
     }
   },
   "include": ["src/**/*.ts", "../packages/shared/src/**/*.ts"],
-  "exclude": ["**/*.test.ts", "**/*.spec.ts"]
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "../packages/shared/src/**/*.test.ts",
+    "../packages/shared/src/**/*.spec.ts"
+  ]
 }
