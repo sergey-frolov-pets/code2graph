@@ -17,7 +17,7 @@ Use this checklist after each refactoring phase or PR.
 
 ## Offline / single-file
 
-- [ ] Open `release/vueplantuml.html` via `file://`
+- [ ] Open `release/code2graph.html` via `file://`
 - [ ] Editor renders PlantUML preview
 - [ ] Modals open and close (Escape, backdrop)
 - [ ] Tooltips on long-press (mobile emulation)

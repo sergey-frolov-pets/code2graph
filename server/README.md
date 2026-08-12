@@ -1,4 +1,4 @@
-# vuePlantUML Library API + LLM proxy
+# Code2Graph Library API + LLM proxy
 
 Опциональный сервер для:
 

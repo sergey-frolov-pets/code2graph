@@ -246,8 +246,8 @@ async function dispatchLlmChat(
         messages,
         jsonMode,
         {
-          "HTTP-Referer": "https://github.com/sergey-frolov-pets/vuePUML",
-          "X-Title": "vuePlantUML",
+          "HTTP-Referer": "https://github.com/sergey-frolov-pets/code2graph",
+          "X-Title": "Code2Graph",
         },
       );
       break;

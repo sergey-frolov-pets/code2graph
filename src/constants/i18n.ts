@@ -2,7 +2,7 @@ export const SUPPORTED_LOCALES = ["ru", "en"] as const;
 
 export type AppLocale = (typeof SUPPORTED_LOCALES)[number];
 
-export const STORAGE_KEY_LOCALE = "plantuml-smetana-locale";
+export const STORAGE_KEY_LOCALE = "code2graph-locale";
 
 export const DEFAULT_LOCALE: AppLocale = "ru";
 

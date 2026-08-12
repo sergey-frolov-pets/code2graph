@@ -1,6 +1,6 @@
 {
-  "name": "vuePlantUML",
-  "short_name": "PlantUML",
+  "name": "Code2Graph",
+  "short_name": "Code2Graph",
   "description": "Кросс-платформенный оффлайн генератор PlantUML диаграмм",
   "id": "./",
   "start_url": "./index.html",

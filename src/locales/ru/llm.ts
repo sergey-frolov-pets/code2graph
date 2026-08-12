@@ -5,7 +5,7 @@ export const llmMessages: LocaleMessages = {
   "llm.keysGuide.lead": "Выберите провайдера в Настройки → AI, создайте API-ключ на сайте провайдера и вставьте его в настройках.",
   "llm.keysGuide.stepRegister": "Зарегистрируйтесь или войдите в консоль провайдера.",
   "llm.keysGuide.stepCreateKey": "Создайте API-ключ:",
-  "llm.keysGuide.stepPaste": "В vuePlantUML: Настройки → AI → выберите провайдера → вставьте ключ и сохраните.",
+  "llm.keysGuide.stepPaste": "В Code2Graph: Настройки → AI → выберите провайдера → вставьте ключ и сохраните.",
   "llm.keysGuide.securityTitle": "Безопасность ключей, паролей и токенов",
   "llm.keysGuide.securityLead":
     "Секреты не отправляются на сторонние серверы приложения — только локально в браузере (localStorage):",

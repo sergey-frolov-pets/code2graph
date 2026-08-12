@@ -181,7 +181,7 @@ export function useLibraryDiagramPreview() {
 
   function watermarkLabel(): string {
     const locale = readInitialLocale();
-    return locale === "ru" ? "vuePlantUML · превью" : "vuePlantUML · preview";
+    return locale === "ru" ? "Code2Graph · превью" : "Code2Graph · preview";
   }
 
   return {

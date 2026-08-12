@@ -1,4 +1,4 @@
-export const LIBRARY_DB_NAME = "vueplantuml-library";
+export const LIBRARY_DB_NAME = "code2graph-library";
 export const LIBRARY_DB_VERSION = 1;
 
 export const LIBRARY_STORE_SECTIONS = "sections";

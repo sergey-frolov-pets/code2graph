@@ -193,7 +193,7 @@ const MERMAID_SAMPLES_RU: Record<HandcraftedMermaidSampleId, string> = {
         number price
     }`,
   gantt: `gantt
-title План релиза vuePlantUML
+title План релиза Code2Graph
 dateFormat YYYY-MM-DD
 axisFormat %d.%m
 excludes weekends
@@ -343,7 +343,7 @@ const MERMAID_SAMPLES_EN: Record<HandcraftedMermaidSampleId, string> = {
         number price
     }`,
   gantt: `gantt
-title vuePlantUML release plan
+title Code2Graph release plan
 dateFormat YYYY-MM-DD
 axisFormat %m/%d
 excludes weekends

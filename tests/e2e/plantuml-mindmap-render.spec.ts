@@ -15,5 +15,5 @@ test("plantuml mindmap sample renders offline in preview", async ({ page }) => {
 
   const previewText = await page.locator(".preview-content").innerText();
   expect(previewText).not.toMatch(/Syntax Error/i);
-  expect(previewText).toContain("vuePlantUML");
+  expect(previewText).toContain("Code2Graph");
 });

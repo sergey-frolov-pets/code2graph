@@ -1,4 +1,4 @@
-export const VERSIONS_DB_NAME = "vueplantuml-versions";
+export const VERSIONS_DB_NAME = "code2graph-versions";
 export const VERSIONS_DB_VERSION = 2;
 export const VERSIONS_STORE = "versions";
 export const LLM_EDIT_CONVERSATIONS_STORE = "llmEditConversations";

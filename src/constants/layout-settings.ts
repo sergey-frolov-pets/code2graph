@@ -1,4 +1,4 @@
-export const STORAGE_KEY_SPLIT_RATIO = "plantuml-smetana-split-ratio";
+export const STORAGE_KEY_SPLIT_RATIO = "code2graph-split-ratio";
 
 export const DEFAULT_SPLIT_RATIO = 0.5;
 

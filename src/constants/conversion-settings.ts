@@ -1,6 +1,8 @@
 export const CONVERSION_IR_VERSION = 1 as const;
 
-export const SVG_METADATA_ID = "vueplantuml-ir";
+export const SVG_METADATA_ID = "code2graph-ir";
+/** Legacy vuePlantUML exports before Code2Graph rename. */
+export const LEGACY_SVG_METADATA_ID = "vueplantuml-ir";
 
 export const SVG_METADATA_ENCODING_PLAIN = "base64" as const;
 

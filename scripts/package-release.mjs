@@ -18,7 +18,7 @@ function packageRelease() {
   rmSync(releaseDir, { recursive: true, force: true });
   mkdirSync(releaseDir, { recursive: true });
 
-  copyFileSync(singleHtml, path.join(releaseDir, "vueplantuml.html"));
+  copyFileSync(singleHtml, path.join(releaseDir, "code2graph.html"));
   copyFileSync(
     path.join(publicDir, "llm-api-keys.html"),
     path.join(releaseDir, "llm-api-keys.html"),
@@ -36,7 +36,7 @@ function packageRelease() {
   );
 
   console.log(
-    "Release package: release/vueplantuml.html, llm-api-keys.html, llm-api-keys.en.html, plantuml-lib/, README.md",
+    "Release package: release/code2graph.html, llm-api-keys.html, llm-api-keys.en.html, plantuml-lib/, README.md",
   );
 }
 

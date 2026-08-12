@@ -4,7 +4,7 @@ async function seedLocalLibraryDiagram(
   page: import("@playwright/test").Page,
 ): Promise<void> {
   await page.evaluate(async () => {
-    const DB = "vueplantuml-library";
+    const DB = "code2graph-library";
     await new Promise<void>((resolve) => {
       const del = indexedDB.deleteDatabase(DB);
       del.onsuccess = () => resolve();

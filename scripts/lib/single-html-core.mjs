@@ -87,7 +87,7 @@ const ERROR_HANDLER_SCRIPT = `
 const LOADING_SHELL = `
     <div id="app">
       <div style="padding:20px;font-family:sans-serif;color:#1a1f24;background:#f4f6f8;min-height:100vh">
-        <h1 style="margin:0 0 8px;font-size:20px">vuePlantUML</h1>
+        <h1 style="margin:0 0 8px;font-size:20px">Code2Graph</h1>
         <p style="margin:0;color:#5b6670">Загрузка интерфейса...</p>
       </div>
     </div>`;
@@ -116,7 +116,7 @@ export function buildSingleHtmlDocument({
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="color-scheme" content="light dark" />
-    <title>vuePlantUML</title>
+    <title>Code2Graph</title>
     ${headExtra}
     ${css ? `<style>\n${css}\n    </style>` : ""}
     ${includePwaBootstrap ? `<script>\n${escapeScriptContent(pwaBootstrap)}\n    </script>` : ""}

@@ -1,6 +1,6 @@
 # Развёртывание Library API (библиотека диаграмм)
 
-Отдельный Node.js-сервер для общей библиотеки диаграмм и free LLM proxy. Фронтенд vuePlantUML (GitHub Pages) подключается к нему через настройки приложения.
+Отдельный Node.js-сервер для общей библиотеки диаграмм и free LLM proxy. Фронтенд Code2Graph (GitHub Pages) подключается к нему через настройки приложения.
 
 ## Рекомендуемые тарифы VPS
 
@@ -63,11 +63,11 @@ node -v   # v20.x
 ### 2. Клонирование и сборка API
 
 ```bash
-sudo mkdir -p /opt/vueplantuml
-sudo chown "$USER":"$USER" /opt/vueplantuml
-cd /opt/vueplantuml
+sudo mkdir -p /opt/code2graph
+sudo chown "$USER":"$USER" /opt/code2graph
+cd /opt/code2graph
 
-git clone https://github.com/YOUR_USER/vuePlantUML.git .
+git clone https://github.com/YOUR_USER/Code2Graph.git .
 cd server
 npm ci
 npm run build
@@ -75,11 +75,11 @@ npm run build
 
 ### 3. Переменные окружения
 
-Создайте `/opt/vueplantuml/server/.env`:
+Создайте `/opt/code2graph/server/.env`:
 
 ```bash
 PORT=3001
-DB_PATH=/opt/vueplantuml/data/library.db
+DB_PATH=/opt/code2graph/data/library.db
 
 # Секрет для Bearer-токенов (обязательно в продакшене)
 AUTH_TOKEN_SECRET=your_random_secret_here
@@ -92,23 +92,23 @@ LLM_RATE_LIMIT_PER_MINUTE=20
 Создайте каталог для SQLite:
 
 ```bash
-mkdir -p /opt/vueplantuml/data
+mkdir -p /opt/code2graph/data
 ```
 
 ### 4. systemd-сервис
 
-Файл `/etc/systemd/system/vueplantuml-library.service`:
+Файл `/etc/systemd/system/code2graph-library.service`:
 
 ```ini
 [Unit]
-Description=vuePlantUML Library API
+Description=Code2Graph Library API
 After=network.target
 
 [Service]
 Type=simple
 User=www-data
-WorkingDirectory=/opt/vueplantuml/server
-EnvironmentFile=/opt/vueplantuml/server/.env
+WorkingDirectory=/opt/code2graph/server
+EnvironmentFile=/opt/code2graph/server/.env
 ExecStart=/usr/bin/node dist/index.js
 Restart=on-failure
 RestartSec=5
@@ -118,24 +118,24 @@ WantedBy=multi-user.target
 ```
 
 ```bash
-sudo chown -R www-data:www-data /opt/vueplantuml/data
+sudo chown -R www-data:www-data /opt/code2graph/data
 sudo systemctl daemon-reload
-sudo systemctl enable --now vueplantuml-library
-sudo systemctl status vueplantuml-library
+sudo systemctl enable --now code2graph-library
+sudo systemctl status code2graph-library
 ```
 
 Проверка (с учётными данными):
 
 ```bash
 curl -u 'your_login:your_strong_password_here' http://127.0.0.1:3001/api/health
-# {"ok":true,"service":"vueplantuml-library-api"}
+# {"ok":true,"service":"code2graph-library-api"}
 ```
 
 ### 5. Nginx + HTTPS
 
 Замените `library.example.com` на ваш домен (поддомен A-записи на IP VPS).
 
-Файл `/etc/nginx/sites-available/vueplantuml-library`:
+Файл `/etc/nginx/sites-available/code2graph-library`:
 
 ```nginx
 server {
@@ -155,7 +155,7 @@ server {
 ```
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/vueplantuml-library /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/code2graph-library /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 sudo certbot --nginx -d library.example.com
 ```
@@ -170,7 +170,7 @@ sudo ufw enable
 
 ---
 
-## Подключение приложения vuePlantUML
+## Подключение приложения Code2Graph
 
 1. Откройте приложение (например https://puml.sergey-frolov.ru/).
 2. **Настройки → Библиотека**:
@@ -200,12 +200,12 @@ sudo ufw enable
 ## Обновление
 
 ```bash
-cd /opt/vueplantuml
+cd /opt/code2graph
 git pull
 cd server
 npm ci
 npm run build
-sudo systemctl restart vueplantuml-library
+sudo systemctl restart code2graph-library
 ```
 
 Данные SQLite в `data/library.db` сохраняются при обновлении.
@@ -213,7 +213,7 @@ sudo systemctl restart vueplantuml-library
 ## Резервное копирование
 
 ```bash
-cp /opt/vueplantuml/data/library.db /backup/library-$(date +%Y%m%d).db
+cp /opt/code2graph/data/library.db /backup/library-$(date +%Y%m%d).db
 ```
 
-Или экспорт через UI: **Библиотека → Перенос → Экспорт** (`vueplantuml-library.json`).
+Или экспорт через UI: **Библиотека → Перенос → Экспорт** (`code2graph-library.json`).

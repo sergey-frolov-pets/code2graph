@@ -1,10 +1,10 @@
-export const STORAGE_KEY_EDITOR_FONT_SIZE = "plantuml-smetana-editor-font-size";
-export const STORAGE_KEY_EDITOR_FONT_FAMILY = "plantuml-smetana-editor-font-family";
+export const STORAGE_KEY_EDITOR_FONT_SIZE = "code2graph-editor-font-size";
+export const STORAGE_KEY_EDITOR_FONT_FAMILY = "code2graph-editor-font-family";
 export const STORAGE_KEY_EDITOR_SYNTAX_HIGHLIGHT =
-  "plantuml-smetana-editor-syntax-highlight";
+  "code2graph-editor-syntax-highlight";
 export const STORAGE_KEY_EDITOR_AUTOCOMPLETE =
-  "plantuml-smetana-editor-autocomplete";
-export const STORAGE_KEY_PREVIEW_BG = "plantuml-smetana-preview-bg";
+  "code2graph-editor-autocomplete";
+export const STORAGE_KEY_PREVIEW_BG = "code2graph-preview-bg";
 
 export const DEFAULT_PREVIEW_BG = {
   light: "#ffffff",

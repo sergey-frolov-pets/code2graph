@@ -10,7 +10,7 @@ import {
 } from "@/storage/diagram-store";
 import { downloadTextFile } from "@/utils/export";
 
-const EXPORT_FILE_NAME = "vueplantuml-library.json";
+const EXPORT_FILE_NAME = "code2graph-library.json";
 const EXPORT_MIME_TYPE = "application/json;charset=utf-8";
 
 export async function buildLocalExportBundle(

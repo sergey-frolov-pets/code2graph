@@ -31,7 +31,7 @@ test("mixed gantt and plantuml source is cleaned and renders", async ({
 
   const mixed = `${ganttSource}\n@startuml\nAlice -> Bob\n@enduml`;
   await page.evaluate((source) => {
-    localStorage.setItem("plantuml-smetana-source", source);
+    localStorage.setItem("code2graph-source", source);
   }, mixed);
   await page.reload();
   await expect(page.locator(".code-editor__textarea")).toBeVisible({

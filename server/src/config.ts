@@ -23,7 +23,7 @@ export const LLM_RATE_LIMIT_PER_MINUTE = Number(
 
 export const AUTH_TOKEN_SECRET =
   process.env.AUTH_TOKEN_SECRET?.trim() ||
-  "vueplantuml-dev-auth-secret-change-me";
+  "code2graph-dev-auth-secret-change-me";
 
 export const SHARED_SECTION_TITLE =
   process.env.SHARED_SECTION_TITLE?.trim() || "Общие";

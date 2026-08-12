@@ -3,7 +3,7 @@
 Источник для `public/llm-api-keys.html` (рус.) и `public/llm-api-keys.en.html` (англ.).
 Обновляйте все три файла синхронно.
 
-## vuePlantUML — Bring Your Own Key
+## Code2Graph — Bring Your Own Key
 
 Ключ нужен только для провайдеров **«свой ключ»** в Настройки → AI.  
 Бесплатные провайдеры **без ключа** используют сервер приложения (`POST /api/llm/chat`).
@@ -13,7 +13,7 @@
 1. Войдите в [Google AI Studio](https://aistudio.google.com/).
 2. Создайте ключ: [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
 3. Free tier: лимиты на запросы в сутки (см. актуальную документацию Google).
-4. В vuePlantUML: **Настройки → AI → Google Gemini (свой ключ)** → вставьте ключ → Сохранить.
+4. В Code2Graph: **Настройки → AI → Google Gemini (свой ключ)** → вставьте ключ → Сохранить.
 
 ### Groq (`groq`)
 
@@ -37,7 +37,7 @@
 
 ### Безопасность ключей, паролей и токенов
 
-vuePlantUML не отправляет секреты на сторонние серверы приложения. Всё хранится
+Code2Graph не отправляет секреты на сторонние серверы приложения. Всё хранится
 только локально в браузере (`localStorage`):
 
 - **API-ключи LLM** (Настройки → AI)

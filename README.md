@@ -1,14 +1,14 @@
-# vuePlantUML
+# Code2Graph
 
 Кросс-платформенный оффлайн генератор PlantUML диаграмм на Vue 3 + `@plantuml/core` (Smetana).
 
 **Сайт:** [puml.sergey-frolov.ru](https://puml.sergey-frolov.ru/)
 
-Репозиторий: [github.com/sergey-frolov-pets/vuePUML](https://github.com/sergey-frolov-pets/vuePUML)
+Репозиторий: [github.com/sergey-frolov-pets/code2graph](https://github.com/sergey-frolov-pets/code2graph)
 
 ## Скачать
 
-[Releases](https://github.com/sergey-frolov-pets/vuePUML/releases/latest) → **`vueplantuml.html`**
+[Releases](https://github.com/sergey-frolov-pets/code2graph/releases/latest) → **`code2graph.html`**
 
 Локальная сборка релиз-пакета (HTML + companion files):
 
@@ -20,7 +20,7 @@ npm run build:release
 
 | Файл | Назначение |
 |------|------------|
-| `vueplantuml.html` | Приложение (один HTML) |
+| `code2graph.html` | Приложение (один HTML) |
 | `llm-api-keys.html` | Инструкция по API-ключам BYOK |
 | `plantuml-lib/` | C4 stdlib для `!include` |
 | `README.md` | Этот файл (краткая справка) |

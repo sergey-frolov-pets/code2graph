@@ -17,27 +17,27 @@ export function isDiagramLanguage(value: string): value is DiagramLanguage {
 
 export const LIBRARY_SEARCH_DEBOUNCE_MS = 300;
 
-export const LIBRARY_CACHE_KEY = "plantuml-smetana-library-synced-at";
+export const LIBRARY_CACHE_KEY = "code2graph-library-synced-at";
 
-export const STORAGE_KEY_LIBRARY_API_URL = "plantuml-smetana-library-api-url";
+export const STORAGE_KEY_LIBRARY_API_URL = "code2graph-library-api-url";
 
 export const STORAGE_KEY_LIBRARY_API_USERNAME =
-  "plantuml-smetana-library-api-username";
+  "code2graph-library-api-username";
 
 export const STORAGE_KEY_LIBRARY_API_PASSWORD =
-  "plantuml-smetana-library-api-password";
+  "code2graph-library-api-password";
 
-export const STORAGE_KEY_LIBRARY_TARGET = "plantuml-smetana-library-target";
+export const STORAGE_KEY_LIBRARY_TARGET = "code2graph-library-target";
 
-export const STORAGE_KEY_LIBRARY_PROFILES = "plantuml-smetana-library-profiles";
+export const STORAGE_KEY_LIBRARY_PROFILES = "code2graph-library-profiles";
 
 export const STORAGE_KEY_ACTIVE_LIBRARY_PROFILE_ID =
-  "plantuml-smetana-active-library-profile-id";
+  "code2graph-active-library-profile-id";
 
 export const STORAGE_KEY_LIBRARY_PROFILE_SECRETS =
-  "plantuml-smetana-library-profile-secrets";
+  "code2graph-library-profile-secrets";
 
-export const STORAGE_KEY_LIBRARY_AUTH_TOKEN = "plantuml-smetana-library-auth-token";
+export const STORAGE_KEY_LIBRARY_AUTH_TOKEN = "code2graph-library-auth-token";
 
 export type LibraryTarget = "local" | "online";
 

@@ -42,7 +42,7 @@ function applyDocumentLocale(value: AppLocale): void {
     .querySelector('meta[name="description"]')
     ?.setAttribute("content", description);
 
-  document.title = "vuePlantUML";
+  document.title = "Code2Graph";
 }
 
 watch(

@@ -39,7 +39,7 @@ describe("useDiagramDocument", () => {
     storage.set(STORAGE_KEY_DIAGRAM_FORMAT, "mermaid");
     storage.set(STORAGE_KEY_FILE_NAME, "diagram.mmd");
     storage.set(
-      "plantuml-smetana-source",
+      "code2graph-source",
       "info\n  title without mermaid markers",
     );
 
@@ -58,7 +58,7 @@ describe("useDiagramDocument", () => {
       });
 
     restoreDocumentMetadata();
-    source.value = storage.get("plantuml-smetana-source") ?? "";
+    source.value = storage.get("code2graph-source") ?? "";
     prepareRestoredSource();
 
     expect(diagramFormat.value).toBe("mermaid");

@@ -2,6 +2,8 @@ import type { DiagramFormat } from "@/constants/diagram-formats";
 import {
   CONVERSION_MAX_EDGES,
   CONVERSION_MAX_NODES,
+  LEGACY_SVG_METADATA_ID,
+  SVG_METADATA_ID,
 } from "@/constants/conversion-settings";
 import type { AppLocale } from "@/constants/i18n";
 import { classifyDiagramKind } from "@/services/conversion/classify-diagram-kind";
@@ -49,7 +51,10 @@ function resolveMode(input: ConvertDiagramInput): "source" | "visual" | "combo" 
     return "combo";
   }
 
-  if (input.previewSvg?.includes(`id="vueplantuml-ir"`)) {
+  if (
+    input.previewSvg?.includes(`id="${SVG_METADATA_ID}"`) ||
+    input.previewSvg?.includes(`id="${LEGACY_SVG_METADATA_ID}"`)
+  ) {
     return "metadata";
   }
   if (input.previewSvg) {
