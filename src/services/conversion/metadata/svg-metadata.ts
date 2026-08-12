@@ -1,5 +1,6 @@
 import {
   CONVERSION_IR_VERSION,
+  LEGACY_SVG_METADATA_ID,
   SVG_METADATA_ENCODING_GZIP,
   SVG_METADATA_ENCODING_PLAIN,
   SVG_METADATA_ID,
@@ -109,9 +110,14 @@ export async function embedSvgMetadata(svg: string, ir: DiagramIR): Promise<stri
 
   const metadata = buildMetadataElement(payload, encoding);
 
-  if (svg.includes(`id="${SVG_METADATA_ID}"`)) {
+  if (
+    svg.includes(`id="${SVG_METADATA_ID}"`) ||
+    svg.includes(`id="${LEGACY_SVG_METADATA_ID}"`)
+  ) {
     return svg.replace(
-      new RegExp(`<metadata id="${SVG_METADATA_ID}"[\\s\\S]*?</metadata>`),
+      new RegExp(
+        `<metadata id="(?:${SVG_METADATA_ID}|${LEGACY_SVG_METADATA_ID})"[\\s\\S]*?</metadata>`,
+      ),
       metadata,
     );
   }
@@ -121,7 +127,9 @@ export async function embedSvgMetadata(svg: string, ir: DiagramIR): Promise<stri
 
 export async function readSvgMetadata(svg: string): Promise<DiagramIR | null> {
   const match = svg.match(
-    new RegExp(`<metadata id="${SVG_METADATA_ID}"[^>]*>[\\s\\S]*?</metadata>`),
+    new RegExp(
+      `<metadata id="(?:${SVG_METADATA_ID}|${LEGACY_SVG_METADATA_ID})"[^>]*>[\\s\\S]*?</metadata>`,
+    ),
   );
   if (!match?.[0]) {
     return null;

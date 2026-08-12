@@ -63,7 +63,7 @@ const llmApiKeysGuideHref = computed(() => getLlmApiKeysGuideHref(locale.value))
     <h3 class="about-subtitle">{{ t("about.sourceCode") }}</h3>
     <p class="about-meta">
       <a :href="APP_LINKS.github" target="_blank" rel="noopener noreferrer">
-        github.com/sergey-frolov-pets/vuePUML
+        github.com/sergey-frolov-pets/code2graph
       </a>
     </p>
 

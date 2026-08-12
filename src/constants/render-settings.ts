@@ -7,7 +7,7 @@ export type RenderMode = (typeof RENDER_MODES)[keyof typeof RENDER_MODES];
 
 export const DEFAULT_RENDER_MODE: RenderMode = RENDER_MODES.offline;
 
-export const STORAGE_KEY_RENDER_MODE = "plantuml-smetana-render-mode";
+export const STORAGE_KEY_RENDER_MODE = "code2graph-render-mode";
 
 export const PLANTUML_ONLINE_SERVER_URL = "https://www.plantuml.com/plantuml";
 

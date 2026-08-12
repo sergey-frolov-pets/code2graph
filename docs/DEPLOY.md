@@ -1,4 +1,4 @@
-# Деплой vuePlantUML
+# Деплой Code2Graph
 
 ## Канонический таргет: GitHub Pages
 
@@ -41,4 +41,4 @@ npm run dev:api      # library API :3001
 
 ## Релизы
 
-GitHub Release прикрепляет `vueplantuml.html` (см. `npm run package:release`).
+GitHub Release прикрепляет `code2graph.html` (см. `npm run package:release`).

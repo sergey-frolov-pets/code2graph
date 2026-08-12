@@ -344,7 +344,7 @@ export function getDb(): Database.Database {
   runMigrations(db);
   seedInitialData(db);
 
-  if (AUTH_TOKEN_SECRET === "vueplantuml-dev-auth-secret-change-me") {
+  if (AUTH_TOKEN_SECRET === "code2graph-dev-auth-secret-change-me") {
     console.warn(
       "[library-api] Using default AUTH_TOKEN_SECRET. Set AUTH_TOKEN_SECRET in production.",
     );

@@ -1,9 +1,9 @@
 {
-  "name": "vueplantuml-app",
+  "name": "code2graph-app",
   "version": "1.0.65",
   "private": true,
   "type": "module",
-  "description": "Vue.js PlantUML diagram generator with Smetana layout — works offline via file:// on Android",
+  "description": "Code2Graph — offline PlantUML, Mermaid, and GraphML diagram editor (Vue 3 + Smetana)",
   "scripts": {
     "dev": "vite",
     "dev:api": "npm --prefix server run dev",

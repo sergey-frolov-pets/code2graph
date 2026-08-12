@@ -33,7 +33,7 @@ const protectedApi = new Hono();
 protectedApi.use("*", libraryAuthMiddleware);
 
 protectedApi.get("/health", (context) => {
-  return context.json({ ok: true, service: "vueplantuml-library-api" });
+  return context.json({ ok: true, service: "code2graph-library-api" });
 });
 
 protectedApi.route("/auth", authRouter);

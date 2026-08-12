@@ -1,4 +1,4 @@
-# vuePlantUML — релиз-пакет
+# Code2Graph — релиз-пакет
 
 Кросс-платформенный оффлайн генератор PlantUML на Vue 3 + `@plantuml/core`.
 
@@ -6,7 +6,7 @@
 
 | Файл | Описание |
 |------|----------|
-| `vueplantuml.html` | Приложение (открыть в браузере) |
+| `code2graph.html` | Приложение (открыть в браузере) |
 | `llm-api-keys.html` | Как получить API-ключи для BYOK-провайдеров (рус.) |
 | `llm-api-keys.en.html` | How to get LLM API keys (English) |
 | `plantuml-lib/` | C4 PlantUML stdlib (`!include`) |
@@ -41,7 +41,7 @@ npm run dev
 npm run build:release   # собрать release/
 ```
 
-Подробности: [README.md](https://github.com/sergey-frolov-pets/vuePUML) в репозитории.
+Подробности: [README.md](https://github.com/sergey-frolov-pets/code2graph) в репозитории.
 
 ## Лицензия
 

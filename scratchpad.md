@@ -1,4 +1,4 @@
-# scratchpad: LLM для vuePlantUML (Free + BYOK)
+# scratchpad: LLM для Code2Graph (Free + BYOK)
 
 > Обновлено: 2026-08-05.
 > Запросы: BYOK + guide при отсутствии ключа; бесплатный AI без ключа с выбором в настройках; default = рекомендованный.
@@ -79,7 +79,7 @@ openLlmKeysGuide(providerId?: string): void
   // popup blocked / single-file → LlmKeysGuideModal
 ```
 
-**Single-file релиз:** zip с `vueplantuml.html` + `llm-api-keys.html`.
+**Single-file релиз:** zip с `code2graph.html` + `llm-api-keys.html`.
 
 **Критерий готовности:** кнопка «Как получить ключ» открывает guide (только для BYOK-провайдеров).
 
@@ -240,7 +240,7 @@ System prompt: JSON only, PlantUML rules, C4 include policy.
 - `messages.ts`: about AI section
 - `APP_LINKS.llmApiKeysGuide` — используется в About и Settings
 - `build-single-html.mjs` / `build-single-only.mjs` — копируют `llm-api-keys.html`
-- `npm run build:release` → `release/vueplantuml.html` + companion files
+- `npm run build:release` → `release/code2graph.html` + companion files
 - `README.md`, `publish/README.md`, `server/README.md`
 
 ---
@@ -351,7 +351,7 @@ I'll keep the dependency section clean in the file.
 
 ---
 
-# scratchpad: полный рефакторинг кодовой базы vuePlantUML
+# scratchpad: полный рефакторинг кодовой базы Code2Graph
 
 > Обновлено: 2026-08-08  
 > Статус: **план** (код не менялся)  
@@ -374,7 +374,7 @@ I'll keep the dependency section clean in the file.
 
 | Ограничение | Почему |
 |-------------|--------|
-| `build:single` / `build:release` | Android `file://`, релиз `vueplantuml.html` |
+| `build:single` / `build:release` | Android `file://`, релиз `code2graph.html` |
 | Offline-first | Нет гарантии API; localStorage + IndexedDB |
 | Library dual-mode | Local IDB ↔ remote API, `libraryTarget` |
 | i18n ru/en parity | `npm run check:i18n` в CI |

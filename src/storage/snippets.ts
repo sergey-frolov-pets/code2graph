@@ -4,9 +4,9 @@ import {
   writeStorageJson,
 } from "@/core/safe-storage";
 
-export const STORAGE_KEY_CUSTOM_SNIPPETS = "plantuml-smetana-custom-snippets";
+export const STORAGE_KEY_CUSTOM_SNIPPETS = "code2graph-custom-snippets";
 export const STORAGE_KEY_SNIPPETS_PANEL_POSITION =
-  "plantuml-smetana-snippets-panel-position";
+  "code2graph-snippets-panel-position";
 
 export const SNIPPETS_EXPORT_VERSION = 1;
 export const SNIPPETS_EXPORT_FILE_NAME = "plantuml-snippets.json";

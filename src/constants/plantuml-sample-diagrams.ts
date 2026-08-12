@@ -57,7 +57,7 @@ export const PLANTUML_SAMPLE_WIZARD_TYPES: Record<PlantUmlSampleId, import("@/co
 };
 
 const DEFAULT_SOURCE_RU = `@startuml
-' Движок раскладки Smetana (по умолчанию в vuePlantUML)
+' Движок раскладки Smetana (по умолчанию в Code2Graph)
 !pragma layout smetana
 
 title Пример диаграммы классов
@@ -91,7 +91,7 @@ User "1" --> "*" Order : создаёт
 @enduml`;
 
 const DEFAULT_SOURCE_EN = `@startuml
-' Smetana layout engine (default in vuePlantUML)
+' Smetana layout engine (default in Code2Graph)
 !pragma layout smetana
 
 title Class diagram example
@@ -415,14 +415,14 @@ SHOW_PERSON_OUTLINE()
 AddElementTag("backend", $fontColor=$ELEMENT_FONT_COLOR, $bgColor="#335DA5", $shape=EightSidedShape(), $legendText="backend\\n(eight sided)")
 AddRelTag("async", $textColor=$ARROW_FONT_COLOR, $lineColor=$ARROW_COLOR, $lineStyle=DashedLine())
 
-title C4 — vuePlantUML (контейнеры)
+title C4 — Code2Graph (контейнеры)
 
 ' Person — пользователь; Person_Ext — внешний актор
 Person(user, "Пользователь", "Создаёт и редактирует диаграммы")
 Person_Ext(admin, "Администратор", "Управляет библиотекой")
 
 ' System_Boundary — граница нашей системы
-System_Boundary(app, "vuePlantUML") {
+System_Boundary(app, "Code2Graph") {
   Container(spa, "SPA", "Vue 3, TypeScript", "Редактор и превью диаграмм")
   Container(api, "Library API", "Node.js, Hono", "REST API библиотеки диаграмм", $tags="backend")
   ContainerDb(db, "SQLite", "SQLite 3", "Хранение диаграмм и метаданных")
@@ -459,7 +459,7 @@ sunday are closed
 ' Mind map — полный пример возможностей PlantUML (офлайн-движок)
 top to bottom direction
 
-title vuePlantUML — mind map
+title Code2Graph — mind map
 header Редактор диаграмм
 footer Офлайн · SVG · PNG
 caption Рис. 1 — демонстрация синтаксиса
@@ -470,7 +470,7 @@ legend right
 endlegend
 
 ' Корневой узел с inline-цветом
-*[#1565C0] vuePlantUML
+*[#1565C0] Code2Graph
 
 ' Ветка справа (+) — арифметическая нотация
 +[#2E7D32] Редактор
@@ -821,14 +821,14 @@ SHOW_PERSON_OUTLINE()
 AddElementTag("backend", $fontColor=$ELEMENT_FONT_COLOR, $bgColor="#335DA5", $shape=EightSidedShape(), $legendText="backend\\n(eight sided)")
 AddRelTag("async", $textColor=$ARROW_FONT_COLOR, $lineColor=$ARROW_COLOR, $lineStyle=DashedLine())
 
-title C4 — vuePlantUML (containers)
+title C4 — Code2Graph (containers)
 
 ' Person — user; Person_Ext — external actor
 Person(user, "User", "Creates and edits diagrams")
 Person_Ext(admin, "Administrator", "Manages diagram library")
 
 ' System_Boundary — boundary of our system
-System_Boundary(app, "vuePlantUML") {
+System_Boundary(app, "Code2Graph") {
   Container(spa, "SPA", "Vue 3, TypeScript", "Diagram editor and preview")
   Container(api, "Library API", "Node.js, Hono", "REST API for diagram library", $tags="backend")
   ContainerDb(db, "SQLite", "SQLite 3", "Stores diagrams and metadata")
@@ -865,7 +865,7 @@ sunday are closed
 ' Mind map — full PlantUML feature showcase (offline engine)
 top to bottom direction
 
-title vuePlantUML — mind map
+title Code2Graph — mind map
 header Diagram editor
 footer Offline · SVG · PNG
 caption Fig. 1 — syntax demonstration
@@ -876,7 +876,7 @@ legend right
 endlegend
 
 ' Root node with inline color
-*[#1565C0] vuePlantUML
+*[#1565C0] Code2Graph
 
 ' Right branch (+) — arithmetic notation
 +[#2E7D32] Editor

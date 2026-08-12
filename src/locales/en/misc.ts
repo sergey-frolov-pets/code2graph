@@ -175,7 +175,7 @@ export const miscMessages: LocaleMessages = {
   "pwa.installError": "Installation failed. Try the browser menu or reload the page.",
   "pwa.manualTitle": "Manual installation",
   "pwa.bannerTitle": "Install the app",
-  "pwa.bannerDescription": "Add vuePlantUML to your home screen for offline PlantUML, Mermaid, and GraphML editing.",
+  "pwa.bannerDescription": "Add Code2Graph to your home screen for offline PlantUML, Mermaid, and GraphML editing.",
   "pwa.bannerDismiss": "Not now",
   "pwa.open": "Open",
   "pwa.httpsRequiredTitle": "HTTPS required",

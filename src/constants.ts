@@ -1,5 +1,5 @@
 export const APP_META = {
-  name: "vuePlantUML",
+  name: "Code2Graph",
   developer: "FSVibe",
   version: __APP_VERSION__,
   copyright: "© 2026 FSVibe",
@@ -7,10 +7,10 @@ export const APP_META = {
 
 export const APP_LINKS = {
   site: "https://puml.sergey-frolov.ru/",
-  githubPages: "https://sergey-frolov-pets.github.io/vuePUML/",
-  github: "https://github.com/sergey-frolov-pets/vuePUML",
+  githubPages: "https://sergey-frolov-pets.github.io/code2graph/",
+  github: "https://github.com/sergey-frolov-pets/code2graph",
   githubReleases:
-    "https://github.com/sergey-frolov-pets/vuePUML/releases/latest",
+    "https://github.com/sergey-frolov-pets/code2graph/releases/latest",
   plantumlGuide: "https://plantuml.com/guide",
   plantuml: "https://plantuml.com/",
   plantumlCore: "https://www.npmjs.com/package/@plantuml/core",
@@ -28,12 +28,12 @@ export const APP_LINKS = {
   llmApiKeysGuide: "./llm-api-keys.html",
 } as const;
 
-export const STORAGE_KEY_SOURCE = "plantuml-smetana-source";
-export const STORAGE_KEY_DIAGRAM_FORMAT = "plantuml-smetana-diagram-format";
-export const STORAGE_KEY_FILE_NAME = "plantuml-smetana-file-name";
-export const STORAGE_KEY_UI_DARK = "plantuml-smetana-ui-dark";
-export const STORAGE_KEY_DIAGRAM_DARK = "plantuml-smetana-diagram-dark";
-export const STORAGE_KEY_LAYOUT = "plantuml-smetana-layout";
+export const STORAGE_KEY_SOURCE = "code2graph-source";
+export const STORAGE_KEY_DIAGRAM_FORMAT = "code2graph-diagram-format";
+export const STORAGE_KEY_FILE_NAME = "code2graph-file-name";
+export const STORAGE_KEY_UI_DARK = "code2graph-ui-dark";
+export const STORAGE_KEY_DIAGRAM_DARK = "code2graph-diagram-dark";
+export const STORAGE_KEY_LAYOUT = "code2graph-layout";
 
 export const RENDER_DEBOUNCE_MS = 400;
 

@@ -175,7 +175,7 @@ export const miscMessages: LocaleMessages = {
   "pwa.installError": "Не удалось выполнить установку. Попробуйте через меню браузера или перезагрузите страницу.",
   "pwa.manualTitle": "Установка вручную",
   "pwa.bannerTitle": "Установите приложение",
-  "pwa.bannerDescription": "Добавьте vuePlantUML на главный экран для офлайн-редактирования PlantUML, Mermaid и GraphML.",
+  "pwa.bannerDescription": "Добавьте Code2Graph на главный экран для офлайн-редактирования PlantUML, Mermaid и GraphML.",
   "pwa.bannerDismiss": "Не сейчас",
   "pwa.open": "Открыть",
   "pwa.httpsRequiredTitle": "Нужен HTTPS",
