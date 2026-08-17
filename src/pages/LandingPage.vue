@@ -34,7 +34,7 @@ const { navigateTo } = useAppRouter();
         <figure class="landing-hero__visual">
           <img
             class="landing-hero__image"
-            src="./images/landing-workflow.png"
+            src="/images/landing-workflow.png"
             :alt="t('site.landingHeroAlt')"
             width="1200"
             height="675"
