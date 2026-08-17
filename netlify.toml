@@ -1,6 +1,0 @@
-[build]
-  publish = "dist-single"
-  command = "npm run build:single"
-
-[build.environment]
-  NODE_VERSION = "20"

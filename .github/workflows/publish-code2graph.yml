@@ -2,6 +2,11 @@ name: Publish to code2graph repo
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "README.md"
 
 permissions:
   contents: read
@@ -15,6 +20,21 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Remove obsolete files (not part of canonical code2graph tree)
+        run: |
+          rm -rf publish/
+          rm -f scratchpad.md netlify.toml
+          rm -f scripts/migrate-to-code2graph.mjs
+          rm -f docs/diagram-converter-plan.md docs/REFACTORING.md
+          rm -f .github/workflows/publish-code2graph.yml
+          rm -f .github/workflows/publish-ozadachnik.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: strip obsolete files for code2graph mirror [skip ci]"
+          fi
+
       - name: Push to sergey-frolov-pets/code2graph
         env:
           GH_PAT: ${{ secrets.CODE2GRAPH_PUBLISH_PAT }}
@@ -23,7 +43,5 @@ jobs:
             echo "Missing secret CODE2GRAPH_PUBLISH_PAT"
             exit 1
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote add code2graph "https://x-access-token:${GH_PAT}@github.com/sergey-frolov-pets/code2graph.git"
           git push code2graph HEAD:main --force
