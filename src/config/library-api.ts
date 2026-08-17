@@ -31,6 +31,10 @@ function readInitialLibraryApiUrl(): string {
     return normalizeLibraryApiUrl(envUrl);
   }
 
+  if (typeof window !== "undefined" && window.location.protocol.startsWith("http")) {
+    return normalizeLibraryApiUrl(window.location.origin);
+  }
+
   return "";
 }
 

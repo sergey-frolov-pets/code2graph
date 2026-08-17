@@ -3,6 +3,18 @@ import { LlmClientError } from "@/services/llm/llm-types";
 import { buildLibraryAuthHeader } from "@/config/library-credentials";
 import { resolveLlmChatUrl } from "@/utils/llm-proxy";
 
+function buildProxyChatBody(
+  providerId: string,
+  messages: LlmChatMessage[],
+  options: LlmChatOptions,
+): Record<string, unknown> {
+  return {
+    providerId,
+    messages,
+    jsonMode: options.jsonMode ?? true,
+  };
+}
+
 export async function proxyLlmChat(
   providerId: string,
   messages: LlmChatMessage[],
@@ -22,11 +34,7 @@ export async function proxyLlmChat(
       "Content-Type": "application/json",
       ...buildLibraryAuthHeader(),
     },
-    body: JSON.stringify({
-      providerId,
-      messages,
-      jsonMode: options.jsonMode ?? true,
-    }),
+    body: JSON.stringify(buildProxyChatBody(providerId, messages, options)),
   });
 
   const payload = (await response.json().catch(() => null)) as

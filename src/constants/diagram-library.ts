@@ -39,6 +39,8 @@ export const STORAGE_KEY_LIBRARY_PROFILE_SECRETS =
 
 export const STORAGE_KEY_LIBRARY_AUTH_TOKEN = "code2graph-library-auth-token";
 
+export const STORAGE_KEY_REMEMBER_LOGIN = "code2graph-remember-login";
+
 export type LibraryTarget = "local" | "online";
 
 export const SECTION_KINDS = ["shared", "personal"] as const;
