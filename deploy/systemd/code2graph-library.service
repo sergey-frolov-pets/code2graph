@@ -1,0 +1,15 @@
+[Unit]
+Description=Code2Graph Library API + LLM proxy
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/code2graph/server
+EnvironmentFile=/opt/code2graph/server/.env
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

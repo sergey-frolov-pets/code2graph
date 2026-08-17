@@ -95,6 +95,17 @@ cd server && npm run dev
 
 Ответ LLM проверяется (JSON → PlantUML static → engine) до применения в редактор. Undo доступен после AI-изменений.
 
+## Деплой на VDSINA (www.code2graph.ru)
+
+Полная установка на голую Ubuntu и автообновление:
+
+```bash
+sudo bash scripts/deploy/vdsina-install.sh   # первичная установка
+sudo bash scripts/deploy/vdsina-update.sh    # обновление сайта
+```
+
+Подробности: [docs/DEPLOY_VDSINA.md](docs/DEPLOY_VDSINA.md)
+
 ## Деплой на GitHub Pages
 
 Сайт публикуется автоматически при пуше в `main` (workflow `.github/workflows/deploy-pages.yml`).
