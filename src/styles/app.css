@@ -755,9 +755,36 @@ a {
   display: grid;
   gap: 32px;
   padding: 48px 24px 32px;
-  max-width: 960px;
+  max-width: 1120px;
   margin: 0 auto;
   width: 100%;
+}
+
+.landing-hero__grid {
+  display: grid;
+  gap: 32px;
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .landing-hero__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 40px;
+  }
+}
+
+.landing-hero__visual {
+  margin: 0;
+}
+
+.landing-hero__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  background: var(--surface);
 }
 
 .landing-hero__badge {

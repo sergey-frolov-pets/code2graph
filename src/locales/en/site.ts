@@ -4,6 +4,8 @@ export const siteMessages: LocaleMessages = {
   "site.landingTitle": "Code2Graph",
   "site.landingSubtitle":
     "Offline diagram editor: PlantUML, Mermaid, and GraphML. AI assistant, cloud library, SVG/PNG export.",
+  "site.landingHeroAlt":
+    "Code2Graph: code to diagrams (sequence, flowchart, graph) → cloud storage → Mermaid, PlantUML, GraphML export",
   "site.landingCtaApp": "Open editor",
   "site.landingCtaRegister": "Sign up",
   "site.landingCtaLogin": "Sign in",
