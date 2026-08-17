@@ -3,6 +3,7 @@ import { computed } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import { useLocale } from "@/composables/useLocale";
 import { FORMAT_GUIDE_LINKS } from "@/constants/help-guides";
+import DeveloperBrand from "@/components/DeveloperBrand.vue";
 import { APP_LINKS, APP_META } from "@/constants";
 import { getLlmApiKeysGuideHref } from "@/constants/llm-settings";
 
@@ -24,8 +25,9 @@ const llmApiKeysGuideHref = computed(() => getLlmApiKeysGuideHref(locale.value))
     <p class="about-lead">
       {{ t("about.lead", { name: APP_META.name }) }}
     </p>
-    <p class="about-meta">
-      {{ t("about.developedBy", { developer: APP_META.developer }) }}
+    <p class="about-meta about-developer">
+      <span>{{ t("about.developedByLabel") }}</span>
+      <DeveloperBrand />
     </p>
     <p class="about-meta">{{ t("about.version", { version: APP_META.version }) }}</p>
 
@@ -161,6 +163,12 @@ const llmApiKeysGuideHref = computed(() => getLlmApiKeysGuideHref(locale.value))
 .about-meta {
   margin: 0 0 6px;
   color: var(--text-muted);
+}
+
+.about-developer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .about-subtitle {
