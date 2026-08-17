@@ -115,6 +115,7 @@ export const miscMessages: LocaleMessages = {
   "about.formatsGraphml":
     "GraphML — XML-формат графов; просмотр и редактирование в приложении, визуальное проектирование — в",
   "about.developedBy": "Разработана {developer}",
+  "about.developedByLabel": "Разработана",
   "about.version": "Версия {version}",
   "about.site": "Сайт",
   "about.sourceCode": "Исходный код",

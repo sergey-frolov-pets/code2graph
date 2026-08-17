@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
+import DeveloperBrand from "@/components/DeveloperBrand.vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
-import { APP_META, type LayoutEngine } from "@/constants";
+import { type LayoutEngine } from "@/constants";
 import {
   isOnlineRenderMode,
   type RenderMode,
@@ -62,6 +63,9 @@ onUnmounted(() => {
         :class="isOnlineMode ? 'is-online' : 'is-offline'"
       />
     </span>
-    <span class="status-bar__copyright">{{ APP_META.copyright }}</span>
+    <span class="status-bar__copyright">
+      <span class="status-bar__copyright-year">© 2026</span>
+      <DeveloperBrand size="sm" />
+    </span>
   </footer>
 </template>
