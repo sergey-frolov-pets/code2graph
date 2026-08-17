@@ -19,18 +19,6 @@ CI перед деплоем выполняет:
 - `npm run check:i18n` — паритет ключей RU/EN
 - `npm --prefix server run typecheck` — проверка TypeScript API-сервера
 
-## Альтернативный таргет: Netlify
-
-`netlify.toml` настроен на **legacy**-сборку без PWA:
-
-| Параметр | Значение |
-|----------|----------|
-| Команда сборки | `npm run build:single` |
-| Артефакт | `dist-single/index.html` |
-| PWA | Нет |
-
-Используйте Netlify только если нужен минимальный одиночный HTML без service worker. Для основного продакшена предпочтителен GitHub Pages.
-
 ## Локальная разработка
 
 ```bash

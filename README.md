@@ -27,7 +27,7 @@ npm run build:release
 
 Для `file://` держите **все файлы в одной папке**.
 
-Альтернатива: `publish/index.html` в репозитории или `dist-single/index.html` после `npm run build:single`.
+Альтернатива: `dist-single/index.html` после `npm run build:single`.
 
 ## Разработка
 
