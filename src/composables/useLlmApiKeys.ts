@@ -1,3 +1,7 @@
+/**
+ * BYOK LLM API keys — только localStorage браузера.
+ * Никогда отправляются на сервер Code2Graph (см. proxy-client, server/llm-proxy-request).
+ */
 import { computed, ref } from "vue";
 import { STORAGE_KEY_LLM_API_KEYS } from "@/constants/llm-settings";
 import {

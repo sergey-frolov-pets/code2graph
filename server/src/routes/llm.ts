@@ -6,23 +6,16 @@ import {
   LLM_RATE_LIMIT_PER_MINUTE,
 } from "../config.js";
 import {
+  containsForbiddenClientLlmKeyField,
+  parseLlmProxyChatBody,
+  type LlmChatMessage,
+} from "../llm-proxy-request.js";
+import {
   FREE_BUILTIN_LLM_PROVIDERS,
-  isFreeBuiltinLlmProviderId,
   type FreeBuiltinLlmProviderId,
 } from "../llm-providers.js";
 
-export type LlmChatRole = "system" | "user" | "assistant";
-
-export interface LlmChatMessage {
-  role: LlmChatRole;
-  content: string;
-}
-
-export interface LlmChatRequestBody {
-  providerId: FreeBuiltinLlmProviderId;
-  messages: LlmChatMessage[];
-  jsonMode?: boolean;
-}
+export type { LlmChatMessage } from "../llm-proxy-request.js";
 
 export interface LlmChatResponseBody {
   content: string;
@@ -80,53 +73,6 @@ function resolveProviderApiKey(
     default:
       return undefined;
   }
-}
-
-function parseChatBody(raw: unknown): LlmChatRequestBody | null {
-  if (!raw || typeof raw !== "object") {
-    return null;
-  }
-
-  const record = raw as Record<string, unknown>;
-  const providerId = record.providerId;
-  const messages = record.messages;
-  const jsonMode = record.jsonMode;
-
-  if (typeof providerId !== "string" || !isFreeBuiltinLlmProviderId(providerId)) {
-    return null;
-  }
-
-  if (!Array.isArray(messages) || messages.length === 0) {
-    return null;
-  }
-
-  const parsedMessages: LlmChatMessage[] = [];
-
-  for (const item of messages) {
-    if (!item || typeof item !== "object") {
-      return null;
-    }
-
-    const message = item as Record<string, unknown>;
-    const role = message.role;
-    const content = message.content;
-
-    if (role !== "system" && role !== "user" && role !== "assistant") {
-      return null;
-    }
-
-    if (typeof content !== "string" || !content.trim()) {
-      return null;
-    }
-
-    parsedMessages.push({ role, content });
-  }
-
-  return {
-    providerId,
-    messages: parsedMessages,
-    jsonMode: jsonMode === true,
-  };
 }
 
 async function callGemini(
@@ -282,7 +228,18 @@ llmRouter.post("/chat", async (context) => {
     return context.json({ error: "invalid_json", message: "Invalid JSON body" }, 400);
   }
 
-  const body = parseChatBody(rawBody);
+  if (containsForbiddenClientLlmKeyField(rawBody)) {
+    return context.json(
+      {
+        error: "user_api_key_forbidden",
+        message:
+          "BYOK LLM API keys must not be sent to this server. Configure keys in the browser only.",
+      },
+      400,
+    );
+  }
+
+  const body = parseLlmProxyChatBody(rawBody);
   if (!body) {
     return context.json(
       {

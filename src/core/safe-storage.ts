@@ -30,6 +30,32 @@ export function removeStorageItem(key: string): boolean {
   }
 }
 
+export function readSessionItem(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+export function writeSessionItem(key: string, value: string): boolean {
+  try {
+    sessionStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function removeSessionItem(key: string): boolean {
+  try {
+    sessionStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function readStorageBoolean(key: string): boolean | null {
   const saved = readStorageItem(key);
   if (saved === null) {

@@ -45,6 +45,9 @@ const { t } = useLocale();
 
     <template v-if="llm.isActiveProviderByok">
       <p class="settings-field__label settings-key-status">
+        <span class="settings-key-status__badge settings-key-status__badge--local is-set">
+          {{ t("settings.llmApiKeyLocalBadge") }}
+        </span>
         <span
           class="settings-key-status__badge"
           :class="llm.hasActiveApiKey ? 'is-set' : 'is-missing'"
