@@ -97,6 +97,8 @@ cd server && npm run dev
 
 ## Деплой на VDSINA (www.code2graph.ru)
 
+Репозиторий для сервера: **github.com/sergey-frolov-pets/code2graph**
+
 Полная установка на голую Ubuntu и автообновление:
 
 ```bash

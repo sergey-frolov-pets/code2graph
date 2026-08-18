@@ -2,11 +2,15 @@
 # Code2Graph — первичная установка на голую Ubuntu 22/24 (VDSINA + reg.ru DNS).
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/repo-auth.sh"
+
 DOMAIN="${CODE2GRAPH_DOMAIN:-www.code2graph.ru}"
-REPO_URL="${CODE2GRAPH_REPO_URL:-https://github.com/sergey-frolov-pets/code2graph.git}"
 INSTALL_DIR="${CODE2GRAPH_INSTALL_DIR:-/opt/code2graph}"
 WEB_ROOT="${CODE2GRAPH_WEB_ROOT:-/var/www/code2graph}"
 NODE_MAJOR="${CODE2GRAPH_NODE_MAJOR:-20}"
+REPO_URL="$(resolve_code2graph_repo_url)"
 
 if [[ $EUID -ne 0 ]]; then
   echo "Запустите скрипт от root: sudo bash scripts/deploy/vdsina-install.sh"
@@ -25,16 +29,20 @@ if ! command -v node >/dev/null 2>&1 || [[ "$(node -p process.versions.node.spli
   apt-get install -y -qq nodejs
 fi
 
-echo "==> Репозиторий"
+echo "==> Репозиторий ($REPO_URL)"
 mkdir -p "$(dirname "$INSTALL_DIR")"
 if [[ ! -d "$INSTALL_DIR/.git" ]]; then
   git clone "$REPO_URL" "$INSTALL_DIR"
+else
+  configure_git_origin "$INSTALL_DIR"
 fi
 
 cd "$INSTALL_DIR"
 git fetch origin main
 git checkout main
 git pull origin main
+
+save_deploy_env
 
 echo "==> Сборка"
 npm ci

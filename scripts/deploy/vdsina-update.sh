@@ -2,6 +2,10 @@
 # Code2Graph — обновление сайта на VDSINA (pull + build + deploy static + restart API).
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/repo-auth.sh"
+
 INSTALL_DIR="${CODE2GRAPH_INSTALL_DIR:-/opt/code2graph}"
 WEB_ROOT="${CODE2GRAPH_WEB_ROOT:-/var/www/code2graph}"
 SKIP_NGINX_RELOAD=false
@@ -11,6 +15,8 @@ for arg in "$@"; do
     --skip-nginx-reload) SKIP_NGINX_RELOAD=true ;;
   esac
 done
+
+configure_git_origin "$INSTALL_DIR"
 
 cd "$INSTALL_DIR"
 
