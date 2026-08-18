@@ -180,4 +180,5 @@ export const siteMessages: LocaleMessages = {
   "site.registerMismatch": "Пароли не совпадают",
   "site.registerRequired": "Заполните все поля",
   "site.welcomeUser": "Вы вошли как {username}",
+  "site.versionHint": "Версия сайта — сравните после обновления или перезагрузки страницы",
 };

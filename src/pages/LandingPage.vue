@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import SiteFooter from "@/components/site/SiteFooter.vue";
+import LandingDiagramBackground from "@/components/site/LandingDiagramBackground.vue";
 import SiteHeader from "@/components/site/SiteHeader.vue";
 import { useAppRouter } from "@/composables/useAppRouter";
 import { useLocale } from "@/composables/useLocale";
@@ -150,6 +152,7 @@ function onPricingAction(action: "register" | "mailto"): void {
 
 <template>
   <div class="site-page landing-page">
+    <LandingDiagramBackground />
     <SiteHeader landing-nav />
 
     <main class="landing-main">
@@ -180,10 +183,10 @@ function onPricingAction(action: "register" | "mailto"): void {
           <figure class="landing-hero__visual">
             <img
               class="landing-hero__image"
-              src="/images/landing-workflow.png"
+              :src="APP_META.landingHeroImage"
               :alt="t('site.landingHeroAlt')"
-              width="1200"
-              height="675"
+              width="1536"
+              height="1024"
               loading="eager"
               decoding="async"
             />
@@ -205,8 +208,8 @@ function onPricingAction(action: "register" | "mailto"): void {
             <tbody>
               <tr v-for="(row, index) in painRows" :key="index">
                 <th scope="row">{{ t(row.problem) }}</th>
-                <td>{{ t(row.current) }}</td>
-                <td>{{ t(row.solution) }}</td>
+                <td :data-label="t('site.pain.colCurrent')">{{ t(row.current) }}</td>
+                <td :data-label="t('site.pain.colSolution')">{{ t(row.solution) }}</td>
               </tr>
             </tbody>
           </table>
@@ -320,8 +323,6 @@ function onPricingAction(action: "register" | "mailto"): void {
       </section>
     </main>
 
-    <footer class="site-footer">
-      <span>{{ APP_META.copyright }}</span>
-    </footer>
+    <SiteFooter />
   </div>
 </template>

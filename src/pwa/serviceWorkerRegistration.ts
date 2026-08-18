@@ -10,7 +10,9 @@ const REGISTRATION_TIMEOUT_MS = 10_000;
 let registrationPromise: Promise<ServiceWorkerRegistration | null> | null = null;
 
 export function resolveServiceWorkerUrl(): string {
-  return new URL(SW_SCRIPT, window.location.href).href;
+  const url = new URL(SW_SCRIPT, window.location.href);
+  url.searchParams.set("v", __APP_VERSION__);
+  return url.href;
 }
 
 export function resolveServiceWorkerScope(): string {

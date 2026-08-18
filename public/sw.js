@@ -1,3 +1,4 @@
+const CACHE_PREFIX = "code2graph-";
 const PRECACHE = "code2graph-precache-v1";
 const SHARED_PUML_CACHE = "shared-puml-v1";
 const APP_SHELL_CACHE = "code2graph-shell-v1";
@@ -14,7 +15,15 @@ const PRECACHE_URLS = [
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
-      .open(PRECACHE)
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => key.startsWith(CACHE_PREFIX) && key !== PRECACHE)
+            .map((key) => caches.delete(key)),
+        ),
+      )
+      .then(() => caches.open(PRECACHE))
       .then((cache) => cache.addAll(PRECACHE_URLS))
       .then(() => self.skipWaiting())
       .catch(() => self.skipWaiting()),
@@ -26,6 +35,11 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+    return;
+  }
+
   if (event.data?.type !== "GET_SHARED_PUML") {
     return;
   }

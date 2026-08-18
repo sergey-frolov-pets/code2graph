@@ -207,4 +207,7 @@ export const miscMessages: LocaleMessages = {
   "pwa.swRegistrationError": "Ошибка регистрации: {error}",
   "pwa.swNotActive": "Service Worker ещё не активен на этой вкладке.\n\nПерезагрузите страницу один раз, затем снова нажмите «Установить».",
   "pwa.chromeNoPrompt": "Chrome не выдал автоматическую установку. Чаще всего это бывает, если вы ранее нажали «Отмена» в диалоге браузера.\n\nУстановите вручную: меню браузера (⋮) → «Установить приложение» / «Добавить на главный экран».",
+  "pwa.updateAvailable": "Доступна новая версия сайта",
+  "pwa.updateReload": "Обновить",
+  "pwa.updateDismiss": "Позже",
 };
