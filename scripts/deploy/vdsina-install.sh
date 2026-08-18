@@ -116,7 +116,9 @@ fi
 
 chown -R www-data:www-data "$INSTALL_DIR/data"
 
+NODE_BIN="$(command -v node)"
 install -m 0644 deploy/systemd/code2graph-library.service /etc/systemd/system/code2graph-library.service
+sed -i "s|^ExecStart=.*|ExecStart=${NODE_BIN} dist/index.js|" /etc/systemd/system/code2graph-library.service
 systemctl daemon-reload
 systemctl enable --now code2graph-library
 
