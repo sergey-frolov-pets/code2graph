@@ -32,12 +32,19 @@ mkdir -p "$INSTALL_DIR/data"
 chown -R www-data:www-data "$INSTALL_DIR/data"
 chmod 755 "$INSTALL_DIR" "$INSTALL_DIR/server"
 
-if [[ ! -f "$INSTALL_DIR/server/dist/index.js" ]]; then
-  echo "==> Сборка API (dist/index.js не найден)"
+# shellcheck disable=SC1091
+source "$INSTALL_DIR/scripts/deploy/server-entry.sh"
+
+SERVER_ENTRY="$(resolve_server_entry "$INSTALL_DIR/server")" || {
+  echo "==> Сборка API (entry не найден)"
   cd "$INSTALL_DIR"
   npm --prefix server ci
   npm --prefix server run build
-fi
+  SERVER_ENTRY="$(resolve_server_entry "$INSTALL_DIR/server")" || {
+    echo "Ошибка: после build нет dist/server/src/index.js"
+    exit 1
+  }
+}
 
 if [[ -f "$INSTALL_DIR/dist/index.html" ]]; then
   echo "==> Статика -> ${WEB_ROOT}"
@@ -52,12 +59,12 @@ if [[ -z "$NODE_BIN" ]]; then
 fi
 
 install -m 0644 "$UNIT_SRC" /etc/systemd/system/code2graph-library.service
-sed -i "s|^ExecStart=.*|ExecStart=${NODE_BIN} dist/index.js|" /etc/systemd/system/code2graph-library.service
+sed -i "s|^ExecStart=.*|ExecStart=${NODE_BIN} ${SERVER_ENTRY}|" /etc/systemd/system/code2graph-library.service
 sed -i 's|^EnvironmentFile=|EnvironmentFile=-|' /etc/systemd/system/code2graph-library.service
 
-echo "==> Пробный запуск (www-data, 3s)..."
+echo "==> Пробный запуск (www-data, 3s) entry=${SERVER_ENTRY}..."
 if ! timeout 3 sudo -u www-data env PORT=3001 DB_PATH="$INSTALL_DIR/data/library.db" \
-  bash -c "cd '$INSTALL_DIR/server' && exec $NODE_BIN dist/index.js" 2>&1; then
+  bash -c "cd '$INSTALL_DIR/server' && exec $NODE_BIN ${SERVER_ENTRY}" 2>&1; then
   echo "Пробный запуск завершён (timeout или ошибка — см. выше)"
 fi
 
