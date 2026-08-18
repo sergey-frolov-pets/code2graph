@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import SiteFooter from "@/components/site/SiteFooter.vue";
 import LandingDiagramBackground from "@/components/site/LandingDiagramBackground.vue";
 import SiteHeader from "@/components/site/SiteHeader.vue";
 import { useAppRouter } from "@/composables/useAppRouter";
 import { useLocale } from "@/composables/useLocale";
-import { APP_META } from "@/constants";
 
 const { t } = useLocale();
 const { navigateTo } = useAppRouter();
@@ -322,8 +322,6 @@ function onPricingAction(action: "register" | "mailto"): void {
       </section>
     </main>
 
-    <footer class="site-footer">
-      <span>{{ APP_META.copyright }}</span>
-    </footer>
+    <SiteFooter />
   </div>
 </template>

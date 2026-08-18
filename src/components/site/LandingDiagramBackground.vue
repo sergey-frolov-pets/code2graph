@@ -6,7 +6,7 @@
       viewBox="0 0 1440 900"
       preserveAspectRatio="xMidYMid slice"
     >
-      <g class="landing-diagram-bg__layer landing-diagram-bg__layer--flow" transform="translate(1040 72)">
+      <g class="landing-diagram-bg__motif" transform="translate(1040 72)">
         <rect x="0" y="0" width="96" height="44" rx="6" />
         <path d="M48 44 V68" />
         <polygon points="44,64 48,72 52,64" />
@@ -16,7 +16,7 @@
         <rect x="0" y="144" width="96" height="44" rx="6" />
       </g>
 
-      <g class="landing-diagram-bg__layer landing-diagram-bg__layer--sequence" transform="translate(72 560)">
+      <g class="landing-diagram-bg__motif" transform="translate(72 560)">
         <line x1="24" y1="0" x2="24" y2="160" />
         <line x1="120" y1="0" x2="120" y2="160" />
         <line x1="216" y1="0" x2="216" y2="160" />
@@ -28,7 +28,7 @@
         <polygon points="128,104 120,108 128,112" />
       </g>
 
-      <g class="landing-diagram-bg__layer landing-diagram-bg__layer--graph" transform="translate(920 520)">
+      <g class="landing-diagram-bg__motif" transform="translate(920 520)">
         <circle cx="48" cy="48" r="28" />
         <circle cx="168" cy="24" r="22" />
         <circle cx="176" cy="132" r="26" />
@@ -37,7 +37,7 @@
         <path d="M142 132 L74 62" stroke-dasharray="5 4" />
       </g>
 
-      <g class="landing-diagram-bg__layer landing-diagram-bg__layer--class" transform="translate(220 120)">
+      <g class="landing-diagram-bg__motif" transform="translate(220 120)">
         <rect x="0" y="0" width="120" height="88" rx="6" />
         <line x1="0" y1="28" x2="120" y2="28" />
         <line x1="0" y1="56" x2="120" y2="56" />
@@ -46,44 +46,16 @@
         <path d="M120 44 H160" />
         <polygon points="152,40 160,44 152,48" />
       </g>
+
+      <g class="landing-diagram-bg__motif landing-diagram-bg__motif--center" transform="translate(620 300)">
+        <rect x="0" y="0" width="88" height="40" rx="6" />
+        <path d="M44 40 V64" />
+        <polygon points="40,60 44,68 48,60" />
+        <rect x="120" y="8" width="88" height="40" rx="6" />
+        <path d="M88 28 H120" />
+        <polygon points="112,24 120,28 112,32" />
+        <rect x="240" y="0" width="88" height="40" rx="6" />
+      </g>
     </svg>
   </div>
 </template>
-
-<style scoped>
-.landing-diagram-bg {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.landing-diagram-bg__svg {
-  width: 100%;
-  height: 100%;
-}
-
-.landing-diagram-bg__layer {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0.055;
-}
-
-.landing-diagram-bg__layer--flow rect {
-  fill: color-mix(in srgb, var(--accent) 4%, transparent);
-}
-
-.landing-diagram-bg__layer--class rect {
-  fill: color-mix(in srgb, var(--accent) 4%, transparent);
-}
-
-@media (max-width: 767px) {
-  .landing-diagram-bg__layer {
-    opacity: 0.04;
-  }
-}
-</style>

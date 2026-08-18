@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import AppUpdateBanner from "@/components/AppUpdateBanner.vue";
 import App from "@/App.vue";
 import { bindAppRouterListeners, useAppRouter } from "@/composables/useAppRouter";
 import AccountPage from "@/pages/AccountPage.vue";
@@ -28,5 +29,6 @@ const view = computed(() => {
 </script>
 
 <template>
+  <AppUpdateBanner />
   <component :is="view" />
 </template>

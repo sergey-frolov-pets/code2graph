@@ -176,4 +176,5 @@ export const siteMessages: LocaleMessages = {
   "site.registerMismatch": "Passwords do not match",
   "site.registerRequired": "Fill in all fields",
   "site.welcomeUser": "Signed in as {username}",
+  "site.versionHint": "Site version — compare after an update or page reload",
 };
