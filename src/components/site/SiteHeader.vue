@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useLocale } from "@/composables/useLocale";
 import { useAppRouter } from "@/composables/useAppRouter";
+import HeaderControls from "@/components/layout/HeaderControls.vue";
 import { APP_META } from "@/constants";
 
 const props = withDefaults(defineProps<{ landingNav?: boolean }>(), { landingNav: false });
@@ -44,6 +45,7 @@ function scrollToSection(sectionId: string): void {
       </nav>
 
       <nav class="site-header__nav">
+        <HeaderControls />
         <template v-if="props.landingNav">
           <button
             class="btn btn-ghost site-header__nav-account"

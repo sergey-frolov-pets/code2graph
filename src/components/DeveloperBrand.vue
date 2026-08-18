@@ -15,13 +15,8 @@ withDefaults(
       class="developer-brand__logo"
       :src="APP_META.developerLogo"
       :alt="APP_META.developer"
-<<<<<<< HEAD
       width="88"
       height="24"
-=======
-      width="104"
-      height="40"
->>>>>>> origin/main
       decoding="async"
     />
   </span>

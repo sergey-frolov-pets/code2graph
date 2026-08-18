@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import InstallAppButton from "@/components/InstallAppButton.vue";
+import HeaderControls from "@/components/layout/HeaderControls.vue";
 import IconButton from "@/components/IconButton.vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import { APP_META } from "@/constants";
@@ -27,6 +28,7 @@ const { t } = useLocale();
       <p class="app-header__subtitle">{{ t("app.subtitle") }}</p>
     </div>
     <nav class="app-header__nav" :aria-label="t('app.mainNav')">
+      <HeaderControls />
       <IconButton
         :label="t('app.aiNewDiagram')"
         extra-class="app-header__icon-btn"

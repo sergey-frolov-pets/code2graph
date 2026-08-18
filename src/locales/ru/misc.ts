@@ -105,9 +105,25 @@ export const miscMessages: LocaleMessages = {
   "install.httpsOnly": "Установка доступна только по HTTPS",
   "install.alreadyInstalled": "Приложение уже установлено",
   "install.manual": "Установка вручную — нажмите для инструкции",
+  "header.language": "Язык интерфейса",
+  "header.themeToLight": "Переключить на светлую тему",
+  "header.themeToDark": "Переключить на тёмную тему",
   "about.title": "О программе",
   "about.lead":
-    "{name} — кроссплатформенный оффлайн-редактор диаграмм PlantUML, Mermaid и GraphML с экспортом в SVG и PNG.",
+    "{name} — кроссплатформенный оффлайн-редактор диаграмм PlantUML, Mermaid и GraphML с экспортом в SVG и PNG, облачной библиотекой и AI-ассистентом.",
+  "about.features": "Возможности",
+  "about.featuresOffline":
+    "Оффлайн-редактирование и рендеринг PlantUML (Smetana), Mermaid и GraphML без отправки исходников на сервер.",
+  "about.featuresExport": "Экспорт диаграмм в SVG и PNG, сохранение исходников в файл.",
+  "about.featuresLibrary":
+    "Облачная библиотека диаграмм: сохранение, версии, совместный доступ и восстановление из истории.",
+  "about.featuresAi":
+    "Генерация и правка диаграмм через облачные LLM — провайдер и API-ключ настраиваются в Настройки → AI.",
+  "about.featuresConvert":
+    "Конвертация между PlantUML, Mermaid и GraphML встроенным конвертером.",
+  "about.featuresPwa": "Установка как PWA — работа в браузере и автономно после установки.",
+  "about.featuresValidation": "Проверка синтаксиса PlantUML с подсветкой проблемных строк в редакторе.",
+  "about.copyright": "{copyright}",
   "about.formats": "Поддерживаемые форматы",
   "about.formatsPlantuml": "PlantUML — текстовый язык UML-диаграмм с оффлайн-рендерингом через @plantuml/core (Smetana).",
   "about.formatsMermaid":
@@ -122,8 +138,8 @@ export const miscMessages: LocaleMessages = {
   "about.license": "Лицензия",
   "about.licenseText": "Распространяется под лицензией",
   "about.components": "Используемые компоненты",
+  "about.aiLead": "Подробнее о настройке провайдера и получении API-ключа:",
   "about.ai": "AI / LLM",
-  "about.aiLead": "Генерация и редактирование диаграмм через облачные LLM. Укажите провайдера и API-ключ в Настройки → AI.",
   "about.llmGuide": "Как получить API-ключ",
   "about.mermaid": "Mermaid",
   "about.mermaidLead": "Текстовый формат диаграмм: блок-схемы, sequence, классы, Gantt и др. Оффлайн-рендер через mermaid.js, онлайн — через mermaid.ink.",
