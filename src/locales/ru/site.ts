@@ -34,6 +34,8 @@ export const siteMessages: LocaleMessages = {
   "site.loginError": "Неверный логин или пароль",
   "site.registerError": "Не удалось зарегистрироваться",
   "site.registerDisabled": "Регистрация отключена администратором",
+  "site.registerStatusError":
+    "Не удалось проверить статус сервера. Проверьте подключение и попробуйте снова.",
   "site.registerMismatch": "Пароли не совпадают",
   "site.registerRequired": "Заполните все поля",
   "site.welcomeUser": "Вы вошли как {username}",
