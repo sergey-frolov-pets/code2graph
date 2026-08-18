@@ -30,7 +30,8 @@ if ! git diff --staged --quiet; then
   git commit -m "chore: strip obsolete files for code2graph mirror"
 fi
 
-git remote add code2graph "https://x-access-token:${PAT}@github.com/sergey-frolov-pets/code2graph.git"
-git push code2graph HEAD:main --force
+git -c credential.helper= push \
+  "https://x-access-token:${PAT}@github.com/sergey-frolov-pets/code2graph.git" \
+  HEAD:main --force
 
 echo "Published to https://github.com/sergey-frolov-pets/code2graph"
