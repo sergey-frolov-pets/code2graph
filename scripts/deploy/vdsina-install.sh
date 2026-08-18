@@ -106,8 +106,7 @@ fi
 
 cd "$INSTALL_DIR"
 git fetch origin main
-git checkout main
-git pull origin main
+git checkout -B main origin/main
 
 save_deploy_env
 
