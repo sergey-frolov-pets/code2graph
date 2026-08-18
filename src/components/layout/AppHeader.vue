@@ -3,7 +3,10 @@ import InstallAppButton from "@/components/InstallAppButton.vue";
 import IconButton from "@/components/IconButton.vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import { APP_META } from "@/constants";
+import { useAppRouter } from "@/composables/useAppRouter";
 import { useLocale } from "@/composables/useLocale";
+
+const { navigateTo } = useAppRouter();
 
 const emit = defineEmits<{
   openWizard: [];
@@ -39,6 +42,13 @@ const { t } = useLocale();
         <ActionIcon name="library" />
       </IconButton>
       <InstallAppButton />
+      <IconButton
+        :label="t('site.accountTitle')"
+        extra-class="app-header__icon-btn"
+        @click="navigateTo('account')"
+      >
+        <ActionIcon name="user" />
+      </IconButton>
       <IconButton
         :label="t('app.settings')"
         extra-class="app-header__icon-btn"

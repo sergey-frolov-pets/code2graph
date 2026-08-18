@@ -32,6 +32,7 @@ import {
   Undo2,
   Unlink,
   Upload,
+  User,
   X,
   ZoomIn,
   ZoomOut,
@@ -70,6 +71,7 @@ export type ActionIconName =
   | "shield"
   | "globe"
   | "unlink"
+  | "user"
   | "more";
 
 const props = withDefaults(
@@ -115,6 +117,7 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   shield: Shield,
   globe: Globe,
   unlink: Unlink,
+  user: User,
   more: Ellipsis,
 };
 
