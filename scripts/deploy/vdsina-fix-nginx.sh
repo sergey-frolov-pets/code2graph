@@ -39,6 +39,22 @@ server {
         client_max_body_size 4m;
     }
 
+    location = /index.html {
+        add_header Cache-Control "no-cache, must-revalidate";
+        try_files \$uri =404;
+    }
+
+    location = /sw.js {
+        add_header Cache-Control "no-cache, must-revalidate";
+        try_files \$uri =404;
+    }
+
+    location = /version.txt {
+        add_header Cache-Control "no-cache, must-revalidate";
+        default_type text/plain;
+        try_files \$uri =404;
+    }
+
     location / {
         try_files \$uri \$uri/ /index.html;
     }

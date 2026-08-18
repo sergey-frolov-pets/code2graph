@@ -12,6 +12,10 @@ for arg in "$@"; do
   esac
 done
 
+read_app_version() {
+  node -p "require('./package.json').version"
+}
+
 AUTH_SCRIPT="$INSTALL_DIR/scripts/deploy/repo-auth.sh"
 if [[ -f "$AUTH_SCRIPT" ]]; then
   # shellcheck disable=SC1091
@@ -43,9 +47,21 @@ source "$INSTALL_DIR/scripts/deploy/build-memory.sh"
 ensure_swap_for_build
 export_node_build_memory
 
+BEFORE_COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo none)"
+BEFORE_VERSION="$(read_app_version 2>/dev/null || echo unknown)"
+
 echo "==> git sync (origin/main)"
+echo "    было: commit ${BEFORE_COMMIT}, v${BEFORE_VERSION}"
 git fetch origin main
 git checkout -B main origin/main
+
+AFTER_COMMIT="$(git rev-parse --short HEAD)"
+AFTER_VERSION="$(read_app_version)"
+echo "    стало: commit ${AFTER_COMMIT}, v${AFTER_VERSION}"
+
+if [[ "$BEFORE_COMMIT" == "$AFTER_COMMIT" ]]; then
+  echo "    ⚠ код на сервере уже совпадает с origin/main — если на сайте старая версия, проверьте кэш браузера или nginx"
+fi
 
 echo "==> Frontend build"
 npm ci
@@ -57,8 +73,15 @@ npm --prefix server ci
 npm --prefix server run build
 
 echo "==> Static files -> ${WEB_ROOT}"
+printf '%s\n' "$AFTER_VERSION" > dist/version.txt
 install -d -m 0755 "$WEB_ROOT"
 rsync -a --delete dist/ "$WEB_ROOT/"
+
+DEPLOYED_VERSION="$(cat "$WEB_ROOT/version.txt" 2>/dev/null || echo missing)"
+if [[ "$DEPLOYED_VERSION" != "$AFTER_VERSION" ]]; then
+  echo "ОШИБКА: в ${WEB_ROOT}/version.txt версия '${DEPLOYED_VERSION}', ожидалась v${AFTER_VERSION}"
+  exit 1
+fi
 
 echo "==> systemd restart"
 systemctl daemon-reload
@@ -70,3 +93,5 @@ if [[ "$SKIP_NGINX_RELOAD" != true ]] && command -v nginx >/dev/null; then
 fi
 
 echo "==> Обновление завершено ($(date -Is))"
+echo "    Задеплоено: v${AFTER_VERSION} (commit ${AFTER_COMMIT})"
+echo "    Проверка: curl -fsS https://www.code2graph.ru/version.txt"
