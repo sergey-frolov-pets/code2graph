@@ -3,6 +3,7 @@
 set -eo pipefail
 
 INSTALL_DIR="${CODE2GRAPH_INSTALL_DIR:-/opt/code2graph}"
+WEB_ROOT="${CODE2GRAPH_WEB_ROOT:-/var/www/code2graph}"
 
 if [[ $EUID -ne 0 ]]; then
   echo "Запустите: sudo bash scripts/deploy/vdsina-fix-systemd.sh"
@@ -29,12 +30,19 @@ fi
 
 mkdir -p "$INSTALL_DIR/data"
 chown -R www-data:www-data "$INSTALL_DIR/data"
+chmod 755 "$INSTALL_DIR" "$INSTALL_DIR/server"
 
 if [[ ! -f "$INSTALL_DIR/server/dist/index.js" ]]; then
   echo "==> Сборка API (dist/index.js не найден)"
   cd "$INSTALL_DIR"
   npm --prefix server ci
   npm --prefix server run build
+fi
+
+if [[ -f "$INSTALL_DIR/dist/index.html" ]]; then
+  echo "==> Статика -> ${WEB_ROOT}"
+  install -d -m 0755 "$WEB_ROOT"
+  rsync -a --delete "$INSTALL_DIR/dist/" "$WEB_ROOT/"
 fi
 
 NODE_BIN="$(command -v node)"
@@ -44,13 +52,25 @@ if [[ -z "$NODE_BIN" ]]; then
 fi
 
 install -m 0644 "$UNIT_SRC" /etc/systemd/system/code2graph-library.service
-# Подставить реальный путь к node (не всегда /usr/bin/node)
 sed -i "s|^ExecStart=.*|ExecStart=${NODE_BIN} dist/index.js|" /etc/systemd/system/code2graph-library.service
+sed -i 's|^EnvironmentFile=|EnvironmentFile=-|' /etc/systemd/system/code2graph-library.service
+
+echo "==> Пробный запуск (www-data, 3s)..."
+if ! timeout 3 sudo -u www-data env PORT=3001 DB_PATH="$INSTALL_DIR/data/library.db" \
+  bash -c "cd '$INSTALL_DIR/server' && exec $NODE_BIN dist/index.js" 2>&1; then
+  echo "Пробный запуск завершён (timeout или ошибка — см. выше)"
+fi
 
 systemctl daemon-reload
 systemctl enable code2graph-library
 systemctl restart code2graph-library
-systemctl status code2graph-library --no-pager
+sleep 2
+systemctl status code2graph-library --no-pager -l || true
 
 echo "==> Проверка API:"
-curl -sS http://127.0.0.1:3001/api/auth/status || true
+if curl -fsS --max-time 5 http://127.0.0.1:3001/api/auth/status; then
+  echo ""
+else
+  echo "API не отвечает — последние логи:"
+  journalctl -u code2graph-library -n 40 --no-pager
+fi
