@@ -831,6 +831,19 @@ a {
   background: none;
   cursor: pointer;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.site-header__tagline {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .site-header__logo {
@@ -995,6 +1008,118 @@ a {
   gap: 8px;
   color: var(--text-muted);
   font-size: 0.95rem;
+}
+
+.landing-hero__tagline {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.landing-pillars__grid,
+.landing-deep-dive__grid {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .landing-pillars__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .landing-deep-dive__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.landing-pillar-card,
+.landing-deep-dive-card {
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.landing-pillar-card h3,
+.landing-deep-dive-card h3 {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+}
+
+.landing-pillar-card p,
+.landing-deep-dive-card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.landing-formats__table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.landing-formats__table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.landing-formats__table th,
+.landing-formats__table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.landing-formats__table thead th {
+  background: var(--surface-muted);
+  font-size: 0.9rem;
+}
+
+.landing-formats__table tbody th {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.landing-formats__table tbody tr:last-child th,
+.landing-formats__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.landing-getting-started__grid {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .landing-getting-started__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.landing-getting-started-card {
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.landing-getting-started-card h3 {
+  margin: 0 0 10px;
+}
+
+.landing-getting-started-card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
 }
 
 .landing-pain__table-wrap {
@@ -1260,6 +1385,13 @@ a {
   font-size: 1.05rem;
 }
 
+.landing-final-cta__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
 @media (max-width: 767px) {
   .site-header {
     padding: 12px 16px;
@@ -1370,6 +1502,61 @@ a {
   }
 
   .landing-pain__table tbody td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+
+  .landing-formats__table thead {
+    display: none;
+  }
+
+  .landing-formats__table,
+  .landing-formats__table tbody,
+  .landing-formats__table tr,
+  .landing-formats__table th,
+  .landing-formats__table td {
+    display: block;
+    width: 100%;
+  }
+
+  .landing-formats__table tbody tr {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .landing-formats__table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .landing-formats__table tbody th,
+  .landing-formats__table tbody td {
+    padding: 0;
+    border-bottom: none;
+  }
+
+  .landing-formats__table tbody th {
+    margin-bottom: 12px;
+    font-size: 1rem;
+  }
+
+  .landing-formats__table tbody td {
+    margin-bottom: 10px;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+  }
+
+  .landing-formats__table tbody td:last-child {
+    margin-bottom: 0;
+    color: var(--text);
+  }
+
+  .landing-formats__table tbody td::before {
     content: attr(data-label);
     display: block;
     margin-bottom: 4px;

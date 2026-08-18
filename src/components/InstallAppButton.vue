@@ -4,6 +4,13 @@ import { useLongPressTooltip } from "@/composables/useLongPressTooltip";
 import { useLocale } from "@/composables/useLocale";
 import { usePwaInstall } from "@/composables/usePwaInstall";
 
+const props = withDefaults(
+  defineProps<{
+    landingLabel?: boolean;
+  }>(),
+  { landingLabel: false },
+);
+
 const {
   canShowInstallButton,
   canInstallNow,
@@ -14,6 +21,10 @@ const {
 } = usePwaInstall();
 
 const { t } = useLocale();
+
+const buttonLabel = computed(() =>
+  props.landingLabel ? t("site.landingCtaInstallPwa") : t("install.label"),
+);
 
 const installTitle = computed(() => {
   if (needsHttps.value) {
@@ -102,7 +113,7 @@ function onClick(event: MouseEvent): void {
         stroke-linejoin="round"
       />
     </svg>
-    <span class="install-app-btn__label">{{ t("install.label") }}</span>
+    <span class="install-app-btn__label">{{ buttonLabel }}</span>
   </button>
 </template>
 
