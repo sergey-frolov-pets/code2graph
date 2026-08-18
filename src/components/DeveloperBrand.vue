@@ -15,8 +15,8 @@ withDefaults(
       class="developer-brand__logo"
       :src="APP_META.developerLogo"
       :alt="APP_META.developer"
-      width="88"
-      height="24"
+      :width="APP_META.developerLogoWidth"
+      :height="APP_META.developerLogoHeight"
       decoding="async"
     />
   </span>
