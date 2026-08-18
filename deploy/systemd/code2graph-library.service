@@ -5,11 +5,16 @@ After=network.target
 [Service]
 Type=simple
 User=www-data
+Group=www-data
 WorkingDirectory=/opt/code2graph/server
-EnvironmentFile=/opt/code2graph/server/.env
+EnvironmentFile=-/opt/code2graph/server/.env
 ExecStart=/usr/bin/node dist/index.js
 Restart=on-failure
 RestartSec=5
+# SQLite + логи при падении
+ReadWritePaths=/opt/code2graph/data
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
