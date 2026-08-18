@@ -38,6 +38,7 @@ import {
   type EditorFontSize,
 } from "@/constants/editor-settings";
 import { useLocale } from "@/composables/useLocale";
+import { useUiTheme } from "@/composables/useUiTheme";
 import {
   readStorageBoolean,
   readStorageItem,
@@ -52,13 +53,6 @@ function readInitialRenderMode(): RenderMode {
   }
 
   return DEFAULT_RENDER_MODE;
-}
-
-function readInitialUiDarkMode(): boolean {
-  return (
-    readStorageBoolean(STORAGE_KEY_UI_DARK) ??
-    window.matchMedia("(prefers-color-scheme: dark)").matches
-  );
 }
 
 function readInitialDiagramDarkMode(): boolean {
@@ -122,11 +116,11 @@ function readInitialPreviewBackground(isDark: boolean): string {
 
 export function usePersistedSettings() {
   const { locale } = useLocale();
+  const { uiDarkMode } = useUiTheme();
 
   const source = ref(getDefaultSource(locale.value));
   const layout = ref<LayoutEngine>(LAYOUT_ENGINES.smetana);
   const renderMode = ref<RenderMode>(readInitialRenderMode());
-  const uiDarkMode = ref(readInitialUiDarkMode());
   const diagramDarkMode = ref(readInitialDiagramDarkMode());
   const editorFontSize = ref<EditorFontSize>(readInitialEditorFontSize());
   const editorFontFamilyId = ref<EditorFontFamilyId>(
@@ -197,15 +191,14 @@ export function usePersistedSettings() {
     applyLocaleToStoredSource();
   }
 
-  function applyThemeToDocument(): void {
-    document.documentElement.dataset.theme = uiDarkMode.value ? "dark" : "light";
+  function applyPreviewBackgroundToDocument(): void {
     document.documentElement.style.setProperty(
       "--preview-bg",
       previewBackground.value,
     );
   }
 
-  watch(uiDarkMode, applyThemeToDocument, { immediate: true });
+  watch(previewBackground, applyPreviewBackgroundToDocument, { immediate: true });
 
   watch(
     diagramDarkMode,
@@ -220,8 +213,6 @@ export function usePersistedSettings() {
     },
     { immediate: true },
   );
-
-  watch(previewBackground, applyThemeToDocument, { immediate: true });
 
   watch(
     [

@@ -18,6 +18,24 @@ const emit = defineEmits<{
 const { locale, t } = useLocale();
 
 const llmApiKeysGuideHref = computed(() => getLlmApiKeysGuideHref(locale.value));
+
+const siteHostname = computed(() => {
+  try {
+    return new URL(APP_LINKS.site).hostname;
+  } catch {
+    return APP_LINKS.site;
+  }
+});
+
+const featureKeys = [
+  "about.featuresOffline",
+  "about.featuresExport",
+  "about.featuresLibrary",
+  "about.featuresAi",
+  "about.featuresConvert",
+  "about.featuresPwa",
+  "about.featuresValidation",
+] as const;
 </script>
 
 <template>
@@ -25,14 +43,26 @@ const llmApiKeysGuideHref = computed(() => getLlmApiKeysGuideHref(locale.value))
     <p class="about-lead">
       {{ t("about.lead", { name: APP_META.name }) }}
     </p>
+
     <p class="about-meta about-developer">
       <span>{{ t("about.developedByLabel") }}</span>
       <DeveloperBrand />
     </p>
+
     <p class="about-meta">{{ t("about.version", { version: APP_META.version }) }}</p>
+    <p class="about-meta about-copyright">
+      {{ t("about.copyright", { copyright: APP_META.copyright }) }}
+    </p>
+
+    <h3 class="about-subtitle">{{ t("about.features") }}</h3>
+    <ul class="about-list">
+      <li v-for="featureKey in featureKeys" :key="featureKey">
+        {{ t(featureKey) }}
+      </li>
+    </ul>
 
     <h3 class="about-subtitle">{{ t("about.formats") }}</h3>
-    <ul class="about-formats">
+    <ul class="about-list">
       <li>{{ t("about.formatsPlantuml") }}</li>
       <li>{{ t("about.formatsMermaid") }}</li>
       <li>
@@ -55,10 +85,18 @@ const llmApiKeysGuideHref = computed(() => getLlmApiKeysGuideHref(locale.value))
       </li>
     </ul>
 
+    <h3 class="about-subtitle">{{ t("about.ai") }}</h3>
+    <p class="about-meta">{{ t("about.aiLead") }}</p>
+    <p class="about-meta">
+      <a :href="llmApiKeysGuideHref" target="_blank" rel="noopener noreferrer">
+        {{ t("about.llmGuide") }}
+      </a>
+    </p>
+
     <h3 class="about-subtitle">{{ t("about.site") }}</h3>
     <p class="about-meta">
       <a :href="APP_LINKS.site" target="_blank" rel="noopener noreferrer">
-        puml.sergey-frolov.ru
+        {{ siteHostname }}
       </a>
     </p>
 
@@ -70,7 +108,7 @@ const llmApiKeysGuideHref = computed(() => getLlmApiKeysGuideHref(locale.value))
     </p>
 
     <h3 class="about-subtitle">{{ t("about.license") }}</h3>
-    <p>
+    <p class="about-meta">
       {{ t("about.licenseText") }}
       <a :href="APP_LINKS.mitLicense" target="_blank" rel="noopener noreferrer">
         MIT
@@ -118,34 +156,6 @@ const llmApiKeysGuideHref = computed(() => getLlmApiKeysGuideHref(locale.value))
       </li>
     </ul>
 
-    <h3 class="about-subtitle">{{ t("about.mermaid") }}</h3>
-    <p class="about-meta">{{ t("about.mermaidLead") }}</p>
-    <p class="about-meta">
-      <a :href="APP_LINKS.mermaidGuide" target="_blank" rel="noopener noreferrer">
-        {{ t("about.mermaidGuide") }}
-      </a>
-    </p>
-
-    <h3 class="about-subtitle">{{ t("about.graphml") }}</h3>
-    <p class="about-meta">{{ t("about.graphmlLead") }}</p>
-    <p class="about-meta">
-      <a :href="APP_LINKS.graphml" target="_blank" rel="noopener noreferrer">
-        {{ t("about.graphmlSpec") }}
-      </a>
-      ·
-      <a :href="APP_LINKS.yEd" target="_blank" rel="noopener noreferrer">
-        {{ t("about.yedEditor") }}
-      </a>
-    </p>
-
-    <h3 class="about-subtitle">{{ t("about.ai") }}</h3>
-    <p class="about-meta">{{ t("about.aiLead") }}</p>
-    <p class="about-meta">
-      <a :href="llmApiKeysGuideHref" target="_blank" rel="noopener noreferrer">
-        {{ t("about.llmGuide") }}
-      </a>
-    </p>
-
     <template #footer>
       <button class="btn btn-primary" type="button" @click="emit('close')">
         {{ t("app.close") }}
@@ -171,28 +181,24 @@ const llmApiKeysGuideHref = computed(() => getLlmApiKeysGuideHref(locale.value))
   gap: 8px;
 }
 
+.about-copyright {
+  margin-bottom: 12px;
+}
+
 .about-subtitle {
   margin: 16px 0 8px;
   font-size: 0.92rem;
 }
 
+.about-list,
 .about-links {
-  margin: 0;
-  padding-left: 1.2rem;
-  line-height: 1.7;
-}
-
-.about-links a {
-  color: var(--accent);
-}
-
-.about-formats {
   margin: 0;
   padding-left: 1.2rem;
   line-height: 1.6;
 }
 
-.about-formats a {
+.about-links a,
+.about-list a {
   color: var(--accent);
 }
 </style>

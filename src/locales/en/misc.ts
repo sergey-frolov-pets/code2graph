@@ -105,9 +105,25 @@ export const miscMessages: LocaleMessages = {
   "install.httpsOnly": "Installation is available over HTTPS only",
   "install.alreadyInstalled": "App is already installed",
   "install.manual": "Manual install — click for instructions",
+  "header.language": "Interface language",
+  "header.themeToLight": "Switch to light theme",
+  "header.themeToDark": "Switch to dark theme",
   "about.title": "About",
   "about.lead":
-    "{name} — cross-platform offline editor for PlantUML, Mermaid, and GraphML diagrams with SVG and PNG export.",
+    "{name} — cross-platform offline editor for PlantUML, Mermaid, and GraphML diagrams with SVG and PNG export, cloud library, and AI assistant.",
+  "about.features": "Key features",
+  "about.featuresOffline":
+    "Offline editing and rendering for PlantUML (Smetana), Mermaid, and GraphML without sending source code to a server.",
+  "about.featuresExport": "Export diagrams to SVG and PNG; save source files locally.",
+  "about.featuresLibrary":
+    "Cloud diagram library: save, version history, sharing, and restore from history.",
+  "about.featuresAi":
+    "Generate and edit diagrams via cloud LLMs — configure provider and API key in Settings → AI.",
+  "about.featuresConvert":
+    "Convert between PlantUML, Mermaid, and GraphML with the built-in converter.",
+  "about.featuresPwa": "Install as a PWA — use in the browser or standalone after installation.",
+  "about.featuresValidation": "PlantUML syntax validation with problem-line highlighting in the editor.",
+  "about.copyright": "{copyright}",
   "about.formats": "Supported formats",
   "about.formatsPlantuml": "PlantUML — textual UML diagrams with offline rendering via @plantuml/core (Smetana).",
   "about.formatsMermaid":
@@ -122,8 +138,8 @@ export const miscMessages: LocaleMessages = {
   "about.license": "License",
   "about.licenseText": "Distributed under the",
   "about.components": "Third-party components",
+  "about.aiLead": "Learn more about provider setup and getting an API key:",
   "about.ai": "AI / LLM",
-  "about.aiLead": "Generate and edit diagrams via cloud LLMs. Set a provider and API key in Settings → AI.",
   "about.llmGuide": "How to get an API key",
   "about.mermaid": "Mermaid",
   "about.mermaidLead": "Text-based diagrams: flowcharts, sequence, class, Gantt, and more. Offline rendering via mermaid.js, online via mermaid.ink.",
