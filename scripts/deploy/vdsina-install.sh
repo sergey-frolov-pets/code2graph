@@ -99,14 +99,16 @@ fi
 echo "==> Репозиторий ($REPO_URL)"
 mkdir -p "$(dirname "$INSTALL_DIR")"
 if [[ ! -d "$INSTALL_DIR/.git" ]]; then
-  git clone "$REPO_URL" "$INSTALL_DIR"
+  git clone -b main "$REPO_URL" "$INSTALL_DIR"
 else
   configure_git_origin "$INSTALL_DIR"
 fi
 
 cd "$INSTALL_DIR"
-git fetch origin main
-git checkout -B main origin/main
+
+# shellcheck disable=SC1091
+source "$INSTALL_DIR/scripts/deploy/sync-origin-main.sh"
+sync_origin_main "$INSTALL_DIR"
 
 save_deploy_env
 
