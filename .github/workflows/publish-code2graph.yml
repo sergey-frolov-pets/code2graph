@@ -19,6 +19,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # Do not persist GITHUB_TOKEN — it cannot push to another repo and
+          # overrides PAT embedded in the push URL (github-actions[bot] 403).
+          persist-credentials: false
 
       - name: Publish mirror to code2graph
         env:
@@ -44,5 +47,7 @@ jobs:
             git commit -m "chore: strip obsolete files for code2graph mirror [skip ci]"
           fi
 
-          git remote add code2graph "https://x-access-token:${GH_PAT}@github.com/sergey-frolov-pets/code2graph.git"
-          git push code2graph HEAD:main --force
+          # Push with PAT only (no credential helper / GITHUB_TOKEN).
+          git -c credential.helper= push \
+            "https://x-access-token:${GH_PAT}@github.com/sergey-frolov-pets/code2graph.git" \
+            HEAD:main --force
