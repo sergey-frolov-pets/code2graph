@@ -81,7 +81,16 @@ apt-get update -qq
 apt-get upgrade -y -qq
 apt-get install -y -qq git curl nginx certbot python3-certbot-nginx ufw
 
-if ! command -v node >/dev/null 2>&1 || [[ "$(node -p process.versions.node.split('.')[0])" -lt "$NODE_MAJOR" ]]; then
+need_node_install() {
+  if ! command -v node >/dev/null 2>&1; then
+    return 0
+  fi
+  local installed_major
+  installed_major="$(node --version 2>/dev/null | sed 's/^v//' | cut -d. -f1)"
+  [[ -z "$installed_major" || "$installed_major" -lt "$NODE_MAJOR" ]]
+}
+
+if need_node_install; then
   echo "==> Node.js ${NODE_MAJOR}"
   curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash -
   apt-get install -y -qq nodejs
