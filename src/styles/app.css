@@ -733,9 +733,39 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   padding: 16px 24px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
+}
+
+.site-header__links {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  justify-content: center;
+}
+
+@media (min-width: 1024px) {
+  .site-header__links {
+    display: flex;
+  }
+}
+
+.site-header__link {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.site-header__link:hover {
+  color: var(--text);
+  background: var(--surface-muted);
 }
 
 .site-header__brand {
@@ -758,13 +788,9 @@ a {
 }
 
 .landing-hero {
-  flex: 1;
   display: grid;
   gap: 32px;
-  padding: 48px 24px 32px;
-  max-width: 1120px;
-  margin: 0 auto;
-  width: 100%;
+  padding-top: 48px;
 }
 
 .landing-hero__grid {
@@ -832,6 +858,310 @@ a {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+}
+
+.landing-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px 48px;
+}
+
+.landing-section {
+  padding: 48px 0;
+}
+
+.landing-section__title {
+  margin: 0 0 28px;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.landing-hero__cta-primary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.landing-hero__cta-note {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.landing-hero__trust {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.landing-pain__table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.landing-pain__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.landing-pain__table th,
+.landing-pain__table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  text-align: left;
+}
+
+.landing-pain__table thead th {
+  background: var(--surface-muted);
+  font-weight: 600;
+}
+
+.landing-pain__table tbody th {
+  font-weight: 600;
+  width: 18%;
+}
+
+.landing-pain__table tbody tr:last-child th,
+.landing-pain__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.landing-features-grid {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .landing-features-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.landing-feature-card {
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.landing-feature-card h3 {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+}
+
+.landing-feature-card p {
+  margin: 0 0 10px;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.landing-feature-card p:last-child {
+  margin-bottom: 0;
+}
+
+.landing-audience__grid {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .landing-audience__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.landing-audience-card {
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.landing-audience-card h3 {
+  margin: 0 0 12px;
+}
+
+.landing-audience-card ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--text-muted);
+}
+
+.landing-audience-card li + li {
+  margin-top: 8px;
+}
+
+.landing-how__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 900px) {
+  .landing-how__steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.landing-how__step {
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.landing-how__step h3 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+
+.landing-how__step p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.landing-metrics__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .landing-metrics__list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.landing-metrics__list li {
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-weight: 600;
+  text-align: center;
+}
+
+.landing-pricing__grid {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 900px) {
+  .landing-pricing__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.landing-pricing-card {
+  position: relative;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.landing-pricing-card--popular {
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
+.landing-pricing-card__badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  margin: 0;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-radius: 999px;
+}
+
+.landing-pricing-card h3 {
+  margin: 0;
+}
+
+.landing-pricing-card__desc {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.landing-pricing-card ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  flex: 1;
+}
+
+.landing-pricing-card li + li {
+  margin-top: 6px;
+}
+
+.landing-pricing-card__price {
+  margin: 8px 0 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.landing-faq__list {
+  display: grid;
+  gap: 12px;
+}
+
+.landing-faq__item {
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.landing-faq__item summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.landing-faq__item p {
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.landing-final-cta {
+  text-align: center;
+  padding: 56px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 24px;
+}
+
+.landing-final-cta__text {
+  margin: 0 auto 24px;
+  max-width: 40rem;
+  color: var(--text-muted);
+  font-size: 1.05rem;
 }
 
 .site-footer {
