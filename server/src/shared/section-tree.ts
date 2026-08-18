@@ -1,4 +1,4 @@
 export {
   buildSectionTree,
   collectSectionSubtree,
-} from "@shared/section-tree.js";
+} from "../../../packages/shared/src/section-tree.js";

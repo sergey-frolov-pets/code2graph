@@ -98,8 +98,19 @@ curl -sS https://www.code2graph.ru/api/auth/status
 
 ## Обновление
 
+Скрипт жёстко синхронизирует локальный `main` с `origin/main` (publish в code2graph — force-push; обычный `git pull` на VPS может падать с «divergent branches»).
+
 ```bash
 sudo bash /opt/code2graph/scripts/deploy/vdsina-update.sh
+```
+
+Если обновление уже упало на git, вручную:
+
+```bash
+cd /opt/code2graph
+git fetch origin main
+git checkout -B main origin/main
+sudo bash scripts/deploy/vdsina-update.sh
 ```
 
 ## Cron (автообновление)

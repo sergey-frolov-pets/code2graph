@@ -191,4 +191,7 @@ export const miscMessages: LocaleMessages = {
   "pwa.swRegistrationError": "Registration error: {error}",
   "pwa.swNotActive": "Service Worker is not active on this tab yet.\n\nReload the page once, then press «Install» again.",
   "pwa.chromeNoPrompt": "Chrome did not provide automatic installation. This often happens if you previously dismissed the browser dialog.\n\nInstall manually: browser menu (⋮) → «Install app» / «Add to Home Screen».",
+  "pwa.updateAvailable": "A new site version is available",
+  "pwa.updateReload": "Reload",
+  "pwa.updateDismiss": "Later",
 };

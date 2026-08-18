@@ -19,12 +19,18 @@ const username = ref("");
 const password = ref("");
 const passwordConfirm = ref("");
 const isSubmitting = ref(false);
+const authStatusReady = ref(false);
 const errorMessage = ref("");
 
 onMounted(async () => {
-  await checkLibraryAuthStatus();
-  if (!needsSetup.value && !registrationEnabled.value) {
-    errorMessage.value = t("site.registerDisabled");
+  try {
+    await checkLibraryAuthStatus();
+    authStatusReady.value = true;
+    if (!needsSetup.value && !registrationEnabled.value) {
+      errorMessage.value = t("site.registerDisabled");
+    }
+  } catch {
+    errorMessage.value = t("site.registerStatusError");
   }
 });
 
@@ -99,7 +105,9 @@ async function onSubmit(): Promise<void> {
         <button
           class="btn btn-primary btn-lg"
           type="submit"
-          :disabled="isSubmitting || (!needsSetup && !registrationEnabled)"
+          :disabled="
+            isSubmitting || (authStatusReady && !needsSetup && !registrationEnabled)
+          "
         >
           {{ t("site.registerSubmit") }}
         </button>

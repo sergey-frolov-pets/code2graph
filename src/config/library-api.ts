@@ -17,7 +17,12 @@ export function normalizeLibraryApiUrl(input: string): string {
 }
 
 function readStoredLibraryApiUrl(): string | null {
-  return readStorageItem(STORAGE_KEY_LIBRARY_API_URL);
+  const saved = readStorageItem(STORAGE_KEY_LIBRARY_API_URL);
+  if (saved === null || saved.trim() === "") {
+    return null;
+  }
+
+  return saved;
 }
 
 function readInitialLibraryApiUrl(): string {

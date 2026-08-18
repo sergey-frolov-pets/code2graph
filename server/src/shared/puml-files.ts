@@ -4,4 +4,4 @@ export {
   isPumlFileName,
   resolvePumlFileName,
   sanitizeFileName,
-} from "@shared/puml-files.js";
+} from "../../../packages/shared/src/puml-files.js";

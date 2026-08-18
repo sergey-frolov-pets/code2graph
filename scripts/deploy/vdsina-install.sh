@@ -99,15 +99,16 @@ fi
 echo "==> Репозиторий ($REPO_URL)"
 mkdir -p "$(dirname "$INSTALL_DIR")"
 if [[ ! -d "$INSTALL_DIR/.git" ]]; then
-  git clone "$REPO_URL" "$INSTALL_DIR"
+  git clone -b main "$REPO_URL" "$INSTALL_DIR"
 else
   configure_git_origin "$INSTALL_DIR"
 fi
 
 cd "$INSTALL_DIR"
-git fetch origin main
-git checkout main
-git pull origin main
+
+# shellcheck disable=SC1091
+source "$INSTALL_DIR/scripts/deploy/sync-origin-main.sh"
+sync_origin_main "$INSTALL_DIR"
 
 save_deploy_env
 
@@ -132,49 +133,19 @@ fi
 chown -R www-data:www-data "$INSTALL_DIR/data"
 
 NODE_BIN="$(command -v node)"
+# shellcheck disable=SC1091
+source "$INSTALL_DIR/scripts/deploy/server-entry.sh"
+SERVER_ENTRY="$(resolve_server_entry "$INSTALL_DIR/server")"
 install -m 0644 deploy/systemd/code2graph-library.service /etc/systemd/system/code2graph-library.service
-sed -i "s|^ExecStart=.*|ExecStart=${NODE_BIN} dist/index.js|" /etc/systemd/system/code2graph-library.service
+sed -i "s|^ExecStart=.*|ExecStart=${NODE_BIN} ${SERVER_ENTRY}|" /etc/systemd/system/code2graph-library.service
+sed -i 's|^EnvironmentFile=|EnvironmentFile=-|' /etc/systemd/system/code2graph-library.service
 systemctl daemon-reload
 systemctl enable --now code2graph-library
 
 install -d -m 0755 "$WEB_ROOT"
 rsync -a --delete dist/ "$WEB_ROOT/"
 
-echo "==> Nginx + TLS для ${DOMAIN}"
-NGINX_SITE="/etc/nginx/sites-available/code2graph"
-cat >"$NGINX_SITE" <<EOF
-server {
-    listen 80;
-    server_name ${DOMAIN} code2graph.ru;
-
-    root ${WEB_ROOT};
-    index index.html;
-
-    location /api/ {
-        proxy_pass http://127.0.0.1:3001/api/;
-        proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        client_max_body_size 4m;
-    }
-
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
-}
-EOF
-
-ln -sf "$NGINX_SITE" /etc/nginx/sites-enabled/code2graph
-rm -f /etc/nginx/sites-enabled/default
-nginx -t
-systemctl reload nginx
-
-certbot --nginx -d "$DOMAIN" -d code2graph.ru \
-  --non-interactive --agree-tos \
-  -m "${CODE2GRAPH_ADMIN_EMAIL:-admin@code2graph.ru}" 2>/dev/null || \
-  echo "Certbot: настройте TLS вручную после DNS A-записи на VPS"
+bash "$INSTALL_DIR/scripts/deploy/vdsina-fix-nginx.sh"
 
 ufw allow OpenSSH
 ufw allow 'Nginx Full'
