@@ -11,6 +11,7 @@ import {
   setTreeNodeChecked,
 } from "@/services/code-graph/ingest/build-project-tree";
 import { generateCodeGraphDiagram } from "@/services/code-graph/pipeline/generate-diagram";
+import { refineCodeGraphIrWithLlm } from "@/services/code-graph/pipeline/hybrid-llm-refine";
 import { readStorageItem, writeStorageItem } from "@/core/safe-storage";
 import { CODE_GRAPH_GITHUB_TOKEN_STORAGE_KEY } from "@/constants/code-graph";
 import { renderPlantUmlPreviewSvg } from "@/utils/llm-preview";
@@ -111,12 +112,30 @@ export function useCodeGraphWizardFlow(options: UseCodeGraphWizardFlowOptions) {
       return;
     }
 
-    const result = generateCodeGraphDiagram({
+    let result = generateCodeGraphDiagram({
       project: ingest.project.value,
       diagramType: selectedDiagramType.value,
       selectedFileIds: fileIds,
       selectedSymbolIds: symbolIds,
     });
+
+    if (
+      useHybridLlm.value &&
+      gate.limits.value.hybridLlmEnabled &&
+      selectedDiagramType.value === "flow"
+    ) {
+      const refinedIr = await refineCodeGraphIrWithLlm(
+        result.ir,
+        `${ingest.project.value.rootName}; files=${ingest.project.value.files.length}`,
+      );
+      result = generateCodeGraphDiagram({
+        project: ingest.project.value,
+        diagramType: selectedDiagramType.value,
+        selectedFileIds: fileIds,
+        selectedSymbolIds: symbolIds,
+        irOverride: refinedIr,
+      });
+    }
 
     irReview.setIr(result.ir);
     resultSource.value = result.plantUml;

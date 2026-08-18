@@ -10,10 +10,13 @@ defineProps<{
     description: string;
     allowed: boolean;
   }>;
+  hybridEnabled: boolean;
+  useHybridLlm: boolean;
 }>();
 
 const emit = defineEmits<{
   select: [diagramType: CodeGraphDiagramType];
+  "update:useHybridLlm": [enabled: boolean];
 }>();
 
 const { t } = useLocale();
@@ -42,7 +45,24 @@ const { t } = useLocale();
         </span>
       </button>
     </div>
+
+    <label v-if="hybridEnabled && selectedDiagramType === 'flow'" class="code-graph-hybrid-toggle">
+      <input
+        type="checkbox"
+        :checked="useHybridLlm"
+        @change="emit('update:useHybridLlm', ($event.target as HTMLInputElement).checked)"
+      />
+      {{ t("codeGraph.hybridLlm") }}
+    </label>
   </div>
 </template>
 
 <style src="../wizard-modal.css"></style>
+<style scoped>
+.code-graph-hybrid-toggle {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: center;
+}
+</style>

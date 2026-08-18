@@ -69,6 +69,8 @@ defineProps<{
   codeBatchEnabled: boolean;
   codeBatchRunning: boolean;
   codeBatchProgress: number;
+  codeHybridEnabled: boolean;
+  codeUseHybridLlm: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -94,6 +96,7 @@ const emit = defineEmits<{
   "code-ir-label-update": [nodeId: string, label: string];
   "code-batch-add": [];
   "code-batch-run": [];
+  "update:codeUseHybridLlm": [enabled: boolean];
 }>();
 </script>
 
@@ -135,7 +138,10 @@ const emit = defineEmits<{
     v-else-if="currentStepId === 'codeDiagramType'"
     :selected-diagram-type="codeDiagramType"
     :options="codeDiagramTypeOptions"
+    :hybrid-enabled="codeHybridEnabled"
+    :use-hybrid-llm="codeUseHybridLlm"
     @select="emit('code-diagram-type-select', $event)"
+    @update:use-hybrid-llm="emit('update:codeUseHybridLlm', $event)"
   />
 
   <WizardCodeIrReviewStep

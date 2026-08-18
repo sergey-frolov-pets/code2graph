@@ -39,6 +39,7 @@ export const codeGraphMessages = {
   "codeGraph.batchAddCurrent": "Add current selection",
   "codeGraph.batchRun": "Run queue",
   "codeGraph.batchProOnly": "Batch generation requires Code2Graph Pro.",
+  "codeGraph.hybridLlm": "Refine flow with LLM (BYOK, Pro)",
   "llm.wizard.mode.fromCode": "From code",
   "llm.wizard.mode.fromCodeDesc":
     "Zip / folder / GitHub → project tree → PlantUML (Python, JS, TS, HTML).",

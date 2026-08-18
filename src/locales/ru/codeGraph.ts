@@ -39,6 +39,7 @@ export const codeGraphMessages = {
   "codeGraph.batchAddCurrent": "Добавить текущий выбор",
   "codeGraph.batchRun": "Запустить очередь",
   "codeGraph.batchProOnly": "Пакетная генерация доступна в Code2Graph Pro.",
+  "codeGraph.hybridLlm": "Уточнить flow через LLM (BYOK, Pro)",
   "llm.wizard.mode.fromCode": "Из кода",
   "llm.wizard.mode.fromCodeDesc":
     "Zip / папка / GitHub → дерево проекта → PlantUML (Python, JS, TS, HTML).",

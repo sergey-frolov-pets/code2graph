@@ -275,6 +275,8 @@ function handleApplyClick(): void {
           :code-batch-enabled="codeGraph.gate.limits.value.batchEnabled"
           :code-batch-running="codeGraph.batch.isRunning.value"
           :code-batch-progress="codeGraph.batch.progressPercent.value"
+          :code-hybrid-enabled="codeGraph.gate.limits.value.hybridLlmEnabled"
+          :code-use-hybrid-llm="codeGraph.useHybridLlm.value"
           @mode-select="onModeSelect($event)"
           @language-select="onLanguageSelect($event)"
           @type-select="onTypeSelect($event)"
@@ -297,6 +299,7 @@ function handleApplyClick(): void {
           @code-ir-label-update="codeGraph.irReview.updateNodeLabel($event[0], $event[1])"
           @code-batch-add="codeGraph.addCurrentToBatch()"
           @code-batch-run="codeGraph.runBatchGeneration()"
+          @update:code-use-hybrid-llm="codeGraph.useHybridLlm.value = $event"
         />
       </div>
 
