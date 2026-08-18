@@ -111,9 +111,15 @@ git pull origin main
 
 save_deploy_env
 
+# shellcheck disable=SC1091
+source "$INSTALL_DIR/scripts/deploy/build-memory.sh"
+ensure_swap_for_build
+export_node_build_memory
+
 echo "==> Сборка"
 npm ci
 npm run build
+unset NODE_OPTIONS
 npm --prefix server ci
 npm --prefix server run build
 
