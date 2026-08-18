@@ -46,6 +46,13 @@ function scrollToSection(sectionId: string): void {
       <nav class="site-header__nav">
         <template v-if="props.landingNav">
           <button
+            class="btn btn-ghost site-header__nav-account"
+            type="button"
+            @click="navigateTo('account')"
+          >
+            {{ t("site.accountTitle") }}
+          </button>
+          <button
             class="btn btn-ghost site-header__nav-login"
             type="button"
             @click="navigateTo('login')"
@@ -64,6 +71,9 @@ function scrollToSection(sectionId: string): void {
           </button>
         </template>
         <template v-else>
+          <button class="btn btn-ghost" type="button" @click="navigateTo('account')">
+            {{ t("site.accountTitle") }}
+          </button>
           <button class="btn btn-ghost" type="button" @click="navigateTo('login')">
             {{ t("site.landingCtaLogin") }}
           </button>
