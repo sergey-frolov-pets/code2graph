@@ -16,6 +16,7 @@ import { useDiagramExport } from "@/composables/useDiagramExport";
 import { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import { useDiagramRender } from "@/composables/useDiagramRender";
 import { useEditorHistory } from "@/composables/useEditorHistory";
+import { useEditorDocuments } from "@/composables/editor/useEditorDocuments";
 import { useEditorSourceHistory } from "@/composables/useEditorSourceHistory";
 import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
 import { useLocale } from "@/composables/useLocale";
@@ -83,6 +84,11 @@ export interface AppShellContext {
   onSyntaxAskFromValidation: () => void;
   applyAiPlantUml: (source: string, label: string) => void;
   applyWizardDiagram: (source: string, label: string) => void;
+  applyWizardDiagramToNewTab: (source: string, label: string) => void;
+  editorDocuments: ReturnType<typeof useEditorDocuments>["documents"];
+  activeDocumentId: ReturnType<typeof useEditorDocuments>["activeDocumentId"];
+  switchEditorTab: (documentId: string) => void;
+  closeEditorTab: (documentId: string) => void;
   savePuml: () => Promise<void>;
   onVersionRestore: (source: string) => void;
   renderDiagram: () => Promise<void>;
@@ -215,6 +221,17 @@ export function useAppShell(): AppShellContext {
     scheduleRender,
     clearHistory: clearEditorHistory,
   });
+
+  const editorDocumentsApi = useEditorDocuments({
+    source,
+    diagramFormat,
+    loadedFileName,
+    onPersist: persistSettings,
+  });
+
+  function initEditorDocumentsOnBoot(): void {
+    editorDocumentsApi.initDocuments();
+  }
 
   const { canExport, exportSvg, exportPng } = useDiagramExport({
     svg,
@@ -373,6 +390,20 @@ export function useAppShell(): AppShellContext {
     });
   }
 
+  function applyWizardDiagramToNewTab(wizardSource: string, label: string): void {
+    flushPendingHistory();
+    withSuppressedSourceHistory(() => {
+      editorDocumentsApi.openNewTab({
+        source: wizardSource,
+        label,
+        format: "plantuml",
+      });
+      error.value = "";
+      syntaxErrorLines.value = [];
+      scheduleRender();
+    });
+  }
+
   function onVersionRestoreWithHistory(content: string): void {
     flushPendingHistory();
     withSuppressedSourceHistory(() => {
@@ -416,6 +447,7 @@ export function useAppShell(): AppShellContext {
     restoreDocumentMetadata();
     restoreSettings();
     prepareRestoredSource();
+    initEditorDocumentsOnBoot();
     void initializeIncomingSources();
     void bootEngine();
     void handleShareLinkOnBoot();
@@ -468,6 +500,11 @@ export function useAppShell(): AppShellContext {
     onSyntaxAskFromValidation,
     applyAiPlantUml: applyAiPlantUmlWithHistory,
     applyWizardDiagram: applyWizardDiagramWithHistory,
+    applyWizardDiagramToNewTab,
+    editorDocuments: editorDocumentsApi.documents,
+    activeDocumentId: editorDocumentsApi.activeDocumentId,
+    switchEditorTab: editorDocumentsApi.switchTab,
+    closeEditorTab: editorDocumentsApi.closeTab,
     savePuml,
     onVersionRestore: onVersionRestoreWithHistory,
     renderDiagram,

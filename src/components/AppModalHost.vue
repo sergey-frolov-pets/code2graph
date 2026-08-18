@@ -32,6 +32,7 @@ const {
   onSyntaxAskFromValidation,
   applyAiPlantUml,
   applyWizardDiagram,
+  applyWizardDiagramToNewTab,
   onVersionRestore,
 } = useAppShellContext();
 
@@ -61,6 +62,10 @@ function onPatchApply(payload: { plantuml: string; label: string }) {
 
 function onWizardApply(payload: { source: string; label: string }) {
   applyWizardDiagram(payload.source, payload.label);
+}
+
+function onWizardApplyNewTab(payload: { source: string; label: string }) {
+  applyWizardDiagramToNewTab(payload.source, payload.label);
 }
 </script>
 
@@ -167,6 +172,7 @@ function onWizardApply(payload: { source: string; label: string }) {
     :diagram-dark-mode="diagramDarkMode"
     @close="isWizardModalOpen = false"
     @apply="onWizardApply"
+    @apply-new-tab="onWizardApplyNewTab"
   />
 
   <component

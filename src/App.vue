@@ -9,6 +9,7 @@ import AppHeader from "@/components/layout/AppHeader.vue";
 import AppStatusBar from "@/components/layout/AppStatusBar.vue";
 import PreviewFab from "@/components/layout/PreviewFab.vue";
 import ResponsivePanelTabs from "@/components/layout/ResponsivePanelTabs.vue";
+import EditorTabBar from "@/components/editor/EditorTabBar.vue";
 import PwaInstallBanner from "@/components/layout/PwaInstallBanner.vue";
 import { useMediaQuery } from "@/composables/useMediaQuery";
 import { useResizableSplit } from "@/composables/useResizableSplit";
@@ -77,6 +78,10 @@ const {
   canUndo,
   canRedo,
   modals,
+  editorDocuments,
+  activeDocumentId,
+  switchEditorTab,
+  closeEditorTab,
 } = shell;
 
 function showMobilePreview(): void {
@@ -116,6 +121,14 @@ onUnmounted(() => {
     />
 
     <ResponsivePanelTabs v-model="activeMobilePanel" />
+
+    <EditorTabBar
+      v-if="editorDocuments.length > 0"
+      :documents="editorDocuments"
+      :active-document-id="activeDocumentId"
+      @switch="switchEditorTab"
+      @close="closeEditorTab"
+    />
 
     <main
       ref="mainRef"

@@ -13,6 +13,7 @@ import { ratingsRouter } from "./routes/ratings.js";
 import { shareRouter } from "./routes/share.js";
 import { subscriptionAccessRouter } from "./routes/subscription-access.js";
 import { subscriptionsRouter } from "./routes/subscriptions.js";
+import { codeGraphRouter } from "./routes/code-graph.js";
 
 const app = new Hono();
 
@@ -42,6 +43,7 @@ protectedApi.route("/sections", sectionsRouter);
 protectedApi.route("/diagrams", diagramsRouter);
 protectedApi.route("/ratings", ratingsRouter);
 protectedApi.route("/subscriptions", subscriptionsRouter);
+protectedApi.route("/code-graph", codeGraphRouter);
 protectedApi.route("/llm", llmRouter);
 
 app.route("/api", protectedApi);
