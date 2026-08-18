@@ -1,7 +1,8 @@
 export const APP_META = {
   name: "Code2Graph",
   developer: "FSVibe",
-  developerLogo: "/icons/fsvibe-logo.svg",
+  developerLogo: "/icons/fsvibe-logo.png",
+  landingHeroImage: "/images/landing-workflow.png",
   version: __APP_VERSION__,
   copyright: "© 2026 FSVibe",
 } as const;

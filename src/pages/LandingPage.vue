@@ -4,6 +4,7 @@ import LandingDiagramBackground from "@/components/site/LandingDiagramBackground
 import SiteHeader from "@/components/site/SiteHeader.vue";
 import { useAppRouter } from "@/composables/useAppRouter";
 import { useLocale } from "@/composables/useLocale";
+import { APP_META } from "@/constants";
 
 const { t } = useLocale();
 const { navigateTo } = useAppRouter();
@@ -182,10 +183,10 @@ function onPricingAction(action: "register" | "mailto"): void {
           <figure class="landing-hero__visual">
             <img
               class="landing-hero__image"
-              src="/images/landing-workflow.svg"
+              :src="APP_META.landingHeroImage"
               :alt="t('site.landingHeroAlt')"
-              width="1200"
-              height="675"
+              width="1536"
+              height="1024"
               loading="eager"
               decoding="async"
             />
