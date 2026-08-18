@@ -38,6 +38,11 @@ configure_git_origin "$INSTALL_DIR"
 
 cd "$INSTALL_DIR"
 
+# shellcheck disable=SC1091
+source "$INSTALL_DIR/scripts/deploy/build-memory.sh"
+ensure_swap_for_build
+export_node_build_memory
+
 echo "==> git pull"
 git fetch origin main
 git checkout main
@@ -46,6 +51,7 @@ git pull origin main
 echo "==> Frontend build"
 npm ci
 npm run build
+unset NODE_OPTIONS
 
 echo "==> API build"
 npm --prefix server ci
