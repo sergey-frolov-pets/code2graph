@@ -1,7 +1,21 @@
 # Деплой на VDSINA (www.code2graph.ru)
 
-Канонический репозиторий: **https://github.com/sergey-frolov-pets/code2graph**  
-Сайт: **https://www.code2graph.ru** — фронтенд (PWA) + API на одном домене (`/api`).
+Канонический репозиторий: **https://github.com/sergey-frolov-pets/code2graph**
+
+---
+
+## ⚠️ `curl raw.githubusercontent.com` → 404
+
+Это **нормально**, если репозиторий `code2graph` **Private**.
+
+GitHub **не отдаёт** файлы приватных репозиториев через `raw.githubusercontent.com` (всегда 404 без авторизации).
+
+**Два решения:**
+
+| Вариант | Действие |
+|---------|----------|
+| **A. Public repo** | GitHub → `code2graph` → Settings → Danger zone → **Change visibility → Public** → тогда работает `curl raw...` |
+| **B. Private repo** | Установка через **PAT + GitHub API** или `git clone` (ниже) |
 
 ---
 
@@ -9,33 +23,44 @@
 
 | Тип | Имя | Значение |
 |-----|-----|----------|
-| A | `@` | IP VPS VDSINA |
-| A | `www` | IP VPS VDSINA |
+| A | `@` | IP VPS |
+| A | `www` | IP VPS |
+
+---
+
+## Установка (private `code2graph`) — one-liner
+
+PAT: **Contents: Read** на репо `code2graph`.
 
 ```bash
-dig +short www.code2graph.ru A
+export CODE2GRAPH_GIT_TOKEN=ghp_ваш_токен
+export CODE2GRAPH_ADMIN_EMAIL=sfrolov2@gmail.com
+
+curl -fsSL \
+  -H "Authorization: token ${CODE2GRAPH_GIT_TOKEN}" \
+  -H "Accept: application/vnd.github.raw" \
+  "https://api.github.com/repos/sergey-frolov-pets/code2graph/contents/scripts/deploy/vdsina-install.sh?ref=main" \
+  | sudo -E CODE2GRAPH_GIT_TOKEN="$CODE2GRAPH_GIT_TOKEN" \
+         CODE2GRAPH_ADMIN_EMAIL="$CODE2GRAPH_ADMIN_EMAIL" bash
+```
+
+Или через helper-скрипт (после `git clone`):
+
+```bash
+sudo -E CODE2GRAPH_GIT_TOKEN=ghp_xxx bash scripts/deploy/install-vdsina-from-github.sh
 ```
 
 ---
 
-## Установка на VPS
-
-### Если репозиторий `code2graph` **публичный**
+## Установка (public `code2graph`)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/sergey-frolov-pets/code2graph/main/scripts/deploy/vdsina-install.sh | sudo bash
 ```
 
-### Если репозиторий `code2graph` **приватный** (PAT обязателен)
+---
 
-`raw.githubusercontent.com` **не работает** для private repo → клонируем `code2graph` с токеном:
-
-**1. Fine-grained PAT**
-
-- Repository: **only `code2graph`**
-- Permission: **Contents: Read-only**
-
-**2. На VPS (Ubuntu 22/24)**
+## Установка через git clone (private или public)
 
 ```bash
 export CODE2GRAPH_GIT_TOKEN=ghp_ваш_токен
@@ -48,38 +73,15 @@ sudo -E CODE2GRAPH_GIT_TOKEN="$CODE2GRAPH_GIT_TOKEN" \
   bash /tmp/code2graph-setup/scripts/deploy/vdsina-install.sh
 ```
 
-Токен сохранится в `/etc/code2graph/deploy.env` для `git pull` при обновлениях.
-
-### Уже есть клон `code2graph`
-
-```bash
-cd /opt/code2graph
-sudo -E CODE2GRAPH_GIT_TOKEN=ghp_xxx bash scripts/deploy/vdsina-install.sh
-```
-
 ---
 
 ## После установки
 
 ```bash
-sudo nano /opt/code2graph/server/.env   # AUTH_TOKEN_SECRET, LLM ключи
+sudo nano /opt/code2graph/server/.env
 sudo systemctl restart code2graph-library
+curl -sS https://www.code2graph.ru/api/auth/status
 ```
-
----
-
-## Переменные окружения
-
-| Переменная | По умолчанию |
-|------------|--------------|
-| `CODE2GRAPH_REPO_URL` | `https://github.com/sergey-frolov-pets/code2graph.git` |
-| `CODE2GRAPH_GIT_TOKEN` | — (нужен для private repo) |
-| `CODE2GRAPH_DOMAIN` | `www.code2graph.ru` |
-| `CODE2GRAPH_INSTALL_DIR` | `/opt/code2graph` |
-| `CODE2GRAPH_WEB_ROOT` | `/var/www/code2graph` |
-| `CODE2GRAPH_ADMIN_EMAIL` | `admin@code2graph.ru` |
-
----
 
 ## Обновление
 
@@ -87,7 +89,7 @@ sudo systemctl restart code2graph-library
 sudo bash /opt/code2graph/scripts/deploy/vdsina-update.sh
 ```
 
-## Автообновление (cron)
+## Cron (автообновление)
 
 ```bash
 echo '15 4 * * * root /opt/code2graph/scripts/deploy/vdsina-update.sh >> /var/log/code2graph-update.log 2>&1' \
@@ -96,22 +98,12 @@ echo '15 4 * * * root /opt/code2graph/scripts/deploy/vdsina-update.sh >> /var/lo
 
 ---
 
-## Проверка
+## Переменные
 
-```bash
-curl -sS https://www.code2graph.ru/api/auth/status
-systemctl status code2graph-library
-```
-
-С авторизацией:
-
-```bash
-curl -sS -u 'логин:пароль' https://www.code2graph.ru/api/health
-```
-
----
-
-## LLM
-
-- **BYOK** — ключи только в `localStorage` браузера  
-- **Free LLM** — ключи в `/opt/code2graph/server/.env`
+| Переменная | По умолчанию |
+|------------|--------------|
+| `CODE2GRAPH_REPO_URL` | `https://github.com/sergey-frolov-pets/code2graph.git` |
+| `CODE2GRAPH_GIT_TOKEN` | — (для private) |
+| `CODE2GRAPH_DOMAIN` | `www.code2graph.ru` |
+| `CODE2GRAPH_INSTALL_DIR` | `/opt/code2graph` |
+| `CODE2GRAPH_ADMIN_EMAIL` | `admin@code2graph.ru` |
