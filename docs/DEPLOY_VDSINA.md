@@ -80,6 +80,19 @@ sudo -E CODE2GRAPH_GIT_TOKEN="$CODE2GRAPH_GIT_TOKEN" \
 ```bash
 sudo nano /opt/code2graph/server/.env
 sudo systemctl restart code2graph-library
+sudo systemctl status code2graph-library
+
+Если unit не найден — установка прервалась до systemd. На VPS:
+
+```bash
+sudo bash /opt/code2graph/scripts/deploy/vdsina-fix-systemd.sh
+```
+
+Или полный перезапуск установки:
+
+```bash
+sudo bash /opt/code2graph/scripts/deploy/vdsina-install.sh
+```
 curl -sS https://www.code2graph.ru/api/auth/status
 ```
 
