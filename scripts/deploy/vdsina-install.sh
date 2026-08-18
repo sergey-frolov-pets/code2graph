@@ -1,10 +1,68 @@
 #!/usr/bin/env bash
 # Code2Graph — первичная установка на голую Ubuntu 22/24 (VDSINA + reg.ru DNS).
-set -euo pipefail
+# Работает при curl ... | bash (без BASH_SOURCE / без repo-auth.sh на диске).
+set -eo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck disable=SC1091
-source "$SCRIPT_DIR/repo-auth.sh"
+load_deploy_auth() {
+  local script_path="${BASH_SOURCE[0]:-}"
+  local script_dir=""
+
+  if [[ -n "$script_path" && "$script_path" != "bash" && "$script_path" != "-" ]]; then
+    script_dir="$(cd "$(dirname "$script_path")" && pwd)"
+  elif [[ -n "${0:-}" && -f "${0}" && "${0}" != "-" ]]; then
+    script_dir="$(cd "$(dirname "$0")" && pwd)"
+  fi
+
+  if [[ -n "$script_dir" && -f "$script_dir/repo-auth.sh" ]]; then
+    # shellcheck disable=SC1091
+    source "$script_dir/repo-auth.sh"
+    return 0
+  fi
+
+  # curl | bash — inline (same as repo-auth.sh)
+  CODE2GRAPH_DEFAULT_REPO="https://github.com/sergey-frolov-pets/code2graph.git"
+
+  load_deploy_env() {
+    if [[ -f /etc/code2graph/deploy.env ]]; then
+      # shellcheck disable=SC1091
+      source /etc/code2graph/deploy.env
+    fi
+  }
+
+  resolve_code2graph_repo_url() {
+    load_deploy_env
+    local url="${CODE2GRAPH_REPO_URL:-$CODE2GRAPH_DEFAULT_REPO}"
+    if [[ -n "${CODE2GRAPH_GIT_TOKEN:-}" ]] && [[ "$url" == https://github.com/* ]]; then
+      url="https://x-access-token:${CODE2GRAPH_GIT_TOKEN}@${url#https://}"
+    fi
+    printf '%s' "$url"
+  }
+
+  configure_git_origin() {
+    local dir="$1"
+    local url
+    url="$(resolve_code2graph_repo_url)"
+    if [[ -d "$dir/.git" ]]; then
+      git -C "$dir" remote set-url origin "$url"
+    fi
+  }
+
+  save_deploy_env() {
+    local env_file="/etc/code2graph/deploy.env"
+    if [[ -n "${CODE2GRAPH_GIT_TOKEN:-}" ]]; then
+      install -d -m 0700 /etc/code2graph
+      cat >"$env_file" <<EOF
+# Code2Graph VPS deploy — git access (code2graph repo)
+CODE2GRAPH_REPO_URL=${CODE2GRAPH_REPO_URL:-$CODE2GRAPH_DEFAULT_REPO}
+CODE2GRAPH_GIT_TOKEN=${CODE2GRAPH_GIT_TOKEN}
+EOF
+      chmod 0600 "$env_file"
+    fi
+  }
+}
+
+load_deploy_auth
+set -u
 
 DOMAIN="${CODE2GRAPH_DOMAIN:-www.code2graph.ru}"
 INSTALL_DIR="${CODE2GRAPH_INSTALL_DIR:-/opt/code2graph}"

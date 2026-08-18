@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Git auth for private sergey-frolov-pets/code2graph on VPS.
-set -euo pipefail
+# Sourced by deploy scripts — no set -euo here (caller controls strict mode).
 
 CODE2GRAPH_DEFAULT_REPO="https://github.com/sergey-frolov-pets/code2graph.git"
 
