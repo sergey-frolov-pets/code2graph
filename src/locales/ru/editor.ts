@@ -150,4 +150,6 @@ export const editorMessages: LocaleMessages = {
   "editor.completion.mermaidLine": "линейный график",
   "editor.completion.mermaidBlockGroup": "группа блоков",
   "editor.completion.mermaidPacketField": "поле пакета",
+  "editor.tabs.label": "Вкладки редактора",
+  "editor.tabs.close": "Закрыть вкладку {label}",
 };

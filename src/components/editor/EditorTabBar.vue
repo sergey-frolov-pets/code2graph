@@ -19,6 +19,7 @@ const { t } = useLocale();
     v-if="documents.length > 0"
     class="editor-tab-bar"
     role="tablist"
+    data-testid="editor-tab-bar"
     :aria-label="t('editor.tabs.label')"
   >
     <div

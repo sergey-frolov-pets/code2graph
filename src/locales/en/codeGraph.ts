@@ -40,14 +40,4 @@ export const codeGraphMessages = {
   "codeGraph.batchRun": "Run queue",
   "codeGraph.batchProOnly": "Batch generation requires Code2Graph Pro.",
   "codeGraph.hybridLlm": "Refine flow with LLM (BYOK, Pro)",
-  "llm.wizard.mode.fromCode": "From code",
-  "llm.wizard.mode.fromCodeDesc":
-    "Zip / folder / GitHub → project tree → PlantUML (Python, JS, TS, HTML).",
-  "llm.wizard.step.codeSource": "Project source",
-  "llm.wizard.step.codeTree": "Project tree",
-  "llm.wizard.step.codeDiagramType": "Diagram type",
-  "llm.wizard.step.codeIrReview": "IR review",
-  "llm.wizard.step.codeBatch": "Batch generation",
-  "editor.tabs.label": "Editor tabs",
-  "editor.tabs.close": "Close tab {label}",
 } as const;

@@ -36,6 +36,7 @@ const { t } = useLocale();
           'is-disabled': !option.allowed,
         }"
         :disabled="!option.allowed"
+        :data-testid="`code-graph-diagram-${option.id}`"
         @click="emit('select', option.id)"
       >
         <strong>{{ option.label }}</strong>

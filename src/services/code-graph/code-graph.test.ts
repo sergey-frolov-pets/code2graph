@@ -83,4 +83,26 @@ describe("code-graph pipeline", () => {
 
     expect(classDiagram.plantUml.toLowerCase()).toContain("user");
   });
+
+  it("generates class diagram with implicit file selection (empty fileIds)", async () => {
+    const project = await analyzeProject({
+      rootName: "e2e-demo",
+      sourceKind: "zip",
+      files: [
+        {
+          relativePath: "user.py",
+          content: 'class User:\n    def __init__(self, name: str):\n        self.name = name\n',
+        },
+      ],
+    });
+
+    const classDiagram = generateCodeGraphDiagram({
+      project,
+      diagramType: "class",
+      selectedFileIds: [],
+      selectedSymbolIds: [],
+    });
+
+    expect(classDiagram.plantUml.toLowerCase()).toContain("class user");
+  });
 });

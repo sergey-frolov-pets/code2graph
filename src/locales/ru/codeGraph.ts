@@ -40,14 +40,4 @@ export const codeGraphMessages = {
   "codeGraph.batchRun": "Запустить очередь",
   "codeGraph.batchProOnly": "Пакетная генерация доступна в Code2Graph Pro.",
   "codeGraph.hybridLlm": "Уточнить flow через LLM (BYOK, Pro)",
-  "llm.wizard.mode.fromCode": "Из кода",
-  "llm.wizard.mode.fromCodeDesc":
-    "Zip / папка / GitHub → дерево проекта → PlantUML (Python, JS, TS, HTML).",
-  "llm.wizard.step.codeSource": "Источник проекта",
-  "llm.wizard.step.codeTree": "Дерево проекта",
-  "llm.wizard.step.codeDiagramType": "Тип диаграммы",
-  "llm.wizard.step.codeIrReview": "IR review",
-  "llm.wizard.step.codeBatch": "Пакетная генерация",
-  "editor.tabs.label": "Вкладки редактора",
-  "editor.tabs.close": "Закрыть вкладку {label}",
 } as const;

@@ -112,9 +112,9 @@ export function mapClassToDiagramIr(
     kind: "class",
     matchConfidence: 1,
     semantic: {
-      members: symbol.members ?? [],
-      extends: symbol.extends ?? [],
-      implements: symbol.implements ?? [],
+      members: [...(symbol.members ?? [])],
+      extends: [...(symbol.extends ?? [])],
+      implements: [...(symbol.implements ?? [])],
       notes: notesForSymbol(project, symbol.id),
     },
   }));

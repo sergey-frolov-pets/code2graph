@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("converts plantuml graph to mermaid and supports undo", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/#/app");
 
   const editor = page.locator(".code-editor__textarea");
   await expect(editor).toBeVisible({ timeout: 30_000 });

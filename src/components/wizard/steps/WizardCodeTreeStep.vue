@@ -32,7 +32,7 @@ const flatNodes = computed(() =>
       <span class="code-graph-progress__path">{{ currentPath }}</span>
     </div>
 
-    <div v-if="tree" class="code-graph-tree" role="tree">
+    <div v-if="tree" class="code-graph-tree" role="tree" data-testid="code-graph-tree">
       <label
         v-for="node in flatNodes"
         :key="node.id"

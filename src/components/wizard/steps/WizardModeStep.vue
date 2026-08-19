@@ -31,6 +31,7 @@ const { t } = useLocale();
         type="button"
         role="radio"
         :aria-checked="wizardState.creationMode === mode"
+        :data-testid="`wizard-mode-${mode}`"
         @click="emit('mode-select', mode)"
       >
         {{ t(`llm.wizard.mode.${mode}`) }}

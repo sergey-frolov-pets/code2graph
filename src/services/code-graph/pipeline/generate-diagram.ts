@@ -8,6 +8,7 @@ import {
 import { validateDiagramIr } from "@/services/conversion/validate-diagram-ir";
 import { emitPlantUmlFromIr } from "@/services/conversion/emit/emit-plantuml";
 import type { DiagramIR } from "@/services/conversion/diagram-ir";
+import { cloneDiagramIr } from "@/services/conversion/diagram-ir";
 
 function enforceDiagramIrLimits(ir: DiagramIR): {
   ir: DiagramIR;
@@ -76,7 +77,7 @@ export function applyDiagramIrEdits(
   base: DiagramIR,
   edits: Array<{ nodeId: string; label?: string; groupId?: string | null }>,
 ): DiagramIR {
-  const next: DiagramIR = structuredClone(base);
+  const next: DiagramIR = cloneDiagramIr(base);
 
   for (const edit of edits) {
     const node = next.nodes.find((entry) => entry.id === edit.nodeId);

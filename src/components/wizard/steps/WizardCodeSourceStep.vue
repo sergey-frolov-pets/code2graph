@@ -60,7 +60,7 @@ function onFolderChange(event: Event): void {
     <div v-if="sourceTab === 'zip'" class="code-graph-source-panel">
       <label class="code-graph-file-input">
         <span>{{ t("codeGraph.pickZip") }}</span>
-        <input type="file" accept=".zip,application/zip" @change="onZipChange" />
+        <input type="file" accept=".zip,application/zip" data-testid="code-graph-zip-input" @change="onZipChange" />
       </label>
     </div>
 

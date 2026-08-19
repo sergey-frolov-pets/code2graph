@@ -192,6 +192,7 @@ function handleApplyClick(): void {
     :open="open"
     wide
     :title="t('llm.wizard.title')"
+    test-id="diagram-wizard-modal"
     @close="emit('close')"
   >
     <WizardOnboardingBanner

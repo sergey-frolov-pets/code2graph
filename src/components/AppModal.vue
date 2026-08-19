@@ -12,6 +12,7 @@ const props = defineProps<{
   variant?: "default" | "success" | "error";
   wide?: boolean;
   layer?: "default" | "above-library";
+  testId?: string;
 }>();
 
 const emit = defineEmits<{
@@ -59,6 +60,7 @@ function onBackdropClick(event: MouseEvent): void {
         :aria-labelledby="titleId"
         aria-modal="true"
         tabindex="-1"
+        :data-testid="testId ?? 'app-modal-dialog'"
       >
         <header class="modal-header" :class="variant ? `is-${variant}` : ''">
           <h2 :id="titleId" class="modal-title">{{ title }}</h2>

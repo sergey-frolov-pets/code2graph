@@ -139,6 +139,7 @@ export function useCodeGraphWizardFlow(options: UseCodeGraphWizardFlowOptions) {
 
     irReview.setIr(result.ir);
     resultSource.value = result.plantUml;
+    errorMessage.value = "";
     isPreviewLoading.value = true;
 
     try {
@@ -148,6 +149,9 @@ export function useCodeGraphWizardFlow(options: UseCodeGraphWizardFlowOptions) {
         options.diagramDarkMode.value,
         options.renderMode.value,
       );
+    } catch {
+      // Live preview is best-effort; PlantUML source remains in resultSource.
+      previewSvg.value = "";
     } finally {
       isPreviewLoading.value = false;
     }

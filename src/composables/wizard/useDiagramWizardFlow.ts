@@ -20,6 +20,7 @@ import {
   getWizardSteps,
   getWizardStructuralElementsForType,
   getWizardTypesForLanguage,
+  isWizardCreationMode,
   isWizardDiagramType,
   isWizardLanguage,
   resolveWizardStateWithDefaults,
@@ -391,7 +392,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   );
 
   function onModeSelect(mode: string): void {
-    if (mode === "ai" || mode === "manual") {
+    if (isWizardCreationMode(mode)) {
       wizardState.value.creationMode = mode;
     }
   }

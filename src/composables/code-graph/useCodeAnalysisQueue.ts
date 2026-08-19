@@ -1,6 +1,7 @@
 import { computed, ref } from "vue";
 import type { CodeGraphDiagramType } from "@/constants/code-graph";
 import type { DiagramIR } from "@/services/conversion/diagram-ir";
+import { cloneDiagramIr } from "@/services/conversion/diagram-ir";
 import type { CodeProjectIR, ProjectTreeNode } from "@/services/code-graph/ir/code-project-ir";
 import {
   resolveSelectedFileIds,
@@ -108,7 +109,7 @@ export function useCodeGraphIrReview() {
   const edits = ref<Array<{ nodeId: string; label?: string; groupId?: string | null }>>([]);
 
   function setIr(ir: DiagramIR): void {
-    editableIr.value = structuredClone(ir);
+    editableIr.value = cloneDiagramIr(ir);
     edits.value = [];
   }
 
