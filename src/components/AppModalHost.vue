@@ -4,6 +4,7 @@ import {
   LLM_KEYS_GUIDE_MODAL,
 } from "@/app/app-modal-registry";
 import { useAppShellContext } from "@/composables/useAppShell";
+import type { DiagramFormat } from "@/constants/diagram-formats";
 
 const {
   source,
@@ -31,7 +32,6 @@ const {
   onFileLoaded,
   onSyntaxAskFromValidation,
   applyAiPlantUml,
-  applyWizardDiagram,
   applyWizardDiagramToNewTab,
   onVersionRestore,
 } = useAppShellContext();
@@ -62,12 +62,20 @@ function onPatchApply(payload: { plantuml: string; label: string }) {
   applyAiPlantUml(payload.plantuml, payload.label);
 }
 
-function onWizardApply(payload: { source: string; label: string }) {
-  applyWizardDiagram(payload.source, payload.label);
+function onWizardApply(payload: {
+  source: string;
+  label: string;
+  format: DiagramFormat;
+}) {
+  applyWizardDiagramToNewTab(payload.source, payload.label, payload.format);
 }
 
-function onWizardApplyNewTab(payload: { source: string; label: string }) {
-  applyWizardDiagramToNewTab(payload.source, payload.label);
+function onWizardApplyNewTab(payload: {
+  source: string;
+  label: string;
+  format?: DiagramFormat;
+}) {
+  applyWizardDiagramToNewTab(payload.source, payload.label, payload.format);
 }
 </script>
 
