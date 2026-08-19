@@ -103,7 +103,8 @@ cd server && npm run dev
 
 ```bash
 sudo bash scripts/deploy/vdsina-install.sh   # первичная установка
-sudo bash scripts/deploy/vdsina-update.sh    # обновление сайта
+sudo bash scripts/deploy/vdsina-update.sh    # обновление с origin/main
+sudo bash scripts/deploy/vdsina-update.sh --commit <sha>  # тест commit без merge в main
 ```
 
 Подробности: [docs/DEPLOY_VDSINA.md](docs/DEPLOY_VDSINA.md)

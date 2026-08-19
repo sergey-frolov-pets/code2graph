@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Строгая синхронизация с origin/main — единственный допустимый источник деплоя на VDS.
+# Строгая синхронизация с origin/main — канонический источник прод-деплоя на VDS.
+# Опционально: checkout конкретного commit SHA (тест без merge в main).
 # Подключается из deploy-скриптов (без set -euo — вызывающий скрипт управляет strict mode).
 
 CODE2GRAPH_DEPLOY_BRANCH="main"
 
 sync_origin_main() {
   local dir="$1"
+  local deploy_commit="${2:-}"
   local branch="${CODE2GRAPH_DEPLOY_BRANCH}"
 
   if [[ ! -d "$dir/.git" ]]; then
@@ -14,6 +16,24 @@ sync_origin_main() {
   fi
 
   pushd "$dir" >/dev/null
+
+  if [[ -n "$deploy_commit" ]]; then
+    echo "==> git sync (тестовый деплой: commit ${deploy_commit})"
+    git fetch origin --prune
+
+    local resolved=""
+    if ! resolved="$(git rev-parse --verify "${deploy_commit}^{commit}" 2>/dev/null)"; then
+      echo "ОШИБКА: commit '${deploy_commit}' не найден после git fetch origin"
+      echo "    Убедитесь, что commit запушен в GitHub (ветка cursor/* или main)."
+      popd >/dev/null
+      return 1
+    fi
+
+    git checkout --detach "$resolved"
+    echo "    detached HEAD @ $(git rev-parse --short HEAD) — $(git log -1 --format='%s')"
+    popd >/dev/null
+    return 0
+  fi
 
   echo "==> git sync (только origin/${branch}, без feature-веток)"
   git fetch origin "$branch"
