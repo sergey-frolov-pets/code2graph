@@ -72,7 +72,8 @@ export type ActionIconName =
   | "globe"
   | "unlink"
   | "user"
-  | "more";
+  | "more"
+  | "code";
 
 const props = withDefaults(
   defineProps<{
@@ -119,6 +120,7 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   unlink: Unlink,
   user: User,
   more: Ellipsis,
+  code: Braces,
 };
 
 const iconComponent = computed(() => ICON_MAP[props.name]);

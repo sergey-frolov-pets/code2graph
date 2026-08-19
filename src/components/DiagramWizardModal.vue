@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, toRef } from "vue";
+import { computed, ref, toRef, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import LoadingState from "@/components/ui/LoadingState.vue";
 import WizardOnboardingBanner from "@/components/wizard/WizardOnboardingBanner.vue";
@@ -16,6 +16,7 @@ import { useLocale } from "@/composables/useLocale";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
 import type { CodeGraphDiagramType } from "@/constants/code-graph";
+import type { WizardCreationMode } from "@/constants/llm-wizard";
 
 const props = defineProps<{
   open: boolean;
@@ -23,6 +24,7 @@ const props = defineProps<{
   layout: LayoutEngine;
   renderMode: RenderMode;
   diagramDarkMode: boolean;
+  initialCreationMode?: WizardCreationMode | null;
 }>();
 
 const emit = defineEmits<{
@@ -34,6 +36,17 @@ const emit = defineEmits<{
 const { t, locale } = useLocale();
 const { showWizardBanner, dismissWizardBanner } = useWizardOnboarding();
 const { activeLlmDetail } = useActiveLlmLabel();
+
+const pendingLaunchMode = ref<WizardCreationMode | null>(null);
+
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen) {
+      pendingLaunchMode.value = props.initialCreationMode ?? null;
+    }
+  },
+);
 
 const {
   stepIndex,
@@ -90,6 +103,7 @@ const {
   diagramDarkMode: toRef(props, "diagramDarkMode"),
   locale,
   t,
+  initialCreationMode: pendingLaunchMode,
   onApply: (payload) => emit("apply", payload),
   onClose: () => emit("close"),
 });
