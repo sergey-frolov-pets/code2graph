@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("loads editor and shows preview panel", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/#/app");
 
   const editor = page.locator(".code-editor__textarea");
   await expect(editor).toBeVisible({ timeout: 30_000 });

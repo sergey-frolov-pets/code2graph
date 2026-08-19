@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`code-graph golden fixtures > python-class-simple produces stable class diagram 1`] = `
+"@startuml
+!pragma layout smetana
+
+class User {
+}
+
+@enduml"
+`;

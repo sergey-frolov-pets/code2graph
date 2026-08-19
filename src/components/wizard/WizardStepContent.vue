@@ -7,6 +7,12 @@ import WizardParamsStep from "@/components/wizard/steps/WizardParamsStep.vue";
 import WizardContextStep from "@/components/wizard/steps/WizardContextStep.vue";
 import WizardPromptStep from "@/components/wizard/steps/WizardPromptStep.vue";
 import WizardResultStep from "@/components/wizard/steps/WizardResultStep.vue";
+import WizardCodeSourceStep from "@/components/wizard/steps/WizardCodeSourceStep.vue";
+import WizardCodeTreeStep from "@/components/wizard/steps/WizardCodeTreeStep.vue";
+import WizardCodeDiagramTypeStep from "@/components/wizard/steps/WizardCodeDiagramTypeStep.vue";
+import WizardCodeIrReviewStep from "@/components/wizard/steps/WizardCodeIrReviewStep.vue";
+import WizardCodeBatchStep from "@/components/wizard/steps/WizardCodeBatchStep.vue";
+import type { CodeGraphDiagramType } from "@/constants/code-graph";
 import type {
   WizardDiagramDirection,
   WizardParamField,
@@ -14,6 +20,9 @@ import type {
   WizardStepId,
   WizardStructuralElementId,
 } from "@/constants/llm-wizard";
+import type { CodeGraphBatchItem } from "@/composables/code-graph/useCodeAnalysisQueue";
+import type { DiagramIR } from "@/services/conversion/diagram-ir";
+import type { ProjectTreeNode } from "@/services/code-graph/ir/code-project-ir";
 import type { LlmEditConversationMessage } from "@/types/llm-edit-conversation";
 
 const wizardState = defineModel<WizardState>("wizardState", { required: true });
@@ -21,6 +30,7 @@ const wizardState = defineModel<WizardState>("wizardState", { required: true });
 defineProps<{
   currentStepId: WizardStepId | string;
   isAiMode: boolean;
+  isFromCodeMode: boolean;
   isGenerating: boolean;
   isManualResultReady: boolean;
   errorMessage: string;
@@ -38,6 +48,29 @@ defineProps<{
   showRefineChat: boolean;
   refineMessages: LlmEditConversationMessage[];
   isRefineChatBusy: boolean;
+  codeSourceTab: "zip" | "folder" | "github";
+  codeGithubUrl: string;
+  codeGithubToken: string;
+  codeGithubEnabled: boolean;
+  codeIngestLoading: boolean;
+  codeProjectTree: ProjectTreeNode | null;
+  codeProgressCompleted: number;
+  codeProgressTotal: number;
+  codeCurrentPath: string;
+  codeDiagramType: CodeGraphDiagramType;
+  codeDiagramTypeOptions: Array<{
+    id: CodeGraphDiagramType;
+    label: string;
+    description: string;
+    allowed: boolean;
+  }>;
+  codeEditableIr: DiagramIR | null;
+  codeBatchQueue: CodeGraphBatchItem[];
+  codeBatchEnabled: boolean;
+  codeBatchRunning: boolean;
+  codeBatchProgress: number;
+  codeHybridEnabled: boolean;
+  codeUseHybridLlm: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -51,6 +84,19 @@ const emit = defineEmits<{
   "planning-clear": [];
   "refine-send": [content: string];
   "refine-clear": [];
+  "update:codeSourceTab": [value: "zip" | "folder" | "github"];
+  "update:codeGithubUrl": [value: string];
+  "update:codeGithubToken": [value: string];
+  "code-zip-selected": [file: File];
+  "code-folder-picker": [];
+  "code-folder-input": [fileList: FileList];
+  "code-github-load": [];
+  "code-tree-toggle": [nodeId: string, checked: boolean];
+  "code-diagram-type-select": [diagramType: CodeGraphDiagramType];
+  "code-ir-label-update": [nodeId: string, label: string];
+  "code-batch-add": [];
+  "code-batch-run": [];
+  "update:codeUseHybridLlm": [enabled: boolean];
 }>();
 </script>
 
@@ -60,6 +106,58 @@ const emit = defineEmits<{
     :wizard-state="wizardState"
     :selected-mode-description="selectedModeDescription"
     @mode-select="emit('mode-select', $event)"
+  />
+
+  <WizardCodeSourceStep
+    v-else-if="currentStepId === 'codeSource'"
+    :source-tab="codeSourceTab"
+    :github-url="codeGithubUrl"
+    :github-token="codeGithubToken"
+    :github-enabled="codeGithubEnabled"
+    :is-loading="codeIngestLoading"
+    :error-message="errorMessage"
+    @update:source-tab="emit('update:codeSourceTab', $event)"
+    @update:github-url="emit('update:codeGithubUrl', $event)"
+    @update:github-token="emit('update:codeGithubToken', $event)"
+    @zip-selected="emit('code-zip-selected', $event)"
+    @folder-picker="emit('code-folder-picker')"
+    @folder-input="emit('code-folder-input', $event)"
+    @github-load="emit('code-github-load')"
+  />
+
+  <WizardCodeTreeStep
+    v-else-if="currentStepId === 'codeTree'"
+    :tree="codeProjectTree"
+    :progress-completed="codeProgressCompleted"
+    :progress-total="codeProgressTotal"
+    :current-path="codeCurrentPath"
+    @toggle="(nodeId, checked) => emit('code-tree-toggle', nodeId, checked)"
+  />
+
+  <WizardCodeDiagramTypeStep
+    v-else-if="currentStepId === 'codeDiagramType'"
+    :selected-diagram-type="codeDiagramType"
+    :options="codeDiagramTypeOptions"
+    :hybrid-enabled="codeHybridEnabled"
+    :use-hybrid-llm="codeUseHybridLlm"
+    @select="emit('code-diagram-type-select', $event)"
+    @update:use-hybrid-llm="emit('update:codeUseHybridLlm', $event)"
+  />
+
+  <WizardCodeIrReviewStep
+    v-else-if="currentStepId === 'codeIrReview'"
+    :ir="codeEditableIr"
+    @update-label="(nodeId, label) => emit('code-ir-label-update', nodeId, label)"
+  />
+
+  <WizardCodeBatchStep
+    v-else-if="currentStepId === 'codeBatch'"
+    :queue="codeBatchQueue"
+    :batch-enabled="codeBatchEnabled"
+    :is-running="codeBatchRunning"
+    :progress-percent="codeBatchProgress"
+    @add="emit('code-batch-add')"
+    @run="emit('code-batch-run')"
   />
 
   <WizardLanguageStep
@@ -110,7 +208,7 @@ const emit = defineEmits<{
   />
 
   <WizardResultStep
-    v-else
+    v-else-if="currentStepId === 'result'"
     :is-generating="isGenerating"
     :is-manual-result-ready="isManualResultReady"
     :error-message="errorMessage"

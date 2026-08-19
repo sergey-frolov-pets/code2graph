@@ -273,3 +273,8 @@ export function uniqueDiagramId(base: string, used: Set<string>): string {
   used.add(id);
   return id;
 }
+
+/** Deep-clone IR without relying on structuredClone (Vue proxies break it in the browser). */
+export function cloneDiagramIr(ir: DiagramIR): DiagramIR {
+  return JSON.parse(JSON.stringify(ir)) as DiagramIR;
+}

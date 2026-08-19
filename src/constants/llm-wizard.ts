@@ -51,7 +51,7 @@ export const WIZARD_DIAGRAM_THEMES = ["default", "dark"] as const;
 
 export type WizardDiagramTheme = (typeof WIZARD_DIAGRAM_THEMES)[number];
 
-export const WIZARD_CREATION_MODES = ["ai", "manual"] as const;
+export const WIZARD_CREATION_MODES = ["ai", "manual", "fromCode"] as const;
 
 export type WizardCreationMode = (typeof WIZARD_CREATION_MODES)[number];
 
@@ -109,6 +109,11 @@ export const WIZARD_STEP_IDS = [
   "params",
   "context",
   "prompt",
+  "codeSource",
+  "codeTree",
+  "codeDiagramType",
+  "codeIrReview",
+  "codeBatch",
   "result",
 ] as const;
 
@@ -431,6 +436,18 @@ export function wizardTypeSupportsDirection(
 }
 
 export function getWizardSteps(state: WizardState): WizardStepId[] {
+  if (state.creationMode === "fromCode") {
+    return [
+      "mode",
+      "codeSource",
+      "codeTree",
+      "codeDiagramType",
+      "codeIrReview",
+      "codeBatch",
+      "result",
+    ];
+  }
+
   const steps: WizardStepId[] = ["mode", "language", "type"];
 
   if (state.creationMode === "ai") {

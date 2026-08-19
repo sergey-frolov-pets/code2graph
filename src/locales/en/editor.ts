@@ -150,4 +150,6 @@ export const editorMessages: LocaleMessages = {
   "editor.completion.mermaidLine": "line chart",
   "editor.completion.mermaidBlockGroup": "block group",
   "editor.completion.mermaidPacketField": "packet field",
+  "editor.tabs.label": "Editor tabs",
+  "editor.tabs.close": "Close tab {label}",
 };
