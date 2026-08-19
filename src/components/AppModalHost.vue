@@ -52,6 +52,8 @@ const {
   closeSyntaxModal,
   closeSaveToLibraryModal,
   closeConvertModal,
+  closeWizardModal,
+  wizardInitialCreationMode,
 } = modals;
 
 const { guideModalOpen, guideProviderId, closeLlmKeysGuide } = llmKeysGuide;
@@ -170,7 +172,8 @@ function onWizardApplyNewTab(payload: { source: string; label: string }) {
     :layout="layout"
     :render-mode="renderMode"
     :diagram-dark-mode="diagramDarkMode"
-    @close="isWizardModalOpen = false"
+    :initial-creation-mode="wizardInitialCreationMode"
+    @close="closeWizardModal"
     @apply="onWizardApply"
     @apply-new-tab="onWizardApplyNewTab"
   />

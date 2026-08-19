@@ -116,6 +116,7 @@ onUnmounted(() => {
   <div class="app-shell">
     <AppHeader
       @open-wizard="modals.openWizardModal"
+      @open-code-graph-wizard="modals.openCodeGraphWizardModal"
       @open-library="modals.openLibraryModal"
       @open-settings="modals.openSettingsModal"
     />

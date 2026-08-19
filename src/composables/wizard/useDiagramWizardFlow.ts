@@ -30,6 +30,7 @@ import {
   type WizardState,
   type WizardStepId,
   type WizardStructuralElementId,
+  type WizardCreationMode,
 } from "@/constants/llm-wizard";
 import { LlmClientError } from "@/services/llm/llm-types";
 import { renderGraphmlToSvg } from "@/services/graphml/graphml-engine";
@@ -67,6 +68,7 @@ export interface UseDiagramWizardFlowOptions {
   diagramDarkMode: Ref<boolean>;
   locale: Ref<AppLocale>;
   t: TranslateFn;
+  initialCreationMode?: Ref<WizardCreationMode | null>;
   onApply: (payload: { source: string; label: string }) => void;
   onClose: () => void;
 }
@@ -204,11 +206,19 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
 
   function resetWizard(): void {
     stepIndex.value = 0;
+    const launchMode = options.initialCreationMode?.value;
     wizardState.value = {
       ...DEFAULT_WIZARD_STATE,
+      creationMode:
+        launchMode && isWizardCreationMode(launchMode)
+          ? launchMode
+          : DEFAULT_WIZARD_STATE.creationMode,
       typeParams: createDefaultTypeParams(),
       structuralElements: createDefaultStructuralElements(),
     };
+    if (options.initialCreationMode) {
+      options.initialCreationMode.value = null;
+    }
     isGenerating.value = false;
     errorMessage.value = "";
     resultSource.value = "";
