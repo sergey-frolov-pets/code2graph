@@ -188,6 +188,23 @@
   background: var(--surface-muted);
 }
 
+.wizard-mode-toggle--creation-modes {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.wizard-mode-toggle--creation-modes .wizard-mode-toggle__option {
+  white-space: nowrap;
+  padding-inline: 6px;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 560px) {
+  .wizard-mode-toggle--creation-modes .wizard-mode-toggle__option {
+    font-size: 0.74rem;
+    padding-inline: 4px;
+  }
+}
+
 .wizard-mode-toggle__option {
   min-height: 40px;
   padding: 8px 12px;

@@ -56,22 +56,24 @@ const { t } = useLocale();
   gap: 4px;
   padding: 6px 8px 0;
   overflow-x: auto;
-  border-bottom: 1px solid var(--border-color, #ddd);
-  background: var(--panel-bg, #fafafa);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-muted);
 }
 
 .editor-tab-bar__tab {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  border: 1px solid var(--border-color, #ddd);
+  border: 1px solid var(--border);
   border-bottom: none;
   border-radius: 8px 8px 0 0;
-  background: var(--panel-bg-muted, #f3f3f3);
+  background: color-mix(in srgb, var(--surface-muted) 80%, var(--surface));
+  color: var(--text);
 }
 
 .editor-tab-bar__tab.is-active {
-  background: var(--panel-bg, #fff);
+  background: var(--surface);
+  color: var(--text);
   font-weight: 600;
 }
 

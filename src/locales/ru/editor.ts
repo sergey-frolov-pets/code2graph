@@ -63,6 +63,7 @@ export const editorMessages: LocaleMessages = {
   "editor.versions": "Версии",
   "editor.aiPatch": "Изменить с AI",
   "editor.aiSyntaxAsk": "Спросить по синтаксису",
+  "editor.aiAssistant": "ИИ-помощник",
   "editor.undo": "Отменить (Ctrl+Z)",
   "editor.redo": "Повторить (Ctrl+Y)",
   "editor.history.edit": "Правка",
