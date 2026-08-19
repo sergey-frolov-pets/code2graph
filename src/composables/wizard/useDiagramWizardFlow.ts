@@ -7,6 +7,7 @@ import {
 } from "@/services/llm/llm-wizard-chat";
 import { useLlmConversation } from "@/composables/useLlmConversation";
 import { toLlmChatMessages } from "@/utils/llm-edit-conversation";
+import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
 import {
@@ -69,7 +70,7 @@ export interface UseDiagramWizardFlowOptions {
   locale: Ref<AppLocale>;
   t: TranslateFn;
   initialCreationMode?: Ref<WizardCreationMode | null>;
-  onApply: (payload: { source: string; label: string }) => void;
+  onApply: (payload: { source: string; label: string; format: DiagramFormat }) => void;
   onClose: () => void;
 }
 
@@ -728,6 +729,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     onApply({
       source: resultSource.value,
       label: buildApplyLabel(wizardState.value),
+      format: wizardState.value.language,
     });
     onClose();
   }
@@ -743,6 +745,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     onApply({
       source,
       label: buildApplyLabel(resolved),
+      format: resolved.language,
     });
     onClose();
   }

@@ -84,7 +84,11 @@ export interface AppShellContext {
   onSyntaxAskFromValidation: () => void;
   applyAiPlantUml: (source: string, label: string) => void;
   applyWizardDiagram: (source: string, label: string) => void;
-  applyWizardDiagramToNewTab: (source: string, label: string) => void;
+  applyWizardDiagramToNewTab: (
+    source: string,
+    label: string,
+    format?: DiagramFormat,
+  ) => void;
   editorDocuments: ReturnType<typeof useEditorDocuments>["documents"];
   activeDocumentId: ReturnType<typeof useEditorDocuments>["activeDocumentId"];
   switchEditorTab: (documentId: string) => void;
@@ -246,6 +250,7 @@ export function useAppShell(): AppShellContext {
     onAiPatchRequest,
     applyAiPlantUml,
     applyWizardDiagram,
+    onWizardDiagramApplied,
   } = useAiSourceApply({
     source,
     error,
@@ -390,17 +395,22 @@ export function useAppShell(): AppShellContext {
     });
   }
 
-  function applyWizardDiagramToNewTab(wizardSource: string, label: string): void {
+  function applyWizardDiagramToNewTab(
+    wizardSource: string,
+    label: string,
+    format: DiagramFormat = "plantuml",
+  ): void {
     flushPendingHistory();
     withSuppressedSourceHistory(() => {
       editorDocumentsApi.openNewTab({
         source: wizardSource,
         label,
-        format: "plantuml",
+        format,
       });
       error.value = "";
       syntaxErrorLines.value = [];
       scheduleRender();
+      onWizardDiagramApplied();
     });
   }
 

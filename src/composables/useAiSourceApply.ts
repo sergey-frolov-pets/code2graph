@@ -58,5 +58,6 @@ export function useAiSourceApply(options: UseAiSourceApplyOptions) {
     onAiPatchRequest,
     applyAiPlantUml,
     applyWizardDiagram,
+    onWizardDiagramApplied: maybeShowAfterWizardApply,
   };
 }

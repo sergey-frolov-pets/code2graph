@@ -11,7 +11,6 @@ const { navigateTo } = useAppRouter();
 
 const emit = defineEmits<{
   openWizard: [];
-  openCodeGraphWizard: [];
   openLibrary: [];
   openSettings: [];
 }>();
@@ -35,14 +34,7 @@ const { t } = useLocale();
         extra-class="app-header__icon-btn"
         @click="emit('openWizard')"
       >
-        <ActionIcon name="ai" />
-      </IconButton>
-      <IconButton
-        :label="t('app.codeGraphDiagram')"
-        extra-class="app-header__icon-btn"
-        @click="emit('openCodeGraphWizard')"
-      >
-        <ActionIcon name="code" />
+        <ActionIcon name="plus" />
       </IconButton>
       <IconButton
         :label="t('app.library')"

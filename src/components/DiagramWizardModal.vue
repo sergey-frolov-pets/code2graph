@@ -13,6 +13,7 @@ import { useCodeGraphWizardFlow } from "@/composables/code-graph/useCodeGraphWiz
 import { useActiveLlmLabel } from "@/composables/useActiveLlmLabel";
 import { useWizardOnboarding } from "@/composables/wizard/useWizardOnboarding";
 import { useLocale } from "@/composables/useLocale";
+import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
 import type { CodeGraphDiagramType } from "@/constants/code-graph";
@@ -29,8 +30,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
-  apply: [payload: { source: string; label: string }];
-  "apply-new-tab": [payload: { source: string; label: string }];
+  apply: [payload: { source: string; label: string; format: DiagramFormat }];
+  "apply-new-tab": [payload: { source: string; label: string; format?: DiagramFormat }];
 }>();
 
 const { t, locale } = useLocale();
