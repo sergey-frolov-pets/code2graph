@@ -4,6 +4,7 @@ import ActionIcon from "@/components/icons/ActionIcon.vue";
 import FileBadgeIcon from "@/components/icons/FileBadgeIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import TooltipWrap from "@/components/TooltipWrap.vue";
+import ToolbarOverflowMenu from "@/components/ui/ToolbarOverflowMenu.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
 import { useLocale } from "@/composables/useLocale";
 import {
@@ -71,6 +72,44 @@ const validateLabel = computed(() =>
 const formatBadgeLabel = computed(() =>
   t(`editor.format.${props.formatDefinition.id}`),
 );
+
+const showAiAssistantMenu = computed(
+  () =>
+    props.formatDefinition.supportsAiPatch &&
+    props.formatDefinition.supportsAiSyntaxAsk,
+);
+
+const aiAssistantMenuGroups = computed(() => [
+  {
+    id: "ai",
+    label: "",
+    actions: [
+      {
+        id: "patch",
+        label: t("editor.aiPatch"),
+        icon: "ai" as const,
+        disabled: !props.canAiPatch,
+      },
+      {
+        id: "syntax-ask",
+        label: t("editor.aiSyntaxAsk"),
+        icon: "syntax-help" as const,
+        disabled: !props.canAiSyntaxAsk,
+      },
+    ],
+  },
+]);
+
+function onAiAssistantAction(actionId: string): void {
+  if (actionId === "patch") {
+    emit("aiPatch");
+    return;
+  }
+
+  if (actionId === "syntax-ask") {
+    emit("aiSyntaxAsk");
+  }
+}
 
 const titleTooltip = computed(() =>
   t(`editor.titleTooltip.${props.formatDefinition.id}`),
@@ -191,8 +230,15 @@ function onSampleChange(event: Event): void {
       >
         <ActionIcon name="library" />
       </IconButton>
+      <ToolbarOverflowMenu
+        v-if="showAiAssistantMenu"
+        :label="t('editor.aiAssistant')"
+        icon="ai"
+        :groups="aiAssistantMenuGroups"
+        @action="onAiAssistantAction"
+      />
       <IconButton
-        v-if="formatDefinition.supportsAiPatch"
+        v-else-if="formatDefinition.supportsAiPatch"
         :label="t('editor.aiPatch')"
         :disabled="!canAiPatch"
         prevent-mousedown-default
@@ -201,7 +247,7 @@ function onSampleChange(event: Event): void {
         <ActionIcon name="ai" />
       </IconButton>
       <IconButton
-        v-if="formatDefinition.supportsAiSyntaxAsk"
+        v-else-if="formatDefinition.supportsAiSyntaxAsk"
         :label="t('editor.aiSyntaxAsk')"
         :disabled="!canAiSyntaxAsk"
         prevent-mousedown-default

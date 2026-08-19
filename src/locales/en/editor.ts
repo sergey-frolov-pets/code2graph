@@ -63,6 +63,7 @@ export const editorMessages: LocaleMessages = {
   "editor.versions": "Versions",
   "editor.aiPatch": "Edit with AI",
   "editor.aiSyntaxAsk": "Ask about syntax",
+  "editor.aiAssistant": "AI assistant",
   "editor.undo": "Undo (Ctrl+Z)",
   "editor.redo": "Redo (Ctrl+Y)",
   "editor.history.edit": "Edit",

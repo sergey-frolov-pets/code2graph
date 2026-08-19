@@ -19,7 +19,7 @@ const { t } = useLocale();
   <div class="wizard-step">
     <p class="wizard-hint">{{ t("llm.wizard.modeHint") }}</p>
     <div
-      class="wizard-mode-toggle"
+      class="wizard-mode-toggle wizard-mode-toggle--creation-modes"
       role="radiogroup"
       :aria-label="t('llm.wizard.step.mode')"
     >

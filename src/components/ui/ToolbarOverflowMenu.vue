@@ -18,10 +18,16 @@ export interface ToolbarMenuGroup {
   actions: ToolbarMenuAction[];
 }
 
-defineProps<{
-  label: string;
-  groups: ToolbarMenuGroup[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    label: string;
+    groups: ToolbarMenuGroup[];
+    icon?: ActionIconName;
+  }>(),
+  {
+    icon: "more",
+  },
+);
 
 const emit = defineEmits<{
   action: [id: string];
@@ -81,7 +87,7 @@ onUnmounted(() => {
       extra-class="toolbar-overflow__trigger"
       @click="toggle"
     >
-      <ActionIcon name="more" />
+      <ActionIcon :name="props.icon" />
     </IconButton>
 
     <div
@@ -96,7 +102,7 @@ onUnmounted(() => {
         :key="group.id"
         class="toolbar-overflow__group"
       >
-        <h3 class="toolbar-overflow__group-title">{{ group.label }}</h3>
+        <h3 v-if="group.label" class="toolbar-overflow__group-title">{{ group.label }}</h3>
         <button
           v-for="action in group.actions"
           :key="action.id"
