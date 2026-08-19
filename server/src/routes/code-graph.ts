@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import type { AuthVariables } from "../auth.js";
+import type { AuthVariables } from "../auth/context.js";
 
 export const CODE_GRAPH_PRO_SKU = "code2graph-pro";
 
