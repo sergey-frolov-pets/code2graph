@@ -98,11 +98,33 @@ curl -sS https://www.code2graph.ru/api/auth/status
 
 ## Обновление
 
-Скрипт жёстко синхронизирует локальный `main` с `origin/main` (publish в code2graph — force-push; обычный `git pull` на VPS может падать с «divergent branches»).
+Скрипт по умолчанию жёстко синхронизирует локальный `main` с `origin/main` (publish в code2graph — force-push; обычный `git pull` на VPS может падать с «divergent branches»).
 
 ```bash
 sudo bash /opt/code2graph/scripts/deploy/vdsina-update.sh
 ```
+
+### Тест commit-а без merge в main
+
+Чтобы проверить изменения из feature-ветки на VPS до merge в `main`, укажите SHA (короткий или полный). Commit должен быть **запушен** в GitHub.
+
+```bash
+# CLI
+sudo bash /opt/code2graph/scripts/deploy/vdsina-update.sh --commit fcdb931
+
+# или переменная окружения
+sudo CODE2GRAPH_DEPLOY_COMMIT=fcdb931 bash /opt/code2graph/scripts/deploy/vdsina-update.sh
+```
+
+Скрипт делает `git fetch origin`, checkout в **detached HEAD** на указанный commit, собирает и выкладывает сайт.
+
+Вернуть прод с `origin/main`:
+
+```bash
+sudo bash /opt/code2graph/scripts/deploy/vdsina-update.sh
+```
+
+Справка: `sudo bash /opt/code2graph/scripts/deploy/vdsina-update.sh --help`
 
 Если обновление уже упало на git, вручную:
 
@@ -130,4 +152,5 @@ echo '15 4 * * * root /opt/code2graph/scripts/deploy/vdsina-update.sh >> /var/lo
 | `CODE2GRAPH_GIT_TOKEN` | — (для private) |
 | `CODE2GRAPH_DOMAIN` | `www.code2graph.ru` |
 | `CODE2GRAPH_INSTALL_DIR` | `/opt/code2graph` |
+| `CODE2GRAPH_DEPLOY_COMMIT` | — (SHA для тестового деплоя, см. `vdsina-update.sh --commit`) |
 | `CODE2GRAPH_ADMIN_EMAIL` | `admin@code2graph.ru` |
