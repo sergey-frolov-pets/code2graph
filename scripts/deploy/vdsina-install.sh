@@ -119,7 +119,10 @@ export_node_build_memory
 
 echo "==> Сборка"
 npm ci
-npm run build
+if ! npm run build:deploy; then
+  echo "ОШИБКА: сборка фронта не удалась"
+  exit 1
+fi
 unset NODE_OPTIONS
 npm --prefix server ci
 npm --prefix server run build

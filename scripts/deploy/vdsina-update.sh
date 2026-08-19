@@ -113,7 +113,10 @@ fi
 
 echo "==> Frontend build"
 npm ci
-npm run build
+if ! npm run build:deploy; then
+  echo "ОШИБКА: сборка фронта не удалась (см. вывод выше). Сайт не обновлён."
+  exit 1
+fi
 unset NODE_OPTIONS
 
 echo "==> API build"
@@ -121,13 +124,18 @@ npm --prefix server ci
 npm --prefix server run build
 
 echo "==> Static files -> ${WEB_ROOT}"
-printf '%s\n' "$AFTER_VERSION" > dist/version.txt
+printf '%s\n' "${AFTER_VERSION} (${AFTER_COMMIT})" > dist/version.txt
 install -d -m 0755 "$WEB_ROOT"
 rsync -a --delete dist/ "$WEB_ROOT/"
 
+if ! grep -q "codeGraph.sourceHint" "$WEB_ROOT/index.html"; then
+  echo "ОШИБКА: в ${WEB_ROOT}/index.html нет code-to-graph — проверьте сборку и commit ${AFTER_COMMIT}"
+  exit 1
+fi
+
 DEPLOYED_VERSION="$(cat "$WEB_ROOT/version.txt" 2>/dev/null || echo missing)"
-if [[ "$DEPLOYED_VERSION" != "$AFTER_VERSION" ]]; then
-  echo "ОШИБКА: в ${WEB_ROOT}/version.txt версия '${DEPLOYED_VERSION}', ожидалась v${AFTER_VERSION}"
+if [[ "$DEPLOYED_VERSION" != "${AFTER_VERSION} (${AFTER_COMMIT})" ]]; then
+  echo "ОШИБКА: в ${WEB_ROOT}/version.txt '${DEPLOYED_VERSION}', ожидалось '${AFTER_VERSION} (${AFTER_COMMIT})'"
   exit 1
 fi
 

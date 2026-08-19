@@ -1,6 +1,6 @@
 {
   "name": "code2graph-app",
-  "version": "1.0.71",
+  "version": "1.0.72",
   "private": true,
   "type": "module",
   "description": "Code2Graph — offline PlantUML, Mermaid, and GraphML diagram editor (Vue 3 + Smetana)",
@@ -10,6 +10,7 @@
     "dev:all": "npm run dev:api & npm run dev",
     "prebuild": "node scripts/copy-vendor.mjs && node scripts/copy-c4-lib.mjs && node scripts/copy-archimate-lib.mjs && node scripts/generate-pwa-icons.mjs",
     "build": "vue-tsc --noEmit && vite build && node scripts/build-single-html.mjs",
+    "build:deploy": "npm run prebuild && vite build && node scripts/build-single-html.mjs",
     "build:minimal": "vue-tsc --noEmit && vite build && node scripts/build-minimal.mjs",
     "build:single": "vue-tsc --noEmit && vite build && node scripts/build-single-only.mjs",
     "build:release": "npm run build:single && node scripts/package-release.mjs",
