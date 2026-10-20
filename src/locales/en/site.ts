@@ -121,6 +121,9 @@ export const siteMessages: LocaleMessages = {
   "site.registerTitle": "Sign up",
   "site.registerSubtitle": "Create an account on the Code2Graph server",
   "site.accountTitle": "Account",
+  "site.staticModeTitle": "Local edition",
+  "site.staticModeText":
+    "This build runs without a server or database: diagrams stay in your browser. Sign-in and the cloud library are available on the server edition.",
   "site.username": "Username",
   "site.password": "Password",
   "site.passwordConfirm": "Confirm password",

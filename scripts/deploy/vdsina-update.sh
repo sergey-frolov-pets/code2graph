@@ -113,6 +113,9 @@ fi
 
 echo "==> Frontend build"
 npm ci
+# shellcheck disable=SC1091
+source "$INSTALL_DIR/scripts/deploy/frontend-env.sh"
+export_frontend_api_env "$INSTALL_DIR"
 if ! npm run build:deploy; then
   echo "ОШИБКА: сборка фронта не удалась (см. вывод выше). Сайт не обновлён."
   exit 1

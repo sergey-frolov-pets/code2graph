@@ -39,7 +39,7 @@ export const settingsMessages: LocaleMessages = {
   "settings.about": "About",
   "settings.library": "Library",
   "settings.libraryServer": "Library server URL",
-  "settings.libraryServerHint": "Leave empty for a local-only library without a server. Example: https://library.example.com or http://localhost:3001",
+  "settings.libraryServerHint": "Empty uses the address baked into this build. If the build has no server, the library stays on this device. Custom server: https://library.example.com or http://localhost:3001",
   "settings.libraryServerPlaceholder": "Empty — local only",
   "settings.libraryUsername": "Library server username",
   "settings.libraryUsernamePlaceholder": "Username for Basic Auth",

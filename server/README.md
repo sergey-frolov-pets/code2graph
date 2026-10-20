@@ -29,6 +29,15 @@ npm run dev
 | `OPENROUTER_API_KEY` | Ключ OpenRouter для `openrouter-free` | — |
 | `LLM_RATE_LIMIT_PER_MINUTE` | Лимит запросов LLM на IP | `20` |
 | `AUTH_TOKEN_SECRET` | Секрет для Bearer-токенов API | dev-значение (задайте в продакшене) |
+| `VITE_API_BASE_URL` | Адрес API для **сборки фронтенда** (не читается Node) | на VPS, если ключ отсутствует: `same-origin` |
+
+`VITE_API_BASE_URL` связывает статическую и серверную версии без правок кода:
+
+- пусто — GitHub Pages и любая статика: библиотека только в браузере, без SQLite;
+- `same-origin` — фронтенд вызывает `/api` на том же хосте;
+- `https://хост` — фронтенд вызывает указанный сервер.
+
+На VPS значение забирает `scripts/deploy/frontend-env.sh` из `server/.env` перед `npm run build`.
 
 Первый администратор создаётся через приложение при открытии библиотеки (`POST /api/auth/setup`), если в SQLite ещё нет пользователей. Публичный статус: `GET /api/auth/status`.
 

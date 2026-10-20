@@ -3,6 +3,11 @@
 declare const __APP_VERSION__: string;
 
 interface ImportMetaEnv {
+  /**
+   * Пусто — статическая сборка без сервера и БД.
+   * `same-origin` — API на том же хосте (`/api`).
+   * Иначе абсолютный URL сервера библиотеки.
+   */
   readonly VITE_API_BASE_URL?: string;
 }
 

@@ -87,6 +87,10 @@ AUTH_TOKEN_SECRET=your_random_secret_here
 # Опционально: free LLM proxy
 GEMINI_API_KEY=your-gemini-key
 LLM_RATE_LIMIT_PER_MINUTE=20
+
+# Вшивается во фронтенд при сборке на VPS (не используется процессом Node).
+# same-origin — сайт и /api на одном домене. Пусто — статика без сервера.
+VITE_API_BASE_URL=same-origin
 ```
 
 Создайте каталог для SQLite:

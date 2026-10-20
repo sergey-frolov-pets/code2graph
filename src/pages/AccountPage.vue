@@ -1,16 +1,23 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
+import ServerRequiredNotice from "@/components/site/ServerRequiredNotice.vue";
 import SiteHeader from "@/components/site/SiteHeader.vue";
 import { useAppRouter } from "@/composables/useAppRouter";
+import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import { useLibraryAuth } from "@/composables/useLibraryAuth";
 import { useLocale } from "@/composables/useLocale";
 
 const { t } = useLocale();
 const { navigateTo } = useAppRouter();
+const { isLocalMode } = useLibraryApiUrl();
 const { currentUser, isAuthenticated, refreshCurrentUser, logoutLibraryAuth } =
   useLibraryAuth();
 
 onMounted(async () => {
+  if (isLocalMode.value) {
+    return;
+  }
+
   await refreshCurrentUser();
   if (!isAuthenticated.value) {
     navigateTo("login");
@@ -24,7 +31,8 @@ function onLogout(): void {
 </script>
 
 <template>
-  <div class="site-page auth-page">
+  <ServerRequiredNotice v-if="isLocalMode" />
+  <div v-else class="site-page auth-page">
     <SiteHeader />
 
     <main v-if="currentUser" class="auth-card">

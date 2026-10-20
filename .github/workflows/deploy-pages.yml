@@ -52,7 +52,11 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium
 
-      - name: Build
+      - name: Build static site
+        env:
+          # Пустой адрес API: GitHub Pages без сервера и базы данных.
+          # Серверная сборка задаёт VITE_API_BASE_URL=same-origin (см. server/.env).
+          VITE_API_BASE_URL: ""
         run: npm run build
 
       - name: E2E smoke test

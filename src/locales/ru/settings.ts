@@ -39,7 +39,7 @@ export const settingsMessages: LocaleMessages = {
   "settings.about": "О программе",
   "settings.library": "Библиотека",
   "settings.libraryServer": "Адрес сервера библиотеки",
-  "settings.libraryServerHint": "Оставьте пустым для локальной библиотеки без сервера. Пример: https://library.example.com или http://localhost:3001",
+  "settings.libraryServerHint": "Пусто — адрес из сборки сайта. Если при сборке сервер не задан, библиотека только локальная. Свой сервер: https://library.example.com или http://localhost:3001",
   "settings.libraryServerPlaceholder": "Пусто — только локально",
   "settings.libraryUsername": "Логин сервера библиотеки",
   "settings.libraryUsernamePlaceholder": "Логин для Basic Auth",
