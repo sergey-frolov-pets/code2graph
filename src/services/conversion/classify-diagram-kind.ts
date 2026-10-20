@@ -197,6 +197,10 @@ export function classifyDiagramKind(
   const text = stripCommentsAndFences(source);
   const lower = text.toLowerCase();
 
+  if (format === "wiremark") {
+    return "unknown";
+  }
+
   if (format === "graphml" || lower.includes("<graphml")) {
     return "graph";
   }

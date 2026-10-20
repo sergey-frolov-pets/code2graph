@@ -208,7 +208,7 @@ export async function addLibraryDiagramFromFile(
   const tags = metadata.tags ?? [];
   const title =
     metadata.title?.trim() ||
-    file.name.replace(/\.(puml|plantuml|txt|mmd|mermaid|graphml)$/i, "") ||
+    file.name.replace(/\.(puml|plantuml|txt|mmd|mermaid|graphml|wiremark)$/i, "") ||
     "Diagram";
 
   return addLibraryDiagram(ctx, {

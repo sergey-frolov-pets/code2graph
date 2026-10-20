@@ -10,6 +10,7 @@ import { isSnippetsHotkey } from "@/constants/snippets-settings";
 import { detectDiagramFormat } from "@/utils/diagram-format";
 import { isCompleteMermaidDiagram } from "@/utils/mermaid-source";
 import { isCompleteGraphmlDocument } from "@/utils/graphml-source";
+import { isCompleteWiremarkDocument } from "@/utils/wiremark-source";
 
 const props = defineProps<{
   source: string;
@@ -76,8 +77,10 @@ function onPaste(event: ClipboardEvent): void {
       ? isCompleteGraphmlDocument(pasted)
       : pastedFormat === "mermaid"
         ? isCompleteMermaidDiagram(pasted)
-        : pastedFormat === "plantuml" &&
-          /@start(uml|gantt)\b/i.test(pasted)) &&
+        : pastedFormat === "wiremark"
+          ? isCompleteWiremarkDocument(pasted)
+          : pastedFormat === "plantuml" &&
+            /@start(uml|gantt)\b/i.test(pasted)) &&
     !hasFullSelection
   ) {
     event.preventDefault();

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { getWizardTypesForLanguage } from "@/constants/llm-wizard";
 import {
+  WIREMARK_SAMPLE_IDS,
+  getWiremarkSampleSource,
+} from "@/constants/wiremark-sample-diagrams";
+import {
   MERMAID_SAMPLE_IDS,
   MERMAID_SAMPLE_WIZARD_TYPES,
   getMermaidSampleSource,
@@ -41,6 +45,11 @@ describe("diagram samples coverage", () => {
     for (const id of MERMAID_SAMPLE_IDS) {
       expect(getMermaidSampleSource(id, "ru").trim().length).toBeGreaterThan(0);
       expect(getMermaidSampleSource(id, "en").trim().length).toBeGreaterThan(0);
+    }
+
+    for (const id of WIREMARK_SAMPLE_IDS) {
+      expect(getWiremarkSampleSource(id, "ru").trim().length).toBeGreaterThan(0);
+      expect(getWiremarkSampleSource(id, "en").trim().length).toBeGreaterThan(0);
     }
   });
 });

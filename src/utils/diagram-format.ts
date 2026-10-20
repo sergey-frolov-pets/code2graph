@@ -3,6 +3,7 @@ import {
   detectFormatFromFileName,
   type DiagramFormat,
 } from "@/constants/diagram-formats";
+import { looksLikeWiremarkSource } from "@/utils/wiremark-source";
 
 export function detectDiagramFormatFromSource(source: string): DiagramFormat | null {
   const trimmed = source.trim();
@@ -47,6 +48,10 @@ export function detectDiagramFormatFromSource(source: string): DiagramFormat | n
     return "plantuml";
   }
 
+  if (looksLikeWiremarkSource(trimmed)) {
+    return "wiremark";
+  }
+
   return null;
 }
 
@@ -59,7 +64,12 @@ export function resolveLibraryDiagramFormat(
     return detectDiagramFormat(source, fileName);
   }
 
-  if (language === "mermaid" || language === "graphml" || language === "plantuml") {
+  if (
+    language === "mermaid" ||
+    language === "graphml" ||
+    language === "plantuml" ||
+    language === "wiremark"
+  ) {
     return language;
   }
 

@@ -4,6 +4,8 @@ export const MERMAID_EXTENSIONS = [".mmd", ".mermaid"] as const;
 
 export const GRAPHML_EXTENSIONS = [".graphml"] as const;
 
+export const WIREMARK_EXTENSIONS = [".wiremark"] as const;
+
 export function isPumlFileName(fileName: string): boolean {
   const lowerName = fileName.toLowerCase();
   return PUML_EXTENSIONS.some((extension) => lowerName.endsWith(extension));
@@ -36,6 +38,9 @@ export function detectLanguageFromFileName(fileName: string): string | null {
   if (GRAPHML_EXTENSIONS.some((extension) => lowerName.endsWith(extension))) {
     return "graphml";
   }
+  if (WIREMARK_EXTENSIONS.some((extension) => lowerName.endsWith(extension))) {
+    return "wiremark";
+  }
   if (isPumlFileName(fileName)) {
     return "plantuml";
   }
@@ -62,6 +67,14 @@ export function detectLanguageFromSource(source: string): string {
     /^(graph|flowchart|classdiagram|statediagram|erdiagram)\b/.test(trimmed)
   ) {
     return "mermaid";
+  }
+  if (
+    trimmed.startsWith("```wireframe") ||
+    trimmed.startsWith("```wiremark") ||
+    trimmed.startsWith("wireframe ") ||
+    trimmed.startsWith("flow ")
+  ) {
+    return "wiremark";
   }
   return "plantuml";
 }

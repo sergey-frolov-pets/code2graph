@@ -2,6 +2,7 @@ import type { DiagramFormat } from "@/constants/diagram-formats";
 import { graphmlFormatHandler } from "./graphml/handler";
 import { mermaidFormatHandler } from "./mermaid/handler";
 import { plantUmlFormatHandler } from "./plantuml/handler";
+import { wiremarkFormatHandler } from "./wiremark/handler";
 import type { FormatContext, FormatHandler } from "./types";
 import type { SyntaxCheckResult } from "@/utils/plantuml-syntax";
 
@@ -9,6 +10,7 @@ const handlers: Record<DiagramFormat, FormatHandler> = {
   plantuml: plantUmlFormatHandler,
   mermaid: mermaidFormatHandler,
   graphml: graphmlFormatHandler,
+  wiremark: wiremarkFormatHandler,
 };
 
 export function getFormatHandler(format: DiagramFormat): FormatHandler {
@@ -69,6 +71,7 @@ export {
   plantUmlFormatHandler,
   mermaidFormatHandler,
   graphmlFormatHandler,
+  wiremarkFormatHandler,
 };
 export type {
   FormatHandler,

@@ -10,9 +10,11 @@ import { useLocale } from "@/composables/useLocale";
 import {
   MERMAID_SAMPLE_IDS,
   PLANTUML_SAMPLE_IDS,
+  WIREMARK_SAMPLE_IDS,
   type MermaidSampleId,
   type PlantUmlSampleId,
   type SampleSelection,
+  type WiremarkSampleId,
 } from "@/constants/sample-diagrams";
 import type { DiagramFormatDefinition } from "@/constants/diagram-formats";
 import { SNIPPETS_KEYBOARD_SHORTCUT } from "@/constants/snippets-settings";
@@ -62,6 +64,13 @@ const mermaidSampleOptions = computed(() =>
   MERMAID_SAMPLE_IDS.map((id) => ({
     value: `mermaid:${id}`,
     label: t(`samples.mermaid.${id}`),
+  })),
+);
+
+const wiremarkSampleOptions = computed(() =>
+  WIREMARK_SAMPLE_IDS.map((id) => ({
+    value: `wiremark:${id}`,
+    label: t(`samples.wiremark.${id}`),
   })),
 );
 
@@ -122,15 +131,21 @@ const saveLabel = computed(() => {
   if (props.formatDefinition.id === "graphml") {
     return t("editor.saveGraphml");
   }
+  if (props.formatDefinition.id === "wiremark") {
+    return t("editor.saveWiremark");
+  }
   return t("app.savePuml");
 });
 
-const saveBadgeFormat = computed<"PUML" | "MMD" | "GML">(() => {
+const saveBadgeFormat = computed<"PUML" | "MMD" | "GML" | "WMK">(() => {
   if (props.formatDefinition.id === "mermaid") {
     return "MMD";
   }
   if (props.formatDefinition.id === "graphml") {
     return "GML";
+  }
+  if (props.formatDefinition.id === "wiremark") {
+    return "WMK";
   }
   return "PUML";
 });
@@ -141,6 +156,9 @@ const openFileLabel = computed(() => {
   }
   if (props.formatDefinition.id === "mermaid") {
     return t("editor.openMermaid");
+  }
+  if (props.formatDefinition.id === "wiremark") {
+    return t("editor.openWiremark");
   }
   return t("editor.openPuml");
 });
@@ -166,6 +184,13 @@ function parseSampleSelection(value: string): SampleSelection | null {
     (MERMAID_SAMPLE_IDS as readonly string[]).includes(id)
   ) {
     return { format: "mermaid", id: id as MermaidSampleId };
+  }
+
+  if (
+    format === "wiremark" &&
+    (WIREMARK_SAMPLE_IDS as readonly string[]).includes(id)
+  ) {
+    return { format: "wiremark", id: id as WiremarkSampleId };
   }
 
   return null;
@@ -325,6 +350,15 @@ function onSampleChange(event: Event): void {
             <optgroup :label="t('editor.samplesMermaid')">
               <option
                 v-for="sample in mermaidSampleOptions"
+                :key="sample.value"
+                :value="sample.value"
+              >
+                {{ sample.label }}
+              </option>
+            </optgroup>
+            <optgroup :label="t('editor.samplesWiremark')">
+              <option
+                v-for="sample in wiremarkSampleOptions"
                 :key="sample.value"
                 :value="sample.value"
               >

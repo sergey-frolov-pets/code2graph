@@ -3,7 +3,7 @@ import { detectAutoFoldRegions } from "@/utils/auto-fold-regions";
 
 function findRegion(
   source: string,
-  format: "plantuml" | "mermaid" | "graphml",
+  format: "plantuml" | "mermaid" | "graphml" | "wiremark",
   label: string,
 ) {
   return detectAutoFoldRegions(source, format).find((region) => region.label === label);
@@ -234,6 +234,30 @@ describe("detectAutoFoldRegions", () => {
       const regions = detectAutoFoldRegions(source, "graphml");
       expect(regions.some((region) => region.label === "desc")).toBe(true);
       expect(regions.some((region) => region.label === "data")).toBe(true);
+    });
+  });
+
+  describe("wiremark", () => {
+    it("folds a named frame", () => {
+      const source = [
+        "Flow LR",
+        "",
+        "Wireframe #login mobile",
+        "  Stack column",
+        "    Button \"Sign in\" contained",
+        "",
+        "Wireframe #home landscape",
+        "  Typography h4 \"Welcome\"",
+      ].join("\n");
+
+      expect(findRegion(source, "wiremark", "login")).toMatchObject({
+        startLine: 3,
+        endLine: 6,
+      });
+      expect(findRegion(source, "wiremark", "home")).toMatchObject({
+        startLine: 7,
+        endLine: 8,
+      });
     });
   });
 });

@@ -39,6 +39,11 @@ const formatRows = [
     purpose: "site.formats.graphml.purpose",
     features: "site.formats.graphml.features",
   },
+  {
+    format: "WireMark",
+    purpose: "site.formats.wiremark.purpose",
+    features: "site.formats.wiremark.features",
+  },
 ] as const;
 
 const audienceCards = [

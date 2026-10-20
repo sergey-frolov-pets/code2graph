@@ -1,6 +1,11 @@
 import type { DiagramLanguage } from "@/constants/diagram-library";
 
-export const DIAGRAM_FORMATS = ["plantuml", "mermaid", "graphml"] as const;
+export const DIAGRAM_FORMATS = [
+  "plantuml",
+  "mermaid",
+  "graphml",
+  "wiremark",
+] as const;
 
 export type DiagramFormat = (typeof DIAGRAM_FORMATS)[number];
 
@@ -77,6 +82,23 @@ export const DIAGRAM_FORMAT_DEFINITIONS: Record<
     supportsAiSyntaxAsk: false,
     supportsSnippets: false,
     supportsSamples: false,
+    supportsSaveSource: true,
+    usesPlantUmlEngine: false,
+    supportsOnlineRender: false,
+  },
+  wiremark: {
+    id: "wiremark",
+    language: "wiremark",
+    extensions: [".wiremark"],
+    mimeType: "text/vnd.wiremark",
+    accept: ".wiremark",
+    defaultFileName: "diagram.wiremark",
+    editable: true,
+    supportsSyntaxValidation: true,
+    supportsAiPatch: false,
+    supportsAiSyntaxAsk: false,
+    supportsSnippets: false,
+    supportsSamples: true,
     supportsSaveSource: true,
     usesPlantUmlEngine: false,
     supportsOnlineRender: false,

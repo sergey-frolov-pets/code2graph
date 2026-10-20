@@ -16,4 +16,9 @@ export const FORMAT_GUIDE_LINKS = [
     href: APP_LINKS.graphmlGuide,
     labelKey: "settings.graphmlGuide",
   },
+  {
+    id: "wiremark",
+    href: APP_LINKS.wiremarkGuide,
+    labelKey: "settings.wiremarkGuide",
+  },
 ] as const;

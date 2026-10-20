@@ -76,7 +76,8 @@ const effectiveSyntaxHighlight = computed(
     props.syntaxHighlightEnabled &&
     (diagramFormat.value === "plantuml" ||
       diagramFormat.value === "mermaid" ||
-      diagramFormat.value === "graphml"),
+      diagramFormat.value === "graphml" ||
+      diagramFormat.value === "wiremark"),
 );
 const editorPlaceholder = computed(() => {
   if (diagramFormat.value === "graphml") {
@@ -84,6 +85,9 @@ const editorPlaceholder = computed(() => {
   }
   if (diagramFormat.value === "mermaid") {
     return t("editor.placeholderMermaid");
+  }
+  if (diagramFormat.value === "wiremark") {
+    return t("editor.placeholderWiremark");
   }
   return t("editor.placeholder");
 });

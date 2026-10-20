@@ -70,6 +70,8 @@ export const siteMessages: LocaleMessages = {
   "site.formats.mermaid.features": "Live preview, Wizard generation, export",
   "site.formats.graphml.purpose": "Topology graphs for yEd, Draw.io, and visualization systems",
   "site.formats.graphml.features": "Import, visualization, conversion to code",
+  "site.formats.wiremark.purpose": "Hand-drawn UI wireframes inside markdown",
+  "site.formats.wiremark.features": "Editing, live preview, sample screens",
 
   "site.audience.title": "Speeds up the whole engineering team",
   "site.audience.architect.title": "🏛 Software architects",

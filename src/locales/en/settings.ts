@@ -35,6 +35,7 @@ export const settingsMessages: LocaleMessages = {
   "settings.plantumlGuide": "PlantUML guide",
   "settings.mermaidGuide": "Mermaid guide",
   "settings.graphmlGuide": "GraphML guide",
+  "settings.wiremarkGuide": "WireMark guide",
   "settings.yedEditor": "yEd Graph Editor",
   "settings.about": "About",
   "settings.library": "Library",

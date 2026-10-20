@@ -6,6 +6,7 @@ const DIAGRAM_FORMAT_LABELS: Record<DiagramLanguage, string> = {
   mermaid: "mermaid",
   graphviz: "graphviz",
   graphml: "graphml",
+  wiremark: "wiremark",
   ditaa: "ditaa",
   other: "other",
 };

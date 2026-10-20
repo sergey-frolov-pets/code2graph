@@ -6,6 +6,12 @@ import {
   type MermaidSampleId,
 } from "@/constants/mermaid-sample-diagrams";
 import {
+  findWiremarkSampleId,
+  getWiremarkSampleSource,
+  isWiremarkSampleSource,
+  type WiremarkSampleId,
+} from "@/constants/wiremark-sample-diagrams";
+import {
   findPlantUmlSampleId,
   getAllPlantUmlSampleSources,
   getPlantUmlDefaultSource,
@@ -18,10 +24,13 @@ import {
 export { PLANTUML_SAMPLE_IDS, type PlantUmlSampleId };
 export type { MermaidSampleId };
 export { MERMAID_SAMPLE_IDS } from "@/constants/mermaid-sample-diagrams";
+export type { WiremarkSampleId };
+export { WIREMARK_SAMPLE_IDS } from "@/constants/wiremark-sample-diagrams";
 
 export type SampleSelection =
   | { format: "plantuml"; id: PlantUmlSampleId }
-  | { format: "mermaid"; id: MermaidSampleId };
+  | { format: "mermaid"; id: MermaidSampleId }
+  | { format: "wiremark"; id: WiremarkSampleId };
 
 const ALL_SAMPLE_SOURCES = new Set([
   ...getAllPlantUmlSampleSources(),
@@ -39,6 +48,10 @@ export function getSampleSource(
     return getMermaidSampleSource(selection.id, locale);
   }
 
+  if (selection.format === "wiremark") {
+    return getWiremarkSampleSource(selection.id, locale);
+  }
+
   return getPlantUmlSampleSource(selection.id, locale);
 }
 
@@ -47,7 +60,11 @@ export function isDefaultSource(source: string): boolean {
 }
 
 export function isSampleDiagramSource(source: string): boolean {
-  return ALL_SAMPLE_SOURCES.has(source) || isMermaidSampleSource(source);
+  return (
+    ALL_SAMPLE_SOURCES.has(source) ||
+    isMermaidSampleSource(source) ||
+    isWiremarkSampleSource(source)
+  );
 }
 
 export function translateSourceForLocale(
@@ -73,6 +90,11 @@ export function translateSourceForLocale(
     return getMermaidSampleSource(mermaidSampleId, toLocale);
   }
 
+  const wiremarkSampleId = findWiremarkSampleId(source, fromLocale);
+  if (wiremarkSampleId) {
+    return getWiremarkSampleSource(wiremarkSampleId, toLocale);
+  }
+
   return null;
 }
 
@@ -88,6 +110,11 @@ export function findAnySampleSelection(
   const mermaidId = findMermaidSampleId(source, locale);
   if (mermaidId) {
     return { format: "mermaid", id: mermaidId };
+  }
+
+  const wiremarkId = findWiremarkSampleId(source, locale);
+  if (wiremarkId) {
+    return { format: "wiremark", id: wiremarkId };
   }
 
   return null;
@@ -111,6 +138,9 @@ export function getDefaultFileNameForSample(
 ): string {
   if (selection.format === "mermaid") {
     return `${label}.mmd`;
+  }
+  if (selection.format === "wiremark") {
+    return `${label}.wiremark`;
   }
   return `${label}.puml`;
 }

@@ -126,7 +126,8 @@ export function useLibraryDiagramPreview() {
       if (
         !rendered.trim() &&
         isOnlineRenderMode(renderMode) &&
-        format !== "graphml"
+        format !== "graphml" &&
+        format !== "wiremark"
       ) {
         rendered = await renderWithMode(trimmedSource, format, {
           dark,
@@ -143,7 +144,11 @@ export function useLibraryDiagramPreview() {
 
       svg.value = rendered;
     } catch (renderError) {
-      if (isOnlineRenderMode(renderMode) && format !== "graphml") {
+      if (
+        isOnlineRenderMode(renderMode) &&
+        format !== "graphml" &&
+        format !== "wiremark"
+      ) {
         try {
           const offlineRendered = await renderWithMode(trimmedSource, format, {
             dark,
