@@ -3,12 +3,37 @@ import { LocalizedAppError } from "@/utils/localized-app-error";
 const SVG_XMLNS = "http://www.w3.org/2000/svg";
 const LIGHT_SVG_FILLS = new Set(["#ffffff", "#fff", "white"]);
 
+/** Containers whose white rects are paint data, not a page background. */
+const SVG_PAINT_CONTAINER_TAGS = new Set([
+  "mask",
+  "clippath",
+  "pattern",
+  "marker",
+  "defs",
+]);
+
 function normalizeColor(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function isInsideSvgPaintContainer(element: Element): boolean {
+  let parent = element.parentElement;
+  while (parent) {
+    if (SVG_PAINT_CONTAINER_TAGS.has(parent.tagName.toLowerCase())) {
+      return true;
+    }
+    parent = parent.parentElement;
+  }
+
+  return false;
+}
+
 function transparentizeLightBackground(root: Element): void {
   for (const rect of root.querySelectorAll("rect")) {
+    if (isInsideSvgPaintContainer(rect)) {
+      continue;
+    }
+
     const fill = normalizeColor(rect.getAttribute("fill") ?? "");
     if (!LIGHT_SVG_FILLS.has(fill)) {
       continue;

@@ -10,6 +10,8 @@ describe("d2 engine", () => {
       for (const locale of ["ru", "en"] as const) {
         const svg = await renderD2ToSvg(getD2SampleSource(id, locale));
         expect(svg.trim().startsWith("<svg")).toBe(true);
+        expect(svg).toMatch(/<svg[^>]*\bwidth="\d+"/);
+        expect(svg).toMatch(/<svg[^>]*\bheight="\d+"/);
       }
     }
   }, 30_000);
@@ -28,6 +30,11 @@ describe("d2 engine", () => {
       expect((await validateD2Syntax(source)).valid).toBe(true);
     }
   }, 30_000);
+
+  it("keeps a white mask so labeled edges stay visible", async () => {
+    const svg = await renderD2ToSvg(getD2SampleSource("flow", "en"));
+    expect(svg).toMatch(/<mask\b[^>]*>[\s\S]*?\bfill="white"/);
+  });
 
   it("reports a line for invalid connections", async () => {
     const result = await validateD2Syntax("->");
