@@ -90,6 +90,8 @@ Body:
 
 Тело plan и scaffold: `{ "request": "...", "format?": "d2", "diagramType?": "sequence", "locale?": "ru", "direction?": "LR" }`.
 
+Инструмент MCP `generate_diagram` к этому исходнику добавляет изображение: PNG для PlantUML, D2, Structurizr, GraphML и WireMark, JPEG для Mermaid. HTTP-ответ scaffold по-прежнему содержит только исходник; картинку собирает процесс MCP.
+
 ## Настройка в приложении
 
 **Настройки → Библиотека → Адрес сервера:** `http://localhost:3001` (или ваш хост).

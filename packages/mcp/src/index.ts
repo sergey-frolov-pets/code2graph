@@ -8,6 +8,7 @@ import {
   planDiagram,
   type AgentDiagramLocale,
 } from "../../../packages/shared/src/agent-diagram.js";
+import { attachDiagramImage } from "./attach-image.js";
 
 const formatSchema = z.enum(AGENT_DIAGRAM_LANGUAGES);
 const localeSchema = z.enum(["ru", "en"]);
@@ -53,7 +54,7 @@ server.registerTool(
   "generate_diagram",
   {
     description:
-      "Pick a Code2Graph language and return diagram source for that language. Uses CODE2GRAPH_API_URL when set, otherwise builds the scaffold locally. Languages: PlantUML, Mermaid, GraphML, WireMark, D2, Structurizr.",
+      "Pick a Code2Graph language and return diagram source plus a rendered image. Uses CODE2GRAPH_API_URL for the source when set, otherwise builds the scaffold locally. The image is a separate MCP image block: PNG for PlantUML, D2, Structurizr (Kroki), GraphML, and WireMark; JPEG for Mermaid (mermaid.ink). Languages: PlantUML, Mermaid, GraphML, WireMark, D2, Structurizr.",
     inputSchema: {
       request: z.string().describe("What the diagram should show"),
       format: formatSchema.optional(),
@@ -73,7 +74,7 @@ server.registerTool(
       count,
     });
     if (remote) {
-      return jsonText(remote);
+      return attachDiagramImage(remote);
     }
 
     const generated = generateDiagramScaffold({
@@ -84,7 +85,7 @@ server.registerTool(
       direction,
       count,
     });
-    return jsonText({
+    return attachDiagramImage({
       ...generated.plan,
       source: generated.scaffold.source,
       fileName: generated.scaffold.fileName,

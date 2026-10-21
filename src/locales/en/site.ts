@@ -156,19 +156,19 @@ export const siteMessages = {
   "site.backHome": "Back to home",
   "site.mcp.title": "MCP for agents",
   "site.mcp.lead":
-    "An agent describes a diagram in words. Code2Graph picks the language and returns source for PlantUML, Mermaid, GraphML, WireMark, D2, or Structurizr.",
+    "An agent describes a diagram in words. Code2Graph picks the language and returns source and an image for PlantUML, Mermaid, GraphML, WireMark, D2, or Structurizr.",
   "site.mcp.pointPlan": "plan_diagram chooses the language and diagram type.",
-  "site.mcp.pointGenerate": "generate_diagram returns the diagram source.",
+  "site.mcp.pointGenerate": "generate_diagram returns the diagram source and an image.",
   "site.mcp.pointLanguages": "The same six languages as the editor and the wizard.",
   "site.mcp.openPage": "How to connect MCP",
   "site.mcp.pageTitle": "Code2Graph MCP",
   "site.mcp.summary":
-    "The MCP server lets Cursor and other agents ask Code2Graph for a diagram. It chooses a language from the request and returns source the editor can open.",
+    "The MCP server lets Cursor and other agents ask Code2Graph for a diagram. It chooses a language from the request and returns source plus an image of the diagram.",
   "site.mcp.toolsTitle": "Tools",
   "site.mcp.toolList": "languages on the site and the diagram types each one accepts.",
   "site.mcp.toolPlan": "language and type for a sentence, without source.",
   "site.mcp.toolGenerate":
-    "diagram source. With CODE2GRAPH_API_URL it calls the server; otherwise it builds the same scaffold locally.",
+    "diagram source and an image. With CODE2GRAPH_API_URL the source comes from the server; otherwise the same scaffold is built locally. The picture is a separate block: Kroki draws PlantUML, D2, and Structurizr, mermaid.ink draws Mermaid, and GraphML and WireMark are drawn locally.",
   "site.mcp.connectTitle": "Connect in Cursor",
   "site.mcp.connectText":
     "Run the script from a checkout of this repository. Replace the path with your checkout. Leave the URL empty to generate locally, or point it at the server edition.",
