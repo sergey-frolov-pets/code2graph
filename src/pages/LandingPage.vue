@@ -2,6 +2,7 @@
 import SiteFooter from "@/components/site/SiteFooter.vue";
 import LandingDiagramBackground from "@/components/site/LandingDiagramBackground.vue";
 import LandingInstallButton from "@/components/site/LandingInstallButton.vue";
+import McpResultPreview from "@/components/site/McpResultPreview.vue";
 import SiteHeader from "@/components/site/SiteHeader.vue";
 import { useAppRouter } from "@/composables/useAppRouter";
 import { useLocale } from "@/composables/useLocale";
@@ -95,6 +96,7 @@ const languages = DIAGRAM_LANGUAGE_MODULES.filter((module) => module.site);
           <li>{{ t("site.mcp.pointGenerate") }}</li>
           <li>{{ t("site.mcp.pointLanguages") }}</li>
         </ul>
+        <McpResultPreview />
         <button
           class="btn btn-primary"
           type="button"

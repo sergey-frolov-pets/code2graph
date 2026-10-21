@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import SiteFooter from "@/components/site/SiteFooter.vue";
+import McpResultPreview from "@/components/site/McpResultPreview.vue";
 import SiteHeader from "@/components/site/SiteHeader.vue";
 import { useAppRouter } from "@/composables/useAppRouter";
 import { useLocale } from "@/composables/useLocale";
@@ -40,6 +41,7 @@ const sourceUrl = `${APP_LINKS.github}/tree/main/packages/mcp`;
       <p class="mcp-lead">
         {{ t("site.mcp.summary") }}
       </p>
+      <McpResultPreview />
 
       <section aria-labelledby="mcp-tools-title">
         <h2 id="mcp-tools-title">

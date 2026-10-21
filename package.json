@@ -3,7 +3,7 @@
   "version": "1.0.74",
   "private": true,
   "type": "module",
-  "description": "Code2Graph — offline PlantUML, Mermaid, GraphML, WireMark, D2, and Structurizr diagram editor (Vue 3 + Smetana)",
+  "description": "Code2Graph — PlantUML, Mermaid, GraphML, WireMark, D2, and Structurizr diagram editor. MCP returns source and a rendered image.",
   "scripts": {
     "dev": "vite",
     "dev:api": "npm --prefix server run dev",

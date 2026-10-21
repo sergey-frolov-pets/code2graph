@@ -11,7 +11,7 @@ export const siteMessages = {
 
   "site.landingTitle": "Code2Graph",
   "site.landingSubtitle":
-    "PWA studio for PlantUML, Mermaid, and GraphML: AI, format converter, editor, and storage — on any device, even without internet.",
+    "PWA studio for PlantUML, Mermaid, GraphML, WireMark, D2, and Structurizr. MCP for agents returns diagram source and an image.",
   "site.landingCtaApp": "Open editor",
   "site.landingCtaInstallPwa": "📲 Install PWA",
   "site.landingCtaRegister": "Sign up",
@@ -21,7 +21,7 @@ export const siteMessages = {
 
   "site.hero.title": "Text diagrams in the browser",
   "site.hero.subtitle":
-    "Write a diagram and see it right away. PlantUML, Mermaid, GraphML, WireMark, D2, and Structurizr — including offline.",
+    "Write a diagram and see it right away. PlantUML, Mermaid, GraphML, WireMark, D2, and Structurizr — including offline. MCP gives an agent the source and an image.",
   "site.offlineNote": "Editing and preview work without a network.",
   "site.languages.title": "Languages",
   "site.language.sites": "Sites",
@@ -159,6 +159,10 @@ export const siteMessages = {
     "An agent describes a diagram in words. Code2Graph picks the language and returns source and an image for PlantUML, Mermaid, GraphML, WireMark, D2, or Structurizr.",
   "site.mcp.pointPlan": "plan_diagram chooses the language and diagram type.",
   "site.mcp.pointGenerate": "generate_diagram returns the diagram source and an image.",
+  "site.mcp.exampleCaption":
+    "A generate_diagram result is source the editor can open, plus a rendered image of the diagram.",
+  "site.mcp.exampleSource": "Source",
+  "site.mcp.exampleImage": "Image",
   "site.mcp.pointLanguages": "The same six languages as the editor and the wizard.",
   "site.mcp.openPage": "How to connect MCP",
   "site.mcp.pageTitle": "Code2Graph MCP",
