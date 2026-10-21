@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 const PREVIEW_READY_TIMEOUT_MS = 90_000;
 const ENGINE_READY_TIMEOUT_MS = 15_000;
@@ -20,6 +20,20 @@ export async function skipIfOfflinePlantUmlUnavailable(page: Page): Promise<void
       "Offline PlantUML engine did not boot in the preview environment",
     );
   }
+}
+
+export async function selectToolbarSample(
+  page: Page,
+  format: string,
+  sampleId: string,
+): Promise<void> {
+  const formatSelect = page.locator(".format-select");
+  await expect(formatSelect).toBeVisible();
+  if ((await formatSelect.inputValue()) !== format) {
+    await formatSelect.selectOption(format);
+  }
+
+  await page.locator(".sample-select").selectOption(`${format}:${sampleId}`);
 }
 
 export async function waitForPreviewReady(page: Page): Promise<void> {

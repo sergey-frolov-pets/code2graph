@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { waitForPreviewReady } from "./helpers/preview";
+import { selectToolbarSample, waitForPreviewReady } from "./helpers/preview";
 
 test("mermaid gantt sample renders in preview", async ({ page }) => {
   await page.goto("/#/app");
@@ -7,7 +7,7 @@ test("mermaid gantt sample renders in preview", async ({ page }) => {
     timeout: 30_000,
   });
 
-  await page.locator(".sample-select").selectOption("mermaid:gantt");
+  await selectToolbarSample(page, "mermaid", "gantt");
 
   await waitForPreviewReady(page);
   const svg = page.locator(".preview-content svg");

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { waitForPreviewReady } from "./helpers/preview";
+import { selectToolbarSample, waitForPreviewReady } from "./helpers/preview";
 
 async function expectSampleRenders(page: import("@playwright/test").Page, sampleId: string) {
   await page.goto("/#/app");
@@ -7,7 +7,7 @@ async function expectSampleRenders(page: import("@playwright/test").Page, sample
     timeout: 30_000,
   });
 
-  await page.locator(".sample-select").selectOption(`mermaid:${sampleId}`);
+  await selectToolbarSample(page, "mermaid", sampleId);
 
   await expect(page.locator(".preview-error")).toHaveCount(0, { timeout: 30_000 });
   await waitForPreviewReady(page);
