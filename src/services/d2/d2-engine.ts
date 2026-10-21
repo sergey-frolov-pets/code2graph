@@ -10,6 +10,12 @@ const D2_THEME_DARK_FLAGSHIP = 200;
 
 const D2_RENDER_PAD_PX = 40;
 
+/**
+ * Natural pixel size. D2's default scale fits the SVG to the screen and omits
+ * width/height, so an embedded preview stretches or collapses the diagram.
+ */
+const D2_RENDER_SCALE = 1;
+
 const D2_LAYOUT_ENGINE = "dagre" satisfies CompileOptions["layout"];
 
 let instance: D2 | null = null;
@@ -51,6 +57,7 @@ export async function renderD2ToSvg(
     layout: D2_LAYOUT_ENGINE,
     themeID: options.dark ? D2_THEME_DARK_FLAGSHIP : D2_THEME_NEUTRAL,
     pad: D2_RENDER_PAD_PX,
+    scale: D2_RENDER_SCALE,
     noXMLTag: true,
   };
   const compiled = await d2.compile(prepared, compileOptions);

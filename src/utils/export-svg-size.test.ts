@@ -37,5 +37,15 @@ describe("sanitizeSvgForPreview", () => {
     expect(result).toMatch(/<svg[^>]*\bwidth="1200"/);
     expect(result).toMatch(/<svg[^>]*\bheight="268"/);
     expect(result).not.toMatch(/<svg[^>]*\bwidth="100%"/);
+    expect(result).toMatch(/<rect[^>]*\bfill="none"/);
+  });
+
+  it("keeps the white rect that makes a D2 connection mask visible", () => {
+    const result = sanitizeSvgForPreview(
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 40"><svg width="100" height="40" viewBox="-10 -10 100 40"><rect x="-10" y="-10" width="100" height="40" fill="#FFFFFF"/><path d="M0 0 L10 10" mask="url(#edge-mask)"/><mask id="edge-mask"><rect x="-10" y="-10" width="100" height="40" fill="white"/></mask></svg></svg>`,
+    );
+
+    expect(result).toMatch(/<mask[^>]*>\s*<rect[^>]*\bfill="white"/);
+    expect(result).not.toMatch(/<mask[^>]*>\s*<rect[^>]*\bfill="none"/);
   });
 });

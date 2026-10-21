@@ -5,7 +5,10 @@ import {
   getWiremarkSampleSource,
 } from "@/constants/wiremark-sample-diagrams";
 import { validateWiremarkSyntax } from "@/services/wiremark/syntax-validation";
-import { renderWiremarkToSvg } from "@/services/wiremark/wiremark-engine";
+import {
+  ensureWireframePadding,
+  renderWiremarkToSvg,
+} from "@/services/wiremark/wiremark-engine";
 
 describe("wiremark engine", () => {
   it("renders every sample to svg", () => {
@@ -47,6 +50,36 @@ describe("wiremark engine", () => {
       expect(validateWiremarkSyntax(source).valid).toBe(true);
       expect(renderWiremarkToSvg(source, { dark: false })).toContain("<svg");
     }
+  });
+
+  it("insets frame content and keeps sketch strokes inside the viewBox", () => {
+    const svg = renderWiremarkToSvg(
+      `Wireframe #login mobile\n  Typography h4 "Hi"`,
+      { dark: false },
+    );
+    const textX = Number(svg.match(/<text x="([\d.]+)"/)?.[1]);
+    const viewBox = svg.match(/viewBox="([^"]+)"/)?.[1]?.split(/\s+/).map(Number);
+
+    expect(textX).toBe(16);
+    expect(viewBox?.[0]).toBeLessThan(0);
+    expect(viewBox?.[1]).toBeLessThan(0);
+    expect(svg).toMatch(/\bwidth="\d+"/);
+    expect(svg).toMatch(/\bheight="\d+"/);
+  });
+
+  it("respects an explicit frame padding", () => {
+    expect(
+      ensureWireframePadding('Wireframe #login mobile padding=0 // keep flush'),
+    ).toBe('Wireframe #login mobile padding=0 // keep flush');
+    expect(ensureWireframePadding("Wireframe #login mobile pad=1")).toBe(
+      "Wireframe #login mobile pad=1",
+    );
+
+    const svg = renderWiremarkToSvg(
+      `Wireframe #login mobile padding=0\n  Typography h4 "Hi"`,
+      { dark: false },
+    );
+    expect(svg.match(/<text x="([\d.]+)"/)?.[1]).toBe("0");
   });
 
   it("rejects an empty source", () => {
