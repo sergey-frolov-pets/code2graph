@@ -5,9 +5,11 @@ import IconButton from "@/components/IconButton.vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import { APP_META } from "@/constants";
 import { useAppRouter } from "@/composables/useAppRouter";
+import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import { useLocale } from "@/composables/useLocale";
 
 const { navigateTo } = useAppRouter();
+const { isLocalMode } = useLibraryApiUrl();
 
 const emit = defineEmits<{
   openWizard: [];
@@ -45,6 +47,7 @@ const { t } = useLocale();
       </IconButton>
       <InstallAppButton />
       <IconButton
+        v-if="!isLocalMode"
         :label="t('site.accountTitle')"
         extra-class="app-header__icon-btn"
         @click="navigateTo('account')"

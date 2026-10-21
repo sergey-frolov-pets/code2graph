@@ -122,6 +122,9 @@ export const siteMessages: LocaleMessages = {
   "site.registerTitle": "Регистрация",
   "site.registerSubtitle": "Создайте аккаунт на сервере Code2Graph",
   "site.accountTitle": "Личный кабинет",
+  "site.staticModeTitle": "Локальная версия",
+  "site.staticModeText":
+    "Эта сборка работает без сервера и базы данных: диаграммы хранятся в браузере. Вход и облачная библиотека доступны на версии с сервером.",
   "site.username": "Логин",
   "site.password": "Пароль",
   "site.passwordConfirm": "Пароль ещё раз",

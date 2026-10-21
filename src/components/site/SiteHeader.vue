@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import InstallAppButton from "@/components/InstallAppButton.vue";
 import HeaderControls from "@/components/layout/HeaderControls.vue";
+import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import { useLocale } from "@/composables/useLocale";
 import { useAppRouter } from "@/composables/useAppRouter";
 import { APP_META } from "@/constants";
@@ -9,6 +10,7 @@ const props = withDefaults(defineProps<{ landingNav?: boolean }>(), { landingNav
 
 const { t } = useLocale();
 const { navigateTo } = useAppRouter();
+const { isLocalMode } = useLibraryApiUrl();
 
 const landingSections = [
   { id: "features", labelKey: "site.nav.features" },
@@ -55,10 +57,20 @@ function scrollToSection(sectionId: string): void {
           </button>
         </template>
         <template v-else>
-          <button class="btn btn-ghost" type="button" @click="navigateTo('account')">
+          <button
+            v-if="!isLocalMode"
+            class="btn btn-ghost"
+            type="button"
+            @click="navigateTo('account')"
+          >
             {{ t("site.accountTitle") }}
           </button>
-          <button class="btn btn-ghost" type="button" @click="navigateTo('login')">
+          <button
+            v-if="!isLocalMode"
+            class="btn btn-ghost"
+            type="button"
+            @click="navigateTo('login')"
+          >
             {{ t("site.landingCtaLogin") }}
           </button>
           <button class="btn btn-primary" type="button" @click="navigateTo('app')">

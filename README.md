@@ -50,13 +50,21 @@ npm run check:i18n
 npm run dev:all
 ```
 
+Локальная разработка уже включает сервер через `.env.development` (`VITE_API_BASE_URL=same-origin`). Отдельный код для этого не нужен.
+
 Сборка для GitHub Pages / хостинга:
 
 ```bash
-npm run build:single
+npm run build
 ```
 
-Результат: `dist-single/index.html` + `llm-api-keys.html` + `plantuml-lib/`
+По умолчанию это **статическая версия без сервера и базы данных**: библиотека диаграмм в браузере. Результат — `dist/` (один `index.html` + PWA).
+
+Серверная сборка — та же команда, другой `.env` (см. [docs/DEPLOY.md](docs/DEPLOY.md)):
+
+```bash
+VITE_API_BASE_URL=same-origin npm run build
+```
 
 ## AI / LLM — генерация и редактирование диаграмм
 
@@ -113,7 +121,9 @@ sudo bash scripts/deploy/vdsina-update.sh --commit <sha>  # тест commit бе
 
 Сайт публикуется автоматически при пуше в `main` (workflow `.github/workflows/deploy-pages.yml`).
 
-Подробности о таргетах деплоя (GitHub Pages vs Netlify): [docs/DEPLOY.md](docs/DEPLOY.md).
+Сборка для Pages **не подключает базу данных**. `VITE_API_BASE_URL` в workflow пустой: вход, облачная библиотека и SQLite остаются на версии с сервером. Локальная библиотека (IndexedDB) и оффлайн-редактор работают как обычно.
+
+Подробности о таргетах деплоя (GitHub Pages vs сервер): [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ### Настройка домена `puml.sergey-frolov.ru`
 

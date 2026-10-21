@@ -153,11 +153,14 @@ echo '15 4 * * * root /opt/code2graph/scripts/deploy/vdsina-update.sh >> /var/lo
 
 ---
 
+Фронтенд на VPS собирается с сервером: скрипт деплоя читает `VITE_API_BASE_URL` из `server/.env`. Значение `same-origin` (оно же подставляется, если ключа нет) отправляет браузер в `/api` этого хоста. Пустое значение собирает статику без базы, как GitHub Pages. Код приложения для этого не меняется.
+
 ## Переменные
 
 | Переменная | По умолчанию |
 |------------|--------------|
 | `CODE2GRAPH_REPO_URL` | `https://github.com/sergey-frolov-pets/code2graph.git` |
+| `VITE_API_BASE_URL` | `same-origin`, если ключа нет в `server/.env` |
 | `CODE2GRAPH_GIT_TOKEN` | — (для private) |
 | `CODE2GRAPH_DOMAIN` | `www.code2graph.ru` |
 | `CODE2GRAPH_INSTALL_DIR` | `/opt/code2graph` |

@@ -9,11 +9,12 @@ import {
   STORAGE_KEY_LIBRARY_PROFILES,
 } from "@/constants/diagram-library";
 import {
+  getLibraryApiBaseUrl,
   normalizeLibraryApiUrl,
+  resolveActiveProfileApiUrl,
   setLibraryApiBaseUrl,
 } from "@/config/library-api";
 import {
-  clearLibraryApiCredentials,
   getLibraryCredentialsRefs,
   setLibraryApiUsername,
 } from "@/config/library-credentials";
@@ -110,18 +111,39 @@ function readActiveProfileId(): string {
   );
 }
 
+function readProfilePageLocation(): { pageOrigin: string; pageProtocol: string } {
+  if (typeof window === "undefined") {
+    return { pageOrigin: "", pageProtocol: "" };
+  }
+
+  return {
+    pageOrigin: window.location.origin,
+    pageProtocol: window.location.protocol,
+  };
+}
+
 function applyActiveProfile(): void {
   const profile =
     libraryProfiles.value.find((entry) => entry.id === activeProfileId.value) ??
     libraryProfiles.value[0];
 
   if (!profile) {
-    setLibraryApiBaseUrl("");
-    clearLibraryApiCredentials();
     return;
   }
 
-  setLibraryApiBaseUrl(profile.apiUrl);
+  const page = readProfilePageLocation();
+  const nextApiUrl = resolveActiveProfileApiUrl(
+    profile.apiUrl,
+    getLibraryApiBaseUrl(),
+    {
+      envUrl: import.meta.env.VITE_API_BASE_URL,
+      pageOrigin: page.pageOrigin,
+      pageProtocol: page.pageProtocol,
+    },
+  );
+  if (nextApiUrl !== getLibraryApiBaseUrl()) {
+    setLibraryApiBaseUrl(nextApiUrl);
+  }
   setLibraryApiUsername(profile.username);
 
   const secrets = readSecretsMap()[profile.id];
