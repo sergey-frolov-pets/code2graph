@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { getMermaidSampleSource } from "../../src/constants/mermaid-sample-diagrams";
-import { waitForPreviewReady } from "./helpers/preview";
+import { selectToolbarSample, waitForPreviewReady } from "./helpers/preview";
 
 const ganttSource = getMermaidSampleSource("gantt", "ru");
 
@@ -10,7 +10,7 @@ test("mermaid gantt sample renders from dropdown", async ({ page }) => {
     timeout: 30_000,
   });
 
-  await page.locator(".sample-select").selectOption("mermaid:gantt");
+  await selectToolbarSample(page, "mermaid", "gantt");
 
   await waitForPreviewReady(page);
   await expect(page.locator(".preview-error")).toHaveCount(0);
