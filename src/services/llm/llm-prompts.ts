@@ -1,7 +1,12 @@
+import type { WizardDiagramType } from "@/constants/llm-wizard";
 import {
   LLM_GENERATE_ROLE_PROMPT,
   LLM_WIZARD_ROLE_PROMPT,
 } from "@/services/llm/diagram-format-rules";
+import {
+  formatLlmDiagramGuideBlock,
+  guideForWizardDiagram,
+} from "@/services/llm/guides/llm-diagram-guides";
 
 export const LLM_JSON_OUTPUT_PREFIX =
   "Respond with a single JSON object only. No markdown fences outside the JSON.";
@@ -33,30 +38,43 @@ export const LLM_SYNTAX_ASK_CLARIFICATION_APPENDIX =
 export const LLM_WIZARD_PLANNING_APPENDIX =
   "You help plan a diagram before generation. If requirements are unclear, respond with JSON {\"clarificationQuestion\":\"...\"}. Otherwise respond with JSON {\"message\":\"brief acknowledgment or summary\"}. Do not generate diagram source yet.";
 
-export function buildLlmSystemPrompt(basePrompt: string): string {
+export function buildLlmSystemPrompt(
+  basePrompt: string,
+  diagramGuide = "",
+): string {
   return [
     LLM_GENERATE_ROLE_PROMPT,
     basePrompt,
     LLM_PLANTUML_RULES,
+    formatLlmDiagramGuideBlock(diagramGuide),
     LLM_COMPLETENESS_APPENDIX,
     LLM_JSON_SYSTEM_APPENDIX,
-  ].join("\n\n");
+  ]
+    .filter((part) => part.trim().length > 0)
+    .join("\n\n");
 }
 
-export function buildLlmMermaidSystemPrompt(basePrompt: string): string {
+export function buildLlmMermaidSystemPrompt(
+  basePrompt: string,
+  diagramGuide = "",
+): string {
   return [
     LLM_GENERATE_ROLE_PROMPT,
     basePrompt,
     LLM_MERMAID_RULES,
+    formatLlmDiagramGuideBlock(diagramGuide),
     LLM_COMPLETENESS_APPENDIX,
     LLM_JSON_MERMAID_APPENDIX,
-  ].join("\n\n");
+  ]
+    .filter((part) => part.trim().length > 0)
+    .join("\n\n");
 }
 
 export function buildWizardLlmSystemPrompt(
   basePrompt: string,
   formatRules: string,
   language: "plantuml" | "mermaid",
+  diagramType?: WizardDiagramType,
 ): string {
   const jsonAppendix =
     language === "mermaid"
@@ -68,12 +86,19 @@ export function buildWizardLlmSystemPrompt(
       ? [LLM_MERMAID_RULES, formatRules].join("\n\n")
       : formatRules;
 
+  const diagramGuide = diagramType
+    ? guideForWizardDiagram(language, diagramType)
+    : "";
+
   return [
     LLM_WIZARD_ROLE_PROMPT,
     basePrompt,
     formatRulesBlock,
+    formatLlmDiagramGuideBlock(diagramGuide),
     jsonAppendix,
-  ].join("\n\n");
+  ]
+    .filter((part) => part.trim().length > 0)
+    .join("\n\n");
 }
 
 export const LLM_PATCH_COMPLETENESS_APPENDIX =
@@ -81,14 +106,20 @@ export const LLM_PATCH_COMPLETENESS_APPENDIX =
 
 export const LLM_PATCH_JSON_APPENDIX = `${LLM_JSON_OUTPUT_PREFIX} Required field: replacement (string) — the NEW PlantUML text that replaces ONLY the user-selected fragment. Optional: explanation (string). Do not return the full diagram unless the user explicitly asked to rewrite everything. ${LLM_CLARIFICATION_JSON_APPENDIX}`;
 
-export function buildLlmPatchSystemPrompt(basePrompt: string): string {
+export function buildLlmPatchSystemPrompt(
+  basePrompt: string,
+  diagramGuide = "",
+): string {
   return [
     LLM_GENERATE_ROLE_PROMPT,
     basePrompt,
     LLM_PLANTUML_RULES,
+    formatLlmDiagramGuideBlock(diagramGuide),
     LLM_PATCH_COMPLETENESS_APPENDIX,
     LLM_PATCH_JSON_APPENDIX,
-  ].join("\n\n");
+  ]
+    .filter((part) => part.trim().length > 0)
+    .join("\n\n");
 }
 
 export const LLM_TEST_USER_PROMPT =
@@ -96,12 +127,18 @@ export const LLM_TEST_USER_PROMPT =
 
 export const LLM_SYNTAX_ASK_JSON_APPENDIX = `${LLM_JSON_OUTPUT_PREFIX} ${LLM_SYNTAX_ASK_CLARIFICATION_APPENDIX} Match the user's language. Do not rewrite or return the full diagram source unless the user explicitly asked for a full rewrite.`;
 
-export function buildLlmSyntaxAskSystemPrompt(basePrompt: string): string {
+export function buildLlmSyntaxAskSystemPrompt(
+  basePrompt: string,
+  diagramGuide = "",
+): string {
   return [
     basePrompt,
     LLM_PLANTUML_RULES,
+    formatLlmDiagramGuideBlock(diagramGuide),
     LLM_SYNTAX_ASK_JSON_APPENDIX,
-  ].join("\n\n");
+  ]
+    .filter((part) => part.trim().length > 0)
+    .join("\n\n");
 }
 
 export function buildSyntaxAskUserPrompt(source: string, question: string): string {
