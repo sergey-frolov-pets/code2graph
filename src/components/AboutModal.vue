@@ -70,6 +70,7 @@ const featureKeys = [
         <a :href="APP_LINKS.yEd" target="_blank" rel="noopener noreferrer">yEd</a>.
       </li>
       <li>{{ t("about.formatsD2") }}</li>
+      <li>{{ t("about.formatsStructurizr") }}</li>
     </ul>
 
     <h3 class="about-subtitle">{{ t("settings.help") }}</h3>

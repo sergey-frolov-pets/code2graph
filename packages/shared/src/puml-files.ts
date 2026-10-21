@@ -1,4 +1,5 @@
 import { looksLikeD2Source } from "./d2-source.js";
+import { looksLikeStructurizrSource } from "./structurizr-source.js";
 
 export const PUML_EXTENSIONS = [".puml", ".plantuml", ".txt"] as const;
 
@@ -10,16 +11,19 @@ export const WIREMARK_EXTENSIONS = [".wiremark"] as const;
 
 export const D2_EXTENSIONS = [".d2"] as const;
 
+export const STRUCTURIZR_EXTENSIONS = [".structurizr", ".dsl"] as const;
+
 const KNOWN_DIAGRAM_EXTENSIONS = [
   ...PUML_EXTENSIONS,
   ...MERMAID_EXTENSIONS,
   ...GRAPHML_EXTENSIONS,
   ...WIREMARK_EXTENSIONS,
   ...D2_EXTENSIONS,
+  ...STRUCTURIZR_EXTENSIONS,
 ] as const;
 
 const DIAGRAM_TITLE_EXTENSION =
-  /\.(puml|plantuml|txt|mmd|mermaid|graphml|wiremark|d2)$/i;
+  /\.(puml|plantuml|txt|mmd|mermaid|graphml|wiremark|d2|structurizr|dsl)$/i;
 
 export function isPumlFileName(fileName: string): boolean {
   const lowerName = fileName.toLowerCase();
@@ -70,6 +74,9 @@ export function detectLanguageFromFileName(fileName: string): string | null {
   if (D2_EXTENSIONS.some((extension) => lowerName.endsWith(extension))) {
     return "d2";
   }
+  if (STRUCTURIZR_EXTENSIONS.some((extension) => lowerName.endsWith(extension))) {
+    return "structurizr";
+  }
   if (isPumlFileName(fileName)) {
     return "plantuml";
   }
@@ -104,6 +111,9 @@ export function detectLanguageFromSource(source: string): string {
     trimmed.startsWith("flow ")
   ) {
     return "wiremark";
+  }
+  if (looksLikeStructurizrSource(source)) {
+    return "structurizr";
   }
   if (looksLikeD2Source(source)) {
     return "d2";

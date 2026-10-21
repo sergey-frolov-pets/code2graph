@@ -37,6 +37,7 @@ export const settingsMessages = {
   "settings.graphmlGuide": "Справка GraphML",
   "settings.wiremarkGuide": "Справка WireMark",
   "settings.d2Guide": "Справка D2",
+  "settings.structurizrGuide": "Справка Structurizr DSL",
   "settings.yedEditor": "yEd Graph Editor",
   "settings.about": "О программе",
   "settings.library": "Библиотека",

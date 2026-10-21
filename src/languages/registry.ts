@@ -3,6 +3,7 @@ import { d2LanguageModule } from "@/languages/modules/d2";
 import { graphmlLanguageModule } from "@/languages/modules/graphml";
 import { mermaidLanguageModule } from "@/languages/modules/mermaid";
 import { plantumlLanguageModule } from "@/languages/modules/plantuml";
+import { structurizrLanguageModule } from "@/languages/modules/structurizr";
 import { wiremarkLanguageModule } from "@/languages/modules/wiremark";
 import type {
   DiagramFormatDefinition,
@@ -15,6 +16,7 @@ export const DIAGRAM_LANGUAGE_MODULES = [
   graphmlLanguageModule,
   wiremarkLanguageModule,
   d2LanguageModule,
+  structurizrLanguageModule,
 ] as const satisfies readonly DiagramLanguageModule[];
 
 const modulesById = Object.fromEntries(

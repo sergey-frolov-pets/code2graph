@@ -13,6 +13,7 @@ import {
 import type { MermaidSampleId } from "@/constants/mermaid-sample-diagrams";
 import type { WiremarkSampleId } from "@/constants/wiremark-sample-diagrams";
 import type { D2SampleId } from "@/constants/d2-sample-diagrams";
+import type { StructurizrSampleId } from "@/constants/structurizr-sample-diagrams";
 import {
   getDiagramFormatDefinition,
   getLanguageModule,
@@ -26,6 +27,8 @@ export type { WiremarkSampleId };
 export { WIREMARK_SAMPLE_IDS } from "@/constants/wiremark-sample-diagrams";
 export type { D2SampleId };
 export { D2_SAMPLE_IDS } from "@/constants/d2-sample-diagrams";
+export type { StructurizrSampleId };
+export { STRUCTURIZR_SAMPLE_IDS } from "@/constants/structurizr-sample-diagrams";
 
 export interface SampleSelection {
   format: DiagramFormat;

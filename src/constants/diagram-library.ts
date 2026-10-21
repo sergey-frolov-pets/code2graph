@@ -7,6 +7,7 @@ export const DIAGRAM_LANGUAGES = [
   "graphml",
   "wiremark",
   "d2",
+  "structurizr",
   "ditaa",
   "other",
 ] as const;

@@ -74,6 +74,8 @@ export const siteMessages = {
   "site.formats.wiremark.features": "Editing, live preview, sample screens",
   "site.formats.d2.purpose": "Modern diagrams: architecture, sequence, classes, and SQL",
   "site.formats.d2.features": "Editing, offline preview, samples for the selected language",
+  "site.formats.structurizr.purpose": "C4 architecture as code: context, containers, components, deployment",
+  "site.formats.structurizr.features": "Editing, offline C4 preview, samples for the selected language",
 
   "site.audience.title": "Speeds up the whole engineering team",
   "site.audience.architect.title": "🏛 Software architects",

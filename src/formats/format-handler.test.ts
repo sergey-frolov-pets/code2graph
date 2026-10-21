@@ -3,6 +3,7 @@ import { DIAGRAM_FORMATS } from "@/constants/diagram-format-ids";
 import {
   d2FormatHandler,
   getFormatHandler,
+  structurizrFormatHandler,
   graphmlFormatHandler,
   mermaidFormatHandler,
   plantUmlFormatHandler,
@@ -60,6 +61,11 @@ describe("FormatHandler", () => {
 
   it("highlights D2 keywords", () => {
     const html = d2FormatHandler.highlightLine("direction: right");
+    expect(html).toContain("tok-keyword");
+  });
+
+  it("highlights Structurizr keywords", () => {
+    const html = structurizrFormatHandler.highlightLine("workspace {");
     expect(html).toContain("tok-keyword");
   });
 

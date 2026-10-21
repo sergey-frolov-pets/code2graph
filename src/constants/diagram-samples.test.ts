@@ -6,6 +6,10 @@ import {
   getD2SampleSource,
 } from "@/constants/d2-sample-diagrams";
 import {
+  STRUCTURIZR_SAMPLE_IDS,
+  getStructurizrSampleSource,
+} from "@/constants/structurizr-sample-diagrams";
+import {
   WIREMARK_SAMPLE_IDS,
   getWiremarkSampleSource,
 } from "@/constants/wiremark-sample-diagrams";
@@ -61,6 +65,11 @@ describe("diagram samples coverage", () => {
       expect(getD2SampleSource(id, "ru").trim().length).toBeGreaterThan(0);
       expect(getD2SampleSource(id, "en").trim().length).toBeGreaterThan(0);
     }
+
+    for (const id of STRUCTURIZR_SAMPLE_IDS) {
+      expect(getStructurizrSampleSource(id, "ru").trim().length).toBeGreaterThan(0);
+      expect(getStructurizrSampleSource(id, "en").trim().length).toBeGreaterThan(0);
+    }
   });
 
   it("lists samples only for the selected language", () => {
@@ -68,6 +77,7 @@ describe("diagram samples coverage", () => {
     expect(listSampleIds("mermaid")).toEqual([...MERMAID_SAMPLE_IDS]);
     expect(listSampleIds("wiremark")).toEqual([...WIREMARK_SAMPLE_IDS]);
     expect(listSampleIds("d2")).toEqual([...D2_SAMPLE_IDS]);
+    expect(listSampleIds("structurizr")).toEqual([...STRUCTURIZR_SAMPLE_IDS]);
     expect(listSampleIds("graphml")).toEqual([]);
   });
 });

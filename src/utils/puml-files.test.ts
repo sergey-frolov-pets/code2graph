@@ -43,6 +43,10 @@ describe("resolvePumlFileName", () => {
     expect(resolvePumlFileName("flow.mmd")).toBe("flow.mmd");
     expect(resolvePumlFileName("screen.wiremark")).toBe("screen.wiremark");
     expect(resolvePumlFileName("architecture.d2")).toBe("architecture.d2");
+    expect(resolvePumlFileName("workspace.dsl")).toBe("workspace.dsl");
+    expect(resolvePumlFileName("workspace.structurizr")).toBe(
+      "workspace.structurizr",
+    );
   });
 
   it("replaces non-puml extension with .puml", () => {

@@ -3,6 +3,7 @@ import { d2FormatHandler } from "./d2/handler";
 import { graphmlFormatHandler } from "./graphml/handler";
 import { mermaidFormatHandler } from "./mermaid/handler";
 import { plantUmlFormatHandler } from "./plantuml/handler";
+import { structurizrFormatHandler } from "./structurizr/handler";
 import { wiremarkFormatHandler } from "./wiremark/handler";
 import { getLanguageModule } from "@/languages/registry";
 import type { FormatContext, FormatHandler } from "./types";
@@ -68,6 +69,7 @@ export {
   graphmlFormatHandler,
   wiremarkFormatHandler,
   d2FormatHandler,
+  structurizrFormatHandler,
 };
 export type {
   FormatHandler,

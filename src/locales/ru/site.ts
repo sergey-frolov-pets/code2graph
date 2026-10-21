@@ -74,6 +74,8 @@ export const siteMessages = {
   "site.formats.wiremark.features": "Редактирование, живой просмотр, примеры экранов",
   "site.formats.d2.purpose": "Современные схемы: архитектура, sequence, классы и SQL",
   "site.formats.d2.features": "Редактирование, оффлайн-просмотр, примеры выбранного языка",
+  "site.formats.structurizr.purpose": "Архитектура C4 как код: контекст, контейнеры, компоненты, развёртывание",
+  "site.formats.structurizr.features": "Редактирование, оффлайн-просмотр C4, примеры выбранного языка",
 
   "site.audience.title": "Ускоряет работу всей технической команды",
   "site.audience.architect.title": "🏛 Архитекторы ПО",

@@ -37,6 +37,7 @@ export const settingsMessages = {
   "settings.graphmlGuide": "GraphML guide",
   "settings.wiremarkGuide": "WireMark guide",
   "settings.d2Guide": "D2 guide",
+  "settings.structurizrGuide": "Structurizr DSL guide",
   "settings.yedEditor": "yEd Graph Editor",
   "settings.about": "About",
   "settings.library": "Library",

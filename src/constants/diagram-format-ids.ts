@@ -10,6 +10,7 @@ export const DIAGRAM_FORMATS = [
   "graphml",
   "wiremark",
   "d2",
+  "structurizr",
 ] as const;
 
 export type DiagramFormat = (typeof DIAGRAM_FORMATS)[number];

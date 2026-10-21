@@ -21,7 +21,7 @@ export interface DiagramFormatDefinition {
   supportsOnlineRender: boolean;
   /** When false, conversion leaves an empty model instead of a structural parse. */
   supportsStructuralConversion: boolean;
-  /** Async engine boot (PlantUML, Mermaid, D2) before the first render. */
+  /** Async engine boot (PlantUML, Mermaid, D2, Structurizr) before the first render. */
   requiresEngineBoot: boolean;
 }
 

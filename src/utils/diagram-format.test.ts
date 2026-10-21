@@ -11,6 +11,8 @@ describe("detectDiagramFormat", () => {
     expect(detectDiagramFormat("", "diagram.puml")).toBe("plantuml");
     expect(detectDiagramFormat("", "login.wiremark")).toBe("wiremark");
     expect(detectDiagramFormat("", "architecture.d2")).toBe("d2");
+    expect(detectDiagramFormat("", "workspace.dsl")).toBe("structurizr");
+    expect(detectDiagramFormat("", "workspace.structurizr")).toBe("structurizr");
   });
 
   it("prefers source markers over file extension", () => {
@@ -52,6 +54,13 @@ describe("detectDiagramFormat", () => {
   it("detects d2 from direction and a fenced block", () => {
     expect(detectDiagramFormat("direction: right\nx -> y")).toBe("d2");
     expect(detectDiagramFormat("```d2\nx -> y\n```")).toBe("d2");
+  });
+
+  it("detects structurizr from a workspace and a fenced block", () => {
+    expect(detectDiagramFormat("workspace {\nmodel {}\n}")).toBe("structurizr");
+    expect(
+      detectDiagramFormat("```structurizr\nworkspace {}\n```"),
+    ).toBe("structurizr");
   });
 
   it("defaults to plantuml for classic source", () => {

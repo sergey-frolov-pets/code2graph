@@ -8,6 +8,7 @@ const DIAGRAM_FORMAT_LABELS: Record<DiagramLanguage, string> = {
   graphml: "graphml",
   wiremark: "wiremark",
   d2: "d2",
+  structurizr: "structurizr",
   ditaa: "ditaa",
   other: "other",
 };
