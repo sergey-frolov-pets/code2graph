@@ -1,6 +1,6 @@
 {
   "name": "code2graph-app",
-  "version": "1.0.72",
+  "version": "1.0.73",
   "private": true,
   "type": "module",
   "description": "Code2Graph — offline PlantUML, Mermaid, GraphML, WireMark, D2, and Structurizr diagram editor (Vue 3 + Smetana)",
