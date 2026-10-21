@@ -35,6 +35,13 @@ const { isLocalMode } = useLibraryApiUrl();
       <nav class="site-header__nav">
         <HeaderControls />
         <template v-if="props.landingNav">
+          <button
+            class="btn btn-ghost"
+            type="button"
+            @click="navigateTo('mcp')"
+          >
+            {{ t("site.nav.mcp") }}
+          </button>
           <InstallAppButton landing-label />
           <button
             class="btn btn-primary"

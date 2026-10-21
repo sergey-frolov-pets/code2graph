@@ -1,6 +1,13 @@
 import { isDiagramFormat, type DiagramFormat } from "@/constants/diagram-format-ids";
 
-export type AppRouteName = "landing" | "login" | "register" | "account" | "app" | "language";
+export type AppRouteName =
+  | "landing"
+  | "login"
+  | "register"
+  | "account"
+  | "app"
+  | "language"
+  | "mcp";
 
 export interface ParsedAppRoute {
   name: AppRouteName;
@@ -13,6 +20,7 @@ const ROUTE_HASH: Record<Exclude<AppRouteName, "language">, string> = {
   register: "#/register",
   account: "#/account",
   app: "#/app",
+  mcp: "#/mcp",
 };
 
 const LANGUAGE_ROUTE = /^lang\/([a-z0-9]+)$/;
@@ -36,6 +44,8 @@ export function parseRouteFromHash(hash: string): ParsedAppRoute {
     case "account":
     case "cabinet":
       return { name: "account", languageId: null };
+    case "mcp":
+      return { name: "mcp", languageId: null };
     default:
       return { name: "landing", languageId: null };
   }

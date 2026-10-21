@@ -6,6 +6,7 @@ import { bindAppRouterListeners, useAppRouter } from "@/composables/useAppRouter
 import AccountPage from "@/pages/AccountPage.vue";
 import LandingPage from "@/pages/LandingPage.vue";
 import LanguagePage from "@/pages/LanguagePage.vue";
+import McpPage from "@/pages/McpPage.vue";
 import LoginPage from "@/pages/LoginPage.vue";
 import RegisterPage from "@/pages/RegisterPage.vue";
 
@@ -25,6 +26,8 @@ const view = computed(() => {
       return App;
     case "language":
       return LanguagePage;
+    case "mcp":
+      return McpPage;
     default:
       return LandingPage;
   }

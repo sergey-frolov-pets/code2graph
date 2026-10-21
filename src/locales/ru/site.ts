@@ -7,6 +7,7 @@ export const siteMessages = {
   "site.nav.pwa": "PWA / Оффлайн",
   "site.nav.formats": "Форматы",
   "site.nav.faq": "FAQ",
+  "site.nav.mcp": "MCP",
 
   "site.landingTitle": "Code2Graph",
   "site.landingSubtitle":
@@ -154,6 +155,33 @@ export const siteMessages = {
   "site.logout": "Выйти",
   "site.openEditor": "Открыть редактор",
   "site.backHome": "На главную",
+  "site.mcp.title": "MCP для агентов",
+  "site.mcp.lead":
+    "Агент описывает диаграмму словами. Code2Graph выбирает язык и возвращает исходник PlantUML, Mermaid, GraphML, WireMark, D2 или Structurizr.",
+  "site.mcp.pointPlan": "plan_diagram выбирает язык и тип диаграммы.",
+  "site.mcp.pointGenerate": "generate_diagram возвращает исходник.",
+  "site.mcp.pointLanguages": "Те же шесть языков, что в редакторе и в мастере.",
+  "site.mcp.openPage": "Как подключить MCP",
+  "site.mcp.pageTitle": "Code2Graph MCP",
+  "site.mcp.summary":
+    "MCP-сервер даёт Cursor и другим агентам запросить диаграмму у Code2Graph. По тексту запроса выбирается язык, в ответ приходит исходник, который открывается в редакторе.",
+  "site.mcp.toolsTitle": "Инструменты",
+  "site.mcp.toolList": "языки сайта и типы диаграмм для каждого.",
+  "site.mcp.toolPlan": "язык и тип по фразе, без исходника.",
+  "site.mcp.toolGenerate":
+    "исходник диаграммы. Если задан CODE2GRAPH_API_URL, запрос идёт на сервер, иначе тот же шаблон собирается локально.",
+  "site.mcp.connectTitle": "Подключение в Cursor",
+  "site.mcp.connectText":
+    "Запускайте скрипт из копии этого репозитория. Подставьте свой путь. Без адреса генерация локальная, с адресом — через серверную версию сайта.",
+  "site.mcp.source": "Пакет MCP в репозитории",
+  "site.mcp.apiTitle": "API сервера",
+  "site.mcp.apiText":
+    "Серверная версия отдаёт эти маршруты. Если задан AGENT_API_TOKEN, нужен заголовок Authorization: Bearer с тем же значением, что CODE2GRAPH_API_TOKEN.",
+  "site.mcp.apiFormats": "языки и типы",
+  "site.mcp.apiPlan": "выбор языка",
+  "site.mcp.apiScaffold": "язык, тип и исходник",
+  "site.mcp.staticNote":
+    "GitHub Pages — статический редактор и не отдаёт /api/agent. API работает на серверной версии, например www.code2graph.ru.",
   "site.noAccount": "Нет аккаунта?",
   "site.hasAccount": "Уже есть аккаунт?",
   "site.role": "Роль",

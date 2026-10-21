@@ -76,6 +76,34 @@ const languages = DIAGRAM_LANGUAGE_MODULES.filter((module) => module.site);
         </div>
       </section>
 
+      <section
+        id="mcp"
+        class="landing-section landing-mcp"
+        aria-labelledby="mcp-title"
+      >
+        <h2
+          id="mcp-title"
+          class="landing-section__title"
+        >
+          {{ t("site.mcp.title") }}
+        </h2>
+        <p class="landing-mcp__lead">
+          {{ t("site.mcp.lead") }}
+        </p>
+        <ul class="landing-mcp__points">
+          <li>{{ t("site.mcp.pointPlan") }}</li>
+          <li>{{ t("site.mcp.pointGenerate") }}</li>
+          <li>{{ t("site.mcp.pointLanguages") }}</li>
+        </ul>
+        <button
+          class="btn btn-primary"
+          type="button"
+          @click="navigateTo('mcp')"
+        >
+          {{ t("site.mcp.openPage") }}
+        </button>
+      </section>
+
       <p class="landing-stack">
         {{ t("site.stackLead") }}
         <a
@@ -133,5 +161,24 @@ const languages = DIAGRAM_LANGUAGE_MODULES.filter((module) => module.site);
 
 .landing-stack a {
   color: var(--accent);
+}
+
+.landing-mcp {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.landing-mcp__lead,
+.landing-mcp__points {
+  margin: 0;
+  max-width: 640px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.landing-mcp__points {
+  text-align: left;
 }
 </style>

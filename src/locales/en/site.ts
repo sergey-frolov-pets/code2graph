@@ -7,6 +7,7 @@ export const siteMessages = {
   "site.nav.pwa": "PWA / Offline",
   "site.nav.formats": "Formats",
   "site.nav.faq": "FAQ",
+  "site.nav.mcp": "MCP",
 
   "site.landingTitle": "Code2Graph",
   "site.landingSubtitle":
@@ -153,6 +154,33 @@ export const siteMessages = {
   "site.logout": "Sign out",
   "site.openEditor": "Open editor",
   "site.backHome": "Back to home",
+  "site.mcp.title": "MCP for agents",
+  "site.mcp.lead":
+    "An agent describes a diagram in words. Code2Graph picks the language and returns source for PlantUML, Mermaid, GraphML, WireMark, D2, or Structurizr.",
+  "site.mcp.pointPlan": "plan_diagram chooses the language and diagram type.",
+  "site.mcp.pointGenerate": "generate_diagram returns the diagram source.",
+  "site.mcp.pointLanguages": "The same six languages as the editor and the wizard.",
+  "site.mcp.openPage": "How to connect MCP",
+  "site.mcp.pageTitle": "Code2Graph MCP",
+  "site.mcp.summary":
+    "The MCP server lets Cursor and other agents ask Code2Graph for a diagram. It chooses a language from the request and returns source the editor can open.",
+  "site.mcp.toolsTitle": "Tools",
+  "site.mcp.toolList": "languages on the site and the diagram types each one accepts.",
+  "site.mcp.toolPlan": "language and type for a sentence, without source.",
+  "site.mcp.toolGenerate":
+    "diagram source. With CODE2GRAPH_API_URL it calls the server; otherwise it builds the same scaffold locally.",
+  "site.mcp.connectTitle": "Connect in Cursor",
+  "site.mcp.connectText":
+    "Run the script from a checkout of this repository. Replace the path with your checkout. Leave the URL empty to generate locally, or point it at the server edition.",
+  "site.mcp.source": "MCP package in the repository",
+  "site.mcp.apiTitle": "Server API",
+  "site.mcp.apiText":
+    "The server edition exposes these routes. If AGENT_API_TOKEN is set, send Authorization: Bearer with the same value as CODE2GRAPH_API_TOKEN.",
+  "site.mcp.apiFormats": "languages and types",
+  "site.mcp.apiPlan": "choose a language",
+  "site.mcp.apiScaffold": "language, type, and source",
+  "site.mcp.staticNote":
+    "GitHub Pages is a static editor and does not serve /api/agent. The API runs on the server edition, for example www.code2graph.ru.",
   "site.noAccount": "No account?",
   "site.hasAccount": "Already have an account?",
   "site.role": "Role",
