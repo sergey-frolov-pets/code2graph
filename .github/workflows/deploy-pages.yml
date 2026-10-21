@@ -62,6 +62,11 @@ jobs:
       - name: E2E smoke test
         run: npm run test:e2e
 
+      # www.code2graph.ru указывает на VPS, не на GitHub Pages.
+      # Файл CNAME заставил бы github.io перенаправлять на этот домен.
+      - name: Keep the site on github.io
+        run: rm -f dist/CNAME
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
