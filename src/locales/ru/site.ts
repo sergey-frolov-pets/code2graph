@@ -1,6 +1,6 @@
 import type { LocaleMessages } from "../types";
 
-export const siteMessages: LocaleMessages = {
+export const siteMessages = {
   "site.tagline": "Diagrams-as-Code Studio",
   "site.nav.features": "Возможности",
   "site.nav.converter": "Конвертер & ИИ",
@@ -148,4 +148,4 @@ export const siteMessages: LocaleMessages = {
   "site.registerRequired": "Заполните все поля",
   "site.welcomeUser": "Вы вошли как {username}",
   "site.versionHint": "Версия сайта — сравните после обновления или перезагрузки страницы",
-};
+} as const satisfies LocaleMessages;

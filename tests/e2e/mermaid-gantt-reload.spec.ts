@@ -5,7 +5,7 @@ import { waitForPreviewReady } from "./helpers/preview";
 const ganttSource = getMermaidSampleSource("gantt", "ru");
 
 test("mermaid gantt sample renders from dropdown", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/#/app");
   await expect(page.locator(".code-editor__textarea")).toBeVisible({
     timeout: 30_000,
   });
@@ -24,7 +24,7 @@ test("mermaid gantt sample renders from dropdown", async ({ page }) => {
 test("mixed gantt and plantuml source is cleaned and renders", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/app");
   await expect(page.locator(".code-editor__textarea")).toBeVisible({
     timeout: 30_000,
   });
@@ -45,7 +45,7 @@ test("mixed gantt and plantuml source is cleaned and renders", async ({
 test("pasting mermaid gantt over plantuml replaces the document", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/app");
   await expect(page.locator(".code-editor__textarea")).toBeVisible({
     timeout: 30_000,
   });

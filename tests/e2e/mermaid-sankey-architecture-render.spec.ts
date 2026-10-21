@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { waitForPreviewReady } from "./helpers/preview";
 
 async function expectSampleRenders(page: import("@playwright/test").Page, sampleId: string) {
-  await page.goto("/");
+  await page.goto("/#/app");
   await expect(page.locator(".code-editor__textarea")).toBeVisible({
     timeout: 30_000,
   });

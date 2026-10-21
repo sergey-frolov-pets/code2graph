@@ -1,6 +1,6 @@
 import type { LocaleMessages } from "../types";
 
-export const conversionMessages: LocaleMessages = {
+export const conversionMessages = {
   "conversion.title": "Convert diagram",
   "conversion.targetFormat": "Target format",
   "conversion.mode": "Mode",
@@ -68,4 +68,4 @@ export const conversionMessages: LocaleMessages = {
   "conversion.loss.journeyScores": "Journey satisfaction scores",
   "conversion.loss.timelineFormat": "Timeline date formatting",
   "conversion.loss.objectFields": "Object field values",
-};
+} as const satisfies LocaleMessages;

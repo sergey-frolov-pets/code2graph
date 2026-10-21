@@ -1,6 +1,6 @@
 import type { LocaleMessages } from "../types";
 
-export const libraryMessages: LocaleMessages = {
+export const libraryMessages = {
   "library.title": "Библиотека диаграмм",
   "library.browse": "Просмотр",
   "library.refresh": "Обновить",
@@ -277,4 +277,4 @@ export const libraryMessages: LocaleMessages = {
   "library.subscriptionRevokeError": "Не удалось отозвать подписку",
   "library.subscriptionGrantsLoadError": "Не удалось загрузить подписчиков",
   "library.subscriptionPermissionMergeHint": "При нескольких активных подписках на раздел применяется максимальный уровень доступа.",
-};
+} as const satisfies LocaleMessages;

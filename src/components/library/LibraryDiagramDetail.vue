@@ -4,6 +4,7 @@ import IconButton from "@/components/IconButton.vue";
 import LibraryDiagramRatingPanel from "@/components/library/LibraryDiagramRatingPanel.vue";
 import LibraryStarRating from "@/components/library/LibraryStarRating.vue";
 import { useLocale } from "@/composables/useLocale";
+import { isLocaleKey } from "@/locales/types";
 import { formatDate } from "@/shared/format-date";
 import { VISIBILITY_OPTIONS } from "@/constants/library-visibility";
 import {
@@ -54,7 +55,8 @@ function contentLocaleLabel(locale: string): string {
   if (!locale) {
     return t("library.contentLocaleAny");
   }
-  return t(`library.contentLocale.${locale}`);
+  const key = `library.contentLocale.${locale}`;
+  return isLocaleKey(key) ? t(key) : locale;
 }
 </script>
 

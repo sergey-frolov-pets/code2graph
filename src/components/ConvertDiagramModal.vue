@@ -2,6 +2,7 @@
 import { computed, ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import { useLocale } from "@/composables/useLocale";
+import { isLocaleKey } from "@/locales/types";
 import {
   DIAGRAM_FORMATS,
   type DiagramFormat,
@@ -87,18 +88,19 @@ watch(
 );
 
 const lossItems = computed(() =>
-  conversionResult.value.report.lossIds.map((lossId) => ({
-    id: lossId,
-    label: t(`conversion.${lossId}`),
-  })),
+  conversionResult.value.report.lossIds.map((lossId) => {
+    const key = `conversion.${lossId}`;
+    return {
+      id: lossId,
+      label: isLocaleKey(key) ? t(key) : lossId,
+    };
+  }),
 );
 
 const warningItems = computed(() =>
   conversionResult.value.report.warnings.map((warningId) => ({
     id: warningId,
-    label: warningId.startsWith("conversion.")
-      ? t(warningId as `conversion.${string}`)
-      : warningId,
+    label: isLocaleKey(warningId) ? t(warningId) : warningId,
   })),
 );
 

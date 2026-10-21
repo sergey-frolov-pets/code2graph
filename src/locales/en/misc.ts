@@ -1,6 +1,6 @@
 import type { LocaleMessages } from "../types";
 
-export const miscMessages: LocaleMessages = {
+export const miscMessages = {
   "versions.title": "Versions — {file}",
   "versions.commentLabel": "Version comment",
   "versions.commentPlaceholder": "Optional comment…",
@@ -219,4 +219,4 @@ export const miscMessages: LocaleMessages = {
   "pwa.updateAvailable": "A new site version is available",
   "pwa.updateReload": "Reload",
   "pwa.updateDismiss": "Later",
-};
+} as const satisfies LocaleMessages;

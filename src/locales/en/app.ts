@@ -1,6 +1,6 @@
 import type { LocaleMessages } from "../types";
 
-export const appMessages: LocaleMessages = {
+export const appMessages = {
   "app.subtitle": "Cross-platform PlantUML, Mermaid, GraphML, and WireMark editor with AI diagram generation",
   "app.aiNewDiagram": "New diagram",
   "app.codeGraphDiagram": "Diagram from code",
@@ -44,4 +44,4 @@ export const appMessages: LocaleMessages = {
   "app.unknownRenderError": "Unknown rendering error",
   "app.exportPngFailed": "Failed to export PNG",
   "app.engineLoadError": "Engine loading error",
-};
+} as const satisfies LocaleMessages;

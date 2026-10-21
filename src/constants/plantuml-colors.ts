@@ -1,7 +1,9 @@
+import type { LocaleKey } from "@/locales/types";
+
 export interface PlantUmlColorOption {
   label: string;
   value: string;
-  detailKey?: string;
+  detailKey?: LocaleKey;
 }
 
 export const PLANTUML_NAMED_COLORS: PlantUmlColorOption[] = [

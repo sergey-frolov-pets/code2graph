@@ -1,3 +1,5 @@
+import type { LocaleMessages } from "../types";
+
 export const codeGraphMessages = {
   "codeGraph.sourceHint":
     "Upload a zip archive (up to 5 MB), a local folder, or specify a GitHub repository.",
@@ -40,4 +42,4 @@ export const codeGraphMessages = {
   "codeGraph.batchRun": "Run queue",
   "codeGraph.batchProOnly": "Batch generation requires Code2Graph Pro.",
   "codeGraph.hybridLlm": "Refine flow with LLM (BYOK, Pro)",
-} as const;
+} as const satisfies LocaleMessages;

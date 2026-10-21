@@ -1,4 +1,5 @@
 import type { AppLocale } from "@/constants/i18n";
+import type { LocaleKey } from "@/locales/types";
 import { getWizardDiagramFormatRules } from "@/services/llm/diagram-format-rules";
 import { getWizardTypePromptHint } from "@/constants/wizard-prompt-hints";
 import {
@@ -474,7 +475,7 @@ export function wizardTypeHasStructureStep(
   );
 }
 
-export function getWizardStepTitleKey(stepId: WizardStepId): string {
+export function getWizardStepTitleKey(stepId: WizardStepId): LocaleKey {
   return `llm.wizard.step.${stepId}`;
 }
 

@@ -1,6 +1,6 @@
 import type { LocaleMessages } from "../types";
 
-export const llmMessages: LocaleMessages = {
+export const llmMessages = {
   "llm.keysGuide.title": "How to get an API key",
   "llm.keysGuide.lead": "Choose a provider in Settings → AI, create an API key on the provider website, and paste it in Settings.",
   "llm.keysGuide.stepRegister": "Sign in or register at the provider console.",
@@ -378,4 +378,4 @@ export const llmMessages: LocaleMessages = {
     "network blocks, servers with addresses, connections. Every server and link.",
   "llm.wizard.promptHint.archimate":
     "ArchiMate layers, elements (!include archimate), relationships. Every element from your description.",
-};
+} as const satisfies LocaleMessages;

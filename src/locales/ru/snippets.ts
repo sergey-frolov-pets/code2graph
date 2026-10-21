@@ -1,6 +1,6 @@
 import type { LocaleMessages } from "../types";
 
-export const snippetsMessages: LocaleMessages = {
+export const snippetsMessages = {
   "snippets.panelTitle": "Сниппеты PlantUML",
   "snippets.add": "Добавить сниппет",
   "snippets.addTitle": "Новый сниппет",
@@ -165,4 +165,4 @@ export const snippetsMessages: LocaleMessages = {
   "snippets.builtin.wbsColoredDesc": "*#LightBlue элемент",
   "snippets.builtin.wbsLeft": "left / right side",
   "snippets.builtin.wbsLeftDesc": "Разделение по сторонам",
-};
+} as const satisfies LocaleMessages;

@@ -68,7 +68,7 @@ async function seedLocalLibraryDiagram(
 test("library local preview modal opens with rendered svg", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/#/app");
   await expect(page.locator(".code-editor__textarea")).toBeVisible({
     timeout: 30_000,
   });

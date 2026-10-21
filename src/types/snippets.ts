@@ -1,3 +1,5 @@
+import type { LocaleKey } from "@/locales/types";
+
 export const SNIPPET_CATEGORY_IDS = [
   "basic",
   "classes",
@@ -19,8 +21,8 @@ export type SnippetCategoryId = (typeof SNIPPET_CATEGORY_IDS)[number];
 export interface BuiltinSnippet {
   id: string;
   categoryId: SnippetCategoryId;
-  titleKey: string;
-  descriptionKey?: string;
+  titleKey: LocaleKey;
+  descriptionKey?: LocaleKey;
   content: string;
 }
 
@@ -39,8 +41,8 @@ export type SnippetListItem =
       kind: "builtin";
       id: string;
       categoryId: SnippetCategoryId;
-      titleKey: string;
-      descriptionKey?: string;
+      titleKey: LocaleKey;
+      descriptionKey?: LocaleKey;
       content: string;
     }
   | {

@@ -1,6 +1,6 @@
 import type { LocaleMessages } from "../types";
 
-export const snippetsMessages: LocaleMessages = {
+export const snippetsMessages = {
   "snippets.panelTitle": "PlantUML snippets",
   "snippets.add": "Add snippet",
   "snippets.addTitle": "New snippet",
@@ -165,4 +165,4 @@ export const snippetsMessages: LocaleMessages = {
   "snippets.builtin.wbsColoredDesc": "*#LightBlue item",
   "snippets.builtin.wbsLeft": "left / right side",
   "snippets.builtin.wbsLeftDesc": "Split by sides",
-};
+} as const satisfies LocaleMessages;

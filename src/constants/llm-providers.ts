@@ -1,3 +1,5 @@
+import type { LocaleKey } from "@/locales/types";
+
 export const LLM_PROVIDER_KIND = {
   BYOK: "byok",
   FREE_BUILTIN: "free_builtin",
@@ -10,8 +12,8 @@ export interface LlmProviderDefinition {
   id: string;
   kind: LlmProviderKind;
   requiresUserKey: boolean;
-  nameKey: string;
-  descriptionKey: string;
+  nameKey: LocaleKey;
+  descriptionKey: LocaleKey;
   defaultModel: string;
   keyUrl?: string;
   docsUrl?: string;

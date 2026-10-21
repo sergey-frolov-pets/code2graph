@@ -8,6 +8,7 @@ import {
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useLocale } from "@/composables/useLocale";
+import type { LocaleKey } from "@/locales/types";
 import { resolveLocalizedErrorMessage } from "@/utils/localized-app-error";
 import { loadDiagramFromFile, resolveDiagramFileName } from "@/utils/diagram-files";
 
@@ -85,14 +86,19 @@ export function useEditorFileImport(options: {
     await importFile(file);
   }
 
+  function sampleTitleKey(selection: SampleSelection): LocaleKey {
+    if (selection.format === "mermaid") {
+      return `samples.mermaid.${selection.id}`;
+    }
+    if (selection.format === "wiremark") {
+      return `samples.wiremark.${selection.id}`;
+    }
+    return `samples.plantuml.${selection.id}`;
+  }
+
   function loadSample(selection: SampleSelection): void {
     const sample = getSampleSource(selection, locale.value);
-    const labelKey =
-      selection.format === "mermaid"
-        ? `samples.mermaid.${selection.id}`
-        : selection.format === "wiremark"
-          ? `samples.wiremark.${selection.id}`
-          : `samples.plantuml.${selection.id}`;
+    const labelKey = sampleTitleKey(selection);
 
     resetFolds();
     source.value = sample;

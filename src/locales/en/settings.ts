@@ -1,6 +1,6 @@
 import type { LocaleMessages } from "../types";
 
-export const settingsMessages: LocaleMessages = {
+export const settingsMessages = {
   "settings.fontSystem": "System monospace",
   "settings.title": "Settings",
   "settings.editor": "Editor",
@@ -93,4 +93,4 @@ export const settingsMessages: LocaleMessages = {
   "settings.llmTestRunning": "Testing…",
   "settings.llmTestSuccess": "Connection successful",
   "settings.llmTestFailed": "Connection failed",
-};
+} as const satisfies LocaleMessages;

@@ -1,6 +1,6 @@
 import type { LocaleMessages } from "../types";
 
-export const editorMessages: LocaleMessages = {
+export const editorMessages = {
   "editor.title": "Code",
   "editor.titleTooltip.plantuml": "PlantUML source code",
   "editor.titleTooltip.mermaid": "Mermaid source code",
@@ -159,4 +159,4 @@ export const editorMessages: LocaleMessages = {
   "editor.completion.mermaidPacketField": "packet field",
   "editor.tabs.label": "Editor tabs",
   "editor.tabs.close": "Close tab {label}",
-};
+} as const satisfies LocaleMessages;
