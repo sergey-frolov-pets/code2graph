@@ -3,7 +3,6 @@ import type { LocaleMessages } from "../types";
 export const appMessages = {
   "app.subtitle": "Кроссплатформенный редактор диаграмм PlantUML, Mermaid, GraphML, WireMark, D2 и Structurizr с ИИ-генерацией",
   "app.aiNewDiagram": "Новая диаграмма",
-  "app.codeGraphDiagram": "Диаграмма из кода",
   "app.settings": "Настройки",
   "app.library": "Библиотека",
   "app.close": "Закрыть",

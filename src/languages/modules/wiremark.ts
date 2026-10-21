@@ -44,6 +44,7 @@ export const wiremarkLanguageModule: DiagramLanguageModule = {
   site: {
     purposeKey: "site.formats.wiremark.purpose",
     featuresKey: "site.formats.wiremark.features",
+    summaryKey: "site.formats.wiremark.summary",
   },
   guide: {
     href: "https://docs.wiremark.dev/",

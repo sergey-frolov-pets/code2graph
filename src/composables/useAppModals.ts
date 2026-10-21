@@ -39,10 +39,6 @@ export function useAppModals() {
       wizardInitialCreationMode.value = null;
       isWizardModalOpen.value = true;
     },
-    openCodeGraphWizardModal: () => {
-      wizardInitialCreationMode.value = "fromCode";
-      isWizardModalOpen.value = true;
-    },
     closeWizardModal: () => {
       isWizardModalOpen.value = false;
       wizardInitialCreationMode.value = null;

@@ -11,8 +11,6 @@ export const siteMessages = {
   "site.landingTitle": "Code2Graph",
   "site.landingSubtitle":
     "PWA studio for PlantUML, Mermaid, and GraphML: AI, format converter, editor, and storage — on any device, even without internet.",
-  "site.landingHeroAlt":
-    "Code2Graph: Diagrams-as-Code — AI, PlantUML/Mermaid/GraphML converter, PWA and offline editor",
   "site.landingCtaApp": "Open editor",
   "site.landingCtaInstallPwa": "📲 Install PWA",
   "site.landingCtaRegister": "Sign up",
@@ -20,10 +18,14 @@ export const siteMessages = {
   "site.landingCtaTryFree": "Try for free",
   "site.landingCtaDemo": "Demo",
 
-  "site.hero.title":
-    "Create, convert, and store architecture diagrams. Anywhere. Even offline.",
+  "site.hero.title": "Text diagrams in the browser",
   "site.hero.subtitle":
-    "Code2Graph is a universal PWA studio for PlantUML, Mermaid, and GraphML. Generate diagrams with AI and a step-by-step Wizard, convert formats in one click, and work in the browser or as a standalone app without internet.",
+    "Write a diagram and see it right away. PlantUML, Mermaid, GraphML, WireMark, D2, and Structurizr — including offline.",
+  "site.offlineNote": "Editing and preview work without a network.",
+  "site.languages.title": "Languages",
+  "site.language.sites": "Sites",
+  "site.language.libraries": "Libraries used in the app",
+  "site.stackLead": "Interface:",
   "site.hero.ctaPrimary": "Open editor without sign-up",
   "site.hero.ctaSecondary": "📲 Install on desktop / phone",
   "site.hero.trustOffline":
@@ -66,16 +68,28 @@ export const siteMessages = {
   "site.formats.colFeatures": "Code2Graph capabilities",
   "site.formats.plantuml.purpose": "Complex UML, sequence, class, and state diagrams",
   "site.formats.plantuml.features": "Editing, AI generation, conversion to Mermaid/GraphML",
+  "site.formats.plantuml.summary":
+    "Text UML for sequences, classes, states, C4, and more. Code2Graph renders it offline with @plantuml/core and the Smetana layout engine. C4 and ArchiMate diagrams use the matching PlantUML standard libraries.",
   "site.formats.mermaid.purpose": "Lightweight diagrams for GitHub, Notion, Obsidian, and Jira",
   "site.formats.mermaid.features": "Live preview, Wizard generation, export",
+  "site.formats.mermaid.summary":
+    "A compact diagram language for Markdown, GitHub, and notes. The editor renders Mermaid in the browser; the online mode can also use mermaid.ink.",
   "site.formats.graphml.purpose": "Topology graphs for yEd, Draw.io, and visualization systems",
   "site.formats.graphml.features": "Import, visualization, conversion to code",
+  "site.formats.graphml.summary":
+    "An XML graph format used by yEd and other tools. Code2Graph reads GraphML and lays the graph out with dagre.",
   "site.formats.wiremark.purpose": "Hand-drawn UI wireframes inside markdown",
   "site.formats.wiremark.features": "Editing, live preview, sample screens",
+  "site.formats.wiremark.summary":
+    "Text wireframes that look like a sketch. Preview in the app is drawn by @wiremark/core.",
   "site.formats.d2.purpose": "Modern diagrams: architecture, sequence, classes, and SQL",
   "site.formats.d2.features": "Editing, offline preview, samples for the selected language",
+  "site.formats.d2.summary":
+    "A modern diagram language for architecture, sequences, classes, and SQL. The offline preview is compiled by @d2lang/d2.",
   "site.formats.structurizr.purpose": "C4 architecture as code: context, containers, components, deployment",
   "site.formats.structurizr.features": "Editing, offline C4 preview, samples for the selected language",
+  "site.formats.structurizr.summary":
+    "C4 architecture as code: landscape, context, containers, components, and deployment. The editor keeps the Structurizr DSL and draws views with PlantUML C4.",
 
   "site.audience.title": "Speeds up the whole engineering team",
   "site.audience.architect.title": "🏛 Software architects",

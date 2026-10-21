@@ -69,14 +69,6 @@ function onWizardApply(payload: {
 }) {
   applyWizardDiagramToNewTab(payload.source, payload.label, payload.format);
 }
-
-function onWizardApplyNewTab(payload: {
-  source: string;
-  label: string;
-  format?: DiagramFormat;
-}) {
-  applyWizardDiagramToNewTab(payload.source, payload.label, payload.format);
-}
 </script>
 
 <template>
@@ -183,7 +175,6 @@ function onWizardApplyNewTab(payload: {
     :initial-creation-mode="wizardInitialCreationMode"
     @close="closeWizardModal"
     @apply="onWizardApply"
-    @apply-new-tab="onWizardApplyNewTab"
   />
 
   <component

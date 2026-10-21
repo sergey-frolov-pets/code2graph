@@ -40,6 +40,7 @@ export const graphmlLanguageModule: DiagramLanguageModule = {
   site: {
     purposeKey: "site.formats.graphml.purpose",
     featuresKey: "site.formats.graphml.features",
+    summaryKey: "site.formats.graphml.summary",
   },
   guide: {
     href: "http://graphml.graphdrawing.org/primer/graphml-primer.html",

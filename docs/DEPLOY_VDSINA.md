@@ -133,7 +133,6 @@ sudo bash /opt/code2graph/scripts/deploy/vdsina-update.sh
 1. **Смотрите вывод скрипта до конца** — при ошибке `vue-tsc` / `npm run build` старый `index.html` остаётся. С версии 1.0.72 деплой использует `npm run build:deploy` (без typecheck).
 2. **Проверка версии:** `curl -fsS https://www.code2graph.ru/version.txt` — если там `1.0.71` без commit, обновление не дошло.
 3. **Жёсткое обновление в браузере:** Ctrl+Shift+R (PWA может кэшировать старый bundle).
-4. **Где code-to-graph в UI:** кнопка **«Диаграмма из кода»** в шапке или **Новая диаграмма** → **Из кода**.
 
 Если обновление уже упало на git, вручную:
 

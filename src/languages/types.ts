@@ -28,6 +28,7 @@ export interface DiagramFormatDefinition {
 export interface DiagramLanguageSiteCopy {
   purposeKey: LocaleKey;
   featuresKey: LocaleKey;
+  summaryKey: LocaleKey;
 }
 
 export interface DiagramLanguageGuide {

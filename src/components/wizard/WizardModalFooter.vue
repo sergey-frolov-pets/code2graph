@@ -8,7 +8,6 @@ import type { WizardStepId } from "@/constants/llm-wizard";
 defineProps<{
   currentStepId: WizardStepId | string;
   isAiMode: boolean;
-  isFromCodeMode?: boolean;
   isGenerating: boolean;
   canGoNext: boolean;
   showBackButton: boolean;
@@ -52,7 +51,7 @@ const { generatingLabel } = useActiveLlmLabel();
       </IconButton>
 
       <IconButton
-        v-if="currentStepId !== 'result' && !isFromCodeMode"
+        v-if="currentStepId !== 'result'"
         :label="t('llm.wizard.transferToEditor')"
         extra-class="wizard-footer__btn"
         :disabled="isGenerating"
@@ -106,7 +105,7 @@ const { generatingLabel } = useActiveLlmLabel();
       </IconButton>
 
       <IconButton
-        v-if="currentStepId === 'result' && !isFromCodeMode && !isGenerating"
+        v-if="currentStepId === 'result' && !isGenerating"
         :label="t('llm.wizard.regenerate')"
         extra-class="wizard-footer__btn"
         @click="emit('regenerate')"

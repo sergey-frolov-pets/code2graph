@@ -6,7 +6,6 @@ import { llmMessages } from "./llm";
 import { settingsMessages } from "./settings";
 import { miscMessages } from "./misc";
 import { conversionMessages } from "./conversion";
-import { codeGraphMessages } from "./codeGraph";
 import { siteMessages } from "./site";
 
 export const enMessages = {
@@ -18,6 +17,5 @@ export const enMessages = {
   ...settingsMessages,
   ...miscMessages,
   ...conversionMessages,
-  ...codeGraphMessages,
   ...siteMessages,
 } as const;

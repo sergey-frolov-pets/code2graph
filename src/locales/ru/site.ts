@@ -11,8 +11,6 @@ export const siteMessages = {
   "site.landingTitle": "Code2Graph",
   "site.landingSubtitle":
     "PWA-студия для PlantUML, Mermaid и GraphML: ИИ, конвертер форматов, редактор и хранилище — на любых устройствах, даже без интернета.",
-  "site.landingHeroAlt":
-    "Code2Graph: Diagrams-as-Code — ИИ, конвертер PlantUML/Mermaid/GraphML, PWA и оффлайн-редактор",
   "site.landingCtaApp": "Открыть редактор",
   "site.landingCtaInstallPwa": "📲 Установить PWA",
   "site.landingCtaRegister": "Регистрация",
@@ -20,10 +18,14 @@ export const siteMessages = {
   "site.landingCtaTryFree": "Попробовать бесплатно",
   "site.landingCtaDemo": "Демо",
 
-  "site.hero.title":
-    "Создавайте, конвертируйте и храните архитектурные диаграммы. Везде. Даже оффлайн.",
+  "site.hero.title": "Текстовые диаграммы в браузере",
   "site.hero.subtitle":
-    "Code2Graph — универсальная PWA-студия для работы с PlantUML, Mermaid и GraphML. Генерируйте диаграммы с помощью ИИ и пошагового Мастера, конвертируйте форматы в 1 клик и работайте прямо в браузере или как в отдельном приложении без интернета.",
+    "Пишите схему и сразу смотрите её. PlantUML, Mermaid, GraphML, WireMark, D2 и Structurizr — в том числе без интернета.",
+  "site.offlineNote": "Редактирование и просмотр работают без сети.",
+  "site.languages.title": "Языки",
+  "site.language.sites": "Сайты",
+  "site.language.libraries": "Библиотеки в приложении",
+  "site.stackLead": "Интерфейс:",
   "site.hero.ctaPrimary": "Открыть редактор без регистрации",
   "site.hero.ctaSecondary": "📲 Установить на ПК / Смартфон",
   "site.hero.trustOffline":
@@ -66,16 +68,28 @@ export const siteMessages = {
   "site.formats.colFeatures": "Возможности в Code2Graph",
   "site.formats.plantuml.purpose": "Сложные UML, Sequence, Class и State диаграммы",
   "site.formats.plantuml.features": "Редактирование, AI-генерация, конвертация в Mermaid/GraphML",
+  "site.formats.plantuml.summary":
+    "Текстовый UML: последовательности, классы, состояния, C4 и другие схемы. В приложении рисуется офлайн через @plantuml/core и раскладку Smetana. C4 и ArchiMate подключают соответствующие стандартные библиотеки PlantUML.",
   "site.formats.mermaid.purpose": "Легковесные схемы для GitHub, Notion, Obsidian и Jira",
   "site.formats.mermaid.features": "Живой просмотр, генерация через Мастер, экспорт",
+  "site.formats.mermaid.summary":
+    "Компактный язык диаграмм для Markdown, GitHub и заметок. Редактор рисует Mermaid в браузере, онлайн-режим может использовать mermaid.ink.",
   "site.formats.graphml.purpose": "Графы с топологией для yEd, Draw.io и виз-систем",
   "site.formats.graphml.features": "Импорт, визуализация, конвертация в код",
+  "site.formats.graphml.summary":
+    "XML-формат графов, который используют yEd и другие инструменты. Code2Graph читает GraphML и раскладывает граф библиотекой dagre.",
   "site.formats.wiremark.purpose": "Вайрфреймы интерфейса в стиле наброска, прямо в тексте",
   "site.formats.wiremark.features": "Редактирование, живой просмотр, примеры экранов",
+  "site.formats.wiremark.summary":
+    "Текстовые вайрфреймы в виде наброска. Просмотр в приложении рисует @wiremark/core.",
   "site.formats.d2.purpose": "Современные схемы: архитектура, sequence, классы и SQL",
   "site.formats.d2.features": "Редактирование, оффлайн-просмотр, примеры выбранного языка",
+  "site.formats.d2.summary":
+    "Современный язык схем: архитектура, последовательности, классы и SQL. Оффлайн-просмотр собирает @d2lang/d2.",
   "site.formats.structurizr.purpose": "Архитектура C4 как код: контекст, контейнеры, компоненты, развёртывание",
   "site.formats.structurizr.features": "Редактирование, оффлайн-просмотр C4, примеры выбранного языка",
+  "site.formats.structurizr.summary":
+    "Архитектура C4 как код: ландшафт, контекст, контейнеры, компоненты и развёртывание. Редактор хранит Structurizr DSL и рисует виды через PlantUML C4.",
 
   "site.audience.title": "Ускоряет работу всей технической команды",
   "site.audience.architect.title": "🏛 Архитекторы ПО",

@@ -41,6 +41,7 @@ export const d2LanguageModule: DiagramLanguageModule = {
   site: {
     purposeKey: "site.formats.d2.purpose",
     featuresKey: "site.formats.d2.features",
+    summaryKey: "site.formats.d2.summary",
   },
   guide: {
     href: "https://d2lang.com/tour/intro/",

@@ -10,6 +10,8 @@ const PRECACHE_URLS = [
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon.svg",
+  "./icons/apple-touch-icon.png",
+  "./icons/fsvibe-logo.svg",
 ];
 
 self.addEventListener("install", (event) => {

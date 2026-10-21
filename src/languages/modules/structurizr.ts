@@ -41,6 +41,7 @@ export const structurizrLanguageModule: DiagramLanguageModule = {
   site: {
     purposeKey: "site.formats.structurizr.purpose",
     featuresKey: "site.formats.structurizr.features",
+    summaryKey: "site.formats.structurizr.summary",
   },
   guide: {
     href: "https://docs.structurizr.com/dsl/language",

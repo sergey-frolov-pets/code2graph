@@ -45,6 +45,7 @@ export const mermaidLanguageModule: DiagramLanguageModule = {
   site: {
     purposeKey: "site.formats.mermaid.purpose",
     featuresKey: "site.formats.mermaid.features",
+    summaryKey: "site.formats.mermaid.summary",
   },
   guide: {
     href: "https://mermaid.js.org/intro/",

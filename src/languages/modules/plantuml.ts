@@ -44,6 +44,7 @@ export const plantumlLanguageModule: DiagramLanguageModule = {
   site: {
     purposeKey: "site.formats.plantuml.purpose",
     featuresKey: "site.formats.plantuml.features",
+    summaryKey: "site.formats.plantuml.summary",
   },
   guide: {
     href: "https://plantuml.com/guide",

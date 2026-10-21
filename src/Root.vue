@@ -5,6 +5,7 @@ import App from "@/App.vue";
 import { bindAppRouterListeners, useAppRouter } from "@/composables/useAppRouter";
 import AccountPage from "@/pages/AccountPage.vue";
 import LandingPage from "@/pages/LandingPage.vue";
+import LanguagePage from "@/pages/LanguagePage.vue";
 import LoginPage from "@/pages/LoginPage.vue";
 import RegisterPage from "@/pages/RegisterPage.vue";
 
@@ -13,7 +14,7 @@ bindAppRouterListeners();
 const { route } = useAppRouter();
 
 const view = computed(() => {
-  switch (route.value) {
+  switch (route.value.name) {
     case "login":
       return LoginPage;
     case "register":
@@ -22,6 +23,8 @@ const view = computed(() => {
       return AccountPage;
     case "app":
       return App;
+    case "language":
+      return LanguagePage;
     default:
       return LandingPage;
   }

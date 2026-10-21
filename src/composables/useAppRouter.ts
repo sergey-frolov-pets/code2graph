@@ -2,10 +2,10 @@ import { ref } from "vue";
 import {
   navigateTo,
   parseRouteFromHash,
-  type AppRouteName,
+  type ParsedAppRoute,
 } from "@/router";
 
-const currentRoute = ref<AppRouteName>(parseRouteFromHash(window.location.hash));
+const currentRoute = ref<ParsedAppRoute>(parseRouteFromHash(window.location.hash));
 let listenersBound = false;
 
 function syncRouteFromHash(): void {
