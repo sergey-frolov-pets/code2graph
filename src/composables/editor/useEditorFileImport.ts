@@ -1,14 +1,19 @@
 import { computed, ref, type Ref } from "vue";
 import {
   getDefaultFileNameForSample,
+  getSampleCatalog,
   getSampleSource,
+  isDefaultSource,
   isSampleDiagramSource,
   type SampleSelection,
 } from "@/constants/sample-diagrams";
-import type { DiagramFormat } from "@/constants/diagram-formats";
+import {
+  getDiagramFormatDefinition,
+  type DiagramFormat,
+} from "@/constants/diagram-formats";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useLocale } from "@/composables/useLocale";
-import type { LocaleKey } from "@/locales/types";
+import { isLocaleKey, type LocaleKey } from "@/locales/types";
 import { resolveLocalizedErrorMessage } from "@/utils/localized-app-error";
 import { loadDiagramFromFile, resolveDiagramFileName } from "@/utils/diagram-files";
 
@@ -87,13 +92,40 @@ export function useEditorFileImport(options: {
   }
 
   function sampleTitleKey(selection: SampleSelection): LocaleKey {
-    if (selection.format === "mermaid") {
-      return `samples.mermaid.${selection.id}`;
+    const key = `samples.${selection.format}.${selection.id}`;
+    return isLocaleKey(key) ? key : "editor.samples";
+  }
+
+  function changeFormat(format: DiagramFormat): void {
+    if (format === diagramFormat.value) {
+      return;
     }
-    if (selection.format === "wiremark") {
-      return `samples.wiremark.${selection.id}`;
+
+    const shouldReplace =
+      !source.value.trim() ||
+      isSampleDiagramSource(source.value) ||
+      isDefaultSource(source.value);
+    const catalog = getSampleCatalog(format);
+    const firstSampleId = catalog?.ids[0];
+
+    if (shouldReplace && catalog && firstSampleId) {
+      loadSample({ format, id: firstSampleId });
+      return;
     }
-    return `samples.plantuml.${selection.id}`;
+
+    if (shouldReplace) {
+      resetFolds();
+      source.value = "";
+      diagramFormat.value = format;
+      onFileLoaded({
+        content: "",
+        fileName: getDiagramFormatDefinition(format).defaultFileName,
+        format,
+      });
+      return;
+    }
+
+    diagramFormat.value = format;
   }
 
   function loadSample(selection: SampleSelection): void {
@@ -152,6 +184,7 @@ export function useEditorFileImport(options: {
     onDragLeave,
     onDrop,
     loadSample,
+    changeFormat,
     requestClear,
   };
 }

@@ -36,6 +36,7 @@ export const settingsMessages = {
   "settings.mermaidGuide": "Справка Mermaid",
   "settings.graphmlGuide": "Справка GraphML",
   "settings.wiremarkGuide": "Справка WireMark",
+  "settings.d2Guide": "Справка D2",
   "settings.yedEditor": "yEd Graph Editor",
   "settings.about": "О программе",
   "settings.library": "Библиотека",

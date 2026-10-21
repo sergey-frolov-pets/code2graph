@@ -7,10 +7,8 @@ import type { CompletionKind } from "@/utils/completion-types";
 import type { CodeFoldRegion } from "@/utils/code-folds";
 import { mergeDisplayTextIntoSource } from "@/utils/code-folds";
 import { isSnippetsHotkey } from "@/constants/snippets-settings";
+import { getLanguageModule } from "@/languages/registry";
 import { detectDiagramFormat } from "@/utils/diagram-format";
-import { isCompleteMermaidDiagram } from "@/utils/mermaid-source";
-import { isCompleteGraphmlDocument } from "@/utils/graphml-source";
-import { isCompleteWiremarkDocument } from "@/utils/wiremark-source";
 
 const props = defineProps<{
   source: string;
@@ -73,14 +71,7 @@ function onPaste(event: ClipboardEvent): void {
 
   if (
     pastedFormat !== currentFormat &&
-    (pastedFormat === "graphml"
-      ? isCompleteGraphmlDocument(pasted)
-      : pastedFormat === "mermaid"
-        ? isCompleteMermaidDiagram(pasted)
-        : pastedFormat === "wiremark"
-          ? isCompleteWiremarkDocument(pasted)
-          : pastedFormat === "plantuml" &&
-            /@start(uml|gantt)\b/i.test(pasted)) &&
+    getLanguageModule(pastedFormat).isCompleteSource(pasted) &&
     !hasFullSelection
   ) {
     event.preventDefault();

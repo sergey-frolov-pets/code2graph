@@ -72,6 +72,8 @@ export const siteMessages = {
   "site.formats.graphml.features": "Import, visualization, conversion to code",
   "site.formats.wiremark.purpose": "Hand-drawn UI wireframes inside markdown",
   "site.formats.wiremark.features": "Editing, live preview, sample screens",
+  "site.formats.d2.purpose": "Modern diagrams: architecture, sequence, classes, and SQL",
+  "site.formats.d2.features": "Editing, offline preview, samples for the selected language",
 
   "site.audience.title": "Speeds up the whole engineering team",
   "site.audience.architect.title": "🏛 Software architects",

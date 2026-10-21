@@ -1,5 +1,6 @@
 import type { AppLocale } from "@/constants/i18n";
 import { buildWizardDiagramSample } from "@/constants/wizard-sample-sources";
+import type { SampleCatalog } from "@/languages/sample-catalog";
 
 export const MERMAID_SAMPLE_IDS = [
   "flowchart",
@@ -430,6 +431,19 @@ export function findMermaidSampleIdAnyLocale(
 export function isMermaidSampleSource(source: string): boolean {
   return ALL_MERMAID_SAMPLE_SOURCES.has(source);
 }
+
+export const mermaidSampleCatalog: SampleCatalog = {
+  ids: MERMAID_SAMPLE_IDS,
+  getSource(id, locale) {
+    return getMermaidSampleSource(id as MermaidSampleId, locale);
+  },
+  findId(source, locale) {
+    return findMermaidSampleId(source, locale);
+  },
+  isSampleSource(source) {
+    return isMermaidSampleSource(source);
+  },
+};
 
 export function translateMermaidSourceForLocale(
   source: string,

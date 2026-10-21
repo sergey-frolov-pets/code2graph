@@ -6,6 +6,7 @@ import SiteHeader from "@/components/site/SiteHeader.vue";
 import { useAppRouter } from "@/composables/useAppRouter";
 import { useLocale } from "@/composables/useLocale";
 import { APP_META } from "@/constants";
+import { DIAGRAM_LANGUAGE_MODULES } from "@/languages/registry";
 
 const { t } = useLocale();
 const { navigateTo } = useAppRouter();
@@ -23,28 +24,17 @@ const deepDiveItems = [
   { title: "site.deepDive.item4.title", text: "site.deepDive.item4.text" },
 ] as const;
 
-const formatRows = [
-  {
-    format: "PlantUML",
-    purpose: "site.formats.plantuml.purpose",
-    features: "site.formats.plantuml.features",
-  },
-  {
-    format: "Mermaid",
-    purpose: "site.formats.mermaid.purpose",
-    features: "site.formats.mermaid.features",
-  },
-  {
-    format: "GraphML",
-    purpose: "site.formats.graphml.purpose",
-    features: "site.formats.graphml.features",
-  },
-  {
-    format: "WireMark",
-    purpose: "site.formats.wiremark.purpose",
-    features: "site.formats.wiremark.features",
-  },
-] as const;
+const formatRows = DIAGRAM_LANGUAGE_MODULES.flatMap((module) =>
+  module.site
+    ? [
+        {
+          format: module.labelKey,
+          purpose: module.site.purposeKey,
+          features: module.site.featuresKey,
+        },
+      ]
+    : [],
+);
 
 const audienceCards = [
   {
@@ -166,7 +156,7 @@ const faqItems = [
             </thead>
             <tbody>
               <tr v-for="row in formatRows" :key="row.format">
-                <th scope="row">{{ row.format }}</th>
+                <th scope="row">{{ t(row.format) }}</th>
                 <td :data-label="t('site.formats.colPurpose')">{{ t(row.purpose) }}</td>
                 <td :data-label="t('site.formats.colFeatures')">{{ t(row.features) }}</td>
               </tr>

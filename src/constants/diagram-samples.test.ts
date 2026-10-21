@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { getWizardTypesForLanguage } from "@/constants/llm-wizard";
+import { listSampleIds } from "@/constants/sample-diagrams";
+import {
+  D2_SAMPLE_IDS,
+  getD2SampleSource,
+} from "@/constants/d2-sample-diagrams";
 import {
   WIREMARK_SAMPLE_IDS,
   getWiremarkSampleSource,
@@ -51,5 +56,18 @@ describe("diagram samples coverage", () => {
       expect(getWiremarkSampleSource(id, "ru").trim().length).toBeGreaterThan(0);
       expect(getWiremarkSampleSource(id, "en").trim().length).toBeGreaterThan(0);
     }
+
+    for (const id of D2_SAMPLE_IDS) {
+      expect(getD2SampleSource(id, "ru").trim().length).toBeGreaterThan(0);
+      expect(getD2SampleSource(id, "en").trim().length).toBeGreaterThan(0);
+    }
+  });
+
+  it("lists samples only for the selected language", () => {
+    expect(listSampleIds("plantuml")).toEqual([...PLANTUML_SAMPLE_IDS]);
+    expect(listSampleIds("mermaid")).toEqual([...MERMAID_SAMPLE_IDS]);
+    expect(listSampleIds("wiremark")).toEqual([...WIREMARK_SAMPLE_IDS]);
+    expect(listSampleIds("d2")).toEqual([...D2_SAMPLE_IDS]);
+    expect(listSampleIds("graphml")).toEqual([]);
   });
 });

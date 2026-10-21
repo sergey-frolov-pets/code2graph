@@ -39,6 +39,12 @@ describe("resolvePumlFileName", () => {
     expect(resolvePumlFileName("flow")).toBe("flow.puml");
   });
 
+  it("keeps other diagram extensions", () => {
+    expect(resolvePumlFileName("flow.mmd")).toBe("flow.mmd");
+    expect(resolvePumlFileName("screen.wiremark")).toBe("screen.wiremark");
+    expect(resolvePumlFileName("architecture.d2")).toBe("architecture.d2");
+  });
+
   it("replaces non-puml extension with .puml", () => {
     expect(resolvePumlFileName("flow.json")).toBe("flow.puml");
   });

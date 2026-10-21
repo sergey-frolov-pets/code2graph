@@ -61,6 +61,11 @@ export const miscMessages = {
   "samples.wiremark.settings": "Settings",
   "samples.wiremark.flow": "Screen flow",
   "samples.wiremark.product": "Product card",
+  "samples.d2.flow": "Request flow",
+  "samples.d2.sequence": "Sequence",
+  "samples.d2.classes": "Classes",
+  "samples.d2.sql": "SQL tables",
+  "samples.d2.architecture": "Architecture",
   "share.title": "PlantUML diagram",
   "engine.noDecompression": "Browser does not support DecompressionStream",
   "engine.vizLoadFailed": "Failed to load viz-global.js",
@@ -136,6 +141,8 @@ export const miscMessages = {
     "Mermaid — text-based diagrams (flowchart, sequence, class, etc.) with offline rendering via mermaid.js or online via mermaid.ink.",
   "about.formatsGraphml":
     "GraphML — XML graph format; view and edit in the app, visual design in",
+  "about.formatsD2":
+    "D2 — modern diagram language with offline rendering via D2.js (WebAssembly).",
   "about.developedBy": "Developed by {developer}",
   "about.developedByLabel": "Developed by",
   "about.version": "Version {version}",
@@ -193,6 +200,7 @@ export const miscMessages = {
   "wiremark.emptySource": "WireMark source is empty",
   "wiremark.renderFailed": "WireMark rendering error: {detail}",
   "wiremark.parseFailed": "Failed to parse WireMark",
+  "d2.parseFailed": "Failed to parse D2",
   "graphml.invalidRoot": "GraphML root element not found",
   "graphml.noGraph": "GraphML file has no graph element",
   "graphml.noNodes": "GraphML file has no nodes",

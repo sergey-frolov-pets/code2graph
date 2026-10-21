@@ -2,6 +2,7 @@ import { computed, ref, type Ref } from "vue";
 import type { TranslateFn } from "@/locales/types";
 import { MAX_PUML_FILE_BYTES, type DiagramVisibility } from "@/constants/diagram-library";
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
+import { stripDiagramTitleExtension } from "@shared/puml-files";
 import { parseTagsInput } from "@/utils/library-tags";
 import type { LibraryTab } from "./useLibraryBrowseFlow";
 
@@ -50,10 +51,7 @@ export function useLibraryUpload(options: {
     }
     uploadFile.value = file;
     if (!uploadTitle.value.trim()) {
-      uploadTitle.value = file.name.replace(
-        /\.(puml|plantuml|txt|mmd|mermaid|graphml|wiremark)$/i,
-        "",
-      );
+      uploadTitle.value = stripDiagramTitleExtension(file.name);
     }
   }
 

@@ -5,6 +5,7 @@ import {
   isDiagramFormat,
   type DiagramFormat,
 } from "@/constants/diagram-formats";
+import { getLanguageModule } from "@/languages/registry";
 import {
   STORAGE_KEY_DIAGRAM_FORMAT,
   STORAGE_KEY_FILE_NAME,
@@ -61,11 +62,7 @@ function reconcileDiagramFormat(
   }
 
   const fromFileName = detectFormatFromFileName(fileName);
-  if (
-    fromFileName === "mermaid" ||
-    fromFileName === "graphml" ||
-    fromFileName === "wiremark"
-  ) {
+  if (fromFileName && !getLanguageModule(fromFileName).isFallbackFormat) {
     return fromFileName;
   }
 

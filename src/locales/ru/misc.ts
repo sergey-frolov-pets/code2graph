@@ -61,6 +61,11 @@ export const miscMessages = {
   "samples.wiremark.settings": "Настройки",
   "samples.wiremark.flow": "Переходы экранов",
   "samples.wiremark.product": "Карточка товара",
+  "samples.d2.flow": "Поток запроса",
+  "samples.d2.sequence": "Последовательность",
+  "samples.d2.classes": "Классы",
+  "samples.d2.sql": "SQL-таблицы",
+  "samples.d2.architecture": "Архитектура",
   "share.title": "PlantUML диаграмма",
   "engine.noDecompression": "Браузер не поддерживает DecompressionStream",
   "engine.vizLoadFailed": "Не удалось загрузить viz-global.js",
@@ -136,6 +141,8 @@ export const miscMessages = {
     "Mermaid — диаграммы из текста (flowchart, sequence, class и др.) с оффлайн-рендерингом через mermaid.js или онлайн через mermaid.ink.",
   "about.formatsGraphml":
     "GraphML — XML-формат графов; просмотр и редактирование в приложении, визуальное проектирование — в",
+  "about.formatsD2":
+    "D2 — современный язык диаграмм с оффлайн-рендером через D2.js (WebAssembly).",
   "about.developedBy": "Разработана {developer}",
   "about.developedByLabel": "Разработана",
   "about.version": "Версия {version}",
@@ -193,6 +200,7 @@ export const miscMessages = {
   "wiremark.emptySource": "Исходник WireMark пуст",
   "wiremark.renderFailed": "Ошибка рендера WireMark: {detail}",
   "wiremark.parseFailed": "Не удалось разобрать WireMark",
+  "d2.parseFailed": "Не удалось разобрать D2",
   "graphml.invalidRoot": "Корневой элемент GraphML не найден",
   "graphml.noGraph": "В GraphML отсутствует элемент graph",
   "graphml.noNodes": "В GraphML нет узлов",

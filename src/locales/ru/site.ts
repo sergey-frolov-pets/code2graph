@@ -72,6 +72,8 @@ export const siteMessages = {
   "site.formats.graphml.features": "Импорт, визуализация, конвертация в код",
   "site.formats.wiremark.purpose": "Вайрфреймы интерфейса в стиле наброска, прямо в тексте",
   "site.formats.wiremark.features": "Редактирование, живой просмотр, примеры экранов",
+  "site.formats.d2.purpose": "Современные схемы: архитектура, sequence, классы и SQL",
+  "site.formats.d2.features": "Редактирование, оффлайн-просмотр, примеры выбранного языка",
 
   "site.audience.title": "Ускоряет работу всей технической команды",
   "site.audience.architect.title": "🏛 Архитекторы ПО",

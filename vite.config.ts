@@ -53,5 +53,11 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts", "packages/shared/src/**/*.test.ts"],
+    alias: {
+      "@d2lang/d2": path.resolve(
+        appRoot,
+        "node_modules/@d2lang/d2/dist/node-esm/index.js",
+      ),
+    },
   },
 });

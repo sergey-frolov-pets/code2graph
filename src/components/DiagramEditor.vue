@@ -15,12 +15,12 @@ import EditorFoldOnboardingBanner from "@/components/editor/EditorFoldOnboarding
 import EditorFoldRegionsModal from "@/components/editor/EditorFoldRegionsModal.vue";
 import { useLocale } from "@/composables/useLocale";
 import type { EditorFontSize } from "@/constants/editor-settings";
-import type { SampleSelection } from "@/constants/sample-diagrams";
 import {
   DIAGRAM_FILE_ACCEPT,
   getDiagramFormatDefinition,
   type DiagramFormat,
 } from "@/constants/diagram-formats";
+import { getLanguageModule } from "@/languages/registry";
 import { useEditorFoldOnboarding } from "@/composables/wizard/useWizardOnboarding";
 import { useEditorAutocomplete } from "@/composables/useEditorAutocomplete";
 import { useCodeFolds } from "@/composables/editor/useCodeFolds";
@@ -70,31 +70,16 @@ const { showFoldOnboarding, dismissFoldOnboarding } = useEditorFoldOnboarding();
 const formatDefinition = computed(() =>
   getDiagramFormatDefinition(diagramFormat.value),
 );
+const languageModule = computed(() => getLanguageModule(diagramFormat.value));
 const isReadOnly = computed(() => !formatDefinition.value.editable);
 const effectiveSyntaxHighlight = computed(
   () =>
-    props.syntaxHighlightEnabled &&
-    (diagramFormat.value === "plantuml" ||
-      diagramFormat.value === "mermaid" ||
-      diagramFormat.value === "graphml" ||
-      diagramFormat.value === "wiremark"),
+    props.syntaxHighlightEnabled && languageModule.value.supportsSyntaxHighlight,
 );
-const editorPlaceholder = computed(() => {
-  if (diagramFormat.value === "graphml") {
-    return t("editor.placeholderGraphml");
-  }
-  if (diagramFormat.value === "mermaid") {
-    return t("editor.placeholderMermaid");
-  }
-  if (diagramFormat.value === "wiremark") {
-    return t("editor.placeholderWiremark");
-  }
-  return t("editor.placeholder");
-});
+const editorPlaceholder = computed(() => t(languageModule.value.placeholderKey));
 const effectiveAutocomplete = computed(
   () =>
-    props.autocompleteEnabled &&
-    (diagramFormat.value === "plantuml" || diagramFormat.value === "mermaid"),
+    props.autocompleteEnabled && languageModule.value.supportsAutocomplete,
 );
 
 const gutterComponentRef = ref<InstanceType<typeof EditorCodeGutter> | null>(
@@ -208,6 +193,7 @@ const {
   onDragLeave,
   onDrop,
   loadSample,
+  changeFormat,
   requestClear,
 } = useEditorFileImport({
   source,
@@ -331,7 +317,8 @@ onUnmounted(() => {
       @convert="emit('convert')"
       @clear="requestClear"
       @toggle-snippets="snippetsOpen = !snippetsOpen"
-      @load-sample="loadSample($event as SampleSelection)"
+      @load-sample="loadSample"
+      @change-format="changeFormat"
       @toggle-fullscreen="isFullscreen = !isFullscreen"
     />
 

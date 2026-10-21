@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { DIAGRAM_FORMATS } from "@/constants/diagram-format-ids";
 import {
+  d2FormatHandler,
   getFormatHandler,
   graphmlFormatHandler,
   mermaidFormatHandler,
@@ -56,8 +58,13 @@ describe("FormatHandler", () => {
     }).length).toBeGreaterThan(0);
   });
 
+  it("highlights D2 keywords", () => {
+    const html = d2FormatHandler.highlightLine("direction: right");
+    expect(html).toContain("tok-keyword");
+  });
+
   it("exposes render entry point on every handler", () => {
-    for (const format of ["plantuml", "mermaid", "graphml", "wiremark"] as const) {
+    for (const format of DIAGRAM_FORMATS) {
       expect(typeof getFormatHandler(format).render).toBe("function");
       expect(typeof getFormatHandler(format).bootEngine).toBe("function");
       expect(typeof getFormatHandler(format).isEngineReady).toBe("function");

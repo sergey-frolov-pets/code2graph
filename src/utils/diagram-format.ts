@@ -1,58 +1,12 @@
 import type { DiagramLanguage } from "@/constants/diagram-library";
+import { isDiagramFormat, type DiagramFormat } from "@/constants/diagram-format-ids";
 import {
   detectFormatFromFileName,
-  type DiagramFormat,
-} from "@/constants/diagram-formats";
-import { looksLikeWiremarkSource } from "@/utils/wiremark-source";
+  detectRegisteredDiagramSource,
+} from "@/languages/registry";
 
 export function detectDiagramFormatFromSource(source: string): DiagramFormat | null {
-  const trimmed = source.trim();
-  if (!trimmed) {
-    return null;
-  }
-
-  const withoutMermaidComments = trimmed
-    .replace(/^(?:%%[^\n]*\n)+/m, "")
-    .trim();
-  const lower = withoutMermaidComments.toLowerCase();
-  const fullLower = trimmed.toLowerCase();
-
-  if (
-    fullLower.startsWith("<?xml") &&
-    (fullLower.includes("<graphml") || fullLower.includes(":graphml"))
-  ) {
-    return "graphml";
-  }
-
-  if (
-    lower.startsWith("```mermaid") ||
-    /^(graph|flowchart|sequencediagram|classdiagram|statediagram|erdiagram|journey|gantt|pie|mindmap|timeline|gitgraph|sankey-beta|xychart-beta|block-beta)\b/i.test(
-      withoutMermaidComments,
-    )
-  ) {
-    return "mermaid";
-  }
-
-  if (
-    fullLower.includes("@startuml") ||
-    fullLower.includes("@enduml") ||
-    fullLower.includes("@startgantt") ||
-    /^@start(mindmap|wbs|json|yaml|ditaa|salt|dot|chen|nwdiag|chronology|ebnf|regex|board|math|latex)\b/im.test(
-      trimmed,
-    )
-  ) {
-    return "plantuml";
-  }
-
-  if (lower.startsWith("graph ") || lower.startsWith("digraph ")) {
-    return "plantuml";
-  }
-
-  if (looksLikeWiremarkSource(trimmed)) {
-    return "wiremark";
-  }
-
-  return null;
+  return detectRegisteredDiagramSource(source);
 }
 
 export function resolveLibraryDiagramFormat(
@@ -64,12 +18,7 @@ export function resolveLibraryDiagramFormat(
     return detectDiagramFormat(source, fileName);
   }
 
-  if (
-    language === "mermaid" ||
-    language === "graphml" ||
-    language === "plantuml" ||
-    language === "wiremark"
-  ) {
+  if (language && isDiagramFormat(language)) {
     return language;
   }
 

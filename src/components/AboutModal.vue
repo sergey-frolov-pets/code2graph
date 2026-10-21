@@ -69,6 +69,7 @@ const featureKeys = [
         {{ t("about.formatsGraphml") }}
         <a :href="APP_LINKS.yEd" target="_blank" rel="noopener noreferrer">yEd</a>.
       </li>
+      <li>{{ t("about.formatsD2") }}</li>
     </ul>
 
     <h3 class="about-subtitle">{{ t("settings.help") }}</h3>

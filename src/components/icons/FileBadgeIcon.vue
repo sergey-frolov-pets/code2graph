@@ -4,19 +4,15 @@ import type { Component } from "vue";
 import { FileCode, FileImage, Shapes } from "@lucide/vue";
 
 const props = defineProps<{
-  format: "PNG" | "SVG" | "PUML" | "MMD" | "GML" | "WMK";
+  format: string;
 }>();
 
-const ICON_MAP: Record<"PNG" | "SVG" | "PUML" | "MMD" | "GML" | "WMK", Component> = {
-  PUML: FileCode,
-  MMD: FileCode,
-  GML: FileCode,
-  WMK: FileCode,
+const EXPORT_ICONS: Record<string, Component> = {
   SVG: Shapes,
   PNG: FileImage,
 };
 
-const iconComponent = computed(() => ICON_MAP[props.format]);
+const iconComponent = computed(() => EXPORT_ICONS[props.format] ?? FileCode);
 </script>
 
 <template>

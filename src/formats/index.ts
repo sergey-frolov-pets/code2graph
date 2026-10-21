@@ -1,20 +1,15 @@
-import type { DiagramFormat } from "@/constants/diagram-formats";
+import type { DiagramFormat } from "@/constants/diagram-format-ids";
+import { d2FormatHandler } from "./d2/handler";
 import { graphmlFormatHandler } from "./graphml/handler";
 import { mermaidFormatHandler } from "./mermaid/handler";
 import { plantUmlFormatHandler } from "./plantuml/handler";
 import { wiremarkFormatHandler } from "./wiremark/handler";
+import { getLanguageModule } from "@/languages/registry";
 import type { FormatContext, FormatHandler } from "./types";
 import type { SyntaxCheckResult } from "@/utils/plantuml-syntax";
 
-const handlers: Record<DiagramFormat, FormatHandler> = {
-  plantuml: plantUmlFormatHandler,
-  mermaid: mermaidFormatHandler,
-  graphml: graphmlFormatHandler,
-  wiremark: wiremarkFormatHandler,
-};
-
 export function getFormatHandler(format: DiagramFormat): FormatHandler {
-  return handlers[format];
+  return getLanguageModule(format).handler;
 }
 
 export async function validateDiagramSyntax(
@@ -72,6 +67,7 @@ export {
   mermaidFormatHandler,
   graphmlFormatHandler,
   wiremarkFormatHandler,
+  d2FormatHandler,
 };
 export type {
   FormatHandler,

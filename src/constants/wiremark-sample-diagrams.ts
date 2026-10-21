@@ -1,4 +1,5 @@
 import type { AppLocale } from "@/constants/i18n";
+import type { SampleCatalog } from "@/languages/sample-catalog";
 
 export const WIREMARK_SAMPLE_IDS = [
   "login",
@@ -231,3 +232,16 @@ export function findWiremarkSampleId(
 export function isWiremarkSampleSource(source: string): boolean {
   return ALL_WIREMARK_SAMPLE_SOURCES.has(source);
 }
+
+export const wiremarkSampleCatalog: SampleCatalog = {
+  ids: WIREMARK_SAMPLE_IDS,
+  getSource(id, locale) {
+    return getWiremarkSampleSource(id as WiremarkSampleId, locale);
+  },
+  findId(source, locale) {
+    return findWiremarkSampleId(source, locale);
+  },
+  isSampleSource(source) {
+    return isWiremarkSampleSource(source);
+  },
+};

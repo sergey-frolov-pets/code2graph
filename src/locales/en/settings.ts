@@ -36,6 +36,7 @@ export const settingsMessages = {
   "settings.mermaidGuide": "Mermaid guide",
   "settings.graphmlGuide": "GraphML guide",
   "settings.wiremarkGuide": "WireMark guide",
+  "settings.d2Guide": "D2 guide",
   "settings.yedEditor": "yEd Graph Editor",
   "settings.about": "About",
   "settings.library": "Library",

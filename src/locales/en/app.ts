@@ -1,7 +1,7 @@
 import type { LocaleMessages } from "../types";
 
 export const appMessages = {
-  "app.subtitle": "Cross-platform PlantUML, Mermaid, GraphML, and WireMark editor with AI diagram generation",
+  "app.subtitle": "Cross-platform PlantUML, Mermaid, GraphML, WireMark, and D2 editor with AI diagram generation",
   "app.aiNewDiagram": "New diagram",
   "app.codeGraphDiagram": "Diagram from code",
   "app.settings": "Settings",
@@ -25,6 +25,7 @@ export const appMessages = {
   "app.engineLoading": "Loading PlantUML engine…",
   "app.engineNotReady": "PlantUML engine is not loaded yet",
   "app.mermaidEngineNotReady": "Mermaid engine is not loaded yet",
+  "app.d2EngineNotReady": "D2 engine is not loaded yet",
   "app.renderModeOnlineReady": "Online renderer ready",
   "app.renderModeOnlineOffline": "No network for online rendering",
   "app.importError": "Import error",

@@ -10,6 +10,7 @@ describe("detectDiagramFormat", () => {
     expect(detectDiagramFormat("", "graph.graphml")).toBe("graphml");
     expect(detectDiagramFormat("", "diagram.puml")).toBe("plantuml");
     expect(detectDiagramFormat("", "login.wiremark")).toBe("wiremark");
+    expect(detectDiagramFormat("", "architecture.d2")).toBe("d2");
   });
 
   it("prefers source markers over file extension", () => {
@@ -46,6 +47,11 @@ describe("detectDiagramFormat", () => {
     expect(
       detectDiagramFormat("```wireframe\nWireframe mobile\n  Typography h4 \"Hi\"\n```"),
     ).toBe("wiremark");
+  });
+
+  it("detects d2 from direction and a fenced block", () => {
+    expect(detectDiagramFormat("direction: right\nx -> y")).toBe("d2");
+    expect(detectDiagramFormat("```d2\nx -> y\n```")).toBe("d2");
   });
 
   it("defaults to plantuml for classic source", () => {
