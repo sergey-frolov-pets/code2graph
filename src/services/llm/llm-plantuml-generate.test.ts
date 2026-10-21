@@ -17,15 +17,19 @@ vi.mock("@/utils/validate-llm-mermaid", () => ({
   validateLlmMermaidResponse: vi.fn(),
 }));
 
+vi.mock("@/services/llm/validate-llm-format", () => ({
+  validateLlmRegisteredFormat: vi.fn(),
+}));
+
 import { llmChat } from "@/services/llm/llm-client";
 import {
   askPlantUmlSyntaxQuestion,
   generateValidPlantUml,
   generateValidWizardDiagram,
 } from "@/services/llm/llm-plantuml-generate";
+import { validateLlmRegisteredFormat } from "@/services/llm/validate-llm-format";
 import { validateLlmMermaidResponse } from "@/utils/validate-llm-mermaid";
 import { validateLlmResponse } from "@/utils/validate-llm-plantuml";
-import { LlmClientError } from "@/services/llm/llm-types";
 
 describe("llm-plantuml-generate", () => {
   it("returns validated plantuml on first attempt", async () => {
@@ -52,17 +56,30 @@ describe("llm-plantuml-generate", () => {
     expect(result.explanation).toBe("ok");
   });
 
-  it("rejects graphml wizard generation", async () => {
-    await expect(
-      generateValidWizardDiagram(
-        "prompt",
-        "graphml",
-        "graph",
-        LAYOUT_ENGINES.smetana,
-        false,
-        DEFAULT_RENDER_MODE,
-      ),
-    ).rejects.toBeInstanceOf(LlmClientError);
+  it("validates graphml wizard responses through the format handler", async () => {
+    vi.mocked(llmChat).mockResolvedValueOnce({
+      content: '{"plantuml":"<graphml></graphml>"}',
+      providerId: "test",
+      model: "test-model",
+    });
+    vi.mocked(validateLlmRegisteredFormat).mockResolvedValueOnce({
+      valid: true,
+      plantuml: "<graphml></graphml>",
+      output: { plantuml: "<graphml></graphml>", explanation: "graph" },
+      issues: [],
+    });
+
+    const result = await generateValidWizardDiagram(
+      "draw a graph",
+      "graphml",
+      "graph",
+      LAYOUT_ENGINES.smetana,
+      false,
+      DEFAULT_RENDER_MODE,
+    );
+
+    expect(result.plantuml).toContain("graphml");
+    expect(validateLlmRegisteredFormat).toHaveBeenCalled();
   });
 
   it("validates wizard mermaid responses", async () => {

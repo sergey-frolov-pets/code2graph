@@ -13,6 +13,7 @@ import {
 } from "../../shared/diagram-mappers.js";
 import {
   detectLanguageFromFileName,
+  stripDiagramTitleExtension,
   detectLanguageFromSource,
   resolvePumlFileName,
 } from "../../shared/puml-files.js";
@@ -131,7 +132,7 @@ export function registerDiagramCrudRoutes(router: DiagramsRouter): void {
             detectLanguageFromSource(source);
         }
         if (!title) {
-          title = fileName.replace(/\.(puml|plantuml|txt|mmd|mermaid|graphml|wiremark)$/i, "");
+          title = stripDiagramTitleExtension(fileName);
         }
       } else {
         const sourceField = formData.get("source");
@@ -180,7 +181,7 @@ export function registerDiagramCrudRoutes(router: DiagramsRouter): void {
     }
 
     if (!title) {
-      title = fileName.replace(/\.(puml|plantuml|txt|mmd|mermaid|graphml|wiremark)$/i, "") || "Диаграмма";
+      title = stripDiagramTitleExtension(fileName) || "Диаграмма";
     }
 
     if (!isDiagramLanguage(language)) {

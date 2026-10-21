@@ -1,5 +1,5 @@
 import type { LayoutEngine } from "@/constants";
-import type { DiagramFormat } from "@/constants/diagram-formats";
+import type { DiagramFormat } from "@/constants/diagram-format-ids";
 import type { RenderMode } from "@/constants/render-settings";
 import type {
   CompletionItem,

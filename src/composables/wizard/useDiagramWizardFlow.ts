@@ -34,6 +34,7 @@ import {
   type WizardCreationMode,
 } from "@/constants/llm-wizard";
 import { LlmClientError } from "@/services/llm/llm-types";
+import { renderDiagram } from "@/formats";
 import { renderGraphmlToSvg } from "@/services/graphml/graphml-engine";
 import { renderMermaidToSvg } from "@/services/mermaid/mermaid-engine";
 import { renderPlantUmlPreviewSvg } from "@/utils/llm-preview";
@@ -247,15 +248,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     }
   }
 
-  function syncModeForLanguage(): void {
-    if (
-      wizardState.value.language === "graphml" &&
-      wizardState.value.creationMode === "ai"
-    ) {
-      wizardState.value.creationMode = "manual";
-    }
-  }
-
   function syncTypeForLanguage(): void {
     const allowed = getWizardTypesForLanguage(wizardState.value.language);
     if (!allowed.includes(wizardState.value.diagramType)) {
@@ -281,7 +273,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   watch(
     () => wizardState.value.language,
     () => {
-      syncModeForLanguage();
       syncTypeForLanguage();
       clampStepIndex();
     },
@@ -457,24 +448,31 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     isPreviewLoading.value = true;
     try {
       let svg = "";
-      if (wizardState.value.language === "graphml") {
+      const language = wizardState.value.language;
+      if (language === "graphml") {
         svg = await renderGraphmlToSvg(source, {
           dark: diagramDarkMode.value,
           direction: wizardState.value.direction,
         });
-      } else if (wizardState.value.language === "mermaid") {
+      } else if (language === "mermaid") {
         svg = await renderMermaidToSvg(
           source,
           { dark: diagramDarkMode.value },
           renderMode.value,
         );
-      } else {
+      } else if (language === "plantuml") {
         svg = await renderPlantUmlPreviewSvg(
           source,
           layout.value,
           diagramDarkMode.value,
           renderMode.value,
         );
+      } else {
+        svg = await renderDiagram(language, source, {
+          layout: layout.value,
+          diagramDarkMode: diagramDarkMode.value,
+          renderMode: renderMode.value,
+        });
       }
 
       if (generation !== previewGeneration) {

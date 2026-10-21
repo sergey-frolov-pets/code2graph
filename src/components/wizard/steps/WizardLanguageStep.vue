@@ -17,7 +17,9 @@ const { t } = useLocale();
 
 <template>
   <div class="wizard-step">
-    <p class="wizard-field__label">{{ t("llm.wizard.diagramLanguage") }}</p>
+    <p class="wizard-field__label">
+      {{ t("llm.wizard.diagramLanguage") }}
+    </p>
     <div
       class="wizard-radio-list"
       role="radiogroup"
@@ -36,9 +38,35 @@ const { t } = useLocale();
         {{ option.label }}
       </button>
     </div>
-    <p v-if="isAiMode" class="wizard-hint">{{ t("llm.wizard.languageAiHint") }}</p>
-    <p v-if="wizardState.language === 'graphml'" class="wizard-hint">
+    <p
+      v-if="isAiMode"
+      class="wizard-hint"
+    >
+      {{ t("llm.wizard.languageAiHint") }}
+    </p>
+    <p
+      v-if="wizardState.language === 'graphml'"
+      class="wizard-hint"
+    >
       {{ t("llm.wizard.languageGraphmlHint") }}
+    </p>
+    <p
+      v-if="wizardState.language === 'd2'"
+      class="wizard-hint"
+    >
+      {{ t("llm.wizard.languageD2Hint") }}
+    </p>
+    <p
+      v-if="wizardState.language === 'structurizr'"
+      class="wizard-hint"
+    >
+      {{ t("llm.wizard.languageStructurizrHint") }}
+    </p>
+    <p
+      v-if="wizardState.language === 'wiremark'"
+      class="wizard-hint"
+    >
+      {{ t("llm.wizard.languageWiremarkHint") }}
     </p>
   </div>
 </template>

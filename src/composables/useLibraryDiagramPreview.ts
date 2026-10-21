@@ -12,6 +12,7 @@ import {
   getFormatHandler,
   renderDiagram,
 } from "@/formats";
+import { getDiagramFormatDefinition } from "@/constants/diagram-formats";
 import { resolveLibraryDiagramFormat } from "@/utils/diagram-format";
 import { sanitizeSvgForPreview } from "@/utils/export";
 import { resolveLocalizedErrorMessage } from "@/utils/localized-app-error";
@@ -126,8 +127,7 @@ export function useLibraryDiagramPreview() {
       if (
         !rendered.trim() &&
         isOnlineRenderMode(renderMode) &&
-        format !== "graphml" &&
-        format !== "wiremark"
+        getDiagramFormatDefinition(format).supportsOnlineRender
       ) {
         rendered = await renderWithMode(trimmedSource, format, {
           dark,
@@ -146,8 +146,7 @@ export function useLibraryDiagramPreview() {
     } catch (renderError) {
       if (
         isOnlineRenderMode(renderMode) &&
-        format !== "graphml" &&
-        format !== "wiremark"
+        getDiagramFormatDefinition(format).supportsOnlineRender
       ) {
         try {
           const offlineRendered = await renderWithMode(trimmedSource, format, {

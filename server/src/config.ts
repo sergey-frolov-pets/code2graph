@@ -31,12 +31,16 @@ export const SHARED_SECTION_TITLE =
 export const REGISTRATION_ENABLED =
   process.env.REGISTRATION_ENABLED?.trim() !== "false";
 
+export const AGENT_API_TOKEN = process.env.AGENT_API_TOKEN?.trim() || undefined;
+
 export const DIAGRAM_LANGUAGES = [
   "plantuml",
   "mermaid",
   "graphviz",
   "graphml",
   "wiremark",
+  "d2",
+  "structurizr",
   "ditaa",
   "other",
 ] as const;

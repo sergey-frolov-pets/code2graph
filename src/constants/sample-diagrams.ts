@@ -1,40 +1,52 @@
 import type { AppLocale } from "@/constants/i18n";
 import {
-  findMermaidSampleId,
-  getMermaidSampleSource,
-  isMermaidSampleSource,
-  type MermaidSampleId,
-} from "@/constants/mermaid-sample-diagrams";
+  DIAGRAM_FORMATS,
+  isDiagramFormat,
+  type DiagramFormat,
+} from "@/constants/diagram-format-ids";
 import {
-  findWiremarkSampleId,
-  getWiremarkSampleSource,
-  isWiremarkSampleSource,
-  type WiremarkSampleId,
-} from "@/constants/wiremark-sample-diagrams";
-import {
-  findPlantUmlSampleId,
-  getAllPlantUmlSampleSources,
   getPlantUmlDefaultSource,
-  getPlantUmlSampleSource,
   isPlantUmlDefaultSource,
   PLANTUML_SAMPLE_IDS,
   type PlantUmlSampleId,
 } from "@/constants/plantuml-sample-diagrams";
+import type { MermaidSampleId } from "@/constants/mermaid-sample-diagrams";
+import type { WiremarkSampleId } from "@/constants/wiremark-sample-diagrams";
+import type { D2SampleId } from "@/constants/d2-sample-diagrams";
+import type { StructurizrSampleId } from "@/constants/structurizr-sample-diagrams";
+import {
+  getDiagramFormatDefinition,
+  getLanguageModule,
+} from "@/languages/registry";
+import type { SampleCatalog } from "@/languages/sample-catalog";
 
 export { PLANTUML_SAMPLE_IDS, type PlantUmlSampleId };
 export type { MermaidSampleId };
 export { MERMAID_SAMPLE_IDS } from "@/constants/mermaid-sample-diagrams";
 export type { WiremarkSampleId };
 export { WIREMARK_SAMPLE_IDS } from "@/constants/wiremark-sample-diagrams";
+export type { D2SampleId };
+export { D2_SAMPLE_IDS } from "@/constants/d2-sample-diagrams";
+export type { StructurizrSampleId };
+export { STRUCTURIZR_SAMPLE_IDS } from "@/constants/structurizr-sample-diagrams";
 
-export type SampleSelection =
-  | { format: "plantuml"; id: PlantUmlSampleId }
-  | { format: "mermaid"; id: MermaidSampleId }
-  | { format: "wiremark"; id: WiremarkSampleId };
+export interface SampleSelection {
+  format: DiagramFormat;
+  id: string;
+}
 
-const ALL_SAMPLE_SOURCES = new Set([
-  ...getAllPlantUmlSampleSources(),
-]);
+export function getSampleCatalog(format: DiagramFormat): SampleCatalog | null {
+  const catalog = getLanguageModule(format).samples;
+  if (!catalog || !getLanguageModule(format).definition.supportsSamples) {
+    return null;
+  }
+
+  return catalog;
+}
+
+export function listSampleIds(format: DiagramFormat): readonly string[] {
+  return getSampleCatalog(format)?.ids ?? [];
+}
 
 export function getDefaultSource(locale: AppLocale): string {
   return getPlantUmlDefaultSource(locale);
@@ -44,15 +56,12 @@ export function getSampleSource(
   selection: SampleSelection,
   locale: AppLocale,
 ): string {
-  if (selection.format === "mermaid") {
-    return getMermaidSampleSource(selection.id, locale);
+  const catalog = getSampleCatalog(selection.format);
+  if (!catalog || !(catalog.ids as readonly string[]).includes(selection.id)) {
+    throw new Error(`Unknown sample ${selection.format}:${selection.id}`);
   }
 
-  if (selection.format === "wiremark") {
-    return getWiremarkSampleSource(selection.id, locale);
-  }
-
-  return getPlantUmlSampleSource(selection.id, locale);
+  return catalog.getSource(selection.id, locale);
 }
 
 export function isDefaultSource(source: string): boolean {
@@ -60,11 +69,19 @@ export function isDefaultSource(source: string): boolean {
 }
 
 export function isSampleDiagramSource(source: string): boolean {
-  return (
-    ALL_SAMPLE_SOURCES.has(source) ||
-    isMermaidSampleSource(source) ||
-    isWiremarkSampleSource(source)
+  return Object.values(getRegisteredCatalogs()).some((catalog) =>
+    catalog.isSampleSource(source),
   );
+}
+
+function getRegisteredCatalogs(): SampleCatalog[] {
+  return DIAGRAM_FORMATS.map((format) => getSampleCatalog(format)).filter(
+    (catalog): catalog is SampleCatalog => catalog !== null,
+  );
+}
+
+function listRegisteredFormats(): readonly DiagramFormat[] {
+  return DIAGRAM_FORMATS;
 }
 
 export function translateSourceForLocale(
@@ -80,19 +97,12 @@ export function translateSourceForLocale(
     return getDefaultSource(toLocale);
   }
 
-  const sampleId = findPlantUmlSampleId(source, fromLocale);
-  if (sampleId) {
-    return getPlantUmlSampleSource(sampleId, toLocale);
-  }
-
-  const mermaidSampleId = findMermaidSampleId(source, fromLocale);
-  if (mermaidSampleId) {
-    return getMermaidSampleSource(mermaidSampleId, toLocale);
-  }
-
-  const wiremarkSampleId = findWiremarkSampleId(source, fromLocale);
-  if (wiremarkSampleId) {
-    return getWiremarkSampleSource(wiremarkSampleId, toLocale);
+  for (const format of listRegisteredFormats()) {
+    const catalog = getSampleCatalog(format);
+    const sampleId = catalog?.findId(source, fromLocale);
+    if (catalog && sampleId) {
+      return catalog.getSource(sampleId, toLocale);
+    }
   }
 
   return null;
@@ -102,19 +112,12 @@ export function findAnySampleSelection(
   source: string,
   locale: AppLocale,
 ): SampleSelection | null {
-  const plantUmlId = findPlantUmlSampleId(source, locale);
-  if (plantUmlId) {
-    return { format: "plantuml", id: plantUmlId };
-  }
-
-  const mermaidId = findMermaidSampleId(source, locale);
-  if (mermaidId) {
-    return { format: "mermaid", id: mermaidId };
-  }
-
-  const wiremarkId = findWiremarkSampleId(source, locale);
-  if (wiremarkId) {
-    return { format: "wiremark", id: wiremarkId };
+  for (const format of listRegisteredFormats()) {
+    const catalog = getSampleCatalog(format);
+    const sampleId = catalog?.findId(source, locale);
+    if (sampleId) {
+      return { format, id: sampleId };
+    }
   }
 
   return null;
@@ -136,11 +139,26 @@ export function getDefaultFileNameForSample(
   selection: SampleSelection,
   label: string,
 ): string {
-  if (selection.format === "mermaid") {
-    return `${label}.mmd`;
+  const extension = getDiagramFormatDefinition(selection.format).extensions[0];
+  return `${label}${extension}`;
+}
+
+export function parseSampleSelection(value: string): SampleSelection | null {
+  const separatorIndex = value.indexOf(":");
+  if (separatorIndex < 0) {
+    return null;
   }
-  if (selection.format === "wiremark") {
-    return `${label}.wiremark`;
+
+  const format = value.slice(0, separatorIndex);
+  const id = value.slice(separatorIndex + 1);
+  if (!isDiagramFormat(format)) {
+    return null;
   }
-  return `${label}.puml`;
+
+  const catalog = getSampleCatalog(format);
+  if (!catalog || !(catalog.ids as readonly string[]).includes(id)) {
+    return null;
+  }
+
+  return { format, id };
 }

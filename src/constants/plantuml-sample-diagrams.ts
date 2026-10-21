@@ -1,5 +1,6 @@
 import type { AppLocale } from "@/constants/i18n";
 import { buildWizardDiagramSample } from "@/constants/wizard-sample-sources";
+import type { SampleCatalog } from "@/languages/sample-catalog";
 
 export const PLANTUML_SAMPLE_IDS = [
   "classes",
@@ -992,6 +993,8 @@ export function isPlantUmlDefaultSource(source: string): boolean {
   return source === DEFAULT_SOURCE_RU || source === DEFAULT_SOURCE_EN;
 }
 
+const ALL_PLANTUML_SAMPLE_SOURCES = new Set<string>();
+
 export function getAllPlantUmlSampleSources(): string[] {
   const sources = new Set<string>([DEFAULT_SOURCE_RU, DEFAULT_SOURCE_EN]);
 
@@ -1003,3 +1006,20 @@ export function getAllPlantUmlSampleSources(): string[] {
 
   return [...sources];
 }
+
+for (const source of getAllPlantUmlSampleSources()) {
+  ALL_PLANTUML_SAMPLE_SOURCES.add(source);
+}
+
+export const plantUmlSampleCatalog: SampleCatalog = {
+  ids: PLANTUML_SAMPLE_IDS,
+  getSource(id, locale) {
+    return getPlantUmlSampleSource(id as PlantUmlSampleId, locale);
+  },
+  findId(source, locale) {
+    return findPlantUmlSampleId(source, locale);
+  },
+  isSampleSource(source) {
+    return ALL_PLANTUML_SAMPLE_SOURCES.has(source);
+  },
+};

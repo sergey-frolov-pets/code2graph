@@ -7,12 +7,11 @@ export const siteMessages = {
   "site.nav.pwa": "PWA / Offline",
   "site.nav.formats": "Formats",
   "site.nav.faq": "FAQ",
+  "site.nav.mcp": "MCP",
 
   "site.landingTitle": "Code2Graph",
   "site.landingSubtitle":
     "PWA studio for PlantUML, Mermaid, and GraphML: AI, format converter, editor, and storage — on any device, even without internet.",
-  "site.landingHeroAlt":
-    "Code2Graph: Diagrams-as-Code — AI, PlantUML/Mermaid/GraphML converter, PWA and offline editor",
   "site.landingCtaApp": "Open editor",
   "site.landingCtaInstallPwa": "📲 Install PWA",
   "site.landingCtaRegister": "Sign up",
@@ -20,10 +19,14 @@ export const siteMessages = {
   "site.landingCtaTryFree": "Try for free",
   "site.landingCtaDemo": "Demo",
 
-  "site.hero.title":
-    "Create, convert, and store architecture diagrams. Anywhere. Even offline.",
+  "site.hero.title": "Text diagrams in the browser",
   "site.hero.subtitle":
-    "Code2Graph is a universal PWA studio for PlantUML, Mermaid, and GraphML. Generate diagrams with AI and a step-by-step Wizard, convert formats in one click, and work in the browser or as a standalone app without internet.",
+    "Write a diagram and see it right away. PlantUML, Mermaid, GraphML, WireMark, D2, and Structurizr — including offline.",
+  "site.offlineNote": "Editing and preview work without a network.",
+  "site.languages.title": "Languages",
+  "site.language.sites": "Sites",
+  "site.language.libraries": "Libraries used in the app",
+  "site.stackLead": "Interface:",
   "site.hero.ctaPrimary": "Open editor without sign-up",
   "site.hero.ctaSecondary": "📲 Install on desktop / phone",
   "site.hero.trustOffline":
@@ -66,12 +69,28 @@ export const siteMessages = {
   "site.formats.colFeatures": "Code2Graph capabilities",
   "site.formats.plantuml.purpose": "Complex UML, sequence, class, and state diagrams",
   "site.formats.plantuml.features": "Editing, AI generation, conversion to Mermaid/GraphML",
+  "site.formats.plantuml.summary":
+    "Text UML for sequences, classes, states, C4, and more. Code2Graph renders it offline with @plantuml/core and the Smetana layout engine. C4 and ArchiMate diagrams use the matching PlantUML standard libraries.",
   "site.formats.mermaid.purpose": "Lightweight diagrams for GitHub, Notion, Obsidian, and Jira",
   "site.formats.mermaid.features": "Live preview, Wizard generation, export",
+  "site.formats.mermaid.summary":
+    "A compact diagram language for Markdown, GitHub, and notes. The editor renders Mermaid in the browser; the online mode can also use mermaid.ink.",
   "site.formats.graphml.purpose": "Topology graphs for yEd, Draw.io, and visualization systems",
   "site.formats.graphml.features": "Import, visualization, conversion to code",
+  "site.formats.graphml.summary":
+    "An XML graph format used by yEd and other tools. Code2Graph reads GraphML and lays the graph out with dagre.",
   "site.formats.wiremark.purpose": "Hand-drawn UI wireframes inside markdown",
   "site.formats.wiremark.features": "Editing, live preview, sample screens",
+  "site.formats.wiremark.summary":
+    "Text wireframes that look like a sketch. Preview in the app is drawn by @wiremark/core.",
+  "site.formats.d2.purpose": "Modern diagrams: architecture, sequence, classes, and SQL",
+  "site.formats.d2.features": "Editing, offline preview, samples for the selected language",
+  "site.formats.d2.summary":
+    "A modern diagram language for architecture, sequences, classes, and SQL. The offline preview is compiled by @d2lang/d2.",
+  "site.formats.structurizr.purpose": "C4 architecture as code: context, containers, components, deployment",
+  "site.formats.structurizr.features": "Editing, offline C4 preview, samples for the selected language",
+  "site.formats.structurizr.summary":
+    "C4 architecture as code: landscape, context, containers, components, and deployment. The editor keeps the Structurizr DSL and draws views with PlantUML C4.",
 
   "site.audience.title": "Speeds up the whole engineering team",
   "site.audience.architect.title": "🏛 Software architects",
@@ -135,6 +154,33 @@ export const siteMessages = {
   "site.logout": "Sign out",
   "site.openEditor": "Open editor",
   "site.backHome": "Back to home",
+  "site.mcp.title": "MCP for agents",
+  "site.mcp.lead":
+    "An agent describes a diagram in words. Code2Graph picks the language and returns source for PlantUML, Mermaid, GraphML, WireMark, D2, or Structurizr.",
+  "site.mcp.pointPlan": "plan_diagram chooses the language and diagram type.",
+  "site.mcp.pointGenerate": "generate_diagram returns the diagram source.",
+  "site.mcp.pointLanguages": "The same six languages as the editor and the wizard.",
+  "site.mcp.openPage": "How to connect MCP",
+  "site.mcp.pageTitle": "Code2Graph MCP",
+  "site.mcp.summary":
+    "The MCP server lets Cursor and other agents ask Code2Graph for a diagram. It chooses a language from the request and returns source the editor can open.",
+  "site.mcp.toolsTitle": "Tools",
+  "site.mcp.toolList": "languages on the site and the diagram types each one accepts.",
+  "site.mcp.toolPlan": "language and type for a sentence, without source.",
+  "site.mcp.toolGenerate":
+    "diagram source. With CODE2GRAPH_API_URL it calls the server; otherwise it builds the same scaffold locally.",
+  "site.mcp.connectTitle": "Connect in Cursor",
+  "site.mcp.connectText":
+    "Run the script from a checkout of this repository. Replace the path with your checkout. Leave the URL empty to generate locally, or point it at the server edition.",
+  "site.mcp.source": "MCP package in the repository",
+  "site.mcp.apiTitle": "Server API",
+  "site.mcp.apiText":
+    "The server edition exposes these routes. If AGENT_API_TOKEN is set, send Authorization: Bearer with the same value as CODE2GRAPH_API_TOKEN.",
+  "site.mcp.apiFormats": "languages and types",
+  "site.mcp.apiPlan": "choose a language",
+  "site.mcp.apiScaffold": "language, type, and source",
+  "site.mcp.staticNote":
+    "GitHub Pages is a static editor and does not serve /api/agent. The API runs on the server edition, for example www.code2graph.ru.",
   "site.noAccount": "No account?",
   "site.hasAccount": "Already have an account?",
   "site.role": "Role",

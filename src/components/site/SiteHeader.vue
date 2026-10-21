@@ -12,47 +12,42 @@ const { t } = useLocale();
 const { navigateTo } = useAppRouter();
 const { isLocalMode } = useLibraryApiUrl();
 
-const landingSections = [
-  { id: "features", labelKey: "site.nav.features" },
-  { id: "converter", labelKey: "site.nav.converter" },
-  { id: "pwa", labelKey: "site.nav.pwa" },
-  { id: "formats", labelKey: "site.nav.formats" },
-  { id: "faq", labelKey: "site.nav.faq" },
-] as const;
-
-function scrollToSection(sectionId: string): void {
-  const element = document.getElementById(sectionId);
-  if (element) {
-    element.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-}
 </script>
 
 <template>
-  <header class="site-header" :class="{ 'site-header--landing': props.landingNav }">
+  <header
+    class="site-header"
+    :class="{ 'site-header--landing': props.landingNav }"
+  >
     <div class="site-header__row">
-      <button class="site-header__brand" type="button" @click="navigateTo('landing')">
+      <button
+        class="site-header__brand"
+        type="button"
+        @click="navigateTo('landing')"
+      >
         <span class="site-header__logo">{{ APP_META.name }}</span>
-        <span v-if="props.landingNav" class="site-header__tagline">{{ t("site.tagline") }}</span>
+        <span
+          v-if="props.landingNav"
+          class="site-header__tagline"
+        >{{ t("site.tagline") }}</span>
       </button>
-
-      <nav v-if="props.landingNav" class="site-header__links" aria-label="Landing sections">
-        <button
-          v-for="section in landingSections"
-          :key="section.id"
-          class="site-header__link"
-          type="button"
-          @click="scrollToSection(section.id)"
-        >
-          {{ t(section.labelKey) }}
-        </button>
-      </nav>
 
       <nav class="site-header__nav">
         <HeaderControls />
         <template v-if="props.landingNav">
+          <button
+            class="btn btn-ghost"
+            type="button"
+            @click="navigateTo('mcp')"
+          >
+            {{ t("site.nav.mcp") }}
+          </button>
           <InstallAppButton landing-label />
-          <button class="btn btn-primary" type="button" @click="navigateTo('app')">
+          <button
+            class="btn btn-primary"
+            type="button"
+            @click="navigateTo('app')"
+          >
             {{ t("site.landingCtaApp") }}
           </button>
         </template>
@@ -73,27 +68,15 @@ function scrollToSection(sectionId: string): void {
           >
             {{ t("site.landingCtaLogin") }}
           </button>
-          <button class="btn btn-primary" type="button" @click="navigateTo('app')">
+          <button
+            class="btn btn-primary"
+            type="button"
+            @click="navigateTo('app')"
+          >
             {{ t("site.landingCtaApp") }}
           </button>
         </template>
       </nav>
     </div>
-
-    <nav
-      v-if="props.landingNav"
-      class="site-header__scroll-links"
-      aria-label="Landing sections"
-    >
-      <button
-        v-for="section in landingSections"
-        :key="`mobile-${section.id}`"
-        class="site-header__scroll-link"
-        type="button"
-        @click="scrollToSection(section.id)"
-      >
-        {{ t(section.labelKey) }}
-      </button>
-    </nav>
   </header>
 </template>

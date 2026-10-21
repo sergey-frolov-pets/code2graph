@@ -53,20 +53,35 @@ export function buildLlmMermaidSystemPrompt(basePrompt: string): string {
   ].join("\n\n");
 }
 
+const LLM_EXTRA_LANGUAGE_RULES: Record<string, string> = {
+  graphml:
+    "GraphML rules: return a complete graphml document. Do not use markdown fences inside the plantuml JSON field.",
+  d2: "D2 rules: return D2 source with shapes and -> connections. Do not use markdown fences inside the plantuml JSON field.",
+  structurizr:
+    "Structurizr rules: return one workspace DSL document. Do not use markdown fences inside the plantuml JSON field.",
+  wiremark:
+    "WireMark rules: return a Wireframe document with quoted labels. Do not use markdown fences inside the plantuml JSON field.",
+};
+
 export function buildWizardLlmSystemPrompt(
   basePrompt: string,
   formatRules: string,
-  language: "plantuml" | "mermaid",
+  language: "plantuml" | "mermaid" | "graphml" | "wiremark" | "d2" | "structurizr",
 ): string {
   const jsonAppendix =
     language === "mermaid"
       ? LLM_JSON_MERMAID_APPENDIX
-      : LLM_JSON_WIZARD_PLANTUML_APPENDIX;
+      : language === "plantuml"
+        ? LLM_JSON_WIZARD_PLANTUML_APPENDIX
+        : `${LLM_JSON_OUTPUT_PREFIX} Required field: plantuml (string with complete ${language} source — field name plantuml for API compatibility). Optional: explanation (string).`;
 
-  const formatRulesBlock =
+  const languageRules =
     language === "mermaid"
-      ? [LLM_MERMAID_RULES, formatRules].join("\n\n")
-      : formatRules;
+      ? LLM_MERMAID_RULES
+      : LLM_EXTRA_LANGUAGE_RULES[language];
+  const formatRulesBlock = languageRules
+    ? [languageRules, formatRules].join("\n\n")
+    : formatRules;
 
   return [
     LLM_WIZARD_ROLE_PROMPT,

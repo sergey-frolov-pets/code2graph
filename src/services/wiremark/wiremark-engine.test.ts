@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { scaffoldDiagram } from "@shared/agent-diagram";
 import {
   WIREMARK_SAMPLE_IDS,
   getWiremarkSampleSource,
@@ -33,6 +34,19 @@ describe("wiremark engine", () => {
   TextField Email`);
     expect(result.valid).toBe(false);
     expect(result.issues[0]?.line).toBeGreaterThan(0);
+  });
+
+  it("renders the wizard wireframe scaffold", () => {
+    for (const locale of ["ru", "en"] as const) {
+      const source = scaffoldDiagram({
+        format: "wiremark",
+        diagramType: "wireframe",
+        locale,
+        count: 3,
+      }).source;
+      expect(validateWiremarkSyntax(source).valid).toBe(true);
+      expect(renderWiremarkToSvg(source, { dark: false })).toContain("<svg");
+    }
   });
 
   it("rejects an empty source", () => {

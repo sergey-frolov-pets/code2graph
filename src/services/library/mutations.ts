@@ -7,6 +7,7 @@ import {
   type UpdateSectionPayload,
 } from "@/constants/diagram-library";
 import { getDiagramFormatDefinition } from "@/constants/diagram-formats";
+import { stripDiagramTitleExtension } from "@shared/puml-files";
 import {
   createDiagram,
   createSection,
@@ -208,7 +209,7 @@ export async function addLibraryDiagramFromFile(
   const tags = metadata.tags ?? [];
   const title =
     metadata.title?.trim() ||
-    file.name.replace(/\.(puml|plantuml|txt|mmd|mermaid|graphml|wiremark)$/i, "") ||
+    stripDiagramTitleExtension(file.name) ||
     "Diagram";
 
   return addLibraryDiagram(ctx, {

@@ -1,9 +1,8 @@
 import type { LocaleMessages } from "../types";
 
 export const appMessages = {
-  "app.subtitle": "Кроссплатформенный редактор диаграмм PlantUML, Mermaid, GraphML и WireMark с ИИ-генерацией",
+  "app.subtitle": "Кроссплатформенный редактор диаграмм PlantUML, Mermaid, GraphML, WireMark, D2 и Structurizr с ИИ-генерацией",
   "app.aiNewDiagram": "Новая диаграмма",
-  "app.codeGraphDiagram": "Диаграмма из кода",
   "app.settings": "Настройки",
   "app.library": "Библиотека",
   "app.close": "Закрыть",
@@ -25,6 +24,8 @@ export const appMessages = {
   "app.engineLoading": "Загрузка движка PlantUML…",
   "app.engineNotReady": "Движок PlantUML ещё не загружен",
   "app.mermaidEngineNotReady": "Движок Mermaid ещё не загружен",
+  "app.d2EngineNotReady": "Движок D2 ещё не загружен",
+  "app.structurizrEngineNotReady": "Превью Structurizr ждёт движок PlantUML",
   "app.renderModeOnlineReady": "Онлайн-рендер готов",
   "app.renderModeOnlineOffline": "Нет сети для онлайн-рендера",
   "app.importError": "Ошибка импорта",

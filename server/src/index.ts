@@ -5,6 +5,7 @@ import { libraryAuthMiddleware } from "./auth.js";
 import { SERVER_PORT } from "./config.js";
 import { getDb } from "./db.js";
 import { adminRouter } from "./routes/admin.js";
+import { agentRouter } from "./routes/agent.js";
 import { authRouter } from "./routes/auth.js";
 import { diagramsRouter, sectionsRouter } from "./routes/library.js";
 import { llmRouter } from "./routes/llm.js";
@@ -13,7 +14,6 @@ import { ratingsRouter } from "./routes/ratings.js";
 import { shareRouter } from "./routes/share.js";
 import { subscriptionAccessRouter } from "./routes/subscription-access.js";
 import { subscriptionsRouter } from "./routes/subscriptions.js";
-import { codeGraphRouter } from "./routes/code-graph.js";
 
 const app = new Hono();
 
@@ -29,6 +29,7 @@ app.use(
 app.route("/api/share", shareRouter);
 app.route("/api/subscriptions/access", subscriptionAccessRouter);
 app.route("/api/auth", publicAuthRouter);
+app.route("/api/agent", agentRouter);
 
 const protectedApi = new Hono();
 protectedApi.use("*", libraryAuthMiddleware);
@@ -43,7 +44,6 @@ protectedApi.route("/sections", sectionsRouter);
 protectedApi.route("/diagrams", diagramsRouter);
 protectedApi.route("/ratings", ratingsRouter);
 protectedApi.route("/subscriptions", subscriptionsRouter);
-protectedApi.route("/code-graph", codeGraphRouter);
 protectedApi.route("/llm", llmRouter);
 
 app.route("/api", protectedApi);

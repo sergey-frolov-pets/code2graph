@@ -8,15 +8,17 @@ import ToolbarOverflowMenu from "@/components/ui/ToolbarOverflowMenu.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
 import { useLocale } from "@/composables/useLocale";
 import {
-  MERMAID_SAMPLE_IDS,
-  PLANTUML_SAMPLE_IDS,
-  WIREMARK_SAMPLE_IDS,
-  type MermaidSampleId,
-  type PlantUmlSampleId,
+  listSampleIds,
+  parseSampleSelection,
   type SampleSelection,
-  type WiremarkSampleId,
 } from "@/constants/sample-diagrams";
-import type { DiagramFormatDefinition } from "@/constants/diagram-formats";
+import {
+  isDiagramFormat,
+  type DiagramFormat,
+  type DiagramFormatDefinition,
+} from "@/constants/diagram-formats";
+import { DIAGRAM_LANGUAGE_MODULES, getLanguageModule } from "@/languages/registry";
+import { isLocaleKey } from "@/locales/types";
 import { SNIPPETS_KEYBOARD_SHORTCUT } from "@/constants/snippets-settings";
 
 const props = defineProps<{
@@ -48,38 +50,34 @@ const emit = defineEmits<{
   convert: [];
   toggleSnippets: [];
   loadSample: [selection: SampleSelection];
+  changeFormat: [format: DiagramFormat];
   toggleFullscreen: [];
 }>();
 
 const { t } = useLocale();
 
-const plantUmlSampleOptions = computed(() =>
-  PLANTUML_SAMPLE_IDS.map((id) => ({
-    value: `plantuml:${id}`,
-    label: t(`samples.plantuml.${id}`),
-  })),
+const languageModule = computed(() =>
+  getLanguageModule(props.formatDefinition.id),
 );
 
-const mermaidSampleOptions = computed(() =>
-  MERMAID_SAMPLE_IDS.map((id) => ({
-    value: `mermaid:${id}`,
-    label: t(`samples.mermaid.${id}`),
-  })),
-);
+const sampleOptions = computed(() =>
+  listSampleIds(props.formatDefinition.id).flatMap((id) => {
+    const key = `samples.${props.formatDefinition.id}.${id}`;
+    if (!isLocaleKey(key)) {
+      return [];
+    }
 
-const wiremarkSampleOptions = computed(() =>
-  WIREMARK_SAMPLE_IDS.map((id) => ({
-    value: `wiremark:${id}`,
-    label: t(`samples.wiremark.${id}`),
-  })),
+    return [
+      {
+        value: `${props.formatDefinition.id}:${id}`,
+        label: t(key),
+      },
+    ];
+  }),
 );
 
 const validateLabel = computed(() =>
   props.isValidating ? t("editor.validating") : t("editor.validate"),
-);
-
-const formatBadgeLabel = computed(() =>
-  t(`editor.format.${props.formatDefinition.id}`),
 );
 
 const showAiAssistantMenu = computed(
@@ -120,80 +118,21 @@ function onAiAssistantAction(actionId: string): void {
   }
 }
 
-const titleTooltip = computed(() =>
-  t(`editor.titleTooltip.${props.formatDefinition.id}`),
-);
+const titleTooltip = computed(() => t(languageModule.value.titleTooltipKey));
 
-const saveLabel = computed(() => {
-  if (props.formatDefinition.id === "mermaid") {
-    return t("editor.saveMermaid");
-  }
-  if (props.formatDefinition.id === "graphml") {
-    return t("editor.saveGraphml");
-  }
-  if (props.formatDefinition.id === "wiremark") {
-    return t("editor.saveWiremark");
-  }
-  return t("app.savePuml");
-});
+const saveLabel = computed(() => t(languageModule.value.saveFileKey));
 
-const saveBadgeFormat = computed<"PUML" | "MMD" | "GML" | "WMK">(() => {
-  if (props.formatDefinition.id === "mermaid") {
-    return "MMD";
-  }
-  if (props.formatDefinition.id === "graphml") {
-    return "GML";
-  }
-  if (props.formatDefinition.id === "wiremark") {
-    return "WMK";
-  }
-  return "PUML";
-});
+const saveBadgeFormat = computed(() => languageModule.value.fileBadge);
 
-const openFileLabel = computed(() => {
-  if (props.formatDefinition.id === "graphml") {
-    return t("editor.openGraphml");
-  }
-  if (props.formatDefinition.id === "mermaid") {
-    return t("editor.openMermaid");
-  }
-  if (props.formatDefinition.id === "wiremark") {
-    return t("editor.openWiremark");
-  }
-  return t("editor.openPuml");
-});
+const openFileLabel = computed(() => t(languageModule.value.openFileKey));
 
-function parseSampleSelection(value: string): SampleSelection | null {
-  const separatorIndex = value.indexOf(":");
-  if (separatorIndex < 0) {
-    return null;
+function onFormatChange(event: Event): void {
+  const value = (event.target as HTMLSelectElement).value;
+  if (!isDiagramFormat(value) || value === props.formatDefinition.id) {
+    return;
   }
 
-  const format = value.slice(0, separatorIndex);
-  const id = value.slice(separatorIndex + 1);
-
-  if (
-    format === "plantuml" &&
-    (PLANTUML_SAMPLE_IDS as readonly string[]).includes(id)
-  ) {
-    return { format: "plantuml", id: id as PlantUmlSampleId };
-  }
-
-  if (
-    format === "mermaid" &&
-    (MERMAID_SAMPLE_IDS as readonly string[]).includes(id)
-  ) {
-    return { format: "mermaid", id: id as MermaidSampleId };
-  }
-
-  if (
-    format === "wiremark" &&
-    (WIREMARK_SAMPLE_IDS as readonly string[]).includes(id)
-  ) {
-    return { format: "wiremark", id: id as WiremarkSampleId };
-  }
-
-  return null;
+  emit("changeFormat", value);
 }
 
 function onSampleChange(event: Event): void {
@@ -213,9 +152,24 @@ function onSampleChange(event: Event): void {
       <h2 class="panel-title panel-title--editor" :title="titleTooltip">
         {{ t("editor.title") }}
       </h2>
-      <span class="panel-title__badge panel-title__badge--format" :title="titleTooltip">
-        {{ formatBadgeLabel }}
-      </span>
+      <label class="format-select-wrap">
+        <span class="sr-only">{{ t("editor.language") }}</span>
+        <select
+          class="select format-select"
+          :value="formatDefinition.id"
+          :title="titleTooltip"
+          :aria-label="t('editor.language')"
+          @change="onFormatChange"
+        >
+          <option
+            v-for="module in DIAGRAM_LANGUAGE_MODULES"
+            :key="module.id"
+            :value="module.id"
+          >
+            {{ t(module.labelKey) }}
+          </option>
+        </select>
+      </label>
       <span
         v-if="!formatDefinition.editable"
         class="panel-title__badge panel-title__badge--muted"
@@ -327,7 +281,7 @@ function onSampleChange(event: Event): void {
         <ActionIcon name="snippets" />
       </IconButton>
       <TooltipWrap
-        v-if="formatDefinition.supportsSamples"
+        v-if="formatDefinition.supportsSamples && sampleOptions.length > 0"
         :label="t('editor.samplesTooltip')"
       >
         <label class="sample-select-wrap">
@@ -335,36 +289,23 @@ function onSampleChange(event: Event): void {
           <select
             class="select sample-select"
             :title="t('editor.samplesTooltip')"
+            value=""
             @change="onSampleChange"
           >
-            <option value="" selected disabled>{{ t("editor.samples") }}</option>
-            <optgroup :label="t('editor.samplesPlantUml')">
-              <option
-                v-for="sample in plantUmlSampleOptions"
-                :key="sample.value"
-                :value="sample.value"
-              >
-                {{ sample.label }}
-              </option>
-            </optgroup>
-            <optgroup :label="t('editor.samplesMermaid')">
-              <option
-                v-for="sample in mermaidSampleOptions"
-                :key="sample.value"
-                :value="sample.value"
-              >
-                {{ sample.label }}
-              </option>
-            </optgroup>
-            <optgroup :label="t('editor.samplesWiremark')">
-              <option
-                v-for="sample in wiremarkSampleOptions"
-                :key="sample.value"
-                :value="sample.value"
-              >
-                {{ sample.label }}
-              </option>
-            </optgroup>
+            <option
+              value=""
+              selected
+              disabled
+            >
+              {{ t("editor.samples") }}
+            </option>
+            <option
+              v-for="sample in sampleOptions"
+              :key="sample.value"
+              :value="sample.value"
+            >
+              {{ sample.label }}
+            </option>
           </select>
         </label>
       </TooltipWrap>
@@ -414,6 +355,21 @@ function onSampleChange(event: Event): void {
 .panel-title__badge--muted {
   background: color-mix(in srgb, var(--accent) 18%, transparent);
   color: var(--accent);
+}
+
+.format-select-wrap {
+  display: inline-flex;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.format-select {
+  height: 28px;
+  min-height: 28px;
+  max-width: 132px;
+  padding: 0 24px 0 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 
 .sample-select-wrap {

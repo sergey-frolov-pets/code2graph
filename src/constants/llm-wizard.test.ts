@@ -321,9 +321,56 @@ describe("llm-wizard", () => {
     expect(source).toContain('rankdir="LR"');
   });
 
-  it("exposes graphml only for manual mode", () => {
-    expect(getWizardLanguagesForMode("manual")).toContain("graphml");
-    expect(getWizardLanguagesForMode("ai")).not.toContain("graphml");
+  it("exposes every site language in manual and AI modes", () => {
+    for (const mode of ["manual", "ai"] as const) {
+      const languages = getWizardLanguagesForMode(mode);
+      expect(languages).toEqual([
+        "plantuml",
+        "mermaid",
+        "graphml",
+        "wiremark",
+        "d2",
+        "structurizr",
+      ]);
+    }
+  });
+
+  it("builds D2, Structurizr, and WireMark scaffolds", () => {
+    const d2 = buildManualScaffold(
+      createState({
+        language: "d2",
+        diagramType: "flowchart",
+        direction: "LR",
+        typeParams: { ...createDefaultTypeParams(), nodes: 3 },
+      }),
+      "en",
+    );
+    expect(d2).toContain("direction: right");
+    expect(d2).toContain("step1 -> step2");
+
+    const dsl = buildManualScaffold(
+      createState({
+        language: "structurizr",
+        diagramType: "c4_context",
+        direction: "LR",
+      }),
+      "ru",
+    );
+    expect(dsl).toContain("workspace");
+    expect(dsl).toContain("systemContext");
+    expect(dsl).toContain("Покупатель");
+
+    const wireframe = buildManualScaffold(
+      createState({
+        language: "wiremark",
+        diagramType: "wireframe",
+        typeParams: { ...createDefaultTypeParams(), steps: 2 },
+      }),
+      "en",
+    );
+    expect(wireframe).toContain("Wireframe #screen");
+    expect(wireframe).toContain('TextField "Field 1"');
+    expect(wireframe).toContain('TextField "Field 2"');
   });
 
   it("lists gantt for plantuml and mermaid", () => {

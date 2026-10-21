@@ -1,10 +1,11 @@
+import { publicAsset } from "@/utils/public-asset";
+
 export const APP_META = {
   name: "Code2Graph",
   developer: "FSVibe",
-  developerLogo: "/icons/fsvibe-logo.svg",
+  developerLogo: publicAsset("icons/fsvibe-logo.svg"),
   developerLogoWidth: 835,
   developerLogoHeight: 255,
-  landingHeroImage: "/images/landing-workflow.png",
   version: __APP_VERSION__,
   copyright: "© 2026 FSVibe",
 } as const;
@@ -26,6 +27,14 @@ export const APP_LINKS = {
   graphml: "http://graphml.graphdrawing.org/",
   wiremarkGuide: "https://docs.wiremark.dev/",
   wiremark: "https://wiremark.dev/",
+  d2Guide: "https://d2lang.com/tour/intro/",
+  d2: "https://d2lang.com/",
+  structurizrGuide: "https://docs.structurizr.com/dsl/language",
+  structurizr: "https://structurizr.com/",
+  c4PlantUml: "https://github.com/plantuml-stdlib/C4-PlantUML",
+  archimatePlantUml: "https://github.com/plantuml-stdlib/Archimate-PlantUML",
+  mermaidPackage: "https://www.npmjs.com/package/mermaid",
+  d2Package: "https://www.npmjs.com/package/@d2lang/d2",
   wiremarkCore: "https://www.npmjs.com/package/@wiremark/core",
   yEd: "https://www.yworks.com/products/yed",
   dagre: "https://github.com/dagrejs/dagre",
@@ -60,8 +69,12 @@ export {
   PLANTUML_SAMPLE_IDS,
   MERMAID_SAMPLE_IDS,
   WIREMARK_SAMPLE_IDS,
+  D2_SAMPLE_IDS,
+  STRUCTURIZR_SAMPLE_IDS,
   type PlantUmlSampleId,
   type MermaidSampleId,
   type WiremarkSampleId,
+  type D2SampleId,
+  type StructurizrSampleId,
   type SampleSelection,
 } from "@/constants/sample-diagrams";

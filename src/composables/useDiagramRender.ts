@@ -4,6 +4,7 @@ import {
   getDiagramFormatDefinition,
   type DiagramFormat,
 } from "@/constants/diagram-formats";
+import { getLanguageModule } from "@/languages/registry";
 import {
   isOnlineRenderMode,
   type RenderMode,
@@ -82,10 +83,15 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
   }
 
   function resolveOnlineEngineNotReadyMessage(): string {
+    if (
+      isFileProtocol() &&
+      getLanguageModule(diagramFormat.value).onlineProbe === "mermaid"
+    ) {
+      return t("engine.mermaidOnlineFileProtocol");
+    }
+
     if (isFileProtocol()) {
-      return diagramFormat.value === "mermaid"
-        ? t("engine.mermaidOnlineFileProtocol")
-        : t("engine.onlineFileProtocol");
+      return t("engine.onlineFileProtocol");
     }
 
     return t("app.renderModeOnlineOffline");
@@ -96,7 +102,9 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
       return;
     }
 
-    if (diagramFormat.value === "mermaid") {
+    const probe = getLanguageModule(diagramFormat.value).onlineProbe;
+
+    if (probe === "mermaid") {
       const reachable = await probeMermaidInkConnectivity();
       engineReady.value = true;
       engineStatus.value = reachable
@@ -105,7 +113,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
       return;
     }
 
-    if (diagramFormat.value === "plantuml") {
+    if (probe === "plantuml") {
       const reachable = await probePlantUmlServerConnectivity();
       engineReady.value = true;
       engineStatus.value = reachable
@@ -125,16 +133,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
       return resolveOnlineEngineNotReadyMessage();
     }
 
-    const definition = formatDefinition.value;
-    if (definition.usesPlantUmlEngine) {
-      return t("app.engineNotReady");
-    }
-
-    if (diagramFormat.value === "mermaid") {
-      return t("app.mermaidEngineNotReady");
-    }
-
-    return t("app.engineNotReady");
+    return t(getLanguageModule(diagramFormat.value).engineNotReadyKey);
   }
 
   async function renderDiagramView(): Promise<void> {
@@ -250,7 +249,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
       return;
     }
 
-    if (definition.usesPlantUmlEngine || format === "mermaid") {
+    if (definition.requiresEngineBoot) {
       await bootOfflineEngine(format);
       return;
     }
@@ -265,11 +264,12 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
       return;
     }
 
-    if (diagramFormat.value === "mermaid") {
+    const probe = getLanguageModule(diagramFormat.value).onlineProbe;
+    if (probe === "mermaid") {
       resetMermaidInkConnectivity();
     }
 
-    if (diagramFormat.value === "plantuml") {
+    if (probe === "plantuml") {
       resetPlantUmlServerConnectivity();
     }
 
