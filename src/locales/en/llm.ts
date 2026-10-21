@@ -145,8 +145,14 @@ export const llmMessages = {
   "llm.wizard.language.plantuml": "PlantUML",
   "llm.wizard.language.mermaid": "Mermaid",
   "llm.wizard.language.graphml": "GraphML",
-  "llm.wizard.languageAiHint": "AI supports PlantUML and Mermaid. GraphML is manual-only.",
-  "llm.wizard.languageGraphmlHint": "GraphML opens in the editor with XML syntax highlighting; edit the scaffold manually.",
+  "llm.wizard.language.wiremark": "WireMark",
+  "llm.wizard.language.d2": "D2",
+  "llm.wizard.language.structurizr": "Structurizr DSL",
+  "llm.wizard.languageAiHint": "AI can generate every language on this site: PlantUML, Mermaid, GraphML, WireMark, D2, and Structurizr.",
+  "llm.wizard.languageGraphmlHint": "GraphML is an XML graph. AI returns a graphml document, and the manual scaffold is editable XML.",
+  "llm.wizard.languageD2Hint": "D2 covers flows, sequences, classes, SQL tables, and architecture. Direction becomes direction: right or down.",
+  "llm.wizard.languageStructurizrHint": "Structurizr DSL builds a C4 workspace: context, containers, components, or deployment.",
+  "llm.wizard.languageWiremarkHint": "WireMark builds a screen wireframe. The step count is the number of fields.",
   "llm.wizard.diagramType": "Type",
   "llm.wizard.theme": "Diagram theme",
   "llm.wizard.direction": "Direction",
@@ -249,6 +255,7 @@ export const llmMessages = {
   "llm.wizard.type.wbs": "Work breakdown (WBS)",
   "llm.wizard.type.nwdiag": "Network diagram",
   "llm.wizard.type.archimate": "ArchiMate",
+  "llm.wizard.type.wireframe": "Screen wireframe",
   "llm.wizard.typeDesc.sequence": "Message exchange between participants over time",
   "llm.wizard.typeDesc.class": "Classes, attributes, methods, and inheritance",
   "llm.wizard.typeDesc.component": "Software components and their dependencies",
@@ -279,6 +286,7 @@ export const llmMessages = {
   "llm.wizard.typeDesc.wbs": "Project hierarchy from root to sub-tasks",
   "llm.wizard.typeDesc.nwdiag": "Servers, networks, and connections",
   "llm.wizard.typeDesc.archimate": "Enterprise architecture layers and relations",
+  "llm.wizard.typeDesc.wireframe": "A screen with a title, fields, and an action",
   "llm.wizard.detailsPlaceholder.sequence": "Sync/async calls, alt/else…",
   "llm.wizard.detailsPlaceholder.class": "Classes, inheritance, interfaces…",
   "llm.wizard.detailsPlaceholder.component": "Components and dependencies…",
@@ -309,6 +317,7 @@ export const llmMessages = {
   "llm.wizard.detailsPlaceholder.wbs": "Root task, branches, sub-tasks…",
   "llm.wizard.detailsPlaceholder.nwdiag": "Servers, groups, addresses…",
   "llm.wizard.detailsPlaceholder.archimate": "Layers, elements, relations…",
+  "llm.wizard.detailsPlaceholder.wireframe": "Screen title, fields, button label…",
   "llm.wizard.promptHintLabel": "Type structure guide for this diagram:",
   "llm.wizard.promptHint.sequence":
     "Participants (e.g. User, Web App, API, Database). Messages in order: request → processing → response. Add alt/else for errors and returns (-->) where needed.",
@@ -370,4 +379,6 @@ export const llmMessages = {
     "network blocks, servers with addresses, connections. Every server and link.",
   "llm.wizard.promptHint.archimate":
     "ArchiMate layers, elements (!include archimate), relationships. Every element from your description.",
+  "llm.wizard.promptHint.wireframe":
+    "Wireframe screen: title, one TextField per input, and a Button. Quote every label.",
 } as const satisfies LocaleMessages;

@@ -1,5 +1,11 @@
 import type { AppLocale } from "@/constants/i18n";
 import type { LocaleKey } from "@/locales/types";
+import {
+  AGENT_DIAGRAM_LANGUAGES,
+  AGENT_TYPES_BY_LANGUAGE,
+  diagramFormatLabel,
+  scaffoldDiagram,
+} from "@shared/agent-diagram";
 import { getWizardDiagramFormatRules } from "@/services/llm/diagram-format-rules";
 import { getWizardTypePromptHint } from "@/constants/wizard-prompt-hints";
 import {
@@ -40,6 +46,7 @@ export const WIZARD_DIAGRAM_TYPES = [
   "wbs",
   "nwdiag",
   "archimate",
+  "wireframe",
 ] as const;
 
 export type WizardDiagramType = (typeof WIZARD_DIAGRAM_TYPES)[number];
@@ -56,7 +63,7 @@ export const WIZARD_CREATION_MODES = ["ai", "manual"] as const;
 
 export type WizardCreationMode = (typeof WIZARD_CREATION_MODES)[number];
 
-export const WIZARD_LANGUAGES = ["plantuml", "mermaid", "graphml"] as const;
+export const WIZARD_LANGUAGES = AGENT_DIAGRAM_LANGUAGES;
 
 export type WizardLanguage = (typeof WIZARD_LANGUAGES)[number];
 
@@ -207,6 +214,7 @@ export const WIZARD_TYPE_PARAM_FIELDS: Record<WizardDiagramType, WizardParamFiel
     { id: "edges", min: 1, max: 12, default: 3 },
   ],
   archimate: [{ id: "nodes", min: 2, max: 12, default: 4 }],
+  wireframe: [{ id: "steps", min: 1, max: 8, default: 3 }],
 };
 
 export const WIZARD_TYPE_STRUCTURAL_ELEMENTS: Record<
@@ -243,6 +251,7 @@ export const WIZARD_TYPE_STRUCTURAL_ELEMENTS: Record<
   wbs: ["note"],
   nwdiag: ["note"],
   archimate: ["note"],
+  wireframe: [],
 };
 
 const PLANTUML_ONLY_STRUCTURAL_ELEMENTS = new Set<WizardStructuralElementId>([
@@ -256,52 +265,6 @@ const PLANTUML_ONLY_STRUCTURAL_ELEMENTS = new Set<WizardStructuralElementId>([
 ]);
 
 const GRAPHML_STRUCTURAL_ELEMENTS = new Set<WizardStructuralElementId>(["cluster"]);
-
-const PLANTUML_WIZARD_TYPES: WizardDiagramType[] = [
-  "sequence",
-  "class",
-  "component",
-  "activity",
-  "state",
-  "c4_context",
-  "c4_container",
-  "gantt",
-  "mindmap",
-  "er",
-  "usecase",
-  "deployment",
-  "object",
-  "timing",
-  "wbs",
-  "nwdiag",
-  "archimate",
-];
-
-const MERMAID_WIZARD_TYPES: WizardDiagramType[] = [
-  "sequence",
-  "class",
-  "component",
-  "activity",
-  "state",
-  "gantt",
-  "mindmap",
-  "er",
-  "flowchart",
-  "pie",
-  "journey",
-  "gitgraph",
-  "timeline",
-  "sankey",
-  "xychart",
-  "block",
-  "c4_context",
-  "requirement",
-  "quadrant",
-  "architecture",
-  "packet",
-];
-
-const GRAPHML_WIZARD_TYPES: WizardDiagramType[] = ["graph"];
 
 const DIRECTION_SUPPORTED_TYPES: WizardDiagramType[] = [
   "class",
@@ -352,6 +315,14 @@ export function getWizardStructuralElementsForType(
 ): WizardStructuralElementId[] {
   const base = WIZARD_TYPE_STRUCTURAL_ELEMENTS[diagramType] ?? [];
 
+  if (
+    language === "d2" ||
+    language === "structurizr" ||
+    language === "wiremark"
+  ) {
+    return [];
+  }
+
   if (language === "graphml") {
     return base.filter((elementId) => GRAPHML_STRUCTURAL_ELEMENTS.has(elementId));
   }
@@ -396,24 +367,18 @@ export function isWizardLanguage(value: string): value is WizardLanguage {
   return (WIZARD_LANGUAGES as readonly string[]).includes(value);
 }
 
-export function getWizardLanguagesForMode(mode: WizardCreationMode): WizardLanguage[] {
-  return mode === "ai" ? ["plantuml", "mermaid"] : [...WIZARD_LANGUAGES];
+export function getWizardLanguagesForMode(
+  _mode: WizardCreationMode,
+): WizardLanguage[] {
+  return [...WIZARD_LANGUAGES];
 }
 
 export function getWizardTypesForLanguage(language: WizardLanguage): WizardDiagramType[] {
-  if (language === "graphml") {
-    return [...GRAPHML_WIZARD_TYPES];
-  }
-
-  if (language === "mermaid") {
-    return [...MERMAID_WIZARD_TYPES];
-  }
-
-  return [...PLANTUML_WIZARD_TYPES];
+  return [...AGENT_TYPES_BY_LANGUAGE[language]];
 }
 
 export function isWizardLanguageAiSupported(language: WizardLanguage): boolean {
-  return language === "plantuml" || language === "mermaid";
+  return WIZARD_LANGUAGES.includes(language);
 }
 
 export function wizardTypeSupportsDirection(
@@ -426,6 +391,18 @@ export function wizardTypeSupportsDirection(
 
   if (language === "graphml") {
     return diagramType === "graph";
+  }
+
+  if (language === "d2") {
+    return AGENT_TYPES_BY_LANGUAGE.d2.includes(diagramType);
+  }
+
+  if (language === "structurizr") {
+    return AGENT_TYPES_BY_LANGUAGE.structurizr.includes(diagramType);
+  }
+
+  if (language === "wiremark") {
+    return false;
   }
 
   return DIRECTION_SUPPORTED_TYPES.includes(diagramType);
@@ -515,12 +492,7 @@ export function buildWizardPrompt(state: WizardState, locale: AppLocale = "en"):
   const typeLabel = state.diagramType.replace(/_/g, " ");
   const paramLines = formatTypeParamsForPrompt(state);
   const typePromptHint = getWizardTypePromptHint(state.diagramType, locale);
-  const formatLabel =
-    state.language === "mermaid"
-      ? "Mermaid"
-      : state.language === "graphml"
-        ? "GraphML"
-        : "PlantUML";
+  const formatLabel = diagramFormatLabel(state.language);
 
   const lines = [
     `Create a new ${formatLabel} ${typeLabel} diagram.`,
@@ -582,12 +554,12 @@ export function buildWizardPrompt(state: WizardState, locale: AppLocale = "en"):
     );
   }
 
+  const sourceName =
+    state.language === "plantuml" ? "PlantUML" : formatLabel;
   lines.push(
     "",
     "Output requirement:",
-    state.language === "mermaid"
-      ? "Return the COMPLETE Mermaid source in JSON field plantuml (same field name as PlantUML responses). Include every element from Description and Additional requirements."
-      : "Return the COMPLETE PlantUML source in JSON field plantuml. Include every element from Description and Additional requirements.",
+    `Return the COMPLETE ${sourceName} source in JSON field plantuml (field name stays plantuml for API compatibility). Include every element from Description and Additional requirements.`,
     "Optional explanation field: summarize how you organized main themes (1–3 sentences).",
   );
 
@@ -2049,7 +2021,30 @@ function buildPlantUmlArchimate(state: WizardState, locale: AppLocale): string {
   return lines.join("\n");
 }
 
+function scaffoldCount(state: WizardState): number {
+  const primary = WIZARD_TYPE_PARAM_FIELDS[state.diagramType][0];
+  if (!primary) {
+    return 3;
+  }
+
+  return state.typeParams[primary.id];
+}
+
 export function buildManualScaffold(state: WizardState, locale: AppLocale): string {
+  if (
+    state.language === "d2" ||
+    state.language === "structurizr" ||
+    state.language === "wiremark"
+  ) {
+    return scaffoldDiagram({
+      format: state.language,
+      diagramType: state.diagramType,
+      locale,
+      direction: state.direction,
+      count: scaffoldCount(state),
+    }).source;
+  }
+
   if (state.language === "graphml") {
     return buildGraphmlGraph(state, locale);
   }

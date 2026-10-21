@@ -76,6 +76,20 @@ Body:
 
 Разрешены только id: `google-gemini-free`, `groq-free`, `openrouter-free`.
 
+## Agent API
+
+Публичные маршруты для MCP (`packages/mcp`). Библиотечный логин не нужен.
+
+Если задан `AGENT_API_TOKEN`, запросы ждут `Authorization: Bearer <token>`. Без переменной маршруты открыты.
+
+| Метод | Путь | Назначение |
+| --- | --- | --- |
+| `GET` | `/api/agent/formats` | Языки сайта и типы диаграмм |
+| `POST` | `/api/agent/diagrams/plan` | Выбор языка и типа по тексту |
+| `POST` | `/api/agent/diagrams/scaffold` | Исходник шаблона для выбранного языка |
+
+Тело plan и scaffold: `{ "request": "...", "format?": "d2", "diagramType?": "sequence", "locale?": "ru", "direction?": "LR" }`.
+
 ## Настройка в приложении
 
 **Настройки → Библиотека → Адрес сервера:** `http://localhost:3001` (или ваш хост).

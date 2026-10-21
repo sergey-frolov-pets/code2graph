@@ -145,8 +145,14 @@ export const llmMessages = {
   "llm.wizard.language.plantuml": "PlantUML",
   "llm.wizard.language.mermaid": "Mermaid",
   "llm.wizard.language.graphml": "GraphML",
-  "llm.wizard.languageAiHint": "ИИ поддерживает PlantUML и Mermaid. GraphML — только вручную.",
-  "llm.wizard.languageGraphmlHint": "GraphML открывается в редакторе с подсветкой XML; шаблон можно редактировать вручную.",
+  "llm.wizard.language.wiremark": "WireMark",
+  "llm.wizard.language.d2": "D2",
+  "llm.wizard.language.structurizr": "Structurizr DSL",
+  "llm.wizard.languageAiHint": "ИИ генерирует все языки сайта: PlantUML, Mermaid, GraphML, WireMark, D2 и Structurizr.",
+  "llm.wizard.languageGraphmlHint": "GraphML — это XML-граф. ИИ возвращает документ graphml, ручной шаблон тоже можно править.",
+  "llm.wizard.languageD2Hint": "D2 покрывает потоки, последовательности, классы, SQL-таблицы и архитектуру. Направление становится direction: right или down.",
+  "llm.wizard.languageStructurizrHint": "Structurizr DSL собирает C4-workspace: контекст, контейнеры, компоненты или развёртывание.",
+  "llm.wizard.languageWiremarkHint": "WireMark собирает макет экрана. Число шагов — это число полей.",
   "llm.wizard.diagramType": "Тип",
   "llm.wizard.theme": "Тема диаграммы",
   "llm.wizard.direction": "Направление",
@@ -249,6 +255,7 @@ export const llmMessages = {
   "llm.wizard.type.wbs": "Иерархия работ (WBS)",
   "llm.wizard.type.nwdiag": "Сетевая диаграмма",
   "llm.wizard.type.archimate": "ArchiMate",
+  "llm.wizard.type.wireframe": "Макет экрана",
   "llm.wizard.typeDesc.sequence": "Обмен сообщениями между участниками во времени",
   "llm.wizard.typeDesc.class": "Классы, атрибуты, методы и наследование",
   "llm.wizard.typeDesc.component": "Компоненты ПО и зависимости между ними",
@@ -279,6 +286,7 @@ export const llmMessages = {
   "llm.wizard.typeDesc.wbs": "Иерархия проекта от корня к подзадачам",
   "llm.wizard.typeDesc.nwdiag": "Серверы, сети и соединения",
   "llm.wizard.typeDesc.archimate": "Слои и элементы корпоративной архитектуры",
+  "llm.wizard.typeDesc.wireframe": "Экран с заголовком, полями и действием",
   "llm.wizard.detailsPlaceholder.sequence": "Синхронные/асинхронные вызовы, alt/else…",
   "llm.wizard.detailsPlaceholder.class": "Классы, наследование, интерфейсы…",
   "llm.wizard.detailsPlaceholder.component": "Компоненты и зависимости…",
@@ -309,6 +317,7 @@ export const llmMessages = {
   "llm.wizard.detailsPlaceholder.wbs": "Корневая задача, ветки, подзадачи…",
   "llm.wizard.detailsPlaceholder.nwdiag": "Серверы, группы, адреса…",
   "llm.wizard.detailsPlaceholder.archimate": "Слои, элементы, связи…",
+  "llm.wizard.detailsPlaceholder.wireframe": "Заголовок экрана, поля, подпись кнопки…",
   "llm.wizard.promptHintLabel": "Подсказка по структуре для этого типа:",
   "llm.wizard.promptHint.sequence":
     "Участники (например: Пользователь, Веб-приложение, API, БД). Сообщения по порядку: запрос → обработка → ответ. Добавь alt/else для ошибок, возвраты (-->) где нужно.",
@@ -370,4 +379,6 @@ export const llmMessages = {
     "Сетевые блоки, серверы с адресами, соединения. Все серверы и связи.",
   "llm.wizard.promptHint.archimate":
     "Слои ArchiMate, элементы (!include archimate), связи между элементами. Все элементы из описания.",
+  "llm.wizard.promptHint.wireframe":
+    "Макет экрана: заголовок, TextField на каждое поле и Button. Все подписи в кавычках.",
 } as const satisfies LocaleMessages;

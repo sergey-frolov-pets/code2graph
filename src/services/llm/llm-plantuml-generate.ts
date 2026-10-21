@@ -23,6 +23,7 @@ import type {
 import type { DiagramFormatPromptContext } from "@/services/llm/diagram-format-rules";
 import { getWizardDiagramFormatRules } from "@/constants/llm-wizard";
 import { runLlmJsonValidationLoop } from "@/services/llm/llm-validation-loop";
+import { validateLlmRegisteredFormat } from "@/services/llm/validate-llm-format";
 import { validateLlmResponse } from "@/utils/validate-llm-plantuml";
 import { validateLlmMermaidResponse } from "@/utils/validate-llm-mermaid";
 
@@ -107,13 +108,6 @@ export async function generateValidWizardDiagram(
   priorMessages?: LlmChatMessage[],
   formatPromptContext?: DiagramFormatPromptContext,
 ): Promise<GenerateValidPlantUmlResult> {
-  if (language === "graphml") {
-    throw new LlmClientError(
-      "validation_failed",
-      "GraphML is not supported for AI wizard generation",
-    );
-  }
-
   const formatRules = getWizardDiagramFormatRules(
     language,
     diagramType,
@@ -138,7 +132,15 @@ export async function generateValidWizardDiagram(
       const validation =
         language === "mermaid"
           ? await validateLlmMermaidResponse(content, darkMode, renderMode)
-          : await validateLlmResponse(content, layout, darkMode, renderMode);
+          : language === "plantuml"
+            ? await validateLlmResponse(content, layout, darkMode, renderMode)
+            : await validateLlmRegisteredFormat(
+                language,
+                content,
+                layout,
+                darkMode,
+                renderMode,
+              );
 
       if (validation.valid && validation.plantuml) {
         return {

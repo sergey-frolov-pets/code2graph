@@ -1,0 +1,26 @@
+{
+  "name": "@code2graph/mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP server that plans and scaffolds Code2Graph diagrams in every site language.",
+  "bin": {
+    "code2graph-mcp": "./bin/code2graph-mcp.js"
+  },
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.20.2",
+    "tsx": "^4.19.3",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "~5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

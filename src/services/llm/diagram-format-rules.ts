@@ -445,16 +445,88 @@ function buildMermaidSyntaxRules(diagramType: WizardDiagramType): string[] {
   }
 }
 
+function buildD2SyntaxRules(diagramType: WizardDiagramType): string[] {
+  const shape =
+    diagramType === "class"
+      ? "Use shape: class on class blocks and -> for relationships."
+      : diagramType === "er"
+        ? "Use shape: sql_table and connect primary keys to foreign keys."
+        : diagramType === "sequence"
+          ? "Wrap participants in a block with shape: sequence_diagram."
+          : diagramType === "architecture"
+            ? "Group services in a container and use cylinder or hexagon shapes where they help."
+            : "Connect steps with -> and set direction: right or direction: down.";
+
+  return [
+    "Format: D2 diagram source.",
+    "Do not wrap the source in Markdown fences or PlantUML @start/@end tags.",
+    shape,
+  ];
+}
+
+function buildStructurizrSyntaxRules(diagramType: WizardDiagramType): string[] {
+  const view =
+    diagramType === "c4_container"
+      ? "Add a container view with include * and autolayout."
+      : diagramType === "component"
+        ? "Declare components inside a container and add a component view."
+        : diagramType === "deployment"
+          ? "Declare a deploymentEnvironment with deploymentNode and containerInstance, plus a deployment view."
+          : "Add people and software systems, then a systemContext view with include *.";
+
+  return [
+    "Format: Structurizr DSL.",
+    "Return one workspace { model { } views { } } document.",
+    "Do not emit PlantUML or Mermaid.",
+    view,
+  ];
+}
+
+function buildWiremarkSyntaxRules(): string[] {
+  return [
+    "Format: WireMark wireframe.",
+    "Start with a Wireframe declaration, then a Stack of quoted Typography, TextField, and Button lines.",
+    "Quote every visible label. Do not emit PlantUML or Mermaid.",
+  ];
+}
+
+function buildGraphmlSyntaxRules(): string[] {
+  return [
+    "Format: GraphML XML.",
+    "Return a graphml document with a graph element, node ids, and edge source/target attributes.",
+    "Do not emit PlantUML or Mermaid.",
+  ];
+}
+
+function buildSyntaxRules(
+  language: WizardLanguage,
+  diagramType: WizardDiagramType,
+): string[] {
+  switch (language) {
+    case "mermaid":
+      return buildMermaidSyntaxRules(diagramType);
+    case "d2":
+      return buildD2SyntaxRules(diagramType);
+    case "structurizr":
+      return buildStructurizrSyntaxRules(diagramType);
+    case "wiremark":
+      return buildWiremarkSyntaxRules();
+    case "graphml":
+      return buildGraphmlSyntaxRules();
+    case "plantuml":
+      return buildPlantUmlSyntaxRules(diagramType);
+    default:
+      return buildPlantUmlSyntaxRules(diagramType);
+  }
+}
+
 export function buildDiagramFormatRules(
   language: WizardLanguage,
   diagramType: WizardDiagramType,
   typeParams: DiagramFormatTypeParams = {},
   promptContext?: DiagramFormatPromptContext,
 ): string {
-  const syntax =
-    language === "mermaid"
-      ? buildMermaidSyntaxRules(diagramType)
-      : buildPlantUmlSyntaxRules(diagramType);
+  const syntax = buildSyntaxRules(language, diagramType);
 
   const typeCompleteness = buildTypeParamCompleteness(diagramType, typeParams);
   const promptText = combinePromptContextText(promptContext);

@@ -5,6 +5,7 @@ import { libraryAuthMiddleware } from "./auth.js";
 import { SERVER_PORT } from "./config.js";
 import { getDb } from "./db.js";
 import { adminRouter } from "./routes/admin.js";
+import { agentRouter } from "./routes/agent.js";
 import { authRouter } from "./routes/auth.js";
 import { diagramsRouter, sectionsRouter } from "./routes/library.js";
 import { llmRouter } from "./routes/llm.js";
@@ -28,6 +29,7 @@ app.use(
 app.route("/api/share", shareRouter);
 app.route("/api/subscriptions/access", subscriptionAccessRouter);
 app.route("/api/auth", publicAuthRouter);
+app.route("/api/agent", agentRouter);
 
 const protectedApi = new Hono();
 protectedApi.use("*", libraryAuthMiddleware);

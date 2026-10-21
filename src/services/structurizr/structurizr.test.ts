@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { AGENT_TYPES_BY_LANGUAGE, scaffoldDiagram } from "@shared/agent-diagram";
 import {
   STRUCTURIZR_SAMPLE_IDS,
   getStructurizrSampleSource,
@@ -195,5 +196,25 @@ describe("stackDiagramSvgs", () => {
     expect(stacked).toContain('width="100px"');
     expect(stacked).toContain('height="92px"');
     expect(stacked).toContain('y="72"');
+  });
+});
+
+describe("structurizr wizard scaffolds", () => {
+  it("parses every Structurizr wizard type", async () => {
+    for (const diagramType of AGENT_TYPES_BY_LANGUAGE.structurizr) {
+      for (const locale of ["ru", "en"] as const) {
+        const source = scaffoldDiagram({
+          format: "structurizr",
+          diagramType,
+          locale,
+          direction: "LR",
+          count: 3,
+        }).source;
+        expect(() => parseStructurizr(source)).not.toThrow();
+        await expect(validateStructurizrSyntax(source)).resolves.toMatchObject({
+          valid: true,
+        });
+      }
+    }
   });
 });
