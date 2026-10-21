@@ -458,6 +458,38 @@ function detectGraphmlFoldRegions(lines: string[]): AutoFoldRegion[] {
   return regions;
 }
 
+function detectWiremarkFoldRegions(lines: string[]): AutoFoldRegion[] {
+  const regions: AutoFoldRegion[] = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (!/^\s*Wireframe\b/.test(line)) {
+      continue;
+    }
+
+    const baseIndent = line.match(/^[ ]*/)?.[0].length ?? 0;
+    let end = index;
+    for (let next = index + 1; next < lines.length; next += 1) {
+      const candidate = lines[next];
+      if (!candidate.trim()) {
+        end = next;
+        continue;
+      }
+      if ((candidate.match(/^[ ]*/)?.[0].length ?? 0) <= baseIndent) {
+        break;
+      }
+      end = next;
+    }
+
+    if (end > index) {
+      const frameId = line.match(/#([\w-]+)/)?.[1] ?? "Wireframe";
+      regions.push(createAutoFoldRegion(index + 1, end + 1, frameId));
+    }
+  }
+
+  return regions;
+}
+
 function createAutoFoldRegion(
   startLine: number,
   endLine: number,
@@ -505,6 +537,9 @@ export function detectAutoFoldRegions(
       break;
     case "graphml":
       regions = detectGraphmlFoldRegions(lines);
+      break;
+    case "wiremark":
+      regions = detectWiremarkFoldRegions(lines);
       break;
     default:
       return [];

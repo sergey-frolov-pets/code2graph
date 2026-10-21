@@ -9,6 +9,7 @@ describe("detectDiagramFormat", () => {
     expect(detectDiagramFormat("", "flow.mmd")).toBe("mermaid");
     expect(detectDiagramFormat("", "graph.graphml")).toBe("graphml");
     expect(detectDiagramFormat("", "diagram.puml")).toBe("plantuml");
+    expect(detectDiagramFormat("", "login.wiremark")).toBe("wiremark");
   });
 
   it("prefers source markers over file extension", () => {
@@ -37,6 +38,16 @@ describe("detectDiagramFormat", () => {
     ).toBe("graphml");
   });
 
+  it("detects wiremark from a frame root and a fenced block", () => {
+    expect(
+      detectDiagramFormat(`Wireframe #login mobile
+  Button "Sign in" contained`),
+    ).toBe("wiremark");
+    expect(
+      detectDiagramFormat("```wireframe\nWireframe mobile\n  Typography h4 \"Hi\"\n```"),
+    ).toBe("wiremark");
+  });
+
   it("defaults to plantuml for classic source", () => {
     expect(detectDiagramFormat("@startuml\nA -> B\n@enduml")).toBe("plantuml");
   });
@@ -55,6 +66,9 @@ describe("resolveLibraryDiagramFormat", () => {
   it("uses explicit language for empty source", () => {
     expect(resolveLibraryDiagramFormat("", "x.graphml", "graphml")).toBe(
       "graphml",
+    );
+    expect(resolveLibraryDiagramFormat("", "login.wiremark", "wiremark")).toBe(
+      "wiremark",
     );
   });
 

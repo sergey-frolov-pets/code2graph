@@ -90,7 +90,9 @@ export function useEditorFileImport(options: {
     const labelKey =
       selection.format === "mermaid"
         ? `samples.mermaid.${selection.id}`
-        : `samples.plantuml.${selection.id}`;
+        : selection.format === "wiremark"
+          ? `samples.wiremark.${selection.id}`
+          : `samples.plantuml.${selection.id}`;
 
     resetFolds();
     source.value = sample;

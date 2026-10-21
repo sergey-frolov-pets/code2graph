@@ -1,3 +1,4 @@
+import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { VisualHints } from "@/services/conversion/visual/visual-hints";
 
 function parseNumeric(value: string | null): number | undefined {
@@ -128,7 +129,7 @@ export function extractPlantUmlVisualHints(svg: string): VisualHints {
 
 export function extractVisualHintsFromSvg(
   svg: string,
-  sourceFormat?: "plantuml" | "mermaid" | "graphml",
+  sourceFormat?: DiagramFormat,
 ): VisualHints {
   if (!svg.includes("<svg")) {
     return { nodes: [], edges: [], source: "plantuml-geometry" };

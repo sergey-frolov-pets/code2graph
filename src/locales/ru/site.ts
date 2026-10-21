@@ -70,6 +70,8 @@ export const siteMessages: LocaleMessages = {
   "site.formats.mermaid.features": "Живой просмотр, генерация через Мастер, экспорт",
   "site.formats.graphml.purpose": "Графы с топологией для yEd, Draw.io и виз-систем",
   "site.formats.graphml.features": "Импорт, визуализация, конвертация в код",
+  "site.formats.wiremark.purpose": "Вайрфреймы интерфейса в стиле наброска, прямо в тексте",
+  "site.formats.wiremark.features": "Редактирование, живой просмотр, примеры экранов",
 
   "site.audience.title": "Ускоряет работу всей технической команды",
   "site.audience.architect.title": "🏛 Архитекторы ПО",

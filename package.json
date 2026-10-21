@@ -3,7 +3,7 @@
   "version": "1.0.72",
   "private": true,
   "type": "module",
-  "description": "Code2Graph — offline PlantUML, Mermaid, and GraphML diagram editor (Vue 3 + Smetana)",
+  "description": "Code2Graph — offline PlantUML, Mermaid, GraphML, and WireMark diagram editor (Vue 3 + Smetana)",
   "scripts": {
     "dev": "vite",
     "dev:api": "npm --prefix server run dev",
@@ -33,6 +33,7 @@
     "@lucide/vue": "^1.28.0",
     "@plantuml/core": "^1.2026.6",
     "@tanstack/vue-virtual": "^3.13.35",
+    "@wiremark/core": "^0.1.0",
     "dagre": "^0.8.5",
     "fflate": "^0.8.3",
     "htmlparser2": "^12.0.0",

@@ -36,6 +36,7 @@ export const DIAGRAM_LANGUAGES = [
   "mermaid",
   "graphviz",
   "graphml",
+  "wiremark",
   "ditaa",
   "other",
 ] as const;

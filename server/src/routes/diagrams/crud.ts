@@ -131,7 +131,7 @@ export function registerDiagramCrudRoutes(router: DiagramsRouter): void {
             detectLanguageFromSource(source);
         }
         if (!title) {
-          title = fileName.replace(/\.(puml|plantuml|txt|mmd|mermaid|graphml)$/i, "");
+          title = fileName.replace(/\.(puml|plantuml|txt|mmd|mermaid|graphml|wiremark)$/i, "");
         }
       } else {
         const sourceField = formData.get("source");
@@ -180,7 +180,7 @@ export function registerDiagramCrudRoutes(router: DiagramsRouter): void {
     }
 
     if (!title) {
-      title = fileName.replace(/\.(puml|plantuml|txt|mmd|mermaid|graphml)$/i, "") || "Диаграмма";
+      title = fileName.replace(/\.(puml|plantuml|txt|mmd|mermaid|graphml|wiremark)$/i, "") || "Диаграмма";
     }
 
     if (!isDiagramLanguage(language)) {

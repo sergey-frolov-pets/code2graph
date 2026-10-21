@@ -2,6 +2,7 @@ import type { DiagramFormat } from "@/constants/diagram-formats";
 import { CONVERSION_IR_VERSION } from "@/constants/conversion-settings";
 import { classifyDiagramKind, detectDiagramDirection } from "@/services/conversion/classify-diagram-kind";
 import {
+  createEmptyDiagramIR,
   type DiagramEdge,
   type DiagramIR,
   type DiagramNode,
@@ -99,6 +100,13 @@ export function parseSourceToIr(
 
   if (format === "graphml") {
     return graphmlToIr(cleaned, format);
+  }
+
+  if (format === "wiremark") {
+    return {
+      ...createEmptyDiagramIR("unknown"),
+      metadata: { sourceFormat: format },
+    };
   }
 
   if (format === "plantuml") {

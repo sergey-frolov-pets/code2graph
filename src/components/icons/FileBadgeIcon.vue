@@ -4,13 +4,14 @@ import type { Component } from "vue";
 import { FileCode, FileImage, Shapes } from "@lucide/vue";
 
 const props = defineProps<{
-  format: "PNG" | "SVG" | "PUML" | "MMD" | "GML";
+  format: "PNG" | "SVG" | "PUML" | "MMD" | "GML" | "WMK";
 }>();
 
-const ICON_MAP: Record<"PNG" | "SVG" | "PUML" | "MMD" | "GML", Component> = {
+const ICON_MAP: Record<"PNG" | "SVG" | "PUML" | "MMD" | "GML" | "WMK", Component> = {
   PUML: FileCode,
   MMD: FileCode,
   GML: FileCode,
+  WMK: FileCode,
   SVG: Shapes,
   PNG: FileImage,
 };

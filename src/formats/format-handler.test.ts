@@ -4,6 +4,7 @@ import {
   graphmlFormatHandler,
   mermaidFormatHandler,
   plantUmlFormatHandler,
+  wiremarkFormatHandler,
 } from "@/formats";
 
 describe("FormatHandler", () => {
@@ -25,6 +26,11 @@ describe("FormatHandler", () => {
   it("validates empty GraphML source", () => {
     const result = graphmlFormatHandler.validate("");
     expect(result.valid).toBe(false);
+  });
+
+  it("highlights WireMark components", () => {
+    const html = wiremarkFormatHandler.highlightLine('Button "Sign in" contained');
+    expect(html).toContain("tok-keyword");
   });
 
   it("reports graphml engine as always ready", () => {
@@ -51,7 +57,7 @@ describe("FormatHandler", () => {
   });
 
   it("exposes render entry point on every handler", () => {
-    for (const format of ["plantuml", "mermaid", "graphml"] as const) {
+    for (const format of ["plantuml", "mermaid", "graphml", "wiremark"] as const) {
       expect(typeof getFormatHandler(format).render).toBe("function");
       expect(typeof getFormatHandler(format).bootEngine).toBe("function");
       expect(typeof getFormatHandler(format).isEngineReady).toBe("function");

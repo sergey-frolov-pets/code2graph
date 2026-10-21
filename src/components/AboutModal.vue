@@ -143,6 +143,16 @@ const featureKeys = [
         </a>
       </li>
       <li>
+        <a :href="APP_LINKS.wiremark" target="_blank" rel="noopener noreferrer">
+          WireMark
+        </a>
+      </li>
+      <li>
+        <a :href="APP_LINKS.wiremarkCore" target="_blank" rel="noopener noreferrer">
+          @wiremark/core
+        </a>
+      </li>
+      <li>
         <a :href="APP_LINKS.yEd" target="_blank" rel="noopener noreferrer">yEd</a>
       </li>
       <li>

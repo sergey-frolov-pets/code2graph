@@ -61,7 +61,11 @@ function reconcileDiagramFormat(
   }
 
   const fromFileName = detectFormatFromFileName(fileName);
-  if (fromFileName === "mermaid" || fromFileName === "graphml") {
+  if (
+    fromFileName === "mermaid" ||
+    fromFileName === "graphml" ||
+    fromFileName === "wiremark"
+  ) {
     return fromFileName;
   }
 
