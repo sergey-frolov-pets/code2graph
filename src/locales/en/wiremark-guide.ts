@@ -10,22 +10,22 @@ export const wiremarkGuideMessages = {
 
   "site.wiremark.type.login.title": "Sign-in screen",
   "site.wiremark.type.login.text":
-    "A phone frame. A column holds the heading, the fields, and a contained button that opens another frame with to=#id. This is the wireframe from the WireMark docs home page.",
+    "A phone frame. Tabs, icon fields, an info alert, and a contained full-width button that opens another frame with to=#id.",
   "site.wiremark.type.dashboard.title": "App shell",
   "site.wiremark.type.dashboard.text":
-    "A landscape frame: an app bar, a fixed-width navigation rail, and a card grid in the leftover space. Sizes use tokens such as 240px and *.",
+    "A landscape frame: a menu bar, a dense app bar, a docked drawer, chart cards, and a table with a scrollbar.",
   "site.wiremark.type.form.title": "Form",
   "site.wiremark.type.form.text":
-    "A column of inputs. required marks a field, value= shows text already typed, multiline grows a text area, and Control checkbox is the agreement row.",
+    "A tall frame. Steps, required fields, value=, a multiline area, a select, a slider, a rating, a calendar, and the agreement checkbox.",
   "site.wiremark.type.settings.title": "Settings list",
   "site.wiremark.type.settings.text":
-    "An app bar above a List. Each ListItem carries to=#id, so the row links to its own screen.",
+    "An app bar, an error alert, a list of rows with to=#id, an accordion, bottom navigation, and a confirm dialog.",
   "site.wiremark.type.product.title": "Product card",
   "site.wiremark.type.product.text":
-    "A Card with an Img, CardContent for the title and filler, and CardActions for the buttons. ratio=16:9 sets the picture shape.",
+    "A wide card. Img uses ratio=16:9, then chips, a map, a spec table, and CardActions with a button group.",
   "site.wiremark.type.flow.title": "Screen flow",
   "site.wiremark.type.flow.text":
-    "Several Wireframe frames in one document. Flow LR or Flow TD sets the direction. Connectors come from to=#id. There is no separate from.",
+    "Flow LR links two screens. A hidden shell (visible=false) is pulled in with background=#id, and content sits in Anchor #content. Icons declares a custom mark.",
   "site.wiremark.type.chrome.title": "Shared chrome",
   "site.wiremark.type.chrome.text":
     "A shell with visible=false is not drawn on its own. Other frames pull it in with background=#id and place their content in an Anchor region with anchor=#id.",
