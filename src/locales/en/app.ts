@@ -1,7 +1,7 @@
 import type { LocaleMessages } from "../types";
 
 export const appMessages = {
-  "app.subtitle": "Cross-platform PlantUML, Mermaid, GraphML, WireMark, D2, and Structurizr editor with AI diagram generation",
+  "app.subtitle": "PlantUML, Mermaid, GraphML, WireMark, D2, and Structurizr diagram editor. MCP returns source and an image to the agent.",
   "app.aiNewDiagram": "New diagram",
   "app.settings": "Settings",
   "app.library": "Library",

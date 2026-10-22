@@ -1,7 +1,7 @@
 {
   "name": "Code2Graph",
   "short_name": "Code2Graph",
-  "description": "Кросс-платформенный оффлайн генератор PlantUML диаграмм",
+  "description": "Редактор диаграмм PlantUML, Mermaid, GraphML, WireMark, D2 и Structurizr. MCP возвращает исходник и изображение.",
   "id": "./",
   "start_url": "./index.html",
   "scope": "./",

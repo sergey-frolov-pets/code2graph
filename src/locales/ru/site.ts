@@ -11,7 +11,7 @@ export const siteMessages = {
 
   "site.landingTitle": "Code2Graph",
   "site.landingSubtitle":
-    "PWA-студия для PlantUML, Mermaid и GraphML: ИИ, конвертер форматов, редактор и хранилище — на любых устройствах, даже без интернета.",
+    "PWA-студия для PlantUML, Mermaid, GraphML, WireMark, D2 и Structurizr. MCP для агентов возвращает исходник и изображение.",
   "site.landingCtaApp": "Открыть редактор",
   "site.landingCtaInstallPwa": "📲 Установить PWA",
   "site.landingCtaRegister": "Регистрация",
@@ -21,7 +21,7 @@ export const siteMessages = {
 
   "site.hero.title": "Текстовые диаграммы в браузере",
   "site.hero.subtitle":
-    "Пишите схему и сразу смотрите её. PlantUML, Mermaid, GraphML, WireMark, D2 и Structurizr — в том числе без интернета.",
+    "Пишите схему и сразу смотрите её. PlantUML, Mermaid, GraphML, WireMark, D2 и Structurizr — в том числе без интернета. Агенту MCP отдаёт исходник и изображение.",
   "site.offlineNote": "Редактирование и просмотр работают без сети.",
   "site.languages.title": "Языки",
   "site.language.sites": "Сайты",
@@ -157,19 +157,23 @@ export const siteMessages = {
   "site.backHome": "На главную",
   "site.mcp.title": "MCP для агентов",
   "site.mcp.lead":
-    "Агент описывает диаграмму словами. Code2Graph выбирает язык и возвращает исходник PlantUML, Mermaid, GraphML, WireMark, D2 или Structurizr.",
+    "Агент описывает диаграмму словами. Code2Graph выбирает язык и возвращает исходник и изображение PlantUML, Mermaid, GraphML, WireMark, D2 или Structurizr.",
   "site.mcp.pointPlan": "plan_diagram выбирает язык и тип диаграммы.",
-  "site.mcp.pointGenerate": "generate_diagram возвращает исходник.",
+  "site.mcp.pointGenerate": "generate_diagram возвращает исходник и изображение.",
+  "site.mcp.exampleCaption":
+    "Ответ generate_diagram — это исходник, который открывается в редакторе, и готовое изображение диаграммы.",
+  "site.mcp.exampleSource": "Исходник",
+  "site.mcp.exampleImage": "Изображение",
   "site.mcp.pointLanguages": "Те же шесть языков, что в редакторе и в мастере.",
   "site.mcp.openPage": "Как подключить MCP",
   "site.mcp.pageTitle": "Code2Graph MCP",
   "site.mcp.summary":
-    "MCP-сервер даёт Cursor и другим агентам запросить диаграмму у Code2Graph. По тексту запроса выбирается язык, в ответ приходит исходник, который открывается в редакторе.",
+    "MCP-сервер даёт Cursor и другим агентам запросить диаграмму у Code2Graph. По тексту запроса выбирается язык, в ответ приходят исходник и изображение диаграммы.",
   "site.mcp.toolsTitle": "Инструменты",
   "site.mcp.toolList": "языки сайта и типы диаграмм для каждого.",
   "site.mcp.toolPlan": "язык и тип по фразе, без исходника.",
   "site.mcp.toolGenerate":
-    "исходник диаграммы. Если задан CODE2GRAPH_API_URL, запрос идёт на сервер, иначе тот же шаблон собирается локально.",
+    "исходник и изображение. Если задан CODE2GRAPH_API_URL, исходник запрашивается на сервере, иначе шаблон собирается локально. Картинка — отдельный блок: PlantUML, D2 и Structurizr рисует Kroki, Mermaid — mermaid.ink, GraphML и WireMark — локально.",
   "site.mcp.connectTitle": "Подключение в Cursor",
   "site.mcp.connectText":
     "Запускайте скрипт из копии этого репозитория. Подставьте свой путь. Без адреса генерация локальная, с адресом — через серверную версию сайта.",

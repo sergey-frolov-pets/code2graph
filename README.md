@@ -1,6 +1,6 @@
 # Code2Graph
 
-Кросс-платформенный оффлайн генератор PlantUML диаграмм на Vue 3 + `@plantuml/core` (Smetana).
+Редактор текстовых диаграмм в браузере: PlantUML, Mermaid, GraphML, WireMark, D2 и Structurizr (Vue 3). MCP для Cursor и других агентов возвращает исходник и изображение диаграммы.
 
 **Сайт:** [puml.sergey-frolov.ru](https://puml.sergey-frolov.ru/)
 
