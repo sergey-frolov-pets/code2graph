@@ -6,7 +6,11 @@ import {
   type CodeFoldRegion,
   type VisibleLine,
 } from "@/utils/code-folds";
-import { EDITOR_HIGHLIGHT_DEBOUNCE_MS, EDITOR_VIRTUAL_LINE_THRESHOLD } from "@/constants/editor-settings";
+import {
+  EDITOR_HIGHLIGHT_DEBOUNCE_MS,
+  EDITOR_TAB_SIZE,
+  EDITOR_VIRTUAL_LINE_THRESHOLD,
+} from "@/constants/editor-settings";
 import { getFormatHandler } from "@/formats";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 
@@ -147,6 +151,7 @@ export function useEditorDisplayModel(options: {
     "--editor-font-family": editorFontFamily.value,
     "--editor-line-height": String(EDITOR_LINE_HEIGHT),
     "--editor-padding": EDITOR_PADDING,
+    "--editor-tab-size": String(EDITOR_TAB_SIZE),
     "--gutter-chars": String(gutterDigitCount.value),
     "--gutter-padding-inline": GUTTER_PADDING_INLINE,
     "--fold-toggle-width": FOLD_TOGGLE_WIDTH,

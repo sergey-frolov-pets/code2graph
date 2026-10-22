@@ -46,7 +46,7 @@
   font-family: var(--editor-font-family, var(--font-mono));
   font-size: var(--editor-font-size);
   line-height: var(--editor-line-height);
-  tab-size: 2;
+  tab-size: var(--editor-tab-size);
   white-space: pre;
   overflow: auto;
 }

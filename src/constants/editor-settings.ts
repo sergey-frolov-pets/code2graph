@@ -60,6 +60,9 @@ export const DEFAULT_EDITOR_SYNTAX_HIGHLIGHT = true;
 /** Debounce delay before recomputing syntax highlight HTML in the editor. */
 export const EDITOR_HIGHLIGHT_DEBOUNCE_MS = 50;
 
+/** Width of one Tab stop in the code editor. Exposed as --editor-tab-size. */
+export const EDITOR_TAB_SIZE = 2;
+
 /** Enable content-visibility optimization when the document exceeds this line count. */
 export const EDITOR_VIRTUAL_LINE_THRESHOLD = 200;
 export const DEFAULT_EDITOR_AUTOCOMPLETE = true;

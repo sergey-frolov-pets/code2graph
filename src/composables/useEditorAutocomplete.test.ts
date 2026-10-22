@@ -81,4 +81,58 @@ describe("useEditorAutocomplete", () => {
     expect(prevented).toBe(false);
     expect(enterEvent.defaultPrevented).toBe(false);
   });
+
+  it("accepts the active suggestion on Tab", () => {
+    const source = ref("@startuml\nif");
+    textarea.value = source.value;
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+    const autocomplete = useEditorAutocomplete({
+      source,
+      diagramFormat: ref("plantuml"),
+      folds: ref([]),
+      textareaRef: ref(textarea),
+      editorFontSize: ref("14px"),
+      enabled: ref(true),
+    });
+
+    autocomplete.refresh();
+
+    const tabEvent = new KeyboardEvent("keydown", {
+      key: "Tab",
+      bubbles: true,
+      cancelable: true,
+    });
+    const handled = autocomplete.handleKeydown(tabEvent);
+
+    expect(autocomplete.isOpen.value).toBe(false);
+    expect(handled).toBe(true);
+    expect(tabEvent.defaultPrevented).toBe(true);
+    expect(source.value.startsWith("@startuml\n")).toBe(true);
+    expect(source.value).not.toBe("@startuml\nif");
+  });
+
+  it("leaves Tab to the editor when suggestions are closed", () => {
+    const source = ref("@startuml\nAlice -> Bob");
+    textarea.value = source.value;
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+    const autocomplete = useEditorAutocomplete({
+      source,
+      diagramFormat: ref("plantuml"),
+      folds: ref([]),
+      textareaRef: ref(textarea),
+      editorFontSize: ref("14px"),
+      enabled: ref(true),
+    });
+
+    const tabEvent = new KeyboardEvent("keydown", { key: "Tab", bubbles: true });
+    const handled = autocomplete.handleKeydown(tabEvent);
+
+    expect(handled).toBe(false);
+    expect(tabEvent.defaultPrevented).toBe(false);
+    expect(source.value).toBe("@startuml\nAlice -> Bob");
+  });
 });
