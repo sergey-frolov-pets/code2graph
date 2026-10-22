@@ -70,11 +70,13 @@ export {
   MERMAID_SAMPLE_IDS,
   WIREMARK_SAMPLE_IDS,
   D2_SAMPLE_IDS,
+  GRAPHML_SAMPLE_IDS,
   STRUCTURIZR_SAMPLE_IDS,
   type PlantUmlSampleId,
   type MermaidSampleId,
   type WiremarkSampleId,
   type D2SampleId,
+  type GraphmlSampleId,
   type StructurizrSampleId,
   type SampleSelection,
 } from "@/constants/sample-diagrams";

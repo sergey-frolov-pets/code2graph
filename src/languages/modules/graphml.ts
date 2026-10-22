@@ -1,3 +1,4 @@
+import { graphmlSampleCatalog } from "@/constants/graphml-sample-diagrams";
 import { graphmlFormatHandler } from "@/formats/graphml/handler";
 import type { DiagramLanguageModule } from "@/languages/types";
 import { isCompleteGraphmlDocument } from "@/utils/graphml-source";
@@ -16,7 +17,7 @@ export const graphmlLanguageModule: DiagramLanguageModule = {
     supportsAiPatch: false,
     supportsAiSyntaxAsk: false,
     supportsSnippets: false,
-    supportsSamples: false,
+    supportsSamples: true,
     supportsSaveSource: true,
     supportsOnlineRender: false,
     supportsStructuralConversion: true,
@@ -33,7 +34,7 @@ export const graphmlLanguageModule: DiagramLanguageModule = {
   isFallbackFormat: false,
   supportsSyntaxHighlight: true,
   supportsAutocomplete: false,
-  samples: null,
+  samples: graphmlSampleCatalog,
   get handler() {
     return graphmlFormatHandler;
   },
