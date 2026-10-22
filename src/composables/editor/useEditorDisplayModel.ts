@@ -11,9 +11,11 @@ import { getFormatHandler } from "@/formats";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 
 export const EDITOR_LINE_HEIGHT = 1.45;
-export const FOLD_TOGGLE_WIDTH = "14px";
+export const FOLD_TOGGLE_WIDTH = "12px";
 export const EDITOR_PADDING = "12px";
-export const GUTTER_PADDING_INLINE = "6px";
+export const GUTTER_PADDING_INLINE = "2px";
+export const GUTTER_ITEM_GAP = "1px";
+export const GUTTER_BORDER_WIDTH = "1px";
 
 export interface GutterRow {
   key: string;
@@ -149,6 +151,8 @@ export function useEditorDisplayModel(options: {
     "--editor-padding": EDITOR_PADDING,
     "--gutter-chars": String(gutterDigitCount.value),
     "--gutter-padding-inline": GUTTER_PADDING_INLINE,
+    "--gutter-item-gap": GUTTER_ITEM_GAP,
+    "--gutter-border-width": GUTTER_BORDER_WIDTH,
     "--fold-toggle-width": FOLD_TOGGLE_WIDTH,
   }));
 
