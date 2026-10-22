@@ -4,10 +4,11 @@ import {
   type ConversionReport,
 } from "@/services/conversion/conversion-report";
 import type { ConversionModeKind, DiagramKind } from "@/services/conversion/diagram-ir";
-import { getConversionRouteRule } from "@/services/conversion/rules/conversion-matrix";
+import { getKindAwareRouteRule } from "@/services/conversion/kind-projection/kind-aware-route";
 
 export interface AnalyzeConversionLossesInput {
   kind: DiagramKind;
+  targetKind?: DiagramKind;
   sourceFormat: DiagramFormat;
   targetFormat: DiagramFormat;
   mode: ConversionModeKind;
@@ -24,10 +25,12 @@ export interface AnalyzeConversionLossesInput {
 export function analyzeConversionLosses(
   input: AnalyzeConversionLossesInput,
 ): ConversionReport {
-  const rule = getConversionRouteRule(
+  const targetKind = input.targetKind ?? input.kind;
+  const rule = getKindAwareRouteRule(
     input.kind,
     input.sourceFormat,
     input.targetFormat,
+    targetKind,
   );
 
   const lossIds = [...rule.lossIds];
@@ -78,6 +81,7 @@ export function analyzeConversionLosses(
     sourceFormat: input.sourceFormat,
     targetFormat: input.targetFormat,
     kind: input.kind,
+    targetKind,
     level: rule.level,
     blocked: rule.blocked || Boolean(input.parseError),
     lossIds: [...new Set(lossIds)],
