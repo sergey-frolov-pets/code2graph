@@ -6,8 +6,9 @@ export function buildConversionHeaderComment(
   report: ConversionReport,
   locale: AppLocale,
 ): string {
-  const from = report.sourceFormat;
-  const to = report.targetFormat;
+  const kindChanged = Boolean(report.targetKind && report.targetKind !== report.kind);
+  const from = kindChanged ? `${report.sourceFormat} (${report.kind})` : report.sourceFormat;
+  const to = kindChanged ? `${report.targetFormat} (${report.targetKind})` : report.targetFormat;
   const losses = report.lossIds.join(", ");
 
   if (locale === "ru") {

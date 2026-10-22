@@ -7,18 +7,51 @@ import {
   formatMermaidSankeyCsvField,
   sanitizeMermaidArchitectureLabel,
   toMermaidArchitectureServiceId,
+  toMermaidFlowchartId,
 } from "@/services/conversion/emit/mermaid-emit-utils";
 import { formatMermaidGitRef } from "@/utils/mermaid-gitgraph";
 import {
   emitPlantUmlComponentNode,
   escapePlantUmlQuoted,
   flattenPlantUmlLabel,
-  formatPlantUmlActivityLabel,
   formatPlantUmlEdgeSuffix,
 } from "@/services/conversion/emit/plantuml-emit-utils";
+import { emitPlantUmlActivityBody } from "@/services/conversion/emit/plantuml-activity-emit";
+import {
+  buildGraphIndex,
+  buildHierarchy,
+} from "@/services/conversion/graph/graph-analysis";
+
+const DEFAULT_HIERARCHY_ROOT_LABEL = "Diagram";
+const MERMAID_MINDMAP_MIN_INDENT_LEVEL = 2;
+const XYCHART_PLAIN_LABEL = /^[\p{L}\p{N}_]+$/u;
+const XYCHART_DEFAULT_Y_MAX = 100;
+const XYCHART_HEADROOM_RATIO = 1.1;
 
 function flowDirection(ir: DiagramIR): string {
   return ir.direction === "LR" ? "LR" : "TD";
+}
+
+/** Hierarchy items for mindmap/WBS emitters: parsed levels first, otherwise a spanning tree of the graph. */
+function resolveHierarchyItems(ir: DiagramIR): Array<{ level: number; label: string }> {
+  const wbsItems = ir.extras?.wbsItems;
+  if (wbsItems && wbsItems.length > 0) {
+    return wbsItems;
+  }
+  const rootLabel = ir.extras?.title || DEFAULT_HIERARCHY_ROOT_LABEL;
+  return buildHierarchy(ir, rootLabel).items;
+}
+
+function formatXychartLabel(label: string): string {
+  return XYCHART_PLAIN_LABEL.test(label) ? label : `"${escapeMermaidQuoted(label)}"`;
+}
+
+function resolveXychartMax(values: readonly number[]): number {
+  const finite = values.filter((value) => Number.isFinite(value));
+  if (finite.length === 0) {
+    return XYCHART_DEFAULT_Y_MAX;
+  }
+  return Math.ceil(Math.max(...finite) * XYCHART_HEADROOM_RATIO);
 }
 
 function wrapPlantUml(body: string): string {
@@ -27,23 +60,14 @@ function wrapPlantUml(body: string): string {
 
 export function emitMermaidMindmap(ir: DiagramIR): string {
   const lines = ["mindmap"];
-  const wbsItems = ir.extras?.wbsItems;
-  if (wbsItems && wbsItems.length > 0) {
-    const rootItem = wbsItems[0];
+  const items = resolveHierarchyItems(ir);
+  const [rootItem, ...childItems] = items;
+  if (rootItem) {
     lines.push(`  root((${escapeMermaidQuoted(rootItem.label)}))`);
-    for (const item of wbsItems.slice(1)) {
-      const indent = "  ".repeat(Math.max(2, item.level));
-      lines.push(`${indent}${escapeMermaidQuoted(item.label)}`);
-    }
-    return lines.join("\n");
   }
-
-  const root = ir.nodes[0];
-  if (root) {
-    lines.push(`  root((${escapeMermaidQuoted(root.label)}))`);
-  }
-  for (const node of ir.nodes.slice(1)) {
-    lines.push(`    ${escapeMermaidQuoted(node.label)}`);
+  for (const item of childItems) {
+    const indent = "  ".repeat(Math.max(MERMAID_MINDMAP_MIN_INDENT_LEVEL, item.level));
+    lines.push(`${indent}${escapeMermaidQuoted(item.label)}`);
   }
   return lines.join("\n");
 }
@@ -136,9 +160,10 @@ export function emitMermaidTimeline(ir: DiagramIR): string {
 
 export function emitMermaidSankey(ir: DiagramIR): string {
   const lines = ["sankey-beta"];
+  const { nodeById } = buildGraphIndex(ir);
   const flows = ir.extras?.sankeyFlows ?? ir.edges.map((edge) => ({
-    source: ir.nodes.find((node) => node.id === edge.source)?.label ?? edge.source,
-    target: ir.nodes.find((node) => node.id === edge.target)?.label ?? edge.target,
+    source: nodeById.get(edge.source)?.label ?? edge.source,
+    target: nodeById.get(edge.target)?.label ?? edge.target,
     value: Number(edge.label ?? 10) || 10,
   }));
   for (const flow of flows) {
@@ -156,14 +181,19 @@ export function emitMermaidXychart(ir: DiagramIR): string {
     lines.push(`    title "${escapeMermaidQuoted(ir.extras.title)}"`);
   }
   const xLabels = chart?.xLabels ?? ir.nodes.map((node) => node.label);
-  lines.push(`    x-axis [${xLabels.join(", ")}]`);
-  lines.push(`    y-axis "${chart?.yAxis ?? "Value"}" ${chart?.yMin ?? 0} --> ${chart?.yMax ?? 100}`);
+  const fallbackBar = xLabels.map((_, index) => (index + 1) * 10);
+  const series = [...(chart?.bar ?? []), ...(chart?.line ?? [])];
+  const yMax = chart?.yMax ?? resolveXychartMax(series.length > 0 ? series : fallbackBar);
+  lines.push(`    x-axis [${xLabels.map(formatXychartLabel).join(", ")}]`);
+  lines.push(`    y-axis "${escapeMermaidQuoted(chart?.yAxis ?? "Value")}" ${chart?.yMin ?? 0} --> ${yMax}`);
   if (chart?.bar) {
     lines.push(`    bar [${chart.bar.join(", ")}]`);
-  } else if (chart?.line) {
+  }
+  if (chart?.line) {
     lines.push(`    line [${chart.line.join(", ")}]`);
-  } else {
-    lines.push(`    bar [${xLabels.map((_, index) => (index + 1) * 10).join(", ")}]`);
+  }
+  if (!chart?.bar && !chart?.line) {
+    lines.push(`    bar [${fallbackBar.join(", ")}]`);
   }
   return lines.join("\n");
 }
@@ -325,7 +355,7 @@ function renderMermaidNodeLine(node: DiagramIR["nodes"][number], indent = "  "):
         : node.kind === "system" && /db|database|sql|база|бд/i.test(node.label)
           ? `[("${escapeMermaidQuoted(node.label)}")]`
           : formatMermaidNodeLabel(node.label);
-  return `${indent}${node.id}${shape}`;
+  return `${indent}${toMermaidFlowchartId(node.id)}${shape}`;
 }
 
 export function emitMermaidFlowchart(ir: DiagramIR): string {
@@ -341,7 +371,7 @@ export function emitMermaidFlowchart(ir: DiagramIR): string {
       continue;
     }
     const groupLabel = escapeMermaidQuoted(group.label ?? group.id);
-    lines.push(`  subgraph ${group.id}["${groupLabel}"]`);
+    lines.push(`  subgraph ${toMermaidFlowchartId(group.id)}["${groupLabel}"]`);
     for (const node of groupNodes) {
       lines.push(renderMermaidNodeLine(node, "    "));
       groupedNodeIds.add(node.id);
@@ -359,7 +389,7 @@ export function emitMermaidFlowchart(ir: DiagramIR): string {
   for (const edge of ir.edges) {
     const arrow = edge.kind === "dashed" ? "-.->" : "-->";
     const label = edge.label ? `|${escapeMermaidQuoted(edge.label)}|` : "";
-    lines.push(`  ${edge.source} ${arrow}${label} ${edge.target}`);
+    lines.push(`  ${toMermaidFlowchartId(edge.source)} ${arrow}${label} ${toMermaidFlowchartId(edge.target)}`);
   }
   return lines.join("\n");
 }
@@ -403,11 +433,7 @@ export function emitPlantUmlMindmap(ir: DiagramIR): string {
   if (ir.direction === "LR") {
     lines.push("left to right direction");
   }
-  const items = ir.extras?.wbsItems ?? ir.nodes.map((node, index) => ({
-    level: index === 0 ? 1 : 2,
-    label: node.label,
-  }));
-  for (const item of items) {
+  for (const item of resolveHierarchyItems(ir)) {
     lines.push(`${"*".repeat(Math.max(1, item.level))} ${flattenPlantUmlLabel(item.label)}`);
   }
   lines.push("@endmindmap");
@@ -504,11 +530,7 @@ export function emitPlantUmlTiming(ir: DiagramIR): string {
 
 export function emitPlantUmlWbs(ir: DiagramIR): string {
   const lines = ["@startwbs"];
-  const items = ir.extras?.wbsItems ?? ir.nodes.map((node, index) => ({
-    level: index === 0 ? 1 : 2,
-    label: node.label,
-  }));
-  for (const item of items) {
+  for (const item of resolveHierarchyItems(ir)) {
     lines.push(`${"*".repeat(Math.max(1, item.level))} ${flattenPlantUmlLabel(item.label)}`);
   }
   lines.push("@endwbs");
@@ -591,19 +613,7 @@ export function emitPlantUmlGraph(ir: DiagramIR): string {
 }
 
 export function emitPlantUmlActivity(ir: DiagramIR): string {
-  const lines = ["start"];
-  let currentGroupId: string | undefined;
-  const groupById = new Map((ir.groups ?? []).map((g) => [g.id, g.label || g.id]));
-
-  for (const node of ir.nodes) {
-    if (node.groupId && node.groupId !== currentGroupId && groupById.has(node.groupId)) {
-      currentGroupId = node.groupId;
-      lines.push(`|${flattenPlantUmlLabel(groupById.get(node.groupId)!)}|`);
-    }
-    lines.push(`:${formatPlantUmlActivityLabel(node.label)};`);
-  }
-  lines.push("stop");
-  return wrapPlantUml(lines.join("\n"));
+  return wrapPlantUml(emitPlantUmlActivityBody(ir).join("\n"));
 }
 
 export function emitPlantUmlGantt(ir: DiagramIR): string {
@@ -614,6 +624,7 @@ export function emitPlantUmlGantt(ir: DiagramIR): string {
     "project starts 2026-01-06",
     "",
   ];
+  const graph = buildGraphIndex(ir);
   ir.nodes.forEach((node, index) => {
     const label = flattenPlantUmlLabel(node.label) || node.id;
     const rawDuration = String(node.semantic?.duration ?? "3 days");
@@ -635,9 +646,9 @@ export function emitPlantUmlGantt(ir: DiagramIR): string {
       lines.push(`[${label}] lasts ${durationText}`);
       return;
     }
-    const incoming = ir.edges.find((e) => e.target === node.id);
+    const incoming = graph.incoming.get(node.id)?.[0];
     const depNode = incoming
-      ? ir.nodes.find((n) => n.id === incoming.source)
+      ? graph.nodeById.get(incoming.source)
       : ir.nodes[index - 1];
     const prevLabel = depNode ? flattenPlantUmlLabel(depNode.label) || depNode.id : label;
     lines.push(`[${label}] lasts ${durationText} and starts at [${prevLabel}]'s end`);
@@ -655,6 +666,7 @@ export function emitMermaidGantt(ir: DiagramIR): string {
     "section Tasks",
   ];
   let currentSection = "Tasks";
+  const graph = buildGraphIndex(ir);
 
   ir.nodes.forEach((node, index) => {
     const section = node.semantic?.section ? String(node.semantic.section) : undefined;
@@ -679,8 +691,7 @@ export function emitMermaidGantt(ir: DiagramIR): string {
       lines.push(`${label} :${node.id}, ${start}, ${dur}`);
       return;
     }
-    const incoming = ir.edges.find((e) => e.target === node.id);
-    const prevId = incoming?.source ?? ir.nodes[index - 1].id;
+    const prevId = graph.incoming.get(node.id)?.[0]?.source ?? ir.nodes[index - 1].id;
     lines.push(`${label} :${node.id}, after ${prevId}, ${dur}`);
   });
   return lines.join("\n");
