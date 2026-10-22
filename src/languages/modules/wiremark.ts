@@ -1,5 +1,6 @@
 import { wiremarkSampleCatalog } from "@/constants/wiremark-sample-diagrams";
 import { wiremarkFormatHandler } from "@/formats/wiremark/handler";
+import { wiremarkLanguageKeywords } from "@/languages/keywords/wiremark";
 import type { DiagramLanguageModule } from "@/languages/types";
 import {
   isCompleteWiremarkDocument,
@@ -36,7 +37,8 @@ export const wiremarkLanguageModule: DiagramLanguageModule = {
   detectPriority: 10,
   isFallbackFormat: false,
   supportsSyntaxHighlight: true,
-  supportsAutocomplete: false,
+  supportsAutocomplete: true,
+  keywords: wiremarkLanguageKeywords,
   samples: wiremarkSampleCatalog,
   get handler() {
     return wiremarkFormatHandler;

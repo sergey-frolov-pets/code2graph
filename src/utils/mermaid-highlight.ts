@@ -85,6 +85,10 @@ const KEYWORDS = new Set([
 
 const DIRECTIONS = new Set(["tb", "td", "bt", "lr", "rl"]);
 
+export const MERMAID_DIAGRAM_KEYWORDS = DIAGRAM_KEYWORDS;
+export const MERMAID_KEYWORDS = KEYWORDS;
+export const MERMAID_DIRECTIONS = DIRECTIONS;
+
 const ARROW_PATTERNS: Array<{ pattern: RegExp; type: HighlightTokenType }> = [
   { pattern: /\|\|[-=ox.]*\|\|/g, type: "arrow" },
   { pattern: /[xo]--[xo]/g, type: "arrow" },

@@ -1,37 +1,9 @@
+import { STRUCTURIZR_KEYWORD_SET } from "@/languages/keywords/structurizr";
 import {
   escapeHtml,
   type HighlightToken,
   type HighlightTokenType,
 } from "@/utils/plantuml-highlight";
-
-const STRUCTURIZR_KEYWORDS = new Set([
-  "workspace",
-  "model",
-  "views",
-  "person",
-  "softwaresystem",
-  "container",
-  "component",
-  "deploymentnode",
-  "deploymentenvironment",
-  "containerinstance",
-  "softwaresysteminstance",
-  "infrastructurenode",
-  "group",
-  "include",
-  "exclude",
-  "autolayout",
-  "styles",
-  "element",
-  "relationship",
-  "tags",
-  "description",
-  "technology",
-  "properties",
-  "theme",
-  "configuration",
-  "title",
-]);
 
 const STRUCTURIZR_ARROW = /^->/;
 
@@ -100,7 +72,7 @@ export function highlightStructurizrLine(line: string): HighlightToken[] {
     if (/[A-Za-z_!]/.test(current)) {
       const word = line.slice(index).match(/^[!A-Za-z_][\w]*/);
       if (word) {
-        const keyword = STRUCTURIZR_KEYWORDS.has(word[0].toLowerCase());
+        const keyword = STRUCTURIZR_KEYWORD_SET.has(word[0].toLowerCase());
         const directive = word[0].startsWith("!");
         pushToken(
           tokens,

@@ -12,5 +12,9 @@ describe("structurizr highlight", () => {
 
     const keyword = renderStructurizrHighlightedLine("workspace {");
     expect(keyword).toContain("tok-keyword");
+
+    const element = renderStructurizrHighlightedLine("softwareSystem api");
+    expect(element).toContain("tok-keyword");
+    expect(element).toContain("softwareSystem");
   });
 });

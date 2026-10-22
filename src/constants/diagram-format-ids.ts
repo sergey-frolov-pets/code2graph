@@ -1,7 +1,7 @@
 /**
  * Editor format ids. To add a language:
  * 1. Append its id here.
- * 2. Add a module in `src/languages/modules` and register it in `src/languages/registry.ts`.
+ * 2. Add a module in `src/languages/modules` with a `keywords` catalog and register it in `src/languages/registry.ts`.
  * 3. Add `samples.<id>.*` strings and any UI keys the module references.
  */
 export const DIAGRAM_FORMATS = [

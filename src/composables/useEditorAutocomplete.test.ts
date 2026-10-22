@@ -58,6 +58,29 @@ describe("useEditorAutocomplete", () => {
     expect(autocomplete.hasSuggestions.value).toBe(true);
   });
 
+  it("opens D2 keyword suggestions from the shared engine", () => {
+    const source = ref("dire");
+    textarea.value = source.value;
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+    const autocomplete = useEditorAutocomplete({
+      source,
+      diagramFormat: ref("d2"),
+      folds: ref([]),
+      textareaRef: ref(textarea),
+      editorFontSize: ref("14px"),
+      enabled: ref(true),
+    });
+
+    autocomplete.refresh();
+
+    expect(autocomplete.isOpen.value).toBe(true);
+    expect(
+      autocomplete.suggestions.value.some((item) => item.label === "direction"),
+    ).toBe(true);
+  });
+
   it("does not block Enter when prefix is shorter than two characters", () => {
     const source = ref("@startuml\ni");
     textarea.value = source.value;

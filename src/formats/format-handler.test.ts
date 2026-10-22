@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { DIAGRAM_FORMATS } from "@/constants/diagram-format-ids";
+import { DIAGRAM_FORMATS, type DiagramFormat } from "@/constants/diagram-format-ids";
 import {
   d2FormatHandler,
+  extractDiagramCompletionPrefix,
+  getDiagramCompletions,
   getFormatHandler,
   structurizrFormatHandler,
   graphmlFormatHandler,
@@ -9,6 +11,8 @@ import {
   plantUmlFormatHandler,
   wiremarkFormatHandler,
 } from "@/formats";
+import { getLanguageModule } from "@/languages/registry";
+import type { CompletionQuery } from "@/utils/completion-types";
 
 describe("FormatHandler", () => {
   it("highlights PlantUML directives", () => {
@@ -74,6 +78,50 @@ describe("FormatHandler", () => {
       expect(typeof getFormatHandler(format).render).toBe("function");
       expect(typeof getFormatHandler(format).bootEngine).toBe("function");
       expect(typeof getFormatHandler(format).isEngineReady).toBe("function");
+    }
+  });
+
+  it("offers keyword hints for every language through one engine", () => {
+    const samples: Record<
+      DiagramFormat,
+      { line: string; label: string; insertText?: string }
+    > = {
+      plantuml: { line: "spr", label: "sprite" },
+      mermaid: { line: "cli", label: "click" },
+      d2: { line: "dire", label: "direction", insertText: "direction: " },
+      structurizr: { line: "soft", label: "softwareSystem", insertText: "softwareSystem " },
+      graphml: { line: "<nod", label: "node" },
+      wiremark: { line: "But", label: "Button", insertText: "Button " },
+    };
+
+    for (const format of DIAGRAM_FORMATS) {
+      const language = getLanguageModule(format);
+      const sample = samples[format];
+      expect(language.keywords.length).toBeGreaterThan(0);
+      expect(language.supportsAutocomplete).toBe(true);
+
+      const prefix = extractDiagramCompletionPrefix(
+        format,
+        sample.line,
+        sample.line.length,
+      );
+      const query: CompletionQuery = {
+        lines: [sample.line],
+        lineNumber: 1,
+        column: sample.line.length,
+        prefix: prefix.prefix,
+        prefixInfo: prefix,
+      };
+      const items = getDiagramCompletions(format, query);
+      const match = items.find((item) => item.label === sample.label);
+
+      expect(prefix.prefix.toLowerCase()).toBe(
+        sample.line.replace(/^</, "").toLowerCase(),
+      );
+      expect(match).toBeDefined();
+      if (sample.insertText) {
+        expect(match?.insertText).toBe(sample.insertText);
+      }
     }
   });
 });
