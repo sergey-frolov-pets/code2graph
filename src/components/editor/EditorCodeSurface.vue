@@ -5,11 +5,15 @@ import type { VisibleEditorLine } from "@/composables/editor/useEditorDisplayMod
 import type { useEditorAutocomplete } from "@/composables/useEditorAutocomplete";
 import type { CompletionKind } from "@/utils/completion-types";
 import type { CodeFoldRegion } from "@/utils/code-folds";
-import { mergeDisplayTextIntoSource } from "@/utils/code-folds";
+import {
+  mapSourceOffsetToDisplayOffset,
+  mergeDisplayTextIntoSource,
+} from "@/utils/code-folds";
 import { applyDisplayedEditorTab } from "@/utils/editor-indent";
 import { isSnippetsHotkey } from "@/constants/snippets-settings";
 import { getLanguageModule } from "@/languages/registry";
 import { detectDiagramFormat } from "@/utils/diagram-format";
+import { applyEnterAtLineEnd } from "@/utils/editor-enter-indent";
 
 const props = defineProps<{
   source: string;
@@ -158,6 +162,86 @@ function onTextareaKeydown(event: KeyboardEvent): void {
   if (isSnippetsHotkey(event)) {
     event.preventDefault();
     emit("toggleSnippets");
+    return;
+  }
+
+  tryContinueIndentOnEnter(event);
+}
+
+function tryContinueIndentOnEnter(event: KeyboardEvent): void {
+  if (!isPlainEnter(event) || props.readOnly) {
+    return;
+  }
+
+  const textarea = textareaRef.value;
+  if (!textarea || textarea.selectionStart !== textarea.selectionEnd) {
+    return;
+  }
+
+  const edited = applyEnterAtLineEnd(
+    textarea.value,
+    textarea.selectionStart,
+    props.source,
+    props.folds,
+  );
+  if (!edited) {
+    return;
+  }
+
+  event.preventDefault();
+  const sourceCursor = edited.sourceCursor;
+  emit("update:source", edited.source);
+
+  void nextTick(() => {
+    const el = textareaRef.value;
+    if (!el) {
+      return;
+    }
+
+    const displayCursor = mapSourceOffsetToDisplayOffset(
+      sourceCursor,
+      props.source,
+      props.folds,
+    );
+    el.focus();
+    el.setSelectionRange(displayCursor, displayCursor);
+    revealCaret(el, displayCursor);
+    props.autocomplete.refresh();
+    emit("select");
+  });
+}
+
+function isPlainEnter(event: KeyboardEvent): boolean {
+  return (
+    event.key === "Enter" &&
+    !event.shiftKey &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.isComposing
+  );
+}
+
+function revealCaret(textarea: HTMLTextAreaElement, caret: number): void {
+  const lineIndex = textarea.value.slice(0, caret).split("\n").length - 1;
+  const style = getComputedStyle(textarea);
+  const lineHeight = Number.parseFloat(style.lineHeight);
+  if (!Number.isFinite(lineHeight) || lineHeight <= 0) {
+    return;
+  }
+
+  const paddingTop = Number.parseFloat(style.paddingTop);
+  const topInset = Number.isFinite(paddingTop) ? paddingTop : 0;
+  const caretTop = topInset + lineIndex * lineHeight;
+  const caretBottom = caretTop + lineHeight;
+
+  if (caretTop < textarea.scrollTop) {
+    textarea.scrollTop = caretTop;
+    return;
+  }
+
+  if (caretBottom > textarea.scrollTop + textarea.clientHeight) {
+    textarea.scrollTop = caretBottom - textarea.clientHeight;
   }
 }
 
