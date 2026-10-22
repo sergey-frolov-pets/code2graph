@@ -1,34 +1,9 @@
+import { D2_KEYWORD_SET } from "@/languages/keywords/d2";
 import {
   escapeHtml,
   type HighlightToken,
   type HighlightTokenType,
 } from "@/utils/plantuml-highlight";
-
-const D2_KEYWORDS = new Set([
-  "direction",
-  "shape",
-  "style",
-  "class",
-  "classes",
-  "constraint",
-  "label",
-  "icon",
-  "tooltip",
-  "link",
-  "near",
-  "width",
-  "height",
-  "grid-rows",
-  "grid-columns",
-  "grid-gap",
-  "animated",
-  "fill",
-  "stroke",
-  "opacity",
-  "bold",
-  "italic",
-  "underline",
-]);
 
 const D2_ARROW = /^(<->|->|<-|--)/;
 
@@ -92,7 +67,7 @@ export function highlightD2Line(line: string): HighlightToken[] {
       if (word) {
         pushToken(
           tokens,
-          D2_KEYWORDS.has(word[0]) ? "keyword" : "plain",
+          D2_KEYWORD_SET.has(word[0]) ? "keyword" : "plain",
           word[0],
         );
         index += word[0].length;

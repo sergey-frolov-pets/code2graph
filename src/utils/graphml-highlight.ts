@@ -1,21 +1,15 @@
 import {
+  GRAPHML_ELEMENT_TAGS,
+  GRAPHML_ROOT_TAGS,
+} from "@/languages/keywords/graphml";
+import {
   escapeHtml,
   type HighlightToken,
   type HighlightTokenType,
 } from "@/utils/plantuml-highlight";
 
-const ROOT_TAGS = new Set(["graphml", "graph"]);
-const ELEMENT_TAGS = new Set([
-  "node",
-  "edge",
-  "key",
-  "data",
-  "desc",
-  "loc",
-  "port",
-  "hyperedge",
-  "endpoint",
-]);
+const ROOT_TAGS = new Set<string>(GRAPHML_ROOT_TAGS);
+const ELEMENT_TAGS = new Set<string>(GRAPHML_ELEMENT_TAGS);
 
 const ATTRIBUTE_PATTERN =
   /\s+([A-Za-z_:][\w:.-]*)(?:\s*=\s*("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[^\s/>]+))?/g;

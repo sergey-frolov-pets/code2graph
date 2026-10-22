@@ -5,6 +5,8 @@ import { mermaidLanguageModule } from "@/languages/modules/mermaid";
 import { plantumlLanguageModule } from "@/languages/modules/plantuml";
 import { structurizrLanguageModule } from "@/languages/modules/structurizr";
 import { wiremarkLanguageModule } from "@/languages/modules/wiremark";
+import type { FormatHandler } from "@/formats/types";
+import { withKeywordCompletions } from "@/languages/keyword-completion";
 import type {
   DiagramFormatDefinition,
   DiagramLanguageModule,
@@ -18,6 +20,45 @@ export const DIAGRAM_LANGUAGE_MODULES = [
   d2LanguageModule,
   structurizrLanguageModule,
 ] as const satisfies readonly DiagramLanguageModule[];
+
+const connectedHandlers = new Map<DiagramFormat, FormatHandler>();
+
+// Wrap on first read. Handlers and the registry import each other through
+// syntax helpers, so the raw handler binding can still be unset while this
+// module is evaluating.
+for (const languageModule of DIAGRAM_LANGUAGE_MODULES) {
+  const readRawHandler = Object.getOwnPropertyDescriptor(
+    languageModule,
+    "handler",
+  )?.get;
+
+  Object.defineProperty(languageModule, "handler", {
+    configurable: true,
+    enumerable: true,
+    get() {
+      const cached = connectedHandlers.get(languageModule.id);
+      if (cached) {
+        return cached;
+      }
+
+      const rawHandler = readRawHandler?.call(languageModule) as
+        | FormatHandler
+        | undefined;
+      if (!rawHandler) {
+        throw new Error(
+          `Diagram language "${languageModule.id}" has no format handler`,
+        );
+      }
+
+      const connected = withKeywordCompletions(
+        rawHandler,
+        languageModule.keywords,
+      );
+      connectedHandlers.set(languageModule.id, connected);
+      return connected;
+    },
+  });
+}
 
 const modulesById = Object.fromEntries(
   DIAGRAM_LANGUAGE_MODULES.map((module) => [module.id, module]),

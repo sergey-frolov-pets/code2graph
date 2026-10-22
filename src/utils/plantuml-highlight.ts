@@ -208,6 +208,11 @@ const MULTI_WORD_KEYWORDS: Array<{ pattern: RegExp; text: string }> = [
   { pattern: /\bend group\b/gi, text: "end group" },
 ];
 
+export const PLANTUML_KEYWORDS: ReadonlySet<string> = KEYWORDS;
+
+export const PLANTUML_MULTI_WORD_KEYWORDS: readonly string[] =
+  MULTI_WORD_KEYWORDS.map((entry) => entry.text);
+
 const NAMED_COLORS = new Set([
   "aliceblue",
   "antiquewhite",

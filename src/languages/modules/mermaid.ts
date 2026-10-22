@@ -1,5 +1,6 @@
 import { mermaidSampleCatalog } from "@/constants/mermaid-sample-diagrams";
 import { mermaidFormatHandler } from "@/formats/mermaid/handler";
+import { mermaidLanguageKeywords } from "@/languages/keywords/mermaid";
 import type { DiagramLanguageModule } from "@/languages/types";
 import { isCompleteMermaidDiagram } from "@/utils/mermaid-source";
 
@@ -37,6 +38,7 @@ export const mermaidLanguageModule: DiagramLanguageModule = {
   isFallbackFormat: false,
   supportsSyntaxHighlight: true,
   supportsAutocomplete: true,
+  keywords: mermaidLanguageKeywords,
   onlineProbe: "mermaid",
   samples: mermaidSampleCatalog,
   get handler() {

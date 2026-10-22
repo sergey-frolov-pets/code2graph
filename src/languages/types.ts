@@ -37,8 +37,22 @@ export interface DiagramLanguageGuide {
 }
 
 /**
+ * One keyword the shared completion engine can suggest.
+ * Catalogs live next to the language module and are the only place
+ * a newly connected language has to list its words.
+ */
+export interface LanguageKeyword {
+  label: string;
+  insertText?: string;
+  kind?: "keyword" | "directive" | "preprocessor";
+  detailKey?: LocaleKey;
+}
+
+/**
  * Everything a new diagram language needs besides locale strings.
  * Register the object in `src/languages/registry.ts`.
+ * `keywords` is required: the registry attaches one completion engine
+ * to every module, so keyword hints appear for every language.
  */
 export interface DiagramLanguageModule {
   id: DiagramFormat;
@@ -56,6 +70,8 @@ export interface DiagramLanguageModule {
   isFallbackFormat: boolean;
   supportsSyntaxHighlight: boolean;
   supportsAutocomplete: boolean;
+  /** Keyword hints served by the shared completion engine. */
+  keywords: readonly LanguageKeyword[];
   onlineProbe?: "plantuml" | "mermaid";
   samples: SampleCatalog | null;
   handler: FormatHandler;

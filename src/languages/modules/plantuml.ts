@@ -1,5 +1,6 @@
 import { plantUmlFormatHandler } from "@/formats/plantuml/handler";
 import { plantUmlSampleCatalog } from "@/constants/plantuml-sample-diagrams";
+import { plantumlLanguageKeywords } from "@/languages/keywords/plantuml";
 import type { DiagramLanguageModule } from "@/languages/types";
 
 const PLANTUML_START =
@@ -36,6 +37,7 @@ export const plantumlLanguageModule: DiagramLanguageModule = {
   isFallbackFormat: true,
   supportsSyntaxHighlight: true,
   supportsAutocomplete: true,
+  keywords: plantumlLanguageKeywords,
   onlineProbe: "plantuml",
   samples: plantUmlSampleCatalog,
   get handler() {

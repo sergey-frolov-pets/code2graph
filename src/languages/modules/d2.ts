@@ -1,5 +1,6 @@
 import { d2SampleCatalog } from "@/constants/d2-sample-diagrams";
 import { d2FormatHandler } from "@/formats/d2/handler";
+import { d2LanguageKeywords } from "@/languages/keywords/d2";
 import type { DiagramLanguageModule } from "@/languages/types";
 import { looksLikeD2Source } from "@shared/d2-source";
 
@@ -33,7 +34,8 @@ export const d2LanguageModule: DiagramLanguageModule = {
   detectPriority: 20,
   isFallbackFormat: false,
   supportsSyntaxHighlight: true,
-  supportsAutocomplete: false,
+  supportsAutocomplete: true,
+  keywords: d2LanguageKeywords,
   samples: d2SampleCatalog,
   get handler() {
     return d2FormatHandler;

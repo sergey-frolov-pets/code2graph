@@ -1,5 +1,6 @@
 import { structurizrSampleCatalog } from "@/constants/structurizr-sample-diagrams";
 import { structurizrFormatHandler } from "@/formats/structurizr/handler";
+import { structurizrLanguageKeywords } from "@/languages/keywords/structurizr";
 import type { DiagramLanguageModule } from "@/languages/types";
 import { looksLikeStructurizrSource } from "@shared/structurizr-source";
 
@@ -33,7 +34,8 @@ export const structurizrLanguageModule: DiagramLanguageModule = {
   detectPriority: 25,
   isFallbackFormat: false,
   supportsSyntaxHighlight: true,
-  supportsAutocomplete: false,
+  supportsAutocomplete: true,
+  keywords: structurizrLanguageKeywords,
   samples: structurizrSampleCatalog,
   get handler() {
     return structurizrFormatHandler;

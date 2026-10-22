@@ -1,10 +1,11 @@
+import { WIREMARK_DIRECTIVES } from "@/languages/keywords/wiremark";
 import {
   escapeHtml,
   type HighlightToken,
   type HighlightTokenType,
 } from "@/utils/plantuml-highlight";
 
-const DIRECTIVES = new Set(["Wireframe", "Flow", "Icons"]);
+const DIRECTIVES = new Set<string>(WIREMARK_DIRECTIVES);
 
 function pushToken(
   tokens: HighlightToken[],
