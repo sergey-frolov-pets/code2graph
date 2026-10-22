@@ -83,6 +83,176 @@ describe("diagram samples coverage", () => {
     }
   });
 
+  it("shows most documented capabilities in the sample sources", () => {
+    const joined = (parts: string[]) => parts.join("\n");
+
+    const d2 = joined(
+      D2_SAMPLE_IDS.flatMap((id) => [
+        getD2SampleSource(id, "ru"),
+        getD2SampleSource(id, "en"),
+      ]),
+    );
+    for (const token of [
+      "direction:",
+      "shape: person",
+      "shape: cylinder",
+      "shape: sequence_diagram",
+      "shape: class",
+      "shape: sql_table",
+      "shape: diamond",
+      "shape: cloud",
+      "shape: queue",
+      "shape: document",
+      "shape: page",
+      "shape: step",
+      "shape: callout",
+      "shape: stored_data",
+      "shape: text",
+      "shape: hexagon",
+      "shape: oval",
+      "shape: circle",
+      "shape: package",
+      "shape: parallelogram",
+      "shape: square",
+      "classes:",
+      "class: accent",
+      "constraint: primary_key",
+      "constraint: foreign_key",
+      "constraint: unique",
+      "tooltip:",
+      "link:",
+      "near:",
+      "grid-rows:",
+      "grid-columns:",
+      "grid-gap:",
+      "animated: true",
+      "stroke-dash:",
+      "double-border:",
+      "fill-pattern:",
+      "text-transform:",
+      "font: mono",
+      "icon:",
+      "login()",
+      "user_id",
+    ]) {
+      expect(d2, token).toContain(token);
+    }
+
+    const structurizr = joined(
+      STRUCTURIZR_SAMPLE_IDS.flatMap((id) => [
+        getStructurizrSampleSource(id, "en"),
+      ]),
+    );
+    for (const token of [
+      "workspace",
+      "softwareSystem",
+      "container ",
+      "component ",
+      "deploymentNode",
+      "deploymentEnvironment",
+      "containerInstance",
+      "softwareSystemInstance",
+      "infrastructureNode",
+      "group ",
+      "include *",
+      "autolayout",
+      "styles",
+      "element ",
+      "relationship ",
+      "tags ",
+      "properties",
+      "theme ",
+      "systemContext",
+      "systemLandscape",
+      "dynamic ",
+      "filtered ",
+      "url ",
+      "!identifiers",
+      "!impliedRelationships",
+      "!docs",
+      "!adrs",
+      "configuration",
+      "perspectives",
+    ]) {
+      expect(structurizr, token).toContain(token);
+    }
+
+    const graphml = joined(
+      GRAPHML_SAMPLE_IDS.map((id) => getGraphmlSampleSource(id, "en")),
+    );
+    for (const token of [
+      "<graphml",
+      "<graph",
+      "<node",
+      "<edge",
+      "<key",
+      "<data",
+      "<desc>",
+      "<port",
+      "<hyperedge",
+      "<endpoint",
+      'key="loc"',
+      "diamond",
+      "ellipse",
+      "hexagon",
+      "dashed",
+    ]) {
+      expect(graphml, token).toContain(token);
+    }
+
+    const plantuml = joined(
+      PLANTUML_SAMPLE_IDS.map((id) => getPlantUmlSampleSource(id, "en")),
+    );
+    for (const token of [
+      "Enterprise_Boundary",
+      "entity ",
+      "usecase ",
+      "artifact ",
+      "object ",
+      "concise ",
+      "@startwbs",
+      "@startnwdiag",
+      "Business_Actor",
+      "Rel_Flow",
+      "skinparam",
+      "@startmindmap",
+      "@startgantt",
+    ]) {
+      expect(plantuml, token).toContain(token);
+    }
+
+    const mermaid = joined(
+      MERMAID_SAMPLE_IDS.map((id) => getMermaidSampleSource(id, "en")),
+    );
+    for (const token of [
+      "flowchart",
+      "sequenceDiagram",
+      "classDiagram",
+      "C4Component",
+      "stateDiagram-v2",
+      "erDiagram",
+      "gantt",
+      "mindmap",
+      "pie showData",
+      "journey",
+      "gitGraph",
+      "timeline",
+      "sankey-beta",
+      "xychart-beta",
+      "block-beta",
+      "C4Context",
+      "requirementDiagram",
+      "quadrantChart",
+      "architecture-beta",
+      "packet-beta",
+      "linkStyle",
+      "namespace ",
+      "classDef",
+    ]) {
+      expect(mermaid, token).toContain(token);
+    }
+  });
+
   it("lists samples only for the selected language", () => {
     expect(listSampleIds("plantuml")).toEqual([...PLANTUML_SAMPLE_IDS]);
     expect(listSampleIds("mermaid")).toEqual([...MERMAID_SAMPLE_IDS]);

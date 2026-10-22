@@ -1,4 +1,5 @@
 import type { AppLocale } from "@/constants/i18n";
+import { getPlantUmlRichSample } from "@/constants/plantuml-rich-samples";
 import { buildWizardDiagramSample } from "@/constants/wizard-sample-sources";
 import type { SampleCatalog } from "@/languages/sample-catalog";
 
@@ -953,10 +954,13 @@ function buildPlantUmlSampleSource(id: PlantUmlSampleId, locale: AppLocale): str
     return SOURCES_BY_LOCALE[locale][id];
   }
 
-  return buildWizardDiagramSample(
-    PLANTUML_SAMPLE_WIZARD_TYPES[id],
-    "plantuml",
-    locale,
+  return (
+    getPlantUmlRichSample(id, locale) ??
+    buildWizardDiagramSample(
+      PLANTUML_SAMPLE_WIZARD_TYPES[id],
+      "plantuml",
+      locale,
+    )
   );
 }
 
