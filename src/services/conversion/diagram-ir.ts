@@ -30,6 +30,7 @@ export const DIAGRAM_KINDS = [
   "wbs",
   "nwdiag",
   "archimate",
+  "wireframe",
   "unknown",
 ] as const;
 
@@ -184,6 +185,48 @@ export interface DiagramObjectField {
   value: string;
 }
 
+export interface DiagramClassMember {
+  visibility?: "+" | "-" | "#" | "~";
+  name: string;
+  type?: string;
+  isMethod?: boolean;
+  isStatic?: boolean;
+  isAbstract?: boolean;
+}
+
+export interface DiagramEntityAttribute {
+  name: string;
+  type: string;
+  isPrimaryKey?: boolean;
+  isForeignKey?: boolean;
+  comment?: string;
+}
+
+export interface DiagramSequenceBlock {
+  type: "alt" | "else" | "opt" | "loop" | "par" | "note" | "divider";
+  label?: string;
+  afterEdgeIndex: number;
+}
+
+export interface DiagramWireframeControl {
+  kind: "heading" | "input" | "button" | "link" | "item" | "card" | "checkbox" | "text";
+  label: string;
+  targetScreenId?: string;
+}
+
+export interface DiagramWireframeScreen {
+  id: string;
+  title: string;
+  layout?: "mobile" | "landscape" | "default";
+  controls: DiagramWireframeControl[];
+}
+
+export interface DiagramNote {
+  targetId?: string;
+  position?: "left" | "right" | "top" | "bottom";
+  text: string;
+}
+
 export interface DiagramIRExtras {
   title?: string;
   slices?: DiagramSlice[];
@@ -201,6 +244,11 @@ export interface DiagramIRExtras {
   networkNodes?: DiagramNetworkNode[];
   timingSignals?: DiagramTimingSignal[];
   objectFields?: Record<string, DiagramObjectField[]>;
+  classMembers?: Record<string, DiagramClassMember[]>;
+  entityAttributes?: Record<string, DiagramEntityAttribute[]>;
+  sequenceBlocks?: DiagramSequenceBlock[];
+  wireframeScreens?: DiagramWireframeScreen[];
+  notes?: DiagramNote[];
   systemBoundary?: string;
   quadrantAxes?: { xFrom?: string; xTo?: string; yFrom?: string; yTo?: string };
   blockColumns?: number;
@@ -250,11 +298,15 @@ export function sanitizeDiagramId(value: string): string {
   }
 
   const sanitized = trimmed
-    .replace(/[^\w-]+/g, "_")
+    .replace(/[^\p{L}\p{N}_-]+/gu, "_")
     .replace(/^_+|_+$/g, "")
     .slice(0, 48);
 
-  return sanitized || "node";
+  if (!sanitized) {
+    return "node";
+  }
+
+  return /^\d/.test(sanitized) ? `n_${sanitized}` : sanitized;
 }
 
 export function uniqueDiagramId(base: string, used: Set<string>): string {

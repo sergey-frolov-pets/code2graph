@@ -23,7 +23,7 @@ export const wiremarkLanguageModule: DiagramLanguageModule = {
     supportsSamples: true,
     supportsSaveSource: true,
     supportsOnlineRender: false,
-    supportsStructuralConversion: false,
+    supportsStructuralConversion: true,
     requiresEngineBoot: false,
   },
   fileBadge: "WMK",

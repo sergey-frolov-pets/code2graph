@@ -3,6 +3,7 @@ import {
   emitMermaidArchitecture,
   emitMermaidBlock,
   emitMermaidC4,
+  emitMermaidClass,
   emitMermaidEr,
   emitMermaidFlowchart,
   emitMermaidGantt,
@@ -14,16 +15,16 @@ import {
   emitMermaidQuadrant,
   emitMermaidRequirement,
   emitMermaidSankey,
-  emitMermaidTimeline,
-  emitMermaidXychart,
-  emitMermaidClass,
   emitMermaidSequence,
   emitMermaidState,
+  emitMermaidTimeline,
+  emitMermaidXychart,
 } from "@/services/conversion/emit/emit-kind-diagrams";
 
 export function emitMermaidFromIr(ir: DiagramIR): string {
   switch (ir.kind) {
     case "class":
+    case "object":
       return emitMermaidClass(ir);
     case "state":
       return emitMermaidState(ir);
@@ -34,6 +35,7 @@ export function emitMermaidFromIr(ir: DiagramIR): string {
     case "gantt":
       return emitMermaidGantt(ir);
     case "mindmap":
+    case "wbs":
       return emitMermaidMindmap(ir);
     case "pie":
       return emitMermaidPie(ir);
@@ -42,6 +44,7 @@ export function emitMermaidFromIr(ir: DiagramIR): string {
     case "gitgraph":
       return emitMermaidGitgraph(ir);
     case "timeline":
+    case "timing":
       return emitMermaidTimeline(ir);
     case "sankey":
       return emitMermaidSankey(ir);
@@ -62,6 +65,10 @@ export function emitMermaidFromIr(ir: DiagramIR): string {
       return emitMermaidPacket(ir);
     case "activity":
     case "deployment":
+    case "usecase":
+    case "nwdiag":
+    case "archimate":
+    case "wireframe":
     case "graph":
     case "unknown":
     default:
