@@ -105,4 +105,46 @@ describe("useDiagramDocument", () => {
     expect(diagramFormat.value).toBe("mermaid");
     expect(loadedFileName.value).toBe("diagram.mmd");
   });
+
+  it("keeps a space typed after a keyword at the end of the file", async () => {
+    const source = ref("@startuml\nactor");
+    const diagramFormat = ref<"plantuml" | "mermaid" | "graphml">("plantuml");
+
+    useDiagramDocument({
+      source,
+      diagramFormat,
+      error: ref(""),
+      syntaxErrorLines: ref<number[]>([]),
+      persistSettings: vi.fn(),
+      scheduleRender: vi.fn(),
+      clearHistory: vi.fn(),
+    });
+
+    source.value = "@startuml\nactor ";
+    await nextTick();
+
+    expect(source.value).toBe("@startuml\nactor ");
+    expect(diagramFormat.value).toBe("plantuml");
+  });
+
+  it("still removes a plantuml tail pasted after a mermaid diagram", async () => {
+    const source = ref("flowchart TD\nA --> B");
+    const diagramFormat = ref<"plantuml" | "mermaid" | "graphml">("mermaid");
+
+    useDiagramDocument({
+      source,
+      diagramFormat,
+      error: ref(""),
+      syntaxErrorLines: ref<number[]>([]),
+      persistSettings: vi.fn(),
+      scheduleRender: vi.fn(),
+      clearHistory: vi.fn(),
+    });
+
+    source.value = "flowchart TD\nA --> B\n@startuml\nAlice -> Bob\n@enduml";
+    await nextTick();
+
+    expect(source.value).toBe("flowchart TD\nA --> B");
+    expect(diagramFormat.value).toBe("mermaid");
+  });
 });

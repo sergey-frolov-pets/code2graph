@@ -4,23 +4,23 @@ const PLANTUML_BLOCK_START_PATTERN =
   /@start(uml|gantt|mindmap|wbs|json|yaml|ditaa|salt|dot|chen|nwdiag|chronology|ebnf|regex|board|math|latex)\b/i;
 
 export function extractLeadingMermaidDiagram(source: string): string {
-  const trimmed = source.trim();
-  const plantUmlStart = trimmed.search(PLANTUML_BLOCK_START_PATTERN);
+  const plantUmlStart = source.search(PLANTUML_BLOCK_START_PATTERN);
 
+  // Trailing spaces and blank lines are part of the text being typed.
   if (plantUmlStart <= 0) {
-    return trimmed;
+    return source;
   }
 
-  const leading = trimmed.slice(0, plantUmlStart).trim();
+  const leading = source.slice(0, plantUmlStart).trim();
   if (!leading) {
-    return trimmed;
+    return source;
   }
 
   if (detectDiagramFormatFromSource(leading) === "mermaid") {
     return leading;
   }
 
-  return trimmed;
+  return source;
 }
 
 export function isCompleteMermaidDiagram(source: string): boolean {

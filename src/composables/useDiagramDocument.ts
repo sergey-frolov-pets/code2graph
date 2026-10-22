@@ -236,7 +236,7 @@ export function useDiagramDocument(options: UseDiagramDocumentOptions) {
     }
 
     const cleaned = extractLeadingMermaidDiagram(content);
-    if (cleaned !== content) {
+    if (cleaned !== content && cleaned.trim() !== content.trim()) {
       source.value = cleaned;
       return;
     }
