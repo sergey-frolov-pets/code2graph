@@ -99,6 +99,44 @@ describe("mergeDisplayTextIntoSource", () => {
 
     expect(merged).toBe("alpha\nBETA\ngamma\ndelta");
   });
+
+  it("drops a deleted line instead of duplicating the line below it", () => {
+    const previousSource = "@startuml\n' comment\ntitle Class";
+
+    expect(
+      mergeDisplayTextIntoSource("@startuml\ntitle Class", previousSource, []),
+    ).toBe("@startuml\ntitle Class");
+    expect(
+      mergeDisplayTextIntoSource("' comment\ntitle Class", previousSource, []),
+    ).toBe("' comment\ntitle Class");
+    expect(
+      mergeDisplayTextIntoSource("@startuml\n' comment", previousSource, []),
+    ).toBe("@startuml\n' comment");
+  });
+
+  it("drops several deleted lines and still inserts a new one", () => {
+    const previousSource = "alpha\nbeta\ngamma\ndelta";
+
+    expect(
+      mergeDisplayTextIntoSource("alpha\ndelta", previousSource, []),
+    ).toBe("alpha\ndelta");
+    expect(
+      mergeDisplayTextIntoSource("alpha\nbeta\ninserted\ngamma\ndelta", previousSource, []),
+    ).toBe("alpha\nbeta\ninserted\ngamma\ndelta");
+  });
+
+  it("keeps hidden fold lines when a visible line below the fold is deleted", () => {
+    const previousSource = "alpha\nbeta\ngamma\ndelta\nepsilon";
+    const folds = [makeFold(2, 3)];
+
+    expect(
+      mergeDisplayTextIntoSource(
+        buildDisplayText(previousSource.split("\n"), folds).replace("delta\n", ""),
+        previousSource,
+        folds,
+      ),
+    ).toBe("alpha\nbeta\ngamma\nepsilon");
+  });
 });
 
 describe("offset mapping with folds", () => {

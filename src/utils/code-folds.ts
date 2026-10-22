@@ -231,54 +231,84 @@ export function buildDisplayText(
     .join("\n");
 }
 
+interface ChangedLineSpan {
+  prefix: number;
+  oldEnd: number;
+  newEnd: number;
+}
+
+/** Shared prefix and the first line of the common suffix, as half-open indexes. */
+function findChangedLineSpan(
+  previousLines: string[],
+  nextLines: string[],
+): ChangedLineSpan {
+  let prefix = 0;
+  while (
+    prefix < previousLines.length &&
+    prefix < nextLines.length &&
+    previousLines[prefix] === nextLines[prefix]
+  ) {
+    prefix += 1;
+  }
+
+  let previousSuffix = previousLines.length - 1;
+  let nextSuffix = nextLines.length - 1;
+  while (
+    previousSuffix >= prefix &&
+    nextSuffix >= prefix &&
+    previousLines[previousSuffix] === nextLines[nextSuffix]
+  ) {
+    previousSuffix -= 1;
+    nextSuffix -= 1;
+  }
+
+  return {
+    prefix,
+    oldEnd: prefix + Math.max(0, previousSuffix - prefix + 1),
+    newEnd: prefix + Math.max(0, nextSuffix - prefix + 1),
+  };
+}
+
 export function mergeDisplayTextIntoSource(
   displayText: string,
   previousSource: string,
   folds: CodeFoldRegion[],
 ): string {
   const previousLines = splitLines(previousSource);
-  const displayLines = splitLines(displayText);
-  const visibleLines = buildVisibleLines(previousLines.length, folds);
-  const resultLines = [...previousLines];
+  const visibleSourceLineNumbers = buildVisibleLines(previousLines.length, folds)
+    .filter((item) => item.kind === "source")
+    .map((item) => item.sourceLine);
+  const previousVisibleLines = visibleSourceLineNumbers.map(
+    (lineNumber) => previousLines[lineNumber - 1] ?? "",
+  );
+  const nextVisibleLines = splitLines(displayText).filter(
+    (line) => !isFoldPlaceholderLine(line),
+  );
+  const changed = findChangedLineSpan(previousVisibleLines, nextVisibleLines);
+  const insertedLines = nextVisibleLines.slice(changed.prefix, changed.newEnd);
+  const removedSourceLines = new Set(
+    visibleSourceLineNumbers.slice(changed.prefix, changed.oldEnd),
+  );
+  const insertionBeforeSourceLine = visibleSourceLineNumbers[changed.prefix];
+  const resultLines: string[] = [];
+  let inserted = false;
 
-  let displayIndex = 0;
+  for (let index = 0; index < previousLines.length; index += 1) {
+    const sourceLine = index + 1;
+    if (sourceLine === insertionBeforeSourceLine) {
+      resultLines.push(...insertedLines);
+      inserted = true;
+    }
 
-  for (const item of visibleLines) {
-    if (item.kind === "placeholder") {
-      displayIndex += 1;
+    if (removedSourceLines.has(sourceLine)) {
       continue;
     }
 
-    if (displayIndex >= displayLines.length) {
-      break;
-    }
-
-    const nextLine = displayLines[displayIndex] ?? "";
-    if (isFoldPlaceholderLine(nextLine)) {
-      displayIndex += 1;
-      continue;
-    }
-
-    resultLines[item.sourceLine - 1] = nextLine;
-    displayIndex += 1;
+    resultLines.push(previousLines[index] ?? "");
   }
 
-  if (displayIndex < displayLines.length) {
-    const trailingLines = displayLines
-      .slice(displayIndex)
-      .filter((line) => !isFoldPlaceholderLine(line));
-
-    if (trailingLines.length > 0) {
-      const insertionLine = visibleLines.reduce((maxLine, item) => {
-        if (item.kind === "source") {
-          return Math.max(maxLine, item.sourceLine);
-        }
-
-        return maxLine;
-      }, 0);
-
-      resultLines.splice(insertionLine, 0, ...trailingLines);
-    }
+  if (!inserted) {
+    resultLines.push(...insertedLines);
   }
 
   return joinLines(resultLines);
