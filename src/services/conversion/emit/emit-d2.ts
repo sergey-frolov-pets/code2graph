@@ -207,15 +207,16 @@ function emitD2Graph(ir: DiagramIR): string {
 
   if (ir.edges.length > 0) {
     lines.push("");
+    const nodeById = new Map(ir.nodes.map((node) => [node.id, node]));
+    const resolveRef = (nodeId: string): string => {
+      const groupId = nodeById.get(nodeId)?.groupId;
+      const d2Id = idMap.get(nodeId) ?? safeD2Identifier(nodeId);
+      if (groupId && groupPrefixMap.has(groupId)) {
+        return `${groupPrefixMap.get(groupId)}.${d2Id}`;
+      }
+      return d2Id;
+    };
     for (const edge of ir.edges) {
-      const resolveRef = (nodeId: string): string => {
-        const node = ir.nodes.find((entry) => entry.id === nodeId);
-        const d2Id = idMap.get(nodeId) ?? safeD2Identifier(nodeId);
-        if (node?.groupId && groupPrefixMap.has(node.groupId)) {
-          return `${groupPrefixMap.get(node.groupId)}.${d2Id}`;
-        }
-        return d2Id;
-      };
       const from = resolveRef(edge.source);
       const to = resolveRef(edge.target);
       const labelSuffix = edge.label ? `: "${cleanD2Text(edge.label)}"` : "";

@@ -33,6 +33,31 @@ export function formatMermaidNodeLabel(rawLabel: string): string {
   return `[${label}]`;
 }
 
+const MERMAID_FLOWCHART_RESERVED_IDS: ReadonlySet<string> = new Set([
+  "end",
+  "graph",
+  "flowchart",
+  "subgraph",
+  "direction",
+  "style",
+  "linkstyle",
+  "classdef",
+  "class",
+  "click",
+  "call",
+  "href",
+  "default",
+]);
+
+const MERMAID_RESERVED_ID_SUFFIX = "_node";
+
+/** Flowchart node ids must not collide with Mermaid keywords (`end` closes a subgraph). */
+export function toMermaidFlowchartId(id: string): string {
+  return MERMAID_FLOWCHART_RESERVED_IDS.has(id.toLowerCase())
+    ? `${id}${MERMAID_RESERVED_ID_SUFFIX}`
+    : id;
+}
+
 function needsQuotedMermaidRequirementText(value: string): boolean {
   return /[\s"']/.test(value) || /[^\x20-\x7E]/.test(value);
 }

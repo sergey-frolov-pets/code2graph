@@ -1,18 +1,29 @@
 import type { DiagramFormat } from "@/constants/diagram-formats";
+import type { DiagramKind } from "@/services/conversion/diagram-ir";
 import type { ConversionMode } from "@/services/conversion/pipeline/convert-diagram";
 import { classifyDiagramKind } from "@/services/conversion/classify-diagram-kind";
 import {
-  getConversionRouteRule,
-  isConversionBlocked,
-} from "@/services/conversion/rules/conversion-matrix";
+  getKindAwareRouteRule,
+  listTargetKindOptions,
+  type TargetKindOption,
+} from "@/services/conversion/kind-projection/kind-aware-route";
 
+export function getTargetKindOptions(
+  source: string,
+  sourceFormat: DiagramFormat,
+  targetFormat: DiagramFormat,
+): TargetKindOption[] {
+  const kind = classifyDiagramKind(source, sourceFormat);
+  return listTargetKindOptions(kind, sourceFormat, targetFormat);
+}
+
+/** A format is reachable when the source kind or any relevant projected kind can be emitted in it. */
 export function isTargetFormatBlocked(
   source: string,
   sourceFormat: DiagramFormat,
   targetFormat: DiagramFormat,
 ): boolean {
-  const kind = classifyDiagramKind(source, sourceFormat);
-  return isConversionBlocked(kind, sourceFormat, targetFormat);
+  return getTargetKindOptions(source, sourceFormat, targetFormat).length === 0;
 }
 
 export function isVisualModeBlocked(
@@ -20,6 +31,7 @@ export function isVisualModeBlocked(
   sourceFormat: DiagramFormat,
   targetFormat: DiagramFormat,
   mode: ConversionMode,
+  targetKind?: DiagramKind,
 ): boolean {
   if (mode !== "visual") {
     return false;
@@ -30,5 +42,5 @@ export function isVisualModeBlocked(
     return true;
   }
 
-  return getConversionRouteRule(kind, sourceFormat, targetFormat).blocked;
+  return getKindAwareRouteRule(kind, sourceFormat, targetFormat, targetKind ?? kind).blocked;
 }

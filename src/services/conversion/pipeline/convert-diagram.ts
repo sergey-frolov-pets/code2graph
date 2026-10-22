@@ -9,13 +9,14 @@ import type { AppLocale } from "@/constants/i18n";
 import { classifyDiagramKind } from "@/services/conversion/classify-diagram-kind";
 import { emitIrWithFramework } from "@/services/conversion/conversion-framework";
 import type { ConversionReport } from "@/services/conversion/conversion-report";
-import type { DiagramIR } from "@/services/conversion/diagram-ir";
+import type { DiagramIR, DiagramKind } from "@/services/conversion/diagram-ir";
+import { getKindAwareRouteRule } from "@/services/conversion/kind-projection/kind-aware-route";
+import { projectDiagramKind } from "@/services/conversion/kind-projection/project-diagram-kind";
 import { wrapConvertedSource } from "@/services/conversion/emit/conversion-header";
 import { readSvgMetadata } from "@/services/conversion/metadata/svg-metadata";
 import { mergeDiagramIrWithVisualHints } from "@/services/conversion/merge/merge-diagram-ir";
 import { safeParseSourceToIr } from "@/services/conversion/parse/parse-source-to-ir";
 import { analyzeConversionLosses } from "@/services/conversion/rules/loss-analyzer";
-import { isConversionBlocked } from "@/services/conversion/rules/conversion-matrix";
 import { extractVisualHintsFromSvg } from "@/services/conversion/visual/svg-extractor";
 import { validateDiagramIr } from "@/services/conversion/validate-diagram-ir";
 
@@ -25,6 +26,8 @@ export interface ConvertDiagramInput {
   source: string;
   sourceFormat: DiagramFormat;
   targetFormat: DiagramFormat;
+  /** Diagram kind to produce; defaults to the classified source kind. */
+  targetKind?: DiagramKind;
   mode?: ConversionMode;
   previewSvg?: string;
   locale: AppLocale;
@@ -118,12 +121,14 @@ export async function convertDiagram(
 ): Promise<ConvertDiagramResult> {
   const mode = resolveMode(input);
   const kind = classifyDiagramKind(input.source, input.sourceFormat);
+  const requestedKind = input.targetKind ?? kind;
   const metadataIr = input.previewSvg
     ? await readSvgMetadata(input.previewSvg)
     : null;
 
   const preliminaryReport = analyzeConversionLosses({
     kind,
+    targetKind: requestedKind,
     sourceFormat: input.sourceFormat,
     targetFormat: input.targetFormat,
     mode: mode === "metadata" ? "metadata" : mode,
@@ -133,7 +138,7 @@ export async function convertDiagram(
 
   if (
     preliminaryReport.blocked ||
-    isConversionBlocked(kind, input.sourceFormat, input.targetFormat) ||
+    getKindAwareRouteRule(kind, input.sourceFormat, input.targetFormat, requestedKind).blocked ||
     (mode === "visual" && kind === "sequence")
   ) {
     return {
@@ -206,10 +211,17 @@ export async function convertDiagram(
     mergedVisualEdges = merged.mergedVisualEdges;
   }
 
+  const sourceKind = semantic.kind;
+  const targetKind = input.targetKind ?? sourceKind;
+  if (targetKind !== sourceKind) {
+    semantic = projectDiagramKind(semantic, targetKind).ir;
+  }
+
   const validation = validateDiagramIr(semantic);
 
   const report = analyzeConversionLosses({
-    kind: semantic.kind,
+    kind: sourceKind,
+    targetKind,
     sourceFormat: input.sourceFormat,
     targetFormat: input.targetFormat,
     mode: mode === "metadata" ? "metadata" : mode,
@@ -223,7 +235,7 @@ export async function convertDiagram(
     validationErrors: validation.errors,
   });
 
-  if (parseError || !validation.valid) {
+  if (parseError || !validation.valid || report.blocked) {
     return {
       ok: false,
       blocked: true,

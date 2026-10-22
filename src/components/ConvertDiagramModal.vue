@@ -10,9 +10,11 @@ import {
 import { getLanguageModule } from "@/languages/registry";
 import { createConversionReport } from "@/services/conversion/conversion-report";
 import {
+  getTargetKindOptions,
   isTargetFormatBlocked,
   isVisualModeBlocked,
 } from "@/services/conversion/conversion-route";
+import type { DiagramKind } from "@/services/conversion/diagram-ir";
 import {
   convertDiagram,
   type ConversionMode,
@@ -34,6 +36,7 @@ const emit = defineEmits<{
 const { t, locale } = useLocale();
 
 const targetFormat = ref<DiagramFormat>("mermaid");
+const targetKind = ref<DiagramKind | null>(null);
 const mode = ref<ConversionMode>("auto");
 const acceptedLosses = ref(false);
 const conversionResult = ref<ConvertDiagramResult>({
@@ -49,17 +52,52 @@ const conversionResult = ref<ConvertDiagramResult>({
   }),
 });
 
+const blockedFormats = computed(
+  () =>
+    new Set(
+      DIAGRAM_FORMATS.filter((format) =>
+        isTargetFormatBlocked(props.source, props.sourceFormat, format),
+      ),
+    ),
+);
+
 const availableTargets = computed(() =>
-  DIAGRAM_FORMATS.filter((format) => format !== props.sourceFormat),
+  DIAGRAM_FORMATS.filter(
+    (format) => format !== props.sourceFormat || !blockedFormats.value.has(format),
+  ),
 );
 
 function isFormatBlocked(format: DiagramFormat): boolean {
-  return isTargetFormatBlocked(props.source, props.sourceFormat, format);
+  return blockedFormats.value.has(format);
 }
 
 function formatDisplayLabel(format: DiagramFormat): string {
   return t(getLanguageModule(format).labelKey);
 }
+
+const kindOptions = computed(() =>
+  getTargetKindOptions(props.source, props.sourceFormat, targetFormat.value),
+);
+
+function kindDisplayLabel(kind: DiagramKind): string {
+  const key = `conversion.kind.${kind}`;
+  return isLocaleKey(key) ? t(key) : kind;
+}
+
+function kindOptionLabel(kind: DiagramKind, isSourceKind: boolean): string {
+  const label = kindDisplayLabel(kind);
+  return isSourceKind ? t("conversion.targetKind.same", { kind: label }) : label;
+}
+
+watch(
+  kindOptions,
+  (options) => {
+    if (!options.some((option) => option.kind === targetKind.value)) {
+      targetKind.value = options[0]?.kind ?? null;
+    }
+  },
+  { immediate: true },
+);
 
 const visualModeBlocked = computed(() =>
   isVisualModeBlocked(
@@ -67,6 +105,7 @@ const visualModeBlocked = computed(() =>
     props.sourceFormat,
     targetFormat.value,
     mode.value,
+    targetKind.value ?? undefined,
   ),
 );
 
@@ -76,6 +115,7 @@ watch(
     () => props.sourceFormat,
     () => props.previewSvg,
     targetFormat,
+    targetKind,
     mode,
     locale,
   ],
@@ -84,6 +124,7 @@ watch(
       source: props.source,
       sourceFormat: props.sourceFormat,
       targetFormat: targetFormat.value,
+      targetKind: targetKind.value ?? undefined,
       mode: mode.value,
       previewSvg: props.previewSvg,
       locale: locale.value,
@@ -124,19 +165,19 @@ watch(
       return;
     }
     const firstAvailable = availableTargets.value.find(
-      (format) => !isTargetFormatBlocked(props.source, props.sourceFormat, format),
+      (format) => format !== props.sourceFormat && !isFormatBlocked(format),
     );
     targetFormat.value = firstAvailable ?? availableTargets.value[0] ?? "mermaid";
+    targetKind.value = kindOptions.value[0]?.kind ?? null;
     mode.value = "auto";
     acceptedLosses.value = false;
   },
+  { immediate: true },
 );
 
 watch(targetFormat, (format) => {
   if (isTargetFormatBlocked(props.source, props.sourceFormat, format)) {
-    const fallback = availableTargets.value.find(
-      (entry) => !isTargetFormatBlocked(props.source, props.sourceFormat, entry),
-    );
+    const fallback = availableTargets.value.find((entry) => !isFormatBlocked(entry));
     if (fallback) {
       targetFormat.value = fallback;
     }
@@ -174,6 +215,24 @@ function onApply(): void {
             :disabled="isFormatBlocked(format)"
           >
             {{ formatDisplayLabel(format) }}{{ isFormatBlocked(format) ? ` — ${t('conversion.blocked')}` : '' }}
+          </option>
+        </select>
+      </label>
+
+      <label class="convert-field">
+        <span class="convert-field__label">{{ t("conversion.targetKind") }}</span>
+        <select
+          v-model="targetKind"
+          class="select"
+          data-testid="convert-target-kind"
+          :disabled="kindOptions.length === 0"
+        >
+          <option
+            v-for="option in kindOptions"
+            :key="option.kind"
+            :value="option.kind"
+          >
+            {{ kindOptionLabel(option.kind, option.isSourceKind) }} · {{ t(`conversion.level.${option.rule.level}`) }}
           </option>
         </select>
       </label>

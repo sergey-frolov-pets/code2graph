@@ -7,6 +7,7 @@ export interface ConversionReport {
   sourceFormat: DiagramFormat;
   targetFormat: DiagramFormat;
   kind: DiagramKind;
+  targetKind?: DiagramKind;
   level: ConversionQualityLevel;
   blocked: boolean;
   lossIds: string[];
