@@ -13,20 +13,71 @@ export type StructurizrSampleId = (typeof STRUCTURIZR_SAMPLE_IDS)[number];
 const STRUCTURIZR_SAMPLES_RU: Record<StructurizrSampleId, string> = {
   context: `workspace "Интернет-магазин" "Покупка товаров" {
 
+    !identifiers hierarchical
+    !impliedRelationships false
+    !docs "https://example.com/docs"
+    !adrs "https://example.com/adrs"
+
     model {
-        customer = person "Покупатель" "Оформляет заказы."
-        shop = softwareSystem "Магазин" "Принимает и обрабатывает заказы."
+        properties {
+            "owner" "shop"
+        }
+
+        group "Люди" {
+            customer = person "Покупатель" "Оформляет заказы." {
+                tags "External"
+                url "https://example.com/customer"
+                perspectives {
+                    "role" "Покупатель"
+                }
+            }
+        }
+        shop = softwareSystem "Магазин" "Принимает и обрабатывает заказы." {
+            description "Основная система"
+            technology "Code2Graph"
+        }
         mail = softwareSystem "Почта" "Отправляет письма покупателю."
 
-        customer -> shop "Оформляет заказ"
-        shop -> mail "Отправляет письмо"
+        customer -> shop "Оформляет заказ" "HTTPS"
+        shop -> mail "Отправляет письмо" "SMTP"
     }
 
     views {
-        systemContext shop "Context" {
+        systemLandscape "Landscape" "Все системы" {
             include *
             autolayout lr
+            title "Ландшафт"
         }
+        systemContext shop "Context" "Покупка" {
+            include *
+            autolayout lr
+            title "Контекст"
+        }
+        dynamic shop "Order" "Заказ" {
+            customer -> shop "Оформляет заказ"
+        }
+        filtered * "Filtered" {
+            include *
+        }
+        styles {
+            element "Person" {
+                shape Person
+                background #08427b
+                color #ffffff
+            }
+            element "Database" {
+                shape Cylinder
+            }
+            relationship "Relationship" {
+                thickness 2
+                style dashed
+            }
+        }
+        theme "https://static.structurizr.com/themes/default/theme.json"
+    }
+
+    configuration {
+        scope softwaresystem
     }
 }`,
   containers: `workspace "Магазин" "Контейнеры интернет-магазина" {
@@ -34,8 +85,16 @@ const STRUCTURIZR_SAMPLES_RU: Record<StructurizrSampleId, string> = {
     model {
         customer = person "Покупатель" "Покупает товары."
         shop = softwareSystem "Магазин" "Интернет-магазин." {
-            web = container "Веб-приложение" "Интерфейс покупателя." "React"
-            api = container "API" "Заказы и каталог." "Java"
+            group "Каналы" {
+                web = container "Веб-приложение" "Интерфейс покупателя." "React" {
+                    url "https://example.com/web"
+                }
+            }
+            api = container "API" "Заказы и каталог." "Java" {
+                properties {
+                    "tier" "backend"
+                }
+            }
             db = container "База" "Заказы и товары." "PostgreSQL" {
                 tags "Database"
             }
@@ -50,6 +109,16 @@ const STRUCTURIZR_SAMPLES_RU: Record<StructurizrSampleId, string> = {
         container shop "Containers" {
             include *
             autolayout lr
+            title "Контейнеры"
+        }
+
+        styles {
+            element "Database" {
+                shape Cylinder
+            }
+            element "Container" {
+                shape RoundedBox
+            }
         }
     }
 }`,
@@ -58,10 +127,14 @@ const STRUCTURIZR_SAMPLES_RU: Record<StructurizrSampleId, string> = {
     model {
         shop = softwareSystem "Магазин" "Интернет-магазин." {
             api = container "API" "Сервис заказов." "Java" {
-                orders = component "Заказы" "Создаёт заказ." "Spring Bean"
-                catalog = component "Каталог" "Отдаёт товары." "Spring Bean"
+                group "Сервисы" {
+                    orders = component "Заказы" "Создаёт заказ." "Spring Bean" {
+                        url "https://example.com/orders"
+                    }
+                    catalog = component "Каталог" "Отдаёт товары." "Spring Bean"
+                }
 
-                orders -> catalog "Запрашивает товар"
+                orders -> catalog "Запрашивает товар" "JSON"
             }
             db = container "База" "Хранит заказы." "PostgreSQL" {
                 tags "Database"
@@ -75,6 +148,16 @@ const STRUCTURIZR_SAMPLES_RU: Record<StructurizrSampleId, string> = {
         component api "Components" {
             include *
             autolayout tb
+            title "Компоненты"
+        }
+
+        styles {
+            element "Component" {
+                shape Component
+            }
+            element "Database" {
+                shape Cylinder
+            }
         }
     }
 }`,
@@ -90,7 +173,12 @@ const STRUCTURIZR_SAMPLES_RU: Record<StructurizrSampleId, string> = {
 
         live = deploymentEnvironment "Production" {
             cluster = deploymentNode "Кластер" "Kubernetes-кластер." "Kubernetes" {
+                properties {
+                    "region" "eu"
+                }
+                gateway = infrastructureNode "Шлюз" "Входной балансировщик." "Nginx"
                 containerInstance web
+                shopLive = softwareSystemInstance shop
                 dbNode = deploymentNode "База данных" "Узел PostgreSQL." "VM" {
                     containerInstance db
                 }
@@ -102,6 +190,13 @@ const STRUCTURIZR_SAMPLES_RU: Record<StructurizrSampleId, string> = {
         deployment shop live "Deployment" {
             include *
             autolayout lr
+            title "Развёртывание"
+        }
+
+        styles {
+            element "Database" {
+                shape Cylinder
+            }
         }
     }
 }`,
@@ -110,20 +205,71 @@ const STRUCTURIZR_SAMPLES_RU: Record<StructurizrSampleId, string> = {
 const STRUCTURIZR_SAMPLES_EN: Record<StructurizrSampleId, string> = {
   context: `workspace "Online shop" "Buying products" {
 
+    !identifiers hierarchical
+    !impliedRelationships false
+    !docs "https://example.com/docs"
+    !adrs "https://example.com/adrs"
+
     model {
-        customer = person "Customer" "Places orders."
-        shop = softwareSystem "Shop" "Takes and fulfills orders."
+        properties {
+            "owner" "shop"
+        }
+
+        group "People" {
+            customer = person "Customer" "Places orders." {
+                tags "External"
+                url "https://example.com/customer"
+                perspectives {
+                    "role" "Customer"
+                }
+            }
+        }
+        shop = softwareSystem "Shop" "Takes and fulfills orders." {
+            description "Primary system"
+            technology "Code2Graph"
+        }
         mail = softwareSystem "Mail" "Sends messages to the customer."
 
-        customer -> shop "Places an order"
-        shop -> mail "Sends a message"
+        customer -> shop "Places an order" "HTTPS"
+        shop -> mail "Sends a message" "SMTP"
     }
 
     views {
-        systemContext shop "Context" {
+        systemLandscape "Landscape" "All systems" {
             include *
             autolayout lr
+            title "Landscape"
         }
+        systemContext shop "Context" "Buying" {
+            include *
+            autolayout lr
+            title "Context"
+        }
+        dynamic shop "Order" "Checkout" {
+            customer -> shop "Places an order"
+        }
+        filtered * "Filtered" {
+            include *
+        }
+        styles {
+            element "Person" {
+                shape Person
+                background #08427b
+                color #ffffff
+            }
+            element "Database" {
+                shape Cylinder
+            }
+            relationship "Relationship" {
+                thickness 2
+                style dashed
+            }
+        }
+        theme "https://static.structurizr.com/themes/default/theme.json"
+    }
+
+    configuration {
+        scope softwaresystem
     }
 }`,
   containers: `workspace "Shop" "Containers of the online shop" {
@@ -131,8 +277,16 @@ const STRUCTURIZR_SAMPLES_EN: Record<StructurizrSampleId, string> = {
     model {
         customer = person "Customer" "Buys products."
         shop = softwareSystem "Shop" "Online shop." {
-            web = container "Web application" "Customer interface." "React"
-            api = container "API" "Orders and catalog." "Java"
+            group "Channels" {
+                web = container "Web application" "Customer interface." "React" {
+                    url "https://example.com/web"
+                }
+            }
+            api = container "API" "Orders and catalog." "Java" {
+                properties {
+                    "tier" "backend"
+                }
+            }
             db = container "Database" "Orders and products." "PostgreSQL" {
                 tags "Database"
             }
@@ -147,6 +301,16 @@ const STRUCTURIZR_SAMPLES_EN: Record<StructurizrSampleId, string> = {
         container shop "Containers" {
             include *
             autolayout lr
+            title "Containers"
+        }
+
+        styles {
+            element "Database" {
+                shape Cylinder
+            }
+            element "Container" {
+                shape RoundedBox
+            }
         }
     }
 }`,
@@ -155,10 +319,14 @@ const STRUCTURIZR_SAMPLES_EN: Record<StructurizrSampleId, string> = {
     model {
         shop = softwareSystem "Shop" "Online shop." {
             api = container "API" "Order service." "Java" {
-                orders = component "Orders" "Creates an order." "Spring Bean"
-                catalog = component "Catalog" "Returns products." "Spring Bean"
+                group "Services" {
+                    orders = component "Orders" "Creates an order." "Spring Bean" {
+                        url "https://example.com/orders"
+                    }
+                    catalog = component "Catalog" "Returns products." "Spring Bean"
+                }
 
-                orders -> catalog "Requests a product"
+                orders -> catalog "Requests a product" "JSON"
             }
             db = container "Database" "Stores orders." "PostgreSQL" {
                 tags "Database"
@@ -172,6 +340,16 @@ const STRUCTURIZR_SAMPLES_EN: Record<StructurizrSampleId, string> = {
         component api "Components" {
             include *
             autolayout tb
+            title "Components"
+        }
+
+        styles {
+            element "Component" {
+                shape Component
+            }
+            element "Database" {
+                shape Cylinder
+            }
         }
     }
 }`,
@@ -187,7 +365,12 @@ const STRUCTURIZR_SAMPLES_EN: Record<StructurizrSampleId, string> = {
 
         live = deploymentEnvironment "Production" {
             cluster = deploymentNode "Cluster" "Kubernetes cluster." "Kubernetes" {
+                properties {
+                    "region" "eu"
+                }
+                gateway = infrastructureNode "Gateway" "Ingress load balancer." "Nginx"
                 containerInstance web
+                shopLive = softwareSystemInstance shop
                 dbNode = deploymentNode "Database node" "PostgreSQL node." "VM" {
                     containerInstance db
                 }
@@ -199,6 +382,13 @@ const STRUCTURIZR_SAMPLES_EN: Record<StructurizrSampleId, string> = {
         deployment shop live "Deployment" {
             include *
             autolayout lr
+            title "Deployment"
+        }
+
+        styles {
+            element "Database" {
+                shape Cylinder
+            }
         }
     }
 }`,

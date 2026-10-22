@@ -19,7 +19,8 @@ const GRAPHML_KEYS = `  <key id="label" for="node" attr.name="label" attr.type="
   <key id="stroke" for="node" attr.name="stroke" attr.type="string"/>
   <key id="edgeLabel" for="edge" attr.name="label" attr.type="string"/>
   <key id="style" for="edge" attr.name="style" attr.type="string"/>
-  <key id="color" for="edge" attr.name="color" attr.type="string"/>`;
+  <key id="color" for="edge" attr.name="color" attr.type="string"/>
+  <key id="loc" for="node" attr.name="loc" attr.type="string"/>`;
 
 const GRAPH_PALETTE = {
   blueFill: "#dbeafe",
@@ -130,6 +131,8 @@ interface GraphmlSampleCopy {
   call: string;
   query: string;
   event: string;
+  gate: string;
+  fanout: string;
   statesDescription: string;
   idle: string;
   working: string;
@@ -203,6 +206,22 @@ function buildLocalizedSamples(
           color: GRAPH_PALETTE.violet,
           dashed: true,
         }),
+        `    <node id="gate">
+      <data key="shape">diamond</data>
+      <data key="fill">${GRAPH_PALETTE.amberFill}</data>
+      <data key="stroke">${GRAPH_PALETTE.amber}</data>
+      <data key="label">${copy.gate}</data>
+      <data key="loc">12,40</data>
+      <port name="in"/>
+      <port name="out"/>
+    </node>`,
+        `    <hyperedge id="fanout">
+      <desc>${copy.fanout}</desc>
+      <endpoint node="web"/>
+      <endpoint node="api"/>
+      <endpoint node="queue"/>
+    </hyperedge>`,
+        graphEdge("api", "gate", { label: copy.gate, color: GRAPH_PALETTE.amber }),
       ].join("\n"),
     }),
     states: buildGraphmlSample({
@@ -276,6 +295,8 @@ const GRAPHML_SAMPLES_RU = buildLocalizedSamples({
   call: "Вызов",
   query: "Запрос",
   event: "Событие",
+  gate: "Шлюз",
+  fanout: "Рассылка",
   statesDescription: "Состояния справа налево, с циклом возврата",
   idle: "Ожидание",
   working: "Обработка",
@@ -317,6 +338,8 @@ const GRAPHML_SAMPLES_EN = buildLocalizedSamples({
   call: "Call",
   query: "Query",
   event: "Event",
+  gate: "Gateway",
+  fanout: "Broadcast",
   statesDescription: "States right to left, with a return cycle",
   idle: "Idle",
   working: "Working",

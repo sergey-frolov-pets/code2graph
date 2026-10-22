@@ -1,4 +1,5 @@
 import type { AppLocale } from "@/constants/i18n";
+import { getMermaidRichSample } from "@/constants/mermaid-rich-samples";
 import { buildWizardDiagramSample } from "@/constants/wizard-sample-sources";
 import type { SampleCatalog } from "@/languages/sample-catalog";
 
@@ -84,7 +85,9 @@ const MERMAID_SAMPLES_RU: Record<HandcraftedMermaidSampleId, string> = {
     classDef ok fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
     classDef warn fill:#FFF3E0,stroke:#E65100,color:#BF360C
     class C,F,G ok
-    class D warn`,
+    class D warn
+    linkStyle 0 stroke:#1565C0,stroke-width:2px
+    click A "https://example.com" "Открыть"`,
   sequence: `sequenceDiagram
     %% Диаграмма последовательности: участники, alt/opt/loop
     autonumber
@@ -117,6 +120,14 @@ const MERMAID_SAMPLES_RU: Record<HandcraftedMermaidSampleId, string> = {
         App-->>User: режим без сети
     end
 
+    par Параллельно
+        App->>DB: метрики
+    and
+        App->>API: обновить токен
+    end
+
+    Note right of App: Превью рисуется в браузере
+
     App-->>User: Превью SVG
     deactivate App`,
   classDiagram: `classDiagram
@@ -148,10 +159,17 @@ const MERMAID_SAMPLES_RU: Record<HandcraftedMermaidSampleId, string> = {
         +number price
     }
 
+    namespace Домен {
+        class Animal
+        class Dog
+    }
+
     Animal <|-- Dog
     Dog ..|> Feedable
-    Order "1" --> "*" Item : содержит
-    Dog --> Order : создаёт`,
+    Order "1" *-- "*" Item : содержит
+    Dog --> Order : создаёт
+
+    note for Dog "Лояльный компаньон"`,
   state: `stateDiagram-v2
     %% Диаграмма состояний: переходы и заметки
     [*] --> Idle
@@ -164,6 +182,12 @@ const MERMAID_SAMPLES_RU: Record<HandcraftedMermaidSampleId, string> = {
     Preview --> Idle : new diagram
     Error --> Editing : retry
     Preview --> [*] : export done
+
+    state Validating {
+        [*] --> Check
+        Check --> Passed: ok
+        Check --> Failed: errors
+    }
 
     note right of Validating
         Проверка синтаксиса
@@ -234,7 +258,9 @@ const MERMAID_SAMPLES_EN: Record<HandcraftedMermaidSampleId, string> = {
     classDef ok fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
     classDef warn fill:#FFF3E0,stroke:#E65100,color:#BF360C
     class C,F,G ok
-    class D warn`,
+    class D warn
+    linkStyle 0 stroke:#1565C0,stroke-width:2px
+    click A "https://example.com" "Open"`,
   sequence: `sequenceDiagram
     %% Sequence diagram: participants, alt/opt/loop
     autonumber
@@ -267,6 +293,14 @@ const MERMAID_SAMPLES_EN: Record<HandcraftedMermaidSampleId, string> = {
         App-->>User: offline mode
     end
 
+    par In parallel
+        App->>DB: metrics
+    and
+        App->>API: refresh token
+    end
+
+    Note right of App: Preview is drawn in the browser
+
     App-->>User: SVG preview
     deactivate App`,
   classDiagram: `classDiagram
@@ -298,10 +332,17 @@ const MERMAID_SAMPLES_EN: Record<HandcraftedMermaidSampleId, string> = {
         +number price
     }
 
+    namespace Domain {
+        class Animal
+        class Dog
+    }
+
     Animal <|-- Dog
     Dog ..|> Feedable
-    Order "1" --> "*" Item : contains
-    Dog --> Order : creates`,
+    Order "1" *-- "*" Item : contains
+    Dog --> Order : creates
+
+    note for Dog "Loyal companion"`,
   state: `stateDiagram-v2
     %% State diagram: transitions and notes
     [*] --> Idle
@@ -314,6 +355,12 @@ const MERMAID_SAMPLES_EN: Record<HandcraftedMermaidSampleId, string> = {
     Preview --> Idle : new diagram
     Error --> Editing : retry
     Preview --> [*] : export done
+
+    state Validating {
+        [*] --> Check
+        Check --> Passed: ok
+        Check --> Failed: errors
+    }
 
     note right of Validating
         Syntax check
@@ -382,10 +429,13 @@ function buildMermaidSampleSource(id: MermaidSampleId, locale: AppLocale): strin
     return MERMAID_SOURCES_BY_LOCALE[locale][id];
   }
 
-  return buildWizardDiagramSample(
-    MERMAID_SAMPLE_WIZARD_TYPES[id],
-    "mermaid",
-    locale,
+  return (
+    getMermaidRichSample(id, locale) ??
+    buildWizardDiagramSample(
+      MERMAID_SAMPLE_WIZARD_TYPES[id],
+      "mermaid",
+      locale,
+    )
   );
 }
 
