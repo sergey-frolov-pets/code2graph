@@ -26,6 +26,8 @@ export const siteMessages = {
   "site.languages.title": "Языки",
   "site.language.sites": "Сайты",
   "site.language.libraries": "Библиотеки в приложении",
+  "site.language.diagramTypes": "Типы диаграмм",
+  "site.language.keywords": "Ключевые слова",
   "site.stackLead": "Интерфейс:",
   "site.hero.ctaPrimary": "Открыть редактор без регистрации",
   "site.hero.ctaSecondary": "📲 Установить на ПК / Смартфон",

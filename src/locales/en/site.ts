@@ -26,6 +26,8 @@ export const siteMessages = {
   "site.languages.title": "Languages",
   "site.language.sites": "Sites",
   "site.language.libraries": "Libraries used in the app",
+  "site.language.diagramTypes": "Diagram types",
+  "site.language.keywords": "Keywords",
   "site.stackLead": "Interface:",
   "site.hero.ctaPrimary": "Open editor without sign-up",
   "site.hero.ctaSecondary": "📲 Install on desktop / phone",

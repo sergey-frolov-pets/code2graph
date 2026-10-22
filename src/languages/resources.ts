@@ -33,6 +33,8 @@ export const LANGUAGE_RESOURCES: Record<DiagramFormat, readonly LanguageResource
   wiremark: [
     { kind: "site", href: APP_LINKS.wiremark, label: "WireMark" },
     { kind: "site", href: APP_LINKS.wiremarkGuide, label: "WireMark docs" },
+    { kind: "site", href: APP_LINKS.wiremarkComponents, label: "Component reference" },
+    { kind: "site", href: APP_LINKS.wiremarkIcons, label: "Icon gallery" },
     { kind: "library", href: APP_LINKS.wiremarkCore, label: "@wiremark/core" },
   ],
   d2: [
