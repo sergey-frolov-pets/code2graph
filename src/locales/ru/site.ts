@@ -27,6 +27,7 @@ export const siteMessages = {
   "site.language.sites": "Сайты",
   "site.language.libraries": "Библиотеки в приложении",
   "site.language.types": "Основные типы",
+  "site.language.diagramTypes": "Типы диаграмм",
   "site.language.keywords": "Ключевые слова",
   "site.language.example": "Пример",
   "site.primer.graphml.type.directed.title": "Направленный граф",

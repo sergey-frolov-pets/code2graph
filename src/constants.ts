@@ -26,6 +26,8 @@ export const APP_LINKS = {
   graphmlGuide: "http://graphml.graphdrawing.org/primer/graphml-primer.html",
   graphml: "http://graphml.graphdrawing.org/",
   wiremarkGuide: "https://docs.wiremark.dev/",
+  wiremarkComponents: "https://docs.wiremark.dev/reference/components",
+  wiremarkIcons: "https://docs.wiremark.dev/reference/icons",
   wiremark: "https://wiremark.dev/",
   d2Guide: "https://d2lang.com/tour/intro/",
   d2: "https://d2lang.com/",

@@ -27,6 +27,7 @@ export const siteMessages = {
   "site.language.sites": "Sites",
   "site.language.libraries": "Libraries used in the app",
   "site.language.types": "Main diagram types",
+  "site.language.diagramTypes": "Diagram types",
   "site.language.keywords": "Keywords",
   "site.language.example": "Example",
   "site.primer.graphml.type.directed.title": "Directed graph",
