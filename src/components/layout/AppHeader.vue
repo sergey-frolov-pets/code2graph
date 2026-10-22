@@ -32,6 +32,13 @@ const { t } = useLocale();
     <nav class="app-header__nav" :aria-label="t('app.mainNav')">
       <HeaderControls />
       <IconButton
+        :label="t('site.backHome')"
+        extra-class="app-header__icon-btn"
+        @click="navigateTo('landing')"
+      >
+        <ActionIcon name="home" />
+      </IconButton>
+      <IconButton
         :label="t('app.aiNewDiagram')"
         extra-class="app-header__icon-btn"
         @click="emit('openWizard')"

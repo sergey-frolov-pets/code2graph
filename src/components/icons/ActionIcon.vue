@@ -16,6 +16,7 @@ import {
   FolderOpen,
   Globe,
   History,
+  House,
   Library,
   Moon,
   Plus,
@@ -39,6 +40,7 @@ import {
 } from "@lucide/vue";
 
 export type ActionIconName =
+  | "home"
   | "back"
   | "next"
   | "arrow-down"
@@ -86,6 +88,7 @@ const props = withDefaults(
 );
 
 const ICON_MAP: Record<ActionIconName, Component> = {
+  home: House,
   back: ArrowLeft,
   next: ArrowRight,
   "arrow-down": ArrowDown,

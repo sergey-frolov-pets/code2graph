@@ -11,3 +11,17 @@ test("loads editor and shows preview panel", async ({ page }) => {
   const previewPanel = page.locator(".preview-panel");
   await expect(previewPanel).toBeVisible();
 });
+
+test("returns from the editor header to the landing page", async ({ page }) => {
+  await page.goto("/#/app");
+
+  const homeButton = page.locator(".app-header__nav").getByRole("button", {
+    name: /На главную|Back to home/i,
+  });
+  await expect(homeButton).toBeVisible({ timeout: 30_000 });
+  await homeButton.click();
+
+  await expect(page).toHaveURL(/#\/$/);
+  await expect(page.locator(".landing-page")).toBeVisible();
+});
+
