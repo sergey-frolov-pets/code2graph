@@ -26,6 +26,80 @@ export const siteMessages = {
   "site.languages.title": "Языки",
   "site.language.sites": "Сайты",
   "site.language.libraries": "Библиотеки в приложении",
+  "site.language.types": "Основные типы",
+  "site.language.keywords": "Ключевые слова",
+  "site.language.example": "Пример",
+  "site.primer.graphml.type.directed.title": "Направленный граф",
+  "site.primer.graphml.type.directed.summary":
+    "Рёбра идут от источника к цели. Так Code2Graph рисует GraphML по умолчанию.",
+  "site.primer.graphml.type.undirected.title": "Ненаправленный граф",
+  "site.primer.graphml.type.undirected.summary":
+    "Рёбра только соединяют узлы, без направления.",
+  "site.primer.wiremark.type.flow.title": "Связанные экраны",
+  "site.primer.wiremark.type.flow.summary":
+    "Несколько макетов в одном файле и переходы to=#якорь между ними.",
+  "site.primer.plantuml.kw.startuml":
+    "Пара @startuml и @enduml открывает и закрывает диаграмму.",
+  "site.primer.plantuml.kw.participant":
+    "Именованный участник на линии жизни. as задаёт короткое имя.",
+  "site.primer.plantuml.kw.arrow": "Сообщение: -> к участнику, --> ответ.",
+  "site.primer.plantuml.kw.alt":
+    "Взаимоисключающие ветки. else — вторая ветка, end закрывает блок.",
+  "site.primer.plantuml.kw.note": "Заметка слева, справа или над участниками.",
+  "site.primer.plantuml.kw.if":
+    "Развилка в активности: then и else, закрывается endif.",
+  "site.primer.plantuml.kw.skinparam":
+    "Общий параметр оформления, например цвет фона.",
+  "site.primer.mermaid.kw.participant":
+    "Участник последовательности. as подменяет видимую подпись.",
+  "site.primer.mermaid.kw.arrow":
+    "Сообщение: ->> сплошная стрелка, -->> пунктирный ответ.",
+  "site.primer.mermaid.kw.alt":
+    "Ветки последовательности. else — другая ветка, end закрывает блок.",
+  "site.primer.mermaid.kw.note": "Заметка справа от участника или над несколькими.",
+  "site.primer.mermaid.kw.subgraph": "Группа узлов в блок-схеме. Закрывается end.",
+  "site.primer.mermaid.kw.class": "Класс с полями и методами внутри classDiagram.",
+  "site.primer.mermaid.kw.section": "Группа задач на диаграмме Ганта.",
+  "site.primer.graphml.kw.graphml":
+    "Корень документа. Пространство имён GraphML обязательно.",
+  "site.primer.graphml.kw.graph":
+    "Сам граф. edgedefault — directed или undirected.",
+  "site.primer.graphml.kw.node": "Вершина. id должен быть уникальным.",
+  "site.primer.graphml.kw.edge": "Ребро. source и target ссылаются на id узлов.",
+  "site.primer.graphml.kw.key": "Объявление атрибута для узлов или рёбер.",
+  "site.primer.graphml.kw.data":
+    "Значение атрибута. Видимая подпись лежит здесь, не в id.",
+  "site.primer.wiremark.kw.wireframe":
+    "Один экран. Имя после # — якорь для переходов.",
+  "site.primer.wiremark.kw.flow":
+    "Связывает несколько экранов. LR рисует связи слева направо.",
+  "site.primer.wiremark.kw.stack":
+    "Колонка или ряд. gap задаёт промежуток, отступ — вложенность.",
+  "site.primer.wiremark.kw.typography":
+    "Текст. h4 и body1 — уровень, строка в кавычках — надпись.",
+  "site.primer.wiremark.kw.textfield":
+    "Поле ввода. Подпись в кавычках, настройки вроде required — без кавычек.",
+  "site.primer.wiremark.kw.button":
+    "Кнопка. contained заливает её, to=#id ведёт на другой экран.",
+  "site.primer.d2.kw.direction":
+    "Направление раскладки: down, right, left или up.",
+  "site.primer.d2.kw.shape":
+    "Форма узла: person, cylinder, class, sql_table, sequence_diagram.",
+  "site.primer.d2.kw.arrow": "Связь между узлами. Подпись пишется после двоеточия.",
+  "site.primer.d2.kw.style": "Оформление узла: заливка, обводка, шрифт.",
+  "site.primer.d2.kw.constraint":
+    "Ограничение колонки SQL: primary_key, foreign_key или unique.",
+  "site.primer.structurizr.kw.workspace":
+    "Корень документа: имя и короткое описание модели.",
+  "site.primer.structurizr.kw.person": "Человек, который пользуется системой.",
+  "site.primer.structurizr.kw.softwareSystem": "Программная система в модели.",
+  "site.primer.structurizr.kw.container":
+    "Приложение или хранилище внутри системы. Третий аргумент — технология.",
+  "site.primer.structurizr.kw.arrow":
+    "Кто к кому обращается. Подпись отношения — в кавычках.",
+  "site.primer.structurizr.kw.views": "Какие виды нарисовать из модели.",
+  "site.primer.structurizr.kw.autolayout":
+    "Автораскладка вида: tb сверху вниз или lr слева направо.",
   "site.stackLead": "Интерфейс:",
   "site.hero.ctaPrimary": "Открыть редактор без регистрации",
   "site.hero.ctaSecondary": "📲 Установить на ПК / Смартфон",
