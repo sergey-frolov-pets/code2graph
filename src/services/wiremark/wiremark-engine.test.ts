@@ -4,6 +4,10 @@ import {
   WIREMARK_SAMPLE_IDS,
   getWiremarkSampleSource,
 } from "@/constants/wiremark-sample-diagrams";
+import {
+  WIREMARK_COMPONENTS,
+  WIREMARK_DIRECTIVES,
+} from "@/languages/keywords/wiremark";
 import { validateWiremarkSyntax } from "@/services/wiremark/syntax-validation";
 import {
   ensureWireframePadding,
@@ -21,6 +25,35 @@ describe("wiremark engine", () => {
         expect(validateWiremarkSyntax(getWiremarkSampleSource(id, locale)).valid).toBe(
           true,
         );
+      }
+    }
+  });
+
+  it("covers the wiremark component vocabulary", () => {
+    const features = [
+      /\bvisible=false\b/,
+      /\bbackground=#/,
+      /\banchor=#/,
+      /\bfiller=/,
+      /\bmultiline\b/,
+      /\bscrollbar=/,
+      /^Icons\b/m,
+      /^Flow LR\b/m,
+    ];
+
+    for (const locale of ["ru", "en"] as const) {
+      const corpus = WIREMARK_SAMPLE_IDS.map((id) =>
+        getWiremarkSampleSource(id, locale),
+      ).join("\n");
+
+      for (const name of [...WIREMARK_DIRECTIVES, ...WIREMARK_COMPONENTS]) {
+        expect(corpus, `${locale} ${name}`).toMatch(
+          new RegExp(`(^|\\n)\\s*${name}\\b`),
+        );
+      }
+
+      for (const feature of features) {
+        expect(corpus, `${locale} ${feature}`).toMatch(feature);
       }
     }
   });
