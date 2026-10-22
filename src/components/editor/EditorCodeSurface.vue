@@ -6,6 +6,7 @@ import type { useEditorAutocomplete } from "@/composables/useEditorAutocomplete"
 import type { CompletionKind } from "@/utils/completion-types";
 import type { CodeFoldRegion } from "@/utils/code-folds";
 import { mergeDisplayTextIntoSource } from "@/utils/code-folds";
+import { applyDisplayedEditorTab } from "@/utils/editor-indent";
 import { isSnippetsHotkey } from "@/constants/snippets-settings";
 import { getLanguageModule } from "@/languages/registry";
 import { detectDiagramFormat } from "@/utils/diagram-format";
@@ -93,8 +94,64 @@ function onDisplayInput(event: Event): void {
   });
 }
 
+function isPlainTabKey(event: KeyboardEvent): boolean {
+  return (
+    event.key === "Tab" &&
+    !event.ctrlKey &&
+    !event.altKey &&
+    !event.metaKey &&
+    !event.isComposing
+  );
+}
+
+function applyTabEdit(outdent: boolean): void {
+  const textarea = textareaRef.value;
+  if (!textarea) {
+    return;
+  }
+
+  const edit = applyDisplayedEditorTab({
+    source: props.source,
+    folds: props.folds,
+    displayText: textarea.value,
+    selectionStart: textarea.selectionStart,
+    selectionEnd: textarea.selectionEnd,
+    outdent,
+  });
+
+  if (!edit) {
+    return;
+  }
+
+  if (edit.source !== props.source) {
+    emit("update:source", edit.source);
+  }
+
+  void nextTick(() => {
+    const current = textareaRef.value;
+    if (!current) {
+      return;
+    }
+
+    current.focus();
+    current.setSelectionRange(edit.selectionStart, edit.selectionEnd);
+    emit("select");
+    props.autocomplete.refresh();
+  });
+}
+
 function onTextareaKeydown(event: KeyboardEvent): void {
   if (props.autocomplete.handleKeydown(event)) {
+    return;
+  }
+
+  if (isPlainTabKey(event)) {
+    if (props.readOnly) {
+      return;
+    }
+
+    event.preventDefault();
+    applyTabEdit(event.shiftKey);
     return;
   }
 
