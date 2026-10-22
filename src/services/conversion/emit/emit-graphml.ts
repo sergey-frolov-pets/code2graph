@@ -1,4 +1,4 @@
-import type { DiagramIR } from "@/services/conversion/diagram-ir";
+import type { DiagramDirection, DiagramIR } from "@/services/conversion/diagram-ir";
 
 function escapeXml(value: string): string {
   return value
@@ -6,6 +6,14 @@ function escapeXml(value: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function rankdirAttribute(direction: DiagramDirection | undefined): string {
+  if (direction === "LR" || direction === "RL" || direction === "BT") {
+    return ` rankdir="${direction}"`;
+  }
+
+  return "";
 }
 
 export function emitGraphmlFromIr(ir: DiagramIR): string {
@@ -18,7 +26,7 @@ export function emitGraphmlFromIr(ir: DiagramIR): string {
     '  <key id="d3" for="node" attr.name="y" attr.type="double"/>',
     '  <key id="d4" for="node" attr.name="fill" attr.type="string"/>',
     '  <key id="d5" for="node" attr.name="shape" attr.type="string"/>',
-    `  <graph edgedefault="directed"${ir.direction === "LR" ? ' rankdir="LR"' : ""}>`,
+    `  <graph edgedefault="directed"${rankdirAttribute(ir.direction)}>`,
   ];
 
   for (const node of ir.nodes) {

@@ -15,20 +15,68 @@ const DASHED_STROKE_PATTERN = "6 4";
 const LABEL_ATTR_NAMES = ["label", "nodeLabel", "edgeLabel"] as const;
 const SHAPE_ATTR_NAME = "shape";
 const STYLE_ATTR_NAME = "style";
+const FILL_ATTR_NAME = "fill";
+const STROKE_ATTR_NAME = "stroke";
+const COLOR_ATTR_NAME = "color";
 const DASHED_STYLE = "dashed";
 const UNDIRECTED_EDGE_DEFAULT = "undirected";
 const DIRECTED_EDGE_FLAG = "true";
 const UNDIRECTED_EDGE_FLAG = "false";
-const NON_LABEL_ATTRS = new Set([SHAPE_ATTR_NAME, STYLE_ATTR_NAME]);
+const NON_LABEL_ATTRS = new Set([
+  SHAPE_ATTR_NAME,
+  STYLE_ATTR_NAME,
+  FILL_ATTR_NAME,
+  STROKE_ATTR_NAME,
+  COLOR_ATTR_NAME,
+]);
+const HEX_COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+const RANK_DIRECTIONS = ["TB", "LR", "BT", "RL"] as const;
+const LAYOUT_NODE_SEP = 56;
+const LAYOUT_RANK_SEP = 84;
+const LAYOUT_EDGE_SEP = 28;
+const FONT_FAMILY = "system-ui, sans-serif";
+const STROKE_WIDTH = 1.5;
+const EDGE_LABEL_FONT_SIZE = 11;
+const EDGE_LABEL_CHAR_WIDTH = 7;
+const EDGE_LABEL_LINE_HEIGHT = 16;
+const EDGE_LABEL_PAD_X = 5;
+const EDGE_LABEL_GAP = 6;
+const EDGE_LABEL_SAMPLE_STEP = 12;
+const LABEL_SEPARATION_STEPS = 32;
+const GROUP_LABEL_FONT_SIZE = 12;
+const GROUP_LABEL_CHAR_WIDTH = 7.2;
+const GROUP_LABEL_INSET_X = 10;
+const GROUP_LABEL_BASELINE_GAP = 6;
+const GROUP_LABEL_ASCENT = 12;
+const GROUP_LABEL_DESCENT = 4;
+const OBSTACLE_PAD = 4;
+const LIGHT_TEXT = "#0f172a";
+const DARK_TEXT = "#f8fafc";
+const LIGHT_CANVAS = "#ffffff";
+const DARK_CANVAS = "#171d24";
+const TEXT_LUMINANCE_THRESHOLD = 0.55;
+const SRGB_LINEAR_THRESHOLD = 0.03928;
+const SRGB_OFFSET = 0.055;
+const SRGB_SCALE = 1.055;
+const SRGB_GAMMA = 2.4;
+const SRGB_SLOPE = 12.92;
+const LUMA_RED = 0.2126;
+const LUMA_GREEN = 0.7152;
+const LUMA_BLUE = 0.0722;
+const HEX_CHANNEL_BASE = 16;
+const HEX_BYTE_MAX = 255;
 
 const NODE_SHAPES = ["rectangle", "ellipse", "diamond", "hexagon"] as const;
 
 type GraphmlNodeShape = (typeof NODE_SHAPES)[number];
+type GraphmlRankDirection = (typeof RANK_DIRECTIONS)[number];
 
 interface GraphmlNode {
   id: string;
   label: string;
   shape: GraphmlNodeShape;
+  fill?: string;
+  stroke?: string;
   parentId?: string;
   isGroup: boolean;
 }
@@ -37,6 +85,7 @@ interface GraphmlEdge {
   source: string;
   target: string;
   label?: string;
+  color?: string;
   directed: boolean;
   dashed: boolean;
 }
@@ -44,7 +93,7 @@ interface GraphmlEdge {
 interface ParsedGraphml {
   nodes: GraphmlNode[];
   edges: GraphmlEdge[];
-  direction: "TB" | "LR";
+  direction: GraphmlRankDirection;
 }
 
 interface DataEntry {
@@ -59,6 +108,35 @@ interface ThemeColors {
   edgeStroke: string;
   groupFill: string;
   groupStroke: string;
+  canvas: string;
+}
+
+interface AxisBox {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+interface PolyPoint {
+  x: number;
+  y: number;
+}
+
+interface PlacedEdgeLabel {
+  text: string;
+  cx: number;
+  cy: number;
+  width: number;
+  height: number;
+}
+
+interface EdgeLayout {
+  label?: string;
+  color?: string;
+  directed: boolean;
+  dashed: boolean;
+  points: PolyPoint[];
 }
 
 function escapeXml(value: string): string {
@@ -84,6 +162,57 @@ function parseShape(value: string | undefined): GraphmlNodeShape {
   }
 
   return "rectangle";
+}
+
+function parseRankDirection(value: string | null | undefined): GraphmlRankDirection {
+  const normalized = value?.toUpperCase();
+  if (
+    normalized &&
+    (RANK_DIRECTIONS as readonly string[]).includes(normalized)
+  ) {
+    return normalized as GraphmlRankDirection;
+  }
+
+  return "TB";
+}
+
+function readHexColor(value: string | undefined): string | undefined {
+  if (!value || !HEX_COLOR_PATTERN.test(value)) {
+    return undefined;
+  }
+
+  const hex = value.toLowerCase();
+  if (hex.length === 4) {
+    return `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
+  }
+
+  return hex;
+}
+
+function channelLuminance(value: number): number {
+  const normalized = value / HEX_BYTE_MAX;
+  if (normalized <= SRGB_LINEAR_THRESHOLD) {
+    return normalized / SRGB_SLOPE;
+  }
+
+  return ((normalized + SRGB_OFFSET) / SRGB_SCALE) ** SRGB_GAMMA;
+}
+
+function textColorForFill(fill: string, fallback: string): string {
+  const expanded = readHexColor(fill) ?? fill;
+  const red = Number.parseInt(expanded.slice(1, 3), HEX_CHANNEL_BASE);
+  const green = Number.parseInt(expanded.slice(3, 5), HEX_CHANNEL_BASE);
+  const blue = Number.parseInt(expanded.slice(5, 7), HEX_CHANNEL_BASE);
+  if ([red, green, blue].some((channel) => Number.isNaN(channel))) {
+    return fallback;
+  }
+
+  const luminance =
+    LUMA_RED * channelLuminance(red) +
+    LUMA_GREEN * channelLuminance(green) +
+    LUMA_BLUE * channelLuminance(blue);
+
+  return luminance > TEXT_LUMINANCE_THRESHOLD ? LIGHT_TEXT : DARK_TEXT;
 }
 
 function readDataEntries(element: Element, keyMap: Map<string, string>): DataEntry[] {
@@ -164,6 +293,8 @@ function collectGraph(
         id,
         label: readLabel(entries) ?? id,
         shape: parseShape(readNamedData(entries, [SHAPE_ATTR_NAME])),
+        fill: readHexColor(readNamedData(entries, [FILL_ATTR_NAME])),
+        stroke: readHexColor(readNamedData(entries, [STROKE_ATTR_NAME])),
         parentId,
         isGroup: Boolean(nestedGraph),
       });
@@ -186,6 +317,7 @@ function collectGraph(
         source,
         target,
         label: readLabel(entries),
+        color: readHexColor(readNamedData(entries, [COLOR_ATTR_NAME])),
         directed: isDirectedEdge(child, defaultDirected),
         dashed: readNamedData(entries, [STYLE_ATTR_NAME]) === DASHED_STYLE,
       });
@@ -234,26 +366,23 @@ export function parseGraphml(source: string): ParsedGraphml {
     throw new LocalizedAppError("graphml.noNodes");
   }
 
-  const rankdir = graphElement.getAttribute("rankdir");
-  const direction: "TB" | "LR" =
-    rankdir?.toUpperCase() === "LR" || rankdir?.toUpperCase() === "RL"
-      ? "LR"
-      : "TB";
+  const direction = parseRankDirection(graphElement.getAttribute("rankdir"));
 
   return { nodes, edges, direction };
 }
 
 function layoutGraph(
   graph: ParsedGraphml,
-  rankdir: "TB" | "LR" = "TB",
+  rankdir: GraphmlRankDirection = "TB",
 ): dagre.graphlib.Graph {
-  const dagreGraph = new dagre.graphlib.Graph({ compound: true });
+  const dagreGraph = new dagre.graphlib.Graph({ compound: true, multigraph: true });
   dagreGraph.setGraph({
     rankdir,
     marginx: GRAPH_MARGIN,
     marginy: GRAPH_MARGIN,
-    nodesep: 40,
-    ranksep: 56,
+    nodesep: LAYOUT_NODE_SEP,
+    ranksep: LAYOUT_RANK_SEP,
+    edgesep: LAYOUT_EDGE_SEP,
   });
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
@@ -271,8 +400,8 @@ function layoutGraph(
     }
   }
 
-  for (const edge of graph.edges) {
-    dagreGraph.setEdge(edge.source, edge.target);
+  for (const [index, edge] of graph.edges.entries()) {
+    dagreGraph.setEdge(edge.source, edge.target, {}, `e${index}`);
   }
 
   dagre.layout(dagreGraph);
@@ -294,21 +423,218 @@ function themeColors(dark: boolean): ThemeColors {
     return {
       nodeFill: "#1f2937",
       nodeStroke: "#94a3b8",
-      textFill: "#f8fafc",
+      textFill: DARK_TEXT,
       edgeStroke: "#94a3b8",
       groupFill: "#111827",
       groupStroke: "#64748b",
+      canvas: DARK_CANVAS,
     };
   }
 
   return {
     nodeFill: "#ffffff",
     nodeStroke: "#64748b",
-    textFill: "#0f172a",
+    textFill: LIGHT_TEXT,
     edgeStroke: "#64748b",
     groupFill: "#f8fafc",
     groupStroke: "#94a3b8",
+    canvas: LIGHT_CANVAS,
   };
+}
+
+function formatCoord(value: number): string {
+  return String(Math.round(value * 10) / 10);
+}
+
+function edgeLabelSize(text: string): { width: number; height: number } {
+  return {
+    width: text.length * EDGE_LABEL_CHAR_WIDTH + EDGE_LABEL_PAD_X * 2,
+    height: EDGE_LABEL_LINE_HEIGHT,
+  };
+}
+
+function toBox(cx: number, cy: number, width: number, height: number): AxisBox {
+  return {
+    left: cx - width / 2,
+    top: cy - height / 2,
+    right: cx + width / 2,
+    bottom: cy + height / 2,
+  };
+}
+
+function expandedBox(box: AxisBox, pad: number): AxisBox {
+  return {
+    left: box.left - pad,
+    top: box.top - pad,
+    right: box.right + pad,
+    bottom: box.bottom + pad,
+  };
+}
+
+function boxesOverlap(a: AxisBox, b: AxisBox): boolean {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+}
+
+function overlapAmounts(a: AxisBox, b: AxisBox): { x: number; y: number } {
+  return {
+    x: Math.min(a.right, b.right) - Math.max(a.left, b.left),
+    y: Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top),
+  };
+}
+
+function pointInside(box: AxisBox, x: number, y: number): boolean {
+  return x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
+}
+
+function groupLabelBox(groupLeft: number, groupTop: number, label: string): AxisBox {
+  const baseline = groupTop - GROUP_LABEL_BASELINE_GAP;
+  const left = groupLeft + GROUP_LABEL_INSET_X;
+  return {
+    left,
+    right: left + label.length * GROUP_LABEL_CHAR_WIDTH,
+    top: baseline - GROUP_LABEL_ASCENT,
+    bottom: baseline + GROUP_LABEL_DESCENT,
+  };
+}
+
+function samplePolyline(
+  points: PolyPoint[],
+): Array<{ x: number; y: number }> {
+  const samples: Array<{ x: number; y: number }> = [];
+
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const start = points[index];
+    const end = points[index + 1];
+    if (!start || !end) {
+      continue;
+    }
+
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const length = Math.hypot(dx, dy);
+    if (length < 1) {
+      continue;
+    }
+
+    const count = Math.max(1, Math.round(length / EDGE_LABEL_SAMPLE_STEP));
+    for (let step = 0; step <= count; step += 1) {
+      const t = step / count;
+      samples.push({
+        x: start.x + dx * t,
+        y: start.y + dy * t,
+      });
+    }
+  }
+
+  return samples;
+}
+
+function labelBox(label: PlacedEdgeLabel, gap = 0): AxisBox {
+  return expandedBox(toBox(label.cx, label.cy, label.width, label.height), gap);
+}
+
+function pushLabelsApart(first: PlacedEdgeLabel, second: PlacedEdgeLabel): boolean {
+  const firstBox = labelBox(first, EDGE_LABEL_GAP / 2);
+  const secondBox = labelBox(second, EDGE_LABEL_GAP / 2);
+  if (!boxesOverlap(firstBox, secondBox)) {
+    return false;
+  }
+
+  const amount = overlapAmounts(firstBox, secondBox);
+  if (amount.x <= 0 || amount.y <= 0) {
+    return false;
+  }
+
+  if (amount.x < amount.y) {
+    const direction = first.cx <= second.cx ? -1 : 1;
+    const push = amount.x / 2 + 0.5;
+    first.cx += direction * push;
+    second.cx -= direction * push;
+    return true;
+  }
+
+  const direction = first.cy <= second.cy ? -1 : 1;
+  const push = amount.y / 2 + 0.5;
+  first.cy += direction * push;
+  second.cy -= direction * push;
+  return true;
+}
+
+function pushLabelOutOfObstacle(label: PlacedEdgeLabel, obstacle: AxisBox): boolean {
+  const box = labelBox(label);
+  const padded = expandedBox(obstacle, OBSTACLE_PAD);
+  if (!boxesOverlap(box, padded)) {
+    return false;
+  }
+
+  const amount = overlapAmounts(box, padded);
+  const obstacleCenterX = (obstacle.left + obstacle.right) / 2;
+  const obstacleCenterY = (obstacle.top + obstacle.bottom) / 2;
+  if (amount.x < amount.y) {
+    const direction = label.cx >= obstacleCenterX ? 1 : -1;
+    label.cx += direction * (amount.x + 0.5);
+    return true;
+  }
+
+  const direction = label.cy >= obstacleCenterY ? 1 : -1;
+  label.cy += direction * (amount.y + 0.5);
+  return true;
+}
+
+function placeEdgeLabels(edges: EdgeLayout[], obstacles: AxisBox[]): Array<PlacedEdgeLabel | undefined> {
+  const placements: Array<PlacedEdgeLabel | undefined> = edges.map((edge) => {
+    if (!edge.label) {
+      return undefined;
+    }
+
+    const size = edgeLabelSize(edge.label);
+    const samples = samplePolyline(edge.points);
+    const freeSamples = samples.filter(
+      (sample) => !obstacles.some((obstacle) => pointInside(obstacle, sample.x, sample.y)),
+    );
+    const pool = freeSamples.length > 0 ? freeSamples : samples;
+    const anchor = pool[Math.floor(pool.length / 2)] ?? edge.points[0] ?? { x: 0, y: 0 };
+
+    return {
+      text: edge.label,
+      cx: anchor.x,
+      cy: anchor.y,
+      width: size.width,
+      height: size.height,
+    };
+  });
+
+  for (let step = 0; step < LABEL_SEPARATION_STEPS; step += 1) {
+    let moved = false;
+    for (let index = 0; index < placements.length; index += 1) {
+      const label = placements[index];
+      if (!label) {
+        continue;
+      }
+
+      for (let otherIndex = index + 1; otherIndex < placements.length; otherIndex += 1) {
+        const other = placements[otherIndex];
+        if (!other) {
+          continue;
+        }
+        moved = pushLabelsApart(label, other) || moved;
+      }
+
+      for (const obstacle of obstacles) {
+        moved = pushLabelOutOfObstacle(label, obstacle) || moved;
+      }
+    }
+
+    if (!moved) {
+      break;
+    }
+  }
+
+  return placements;
+}
+
+function markerId(color: string): string {
+  return `graphml-arrow-${color.slice(1)}`;
 }
 
 function renderNodeShape(
@@ -320,7 +646,7 @@ function renderNodeShape(
   fill: string,
   stroke: string,
 ): string {
-  const paint = `fill="${fill}" stroke="${stroke}" stroke-width="1.5"`;
+  const paint = `fill="${fill}" stroke="${stroke}" stroke-width="${STROKE_WIDTH}"`;
   if (shape === "ellipse") {
     return `<ellipse cx="${x + width / 2}" cy="${y + height / 2}" rx="${width / 2}" ry="${height / 2}" ${paint}/>`;
   }
@@ -349,12 +675,21 @@ function renderNodeShape(
   return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="${NODE_RX}" ${paint}/>`;
 }
 
+interface RenderedNode {
+  node: GraphmlNode;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 function renderGraphmlSvg(
   graph: ParsedGraphml,
   dagreGraph: dagre.graphlib.Graph,
   dark: boolean,
 ): string {
   const colors = themeColors(dark);
+  const renderedNodes: RenderedNode[] = [];
 
   let minX = Number.POSITIVE_INFINITY;
   let minY = Number.POSITIVE_INFINITY;
@@ -372,91 +707,192 @@ function renderGraphmlSvg(
     minY = Math.min(minY, layoutNode.y - layoutNode.height / 2 - labelOutset);
     maxX = Math.max(maxX, layoutNode.x + layoutNode.width / 2);
     maxY = Math.max(maxY, layoutNode.y + layoutNode.height / 2);
+    renderedNodes.push({
+      node,
+      x: layoutNode.x - layoutNode.width / 2,
+      y: layoutNode.y - layoutNode.height / 2,
+      width: layoutNode.width,
+      height: layoutNode.height,
+    });
   }
 
-  const width = Math.max(maxX - minX + GRAPH_MARGIN * 2, 320);
-  const height = Math.max(maxY - minY + GRAPH_MARGIN * 2, 240);
   const offsetX = GRAPH_MARGIN - minX;
   const offsetY = GRAPH_MARGIN - minY;
+  for (const rendered of renderedNodes) {
+    rendered.x += offsetX;
+    rendered.y += offsetY;
+  }
 
-  const groupElements = graph.nodes
-    .filter((node) => node.isGroup)
-    .map((node) => {
-      const layoutNode = dagreGraph.node(node.id);
-      if (!layoutNode) {
-        return "";
+  const obstacles: AxisBox[] = [];
+  for (const rendered of renderedNodes) {
+    if (rendered.node.isGroup) {
+      obstacles.push(
+        groupLabelBox(rendered.x, rendered.y, rendered.node.label),
+      );
+      continue;
+    }
+
+    obstacles.push({
+      left: rendered.x,
+      top: rendered.y,
+      right: rendered.x + rendered.width,
+      bottom: rendered.y + rendered.height,
+    });
+  }
+
+  const edgeLayouts: EdgeLayout[] = graph.edges.flatMap((edge, index) => {
+    const layoutEdge = dagreGraph.edge({
+      v: edge.source,
+      w: edge.target,
+      name: `e${index}`,
+    });
+    if (!layoutEdge?.points?.length) {
+      return [];
+    }
+
+    return [{
+      label: edge.label,
+      color: edge.color,
+      directed: edge.directed,
+      dashed: edge.dashed,
+      points: layoutEdge.points.map((point: PolyPoint) => ({
+        x: point.x + offsetX,
+        y: point.y + offsetY,
+      })),
+    }];
+  });
+
+  const placedLabels = placeEdgeLabels(edgeLayouts, obstacles);
+  const contentBoxes: AxisBox[] = [
+    ...renderedNodes.map((rendered) => ({
+      left: rendered.x,
+      top: rendered.node.isGroup ? rendered.y - GROUP_LABEL_OUTSET : rendered.y,
+      right: rendered.x + rendered.width,
+      bottom: rendered.y + rendered.height,
+    })),
+    ...placedLabels.flatMap((label) => (label ? [labelBox(label)] : [])),
+    ...edgeLayouts.flatMap((edge) =>
+      edge.points.map((point) => ({
+        left: point.x,
+        top: point.y,
+        right: point.x,
+        bottom: point.y,
+      })),
+    ),
+  ];
+
+  let contentLeft = GRAPH_MARGIN;
+  let contentTop = GRAPH_MARGIN;
+  let contentRight = GRAPH_MARGIN;
+  let contentBottom = GRAPH_MARGIN;
+  for (const box of contentBoxes) {
+    contentLeft = Math.min(contentLeft, box.left);
+    contentTop = Math.min(contentTop, box.top);
+    contentRight = Math.max(contentRight, box.right);
+    contentBottom = Math.max(contentBottom, box.bottom);
+  }
+
+  const shiftX = GRAPH_MARGIN - contentLeft;
+  const shiftY = GRAPH_MARGIN - contentTop;
+  if (shiftX !== 0 || shiftY !== 0) {
+    for (const rendered of renderedNodes) {
+      rendered.x += shiftX;
+      rendered.y += shiftY;
+    }
+    for (const edge of edgeLayouts) {
+      for (const point of edge.points) {
+        point.x += shiftX;
+        point.y += shiftY;
       }
+    }
+    for (const label of placedLabels) {
+      if (!label) {
+        continue;
+      }
+      label.cx += shiftX;
+      label.cy += shiftY;
+    }
+  }
 
-      const x = layoutNode.x - layoutNode.width / 2 + offsetX;
-      const y = layoutNode.y - layoutNode.height / 2 + offsetY;
-      const label = escapeXml(node.label);
+  const width = Math.max(contentRight - contentLeft + GRAPH_MARGIN * 2, 320);
+  const height = Math.max(contentBottom - contentTop + GRAPH_MARGIN * 2, 240);
+  const markerColors = new Set<string>([colors.edgeStroke]);
+  for (const edge of edgeLayouts) {
+    if (edge.directed) {
+      markerColors.add(edge.color ?? colors.edgeStroke);
+    }
+  }
 
+  const groupElements = renderedNodes
+    .filter((rendered) => rendered.node.isGroup)
+    .map((rendered) => {
+      const label = escapeXml(rendered.node.label);
+      const fill = rendered.node.fill ?? colors.groupFill;
+      const stroke = rendered.node.stroke ?? colors.groupStroke;
       return `<g class="graphml-group">
-  <rect x="${x}" y="${y}" width="${layoutNode.width}" height="${layoutNode.height}" rx="${NODE_RX}" fill="${colors.groupFill}" stroke="${colors.groupStroke}" stroke-width="1.5"/>
-  <text x="${x + layoutNode.width / 2}" y="${y - 4}" fill="${colors.textFill}" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">${label}</text>
+  <rect x="${formatCoord(rendered.x)}" y="${formatCoord(rendered.y)}" width="${formatCoord(rendered.width)}" height="${formatCoord(rendered.height)}" rx="${NODE_RX}" fill="${fill}" stroke="${stroke}" stroke-width="${STROKE_WIDTH}"/>
+  <text x="${formatCoord(rendered.x + GROUP_LABEL_INSET_X)}" y="${formatCoord(rendered.y - GROUP_LABEL_BASELINE_GAP)}" fill="${colors.textFill}" font-family="${FONT_FAMILY}" font-size="${GROUP_LABEL_FONT_SIZE}" text-anchor="start">${label}</text>
 </g>`;
     })
     .join("\n");
 
-  const nodeElements = graph.nodes
-    .filter((node) => !node.isGroup)
-    .map((node) => {
-      const layoutNode = dagreGraph.node(node.id);
-      if (!layoutNode) {
-        return "";
-      }
-
-      const x = layoutNode.x - layoutNode.width / 2 + offsetX;
-      const y = layoutNode.y - layoutNode.height / 2 + offsetY;
-      const label = escapeXml(node.label);
+  const nodeElements = renderedNodes
+    .filter((rendered) => !rendered.node.isGroup)
+    .map((rendered) => {
+      const fill = rendered.node.fill ?? colors.nodeFill;
+      const stroke = rendered.node.stroke ?? colors.nodeStroke;
+      const textFill = rendered.node.fill
+        ? textColorForFill(fill, colors.textFill)
+        : colors.textFill;
       const shape = renderNodeShape(
-        node.shape,
-        x,
-        y,
-        layoutNode.width,
-        layoutNode.height,
-        colors.nodeFill,
-        colors.nodeStroke,
+        rendered.node.shape,
+        rendered.x,
+        rendered.y,
+        rendered.width,
+        rendered.height,
+        fill,
+        stroke,
       );
 
       return `<g class="graphml-node">
   ${shape}
-  <text x="${x + layoutNode.width / 2}" y="${y + layoutNode.height / 2}" fill="${colors.textFill}" font-family="system-ui, sans-serif" font-size="13" text-anchor="middle" dominant-baseline="middle">${label}</text>
+  <text x="${formatCoord(rendered.x + rendered.width / 2)}" y="${formatCoord(rendered.y + rendered.height / 2)}" fill="${textFill}" font-family="${FONT_FAMILY}" font-size="13" text-anchor="middle" dominant-baseline="middle">${escapeXml(rendered.node.label)}</text>
 </g>`;
     })
     .join("\n");
 
-  const edgeElements = graph.edges
-    .map((edge) => {
-      const layoutEdge = dagreGraph.edge(edge.source, edge.target);
-      if (!layoutEdge?.points?.length) {
-        return "";
-      }
-
-      const shiftedPoints = layoutEdge.points.map((point) => ({
-        x: point.x + offsetX,
-        y: point.y + offsetY,
-      }));
-      const path = buildEdgePath(shiftedPoints);
-      const marker = edge.directed ? ' marker-end="url(#graphml-arrow)"' : "";
+  const edgeElements = edgeLayouts
+    .map((edge, index) => {
+      const path = buildEdgePath(edge.points);
+      const stroke = edge.color ?? colors.edgeStroke;
+      const marker = edge.directed
+        ? ` marker-end="url(#${markerId(stroke)})"`
+        : "";
       const dash = edge.dashed ? ` stroke-dasharray="${DASHED_STROKE_PATTERN}"` : "";
-      const labelPoint = shiftedPoints[Math.floor(shiftedPoints.length / 2)];
-      const labelMarkup = edge.label
-        ? `<text x="${labelPoint.x}" y="${labelPoint.y - 6}" fill="${colors.textFill}" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle">${escapeXml(edge.label)}</text>`
+      const label = placedLabels[index];
+      const labelMarkup = label
+        ? `<rect class="graphml-edge-label" x="${formatCoord(label.cx - label.width / 2)}" y="${formatCoord(label.cy - label.height / 2)}" width="${formatCoord(label.width)}" height="${formatCoord(label.height)}" rx="${NODE_RX}" fill="${colors.canvas}"/>
+  <text x="${formatCoord(label.cx)}" y="${formatCoord(label.cy)}" fill="${colors.textFill}" font-family="${FONT_FAMILY}" font-size="${EDGE_LABEL_FONT_SIZE}" text-anchor="middle" dominant-baseline="middle">${escapeXml(label.text)}</text>`
         : "";
 
       return `<g class="graphml-edge">
-  <path d="${path}" fill="none" stroke="${colors.edgeStroke}" stroke-width="1.5"${dash}${marker}/>
+  <path d="${path}" fill="none" stroke="${stroke}" stroke-width="${STROKE_WIDTH}"${dash}${marker}/>
   ${labelMarkup}
 </g>`;
     })
     .join("\n");
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img">
+  const markerElements = [...markerColors]
+    .map(
+      (color) => `<marker id="${markerId(color)}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="${color}"/>
+    </marker>`,
+    )
+    .join("\n");
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${formatCoord(width)}" height="${formatCoord(height)}" viewBox="0 0 ${formatCoord(width)} ${formatCoord(height)}" role="img">
   <defs>
-    <marker id="graphml-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="${colors.edgeStroke}"/>
-    </marker>
+    ${markerElements}
   </defs>
   ${groupElements}
   ${edgeElements}
@@ -466,11 +902,10 @@ function renderGraphmlSvg(
 
 export async function renderGraphmlToSvg(
   source: string,
-  options: { dark?: boolean; direction?: "TB" | "LR" } = {},
+  options: { dark?: boolean; direction?: GraphmlRankDirection } = {},
 ): Promise<string> {
   const graph = parseGraphml(source);
-  const rankdir =
-    options.direction === "LR" || graph.direction === "LR" ? "LR" : "TB";
+  const rankdir = parseRankDirection(options.direction ?? graph.direction);
   const dagreGraph = layoutGraph(graph, rankdir);
   return renderGraphmlSvg(graph, dagreGraph, Boolean(options.dark));
 }
