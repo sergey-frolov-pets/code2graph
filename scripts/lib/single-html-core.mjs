@@ -84,12 +84,217 @@ const ERROR_HANDLER_SCRIPT = `
           "</pre>";
       });`;
 
+export const LOADING_SHELL_INNER = `
+      <div class="app-boot-loader" role="status" aria-live="polite" aria-label="Code2Graph">
+        <style>
+          .app-boot-loader {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 24px;
+            background: var(--bg, #f4f6f8);
+            color: var(--accent, #0f6cbd);
+          }
+          @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) .app-boot-loader {
+              background: var(--bg, #0f1419);
+              color: var(--accent, #4da3ff);
+            }
+          }
+          .app-boot-loader__svg {
+            width: 128px;
+            height: 128px;
+            overflow: visible;
+          }
+          .app-boot-loader__ring-track {
+            fill: none;
+            stroke: currentColor;
+            stroke-opacity: 0.14;
+            stroke-width: 3;
+          }
+          .app-boot-loader__ring-spin {
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 3.5;
+            stroke-linecap: round;
+            stroke-dasharray: 88 264;
+            transform-origin: 64px 64px;
+            animation: app-boot-ring-rotate 1.4s linear infinite;
+          }
+          .app-boot-loader__edge {
+            fill: none;
+            stroke: currentColor;
+            stroke-opacity: 0.28;
+            stroke-width: 2;
+            stroke-linecap: round;
+          }
+          .app-boot-loader__arrow {
+            fill: currentColor;
+            fill-opacity: 0.35;
+          }
+          .app-boot-loader__edge-flow {
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-dasharray: 14 40;
+            opacity: 0;
+          }
+          .app-boot-loader__edge-flow--1 {
+            animation: app-boot-edge-flow-1 2.4s ease-in-out infinite;
+          }
+          .app-boot-loader__edge-flow--2 {
+            animation: app-boot-edge-flow-2 2.4s ease-in-out infinite;
+          }
+          .app-boot-loader__edge-flow--3 {
+            animation: app-boot-edge-flow-3 2.4s ease-in-out infinite;
+          }
+          .app-boot-loader__node {
+            fill: var(--surface, #ffffff);
+            stroke: currentColor;
+            stroke-width: 2.2;
+            transform-box: fill-box;
+            transform-origin: center;
+          }
+          @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) .app-boot-loader__node {
+              fill: var(--surface, #171d24);
+            }
+          }
+          .app-boot-loader__node--1 {
+            animation: app-boot-node-1 2.4s ease-in-out infinite;
+          }
+          .app-boot-loader__node--2 {
+            animation: app-boot-node-2 2.4s ease-in-out infinite;
+          }
+          .app-boot-loader__node--3 {
+            animation: app-boot-node-3 2.4s ease-in-out infinite;
+          }
+          .app-boot-loader__packet {
+            fill: currentColor;
+            animation: app-boot-packet 2.4s ease-in-out infinite;
+          }
+          @keyframes app-boot-ring-rotate {
+            to {
+              transform: rotate(360deg);
+            }
+          }
+          @keyframes app-boot-node-1 {
+            0%, 100% {
+              stroke-width: 3;
+              transform: scale(1.08);
+            }
+            30%, 85% {
+              stroke-width: 2;
+              transform: scale(1);
+            }
+          }
+          @keyframes app-boot-node-2 {
+            0%, 20%, 65%, 100% {
+              stroke-width: 2;
+              transform: scale(1);
+            }
+            33%, 50% {
+              stroke-width: 3;
+              transform: scale(1.08);
+            }
+          }
+          @keyframes app-boot-node-3 {
+            0%, 55%, 95%, 100% {
+              stroke-width: 2;
+              transform: scale(1);
+            }
+            66%, 83% {
+              stroke-width: 3;
+              transform: scale(1.08);
+            }
+          }
+          @keyframes app-boot-edge-flow-1 {
+            0%, 5% {
+              opacity: 0;
+              stroke-dashoffset: 24;
+            }
+            15%, 28% {
+              opacity: 1;
+            }
+            35%, 100% {
+              opacity: 0;
+              stroke-dashoffset: 0;
+            }
+          }
+          @keyframes app-boot-edge-flow-2 {
+            0%, 38% {
+              opacity: 0;
+              stroke-dashoffset: 24;
+            }
+            48%, 61% {
+              opacity: 1;
+            }
+            68%, 100% {
+              opacity: 0;
+              stroke-dashoffset: 0;
+            }
+          }
+          @keyframes app-boot-edge-flow-3 {
+            0%, 71% {
+              opacity: 0;
+              stroke-dashoffset: 24;
+            }
+            81%, 93% {
+              opacity: 1;
+            }
+            100% {
+              opacity: 0;
+              stroke-dashoffset: 0;
+            }
+          }
+          @keyframes app-boot-packet {
+            0%, 8% {
+              transform: translate(64px, 34px) scale(1);
+              opacity: 1;
+            }
+            30%, 41% {
+              transform: translate(86px, 76px) scale(1);
+              opacity: 1;
+            }
+            63%, 74% {
+              transform: translate(42px, 76px) scale(1);
+              opacity: 1;
+            }
+            95%, 100% {
+              transform: translate(64px, 34px) scale(1);
+              opacity: 1;
+            }
+          }
+        </style>
+        <svg class="app-boot-loader__svg" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle class="app-boot-loader__ring-track" cx="64" cy="64" r="56" />
+          <circle class="app-boot-loader__ring-spin" cx="64" cy="64" r="56" />
+
+          <path class="app-boot-loader__edge" d="M72 44 L82 64" />
+          <polygon class="app-boot-loader__arrow" points="78,63 84,67 84,59" />
+          <path class="app-boot-loader__edge-flow app-boot-loader__edge-flow--1" d="M72 44 L82 64" />
+
+          <path class="app-boot-loader__edge" d="M72 78 L56 78" />
+          <polygon class="app-boot-loader__arrow" points="58,74 52,78 58,82" />
+          <path class="app-boot-loader__edge-flow app-boot-loader__edge-flow--2" d="M72 78 L56 78" />
+
+          <path class="app-boot-loader__edge" d="M46 66 L56 46" />
+          <polygon class="app-boot-loader__arrow" points="58,49 58,42 52,46" />
+          <path class="app-boot-loader__edge-flow app-boot-loader__edge-flow--3" d="M46 66 L56 46" />
+
+          <rect class="app-boot-loader__node app-boot-loader__node--1" x="50" y="24" width="28" height="20" rx="5" />
+          <rect class="app-boot-loader__node app-boot-loader__node--2" x="72" y="66" width="28" height="20" rx="5" />
+          <rect class="app-boot-loader__node app-boot-loader__node--3" x="28" y="66" width="28" height="20" rx="5" />
+
+          <circle class="app-boot-loader__packet" cx="0" cy="0" r="3.5" />
+        </svg>
+      </div>`;
+
 const LOADING_SHELL = `
-    <div id="app">
-      <div style="padding:20px;font-family:sans-serif;color:#1a1f24;background:#f4f6f8;min-height:100vh">
-        <h1 style="margin:0 0 8px;font-size:20px">Code2Graph</h1>
-        <p style="margin:0;color:#5b6670">Загрузка интерфейса...</p>
-      </div>
+    <div id="app">${LOADING_SHELL_INNER}
     </div>`;
 
 export function buildSingleHtmlDocument({
