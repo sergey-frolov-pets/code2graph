@@ -76,7 +76,7 @@ export const siteMessages = {
   "site.formats.mermaid.summary":
     "A compact diagram language for Markdown, GitHub, and notes. The editor renders Mermaid in the browser; the online mode can also use mermaid.ink.",
   "site.formats.graphml.purpose": "Topology graphs for yEd, Draw.io, and visualization systems",
-  "site.formats.graphml.features": "Import, visualization, conversion to code",
+  "site.formats.graphml.features": "Import, visualization, samples, conversion to code",
   "site.formats.graphml.summary":
     "An XML graph format used by yEd and other tools. Code2Graph reads GraphML and lays the graph out with dagre.",
   "site.formats.wiremark.purpose": "Hand-drawn UI wireframes inside markdown",

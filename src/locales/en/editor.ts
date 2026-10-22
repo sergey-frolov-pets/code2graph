@@ -44,7 +44,7 @@ export const editorMessages = {
   "editor.dropHintViewOnly": "GraphML is view-only. Drop a .graphml file here.",
   "editor.placeholder": "@startuml\nAlice -> Bob : Hello\n@enduml",
   "editor.placeholderMermaid": "flowchart TD\n  A[Start] --> B[End]",
-  "editor.placeholderGraphml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\">\n  <graph edgedefault=\"directed\">\n    <node id=\"n1\"/>\n  </graph>\n</graphml>",
+  "editor.placeholderGraphml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\">\n  <key id=\"label\" for=\"node\" attr.name=\"label\" attr.type=\"string\"/>\n  <graph edgedefault=\"directed\">\n    <node id=\"start\"><data key=\"label\">Start</data></node>\n    <node id=\"work\"><data key=\"label\">Step</data></node>\n    <node id=\"end\"><data key=\"label\">Finish</data></node>\n    <edge source=\"start\" target=\"work\"/>\n    <edge source=\"work\" target=\"end\"/>\n  </graph>\n</graphml>",
   "editor.placeholderWiremark": "Wireframe #login mobile\n  Typography h4 \"Sign in\"\n  Button \"Sign in\" contained",
   "editor.placeholderD2": "direction: right\nuser -> api: Request",
   "editor.placeholderStructurizr": "workspace {\n  model {\n    user = person \"User\"\n    app = softwareSystem \"App\"\n    user -> app \"Uses\"\n  }\n}",

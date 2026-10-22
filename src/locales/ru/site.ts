@@ -76,7 +76,7 @@ export const siteMessages = {
   "site.formats.mermaid.summary":
     "Компактный язык диаграмм для Markdown, GitHub и заметок. Редактор рисует Mermaid в браузере, онлайн-режим может использовать mermaid.ink.",
   "site.formats.graphml.purpose": "Графы с топологией для yEd, Draw.io и виз-систем",
-  "site.formats.graphml.features": "Импорт, визуализация, конвертация в код",
+  "site.formats.graphml.features": "Импорт, визуализация, примеры, конвертация в код",
   "site.formats.graphml.summary":
     "XML-формат графов, который используют yEd и другие инструменты. Code2Graph читает GraphML и раскладывает граф библиотекой dagre.",
   "site.formats.wiremark.purpose": "Вайрфреймы интерфейса в стиле наброска, прямо в тексте",

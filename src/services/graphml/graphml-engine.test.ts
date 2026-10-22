@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it } from "vitest";
+import {
+  GRAPHML_SAMPLE_IDS,
+  getGraphmlSampleSource,
+} from "@/constants/graphml-sample-diagrams";
 import { parseGraphml, renderGraphmlToSvg } from "@/services/graphml/graphml-engine";
 
 const SAMPLE_GRAPHML = `<?xml version="1.0" encoding="UTF-8"?>
@@ -66,5 +70,73 @@ describe("renderGraphmlToSvg", () => {
 
     expect(lr.width).toBeGreaterThan(lr.height);
     expect(lr.width).toBeGreaterThan(tb.width);
+  });
+});
+
+describe("graphml samples", () => {
+  it("keeps the node label when a shape key is also present", () => {
+    const graph = parseGraphml(`<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns">
+  <key id="label" for="node" attr.name="label" attr.type="string"/>
+  <key id="shape" for="node" attr.name="shape" attr.type="string"/>
+  <graph edgedefault="directed">
+    <node id="check">
+      <data key="shape">diamond</data>
+      <data key="label">Check</data>
+    </node>
+  </graph>
+</graphml>`);
+
+    expect(graph.nodes[0]).toMatchObject({
+      label: "Check",
+      shape: "diamond",
+      isGroup: false,
+    });
+  });
+
+  it("reads nested nodes, undirected edges, and dashed style", () => {
+    const graph = parseGraphml(getGraphmlSampleSource("network", "en"));
+    const office = graph.nodes.find((node) => node.id === "office");
+    const laptop = graph.nodes.find((node) => node.id === "laptop");
+    const vpn = graph.edges.find((edge) => edge.source === "cloud");
+    const lan = graph.edges.find((edge) => edge.source === "switch");
+
+    expect(office).toMatchObject({ isGroup: true, label: "Office" });
+    expect(laptop).toMatchObject({ parentId: "office", label: "Laptop" });
+    expect(vpn).toMatchObject({ directed: false, dashed: true, label: "VPN" });
+    expect(lan?.directed).toBe(false);
+  });
+
+  it("renders every sample with blocks and arrows", async () => {
+    expect(GRAPHML_SAMPLE_IDS.length).toBeGreaterThanOrEqual(3);
+    expect(GRAPHML_SAMPLE_IDS.length).toBeLessThanOrEqual(5);
+
+    for (const id of GRAPHML_SAMPLE_IDS) {
+      const source = getGraphmlSampleSource(id, "ru");
+      const graph = parseGraphml(source);
+      const svg = await renderGraphmlToSvg(source, { dark: false });
+
+      expect(graph.nodes.length).toBeGreaterThanOrEqual(3);
+      expect(graph.edges.length).toBeGreaterThanOrEqual(2);
+      expect(svg).toContain("<svg");
+      expect(svg).toContain(graph.nodes[0]?.label);
+    }
+
+    const decision = await renderGraphmlToSvg(
+      getGraphmlSampleSource("decision", "en"),
+    );
+    expect(decision).toContain("<polygon");
+    expect(decision).toContain("marker-end");
+
+    const architecture = await renderGraphmlToSvg(
+      getGraphmlSampleSource("architecture", "en"),
+    );
+    expect(architecture).toContain("stroke-dasharray");
+
+    const network = await renderGraphmlToSvg(
+      getGraphmlSampleSource("network", "en"),
+    );
+    expect(network).toContain("Office");
+    expect(network).toContain("graphml-group");
   });
 });
