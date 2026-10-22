@@ -28,11 +28,15 @@
   flex-direction: column;
   align-self: stretch;
   min-height: 0;
+  box-sizing: border-box;
+  font-family: var(--editor-font-family, var(--font-mono));
+  font-size: var(--editor-font-size);
+  line-height: var(--editor-line-height);
   width: calc(
-    var(--fold-toggle-width) + var(--gutter-chars) * 1ch +
-      var(--gutter-padding-inline) * 2 + 4px
+    var(--fold-toggle-width) + var(--gutter-item-gap) + var(--gutter-chars) * 1ch +
+      var(--gutter-padding-inline) * 2 + var(--gutter-border-width)
   );
-  border-right: 1px solid var(--border);
+  border-right: var(--gutter-border-width) solid var(--border);
   background: var(--surface-muted);
 }
 
@@ -95,7 +99,7 @@
 .code-editor__gutter-line {
   display: flex;
   align-items: baseline;
-  gap: 2px;
+  gap: var(--gutter-item-gap);
   min-height: calc(1em * var(--editor-line-height));
   white-space: pre;
   cursor: default;
@@ -134,7 +138,9 @@
 
 .code-editor__gutter-number {
   flex: 1 1 auto;
+  min-width: calc(var(--gutter-chars) * 1ch);
   text-align: right;
+  font-variant-numeric: tabular-nums;
   font-family: var(--editor-font-family, var(--font-mono));
   font-size: var(--editor-font-size);
   line-height: var(--editor-line-height);
