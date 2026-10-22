@@ -7,6 +7,7 @@ import {
   DIAGRAM_FORMATS,
   type DiagramFormat,
 } from "@/constants/diagram-formats";
+import { getLanguageModule } from "@/languages/registry";
 import { createConversionReport } from "@/services/conversion/conversion-report";
 import {
   isTargetFormatBlocked,
@@ -54,6 +55,10 @@ const availableTargets = computed(() =>
 
 function isFormatBlocked(format: DiagramFormat): boolean {
   return isTargetFormatBlocked(props.source, props.sourceFormat, format);
+}
+
+function formatDisplayLabel(format: DiagramFormat): string {
+  return t(getLanguageModule(format).labelKey);
 }
 
 const visualModeBlocked = computed(() =>
@@ -168,7 +173,7 @@ function onApply(): void {
             :value="format"
             :disabled="isFormatBlocked(format)"
           >
-            {{ format }}{{ isFormatBlocked(format) ? ` — ${t('conversion.blocked')}` : '' }}
+            {{ formatDisplayLabel(format) }}{{ isFormatBlocked(format) ? ` — ${t('conversion.blocked')}` : '' }}
           </option>
         </select>
       </label>

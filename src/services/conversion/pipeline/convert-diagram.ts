@@ -7,12 +7,10 @@ import {
 } from "@/constants/conversion-settings";
 import type { AppLocale } from "@/constants/i18n";
 import { classifyDiagramKind } from "@/services/conversion/classify-diagram-kind";
+import { emitIrWithFramework } from "@/services/conversion/conversion-framework";
 import type { ConversionReport } from "@/services/conversion/conversion-report";
 import type { DiagramIR } from "@/services/conversion/diagram-ir";
 import { wrapConvertedSource } from "@/services/conversion/emit/conversion-header";
-import { emitGraphmlFromIr } from "@/services/conversion/emit/emit-graphml";
-import { emitMermaidFromIr } from "@/services/conversion/emit/emit-mermaid";
-import { emitPlantUmlFromIr } from "@/services/conversion/emit/emit-plantuml";
 import { readSvgMetadata } from "@/services/conversion/metadata/svg-metadata";
 import { mergeDiagramIrWithVisualHints } from "@/services/conversion/merge/merge-diagram-ir";
 import { safeParseSourceToIr } from "@/services/conversion/parse/parse-source-to-ir";
@@ -64,16 +62,7 @@ function resolveMode(input: ConvertDiagramInput): "source" | "visual" | "combo" 
 }
 
 function emitIrToSource(ir: DiagramIR, targetFormat: DiagramFormat): string {
-  switch (targetFormat) {
-    case "graphml":
-      return emitGraphmlFromIr(ir);
-    case "mermaid":
-      return emitMermaidFromIr(ir);
-    case "plantuml":
-      return emitPlantUmlFromIr(ir);
-    default:
-      return "";
-  }
+  return emitIrWithFramework(ir, targetFormat);
 }
 
 interface LimitResult {

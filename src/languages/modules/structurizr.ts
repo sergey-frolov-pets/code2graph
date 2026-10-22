@@ -21,7 +21,7 @@ export const structurizrLanguageModule: DiagramLanguageModule = {
     supportsSamples: true,
     supportsSaveSource: true,
     supportsOnlineRender: false,
-    supportsStructuralConversion: false,
+    supportsStructuralConversion: true,
     requiresEngineBoot: true,
   },
   fileBadge: "DSL",

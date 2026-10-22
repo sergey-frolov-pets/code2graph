@@ -29,23 +29,40 @@ export function buildMermaidConversionHeader(
   report: ConversionReport,
   locale: AppLocale,
 ): string {
-  const comment = locale === "ru" ? "%%" : "%%";
-  const header = buildConversionHeaderComment(report, locale)
+  return buildConversionHeaderComment(report, locale)
     .split("\n")
-    .map((line) => `${comment} ${line.replace(/^' /, "")}`)
+    .map((line) => `%% ${line.replace(/^' /, "")}`)
     .join("\n");
-  return header;
+}
+
+export function buildD2ConversionHeader(
+  report: ConversionReport,
+  locale: AppLocale,
+): string {
+  return buildConversionHeaderComment(report, locale)
+    .split("\n")
+    .map((line) => `# ${line.replace(/^' /, "")}`)
+    .join("\n");
+}
+
+export function buildSlashConversionHeader(
+  report: ConversionReport,
+  locale: AppLocale,
+): string {
+  return buildConversionHeaderComment(report, locale)
+    .split("\n")
+    .map((line) => `// ${line.replace(/^' /, "")}`)
+    .join("\n");
 }
 
 export function buildGraphmlConversionHeader(
   report: ConversionReport,
   locale: AppLocale,
 ): string {
-  const header = buildConversionHeaderComment(report, locale)
+  return buildConversionHeaderComment(report, locale)
     .split("\n")
     .map((line) => `<!-- ${line.replace(/^' /, "")} -->`)
     .join("\n");
-  return header;
 }
 
 export function wrapConvertedSource(
@@ -56,6 +73,14 @@ export function wrapConvertedSource(
 ): string {
   if (format === "mermaid") {
     return `${buildMermaidConversionHeader(report, locale)}\n${source}`;
+  }
+
+  if (format === "d2") {
+    return `${buildD2ConversionHeader(report, locale)}\n${source}`;
+  }
+
+  if (format === "structurizr" || format === "wiremark") {
+    return `${buildSlashConversionHeader(report, locale)}\n${source}`;
   }
 
   if (format === "graphml") {

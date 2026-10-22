@@ -1,3 +1,4 @@
+import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { DiagramKind } from "@/services/conversion/diagram-ir";
 
 export type DiagramKindFamily =
@@ -8,6 +9,7 @@ export type DiagramKindFamily =
   | "hierarchical"
   | "chart"
   | "network"
+  | "ui"
   | "specialized";
 
 export const DIAGRAM_KIND_FAMILIES: Record<DiagramKind, DiagramKindFamily> = {
@@ -39,28 +41,34 @@ export const DIAGRAM_KIND_FAMILIES: Record<DiagramKind, DiagramKindFamily> = {
   wbs: "hierarchical",
   nwdiag: "network",
   archimate: "uml",
+  wireframe: "ui",
   unknown: "graph",
 };
 
-export function getDiagramKindFamily(kind: DiagramKind): DiagramKindFamily {
-  return DIAGRAM_KIND_FAMILIES[kind] ?? "graph";
-}
-
-export function isGraphProjectableKind(kind: DiagramKind): boolean {
-  return [
+export const NATIVE_KINDS_BY_FORMAT: Record<
+  DiagramFormat,
+  readonly DiagramKind[]
+> = {
+  plantuml: [
     "graph",
-    "sankey",
-    "block",
-    "architecture",
+    "class",
+    "state",
+    "er",
+    "sequence",
+    "activity",
+    "gantt",
+    "mindmap",
+    "c4_context",
+    "c4_container",
+    "usecase",
     "deployment",
+    "object",
+    "timing",
+    "wbs",
     "nwdiag",
     "archimate",
-    "unknown",
-  ].includes(kind);
-}
-
-export function isMermaidNativeKind(kind: DiagramKind): boolean {
-  return [
+  ],
+  mermaid: [
     "graph",
     "class",
     "state",
@@ -82,27 +90,71 @@ export function isMermaidNativeKind(kind: DiagramKind): boolean {
     "quadrant",
     "architecture",
     "packet",
+  ],
+  graphml: ["graph"],
+  d2: [
+    "graph",
+    "sequence",
+    "class",
+    "er",
+    "architecture",
+    "c4_context",
+    "c4_container",
+    "deployment",
+    "state",
+    "activity",
+  ],
+  structurizr: [
+    "c4_context",
+    "c4_container",
+    "deployment",
+    "architecture",
+    "graph",
+  ],
+  wiremark: ["wireframe"],
+};
+
+export function getDiagramKindFamily(kind: DiagramKind): DiagramKindFamily {
+  return DIAGRAM_KIND_FAMILIES[kind] ?? "graph";
+}
+
+export function isGraphProjectableKind(kind: DiagramKind): boolean {
+  return [
+    "graph",
+    "sankey",
+    "block",
+    "architecture",
+    "deployment",
+    "nwdiag",
+    "archimate",
+    "wireframe",
+    "unknown",
   ].includes(kind);
 }
 
+export function isFormatNativeKind(
+  format: DiagramFormat,
+  kind: DiagramKind,
+): boolean {
+  return NATIVE_KINDS_BY_FORMAT[format].includes(kind);
+}
+
+export function isMermaidNativeKind(kind: DiagramKind): boolean {
+  return isFormatNativeKind("mermaid", kind);
+}
+
 export function isPlantUmlNativeKind(kind: DiagramKind): boolean {
-  return [
-    "graph",
-    "class",
-    "state",
-    "er",
-    "sequence",
-    "activity",
-    "gantt",
-    "mindmap",
-    "c4_context",
-    "c4_container",
-    "usecase",
-    "deployment",
-    "object",
-    "timing",
-    "wbs",
-    "nwdiag",
-    "archimate",
-  ].includes(kind);
+  return isFormatNativeKind("plantuml", kind);
+}
+
+export function isD2NativeKind(kind: DiagramKind): boolean {
+  return isFormatNativeKind("d2", kind);
+}
+
+export function isStructurizrNativeKind(kind: DiagramKind): boolean {
+  return isFormatNativeKind("structurizr", kind);
+}
+
+export function isWiremarkNativeKind(kind: DiagramKind): boolean {
+  return isFormatNativeKind("wiremark", kind);
 }

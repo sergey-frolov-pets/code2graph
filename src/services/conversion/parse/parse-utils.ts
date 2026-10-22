@@ -1,9 +1,11 @@
 export function stripSourceComments(source: string): string {
   return source
-    .replace(/^\s*```mermaid\s*/i, "")
+    .replace(/^\s*```(?:mermaid|plantuml|d2|structurizr|dsl|wiremark|graphml|xml)?\s*/i, "")
     .replace(/\s*```\s*$/i, "")
     .replace(/^\s*'.*$/gm, "")
     .replace(/^\s*\/\/.*$/gm, "")
+    .replace(/^\s*#(?!\w+\b).*$/gm, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
     .replace(/<!--[\s\S]*?-->/g, "");
 }
 
