@@ -24,13 +24,21 @@ const { t } = useLocale();
   <header class="app-header">
     <div class="app-header__main">
       <div class="app-header__title-row">
-        <h1>{{ APP_META.name }}</h1>
+        <h1>
+          <button
+            class="app-header__brand"
+            type="button"
+            :title="t('site.backHome')"
+            @click="navigateTo('landing')"
+          >
+            {{ APP_META.name }}
+          </button>
+        </h1>
         <span class="app-header__version">v{{ APP_META.version }}</span>
       </div>
       <p class="app-header__subtitle">{{ t("app.subtitle") }}</p>
     </div>
     <nav class="app-header__nav" :aria-label="t('app.mainNav')">
-      <HeaderControls />
       <IconButton
         :label="t('site.backHome')"
         extra-class="app-header__icon-btn"
@@ -38,6 +46,7 @@ const { t } = useLocale();
       >
         <ActionIcon name="home" />
       </IconButton>
+      <HeaderControls />
       <IconButton
         :label="t('app.aiNewDiagram')"
         extra-class="app-header__icon-btn"
@@ -96,6 +105,30 @@ const { t } = useLocale();
 .app-header h1 {
   margin: 0;
   font-size: 1.25rem;
+}
+
+.app-header__brand {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  cursor: pointer;
+}
+
+.app-header__brand:hover,
+.app-header__brand:focus-visible {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.app-header__brand:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 .app-header__version {
