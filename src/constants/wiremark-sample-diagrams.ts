@@ -19,7 +19,7 @@ Wireframe #login mobile
     Typography h4 "Вход"
     TextField "Почта" startIcon=Email
     TextField "Пароль" startIcon=Lock
-    Stack row
+    Stack row gap=1
       Control checkbox
       Typography body1 "Запомнить меня"
       Spacer
@@ -60,7 +60,7 @@ Wireframe #new-account mobile
     TextField "Почта" startIcon=Email required value="you@example.com"
     TextField "Пароль" startIcon=Lock required
     TextField "О себе" multiline filler=blocks
-    Stack row
+    Stack row gap=1
       Control checkbox checked
       Typography body1 "Согласен с условиями"
     Button "Создать" contained to=#welcome`,
@@ -110,7 +110,7 @@ Wireframe #login mobile
     Typography h4 "Sign in"
     TextField "Email" startIcon=Email
     TextField "Password" startIcon=Lock
-    Stack row
+    Stack row gap=1
       Control checkbox
       Typography body1 "Remember me"
       Spacer
@@ -151,7 +151,7 @@ Wireframe #new-account mobile
     TextField "Email" startIcon=Email required value="you@example.com"
     TextField "Password" startIcon=Lock required
     TextField "Bio" multiline filler=blocks
-    Stack row
+    Stack row gap=1
       Control checkbox checked
       Typography body1 "I agree to the terms"
     Button "Create account" contained to=#welcome`,

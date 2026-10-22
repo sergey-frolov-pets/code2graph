@@ -82,6 +82,20 @@ describe("wiremark engine", () => {
     expect(svg.match(/<text x="([\d.]+)"/)?.[1]).toBe("0");
   });
 
+  it("keeps a checkbox label off the checkbox itself", () => {
+    const svg = renderWiremarkToSvg(getWiremarkSampleSource("form", "en"), {
+      dark: false,
+    });
+    const labelX = Number(
+      svg.match(/<text[^>]*x="([\d.]+)"[^>]*>I agree/)?.[1],
+    );
+    const framePadPx = 16;
+    const checkboxWidthPx = 18;
+    const labelGapPx = 8;
+
+    expect(labelX).toBe(framePadPx + checkboxWidthPx + labelGapPx);
+  });
+
   it("rejects an empty source", () => {
     expect(validateWiremarkSyntax("   ").valid).toBe(false);
     expect(validateWiremarkSyntax("   ").issues[0]?.messageKey).toBe(
