@@ -6,6 +6,10 @@ import {
   getD2SampleSource,
 } from "@/constants/d2-sample-diagrams";
 import {
+  GRAPHML_SAMPLE_IDS,
+  getGraphmlSampleSource,
+} from "@/constants/graphml-sample-diagrams";
+import {
   STRUCTURIZR_SAMPLE_IDS,
   getStructurizrSampleSource,
 } from "@/constants/structurizr-sample-diagrams";
@@ -70,6 +74,13 @@ describe("diagram samples coverage", () => {
       expect(getStructurizrSampleSource(id, "ru").trim().length).toBeGreaterThan(0);
       expect(getStructurizrSampleSource(id, "en").trim().length).toBeGreaterThan(0);
     }
+
+    for (const id of GRAPHML_SAMPLE_IDS) {
+      expect(getGraphmlSampleSource(id, "ru").trim().length).toBeGreaterThan(0);
+      expect(getGraphmlSampleSource(id, "en").trim().length).toBeGreaterThan(0);
+      expect(getGraphmlSampleSource(id, "ru")).toContain("<graphml");
+      expect(getGraphmlSampleSource(id, "en")).toContain("<edge");
+    }
   });
 
   it("lists samples only for the selected language", () => {
@@ -78,6 +89,6 @@ describe("diagram samples coverage", () => {
     expect(listSampleIds("wiremark")).toEqual([...WIREMARK_SAMPLE_IDS]);
     expect(listSampleIds("d2")).toEqual([...D2_SAMPLE_IDS]);
     expect(listSampleIds("structurizr")).toEqual([...STRUCTURIZR_SAMPLE_IDS]);
-    expect(listSampleIds("graphml")).toEqual([]);
+    expect(listSampleIds("graphml")).toEqual([...GRAPHML_SAMPLE_IDS]);
   });
 });
