@@ -33,6 +33,16 @@ describe("extractLeadingMermaidDiagram", () => {
     expect(extractLeadingMermaidDiagram(gantt)).toBe(gantt);
   });
 
+  it("keeps a trailing space after a keyword at the end of the file", () => {
+    const source = "@startuml\nactor ";
+    expect(extractLeadingMermaidDiagram(source)).toBe(source);
+  });
+
+  it("keeps a trailing newline so a new line at the end of the file stays", () => {
+    const source = "@startuml\nactor User\n";
+    expect(extractLeadingMermaidDiagram(source)).toBe(source);
+  });
+
   it("detects complete mermaid gantt", () => {
     expect(
       isCompleteMermaidDiagram(
