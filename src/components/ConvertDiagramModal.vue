@@ -172,6 +172,7 @@ watch(
     mode.value = "auto";
     acceptedLosses.value = false;
   },
+  { immediate: true },
 );
 
 watch(targetFormat, (format) => {
