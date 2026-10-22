@@ -230,6 +230,8 @@ export const siteMessages = {
   "site.openEditor": "Open editor",
   "site.backHome": "Back to home",
   "site.mcp.title": "MCP for agents",
+  "site.mcp.connected": "Connected",
+  "site.mcp.disconnected": "Not connected",
   "site.mcp.lead":
     "An agent describes a diagram in words. Code2Graph picks the language and returns source and an image for PlantUML, Mermaid, GraphML, WireMark, D2, or Structurizr.",
   "site.mcp.pointPlan": "plan_diagram chooses the language and diagram type.",

@@ -231,6 +231,8 @@ export const siteMessages = {
   "site.openEditor": "Открыть редактор",
   "site.backHome": "На главную",
   "site.mcp.title": "MCP для агентов",
+  "site.mcp.connected": "Подключен",
+  "site.mcp.disconnected": "Не подключен",
   "site.mcp.lead":
     "Агент описывает диаграмму словами. Code2Graph выбирает язык и возвращает исходник и изображение PlantUML, Mermaid, GraphML, WireMark, D2 или Structurizr.",
   "site.mcp.pointPlan": "plan_diagram выбирает язык и тип диаграммы.",

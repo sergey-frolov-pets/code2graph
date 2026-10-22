@@ -2,6 +2,7 @@
 import SiteFooter from "@/components/site/SiteFooter.vue";
 import LandingDiagramBackground from "@/components/site/LandingDiagramBackground.vue";
 import LandingInstallButton from "@/components/site/LandingInstallButton.vue";
+import McpConnectionTag from "@/components/site/McpConnectionTag.vue";
 import McpResultPreview from "@/components/site/McpResultPreview.vue";
 import SiteHeader from "@/components/site/SiteHeader.vue";
 import { useAppRouter } from "@/composables/useAppRouter";
@@ -84,9 +85,10 @@ const languages = DIAGRAM_LANGUAGE_MODULES.filter((module) => module.site);
       >
         <h2
           id="mcp-title"
-          class="landing-section__title"
+          class="landing-section__title landing-mcp__title"
         >
           {{ t("site.mcp.title") }}
+          <McpConnectionTag />
         </h2>
         <p class="landing-mcp__lead">
           {{ t("site.mcp.lead") }}
@@ -170,6 +172,20 @@ const languages = DIAGRAM_LANGUAGE_MODULES.filter((module) => module.site);
   justify-items: center;
   gap: 16px;
   text-align: center;
+}
+
+.landing-mcp__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+@media (max-width: 767px) {
+  .landing-mcp__title {
+    justify-content: flex-start;
+  }
 }
 
 .landing-mcp__lead,
