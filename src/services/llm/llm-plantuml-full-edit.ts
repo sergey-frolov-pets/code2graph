@@ -13,6 +13,7 @@ import {
   LLM_MAX_TOKENS_PRECISE,
   LLM_TEMPERATURE_PRECISE,
 } from "@/services/llm/llm-prompts";
+import { guideForPlantUmlText } from "@/services/llm/guides/llm-diagram-guides";
 import type { LlmChatMessage } from "@/services/llm/llm-types";
 import { LlmClientError } from "@/services/llm/llm-types";
 import type { LlmGateHandlers } from "@/composables/useLlmGate";
@@ -38,6 +39,7 @@ export async function generateValidPlantUmlFullEdit(
       role: "system",
       content: buildLlmSystemPrompt(
         "You edit an existing PlantUML diagram according to the user request. Apply changes completely while preserving unrelated structure.",
+        guideForPlantUmlText(fullSource),
       ),
     },
     ...(priorMessages ?? []),

@@ -105,6 +105,32 @@ describe("llm-plantuml-generate", () => {
     );
 
     expect(result.plantuml).toContain("flowchart");
+    const messages = vi.mocked(llmChat).mock.calls.at(-1)?.[0];
+    expect(messages?.[0]?.content).toContain("flowchart TD");
+  });
+
+  it("sends the plantuml sequence guide when the request names that type", async () => {
+    vi.mocked(llmChat).mockResolvedValueOnce({
+      content: '{"plantuml":"@startuml\\nAlice -> Bob\\n@enduml"}',
+      providerId: "test",
+      model: "test-model",
+    });
+    vi.mocked(validateLlmResponse).mockResolvedValueOnce({
+      valid: true,
+      plantuml: "@startuml\nAlice -> Bob\n@enduml",
+      output: { plantuml: "@startuml\nAlice -> Bob\n@enduml" },
+      issues: [],
+    });
+
+    await generateValidPlantUml(
+      "Create a sequence diagram for checkout",
+      LAYOUT_ENGINES.smetana,
+      false,
+      DEFAULT_RENDER_MODE,
+    );
+
+    const messages = vi.mocked(llmChat).mock.calls.at(-1)?.[0];
+    expect(messages?.[0]?.content).toContain("Declare every participant");
   });
 
   it("parses syntax ask answers", async () => {

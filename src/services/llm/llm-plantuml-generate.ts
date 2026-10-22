@@ -22,6 +22,7 @@ import type {
 } from "@/constants/llm-wizard";
 import type { DiagramFormatPromptContext } from "@/services/llm/diagram-format-rules";
 import { getWizardDiagramFormatRules } from "@/constants/llm-wizard";
+import { guideForPlantUmlText } from "@/services/llm/guides/llm-diagram-guides";
 import { runLlmJsonValidationLoop } from "@/services/llm/llm-validation-loop";
 import { validateLlmRegisteredFormat } from "@/services/llm/validate-llm-format";
 import { validateLlmResponse } from "@/utils/validate-llm-plantuml";
@@ -58,7 +59,7 @@ export async function generateValidPlantUml(
   const messages: LlmChatMessage[] = [
     {
       role: "system",
-      content: buildLlmSystemPrompt(systemContext),
+      content: buildLlmSystemPrompt(systemContext, guideForPlantUmlText(userPrompt)),
     },
     { role: "user", content: userPrompt },
   ];
@@ -118,6 +119,7 @@ export async function generateValidWizardDiagram(
     systemContext,
     formatRules,
     language,
+    diagramType,
   );
 
   const messages: LlmChatMessage[] = [
@@ -180,6 +182,7 @@ export async function askPlantUmlSyntaxQuestion(
       role: "system",
       content: buildLlmSyntaxAskSystemPrompt(
         "You are a PlantUML syntax expert. Answer the user's question about how to express something in PlantUML, using their current diagram as context. Match the user's language in your answer.",
+        guideForPlantUmlText(source),
       ),
     },
     ...(priorMessages ?? []),

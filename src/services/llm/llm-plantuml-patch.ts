@@ -12,6 +12,7 @@ import {
   LLM_MAX_TOKENS_PRECISE,
   LLM_TEMPERATURE_PRECISE,
 } from "@/services/llm/llm-prompts";
+import { guideForPlantUmlText } from "@/services/llm/guides/llm-diagram-guides";
 import type { LlmChatMessage } from "@/services/llm/llm-types";
 import { LlmClientError } from "@/services/llm/llm-types";
 import type { LlmGateHandlers } from "@/composables/useLlmGate";
@@ -75,6 +76,7 @@ export async function generateValidPlantUmlPatch(
       role: "system",
       content: buildLlmPatchSystemPrompt(
         "You edit existing PlantUML by replacing only the user-selected fragment with a complete, request-satisfying replacement.",
+        guideForPlantUmlText(fullSource),
       ),
     },
     ...(priorMessages ?? []),
