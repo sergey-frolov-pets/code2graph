@@ -26,6 +26,80 @@ export const siteMessages = {
   "site.languages.title": "Languages",
   "site.language.sites": "Sites",
   "site.language.libraries": "Libraries used in the app",
+  "site.language.types": "Main diagram types",
+  "site.language.keywords": "Keywords",
+  "site.language.example": "Example",
+  "site.primer.graphml.type.directed.title": "Directed graph",
+  "site.primer.graphml.type.directed.summary":
+    "Edges run from a source to a target. This is how Code2Graph draws GraphML by default.",
+  "site.primer.graphml.type.undirected.title": "Undirected graph",
+  "site.primer.graphml.type.undirected.summary":
+    "Edges only connect nodes, with no direction.",
+  "site.primer.wiremark.type.flow.title": "Linked screens",
+  "site.primer.wiremark.type.flow.summary":
+    "Several wireframes in one file, with to=#anchor jumps between them.",
+  "site.primer.plantuml.kw.startuml":
+    "@startuml and @enduml open and close the diagram.",
+  "site.primer.plantuml.kw.participant":
+    "A named lifeline. as gives it a short alias.",
+  "site.primer.plantuml.kw.arrow": "A message: -> toward a participant, --> for the reply.",
+  "site.primer.plantuml.kw.alt":
+    "Mutually exclusive branches. else is the other branch, end closes the block.",
+  "site.primer.plantuml.kw.note": "A note to the left, right, or over participants.",
+  "site.primer.plantuml.kw.if":
+    "An activity decision: then and else, closed with endif.",
+  "site.primer.plantuml.kw.skinparam":
+    "A shared style setting, such as the background color.",
+  "site.primer.mermaid.kw.participant":
+    "A sequence participant. as replaces the visible label.",
+  "site.primer.mermaid.kw.arrow":
+    "A message: ->> is a solid arrow, -->> is a dotted reply.",
+  "site.primer.mermaid.kw.alt":
+    "Sequence branches. else is the other branch, end closes the block.",
+  "site.primer.mermaid.kw.note": "A note to the right of a participant, or over several.",
+  "site.primer.mermaid.kw.subgraph": "A group of flowchart nodes. Close it with end.",
+  "site.primer.mermaid.kw.class": "A class with fields and methods inside classDiagram.",
+  "site.primer.mermaid.kw.section": "A group of tasks on a Gantt chart.",
+  "site.primer.graphml.kw.graphml":
+    "The document root. The GraphML namespace is required.",
+  "site.primer.graphml.kw.graph":
+    "The graph itself. edgedefault is directed or undirected.",
+  "site.primer.graphml.kw.node": "A vertex. id must be unique.",
+  "site.primer.graphml.kw.edge": "An edge. source and target refer to node ids.",
+  "site.primer.graphml.kw.key": "Declares an attribute for nodes or edges.",
+  "site.primer.graphml.kw.data":
+    "An attribute value. The visible label lives here, not in the id.",
+  "site.primer.wiremark.kw.wireframe":
+    "One screen. The name after # is the anchor other screens link to.",
+  "site.primer.wiremark.kw.flow":
+    "Connects several screens. LR draws the links left to right.",
+  "site.primer.wiremark.kw.stack":
+    "A column or a row. gap sets the spacing, indentation sets nesting.",
+  "site.primer.wiremark.kw.typography":
+    "Text. h4 and body1 pick the level, the quoted string is the label.",
+  "site.primer.wiremark.kw.textfield":
+    "An input. The label is quoted, settings such as required are not.",
+  "site.primer.wiremark.kw.button":
+    "A button. contained fills it, to=#id jumps to another screen.",
+  "site.primer.d2.kw.direction":
+    "Layout direction: down, right, left, or up.",
+  "site.primer.d2.kw.shape":
+    "Node shape: person, cylinder, class, sql_table, sequence_diagram.",
+  "site.primer.d2.kw.arrow": "A link between nodes. The label follows the colon.",
+  "site.primer.d2.kw.style": "Node styling: fill, stroke, and font.",
+  "site.primer.d2.kw.constraint":
+    "A SQL column constraint: primary_key, foreign_key, or unique.",
+  "site.primer.structurizr.kw.workspace":
+    "The document root: a name and a short description of the model.",
+  "site.primer.structurizr.kw.person": "A person who uses the system.",
+  "site.primer.structurizr.kw.softwareSystem": "A software system in the model.",
+  "site.primer.structurizr.kw.container":
+    "An application or data store inside a system. The third argument is the technology.",
+  "site.primer.structurizr.kw.arrow":
+    "Who calls whom. The relationship label is quoted.",
+  "site.primer.structurizr.kw.views": "Which views to draw from the model.",
+  "site.primer.structurizr.kw.autolayout":
+    "Automatic view layout: tb is top to bottom, lr is left to right.",
   "site.stackLead": "Interface:",
   "site.hero.ctaPrimary": "Open editor without sign-up",
   "site.hero.ctaSecondary": "📲 Install on desktop / phone",
