@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import SiteFooter from "@/components/site/SiteFooter.vue";
+import McpConnectionTag from "@/components/site/McpConnectionTag.vue";
 import McpResultPreview from "@/components/site/McpResultPreview.vue";
 import SiteHeader from "@/components/site/SiteHeader.vue";
 import { useAppRouter } from "@/composables/useAppRouter";
@@ -37,7 +38,10 @@ const sourceUrl = `${APP_LINKS.github}/tree/main/packages/mcp`;
         {{ t("site.backHome") }}
       </button>
 
-      <h1>{{ t("site.mcp.pageTitle") }}</h1>
+      <h1 class="mcp-title">
+        {{ t("site.mcp.pageTitle") }}
+        <McpConnectionTag />
+      </h1>
       <p class="mcp-lead">
         {{ t("site.mcp.summary") }}
       </p>
@@ -122,6 +126,13 @@ const sourceUrl = `${APP_LINKS.github}/tree/main/packages/mcp`;
 .mcp-main h1 {
   margin: 0;
   font-size: clamp(1.8rem, 4vw, 2.4rem);
+}
+
+.mcp-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
 }
 
 .mcp-lead,
