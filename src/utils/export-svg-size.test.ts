@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
+import { getWiremarkSampleSource } from "@/constants/wiremark-sample-diagrams";
+import { renderWiremarkToSvg } from "@/services/wiremark/wiremark-engine";
 import { normalizeSvgRootSize, parseSvgSize, sanitizeSvgForPreview } from "@/utils/export";
 
 describe("parseSvgSize", () => {
@@ -47,5 +49,24 @@ describe("sanitizeSvgForPreview", () => {
 
     expect(result).toMatch(/<mask[^>]*>\s*<rect[^>]*\bfill="white"/);
     expect(result).not.toMatch(/<mask[^>]*>\s*<rect[^>]*\bfill="none"/);
+  });
+
+  it("keeps the paper chip so a WireMark field outline does not cross its label", () => {
+    const result = sanitizeSvgForPreview(
+      renderWiremarkToSvg(getWiremarkSampleSource("form", "ru"), { dark: false }),
+    );
+    const doc = new DOMParser().parseFromString(result, "image/svg+xml");
+    const label = [...doc.querySelectorAll("text")].find((node) =>
+      node.textContent?.includes("Почта"),
+    );
+    const chip = label?.previousElementSibling;
+
+    expect(chip?.tagName.toLowerCase()).toBe("rect");
+    expect(chip?.getAttribute("fill")?.toLowerCase()).toBe("#ffffff");
+
+    const frameFill = [...doc.querySelectorAll("rect")].find(
+      (node) => Number.parseFloat(node.getAttribute("width") ?? "0") >= 300,
+    );
+    expect(frameFill?.getAttribute("fill")).toBe("none");
   });
 });

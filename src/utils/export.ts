@@ -12,6 +12,14 @@ const SVG_PAINT_CONTAINER_TAGS = new Set([
   "defs",
 ]);
 
+/**
+ * Shorter side of a paper chip drawn behind a label so a stroke does not cut
+ * the glyphs. WireMark floating labels are 13px tall and connector captions
+ * 23px; page and frame fills are taller than this (the smallest nested
+ * background we still clear is 40px).
+ */
+const SVG_LABEL_KNOCKOUT_MAX_SHORTER_EDGE_PX = 32;
+
 function normalizeColor(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -28,9 +36,19 @@ function isInsideSvgPaintContainer(element: Element): boolean {
   return false;
 }
 
+function isLabelKnockoutRect(rect: Element): boolean {
+  const width = Number.parseFloat(rect.getAttribute("width") ?? "");
+  const height = Number.parseFloat(rect.getAttribute("height") ?? "");
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return false;
+  }
+
+  return Math.min(width, height) <= SVG_LABEL_KNOCKOUT_MAX_SHORTER_EDGE_PX;
+}
+
 function transparentizeLightBackground(root: Element): void {
   for (const rect of root.querySelectorAll("rect")) {
-    if (isInsideSvgPaintContainer(rect)) {
+    if (isInsideSvgPaintContainer(rect) || isLabelKnockoutRect(rect)) {
       continue;
     }
 
