@@ -18,7 +18,7 @@ const { t } = useLocale();
       </span>
       <a
         class="site-footer__donate"
-        href="https://boosty.to"
+        href="https://boosty.to/fsvibe/donate"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Support the project"
