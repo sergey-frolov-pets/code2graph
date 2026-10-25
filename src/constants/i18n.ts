@@ -11,6 +11,6 @@ export function isAppLocale(value: string): value is AppLocale {
 }
 
 export const LOCALE_LABELS: Record<AppLocale, string> = {
-  ru: "Русский",
-  en: "English",
+  ru: "RU",
+  en: "EN",
 };
