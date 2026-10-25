@@ -1601,7 +1601,7 @@ a {
     font-size: 0.9rem;
   }
 
-  .site-footer__version {
+  .site-footer__meta {
     margin-left: auto;
   }
 }
@@ -1643,6 +1643,38 @@ a {
   border-radius: 999px;
   background: var(--surface);
   color: var(--text-muted);
+}
+
+.site-footer__meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.site-footer__donate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--border);
+  transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.site-footer__donate:hover {
+  transform: scale(1.06);
+  color: #f15f2c;
+  background-color: color-mix(in srgb, #f15f2c 15%, transparent);
+}
+
+.site-footer__donate svg {
+  width: 18px;
+  height: 18px;
+  display: block;
 }
 
 .auth-page {
