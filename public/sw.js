@@ -1,7 +1,7 @@
 const CACHE_PREFIX = "code2graph-";
 const PRECACHE = "code2graph-precache-v1";
 const SHARED_PUML_CACHE = "shared-puml-v1";
-const APP_SHELL_CACHE = "code2graph-shell-v1";
+const APP_SHELL_CACHE = "code2graph-shell-v2";
 const LIBRARY_API_CACHE = "code2graph-library-api-v1";
 
 const PRECACHE_URLS = [

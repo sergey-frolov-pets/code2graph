@@ -230,5 +230,27 @@
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
+    <!--
+      Analytics: GoatCounter (cookieless, no personal data).
+      Origin comes from VITE_GOATCOUNTER_URL; unset → project default,
+      empty → tracker not loaded at all (see src/analytics/config.ts).
+    -->
+    <script>
+      (function () {
+        var configured = "%VITE_GOATCOUNTER_URL%";
+        // Vite leaves the placeholder untouched when the variable is unset.
+        var origin =
+          configured === "%VITE_GOATCOUNTER_URL%"
+            ? "https://stats.code2graph.ru"
+            : configured.trim();
+        if (origin === "") return;
+        origin = origin.replace(/\/+$/, "");
+        var script = document.createElement("script");
+        script.async = true;
+        script.dataset.goatcounter = origin + "/count";
+        script.src = origin + "/count.js";
+        document.body.appendChild(script);
+      })();
+    </script>
   </body>
 </html>

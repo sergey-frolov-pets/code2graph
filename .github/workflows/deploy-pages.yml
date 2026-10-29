@@ -57,6 +57,9 @@ jobs:
           # Пустой адрес API: GitHub Pages без сервера и базы данных.
           # Серверная сборка задаёт VITE_API_BASE_URL=same-origin (см. server/.env).
           VITE_API_BASE_URL: ""
+          # Аналитика GoatCounter: инстанс проекта. Форки задают свой адрес
+          # или пустую строку, чтобы выключить трекер.
+          VITE_GOATCOUNTER_URL: "https://stats.code2graph.ru"
         run: npm run build
 
       - name: E2E smoke test

@@ -9,6 +9,13 @@ interface ImportMetaEnv {
    * Иначе абсолютный URL сервера библиотеки.
    */
   readonly VITE_API_BASE_URL?: string;
+
+  /**
+   * Адрес инстанса GoatCounter для аналитики.
+   * Не задана — используется адрес проекта по умолчанию.
+   * Пустая строка — аналитика выключена (форки, локальная сборка).
+   */
+  readonly VITE_GOATCOUNTER_URL?: string;
 }
 
 interface ImportMeta {
