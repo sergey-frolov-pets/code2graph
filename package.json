@@ -1,6 +1,6 @@
 {
   "name": "code2graph-app",
-  "version": "1.0.87",
+  "version": "1.0.88",
   "private": true,
   "type": "module",
   "description": "Code2Graph — PlantUML, Mermaid, GraphML, WireMark, D2, and Structurizr diagram editor. MCP returns source and a rendered image.",
