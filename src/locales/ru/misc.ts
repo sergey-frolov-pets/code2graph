@@ -160,7 +160,12 @@ export const miscMessages = {
   "about.site": "Сайт",
   "about.sourceCode": "Исходный код",
   "about.license": "Лицензия",
-  "about.licenseText": "Распространяется под лицензией",
+  "about.licenseText":
+    "Source-available по Prosperity Public License 3.0.0. Некоммерческое использование бесплатно.",
+  "about.licenseCommercial":
+    "Коммерческое использование бесплатно в течение 30 дней, дальше нужна платная лицензия.",
+  "about.licenseRead": "Текст лицензии",
+  "about.licenseCommercialLink": "Коммерческая лицензия",
   "about.components": "Используемые компоненты",
   "about.aiLead": "Подробнее о настройке провайдера и получении API-ключа:",
   "about.ai": "AI / LLM",

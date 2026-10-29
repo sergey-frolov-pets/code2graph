@@ -280,4 +280,11 @@ export const siteMessages = {
   "site.welcomeUser": "Вы вошли как {username}",
   "site.versionHint": "Версия сайта — сравните после обновления или перезагрузки страницы",
   "site.footer.links": "Ссылки проекта",
+  "site.license.title": "Лицензия",
+  "site.license.summary":
+    "Source-available по Prosperity Public License 3.0.0. Некоммерческое использование бесплатно.",
+  "site.license.commercial":
+    "Коммерческое использование бесплатно в течение 30 дней, дальше нужна платная лицензия.",
+  "site.license.read": "Текст лицензии",
+  "site.license.commercialLink": "Коммерческая лицензия",
 } as const satisfies LocaleMessages;

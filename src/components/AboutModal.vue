@@ -110,11 +110,16 @@ const featureKeys = [
     </p>
 
     <h3 class="about-subtitle">{{ t("about.license") }}</h3>
+    <p class="about-meta">{{ t("about.licenseText") }}</p>
+    <p class="about-meta">{{ t("about.licenseCommercial") }}</p>
     <p class="about-meta">
-      {{ t("about.licenseText") }}
-      <a :href="APP_LINKS.mitLicense" target="_blank" rel="noopener noreferrer">
-        MIT
-      </a>.
+      <a :href="APP_LINKS.prosperityLicense" target="_blank" rel="noopener noreferrer">
+        {{ t("about.licenseRead") }}
+      </a>
+      ·
+      <a :href="APP_LINKS.commercialContact">
+        {{ t("about.licenseCommercialLink") }}
+      </a>
     </p>
 
     <h3 class="about-subtitle">{{ t("about.components") }}</h3>

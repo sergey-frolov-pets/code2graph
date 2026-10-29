@@ -21,6 +21,16 @@ const { t } = useLocale();
         {{ t("site.nav.github") }}
       </a>
     </nav>
+    <p class="site-footer__license">
+      {{ t("site.license.summary") }}
+      <a
+        :href="APP_LINKS.prosperityLicense"
+        target="_blank"
+        rel="noopener noreferrer"
+      >{{ t("site.license.read") }}</a>
+      ·
+      <a :href="APP_LINKS.commercialContact">{{ t("site.license.commercialLink") }}</a>
+    </p>
     <div class="site-footer__meta">
       <span class="site-footer__version" :title="t('site.versionHint')">
         v{{ APP_META.version }}

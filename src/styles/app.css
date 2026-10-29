@@ -1636,8 +1636,16 @@ a {
   gap: 12px 16px;
 }
 
-.site-footer__links a {
+.site-footer__links a,
+.site-footer__license a {
   color: inherit;
+}
+
+.site-footer__license {
+  flex: 1 1 280px;
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
 }
 
 .site-footer__year {
