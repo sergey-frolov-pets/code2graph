@@ -2010,7 +2010,7 @@ function buildPlantUmlArchimate(state: WizardState, locale: AppLocale): string {
   }
 
   lines.push(`Application_Component(app1, "${application}")`);
-  lines.push("", 'Rel(customer, app1, "Uses")');
+  lines.push("", 'Rel_Triggering(customer, app1, "Uses")');
 
   if (hasStructural(state, "note")) {
     const noteText = locale === "ru" ? "Примечание" : "Note";

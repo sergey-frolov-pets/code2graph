@@ -167,7 +167,7 @@ title Жизненный цикл запроса
 concise "Запрос" as request
 robust "База" as db
 binary "Кэш" as cache
-clock "Такт" as clk
+clock "Такт" as clk with period 50
 
 @0
 request is Idle
@@ -237,11 +237,11 @@ Application_Service(catalog, "Каталог")
 Technology_Node(cluster, "Кластер")
 Technology_Service(database, "База")
 
-Rel(customer, checkout, "Запускает")
+Rel_Triggering(customer, checkout, "Запускает")
 Rel_Flow(checkout, counter, "Оплачивает")
 Rel_Serving(catalog, api, "Обслуживает")
 Rel_Assignment(cluster, database, "Хранит")
-Rel(api, database, "Читает")
+Rel_Access(api, database, "Читает")
 @enduml`,
 };
 
@@ -397,7 +397,7 @@ title Request lifecycle
 concise "Request" as request
 robust "Database" as db
 binary "Cache" as cache
-clock "Tick" as clk
+clock "Tick" as clk with period 50
 
 @0
 request is Idle
@@ -467,11 +467,11 @@ Application_Service(catalog, "Catalog")
 Technology_Node(cluster, "Cluster")
 Technology_Service(database, "Database")
 
-Rel(customer, checkout, "Starts")
+Rel_Triggering(customer, checkout, "Starts")
 Rel_Flow(checkout, counter, "Pays")
 Rel_Serving(catalog, api, "Serves")
 Rel_Assignment(cluster, database, "Hosts")
-Rel(api, database, "Reads")
+Rel_Access(api, database, "Reads")
 @enduml`,
 };
 
