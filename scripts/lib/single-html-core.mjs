@@ -297,6 +297,45 @@ const LOADING_SHELL = `
     <div id="app">${LOADING_SHELL_INNER}
     </div>`;
 
+/**
+ * GoatCounter loader for the single-file build.
+ *
+ * The single-file pipeline replaces index.html entirely, so the inline
+ * tracker snippet from index.html never reaches the published page. Without
+ * this the analytics bridge in src/analytics has no window.goatcounter and
+ * silently drops every pageview/event.
+ *
+ * Origin comes from VITE_GOATCOUNTER_URL: unset falls back to the project
+ * instance, empty disables the tracker entirely (forks, local builds).
+ */
+export const DISABLED_ANALYTICS = "disabled";
+export const DEFAULT_GOATCOUNTER_ORIGIN = "https://stats.code2graph.ru";
+
+export function analyticsSnippet(
+  rawOrigin = process.env.VITE_GOATCOUNTER_URL ?? DISABLED_ANALYTICS,
+) {
+  const configured = String(rawOrigin ?? "").trim();
+  const origin =
+    configured === DISABLED_ANALYTICS ? DEFAULT_GOATCOUNTER_ORIGIN : configured;
+  if (origin === "") {
+    // Explicitly disabled: no tracker at all (forks, local builds).
+    return "";
+  }
+  const safeOrigin = origin.replace(/\/+$/, "").replace(/"/g, "&quot;");
+  return `    <script>
+      (function () {
+        var origin = "${safeOrigin}";
+        if (origin === "") return;
+        var script = document.createElement("script");
+        script.async = true;
+        script.dataset.goatcounter = origin + "/count";
+        script.src = origin + "/count.js";
+        document.body.appendChild(script);
+      })();
+    </script>
+`;
+}
+
 export function buildSingleHtmlDocument({
   css,
   appJs,
@@ -336,6 +375,7 @@ ${ERROR_HANDLER_SCRIPT}
     <script>
 ${escapeScriptContent(appJs)}
     </script>
+${analyticsSnippet()}
   </body>
 </html>
 `;
