@@ -160,7 +160,12 @@ export const miscMessages = {
   "about.site": "Website",
   "about.sourceCode": "Source code",
   "about.license": "License",
-  "about.licenseText": "Distributed under the",
+  "about.licenseText":
+    "Source-available under the Prosperity Public License 3.0.0. Free for non-commercial use.",
+  "about.licenseCommercial":
+    "Commercial use is free during a 30-day trial; a paid license is required afterwards.",
+  "about.licenseRead": "Read license",
+  "about.licenseCommercialLink": "Commercial license",
   "about.components": "Third-party components",
   "about.aiLead": "Learn more about provider setup and getting an API key:",
   "about.ai": "AI / LLM",
@@ -243,7 +248,7 @@ export const miscMessages = {
   "pwa.httpOnly": "The site is opened over HTTP. PWA installation works over HTTPS only.\n\nIn GitHub: Settings → Pages → Custom domain → enable «Enforce HTTPS».",
   "pwa.iosManual": "Safari on iPhone/iPad does not support automatic installation via button.\n\nTap Share → Add to Home Screen → Add.",
   "pwa.browserUnsupported": "This browser does not support automatic PWA installation.\n\nOpen the site in Chrome or Edge and use the browser menu → «Install app».",
-  "pwa.sslError": "Failed to load Service Worker due to a domain SSL certificate error.\n\nThe browser sees a GitHub certificate (*.github.io), not your domain puml.sergey-frolov.ru.\n\nWhat to do:\n1. GitHub → Settings → Pages → Custom domain: puml.sergey-frolov.ru\n2. Check DNS: CNAME puml → sergey-frolov-pets.github.io\n3. Enable «Enforce HTTPS» and wait for certificate issuance (up to 24 h)\n4. Until the certificate is ready — open {url} to install PWA",
+  "pwa.sslError": "Failed to load Service Worker due to a domain SSL certificate error.\n\nThe browser sees a GitHub certificate (*.github.io), not your domain code2graph.ru.\n\nWhat to do:\n1. GitHub → Settings → Pages → Custom domain: code2graph.ru\n2. Check DNS for code2graph.ru against GitHub Pages\n3. Enable «Enforce HTTPS» and wait for certificate issuance (up to 24 h)\n4. Until the certificate is ready — open {url} to install PWA",
   "pwa.swNotRegistered": "Service Worker is not registered — the browser does not consider the site installable.\n\nReload the page and try again.",
   "pwa.swRegistrationError": "Registration error: {error}",
   "pwa.swNotActive": "Service Worker is not active on this tab yet.\n\nReload the page once, then press «Install» again.",

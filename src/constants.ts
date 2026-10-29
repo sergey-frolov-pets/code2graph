@@ -11,9 +11,10 @@ export const APP_META = {
 } as const;
 
 export const APP_LINKS = {
-  site: "https://www.code2graph.ru/",
+  site: "https://code2graph.ru/",
   githubPages: "https://sergey-frolov-pets.github.io/code2graph/",
   github: "https://github.com/sergey-frolov-pets/code2graph",
+  discussions: "https://github.com/sergey-frolov-pets/code2graph/discussions",
   githubReleases:
     "https://github.com/sergey-frolov-pets/code2graph/releases/latest",
   plantumlGuide: "https://plantuml.com/guide",
@@ -42,7 +43,8 @@ export const APP_LINKS = {
   dagre: "https://github.com/dagrejs/dagre",
   vue: "https://vuejs.org/",
   vite: "https://vite.dev/",
-  mitLicense: "https://opensource.org/licenses/MIT",
+  prosperityLicense: "https://prosperitylicense.com/versions/3.0.0",
+  commercialContact: "mailto:admin@code2graph.ru",
   llmApiKeysGuide: "./llm-api-keys.html",
 } as const;
 

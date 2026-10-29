@@ -1,0 +1,25 @@
+name: Discussions check
+
+on:
+  schedule:
+    # Monday 08:00 UTC. Fails when Discussions are turned off.
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Discussions page returns 200
+        env:
+          DISCUSSIONS_URL: https://github.com/sergey-frolov-pets/code2graph/discussions
+        run: |
+          code=$(curl -sS -o /dev/null -w "%{http_code}" "$DISCUSSIONS_URL")
+          echo "GET $DISCUSSIONS_URL -> $code"
+          if [ "$code" != "200" ]; then
+            echo "Discussions are not available (expected 200, got $code)."
+            exit 1
+          fi

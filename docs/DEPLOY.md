@@ -13,7 +13,7 @@
 
 ## Канонический таргет: GitHub Pages
 
-Основной публичный сайт — [puml.sergey-frolov.ru](https://puml.sergey-frolov.ru/), деплоится из ветки `main` через workflow `.github/workflows/deploy-pages.yml`.
+Основной публичный сайт — [code2graph.ru](https://code2graph.ru), деплоится из ветки `main` через workflow `.github/workflows/deploy-pages.yml`.
 
 | Параметр | Значение |
 |----------|----------|

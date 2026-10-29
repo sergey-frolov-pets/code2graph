@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import GithubStarButton from "@/components/site/GithubStarButton.vue";
 import SiteFooter from "@/components/site/SiteFooter.vue";
 import LandingDiagramBackground from "@/components/site/LandingDiagramBackground.vue";
 import LandingInstallButton from "@/components/site/LandingInstallButton.vue";
@@ -47,6 +48,23 @@ const languages = DIAGRAM_LANGUAGE_MODULES.filter((module) => module.site);
             {{ t("site.landingCtaApp") }}
           </button>
           <LandingInstallButton size="large" />
+          <a
+            class="btn btn-ghost btn-lg"
+            :href="APP_LINKS.github"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ t("site.hero.viewOnGithub") }}
+          </a>
+          <GithubStarButton />
+          <a
+            class="btn btn-ghost btn-lg"
+            :href="APP_LINKS.discussions"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ t("site.hero.askQuestion") }}
+          </a>
         </div>
         <p class="landing-note">
           {{ t("site.offlineNote") }}
@@ -108,6 +126,30 @@ const languages = DIAGRAM_LANGUAGE_MODULES.filter((module) => module.site);
         </button>
       </section>
 
+      <section
+        id="license"
+        class="landing-section landing-license"
+        aria-labelledby="license-title"
+      >
+        <h2
+          id="license-title"
+          class="landing-section__title"
+        >
+          {{ t("site.license.title") }}
+        </h2>
+        <p>{{ t("site.license.summary") }}</p>
+        <p>{{ t("site.license.commercial") }}</p>
+        <p class="landing-license__links">
+          <a
+            :href="APP_LINKS.prosperityLicense"
+            target="_blank"
+            rel="noopener noreferrer"
+          >{{ t("site.license.read") }}</a>
+          ·
+          <a :href="APP_LINKS.commercialContact">{{ t("site.license.commercialLink") }}</a>
+        </p>
+      </section>
+
       <p class="landing-stack">
         {{ t("site.stackLead") }}
         <a
@@ -163,8 +205,21 @@ const languages = DIAGRAM_LANGUAGE_MODULES.filter((module) => module.site);
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
-.landing-stack a {
+.landing-stack a,
+.landing-license__links a {
   color: var(--accent);
+}
+
+.landing-license {
+  display: grid;
+  gap: 8px;
+  max-width: 720px;
+}
+
+.landing-license p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.5;
 }
 
 .landing-mcp {

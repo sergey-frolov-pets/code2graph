@@ -3,7 +3,27 @@
   "version": "1.0.88",
   "private": true,
   "type": "module",
-  "description": "Code2Graph — PlantUML, Mermaid, GraphML, WireMark, D2, and Structurizr diagram editor. MCP returns source and a rendered image.",
+  "description": "Code2Graph — PlantUML, Mermaid, GraphML, WireMark, D2, and Structurizr diagram editor. MCP returns source and a rendered image. Source-available under the Prosperity Public License 3.0.0.",
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "Sergey Frolov <admin@code2graph.ru>",
+  "homepage": "https://code2graph.ru",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sergey-frolov-pets/code2graph.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sergey-frolov-pets/code2graph/issues"
+  },
+  "keywords": [
+    "plantuml",
+    "mermaid",
+    "mcp",
+    "ai-agents",
+    "diagram-editor",
+    "source-available",
+    "graphml",
+    "structurizr"
+  ],
   "scripts": {
     "dev": "vite",
     "dev:api": "npm --prefix server run dev",

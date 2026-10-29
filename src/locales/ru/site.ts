@@ -8,6 +8,12 @@ export const siteMessages = {
   "site.nav.formats": "Форматы",
   "site.nav.faq": "FAQ",
   "site.nav.mcp": "MCP",
+  "site.nav.github": "GitHub",
+  "site.nav.discussions": "Discussions",
+  "site.hero.askQuestion": "💬 Задать вопрос",
+  "site.github.star": "Star",
+  "site.github.starLabel": "Поставить звезду code2graph на GitHub",
+  "site.hero.viewOnGithub": "Открыть на GitHub",
 
   "site.landingTitle": "Code2Graph",
   "site.landingSubtitle":
@@ -275,4 +281,12 @@ export const siteMessages = {
   "site.registerRequired": "Заполните все поля",
   "site.welcomeUser": "Вы вошли как {username}",
   "site.versionHint": "Версия сайта — сравните после обновления или перезагрузки страницы",
+  "site.footer.links": "Ссылки проекта",
+  "site.license.title": "Лицензия",
+  "site.license.summary":
+    "Source-available по Prosperity Public License 3.0.0. Некоммерческое использование бесплатно.",
+  "site.license.commercial":
+    "Коммерческое использование бесплатно в течение 30 дней, дальше нужна платная лицензия.",
+  "site.license.read": "Текст лицензии",
+  "site.license.commercialLink": "Коммерческая лицензия",
 } as const satisfies LocaleMessages;

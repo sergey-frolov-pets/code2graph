@@ -1,42 +1,45 @@
+**English** | [Русский](README.ru.md)
+
 # Code2Graph
 
-Редактор текстовых диаграмм в браузере: PlantUML, Mermaid, GraphML, WireMark, D2 и Structurizr (Vue 3). MCP для Cursor и других агентов возвращает исходник и изображение диаграммы.
+A text-diagram editor with an MCP server for AI agents.
 
-**Сайт:** [puml.sergey-frolov.ru](https://puml.sergey-frolov.ru/)
+**Site:** [code2graph.ru](https://code2graph.ru)
 
-Репозиторий: [github.com/sergey-frolov-pets/code2graph](https://github.com/sergey-frolov-pets/code2graph)
+[![License: Prosperity Public 3.0.0](https://img.shields.io/badge/license-Prosperity%20Public%203.0.0-blue)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/sergey-frolov-pets/code2graph)](https://github.com/sergey-frolov-pets/code2graph/stargazers)
+[![GitHub Discussions](https://img.shields.io/github/discussions/sergey-frolov-pets/code2graph)](https://github.com/sergey-frolov-pets/code2graph/discussions)
+[![Latest release](https://img.shields.io/github/v/release/sergey-frolov-pets/code2graph)](https://github.com/sergey-frolov-pets/code2graph/releases/latest)
 
-## Скачать
+## Features
 
-[Releases](https://github.com/sergey-frolov-pets/code2graph/releases/latest) → **`code2graph.html`**
+- Editor for PlantUML, Mermaid, GraphML, WireMark, D2, and Structurizr.
+- Live preview of the diagram while you edit.
+- Export to SVG and PNG.
+- Diagram library in the browser, and a REST library on the server edition.
+- MCP server for Cursor and other agents: it returns diagram source and a rendered image.
+- AI wizard and AI edits of a selection, with your own API key or the server proxy.
+- Static site on GitHub Pages, plus a self-hosted server edition.
+- Offline editing and installable PWA.
 
-Локальная сборка релиз-пакета (HTML + companion files):
+## Demo
 
-```bash
-npm run build:release
-```
+<!-- TODO: replace docs/demo.gif with a short recording of the editor. The file is not in the repository yet. -->
 
-Результат в `release/`:
+![Code2Graph editor](docs/demo.gif)
 
-| Файл | Назначение |
-|------|------------|
-| `code2graph.html` | Приложение (один HTML) |
-| `llm-api-keys.html` | Инструкция по API-ключам BYOK |
-| `plantuml-lib/` | C4 stdlib для `!include` |
-| `README.md` | Этот файл (краткая справка) |
+## Quick start
 
-Для `file://` держите **все файлы в одной папке**.
-
-Альтернатива: `dist-single/index.html` после `npm run build:single`.
-
-## Разработка
+### Run from source
 
 ```bash
 npm ci
 npm run dev
 ```
 
-Проверки перед коммитом:
+The editor is at the URL Vite prints (port 5173). `npm run dev:all` also starts the library API from `server/`.
+
+Checks used before a commit:
 
 ```bash
 npm run typecheck:all
@@ -44,107 +47,70 @@ npm run test
 npm run check:i18n
 ```
 
-С API-сервером (библиотека + free LLM):
+A static build (no database) is `npm run build`. Details: [docs/DEPLOY.md](docs/DEPLOY.md).
+
+A single HTML file for a release is `npm run build:release`. The artifact is `release/code2graph.html`. Published files are on the [latest release](https://github.com/sergey-frolov-pets/code2graph/releases/latest).
+
+### Self-hosted
+
+This repository has no Dockerfile. The server edition (accounts, cloud library, LLM proxy) is installed with the scripts in `scripts/deploy/`:
 
 ```bash
-npm run dev:all
+sudo bash scripts/deploy/vdsina-install.sh
+sudo bash scripts/deploy/vdsina-update.sh
 ```
 
-Локальная разработка уже включает сервер через `.env.development` (`VITE_API_BASE_URL=same-origin`). Отдельный код для этого не нужен.
+See [docs/DEPLOY_VDSINA.md](docs/DEPLOY_VDSINA.md) and [server/README.md](server/README.md).
 
-Сборка для GitHub Pages / хостинга:
+### MCP server in Cursor
 
-```bash
-npm run build
+Run the server from a checkout of this repository. Replace the path. `CODE2GRAPH_API_URL` points at the server edition; leave the token empty when the server does not require one.
+
+```json
+{
+  "mcpServers": {
+    "code2graph": {
+      "command": "node",
+      "args": ["/ABS/PATH/code2graph/packages/mcp/bin/code2graph-mcp.js"],
+      "env": {
+        "CODE2GRAPH_API_URL": "https://www.code2graph.ru",
+        "CODE2GRAPH_API_TOKEN": "same-value-as-AGENT_API_TOKEN"
+      }
+    }
+  }
+}
 ```
 
-По умолчанию это **статическая версия без сервера и базы данных**: библиотека диаграмм в браузере. Результат — `dist/` (один `index.html` + PWA).
+The same shape works for other MCP clients that read a server command. Tools: `list_diagram_formats`, `plan_diagram`, `generate_diagram`. Package: [packages/mcp](packages/mcp).
 
-Серверная сборка — та же команда, другой `.env` (см. [docs/DEPLOY.md](docs/DEPLOY.md)):
+## Use cases
 
-```bash
-VITE_API_BASE_URL=same-origin npm run build
-```
+- Draw an architecture diagram (C4, deployment, ArchiMate) in the browser and export SVG.
+- Sketch a sequence diagram while reviewing a change, with live preview.
+- Ask an agent in Cursor to generate a diagram. MCP returns source you can open in the editor and an image of the result.
 
-## AI / LLM — генерация и редактирование диаграмм
+## License
 
-Приложение поддерживает облачные LLM для:
+This project is source-available under the Prosperity Public License 3.0.0.
 
-- **Мастер новой диаграммы** (кнопка AI в шапке)
-- **Изменение выделения** (кнопка «Изменить с AI» в редакторе)
+Non-commercial use is free and unrestricted.
 
-### Free (без ключа пользователя)
+Commercial use is free for a 30-day trial. After that, a paid license is required.
 
-- Default провайдер: **Google Gemini 2.0 Flash** (`google-gemini-free`)
-- Запросы идут через **сервер приложения** `POST /api/llm/chat`
-- Нужен consent в **Настройки → AI / LLM**
-- На hosted-сайте с API или при указанном адресе сервера библиотеки
+Contact: [admin@code2graph.ru](mailto:admin@code2graph.ru)
 
-### BYOK (свой ключ)
+- [LICENSE](LICENSE)
+- [Prosperity Public License 3.0.0](https://prosperitylicense.com/versions/3.0.0)
 
-- Провайдеры: Gemini, Groq, OpenRouter, Mistral
-- Ключ только в `localStorage` браузера
-- Инструкция: **Настройки → Как получить API-ключ LLM** или `llm-api-keys.html`
+Earlier versions of this project (tagged or released before 29 October 2026) were licensed under the MIT License. Those grants are irrevocable. The Prosperity Public License 3.0.0 applies to all versions from commit `b15950ac4cb3e5b6264832dff7e3698da942b2a6` onward.
 
-### Сервер LLM (self-hosted)
+## Community
 
-См. [server/README.md](server/README.md).
+- [Discussions](https://github.com/sergey-frolov-pets/code2graph/discussions)
+- [Issues](https://github.com/sergey-frolov-pets/code2graph/issues)
+- [Contributing](CONTRIBUTING.md)
+- Commercial licensing: [admin@code2graph.ru](mailto:admin@code2graph.ru)
 
-Минимум:
+If this project is useful, leave a ⭐. It helps the project.
 
-```bash
-export GEMINI_API_KEY="..."   # https://aistudio.google.com/apikey
-cd server && npm run dev
-```
-
-В приложении: **Настройки → Библиотека** → `http://localhost:3001`
-
-### Валидация
-
-Ответ LLM проверяется (JSON → PlantUML static → engine) до применения в редактор. Undo доступен после AI-изменений.
-
-## Деплой на VDSINA (www.code2graph.ru)
-
-Репозиторий для сервера: **github.com/sergey-frolov-pets/code2graph**
-
-Полная установка на голую Ubuntu и автообновление:
-
-```bash
-sudo bash scripts/deploy/vdsina-install.sh   # первичная установка
-sudo bash scripts/deploy/vdsina-update.sh    # обновление с origin/main
-sudo bash scripts/deploy/vdsina-update.sh --commit <sha>  # тест commit без merge в main
-```
-
-Подробности: [docs/DEPLOY_VDSINA.md](docs/DEPLOY_VDSINA.md)
-
-## Деплой на GitHub Pages
-
-Сайт публикуется автоматически при пуше в `main` (workflow `.github/workflows/deploy-pages.yml`).
-
-Сборка для Pages **не подключает базу данных**. `VITE_API_BASE_URL` в workflow пустой: вход, облачная библиотека и SQLite остаются на версии с сервером. Локальная библиотека (IndexedDB) и оффлайн-редактор работают как обычно.
-
-Подробности о таргетах деплоя (GitHub Pages vs сервер): [docs/DEPLOY.md](docs/DEPLOY.md).
-
-### Настройка домена `puml.sergey-frolov.ru`
-
-1. В репозитории: **Settings → Pages → Custom domain** → `puml.sergey-frolov.ru`
-2. У DNS-провайдера добавьте записи:
-   - `CNAME` `puml` → `sergey-frolov-pets.github.io`
-   - или `A`/`AAAA` на IP GitHub Pages (см. [документацию](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site))
-3. Включите **Enforce HTTPS**
-
-Файл `public/CNAME` уже содержит домен и копируется в `dist/` при сборке.
-
-## Возможности
-
-- Live-предпросмотр SVG
-- Экспорт SVG и PNG
-- Оффлайн (`file://`, PWA)
-- Smetana / ELK / dot layout
-- Тёмная тема, настройки редактора
-- Библиотека диаграмм (локально / REST API)
-- AI: wizard + patch выделения (LLM)
-
-## Лицензия
-
-MIT — см. [LICENSE](LICENSE).
+**Site:** [code2graph.ru](https://code2graph.ru)

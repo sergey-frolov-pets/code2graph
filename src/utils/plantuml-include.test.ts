@@ -34,11 +34,11 @@ describe("mapStdlibIncludePath", () => {
 });
 
 describe("resolvePlantUmlIncludeUrl", () => {
-  const appBaseUrl = "https://puml.sergey-frolov.ru/editor";
+  const appBaseUrl = "https://code2graph.ru/editor";
 
   it("resolves stdlib archimate includes from app root, not parent include", () => {
     const parentUrl =
-      "https://puml.sergey-frolov.ru/plantuml-lib/archimate/Archimate.puml";
+      "https://code2graph.ru/plantuml-lib/archimate/Archimate.puml";
 
     expect(
       resolvePlantUmlIncludeUrl(
@@ -47,18 +47,18 @@ describe("resolvePlantUmlIncludeUrl", () => {
         appBaseUrl,
       ),
     ).toBe(
-      "https://puml.sergey-frolov.ru/plantuml-lib/archimate/themes/shared_style.puml",
+      "https://code2graph.ru/plantuml-lib/archimate/themes/shared_style.puml",
     );
   });
 
   it("resolves relative includes from parent include directory", () => {
     const parentUrl =
-      "https://puml.sergey-frolov.ru/plantuml-lib/archimate/Archimate.puml";
+      "https://code2graph.ru/plantuml-lib/archimate/Archimate.puml";
 
     expect(
       resolvePlantUmlIncludeUrl("themes/shared_style.puml", parentUrl, appBaseUrl),
     ).toBe(
-      "https://puml.sergey-frolov.ru/plantuml-lib/archimate/themes/shared_style.puml",
+      "https://code2graph.ru/plantuml-lib/archimate/themes/shared_style.puml",
     );
   });
 });

@@ -8,6 +8,12 @@ export const siteMessages = {
   "site.nav.formats": "Formats",
   "site.nav.faq": "FAQ",
   "site.nav.mcp": "MCP",
+  "site.nav.github": "GitHub",
+  "site.nav.discussions": "Discussions",
+  "site.hero.askQuestion": "💬 Ask a question",
+  "site.github.star": "Star",
+  "site.github.starLabel": "Star code2graph on GitHub",
+  "site.hero.viewOnGithub": "View on GitHub",
 
   "site.landingTitle": "Code2Graph",
   "site.landingSubtitle":
@@ -274,4 +280,12 @@ export const siteMessages = {
   "site.registerRequired": "Fill in all fields",
   "site.welcomeUser": "Signed in as {username}",
   "site.versionHint": "Site version — compare after an update or page reload",
+  "site.footer.links": "Project links",
+  "site.license.title": "License",
+  "site.license.summary":
+    "Source-available under the Prosperity Public License 3.0.0. Free for non-commercial use.",
+  "site.license.commercial":
+    "Commercial use is free during a 30-day trial; a paid license is required afterwards.",
+  "site.license.read": "Read license",
+  "site.license.commercialLink": "Commercial license",
 } as const satisfies LocaleMessages;

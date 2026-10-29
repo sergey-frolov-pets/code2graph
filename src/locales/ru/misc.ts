@@ -160,7 +160,12 @@ export const miscMessages = {
   "about.site": "Сайт",
   "about.sourceCode": "Исходный код",
   "about.license": "Лицензия",
-  "about.licenseText": "Распространяется под лицензией",
+  "about.licenseText":
+    "Source-available по Prosperity Public License 3.0.0. Некоммерческое использование бесплатно.",
+  "about.licenseCommercial":
+    "Коммерческое использование бесплатно в течение 30 дней, дальше нужна платная лицензия.",
+  "about.licenseRead": "Текст лицензии",
+  "about.licenseCommercialLink": "Коммерческая лицензия",
   "about.components": "Используемые компоненты",
   "about.aiLead": "Подробнее о настройке провайдера и получении API-ключа:",
   "about.ai": "AI / LLM",
@@ -243,7 +248,7 @@ export const miscMessages = {
   "pwa.httpOnly": "Сайт открыт по HTTP. Установка PWA работает только по HTTPS.\n\nВ GitHub: Settings → Pages → Custom domain → включите «Enforce HTTPS».",
   "pwa.iosManual": "Safari на iPhone/iPad не поддерживает автоматическую установку через кнопку.\n\nНажмите «Поделиться» → «На экран Домой» → «Добавить».",
   "pwa.browserUnsupported": "Этот браузер не поддерживает автоматическую установку PWA.\n\nОткройте сайт в Chrome или Edge и используйте меню браузера → «Установить приложение».",
-  "pwa.sslError": "Не удалось загрузить Service Worker из-за ошибки SSL-сертификата домена.\n\nБраузер видит сертификат GitHub (*.github.io), а не вашего домена puml.sergey-frolov.ru.\n\nЧто сделать:\n1. GitHub → Settings → Pages → Custom domain: puml.sergey-frolov.ru\n2. Проверьте DNS: CNAME puml → sergey-frolov-pets.github.io\n3. Включите «Enforce HTTPS» и подождите выпуск сертификата (до 24 ч)\n4. Пока сертификат не готов — откройте {url} для установки PWA",
+  "pwa.sslError": "Не удалось загрузить Service Worker из-за ошибки SSL-сертификата домена.\n\nБраузер видит сертификат GitHub (*.github.io), а не вашего домена code2graph.ru.\n\nЧто сделать:\n1. GitHub → Settings → Pages → Custom domain: code2graph.ru\n2. Проверьте DNS для code2graph.ru по документации GitHub Pages\n3. Включите «Enforce HTTPS» и подождите выпуск сертификата (до 24 ч)\n4. Пока сертификат не готов — откройте {url} для установки PWA",
   "pwa.swNotRegistered": "Service Worker не зарегистрирован — браузер не считает сайт устанавливаемым.\n\nПерезагрузите страницу и попробуйте снова.",
   "pwa.swRegistrationError": "Ошибка регистрации: {error}",
   "pwa.swNotActive": "Service Worker ещё не активен на этой вкладке.\n\nПерезагрузите страницу один раз, затем снова нажмите «Установить».",
