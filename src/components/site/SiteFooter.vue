@@ -44,7 +44,7 @@ const { t } = useLocale();
       </span>
       <a
         class="site-footer__donate"
-        href="https://boosty.to/fsvibe/donate"
+        href="https://widget.lava.top/5a37bf1b-a355-43d5-80e4-9ec7d3d97254"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Support the project"
