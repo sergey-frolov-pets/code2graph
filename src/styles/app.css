@@ -1683,6 +1683,11 @@ a {
   transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
 }
 
+[data-theme="dark"] .site-footer__donate {
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
 .site-footer__donate:hover {
   transform: scale(1.06);
   color: #f15f2c;
@@ -1693,6 +1698,10 @@ a {
   width: 18px;
   height: 18px;
   display: block;
+}
+
+[data-theme="dark"] .site-footer__donate svg {
+  fill: currentColor;
 }
 
 .auth-page {
