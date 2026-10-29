@@ -6,6 +6,7 @@ import LandingInstallButton from "@/components/site/LandingInstallButton.vue";
 import McpConnectionTag from "@/components/site/McpConnectionTag.vue";
 import McpResultPreview from "@/components/site/McpResultPreview.vue";
 import SiteHeader from "@/components/site/SiteHeader.vue";
+import { trackEvent } from "@/analytics";
 import { useAppRouter } from "@/composables/useAppRouter";
 import { useLocale } from "@/composables/useLocale";
 import { APP_LINKS } from "@/constants";
@@ -13,6 +14,21 @@ import { DIAGRAM_LANGUAGE_MODULES } from "@/languages/registry";
 
 const { t } = useLocale();
 const { navigateTo } = useAppRouter();
+
+function openApp(): void {
+  trackEvent("cta-landing-app", "Open editor");
+  navigateTo("app");
+}
+
+function openLanguage(languageId: string): void {
+  trackEvent(`cta-language-${languageId}`, `Open ${languageId} editor`);
+  navigateTo("language", languageId as Parameters<typeof navigateTo>[1]);
+}
+
+function openMcp(): void {
+  trackEvent("cta-landing-mcp", "Open MCP page");
+  navigateTo("mcp");
+}
 
 const languages = DIAGRAM_LANGUAGE_MODULES.filter((module) => module.site);
 </script>
@@ -43,7 +59,7 @@ const languages = DIAGRAM_LANGUAGE_MODULES.filter((module) => module.site);
           <button
             class="btn btn-primary btn-lg"
             type="button"
-            @click="navigateTo('app')"
+            @click="openApp"
           >
             {{ t("site.landingCtaApp") }}
           </button>
@@ -88,7 +104,7 @@ const languages = DIAGRAM_LANGUAGE_MODULES.filter((module) => module.site);
             :key="module.id"
             class="landing-language-card"
             type="button"
-            @click="navigateTo('language', module.id)"
+            @click="openLanguage(module.id)"
           >
             <strong>{{ t(module.labelKey) }}</strong>
             <span>{{ t(module.site!.purposeKey) }}</span>
@@ -120,7 +136,7 @@ const languages = DIAGRAM_LANGUAGE_MODULES.filter((module) => module.site);
         <button
           class="btn btn-primary"
           type="button"
-          @click="navigateTo('mcp')"
+          @click="openMcp"
         >
           {{ t("site.mcp.openPage") }}
         </button>
