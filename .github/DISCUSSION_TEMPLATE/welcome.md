@@ -1,6 +1,8 @@
 # Welcome to Code2Graph discussions
 
-Pin this post after Discussions are enabled.
+Published post: https://github.com/sergey-frolov-pets/code2graph/discussions/45
+
+Pin that post in the Discussions UI. The GitHub API has no mutation to pin a discussion.
 
 ---
 
