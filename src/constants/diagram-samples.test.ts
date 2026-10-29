@@ -214,6 +214,8 @@ describe("diagram samples coverage", () => {
       "@startnwdiag",
       "Business_Actor",
       "Rel_Flow",
+      "Rel_Triggering",
+      "with period",
       "skinparam",
       "@startmindmap",
       "@startgantt",

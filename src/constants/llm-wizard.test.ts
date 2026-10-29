@@ -546,6 +546,23 @@ describe("llm-wizard", () => {
     expect(source).toContain('"Slice 1"');
   });
 
+  it("builds plantuml archimate scaffold with library relationships", () => {
+    const source = buildManualScaffold(
+      createState({
+        diagramType: "archimate",
+        typeParams: {
+          ...createDefaultTypeParams(),
+          nodes: 3,
+        },
+      }),
+      "en",
+    );
+
+    expect(source).toContain("!include <archimate/Archimate>");
+    expect(source).toContain('Rel_Triggering(customer, app1, "Uses")');
+    expect(source).not.toMatch(/^\s*Rel\s*\(/m);
+  });
+
   it("builds plantuml usecase scaffold", () => {
     const source = buildManualScaffold(
       createState({

@@ -37,7 +37,7 @@ export const miscMessages = {
   "samples.mermaid.flowchart": "Блок-схема",
   "samples.mermaid.sequence": "Последовательность",
   "samples.mermaid.classDiagram": "Классы",
-  "samples.mermaid.component": "Компоненты",
+  "samples.mermaid.component": "C4 компоненты",
   "samples.mermaid.activity": "Activity",
   "samples.mermaid.state": "Состояния",
   "samples.mermaid.er": "ER-модель",

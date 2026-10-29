@@ -37,7 +37,7 @@ export const miscMessages = {
   "samples.mermaid.flowchart": "Flowchart",
   "samples.mermaid.sequence": "Sequence",
   "samples.mermaid.classDiagram": "Class diagram",
-  "samples.mermaid.component": "Components",
+  "samples.mermaid.component": "C4 components",
   "samples.mermaid.activity": "Activity",
   "samples.mermaid.state": "State diagram",
   "samples.mermaid.er": "ER model",

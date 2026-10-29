@@ -298,11 +298,13 @@ function buildPlantUmlSyntaxRules(diagramType: WizardDiagramType): string[] {
       return [
         "Format: PlantUML timing diagram with @startuml/@enduml.",
         "Use concise/robust signals and @time markers; notes with note top of when needed.",
+        "A clock signal is clock \"Label\" as alias with period 50.",
       ];
     case "archimate":
       return [
         "Format: PlantUML ArchiMate diagram with @startuml/@enduml.",
         "Use !include <archimate/Archimate> and ArchiMate element macros.",
+        "Relationships are Rel_Triggering, Rel_Flow, Rel_Serving, Rel_Assignment, or Rel_Access.",
       ];
     case "c4_context":
       return [

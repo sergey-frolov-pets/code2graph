@@ -27,9 +27,10 @@ Rules:
 
 - Wrap the diagram in `@startuml` / `@enduml`. Do not add `top to bottom direction`.
 - Declare each signal before the timeline: `concise "Label" as Alias` or `robust "Label" as Alias`.
-- `concise` is binary or short states. `robust` is for longer state names.
+- `concise` is short states. `robust` is for longer state names. A binary signal is `binary "Label" as Alias` with states `0` and `1`.
+- A clock requires a period: `clock "Tick" as clk with period 50`.
 - Time markers are `@0`, `@100`, `@200` (integers). After each marker, set every signal that changes: `Alias is StateName`.
-- Binary concise states are usually `Idle` and `Active`, or the states the user named.
+- Concise states are usually `Idle` and `Active`, or the states the user named.
 - A constraint: `highlight 100 to 200 : label`.
 - Notes: `note top of Alias: text` immediately after a time marker.
 - Keep aliases ASCII. Match the user's language in quoted labels.
