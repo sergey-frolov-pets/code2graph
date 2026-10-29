@@ -19,7 +19,7 @@ function buildSingleHtml() {
       name="description"
       content="Оффлайн-редактор и генератор PlantUML диаграмм на Vue.js"
     />
-    <link rel="canonical" href="https://puml.sergey-frolov.ru/" />
+    <link rel="canonical" href="https://code2graph.ru/" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />

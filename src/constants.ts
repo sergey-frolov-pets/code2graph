@@ -11,7 +11,7 @@ export const APP_META = {
 } as const;
 
 export const APP_LINKS = {
-  site: "https://www.code2graph.ru/",
+  site: "https://code2graph.ru/",
   githubPages: "https://sergey-frolov-pets.github.io/code2graph/",
   github: "https://github.com/sergey-frolov-pets/code2graph",
   githubReleases:
