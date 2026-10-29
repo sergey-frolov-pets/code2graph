@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import GithubStarButton from "@/components/site/GithubStarButton.vue";
 import SiteFooter from "@/components/site/SiteFooter.vue";
 import LandingDiagramBackground from "@/components/site/LandingDiagramBackground.vue";
 import LandingInstallButton from "@/components/site/LandingInstallButton.vue";
@@ -47,6 +48,15 @@ const languages = DIAGRAM_LANGUAGE_MODULES.filter((module) => module.site);
             {{ t("site.landingCtaApp") }}
           </button>
           <LandingInstallButton size="large" />
+          <a
+            class="btn btn-ghost btn-lg"
+            :href="APP_LINKS.github"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ t("site.hero.viewOnGithub") }}
+          </a>
+          <GithubStarButton />
         </div>
         <p class="landing-note">
           {{ t("site.offlineNote") }}

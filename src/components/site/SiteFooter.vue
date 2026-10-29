@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import DeveloperBrand from "@/components/DeveloperBrand.vue";
 import { useLocale } from "@/composables/useLocale";
-import { APP_META } from "@/constants";
+import { APP_LINKS, APP_META } from "@/constants";
 
 const { t } = useLocale();
 </script>
@@ -12,6 +12,15 @@ const { t } = useLocale();
       <span class="site-footer__year">© 2026</span>
       <DeveloperBrand size="sm" />
     </div>
+    <nav class="site-footer__links" :aria-label="t('site.footer.links')">
+      <a
+        :href="APP_LINKS.github"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {{ t("site.nav.github") }}
+      </a>
+    </nav>
     <div class="site-footer__meta">
       <span class="site-footer__version" :title="t('site.versionHint')">
         v{{ APP_META.version }}

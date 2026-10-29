@@ -8,6 +8,10 @@ export const siteMessages = {
   "site.nav.formats": "Форматы",
   "site.nav.faq": "FAQ",
   "site.nav.mcp": "MCP",
+  "site.nav.github": "GitHub",
+  "site.github.star": "Star",
+  "site.github.starLabel": "Поставить звезду code2graph на GitHub",
+  "site.hero.viewOnGithub": "Открыть на GitHub",
 
   "site.landingTitle": "Code2Graph",
   "site.landingSubtitle":
@@ -275,4 +279,5 @@ export const siteMessages = {
   "site.registerRequired": "Заполните все поля",
   "site.welcomeUser": "Вы вошли как {username}",
   "site.versionHint": "Версия сайта — сравните после обновления или перезагрузки страницы",
+  "site.footer.links": "Ссылки проекта",
 } as const satisfies LocaleMessages;
