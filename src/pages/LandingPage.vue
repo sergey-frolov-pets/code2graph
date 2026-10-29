@@ -57,6 +57,14 @@ const languages = DIAGRAM_LANGUAGE_MODULES.filter((module) => module.site);
             {{ t("site.hero.viewOnGithub") }}
           </a>
           <GithubStarButton />
+          <a
+            class="btn btn-ghost btn-lg"
+            :href="APP_LINKS.discussions"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ t("site.hero.askQuestion") }}
+          </a>
         </div>
         <p class="landing-note">
           {{ t("site.offlineNote") }}

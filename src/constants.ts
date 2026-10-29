@@ -14,6 +14,7 @@ export const APP_LINKS = {
   site: "https://code2graph.ru/",
   githubPages: "https://sergey-frolov-pets.github.io/code2graph/",
   github: "https://github.com/sergey-frolov-pets/code2graph",
+  discussions: "https://github.com/sergey-frolov-pets/code2graph/discussions",
   githubReleases:
     "https://github.com/sergey-frolov-pets/code2graph/releases/latest",
   plantumlGuide: "https://plantuml.com/guide",

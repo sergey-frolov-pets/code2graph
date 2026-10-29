@@ -20,6 +20,13 @@ const { t } = useLocale();
       >
         {{ t("site.nav.github") }}
       </a>
+      <a
+        :href="APP_LINKS.discussions"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {{ t("site.nav.discussions") }}
+      </a>
     </nav>
     <p class="site-footer__license">
       {{ t("site.license.summary") }}

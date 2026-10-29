@@ -44,6 +44,15 @@ const { isLocalMode } = useLibraryApiUrl();
           {{ t("site.nav.github") }}
         </a>
         <GithubStarButton v-if="props.landingNav" />
+        <a
+          v-if="props.landingNav"
+          class="btn btn-ghost"
+          :href="APP_LINKS.discussions"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ t("site.nav.discussions") }}
+        </a>
         <template v-if="props.landingNav">
           <button
             class="btn btn-ghost"

@@ -9,6 +9,8 @@ export const siteMessages = {
   "site.nav.faq": "FAQ",
   "site.nav.mcp": "MCP",
   "site.nav.github": "GitHub",
+  "site.nav.discussions": "Discussions",
+  "site.hero.askQuestion": "💬 Ask a question",
   "site.github.star": "Star",
   "site.github.starLabel": "Star code2graph on GitHub",
   "site.hero.viewOnGithub": "View on GitHub",
