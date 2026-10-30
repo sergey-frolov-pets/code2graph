@@ -10,6 +10,8 @@
  * all visits collapse into "/".
  */
 
+import { pagePath } from "./paths";
+
 export interface GoatCounterCountOptions {
   path: string;
   title?: string;
@@ -39,8 +41,8 @@ function getApi(): GoatCounterApi | null {
 
 /**
  * Report a pageview for the given hash route.
- * Path is normalised to the part after the hash so that
- * "#/lang/mermaid" becomes "/lang/mermaid".
+ * The hash is mapped to a readable path (see ./paths): "#/lang/mermaid"
+ * becomes "/master-mermaid", "#/" becomes "/landing".
  */
 export function trackPageview(hash: string, title?: string): void {
   const api = getApi();
@@ -48,11 +50,8 @@ export function trackPageview(hash: string, title?: string): void {
     return;
   }
 
-  const normalized = hash.replace(/^#/, "");
-  const path = normalized === "" || normalized === "/" ? "/" : normalized;
-
   api.count({
-    path,
+    path: pagePath(hash),
     title: title ?? document.title,
   });
 }

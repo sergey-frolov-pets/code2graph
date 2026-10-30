@@ -14,21 +14,26 @@ describe("goatcounter analytics", () => {
     delete window.goatcounter;
   });
 
-  it("maps the landing hash to the root path", () => {
+  it("maps the landing hash to the readable landing path", () => {
     trackPageview("#/", "Code2Graph");
-    expect(count).toHaveBeenCalledWith({ path: "/", title: "Code2Graph" });
+    expect(count).toHaveBeenCalledWith({ path: "/landing", title: "Code2Graph" });
   });
 
-  it("keeps the route path for app and wizard pages", () => {
+  it("sends readable paths for app, mcp and master pages", () => {
     trackPageview("#/app");
+    trackPageview("#/mcp");
     trackPageview("#/lang/mermaid");
     expect(count).toHaveBeenNthCalledWith(1, { path: "/app", title: document.title });
-    expect(count).toHaveBeenNthCalledWith(2, { path: "/lang/mermaid", title: document.title });
+    expect(count).toHaveBeenNthCalledWith(2, { path: "/mcp", title: document.title });
+    expect(count).toHaveBeenNthCalledWith(3, {
+      path: "/master-mermaid",
+      title: document.title,
+    });
   });
 
   it("treats an empty hash as the landing page", () => {
     trackPageview("");
-    expect(count).toHaveBeenCalledWith({ path: "/", title: document.title });
+    expect(count).toHaveBeenCalledWith({ path: "/landing", title: document.title });
   });
 
   it("sends custom events with the event flag", () => {
