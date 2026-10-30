@@ -62,6 +62,17 @@ export function encodePlantUmlPayload(deflated: Uint8Array): string {
 async function deflateUtf8(text: string): Promise<Uint8Array> {
   const input = new TextEncoder().encode(text);
 
+  // Use pako when available: it is the implementation plantuml.com itself uses,
+  // so the produced deflate stream matches the reference encoding byte-for-byte.
+  // Node's zlib (and CompressionStream) pick different match heuristics, which
+  // still decodes fine but breaks golden-string tests and cache keys.
+  try {
+    const { deflate } = await import("pako");
+    return deflate(input);
+  } catch {
+    // pako is a browser-side dependency; fall back to platform APIs.
+  }
+
   if (typeof CompressionStream !== "undefined") {
     const compressedStream = new Response(
       new Blob([input]).stream().pipeThrough(new CompressionStream("deflate")),
