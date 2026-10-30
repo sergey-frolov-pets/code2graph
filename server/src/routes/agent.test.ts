@@ -1,16 +1,36 @@
 import { Hono } from "hono";
-import { describe, expect, it } from "vitest";
-import { agentRouter } from "./agent.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-function createApp(): Hono {
+const AGENT_TOKEN = "test-agent-token-1234567890";
+
+async function loadAgentRouter(options: {
+  token?: string;
+  allowPublic?: boolean;
+}) {
+  vi.resetModules();
+  vi.stubEnv("AGENT_API_TOKEN", options.token ?? "");
+  vi.stubEnv("AGENT_API_ALLOW_PUBLIC", options.allowPublic ? "true" : "");
+  const { agentRouter } = await import("./agent.js");
   const app = new Hono();
   app.route("/api/agent", agentRouter);
   return app;
 }
 
 describe("agent diagram routes", () => {
-  it("lists the site languages", async () => {
-    const response = await createApp().request("/api/agent/formats");
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("lists the site languages when a token is configured", async () => {
+    const app = await loadAgentRouter({ token: AGENT_TOKEN });
+    const response = await app.request("/api/agent/formats", {
+      headers: { Authorization: `Bearer ${AGENT_TOKEN}` },
+    });
     expect(response.status).toBe(200);
     const body = (await response.json()) as {
       formats: Array<{ format: string }>;
@@ -20,9 +40,13 @@ describe("agent diagram routes", () => {
   });
 
   it("scaffolds a D2 diagram from a request", async () => {
-    const response = await createApp().request("/api/agent/diagrams/scaffold", {
+    const app = await loadAgentRouter({ token: AGENT_TOKEN });
+    const response = await app.request("/api/agent/diagrams/scaffold", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${AGENT_TOKEN}`,
+      },
       body: JSON.stringify({ request: "d2 sequence for checkout", locale: "en" }),
     });
     expect(response.status).toBe(200);
@@ -32,11 +56,35 @@ describe("agent diagram routes", () => {
   });
 
   it("rejects an unknown format", async () => {
-    const response = await createApp().request("/api/agent/diagrams/plan", {
+    const app = await loadAgentRouter({ token: AGENT_TOKEN });
+    const response = await app.request("/api/agent/diagrams/plan", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${AGENT_TOKEN}`,
+      },
       body: JSON.stringify({ request: "hello", format: "dot" }),
     });
     expect(response.status).toBe(400);
+  });
+
+  it("is closed when no token is configured", async () => {
+    const app = await loadAgentRouter({});
+    const response = await app.request("/api/agent/formats");
+    expect(response.status).toBe(401);
+  });
+
+  it("requires the token when one is configured", async () => {
+    const app = await loadAgentRouter({ token: AGENT_TOKEN });
+    const response = await app.request("/api/agent/formats", {
+      headers: { Authorization: "Bearer wrong-token" },
+    });
+    expect(response.status).toBe(401);
+  });
+
+  it("opens only with an explicit public opt-in", async () => {
+    const app = await loadAgentRouter({ allowPublic: true });
+    const response = await app.request("/api/agent/formats");
+    expect(response.status).toBe(200);
   });
 });

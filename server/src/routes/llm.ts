@@ -4,6 +4,7 @@ import {
   GROQ_API_KEY,
   OPENROUTER_API_KEY,
   LLM_RATE_LIMIT_PER_MINUTE,
+  LLM_MAX_OUTPUT_TOKENS,
 } from "../config.js";
 import {
   containsForbiddenClientLlmKeyField,
@@ -99,9 +100,10 @@ async function callGemini(
         ? { parts: [{ text: systemMessage.content }] }
         : undefined,
       contents,
-      generationConfig: jsonMode
-        ? { responseMimeType: "application/json" }
-        : undefined,
+      generationConfig: {
+        maxOutputTokens: LLM_MAX_OUTPUT_TOKENS,
+        ...(jsonMode ? { responseMimeType: "application/json" } : {}),
+      },
     }),
   });
 
@@ -140,6 +142,7 @@ async function callOpenAiCompatible(
     body: JSON.stringify({
       model,
       messages,
+      max_tokens: LLM_MAX_OUTPUT_TOKENS,
       response_format: jsonMode ? { type: "json_object" } : undefined,
     }),
   });

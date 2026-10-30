@@ -1,5 +1,10 @@
 import type { FreeBuiltinLlmProviderId } from "./llm-providers.js";
 import { isFreeBuiltinLlmProviderId } from "./llm-providers.js";
+import {
+  LLM_MAX_MESSAGES,
+  LLM_MAX_MESSAGE_CHARS,
+  LLM_MAX_TOTAL_CHARS,
+} from "./config.js";
 
 export type LlmChatRole = "system" | "user" | "assistant";
 
@@ -55,7 +60,12 @@ export function parseLlmProxyChatBody(raw: unknown): LlmProxyChatRequestBody | n
     return null;
   }
 
+  if (messages.length > LLM_MAX_MESSAGES) {
+    return null;
+  }
+
   const parsedMessages: LlmChatMessage[] = [];
+  let totalChars = 0;
 
   for (const item of messages) {
     if (!item || typeof item !== "object") {
@@ -71,6 +81,15 @@ export function parseLlmProxyChatBody(raw: unknown): LlmProxyChatRequestBody | n
     }
 
     if (typeof content !== "string" || !content.trim()) {
+      return null;
+    }
+
+    if (content.length > LLM_MAX_MESSAGE_CHARS) {
+      return null;
+    }
+
+    totalChars += content.length;
+    if (totalChars > LLM_MAX_TOTAL_CHARS) {
       return null;
     }
 

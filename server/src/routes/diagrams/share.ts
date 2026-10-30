@@ -1,5 +1,6 @@
 import { requireAuthenticatedUser } from "../../auth.js";
 import { canReadDiagram } from "../../authz.js";
+import { SHARE_LINK_DEFAULT_TTL_DAYS } from "../../config.js";
 import { getDb } from "../../db.js";
 import { mapDiagram } from "../../shared/diagram-mappers.js";
 import {
@@ -11,6 +12,31 @@ import { DIAGRAM_FULL_SELECT } from "../../services/diagrams-list-query.js";
 import { toDiagramAccessRow } from "../../services/diagrams-access.js";
 import { isSharePermission } from "../../types.js";
 import type { DiagramsRouter } from "./types.js";
+
+/**
+ * Share links expire by default (SHARE_LINK_DEFAULT_TTL_DAYS).
+ * A permanent link requires an explicit `permanent: true` flag.
+ */
+export function resolveShareLinkExpiry(
+  requestedExpiresAt: string | null | undefined,
+  permanent: boolean,
+  now = Date.now(),
+): string | null {
+  if (permanent) {
+    return null;
+  }
+
+  if (typeof requestedExpiresAt === "string" && requestedExpiresAt.trim()) {
+    const parsed = new Date(requestedExpiresAt);
+    if (!Number.isNaN(parsed.getTime()) && parsed.getTime() > now) {
+      return parsed.toISOString();
+    }
+  }
+
+  return new Date(
+    now + SHARE_LINK_DEFAULT_TTL_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
+}
 
 export function registerDiagramShareRoutes(router: DiagramsRouter): void {
   router.get("/:id/share", (context) => {
@@ -67,10 +93,7 @@ export function registerDiagramShareRoutes(router: DiagramsRouter): void {
       return context.json({ error: "Недостаточно прав" }, 403);
     }
 
-    const expiresAt =
-      body.permanent || body.expiresAt === null
-        ? null
-        : body.expiresAt ?? null;
+    const expiresAt = resolveShareLinkExpiry(body.expiresAt, body.permanent === true);
 
     const permission =
       body.permission && isSharePermission(body.permission)

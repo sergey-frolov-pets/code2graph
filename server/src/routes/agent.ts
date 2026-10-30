@@ -8,16 +8,22 @@ import {
   type AgentDiagramDirection,
   type AgentDiagramLocale,
 } from "../../../packages/shared/src/agent-diagram.js";
-import { AGENT_API_TOKEN } from "../config.js";
+import { AGENT_API_ALLOW_PUBLIC, AGENT_API_TOKEN } from "../config.js";
 
 export const agentRouter = new Hono();
 
+/**
+ * The agent API is closed unless explicitly opened:
+ * - a token is configured (Bearer required), or
+ * - AGENT_API_ALLOW_PUBLIC=true (deliberate opt-in for a public endpoint).
+ * A missing token no longer means "everyone is welcome".
+ */
 function isAuthorized(header: string | undefined): boolean {
-  if (!AGENT_API_TOKEN) {
-    return true;
+  if (AGENT_API_TOKEN) {
+    return header === `Bearer ${AGENT_API_TOKEN}`;
   }
 
-  return header === `Bearer ${AGENT_API_TOKEN}`;
+  return AGENT_API_ALLOW_PUBLIC;
 }
 
 function readLocale(value: unknown): AgentDiagramLocale | undefined {

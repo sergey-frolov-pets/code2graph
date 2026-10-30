@@ -2,7 +2,7 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { libraryAuthMiddleware } from "./auth.js";
-import { SERVER_PORT } from "./config.js";
+import { CORS_ORIGINS, SERVER_PORT } from "./config.js";
 import { getDb } from "./db.js";
 import { adminRouter } from "./routes/admin.js";
 import { agentRouter } from "./routes/agent.js";
@@ -11,18 +11,22 @@ import { diagramsRouter, sectionsRouter } from "./routes/library.js";
 import { llmRouter } from "./routes/llm.js";
 import { publicAuthRouter } from "./routes/public-auth.js";
 import { ratingsRouter } from "./routes/ratings.js";
+import { securityHeaders } from "./security-headers.js";
 import { shareRouter } from "./routes/share.js";
 import { subscriptionAccessRouter } from "./routes/subscription-access.js";
 import { subscriptionsRouter } from "./routes/subscriptions.js";
 
 const app = new Hono();
 
+app.use("*", securityHeaders());
+
 app.use(
   "*",
   cors({
-    origin: "*",
+    origin: (origin) => (CORS_ORIGINS.includes(origin) ? origin : null),
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
+    maxAge: 600,
   }),
 );
 
