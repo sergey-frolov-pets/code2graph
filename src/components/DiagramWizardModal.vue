@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, toRef, watch } from "vue";
+import { computed, nextTick, ref, toRef, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import LoadingState from "@/components/ui/LoadingState.vue";
 import WizardOnboardingBanner from "@/components/wizard/WizardOnboardingBanner.vue";
@@ -12,6 +12,7 @@ import { useDiagramWizardFlow } from "@/composables/wizard/useDiagramWizardFlow"
 import { useActiveLlmLabel } from "@/composables/useActiveLlmLabel";
 import { useWizardOnboarding } from "@/composables/wizard/useWizardOnboarding";
 import { useLocale } from "@/composables/useLocale";
+import { trackEvent } from "@/analytics";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
@@ -42,6 +43,15 @@ watch(
   (isOpen) => {
     if (isOpen) {
       pendingLaunchMode.value = props.initialCreationMode ?? null;
+      // New-diagram wizard opened: one event per opening (mode is known after
+      // resetWizard() runs in the flow composable, so read it on the next tick).
+      void nextTick(() => {
+        const mode = wizardState.value.creationMode;
+        trackEvent(
+          mode ? `wizard-open-${mode}` : "wizard-open",
+          mode ? `Wizard: ${mode}` : "Wizard",
+        );
+      });
     }
   },
 );
