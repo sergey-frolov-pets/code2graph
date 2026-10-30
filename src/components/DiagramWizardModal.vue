@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, toRef, watch } from "vue";
+import { computed, nextTick, onMounted, ref, toRef, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import LoadingState from "@/components/ui/LoadingState.vue";
 import WizardOnboardingBanner from "@/components/wizard/WizardOnboardingBanner.vue";
@@ -38,23 +38,35 @@ const { activeLlmDetail } = useActiveLlmLabel();
 
 const pendingLaunchMode = ref<WizardCreationMode | null>(null);
 
+function trackWizardOpen(): void {
+  // New-diagram wizard opened: one event per opening. The creation mode is
+  // known only after resetWizard() runs in the flow composable, hence nextTick.
+  void nextTick(() => {
+    const mode = wizardState.value.creationMode;
+    trackEvent(
+      mode ? `wizard-open-${mode}` : "wizard-open",
+      mode ? `Wizard: ${mode}` : "Wizard",
+    );
+  });
+}
+
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
       pendingLaunchMode.value = props.initialCreationMode ?? null;
-      // New-diagram wizard opened: one event per opening (mode is known after
-      // resetWizard() runs in the flow composable, so read it on the next tick).
-      void nextTick(() => {
-        const mode = wizardState.value.creationMode;
-        trackEvent(
-          mode ? `wizard-open-${mode}` : "wizard-open",
-          mode ? `Wizard: ${mode}` : "Wizard",
-        );
-      });
+      trackWizardOpen();
     }
   },
 );
+
+// The modal is mounted with `v-if` only while open, so the `open` watcher above
+// never fires on the first opening — count that one on mount.
+onMounted(() => {
+  if (props.open) {
+    trackWizardOpen();
+  }
+});
 
 const {
   stepIndex,

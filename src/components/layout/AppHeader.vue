@@ -7,6 +7,7 @@ import { APP_META } from "@/constants";
 import { useAppRouter } from "@/composables/useAppRouter";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import { useLocale } from "@/composables/useLocale";
+import { trackEvent } from "@/analytics";
 
 const { navigateTo } = useAppRouter();
 const { isLocalMode } = useLibraryApiUrl();
@@ -18,6 +19,13 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
+
+// Instant feedback for the "new diagram" button: the wizard itself reports
+// `wizard-open-*` once mounted, this only proves the click reached the app.
+function onOpenWizard(): void {
+  trackEvent("wizard-open-click", "Wizard: new diagram button");
+  emit("openWizard");
+}
 </script>
 
 <template>
@@ -50,7 +58,7 @@ const { t } = useLocale();
       <IconButton
         :label="t('app.aiNewDiagram')"
         extra-class="app-header__icon-btn"
-        @click="emit('openWizard')"
+        @click="onOpenWizard"
       >
         <ActionIcon name="plus" />
       </IconButton>
