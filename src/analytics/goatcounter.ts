@@ -84,3 +84,31 @@ export function trackSave(kind: string, title?: string): void {
   const name = `save-${kind}`;
   trackEvent(name, title ?? name);
 }
+
+/**
+ * Report that the user opened an external diagram file.
+ *
+ * One event per opened file, named `open-<kind>`: `open-diagram-mermaid`,
+ * `open-file-png`, `open-file-unknown`, ... Only the format/kind is sent, never
+ * the file name or its content.
+ */
+export function trackOpen(kind: string, title?: string): void {
+  const name = `open-${kind}`;
+  trackEvent(name, title ?? name);
+}
+
+/**
+ * Map a file name to a stable analytics kind: `diagram-<format>` for formats
+ * the app can render, `file-<extension>` for anything else.
+ */
+export function resolveOpenKind(
+  fileName: string,
+  diagramFormat: string | null,
+): string {
+  if (diagramFormat) {
+    return `diagram-${diagramFormat}`;
+  }
+
+  const match = /\.([a-z0-9]+)$/i.exec(fileName.trim());
+  return match ? `file-${match[1].toLowerCase()}` : "file-unknown";
+}

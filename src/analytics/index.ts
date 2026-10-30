@@ -1,4 +1,10 @@
-export { trackEvent, trackPageview, trackSave } from "./goatcounter";
+export {
+  resolveOpenKind,
+  trackEvent,
+  trackOpen,
+  trackPageview,
+  trackSave,
+} from "./goatcounter";
 export {
   DEFAULT_GOATCOUNTER_ORIGIN,
   isAnalyticsEnabled,

@@ -1,6 +1,6 @@
 import { MAX_PUML_FILE_BYTES } from "@/constants/diagram-library";
 import { downloadTextFile } from "@/utils/export";
-import { trackSave } from "@/analytics";
+import { resolveOpenKind, trackOpen, trackSave } from "@/analytics";
 import { LocalizedAppError } from "@/utils/localized-app-error";
 import {
   detectLanguageFromFileName,
@@ -57,6 +57,9 @@ export async function loadPumlFromFile(file: File): Promise<{
   if (!content.trim()) {
     throw new LocalizedAppError("file.empty");
   }
+
+  const kind = resolveOpenKind(file.name, detectLanguageFromFileName(file.name));
+  trackOpen(kind, `Open shared file: ${kind}`);
 
   return {
     content,
