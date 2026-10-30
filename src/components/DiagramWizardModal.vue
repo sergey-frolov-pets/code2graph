@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, toRef, watch } from "vue";
+import { computed, onMounted, ref, toRef, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import LoadingState from "@/components/ui/LoadingState.vue";
 import WizardOnboardingBanner from "@/components/wizard/WizardOnboardingBanner.vue";
@@ -39,15 +39,8 @@ const { activeLlmDetail } = useActiveLlmLabel();
 const pendingLaunchMode = ref<WizardCreationMode | null>(null);
 
 function trackWizardOpen(): void {
-  // New-diagram wizard opened: one event per opening. The creation mode is
-  // known only after resetWizard() runs in the flow composable, hence nextTick.
-  void nextTick(() => {
-    const mode = wizardState.value.creationMode;
-    trackEvent(
-      mode ? `wizard-open-${mode}` : "wizard-open",
-      mode ? `Wizard: ${mode}` : "Wizard",
-    );
-  });
+  // New-diagram wizard opened: exactly one event per opening.
+  trackEvent("wizard-open", "Wizard: new diagram");
 }
 
 watch(

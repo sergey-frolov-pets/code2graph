@@ -1,4 +1,5 @@
 import { computed, type Ref } from "vue";
+import { trackSave } from "@/analytics";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useDiagramIrCache } from "@/composables/useDiagramIrCache";
 import { useLocale } from "@/composables/useLocale";
@@ -35,6 +36,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     const ir = getLastDiagramIr();
     const payload = ir ? await embedSvgMetadata(svg.value, ir) : svg.value;
     downloadTextFile(payload, "diagram.svg", "image/svg+xml;charset=utf-8");
+    trackSave("image-svg", "Save image: SVG");
   }
 
   async function exportPng(): Promise<void> {
@@ -45,6 +47,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     try {
       const pngBlob = await svgToPngBlob(svg.value, previewBackground.value);
       downloadBlob(pngBlob, "diagram.png");
+      trackSave("image-png", "Save image: PNG");
     } catch (exportError) {
       const message = resolveLocalizedErrorMessage(
         exportError,

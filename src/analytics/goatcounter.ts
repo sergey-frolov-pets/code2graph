@@ -72,3 +72,15 @@ export function trackEvent(name: string, title?: string): void {
     event: true,
   });
 }
+
+/**
+ * Report that the user saved a file to disk.
+ *
+ * One event per save, named `save-<kind>`, so formats stay separate in the
+ * GoatCounter "Events" view: `save-diagram-mermaid`, `save-image-svg`, ...
+ * The file name itself is never sent — only the format/kind.
+ */
+export function trackSave(kind: string, title?: string): void {
+  const name = `save-${kind}`;
+  trackEvent(name, title ?? name);
+}

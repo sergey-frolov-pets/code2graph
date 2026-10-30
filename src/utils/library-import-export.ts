@@ -9,6 +9,7 @@ import {
   loadSectionsFromCache,
 } from "@/storage/diagram-store";
 import { downloadTextFile } from "@/utils/export";
+import { trackSave } from "@/analytics";
 
 const EXPORT_FILE_NAME = "code2graph-library.json";
 const EXPORT_MIME_TYPE = "application/json;charset=utf-8";
@@ -33,6 +34,7 @@ export async function buildLocalExportBundle(
 export function downloadLibraryBundle(bundle: LibraryExportBundle): void {
   const content = JSON.stringify(bundle, null, 2);
   downloadTextFile(content, EXPORT_FILE_NAME, EXPORT_MIME_TYPE);
+  trackSave("library-json", "Save library: JSON");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

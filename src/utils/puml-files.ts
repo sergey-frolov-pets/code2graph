@@ -1,5 +1,6 @@
 import { MAX_PUML_FILE_BYTES } from "@/constants/diagram-library";
 import { downloadTextFile } from "@/utils/export";
+import { trackSave } from "@/analytics";
 import { LocalizedAppError } from "@/utils/localized-app-error";
 import {
   detectLanguageFromFileName,
@@ -65,4 +66,5 @@ export async function loadPumlFromFile(file: File): Promise<{
 
 export function savePumlSource(source: string, fileName: string): void {
   downloadTextFile(source, resolvePumlFileName(fileName), PUML_MIME_TYPE);
+  trackSave("diagram-puml", "Save diagram: puml");
 }

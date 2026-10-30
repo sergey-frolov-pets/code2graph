@@ -16,6 +16,7 @@ import {
   SNIPPETS_EXPORT_FILE_NAME,
 } from "@/storage/snippets";
 import { downloadTextFile } from "@/utils/export";
+import { trackSave } from "@/analytics";
 
 export type SnippetsImportMode = "merge" | "replace";
 
@@ -178,6 +179,7 @@ export function useSnippets() {
       SNIPPETS_EXPORT_FILE_NAME,
       "application/json;charset=utf-8",
     );
+    trackSave("snippets-json", "Save snippets: JSON");
   }
 
   function importCustomSnippets(

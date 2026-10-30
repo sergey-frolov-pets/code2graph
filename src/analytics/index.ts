@@ -1,4 +1,4 @@
-export { trackEvent, trackPageview } from "./goatcounter";
+export { trackEvent, trackPageview, trackSave } from "./goatcounter";
 export {
   DEFAULT_GOATCOUNTER_ORIGIN,
   isAnalyticsEnabled,
