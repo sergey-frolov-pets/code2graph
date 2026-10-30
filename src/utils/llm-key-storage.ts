@@ -5,17 +5,19 @@ const BYOK_PROVIDER_IDS = getByokLlmProviders().map((provider) => provider.id);
 
 const LlmApiKeyValueSchema = z.string().min(8).max(512);
 
-const LlmApiKeysMapSchema = z.record(LlmApiKeyValueSchema).superRefine((value, ctx) => {
-  for (const key of Object.keys(value)) {
-    if (!BYOK_PROVIDER_IDS.includes(key)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Unknown BYOK provider id: ${key}`,
-        path: [key],
-      });
+const LlmApiKeysMapSchema = z
+  .record(z.string(), LlmApiKeyValueSchema)
+  .superRefine((value, ctx) => {
+    for (const key of Object.keys(value)) {
+      if (!BYOK_PROVIDER_IDS.includes(key)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Unknown BYOK provider id: ${key}`,
+          path: [key],
+        });
+      }
     }
-  }
-});
+  });
 
 export function parseLlmApiKeysMap(raw: string | null): Record<string, string> {
   if (!raw) {
