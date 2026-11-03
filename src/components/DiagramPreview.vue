@@ -34,8 +34,9 @@ const isFullscreen = ref(false);
 const viewportRef = ref<HTMLElement | null>(null);
 const contentRef = ref<HTMLElement | null>(null);
 
-const { naturalSize, activeSize, isCustom, sizedMarkup, setWidth, setHeight, resetSize } =
-  useImageSize(computed(() => props.svg));
+const { activeSize, isCustom, sizedMarkup, setWidth, setHeight, resetSize } = useImageSize(
+  computed(() => props.svg),
+);
 
 const previewMarkup = computed(() => {
   const markup = sizedMarkup.value;
