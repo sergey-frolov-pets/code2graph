@@ -33,6 +33,7 @@ export const MERMAID_SAMPLE_IDS = [
   "waterfallBreak",
   "waterfallMulti",
   "waterfallLabels",
+  "waterfallNoLines",
   "bubble",
   "heatmap",
   "orgchart",
@@ -51,6 +52,7 @@ export const MERMAID_EXT_SAMPLE_IDS = [
   "waterfallBreak",
   "waterfallMulti",
   "waterfallLabels",
+  "waterfallNoLines",
   "bubble",
   "heatmap",
   "orgchart",
@@ -103,6 +105,7 @@ export const MERMAID_SAMPLE_WIZARD_TYPES: Record<MermaidSampleId, import("@/cons
   waterfallBreak: "flowchart",
   waterfallMulti: "flowchart",
   waterfallLabels: "flowchart",
+  waterfallNoLines: "flowchart",
   bubble: "flowchart",
   heatmap: "flowchart",
   orgchart: "flowchart",
@@ -516,18 +519,19 @@ series Факт color=#8250df
 -35 : Q3
 = : Итог`,
   waterfallLabels: `waterfall
-%% ПОДПИСИ И ЛИНИИ — самое частое, чего не хватает.
+%% ПОДПИСИ И ЛИНИИ — две вещи, которых чаще всего не хватает.
 %%
-%% 1) ДВА лейбла на одном баре (внутри И над) — пиши оба флага в строке данных:
+%% 1) ДВЕ ПОДПИСИ НА ОДНОМ БАРЕ (внутри И над) — оба флага в строке данных:
 %%      +60 : Q2 inside above
-%%    Флаги можно ставить на каждый бар отдельно, порядок любой.
-%%    Глобально для всех баров: labels both
+%%    Порядок флагов любой, регистр не важен, флаги — на каждый бар отдельно.
+%%    Для всех баров сразу:  labels both
+%%    Внутри подпись белая, над баром — серая: они не мешают друг другу.
 %%
-%% 2) ЛИНИИ между барами — это директивы, а не флаги:
+%% 2) ЛИНИИ между барами — это ДИРЕКТИВА, отдельная строка (не флаг):
 %%      connectors on    включить (по умолчанию включены)
 %%      connectors off   выключить
-%%    Линия идёт от рабочего края бара к следующему: рост — по низу,
-%%    падение — по верху. Если уровни разные, рисуется ступенька.
+%%    Пунктир идёт от рабочего края бара к следующему:
+%%    рост — от верха, падение — от низа. Если уровни разные — ступенькой.
 %%
 %% 3) Своя подпись значения:  label="+60 млн"
 %%    Без подписи вообще:      no-label
@@ -537,6 +541,24 @@ title Подписи и линии
 y "млн ₽" 0 --> 200
 grid 50
 connectors on
+colors total=#1f6feb increase=#2da44e decrease=#cf222e
+=90 : Q1 inside above
++60 : Q2 inside above label="+60 млн"
+-25 : Q3 above
+= : Итог inside above`,
+  waterfallNoLines: `waterfall
+%% ЛИНИИ ВЫКЛЮЧЕНЫ — тот же водопад, что в примере «подписи и линии»,
+%% но без пунктирных соединителей: чистая презентационная картинка.
+%%
+%% Разница — одна строка:  connectors off
+%% (по умолчанию линии включены, поэтому «off» нужно писать явно)
+%%
+%% Сравни с примером «Водопад — подписи и линии»:
+%% там connectors on и те же самые данные.
+title Подписи без линий
+y "млн ₽" 0 --> 200
+grid 50
+connectors off
 colors total=#1f6feb increase=#2da44e decrease=#cf222e
 =90 : Q1 inside above
 +60 : Q2 inside above label="+60 млн"
@@ -655,16 +677,17 @@ series Actual color=#8250df
   waterfallLabels: `waterfall
 %% LABELS AND LINES — the two things people miss most.
 %%
-%% 1) TWO labels on one bar (inside AND above) — write both flags in the row:
+%% 1) TWO LABELS ON ONE BAR (inside AND above) — write both flags in the row:
 %%      +60 : Q2 inside above
-%%    Flags are per-bar and order-independent.
-%%    For every bar at once: labels both
+%%    Flags are per-bar, order-independent, case-insensitive.
+%%    For every bar at once:  labels both
+%%    The inside label is white, the one above the bar is grey — they never clash.
 %%
-%% 2) LINES between bars are directives, not flags:
+%% 2) LINES between bars are a DIRECTIVE on its own line (not a flag):
 %%      connectors on    enable (on by default)
 %%      connectors off   disable
-%%    The line runs from the working edge of a bar to the next one:
-%%    growth — along the bottom, decline — along the top. Different levels
+%%    The dashed line runs from the working edge of a bar to the next one:
+%%    growth — from the top, decline — from the bottom. Different levels
 %%    are joined with a step.
 %%
 %% 3) Custom value label:  label="+60 M"
@@ -675,6 +698,24 @@ title Labels and lines
 y "M USD" 0 --> 200
 grid 50
 connectors on
+colors total=#1f6feb increase=#2da44e decrease=#cf222e
+=90 : Q1 inside above
++60 : Q2 inside above label="+60 M"
+-25 : Q3 above
+= : Total inside above`,
+  waterfallNoLines: `waterfall
+%% LINES OFF — the very same waterfall as "labels and lines",
+%% but without the dashed connectors: a clean presentation picture.
+%%
+%% The only difference is one line:  connectors off
+%% (connectors are on by default, so "off" must be written explicitly)
+%%
+%% Compare with the "Waterfall — labels and lines" sample:
+%% it has connectors on and exactly the same data.
+title Labels without lines
+y "M USD" 0 --> 200
+grid 50
+connectors off
 colors total=#1f6feb increase=#2da44e decrease=#cf222e
 =90 : Q1 inside above
 +60 : Q2 inside above label="+60 M"

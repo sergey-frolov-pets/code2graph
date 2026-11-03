@@ -1042,3 +1042,60 @@ y "" 0 --> 200
     expect(hasVertical).toBe(true);
   });
 });
+
+describe("waterfall: пример «подписи и линии» (сэмпл редактора)", () => {
+  const SAMPLE = `waterfall
+title Подписи и линии
+y "млн ₽" 0 --> 200
+grid 50
+connectors on
+colors total=#1f6feb increase=#2da44e decrease=#cf222e
+=90 : Q1 inside above
++60 : Q2 inside above label="+60 млн"
+-25 : Q3 above
+= : Итог inside above`;
+
+  it("разбирается без ошибок", () => {
+    const r = waterfallEngine.parse(SAMPLE);
+    expect(r.ok).toBe(true);
+  });
+
+  it("на баре Q2 обе подписи: внутри (белая, жирная) и над (fgDim)", () => {
+    const r = waterfallEngine.parse(SAMPLE);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    // Своя подпись label="+60 млн" стоит и внутри бара, и над ним.
+    const occurrences = (svg.match(/\+60 млн/g) ?? []).length;
+    expect(occurrences).toBe(2);
+    // Внутри — белым жирным, над баром — цветом fgDim.
+    expect(svg).toMatch(/fill="#ffffff" font-size="[\d.]+" text-anchor="middle" font-weight="600">\+60 млн</);
+    const inside = [...svg.matchAll(/<text x="([\d.]+)" y="([\d.]+)" fill="#ffffff"[^>]*>\+60 млн</g)];
+    const above = [...svg.matchAll(/<text x="([\d.]+)" y="([\d.]+)" fill="#656d76"[^>]*>\+60 млн</g)];
+    expect(inside.length).toBe(1);
+    expect(above.length).toBe(1);
+    // Подпись «над» стоит выше (меньший y), чем подпись «внутри».
+    expect(Number(above[0][2])).toBeLessThan(Number(inside[0][2]));
+    // X совпадает — обе подписи центрированы по одному бару.
+    expect(above[0][1]).toBe(inside[0][1]);
+  });
+
+  it("линии включены: коннекторы есть", () => {
+    const r = waterfallEngine.parse(SAMPLE);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect((svg.match(/data-connector="1"/g) ?? []).length).toBeGreaterThan(0);
+  });
+
+  it("`connectors off` на тех же данных убирает линии, подписи остаются", () => {
+    const withLines = waterfallEngine.render(
+      waterfallEngine.parse(SAMPLE).value as WaterfallModel,
+      {},
+    );
+    const withoutLines = waterfallEngine.render(
+      waterfallEngine.parse(SAMPLE.replace("connectors on", "connectors off")).value as WaterfallModel,
+      {},
+    );
+    expect((withLines.match(/data-connector="1"/g) ?? []).length).toBeGreaterThan(0);
+    expect((withoutLines.match(/data-connector="1"/g) ?? []).length).toBe(0);
+    // Подписи от выключения линий не страдают.
+    expect((withoutLines.match(/\+60 млн/g) ?? []).length).toBe(2);
+  });
+});
