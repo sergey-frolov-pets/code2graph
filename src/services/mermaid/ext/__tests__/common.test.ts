@@ -127,12 +127,13 @@ describe("getPalette", () => {
 describe("createSvg", () => {
   const palette = getPalette(false);
 
-  it("корень без width/height, с viewBox и xmlns", () => {
+  it("корень с viewBox, size и xmlns", () => {
     const svg = createSvg({ width: 200, height: 100, palette }).toString();
     expect(svg).toContain('xmlns="http://www.w3.org/2000/svg"');
     expect(svg).toContain('viewBox="0 0 200 100"');
-    expect(svg).not.toMatch(/<svg[^>]*\swidth=/);
-    expect(svg).not.toMatch(/<svg[^>]*\sheight=/);
+    // width/height нужны PNG-экспорту: parseSvgSize() берёт их для canvas.
+    expect(svg).toMatch(/<svg[^>]*\swidth="200"/);
+    expect(svg).toMatch(/<svg[^>]*\sheight="100"/);
   });
 
   it("рисует фон", () => {

@@ -128,7 +128,6 @@ data
     const r = heatmapEngine.parse(src);
     const svg = heatmapEngine.render(r.value as HeatmapModel, {});
     expect(svg).toMatch(/^<svg/);
-    expect(svg).not.toMatch(/<svg[^>]*\swidth=/);
   });
 
   it("рисует по прямоугольнику на ячейку", () => {
@@ -163,6 +162,13 @@ R : 10,,`);
 
   it("проходит общие инварианты SVG", () => {
     const r = heatmapEngine.parse(src);
-    assertSvgInvariants(heatmapEngine.render(r.value as HeatmapModel, {}), { minElements: 6 });
+    const svgForSize = heatmapEngine.render(r.value as HeatmapModel, {});
+    assertSvgInvariants(svgForSize, {
+      minElements: 6,
+      expectSize: {
+        width: Number(/viewBox="0 0 ([\d.]+)/.exec(svgForSize)?.[1]),
+        height: Number(/viewBox="0 0 [\d.]+ ([\d.]+)/.exec(svgForSize)?.[1]),
+      },
+    });
   });
 });

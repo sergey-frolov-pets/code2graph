@@ -142,8 +142,6 @@ describe("waterfall: рендер", () => {
     expect(svg).toMatch(/^<svg/);
     expect(svg).toContain('xmlns="http://www.w3.org/2000/svg"');
     expect(svg).toMatch(/viewBox="0 0 [\d.]+ [\d.]+"/);
-    expect(svg).not.toMatch(/<svg[^>]*\swidth=/);
-    expect(svg).not.toMatch(/<svg[^>]*\sheight=/);
   });
 
   it("содержит подписи колонок", () => {
@@ -178,6 +176,13 @@ describe("waterfall: рендер", () => {
     const r = waterfallEngine.parse(`waterfall
 =40 : Q1
 =40 : Q2`);
-    assertSvgInvariants(waterfallEngine.render(r.value as WaterfallModel, {}), { minElements: 6 });
+    const svgForSize = waterfallEngine.render(r.value as WaterfallModel, {});
+    assertSvgInvariants(svgForSize, {
+      minElements: 6,
+      expectSize: {
+        width: Number(/viewBox="0 0 ([\d.]+)/.exec(svgForSize)?.[1]),
+        height: Number(/viewBox="0 0 [\d.]+ ([\d.]+)/.exec(svgForSize)?.[1]),
+      },
+    });
   });
 });

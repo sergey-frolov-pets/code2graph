@@ -56,7 +56,13 @@ describe("golden: эталоны рендера", () => {
 
         // Успешный рендер дополнительно проверяется общими инвариантами.
         if (!actual.startsWith("ERROR")) {
-          assertSvgInvariants(actual, { minElements: 1 });
+          assertSvgInvariants(actual, {
+            minElements: 1,
+            expectSize: {
+              width: Number(/viewBox="0 0 ([\d.]+)/.exec(actual)?.[1]),
+              height: Number(/viewBox="0 0 [\d.]+ ([\d.]+)/.exec(actual)?.[1]),
+            },
+          });
         }
       });
     }

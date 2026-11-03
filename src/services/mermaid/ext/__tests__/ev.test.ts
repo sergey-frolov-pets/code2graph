@@ -108,7 +108,6 @@ grid`;
     const r = evEngine.parse(src);
     const svg = evEngine.render(r.value as EvModel, {});
     expect(svg).toMatch(/^<svg/);
-    expect(svg).not.toMatch(/<svg[^>]*\swidth=/);
   });
 
   it("рисует три полилинии", () => {
@@ -142,6 +141,13 @@ grid`;
 
   it("проходит общие инварианты SVG", () => {
     const r = evEngine.parse(src);
-    assertSvgInvariants(evEngine.render(r.value as EvModel, {}), { minElements: 6 });
+    const svgForSize = evEngine.render(r.value as EvModel, {});
+    assertSvgInvariants(svgForSize, {
+      minElements: 6,
+      expectSize: {
+        width: Number(/viewBox="0 0 ([\d.]+)/.exec(svgForSize)?.[1]),
+        height: Number(/viewBox="0 0 [\d.]+ ([\d.]+)/.exec(svgForSize)?.[1]),
+      },
+    });
   });
 });

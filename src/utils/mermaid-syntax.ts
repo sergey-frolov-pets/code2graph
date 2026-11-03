@@ -3,6 +3,14 @@ import { countUnbalancedBrackets, type SyntaxCheckResult, type SyntaxIssue } fro
 const MERMAID_DIAGRAM_DECLARATION_PATTERN =
   /^(graph|flowchart|sequencediagram|classdiagram|statediagram(?:-v2)?|erdiagram|journey|gantt|pie|mindmap|timeline|gitgraph|sankey-beta|xychart-beta|block-beta|c4context|requirementdiagram|quadrantchart|architecture(?:-beta)?|packet(?:-beta)?)\b/i;
 
+/**
+ * Типы расширения Mermaid Ext (src/services/mermaid/ext/registry.ts).
+ * Своей декларации в MERMAID_DIAGRAM_DECLARATION_PATTERN у них нет, и штатный
+ * статический чек ругался бы «missingDeclaration» ещё до нашего парсера.
+ * Список — только ключевые слова, без алиасов: алиасы проверяет движок.
+ */
+const MERMAID_EXT_DECLARATION_PATTERN = /^(waterfall|bubble|heatmap|orgchart|ev)\b/i;
+
 const FENCED_MERMAID_START_PATTERN = /^```mermaid\b/i;
 
 function findFirstMeaningfulLine(lines: string[]): { line: number; text: string } | null {
@@ -54,6 +62,20 @@ function hasMermaidDiagramDeclaration(source: string): boolean {
   return MERMAID_DIAGRAM_DECLARATION_PATTERN.test(firstMeaningful.text);
 }
 
+/**
+ * Первая значимая строка — объявление типа расширения Mermaid Ext.
+ * Экспортируется, чтобы формат-хендлер мог отдать проверку движку расширения
+ * и не показывать ложную «нет объявления диаграммы».
+ */
+export function isMermaidExtDeclaration(source: string): boolean {
+  const firstMeaningful = findFirstMeaningfulLine(source.split(/\r?\n/));
+  if (!firstMeaningful) {
+    return false;
+  }
+
+  return MERMAID_EXT_DECLARATION_PATTERN.test(firstMeaningful.text);
+}
+
 /** Быстрая статическая проверка без запуска движка Mermaid */
 export function checkMermaidSyntax(source: string): SyntaxCheckResult {
   const trimmed = source.trim();
@@ -72,7 +94,7 @@ export function checkMermaidSyntax(source: string): SyntaxCheckResult {
     ? trimmed.match(/^```(?:mermaid)?\s*\n([\s\S]*?)```$/i)?.[1]?.trim() ?? trimmed
     : trimmed;
 
-  if (!hasMermaidDiagramDeclaration(prepared)) {
+  if (!hasMermaidDiagramDeclaration(prepared) && !isMermaidExtDeclaration(prepared)) {
     const firstMeaningful = findFirstMeaningfulLine(prepared.split(/\r?\n/));
     issues.push({
       severity: "error",

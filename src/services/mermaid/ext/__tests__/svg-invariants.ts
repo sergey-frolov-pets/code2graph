@@ -11,6 +11,12 @@ function stripXmlns(svg: string): string {
 export interface SvgInvariantOptions {
   /** Ожидаемое минимальное число элементов (защита от пустого SVG). */
   minElements?: number;
+  /**
+   * Ожидаемые размеры корня. Если заданы — у корневого `<svg>` обязаны быть
+   * `width`/`height`, совпадающие с `viewBox` (нужно для PNG-экспорта).
+   * Не заданы — наоборот, запрещены (сырой вывод движка).
+   */
+  expectSize?: { width: number; height: number };
 }
 
 /** Проверяет, что SVG корректен и не содержит запрещённого. */
@@ -25,8 +31,26 @@ export function assertSvgInvariants(svg: string, options: SvgInvariantOptions = 
   if (!svg.includes('xmlns="http://www.w3.org/2000/svg"')) fail("нет xmlns");
 
   const openTag = /^<svg[^>]*>/.exec(svg)?.[0] ?? "";
-  if (/\swidth=/.test(openTag)) fail("у корневого <svg> есть width");
-  if (/\sheight=/.test(openTag)) fail("у корневого <svg> есть height");
+  const hasWidth = /\swidth=/.test(openTag);
+  const hasHeight = /\sheight=/.test(openTag);
+
+  if (options.expectSize) {
+    // Режим экспорта: размеры обязаны быть и совпадать с viewBox.
+    if (!hasWidth) fail("у корневого <svg> нет width");
+    if (!hasHeight) fail("у корневого <svg> нет height");
+    const width = Number(/\swidth="([\d.]+)"/.exec(openTag)?.[1]);
+    const height = Number(/\sheight="([\d.]+)"/.exec(openTag)?.[1]);
+    if (Math.abs(width - options.expectSize.width) > 0.5) {
+      fail(`width ${width} ≠ ожидаемого ${options.expectSize.width}`);
+    }
+    if (Math.abs(height - options.expectSize.height) > 0.5) {
+      fail(`height ${height} ≠ ожидаемого ${options.expectSize.height}`);
+    }
+  } else {
+    if (hasWidth) fail("у корневого <svg> есть width");
+    if (hasHeight) fail("у корневого <svg> есть height");
+  }
+
   if (!/viewBox="0 0 [\d.]+ [\d.]+"/.test(openTag)) fail("нет корректного viewBox");
 
   const stripped = stripXmlns(svg);

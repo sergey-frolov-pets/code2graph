@@ -116,7 +116,6 @@ describe("orgchart: рендер", () => {
     const r = orgchartEngine.parse(src);
     const svg = orgchartEngine.render(r.value as OrgModel, {});
     expect(svg).toMatch(/^<svg/);
-    expect(svg).not.toMatch(/<svg[^>]*\swidth=/);
   });
 
   it("рисует по прямоугольнику на узел", () => {

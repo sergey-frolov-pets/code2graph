@@ -15,7 +15,13 @@ describe("smoke: песочница", () => {
       const src = readFileSync(join(DIR, name), "utf8");
       const svg = await tryRenderExtension(src);
       expect(svg).toBeTruthy();
-      assertSvgInvariants(svg as string, { minElements: 6 });
+      assertSvgInvariants(svg as string, {
+        minElements: 6,
+        expectSize: {
+          width: Number(/viewBox="0 0 ([\d.]+)/.exec(svg as string)?.[1]),
+          height: Number(/viewBox="0 0 [\d.]+ ([\d.]+)/.exec(svg as string)?.[1]),
+        },
+      });
       expect(validateExtensionSource(src)?.valid).toBe(true);
     });
   }

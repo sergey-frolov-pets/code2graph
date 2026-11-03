@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   checkMermaidSyntax,
+  isMermaidExtDeclaration,
   parseMermaidErrorLine,
   parseMermaidErrorMessage,
 } from "@/utils/mermaid-syntax";
@@ -39,6 +40,27 @@ describe("checkMermaidSyntax", () => {
     }
   });
 
+  it("accepts Mermaid Ext declarations without a false missingDeclaration", () => {
+    const types = [
+      "waterfall\n=10 : A\n+5 : B",
+      "bubble\nx \"a\" 0 --> 10",
+      "heatmap\nx A, B",
+      "orgchart\nCEO [Chief]",
+      "ev\ndays 1, 2",
+      "%% комментарий\nWaterfall\n=10 : A",
+    ];
+
+    for (const source of types) {
+      const result = checkMermaidSyntax(source);
+      expect(result.valid, source).toBe(true);
+      expect(result.issues, source).toEqual([]);
+    }
+  });
+
+  it("keeps reporting missing declaration for unknown first line", () => {
+    expect(checkMermaidSyntax("waterfallish\nA --> B").valid).toBe(false);
+  });
+
   it("reports unclosed fenced block", () => {
     const result = checkMermaidSyntax("```mermaid\nflowchart TD\nA --> B");
     expect(result.valid).toBe(false);
@@ -64,5 +86,14 @@ describe("parseMermaidErrorLine", () => {
 describe("parseMermaidErrorMessage", () => {
   it("returns error message text", () => {
     expect(parseMermaidErrorMessage(new Error("Invalid syntax"))).toBe("Invalid syntax");
+  });
+});
+
+describe("isMermaidExtDeclaration", () => {
+  it("detects extension keywords, aliases and skips comments", () => {
+    expect(isMermaidExtDeclaration("waterfall\n=1 : A")).toBe(true);
+    expect(isMermaidExtDeclaration("%% note\nheatmap\nx A")).toBe(true);
+    expect(isMermaidExtDeclaration("flowchart TD\nA --> B")).toBe(false);
+    expect(isMermaidExtDeclaration("")).toBe(false);
   });
 });

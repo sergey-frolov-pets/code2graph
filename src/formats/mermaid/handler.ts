@@ -5,7 +5,7 @@ import {
   waitForMermaidReady,
 } from "@/services/mermaid/mermaid-engine";
 import { validateMermaidSyntax } from "@/services/mermaid/syntax-validation";
-import { checkMermaidSyntax } from "@/utils/mermaid-syntax";
+import { checkMermaidSyntax, isMermaidExtDeclaration } from "@/utils/mermaid-syntax";
 import { renderMermaidHighlightedLine } from "@/utils/mermaid-highlight";
 import {
   extractMermaidCompletionPrefix,
@@ -18,6 +18,12 @@ export const mermaidFormatHandler: FormatHandler = {
   supportsSyntaxValidation: true,
   supportsOnlineRender: true,
   validate(source: string) {
+    // Типы расширения разбирает свой парсер (validateExtensionSource): штатный
+    // mermaid.parse их не знает и вернул бы ложную ошибку.
+    if (__MERMAID_EXT__ && isMermaidExtDeclaration(source)) {
+      return { valid: true, errors: [], errorLines: [] };
+    }
+
     const result = checkMermaidSyntax(source);
     return {
       valid: result.valid,

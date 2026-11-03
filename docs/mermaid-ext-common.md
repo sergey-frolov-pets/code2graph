@@ -40,7 +40,9 @@
 `createSvg({ width, height, palette, debugFrames })` → объект-строитель.
 
 - Корень: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 W H"
-  role="img" font-family="system-ui, ...">`. **Без** `width`/`height`.
+  width="W" height="H" role="img" font-family="system-ui, ...">`.
+  `width`/`height` дублируют `viewBox`: `svgToPngBlob()` строит canvas по
+  `parseSvgSize()`, и без явных размеров PNG выходил дефолтным 800×600.
 - `<title>` — заголовок диаграммы, если задан (доступность).
 - Все элементы — через методы строителя, чтобы экранирование было
   в одном месте: `esc()` для текста и атрибутов.
@@ -61,5 +63,6 @@
 
 1. Ни один движок не импортирует `document`, `window`, `canvas`.
 2. В SVG нет `http://` / `https://` вне `xmlns`, нет `<script>`, нет `@`.
-3. Корневой `<svg>` не имеет атрибутов `width`/`height`.
+3. Корневой `<svg>` имеет `width`/`height`, равные `viewBox` (нужно для PNG-экспорта).
+   Сырой вывод движка без размеров больше не допускается.
 4. Все тексты проходят через `esc()`.

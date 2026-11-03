@@ -49,3 +49,21 @@ describe("validateExtensionSource", () => {
     expect(r?.issues[0].severity).toBe("error");
   });
 });
+
+describe("SVG-корень для экспорта", () => {
+  it("задаёт width/height явно, чтобы PNG не вышел дефолтным 800×600", async () => {
+    const svg = await tryRenderExtension(`waterfall
+=10 : A
++5 : B
+=15 : C`);
+
+    const root = svg!.match(/<svg[^>]*>/)?.[0] ?? "";
+    const viewBox = root.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+    expect(viewBox).not.toBeNull();
+
+    const width = root.match(/\bwidth="([\d.]+)"/)?.[1];
+    const height = root.match(/\bheight="([\d.]+)"/)?.[1];
+    expect(Number(width)).toBeCloseTo(Number(viewBox![1]), 1);
+    expect(Number(height)).toBeCloseTo(Number(viewBox![2]), 1);
+  });
+});

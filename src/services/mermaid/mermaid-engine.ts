@@ -7,6 +7,7 @@ import { loadMermaid } from "@/services/mermaid/mermaid-loader";
 import { renderMermaidOnlineToSvg } from "@/services/mermaid/mermaid-online";
 import { LocalizedAppError } from "@/utils/localized-app-error";
 import { prepareMermaidSource } from "@/utils/mermaid-source";
+import { isMermaidExtDeclaration } from "@/utils/mermaid-syntax";
 
 let initialized = false;
 let renderCounter = 0;
@@ -99,6 +100,13 @@ export async function renderMermaidToSvg(
   options: { dark?: boolean } = {},
   renderMode: RenderMode = DEFAULT_RENDER_MODE,
 ): Promise<string> {
+  // Типы расширения mermaid.ink не знает: отправлять их на сервер бессмысленно
+  // (вернётся ошибка разбора). Рисуем сразу своим движком.
+  if (__MERMAID_EXT__ && isMermaidExtDeclaration(source)) {
+    lastRenderUsedOnlineInk = false;
+    return renderMermaidOfflineToSvg(source, options);
+  }
+
   if (isOnlineRenderMode(renderMode)) {
     try {
       const svg = await renderMermaidOnlineToSvg(source, options);

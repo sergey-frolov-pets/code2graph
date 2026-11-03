@@ -301,8 +301,12 @@ export function createSvg(options: SvgOptions): SvgBuilder {
     },
 
     toString() {
+      // width/height заданы явно: svgToPngBlob() строит canvas по parseSvgSize(),
+      // и без них PNG выходит дефолтным 800×600. sanitizeSvgForPreview() при этом
+      // всё равно материализует размер из viewBox, так что превью не меняется.
       const head =
         `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${fmt(width)} ${fmt(height)}" ` +
+        `width="${fmt(width)}" height="${fmt(height)}" ` +
         `role="img" font-family="${esc(FONT_FAMILY)}">`;
       const titleEl = title ? `<title>${esc(title)}</title>` : "";
       const bg = withBackground

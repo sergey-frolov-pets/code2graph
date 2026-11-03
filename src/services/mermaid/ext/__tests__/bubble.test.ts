@@ -130,7 +130,6 @@ C : x=9, y=8, size=55`;
     const svg = bubbleEngine.render(r.value as BubbleModel, {});
     expect(svg).toMatch(/^<svg/);
     expect(svg).toMatch(/viewBox="0 0 [\d.]+ [\d.]+"/);
-    expect(svg).not.toMatch(/<svg[^>]*\swidth=/);
   });
 
   it("рисует по кругу на точку", () => {
@@ -170,6 +169,13 @@ A : x=1, y=1, size=10`);
 
   it("проходит общие инварианты SVG", () => {
     const r = bubbleEngine.parse(src);
-    assertSvgInvariants(bubbleEngine.render(r.value as BubbleModel, {}), { minElements: 4 });
+    const svgForSize = bubbleEngine.render(r.value as BubbleModel, {});
+    assertSvgInvariants(svgForSize, {
+      minElements: 4,
+      expectSize: {
+        width: Number(/viewBox="0 0 ([\d.]+)/.exec(svgForSize)?.[1]),
+        height: Number(/viewBox="0 0 [\d.]+ ([\d.]+)/.exec(svgForSize)?.[1]),
+      },
+    });
   });
 });
