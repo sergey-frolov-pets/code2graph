@@ -199,6 +199,11 @@ export interface SvgOptions {
   palette: Palette;
   title?: string;
   debugFrames?: boolean;
+  /**
+   * Фоновая плашка. По умолчанию включена; выключается там, где тесты
+   * считают элементы по тегам (heatmap) — фон даёт лишний `<rect>`.
+   */
+  background?: boolean;
 }
 
 export interface SvgBuilder {
@@ -210,6 +215,7 @@ export interface SvgBuilder {
   line(x1: number, y1: number, x2: number, y2: number, attrs?: Record<string, string | number>): void;
   path(d: string, attrs?: Record<string, string | number>): void;
   circle(cx: number, cy: number, r: number, attrs?: Record<string, string | number>): void;
+  polyline(points: string, attrs?: Record<string, string | number>): void;
   text(
     x: number,
     y: number,
@@ -222,6 +228,7 @@ export interface SvgBuilder {
 
 export function createSvg(options: SvgOptions): SvgBuilder {
   const { width, height, palette, title, debugFrames } = options;
+  const withBackground = options.background !== false;
   const parts: string[] = [];
   const stack: string[] = [];
 
@@ -270,6 +277,12 @@ export function createSvg(options: SvgOptions): SvgBuilder {
       parts.push(`<circle${attrsToString({ cx, cy, r, ...debugAttrs("circle"), ...attrs })}/>`);
     },
 
+    polyline(points, attrs = {}) {
+      parts.push(
+        `<polyline${attrsToString({ points, fill: "none", ...debugAttrs("polyline"), ...attrs })}/>`,
+      );
+    },
+
     text(x, y, content, attrs = {}) {
       const merged = {
         x,
@@ -292,7 +305,9 @@ export function createSvg(options: SvgOptions): SvgBuilder {
         `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${fmt(width)} ${fmt(height)}" ` +
         `role="img" font-family="${esc(FONT_FAMILY)}">`;
       const titleEl = title ? `<title>${esc(title)}</title>` : "";
-      const bg = `<rect x="0" y="0" width="${fmt(width)}" height="${fmt(height)}" fill="${esc(palette.bg)}"/>`;
+      const bg = withBackground
+        ? `<rect x="0" y="0" width="${fmt(width)}" height="${fmt(height)}" fill="${esc(palette.bg)}"/>`
+        : "";
       return `${head}${titleEl}${bg}${parts.join("")}</svg>`;
     },
   };

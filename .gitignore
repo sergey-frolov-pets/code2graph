@@ -12,3 +12,6 @@ data/
 server/node_modules/
 server/dist/
 test-results/
+
+# артефакты песочницы (генерируются при прогоне)
+sandbox/out/

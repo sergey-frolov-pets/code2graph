@@ -1,5 +1,5 @@
 import { detectType } from "./registry";
-import type { ExtDiagramType, ExtRenderOptions } from "./types";
+import type { ExtDiagramType, ExtEngine, ExtRenderOptions } from "./types";
 import type { SyntaxCheckResult } from "@/utils/plantuml-syntax";
 
 import { waterfallEngine } from "./engines/waterfall";
@@ -20,13 +20,17 @@ export async function tryRenderExtension(
   if (!type) return null;
 
   const engine = await loadEngine(type);
-  const parsed = engine.parse(source);
+  // Объединение движков даёт union моделей: parse/render не связаны дженериком.
+  // Приводим к «движку над unknown» — на границе это безопасно, каждая ветка
+  // switch гарантирует, что модель и рендер принадлежат одному движку.
+  const anyEngine = engine as ExtEngine<unknown>;
+  const parsed = anyEngine.parse(source);
   if (!parsed.ok || parsed.value === undefined) {
     const first = parsed.errors[0];
     const where = first ? ` (строка ${first.line}, колонка ${first.col + 1})` : "";
     throw new Error(`[${type}] ${first?.message ?? "ошибка разбора"}${where}`);
   }
-  return engine.render(parsed.value, options);
+  return anyEngine.render(parsed.value, options);
 }
 
 /**

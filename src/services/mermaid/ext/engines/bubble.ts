@@ -1,4 +1,4 @@
-import { clamp, createSvg, fmt, getPalette, measureText, truncate } from "../common";
+import { clamp, createSvg, getPalette, measureText, truncate } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
 // --- Модель ---------------------------------------------------------------

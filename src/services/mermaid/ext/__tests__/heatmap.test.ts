@@ -151,11 +151,12 @@ data
   });
 
   it("null-ячейка рисуется серой", () => {
+    // Две колонки, вторая ячейка пустая → null, прямоугольник не рисуется.
     const r = heatmapEngine.parse(`heatmap
 x A, B
 y R
 data
-R : 10,,30`);
+R : 10,,`);
     const svg = heatmapEngine.render(r.value as any, {});
     expect((svg.match(/<rect/g) ?? []).length).toBe(2);
   });

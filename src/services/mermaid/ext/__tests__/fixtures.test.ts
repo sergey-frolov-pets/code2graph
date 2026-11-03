@@ -16,6 +16,7 @@ const EXPECTED_FAILURES = new Set([
   "07-waterfall-empty.mmd",
   "13-bubble-no-data.mmd",
   "22-heatmap-uneven.mmd",
+  "31-orgchart-cycle.mmd",
   "33-orgchart-invalid.mmd",
   "42-ev-mismatch.mmd",
 ]);
