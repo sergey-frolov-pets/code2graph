@@ -1,6 +1,7 @@
 import { createApp } from "vue";
 import { registerShareSupport } from "@/composables/usePumlShare";
 import { trackPageview } from "@/analytics";
+import { useAnalytics } from "@/composables/useAnalytics";
 import Root from "./Root.vue";
 import { initInstallPromptCapture } from "./pwa/installPromptState";
 import "@/config/library-profiles";
@@ -17,3 +18,7 @@ createApp(Root).mount("#app");
 window.addEventListener("hashchange", () => {
   trackPageview(window.location.hash);
 });
+
+// Router-driven tracking (named routes, language pages) on top of the raw
+// hash listener above.
+useAnalytics();
