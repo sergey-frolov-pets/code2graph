@@ -9,6 +9,11 @@ import {
   isOnlineRenderMode,
   type RenderMode,
 } from "@/constants/render-settings";
+import {
+  DEFAULT_PREVIEW_BG,
+  TRANSPARENT_PREVIEW_BG,
+  isTransparentPreviewBg,
+} from "@/constants/editor-settings";
 import { useLocale } from "@/composables/useLocale";
 
 const props = defineProps<{
@@ -40,6 +45,25 @@ const emit = defineEmits<{
 const { t } = useLocale();
 
 const isOnlineMode = computed(() => isOnlineRenderMode(props.renderMode));
+
+const isTransparentBg = computed(() => isTransparentPreviewBg(props.previewBackground));
+
+const transparentBgLabel = computed(() =>
+  isTransparentBg.value
+    ? t("toolbar.previewBackgroundOpaque")
+    : t("toolbar.previewBackgroundTransparent"),
+);
+
+function toggleTransparentBackground(): void {
+  emit(
+    "update:previewBackground",
+    isTransparentBg.value
+      ? props.diagramDarkMode
+        ? DEFAULT_PREVIEW_BG.dark
+        : DEFAULT_PREVIEW_BG.light
+      : TRANSPARENT_PREVIEW_BG,
+  );
+}
 
 const themeToggleLabel = computed(() =>
   props.diagramDarkMode ? t("toolbar.themeToLight") : t("toolbar.themeToDark"),
@@ -99,7 +123,8 @@ function toggleRenderMode(): void {
         <input
           class="preview-toolbar__color"
           type="color"
-          :value="previewBackground"
+          :value="isTransparentBg ? (diagramDarkMode ? DEFAULT_PREVIEW_BG.dark : DEFAULT_PREVIEW_BG.light) : previewBackground"
+          :disabled="isTransparentBg"
           @input="
             emit(
               'update:previewBackground',
@@ -109,6 +134,14 @@ function toggleRenderMode(): void {
         />
       </label>
     </TooltipWrap>
+
+    <IconButton
+      :label="transparentBgLabel"
+      :pressed="isTransparentBg"
+      @click="toggleTransparentBackground"
+    >
+      <ActionIcon :name="isTransparentBg ? 'eye-off' : 'eye'" />
+    </IconButton>
 
     <IconButton :label="t('toolbar.zoomOut')" @click="emit('zoomOut')">
       <ActionIcon name="zoom-out" />
@@ -318,6 +351,11 @@ function toggleRenderMode(): void {
   border-radius: 8px;
   background: var(--surface);
   cursor: pointer;
+}
+
+.preview-toolbar__color:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .sr-only {

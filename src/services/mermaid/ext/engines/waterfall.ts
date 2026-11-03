@@ -901,12 +901,12 @@ function seriesBarColor(base: string, kind: "total" | "increase" | "decrease"): 
 }
 
 export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions): string {
-  const palette = getPalette(options.dark);
+  const palette = getPalette(Boolean(options.dark));
   const { axis, series, labels, title } = model;
   const breaks = model.breaks ?? [];
   const valueLabels = model.valueLabels ?? { above: true, inside: false };
   const axisHidden = Boolean(axis.hidden);
-  const colors = resolveColors(model, options.dark);
+  const colors = resolveColors(model, Boolean(options.dark));
 
   const groups = Math.max(1, series.length);
   const columns = Math.max(1, labels.length);
@@ -928,7 +928,9 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
   const plotHeight = Math.round(PLOT_HEIGHT * scale);
 
   const longestLabel = labels.reduce((acc, l) => Math.max(acc, measureText(l, labelFontSize)), 0);
-  const columnWidth = clamp(longestLabel + Math.round(fontSize * 2.5), 56, Math.round(140 * scale));
+  // Запас по 2.5em с каждой стороны давал зазор между барами всего ~12 px:
+  // соединительные линии были неразличимы. 3.2em оставляет читаемый просвет.
+  const columnWidth = clamp(longestLabel + Math.round(fontSize * 3.2), 64, Math.round(150 * scale));
   const plotWidth = columnWidth * columns;
 
   const ticks =
@@ -1146,10 +1148,16 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
    * край бара (тот, от которого он растёт/падает):
    *   • рост (+):    приходит в НИЗ бара (bottom);
    *   • падение (−): приходит в ВЕРХ бара (top);
-   *   • абсолютная:  приходит на уровень значения.
-   * В обоих случаях это уровень накопленного итога ПЕРЕД колонкой.
+   *   • абсолютная:  приходит на уровень САМОГО значения (верх бара).
+   * Для приращений это накопленный итог ПЕРЕД колонкой; для абсолютной
+   * колонки — её собственное значение (иначе ступенька не рисуется и линия
+   * ложно ложится на уровень предыдущего бара).
    */
-  const connectorToLevel = (g: number, col: number): number => levelBefore(g, col);
+  const connectorToLevel = (g: number, col: number): number => {
+    const st = series[g]?.steps[col];
+    if (st?.kind === "absolute" && st.value !== null) return st.value;
+    return levelBefore(g, col);
+  };
 
   // Соединители рисуются ДО баров, чтобы не перекрывать заливку.
   // x1 — правый край бара колонки `col`, x2 — левый край того же по счёту
@@ -1164,12 +1172,42 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
         const x1 =
           plotLeft + col * columnWidth + (columnWidth - groupSpan) / 2 + g * (barWidth + 4) + barWidth;
         const x2 = x1 + columnWidth - barWidth;
-        svg.line(x1, yClamped(from), x2, yClamped(to), {
-          stroke: palette.axis,
-          "stroke-width": 1,
-          "stroke-dasharray": "3 3",
-          "data-connector": "1",
-        });
+        // Зазор между барами почти съедался: линия была длиной ~12 px и терялась
+        // на фоне сетки. Делаем её контрастнее и толще — как в Excel/McKinsey.
+        const stroke = options.dark ? palette.fgDim : palette.axis;
+        const dash = "4 3";
+        const y1 = yClamped(from);
+        const y2 = yClamped(to);
+        if (Math.abs(y2 - y1) < 0.5) {
+          // Один уровень — горизонтальный пунктир от бара к бару.
+          svg.line(x1, y1, x2, y2, {
+            stroke,
+            "stroke-width": 1.25,
+            "stroke-dasharray": dash,
+            "data-connector": "1",
+          });
+        } else {
+          // Разные уровни — ступенька: до середины зазора, вертикально, дальше.
+          const midX = (x1 + x2) / 2;
+          svg.line(x1, y1, midX, y1, {
+            stroke,
+            "stroke-width": 1.25,
+            "stroke-dasharray": dash,
+            "data-connector": "1",
+          });
+          svg.line(midX, y1, midX, y2, {
+            stroke,
+            "stroke-width": 1.25,
+            "stroke-dasharray": dash,
+            "data-connector": "1",
+          });
+          svg.line(midX, y2, x2, y2, {
+            stroke,
+            "stroke-width": 1.25,
+            "stroke-dasharray": dash,
+            "data-connector": "1",
+          });
+        }
       }
     }
   }
@@ -1292,15 +1330,32 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
         barHeight >= Math.max(INSIDE_MIN_HEIGHT, valueFontSize + 2) &&
         measureText(fitted, valueFontSize) <= barWidth - 4;
 
-      if (!hide && wantInside && fitsInside) {
+      // Подпись ВНУТРИ бара. При включённом `above` она не «съедает» надпись
+      // над баром: обе рисуются независимо (это и есть режим `labels both`).
+      const drewInside = !hide && wantInside && fitsInside;
+      if (drewInside) {
         svg.text(x + barWidth / 2, top + barHeight / 2 + valueFontSize * 0.35, fitted, {
           "font-size": valueFontSize,
           fill: INSIDE_TEXT,
           "font-weight": 600,
         });
-      } else if (!hide && (wantAbove || wantInside)) {
-        // Внутри не поместилось — выносим над баром.
-        svg.text(x + barWidth / 2, top - Math.round((5 * fontSize) / FONT_BASE), valueText, {
+      }
+
+      // Подпись НАД баром. Если внутри не поместилось (или inside не просили),
+      // значение выносится сюда — иначе оно бы пропало совсем.
+      const needAbove = !hide && (wantAbove || (wantInside && !fitsInside));
+      if (needAbove) {
+        const aboveY = top - Math.round((5 * fontSize) / FONT_BASE);
+        // Сдвиг вверх, если подпись налезает на соседнюю колонку слева:
+        // иначе «+80» наезжает на бар Q1, а «−40» — на «+80».
+        const halfW = measureText(valueText, valueFontSize) / 2;
+        const leftBound = col === 0 ? plotLeft : columnLeft;
+        const shiftUp =
+          halfW > barWidth / 2 + Math.round((6 * fontSize) / FONT_BASE) &&
+          x + barWidth / 2 - halfW < leftBound
+            ? Math.round(valueFontSize * 1.15)
+            : 0;
+        svg.text(x + barWidth / 2, aboveY - shiftUp, valueText, {
           "font-size": valueFontSize,
           fill: palette.fgDim,
         });

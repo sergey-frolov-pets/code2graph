@@ -975,3 +975,127 @@ series B
     expect(new Set(swatches).size).toBe(2);
   });
 });
+
+describe("waterfall: две подписи на одном баре (inside + above)", () => {
+  it("per-step `inside above` рисует обе подписи", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 200
+=90 : Q1 inside above
++60 : Q2 inside above
+= : Итог`);
+    expect(r.ok).toBe(true);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    // Внутри — белый жирный текст; над баром — текст цветом fgDim.
+    const insideCount = (svg.match(/font-weight="600"/g) ?? []).length;
+    expect(insideCount).toBeGreaterThanOrEqual(2);
+    // Значение «90» встречается дважды: внутри и над.
+    const n90 = (svg.match(/>90</g) ?? []).length;
+    expect(n90).toBeGreaterThanOrEqual(2);
+  });
+
+  it("`labels both` глобально даёт обе подписи", () => {
+    const r = waterfallEngine.parse(`waterfall
+labels both
+y "" 0 --> 200
+=90 : Q1
++60 : Q2`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect((svg.match(/>90</g) ?? []).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("если внутри не помещается — подпись выносится над баром", () => {
+    const r = waterfallEngine.parse(`waterfall
+labels inside
+y "" 0 --> 200
+=2 : Малый
++150 : Большой`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    // У низкого бара подпись не теряется.
+    expect(svg).toContain(">2<");
+  });
+});
+
+describe("waterfall: коннекторы читаемы", () => {
+  it("линия между барами длиннее 16 px", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 200
+=90 : Q1
++60 : Q2
+-25 : Q3`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    const lines = [...svg.matchAll(/<line x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)" y2="([\d.]+)"[^>]*data-connector="1"/g)];
+    expect(lines.length).toBeGreaterThan(0);
+    const span = Math.abs(Number(lines[0][3]) - Number(lines[0][1]));
+    // Зазор между барами — не меньше 12 px, иначе линия теряется на сетке.
+    expect(span).toBeGreaterThan(12);
+  });
+
+  it("разные уровни соединяются ступенькой (вертикальный отрезок)", () => {
+    // Абсолютные колонки на разных уровнях: 90 и 150 → уровни разные.
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 200
+=90 : Q1
+=150 : Q2`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    const segs = [...svg.matchAll(/<line x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)" y2="([\d.]+)"[^>]*data-connector="1"/g)];
+    const hasVertical = segs.some((m) => Math.abs(Number(m[3]) - Number(m[1])) < 0.5 && Math.abs(Number(m[4]) - Number(m[2])) > 0.5);
+    expect(hasVertical).toBe(true);
+  });
+});
+
+describe("waterfall: пример «подписи и линии» (сэмпл редактора)", () => {
+  const SAMPLE = `waterfall
+title Подписи и линии
+y "млн ₽" 0 --> 200
+grid 50
+connectors on
+colors total=#1f6feb increase=#2da44e decrease=#cf222e
+=90 : Q1 inside above
++60 : Q2 inside above label="+60 млн"
+-25 : Q3 above
+= : Итог inside above`;
+
+  it("разбирается без ошибок", () => {
+    const r = waterfallEngine.parse(SAMPLE);
+    expect(r.ok).toBe(true);
+  });
+
+  it("на баре Q2 обе подписи: внутри (белая, жирная) и над (fgDim)", () => {
+    const r = waterfallEngine.parse(SAMPLE);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    // Своя подпись label="+60 млн" стоит и внутри бара, и над ним.
+    const occurrences = (svg.match(/\+60 млн/g) ?? []).length;
+    expect(occurrences).toBe(2);
+    // Внутри — белым жирным, над баром — цветом fgDim.
+    expect(svg).toMatch(/fill="#ffffff" font-size="[\d.]+" text-anchor="middle" font-weight="600">\+60 млн</);
+    const inside = [...svg.matchAll(/<text x="([\d.]+)" y="([\d.]+)" fill="#ffffff"[^>]*>\+60 млн</g)];
+    const above = [...svg.matchAll(/<text x="([\d.]+)" y="([\d.]+)" fill="#656d76"[^>]*>\+60 млн</g)];
+    expect(inside.length).toBe(1);
+    expect(above.length).toBe(1);
+    // Подпись «над» стоит выше (меньший y), чем подпись «внутри».
+    expect(Number(above[0][2])).toBeLessThan(Number(inside[0][2]));
+    // X совпадает — обе подписи центрированы по одному бару.
+    expect(above[0][1]).toBe(inside[0][1]);
+  });
+
+  it("линии включены: коннекторы есть", () => {
+    const r = waterfallEngine.parse(SAMPLE);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect((svg.match(/data-connector="1"/g) ?? []).length).toBeGreaterThan(0);
+  });
+
+  it("`connectors off` на тех же данных убирает линии, подписи остаются", () => {
+    const withLines = waterfallEngine.render(
+      waterfallEngine.parse(SAMPLE).value as WaterfallModel,
+      {},
+    );
+    const withoutLines = waterfallEngine.render(
+      waterfallEngine.parse(SAMPLE.replace("connectors on", "connectors off")).value as WaterfallModel,
+      {},
+    );
+    expect((withLines.match(/data-connector="1"/g) ?? []).length).toBeGreaterThan(0);
+    expect((withoutLines.match(/data-connector="1"/g) ?? []).length).toBe(0);
+    // Подписи от выключения линий не страдают.
+    expect((withoutLines.match(/\+60 млн/g) ?? []).length).toBe(2);
+  });
+});

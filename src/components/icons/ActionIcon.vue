@@ -13,6 +13,7 @@ import {
   Download,
   Ellipsis,
   Eye,
+  EyeOff,
   FolderOpen,
   Globe,
   History,
@@ -68,6 +69,7 @@ export type ActionIconName =
   | "syntax-help"
   | "transfer"
   | "eye"
+  | "eye-off"
   | "star"
   | "cloud"
   | "shield"
@@ -116,6 +118,7 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   "syntax-help": CircleHelp,
   transfer: ArrowLeftRight,
   eye: Eye,
+  "eye-off": EyeOff,
   star: Star,
   cloud: Cloud,
   shield: Shield,

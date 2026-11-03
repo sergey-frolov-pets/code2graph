@@ -11,6 +11,17 @@ export const DEFAULT_PREVIEW_BG = {
   dark: "#171d24",
 } as const;
 
+/**
+ * «Прозрачный» фон предпросмотра. Хранится как строка, а не как цвет:
+ * <input type="color"> такого значения не знает, поэтому тулбар держит
+ * отдельную кнопку-переключатель, а фон панели рисуется шахматкой.
+ */
+export const TRANSPARENT_PREVIEW_BG = "transparent";
+
+export function isTransparentPreviewBg(value: string): boolean {
+  return value.trim().toLowerCase() === TRANSPARENT_PREVIEW_BG;
+}
+
 export const EDITOR_FONT_SIZE_OPTIONS = [
   { label: "12 px", value: "12px" },
   { label: "14 px", value: "14px" },

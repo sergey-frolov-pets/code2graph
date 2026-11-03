@@ -7,7 +7,9 @@ import { embedSvgMetadata } from "@/services/conversion/metadata/svg-metadata";
 import {
   downloadBlob,
   downloadTextFile,
+  isTransparentBackground,
   svgToPngBlob,
+  withTransparentSvgBackground,
 } from "@/utils/export";
 import { resolveLocalizedErrorMessage } from "@/utils/localized-app-error";
 
@@ -36,7 +38,11 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     }
 
     const ir = getLastDiagramIr();
-    const payload = ir ? await embedSvgMetadata(svg.value, ir) : svg.value;
+    // Прозрачный фон предпросмотра = прозрачный фон файла: снимаем плашку,
+    // иначе в SVG остаётся непрозрачный прямоугольник на весь холст.
+    const transparent = isTransparentBackground(previewBackground.value);
+    const base = transparent ? withTransparentSvgBackground(svg.value) : svg.value;
+    const payload = ir ? await embedSvgMetadata(base, ir) : base;
     downloadTextFile(payload, "diagram.svg", "image/svg+xml;charset=utf-8");
     trackSave("image-svg", "Save image: SVG");
   }

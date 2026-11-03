@@ -347,7 +347,7 @@ function readableOn(color: string): string {
 }
 
 export function renderHeatmap(model: HeatmapModel, options: ExtRenderOptions): string {
-  const palette = getPalette(options.dark);
+  const palette = getPalette(Boolean(options.dark));
   const labelFontSize = 11;
 
   const cols = Math.max(1, model.x.length);
