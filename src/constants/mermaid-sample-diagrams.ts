@@ -30,6 +30,9 @@ export const MERMAID_SAMPLE_IDS = [
   // как ext-типы и на странице языка идут отдельной группой.
   "waterfall",
   "waterfallMono",
+  "waterfallBreak",
+  "waterfallMulti",
+  "waterfallLabels",
   "bubble",
   "heatmap",
   "orgchart",
@@ -45,6 +48,9 @@ export type MermaidSampleId = (typeof MERMAID_SAMPLE_IDS)[number];
 export const MERMAID_EXT_SAMPLE_IDS = [
   "waterfall",
   "waterfallMono",
+  "waterfallBreak",
+  "waterfallMulti",
+  "waterfallLabels",
   "bubble",
   "heatmap",
   "orgchart",
@@ -94,6 +100,9 @@ export const MERMAID_SAMPLE_WIZARD_TYPES: Record<MermaidSampleId, import("@/cons
   // ближайший по смыслу — flowchart (дерево/шаги).
   waterfall: "flowchart",
   waterfallMono: "flowchart",
+  waterfallBreak: "flowchart",
+  waterfallMulti: "flowchart",
+  waterfallLabels: "flowchart",
   bubble: "flowchart",
   heatmap: "flowchart",
   orgchart: "flowchart",
@@ -461,55 +470,64 @@ const MERMAID_SOURCES_BY_LOCALE: Record<
  */
 const MERMAID_EXT_SAMPLES_RU: Record<MermaidExtSampleId, string> = {
   waterfall: `waterfall
-%% Демо ВСЕХ возможностей waterfall. Каждая строка ниже — рабочий синтаксис.
-%%
-%% title <текст>                  — заголовок
-%% y "<подпись>" <min> --> <max>  — подпись оси и границы шкалы (без неё — авто)
-%% grid <шаг>                     — шаг сетки по Y (любое положительное число)
-%% axis on|off                    — ось и деления (off — спрятать)
-%% labels above|inside|both|none  — где писать значения (по умолчанию above)
-%% connectors on|off              — соединители между барами (по умолчанию on)
-%% fontsize <6–28>                — базовый размер шрифта (по умолчанию 11)
-%% break <после> --> <до> "текст" — разрыв шкалы: участок ВЫРЕЗАН (сжат до 14px),
-%%                                  бар через разрыв рисуется кусками с зигзагом
-%% mono [on|off]                  — Ч/Б режим: бары различаются светлотой
-%% colors total=#hex increase=#hex decrease=#hex — свои цвета баров
-%%                                  (синонимы: positive=, negative=; имена цветов тоже ок)
-%% series <имя> [color=#hex]      — группа; в мульти-серии цвет = базовый цвет группы,
-%%                                  рост светлее на 20%, падение темнее на 25%
-%%
-%% Строки данных: <знак><число> : <подпись> [флаги]
-%%   =120 : Q1           абсолютное значение (старт/итог)
-%%   = : Итого H1        «=» без числа — повтор накопленного итога
-%%   +180 : Q2           приращение вверх
-%%   -60 : Q3            приращение вниз
-%% Флаги в конце строки (любой порядок):
-%%   inside | above | no-label | label="−60 млн"
-title Выручка 2026: все возможности
+%% Базовый водопад: старт, рост, падение, итог.
+%% Синтаксис строк данных: <знак><число> : <подпись>
+%%   =120 : Q1   абсолютное значение (старт или итог)
+%%   = : Итого  «=» без числа — повтор накопленного итога
+%%   +180 : Q2   приращение вверх
+%%   -60 : Q3    приращение вниз
+%% Остальные возможности — в примерах «разрыв шкалы», «несколько серий» и «подписи».
+title Выручка 2026
+y "млн ₽" 0 --> 500
+grid 100
+=120 : Q1 старт
++180 : Q2 рост
+-60 : Q3 отток
+= : Итого H1
++240 : Q4
+= : Итог года`,
+  waterfallBreak: `waterfall
+%% Разрыв шкалы: участок 300..800 ВЫРЕЗАН, чтобы мелкие шаги стали крупнее.
+%% Бар, проходящий через разрыв, рисуется кусками с «зигзагом» на линии.
+title Выручка с разрывом шкалы
 y "млн ₽" 0 --> 1000
 grid 100
+break 300 --> 800 "разрыв шкалы"
+=120 : Q1
++180 : Q2
++700 : Q3
+= : Итог`,
+  waterfallMulti: `waterfall
+%% Несколько серий: у каждой группы свой базовый цвет,
+%% рост — светлее на 20%, падение — темнее на 25%.
+title План и факт
+y "млн ₽" 0 --> 400
+grid 100
+series План color=#1f6feb
+=120 : Q1
++80 : Q2
+-20 : Q3
+= : Итог
+series Факт color=#8250df
+=110 : Q1
++95 : Q2
+-35 : Q3
+= : Итог`,
+  waterfallLabels: `waterfall
+%% Подписи и оформление: где писать значения, свои цвета, размер шрифта.
+%% labels above|inside|both|none — по умолчанию above
+%% fontsize <6–28>              — базовый размер шрифта
+%% colors total= increase= decrease= — свои цвета (синонимы positive=, negative=)
+title Подписи и цвета
+y "млн ₽" 0 --> 200
+grid 50
 labels both
 fontsize 11
-break 300 --> 800 "разрыв шкалы"
 colors total=#1f6feb increase=#2da44e decrease=#cf222e
-series Базовый color=#1f6feb
-=120 : Q1 старт
-+180 : Q2 рост above
--60 : Q3 отток label="−60 млн"
-= : Итого H1
-+720 : Q4 скачок
-= : Итог года
--40 : Возвраты no-label
-= : Чистый итог
-series Оптимистичный color=#8250df
-=120 : Q1
-+240 : Q2
--40 : Q3
-= : Итого H1
-+760 : Q4
-= : Итог года
--20 : Возвраты
-= : Чистый итог`,
+=90 : Q1
++60 : Q2 label="+60 млн"
+-25 : Q3
+= : Итог`,
   waterfallMono: `waterfall
 %% Чёрно-белый режим: цвета не нужны, бары различаются светлотой.
 %% Полезно для печати и для документов без цвета.
@@ -575,55 +593,64 @@ grid`,
 
 const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
   waterfall: `waterfall
-%% Demo of EVERY waterfall feature. Each line below is working syntax.
-%%
-%% title <text>                   — title
-%% y "<label>" <min> --> <max>    — axis label and scale bounds (omit — auto)
-%% grid <step>                    — Y grid step (any positive number)
-%% axis on|off                    — axis and ticks (off — hide)
-%% labels above|inside|both|none  — where to print values (default above)
-%% connectors on|off              — connector lines between bars (default on)
-%% fontsize <6–28>                — base font size (default 11)
-%% break <after> --> <before> "text" — axis break: the span is CUT (squeezed to 14px),
-%%                                  a bar crossing it is drawn in pieces with a zigzag
-%% mono [on|off]                  — black & white mode: bars differ by lightness
-%% colors total=#hex increase=#hex decrease=#hex — custom bar colours
-%%                                  (aliases: positive=, negative=; colour names work too)
-%% series <name> [color=#hex]     — group; in multi-series the colour is the group base,
-%%                                  increase 20% lighter, decrease 25% darker
-%%
-%% Data rows: <sign><number> : <label> [flags]
-%%   =120 : Q1           absolute value (start / total)
-%%   = : H1 total        bare "=" — repeats the running total
-%%   +180 : Q2           increase
-%%   -60 : Q3            decrease
-%% End-of-row flags (any order):
-%%   inside | above | no-label | label="−60 M"
-title Revenue 2026: every feature
+%% Basic waterfall: start, growth, decline, total.
+%% Data rows: <sign><number> : <label>
+%%   =120 : Q1   absolute value (start or total)
+%%   = : H1 total  bare "=" — repeats the running total
+%%   +180 : Q2   increase
+%%   -60 : Q3    decrease
+%% More features: samples "axis break", "multiple series", "labels".
+title Revenue 2026
+y "M USD" 0 --> 500
+grid 100
+=120 : Q1 start
++180 : Q2 growth
+-60 : Q3 churn
+= : H1 total
++240 : Q4
+= : Year total`,
+  waterfallBreak: `waterfall
+%% Axis break: the 300..800 span is CUT so small steps become bigger.
+%% A bar crossing the break is drawn in pieces with a zigzag on the line.
+title Revenue with axis break
 y "M USD" 0 --> 1000
 grid 100
+break 300 --> 800 "axis break"
+=120 : Q1
++180 : Q2
++700 : Q3
+= : Total`,
+  waterfallMulti: `waterfall
+%% Multiple series: each group has its own base colour,
+%% increases 20% lighter, decreases 25% darker.
+title Plan vs actual
+y "M USD" 0 --> 400
+grid 100
+series Plan color=#1f6feb
+=120 : Q1
++80 : Q2
+-20 : Q3
+= : Total
+series Actual color=#8250df
+=110 : Q1
++95 : Q2
+-35 : Q3
+= : Total`,
+  waterfallLabels: `waterfall
+%% Labels and styling: where to print values, custom colours, font size.
+%% labels above|inside|both|none — default above
+%% fontsize <6–28>              — base font size
+%% colors total= increase= decrease= — custom colours (aliases positive=, negative=)
+title Labels and colours
+y "M USD" 0 --> 200
+grid 50
 labels both
 fontsize 11
-break 300 --> 800 "axis break"
 colors total=#1f6feb increase=#2da44e decrease=#cf222e
-series Base color=#1f6feb
-=120 : Q1 start
-+180 : Q2 growth above
--60 : Q3 churn label="−60 M"
-= : H1 total
-+720 : Q4 spike
-= : Year total
--40 : Refunds no-label
-= : Net total
-series Optimistic color=#8250df
-=120 : Q1
-+240 : Q2
--40 : Q3
-= : H1 total
-+760 : Q4
-= : Year total
--20 : Refunds
-= : Net total`,
+=90 : Q1
++60 : Q2 label="+60 M"
+-25 : Q3
+= : Total`,
   waterfallMono: `waterfall
 %% Black-and-white mode: no colours needed, bars differ by lightness.
 %% Handy for print and for documents without colour.

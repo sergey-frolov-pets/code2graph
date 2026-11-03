@@ -260,6 +260,40 @@ break 300 --> 800 "разрыв"`);
     expect(svg).toContain("разрыв");
   });
 
+  it("куски бара заканчиваются ровно на линии разрыва (синхронно с осью)", () => {
+    // Регресс: куски рисовались по yOf(), который прибавлял BREAK_HEIGHT,
+    // и бар «уезжал» выше линии разрыва. Теперь разрыв места не занимает.
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 1000
+=100 : A
++900 : B
+break 300 --> 800 "разрыв"`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    // Линия разрыва = yOf(b.after) = yOf(300); кусок бара ниже кончается на ней.
+    const lineY = Number([...svg.matchAll(/<line x1="64" y1="([\d.]+)" x2="[\d.]+" y2="[\d.]+" stroke="#656d76" stroke-width="1" stroke-dasharray="6 4"/g)][0][1]);
+    const pieces = [...svg.matchAll(/<rect x="[\d.]+" y="([\d.]+)" width="[\d.]+" height="([\d.]+)" fill="#[0-9a-f]{6}"[^>]*data-bar="0-1"/g)]
+      .map((m) => ({ y: Number(m[1]), bottom: Number(m[1]) + Number(m[2]) }));
+    expect(pieces).toHaveLength(2);
+    const lower = pieces.sort((a, b) => b.y - a.y)[0];
+    const upper = pieces.sort((a, b) => a.y - b.y)[0];
+    // Допуск 2 px: у куска минимальная высота 1.5 px (иначе он не виден).
+    expect(Math.abs(lower.y - lineY)).toBeLessThanOrEqual(2);
+    expect(Math.abs(upper.bottom - lineY)).toBeLessThanOrEqual(2);
+  });
+
+  it("деления на границах разрыва схлопываются в одно", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 1000
+grid 100
+=100 : A
++900 : B
+break 300 --> 800`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    // Подпись «800» на сжатой шкале совпадает по высоте с «300» → не дублируется.
+    expect(svg).not.toContain(">800<");
+    expect(svg).toContain(">300<");
+  });
+
   it("ошибка: «до» меньше «после»", () => {
     const r = waterfallEngine.parse(`waterfall
 =10 : A

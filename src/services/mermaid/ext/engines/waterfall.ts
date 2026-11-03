@@ -735,22 +735,41 @@ const PLOT_HEIGHT = 260;
 const FONT_BASE = 11;
 const FONT_MIN = 6;
 const FONT_MAX = 28;
-/** Высота сжатого участка шкалы (разрыв). */
-const BREAK_HEIGHT = 14;
 /** Минимальная высота подписи внутри бара. */
 const INSIDE_MIN_HEIGHT = 13;
 /** Цвет подписи внутри бара. */
 const INSIDE_TEXT = "#ffffff";
+/** Высота полосы-«зигзага» на линии разрыва (сам разрыв места не занимает). */
+const ZIGZAG_HEIGHT = 8;
+
+/** Видимые (не вырезанные) интервалы шкалы. */
+function visibleRanges(axis: WaterfallAxis, breaks: WaterfallBreak[]): Array<[number, number]> {
+  const sorted = [...breaks]
+    .filter((b) => b.before > axis.min && b.after < axis.max)
+    .sort((a, b) => a.after - b.after);
+  const out: Array<[number, number]> = [];
+  let cursor = axis.min;
+  for (const b of sorted) {
+    const lo = Math.max(axis.min, b.after);
+    const hi = Math.min(axis.max, b.before);
+    if (lo > cursor) out.push([cursor, lo]);
+    cursor = Math.max(cursor, hi);
+  }
+  if (cursor < axis.max) out.push([cursor, axis.max]);
+  return out.length ? out : [[axis.min, axis.max]];
+}
 
 /**
- * Шкала с разрывами. Каждый разрыв «съедает» BREAK_HEIGHT пикселей:
- * участок (after, before) отображается в отрезок фиксированной высоты.
+ * Шкала с разрывами.
  *
- * Значение, попавшее ВНУТРЬ вырезанного участка, прижимается к ближней
- * границе (`clamped = true`). Без этого бар, проходящий через разрыв,
- * рисовался бы «сквозь» него — то есть разрыв выглядел бы как обычный
- * участок шкалы, а не как вырез. Правильная нотация: бар обрывается на
- * линии разрыва (см. renderWaterfall → полосы-«зигзаги»).
+ * Разрыв — это ВЫРЕЗ: участок (after, before) не занимает пикселей вообще,
+ * поэтому данные по обе стороны разрыва масштабируются по-настоящему (px на
+ * единицу одинаковы для всех видимых участков). Линии разрыва рисуются прямо
+ * на стыке участков, бар, проходящий через разрыв, обрывается на линии и
+ * получает «зигзаг».
+ *
+ * Значение внутри вырезанного участка «не существует» на шкале: `yClamped`
+ * прижимает его к ближней границе (это нужно соединителям и подписям).
  */
 function createScale(
   axis: WaterfallAxis,
@@ -758,30 +777,18 @@ function createScale(
   plotTop: number,
   plotBottom: number,
 ) {
-  const span = axis.max - axis.min || 1;
-  const usable = plotBottom - plotTop - breaks.length * BREAK_HEIGHT;
-  // Разрыв ВЫРЕЗАЕТ участок из шкалы: единицы внутри (after, before) не
-  // занимают пикселей. Поэтому px/единицу считаем по видимому диапазону —
-  // иначе разрыв только «съедал» бы 14 px и данные не увеличивались.
-  const cutSpan = breaks.reduce((sum, b) => sum + Math.max(0, b.before - b.after), 0);
-  const visibleSpan = Math.max(span - cutSpan, span * 0.05);
-  const unit = usable / visibleSpan; // px на единицу значения
+  const ranges = visibleRanges(axis, breaks);
+  const visibleSpan = ranges.reduce((sum, [lo, hi]) => sum + (hi - lo), 0) || 1;
+  const unit = (plotBottom - plotTop) / visibleSpan; // px на единицу значения
 
   const yOf = (value: number): number => {
-    // Пиксели = только «видимая» часть значения: единицы, попавшие в разрыв,
-    // не занимают места, а сам разрыв добавляет фиксированный BREAK_HEIGHT.
-    let y = plotBottom - (value - axis.min) * unit;
-    for (const b of breaks) {
-      if (value >= b.before) {
-        // Всё, что выше разрыва: сжимаем вырезанный участок до BREAK_HEIGHT.
-        y += (b.before - b.after) * unit - BREAK_HEIGHT;
-      } else if (value > b.after) {
-        // Внутри вырезанного участка — прижимаем к ближней границе.
-        const t = (value - b.after) / (b.before - b.after);
-        y += (value - b.after) * unit - BREAK_HEIGHT * t;
-      }
+    // Высота видимой части от axis.min до value (вырезанные участки не в счёт).
+    let visible = 0;
+    for (const [lo, hi] of ranges) {
+      const top = Math.min(Math.max(value, lo), hi);
+      if (top > lo) visible += top - lo;
     }
-    return y;
+    return plotBottom - visible * unit;
   };
 
   /** Значение внутри вырезанного участка? (такие точки «не существуют» на шкале) */
@@ -801,7 +808,7 @@ function createScale(
     return yOf(value);
   };
 
-  return { yOf, yClamped, inGap, unit, usable };
+  return { yOf, yClamped, inGap, unit, ranges };
 }
 
 /** Чёрно-белая палитра: уровни серого вместо цвета. */
@@ -949,10 +956,16 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       ? fixedTicks(axis.min, axis.max, axis.gridStep)
       : niceTicks(axis.min, axis.max, 5);
 
+  // Деления на границах разрыва схлопываются в одну линию (300 и 800 лежат
+  // на той же высоте) — рисуем только первое из них.
+  const drawnTickYs = new Set<number>();
   if (!axisHidden) {
     for (const tick of ticks) {
       if (breaks.some((b) => tick > b.after && tick < b.before)) continue;
       const y = yOf(tick);
+      const yKey = Math.round(y * 100) / 100;
+      if (drawnTickYs.has(yKey)) continue;
+      drawnTickYs.add(yKey);
       svg.line(plotLeft, y, plotLeft + plotWidth, y, { stroke: palette.grid, "stroke-width": 1 });
       svg.text(plotLeft - Math.round((8 * fontSize) / FONT_BASE), y + Math.round((4 * fontSize) / FONT_BASE), fmt(tick), {
         "text-anchor": "end",
@@ -989,8 +1002,9 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
   }
 
   // Линии разрыва: две параллельные черты поперёк области графика.
+  // Разрыв места не занимает, поэтому черты лежат на стыке видимых участков.
   for (const b of breaks) {
-    const y = yOf(b.before) - BREAK_HEIGHT / 2;
+    const y = yOf(b.after);
     const gap = 3;
     for (const dy of [-gap / 2, gap / 2]) {
       svg.line(plotLeft, y + dy, plotLeft + plotWidth, y + dy, {
@@ -1006,7 +1020,15 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       const text = truncate(b.label, plotWidth - 8, breakFs);
       const anchorX = plotLeft + plotWidth - 4;
       const fitsLeft = anchorX - measureText(text, breakFs) >= plotLeft + 4;
-      svg.text(fitsLeft ? anchorX : plotLeft + plotWidth / 2, y - Math.round((4 * fontSize) / FONT_BASE), text, {
+      const textX = fitsLeft ? anchorX : plotLeft + plotWidth / 2;
+      // Вырез под подпись: иначе текст лежит на линии разрыва и не читается.
+      const textWidth = measureText(text, breakFs);
+      const clearLeft = fitsLeft ? textX - textWidth : textX - textWidth / 2;
+      svg.rect(clearLeft - 3, y - breakFs * 0.75, textWidth + 6, breakFs * 1.5, {
+        fill: palette.bg,
+        "data-break-gap": "1",
+      });
+      svg.text(textX, y - Math.round((4 * fontSize) / FONT_BASE), text, {
         "text-anchor": fitsLeft ? "end" : "middle",
         "font-size": breakFs,
         fill: palette.fgDim,
@@ -1109,18 +1131,17 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       svg.rect(x, top, barWidth, h, { fill: color, rx: 2, "data-bar": barId });
     }
 
-    // Зигзаг на каждой линии разрыва, которую бар пересёк.
+    // Зигзаг на каждой линии разрыва, которую бар пересёк. Разрыв места не
+    // занимает, поэтому полоса-вырез рисуется ПОВЕРХ бара: без неё куски бара
+    // сливаются и обрыв не читается.
     for (const b of cuts) {
-      const y = yOf(b.before) - BREAK_HEIGHT / 2;
+      const y = yOf(b.after);
       const mid = x + barWidth / 2;
-      const zig = `M${x} ${y - 2} L${mid} ${y + 2} L${x + barWidth} ${y - 2}`;
-      // Сначала «подложка» цветом фона — зигзаг читается и на линии разрыва.
-      svg.path(zig, {
-        fill: "none",
-        stroke: palette.bg,
-        "stroke-width": 3,
-        "data-break-zigzag": "1",
+      svg.rect(x, y - ZIGZAG_HEIGHT / 2, barWidth, ZIGZAG_HEIGHT, {
+        fill: palette.bg,
+        "data-break-gap": "1",
       });
+      const zig = `M${x} ${y - 2} L${mid} ${y + 2} L${x + barWidth} ${y - 2}`;
       svg.path(zig, {
         fill: "none",
         stroke: color,
