@@ -459,11 +459,15 @@ const MERMAID_SOURCES_BY_LOCALE: Record<
 const MERMAID_EXT_SAMPLES_RU: Record<MermaidExtSampleId, string> = {
   waterfall: `waterfall
 title Выручка 2026
-y "млн ₽" 0 --> 120
-=40 : Q1
-+15 : Q2
-+20 : Q3
-=75 : Итог`,
+y "млн ₽" 0 --> 1000
+grid 100
+labels both
+break 300 --> 800 "разрыв шкалы"
+=120 : Q1
++180 : Q2
+= : Итого H1
++700 : Q3
+= : Итог`,
   bubble: `bubble
 title BCG матрица
 x "Доля рынка" 0 --> 10
@@ -511,11 +515,15 @@ grid`,
 const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
   waterfall: `waterfall
 title Revenue 2026
-y "M USD" 0 --> 120
-=40 : Q1
-+15 : Q2
-+20 : Q3
-=75 : Total`,
+y "M USD" 0 --> 1000
+grid 100
+labels both
+break 300 --> 800 "axis break"
+=120 : Q1
++180 : Q2
+= : H1 total
++700 : Q3
+= : Total`,
   bubble: `bubble
 title BCG matrix
 x "Market share" 0 --> 10

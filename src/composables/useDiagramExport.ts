@@ -16,10 +16,12 @@ export interface UseDiagramExportOptions {
   error: Ref<string>;
   isRendering: Ref<boolean>;
   previewBackground: Ref<string>;
+  /** Размер готового PNG; null/undefined — натуральный размер SVG. */
+  imageSize?: Ref<{ width: number; height: number } | null>;
 }
 
 export function useDiagramExport(options: UseDiagramExportOptions) {
-  const { svg, error, isRendering, previewBackground } = options;
+  const { svg, error, isRendering, previewBackground, imageSize } = options;
   const { alert } = useAppDialog();
   const { t } = useLocale();
   const { getLastDiagramIr } = useDiagramIrCache();
@@ -45,7 +47,11 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     }
 
     try {
-      const pngBlob = await svgToPngBlob(svg.value, previewBackground.value);
+      const pngBlob = await svgToPngBlob(
+        svg.value,
+        previewBackground.value,
+        imageSize?.value ?? undefined,
+      );
       downloadBlob(pngBlob, "diagram.png");
       trackSave("image-png", "Save image: PNG");
     } catch (exportError) {

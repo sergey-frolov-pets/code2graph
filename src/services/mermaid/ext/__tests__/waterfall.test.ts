@@ -186,3 +186,372 @@ describe("waterfall: рендер", () => {
     });
   });
 });
+
+describe("waterfall: разрывы шкалы", () => {
+  it("разбирает break с подписью и без", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 1000
+=100 : Старт
++900 : Рост
+break 300 --> 800 "разрыв"
+=1000 : Итог`);
+    expect(r.ok).toBe(true);
+    const m = r.value as WaterfallModel;
+    expect(m.breaks).toHaveLength(1);
+    expect(m.breaks[0]).toMatchObject({ after: 300, before: 800, label: "разрыв" });
+  });
+
+  it("разрыв сжимает участок: бары по обе стороны становятся выше", () => {
+    const src = `waterfall
+y "" 0 --> 1000
+=100 : A
++900 : B`;
+    const plain = waterfallEngine.parse(src);
+    const broken = waterfallEngine.parse(`${src}\nbreak 300 --> 800`);
+    expect(broken.ok).toBe(true);
+    const barOf = (svg: string, fill: string) => {
+      const re = new RegExp(`<rect x="[\\d.]+" y="([\\d.]+)" width="[\\d.]+" height="([\\d.]+)" fill="${fill}"`);
+      const m = re.exec(svg);
+      return m ? { y: Number(m[1]), h: Number(m[2]) } : null;
+    };
+    const plainDelta = barOf(waterfallEngine.render(plain.value as WaterfallModel, {}), "#2da44e");
+    const brokenDelta = barOf(waterfallEngine.render(broken.value as WaterfallModel, {}), "#2da44e");
+    expect(plainDelta).not.toBeNull();
+    expect(brokenDelta).not.toBeNull();
+    // Шкала та же (0..1000), но участок 300..800 сжат → бар «+900» выше.
+    expect(brokenDelta!.h).toBeGreaterThan(plainDelta!.h);
+    // Бар пересекает весь сжатый участок (300..800): выигрыш = BREAK_HEIGHT
+    // минус то, что остаток шкалы (0..300 и 800..1000) стал плотнее.
+    expect(brokenDelta!.h - plainDelta!.h).toBeGreaterThan(1);
+  });
+
+  it("рисует пунктирные линии разрыва и подпись", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 1000
+=100 : A
++900 : B
+break 300 --> 800 "разрыв"`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect(svg).toContain("stroke-dasharray");
+    expect(svg).toContain("разрыв");
+  });
+
+  it("ошибка: «до» меньше «после»", () => {
+    const r = waterfallEngine.parse(`waterfall
+=10 : A
+break 800 --> 300`);
+    expect(r.ok).toBe(false);
+    expect(r.errors[0].message).toMatch(/должно быть больше/i);
+  });
+
+  it("ошибка: пересекающиеся разрывы", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 1000
+=10 : A
+break 100 --> 500
+break 400 --> 900`);
+    expect(r.ok).toBe(false);
+    expect(r.errors[0].message).toMatch(/пересекаются/i);
+  });
+
+  it("разрыв вне шкалы игнорируется, а не ломает рендер", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 100
+=10 : A
++20 : B
+break 500 --> 900`);
+    expect(r.ok).toBe(true);
+    expect((r.value as WaterfallModel).breaks).toHaveLength(0);
+  });
+});
+
+describe("waterfall: подписи внутри и над барами", () => {
+  it("labels inside — подпись значения внутри бара", () => {
+    const r = waterfallEngine.parse(`waterfall
+labels inside
+y "" 0 --> 100
+=40 : Q1
++50 : Q2`);
+    expect(r.ok).toBe(true);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect(svg).toContain("#ffffff"); // белый текст внутри бара
+  });
+
+  it("labels none — подписей значений нет", () => {
+    const r = waterfallEngine.parse(`waterfall
+labels none
+y "" 0 --> 100
+=40 : Q1
++50 : Q2`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect(svg).not.toContain(">+50<");
+    // «>40<» есть в подписях делений оси — проверяем именно тексты значений (font-size 10).
+    expect(svg).not.toMatch(/font-size="10"[^>]*>40</);
+  });
+
+  it("per-step флаг inside перекрывает общий режим", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 100
+=40 : Q1
++50 : Q2 inside`);
+    const m = r.value as WaterfallModel;
+    expect(m.series[0].steps[1].labelInside).toBe(true);
+    expect(m.valueLabels.inside).toBe(false);
+  });
+
+  it("per-step no-label убирает подпись значения", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 100
+=40 : Q1 no-label
++50 : Q2`);
+    const m = r.value as WaterfallModel;
+    const svg = waterfallEngine.render(m, {});
+    expect(svg).not.toMatch(/font-size="10"[^>]*>40</);
+    expect(svg).toContain(">+50<");
+  });
+
+  it("своя подпись значения через label=", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 100
+=40 : Q1 label="40 %"
++50 : Q2`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect(svg).toContain("40 %");
+  });
+
+  it("ошибка: неизвестный режим labels", () => {
+    const r = waterfallEngine.parse(`waterfall
+labels сбоку
+=10 : A`);
+    expect(r.ok).toBe(false);
+    expect(r.errors[0].message).toMatch(/labels above\|inside\|both\|none/i);
+  });
+});
+
+describe("waterfall: шаг сетки и скрытая ось", () => {
+  it("grid задаёт явный шаг делений", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 100
+grid 25
+=10 : A
++50 : B`);
+    expect(r.ok).toBe(true);
+    const m = r.value as WaterfallModel;
+    expect(m.axis.gridStep).toBe(25);
+    const svg = waterfallEngine.render(m, {});
+    for (const tick of ["0", "25", "50", "75", "100"]) {
+      expect(svg).toContain(`>${tick}<`);
+    }
+  });
+
+  it("grid с некруглым шагом", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 30
+grid 7.5
+=10 : A`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect(svg).toContain(">22.5<");
+  });
+
+  it("ошибка: неположительный шаг", () => {
+    const r = waterfallEngine.parse(`waterfall
+grid 0
+=10 : A`);
+    expect(r.ok).toBe(false);
+    expect(r.errors[0].message).toMatch(/положительный шаг/i);
+  });
+
+  it("axis off — нет подписей делений и оси", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "млн" 0 --> 100
+axis off
+=10 : A
++50 : B`);
+    expect(r.ok).toBe(true);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect(svg).not.toContain(">млн<");
+    expect(svg).not.toContain(">50<");
+    // бары на месте
+    expect(svg).toContain(">A<");
+  });
+
+  it("старые диаграммы рендерятся без изменений", () => {
+    const r = waterfallEngine.parse(`waterfall
+title Т
+y "млн ₽" 0 --> 120
+=40 : Q1
++15 : Q2
+=55 : Итог`);
+    const m = r.value as WaterfallModel;
+    expect(m.breaks).toEqual([]);
+    expect(m.valueLabels).toEqual({ above: true, inside: false });
+    expect(m.axis.gridStep).toBeUndefined();
+  });
+});
+
+describe("waterfall: «=» без значения (промежуточный итог)", () => {
+  it("раскрывается в накопленный итог", () => {
+    const r = waterfallEngine.parse(`waterfall
+=40 : Q1
++15 : Q2
+= : Итого H1
++20 : Q3
+= : Итого`);
+    expect(r.ok).toBe(true);
+    const steps = (r.value as WaterfallModel).series[0].steps;
+    expect(steps[2]).toMatchObject({ kind: "absolute", value: 55, label: "Итого H1" });
+    expect(steps[4]).toMatchObject({ kind: "absolute", value: 75, label: "Итого" });
+  });
+
+  it("повтор подряд не сдвигает итог", () => {
+    const r = waterfallEngine.parse(`waterfall
+=100 : Старт
+= : Повтор
+= : Ещё раз`);
+    const steps = (r.value as WaterfallModel).series[0].steps;
+    expect(steps.map((s) => s.value)).toEqual([100, 100, 100]);
+  });
+
+  it("работает с отрицательными шагами", () => {
+    const r = waterfallEngine.parse(`waterfall
+=100 : Старт
+-30 : Расход
+= : Остаток`);
+    const steps = (r.value as WaterfallModel).series[0].steps;
+    expect(steps[2].value).toBe(70);
+  });
+
+  it("раскрывает в каждой группе отдельно", () => {
+    const r = waterfallEngine.parse(`waterfall-multi
+series A
+=10 : Старт
++5 : Рост
+= : Итог
+series B
+=100 : Старт
++50 : Рост
+= : Итог`);
+    expect(r.ok).toBe(true);
+    const m = r.value as WaterfallModel;
+    expect(m.series[0].steps[2].value).toBe(15);
+    expect(m.series[1].steps[2].value).toBe(150);
+  });
+
+  it("влияет на автоподсчёт шкалы", () => {
+    const r = waterfallEngine.parse(`waterfall
+=40 : Q1
++60 : Q2
+= : Итог`);
+    const axis = (r.value as WaterfallModel).axis;
+    expect(axis.max).toBeGreaterThanOrEqual(100);
+  });
+
+  it("ошибка: первая колонка без значения", () => {
+    const r = waterfallEngine.parse(`waterfall
+= : Старт
++10 : Рост`);
+    expect(r.ok).toBe(false);
+    expect(r.errors[0].message).toMatch(/первая колонка/i);
+  });
+
+  it("ошибка: «+» и «-» без значения по-прежнему недопустимы", () => {
+    for (const sign of ["+", "-"]) {
+      const r = waterfallEngine.parse(`waterfall
+=10 : A
+${sign} : B`);
+      expect(r.ok).toBe(false);
+      expect(r.errors[0].message).toMatch(/ожидается число/i);
+    }
+  });
+
+  it("рендерит раскрытое значение подписью", () => {
+    const r = waterfallEngine.parse(`waterfall
+=40 : Q1
++15 : Q2
+= : Итог`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect(svg).toContain(">55<");
+  });
+});
+
+describe("waterfall: соединительные линии", () => {
+  it("по умолчанию включены", () => {
+    const r = waterfallEngine.parse(`waterfall
+=40 : Q1
++15 : Q2
+=55 : Итог`);
+    expect((r.value as WaterfallModel).connectors).toBe(true);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect(svg).toContain('data-connector="1"');
+  });
+
+  it("connectors off — линий нет", () => {
+    const r = waterfallEngine.parse(`waterfall
+connectors off
+=40 : Q1
++15 : Q2
+=55 : Итог`);
+    expect(r.ok).toBe(true);
+    expect((r.value as WaterfallModel).connectors).toBe(false);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect(svg).not.toContain('data-connector="1"');
+  });
+
+  it("connectors on возвращает линии", () => {
+    const r = waterfallEngine.parse(`waterfall
+connectors off
+connectors on
+=10 : A
++5 : B`);
+    expect((r.value as WaterfallModel).connectors).toBe(true);
+  });
+
+  it("число линий = (колонки − 1) × группы", () => {
+    const r = waterfallEngine.parse(`waterfall-multi
+series A
+=10 : A1
++5 : A2
++5 : A3
+series B
+=20 : B1
++5 : B2
++5 : B3`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    const count = (svg.match(/data-connector="1"/g) ?? []).length;
+    expect(count).toBe(4);
+  });
+
+  it("линия тянется от конца бара к началу следующего", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 100
+=40 : Q1
+= : Итог`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    const m = /<line x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)" y2="([\d.]+)"[^>]*data-connector="1"/.exec(svg);
+    expect(m).not.toBeNull();
+    const [, x1, y1, x2, y2] = m!.map(Number);
+    expect(x2).toBeGreaterThan(x1);
+    // Уровень не меняется (40 → 40) → линия горизонтальна.
+    expect(y1).toBeCloseTo(y2, 3);
+  });
+
+  it("линия наклонена, когда уровни разные", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 100
+=40 : Q1
++20 : Q2`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    const m = /<line x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)" y2="([\d.]+)"[^>]*data-connector="1"/.exec(svg);
+    const [, , y1, , y2] = m!.map(Number);
+    // Рост 40 → 60: конец второго бара выше (y меньше).
+    expect(y2).toBeLessThan(y1);
+  });
+
+  it("ошибка: неизвестное значение директивы", () => {
+    const r = waterfallEngine.parse(`waterfall
+connectors может быть
+=10 : A`);
+    expect(r.ok).toBe(false);
+    expect(r.errors[0].message).toMatch(/connectors on.*connectors off/i);
+  });
+});

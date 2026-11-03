@@ -175,6 +175,22 @@ export function niceTicks(min: number, max: number, count = 5): number[] {
   return ticks;
 }
 
+/**
+ * Деления с явным шагом сетки: `step` — любое положительное число,
+ * не обязательно «круглое». Начинаем с первого кратного step не ниже min.
+ */
+export function fixedTicks(min: number, max: number, step: number): number[] {
+  if (!Number.isFinite(min) || !Number.isFinite(max) || !(step > 0)) return [];
+  const eps = step * 1e-9;
+  const start = Math.ceil((min - eps) / step) * step;
+  const ticks: number[] = [];
+  // Защита от бесконечного цикла на вырожденных данных.
+  for (let v = start, guard = 0; v <= max + eps && guard < 1000; v += step, guard += 1) {
+    ticks.push(Math.round(v / step) * step);
+  }
+  return ticks;
+}
+
 /** Округление диапазона до «круглых» границ. */
 export function niceRange(min: number, max: number, count = 5): { min: number; max: number } {
   if (!Number.isFinite(min) || !Number.isFinite(max)) return { min: 0, max: 1 };
@@ -319,7 +335,9 @@ export function createSvg(options: SvgOptions): SvgBuilder {
   return builder;
 }
 
-/** Маркер-стрелка для orgchart. Возвращает markup и id для ссылки. */
+/**
+ * Маркер-стрелка для orgchart. Возвращает markup и id для ссылки.
+ */
 export function arrowMarker(
   palette: Palette,
   id = "ext-arrow",

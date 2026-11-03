@@ -4,6 +4,7 @@ import DiagramToolbar from "@/components/DiagramToolbar.vue";
 import LoadingState from "@/components/ui/LoadingState.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
 import { useLocale } from "@/composables/useLocale";
+import { useImageSize } from "@/composables/useImageSize";
 import { usePreviewPanZoom } from "@/composables/usePreviewPanZoom";
 import { sanitizeSvgForPreview } from "@/utils/export";
 import type { RenderMode } from "@/constants/render-settings";
@@ -25,6 +26,7 @@ const emit = defineEmits<{
   "update:previewBackground": [value: string];
   "update:diagramDarkMode": [value: boolean];
   "update:renderMode": [value: RenderMode];
+  "update:imageSize": [value: { width: number; height: number } | null];
 }>();
 
 const { t } = useLocale();
@@ -32,11 +34,15 @@ const isFullscreen = ref(false);
 const viewportRef = ref<HTMLElement | null>(null);
 const contentRef = ref<HTMLElement | null>(null);
 
+const { naturalSize, activeSize, isCustom, sizedMarkup, setWidth, setHeight, resetSize } =
+  useImageSize(computed(() => props.svg));
+
 const previewMarkup = computed(() => {
-  if (!props.svg) {
+  const markup = sizedMarkup.value;
+  if (!markup) {
     return "";
   }
-  return sanitizeSvgForPreview(props.svg);
+  return sanitizeSvgForPreview(markup);
 });
 
 const {
@@ -94,11 +100,17 @@ watch(isFullscreen, (value) => {
           :diagram-dark-mode="diagramDarkMode"
           :render-mode="renderMode"
           :zoom-percent="zoomPercent"
+          :image-width="activeSize.width"
+          :image-height="activeSize.height"
+          :image-size-custom="isCustom"
           @render-now="emit('renderNow')"
           @export-svg="emit('exportSvg')"
           @export-png="emit('exportPng')"
           @zoom-in="zoomIn"
           @zoom-out="zoomOut"
+          @set-image-width="setWidth"
+          @set-image-height="setHeight"
+          @reset-image-size="resetSize"
           @update:preview-background="emit('update:previewBackground', $event)"
           @update:diagram-dark-mode="emit('update:diagramDarkMode', $event)"
           @update:render-mode="emit('update:renderMode', $event)"

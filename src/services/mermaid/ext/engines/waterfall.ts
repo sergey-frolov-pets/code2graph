@@ -1,6 +1,7 @@
 import {
   clamp,
   createSvg,
+  fixedTicks,
   fmt,
   getPalette,
   measureText,
@@ -16,9 +17,17 @@ export type StepKind = "absolute" | "delta";
 
 export interface WaterfallStep {
   kind: StepKind;
-  /** Для absolute — само значение; для delta — знак уже учтён в value. */
-  value: number;
+  /**
+   * Для absolute — само значение; для delta — знак уже учтён в value.
+   * `null` — «= без значения»: колонка повторяет накопленный итог
+   * (промежуточный итог / повтор предыдущего значения).
+   */
+  value: number | null;
   label: string;
+  /** Подпись внутри бара (перекрывает общую настройку `labels inside`). */
+  labelInside?: boolean;
+  /** Подпись над баром (перекрывает общую настройку `labels above`). */
+  labelAbove?: boolean;
 }
 
 export interface WaterfallSeries {
@@ -32,6 +41,10 @@ export interface WaterfallAxis {
   max: number;
   /** true — границы посчитаны по данным, а не заданы в `y "..." min --> max`. */
   auto: boolean;
+  /** Явный шаг сетки (`grid <шаг>`); без него — «круглые» деления. */
+  gridStep?: number;
+  /** `axis off` — не рисовать ось и подписи делений. */
+  hidden?: boolean;
 }
 
 export interface WaterfallModel {
@@ -40,6 +53,20 @@ export interface WaterfallModel {
   series: WaterfallSeries[];
   /** Подписи колонок — берутся из первой группы. */
   labels: string[];
+  /** Разрывы шкалы: между `break.after` и `break.before` участок сжат. */
+  breaks: WaterfallBreak[];
+  /** Куда рисовать значения: над баром (по умолчанию) и/или внутри бара. */
+  valueLabels: { above: boolean; inside: boolean };
+  /** Соединительные линии между барами (`connectors on|off`), по умолчанию включены. */
+  connectors: boolean;
+}
+
+/** Разрыв оси: значения выше `after` и ниже `before` рисуются вплотную. */
+export interface WaterfallBreak {
+  after: number;
+  before: number;
+  /** Подпись на линии разрыва (опционально). */
+  label?: string;
 }
 
 // --- Разбор ---------------------------------------------------------------
@@ -68,7 +95,51 @@ function parseAxis(line: string): { label?: string; min: number; max: number } |
   return { label: label || undefined, min, max };
 }
 
-function parseStep(text: string, line: number): { step?: WaterfallStep; error?: ExtParseError } {
+/**
+ * Разбор хвоста строки данных.
+ * Поддерживаются флаги (порядок любой, регистр не важен):
+ *   `inside`  — подпись внутри бара
+ *   `above`   — подпись над баром
+ *   `no-label` — без подписи значения
+ *   `label=<текст>` — своя подпись значения (например, «−12 %»)
+ */
+function parseStepFlags(tail: string): {
+  rest: string;
+  inside: boolean;
+  above: boolean;
+  hide: boolean;
+  valueLabel?: string;
+} {
+  let rest = tail;
+  let inside = false;
+  let above = false;
+  let hide = false;
+  let valueLabel: string | undefined;
+
+  const FLAG_RE = /\s+(inside|above|no-label|label=(?:"(?:[^"\\]|\\.)*"|\S+))\s*$/i;
+  for (let guard = 0; guard < 8; guard += 1) {
+    const m = FLAG_RE.exec(rest);
+    if (!m) break;
+    const token = m[1].toLowerCase();
+    if (token === "inside") inside = true;
+    else if (token === "above") above = true;
+    else if (token === "no-label") hide = true;
+    else if (token.startsWith("label=")) {
+      const raw = m[1].slice("label=".length).trim();
+      valueLabel = raw.startsWith('"') && raw.endsWith('"')
+        ? raw.slice(1, -1).replace(/\\"/g, '"')
+        : raw;
+    }
+    rest = rest.slice(0, m.index);
+  }
+
+  return { rest: rest.trim(), inside, above, hide, valueLabel };
+}
+
+function parseStep(
+  text: string,
+  line: number,
+): { step?: WaterfallStep; error?: ExtParseError } {
   const sign = text[0];
   if (sign !== "=" && sign !== "+" && sign !== "-") {
     return {
@@ -86,24 +157,121 @@ function parseStep(text: string, line: number): { step?: WaterfallStep; error?: 
     };
   }
   const rawNumber = text.slice(1, colon).trim();
-  const label = text.slice(colon + 1).trim();
-  const value = parseNumber(rawNumber);
-  if (value === null) {
+  const flags = parseStepFlags(text.slice(colon + 1));
+  const label = flags.rest;
+  const kind: StepKind = sign === "=" ? "absolute" : "delta";
+
+  // «= : подпись» — абсолютная колонка без значения: повторяет накопленный итог.
+  let value: number | null;
+  if (!rawNumber && kind === "absolute") {
+    value = null;
+  } else {
+    const parsed = parseNumber(rawNumber);
+    if (parsed === null) {
+      return {
+        error: {
+          message: rawNumber
+            ? `не удалось разобрать число: «${rawNumber}»`
+            : `после «${sign}» ожидается число (пустое значение допустимо только для «=»)`,
+          line,
+          col: 1,
+        },
+      };
+    }
+    value = parsed;
+  }
+
+  const signed = value === null ? null : sign === "-" ? -Math.abs(value) : value;
+  const step: WaterfallStep = {
+    kind,
+    value: kind === "absolute" ? value : signed,
+    label,
+  };
+  if (flags.inside) step.labelInside = true;
+  if (flags.above) step.labelAbove = true;
+  if (flags.hide) {
+    step.labelInside = false;
+    step.labelAbove = false;
+  }
+  if (flags.valueLabel !== undefined) {
+    // Своя подпись значения хранится в отдельном поле, чтобы не путать с подписью колонки.
+    (step as WaterfallStep & { valueText?: string }).valueText = flags.valueLabel;
+  }
+  return { step };
+}
+
+/** `break <после> --> <до> ["подпись"]` */
+function parseBreak(
+  text: string,
+  line: number,
+): { brk?: WaterfallBreak; error?: ExtParseError } {
+  const m = /^(-?[\d\s_.]+)\s*-->\s*(-?[\d\s_.]+)\s*(?:"(.*)")?\s*$/.exec(text.trim());
+  if (!m) {
     return {
-      error: { message: `не удалось разобрать число: «${rawNumber}»`, line, col: 1 },
+      error: {
+        message: `ожидается «break <после> --> <до> ["подпись"]», получено «${text.trim()}»`,
+        line,
+        col: 0,
+      },
     };
   }
-  const kind: StepKind = sign === "=" ? "absolute" : "delta";
-  const signed = sign === "-" ? -Math.abs(value) : value;
-  return { step: { kind, value: kind === "absolute" ? value : signed, label } };
+  const after = parseNumber(m[1]);
+  const before = parseNumber(m[2]);
+  if (after === null || before === null) {
+    return {
+      error: { message: `не удалось разобрать границы разрыва`, line, col: 0 },
+    };
+  }
+  if (before <= after) {
+    return {
+      error: {
+        message: `разрыв: «до» (${fmt(before)}) должно быть больше «после» (${fmt(after)})`,
+        line,
+        col: 0,
+      },
+    };
+  }
+  const label = m[3] ? m[3].replace(/\\"/g, '"').trim() : undefined;
+  return { brk: { after, before, label: label || undefined } };
+}
+
+/** `labels above|inside|both|none` */
+function parseLabelsMode(
+  text: string,
+  line: number,
+): { mode?: { above: boolean; inside: boolean }; error?: ExtParseError } {
+  const token = text.trim().toLowerCase();
+  switch (token) {
+    case "above":
+      return { mode: { above: true, inside: false } };
+    case "inside":
+      return { mode: { above: false, inside: true } };
+    case "both":
+      return { mode: { above: true, inside: true } };
+    case "none":
+      return { mode: { above: false, inside: false } };
+    default:
+      return {
+        error: {
+          message: `ожидается «labels above|inside|both|none», получено «${text.trim()}»`,
+          line,
+          col: 0,
+        },
+      };
+  }
 }
 
 export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
   const errors: ExtParseError[] = [];
   const series: WaterfallSeries[] = [];
+  const breaks: WaterfallBreak[] = [];
   let current: WaterfallSeries | null = null;
   let title: string | undefined;
   let axis: WaterfallAxis | null = null;
+  let gridStep: number | undefined;
+  let axisHidden = false;
+  let valueLabels = { above: true, inside: false };
+  let connectors = true;
 
   const lines = source.split(/\r?\n/);
   let seenType = false;
@@ -134,6 +302,66 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
         continue;
       }
       axis = { label: parsed.label, min: parsed.min, max: parsed.max, auto: false };
+      continue;
+    }
+
+    if (/^grid\b/i.test(raw)) {
+      const value = parseNumber(raw.slice(4).trim());
+      if (value === null || !(value > 0)) {
+        errors.push({
+          message: `ожидается «grid <положительный шаг>», получено «${raw.slice(4).trim()}»`,
+          line: lineNo,
+          col: 0,
+        });
+        continue;
+      }
+      gridStep = value;
+      continue;
+    }
+
+    if (/^axis\b/i.test(raw)) {
+      const token = raw.slice(4).trim().toLowerCase();
+      if (token === "off" || token === "none" || token === "hidden") {
+        axisHidden = true;
+      } else if (token === "on" || token === "auto" || token === "") {
+        axisHidden = false;
+      } else {
+        errors.push({
+          message: `ожидается «axis off» (или «axis on»)`,
+          line: lineNo,
+          col: 0,
+        });
+      }
+      continue;
+    }
+
+    if (/^labels\b/i.test(raw)) {
+      const { mode, error } = parseLabelsMode(raw.slice(6), lineNo);
+      if (error) errors.push(error);
+      else if (mode) valueLabels = mode;
+      continue;
+    }
+
+    if (/^connectors?\b/i.test(raw)) {
+      const token = raw.replace(/^connectors?\s*/i, "").trim().toLowerCase();
+      if (token === "off" || token === "none" || token === "false" || token === "no") {
+        connectors = false;
+      } else if (token === "on" || token === "true" || token === "yes" || token === "") {
+        connectors = true;
+      } else {
+        errors.push({
+          message: `ожидается «connectors on» или «connectors off», получено «${token}»`,
+          line: lineNo,
+          col: 0,
+        });
+      }
+      continue;
+    }
+
+    if (/^break\b/i.test(raw)) {
+      const { brk, error } = parseBreak(raw.slice(5), lineNo);
+      if (error) errors.push(error);
+      else if (brk) breaks.push(brk);
       continue;
     }
 
@@ -193,13 +421,40 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
 
   const labels = series[0].steps.map((s) => s.label);
 
+  // «=» без значения: колонка повторяет накопленный итог. Раскрываем до
+  // подсчёта шкалы, чтобы extent и рендер видели уже конкретные числа.
+  const carryErrors = resolveCarryOver(series);
+  if (carryErrors.length) return { ok: false, errors: carryErrors };
+
   if (!axis) {
     const extent = computeExtent(series);
     const rounded = niceRange(extent.min, extent.max, 4);
     axis = { min: rounded.min, max: rounded.max, auto: true };
   }
 
-  return { ok: true, errors: [], value: { title, axis, series, labels } };
+  if (gridStep !== undefined) axis.gridStep = gridStep;
+  if (axisHidden) axis.hidden = true;
+
+  // Разрывы вне диапазона шкалы — просто не участвуют в сжатии.
+  const visibleBreaks = breaks.filter((b) => b.after >= axis!.min && b.before <= axis!.max);
+  const sorted = [...visibleBreaks].sort((a, b) => a.after - b.after);
+  for (let i = 1; i < sorted.length; i += 1) {
+    if (sorted[i].after < sorted[i - 1].before) {
+      errors.push({
+        message: `разрывы пересекаются: «${fmt(sorted[i - 1].after)} --> ${fmt(sorted[i - 1].before)}» и «${fmt(sorted[i].after)} --> ${fmt(sorted[i].before)}»`,
+        line: 1,
+        col: 0,
+      });
+      break;
+    }
+  }
+  if (errors.length) return { ok: false, errors };
+
+  return {
+    ok: true,
+    errors: [],
+    value: { title, axis, series, labels, breaks: sorted, valueLabels, connectors },
+  };
 }
 
 function findFirstDataLine(lines: string[]): number {
@@ -211,6 +466,37 @@ function findFirstDataLine(lines: string[]): number {
   return 1;
 }
 
+/**
+ * Раскрывает `= null` (абсолютную колонку без значения) в накопленный итог.
+ * Первая колонка без значения бессмысленна — это ошибка.
+ */
+function resolveCarryOver(series: WaterfallSeries[]): ExtParseError[] {
+  const errors: ExtParseError[] = [];
+  for (const group of series) {
+    let running = 0;
+    for (let i = 0; i < group.steps.length; i += 1) {
+      const step = group.steps[i];
+      if (step.kind === "absolute") {
+        if (step.value === null) {
+          if (i === 0) {
+            errors.push({
+              message: `первая колонка должна быть абсолютной со значением (=N)`,
+              line: 1,
+              col: 0,
+            });
+            return errors;
+          }
+          step.value = running;
+        }
+        running = step.value;
+      } else {
+        running += step.value ?? 0;
+      }
+    }
+  }
+  return errors;
+}
+
 /** min/max по всем накопленным значениям всех групп. */
 function computeExtent(series: WaterfallSeries[]): { min: number; max: number } {
   let min = Infinity;
@@ -219,11 +505,11 @@ function computeExtent(series: WaterfallSeries[]): { min: number; max: number } 
     let running = 0;
     for (const step of group.steps) {
       if (step.kind === "absolute") {
-        running = step.value;
+        running = step.value ?? running;
         min = Math.min(min, running);
         max = Math.max(max, running);
       } else {
-        const next = running + step.value;
+        const next = running + (step.value ?? 0);
         min = Math.min(min, running, next);
         max = Math.max(max, running, next);
         running = next;
@@ -242,10 +528,47 @@ const BAR_GAP = 0.22;
 const MIN_BAR_WIDTH = 8;
 const MAX_BAR_WIDTH = 64;
 const PLOT_HEIGHT = 260;
+/** Высота сжатого участка шкалы (разрыв). */
+const BREAK_HEIGHT = 14;
+/** Минимальная высота подписи внутри бара. */
+const INSIDE_MIN_HEIGHT = 13;
+
+/**
+ * Шкала с разрывами. Каждый разрыв «съедает» BREAK_HEIGHT пикселей:
+ * участок (after, before) отображается в отрезок фиксированной высоты.
+ */
+function createScale(
+  axis: WaterfallAxis,
+  breaks: WaterfallBreak[],
+  plotTop: number,
+  plotBottom: number,
+) {
+  const span = axis.max - axis.min || 1;
+  const usable = plotBottom - plotTop - breaks.length * BREAK_HEIGHT;
+  const unit = usable / span; // px на единицу значения
+
+  const yOf = (value: number): number => {
+    let y = plotBottom - (value - axis.min) * unit;
+    for (const b of breaks) {
+      if (value >= b.before) y -= BREAK_HEIGHT;
+      else if (value > b.after) {
+        // Внутри сжатого участка — прижимаем к ближней границе.
+        const t = (value - b.after) / (b.before - b.after);
+        y -= BREAK_HEIGHT * t;
+      }
+    }
+    return y;
+  };
+
+  return { yOf, unit, usable };
+}
 
 export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions): string {
   const palette = getPalette(options.dark);
   const { axis, series, labels, title } = model;
+  const breaks = model.breaks ?? [];
+  const valueLabels = model.valueLabels ?? { above: true, inside: false };
+  const axisHidden = Boolean(axis.hidden);
 
   const groups = Math.max(1, series.length);
   const columns = Math.max(1, labels.length);
@@ -255,51 +578,121 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
   const columnWidth = clamp(longestLabel + 28, 56, 140);
   const plotWidth = columnWidth * columns;
 
-  const width = PADDING.left + plotWidth + PADDING.right;
+  const leftPad = axisHidden ? 16 : PADDING.left;
+  const width = leftPad + plotWidth + PADDING.right;
   const height = PADDING.top + PLOT_HEIGHT + PADDING.bottom;
 
   const svg = createSvg({ width, height, palette, title, debugFrames: options.debugFrames });
 
-  const plotLeft = PADDING.left;
+  const plotLeft = leftPad;
   const plotTop = PADDING.top;
   const plotBottom = plotTop + PLOT_HEIGHT;
 
-  const yOf = (value: number): number => {
-    const span = axis.max - axis.min || 1;
-    return plotBottom - ((value - axis.min) / span) * PLOT_HEIGHT;
-  };
+  const { yOf } = createScale(axis, breaks, plotTop, plotBottom);
 
   if (title) {
     svg.text(width / 2, 24, title, { "font-size": 15, "font-weight": 600, fill: palette.fg });
   }
 
-  for (const tick of niceTicks(axis.min, axis.max, 5)) {
-    const y = yOf(tick);
-    svg.line(plotLeft, y, plotLeft + plotWidth, y, { stroke: palette.grid, "stroke-width": 1 });
-    svg.text(plotLeft - 8, y + 4, fmt(tick), {
-      "text-anchor": "end",
-      "font-size": labelFontSize,
-      fill: palette.fgDim,
+  const ticks =
+    axis.gridStep !== undefined
+      ? fixedTicks(axis.min, axis.max, axis.gridStep)
+      : niceTicks(axis.min, axis.max, 5);
+
+  if (!axisHidden) {
+    for (const tick of ticks) {
+      if (breaks.some((b) => tick > b.after && tick < b.before)) continue;
+      const y = yOf(tick);
+      svg.line(plotLeft, y, plotLeft + plotWidth, y, { stroke: palette.grid, "stroke-width": 1 });
+      svg.text(plotLeft - 8, y + 4, fmt(tick), {
+        "text-anchor": "end",
+        "font-size": labelFontSize,
+        fill: palette.fgDim,
+      });
+    }
+
+    if (axis.label) {
+      const cx = 16;
+      const cy = plotTop + PLOT_HEIGHT / 2;
+      svg.text(cx, cy, axis.label, {
+        "text-anchor": "middle",
+        "font-size": labelFontSize,
+        fill: palette.fgDim,
+        transform: `rotate(-90 ${cx} ${cy})`,
+      });
+    }
+
+    svg.line(plotLeft, plotBottom, plotLeft + plotWidth, plotBottom, {
+      stroke: palette.axis,
+      "stroke-width": 1,
     });
+  } else {
+    // Ось скрыта — оставляем только линию нуля, если ноль в шкале.
+    if (axis.min < 0 && axis.max > 0) {
+      const zeroY = yOf(0);
+      svg.line(plotLeft, zeroY, plotLeft + plotWidth, zeroY, {
+        stroke: palette.axis,
+        "stroke-width": 1,
+        "stroke-dasharray": "4 3",
+      });
+    }
   }
 
-  if (axis.label) {
-    const cx = 16;
-    const cy = plotTop + PLOT_HEIGHT / 2;
-    svg.text(cx, cy, axis.label, {
-      "text-anchor": "middle",
-      "font-size": labelFontSize,
-      fill: palette.fgDim,
-      transform: `rotate(-90 ${cx} ${cy})`,
-    });
+  // Линии разрыва: две параллельные черты поперёк области графика.
+  for (const b of breaks) {
+    const y = yOf(b.before) - BREAK_HEIGHT / 2;
+    const gap = 3;
+    for (const dy of [-gap / 2, gap / 2]) {
+      svg.line(plotLeft, y + dy, plotLeft + plotWidth, y + dy, {
+        stroke: palette.axis,
+        "stroke-width": 1,
+        "stroke-dasharray": "6 4",
+      });
+    }
+    if (b.label) {
+      svg.text(plotLeft + plotWidth - 4, y - 4, b.label, {
+        "text-anchor": "end",
+        "font-size": 10,
+        fill: palette.fgDim,
+      });
+    }
   }
-
-  svg.line(plotLeft, plotBottom, plotLeft + plotWidth, plotBottom, {
-    stroke: palette.axis,
-    "stroke-width": 1,
-  });
 
   const barWidth = clamp((columnWidth * (1 - BAR_GAP)) / groups, MIN_BAR_WIDTH, MAX_BAR_WIDTH);
+
+  /** Уровень, на котором заканчивается бар колонки: откуда тянется соединитель. */
+  const endLevel = (g: number, col: number): number | null => {
+    const group = series[g];
+    if (!group) return null;
+    let running = 0;
+    for (let k = 0; k <= col; k += 1) {
+      const st = group.steps[k];
+      if (!st) continue;
+      running = st.kind === "absolute" ? (st.value ?? running) : running + (st.value ?? 0);
+    }
+    return group.steps[col] ? running : null;
+  };
+
+  // Соединительные линии рисуются ДО баров, чтобы не перекрывать заливку.
+  if (model.connectors !== false) {
+    for (let g = 0; g < groups; g += 1) {
+      for (let col = 0; col < columns - 1; col += 1) {
+        const from = endLevel(g, col);
+        const to = endLevel(g, col + 1);
+        if (from === null || to === null) continue;
+        const groupSpan = barWidth * groups + (groups - 1) * 4;
+        const startX = plotLeft + col * columnWidth + (columnWidth - groupSpan) / 2;
+        const x1 = startX + g * (barWidth + 4) + barWidth;
+        const x2 = x1 + (columnWidth - barWidth) + 4;
+        svg.line(x1, yOf(from), x2, yOf(to), {
+          stroke: palette.axis,
+          "stroke-width": 1,
+          "stroke-dasharray": "3 3",
+          "data-connector": "1",
+        });
+      }
+    }
+  }
 
   for (let col = 0; col < columns; col += 1) {
     const columnLeft = plotLeft + col * columnWidth;
@@ -315,8 +708,11 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       for (let k = 0; k < col; k += 1) {
         const prev = group.steps[k];
         if (!prev) continue;
-        running = prev.kind === "absolute" ? prev.value : running + prev.value;
+        running = prev.kind === "absolute" ? (prev.value ?? running) : running + (prev.value ?? 0);
       }
+
+      // null здесь уже раскрыт парсером; страховка для рендера «сырой» модели.
+      const stepValue = step.value ?? running;
 
       let from: number;
       let to: number;
@@ -324,13 +720,13 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       if (step.kind === "absolute") {
         // Абсолютная колонка рисуется от нуля; если ноль вне шкалы — от её края.
         const zero = clamp(0, axis.min, axis.max);
-        from = Math.min(zero, step.value);
-        to = Math.max(zero, step.value);
+        from = Math.min(zero, stepValue);
+        to = Math.max(zero, stepValue);
         color = palette.neutral;
       } else {
         from = running;
-        to = running + step.value;
-        color = step.value >= 0 ? palette.positive : palette.negative;
+        to = running + stepValue;
+        color = stepValue >= 0 ? palette.positive : palette.negative;
       }
 
       const x = startX + g * (barWidth + 4);
@@ -341,8 +737,27 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       svg.rect(x, top, barWidth, barHeight, { fill: color, rx: 2 });
 
       const valueText =
-        step.kind === "absolute" ? fmt(step.value) : `${step.value > 0 ? "+" : ""}${fmt(step.value)}`;
-      svg.text(x + barWidth / 2, top - 5, valueText, { "font-size": 10, fill: palette.fgDim });
+        (step as WaterfallStep & { valueText?: string }).valueText ??
+        (step.kind === "absolute" ? fmt(stepValue) : `${stepValue > 0 ? "+" : ""}${fmt(stepValue)}`);
+
+      // Per-step флаги перекрывают общий режим `labels`.
+      const wantInside = step.labelInside ?? valueLabels.inside;
+      const wantAbove = step.labelAbove ?? valueLabels.above;
+      const hide = step.labelInside === false && step.labelAbove === false;
+
+      const fitted = truncate(valueText, barWidth - 4, 10);
+      const fitsInside = barHeight >= INSIDE_MIN_HEIGHT && measureText(fitted, 10) <= barWidth - 4;
+
+      if (!hide && wantInside && fitsInside) {
+        svg.text(x + barWidth / 2, top + barHeight / 2 + 3.5, fitted, {
+          "font-size": 10,
+          fill: "#ffffff",
+          "font-weight": 600,
+        });
+      } else if (!hide && (wantAbove || wantInside)) {
+        // Внутри не поместилось — выносим над баром.
+        svg.text(x + barWidth / 2, top - 5, valueText, { "font-size": 10, fill: palette.fgDim });
+      }
     }
 
     const label = truncate(labels[col] ?? "", columnWidth - 6, labelFontSize);

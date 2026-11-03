@@ -174,11 +174,64 @@ export function downloadBlob(blob: Blob, fileName: string): void {
   URL.revokeObjectURL(url);
 }
 
+/** Размер готового изображения в пикселях. */
+export interface ImageSize {
+  width: number;
+  height: number;
+}
+
+/** Пределы для ручного размера: больше — уже не картинка, а canvas-лимит браузера. */
+export const MIN_IMAGE_SIDE = 64;
+export const MAX_IMAGE_SIDE = 4096;
+
+function clampImageSide(value: number): number {
+  if (!Number.isFinite(value)) {
+    return MIN_IMAGE_SIDE;
+  }
+  return Math.min(MAX_IMAGE_SIDE, Math.max(MIN_IMAGE_SIDE, Math.round(value)));
+}
+
+/**
+ * Подставляет в корневой `<svg>` новый размер (width/height + viewBox с теми же
+ * пропорциями содержимого). Нужно и для превью, и для PNG-экспорта: картинка
+ * рисуется в заданном размере, а не в «натуральном» размере SVG.
+ */
+export function applySvgSize(svg: string, size: ImageSize): string {
+  if (!svg.includes("<svg")) {
+    return svg;
+  }
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svg, "image/svg+xml");
+  const root = doc.documentElement;
+  if (root.tagName.toLowerCase() !== "svg") {
+    return svg;
+  }
+
+  const width = clampImageSide(size.width);
+  const height = clampImageSide(size.height);
+
+  root.setAttribute("width", String(width));
+  root.setAttribute("height", String(height));
+
+  // viewBox сохраняем исходный: он задаёт систему координат содержимого,
+  // а width/height — итоговый размер полотна. Если viewBox нет — ставим свой.
+  if (!parseViewBoxSize(root.getAttribute("viewBox"))) {
+    root.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  }
+
+  return new XMLSerializer().serializeToString(root);
+}
+
 export async function svgToPngBlob(
   svg: string,
   backgroundColor = "#ffffff",
+  size?: ImageSize,
 ): Promise<Blob> {
-  const { width, height } = parseSvgSize(svg);
+  const natural = parseSvgSize(svg);
+  const { width, height } = size
+    ? { width: clampImageSide(size.width), height: clampImageSide(size.height) }
+    : natural;
   const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
   const objectUrl = URL.createObjectURL(svgBlob);
 
