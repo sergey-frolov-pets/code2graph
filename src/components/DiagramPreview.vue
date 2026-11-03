@@ -36,6 +36,7 @@ const contentRef = ref<HTMLElement | null>(null);
 
 const { activeSize, isCustom, sizedMarkup, setWidth, setHeight, resetSize } = useImageSize(
   computed(() => props.svg),
+  computed(() => props.previewBackground),
 );
 
 const previewMarkup = computed(() => {

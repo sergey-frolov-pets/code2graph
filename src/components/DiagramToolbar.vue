@@ -11,6 +11,7 @@ import {
 } from "@/constants/render-settings";
 import {
   DEFAULT_PREVIEW_BG,
+  PREVIEW_BG_PRESETS,
   TRANSPARENT_PREVIEW_BG,
   isTransparentPreviewBg,
 } from "@/constants/editor-settings";
@@ -48,21 +49,27 @@ const isOnlineMode = computed(() => isOnlineRenderMode(props.renderMode));
 
 const isTransparentBg = computed(() => isTransparentPreviewBg(props.previewBackground));
 
-const transparentBgLabel = computed(() =>
-  isTransparentBg.value
-    ? t("toolbar.previewBackgroundOpaque")
-    : t("toolbar.previewBackgroundTransparent"),
+const defaultPreviewBg = computed(() =>
+  props.diagramDarkMode ? DEFAULT_PREVIEW_BG.dark : DEFAULT_PREVIEW_BG.light,
 );
 
-function toggleTransparentBackground(): void {
-  emit(
-    "update:previewBackground",
-    isTransparentBg.value
-      ? props.diagramDarkMode
-        ? DEFAULT_PREVIEW_BG.dark
-        : DEFAULT_PREVIEW_BG.light
-      : TRANSPARENT_PREVIEW_BG,
-  );
+/** Свой цвет — тот, что не совпал ни с одной преднастроенной кнопкой. */
+const isCustomBg = computed(() => {
+  if (isTransparentBg.value) return false;
+  const current = props.previewBackground.trim().toLowerCase();
+  return !PREVIEW_BG_PRESETS.some((preset) => preset.value.toLowerCase() === current);
+});
+
+const customPreviewBg = computed(() =>
+  isCustomBg.value ? props.previewBackground : defaultPreviewBg.value,
+);
+
+function setPreviewBackground(value: string): void {
+  emit("update:previewBackground", value);
+}
+
+function onCustomColorInput(event: Event): void {
+  setPreviewBackground((event.target as HTMLInputElement).value);
 }
 
 const themeToggleLabel = computed(() =>
@@ -117,31 +124,55 @@ function toggleRenderMode(): void {
 
 <template>
   <div class="preview-toolbar">
-    <TooltipWrap :label="t('toolbar.previewBackground')">
-      <label class="preview-toolbar__color-field">
-        <span class="sr-only">{{ t("toolbar.previewBackground") }}</span>
-        <input
-          class="preview-toolbar__color"
-          type="color"
-          :value="isTransparentBg ? (diagramDarkMode ? DEFAULT_PREVIEW_BG.dark : DEFAULT_PREVIEW_BG.light) : previewBackground"
-          :disabled="isTransparentBg"
-          @input="
-            emit(
-              'update:previewBackground',
-              ($event.target as HTMLInputElement).value,
-            )
-          "
-        />
-      </label>
-    </TooltipWrap>
+    <div class="preview-toolbar__bg" role="group" :aria-label="t('toolbar.previewBackground')">
+      <TooltipWrap
+        v-for="preset in PREVIEW_BG_PRESETS"
+        :key="preset.id"
+        :label="t(`toolbar.previewBackgroundPreset.${preset.id}`)"
+      >
+        <button
+          type="button"
+          class="preview-toolbar__swatch"
+          :class="{ 'is-active': !isTransparentBg && !isCustomBg && preset.value === previewBackground }"
+          :style="{ '--swatch-color': preset.value }"
+          :aria-label="t(`toolbar.previewBackgroundPreset.${preset.id}`)"
+          :aria-pressed="!isTransparentBg && !isCustomBg && preset.value === previewBackground"
+          @click="setPreviewBackground(preset.value)"
+        >
+          <span class="preview-toolbar__swatch-dot" />
+        </button>
+      </TooltipWrap>
 
-    <IconButton
-      :label="transparentBgLabel"
-      :pressed="isTransparentBg"
-      @click="toggleTransparentBackground"
-    >
-      <ActionIcon :name="isTransparentBg ? 'eye-off' : 'eye'" />
-    </IconButton>
+      <TooltipWrap :label="t('toolbar.previewBackgroundCustom')">
+        <label
+          class="preview-toolbar__swatch preview-toolbar__swatch--custom"
+          :class="{ 'is-active': isCustomBg }"
+          :style="{ '--swatch-color': customPreviewBg }"
+        >
+          <span class="sr-only">{{ t("toolbar.previewBackgroundCustom") }}</span>
+          <input
+            class="preview-toolbar__color"
+            type="color"
+            :value="customPreviewBg"
+            :aria-label="t('toolbar.previewBackgroundCustom')"
+            @input="onCustomColorInput"
+          />
+        </label>
+      </TooltipWrap>
+
+      <TooltipWrap :label="t('toolbar.previewBackgroundTransparent')">
+        <button
+          type="button"
+          class="preview-toolbar__swatch preview-toolbar__swatch--transparent"
+          :class="{ 'is-active': isTransparentBg }"
+          :aria-label="t('toolbar.previewBackgroundTransparent')"
+          :aria-pressed="isTransparentBg"
+          @click="setPreviewBackground(TRANSPARENT_PREVIEW_BG)"
+        >
+          <ActionIcon name="eye-off" />
+        </button>
+      </TooltipWrap>
+    </div>
 
     <IconButton :label="t('toolbar.zoomOut')" @click="emit('zoomOut')">
       <ActionIcon name="zoom-out" />
@@ -258,6 +289,70 @@ function toggleRenderMode(): void {
   min-width: 0;
 }
 
+.preview-toolbar__bg {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.preview-toolbar__swatch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.preview-toolbar__swatch:hover {
+  border-color: var(--text-muted);
+}
+
+.preview-toolbar__swatch.is-active {
+  border-color: var(--accent, #8250df);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #8250df) 35%, transparent);
+}
+
+.preview-toolbar__swatch-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid rgb(0 0 0 / 12%);
+  background: var(--swatch-color);
+}
+
+.preview-toolbar__swatch--custom {
+  overflow: hidden;
+}
+
+.preview-toolbar__swatch--custom::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 4px;
+  border: 1px solid rgb(0 0 0 / 12%);
+  background: var(--swatch-color);
+  pointer-events: none;
+}
+
+.preview-toolbar__swatch--transparent {
+  background-image:
+    linear-gradient(45deg, var(--preview-checker) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--preview-checker) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--preview-checker) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--preview-checker) 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+}
+
 .preview-toolbar__color-field {
   display: inline-flex;
   margin: 0;
@@ -343,19 +438,14 @@ function toggleRenderMode(): void {
 }
 
 .preview-toolbar__color {
-  box-sizing: border-box;
-  width: 32px;
-  height: 32px;
-  padding: 2px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
   cursor: pointer;
-}
-
-.preview-toolbar__color:disabled {
-  opacity: 0.45;
-  cursor: default;
 }
 
 .sr-only {

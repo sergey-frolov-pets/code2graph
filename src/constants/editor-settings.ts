@@ -22,6 +22,21 @@ export function isTransparentPreviewBg(value: string): boolean {
   return value.trim().toLowerCase() === TRANSPARENT_PREVIEW_BG;
 }
 
+/**
+ * Преднастроенные фоны предпросмотра — кнопки-образцы в тулбаре.
+ * `id` — ключ локализации `toolbar.previewBackgroundPreset.<id>`.
+ * Прозрачный фон в список не входит: он отдельной кнопкой, чтобы случайно
+ * не включиться при выборе цвета.
+ */
+export const PREVIEW_BG_PRESETS = [
+  { id: "light", value: "#ffffff" },
+  { id: "dark", value: "#171d24" },
+  { id: "paper", value: "#f6f1e7" },
+  { id: "mint", value: "#e8f5ec" },
+] as const;
+
+export type PreviewBgPresetId = (typeof PREVIEW_BG_PRESETS)[number]["id"];
+
 export const EDITOR_FONT_SIZE_OPTIONS = [
   { label: "12 px", value: "12px" },
   { label: "14 px", value: "14px" },

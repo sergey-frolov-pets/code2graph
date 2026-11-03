@@ -5,6 +5,7 @@ import { useDiagramIrCache } from "@/composables/useDiagramIrCache";
 import { useLocale } from "@/composables/useLocale";
 import { embedSvgMetadata } from "@/services/conversion/metadata/svg-metadata";
 import {
+  applyPreviewBackground,
   downloadBlob,
   downloadTextFile,
   isTransparentBackground,
@@ -38,10 +39,13 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     }
 
     const ir = getLastDiagramIr();
+    // Фон диаграммы применяется всегда: вырезы под подписи (разрыв, линия)
+    // должны совпадать с выбранным фоном, а не с цветом темы.
+    const themed = applyPreviewBackground(svg.value, previewBackground.value);
     // Прозрачный фон предпросмотра = прозрачный фон файла: снимаем плашку,
     // иначе в SVG остаётся непрозрачный прямоугольник на весь холст.
     const transparent = isTransparentBackground(previewBackground.value);
-    const base = transparent ? withTransparentSvgBackground(svg.value) : svg.value;
+    const base = transparent ? withTransparentSvgBackground(themed) : themed;
     const payload = ir ? await embedSvgMetadata(base, ir) : base;
     downloadTextFile(payload, "diagram.svg", "image/svg+xml;charset=utf-8");
     trackSave("image-svg", "Save image: SVG");
@@ -53,8 +57,13 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     }
 
     try {
+      const transparent = isTransparentBackground(previewBackground.value);
+      // Фон диаграммы применяется и к растре: вырезы под подписи должны
+      // совпадать с выбранным фоном. Прозрачный фон = без плашки холста,
+      // иначе PNG приходит с белым (или тёмным) прямоугольником.
+      const themed = applyPreviewBackground(svg.value, previewBackground.value);
       const pngBlob = await svgToPngBlob(
-        svg.value,
+        transparent ? withTransparentSvgBackground(themed) : themed,
         previewBackground.value,
         imageSize?.value ?? undefined,
       );

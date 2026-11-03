@@ -325,8 +325,11 @@ export function createSvg(options: SvgOptions): SvgBuilder {
         `width="${fmt(width)}" height="${fmt(height)}" ` +
         `role="img" font-family="${esc(FONT_FAMILY)}">`;
       const titleEl = title ? `<title>${esc(title)}</title>` : "";
+      // data-bg="canvas" — метка «это плашка холста, а не данные». По ней
+      // экспорт с прозрачным фоном снимает заливку, не гадая по цвету и
+      // размеру: белые плашки внутри диаграммы (вырезы под подписи) остаются.
       const bg = withBackground
-        ? `<rect x="0" y="0" width="${fmt(width)}" height="${fmt(height)}" fill="${esc(palette.bg)}"/>`
+        ? `<rect data-bg="canvas" x="0" y="0" width="${fmt(width)}" height="${fmt(height)}" fill="${esc(palette.bg)}"/>`
         : "";
       return `${head}${titleEl}${bg}${parts.join("")}</svg>`;
     },
