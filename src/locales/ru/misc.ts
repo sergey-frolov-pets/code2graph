@@ -61,6 +61,7 @@ export const miscMessages = {
   "samples.mermaid.waterfallMulti": "Водопад — несколько серий",
   "samples.mermaid.waterfallLabels": "Водопад — подписи и линии",
   "samples.mermaid.waterfallNoLines": "Водопад — без линий",
+  "samples.mermaid.waterfallThresholds": "Водопад — горизонтальные линии",
   "samples.mermaid.bubble": "Пузырьковая — подписи и шрифт",
   "samples.mermaid.heatmap": "Тепловая карта",
   "samples.mermaid.orgchart": "Оргструктура",

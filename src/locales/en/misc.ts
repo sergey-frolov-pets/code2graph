@@ -61,6 +61,7 @@ export const miscMessages = {
   "samples.mermaid.waterfallMulti": "Waterfall — multiple series",
   "samples.mermaid.waterfallLabels": "Waterfall — labels and lines",
   "samples.mermaid.waterfallNoLines": "Waterfall — no lines",
+  "samples.mermaid.waterfallThresholds": "Waterfall — horizontal lines",
   "samples.mermaid.bubble": "Bubble — labels and font",
   "samples.mermaid.heatmap": "Heatmap",
   "samples.mermaid.orgchart": "Org chart",

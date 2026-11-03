@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import FileBadgeIcon from "@/components/icons/FileBadgeIcon.vue";
 import IconButton from "@/components/IconButton.vue";
@@ -98,9 +98,53 @@ const imageSizeTitle = computed(() =>
   t("toolbar.imageSize", { size: imageSizeLabel.value }),
 );
 
+const sizeRef = ref<HTMLElement | null>(null);
+const sizeButtonRef = ref<HTMLElement | null>(null);
+const sizeMenuStyle = ref<Record<string, string>>({});
+
+/** Меню — position: fixed, поэтому координаты считаем от кнопки. */
+function positionSizeMenu(): void {
+  const button = sizeButtonRef.value;
+  if (!button) return;
+  const rect = button.getBoundingClientRect();
+  const menuWidth = 220;
+  const left = Math.max(8, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8));
+  sizeMenuStyle.value = {
+    left: `${Math.round(left)}px`,
+    top: `${Math.round(rect.bottom + 6)}px`,
+    width: `${menuWidth}px`,
+  };
+}
+
 function toggleSizeMenu(): void {
   sizeMenuOpen.value = !sizeMenuOpen.value;
+  if (sizeMenuOpen.value) {
+    positionSizeMenu();
+  }
 }
+
+function onDocumentPointerDown(event: PointerEvent): void {
+  if (!sizeMenuOpen.value) return;
+  const root = sizeRef.value;
+  if (root && event.target instanceof Node && root.contains(event.target)) return;
+  sizeMenuOpen.value = false;
+}
+
+function onDocumentKeydown(event: KeyboardEvent): void {
+  if (event.key === "Escape" && sizeMenuOpen.value) {
+    sizeMenuOpen.value = false;
+  }
+}
+
+onMounted(() => {
+  document.addEventListener("pointerdown", onDocumentPointerDown, true);
+  document.addEventListener("keydown", onDocumentKeydown);
+});
+
+onUnmounted(() => {
+  document.removeEventListener("pointerdown", onDocumentPointerDown, true);
+  document.removeEventListener("keydown", onDocumentKeydown);
+});
 
 function onSizeInput(axis: "width" | "height", event: Event): void {
   const value = Number((event.target as HTMLInputElement).value);
@@ -192,9 +236,10 @@ function toggleRenderMode(): void {
       <ActionIcon name="zoom-in" />
     </IconButton>
 
-    <div class="preview-toolbar__size">
+    <div ref="sizeRef" class="preview-toolbar__size">
       <TooltipWrap :label="imageSizeTitle">
         <button
+          ref="sizeButtonRef"
           type="button"
           class="preview-toolbar__size-button"
           :class="{ 'is-custom': imageSizeCustom }"
@@ -204,7 +249,7 @@ function toggleRenderMode(): void {
           {{ imageSizeLabel }}
         </button>
       </TooltipWrap>
-      <div v-if="sizeMenuOpen" class="preview-toolbar__size-menu">
+      <div v-if="sizeMenuOpen" class="preview-toolbar__size-menu" :style="sizeMenuStyle">
         <label class="preview-toolbar__size-row">
           <span>{{ t("toolbar.imageWidth") }}</span>
           <input
@@ -393,10 +438,10 @@ function toggleRenderMode(): void {
 }
 
 .preview-toolbar__size-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 30;
+  /* fixed, а не absolute: тулбар (.panel-header__toolbar) скроллится по X
+     через overflow-x: auto и обрезал бы меню — оно «не открывалось». */
+  position: fixed;
+  z-index: 60;
   display: grid;
   gap: 8px;
   min-width: 200px;

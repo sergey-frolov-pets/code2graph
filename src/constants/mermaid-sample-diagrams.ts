@@ -34,6 +34,7 @@ export const MERMAID_SAMPLE_IDS = [
   "waterfallMulti",
   "waterfallLabels",
   "waterfallNoLines",
+  "waterfallThresholds",
   "bubble",
   "heatmap",
   "orgchart",
@@ -53,6 +54,7 @@ export const MERMAID_EXT_SAMPLE_IDS = [
   "waterfallMulti",
   "waterfallLabels",
   "waterfallNoLines",
+  "waterfallThresholds",
   "bubble",
   "heatmap",
   "orgchart",
@@ -106,6 +108,7 @@ export const MERMAID_SAMPLE_WIZARD_TYPES: Record<MermaidSampleId, import("@/cons
   waterfallMulti: "flowchart",
   waterfallLabels: "flowchart",
   waterfallNoLines: "flowchart",
+  waterfallThresholds: "flowchart",
   bubble: "flowchart",
   heatmap: "flowchart",
   orgchart: "flowchart",
@@ -564,6 +567,31 @@ colors total=#1f6feb increase=#2da44e decrease=#cf222e
 +60 : Q2 inside above label="+60 млн"
 -25 : Q3 above
 = : Итог inside above`,
+  waterfallThresholds: `waterfall
+%% ГОРИЗОНТАЛЬНЫЕ ЛИНИИ С ПРИМЕРОМ — уровень плана, цель, порог.
+%%
+%% Директива — ОТДЕЛЬНАЯ строка (не флаг в строке данных):
+%%   line <значение> ["подпись"] [color=#hex] [width=<px>] [style=solid|dash|dot|dashdot]
+%%
+%%   line 350 "план"                 пунктир по умолчанию, цвет темы
+%%   line 400 "цель" color=#cf222e   свой цвет
+%%   line 250 "порог" style=dot width=1
+%%
+%% Линия рисуется по всей ширине графика, подпись — справа от последнего
+%% бара, с вырезом под текст (линия её не перечёркивает).
+%% Линий можно сколько угодно: каждая — своя строка.
+title Выручка против плана
+y "млн ₽" 0 --> 500
+grid 100
+line 350 "план"
+line 400 "цель" color=#cf222e width=2
+line 250 "порог" style=dot width=1
+=120 : Q1
++180 : Q2
+-60 : Q3
+= : Итого H1
++240 : Q4
+= : Итог года`,
   waterfallMono: `waterfall
 %% Чёрно-белый режим: цвета не нужны, бары различаются светлотой.
 %% Полезно для печати и для документов без цвета.
@@ -721,6 +749,31 @@ colors total=#1f6feb increase=#2da44e decrease=#cf222e
 +60 : Q2 inside above label="+60 M"
 -25 : Q3 above
 = : Total inside above`,
+  waterfallThresholds: `waterfall
+%% HORIZONTAL LINES WITH A LABEL — plan level, target, threshold.
+%%
+%% The directive lives on its OWN line (not a flag in a data row):
+%%   line <value> ["label"] [color=#hex] [width=<px>] [style=solid|dash|dot|dashdot]
+%%
+%%   line 350 "plan"                 dashed by default, theme colour
+%%   line 400 "target" color=#cf222e custom colour
+%%   line 250 "threshold" style=dot width=1
+%%
+%% A line spans the whole plot, its label sits to the right of the last bar
+%% with a knockout so the line never strikes through the text.
+%% As many lines as you like — one line each.
+title Revenue vs plan
+y "M USD" 0 --> 500
+grid 100
+line 350 "plan"
+line 400 "target" color=#cf222e width=2
+line 250 "threshold" style=dot width=1
+=120 : Q1
++180 : Q2
+-60 : Q3
+= : H1 total
++240 : Q4
+= : Year total`,
   waterfallMono: `waterfall
 %% Black-and-white mode: no colours needed, bars differ by lightness.
 %% Handy for print and for documents without colour.

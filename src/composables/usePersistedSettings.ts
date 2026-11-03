@@ -28,6 +28,7 @@ import {
   DEFAULT_PREVIEW_BG,
   isEditorFontFamilyId,
   isEditorFontSize,
+  isTransparentPreviewBg,
   resolveEditorFontFamily,
   STORAGE_KEY_EDITOR_AUTOCOMPLETE,
   STORAGE_KEY_EDITOR_FONT_FAMILY,
@@ -45,6 +46,7 @@ import {
   writeStorageItem,
 } from "@/core/safe-storage";
 import { migrateDeprecatedActivityColorSyntax } from "@/utils/plantuml-source";
+import { toOpaqueColor } from "@/utils/export";
 
 function readInitialRenderMode(): RenderMode {
   const saved = readStorageItem(STORAGE_KEY_RENDER_MODE);
@@ -192,10 +194,13 @@ export function usePersistedSettings() {
   }
 
   function applyPreviewBackgroundToDocument(): void {
-    document.documentElement.style.setProperty(
-      "--preview-bg",
-      previewBackground.value,
-    );
+    // Любой выбранный цвет — НЕПРОЗРАЧНАЯ заливка. Прозрачность есть только
+    // у отдельного режима «прозрачный фон»; любое другое значение (в т.ч.
+    // rgba с альфой, прилетевшее из настроек/кастомного пикера) приводим
+    // к сплошному цвету, иначе под ним просвечивает шахматка.
+    const raw = previewBackground.value;
+    const value = isTransparentPreviewBg(raw) ? raw : toOpaqueColor(raw);
+    document.documentElement.style.setProperty("--preview-bg", value);
   }
 
   watch(previewBackground, applyPreviewBackgroundToDocument, { immediate: true });

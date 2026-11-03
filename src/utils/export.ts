@@ -335,6 +335,56 @@ export function applySvgSize(svg: string, size: ImageSize): string {
  * Фон PNG. `transparent` (или пустая строка) — без заливки полотна,
  * альфа-канал сохраняется.
  */
+/**
+ * Непрозрачный вариант цвета: `rgba(…)`/`hsla(…)` с альфой → сплошной цвет,
+ * `#rrggbbaa` → `#rrggbb`, `transparent` → пустая строка (прозрачность
+ * остаётся только у явного режима «прозрачный фон»).
+ *
+ * Нужен фонам предпросмотра и экспорта: любой выбранный цвет обязан быть
+ * сплошным, иначе под ним просвечивает шахматка.
+ */
+export function toOpaqueColor(value: string): string {
+  const raw = value.trim();
+  if (!raw) {
+    return "";
+  }
+
+  const lower = raw.toLowerCase();
+  if (lower === "transparent" || lower === "none") {
+    return "";
+  }
+
+  // #rgb / #rgba / #rrggbb / #rrggbbaa
+  const hex = /^#([0-9a-f]{3,8})$/i.exec(raw);
+  if (hex) {
+    const digits = hex[1];
+    if (digits.length === 4) {
+      return `#${digits.slice(0, 3)}`;
+    }
+    if (digits.length === 8) {
+      return `#${digits.slice(0, 6)}`;
+    }
+    return raw;
+  }
+
+  // rgb()/rgba()/hsl()/hsla() с альфой — отбрасываем альфу.
+  const fn = /^(rgba?|hsla?)\(([^)]*)\)$/i.exec(raw);
+  if (fn) {
+    const parts = fn[2]
+      .split(/[,/]/)
+      .map((part) => part.trim())
+      .filter((part) => part.length > 0);
+    const keep = fn[1].toLowerCase().startsWith("rgb") ? 3 : 3;
+    if (parts.length > keep) {
+      const name = fn[1].toLowerCase().replace("a", "");
+      return `${name}(${parts.slice(0, keep).join(", ")})`;
+    }
+    return raw;
+  }
+
+  return raw;
+}
+
 export function isTransparentBackground(value: string | null | undefined): boolean {
   const normalized = normalizeColor(value ?? "");
   return normalized === "" || normalized === "transparent" || normalized === "none";
