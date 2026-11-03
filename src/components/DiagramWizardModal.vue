@@ -117,7 +117,10 @@ const {
   locale,
   t,
   initialCreationMode: pendingLaunchMode,
-  onApply: (payload) => emit("apply", payload),
+  onApply: (payload) => {
+    trackEvent("wizard-apply", "Wizard: apply");
+    emit("apply", payload);
+  },
   onClose: () => emit("close"),
 });
 
