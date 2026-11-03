@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bubbleEngine } from "../engines/bubble";
+import { bubbleEngine, type BubbleModel } from "../engines/bubble";
 import { checkFixturesForType } from "./fixtures.test";
 import { assertSvgInvariants } from "./svg-invariants";
 
@@ -20,7 +20,7 @@ data
 Продукт A : x=8.2, y=22, size=340, group=Software
 Продукт B : x=2.1, y=25, size=180`);
     expect(r.ok).toBe(true);
-    const m = r.value as any;
+    const m = r.value as BubbleModel;
     expect(m.title).toBe("BCG матрица");
     expect(m.x.label).toBe("Доля рынка");
     expect(m.y.label).toBe("Рост рынка, %");
@@ -45,7 +45,7 @@ mid x=5 y=12
 data
 A : x=1, y=1, size=10`);
     expect(r.ok).toBe(true);
-    const m = r.value as any;
+    const m = r.value as BubbleModel;
     expect(m.quadrants).toEqual(["Звёзды", "Вопросы", "Дойные коровы", "Собаки"]);
     expect(m.mid).toEqual({ x: 5, y: 12 });
   });
@@ -57,7 +57,7 @@ y "Y" 0 --> 20
 data
 A : x=1, y=1, size=10`);
     expect(r.ok).toBe(true);
-    expect((r.value as any).mid).toEqual({ x: 5, y: 10 });
+    expect((r.value as BubbleModel).mid).toEqual({ x: 5, y: 10 });
   });
 
   it("ошибка: нет оси x", () => {
@@ -127,7 +127,7 @@ C : x=9, y=8, size=55`;
 
   it("возвращает SVG без width/height", () => {
     const r = bubbleEngine.parse(src);
-    const svg = bubbleEngine.render(r.value as any, {});
+    const svg = bubbleEngine.render(r.value as BubbleModel, {});
     expect(svg).toMatch(/^<svg/);
     expect(svg).toMatch(/viewBox="0 0 [\d.]+ [\d.]+"/);
     expect(svg).not.toMatch(/<svg[^>]*\swidth=/);
@@ -135,13 +135,13 @@ C : x=9, y=8, size=55`;
 
   it("рисует по кругу на точку", () => {
     const r = bubbleEngine.parse(src);
-    const svg = bubbleEngine.render(r.value as any, {});
+    const svg = bubbleEngine.render(r.value as BubbleModel, {});
     expect((svg.match(/<circle/g) ?? []).length).toBe(3);
   });
 
   it("радиус в пределах [6, 40]", () => {
     const r = bubbleEngine.parse(src);
-    const svg = bubbleEngine.render(r.value as any, {});
+    const svg = bubbleEngine.render(r.value as BubbleModel, {});
     const radii = [...svg.matchAll(/<circle[^>]*\sr="([\d.]+)"/g)].map((m) => Number(m[1]));
     expect(radii).toHaveLength(3);
     for (const rad of radii) {
@@ -153,7 +153,7 @@ C : x=9, y=8, size=55`;
 
   it("подписи точек попадают в SVG", () => {
     const r = bubbleEngine.parse(src);
-    const svg = bubbleEngine.render(r.value as any, {});
+    const svg = bubbleEngine.render(r.value as BubbleModel, {});
     for (const label of ["A", "B", "C"]) expect(svg).toContain(label);
   });
 
@@ -164,12 +164,12 @@ y "Y" 0 --> 10
 quadrants Звёзды, Вопросы, Дойные коровы, Собаки
 data
 A : x=1, y=1, size=10`);
-    const svg = bubbleEngine.render(r.value as any, {});
+    const svg = bubbleEngine.render(r.value as BubbleModel, {});
     for (const q of ["Звёзды", "Вопросы", "Дойные коровы", "Собаки"]) expect(svg).toContain(q);
   });
 
   it("проходит общие инварианты SVG", () => {
     const r = bubbleEngine.parse(src);
-    assertSvgInvariants(bubbleEngine.render(r.value as any, {}), { minElements: 4 });
+    assertSvgInvariants(bubbleEngine.render(r.value as BubbleModel, {}), { minElements: 4 });
   });
 });

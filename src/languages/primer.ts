@@ -30,6 +30,11 @@ export interface LanguagePrimerKeyword {
 export interface LanguagePrimer {
   readonly types: readonly LanguagePrimerType[];
   readonly keywords: readonly LanguagePrimerKeyword[];
+  /**
+   * Типы расширения (Mermaid Ext): на странице языка идут отдельным
+   * разделом, чтобы не смешиваться со штатными типами языка.
+   */
+  readonly extTypes?: readonly LanguagePrimerType[];
 }
 
 function lines(...rows: readonly string[]): string {
@@ -406,42 +411,125 @@ const MERMAID_PRIMER: LanguagePrimer = {
         lines("alt failed", "  API-->>Web: 402", "else paid", "  API-->>Web: 200", "end"),
       ),
     },
+  ],
+  extTypes: [
     {
-      id: "note",
-      token: "Note",
-      hintKey: "site.primer.mermaid.kw.note",
+      id: "ext-waterfall",
+      titleKey: "site.ext.mermaid.type.waterfall",
+      summaryKey: "site.ext.mermaid.desc.waterfall",
       example: both(
-        "Note right of API: Проверить токен",
-        "Note right of API: Check the token",
+        lines(
+          "waterfall",
+          'y "млн ₽" 0 --> 120',
+          "=40 : Q1",
+          "+15 : Q2",
+          "+20 : Q3",
+          "=75 : Итог",
+        ),
+        lines(
+          "waterfall",
+          'y "M USD" 0 --> 120',
+          "=40 : Q1",
+          "+15 : Q2",
+          "+20 : Q3",
+          "=75 : Total",
+        ),
       ),
     },
     {
-      id: "subgraph",
-      token: "subgraph",
-      hintKey: "site.primer.mermaid.kw.subgraph",
+      id: "ext-bubble",
+      titleKey: "site.ext.mermaid.type.bubble",
+      summaryKey: "site.ext.mermaid.desc.bubble",
       example: both(
-        lines("subgraph api [Сервис]", "  A --> B", "end"),
-        lines("subgraph api [Service]", "  A --> B", "end"),
+        lines(
+          "bubble",
+          'x "Доля рынка" 0 --> 10',
+          'y "Рост, %" 0 --> 30',
+          'size "Выручка"',
+          "data",
+          "Продукт A : x=8.2, y=22, size=340, group=Software",
+          "Продукт B : x=2.1, y=25, size=180, group=Software",
+        ),
+        lines(
+          "bubble",
+          'x "Market share" 0 --> 10',
+          'y "Growth, %" 0 --> 30',
+          'size "Revenue"',
+          "data",
+          "Product A : x=8.2, y=22, size=340, group=Software",
+          "Product B : x=2.1, y=25, size=180, group=Software",
+        ),
       ),
     },
     {
-      id: "class",
-      token: "class",
-      hintKey: "site.primer.mermaid.kw.class",
-      example: same(lines("class User {", "  +id int", "}")),
+      id: "ext-heatmap",
+      titleKey: "site.ext.mermaid.type.heatmap",
+      summaryKey: "site.ext.mermaid.desc.heatmap",
+      example: both(
+        lines(
+          "heatmap",
+          "x Пн, Вт, Ср",
+          "y Утро, День",
+          "data",
+          "Утро : 20, 35, 50",
+          "День : 60, 75, 85",
+        ),
+        lines(
+          "heatmap",
+          "x Mon, Tue, Wed",
+          "y Morning, Day",
+          "data",
+          "Morning : 20, 35, 50",
+          "Day : 60, 75, 85",
+        ),
+      ),
     },
     {
-      id: "section",
-      token: "section",
-      hintKey: "site.primer.mermaid.kw.section",
+      id: "ext-orgchart",
+      titleKey: "site.ext.mermaid.type.orgchart",
+      summaryKey: "site.ext.mermaid.desc.orgchart",
       example: both(
-        lines("section Работа", "  Задача :a1, 2026-01-06, 3d"),
-        lines("section Work", "  Task :a1, 2026-01-06, 3d"),
+        lines(
+          "orgchart",
+          "Гендиректор [Генеральный директор]",
+          "Техдир [Технический директор]",
+          "Бэкенд [Руководитель бэкенда]",
+          "Гендиректор -> Техдир",
+          "Техдир -> Бэкенд",
+        ),
+        lines(
+          "orgchart",
+          "CEO [Chief executive officer]",
+          "CTO [Chief technology officer]",
+          "Backend [Head of backend]",
+          "CEO -> CTO",
+          "CTO -> Backend",
+        ),
+      ),
+    },
+    {
+      id: "ext-ev",
+      titleKey: "site.ext.mermaid.type.ev",
+      summaryKey: "site.ext.mermaid.desc.ev",
+      example: both(
+        lines(
+          "ev",
+          "days 1, 2, 3",
+          "pv 10, 25, 45",
+          "ev 8, 20, 40",
+          "ac 12, 28, 50",
+        ),
+        lines(
+          "ev",
+          "days 1, 2, 3",
+          "pv 10, 25, 45",
+          "ev 8, 20, 40",
+          "ac 12, 28, 50",
+        ),
       ),
     },
   ],
 };
-
 const GRAPHML_PRIMER: LanguagePrimer = {
   types: [
     {

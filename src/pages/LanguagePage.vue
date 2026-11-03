@@ -28,6 +28,12 @@ const primer = computed(() =>
   language.value ? LANGUAGE_PRIMERS[language.value.id] : null,
 );
 
+/** Основные типы языка. */
+const primerTypes = computed(() => primer.value?.types ?? []);
+
+/** Типы расширения Mermaid Ext — отдельный раздел. */
+const primerExtTypes = computed(() => primer.value?.extTypes ?? []);
+
 const guide = computed(() =>
   language.value ? LANGUAGE_GUIDES[language.value.id] : undefined,
 );
@@ -155,7 +161,7 @@ const libraryLinks = computed(() => resources.value.filter((link) => link.kind =
           </h2>
           <ul class="language-cards">
             <li
-              v-for="diagramType in primer.types"
+              v-for="diagramType in primerTypes"
               :key="diagramType.id"
               class="language-card"
             >
@@ -167,6 +173,35 @@ const libraryLinks = computed(() => resources.value.filter((link) => link.kind =
               ><code>{{ exampleText(diagramType.example) }}</code></pre>
             </li>
           </ul>
+        </section>
+
+        <section
+          v-if="primerExtTypes.length"
+          aria-labelledby="language-ext-title"
+        >
+          <h2 id="language-ext-title">
+            {{ t("site.ext.mermaid.title") }}
+          </h2>
+          <p class="language-lead">
+            {{ t("site.ext.mermaid.lead") }}
+          </p>
+          <ul class="language-cards">
+            <li
+              v-for="diagramType in primerExtTypes"
+              :key="diagramType.id"
+              class="language-card"
+            >
+              <h3>{{ t(diagramType.titleKey) }}</h3>
+              <p>{{ t(diagramType.summaryKey) }}</p>
+              <pre
+                class="language-example"
+                :aria-label="t('site.language.example')"
+              ><code>{{ exampleText(diagramType.example) }}</code></pre>
+            </li>
+          </ul>
+          <p class="language-lead language-note">
+            {{ t("site.ext.mermaid.note") }}
+          </p>
         </section>
 
         <section aria-labelledby="language-keywords-title">
@@ -276,6 +311,12 @@ const libraryLinks = computed(() => resources.value.filter((link) => link.kind =
 .language-main h2 {
   margin: 0 0 8px;
   font-size: 1rem;
+}
+
+.language-note {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  opacity: 0.85;
 }
 
 .language-main h3,

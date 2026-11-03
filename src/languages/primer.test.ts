@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SUPPORTED_LOCALES } from "@/constants/i18n";
 import { DIAGRAM_LANGUAGE_MODULES } from "@/languages/registry";
-import { LANGUAGE_PRIMERS } from "@/languages/primer";
+import { LANGUAGE_PRIMERS, type LanguagePrimerType } from "@/languages/primer";
 import { isLocaleKey } from "@/locales/types";
 
 const MAX_TYPES_ON_THE_PAGE = 6;
@@ -56,6 +56,39 @@ describe("language page primer", () => {
           expect(example, `${languageId}:${keyword.id}`).toBe(example.trim());
         }
       }
+
+      checkTypes(primer.extTypes ?? [], `${languageId}:ext`);
+    }
+  });
+
+  it("keeps extension types apart from the language types", () => {
+    for (const [languageId, primer] of Object.entries(LANGUAGE_PRIMERS)) {
+      const extTypes = primer.extTypes ?? [];
+      if (extTypes.length === 0) continue;
+
+      const typeIds = new Set(primer.types.map((diagramType) => diagramType.id));
+      for (const extType of extTypes) {
+        expect(typeIds.has(extType.id), `${languageId}:${extType.id}`).toBe(false);
+      }
     }
   });
 });
+
+function checkTypes(
+  types: readonly LanguagePrimerType[],
+  label: string,
+): void {
+  const ids = types.map((diagramType) => diagramType.id);
+  expect(new Set(ids).size, label).toBe(ids.length);
+
+  for (const diagramType of types) {
+    expect(isLocaleKey(diagramType.titleKey), diagramType.titleKey).toBe(true);
+    expect(isLocaleKey(diagramType.summaryKey), diagramType.summaryKey).toBe(true);
+
+    for (const locale of SUPPORTED_LOCALES) {
+      const example = diagramType.example[locale];
+      expect(example.trim().length, `${label}:${diagramType.id}`).toBeGreaterThan(0);
+      expect(example, `${label}:${diagramType.id}`).toBe(example.trim());
+    }
+  }
+}

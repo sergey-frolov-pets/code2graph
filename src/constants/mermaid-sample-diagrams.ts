@@ -25,9 +25,35 @@ export const MERMAID_SAMPLE_IDS = [
   "quadrant",
   "architecture",
   "packet",
+  // Расширение Mermaid Ext (src/services/mermaid/ext). В прод-сборке
+  // __MERMAID_EXT__ = false и эти типы рисует штатный Mermaid (ошибка),
+  // поэтому сэмплы помечены как ext-типы и на странице языка идут отдельной группой.
+  "waterfall",
+  "bubble",
+  "heatmap",
+  "orgchart",
+  "ev",
 ] as const;
 
 export type MermaidSampleId = (typeof MERMAID_SAMPLE_IDS)[number];
+
+/**
+ * Типы, которые рисует расширение Mermaid Ext, а не штатный Mermaid.
+ * Источник истины по синтаксису — docs/mermaid-ext-syntax.md.
+ */
+export const MERMAID_EXT_SAMPLE_IDS = [
+  "waterfall",
+  "bubble",
+  "heatmap",
+  "orgchart",
+  "ev",
+] as const satisfies readonly MermaidSampleId[];
+
+export type MermaidExtSampleId = (typeof MERMAID_EXT_SAMPLE_IDS)[number];
+
+export function isMermaidExtSampleId(id: MermaidSampleId): id is MermaidExtSampleId {
+  return (MERMAID_EXT_SAMPLE_IDS as readonly string[]).includes(id);
+}
 
 export const HANDCRAFTED_MERMAID_SAMPLE_IDS = [
   "flowchart",
@@ -62,6 +88,13 @@ export const MERMAID_SAMPLE_WIZARD_TYPES: Record<MermaidSampleId, import("@/cons
   quadrant: "quadrant",
   architecture: "architecture",
   packet: "packet",
+  // Mermaid Ext: у этих типов нет собственного шаблона мастера,
+  // ближайший по смыслу — flowchart (дерево/шаги).
+  waterfall: "flowchart",
+  bubble: "flowchart",
+  heatmap: "flowchart",
+  orgchart: "flowchart",
+  ev: "flowchart",
 };
 
 const MERMAID_SAMPLES_RU: Record<HandcraftedMermaidSampleId, string> = {
@@ -418,6 +451,123 @@ const MERMAID_SOURCES_BY_LOCALE: Record<
   en: MERMAID_SAMPLES_EN,
 };
 
+/**
+ * Примеры для типов расширения Mermaid Ext.
+ * Синтаксис зафиксирован в docs/mermaid-ext-syntax.md; фикстуры песочницы
+ * (sandbox/fixtures/) — рабочие копии этих же примеров.
+ */
+const MERMAID_EXT_SAMPLES_RU: Record<MermaidExtSampleId, string> = {
+  waterfall: `waterfall
+title Выручка 2026
+y "млн ₽" 0 --> 120
+=40 : Q1
++15 : Q2
++20 : Q3
+=75 : Итог`,
+  bubble: `bubble
+title BCG матрица
+x "Доля рынка" 0 --> 10
+y "Рост рынка, %" 0 --> 30
+size "Выручка"
+quadrants Звёзды, Вопросы, Дойные коровы, Собаки
+mid x=5 y=12
+data
+Продукт A : x=8.2, y=22, size=340, group=Software
+Продукт B : x=2.1, y=25, size=180, group=Software
+Продукт C : x=7.4, y=4, size=520, group=Hardware
+Продукт D : x=1.5, y=3, size=90, group=Hardware`,
+  heatmap: `heatmap
+title Нагрузка по дням
+x Пн, Вт, Ср, Чт, Пт
+y Утро, День, Вечер
+scale
+0-40 : #e8f5e9
+40-70 : #fff3e0
+70+ : #ffebee
+data
+Утро : 20, 35, 50, 30, 25
+День : 60, 75, 85, 70, 55
+Вечер : 40, 45, 65, 50, 35`,
+  orgchart: `orgchart
+Гендиректор [Генеральный директор]
+Техдир [Технический директор]
+Финдир [Финансовый директор]
+Бэкенд [Руководитель бэкенда]
+Фронтенд [Руководитель фронтенда]
+Гендиректор -> Техдир
+Гендиректор -> Финдир
+Техдир -> Бэкенд
+Техдир -> Фронтенд
+Финдир -.-> Бэкенд`,
+  ev: `ev
+title Освоение бюджета
+days 1, 2, 3, 4, 5
+pv 10, 25, 45, 65, 90
+ev 8, 20, 40, 58, 80
+ac 12, 28, 50, 72, 95
+grid`,
+};
+
+const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
+  waterfall: `waterfall
+title Revenue 2026
+y "M USD" 0 --> 120
+=40 : Q1
++15 : Q2
++20 : Q3
+=75 : Total`,
+  bubble: `bubble
+title BCG matrix
+x "Market share" 0 --> 10
+y "Market growth, %" 0 --> 30
+size "Revenue"
+quadrants Stars, Question marks, Cash cows, Dogs
+mid x=5 y=12
+data
+Product A : x=8.2, y=22, size=340, group=Software
+Product B : x=2.1, y=25, size=180, group=Software
+Product C : x=7.4, y=4, size=520, group=Hardware
+Product D : x=1.5, y=3, size=90, group=Hardware`,
+  heatmap: `heatmap
+title Load by day
+x Mon, Tue, Wed, Thu, Fri
+y Morning, Day, Evening
+scale
+0-40 : #e8f5e9
+40-70 : #fff3e0
+70+ : #ffebee
+data
+Morning : 20, 35, 50, 30, 25
+Day : 60, 75, 85, 70, 55
+Evening : 40, 45, 65, 50, 35`,
+  orgchart: `orgchart
+CEO [Chief executive officer]
+CTO [Chief technology officer]
+CFO [Chief financial officer]
+Backend [Head of backend]
+Frontend [Head of frontend]
+CEO -> CTO
+CEO -> CFO
+CTO -> Backend
+CTO -> Frontend
+CFO -.-> Backend`,
+  ev: `ev
+title Budget earned value
+days 1, 2, 3, 4, 5
+pv 10, 25, 45, 65, 90
+ev 8, 20, 40, 58, 80
+ac 12, 28, 50, 72, 95
+grid`,
+};
+
+const MERMAID_EXT_SOURCES_BY_LOCALE: Record<
+  AppLocale,
+  Record<MermaidExtSampleId, string>
+> = {
+  ru: MERMAID_EXT_SAMPLES_RU,
+  en: MERMAID_EXT_SAMPLES_EN,
+};
+
 function isHandcraftedMermaidSampleId(
   id: MermaidSampleId,
 ): id is HandcraftedMermaidSampleId {
@@ -425,6 +575,10 @@ function isHandcraftedMermaidSampleId(
 }
 
 function buildMermaidSampleSource(id: MermaidSampleId, locale: AppLocale): string {
+  if (isMermaidExtSampleId(id)) {
+    return MERMAID_EXT_SOURCES_BY_LOCALE[locale][id];
+  }
+
   if (isHandcraftedMermaidSampleId(id)) {
     return MERMAID_SOURCES_BY_LOCALE[locale][id];
   }

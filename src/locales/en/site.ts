@@ -67,6 +67,26 @@ export const siteMessages = {
   "site.primer.mermaid.kw.subgraph": "A group of flowchart nodes. Close it with end.",
   "site.primer.mermaid.kw.class": "A class with fields and methods inside classDiagram.",
   "site.primer.mermaid.kw.section": "A group of tasks on a Gantt chart.",
+  "site.ext.mermaid.title": "Mermaid Ext extension",
+  "site.ext.mermaid.lead":
+    "Five diagram types that plain Mermaid does not have: waterfall, bubble, heatmap, org chart, and earned value. Drawn by a built-in engine, with no external services.",
+  "site.ext.mermaid.note":
+    "Extension types are enabled by the __MERMAID_EXT__ flag. Whether this build has it is visible by rendering the example below in the editor.",
+  "site.ext.mermaid.type.waterfall": "Waterfall",
+  "site.ext.mermaid.type.bubble": "Bubble",
+  "site.ext.mermaid.type.heatmap": "Heatmap",
+  "site.ext.mermaid.type.orgchart": "Org chart",
+  "site.ext.mermaid.type.ev": "Earned value",
+  "site.ext.mermaid.desc.waterfall":
+    "How a starting value turns into a total through + and − steps. Absolute columns start with =, several scenarios are declared with series.",
+  "site.ext.mermaid.desc.bubble":
+    "Three dimensions at once: x, y, and bubble size. Optionally BCG quadrants and color groups.",
+  "site.ext.mermaid.desc.heatmap":
+    "A value matrix with a color scale. Scale ranges are explicit, an empty cell (two separators in a row) is drawn gray.",
+  "site.ext.mermaid.desc.orgchart":
+    "A reporting tree with explicit edges: solid is the main line, dotted -.-> is a secondary manager. Several roots are gathered under an invisible root.",
+  "site.ext.mermaid.desc.ev":
+    "Three cumulative curves by day: planned value PV, earned value EV, and actual cost AC. Plus SV and CV deviations in the legend.",
   "site.primer.graphml.kw.graphml":
     "The document root. The GraphML namespace is required.",
   "site.primer.graphml.kw.graph":

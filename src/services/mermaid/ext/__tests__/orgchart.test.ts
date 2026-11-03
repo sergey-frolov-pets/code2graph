@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { orgchartEngine } from "../engines/orgchart";
+import { orgchartEngine, type OrgModel } from "../engines/orgchart";
 import { checkFixturesForType } from "./fixtures.test";
 
 describe("orgchart: фикстуры", () => {
@@ -15,7 +15,7 @@ describe("orgchart: разбор", () => {
 Техдир [Технический директор]
 Гендиректор -> Техдир`);
     expect(r.ok).toBe(true);
-    const m = r.value as any;
+    const m = r.value as OrgModel;
     expect(m.nodes).toHaveLength(2);
     expect(m.nodes[0]).toMatchObject({ id: "Гендиректор", label: "Генеральный директор" });
     expect(m.edges).toHaveLength(1);
@@ -28,15 +28,15 @@ A [A]
 B [B]
 A -.-> B`);
     expect(r.ok).toBe(true);
-    expect((r.value as any).edges[0].style).toBe("dotted");
+    expect((r.value as OrgModel).edges[0].style).toBe("dotted");
   });
 
   it("без подписи в скобках подписью служит id", () => {
     const r = orgchartEngine.parse(`orgchart
 A -> B`);
     expect(r.ok).toBe(true);
-    const m = r.value as any;
-    expect(m.nodes.map((n: any) => n.label)).toEqual(["A", "B"]);
+    const m = r.value as OrgModel;
+    expect(m.nodes.map((n) => n.label)).toEqual(["A", "B"]);
   });
 
   it("находит корень", () => {
@@ -47,7 +47,7 @@ C [C]
 A -> B
 B -> C`);
     expect(r.ok).toBe(true);
-    expect((r.value as any).root).toBe("A");
+    expect((r.value as OrgModel).root).toBe("A");
   });
 
   it("несколько корней → виртуальный корень", () => {
@@ -57,7 +57,7 @@ B [B]
 A -> A1
 B -> B1`);
     expect(r.ok).toBe(true);
-    const m = r.value as any;
+    const m = r.value as OrgModel;
     expect(m.virtualRoot).toBe(true);
   });
 
@@ -65,7 +65,7 @@ B -> B1`);
     const r = orgchartEngine.parse(`orgchart
 A -> B`);
     expect(r.ok).toBe(true);
-    expect((r.value as any).nodes).toHaveLength(2);
+    expect((r.value as OrgModel).nodes).toHaveLength(2);
   });
 
   it("ошибка: нет рёбер", () => {
@@ -114,32 +114,32 @@ describe("orgchart: рендер", () => {
 
   it("возвращает SVG без width/height", () => {
     const r = orgchartEngine.parse(src);
-    const svg = orgchartEngine.render(r.value as any, {});
+    const svg = orgchartEngine.render(r.value as OrgModel, {});
     expect(svg).toMatch(/^<svg/);
     expect(svg).not.toMatch(/<svg[^>]*\swidth=/);
   });
 
   it("рисует по прямоугольнику на узел", () => {
     const r = orgchartEngine.parse(src);
-    const svg = orgchartEngine.render(r.value as any, {});
+    const svg = orgchartEngine.render(r.value as OrgModel, {});
     expect((svg.match(/<rect/g) ?? []).length).toBe(4);
   });
 
   it("рисует 4 ребра", () => {
     const r = orgchartEngine.parse(src);
-    const svg = orgchartEngine.render(r.value as any, {});
+    const svg = orgchartEngine.render(r.value as OrgModel, {});
     expect((svg.match(/<path/g) ?? []).length).toBeGreaterThanOrEqual(4);
   });
 
   it("пунктирное ребро получает stroke-dasharray", () => {
     const r = orgchartEngine.parse(src);
-    const svg = orgchartEngine.render(r.value as any, {});
+    const svg = orgchartEngine.render(r.value as OrgModel, {});
     expect(svg).toContain("stroke-dasharray");
   });
 
   it("подписи узлов попадают в SVG", () => {
     const r = orgchartEngine.parse(src);
-    const svg = orgchartEngine.render(r.value as any, {});
+    const svg = orgchartEngine.render(r.value as OrgModel, {});
     for (const label of ["Генеральный директор", "Технический директор", "Финансовый директор"]) {
       expect(svg).toContain(label);
     }
@@ -147,7 +147,7 @@ describe("orgchart: рендер", () => {
 
   it("узлы не перекрываются по вертикали уровня", () => {
     const r = orgchartEngine.parse(src);
-    const svg = orgchartEngine.render(r.value as any, {});
+    const svg = orgchartEngine.render(r.value as OrgModel, {});
     const ys = [...svg.matchAll(/<rect[^>]*\sy="([\d.]+)"/g)].map((m) => Number(m[1]));
     expect(new Set(ys).size).toBeGreaterThanOrEqual(3);
   });
@@ -158,7 +158,7 @@ A -> B
 B -> C
 C -> B`);
     if (r.ok) {
-      expect(() => orgchartEngine.render(r.value as any, {})).not.toThrow();
+      expect(() => orgchartEngine.render(r.value as OrgModel, {})).not.toThrow();
     } else {
       expect(r.errors[0].message).toMatch(/цикл/i);
     }

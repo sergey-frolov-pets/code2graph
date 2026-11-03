@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { heatmapEngine } from "../engines/heatmap";
+import { heatmapEngine, type HeatmapModel } from "../engines/heatmap";
 import { checkFixturesForType } from "./fixtures.test";
 import { assertSvgInvariants } from "./svg-invariants";
 
@@ -22,7 +22,7 @@ data
 Утро : 20, 35, 50
 День : 60, 75, 85`);
     expect(r.ok).toBe(true);
-    const m = r.value as any;
+    const m = r.value as HeatmapModel;
     expect(m.title).toBe("Нагрузка по дням");
     expect(m.x).toEqual(["Пн", "Вт", "Ср"]);
     expect(m.y).toEqual(["Утро", "День"]);
@@ -40,7 +40,7 @@ y R
 data
 R : 1, 100`);
     expect(r.ok).toBe(true);
-    const m = r.value as any;
+    const m = r.value as HeatmapModel;
     expect(m.scale.length).toBeGreaterThanOrEqual(3);
     expect(m.scaleAuto).toBe(true);
   });
@@ -52,7 +52,7 @@ y R
 data
 R : 20,,35`);
     expect(r.ok).toBe(true);
-    expect((r.value as any).rows[0].values).toEqual([20, null, 35]);
+    expect((r.value as HeatmapModel).rows[0].values).toEqual([20, null, 35]);
   });
 
   it("ошибка: нет подписей x", () => {
@@ -126,27 +126,27 @@ data
 
   it("возвращает SVG без width/height", () => {
     const r = heatmapEngine.parse(src);
-    const svg = heatmapEngine.render(r.value as any, {});
+    const svg = heatmapEngine.render(r.value as HeatmapModel, {});
     expect(svg).toMatch(/^<svg/);
     expect(svg).not.toMatch(/<svg[^>]*\swidth=/);
   });
 
   it("рисует по прямоугольнику на ячейку", () => {
     const r = heatmapEngine.parse(src);
-    const svg = heatmapEngine.render(r.value as any, {});
+    const svg = heatmapEngine.render(r.value as HeatmapModel, {});
     expect((svg.match(/<rect/g) ?? []).length).toBe(6);
   });
 
   it("применяет цвета шкалы", () => {
     const r = heatmapEngine.parse(src);
-    const svg = heatmapEngine.render(r.value as any, {});
+    const svg = heatmapEngine.render(r.value as HeatmapModel, {});
     expect(svg).toContain("#e8f5e9");
     expect(svg).toContain("#ffebee");
   });
 
   it("подписи осей попадают в SVG", () => {
     const r = heatmapEngine.parse(src);
-    const svg = heatmapEngine.render(r.value as any, {});
+    const svg = heatmapEngine.render(r.value as HeatmapModel, {});
     for (const label of ["Пн", "Вт", "Ср", "Утро", "День"]) expect(svg).toContain(label);
   });
 
@@ -157,12 +157,12 @@ x A, B
 y R
 data
 R : 10,,`);
-    const svg = heatmapEngine.render(r.value as any, {});
+    const svg = heatmapEngine.render(r.value as HeatmapModel, {});
     expect((svg.match(/<rect/g) ?? []).length).toBe(2);
   });
 
   it("проходит общие инварианты SVG", () => {
     const r = heatmapEngine.parse(src);
-    assertSvgInvariants(heatmapEngine.render(r.value as any, {}), { minElements: 6 });
+    assertSvgInvariants(heatmapEngine.render(r.value as HeatmapModel, {}), { minElements: 6 });
   });
 });

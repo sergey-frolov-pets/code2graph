@@ -3,7 +3,11 @@
 import { describe, expect, it } from "vitest";
 import { getD2SampleSource, D2_SAMPLE_IDS } from "@/constants/d2-sample-diagrams";
 import { DIAGRAM_FORMATS } from "@/constants/diagram-formats";
-import { getMermaidSampleSource, MERMAID_SAMPLE_IDS } from "@/constants/mermaid-sample-diagrams";
+import {
+  getMermaidSampleSource,
+  isMermaidExtSampleId,
+  MERMAID_SAMPLE_IDS,
+} from "@/constants/mermaid-sample-diagrams";
 import { getPlantUmlSampleSource, PLANTUML_SAMPLE_IDS } from "@/constants/plantuml-sample-diagrams";
 import { getStructurizrSampleSource, STRUCTURIZR_SAMPLE_IDS } from "@/constants/structurizr-sample-diagrams";
 import { getWiremarkSampleSource, WIREMARK_SAMPLE_IDS } from "@/constants/wiremark-sample-diagrams";
@@ -190,6 +194,10 @@ describe("unified conversion framework", () => {
 
   it("converts every Mermaid sample in RU and EN to PlantUML and D2", async () => {
     for (const sampleId of MERMAID_SAMPLE_IDS) {
+      // Типы Mermaid Ext не входят в штатный Mermaid: структурная конверсия
+      // для них не определена (см. docs/mermaid-ext-syntax.md, «Что НЕ входит в v1»).
+      if (isMermaidExtSampleId(sampleId)) continue;
+
       const source = getMermaidSampleSource(sampleId, "ru");
       const ir = parseSourceWithFramework(source, "mermaid");
       expect(

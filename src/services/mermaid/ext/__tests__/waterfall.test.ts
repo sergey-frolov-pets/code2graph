@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { waterfallEngine } from "../engines/waterfall";
+import { waterfallEngine, type WaterfallModel } from "../engines/waterfall";
 import { checkFixturesForType } from "./fixtures.test";
 import { assertSvgInvariants } from "./svg-invariants";
 
@@ -19,7 +19,7 @@ y "млн ₽" 0 --> 120
 +20 : Q3
 =75 : Итог`);
     expect(r.ok).toBe(true);
-    const m = r.value as any;
+    const m = r.value as WaterfallModel;
     expect(m.title).toBe("Выручка 2026");
     expect(m.axis.label).toBe("млн ₽");
     expect(m.axis.min).toBe(0);
@@ -38,7 +38,7 @@ y "млн ₽" 0 --> 120
 -25 : Падение
 =-10 : Итог`);
     expect(r.ok).toBe(true);
-    const steps = (r.value as any).series[0].steps;
+    const steps = (r.value as WaterfallModel).series[0].steps;
     expect(steps[2]).toMatchObject({ kind: "absolute", value: -10 });
   });
 
@@ -48,7 +48,7 @@ y "млн ₽" 0 --> 120
 +12.5 : Рост
 +1_000 : Ещё`);
     expect(r.ok).toBe(true);
-    const steps = (r.value as any).series[0].steps;
+    const steps = (r.value as WaterfallModel).series[0].steps;
     expect(steps[0].value).toBe(1200);
     expect(steps[1].value).toBe(12.5);
     expect(steps[2].value).toBe(1000);
@@ -63,7 +63,7 @@ series Оптимистичный
 =50 : Старт
 +45 : Рост`);
     expect(r.ok).toBe(true);
-    const m = r.value as any;
+    const m = r.value as WaterfallModel;
     expect(m.series).toHaveLength(2);
     expect(m.series[0].name).toBe("Базовый");
     expect(m.series[1].name).toBe("Оптимистичный");
@@ -76,7 +76,7 @@ series Оптимистичный
 -800 : Падение
 =750 : Итог`);
     expect(r.ok).toBe(true);
-    const axis = (r.value as any).axis;
+    const axis = (r.value as WaterfallModel).axis;
     expect(axis.auto).toBe(true);
     expect(axis.min).toBeLessThanOrEqual(1200);
     expect(axis.max).toBeGreaterThanOrEqual(1550);
@@ -138,7 +138,7 @@ describe("waterfall: рендер", () => {
 +15 : Q2
 =55 : Итог`);
     expect(r.ok).toBe(true);
-    const svg = waterfallEngine.render(r.value as any, {});
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
     expect(svg).toMatch(/^<svg/);
     expect(svg).toContain('xmlns="http://www.w3.org/2000/svg"');
     expect(svg).toMatch(/viewBox="0 0 [\d.]+ [\d.]+"/);
@@ -151,7 +151,7 @@ describe("waterfall: рендер", () => {
 =40 : Q1
 +15 : Q2
 =55 : Итог`);
-    const svg = waterfallEngine.render(r.value as any, {});
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
     expect(svg).toContain("Q1");
     expect(svg).toContain("Q2");
     expect(svg).toContain("Итог");
@@ -161,8 +161,8 @@ describe("waterfall: рендер", () => {
     const r = waterfallEngine.parse(`waterfall
 =40 : Q1
 =40 : Q2`);
-    const light = waterfallEngine.render(r.value as any, { dark: false });
-    const dark = waterfallEngine.render(r.value as any, { dark: true });
+    const light = waterfallEngine.render(r.value as WaterfallModel, { dark: false });
+    const dark = waterfallEngine.render(r.value as WaterfallModel, { dark: true });
     expect(light).not.toBe(dark);
   });
 
@@ -170,7 +170,7 @@ describe("waterfall: рендер", () => {
     const r = waterfallEngine.parse(`waterfall
 =40 : Q1
 =40 : Q2`);
-    const svg = waterfallEngine.render(r.value as any, { debugFrames: true });
+    const svg = waterfallEngine.render(r.value as WaterfallModel, { debugFrames: true });
     expect(svg).toContain("data-debug");
   });
 
@@ -178,6 +178,6 @@ describe("waterfall: рендер", () => {
     const r = waterfallEngine.parse(`waterfall
 =40 : Q1
 =40 : Q2`);
-    assertSvgInvariants(waterfallEngine.render(r.value as any, {}), { minElements: 6 });
+    assertSvgInvariants(waterfallEngine.render(r.value as WaterfallModel, {}), { minElements: 6 });
   });
 });

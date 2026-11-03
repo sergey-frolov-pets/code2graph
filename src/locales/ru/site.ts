@@ -67,6 +67,26 @@ export const siteMessages = {
   "site.primer.mermaid.kw.subgraph": "Группа узлов в блок-схеме. Закрывается end.",
   "site.primer.mermaid.kw.class": "Класс с полями и методами внутри classDiagram.",
   "site.primer.mermaid.kw.section": "Группа задач на диаграмме Ганта.",
+  "site.ext.mermaid.title": "Расширение Mermaid Ext",
+  "site.ext.mermaid.lead":
+    "Пять типов диаграмм, которых нет в штатном Mermaid: водопад, пузырьковая, тепловая карта, оргструктура и освоенный объём. Рисуются встроенным движком без внешних сервисов.",
+  "site.ext.mermaid.note":
+    "Типы расширения включаются флагом __MERMAID_EXT__. Включён ли он в этой сборке, видно по тому, рисуется ли пример ниже в редакторе.",
+  "site.ext.mermaid.type.waterfall": "Водопад",
+  "site.ext.mermaid.type.bubble": "Пузырьковая",
+  "site.ext.mermaid.type.heatmap": "Тепловая карта",
+  "site.ext.mermaid.type.orgchart": "Оргструктура",
+  "site.ext.mermaid.type.ev": "Освоенный объём",
+  "site.ext.mermaid.desc.waterfall":
+    "Как начальное значение превращается в итоговое через шаги + и −. Абсолютные колонки начинаются с =, несколько сценариев задаются через series.",
+  "site.ext.mermaid.desc.bubble":
+    "Три измерения сразу: x, y и размер пузыря. Опционально — квадранты BCG и группы по цвету.",
+  "site.ext.mermaid.desc.heatmap":
+    "Матрица значений с цветовой шкалой. Диапазоны шкалы задаются явно, пустая ячейка (два разделителя подряд) рисуется серой.",
+  "site.ext.mermaid.desc.orgchart":
+    "Дерево подчинённости с явными рёбрами: сплошное — основная линия, пунктирное -.-> — второй руководитель. Несколько корней собираются под невидимый корень.",
+  "site.ext.mermaid.desc.ev":
+    "Три кумулятивные кривые по дням: плановый объём PV, освоенный EV и фактические затраты AC. Плюс отклонения SV и CV в легенде.",
   "site.primer.graphml.kw.graphml":
     "Корень документа. Пространство имён GraphML обязательно.",
   "site.primer.graphml.kw.graph":
