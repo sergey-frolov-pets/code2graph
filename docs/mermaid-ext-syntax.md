@@ -375,3 +375,56 @@ interface ExtEngine<T> {
   **без DOM** (собственная таблица ширин по глифам, см. этап 2).
 - `options.dark` меняет палитру, `options.debugFrames` добавляет обводку
   каждому элементу и его `id` в `data-*`.
+
+## 8. Проверка и обновление оффлайн-рендеров
+
+Два скрипта закрывают класс ошибок «No diagram type detected matching given
+configuration» — когда движок расширения не подключён к рендеру и исходник
+уходит в штатный `mermaid.parse`.
+
+### `npm run ext:preflight` — проверка актуальности
+
+```bash
+node scripts/mermaid-ext-preflight.mjs                 # все слои
+node scripts/mermaid-ext-preflight.mjs --json          # машинный отчёт
+node scripts/mermaid-ext-preflight.mjs --report=out.md # markdown-таблица
+node scripts/mermaid-ext-preflight.mjs --skip=dist     # без проверки бандла
+```
+
+Слои (от дешёвого к дорогому):
+
+| Слой | Что ловит |
+|---|---|
+| `build` | `__MERMAID_EXT__` захардкожен в `false` → движок вырезан tree-shaking'ом |
+| `entries` | точки входа (движок, синтаксис, хендлер, модуль языка) не собираются |
+| `wiring` | `tryRenderExtension()` не рисует свой тип или перехватывает чужой |
+| `detect` | `detectSource()` не знает ext-ключевых слов → текст уходит в PlantUML |
+| `fence` | `isMermaidExtDeclaration()` не видит тип внутри ```` ```mermaid ````-блока |
+| `golden` | эталоны `sandbox/golden/` разошлись с текущим рендером |
+| `samples` | сэмпл из каталога приложения (ru/en) не рисуется |
+| `dist` | собранный бандл без движка ext (устарел) |
+
+Выход `1` — есть расхождения. Время: ~10 с без `entries`, ~40 с целиком.
+
+### `npm run ext:refresh` — замена устаревших рендеров
+
+```bash
+node scripts/mermaid-ext-refresh.mjs            # только расходящиеся
+node scripts/mermaid-ext-refresh.mjs --dry-run  # показать, что изменится
+node scripts/mermaid-ext-refresh.mjs --all      # перезаписать все эталоны
+node scripts/mermaid-ext-refresh.mjs --only=waterfall,ev
+node scripts/mermaid-ext-refresh.mjs --verify   # обновить и сразу прогнать preflight
+```
+
+- Перед записью делает копию в `sandbox/golden.bak/<дата>/` (`--no-backup` в CI),
+  в конце печатает команду откатa.
+- Пишет **только изменившиеся** файлы — git-история остаётся чистой.
+- Удаляет осиротевшие эталоны (фикстуру убрали — файл тоже).
+- Битые фикстуры дают эталон вида `ERROR: …` — это норма, не ошибка прогона.
+
+Типовой цикл после правки движка:
+
+```bash
+node scripts/mermaid-ext-refresh.mjs --verify
+git add sandbox/golden && git commit -m "chore(mermaid/ext): обновить эталоны"
+```

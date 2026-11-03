@@ -17,3 +17,8 @@ test-results/
 sandbox/out/
 
 sandbox/.cache-golden/
+
+# бэкап эталонов перед перегенерацией (scripts/mermaid-ext-refresh.mjs --no-backup чтобы не создавать)
+sandbox/golden.bak/
+sandbox/.cache-preflight/
+sandbox/.cache-refresh/
