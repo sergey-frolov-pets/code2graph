@@ -477,6 +477,8 @@ const MERMAID_EXT_SAMPLES_RU: Record<MermaidExtSampleId, string> = {
 %%   +180 : Q2   приращение вверх
 %%   -60 : Q3    приращение вниз
 %% Остальные возможности — в примерах «разрыв шкалы», «несколько серий» и «подписи».
+%% ВАЖНО: пунктирные линии между барами — это коннекторы (включены по умолчанию).
+%%         Выключить: connectors off
 title Выручка 2026
 y "млн ₽" 0 --> 500
 grid 100
@@ -514,20 +516,32 @@ series Факт color=#8250df
 -35 : Q3
 = : Итог`,
   waterfallLabels: `waterfall
-%% Подписи и оформление: где писать значения, свои цвета, размер шрифта.
-%% labels above|inside|both|none — по умолчанию above
-%% fontsize <6–28>              — базовый размер шрифта
-%% colors total= increase= decrease= — свои цвета (синонимы positive=, negative=)
-title Подписи и цвета
+%% ПОДПИСИ И ЛИНИИ — самое частое, чего не хватает.
+%%
+%% 1) ДВА лейбла на одном баре (внутри И над) — пиши оба флага в строке данных:
+%%      +60 : Q2 inside above
+%%    Флаги можно ставить на каждый бар отдельно, порядок любой.
+%%    Глобально для всех баров: labels both
+%%
+%% 2) ЛИНИИ между барами — это директивы, а не флаги:
+%%      connectors on    включить (по умолчанию включены)
+%%      connectors off   выключить
+%%    Линия идёт от рабочего края бара к следующему: рост — по низу,
+%%    падение — по верху. Если уровни разные, рисуется ступенька.
+%%
+%% 3) Своя подпись значения:  label="+60 млн"
+%%    Без подписи вообще:      no-label
+%%
+%% 4) Цвета: colors total= increase= decrease=
+title Подписи и линии
 y "млн ₽" 0 --> 200
 grid 50
-labels both
-fontsize 11
+connectors on
 colors total=#1f6feb increase=#2da44e decrease=#cf222e
-=90 : Q1
-+60 : Q2 label="+60 млн"
--25 : Q3
-= : Итог`,
+=90 : Q1 inside above
++60 : Q2 inside above label="+60 млн"
+-25 : Q3 above
+= : Итог inside above`,
   waterfallMono: `waterfall
 %% Чёрно-белый режим: цвета не нужны, бары различаются светлотой.
 %% Полезно для печати и для документов без цвета.
@@ -600,6 +614,8 @@ const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
 %%   +180 : Q2   increase
 %%   -60 : Q3    decrease
 %% More features: samples "axis break", "multiple series", "labels".
+%% NOTE: the dashed lines between bars are connectors (default on).
+%%       Turn them off with: connectors off
 title Revenue 2026
 y "M USD" 0 --> 500
 grid 100
@@ -637,20 +653,33 @@ series Actual color=#8250df
 -35 : Q3
 = : Total`,
   waterfallLabels: `waterfall
-%% Labels and styling: where to print values, custom colours, font size.
-%% labels above|inside|both|none — default above
-%% fontsize <6–28>              — base font size
-%% colors total= increase= decrease= — custom colours (aliases positive=, negative=)
-title Labels and colours
+%% LABELS AND LINES — the two things people miss most.
+%%
+%% 1) TWO labels on one bar (inside AND above) — write both flags in the row:
+%%      +60 : Q2 inside above
+%%    Flags are per-bar and order-independent.
+%%    For every bar at once: labels both
+%%
+%% 2) LINES between bars are directives, not flags:
+%%      connectors on    enable (on by default)
+%%      connectors off   disable
+%%    The line runs from the working edge of a bar to the next one:
+%%    growth — along the bottom, decline — along the top. Different levels
+%%    are joined with a step.
+%%
+%% 3) Custom value label:  label="+60 M"
+%%    No label at all:     no-label
+%%
+%% 4) Colours: colors total= increase= decrease=
+title Labels and lines
 y "M USD" 0 --> 200
 grid 50
-labels both
-fontsize 11
+connectors on
 colors total=#1f6feb increase=#2da44e decrease=#cf222e
-=90 : Q1
-+60 : Q2 label="+60 M"
--25 : Q3
-= : Total`,
+=90 : Q1 inside above
++60 : Q2 inside above label="+60 M"
+-25 : Q3 above
+= : Total inside above`,
   waterfallMono: `waterfall
 %% Black-and-white mode: no colours needed, bars differ by lightness.
 %% Handy for print and for documents without colour.

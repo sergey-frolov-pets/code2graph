@@ -975,3 +975,70 @@ series B
     expect(new Set(swatches).size).toBe(2);
   });
 });
+
+describe("waterfall: две подписи на одном баре (inside + above)", () => {
+  it("per-step `inside above` рисует обе подписи", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 200
+=90 : Q1 inside above
++60 : Q2 inside above
+= : Итог`);
+    expect(r.ok).toBe(true);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    // Внутри — белый жирный текст; над баром — текст цветом fgDim.
+    const insideCount = (svg.match(/font-weight="600"/g) ?? []).length;
+    expect(insideCount).toBeGreaterThanOrEqual(2);
+    // Значение «90» встречается дважды: внутри и над.
+    const n90 = (svg.match(/>90</g) ?? []).length;
+    expect(n90).toBeGreaterThanOrEqual(2);
+  });
+
+  it("`labels both` глобально даёт обе подписи", () => {
+    const r = waterfallEngine.parse(`waterfall
+labels both
+y "" 0 --> 200
+=90 : Q1
++60 : Q2`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect((svg.match(/>90</g) ?? []).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("если внутри не помещается — подпись выносится над баром", () => {
+    const r = waterfallEngine.parse(`waterfall
+labels inside
+y "" 0 --> 200
+=2 : Малый
++150 : Большой`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    // У низкого бара подпись не теряется.
+    expect(svg).toContain(">2<");
+  });
+});
+
+describe("waterfall: коннекторы читаемы", () => {
+  it("линия между барами длиннее 16 px", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 200
+=90 : Q1
++60 : Q2
+-25 : Q3`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    const lines = [...svg.matchAll(/<line x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)" y2="([\d.]+)"[^>]*data-connector="1"/g)];
+    expect(lines.length).toBeGreaterThan(0);
+    const span = Math.abs(Number(lines[0][3]) - Number(lines[0][1]));
+    // Зазор между барами — не меньше 12 px, иначе линия теряется на сетке.
+    expect(span).toBeGreaterThan(12);
+  });
+
+  it("разные уровни соединяются ступенькой (вертикальный отрезок)", () => {
+    // Абсолютные колонки на разных уровнях: 90 и 150 → уровни разные.
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 200
+=90 : Q1
+=150 : Q2`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    const segs = [...svg.matchAll(/<line x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)" y2="([\d.]+)"[^>]*data-connector="1"/g)];
+    const hasVertical = segs.some((m) => Math.abs(Number(m[3]) - Number(m[1])) < 0.5 && Math.abs(Number(m[4]) - Number(m[2])) > 0.5);
+    expect(hasVertical).toBe(true);
+  });
+});
