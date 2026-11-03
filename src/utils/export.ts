@@ -47,16 +47,29 @@ function isLabelKnockoutRect(rect: Element): boolean {
 }
 
 function isCanvasBackgroundRect(rect: Element): boolean {
-  // Плашка холста — только у корневого <svg>: тот же data-bg внутри
-  // <g transform> — это вырез под подпись, его снимать нельзя.
+  // Плашка холста — только у корневого <svg> или в группе без transform:
+  // тот же data-bg внутри <g transform> — это вырез под подпись, его
+  // снимать нельзя.
+  if (rect.getAttribute("data-bg") !== "canvas") {
+    return false;
+  }
   const parent = rect.parentElement;
-  return rect.getAttribute("data-bg") === "canvas" && (!parent || parent.tagName.toLowerCase() === "svg");
+  if (!parent || parent.tagName.toLowerCase() === "svg") {
+    return true;
+  }
+  if (parent.tagName.toLowerCase() !== "g") {
+    return false;
+  }
+  return !parent.getAttribute("transform");
 }
 
 /**
  * Пометить плашку холста: `<rect>` во всю ширину/высоту корневого `<svg>`,
  * который лежит первым элементом и закрашен «фоном страницы».
  * Нужно для движков, которые рисуют фон сами (heatmap, orgchart).
+ *
+ * Плашка может быть обёрнута в `<g>` (например, в waterfall), поэтому
+ * проверяется и родитель-группа без собственного transform.
  */
 function markCanvasBackground(root: Element): void {
   const viewBox = parseViewBoxSize(root.getAttribute("viewBox"));
@@ -107,6 +120,24 @@ function clearCanvasBackground(root: Element): void {
 }
 
 /**
+ * Убрать плашку холста из разметки: у непрозрачного фона её роль играет
+ * сама панель предпросмотра (`--preview-bg`), а полупрозрачный `<rect>`
+ * поверх шахматки давал «клетку» вместо цвета.
+ */
+function removeCanvasBackground(root: Element): void {
+  for (const rect of root.querySelectorAll("rect[data-bg='canvas']")) {
+    if (!isCanvasBackgroundRect(rect)) {
+      continue;
+    }
+    const parent = rect.parentElement;
+    rect.remove();
+    if (parent && parent.tagName.toLowerCase() === "g" && parent.childElementCount === 0) {
+      parent.remove();
+    }
+  }
+}
+
+/**
  * Вырезы под подписи (разрыв, горизонтальная линия) и плашка холста должны
  * быть ОДНОГО цвета — выбранного фона диаграммы. Иначе при светлом фоне
  * вырез, нарисованный цветом тёмной темы, выглядит дырой, а при прозрачном
@@ -119,7 +150,9 @@ export function applyPreviewBackground(svg: string, background: string): string 
     return svg;
   }
 
-  const fill = isTransparentBackground(background) ? "#ffffff" : background.trim();
+  const fill = isTransparentBackground(background)
+    ? "#ffffff"
+    : toOpaqueColor(background);
   if (!fill) {
     return svg;
   }
@@ -475,8 +508,10 @@ export function sanitizeSvgForPreview(svg: string): string {
   normalizeSvgRootSize(root);
   markCanvasBackground(root);
   // Превью всегда рисует фон само (--preview-bg или шахматка), поэтому
-  // плашка холста снимается всегда — и при непрозрачном цвете тоже.
-  clearCanvasBackground(root);
+  // плашка холста убирается из разметки целиком — и при непрозрачном цвете
+  // тоже. Иначе `fill="none"`/полупрозрачный прямоугольник просвечивает
+  // шахматкой.
+  removeCanvasBackground(root);
   transparentizeLightBackground(root);
 
   return new XMLSerializer().serializeToString(root);

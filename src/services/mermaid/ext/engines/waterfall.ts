@@ -342,7 +342,16 @@ function parseLine(
   const result: WaterfallLine = { value };
   let rest = body.slice(valueMatch[0].length).trim();
 
-  const TOKEN_RE = /^(color|width|style)=("[^"]*"|\S*)\s*/i;
+  // Подпись может стоять и ПЕРЕД параметрами: `line 400 "цель" color=#cf222e`.
+  // Поэтому кавычки снимаются первым проходом, а не после разбора key=value.
+  const LEADING_LABEL_RE = /^"((?:[^"\\]|\\.)*)"\s*/;
+  const leading = LEADING_LABEL_RE.exec(rest);
+  if (leading) {
+    result.label = leading[1].replace(/\\"/g, '"');
+    rest = rest.slice(leading[0].length);
+  }
+
+  const TOKEN_RE = /(?:^|\s)(color|width|style)=("[^"]*"|\S*)\s*/i;
   for (let guard = 0; guard < 8; guard += 1) {
     const m = TOKEN_RE.exec(rest);
     if (!m) break;
@@ -387,13 +396,15 @@ function parseLine(
     rest = rest.slice(m[0].length);
   }
 
-  // Всё, что осталось, — подпись (в кавычках или как есть).
+  // Всё, что осталось, — подпись (в кавычках или как есть). Если подпись
+  // уже взята из кавычек в начале строки, остаток дописывается к ней.
   rest = rest.trim();
   if (rest) {
-    result.label =
+    const tail =
       rest.startsWith('"') && rest.endsWith('"') && rest.length >= 2
         ? rest.slice(1, -1).replace(/\\"/g, '"')
         : rest;
+    result.label = result.label ? `${result.label} ${tail}`.trim() : tail;
     if (!result.label) delete result.label;
   }
 
@@ -1129,42 +1140,6 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
     });
   }
 
-  // Горизонтальные линии поверх диаграммы — под сеткой, барами и подписями:
-  // так они не перечёркивают значения, а читаются как «уровень».
-  // Линия, попавшая внутрь вырезанного разрыва, прижимается к его границе —
-  // иначе она «не существует» на шкале и рисовалась бы не там.
-  const lineFontSize = Math.round(fontSize * 0.91);
-  const lineLabelX = leftPad + plotWidth + Math.round((6 * fontSize) / FONT_BASE);
-  for (const item of lines) {
-    if (item.value < axis.min || item.value > axis.max) continue;
-    const y = yClamped(item.value);
-    const stroke = item.color ?? defaultLineColor(palette, options.dark);
-    const dash = LINE_DASH[item.style ?? "dash"];
-    svg.line(plotLeft, y, plotLeft + plotWidth, y, {
-      stroke,
-      "stroke-width": item.width ?? 1.5,
-      ...(dash ? { "stroke-dasharray": dash } : {}),
-      "stroke-linecap": "butt",
-      "data-threshold-line": "1",
-    });
-
-    if (item.label) {
-      const text = `${fmt(item.value)} ${item.label}`;
-      const textWidth = measureText(text, lineFontSize);
-      // Вырез под подпись — цветом плашки холста: иначе текст лежит на линии.
-      svg.rect(lineLabelX - 2, y - lineFontSize * 0.8, textWidth + 4, lineFontSize * 1.6, {
-        fill: palette.bg,
-        "data-line-gap": "1",
-      });
-      svg.text(lineLabelX, y + Math.round((4 * fontSize) / FONT_BASE), text, {
-        "text-anchor": "start",
-        "font-size": lineFontSize,
-        fill: stroke,
-        "data-threshold-label": "1",
-      });
-    }
-  }
-
   // Деления на границах разрыва схлопываются в одну линию (300 и 800 лежат
   // на той же высоте) — рисуем только первое из них.
   const drawnTickYs = new Set<number>();
@@ -1535,6 +1510,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
         svg.text(x + barWidth / 2, aboveY - shiftUp, valueText, {
           "font-size": valueFontSize,
           fill: palette.fgDim,
+          "data-value-label": "1",
         });
       }
     }
@@ -1567,6 +1543,44 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       legendX += swatch + Math.round(fontSize * 1.1) + measureText(name, labelFontSize) + Math.round(fontSize * 1.45);
     }
   }
+
+  // Горизонтальные линии — ПОВЕРХ всей диаграммы (бары, соединители,
+  // подписи значений, линии разрыва): это уровни, по которым сравнивают
+  // столбцы. Рисуются последними, чтобы ничего их не перекрывало.
+  // Линия, попавшая внутрь вырезанного разрыва, прижимается к его границе —
+  // иначе она «не существует» на шкале и рисовалась бы не там.
+  const lineFontSize = Math.round(fontSize * 0.91);
+  const lineLabelX = leftPad + plotWidth + Math.round((6 * fontSize) / FONT_BASE);
+  for (const item of lines) {
+    if (item.value < axis.min || item.value > axis.max) continue;
+    const y = yClamped(item.value);
+    const stroke = item.color ?? defaultLineColor(palette, options.dark);
+    const dash = LINE_DASH[item.style ?? "dash"];
+    svg.line(plotLeft, y, plotLeft + plotWidth, y, {
+      stroke,
+      "stroke-width": item.width ?? 1.5,
+      ...(dash ? { "stroke-dasharray": dash } : {}),
+      "stroke-linecap": "butt",
+      "data-threshold-line": "1",
+    });
+
+    if (item.label) {
+      const text = `${fmt(item.value)} ${item.label}`;
+      const textWidth = measureText(text, lineFontSize);
+      // Вырез под подпись — цветом плашки холста: иначе текст лежит на линии.
+      svg.rect(lineLabelX - 2, y - lineFontSize * 0.8, textWidth + 4, lineFontSize * 1.6, {
+        fill: palette.bg,
+        "data-line-gap": "1",
+      });
+      svg.text(lineLabelX, y + Math.round((4 * fontSize) / FONT_BASE), text, {
+        "text-anchor": "start",
+        "font-size": lineFontSize,
+        fill: stroke,
+        "data-threshold-label": "1",
+      });
+    }
+  }
+
 
   return svg.toString();
 }

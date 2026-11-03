@@ -1099,3 +1099,61 @@ colors total=#1f6feb increase=#2da44e decrease=#cf222e
     expect((withoutLines.match(/\+60 млн/g) ?? []).length).toBe(2);
   });
 });
+
+describe("waterfall: горизонтальные линии", () => {
+  const src = `waterfall
+title Выручка против плана
+y "млн ₽" 0 --> 500
+grid 100
+line 350 "план"
+line 400 "цель" color=#cf222e width=2
+line 250 "порог" style=dot width=1
+=120 : Q1
++180 : Q2
+-60 : Q3
+= : Итого H1
++240 : Q4
+= : Итог года`;
+
+  it("подпись в кавычках не съедает параметры после неё", () => {
+    const r = waterfallEngine.parse(src);
+    expect(r.ok).toBe(true);
+    const lines = (r.value as WaterfallModel).lines;
+    expect(lines).toHaveLength(3);
+    expect(lines[0]).toMatchObject({ value: 250, label: "порог", style: "dot", width: 1 });
+    expect(lines[1]).toMatchObject({ value: 350, label: "план" });
+    expect(lines[2]).toMatchObject({ value: 400, label: "цель", color: "#cf222e", width: 2 });
+  });
+
+  it("параметры перед подписью тоже разбираются", () => {
+    const r = waterfallEngine.parse(`waterfall
+y 0 --> 100
+line 50 color=#cf222e style=solid "цель"
+=40 : A
++20 : B`);
+    expect(r.ok).toBe(true);
+    expect((r.value as WaterfallModel).lines[0]).toMatchObject({
+      value: 50,
+      label: "цель",
+      color: "#cf222e",
+      style: "solid",
+    });
+  });
+
+  it("линии рисуются ПОВЕРХ баров: в SVG они идут после них", () => {
+    const r = waterfallEngine.parse(src);
+    expect(r.ok).toBe(true);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, { dark: false });
+    const lastBar = Math.max(
+      ...[...svg.matchAll(/<rect[^>]*data-bar="1"[^>]*>/g)].map((m) => m.index ?? 0),
+    );
+    const firstLine = svg.indexOf('data-threshold-line="1"');
+    expect(firstLine).toBeGreaterThan(lastBar);
+    // и после подписей значений
+    const lastValueLabel = Math.max(
+      ...[...svg.matchAll(/<text[^>]*data-value-label="1"[^>]*>/g)].map((m) => m.index ?? 0),
+      -1,
+    );
+    if (lastValueLabel >= 0) expect(firstLine).toBeGreaterThan(lastValueLabel);
+  });
+});

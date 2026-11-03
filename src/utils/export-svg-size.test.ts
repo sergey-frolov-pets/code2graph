@@ -118,10 +118,11 @@ describe("прозрачный фон экспорта", () => {
     expect(doc.querySelector("rect[data-break-gap]")?.getAttribute("fill")).toBe("#ffffff");
   });
 
-  it("превью по-прежнему гасит плашку на весь холст (фон рисует панель)", () => {
+  it("превью убирает плашку холста целиком (фон рисует панель)", () => {
     const out = sanitizeSvgForPreview(svgWithBackdrop);
     const doc = new DOMParser().parseFromString(out, "image/svg+xml");
-    expect(doc.querySelectorAll("rect")[0].getAttribute("fill")).toBe("none");
+    // Плашки в разметке больше нет: `fill="none"` просвечивал шахматкой.
+    expect(doc.querySelector("rect[data-bg='canvas']")).toBeNull();
   });
 });
 

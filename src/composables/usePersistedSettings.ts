@@ -201,6 +201,12 @@ export function usePersistedSettings() {
     const raw = previewBackground.value;
     const value = isTransparentPreviewBg(raw) ? raw : toOpaqueColor(raw);
     document.documentElement.style.setProperty("--preview-bg", value);
+    // Нормализуем и само состояние: иначе в настройках остаётся rgba-строка
+    // с альфой, и всё, что читает previewBackground напрямую, снова получает
+    // полупрозрачный фон.
+    if (value !== raw) {
+      previewBackground.value = value;
+    }
   }
 
   watch(previewBackground, applyPreviewBackgroundToDocument, { immediate: true });
