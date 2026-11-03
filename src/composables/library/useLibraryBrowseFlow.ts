@@ -1,0 +1,143 @@
+import { computed, type ComputedRef, type Ref } from "vue";
+import type { TranslateFn } from "@/locales/types";
+import type { FlatSectionOption } from "@/shared/library/section-tree";
+import { FAVORITES_SECTION_ID, RATINGS_SECTION_ID } from "@/constants/diagram-library";
+import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
+
+export type LibraryTab = "browse" | "upload" | "transfer" | "admin";
+export type BrowseStep = "sections" | "diagrams" | "detail" | "subscriptions";
+
+type DiagramLibrary = ReturnType<typeof useDiagramLibrary>;
+
+export function useLibraryBrowseFlow(options: {
+  library: DiagramLibrary;
+  activeTab: Ref<LibraryTab>;
+  browseStep: Ref<BrowseStep>;
+  flatSectionOptions: ComputedRef<FlatSectionOption[]>;
+  resetEditForm: () => void;
+  t: TranslateFn;
+}) {
+  const { library, activeTab, browseStep, flatSectionOptions, resetEditForm, t } =
+    options;
+
+  const showBackButton = computed(
+    () => activeTab.value === "browse" && browseStep.value !== "sections",
+  );
+
+  const showModeTabs = computed(
+    () =>
+      activeTab.value !== "browse" ||
+      browseStep.value === "sections" ||
+      browseStep.value === "subscriptions",
+  );
+
+  const sectionTitle = computed(() => {
+    if (library.selectedSectionId.value === FAVORITES_SECTION_ID) {
+      return t("library.favorites");
+    }
+    if (library.selectedSectionId.value === RATINGS_SECTION_ID) {
+      return t("library.ratings");
+    }
+    if (library.selectedSectionId.value === null) {
+      return t("library.allSections");
+    }
+    const section = flatSectionOptions.value.find(
+      (item) => item.id === library.selectedSectionId.value,
+    );
+    return section?.title ?? t("library.chooseDiagram");
+  });
+
+  const headerTitle = computed(() => {
+    if (activeTab.value === "upload") return t("library.uploadDiagram");
+    if (activeTab.value === "transfer") return t("library.transfer");
+    if (activeTab.value === "admin") return t("library.adminUsersTitle");
+    if (browseStep.value === "subscriptions") return t("library.subscriptionsTitle");
+    if (browseStep.value === "sections") return t("library.chooseSection");
+    if (browseStep.value === "diagrams") {
+      return sectionTitle.value;
+    }
+    if (library.selectedDiagram.value) {
+      return library.selectedDiagram.value.title;
+    }
+    return t("library.title");
+  });
+
+  const breadcrumbItems = computed(() => {
+    if (activeTab.value !== "browse") {
+      return [] as Array<{ label: string; action?: () => void }>;
+    }
+
+    const items: Array<{ label: string; action?: () => void }> = [
+      {
+        label: t("library.allSections"),
+        action: browseStep.value === "sections" ? undefined : resetBrowseFlow,
+      },
+    ];
+
+    if (browseStep.value === "sections" || browseStep.value === "subscriptions") {
+      return items;
+    }
+
+    items.push({
+      label: sectionTitle.value,
+      action:
+        browseStep.value === "detail"
+          ? () => {
+              browseStep.value = "diagrams";
+              resetEditForm();
+            }
+          : undefined,
+    });
+
+    if (browseStep.value === "detail" && library.selectedDiagram.value) {
+      items.push({ label: library.selectedDiagram.value.title });
+    }
+
+    return items;
+  });
+
+  function resetBrowseFlow(): void {
+    browseStep.value = "sections";
+    resetEditForm();
+  }
+
+  function goBack(): void {
+    if (browseStep.value === "detail") {
+      browseStep.value = "diagrams";
+      resetEditForm();
+      return;
+    }
+    if (browseStep.value === "diagrams" || browseStep.value === "subscriptions") {
+      browseStep.value = "sections";
+      resetEditForm();
+    }
+  }
+
+  function openSubscriptions(): void {
+    browseStep.value = "subscriptions";
+    resetEditForm();
+  }
+
+  async function onSectionPick(sectionId: string | null): Promise<void> {
+    await library.selectSection(sectionId);
+    browseStep.value = "diagrams";
+  }
+
+  async function onDiagramPick(diagramId: string): Promise<void> {
+    await library.selectDiagram(diagramId);
+    browseStep.value = "detail";
+  }
+
+  return {
+    browseStep,
+    showBackButton,
+    showModeTabs,
+    headerTitle,
+    breadcrumbItems,
+    resetBrowseFlow,
+    goBack,
+    openSubscriptions,
+    onSectionPick,
+    onDiagramPick,
+  };
+}

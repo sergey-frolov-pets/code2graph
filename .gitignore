@@ -1,0 +1,24 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+dist/
+dist-single/
+release/
+public/vendor/
+vendor/C4-PlantUML/
+vendor/Archimate-PlantUML/
+data/
+server/node_modules/
+server/dist/
+test-results/
+
+# артефакты песочницы (генерируются при прогоне)
+sandbox/out/
+
+sandbox/.cache-golden/
+
+# бэкап эталонов перед перегенерацией (scripts/mermaid-ext-refresh.mjs --no-backup чтобы не создавать)
+sandbox/golden.bak/
+sandbox/.cache-preflight/
+sandbox/.cache-refresh/

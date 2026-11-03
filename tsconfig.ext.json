@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": [],
+    "baseUrl": ".",
+    "paths": { "@/*": ["src/*"] }
+  },
+  "include": [
+    "src/services/mermaid/ext/**/*.ts",
+    "src/services/mermaid/mermaid-engine.ts",
+    "src/services/mermaid/syntax-validation.ts",
+    "src/vite-env.d.ts"
+  ]
+}

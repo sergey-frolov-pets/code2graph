@@ -1,0 +1,13 @@
+{
+  "name": "Code2Graph",
+  "short_name": "Code2Graph",
+  "description": "Редактор диаграмм PlantUML, Mermaid, GraphML, WireMark, D2 и Structurizr. MCP возвращает исходник и изображение.",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f6f8",
+  "theme_color": "#0f6cbd",
+  "lang": "ru"
+}

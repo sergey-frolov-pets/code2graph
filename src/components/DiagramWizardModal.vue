@@ -1,0 +1,246 @@
+<script setup lang="ts">
+import { computed, onMounted, ref, toRef, watch } from "vue";
+import AppModal from "@/components/AppModal.vue";
+import LoadingState from "@/components/ui/LoadingState.vue";
+import WizardOnboardingBanner from "@/components/wizard/WizardOnboardingBanner.vue";
+import WizardAiSetupPanel from "@/components/wizard/WizardAiSetupPanel.vue";
+import WizardLivePreview from "@/components/wizard/WizardLivePreview.vue";
+import WizardProgressSteps from "@/components/wizard/WizardProgressSteps.vue";
+import WizardStepContent from "@/components/wizard/WizardStepContent.vue";
+import WizardModalFooter from "@/components/wizard/WizardModalFooter.vue";
+import { useDiagramWizardFlow } from "@/composables/wizard/useDiagramWizardFlow";
+import { useActiveLlmLabel } from "@/composables/useActiveLlmLabel";
+import { useWizardOnboarding } from "@/composables/wizard/useWizardOnboarding";
+import { useLocale } from "@/composables/useLocale";
+import { trackEvent } from "@/analytics";
+import type { DiagramFormat } from "@/constants/diagram-formats";
+import type { LayoutEngine } from "@/constants";
+import type { RenderMode } from "@/constants/render-settings";
+import type { WizardCreationMode } from "@/constants/llm-wizard";
+
+const props = defineProps<{
+  open: boolean;
+  documentKey: string;
+  layout: LayoutEngine;
+  renderMode: RenderMode;
+  diagramDarkMode: boolean;
+  initialCreationMode?: WizardCreationMode | null;
+}>();
+
+const emit = defineEmits<{
+  close: [];
+  apply: [payload: { source: string; label: string; format: DiagramFormat }];
+}>();
+
+const { t, locale } = useLocale();
+const { showWizardBanner, dismissWizardBanner } = useWizardOnboarding();
+const { activeLlmDetail } = useActiveLlmLabel();
+
+const pendingLaunchMode = ref<WizardCreationMode | null>(null);
+
+function trackWizardOpen(): void {
+  // New-diagram wizard opened: exactly one event per opening.
+  trackEvent("wizard-open", "Wizard: new diagram");
+}
+
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen) {
+      pendingLaunchMode.value = props.initialCreationMode ?? null;
+      trackWizardOpen();
+    }
+  },
+);
+
+// The modal is mounted with `v-if` only while open, so the `open` watcher above
+// never fires on the first opening — count that one on mount.
+onMounted(() => {
+  if (props.open) {
+    trackWizardOpen();
+  }
+});
+
+const {
+  stepIndex,
+  wizardState,
+  isGenerating,
+  errorMessage,
+  resultSource,
+  resultExplanation,
+  previewSvg,
+  isPreviewLoading,
+  aiSetupVisible,
+  aiSetupReason,
+  showLivePreviewPanel,
+  currentStepId,
+  totalSteps,
+  stepTitle,
+  structuralElementOptions,
+  showBackButton,
+  languageOptions,
+  typeOptions,
+  directionOptions,
+  paramFields,
+  isAiMode,
+  selectedModeDescription,
+  isManualResultReady,
+  canGoNext,
+  wizardSteps,
+  onModeSelect,
+  onLanguageSelect,
+  onTypeSelect,
+  onDirectionSelect,
+  onParamChange,
+  onStructuralToggle,
+  goBack,
+  goNext,
+  handleApply,
+  handleTransferToEditor,
+  handleRegenerate,
+  handleAiSetupRetry,
+  planningMessages,
+  isPlanningChatBusy,
+  sendPlanningChatMessage,
+  clearPlanningChat,
+  refineMessages,
+  isRefineChatBusy,
+  sendRefineChatMessage,
+  clearRefineChat,
+  showRefineChat,
+} = useDiagramWizardFlow({
+  open: toRef(props, "open"),
+  documentKey: toRef(props, "documentKey"),
+  layout: toRef(props, "layout"),
+  renderMode: toRef(props, "renderMode"),
+  diagramDarkMode: toRef(props, "diagramDarkMode"),
+  locale,
+  t,
+  initialCreationMode: pendingLaunchMode,
+  onApply: (payload) => {
+    trackEvent("wizard-apply", "Wizard: apply");
+    emit("apply", payload);
+  },
+  onClose: () => emit("close"),
+});
+
+const showLivePreview = computed(
+  () => showLivePreviewPanel.value && !aiSetupVisible.value,
+);
+</script>
+
+<template>
+  <AppModal
+    :open="open"
+    wide
+    :title="t('llm.wizard.title')"
+    test-id="diagram-wizard-modal"
+    @close="emit('close')"
+  >
+    <WizardOnboardingBanner
+      :open="showWizardBanner"
+      @dismiss="dismissWizardBanner"
+    />
+
+    <p class="wizard-step-title">
+      {{ stepTitle }}
+    </p>
+    <div
+      class="wizard-progress"
+      role="progressbar"
+      :aria-valuenow="stepIndex + 1"
+      :aria-valuemin="1"
+      :aria-valuemax="totalSteps"
+      :aria-label="t('llm.wizard.stepCounter', { current: stepIndex + 1, total: totalSteps })"
+    >
+      <div
+        class="wizard-progress__bar"
+        :style="{ width: `${((stepIndex + 1) / totalSteps) * 100}%` }"
+      />
+    </div>
+    <WizardProgressSteps
+      :steps="wizardSteps"
+      :step-index="stepIndex"
+    />
+    <p class="wizard-step-meta">
+      {{ t("llm.wizard.stepCounter", { current: stepIndex + 1, total: totalSteps }) }}
+    </p>
+
+    <WizardAiSetupPanel
+      v-if="aiSetupVisible && isAiMode"
+      :reason="aiSetupReason"
+      @retry="handleAiSetupRetry"
+    />
+
+    <LoadingState
+      v-if="isGenerating && isAiMode && currentStepId !== 'result'"
+      compact
+      class="wizard-generating-banner"
+      :message="t('llm.wizard.generating')"
+      :detail="activeLlmDetail"
+    />
+
+    <div
+      class="wizard-body"
+      :class="{ 'wizard-body--with-preview': showLivePreview }"
+    >
+      <div class="wizard-body__main">
+        <WizardStepContent
+          v-model:wizard-state="wizardState"
+          :current-step-id="currentStepId"
+          :is-ai-mode="isAiMode"
+          :is-generating="isGenerating"
+          :is-manual-result-ready="isManualResultReady"
+          :error-message="errorMessage"
+          :result-explanation="resultExplanation"
+          :selected-mode-description="selectedModeDescription"
+          :language-options="languageOptions"
+          :type-options="typeOptions"
+          :direction-options="directionOptions"
+          :param-fields="paramFields"
+          :structural-element-options="structuralElementOptions"
+          :planning-messages="planningMessages"
+          :is-planning-chat-busy="isPlanningChatBusy"
+          :show-refine-chat="showRefineChat"
+          :refine-messages="refineMessages"
+          :is-refine-chat-busy="isRefineChatBusy"
+          @mode-select="onModeSelect($event)"
+          @language-select="onLanguageSelect($event)"
+          @type-select="onTypeSelect($event)"
+          @direction-select="onDirectionSelect($event)"
+          @param-change="onParamChange"
+          @structural-toggle="onStructuralToggle"
+          @planning-send="sendPlanningChatMessage"
+          @planning-clear="clearPlanningChat"
+          @refine-send="sendRefineChatMessage"
+          @refine-clear="clearRefineChat"
+        />
+      </div>
+
+      <WizardLivePreview
+        v-if="showLivePreview"
+        :preview-svg="previewSvg"
+        :is-preview-loading="isPreviewLoading"
+      />
+    </div>
+
+    <template #footer>
+      <WizardModalFooter
+        :current-step-id="currentStepId"
+        :is-ai-mode="isAiMode"
+        :is-generating="isGenerating"
+        :can-go-next="canGoNext"
+        :show-back-button="showBackButton"
+        :result-source="resultSource"
+        @back="goBack"
+        @close="emit('close')"
+        @transfer-to-editor="handleTransferToEditor"
+        @next="goNext"
+        @apply="handleApply"
+        @regenerate="handleRegenerate"
+      />
+    </template>
+  </AppModal>
+</template>
+
+<style src="./wizard/wizard-modal.css"></style>

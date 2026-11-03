@@ -1,0 +1,31 @@
+{
+  "name": "@code2graph/mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP server that plans Code2Graph diagrams and returns source plus a rendered image.",
+  "bin": {
+    "code2graph-mcp": "./bin/code2graph-mcp.js"
+  },
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/*.test.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.20.2",
+    "@resvg/resvg-js": "^2.6.2",
+    "@wiremark/core": "^0.1.0",
+    "dagre": "^0.8.5",
+    "tsx": "^4.19.3",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/dagre": "^0.7.54",
+    "@types/node": "^22.10.5",
+    "typescript": "~5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

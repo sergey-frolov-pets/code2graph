@@ -1,0 +1,36 @@
+/// <reference types="vite/client" />
+
+declare const __APP_VERSION__: string;
+
+/**
+ * Флаг сборки расширения Mermaid (свои типы диаграмм).
+ * `false` в прод-конфиге → блок врезки вырезается tree-shaking'ом,
+ * код расширения в прод-бандл не попадает.
+ */
+declare const __MERMAID_EXT__: boolean;
+
+interface ImportMetaEnv {
+  /**
+   * Пусто — статическая сборка без сервера и БД.
+   * `same-origin` — API на том же хосте (`/api`).
+   * Иначе абсолютный URL сервера библиотеки.
+   */
+  readonly VITE_API_BASE_URL?: string;
+
+  /**
+   * Адрес инстанса GoatCounter для аналитики.
+   * Не задана — используется адрес проекта по умолчанию.
+   * Пустая строка — аналитика выключена (форки, локальная сборка).
+   */
+  readonly VITE_GOATCOUNTER_URL?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
+declare module "*.vue" {
+  import type { DefineComponent } from "vue";
+  const component: DefineComponent<object, object, unknown>;
+  export default component;
+}
