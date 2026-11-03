@@ -65,6 +65,14 @@ async function renderMermaidOfflineToSvg(
     throw new LocalizedAppError("mermaid.emptySource");
   }
 
+  // Расширение Mermaid (свои типы диаграмм). В проде __MERMAID_EXT__ = false →
+  // этот блок вместе с import() вырезается на этапе сборки.
+  if (__MERMAID_EXT__) {
+    const { tryRenderExtension } = await import("@/services/mermaid/ext");
+    const extSvg = await tryRenderExtension(source, { dark: Boolean(options.dark) });
+    if (extSvg) return extSvg;
+  }
+
   const mermaid = await loadMermaid();
   await ensureMermaidInitialized(Boolean(options.dark));
 

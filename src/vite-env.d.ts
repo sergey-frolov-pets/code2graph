@@ -2,6 +2,13 @@
 
 declare const __APP_VERSION__: string;
 
+/**
+ * Флаг сборки расширения Mermaid (свои типы диаграмм).
+ * `false` в прод-конфиге → блок врезки вырезается tree-shaking'ом,
+ * код расширения в прод-бандл не попадает.
+ */
+declare const __MERMAID_EXT__: boolean;
+
 interface ImportMetaEnv {
   /**
    * Пусто — статическая сборка без сервера и БД.

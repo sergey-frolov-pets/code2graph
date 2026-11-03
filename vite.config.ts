@@ -12,6 +12,8 @@ const packageJson = JSON.parse(
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),
+    // Расширение Mermaid выключено в проде: блок врезки вырезается tree-shaking'ом.
+    __MERMAID_EXT__: JSON.stringify(false),
   },
   resolve: {
     alias: {

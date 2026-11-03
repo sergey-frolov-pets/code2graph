@@ -26,6 +26,9 @@
   ],
   "scripts": {
     "dev": "vite",
+    "sandbox": "vite --config vite.sandbox.config.ts",
+    "sandbox:build": "vite build --config vite.sandbox.config.ts",
+    "test:ext": "vitest run src/services/mermaid/ext",
     "dev:api": "npm --prefix server run dev",
     "dev:all": "npm run dev:api & npm run dev",
     "prebuild": "node scripts/copy-vendor.mjs && node scripts/copy-c4-lib.mjs && node scripts/copy-archimate-lib.mjs && node scripts/generate-pwa-icons.mjs",

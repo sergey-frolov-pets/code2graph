@@ -36,6 +36,14 @@ export async function validateMermaidSyntax(
     };
   }
 
+  // Расширение Mermaid: свои типы проверяем своим парсером, mermaid.parse не зовём.
+  // В проде __MERMAID_EXT__ = false → блок вырезается на этапе сборки.
+  if (__MERMAID_EXT__) {
+    const { validateExtensionSource } = await import("@/services/mermaid/ext");
+    const extResult = validateExtensionSource(source);
+    if (extResult) return extResult;
+  }
+
   try {
     await waitForMermaidReady(darkMode);
     await ensureMermaidParserInitialized(darkMode);
