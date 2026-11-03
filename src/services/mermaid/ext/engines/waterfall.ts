@@ -932,7 +932,17 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
   const plotWidth = columnWidth * columns;
 
   const leftPad = axisHidden ? 16 : padLeft;
-  const width = leftPad + plotWidth + PADDING.right;
+  // Подпись разрыва живёт справа от самого правого бара — под неё нужен запас
+  // по ширине, иначе она обрезается краем SVG.
+  const breakLabels = breaks.filter((b) => Boolean(b.label));
+  const breakLabelRoom = breakLabels.length
+    ? Math.max(
+        ...breakLabels.map(
+          (b) => measureText(b.label ?? "", Math.round(fontSize * 0.91)) + Math.round(fontSize * 1.2),
+        ),
+      )
+    : 0;
+  const width = leftPad + plotWidth + Math.max(PADDING.right, breakLabelRoom);
   const height = padTop + plotHeight + padBottom;
 
   const svg = createSvg({ width, height, palette, title, debugFrames: options.debugFrames });
@@ -942,6 +952,13 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
   const plotBottom = plotTop + plotHeight;
 
   const { yOf, yClamped, inGap } = createScale(axis, breaks, plotTop, plotBottom);
+
+  // Правый край самого правого бара: подпись разрыва выводится справа от него.
+  // Ширина бара и его смещение внутри колонки должны совпадать с раскладкой
+  // ниже (там же считается x бара), иначе подпись «прилипает» к центру колонки.
+  const barWidth = clamp((columnWidth * (1 - BAR_GAP)) / groups, MIN_BAR_WIDTH, MAX_BAR_WIDTH);
+  const groupSpan = barWidth * groups + (groups - 1) * 4;
+  const rightBarEdge = plotLeft + (columns - 1) * columnWidth + (columnWidth + groupSpan) / 2;
 
   if (title) {
     svg.text(width / 2, Math.round((24 * fontSize) / FONT_BASE), title, {
@@ -974,6 +991,40 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       });
     }
 
+    // Границы разрыва подписываем всегда, но только когда шкала показана:
+    // снизу от линии — «после» (минимум вырезанного участка), сверху — «до»
+    // (максимум). Числа стоят ЦЕЛИКОМ по свою сторону линии (нижнее — ниже
+    // линии, верхнее — выше), поэтому линия разрыва их не перечёркивает и
+    // метка не «плавает» относительно делений сетки.
+    const edgeLabelX = plotLeft - Math.round((8 * fontSize) / FONT_BASE);
+    const edgeGap = Math.round((3 * fontSize) / FONT_BASE);
+    const edgeTextW = breaks.reduce(
+      (acc, b) => Math.max(acc, measureText(fmt(b.after), labelFontSize), measureText(fmt(b.before), labelFontSize)),
+      0,
+    );
+    for (const b of breaks) {
+      const y = yOf(b.after);
+      // Вырез под числа: иначе они лежат на линии разрыва.
+      svg.rect(edgeLabelX - edgeTextW - 2, y - edgeGap - labelFontSize * 1.35, edgeTextW + 6, edgeGap * 2 + labelFontSize * 2.7, {
+        fill: palette.bg,
+        "data-break-gap": "1",
+      });
+      // Нижнее число: базлайн ниже линии на gap + высоту строки.
+      svg.text(edgeLabelX, y + edgeGap + labelFontSize, fmt(b.after), {
+        "text-anchor": "end",
+        "font-size": labelFontSize,
+        fill: palette.fgDim,
+        "data-break-edge": "after",
+      });
+      // Верхнее число: базлайн выше линии на gap.
+      svg.text(edgeLabelX, y - edgeGap, fmt(b.before), {
+        "text-anchor": "end",
+        "font-size": labelFontSize,
+        fill: palette.fgDim,
+        "data-break-edge": "before",
+      });
+    }
+
     if (axis.label) {
       const cx = Math.round((16 * fontSize) / FONT_BASE);
       const cy = plotTop + plotHeight / 2;
@@ -1003,6 +1054,10 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
 
   // Линии разрыва: две параллельные черты поперёк области графика.
   // Разрыв места не занимает, поэтому черты лежат на стыке видимых участков.
+  // Подпись разрыва — справа от самого правого бара, на высоте линии.
+  // Правый край последнего бара берём из фактической раскладки: колонка
+  // центрируется, группа внутри неё может быть уже колонки.
+  const lastBarRight = rightBarEdge;
   for (const b of breaks) {
     const y = yOf(b.after);
     const gap = 3;
@@ -1014,30 +1069,25 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       });
     }
     if (b.label) {
-      // Подпись разрыва прижимается вправо, но не выходит за область графика:
-      // длинный текст сдвигается влево (иначе обрезается краем SVG).
       const breakFs = breakFontSize;
-      const text = truncate(b.label, plotWidth - 8, breakFs);
-      const anchorX = plotLeft + plotWidth - 4;
-      const fitsLeft = anchorX - measureText(text, breakFs) >= plotLeft + 4;
-      const textX = fitsLeft ? anchorX : plotLeft + plotWidth / 2;
+      // Длинный текст обрезается по свободному месту справа от последнего бара.
+      const freeWidth = Math.max(24, width - lastBarRight - 8);
+      const text = truncate(b.label, freeWidth, breakFs);
+      const textX = lastBarRight + Math.round((6 * fontSize) / FONT_BASE);
       // Вырез под подпись: иначе текст лежит на линии разрыва и не читается.
       const textWidth = measureText(text, breakFs);
-      const clearLeft = fitsLeft ? textX - textWidth : textX - textWidth / 2;
-      svg.rect(clearLeft - 3, y - breakFs * 0.75, textWidth + 6, breakFs * 1.5, {
+      svg.rect(textX - 2, y - breakFs * 0.75, textWidth + 4, breakFs * 1.5, {
         fill: palette.bg,
         "data-break-gap": "1",
       });
-      svg.text(textX, y - Math.round((4 * fontSize) / FONT_BASE), text, {
-        "text-anchor": fitsLeft ? "end" : "middle",
+      svg.text(textX, y + Math.round((4 * fontSize) / FONT_BASE), text, {
+        "text-anchor": "start",
         "font-size": breakFs,
         fill: palette.fgDim,
+        "data-break-label": "1",
       });
     }
   }
-
-  const barWidth = clamp((columnWidth * (1 - BAR_GAP)) / groups, MIN_BAR_WIDTH, MAX_BAR_WIDTH);
-  const groupSpan = barWidth * groups + (groups - 1) * 4;
 
   /** Накопленный уровень после колонки `col` (включительно). */
   const levelAfter = (g: number, col: number): number => {

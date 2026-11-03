@@ -281,7 +281,7 @@ break 300 --> 800 "разрыв"`);
     expect(Math.abs(upper.bottom - lineY)).toBeLessThanOrEqual(2);
   });
 
-  it("деления на границах разрыва схлопываются в одно", () => {
+  it("на границах разрыва подписаны минимум (снизу) и максимум (сверху)", () => {
     const r = waterfallEngine.parse(`waterfall
 y "" 0 --> 1000
 grid 100
@@ -289,9 +289,71 @@ grid 100
 +900 : B
 break 300 --> 800`);
     const svg = waterfallEngine.render(r.value as WaterfallModel, {});
-    // Подпись «800» на сжатой шкале совпадает по высоте с «300» → не дублируется.
-    expect(svg).not.toContain(">800<");
-    expect(svg).toContain(">300<");
+    // Сетка не подписывает вырезанный участок (800 нет среди делений)…
+    expect([...svg.matchAll(/<text[^>]*>800<\/text>/g)]).toHaveLength(1);
+    // …но границы разрыва подписаны всегда: «после» ниже линии, «до» — выше.
+    const after = /<text x="[\d.]+" y="([\d.]+)"[^>]*data-break-edge="after">300<\/text>/.exec(svg);
+    const before = /<text x="[\d.]+" y="([\d.]+)"[^>]*data-break-edge="before">800<\/text>/.exec(svg);
+    expect(after).not.toBeNull();
+    expect(before).not.toBeNull();
+    expect(Number(after![1])).toBeGreaterThan(Number(before![1]));
+
+    // Числа стоят ЦЕЛИКОМ по свою сторону линии: нижнее ниже линии, верхнее
+    // выше (базлайн верхнего не заходит в полосу линии). Иначе линия их
+    // перечёркивает и цифры «плывут» относительно делений сетки.
+    const lineY = Number(/<line x1="[\d.]+" y1="([\d.]+)"[^>]*stroke-dasharray="6 4"/.exec(svg)![1]);
+    const fs = 11;
+    expect(Number(after![1]) - fs).toBeGreaterThan(lineY);
+    expect(Number(before![1])).toBeLessThan(lineY);
+  });
+
+  it("подпись разрыва — справа от самого правого бара", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 1000
+=100 : A
++900 : B
+break 300 --> 800 "разрыв шкалы"`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    const bars = [...svg.matchAll(/<rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)"[^>]*data-bar=/g)];
+    const rightEdge = Math.max(...bars.map((m) => Number(m[1]) + Number(m[2])));
+    const label = /<text x="([\d.]+)"[^>]*data-break-label="1">разрыв шкалы<\/text>/.exec(svg);
+    expect(label).not.toBeNull();
+    // Подпись целиком помещается в SVG и начинается правее последнего бара.
+    expect(Number(label![1])).toBeGreaterThan(rightEdge);
+    const width = Number(/viewBox="0 0 ([\d.]+)/.exec(svg)![1]);
+    expect(Number(label![1])).toBeLessThan(width);
+  });
+
+  it("подпись разрыва — справа от последнего бара и в мульти-серии", () => {
+    // В мульти-серии группа уже колонки: подпись должна цепляться к краю
+    // реального бара, а не к центру колонки (иначе она «внутри» графика).
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 1000
+break 300 --> 800 "разрыв шкалы"
+series План
+=100 : A
++900 : B
+series Факт
+=120 : A
++860 : B`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    const bars = [...svg.matchAll(/<rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)"[^>]*data-bar=/g)];
+    const rightEdge = Math.max(...bars.map((m) => Number(m[1]) + Number(m[2])));
+    const label = /<text x="([\d.]+)"[^>]*data-break-label="1">разрыв шкалы<\/text>/.exec(svg);
+    expect(label).not.toBeNull();
+    expect(Number(label![1])).toBeGreaterThan(rightEdge);
+    // Зазор небольшой — подпись не улетает далеко от графика.
+    expect(Number(label![1]) - rightEdge).toBeLessThan(20);
+  });
+
+  it("подпись разрыва не обрезается краем SVG", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 1000
+=100 : A
++900 : B
+break 300 --> 800 "очень длинная подпись разрыва шкалы"`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect(svg).toContain("очень длинная подпись разрыва шкалы");
   });
 
   it("ошибка: «до» меньше «после»", () => {
