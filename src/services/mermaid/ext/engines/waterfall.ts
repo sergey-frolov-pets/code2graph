@@ -9,6 +9,7 @@ import {
   niceTicks,
   truncate,
 } from "../common";
+import type { Palette } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
 // --- Модель ---------------------------------------------------------------
@@ -75,6 +76,8 @@ export interface WaterfallModel {
   labels: string[];
   /** Разрывы шкалы: между `break.after` и `break.before` участок сжат. */
   breaks: WaterfallBreak[];
+  /** Горизонтальные линии поверх диаграммы (`line <значение> [...]`). */
+  lines?: WaterfallLine[];
   /** Куда рисовать значения: над баром (по умолчанию) и/или внутри бара. */
   valueLabels: { above: boolean; inside: boolean };
   /** Соединительные линии между барами (`connectors on|off`), по умолчанию включены. */
@@ -100,6 +103,23 @@ export interface WaterfallBreak {
   /** Подпись на линии разрыва (опционально). */
   label?: string;
 }
+
+/**
+ * Горизонтальная линия поверх диаграммы (порог, план, среднее).
+ * `line <значение> ["подпись"] [color=#hex] [width=<px>] [style=dash|dot|dashdot|solid]`
+ */
+export interface WaterfallLine {
+  value: number;
+  /** Подпись справа от баров — как у подписи разрыва. */
+  label?: string;
+  /** Цвет линии и подписи; без него — цвет текста темы. */
+  color?: string;
+  /** Толщина в px (0.5–12). */
+  width?: number;
+  style?: WaterfallLineStyle;
+}
+
+export type WaterfallLineStyle = "solid" | "dash" | "dot" | "dashdot";
 
 // --- Разбор ---------------------------------------------------------------
 
@@ -296,6 +316,90 @@ function parseBreak(
   return { brk: { after, before, label: label || undefined } };
 }
 
+/**
+ * `line <значение> ["подпись"] [color=#hex] [width=<px>] [style=solid|dash|dot|dashdot]`
+ *
+ * Хвост после значения разбирается по токенам: сначала снимаются `key=value`,
+ * затем остаток в кавычках (или без) считается подписью. Порядок любой.
+ */
+function parseLine(
+  text: string,
+  line: number,
+): { line?: WaterfallLine; error?: ExtParseError } {
+  const body = text.trim();
+  const valueMatch = /^(-?[\d\s_.]+)(?=\s|$)/.exec(body);
+  const value = valueMatch ? parseNumber(valueMatch[1]) : null;
+  if (!valueMatch || value === null) {
+    return {
+      error: {
+        message: `ожидается «line <значение> ["подпись"] [color=#hex] [width=<px>] [style=dash]», получено «${body}»`,
+        line,
+        col: 0,
+      },
+    };
+  }
+
+  const result: WaterfallLine = { value };
+  let rest = body.slice(valueMatch[0].length).trim();
+
+  const TOKEN_RE = /^(color|width|style)=("[^"]*"|\S*)\s*/i;
+  for (let guard = 0; guard < 8; guard += 1) {
+    const m = TOKEN_RE.exec(rest);
+    if (!m) break;
+    const key = m[1].toLowerCase();
+    const raw = m[2].replace(/^"|"$/g, "");
+    if (key === "color") {
+      if (!isColor(raw)) {
+        return {
+          error: {
+            message: `не удалось разобрать цвет линии «${raw}» (ожидается #rgb, #rrggbb или имя цвета)`,
+            line,
+            col: 0,
+          },
+        };
+      }
+      result.color = raw;
+    } else if (key === "width") {
+      const width = parseNumber(raw);
+      if (width === null || width <= 0) {
+        return {
+          error: {
+            message: `толщина линии: ожидается положительное число, получено «${raw}»`,
+            line,
+            col: 0,
+          },
+        };
+      }
+      result.width = clamp(width, 0.5, 12);
+    } else {
+      const style = raw.toLowerCase();
+      if (style !== "solid" && style !== "dash" && style !== "dot" && style !== "dashdot") {
+        return {
+          error: {
+            message: `стиль линии: ожидается solid|dash|dot|dashdot, получено «${raw}»`,
+            line,
+            col: 0,
+          },
+        };
+      }
+      result.style = style;
+    }
+    rest = rest.slice(m[0].length);
+  }
+
+  // Всё, что осталось, — подпись (в кавычках или как есть).
+  rest = rest.trim();
+  if (rest) {
+    result.label =
+      rest.startsWith('"') && rest.endsWith('"') && rest.length >= 2
+        ? rest.slice(1, -1).replace(/\\"/g, '"')
+        : rest;
+    if (!result.label) delete result.label;
+  }
+
+  return { line: result };
+}
+
 /** `labels above|inside|both|none` */
 function parseLabelsMode(
   text: string,
@@ -405,6 +509,7 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
   const errors: ExtParseError[] = [];
   const series: WaterfallSeries[] = [];
   const breaks: WaterfallBreak[] = [];
+  const thresholdLines: WaterfallLine[] = [];
   let current: WaterfallSeries | null = null;
   let title: string | undefined;
   let axis: WaterfallAxis | null = null;
@@ -554,6 +659,13 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
       continue;
     }
 
+    if (/^line\b/i.test(raw)) {
+      const { line: parsedLine, error } = parseLine(raw.slice(4), lineNo);
+      if (error) errors.push(error);
+      else if (parsedLine) thresholdLines.push(parsedLine);
+      continue;
+    }
+
     if (/^series\b/i.test(raw)) {
       if (current && current.steps.length === 0) {
         errors.push({
@@ -650,6 +762,7 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
       series,
       labels,
       breaks: sorted,
+      lines: [...thresholdLines].sort((a, b) => a.value - b.value),
       valueLabels,
       connectors,
       fontSize,
@@ -886,6 +999,19 @@ function shade(hex: string, amount: number): string {
   return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
 }
 
+/** Штрих линии по стилю: `solid` — сплошная, остальные — пунктиры. */
+const LINE_DASH: Record<WaterfallLineStyle, string | undefined> = {
+  solid: undefined,
+  dash: "7 4",
+  dot: "1.5 3.5",
+  dashdot: "8 3 1.5 3",
+};
+
+/** Цвет линии по умолчанию: заметнее сетки, но тише баров. */
+function defaultLineColor(palette: Palette, dark?: boolean): string {
+  return dark ? palette.fgDim : palette.axis;
+}
+
 /**
  * Цвет бара в МУЛЬТИ-серии: базовый цвет группы, но с поправкой на тип шага,
  * чтобы различались и группы, и типы:
@@ -904,6 +1030,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
   const palette = getPalette(Boolean(options.dark));
   const { axis, series, labels, title } = model;
   const breaks = model.breaks ?? [];
+  const lines = model.lines ?? [];
   const valueLabels = model.valueLabels ?? { above: true, inside: false };
   const axisHidden = Boolean(axis.hidden);
   const colors = resolveColors(model, Boolean(options.dark));
@@ -951,14 +1078,28 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
   // Подпись разрыва живёт справа от самого правого бара — под неё нужен запас
   // по ширине, иначе она обрезается краем SVG.
   const breakLabels = breaks.filter((b) => Boolean(b.label));
-  const breakLabelRoom = breakLabels.length
-    ? Math.max(
-        ...breakLabels.map(
-          (b) => measureText(b.label ?? "", Math.round(fontSize * 0.91)) + Math.round(fontSize * 1.2),
-        ),
-      )
-    : 0;
-  // Раскладка бара — ДО расчёта ширины SVG: подпись разрыва должна знать,
+  // Подписи горизонтальных линий живут в том же правом поле, что и подпись
+  // разрыва, поэтому запас по ширине считаем по самой длинной из всех.
+  const lineLabels = lines.filter((l) => Boolean(l.label));
+  const rightLabelRoom = Math.max(
+    breakLabels.length
+      ? Math.max(
+          ...breakLabels.map(
+            (b) => measureText(b.label ?? "", Math.round(fontSize * 0.91)) + Math.round(fontSize * 1.2),
+          ),
+        )
+      : 0,
+    lineLabels.length
+      ? Math.max(
+          ...lineLabels.map(
+            (l) =>
+              measureText(`${fmt(l.value)} ${l.label ?? ""}`.trim(), Math.round(fontSize * 0.91)) +
+              Math.round(fontSize * 1.2),
+          ),
+        )
+      : 0,
+  );
+  const breakLabelRoom = rightLabelRoom;  // Раскладка бара — ДО расчёта ширины SVG: подпись разрыва должна знать,
   // где кончается последний бар, чтобы встать в свободном поле справа от него.
   const barWidth = clamp((columnWidth * (1 - BAR_GAP)) / groups, MIN_BAR_WIDTH, MAX_BAR_WIDTH);
   const groupSpan = barWidth * groups + (groups - 1) * 4;
@@ -986,6 +1127,42 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       "font-weight": 600,
       fill: palette.fg,
     });
+  }
+
+  // Горизонтальные линии поверх диаграммы — под сеткой, барами и подписями:
+  // так они не перечёркивают значения, а читаются как «уровень».
+  // Линия, попавшая внутрь вырезанного разрыва, прижимается к его границе —
+  // иначе она «не существует» на шкале и рисовалась бы не там.
+  const lineFontSize = Math.round(fontSize * 0.91);
+  const lineLabelX = leftPad + plotWidth + Math.round((6 * fontSize) / FONT_BASE);
+  for (const item of lines) {
+    if (item.value < axis.min || item.value > axis.max) continue;
+    const y = yClamped(item.value);
+    const stroke = item.color ?? defaultLineColor(palette, options.dark);
+    const dash = LINE_DASH[item.style ?? "dash"];
+    svg.line(plotLeft, y, plotLeft + plotWidth, y, {
+      stroke,
+      "stroke-width": item.width ?? 1.5,
+      ...(dash ? { "stroke-dasharray": dash } : {}),
+      "stroke-linecap": "butt",
+      "data-threshold-line": "1",
+    });
+
+    if (item.label) {
+      const text = `${fmt(item.value)} ${item.label}`;
+      const textWidth = measureText(text, lineFontSize);
+      // Вырез под подпись — цветом плашки холста: иначе текст лежит на линии.
+      svg.rect(lineLabelX - 2, y - lineFontSize * 0.8, textWidth + 4, lineFontSize * 1.6, {
+        fill: palette.bg,
+        "data-line-gap": "1",
+      });
+      svg.text(lineLabelX, y + Math.round((4 * fontSize) / FONT_BASE), text, {
+        "text-anchor": "start",
+        "font-size": lineFontSize,
+        fill: stroke,
+        "data-threshold-label": "1",
+      });
+    }
   }
 
   // Деления на границах разрыва схлопываются в одну линию (300 и 800 лежат

@@ -46,8 +46,116 @@ function isLabelKnockoutRect(rect: Element): boolean {
   return Math.min(width, height) <= SVG_LABEL_KNOCKOUT_MAX_SHORTER_EDGE_PX;
 }
 
+function isCanvasBackgroundRect(rect: Element): boolean {
+  // Плашка холста — только у корневого <svg>: тот же data-bg внутри
+  // <g transform> — это вырез под подпись, его снимать нельзя.
+  const parent = rect.parentElement;
+  return rect.getAttribute("data-bg") === "canvas" && (!parent || parent.tagName.toLowerCase() === "svg");
+}
+
+/**
+ * Пометить плашку холста: `<rect>` во всю ширину/высоту корневого `<svg>`,
+ * который лежит первым элементом и закрашен «фоном страницы».
+ * Нужно для движков, которые рисуют фон сами (heatmap, orgchart).
+ */
+function markCanvasBackground(root: Element): void {
+  const viewBox = parseViewBoxSize(root.getAttribute("viewBox"));
+  if (!viewBox) {
+    return;
+  }
+
+  for (const rect of root.querySelectorAll("rect")) {
+    if (!isCanvasBackgroundRect(rect)) {
+      const width = Number.parseFloat(rect.getAttribute("width") ?? "");
+      const height = Number.parseFloat(rect.getAttribute("height") ?? "");
+      const x = Number.parseFloat(rect.getAttribute("x") ?? "0");
+      const y = Number.parseFloat(rect.getAttribute("y") ?? "0");
+      const coversCanvas =
+        x <= 0 &&
+        y <= 0 &&
+        width >= viewBox.width - 0.5 &&
+        height >= viewBox.height - 0.5;
+      if (!coversCanvas) {
+        continue;
+      }
+      rect.setAttribute("data-bg", "canvas");
+    }
+
+    // Помеченная плашка — единственная, что снимается при прозрачном фоне.
+    // Если она закрашена цветом страницы, вырезы под подписи (тот же цвет)
+    // тоже станут прозрачными; поэтому вырезы получают свою метку и остаются.
+    const fill = rect.getAttribute("fill") ?? "";
+    if (normalizeColor(fill)) {
+      for (const knockout of root.querySelectorAll("rect[data-break-gap], rect[data-line-gap]")) {
+        if (!knockout.getAttribute("data-bg-fill")) {
+          knockout.setAttribute("data-bg-fill", fill);
+        }
+      }
+    }
+    return;
+  }
+}
+
+/** Снять заливку с плашки холста (только она — содержимое не трогаем). */
+function clearCanvasBackground(root: Element): void {
+  for (const rect of root.querySelectorAll("rect[data-bg='canvas']")) {
+    if (!isCanvasBackgroundRect(rect)) {
+      continue;
+    }
+    rect.setAttribute("fill", "none");
+  }
+}
+
+/**
+ * Вырезы под подписи (разрыв, горизонтальная линия) и плашка холста должны
+ * быть ОДНОГО цвета — выбранного фона диаграммы. Иначе при светлом фоне
+ * вырез, нарисованный цветом тёмной темы, выглядит дырой, а при прозрачном
+ * фоне вырез на баре становится прозрачным и бар «рвётся».
+ *
+ * @param background выбранный фон предпросмотра (`transparent` — берём белый)
+ */
+export function applyPreviewBackground(svg: string, background: string): string {
+  if (!svg.includes("<svg")) {
+    return svg;
+  }
+
+  const fill = isTransparentBackground(background) ? "#ffffff" : background.trim();
+  if (!fill) {
+    return svg;
+  }
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svg, "image/svg+xml");
+  const root = doc.documentElement;
+  if (root.tagName.toLowerCase() !== "svg") {
+    return svg;
+  }
+
+  // Плашку холста мог не пометить рендер (движки без своего фона) —
+  // помечаем сами, иначе при смене цвета фон останется прежним.
+  markCanvasBackground(root);
+  const canvas = root.querySelector("rect[data-bg='canvas']");
+  if (canvas) {
+    canvas.setAttribute("fill", fill);
+  }
+
+  for (const rect of root.querySelectorAll(
+    "rect[data-break-gap], rect[data-line-gap], rect[data-bg-fill]",
+  )) {
+    rect.setAttribute("fill", fill);
+  }
+
+  return new XMLSerializer().serializeToString(root);
+}
+
 function transparentizeLightBackground(root: Element): void {
   for (const rect of root.querySelectorAll("rect")) {
+    // Плашка холста снимается отдельно (clearCanvasBackground) — здесь её
+    // трогать не нужно: иначе вырез под подпись потеряет свой фон.
+    if (isCanvasBackgroundRect(rect)) {
+      continue;
+    }
+
     if (isInsideSvgPaintContainer(rect) || isLabelKnockoutRect(rect)) {
       continue;
     }
@@ -246,6 +354,8 @@ export function withTransparentSvgBackground(svg: string): string {
     return svg;
   }
 
+  markCanvasBackground(root);
+  clearCanvasBackground(root);
   transparentizeLightBackground(root);
   return new XMLSerializer().serializeToString(root);
 }
@@ -313,6 +423,10 @@ export function sanitizeSvgForPreview(svg: string): string {
   }
 
   normalizeSvgRootSize(root);
+  markCanvasBackground(root);
+  // Превью всегда рисует фон само (--preview-bg или шахматка), поэтому
+  // плашка холста снимается всегда — и при непрозрачном цвете тоже.
+  clearCanvasBackground(root);
   transparentizeLightBackground(root);
 
   return new XMLSerializer().serializeToString(root);

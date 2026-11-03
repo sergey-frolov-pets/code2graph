@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { getWiremarkSampleSource } from "@/constants/wiremark-sample-diagrams";
 import { renderWiremarkToSvg } from "@/services/wiremark/wiremark-engine";
 import {
+  applyPreviewBackground,
   isTransparentBackground,
   normalizeSvgRootSize,
   parseSvgSize,
@@ -103,9 +104,56 @@ describe("прозрачный фон экспорта", () => {
     expect(rects[1].getAttribute("fill")).toBe("#ffffff");
   });
 
+  it("вырез под подпись не снимается вместе с плашкой холста", () => {
+    const svg =
+      '<svg viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">' +
+      '<rect x="0" y="0" width="200" height="100" fill="#ffffff"/>' +
+      '<g transform="translate(10 10)">' +
+      '<rect x="0" y="0" width="40" height="10" fill="#ffffff" data-break-gap="1"/>' +
+      "</g></svg>";
+    const out = withTransparentSvgBackground(svg);
+    const doc = new DOMParser().parseFromString(out, "image/svg+xml");
+
+    expect(doc.querySelector("rect")?.getAttribute("fill")).toBe("none");
+    expect(doc.querySelector("rect[data-break-gap]")?.getAttribute("fill")).toBe("#ffffff");
+  });
+
   it("превью по-прежнему гасит плашку на весь холст (фон рисует панель)", () => {
     const out = sanitizeSvgForPreview(svgWithBackdrop);
     const doc = new DOMParser().parseFromString(out, "image/svg+xml");
     expect(doc.querySelectorAll("rect")[0].getAttribute("fill")).toBe("none");
+  });
+});
+
+describe("applyPreviewBackground", () => {
+  const svgWithGaps =
+    '<svg viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">' +
+    '<rect x="0" y="0" width="200" height="100" fill="#ffffff"/>' +
+    '<g transform="translate(10 10)">' +
+    '<rect x="0" y="0" width="40" height="10" fill="#171d24" data-break-gap="1"/>' +
+    '<rect x="0" y="20" width="40" height="10" fill="#171d24" data-line-gap="1"/>' +
+    "</g></svg>";
+
+  it("вырезы и плашка получают выбранный цвет фона", () => {
+    const out = applyPreviewBackground(svgWithGaps, "#fdf6e3");
+    const doc = new DOMParser().parseFromString(out, "image/svg+xml");
+
+    expect(doc.querySelector("rect[data-bg='canvas']")?.getAttribute("fill")).toBe("#fdf6e3");
+
+    expect(doc.querySelector("rect[data-break-gap]")?.getAttribute("fill")).toBe("#fdf6e3");
+    expect(doc.querySelector("rect[data-line-gap]")?.getAttribute("fill")).toBe("#fdf6e3");
+  });
+
+  it("прозрачный фон даёт белые вырезы, а не дыры в барах", () => {
+    const out = applyPreviewBackground(svgWithGaps, "transparent");
+    const doc = new DOMParser().parseFromString(out, "image/svg+xml");
+
+    expect(doc.querySelector("rect[data-break-gap]")?.getAttribute("fill")).toBe("#ffffff");
+    expect(doc.querySelector("rect[data-line-gap]")?.getAttribute("fill")).toBe("#ffffff");
+  });
+
+  it("не ломается на пустой строке и мусоре", () => {
+    expect(applyPreviewBackground("", "#ffffff")).toBe("");
+    expect(applyPreviewBackground("not svg", "#ffffff")).toBe("not svg");
   });
 });
