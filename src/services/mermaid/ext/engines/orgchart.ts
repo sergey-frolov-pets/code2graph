@@ -309,7 +309,7 @@ function layout(model: OrgModel): { placed: PlacedNode[]; width: number; height:
 const PADDING = { top: 48, right: 24, bottom: 32, left: 24 };
 
 export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): string {
-  const palette = getPalette(options.dark);
+  const palette = getPalette(Boolean(options.dark));
   const { placed, width: contentWidth, height: contentHeight } = layout(model);
 
   const width = PADDING.left + contentWidth + PADDING.right;

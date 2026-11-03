@@ -2,7 +2,13 @@
 import { describe, expect, it } from "vitest";
 import { getWiremarkSampleSource } from "@/constants/wiremark-sample-diagrams";
 import { renderWiremarkToSvg } from "@/services/wiremark/wiremark-engine";
-import { normalizeSvgRootSize, parseSvgSize, sanitizeSvgForPreview } from "@/utils/export";
+import {
+  isTransparentBackground,
+  normalizeSvgRootSize,
+  parseSvgSize,
+  sanitizeSvgForPreview,
+  withTransparentSvgBackground,
+} from "@/utils/export";
 
 describe("parseSvgSize", () => {
   it("prefers viewBox over percentage width", () => {
@@ -68,5 +74,38 @@ describe("sanitizeSvgForPreview", () => {
       (node) => Number.parseFloat(node.getAttribute("width") ?? "0") >= 300,
     );
     expect(frameFill?.getAttribute("fill")).toBe("none");
+  });
+});
+
+describe("прозрачный фон экспорта", () => {
+  const svgWithBackdrop =
+    '<svg viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">' +
+    '<rect x="0" y="0" width="100" height="50" fill="#ffffff"/>' +
+    '<rect x="10" y="10" width="20" height="20" fill="#ffffff"/>' +
+    "</svg>";
+
+  it("isTransparentBackground распознаёт transparent/none/пусто", () => {
+    expect(isTransparentBackground("transparent")).toBe(true);
+    expect(isTransparentBackground(" TRANSPARENT ")).toBe(true);
+    expect(isTransparentBackground("none")).toBe(true);
+    expect(isTransparentBackground("")).toBe(true);
+    expect(isTransparentBackground(undefined)).toBe(true);
+    expect(isTransparentBackground("#ffffff")).toBe(false);
+    expect(isTransparentBackground("#171d24")).toBe(false);
+  });
+
+  it("withTransparentSvgBackground снимает плашку на весь холст, но не трогает содержимое", () => {
+    const out = withTransparentSvgBackground(svgWithBackdrop);
+    const doc = new DOMParser().parseFromString(out, "image/svg+xml");
+    const rects = Array.from(doc.querySelectorAll("rect"));
+
+    expect(rects[0].getAttribute("fill")).toBe("none");
+    expect(rects[1].getAttribute("fill")).toBe("#ffffff");
+  });
+
+  it("превью по-прежнему гасит плашку на весь холст (фон рисует панель)", () => {
+    const out = sanitizeSvgForPreview(svgWithBackdrop);
+    const doc = new DOMParser().parseFromString(out, "image/svg+xml");
+    expect(doc.querySelectorAll("rect")[0].getAttribute("fill")).toBe("none");
   });
 });

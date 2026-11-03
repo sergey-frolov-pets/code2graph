@@ -117,6 +117,8 @@ export const miscMessages = {
   "fullscreen.expand": "На весь экран",
   "fullscreen.collapse": "Свернуть",
   "toolbar.previewBackground": "Фон предпросмотра",
+  "toolbar.previewBackgroundTransparent": "Прозрачный фон",
+  "toolbar.previewBackgroundOpaque": "Вернуть непрозрачный фон",
   "toolbar.themeToLight": "Переключить на светлую тему диаграммы",
   "toolbar.themeToDark": "Переключить на тёмную тему диаграммы",
   "toolbar.refresh": "Обновить",

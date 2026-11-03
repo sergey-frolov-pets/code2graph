@@ -117,6 +117,8 @@ export const miscMessages = {
   "fullscreen.expand": "Full screen",
   "fullscreen.collapse": "Exit full screen",
   "toolbar.previewBackground": "Preview background",
+  "toolbar.previewBackgroundTransparent": "Transparent background",
+  "toolbar.previewBackgroundOpaque": "Restore opaque background",
   "toolbar.themeToLight": "Switch to light diagram theme",
   "toolbar.themeToDark": "Switch to dark diagram theme",
   "toolbar.refresh": "Refresh",

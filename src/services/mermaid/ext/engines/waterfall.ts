@@ -901,12 +901,12 @@ function seriesBarColor(base: string, kind: "total" | "increase" | "decrease"): 
 }
 
 export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions): string {
-  const palette = getPalette(options.dark);
+  const palette = getPalette(Boolean(options.dark));
   const { axis, series, labels, title } = model;
   const breaks = model.breaks ?? [];
   const valueLabels = model.valueLabels ?? { above: true, inside: false };
   const axisHidden = Boolean(axis.hidden);
-  const colors = resolveColors(model, options.dark);
+  const colors = resolveColors(model, Boolean(options.dark));
 
   const groups = Math.max(1, series.length);
   const columns = Math.max(1, labels.length);

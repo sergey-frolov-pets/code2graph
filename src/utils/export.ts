@@ -223,6 +223,33 @@ export function applySvgSize(svg: string, size: ImageSize): string {
   return new XMLSerializer().serializeToString(root);
 }
 
+/**
+ * Фон PNG. `transparent` (или пустая строка) — без заливки полотна,
+ * альфа-канал сохраняется.
+ */
+export function isTransparentBackground(value: string | null | undefined): boolean {
+  const normalized = normalizeColor(value ?? "");
+  return normalized === "" || normalized === "transparent" || normalized === "none";
+}
+
+/** Корневой `<svg>` без фоновой плашки: экспорт уходит с прозрачным фоном. */
+export function withTransparentSvgBackground(svg: string): string {
+  if (!svg.includes("<svg")) {
+    return svg;
+  }
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svg, "image/svg+xml");
+  const root = doc.documentElement;
+
+  if (root.tagName.toLowerCase() !== "svg") {
+    return svg;
+  }
+
+  transparentizeLightBackground(root);
+  return new XMLSerializer().serializeToString(root);
+}
+
 export async function svgToPngBlob(
   svg: string,
   backgroundColor = "#ffffff",
@@ -246,8 +273,10 @@ export async function svgToPngBlob(
       throw new LocalizedAppError("engine.canvasUnavailable");
     }
 
-    context.fillStyle = backgroundColor;
-    context.fillRect(0, 0, canvas.width, canvas.height);
+    if (!isTransparentBackground(backgroundColor)) {
+      context.fillStyle = backgroundColor;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    }
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
     const pngBlob = await new Promise<Blob>((resolve, reject) => {
