@@ -56,6 +56,7 @@ export const miscMessages = {
   "samples.mermaid.architecture": "Architecture",
   "samples.mermaid.packet": "Packet diagram",
   "samples.mermaid.waterfall": "Водопад — все возможности",
+  "samples.mermaid.waterfallMono": "Водопад — ч/б режим",
   "samples.mermaid.bubble": "Пузырьковая — подписи и шрифт",
   "samples.mermaid.heatmap": "Тепловая карта",
   "samples.mermaid.orgchart": "Оргструктура",

@@ -202,27 +202,51 @@ break 300 --> 800 "разрыв"
   });
 
   it("разрыв сжимает участок: бары по обе стороны становятся выше", () => {
+    // Смысл разрыва: вырезать «пустой» участок шкалы, чтобы данные по краям
+    // стали крупнее. Данные здесь только в 0..100 и 800..1000.
     const src = `waterfall
 y "" 0 --> 1000
 =100 : A
-+900 : B`;
++800 : B
+= : Итог`;
     const plain = waterfallEngine.parse(src);
     const broken = waterfallEngine.parse(`${src}\nbreak 300 --> 800`);
     expect(broken.ok).toBe(true);
-    const barOf = (svg: string, fill: string) => {
-      const re = new RegExp(`<rect x="[\\d.]+" y="([\\d.]+)" width="[\\d.]+" height="([\\d.]+)" fill="${fill}"`);
-      const m = re.exec(svg);
-      return m ? { y: Number(m[1]), h: Number(m[2]) } : null;
+    const barOf = (svg: string, barId: string) => {
+      // Бар, пересекающий разрыв, рисуется кусками (по rect на видимый участок),
+      // поэтому высоту считаем суммой кусков с этим data-bar.
+      const re = new RegExp(
+        `<rect x="[\\d.]+" y="([\\d.]+)" width="[\\d.]+" height="([\\d.]+)" fill="#[0-9a-f]{6}"[^>]*data-bar="${barId}"`,
+        "g",
+      );
+      const all = [...svg.matchAll(re)];
+      if (!all.length) return null;
+      return {
+        y: Math.min(...all.map((m) => Number(m[1]))),
+        h: all.reduce((sum, m) => sum + Number(m[2]), 0),
+      };
     };
-    const plainDelta = barOf(waterfallEngine.render(plain.value as WaterfallModel, {}), "#2da44e");
-    const brokenDelta = barOf(waterfallEngine.render(broken.value as WaterfallModel, {}), "#2da44e");
-    expect(plainDelta).not.toBeNull();
-    expect(brokenDelta).not.toBeNull();
-    // Шкала та же (0..1000), но участок 300..800 сжат → бар «+900» выше.
-    expect(brokenDelta!.h).toBeGreaterThan(plainDelta!.h);
-    // Бар пересекает весь сжатый участок (300..800): выигрыш = BREAK_HEIGHT
-    // минус то, что остаток шкалы (0..300 и 800..1000) стал плотнее.
-    expect(brokenDelta!.h - plainDelta!.h).toBeGreaterThan(1);
+    const plainA = barOf(waterfallEngine.render(plain.value as WaterfallModel, {}), "0-0");
+    const brokenA = barOf(waterfallEngine.render(broken.value as WaterfallModel, {}), "0-0");
+    expect(plainA).not.toBeNull();
+    expect(brokenA).not.toBeNull();
+    // Бар «=100» (0..100) на сжатой шкале заметно выше, чем на непрерывной.
+    expect(brokenA!.h).toBeGreaterThan(plainA!.h);
+    expect(brokenA!.h - plainA!.h).toBeGreaterThan(1);
+  });
+
+  it("бар, пересекающий разрыв, рисуется кусками с зигзагом, а не сплошным", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 1000
+=100 : A
++900 : B
+break 300 --> 800`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    // Бар «+900» пересекает разрыв → два куска с одним data-bar.
+    const pieces = [...svg.matchAll(/<rect[^>]*data-bar="0-1"[^>]*>/g)];
+    expect(pieces.length).toBe(2);
+    // На линии разрыва нарисован зигзаг.
+    expect(svg).toContain('data-break-zigzag="1"');
   });
 
   it("рисует пунктирные линии разрыва и подпись", () => {
@@ -535,7 +559,7 @@ y "" 0 --> 100
     expect(y1).toBeCloseTo(y2, 3);
   });
 
-  it("линия наклонена, когда уровни разные", () => {
+  it("линия горизонтальна: идёт по уровню накопленного итога", () => {
     const r = waterfallEngine.parse(`waterfall
 y "" 0 --> 100
 =40 : Q1
@@ -543,8 +567,9 @@ y "" 0 --> 100
     const svg = waterfallEngine.render(r.value as WaterfallModel, {});
     const m = /<line x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)" y2="([\d.]+)"[^>]*data-connector="1"/.exec(svg);
     const [, , y1, , y2] = m!.map(Number);
-    // Рост 40 → 60: конец второго бара выше (y меньше).
-    expect(y2).toBeLessThan(y1);
+    // Соединитель всегда на уровне итога: у роста — по низу бара (40),
+    // у падения — по верху. Поэтому линия горизонтальна.
+    expect(y1).toBeCloseTo(y2, 3);
   });
 
   it("fontsize задаёт базовый размер шрифта", () => {
@@ -621,5 +646,235 @@ connectors может быть
 =10 : A`);
     expect(r.ok).toBe(false);
     expect(r.errors[0].message).toMatch(/connectors on.*connectors off/i);
+  });
+});
+
+describe("waterfall: соединители — нотация водопада", () => {
+  /** Все соединители: {x1, y1, x2, y2}. */
+  const connectors = (svg: string) =>
+    [...svg.matchAll(/<line x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)" y2="([\d.]+)"[^>]*data-connector="1"/g)]
+      .map((m) => ({ x1: Number(m[1]), y1: Number(m[2]), x2: Number(m[3]), y2: Number(m[4]) }));
+  /** Бары по порядку следования в SVG: {x, top, bottom} (фон и ось отброшены). */
+  const bars = (svg: string) =>
+    [...svg.matchAll(/<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" fill="#[0-9a-f]{6}" rx="2" /g)]
+      .map((m) => ({
+        x: Number(m[1]),
+        top: Number(m[2]),
+        bottom: Number(m[2]) + Number(m[4]),
+      }))
+      .filter((b) => b.bottom - b.top > 1 && b.x > 20);
+
+  it("рост: соединитель идёт по НИЗУ растущего бара", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 100
+=20 : Старт
++30 : Рост
+= : Итог`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    const [start, growth, total] = bars(svg);
+    const [first, second] = connectors(svg);
+
+    // Старт 20 → 50: линия начинается на верхней кромке бара «Старт»
+    // (там накопленный итог 20)…
+    expect(first.x1).toBeGreaterThan(start.x);
+    expect(first.y1).toBeCloseTo(start.top, 1);
+    // …и приходит в нижнюю кромку бара «Рост» — он растёт вверх от 20 до 50.
+    expect(first.y2).toBeCloseTo(growth.bottom, 1);
+    // Следующий соединитель: от верха «Роста» (итог 50) к верху итога.
+    expect(second.y1).toBeCloseTo(growth.top, 1);
+    expect(second.y2).toBeCloseTo(total.top, 1);
+  });
+
+  it("падение: соединитель идёт по ВЕРХУ падающего бара", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 100
+=80 : Старт
+-30 : Падение
+= : Итог`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    const [start, drop, total] = bars(svg);
+    const [first, second] = connectors(svg);
+
+    // Старт 80: соединитель выходит из верха бара «Старт» (итог 80)…
+    expect(first.y1).toBeCloseTo(start.top, 1);
+    // …и приходит в ВЕРХ бара «Падение» — он идёт вниз от 80 до 50.
+    expect(first.y2).toBeCloseTo(drop.top, 1);
+    // Дальше — от низа «Падения» (итог 50) к верху итога (тот же уровень).
+    expect(second.y1).toBeCloseTo(drop.bottom, 1);
+    expect(second.y2).toBeCloseTo(total.top, 1);
+  });
+});
+
+describe("waterfall: чёрно-белый режим (mono)", () => {
+  it("mono включает серые бары вместо цветных", () => {
+    const r = waterfallEngine.parse(`waterfall
+mono
+y "" 0 --> 100
+=40 : Q1
++20 : Q2
+-10 : Q3`);
+    expect(r.ok).toBe(true);
+    expect((r.value as WaterfallModel).mono).toBe(true);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect(svg).toContain('fill="#111111"'); // итог
+    expect(svg).toContain('fill="#a3a3a3"'); // рост
+    expect(svg).toContain('fill="#4d4d4d"'); // падение
+    expect(svg).not.toContain("#2da44e");
+    expect(svg).not.toContain("#cf222e");
+  });
+
+  it("mono off возвращает цветную палитру", () => {
+    const r = waterfallEngine.parse(`waterfall
+mono
+mono off
+y "" 0 --> 100
+=40 : Q1
++20 : Q2`);
+    expect((r.value as WaterfallModel).mono).toBe(false);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect(svg).toContain("#2da44e");
+  });
+
+  it("ошибка: неизвестное значение mono", () => {
+    const r = waterfallEngine.parse(`waterfall
+mono может быть
+=10 : A`);
+    expect(r.ok).toBe(false);
+    expect(r.errors[0].message).toMatch(/mono/);
+  });
+});
+
+describe("waterfall: свои цвета (colors)", () => {
+  it("colors задаёт цвета итогов, роста и падения", () => {
+    const r = waterfallEngine.parse(`waterfall
+colors total=#334155 increase=#0ea5e9 decrease=#f97316
+y "" 0 --> 100
+=40 : Q1
++20 : Q2
+-10 : Q3`);
+    expect(r.ok).toBe(true);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect(svg).toContain('fill="#334155"');
+    expect(svg).toContain('fill="#0ea5e9"');
+    expect(svg).toContain('fill="#f97316"');
+  });
+
+  it("можно задать только часть цветов — остальные из палитры", () => {
+    const r = waterfallEngine.parse(`waterfall
+colors increase=#0ea5e9
+y "" 0 --> 100
+=40 : Q1
++20 : Q2
+-10 : Q3`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect(svg).toContain('fill="#0ea5e9"');
+    expect(svg).toContain("#0969da"); // итог из палитры
+    expect(svg).toContain("#cf222e"); // падение из палитры
+  });
+
+  it("понимает имена цветов и синонимы positive/negative", () => {
+    const r = waterfallEngine.parse(`waterfall
+colors total=navy positive=teal negative=crimson
+=10 : A
++5 : B
+-3 : C`);
+    expect(r.ok).toBe(true);
+    expect((r.value as WaterfallModel).colors).toEqual({
+      total: "navy",
+      increase: "teal",
+      decrease: "crimson",
+    });
+  });
+
+  it("ошибка: неизвестный ключ цвета", () => {
+    const r = waterfallEngine.parse(`waterfall
+colors bar=#fff
+=10 : A`);
+    expect(r.ok).toBe(false);
+    expect(r.errors[0].message).toMatch(/неизвестный ключ цвета/);
+  });
+
+  it("ошибка: не цвет", () => {
+    const r = waterfallEngine.parse(`waterfall
+colors total=нецвет
+=10 : A`);
+    expect(r.ok).toBe(false);
+    expect(r.errors[0].message).toMatch(/не удалось разобрать цвет/);
+  });
+});
+
+describe("waterfall: мульти-серии — цвета различаются", () => {
+  it("цвет группы из series ... color= перекрывает цвета шагов", () => {
+    const r = waterfallEngine.parse(`waterfall
+series Базовый color=#1d4ed8
+=10 : A
++5 : B
+series План color=#9333ea
+=10 : A
++8 : B`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect(svg).toContain('fill="#1d4ed8"');
+    expect(svg).toContain('fill="#9333ea"');
+    expect((r.value as WaterfallModel).series[0].color).toBe("#1d4ed8");
+    expect((r.value as WaterfallModel).series[1].name).toBe("План");
+  });
+
+  it("без явных цветов цветные маркеры легенды всех групп различаются", () => {
+    const r = waterfallEngine.parse(`waterfall
+series A
+=10 : A1
++5 : A2
+series B
+=10 : B1
++5 : B2
+series C
+=10 : C1
++5 : C2`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    // Маркеры легенды — квадраты 10×10 ниже подписей колонок.
+    const swatches = [...svg.matchAll(/<rect x="[\d.]+" y="[\d.]+" width="10" height="10" fill="(#[0-9a-f]{6})"/g)]
+      .map((m) => m[1]);
+    expect(swatches).toHaveLength(3);
+    expect(new Set(swatches).size).toBe(3);
+  });
+
+  it("в мульти-серии различаются и группы, и типы шагов (рост/падение — оттенки)", () => {
+    const r = waterfallEngine.parse(`waterfall
+series A color=#1d4ed8
+=10 : A1
++5 : A2
+-3 : A3
+series B color=#9333ea
+=10 : B1
++5 : B2
+-3 : B3`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    const fills = [...svg.matchAll(/<rect[^>]*fill="(#[0-9a-f]{6})"[^>]*data-bar="([^"]+)"/g)].map(
+      (m) => ({ fill: m[1], bar: m[2] }),
+    );
+    const colorOf = (bar: string) => fills.find((f) => f.bar === bar)!.fill;
+    // Группы различаются базовым цветом.
+    expect(colorOf("0-0")).not.toBe(colorOf("1-0"));
+    // Внутри группы типы различаются: итог ≠ рост ≠ падение.
+    expect(colorOf("0-0")).not.toBe(colorOf("0-1"));
+    expect(colorOf("0-0")).not.toBe(colorOf("0-2"));
+    expect(colorOf("0-1")).not.toBe(colorOf("0-2"));
+    // Итого — 6 разных цветов на 6 баров.
+    expect(new Set(fills.map((f) => f.fill)).size).toBe(6);
+  });
+
+  it("в моно-режиме маркеры групп тоже различаются (по светлоте)", () => {
+    const r = waterfallEngine.parse(`waterfall
+mono
+series A
+=10 : A1
++5 : A2
+series B
+=10 : B1
++5 : B2`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    const swatches = [...svg.matchAll(/<rect x="[\d.]+" y="[\d.]+" width="10" height="10" fill="(#[0-9a-f]{6})"/g)]
+      .map((m) => m[1]);
+    expect(new Set(swatches).size).toBe(2);
   });
 });

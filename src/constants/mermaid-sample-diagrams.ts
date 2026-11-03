@@ -29,6 +29,7 @@ export const MERMAID_SAMPLE_IDS = [
   // движок при __MERMAID_EXT__ = true (по умолчанию в проде). Сэмплы помечены
   // как ext-типы и на странице языка идут отдельной группой.
   "waterfall",
+  "waterfallMono",
   "bubble",
   "heatmap",
   "orgchart",
@@ -43,6 +44,7 @@ export type MermaidSampleId = (typeof MERMAID_SAMPLE_IDS)[number];
  */
 export const MERMAID_EXT_SAMPLE_IDS = [
   "waterfall",
+  "waterfallMono",
   "bubble",
   "heatmap",
   "orgchart",
@@ -91,6 +93,7 @@ export const MERMAID_SAMPLE_WIZARD_TYPES: Record<MermaidSampleId, import("@/cons
   // Mermaid Ext: у этих типов нет собственного шаблона мастера,
   // ближайший по смыслу — flowchart (дерево/шаги).
   waterfall: "flowchart",
+  waterfallMono: "flowchart",
   bubble: "flowchart",
   heatmap: "flowchart",
   orgchart: "flowchart",
@@ -458,16 +461,38 @@ const MERMAID_SOURCES_BY_LOCALE: Record<
  */
 const MERMAID_EXT_SAMPLES_RU: Record<MermaidExtSampleId, string> = {
   waterfall: `waterfall
-%% Демо всех возможностей waterfall: шкала y, шаг сетки, разрыв,
-%% режим подписей, per-step флаги, «=» без значения, мульти-серии,
-%% размер шрифта и соединители.
+%% Демо ВСЕХ возможностей waterfall. Каждая строка ниже — рабочий синтаксис.
+%%
+%% title <текст>                  — заголовок
+%% y "<подпись>" <min> --> <max>  — подпись оси и границы шкалы (без неё — авто)
+%% grid <шаг>                     — шаг сетки по Y (любое положительное число)
+%% axis on|off                    — ось и деления (off — спрятать)
+%% labels above|inside|both|none  — где писать значения (по умолчанию above)
+%% connectors on|off              — соединители между барами (по умолчанию on)
+%% fontsize <6–28>                — базовый размер шрифта (по умолчанию 11)
+%% break <после> --> <до> "текст" — разрыв шкалы: участок ВЫРЕЗАН (сжат до 14px),
+%%                                  бар через разрыв рисуется кусками с зигзагом
+%% mono [on|off]                  — Ч/Б режим: бары различаются светлотой
+%% colors total=#hex increase=#hex decrease=#hex — свои цвета баров
+%%                                  (синонимы: positive=, negative=; имена цветов тоже ок)
+%% series <имя> [color=#hex]      — группа; в мульти-серии цвет = базовый цвет группы,
+%%                                  рост светлее на 20%, падение темнее на 25%
+%%
+%% Строки данных: <знак><число> : <подпись> [флаги]
+%%   =120 : Q1           абсолютное значение (старт/итог)
+%%   = : Итого H1        «=» без числа — повтор накопленного итога
+%%   +180 : Q2           приращение вверх
+%%   -60 : Q3            приращение вниз
+%% Флаги в конце строки (любой порядок):
+%%   inside | above | no-label | label="−60 млн"
 title Выручка 2026: все возможности
 y "млн ₽" 0 --> 1000
 grid 100
 labels both
 fontsize 11
 break 300 --> 800 "разрыв шкалы"
-series Базовый
+colors total=#1f6feb increase=#2da44e decrease=#cf222e
+series Базовый color=#1f6feb
 =120 : Q1 старт
 +180 : Q2 рост above
 -60 : Q3 отток label="−60 млн"
@@ -476,7 +501,7 @@ series Базовый
 = : Итог года
 -40 : Возвраты no-label
 = : Чистый итог
-series Оптимистичный
+series Оптимистичный color=#8250df
 =120 : Q1
 +240 : Q2
 -40 : Q3
@@ -485,6 +510,20 @@ series Оптимистичный
 = : Итог года
 -20 : Возвраты
 = : Чистый итог`,
+  waterfallMono: `waterfall
+%% Чёрно-белый режим: цвета не нужны, бары различаются светлотой.
+%% Полезно для печати и для документов без цвета.
+%% Свои цвета можно задать и здесь — они перекроют серую шкалу.
+title Ч/Б режим (mono)
+mono
+y "млн ₽" 0 --> 300
+grid 50
+=120 : Q1
++80 : Q2
+-40 : Q3
+= : Итого H1
++110 : Q4
+= : Итог года`,
   bubble: `bubble
 %% Демо всех возможностей bubble: оси x/y, легенда размера,
 %% квадранты и их подписи, группы-цвета и размер шрифта.
@@ -536,16 +575,38 @@ grid`,
 
 const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
   waterfall: `waterfall
-%% Demo of every waterfall feature: y axis, grid step, axis break,
-%% label mode, per-step flags, bare "=", multi-series, font size
-%% and connectors.
+%% Demo of EVERY waterfall feature. Each line below is working syntax.
+%%
+%% title <text>                   — title
+%% y "<label>" <min> --> <max>    — axis label and scale bounds (omit — auto)
+%% grid <step>                    — Y grid step (any positive number)
+%% axis on|off                    — axis and ticks (off — hide)
+%% labels above|inside|both|none  — where to print values (default above)
+%% connectors on|off              — connector lines between bars (default on)
+%% fontsize <6–28>                — base font size (default 11)
+%% break <after> --> <before> "text" — axis break: the span is CUT (squeezed to 14px),
+%%                                  a bar crossing it is drawn in pieces with a zigzag
+%% mono [on|off]                  — black & white mode: bars differ by lightness
+%% colors total=#hex increase=#hex decrease=#hex — custom bar colours
+%%                                  (aliases: positive=, negative=; colour names work too)
+%% series <name> [color=#hex]     — group; in multi-series the colour is the group base,
+%%                                  increase 20% lighter, decrease 25% darker
+%%
+%% Data rows: <sign><number> : <label> [flags]
+%%   =120 : Q1           absolute value (start / total)
+%%   = : H1 total        bare "=" — repeats the running total
+%%   +180 : Q2           increase
+%%   -60 : Q3            decrease
+%% End-of-row flags (any order):
+%%   inside | above | no-label | label="−60 M"
 title Revenue 2026: every feature
 y "M USD" 0 --> 1000
 grid 100
 labels both
 fontsize 11
 break 300 --> 800 "axis break"
-series Base
+colors total=#1f6feb increase=#2da44e decrease=#cf222e
+series Base color=#1f6feb
 =120 : Q1 start
 +180 : Q2 growth above
 -60 : Q3 churn label="−60 M"
@@ -554,7 +615,7 @@ series Base
 = : Year total
 -40 : Refunds no-label
 = : Net total
-series Optimistic
+series Optimistic color=#8250df
 =120 : Q1
 +240 : Q2
 -40 : Q3
@@ -563,6 +624,20 @@ series Optimistic
 = : Year total
 -20 : Refunds
 = : Net total`,
+  waterfallMono: `waterfall
+%% Black-and-white mode: no colours needed, bars differ by lightness.
+%% Handy for print and for documents without colour.
+%% Custom colours still work here — they override the grey scale.
+title Mono mode (black & white)
+mono
+y "M USD" 0 --> 300
+grid 50
+=120 : Q1
++80 : Q2
+-40 : Q3
+= : H1 total
++110 : Q4
+= : Year total`,
   bubble: `bubble
 %% Demo of every bubble feature: x/y axes, size legend, quadrants
 %% and their labels, colour groups and font size.

@@ -33,6 +33,8 @@ export interface WaterfallStep {
 export interface WaterfallSeries {
   name?: string;
   steps: WaterfallStep[];
+  /** Свой цвет группы (`series <имя> color=#hex`). */
+  color?: string;
 }
 
 export interface WaterfallAxis {
@@ -46,6 +48,24 @@ export interface WaterfallAxis {
   /** `axis off` — не рисовать ось и подписи делений. */
   hidden?: boolean;
 }
+
+/** Цвета баров по типу шага. */
+export interface WaterfallColors {
+  /** Абсолютные колонки (старт, итоги). */
+  total: string;
+  /** Приращения вверх. */
+  increase: string;
+  /** Приращения вниз. */
+  decrease: string;
+}
+
+/**
+ * Дополнительные цвета мульти-серий (`colors s1=#hex s2=#hex ...`).
+ * Ключ `sN` — цвет серии №N (нумерация с 1, как в легенде). Ключи `group1`,
+ * `series1`, `g1` — синонимы. Если для серии задан и `series <имя> color=#hex`,
+ * и `sN=`, побеждает `color=` у самой серии (он ближе к данным).
+ */
+export type WaterfallSeriesColors = Record<string, string>;
 
 export interface WaterfallModel {
   title?: string;
@@ -65,6 +85,12 @@ export interface WaterfallModel {
    * ширина колонок и высота графика растут вместе со шрифтом.
    */
   fontSize?: number;
+  /** `mono` — чёрно-белый режим: бары различаются светлотой, а не цветом. */
+  mono?: boolean;
+  /** Свои цвета: `colors total=#hex increase=#hex decrease=#hex`. */
+  colors?: Partial<WaterfallColors>;
+  /** Цвета отдельных серий: `colors s1=#hex s2=#hex` (ключи нормализованы в `sN`). */
+  seriesColors?: WaterfallSeriesColors;
 }
 
 /** Разрыв оси: значения выше `after` и ниже `before` рисуются вплотную. */
@@ -78,6 +104,30 @@ export interface WaterfallBreak {
 // --- Разбор ---------------------------------------------------------------
 
 const NUMBER_RE = /^[-+]?\d[\d\s_]*(?:[.,]\d+)?$/;
+/** Цвет: `#rgb`, `#rrggbb` или простое имя (см. COLOR_NAMES). */
+const COLOR_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+const COLOR_NAMES = new Set([
+  "black",
+  "white",
+  "gray",
+  "grey",
+  "silver",
+  "red",
+  "green",
+  "blue",
+  "orange",
+  "purple",
+  "teal",
+  "navy",
+  "maroon",
+  "olive",
+  "gold",
+  "crimson",
+  "steelblue",
+  "darkgreen",
+  "darkred",
+  "darkblue",
+]);
 
 function parseNumber(raw: string): number | null {
   const trimmed = raw.trim();
@@ -85,6 +135,11 @@ function parseNumber(raw: string): number | null {
   const cleaned = trimmed.replace(/[\s_]/g, "").replace(",", ".");
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
+}
+
+function isColor(raw: string): boolean {
+  const t = raw.trim();
+  return COLOR_RE.test(t) || COLOR_NAMES.has(t.toLowerCase());
 }
 
 /** Подпись в кавычках + два числа вокруг `-->`. */
@@ -267,6 +322,85 @@ function parseLabelsMode(
   }
 }
 
+/**
+ * `colors total=#hex increase=#hex decrease=#hex [s1=#hex s2=#hex ...]`
+ * Ключи в любом порядке и по одному; `positive`/`negative` — синонимы.
+ * `sN` / `groupN` / `seriesN` / `gN` — цвет серии №N (с 1).
+ */
+function parseColors(
+  text: string,
+  line: number,
+): { colors?: Partial<WaterfallColors>; seriesColors?: WaterfallSeriesColors; error?: ExtParseError } {
+  const colors: Partial<WaterfallColors> = {};
+  const seriesColors: WaterfallSeriesColors = {};
+  const tokens = text.trim().split(/\s+/).filter(Boolean);
+  if (!tokens.length) {
+    return {
+      error: {
+        message: `ожидается «colors total=#hex increase=#hex decrease=#hex» (или «colors s1=#hex s2=#hex»)`,
+        line,
+        col: 0,
+      },
+    };
+  }
+  for (const token of tokens) {
+    const m = /^(total|increase|decrease|positive|negative|(?:s|g|series|group)\d+)=(.+)$/i.exec(token);
+    if (!m) {
+      return {
+        error: {
+          message: `неизвестный ключ цвета «${token}» (ожидается total=, increase=, decrease= или sN= для серии №N)`,
+          line,
+          col: 0,
+        },
+      };
+    }
+    const key = m[1].toLowerCase();
+    const value = m[2];
+    if (!isColor(value)) {
+      return {
+        error: {
+          message: `не удалось разобрать цвет «${value}» (ожидается #rgb, #rrggbb или имя цвета)`,
+          line,
+          col: 0,
+        },
+      };
+    }
+    if (key === "total") colors.total = value;
+    else if (key === "increase" || key === "positive") colors.increase = value;
+    else if (key === "decrease" || key === "negative") colors.decrease = value;
+    else {
+      // s1 / g1 / series1 / group1 → «s1»
+      const n = Number(/\d+/.exec(key)![0]);
+      if (!(n >= 1)) {
+        return {
+          error: {
+            message: `номер серии должен быть ≥ 1, получено «${token}»`,
+            line,
+            col: 0,
+          },
+        };
+      }
+      seriesColors[`s${n}`] = value;
+    }
+  }
+  return { colors, seriesColors };
+}
+
+/** `series <имя> [color=#hex]` */
+function parseSeriesHeader(raw: string): { name?: string; color?: string } {
+  let body = raw.replace(/^series\s*/i, "").trim();
+  let color: string | undefined;
+  const m = /\s+color=(\S+)\s*$/i.exec(body);
+  if (m && isColor(m[1])) {
+    color = m[1];
+    body = body.slice(0, m.index).trim();
+  }
+  if (body.startsWith('"') && body.endsWith('"') && body.length >= 2) {
+    body = body.slice(1, -1).replace(/\\"/g, '"');
+  }
+  return { name: body || undefined, color };
+}
+
 export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
   const errors: ExtParseError[] = [];
   const series: WaterfallSeries[] = [];
@@ -279,6 +413,9 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
   let valueLabels = { above: true, inside: false };
   let connectors = true;
   let fontSize: number | undefined;
+  let mono = false;
+  let colors: Partial<WaterfallColors> | undefined;
+  let seriesColors: WaterfallSeriesColors | undefined;
 
   const lines = source.split(/\r?\n/);
   let seenType = false;
@@ -302,7 +439,7 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
       const parsed = parseAxis(raw.slice(1).trim());
       if (!parsed) {
         errors.push({
-          message: `ожидается «y "<подпись>" <min> --> <max>»`,
+          message: `ожидается «y "<подпись>" <min> --> <max>"»`,
           line: lineNo,
           col: 0,
         });
@@ -379,6 +516,37 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
       continue;
     }
 
+    if (/^mono\b/i.test(raw)) {
+      const token = raw.replace(/^mono\s*/i, "").trim().toLowerCase();
+      if (token === "" || token === "on" || token === "true" || token === "yes") {
+        mono = true;
+      } else if (token === "off" || token === "false" || token === "no") {
+        mono = false;
+      } else {
+        errors.push({
+          message: `ожидается «mono» (или «mono on|off»), получено «${token}»`,
+          line: lineNo,
+          col: 0,
+        });
+      }
+      continue;
+    }
+
+    if (/^colou?rs?\b/i.test(raw)) {
+      const { colors: parsed, seriesColors: parsedSeries, error } = parseColors(
+        raw.replace(/^colou?rs?\s*/i, ""),
+        lineNo,
+      );
+      if (error) errors.push(error);
+      else {
+        if (parsed && Object.keys(parsed).length) colors = { ...colors, ...parsed };
+        if (parsedSeries && Object.keys(parsedSeries).length) {
+          seriesColors = { ...seriesColors, ...parsedSeries };
+        }
+      }
+      continue;
+    }
+
     if (/^break\b/i.test(raw)) {
       const { brk, error } = parseBreak(raw.slice(5), lineNo);
       if (error) errors.push(error);
@@ -394,7 +562,9 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
           col: 0,
         });
       }
-      current = { name: raw.replace(/^series\s*/i, "").trim() || undefined, steps: [] };
+      const header = parseSeriesHeader(raw);
+      current = { name: header.name, steps: [] };
+      if (header.color) current.color = header.color;
       series.push(current);
       continue;
     }
@@ -474,7 +644,19 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
   return {
     ok: true,
     errors: [],
-    value: { title, axis, series, labels, breaks: sorted, valueLabels, connectors, fontSize },
+    value: {
+      title,
+      axis,
+      series,
+      labels,
+      breaks: sorted,
+      valueLabels,
+      connectors,
+      fontSize,
+      mono,
+      colors,
+      seriesColors,
+    },
   };
 }
 
@@ -557,10 +739,18 @@ const FONT_MAX = 28;
 const BREAK_HEIGHT = 14;
 /** Минимальная высота подписи внутри бара. */
 const INSIDE_MIN_HEIGHT = 13;
+/** Цвет подписи внутри бара. */
+const INSIDE_TEXT = "#ffffff";
 
 /**
  * Шкала с разрывами. Каждый разрыв «съедает» BREAK_HEIGHT пикселей:
  * участок (after, before) отображается в отрезок фиксированной высоты.
+ *
+ * Значение, попавшее ВНУТРЬ вырезанного участка, прижимается к ближней
+ * границе (`clamped = true`). Без этого бар, проходящий через разрыв,
+ * рисовался бы «сквозь» него — то есть разрыв выглядел бы как обычный
+ * участок шкалы, а не как вырез. Правильная нотация: бар обрывается на
+ * линии разрыва (см. renderWaterfall → полосы-«зигзаги»).
  */
 function createScale(
   axis: WaterfallAxis,
@@ -570,22 +760,137 @@ function createScale(
 ) {
   const span = axis.max - axis.min || 1;
   const usable = plotBottom - plotTop - breaks.length * BREAK_HEIGHT;
-  const unit = usable / span; // px на единицу значения
+  // Разрыв ВЫРЕЗАЕТ участок из шкалы: единицы внутри (after, before) не
+  // занимают пикселей. Поэтому px/единицу считаем по видимому диапазону —
+  // иначе разрыв только «съедал» бы 14 px и данные не увеличивались.
+  const cutSpan = breaks.reduce((sum, b) => sum + Math.max(0, b.before - b.after), 0);
+  const visibleSpan = Math.max(span - cutSpan, span * 0.05);
+  const unit = usable / visibleSpan; // px на единицу значения
 
   const yOf = (value: number): number => {
+    // Пиксели = только «видимая» часть значения: единицы, попавшие в разрыв,
+    // не занимают места, а сам разрыв добавляет фиксированный BREAK_HEIGHT.
     let y = plotBottom - (value - axis.min) * unit;
     for (const b of breaks) {
-      if (value >= b.before) y -= BREAK_HEIGHT;
-      else if (value > b.after) {
-        // Внутри сжатого участка — прижимаем к ближней границе.
+      if (value >= b.before) {
+        // Всё, что выше разрыва: сжимаем вырезанный участок до BREAK_HEIGHT.
+        y += (b.before - b.after) * unit - BREAK_HEIGHT;
+      } else if (value > b.after) {
+        // Внутри вырезанного участка — прижимаем к ближней границе.
         const t = (value - b.after) / (b.before - b.after);
-        y -= BREAK_HEIGHT * t;
+        y += (value - b.after) * unit - BREAK_HEIGHT * t;
       }
     }
     return y;
   };
 
-  return { yOf, unit, usable };
+  /** Значение внутри вырезанного участка? (такие точки «не существуют» на шкале) */
+  const inGap = (value: number): boolean =>
+    breaks.some((b) => value > b.after && value < b.before);
+
+  /** y-координата со сжатием к ближней границе разрыва. */
+  const yClamped = (value: number): number => {
+    for (const b of breaks) {
+      if (value > b.after && value < b.before) {
+        // Ближе к какой границе — к той и прижимаем (в пикселях).
+        const dAfter = value - b.after;
+        const dBefore = b.before - value;
+        return dAfter <= dBefore ? yOf(b.after) : yOf(b.before);
+      }
+    }
+    return yOf(value);
+  };
+
+  return { yOf, yClamped, inGap, unit, usable };
+}
+
+/** Чёрно-белая палитра: уровни серого вместо цвета. */
+const MONO_COLORS: WaterfallColors = {
+  total: "#111111",
+  increase: "#a3a3a3",
+  decrease: "#4d4d4d",
+};
+
+/** Моно на тёмном фоне: светлота разворачивается, иначе бары не видны. */
+const MONO_COLORS_DARK: WaterfallColors = {
+  total: "#f0f0f0",
+  increase: "#7a7a7a",
+  decrease: "#b8b8b8",
+};
+
+/**
+ * Цвет бара по типу шага.
+ * Приоритет: свой цвет серии (`series ... color=` или `colors sN=`) → цвет типа
+ * шага (`colors total|increase|decrease`) → палитра темы (или серые уровни в mono).
+ */
+function resolveColors(model: WaterfallModel, dark?: boolean): WaterfallColors {
+  const palette = getPalette(dark);
+  const base: WaterfallColors = model.mono
+    ? dark
+      ? MONO_COLORS_DARK
+      : MONO_COLORS
+    : {
+        total: palette.neutral,
+        increase: palette.positive,
+        decrease: palette.negative,
+      };
+  return { ...base, ...(model.colors ?? {}) };
+}
+
+/**
+ * Цвет серии `group` (0-based) для легенды и для баров без своего типа.
+ * `series <имя> color=` важнее `colors sN=`; без них — цикл палитры.
+ */
+function seriesColor(
+  model: WaterfallModel,
+  group: number,
+  colors: WaterfallColors,
+  dark?: boolean,
+): string | undefined {
+  const own = model.series[group]?.color;
+  if (own) return own;
+  const fromColors = model.seriesColors?.[`s${group + 1}`];
+  if (fromColors) return fromColors;
+  if (model.mono) {
+    // В моно-режиме группы различаются светлотой: от тёмного к светлому.
+    const steps = dark ? [0.85, 0.55, 0.3, 0.7, 0.4, 0.15] : [0.15, 0.45, 0.7, 0.3, 0.6, 0.85];
+    const v = Math.round(255 * (steps[group % steps.length] ?? 0.5));
+    const hex = v.toString(16).padStart(2, "0");
+    return `#${hex}${hex}${hex}`;
+  }
+  const cycle = dark ? SERIES_CYCLE_DARK : SERIES_CYCLE_LIGHT;
+  // Первая группа — цвет итоговых колонок (он уже «главный» в палитре).
+  return group === 0 ? colors.total : cycle[group % cycle.length];
+}
+
+/**
+ * Затемнить/осветлить hex-цвет: `amount` в диапазоне −1..1
+ * (отрицательное — темнее, положительное — светлее).
+ */
+function shade(hex: string, amount: number): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  const mix = (c: number) =>
+    Math.round(amount < 0 ? c * (1 + amount) : c + (255 - c) * amount);
+  const r = mix((n >> 16) & 255);
+  const g = mix((n >> 8) & 255);
+  const b = mix(n & 255);
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+}
+
+/**
+ * Цвет бара в МУЛЬТИ-серии: базовый цвет группы, но с поправкой на тип шага,
+ * чтобы различались и группы, и типы:
+ *   • абсолютные колонки (итоги) — базовый цвет как есть;
+ *   • рост (+) — светлее на 20 %;
+ *   • падение (−) — темнее на 25 %.
+ * Так «все бары разных типов различаются цветом» выполняется и в мульти-режиме.
+ */
+function seriesBarColor(base: string, kind: "total" | "increase" | "decrease"): string {
+  if (kind === "increase") return shade(base, 0.2);
+  if (kind === "decrease") return shade(base, -0.25);
+  return base;
 }
 
 export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions): string {
@@ -594,6 +899,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
   const breaks = model.breaks ?? [];
   const valueLabels = model.valueLabels ?? { above: true, inside: false };
   const axisHidden = Boolean(axis.hidden);
+  const colors = resolveColors(model, options.dark);
 
   const groups = Math.max(1, series.length);
   const columns = Math.max(1, labels.length);
@@ -628,7 +934,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
   const plotTop = padTop;
   const plotBottom = plotTop + plotHeight;
 
-  const { yOf } = createScale(axis, breaks, plotTop, plotBottom);
+  const { yOf, yClamped, inGap } = createScale(axis, breaks, plotTop, plotBottom);
 
   if (title) {
     svg.text(width / 2, Math.round((24 * fontSize) / FONT_BASE), title, {
@@ -709,32 +1015,61 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
   }
 
   const barWidth = clamp((columnWidth * (1 - BAR_GAP)) / groups, MIN_BAR_WIDTH, MAX_BAR_WIDTH);
+  const groupSpan = barWidth * groups + (groups - 1) * 4;
 
-  /** Уровень, на котором заканчивается бар колонки: откуда тянется соединитель. */
-  const endLevel = (g: number, col: number): number | null => {
+  /** Накопленный уровень после колонки `col` (включительно). */
+  const levelAfter = (g: number, col: number): number => {
     const group = series[g];
-    if (!group) return null;
+    if (!group) return 0;
     let running = 0;
     for (let k = 0; k <= col; k += 1) {
       const st = group.steps[k];
       if (!st) continue;
       running = st.kind === "absolute" ? (st.value ?? running) : running + (st.value ?? 0);
     }
-    return group.steps[col] ? running : null;
+    return running;
   };
 
-  // Соединительные линии рисуются ДО баров, чтобы не перекрывать заливку.
+  /** Уровень, с которого начинается бар колонки `col` (до её значения). */
+  const levelBefore = (g: number, col: number): number => (col === 0 ? 0 : levelAfter(g, col - 1));
+
+  /**
+   * Уровень, от которого соединитель уходит к следующей колонке.
+   *
+   * Правило (как в Excel / Plotly): линия всегда идёт по уровню накопленного
+   * итога, то есть по «стартовому» краю СЛЕДУЮЩЕГО бара:
+   *   • рост (+):    бар растёт ВВЕРХ от итога → линия идёт по НИЗУ (низ бара);
+   *   • падение (−): бар идёт ВНИЗ от итога → линия идёт по ВЕРХУ (верх бара);
+   *   • абсолютная:  бар стоит от нуля → линия идёт по значению (верх бара).
+   * Для текущей колонки это тот же уровень, что и накопленный итог ПОСЛЕ неё
+   * (`levelAfter`), т.к. итог — это край бара, от которого растёт следующий.
+   */
+  const connectorFromLevel = (g: number, col: number): number => levelAfter(g, col);
+
+  /**
+   * Уровень, в который соединитель приходит на колонке `col` — «стартовый»
+   * край бара (тот, от которого он растёт/падает):
+   *   • рост (+):    приходит в НИЗ бара (bottom);
+   *   • падение (−): приходит в ВЕРХ бара (top);
+   *   • абсолютная:  приходит на уровень значения.
+   * В обоих случаях это уровень накопленного итога ПЕРЕД колонкой.
+   */
+  const connectorToLevel = (g: number, col: number): number => levelBefore(g, col);
+
+  // Соединители рисуются ДО баров, чтобы не перекрывать заливку.
+  // x1 — правый край бара колонки `col`, x2 — левый край того же по счёту
+  // бара следующей колонки (группа та же, поэтому смещения совпадают).
   if (model.connectors !== false) {
     for (let g = 0; g < groups; g += 1) {
       for (let col = 0; col < columns - 1; col += 1) {
-        const from = endLevel(g, col);
-        const to = endLevel(g, col + 1);
-        if (from === null || to === null) continue;
-        const groupSpan = barWidth * groups + (groups - 1) * 4;
-        const startX = plotLeft + col * columnWidth + (columnWidth - groupSpan) / 2;
-        const x1 = startX + g * (barWidth + 4) + barWidth;
-        const x2 = x1 + (columnWidth - barWidth) + 4;
-        svg.line(x1, yOf(from), x2, yOf(to), {
+        const group = series[g];
+        if (!group?.steps[col] || !group.steps[col + 1]) continue;
+        const from = connectorFromLevel(g, col);
+        const to = connectorToLevel(g, col + 1);
+        const x1 =
+          plotLeft + col * columnWidth + (columnWidth - groupSpan) / 2 + g * (barWidth + 4) + barWidth;
+        const x2 = x1 + columnWidth - barWidth;
+        svg.line(x1, yClamped(from), x2, yClamped(to), {
           stroke: palette.axis,
           "stroke-width": 1,
           "stroke-dasharray": "3 3",
@@ -744,9 +1079,59 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
     }
   }
 
+  /**
+   * Бар, пересекающий разрыв шкалы, рисуется полосами: участок, попавший в
+   * вырезанный диапазон (after, before), не закрашивается, а на линиях
+   * разрыва рисуется «зигзаг» — общепринятый знак обрыва.
+   */
+  const drawBar = (x: number, from: number, to: number, color: string, barId: string) => {
+    const lo = Math.min(from, to);
+    const hi = Math.max(from, to);
+    const cuts = breaks
+      .filter((b) => b.after < hi && b.before > lo)
+      .sort((a, b) => a.after - b.after);
+
+    // Непрерывные куски [lo..hi] минус вырезанные участки.
+    const segments: Array<[number, number]> = [];
+    let cursor = lo;
+    for (const b of cuts) {
+      const segEnd = Math.min(hi, b.after);
+      if (segEnd > cursor) segments.push([cursor, segEnd]);
+      cursor = Math.max(cursor, Math.min(hi, b.before));
+    }
+    if (cursor < hi) segments.push([cursor, hi]);
+    if (!segments.length) segments.push([lo, hi]);
+
+    for (const [sLo, sHi] of segments) {
+      const top = yOf(sHi);
+      const bottom = yOf(sLo);
+      const h = Math.max(1.5, bottom - top);
+      svg.rect(x, top, barWidth, h, { fill: color, rx: 2, "data-bar": barId });
+    }
+
+    // Зигзаг на каждой линии разрыва, которую бар пересёк.
+    for (const b of cuts) {
+      const y = yOf(b.before) - BREAK_HEIGHT / 2;
+      const mid = x + barWidth / 2;
+      const zig = `M${x} ${y - 2} L${mid} ${y + 2} L${x + barWidth} ${y - 2}`;
+      // Сначала «подложка» цветом фона — зигзаг читается и на линии разрыва.
+      svg.path(zig, {
+        fill: "none",
+        stroke: palette.bg,
+        "stroke-width": 3,
+        "data-break-zigzag": "1",
+      });
+      svg.path(zig, {
+        fill: "none",
+        stroke: color,
+        "stroke-width": 1.2,
+        "data-break-zigzag": "1",
+      });
+    }
+  };
+
   for (let col = 0; col < columns; col += 1) {
     const columnLeft = plotLeft + col * columnWidth;
-    const groupSpan = barWidth * groups + (groups - 1) * 4;
     const startX = columnLeft + (columnWidth - groupSpan) / 2;
 
     for (let g = 0; g < groups; g += 1) {
@@ -767,24 +1152,37 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       let from: number;
       let to: number;
       let color: string;
+      // В мульти-серии у каждой группы свой базовый цвет, а внутри группы
+      // тип шага различается светлотой (итог / рост / падение) — так все бары
+      // различимы. В одиночной серии цвет задаёт ТИП шага (total/increase/decrease).
+      const ownSeries = groups > 1 ? seriesColor(model, g, colors, options.dark) : undefined;
       if (step.kind === "absolute") {
         // Абсолютная колонка рисуется от нуля; если ноль вне шкалы — от её края.
         const zero = clamp(0, axis.min, axis.max);
         from = Math.min(zero, stepValue);
         to = Math.max(zero, stepValue);
-        color = palette.neutral;
+        color = ownSeries ? seriesBarColor(ownSeries, "total") : colors.total;
       } else {
         from = running;
         to = running + stepValue;
-        color = stepValue >= 0 ? palette.positive : palette.negative;
+        const kind = stepValue >= 0 ? "increase" : "decrease";
+        color = ownSeries
+          ? seriesBarColor(ownSeries, kind)
+          : kind === "increase"
+            ? colors.increase
+            : colors.decrease;
       }
 
       const x = startX + g * (barWidth + 4);
-      const top = yOf(Math.max(from, to));
-      const bottom = yOf(Math.min(from, to));
-      const barHeight = Math.max(1.5, bottom - top);
+      // Бар, проходящий через разрыв шкалы, рисуется кусками с зигзагом.
+      drawBar(x, from, to, color, `${g}-${col}`);
 
-      svg.rect(x, top, barWidth, barHeight, { fill: color, rx: 2 });
+      // Геометрия для подписи: видимая (не вырезанная) часть бара.
+      const visLo = inGap(from) ? (from < to ? breaks.find((b) => from > b.after && from < b.before)!.before : from) : from;
+      const visHi = inGap(to) ? (to > from ? breaks.find((b) => to > b.after && to < b.before)!.after : to) : to;
+      const top = yOf(Math.max(visLo, visHi));
+      const bottom = yOf(Math.min(visLo, visHi));
+      const barHeight = Math.max(1.5, bottom - top);
 
       const valueText =
         (step as WaterfallStep & { valueText?: string }).valueText ??
@@ -803,7 +1201,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       if (!hide && wantInside && fitsInside) {
         svg.text(x + barWidth / 2, top + barHeight / 2 + valueFontSize * 0.35, fitted, {
           "font-size": valueFontSize,
-          fill: "#ffffff",
+          fill: INSIDE_TEXT,
           "font-weight": 600,
         });
       } else if (!hide && (wantAbove || wantInside)) {
@@ -822,6 +1220,9 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
     });
   }
 
+  // Легенда: при мульти-серии у каждой группы свой цвет — цвета всех групп
+  // обязаны различаться, поэтому свой цвет серии уважается, а безымянные
+  // группы получают цвета по кругу из общей палитры.
   if (groups > 1) {
     let legendX = plotLeft;
     const legendY = plotBottom + Math.round((40 * fontSize) / FONT_BASE);
@@ -829,7 +1230,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       const name = series[g].name ?? `Группа ${g + 1}`;
       const swatch = Math.round(fontSize * 0.91);
       svg.rect(legendX, legendY - swatch + 2, swatch, swatch, {
-        fill: g === 0 ? palette.neutral : palette.accent,
+        fill: seriesColor(model, g, colors, options.dark) ?? colors.total,
         rx: 2,
       });
       svg.text(legendX + swatch + 6, legendY, name, {
@@ -843,6 +1244,10 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
 
   return svg.toString();
 }
+
+/** Палитра для легенды: цвета групп должны различаться между собой. */
+const SERIES_CYCLE_LIGHT = ["#0969da", "#8250df", "#bf8700", "#1a7f37", "#cf222e", "#0f6d8c"];
+const SERIES_CYCLE_DARK = ["#58a6ff", "#a371f7", "#d29922", "#3fb950", "#f85149", "#39c5cf"];
 
 export const waterfallEngine: ExtEngine<WaterfallModel> = {
   type: "waterfall",

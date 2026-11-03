@@ -78,7 +78,7 @@ export const siteMessages = {
   "site.ext.mermaid.type.orgchart": "Org chart",
   "site.ext.mermaid.type.ev": "Earned value",
   "site.ext.mermaid.desc.waterfall":
-    "How a starting value turns into a total through + and − steps. Absolute columns start with =, several scenarios are declared with series.",
+    "How a starting value turns into a total through + and − steps. Absolute columns start with =, several scenarios are declared with series. Axis breaks, a black-and-white mode (mono) and custom colours (colors, series ... color=#hex) are supported.",
   "site.ext.mermaid.desc.bubble":
     "Three dimensions at once: x, y, and bubble size. Optionally BCG quadrants and color groups.",
   "site.ext.mermaid.desc.heatmap":
