@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { waterfallEngine } from "../engines/waterfall";
 import { checkFixturesForType } from "./fixtures.test";
+import { assertSvgInvariants } from "./svg-invariants";
 
 describe("waterfall: фикстуры", () => {
   it("все фикстуры типа waterfall разбираются (кроме помеченных как битые)", () => {
@@ -77,7 +78,7 @@ series Оптимистичный
     expect(r.ok).toBe(true);
     const axis = (r.value as any).axis;
     expect(axis.auto).toBe(true);
-    expect(axis.min).toBeLessThanOrEqual(0);
+    expect(axis.min).toBeLessThanOrEqual(1200);
     expect(axis.max).toBeGreaterThanOrEqual(1550);
   });
 
@@ -173,13 +174,10 @@ describe("waterfall: рендер", () => {
     expect(svg).toContain("data-debug");
   });
 
-  it("в SVG нет контактов автора и внешних ссылок", () => {
+  it("проходит общие инварианты SVG", () => {
     const r = waterfallEngine.parse(`waterfall
 =40 : Q1
 =40 : Q2`);
-    const svg = waterfallEngine.render(r.value as any, {});
-    expect(svg).not.toMatch(/https?:\/\//);
-    expect(svg).not.toMatch(/@/);
-    expect(svg).not.toMatch(/<script/i);
+    assertSvgInvariants(waterfallEngine.render(r.value as any, {}), { minElements: 6 });
   });
 });

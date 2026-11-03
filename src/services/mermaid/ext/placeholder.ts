@@ -4,7 +4,7 @@
  */
 import type { ExtDiagramType, ExtEngine } from "./types";
 
-export function createPlaceholderEngine(type: ExtDiagramType): ExtEngine<never> {
+export function createPlaceholderEngine(type: ExtDiagramType): ExtEngine<unknown> {
   return {
     type,
     aliases: [],

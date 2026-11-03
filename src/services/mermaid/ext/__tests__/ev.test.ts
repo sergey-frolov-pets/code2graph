@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { evEngine } from "../engines/ev";
 import { checkFixturesForType } from "./fixtures.test";
+import { assertSvgInvariants } from "./svg-invariants";
 
 describe("ev: фикстуры", () => {
   it("все фикстуры типа ev разбираются (кроме помеченных как битые)", () => {
@@ -139,10 +140,8 @@ grid`;
     expect(count(svgGrid)).toBeGreaterThan(count(svgPlain));
   });
 
-  it("нет внешних ссылок и скриптов", () => {
+  it("проходит общие инварианты SVG", () => {
     const r = evEngine.parse(src);
-    const svg = evEngine.render(r.value as any, {});
-    expect(svg).not.toMatch(/https?:\/\//);
-    expect(svg).not.toMatch(/<script/i);
+    assertSvgInvariants(evEngine.render(r.value as any, {}), { minElements: 6 });
   });
 });

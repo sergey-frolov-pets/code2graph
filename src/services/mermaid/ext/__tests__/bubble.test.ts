@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { bubbleEngine } from "../engines/bubble";
 import { checkFixturesForType } from "./fixtures.test";
+import { assertSvgInvariants } from "./svg-invariants";
 
 describe("bubble: фикстуры", () => {
   it("все фикстуры типа bubble разбираются (кроме помеченных как битые)", () => {
@@ -167,10 +168,8 @@ A : x=1, y=1, size=10`);
     for (const q of ["Звёзды", "Вопросы", "Дойные коровы", "Собаки"]) expect(svg).toContain(q);
   });
 
-  it("нет внешних ссылок и скриптов", () => {
+  it("проходит общие инварианты SVG", () => {
     const r = bubbleEngine.parse(src);
-    const svg = bubbleEngine.render(r.value as any, {});
-    expect(svg).not.toMatch(/https?:\/\//);
-    expect(svg).not.toMatch(/<script/i);
+    assertSvgInvariants(bubbleEngine.render(r.value as any, {}), { minElements: 4 });
   });
 });

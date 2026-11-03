@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { heatmapEngine } from "../engines/heatmap";
 import { checkFixturesForType } from "./fixtures.test";
+import { assertSvgInvariants } from "./svg-invariants";
 
 describe("heatmap: фикстуры", () => {
   it("все фикстуры типа heatmap разбираются (кроме помеченных как битые)", () => {
@@ -157,5 +158,10 @@ data
 R : 10,,30`);
     const svg = heatmapEngine.render(r.value as any, {});
     expect((svg.match(/<rect/g) ?? []).length).toBe(2);
+  });
+
+  it("проходит общие инварианты SVG", () => {
+    const r = heatmapEngine.parse(src);
+    assertSvgInvariants(heatmapEngine.render(r.value as any, {}), { minElements: 6 });
   });
 });
