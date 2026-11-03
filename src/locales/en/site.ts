@@ -71,7 +71,7 @@ export const siteMessages = {
   "site.ext.mermaid.lead":
     "Five diagram types that plain Mermaid does not have: waterfall, bubble, heatmap, org chart, and earned value. Drawn by a built-in engine, with no external services.",
   "site.ext.mermaid.note":
-    "Extension types are enabled by the __MERMAID_EXT__ flag. Whether this build has it is visible by rendering the example below in the editor.",
+    "All five types are drawn by the built-in engine, with no external services. If the example below does not render in the editor, this build was made without the extension.",
   "site.ext.mermaid.type.waterfall": "Waterfall",
   "site.ext.mermaid.type.bubble": "Bubble",
   "site.ext.mermaid.type.heatmap": "Heatmap",

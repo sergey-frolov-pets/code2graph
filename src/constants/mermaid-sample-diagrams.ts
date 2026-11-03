@@ -25,9 +25,9 @@ export const MERMAID_SAMPLE_IDS = [
   "quadrant",
   "architecture",
   "packet",
-  // Расширение Mermaid Ext (src/services/mermaid/ext). В прод-сборке
-  // __MERMAID_EXT__ = false и эти типы рисует штатный Mermaid (ошибка),
-  // поэтому сэмплы помечены как ext-типы и на странице языка идут отдельной группой.
+  // Расширение Mermaid Ext (src/services/mermaid/ext). Типы рисует встроенный
+  // движок при __MERMAID_EXT__ = true (по умолчанию в проде). Сэмплы помечены
+  // как ext-типы и на странице языка идут отдельной группой.
   "waterfall",
   "bubble",
   "heatmap",

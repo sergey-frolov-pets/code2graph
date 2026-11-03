@@ -1,4 +1,5 @@
 import { countUnbalancedBrackets, type SyntaxCheckResult, type SyntaxIssue } from "@/utils/plantuml-syntax";
+import { prepareMermaidSource } from "@/utils/mermaid-source";
 
 const MERMAID_DIAGRAM_DECLARATION_PATTERN =
   /^(graph|flowchart|sequencediagram|classdiagram|statediagram(?:-v2)?|erdiagram|journey|gantt|pie|mindmap|timeline|gitgraph|sankey-beta|xychart-beta|block-beta|c4context|requirementdiagram|quadrantchart|architecture(?:-beta)?|packet(?:-beta)?)\b/i;
@@ -66,9 +67,14 @@ function hasMermaidDiagramDeclaration(source: string): boolean {
  * Первая значимая строка — объявление типа расширения Mermaid Ext.
  * Экспортируется, чтобы формат-хендлер мог отдать проверку движку расширения
  * и не показывать ложную «нет объявления диаграммы».
+ *
+ * Проверка идёт по подготовленному исходнику: снятый ```mermaid-забор и
+ * отрезанный PlantUML-хвост. Иначе диаграмма из блока кода не распознавалась
+ * и уходила в штатный Mermaid.
  */
 export function isMermaidExtDeclaration(source: string): boolean {
-  const firstMeaningful = findFirstMeaningfulLine(source.split(/\r?\n/));
+  const prepared = prepareMermaidSource(source);
+  const firstMeaningful = findFirstMeaningfulLine(prepared.split(/\r?\n/));
   if (!firstMeaningful) {
     return false;
   }

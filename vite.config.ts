@@ -12,8 +12,10 @@ const packageJson = JSON.parse(
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),
-    // Расширение Mermaid выключено в проде: блок врезки вырезается tree-shaking'ом.
-    __MERMAID_EXT__: JSON.stringify(false),
+    // Расширение Mermaid включено в проде: пять своих типов диаграмм
+    // (waterfall, bubble, heatmap, orgchart, ev) рисует встроенный движок.
+    // Выключить сборку можно переменной окружения MERMAID_EXT=false.
+    __MERMAID_EXT__: JSON.stringify(process.env.MERMAID_EXT !== "false"),
   },
   resolve: {
     alias: {

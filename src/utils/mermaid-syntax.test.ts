@@ -96,4 +96,13 @@ describe("isMermaidExtDeclaration", () => {
     expect(isMermaidExtDeclaration("flowchart TD\nA --> B")).toBe(false);
     expect(isMermaidExtDeclaration("")).toBe(false);
   });
+
+  it("detects extension types inside a fenced mermaid block", () => {
+    expect(isMermaidExtDeclaration("```mermaid\nwaterfall\n=1 : A\n```")).toBe(true);
+    expect(isMermaidExtDeclaration("```\norgchart\nCEO\n```")).toBe(true);
+  });
+
+  it("ignores a trailing PlantUML block after the extension diagram", () => {
+    expect(isMermaidExtDeclaration("bubble\nx A 1\n@startuml\nA -> B\n@enduml")).toBe(true);
+  });
 });

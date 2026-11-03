@@ -5,7 +5,7 @@ import type { DiagramLanguageModule } from "@/languages/types";
 import { isCompleteMermaidDiagram } from "@/utils/mermaid-source";
 
 const MERMAID_TYPE =
-  /^(graph|flowchart|sequencediagram|classdiagram|statediagram|erdiagram|journey|gantt|pie|mindmap|timeline|gitgraph|sankey-beta|xychart-beta|block-beta)\b/i;
+  /^(graph|flowchart|sequencediagram|classdiagram|statediagram|erdiagram|journey|gantt|pie|mindmap|timeline|gitgraph|sankey-beta|xychart-beta|block-beta|waterfall|bubble|heatmap|orgchart|ev)\b/i;
 
 export const mermaidLanguageModule: DiagramLanguageModule = {
   id: "mermaid",
