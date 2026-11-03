@@ -458,28 +458,50 @@ const MERMAID_SOURCES_BY_LOCALE: Record<
  */
 const MERMAID_EXT_SAMPLES_RU: Record<MermaidExtSampleId, string> = {
   waterfall: `waterfall
-title Выручка 2026
+%% Демо всех возможностей waterfall: шкала y, шаг сетки, разрыв,
+%% режим подписей, per-step флаги, «=» без значения, мульти-серии,
+%% размер шрифта и соединители.
+title Выручка 2026: все возможности
 y "млн ₽" 0 --> 1000
 grid 100
 labels both
+fontsize 11
 break 300 --> 800 "разрыв шкалы"
-=120 : Q1
-+180 : Q2
+series Базовый
+=120 : Q1 старт
++180 : Q2 рост above
+-60 : Q3 отток label="−60 млн"
 = : Итого H1
-+700 : Q3
-= : Итог`,
++720 : Q4 скачок
+= : Итог года
+-40 : Возвраты no-label
+= : Чистый итог
+series Оптимистичный
+=120 : Q1
++240 : Q2
+-40 : Q3
+= : Итого H1
++760 : Q4
+= : Итог года
+-20 : Возвраты
+= : Чистый итог`,
   bubble: `bubble
-title BCG матрица
+%% Демо всех возможностей bubble: оси x/y, легенда размера,
+%% квадранты и их подписи, группы-цвета и размер шрифта.
+%% Подписи точек выводятся целиком — переносом по словам, без «…».
+title BCG матрица: подписи целиком
 x "Доля рынка" 0 --> 10
 y "Рост рынка, %" 0 --> 30
 size "Выручка"
 quadrants Звёзды, Вопросы, Дойные коровы, Собаки
 mid x=5 y=12
+fontsize 12
 data
 Продукт A : x=8.2, y=22, size=340, group=Software
 Продукт B : x=2.1, y=25, size=180, group=Software
 Продукт C : x=7.4, y=4, size=520, group=Hardware
-Продукт D : x=1.5, y=3, size=90, group=Hardware`,
+Продукт D : x=1.5, y=3, size=90, group=Hardware
+Продукт E : x=4.6, y=16.5, size=240, group=Software`,
   heatmap: `heatmap
 title Нагрузка по дням
 x Пн, Вт, Ср, Чт, Пт
@@ -514,28 +536,50 @@ grid`,
 
 const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
   waterfall: `waterfall
-title Revenue 2026
+%% Demo of every waterfall feature: y axis, grid step, axis break,
+%% label mode, per-step flags, bare "=", multi-series, font size
+%% and connectors.
+title Revenue 2026: every feature
 y "M USD" 0 --> 1000
 grid 100
 labels both
+fontsize 11
 break 300 --> 800 "axis break"
-=120 : Q1
-+180 : Q2
+series Base
+=120 : Q1 start
++180 : Q2 growth above
+-60 : Q3 churn label="−60 M"
 = : H1 total
-+700 : Q3
-= : Total`,
++720 : Q4 spike
+= : Year total
+-40 : Refunds no-label
+= : Net total
+series Optimistic
+=120 : Q1
++240 : Q2
+-40 : Q3
+= : H1 total
++760 : Q4
+= : Year total
+-20 : Refunds
+= : Net total`,
   bubble: `bubble
-title BCG matrix
+%% Demo of every bubble feature: x/y axes, size legend, quadrants
+%% and their labels, colour groups and font size.
+%% Point labels are never truncated — they wrap by words, no "…".
+title BCG matrix: full labels
 x "Market share" 0 --> 10
 y "Market growth, %" 0 --> 30
 size "Revenue"
 quadrants Stars, Question marks, Cash cows, Dogs
 mid x=5 y=12
+fontsize 12
 data
 Product A : x=8.2, y=22, size=340, group=Software
 Product B : x=2.1, y=25, size=180, group=Software
 Product C : x=7.4, y=4, size=520, group=Hardware
-Product D : x=1.5, y=3, size=90, group=Hardware`,
+Product D : x=1.5, y=3, size=90, group=Hardware
+Product E : x=4.6, y=16.5, size=240, group=Software`,
   heatmap: `heatmap
 title Load by day
 x Mon, Tue, Wed, Thu, Fri

@@ -547,6 +547,74 @@ y "" 0 --> 100
     expect(y2).toBeLessThan(y1);
   });
 
+  it("fontsize задаёт базовый размер шрифта", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 100
+fontsize 16
+=40 : Q1
++50 : Q2`);
+    expect(r.ok).toBe(true);
+    expect((r.value as WaterfallModel).fontSize).toBe(16);
+  });
+
+  it("fontsize масштабирует подписи колонок и значения", () => {
+    const base = `waterfall
+y "" 0 --> 100
+=40 : Q1
++50 : Q2`;
+    const small = waterfallEngine.render(
+      waterfallEngine.parse(`${base}\nfontsize 9`).value as WaterfallModel,
+      {},
+    );
+    const large = waterfallEngine.render(
+      waterfallEngine.parse(`${base}\nfontsize 18`).value as WaterfallModel,
+      {},
+    );
+    // Подпись колонки «Q1» рисуется базовым шрифтом.
+    expect(small).toMatch(/font-size="9"[^>]*>Q1</);
+    expect(large).toMatch(/font-size="18"[^>]*>Q1</);
+    // Значения — чуть меньше базового, но тоже растут.
+    expect(large).toMatch(/font-size="16"[^>]*>\+50</);
+  });
+
+  it("fontsize увеличивает полотно графика", () => {
+    const base = `waterfall
+y "" 0 --> 100
+=40 : Q1
++50 : Q2`;
+    const size = (svg: string): number => {
+      const m = /width="([\d.]+)" height="([\d.]+)"/.exec(svg);
+      return m ? Number(m[1]) * Number(m[2]) : 0;
+    };
+    const small = waterfallEngine.render(
+      waterfallEngine.parse(`${base}\nfontsize 9`).value as WaterfallModel,
+      {},
+    );
+    const large = waterfallEngine.render(
+      waterfallEngine.parse(`${base}\nfontsize 18`).value as WaterfallModel,
+      {},
+    );
+    expect(size(large)).toBeGreaterThan(size(small));
+  });
+
+  it("fontsize вне диапазона прижимается к 6–28", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 100
+fontsize 100
+=40 : Q1
++50 : Q2`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect(svg).toMatch(/font-size="28"[^>]*>Q1</);
+  });
+
+  it("ошибка: fontsize без числа", () => {
+    const r = waterfallEngine.parse(`waterfall
+fontsize крупно
+=10 : A`);
+    expect(r.ok).toBe(false);
+    expect(r.errors[0].message).toMatch(/fontsize <положительное число>/);
+  });
+
   it("ошибка: неизвестное значение директивы", () => {
     const r = waterfallEngine.parse(`waterfall
 connectors может быть

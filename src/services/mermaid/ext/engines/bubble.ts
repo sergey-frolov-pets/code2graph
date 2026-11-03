@@ -1,4 +1,4 @@
-import { clamp, createSvg, getPalette, measureText, truncate } from "../common";
+import { clamp, createSvg, getPalette, measureText } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
 // --- Модель ---------------------------------------------------------------
@@ -19,6 +19,12 @@ export interface BubbleModel {
   quadrants?: [string, string, string, string];
   mid: { x: number; y: number };
   points: BubblePoint[];
+  /**
+   * Базовый размер шрифта подписей точек (`fontsize <px>`).
+   * Не задан — берётся FONT_BASE (11). Влияет на подписи точек и легенду;
+   * заголовок, оси и квадранты масштабируются относительно него.
+   */
+  fontSize?: number;
 }
 
 // --- Разбор ---------------------------------------------------------------
@@ -124,6 +130,7 @@ export function parseBubble(source: string): ExtParseResult<BubbleModel> {
   let sizeLabel: string | undefined;
   let quadrants: [string, string, string, string] | undefined;
   let midRaw: { x?: number; y?: number } | null = null;
+  let fontSize: number | undefined;
   const points: BubblePoint[] = [];
 
   let inData = false;
@@ -204,6 +211,19 @@ export function parseBubble(source: string): ExtParseResult<BubbleModel> {
       midRaw = found;
       continue;
     }
+    if (/^fontsize\b/i.test(raw)) {
+      const parsed = parseNumber(raw.replace(/^fontsize\s*/i, ""));
+      if (parsed === null || !(parsed > 0)) {
+        errors.push({
+          message: `ожидается «fontsize <положительное число>», получено «${raw.replace(/^fontsize\s*/i, "").trim()}»`,
+          line: lineNo,
+          col: 0,
+        });
+        continue;
+      }
+      fontSize = parsed;
+      continue;
+    }
     if (/^data$/i.test(raw)) {
       inData = true;
       dataLine = lineNo;
@@ -211,7 +231,7 @@ export function parseBubble(source: string): ExtParseResult<BubbleModel> {
     }
 
     errors.push({
-      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, x, y, size, quadrants, mid, data)`,
+      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, x, y, size, quadrants, mid, fontsize, data)`,
       line: lineNo,
       col: 0,
     });
@@ -239,7 +259,7 @@ export function parseBubble(source: string): ExtParseResult<BubbleModel> {
   return {
     ok: true,
     errors: [],
-    value: { title, x: xAxis, y: yAxis, sizeLabel, quadrants, mid, points },
+    value: { title, x: xAxis, y: yAxis, sizeLabel, quadrants, mid, points, fontSize },
   };
 }
 
@@ -250,16 +270,115 @@ const PLOT_WIDTH = 460;
 const PLOT_HEIGHT = 320;
 const MIN_R = 6;
 const MAX_R = 40;
+/** Базовый размер шрифта подписей точек, если `fontsize` не задан. */
+const FONT_BASE = 11;
+const FONT_MIN = 6;
+const FONT_MAX = 28;
 
 const GROUP_COLORS = ["#0969da", "#8250df", "#bf8700", "#1a7f37", "#cf222e", "#6e7781"];
 const GROUP_COLORS_DARK = ["#58a6ff", "#a371f7", "#d29922", "#3fb950", "#f85149", "#8b949e"];
+
+/**
+ * Самое длинное слово подписи. Нужно, чтобы выбрать ширину строки:
+ * слово, которое не влезает в круг, выводится целиком (за край),
+ * а не режется по буквам.
+ */
+function longestWord(text: string): string {
+  let best = "";
+  for (const word of String(text ?? "").split(/\s+/)) {
+    if (measureText(word, 1) > measureText(best, 1)) best = word;
+  }
+  return best;
+}
+
+/**
+ * Разбивает подпись на строки по словам так, чтобы каждая строка влезала
+ * в `maxWidth`. Слишком длинное слово режется по символам. Подпись не
+ * теряется: выводится целиком, просто в несколько строк.
+ */
+function wrapLabel(text: string, maxWidth: number, fontSize: number): string[] {
+  const src = String(text ?? "").trim();
+  if (!src) return [];
+  if (measureText(src, fontSize) <= maxWidth) return [src];
+
+  const lines: string[] = [];
+  let current = "";
+  const pushCurrent = (): void => {
+    if (current) lines.push(current);
+    current = "";
+  };
+
+  for (const word of src.split(/\s+/)) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (measureText(candidate, fontSize) <= maxWidth) {
+      current = candidate;
+      continue;
+    }
+    pushCurrent();
+    // Слово само по себе шире строки — режем по символам.
+    if (measureText(word, fontSize) > maxWidth) {
+      let chunk = "";
+      for (const ch of word) {
+        if (measureText(chunk + ch, fontSize) > maxWidth && chunk) {
+          lines.push(chunk);
+          chunk = ch;
+        } else {
+          chunk += ch;
+        }
+      }
+      current = chunk;
+    } else {
+      current = word;
+    }
+  }
+  pushCurrent();
+  return lines;
+}
 
 export function renderBubble(model: BubbleModel, options: ExtRenderOptions): string {
   const palette = getPalette(options.dark);
   const groupColors = options.dark ? GROUP_COLORS_DARK : GROUP_COLORS;
 
+  const fontSize = clamp(model.fontSize ?? FONT_BASE, FONT_MIN, FONT_MAX);
+  // Заголовок и оси масштабируются вместе с подписями, но не 1:1 —
+  // иначе при fontsize 24 заголовок съедает всю шапку.
+  const titleSize = clamp(Math.round(fontSize * 1.36), 15, 26);
+  const axisSize = clamp(Math.round(fontSize * 1.09), 12, 20);
+  const quadrantSize = clamp(Math.round(fontSize), 11, 18);
+  const lineHeight = Math.round(fontSize * 1.15);
+
+  // --- Раскладка легенды (до создания SVG: от неё зависит высота) ---------
+  const groups: string[] = [];
+  for (const p of model.points) {
+    if (p.group && !groups.includes(p.group)) groups.push(p.group);
+  }
+  const swatch = Math.max(10, fontSize * 0.9);
+  const legendRowHeight = Math.max(lineHeight, swatch) + 6;
+  const legendItems: { text: string; group?: string }[] = [];
+  if (model.sizeLabel) legendItems.push({ text: `размер: ${model.sizeLabel}` });
+  for (const group of groups) legendItems.push({ text: group, group });
+
+  const legendRows: { text: string; group?: string; x: number }[][] = [];
+  {
+    let row: { text: string; group?: string; x: number }[] = [];
+    let x = 0;
+    for (const item of legendItems) {
+      const itemWidth = measureText(item.text, fontSize) + (item.group ? swatch + 6 : 0);
+      if (row.length > 0 && x + itemWidth > PLOT_WIDTH) {
+        legendRows.push(row);
+        row = [];
+        x = 0;
+      }
+      row.push({ ...item, x });
+      x += itemWidth + 16;
+    }
+    if (row.length > 0) legendRows.push(row);
+  }
+  const legendHeight = legendRows.length * legendRowHeight;
+
   const width = PADDING.left + PLOT_WIDTH + PADDING.right;
-  const height = PADDING.top + PLOT_HEIGHT + PADDING.bottom;
+  const height =
+    PADDING.top + PLOT_HEIGHT + PADDING.bottom + Math.max(0, legendHeight - legendRowHeight);
   const svg = createSvg({
     width,
     height,
@@ -280,7 +399,11 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
   const py = (v: number): number => plotBottom - clamp((v - yAxis.min) / ySpan, 0, 1) * PLOT_HEIGHT;
 
   if (model.title) {
-    svg.text(width / 2, 24, model.title, { "font-size": 15, "font-weight": 600, fill: palette.fg });
+    svg.text(width / 2, 24, model.title, {
+      "font-size": titleSize,
+      "font-weight": 600,
+      fill: palette.fg,
+    });
   }
 
   // Рамка области
@@ -296,40 +419,46 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
   svg.line(midX, plotTop, midX, plotBottom, { stroke: palette.grid, "stroke-width": 1 });
   svg.line(plotLeft, midY, plotRight, midY, { stroke: palette.grid, "stroke-width": 1 });
 
-  // Подписи квадрантов: лево-верх, право-верх, лево-низ, право-низ
+  // Подписи квадрантов: лево-верх, право-верх, лево-низ, право-низ.
+  // Подпись выводится целиком (перенос по словам), а не обрезается.
   if (model.quadrants) {
     const [q1, q2, q3, q4] = model.quadrants;
     const inset = 8;
-    const fs = 11;
-    svg.text(plotLeft + inset, plotTop + inset + fs, truncate(q1, midX - plotLeft - inset * 2, fs), {
-      "text-anchor": "start",
-      "font-size": fs,
-      fill: palette.fgDim,
-    });
-    svg.text(
-      plotRight - inset,
-      plotTop + inset + fs,
-      truncate(q2, plotRight - midX - inset * 2, fs),
-      { "text-anchor": "end", "font-size": fs, fill: palette.fgDim },
-    );
-    svg.text(
-      plotLeft + inset,
-      plotBottom - inset,
-      truncate(q3, midX - plotLeft - inset * 2, fs),
-      { "text-anchor": "start", "font-size": fs, fill: palette.fgDim },
-    );
-    svg.text(
-      plotRight - inset,
-      plotBottom - inset,
-      truncate(q4, plotRight - midX - inset * 2, fs),
-      { "text-anchor": "end", "font-size": fs, fill: palette.fgDim },
-    );
+    const fs = quadrantSize;
+    const leftWidth = Math.max(40, midX - plotLeft - inset * 2);
+    const rightWidth = Math.max(40, plotRight - midX - inset * 2);
+
+    const drawQuadrant = (
+      text: string,
+      x: number,
+      y: number,
+      maxWidth: number,
+      anchor: "start" | "end",
+      fromBottom: boolean,
+    ): void => {
+      const lines = wrapLabel(text, maxWidth, fs);
+      lines.forEach((line, idx) => {
+        const offset = fromBottom
+          ? -(lines.length - 1 - idx) * lineHeight
+          : idx * lineHeight;
+        svg.text(x, y + offset, line, {
+          "text-anchor": anchor,
+          "font-size": fs,
+          fill: palette.fgDim,
+        });
+      });
+    };
+
+    drawQuadrant(q1, plotLeft + inset, plotTop + inset + fs, leftWidth, "start", false);
+    drawQuadrant(q2, plotRight - inset, plotTop + inset + fs, rightWidth, "end", false);
+    drawQuadrant(q3, plotLeft + inset, plotBottom - inset, leftWidth, "start", true);
+    drawQuadrant(q4, plotRight - inset, plotBottom - inset, rightWidth, "end", true);
   }
 
   // Подписи осей
   if (xAxis.label) {
     svg.text((plotLeft + plotRight) / 2, plotBottom + 34, xAxis.label, {
-      "font-size": 12,
+      "font-size": axisSize,
       fill: palette.fgDim,
     });
   }
@@ -338,7 +467,7 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
     const cy = plotTop + PLOT_HEIGHT / 2;
     svg.text(cx, cy, yAxis.label, {
       "text-anchor": "middle",
-      "font-size": 12,
+      "font-size": axisSize,
       fill: palette.fgDim,
       transform: `rotate(-90 ${cx} ${cy})`,
     });
@@ -356,11 +485,7 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
     return MIN_R + t * (MAX_R - MIN_R);
   };
 
-  // Группы → цвета
-  const groups: string[] = [];
-  for (const p of model.points) {
-    if (p.group && !groups.includes(p.group)) groups.push(p.group);
-  }
+  // Группы → цвета (список groups собран выше, при раскладке легенды)
   const colorOf = (group?: string): string => {
     if (!group) return palette.neutral;
     const idx = groups.indexOf(group);
@@ -379,36 +504,53 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
       stroke: colorOf(point.group),
       "stroke-width": 1.5,
     });
-    const label = truncate(point.label, Math.max(40, r * 2.4), 11);
-    svg.text(cx, cy + 4, label, { "font-size": 11, fill: palette.fg, "font-weight": 600 });
+    const label = point.label;
+    if (label) {
+      // Подпись выводится целиком — без «…». Шрифт подстраивается под круг,
+      // но не мельче FONT_MIN; ширина строки — по кругу, однако слово,
+      // которое в круг не влезает, не режется по буквам, а выходит за край:
+      // читаемость важнее геометрии.
+      const lineFs = clamp(Math.min(fontSize, r * 0.85), FONT_MIN, fontSize);
+      const innerWidth = Math.max(measureText(longestWord(label), lineFs), r * 1.7);
+      const lines = wrapLabel(label, innerWidth, lineFs);
+      const step = Math.round(lineFs * 1.15);
+      const startY = cy - ((lines.length - 1) * step) / 2 + lineFs * 0.35;
+      lines.forEach((line, idx) => {
+        svg.text(cx, startY + idx * step, line, {
+          "font-size": lineFs,
+          fill: palette.fg,
+          "font-weight": 600,
+        });
+      });
+    }
   }
 
-  // Легенда групп + подпись размера
-  let legendX = plotLeft;
-  const legendY = plotBottom + 50;
-  if (model.sizeLabel) {
-    const text = `размер: ${model.sizeLabel}`;
-    svg.text(plotLeft, legendY, text, {
-      "text-anchor": "start",
-      "font-size": 11,
-      fill: palette.fgDim,
-    });
-    legendX += measureText(text, 11) + 20;
-  }
-  for (const group of groups) {
-    const swatch = 10;
-    svg.circle(legendX + swatch / 2, legendY - 4, swatch / 2, {
-      fill: colorOf(group),
-      "fill-opacity": 0.7,
-      stroke: colorOf(group),
-    });
-    svg.text(legendX + swatch + 6, legendY, group, {
-      "text-anchor": "start",
-      "font-size": 11,
-      fill: palette.fgDim,
-    });
-    legendX += swatch + 12 + measureText(group, 11) + 16;
-  }
+  // Легенда групп + подпись размера: строки переносятся по ширине графика.
+  const legendTop = plotBottom + 50;
+  legendRows.forEach((row, rowIdx) => {
+    const y = legendTop + rowIdx * legendRowHeight;
+    for (const item of row) {
+      const x = plotLeft + item.x;
+      if (item.group) {
+        svg.circle(x + swatch / 2, y - 4, swatch / 2, {
+          fill: colorOf(item.group),
+          "fill-opacity": 0.7,
+          stroke: colorOf(item.group),
+        });
+        svg.text(x + swatch + 6, y, item.text, {
+          "text-anchor": "start",
+          "font-size": fontSize,
+          fill: palette.fgDim,
+        });
+      } else {
+        svg.text(x, y, item.text, {
+          "text-anchor": "start",
+          "font-size": fontSize,
+          fill: palette.fgDim,
+        });
+      }
+    }
+  });
 
   return svg.toString();
 }

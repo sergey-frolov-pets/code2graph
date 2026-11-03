@@ -179,3 +179,89 @@ A : x=1, y=1, size=10`);
     });
   });
 });
+
+describe("bubble: подписи целиком и размер шрифта", () => {
+  const base = `bubble
+x "X" 0 --> 10
+y "Y" 0 --> 10
+data
+Очень длинное название продукта : x=5, y=5, size=100
+B : x=1, y=1, size=10`;
+
+  it("длинная подпись выводится целиком, без «…»", () => {
+    const r = bubbleEngine.parse(base);
+    const svg = bubbleEngine.render(r.value as BubbleModel, {});
+    expect(svg).not.toContain("…");
+    // Все слова подписи присутствуют в SVG (возможно, в разных <text>).
+    for (const word of ["Очень", "длинное", "название", "продукта"]) {
+      expect(svg).toContain(word);
+    }
+  });
+
+  it("подпись не режется по буквам: каждое слово — отдельным <text>", () => {
+    const r = bubbleEngine.parse(base);
+    const svg = bubbleEngine.render(r.value as BubbleModel, {});
+    const texts = [...svg.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map((m) => m[1]);
+    // Ни одна строка не должна быть обрывком слова.
+    expect(texts).toContain("Очень");
+    expect(texts).toContain("название");
+    expect(texts.some((t) => t === "назв")).toBe(false);
+  });
+
+  it("fontsize задаёт размер шрифта подписей", () => {
+    const small = bubbleEngine.parse(base.replace("data", "fontsize 9\ndata"));
+    const large = bubbleEngine.parse(base.replace("data", "fontsize 20\ndata"));
+    expect(small.ok).toBe(true);
+    expect(large.ok).toBe(true);
+    expect((small.value as BubbleModel).fontSize).toBe(9);
+    expect((large.value as BubbleModel).fontSize).toBe(20);
+
+    const svgSmall = bubbleEngine.render(small.value as BubbleModel, {});
+    const svgLarge = bubbleEngine.render(large.value as BubbleModel, {});
+    const maxFont = (svg: string): number =>
+      Math.max(...[...svg.matchAll(/font-size="([\d.]+)"/g)].map((m) => Number(m[1])));
+    expect(maxFont(svgLarge)).toBeGreaterThan(maxFont(svgSmall));
+  });
+
+  it("без fontsize шрифт базовый (11)", () => {
+    const r = bubbleEngine.parse(base);
+    expect((r.value as BubbleModel).fontSize).toBeUndefined();
+    const svg = bubbleEngine.render(r.value as BubbleModel, {});
+    expect(svg).toContain('font-size="11"');
+  });
+
+  it("fontsize вне диапазона прижимается к 6–28", () => {
+    const tiny = bubbleEngine.parse(base.replace("data", "fontsize 1\ndata"));
+    const huge = bubbleEngine.parse(base.replace("data", "fontsize 999\ndata"));
+    expect(tiny.ok).toBe(true);
+    expect(huge.ok).toBe(true);
+    const svgTiny = bubbleEngine.render(tiny.value as BubbleModel, {});
+    const svgHuge = bubbleEngine.render(huge.value as BubbleModel, {});
+    const minFont = (svg: string): number =>
+      Math.min(...[...svg.matchAll(/font-size="([\d.]+)"/g)].map((m) => Number(m[1])));
+    const maxFont = (svg: string): number =>
+      Math.max(...[...svg.matchAll(/font-size="([\d.]+)"/g)].map((m) => Number(m[1])));
+    expect(minFont(svgTiny)).toBeGreaterThanOrEqual(6);
+    expect(maxFont(svgHuge)).toBeLessThanOrEqual(28);
+  });
+
+  it("fontsize без числа — ошибка разбора", () => {
+    const r = bubbleEngine.parse(base.replace("data", "fontsize abc\ndata"));
+    expect(r.ok).toBe(false);
+    expect(r.errors[0].message).toContain("fontsize");
+  });
+
+  it("подписи квадрантов тоже переносятся, а не обрезаются", () => {
+    const r = bubbleEngine.parse(`bubble
+x "X" 0 --> 10
+y "Y" 0 --> 10
+quadrants Очень длинная подпись квадранта, Q2, Q3, Q4
+data
+A : x=5, y=5, size=10`);
+    const svg = bubbleEngine.render(r.value as BubbleModel, {});
+    expect(svg).not.toContain("…");
+    for (const word of ["Очень", "длинная", "подпись", "квадранта"]) {
+      expect(svg).toContain(word);
+    }
+  });
+});

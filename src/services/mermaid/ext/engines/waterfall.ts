@@ -59,6 +59,12 @@ export interface WaterfallModel {
   valueLabels: { above: boolean; inside: boolean };
   /** Соединительные линии между барами (`connectors on|off`), по умолчанию включены. */
   connectors: boolean;
+  /**
+   * Базовый размер шрифта (`fontsize <px>`). Не задан — FONT_BASE (11).
+   * Масштабирует подписи колонок, деления шкалы, значения, легенду и заголовок;
+   * ширина колонок и высота графика растут вместе со шрифтом.
+   */
+  fontSize?: number;
 }
 
 /** Разрыв оси: значения выше `after` и ниже `before` рисуются вплотную. */
@@ -272,6 +278,7 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
   let axisHidden = false;
   let valueLabels = { above: true, inside: false };
   let connectors = true;
+  let fontSize: number | undefined;
 
   const lines = source.split(/\r?\n/);
   let seenType = false;
@@ -355,6 +362,20 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
           col: 0,
         });
       }
+      continue;
+    }
+
+    if (/^fontsize\b/i.test(raw)) {
+      const value = parseNumber(raw.replace(/^fontsize\s*/i, ""));
+      if (value === null || !(value > 0)) {
+        errors.push({
+          message: `ожидается «fontsize <положительное число>», получено «${raw.replace(/^fontsize\s*/i, "").trim()}»`,
+          line: lineNo,
+          col: 0,
+        });
+        continue;
+      }
+      fontSize = value;
       continue;
     }
 
@@ -453,7 +474,7 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
   return {
     ok: true,
     errors: [],
-    value: { title, axis, series, labels, breaks: sorted, valueLabels, connectors },
+    value: { title, axis, series, labels, breaks: sorted, valueLabels, connectors, fontSize },
   };
 }
 
@@ -528,6 +549,10 @@ const BAR_GAP = 0.22;
 const MIN_BAR_WIDTH = 8;
 const MAX_BAR_WIDTH = 64;
 const PLOT_HEIGHT = 260;
+/** Базовый размер шрифта, если `fontsize` не задан. */
+const FONT_BASE = 11;
+const FONT_MIN = 6;
+const FONT_MAX = 28;
 /** Высота сжатого участка шкалы (разрыв). */
 const BREAK_HEIGHT = 14;
 /** Минимальная высота подписи внутри бара. */
@@ -572,26 +597,45 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
 
   const groups = Math.max(1, series.length);
   const columns = Math.max(1, labels.length);
-  const labelFontSize = 11;
+
+  // --- Размеры, зависящие от шрифта ----------------------------------------
+  // fontsize масштабирует все тексты; ширина колонок, высота графика и отступы
+  // растут вместе с ним — иначе при крупном шрифте подписи налезают друг на друга.
+  const fontSize = clamp(model.fontSize ?? FONT_BASE, FONT_MIN, FONT_MAX);
+  const scale = fontSize / FONT_BASE;
+  const labelFontSize = fontSize;
+  const valueFontSize = Math.round(fontSize * 0.91);
+  const breakFontSize = Math.round(fontSize * 0.91);
+  const titleFontSize = clamp(Math.round(fontSize * 1.36), 15, 26);
+  // При базовом шрифте отступы остаются прежними (44 / 52 / 64) — эталоны
+  // рендера не должны меняться от одной только правки масштабирования.
+  const padTop = Math.round((PADDING.top * fontSize) / FONT_BASE);
+  const padBottom = Math.round((PADDING.bottom * fontSize) / FONT_BASE);
+  const padLeft = Math.round((PADDING.left * fontSize) / FONT_BASE);
+  const plotHeight = Math.round(PLOT_HEIGHT * scale);
 
   const longestLabel = labels.reduce((acc, l) => Math.max(acc, measureText(l, labelFontSize)), 0);
-  const columnWidth = clamp(longestLabel + 28, 56, 140);
+  const columnWidth = clamp(longestLabel + Math.round(fontSize * 2.5), 56, Math.round(140 * scale));
   const plotWidth = columnWidth * columns;
 
-  const leftPad = axisHidden ? 16 : PADDING.left;
+  const leftPad = axisHidden ? 16 : padLeft;
   const width = leftPad + plotWidth + PADDING.right;
-  const height = PADDING.top + PLOT_HEIGHT + PADDING.bottom;
+  const height = padTop + plotHeight + padBottom;
 
   const svg = createSvg({ width, height, palette, title, debugFrames: options.debugFrames });
 
   const plotLeft = leftPad;
-  const plotTop = PADDING.top;
-  const plotBottom = plotTop + PLOT_HEIGHT;
+  const plotTop = padTop;
+  const plotBottom = plotTop + plotHeight;
 
   const { yOf } = createScale(axis, breaks, plotTop, plotBottom);
 
   if (title) {
-    svg.text(width / 2, 24, title, { "font-size": 15, "font-weight": 600, fill: palette.fg });
+    svg.text(width / 2, Math.round((24 * fontSize) / FONT_BASE), title, {
+      "font-size": titleFontSize,
+      "font-weight": 600,
+      fill: palette.fg,
+    });
   }
 
   const ticks =
@@ -604,7 +648,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       if (breaks.some((b) => tick > b.after && tick < b.before)) continue;
       const y = yOf(tick);
       svg.line(plotLeft, y, plotLeft + plotWidth, y, { stroke: palette.grid, "stroke-width": 1 });
-      svg.text(plotLeft - 8, y + 4, fmt(tick), {
+      svg.text(plotLeft - Math.round((8 * fontSize) / FONT_BASE), y + Math.round((4 * fontSize) / FONT_BASE), fmt(tick), {
         "text-anchor": "end",
         "font-size": labelFontSize,
         fill: palette.fgDim,
@@ -612,8 +656,8 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
     }
 
     if (axis.label) {
-      const cx = 16;
-      const cy = plotTop + PLOT_HEIGHT / 2;
+      const cx = Math.round((16 * fontSize) / FONT_BASE);
+      const cy = plotTop + plotHeight / 2;
       svg.text(cx, cy, axis.label, {
         "text-anchor": "middle",
         "font-size": labelFontSize,
@@ -650,9 +694,15 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       });
     }
     if (b.label) {
-      svg.text(plotLeft + plotWidth - 4, y - 4, b.label, {
-        "text-anchor": "end",
-        "font-size": 10,
+      // Подпись разрыва прижимается вправо, но не выходит за область графика:
+      // длинный текст сдвигается влево (иначе обрезается краем SVG).
+      const breakFs = breakFontSize;
+      const text = truncate(b.label, plotWidth - 8, breakFs);
+      const anchorX = plotLeft + plotWidth - 4;
+      const fitsLeft = anchorX - measureText(text, breakFs) >= plotLeft + 4;
+      svg.text(fitsLeft ? anchorX : plotLeft + plotWidth / 2, y - Math.round((4 * fontSize) / FONT_BASE), text, {
+        "text-anchor": fitsLeft ? "end" : "middle",
+        "font-size": breakFs,
         fill: palette.fgDim,
       });
     }
@@ -745,23 +795,28 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       const wantAbove = step.labelAbove ?? valueLabels.above;
       const hide = step.labelInside === false && step.labelAbove === false;
 
-      const fitted = truncate(valueText, barWidth - 4, 10);
-      const fitsInside = barHeight >= INSIDE_MIN_HEIGHT && measureText(fitted, 10) <= barWidth - 4;
+      const fitted = truncate(valueText, barWidth - 4, valueFontSize);
+      const fitsInside =
+        barHeight >= Math.max(INSIDE_MIN_HEIGHT, valueFontSize + 2) &&
+        measureText(fitted, valueFontSize) <= barWidth - 4;
 
       if (!hide && wantInside && fitsInside) {
-        svg.text(x + barWidth / 2, top + barHeight / 2 + 3.5, fitted, {
-          "font-size": 10,
+        svg.text(x + barWidth / 2, top + barHeight / 2 + valueFontSize * 0.35, fitted, {
+          "font-size": valueFontSize,
           fill: "#ffffff",
           "font-weight": 600,
         });
       } else if (!hide && (wantAbove || wantInside)) {
         // Внутри не поместилось — выносим над баром.
-        svg.text(x + barWidth / 2, top - 5, valueText, { "font-size": 10, fill: palette.fgDim });
+        svg.text(x + barWidth / 2, top - Math.round((5 * fontSize) / FONT_BASE), valueText, {
+          "font-size": valueFontSize,
+          fill: palette.fgDim,
+        });
       }
     }
 
     const label = truncate(labels[col] ?? "", columnWidth - 6, labelFontSize);
-    svg.text(columnLeft + columnWidth / 2, plotBottom + 18, label, {
+    svg.text(columnLeft + columnWidth / 2, plotBottom + Math.round((18 * fontSize) / FONT_BASE), label, {
       "font-size": labelFontSize,
       fill: palette.fg,
     });
@@ -769,10 +824,10 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
 
   if (groups > 1) {
     let legendX = plotLeft;
-    const legendY = plotBottom + 40;
+    const legendY = plotBottom + Math.round((40 * fontSize) / FONT_BASE);
     for (let g = 0; g < groups; g += 1) {
       const name = series[g].name ?? `Группа ${g + 1}`;
-      const swatch = 10;
+      const swatch = Math.round(fontSize * 0.91);
       svg.rect(legendX, legendY - swatch + 2, swatch, swatch, {
         fill: g === 0 ? palette.neutral : palette.accent,
         rx: 2,
@@ -782,7 +837,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
         "font-size": labelFontSize,
         fill: palette.fgDim,
       });
-      legendX += swatch + 12 + measureText(name, labelFontSize) + 16;
+      legendX += swatch + Math.round(fontSize * 1.1) + measureText(name, labelFontSize) + Math.round(fontSize * 1.45);
     }
   }
 
