@@ -1004,20 +1004,28 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
     );
     for (const b of breaks) {
       const y = yOf(b.after);
-      // Вырез под числа: иначе они лежат на линии разрыва.
-      svg.rect(edgeLabelX - edgeTextW - 2, y - edgeGap - labelFontSize * 1.35, edgeTextW + 6, edgeGap * 2 + labelFontSize * 2.7, {
+      // Числа прижаты к линии разрыва так, чтобы между ними и линией остался
+      // зазор в `edgeGap`: базлайн нижнего = линия + зазор + высота строки,
+      // базлайн верхнего = линия − зазор (то есть его низ ровно на зазоре).
+      const lowerBaseline = y + edgeGap + labelFontSize;
+      const upperBaseline = y - edgeGap;
+      // Вырез под оба числа: от верха верхнего до низа нижнего (+ запас на
+      // выносные элементы). Иначе цифры лежат на линии разрыва.
+      const boxTop = upperBaseline - labelFontSize;
+      const boxBottom = lowerBaseline + Math.round(labelFontSize * 0.25);
+      svg.rect(edgeLabelX - edgeTextW - 3, boxTop - 1, edgeTextW + 7, boxBottom - boxTop + 2, {
         fill: palette.bg,
         "data-break-gap": "1",
       });
-      // Нижнее число: базлайн ниже линии на gap + высоту строки.
-      svg.text(edgeLabelX, y + edgeGap + labelFontSize, fmt(b.after), {
+      // Нижнее число — минимум вырезанного участка: базлайн ниже линии.
+      svg.text(edgeLabelX, lowerBaseline, fmt(b.after), {
         "text-anchor": "end",
         "font-size": labelFontSize,
         fill: palette.fgDim,
         "data-break-edge": "after",
       });
-      // Верхнее число: базлайн выше линии на gap.
-      svg.text(edgeLabelX, y - edgeGap, fmt(b.before), {
+      // Верхнее число — максимум вырезанного участка: базлайн выше линии.
+      svg.text(edgeLabelX, upperBaseline, fmt(b.before), {
         "text-anchor": "end",
         "font-size": labelFontSize,
         fill: palette.fgDim,
