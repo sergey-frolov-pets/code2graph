@@ -1118,7 +1118,7 @@ line 250 "порог" style=dot width=1
   it("подпись в кавычках не съедает параметры после неё", () => {
     const r = waterfallEngine.parse(src);
     expect(r.ok).toBe(true);
-    const lines = (r.value as WaterfallModel).lines;
+    const lines = (r.value as WaterfallModel).lines ?? [];
     expect(lines).toHaveLength(3);
     expect(lines[0]).toMatchObject({ value: 250, label: "порог", style: "dot", width: 1 });
     expect(lines[1]).toMatchObject({ value: 350, label: "план" });
@@ -1132,7 +1132,7 @@ line 50 color=#cf222e style=solid "цель"
 =40 : A
 +20 : B`);
     expect(r.ok).toBe(true);
-    expect((r.value as WaterfallModel).lines[0]).toMatchObject({
+    expect((r.value as WaterfallModel).lines?.[0]).toMatchObject({
       value: 50,
       label: "цель",
       color: "#cf222e",
