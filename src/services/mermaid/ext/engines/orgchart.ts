@@ -308,6 +308,57 @@ function layout(model: OrgModel): { placed: PlacedNode[]; width: number; height:
 
 const PADDING = { top: 48, right: 24, bottom: 32, left: 24 };
 
+/**
+ * Если на одной стороне карточки есть и сплошное, и пунктирное ребро,
+ * их точки контакта разъезжаются на этот зазор, чтобы штрихи не совпали.
+ */
+const CONTACT_STYLE_GAP = 16;
+/** Точка контакта не ближе этого отступа к боковому краю карточки. */
+const CONTACT_EDGE_INSET = 8;
+/**
+ * На одном горизонтальном коридоре сплошной и пунктирный «локоть»
+ * разводятся по вертикали, иначе общий участок ложится друг на друга.
+ */
+const ELBOW_STYLE_SEPARATION = 10;
+
+interface DrawableEdge {
+  edge: OrgEdge;
+  from: PlacedNode;
+  to: PlacedNode;
+  y1: number;
+  y2: number;
+}
+
+function uniqueStyles(edges: DrawableEdge[], pick: (item: DrawableEdge) => boolean): OrgEdgeStyle[] {
+  const styles: OrgEdgeStyle[] = [];
+  for (const item of edges) {
+    if (!pick(item) || styles.includes(item.edge.style)) continue;
+    styles.push(item.edge.style);
+  }
+  return styles;
+}
+
+/** Сдвиг точки контакта: сплошная влево, пунктир вправо. Один стиль — центр. */
+function styleContactShift(cardWidth: number, styles: readonly OrgEdgeStyle[], style: OrgEdgeStyle): number {
+  if (styles.length < 2 || !styles.includes(style)) return 0;
+  const maxShift = Math.max(0, cardWidth / 2 - CONTACT_EDGE_INSET);
+  const shift = Math.min(CONTACT_STYLE_GAP / 2, maxShift);
+  return style === "solid" ? -shift : shift;
+}
+
+function corridorKey(y1: number, y2: number): string {
+  return `${fmt(y1)}|${fmt(y2)}`;
+}
+
+function elbowY(y1: number, y2: number, style: OrgEdgeStyle, separateStyles: boolean): number {
+  const mid = y1 + (y2 - y1) / 2;
+  if (!separateStyles) return mid;
+  const room = Math.abs(y2 - y1) / 2;
+  const half = Math.min(ELBOW_STYLE_SEPARATION / 2, room / 2);
+  if (half <= 0) return mid;
+  return style === "solid" ? mid - half : mid + half;
+}
+
 export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): string {
   const palette = getPalette(Boolean(options.dark));
   const { placed, width: contentWidth, height: contentHeight } = layout(model);
@@ -336,18 +387,40 @@ export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): stri
   const marker = arrowMarker(palette, "ext-org-arrow");
   svg.raw(marker.markup);
 
-  // Рёбра — под узлами
+  const drawable: DrawableEdge[] = [];
   for (const edge of model.edges) {
     const from = byId.get(edge.from);
     const to = byId.get(edge.to);
     if (!from || !to) continue;
+    drawable.push({
+      edge,
+      from,
+      to,
+      y1: offsetY + from.y + from.height,
+      y2: offsetY + to.y,
+    });
+  }
 
-    const x1 = offsetX + from.x + from.width / 2;
-    const y1 = offsetY + from.y + from.height;
-    const x2 = offsetX + to.x + to.width / 2;
-    const y2 = offsetY + to.y;
+  const mixedCorridors = new Set<string>();
+  const stylesByCorridor = new Map<string, OrgEdgeStyle[]>();
+  for (const item of drawable) {
+    const key = corridorKey(item.y1, item.y2);
+    const styles = stylesByCorridor.get(key) ?? [];
+    if (!styles.includes(item.edge.style)) styles.push(item.edge.style);
+    stylesByCorridor.set(key, styles);
+    if (styles.length > 1) mixedCorridors.add(key);
+  }
 
-    const midY = y1 + (y2 - y1) / 2;
+  // Рёбра — под узлами. Сплошная и пунктирная линии не делят одну точку
+  // контакта на карточке и не ложатся на общий горизонтальный участок.
+  for (const item of drawable) {
+    const { edge, from, to, y1, y2 } = item;
+    const outStyles = uniqueStyles(drawable, (candidate) => candidate.edge.from === edge.from);
+    const inStyles = uniqueStyles(drawable, (candidate) => candidate.edge.to === edge.to);
+    const x1 =
+      offsetX + from.x + from.width / 2 + styleContactShift(from.width, outStyles, edge.style);
+    const x2 = offsetX + to.x + to.width / 2 + styleContactShift(to.width, inStyles, edge.style);
+    const midY = elbowY(y1, y2, edge.style, mixedCorridors.has(corridorKey(y1, y2)));
     const d = `M ${fmt(x1)} ${fmt(y1)} L ${fmt(x1)} ${fmt(midY)} L ${fmt(x2)} ${fmt(midY)} L ${fmt(x2)} ${fmt(y2)}`;
     const attrs: Record<string, string | number> = {
       d,
