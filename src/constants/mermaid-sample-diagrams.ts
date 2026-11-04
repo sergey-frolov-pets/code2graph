@@ -609,7 +609,7 @@ grid 50
   bubble: `bubble
 %% Демо всех возможностей bubble: оси x/y, легенда размера,
 %% квадранты и их подписи, группы-цвета и размер шрифта.
-%% Подписи точек выводятся целиком — переносом по словам, без «…».
+%% Подпись внутри пузырька, если влезает; иначе под ним, целиком, без «…».
 title BCG матрица: подписи целиком
 x "Доля рынка" 0 --> 10
 y "Рост рынка, %" 0 --> 30
@@ -791,7 +791,7 @@ grid 50
   bubble: `bubble
 %% Demo of every bubble feature: x/y axes, size legend, quadrants
 %% and their labels, colour groups and font size.
-%% Point labels are never truncated — they wrap by words, no "…".
+%% A label stays inside the bubble when it fits; otherwise it sits below, uncut, no "…".
 title BCG matrix: full labels
 x "Market share" 0 --> 10
 y "Market growth, %" 0 --> 30

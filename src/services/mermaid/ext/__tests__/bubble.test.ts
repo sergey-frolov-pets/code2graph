@@ -3,6 +3,25 @@ import { bubbleEngine, type BubbleModel } from "../engines/bubble";
 import { checkFixturesForType } from "./fixtures.test";
 import { assertSvgInvariants } from "./svg-invariants";
 
+function svgTexts(svg: string): { x: number; y: number; text: string }[] {
+  return [...svg.matchAll(/<text\b([^>]*)>([^<]*)<\/text>/g)].map((match) => ({
+    x: Number(/\sx="([\d.]+)"/.exec(match[1])?.[1]),
+    y: Number(/\sy="([\d.]+)"/.exec(match[1])?.[1]),
+    text: match[2],
+  }));
+}
+
+/** Круги точек, без кружков легенды (у них радиус меньше MIN_R). */
+function dataBubbles(svg: string): { cx: number; cy: number; r: number }[] {
+  return [...svg.matchAll(/<circle\b([^>]*)\/>/g)]
+    .map((match) => ({
+      cx: Number(/\scx="([\d.]+)"/.exec(match[1])?.[1]),
+      cy: Number(/\scy="([\d.]+)"/.exec(match[1])?.[1]),
+      r: Number(/\sr="([\d.]+)"/.exec(match[1])?.[1]),
+    }))
+    .filter((bubble) => bubble.r >= 6);
+}
+
 describe("bubble: фикстуры", () => {
   it("все фикстуры типа bubble разбираются (кроме помеченных как битые)", () => {
     checkFixturesForType("bubble", (src) => bubbleEngine.parse(src));
@@ -198,13 +217,14 @@ B : x=1, y=1, size=10`;
     }
   });
 
-  it("подпись не режется по буквам: каждое слово — отдельным <text>", () => {
+  it("подпись не режется по буквам", () => {
     const r = bubbleEngine.parse(base);
     const svg = bubbleEngine.render(r.value as BubbleModel, {});
     const texts = [...svg.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map((m) => m[1]);
-    // Ни одна строка не должна быть обрывком слова.
-    expect(texts).toContain("Очень");
-    expect(texts).toContain("название");
+    const words = ["Очень", "длинное", "название", "продукта"];
+    const pointLines = texts.filter((line) => words.some((word) => line.includes(word)));
+    // Под пузырьком слова могут стоять в одной строке, но не обрывками.
+    expect(pointLines.join(" ")).toBe(words.join(" "));
     expect(texts.some((t) => t === "назв")).toBe(false);
   });
 
@@ -249,6 +269,54 @@ B : x=1, y=1, size=10`;
     const r = bubbleEngine.parse(base.replace("data", "fontsize abc\ndata"));
     expect(r.ok).toBe(false);
     expect(r.errors[0].message).toContain("fontsize");
+  });
+
+  it("короткая подпись крупного пузырька остаётся внутри круга", () => {
+    const r = bubbleEngine.parse(`bubble
+x "X" 0 --> 10
+y "Y" 0 --> 10
+data
+A : x=5, y=5, size=100`);
+    const svg = bubbleEngine.render(r.value as BubbleModel, {});
+    const bubble = dataBubbles(svg)[0];
+    const label = svgTexts(svg).find((item) => item.text === "A");
+    expect(bubble).toBeDefined();
+    expect(label).toBeDefined();
+    expect(label!.y).toBeGreaterThan(bubble.cy - bubble.r);
+    expect(label!.y).toBeLessThan(bubble.cy + bubble.r);
+  });
+
+  it("подпись, которая не влезает в пузырёк, рисуется под ним", () => {
+    const r = bubbleEngine.parse(`bubble
+x "X" 0 --> 10
+y "Y" 0 --> 10
+data
+Очень длинное название продукта : x=5, y=5, size=100`);
+    const svg = bubbleEngine.render(r.value as BubbleModel, {});
+    const bubble = dataBubbles(svg)[0];
+    const words = ["Очень", "длинное", "название", "продукта"];
+    const labels = svgTexts(svg).filter((item) => words.some((word) => item.text.includes(word)));
+    expect(labels.length).toBeGreaterThan(0);
+    for (const label of labels) {
+      expect(label.y).toBeGreaterThan(bubble.cy + bubble.r);
+    }
+    const height = Number(/viewBox="0 0 [\d.]+ ([\d.]+)"/.exec(svg)?.[1]);
+    expect(height).toBeGreaterThan(Math.max(...labels.map((label) => label.y)));
+  });
+
+  it("мелкий пузырёк не прячет короткую подпись внутрь нечитаемым шрифтом", () => {
+    const r = bubbleEngine.parse(`bubble
+x "X" 0 --> 10
+y "Y" 0 --> 10
+data
+A : x=5, y=5, size=100
+Мелкий : x=1, y=1, size=1`);
+    const svg = bubbleEngine.render(r.value as BubbleModel, {});
+    const small = dataBubbles(svg).find((bubble) => bubble.r <= 10);
+    const label = svgTexts(svg).find((item) => item.text === "Мелкий");
+    expect(small).toBeDefined();
+    expect(label).toBeDefined();
+    expect(label!.y).toBeGreaterThan(small!.cy + small!.r);
   });
 
   it("подписи квадрантов тоже переносятся, а не обрезаются", () => {
