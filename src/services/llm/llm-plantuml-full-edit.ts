@@ -5,7 +5,7 @@ import {
   buildFullDiagramFollowUpPrompt,
   buildFullDiagramNoChangeRetryPrompt,
   buildFullDiagramRevertRetryPrompt,
-} from "@/constants/llm-wizard";
+} from "@/services/llm/wizard/edit-prompts";
 import { llmChat } from "@/services/llm/llm-client";
 import { parseLlmClarificationQuestion } from "@/schemas/llm-clarification";
 import {

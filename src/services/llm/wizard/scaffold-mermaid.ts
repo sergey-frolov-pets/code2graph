@@ -1,22 +1,34 @@
 import type { AppLocale } from "@/constants/i18n";
 import type { WizardDiagramDirection, WizardState } from "@/constants/llm-wizard";
 import {
+  formatMermaidRequirementText,
+  formatMermaidSankeyCsvField,
+  sanitizeMermaidArchitectureLabel,
+} from "@/services/conversion/emit/mermaid-emit-utils";
+import {
+  actorLabel,
   appendGraphmlClusterStructure,
   appendMermaidFlowStructure,
   appendMermaidGanttStructure,
   appendMermaidSequenceStructure,
   branchLabel,
   classLabel,
+  commitLabel,
   componentLabel,
   entityLabel,
+  eventLabel,
+  externalSystemLabel,
+  fieldLabel,
   hasStructural,
   nodeLabel,
   participantLabel,
+  sliceLabel,
   stateLabel,
   stepLabel,
   subBranchLabel,
   taskLabel,
 } from "@/services/llm/wizard/scaffold-shared";
+import { formatMermaidGitRef } from "@/utils/mermaid-gitgraph";
 
 export function mermaidFlowDirection(direction: WizardDiagramDirection): string {
   return direction === "LR" ? "LR" : "TD";
@@ -82,7 +94,10 @@ export function buildMermaidFlowchart(
   state: WizardState,
   locale: AppLocale,
 ): string {
-  const nodeCount = state.typeParams.components || state.typeParams.nodes;
+  const nodeCount =
+    state.diagramType === "flowchart"
+      ? state.typeParams.nodes
+      : state.typeParams.components || state.typeParams.nodes;
   const flow = mermaidFlowDirection(state.direction);
   const startLabel = locale === "ru" ? "Старт" : "Start";
   const endLabel = locale === "ru" ? "Готово" : "Done";
@@ -299,6 +314,234 @@ export function buildMermaidState(state: WizardState, locale: AppLocale): string
   if (hasStructural(state, "note")) {
     const noteText = locale === "ru" ? "Примечание" : "Note";
     lines.push(`  note right of ${stateLabel(1, locale).replace(/\s+/g, "_")}: ${noteText}`);
+  }
+
+  return lines.join("\n");
+}
+
+export function buildMermaidPie(state: WizardState, locale: AppLocale): string {
+  const count = state.typeParams.nodes;
+  const title = locale === "ru" ? "Распределение" : "Distribution";
+  const lines = ["pie showData", `    title ${title}`];
+
+  for (let index = 1; index <= count; index += 1) {
+    const label = sliceLabel(index, locale);
+    const value = (count - index + 1) * 10;
+    lines.push(`    "${label}" : ${value}`);
+  }
+
+  return lines.join("\n");
+}
+
+export function buildMermaidJourney(state: WizardState, locale: AppLocale): string {
+  const stepCount = state.typeParams.steps;
+  const title = locale === "ru" ? "Путь пользователя" : "User journey";
+  const section = locale === "ru" ? "Этап" : "Stage";
+  const actor = locale === "ru" ? "Пользователь" : "User";
+  const lines = ["journey", `    title ${title}`];
+
+  if (hasStructural(state, "section")) {
+    lines.push(`    section ${section} 1`);
+  }
+
+  for (let index = 1; index <= stepCount; index += 1) {
+    const action = stepLabel(index, locale);
+    lines.push(`      ${action}: ${index + 2}: ${actor}`);
+  }
+
+  return lines.join("\n");
+}
+
+export function buildMermaidGitgraph(state: WizardState, locale: AppLocale): string {
+  const count = state.typeParams.steps;
+  const branch = locale === "ru" ? "разработка" : "develop";
+  const branchRef = formatMermaidGitRef(branch);
+  const lines = ["gitGraph"];
+
+  lines.push(`    commit id: "${commitLabel(1, locale)}"`);
+  lines.push(`    branch ${branchRef}`);
+
+  for (let index = 2; index <= count; index += 1) {
+    lines.push(`    commit id: "${commitLabel(index, locale)}"`);
+  }
+
+  if (count >= 2) {
+    lines.push("    checkout main", `    merge ${branchRef}`);
+  }
+
+  return lines.join("\n");
+}
+
+export function buildMermaidTimeline(state: WizardState, locale: AppLocale): string {
+  const count = state.typeParams.steps;
+  const title = locale === "ru" ? "Хронология" : "Timeline";
+  const lines = ["timeline", `    title ${title}`];
+
+  if (hasStructural(state, "section")) {
+    lines.push(`    section ${locale === "ru" ? "События" : "Events"}`);
+  }
+
+  for (let index = 1; index <= count; index += 1) {
+    lines.push(`    202${index} : ${eventLabel(index, locale)}`);
+  }
+
+  return lines.join("\n");
+}
+
+export function buildMermaidSankey(state: WizardState, locale: AppLocale): string {
+  const nodeCount = state.typeParams.nodes;
+  const edgeCount = Math.min(state.typeParams.edges, nodeCount > 1 ? nodeCount - 1 : 0);
+  const lines = ["sankey-beta"];
+
+  for (let index = 1; index <= edgeCount; index += 1) {
+    const from = nodeLabel(index, locale);
+    const to = nodeLabel(index + 1, locale);
+    lines.push(
+      `    ${formatMermaidSankeyCsvField(from)},${formatMermaidSankeyCsvField(to)},${index * 10}`,
+    );
+  }
+
+  return lines.join("\n");
+}
+
+export function buildMermaidXychart(state: WizardState, locale: AppLocale): string {
+  const count = state.typeParams.steps;
+  const title = locale === "ru" ? "Данные" : "Data";
+  const yLabel = locale === "ru" ? "Значение" : "Value";
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const axisLabels = months.slice(0, count);
+  const values = Array.from({ length: count }, (_, index) => (index + 1) * 10);
+  const lines = [
+    "xychart-beta",
+    `    title "${title}"`,
+    `    x-axis [${axisLabels.join(", ")}]`,
+    `    y-axis "${yLabel}" 0 --> ${count * 15}`,
+    `    bar [${values.join(", ")}]`,
+  ];
+
+  return lines.join("\n");
+}
+
+export function buildMermaidBlock(state: WizardState, locale: AppLocale): string {
+  const count = state.typeParams.nodes;
+  const columns = Math.min(count, 3);
+  const lines = ["block-beta", `    columns ${columns}`];
+
+  for (let index = 1; index <= count; index += 1) {
+    lines.push(`    ${nodeLabel(index, locale)}`);
+  }
+
+  return lines.join("\n");
+}
+
+export function buildMermaidC4Context(state: WizardState, locale: AppLocale): string {
+  const actorCount = state.typeParams.actors;
+  const externalCount = state.typeParams.externalSystems;
+  const title = locale === "ru" ? "Контекст системы" : "System Context";
+  const systemName = locale === "ru" ? "Система" : "System";
+  const lines = [
+    "C4Context",
+    `    title ${title}`,
+    `    Person(${actorLabel(1, locale).replace(/\s+/g, "_")}, "${actorLabel(1, locale)}", "")`,
+  ];
+
+  for (let index = 2; index <= actorCount; index += 1) {
+    const label = actorLabel(index, locale);
+    lines.push(`    Person(${label.replace(/\s+/g, "_")}, "${label}", "")`);
+  }
+
+  lines.push(`    System(${systemName}, "${systemName}", "")`);
+
+  for (let index = 1; index <= externalCount; index += 1) {
+    const label = externalSystemLabel(index, locale);
+    lines.push(`    System_Ext(${label.replace(/\s+/g, "_")}, "${label}", "")`);
+  }
+
+  if (actorCount >= 1) {
+    lines.push(
+      `    Rel(${actorLabel(1, locale).replace(/\s+/g, "_")}, ${systemName}, "${locale === "ru" ? "использует" : "uses"}")`,
+    );
+  }
+
+  return lines.join("\n");
+}
+
+export function buildMermaidRequirement(state: WizardState, locale: AppLocale): string {
+  const count = state.typeParams.nodes;
+  const lines = ["requirementDiagram"];
+
+  for (let index = 1; index <= count; index += 1) {
+    const reqId = `req${index}`;
+    const text = locale === "ru" ? `Требование ${index}` : `Requirement ${index}`;
+    lines.push(
+      `    requirement ${reqId} {`,
+      `      id: ${index}`,
+      `      text: ${formatMermaidRequirementText(text)}`,
+      "    }",
+    );
+  }
+
+  lines.push("    element comp1 {", "      type: component", "    }");
+  lines.push("    comp1 - satisfies -> req1");
+
+  return lines.join("\n");
+}
+
+export function buildMermaidQuadrant(state: WizardState, locale: AppLocale): string {
+  const count = state.typeParams.nodes;
+  const title = locale === "ru" ? "Приоритеты" : "Priorities";
+  const quadrantLabel = locale === "ru" ? "Высокий приоритет" : "High priority";
+  const lines = [
+    "quadrantChart",
+    `    title ${formatMermaidRequirementText(title)}`,
+    "    x-axis Low --> High",
+    "    y-axis Low --> High",
+    `    quadrant-1 ${formatMermaidRequirementText(quadrantLabel)}`,
+  ];
+
+  for (let index = 1; index <= count; index += 1) {
+    const label = nodeLabel(index, locale);
+    const x = (0.2 + index * 0.15).toFixed(1);
+    const y = (0.3 + index * 0.1).toFixed(1);
+    lines.push(`    ${formatMermaidRequirementText(label)}: [${x}, ${y}]`);
+  }
+
+  return lines.join("\n");
+}
+
+export function buildMermaidArchitecture(state: WizardState, locale: AppLocale): string {
+  const count = state.typeParams.components;
+  const groupId = "api";
+  const groupLabel = "API";
+  const lines = [
+    "architecture-beta",
+    `    group ${groupId}(cloud)[${groupLabel}]`,
+  ];
+
+  for (let index = 1; index <= count; index += 1) {
+    const serviceId = `component_${index}`;
+    const display = sanitizeMermaidArchitectureLabel(componentLabel(index, locale));
+    lines.push(`        service ${serviceId}(server)[${display}] in ${groupId}`);
+  }
+
+  if (count >= 2) {
+    lines.push("    component_1:R -- L:component_2");
+  }
+
+  return lines.join("\n");
+}
+
+export function buildMermaidPacket(state: WizardState, locale: AppLocale): string {
+  const count = state.typeParams.steps;
+  const title = locale === "ru" ? "Структура пакета" : "Packet structure";
+  const lines = ["packet-beta", `    title ${title}`];
+  const bitsPerField = Math.floor(32 / count);
+
+  for (let index = 1; index <= count; index += 1) {
+    const start = (index - 1) * bitsPerField;
+    const end = index === count ? 31 : index * bitsPerField - 1;
+    const label = fieldLabel(index, locale);
+    lines.push(`    ${start}-${end}: "${label}"`);
   }
 
   return lines.join("\n");

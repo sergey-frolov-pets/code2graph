@@ -132,6 +132,34 @@ export function subBranchLabel(index: number, locale: AppLocale): string {
   return locale === "ru" ? `Подветка ${index}` : `Sub-branch ${index}`;
 }
 
+export function sliceLabel(index: number, locale: AppLocale): string {
+  return locale === "ru" ? `Сегмент ${index}` : `Slice ${index}`;
+}
+
+export function eventLabel(index: number, locale: AppLocale): string {
+  return locale === "ru" ? `Событие ${index}` : `Event ${index}`;
+}
+
+export function commitLabel(index: number, locale: AppLocale): string {
+  return locale === "ru" ? `Коммит ${index}` : `Commit ${index}`;
+}
+
+export function useCaseLabel(index: number, locale: AppLocale): string {
+  return locale === "ru" ? `Сценарий ${index}` : `Use case ${index}`;
+}
+
+export function serverLabel(index: number, locale: AppLocale): string {
+  return locale === "ru" ? `Сервер ${index}` : `Server ${index}`;
+}
+
+export function signalLabel(index: number, locale: AppLocale): string {
+  return locale === "ru" ? `Сигнал ${index}` : `Signal ${index}`;
+}
+
+export function fieldLabel(index: number, locale: AppLocale): string {
+  return locale === "ru" ? `Поле ${index}` : `Field ${index}`;
+}
+
 export function hasStructural(
   state: WizardState,
   elementId: WizardStructuralElementId,

@@ -1,24 +1,20 @@
 import { computed, ref, watch, type Ref } from "vue";
-import type { TranslateFn } from "@/locales/types";
-import { generateValidWizardDiagram } from "@/services/llm/llm-plantuml-generate";
+import { useLlmApiKeys } from "@/composables/useLlmApiKeys";
 import {
-  buildWizardPromptWithChatContext,
-  sendWizardPlanningChat,
-} from "@/services/llm/llm-wizard-chat";
-import { useLlmConversation } from "@/composables/useLlmConversation";
-import { toLlmChatMessages } from "@/utils/llm-edit-conversation";
-import type { DiagramFormat } from "@/constants/diagram-formats";
+  useLlmGate,
+  type LlmGateFailureReason,
+} from "@/composables/useLlmGate";
+import { useLlmSettings } from "@/composables/useLlmSettings";
+import { useWizardAiChat } from "@/composables/wizard/useWizardAiChat";
+import { useWizardStepPreview } from "@/composables/wizard/useWizardStepPreview";
+import type { LayoutEngine } from "@/constants";
 import {
   exampleDirection,
   type DiagramExample,
 } from "@/constants/diagram-example-catalog";
-import { getSampleSource } from "@/constants/sample-diagrams";
-import type { GalleryExampleAction } from "@/constants/wizard-gallery";
-import type { LayoutEngine } from "@/constants";
-import type { RenderMode } from "@/constants/render-settings";
+import type { DiagramFormat } from "@/constants/diagram-formats";
+import type { AppLocale } from "@/constants/i18n";
 import {
-  buildManualScaffold,
-  buildWizardPrompt,
   createDefaultStructuralElements,
   createDefaultTypeParams,
   DEFAULT_WIZARD_STATE,
@@ -32,37 +28,14 @@ import {
   WIZARD_TYPE_PARAM_FIELDS,
   type WizardParamField,
   type WizardState,
-  type WizardStepId,
   type WizardStructuralElementId,
 } from "@/constants/llm-wizard";
-import { LlmClientError } from "@/services/llm/llm-types";
-import { renderDiagram } from "@/formats";
-import { renderGraphmlToSvg } from "@/services/graphml/graphml-engine";
-import { renderMermaidToSvg } from "@/services/mermaid/mermaid-engine";
-import { renderPlantUmlPreviewSvg } from "@/utils/llm-preview";
-import type { AppLocale } from "@/constants/i18n";
-import {
-  useLlmGate,
-  type LlmGateFailureReason,
-} from "@/composables/useLlmGate";
-import { useLlmApiKeys } from "@/composables/useLlmApiKeys";
-import { useLlmSettings } from "@/composables/useLlmSettings";
-
-const MANUAL_LIVE_PREVIEW_STEPS = new Set<WizardStepId>([
-  "direction",
-  "params",
-]);
-
-function isLivePreviewStep(
-  step: WizardStepId,
-  aiMode: boolean,
-): boolean {
-  if (step === "type") {
-    return true;
-  }
-
-  return !aiMode && MANUAL_LIVE_PREVIEW_STEPS.has(step);
-}
+import type { RenderMode } from "@/constants/render-settings";
+import { getSampleSource } from "@/constants/sample-diagrams";
+import type { GalleryExampleAction } from "@/constants/wizard-gallery";
+import type { TranslateFn } from "@/locales/types";
+import { buildManualScaffold } from "@/services/llm/wizard/manual-scaffold";
+import { buildWizardPrompt } from "@/services/llm/wizard/wizard-prompts";
 
 export interface UseDiagramWizardFlowOptions {
   open: Ref<boolean>;
@@ -100,22 +73,16 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   const errorMessage = ref("");
   const resultSource = ref("");
   const resultExplanation = ref("");
-  const previewSvg = ref("");
-  const isPreviewLoading = ref(false);
   const aiSetupVisible = ref(false);
   const aiSetupReason = ref<LlmGateFailureReason | null>(null);
-  let stepPreviewTimer: ReturnType<typeof setTimeout> | null = null;
-  let previewGeneration = 0;
+
   const { llmConsent, llmProviderId } = useLlmSettings();
   const { hasLlmApiKey } = useLlmApiKeys();
-  const planningConversation = useLlmConversation(documentKey, "wizard-plan");
-  const refineConversation = useLlmConversation(documentKey, "wizard-refine");
-  const isPlanningChatBusy = ref(false);
-  const isRefineChatBusy = ref(false);
 
   const wizardSteps = computed(() => getWizardSteps(wizardState.value));
   const currentStepId = computed(() => wizardSteps.value[stepIndex.value] ?? "mode");
   const totalSteps = computed(() => wizardSteps.value.length);
+  const isAiMode = computed(() => wizardState.value.creationMode === "ai");
 
   const stepTitle = computed(() => {
     if (currentStepId.value === "context" && isAiMode.value) {
@@ -148,7 +115,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     WIZARD_TYPE_PARAM_FIELDS[wizardState.value.diagramType],
   );
 
-  const isAiMode = computed(() => wizardState.value.creationMode === "ai");
   const isManualResultReady = computed(
     () =>
       !isAiMode.value &&
@@ -156,30 +122,81 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
       resultSource.value.length > 0,
   );
 
-  const showRefineChat = computed(
-    () =>
-      isAiMode.value &&
-      currentStepId.value === "result" &&
-      resultSource.value.trim().length > 0,
-  );
+  async function checkAiAccess(): Promise<boolean> {
+    const { requireLlmAccess } = useLlmGate();
+    const gate = await requireLlmAccess({ silent: true });
 
-  const showLivePreviewPanel = computed(() => {
-    const step = currentStepId.value as WizardStepId;
-    if (isLivePreviewStep(step, isAiMode.value)) {
-      return true;
+    if (!gate.ok) {
+      aiSetupReason.value = gate.reason;
+      aiSetupVisible.value = true;
+      return false;
     }
 
-    return (
-      step === "result" &&
-      (previewSvg.value.length > 0 || isPreviewLoading.value)
-    );
+    aiSetupVisible.value = false;
+    aiSetupReason.value = null;
+    return true;
+  }
+
+  const {
+    previewSvg,
+    isPreviewLoading,
+    showLivePreviewPanel,
+    resetPreviewState,
+    loadPreview,
+    scheduleStepPreview,
+  } = useWizardStepPreview({
+    wizardState,
+    wizardSteps,
+    stepIndex,
+    currentStepId,
+    galleryVisible,
+    isAiMode,
+    layout,
+    renderMode,
+    diagramDarkMode,
+    locale,
+    errorMessage,
+    t,
+  });
+
+  const {
+    planningMessages,
+    isPlanningChatBusy,
+    sendPlanningChatMessage,
+    clearPlanningChat,
+    refineMessages,
+    isRefineChatBusy,
+    sendRefineChatMessage,
+    clearRefineChat,
+    showRefineChat,
+    clearConversations,
+    generateDiagram,
+  } = useWizardAiChat({
+    documentKey,
+    wizardState,
+    currentStepId,
+    isAiMode,
+    layout,
+    renderMode,
+    diagramDarkMode,
+    locale,
+    isGenerating,
+    errorMessage,
+    resultSource,
+    resultExplanation,
+    previewSvg,
+    aiSetupVisible,
+    aiSetupReason,
+    checkAiAccess,
+    loadPreview,
+    t,
   });
 
   const canGoNext = computed(() => {
     if (currentStepId.value === "context") {
       return (
         wizardState.value.contextText.trim().length > 0 ||
-        planningConversation.messages.value.length > 0
+        planningMessages.value.length > 0
       );
     }
 
@@ -202,13 +219,10 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     errorMessage.value = "";
     resultSource.value = "";
     resultExplanation.value = "";
-    previewSvg.value = "";
-    isPreviewLoading.value = false;
-    previewGeneration += 1;
+    resetPreviewState();
     aiSetupVisible.value = false;
     aiSetupReason.value = null;
-    void planningConversation.clear();
-    void refineConversation.clear();
+    clearConversations();
   }
 
   function clampStepIndex(): void {
@@ -263,60 +277,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     },
   );
 
-  async function checkAiAccess(): Promise<boolean> {
-    const { requireLlmAccess } = useLlmGate();
-    const gate = await requireLlmAccess({ silent: true });
-
-    if (!gate.ok) {
-      aiSetupReason.value = gate.reason;
-      aiSetupVisible.value = true;
-      return false;
-    }
-
-    aiSetupVisible.value = false;
-    aiSetupReason.value = null;
-    return true;
-  }
-
-  function scheduleStepPreview(): void {
-    if (galleryVisible.value) {
-      if (stepPreviewTimer) {
-        clearTimeout(stepPreviewTimer);
-        stepPreviewTimer = null;
-      }
-      previewSvg.value = "";
-      return;
-    }
-
-    if (stepPreviewTimer) {
-      clearTimeout(stepPreviewTimer);
-    }
-
-    stepPreviewTimer = setTimeout(() => {
-      void refreshStepPreview();
-    }, 200);
-  }
-
-  async function refreshStepPreview(): Promise<void> {
-    if (galleryVisible.value || currentStepId.value === "result") {
-      return;
-    }
-
-    const step = currentStepId.value as WizardStepId;
-    if (!isLivePreviewStep(step, isAiMode.value)) {
-      previewSvg.value = "";
-      return;
-    }
-
-    const visitedSteps = wizardSteps.value.slice(0, stepIndex.value + 1);
-    const resolved = resolveWizardStateWithDefaults(
-      wizardState.value,
-      visitedSteps,
-    );
-    const source = buildManualScaffold(resolved, locale.value);
-    await loadPreview(source);
-  }
-
   watch([llmConsent, llmProviderId], () => {
     if (aiSetupVisible.value) {
       void checkAiAccess();
@@ -358,32 +318,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
       wizardState.value.language,
     ],
     scheduleStepPreview,
-    { deep: true },
-  );
-
-  watch(
-    () => [
-      wizardState.value.creationMode,
-      wizardState.value.language,
-      wizardState.value.diagramType,
-      wizardState.value.theme,
-      wizardState.value.direction,
-      wizardState.value.typeParams,
-      wizardState.value.structuralElements,
-      wizardState.value.contextText,
-      wizardState.value.typeSpecificText,
-    ],
-    () => {
-      if (currentStepId.value === "prompt" || wizardSteps.value.includes("prompt")) {
-        const promptStepIndex = wizardSteps.value.indexOf("prompt");
-        if (promptStepIndex >= 0 && stepIndex.value <= promptStepIndex) {
-          wizardState.value.promptText = buildWizardPrompt(
-            wizardState.value,
-            locale.value,
-          );
-        }
-      }
-    },
     { deep: true },
   );
 
@@ -461,237 +395,11 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     galleryVisible.value = true;
   }
 
-  async function loadPreview(source: string): Promise<void> {
-    const generation = ++previewGeneration;
-    isPreviewLoading.value = true;
-    try {
-      let svg = "";
-      const language = wizardState.value.language;
-      if (language === "graphml") {
-        svg = await renderGraphmlToSvg(source, {
-          dark: diagramDarkMode.value,
-          direction: wizardState.value.direction,
-        });
-      } else if (language === "mermaid") {
-        svg = await renderMermaidToSvg(
-          source,
-          { dark: diagramDarkMode.value },
-          renderMode.value,
-        );
-      } else if (language === "plantuml") {
-        svg = await renderPlantUmlPreviewSvg(
-          source,
-          layout.value,
-          diagramDarkMode.value,
-          renderMode.value,
-        );
-      } else {
-        svg = await renderDiagram(language, source, {
-          layout: layout.value,
-          diagramDarkMode: diagramDarkMode.value,
-          renderMode: renderMode.value,
-        });
-      }
-
-      if (generation !== previewGeneration) {
-        return;
-      }
-
-      previewSvg.value = svg;
-    } catch (error) {
-      if (generation !== previewGeneration) {
-        return;
-      }
-
-      previewSvg.value = "";
-      errorMessage.value =
-        error instanceof Error ? error.message : t("llm.wizard.previewError");
-    } finally {
-      if (generation === previewGeneration) {
-        isPreviewLoading.value = false;
-      }
-    }
-  }
-
   async function prepareManualResult(): Promise<void> {
     errorMessage.value = "";
     resultExplanation.value = "";
     resultSource.value = buildManualScaffold(wizardState.value, locale.value);
     await loadPreview(resultSource.value);
-  }
-
-  async function generateDiagram(): Promise<void> {
-    isGenerating.value = true;
-    errorMessage.value = "";
-    resultSource.value = "";
-    resultExplanation.value = "";
-    previewSvg.value = "";
-
-    if (!(await checkAiAccess())) {
-      isGenerating.value = false;
-      return;
-    }
-
-    try {
-      const basePrompt = buildWizardPrompt(wizardState.value, locale.value);
-      const planningMessages = toLlmChatMessages(
-        planningConversation.messages.value,
-      );
-      const userPrompt = buildWizardPromptWithChatContext(
-        basePrompt,
-        planningMessages,
-      );
-      wizardState.value.promptText = userPrompt;
-
-      const result = await generateValidWizardDiagram(
-        userPrompt,
-        wizardState.value.language,
-        wizardState.value.diagramType,
-        layout.value,
-        diagramDarkMode.value,
-        renderMode.value,
-        { silent: true },
-        "Generate a complete diagram from the wizard Description and Additional requirements.",
-        wizardState.value.typeParams,
-        planningMessages,
-        {
-          description: wizardState.value.contextText,
-          additionalRequirements: wizardState.value.typeSpecificText,
-        },
-      );
-
-      resultSource.value = result.plantuml;
-      resultExplanation.value = result.explanation ?? "";
-      await loadPreview(result.plantuml);
-    } catch (error) {
-      if (error instanceof LlmClientError && error.code === "access_denied") {
-        aiSetupVisible.value = true;
-        const reason = error.message.replace(/^LLM access denied:\s*/, "");
-        if (
-          reason === "no_consent" ||
-          reason === "no_key" ||
-          reason === "no_proxy" ||
-          reason === "provider_invalid" ||
-          reason === "provider_unavailable"
-        ) {
-          aiSetupReason.value = reason;
-        }
-      }
-
-      errorMessage.value =
-        error instanceof LlmClientError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : t("llm.wizard.generateError");
-    } finally {
-      isGenerating.value = false;
-    }
-  }
-
-  async function sendPlanningChatMessage(content: string): Promise<void> {
-    if (!(await checkAiAccess())) {
-      return;
-    }
-
-    isPlanningChatBusy.value = true;
-    errorMessage.value = "";
-
-    try {
-      const priorMessages = toLlmChatMessages(planningConversation.messages.value);
-      const result = await sendWizardPlanningChat(
-        content,
-        wizardState.value,
-        priorMessages,
-        { silent: true },
-        locale.value,
-      );
-
-      const assistantContent =
-        result.kind === "clarification"
-          ? result.clarificationQuestion
-          : result.message;
-
-      await planningConversation.appendTurn(content, assistantContent);
-
-      if (!wizardState.value.contextText.trim()) {
-        wizardState.value.contextText = content;
-      }
-    } catch (error) {
-      errorMessage.value =
-        error instanceof LlmClientError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : t("llm.wizard.planningChatError");
-    } finally {
-      isPlanningChatBusy.value = false;
-    }
-  }
-
-  async function sendRefineChatMessage(content: string): Promise<void> {
-    if (!resultSource.value.trim() || !(await checkAiAccess())) {
-      return;
-    }
-
-    isRefineChatBusy.value = true;
-    errorMessage.value = "";
-
-    try {
-      const priorMessages = toLlmChatMessages(refineConversation.messages.value);
-      const refinePrompt = [
-        "Refine the generated diagram below according to the user message.",
-        "=== CURRENT SOURCE ===",
-        resultSource.value,
-        "",
-        "=== USER REQUEST ===",
-        content.trim(),
-      ].join("\n");
-
-      let assistantContent = "";
-      let updatedSource = resultSource.value;
-
-      const refineFormatContext = {
-        description: wizardState.value.contextText,
-        additionalRequirements: content.trim(),
-      };
-
-      const result = await generateValidWizardDiagram(
-        refinePrompt,
-        wizardState.value.language,
-        wizardState.value.diagramType,
-        layout.value,
-        diagramDarkMode.value,
-        renderMode.value,
-        { silent: true },
-        "Refine the wizard-generated diagram according to the user request. Expand incomplete branches when the user asks for missing items.",
-        wizardState.value.typeParams,
-        priorMessages,
-        refineFormatContext,
-      );
-
-      updatedSource = result.plantuml;
-      const explanation = result.explanation;
-      assistantContent =
-        result.explanation?.trim() || t("llm.wizard.refineApplied");
-
-      await refineConversation.appendTurn(content, assistantContent);
-
-      if (updatedSource !== resultSource.value) {
-        resultSource.value = updatedSource;
-        resultExplanation.value = explanation ?? "";
-        await loadPreview(updatedSource);
-      }
-    } catch (error) {
-      errorMessage.value =
-        error instanceof LlmClientError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : t("llm.wizard.refineChatError");
-    } finally {
-      isRefineChatBusy.value = false;
-    }
   }
 
   function goNext(): void {
@@ -825,14 +533,14 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     handleTransferToEditor,
     handleRegenerate,
     handleAiSetupRetry,
-    planningMessages: planningConversation.messages,
+    planningMessages,
     isPlanningChatBusy,
     sendPlanningChatMessage,
-    clearPlanningChat: planningConversation.clear,
-    refineMessages: refineConversation.messages,
+    clearPlanningChat,
+    refineMessages,
     isRefineChatBusy,
     sendRefineChatMessage,
-    clearRefineChat: refineConversation.clear,
+    clearRefineChat,
     showRefineChat,
   };
 }

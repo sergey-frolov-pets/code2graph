@@ -1,30 +1,74 @@
+import { scaffoldDiagram } from "@shared/agent-diagram";
 import type { AppLocale } from "@/constants/i18n";
-import type { WizardState } from "@/constants/llm-wizard";
+import { WIZARD_TYPE_PARAM_FIELDS, type WizardState } from "@/constants/llm-wizard";
 import {
   buildGraphmlGraph,
   buildMermaidActivity,
+  buildMermaidArchitecture,
+  buildMermaidBlock,
+  buildMermaidC4Context,
   buildMermaidClass,
   buildMermaidComponent,
   buildMermaidEr,
   buildMermaidFlowchart,
   buildMermaidGantt,
+  buildMermaidGitgraph,
+  buildMermaidJourney,
   buildMermaidMindmap,
+  buildMermaidPacket,
+  buildMermaidPie,
+  buildMermaidQuadrant,
+  buildMermaidRequirement,
+  buildMermaidSankey,
   buildMermaidSequence,
   buildMermaidState,
+  buildMermaidTimeline,
+  buildMermaidXychart,
 } from "@/services/llm/wizard/scaffold-mermaid";
 import {
   buildPlantUmlActivity,
+  buildPlantUmlArchimate,
   buildPlantUmlC4Container,
   buildPlantUmlC4Context,
   buildPlantUmlClass,
   buildPlantUmlComponent,
+  buildPlantUmlDeployment,
+  buildPlantUmlEr,
   buildPlantUmlGantt,
   buildPlantUmlMindmap,
+  buildPlantUmlNwdiag,
+  buildPlantUmlObject,
   buildPlantUmlSequence,
   buildPlantUmlState,
+  buildPlantUmlTiming,
+  buildPlantUmlUsecase,
+  buildPlantUmlWbs,
 } from "@/services/llm/wizard/scaffold-plantuml";
 
+function scaffoldCount(state: WizardState): number {
+  const primary = WIZARD_TYPE_PARAM_FIELDS[state.diagramType][0];
+  if (!primary) {
+    return 3;
+  }
+
+  return state.typeParams[primary.id];
+}
+
 export function buildManualScaffold(state: WizardState, locale: AppLocale): string {
+  if (
+    state.language === "d2" ||
+    state.language === "structurizr" ||
+    state.language === "wiremark"
+  ) {
+    return scaffoldDiagram({
+      format: state.language,
+      diagramType: state.diagramType,
+      locale,
+      direction: state.direction,
+      count: scaffoldCount(state),
+    }).source;
+  }
+
   if (state.language === "graphml") {
     return buildGraphmlGraph(state, locale);
   }
@@ -47,6 +91,32 @@ export function buildManualScaffold(state: WizardState, locale: AppLocale): stri
         return buildMermaidMindmap(state, locale);
       case "er":
         return buildMermaidEr(state, locale);
+      case "flowchart":
+        return buildMermaidFlowchart(state, locale);
+      case "pie":
+        return buildMermaidPie(state, locale);
+      case "journey":
+        return buildMermaidJourney(state, locale);
+      case "gitgraph":
+        return buildMermaidGitgraph(state, locale);
+      case "timeline":
+        return buildMermaidTimeline(state, locale);
+      case "sankey":
+        return buildMermaidSankey(state, locale);
+      case "xychart":
+        return buildMermaidXychart(state, locale);
+      case "block":
+        return buildMermaidBlock(state, locale);
+      case "c4_context":
+        return buildMermaidC4Context(state, locale);
+      case "requirement":
+        return buildMermaidRequirement(state, locale);
+      case "quadrant":
+        return buildMermaidQuadrant(state, locale);
+      case "architecture":
+        return buildMermaidArchitecture(state, locale);
+      case "packet":
+        return buildMermaidPacket(state, locale);
       default:
         return buildMermaidFlowchart(state, locale);
     }
@@ -71,8 +141,23 @@ export function buildManualScaffold(state: WizardState, locale: AppLocale): stri
       return buildPlantUmlGantt(state, locale);
     case "mindmap":
       return buildPlantUmlMindmap(state, locale);
+    case "er":
+      return buildPlantUmlEr(state, locale);
+    case "usecase":
+      return buildPlantUmlUsecase(state, locale);
+    case "deployment":
+      return buildPlantUmlDeployment(state, locale);
+    case "object":
+      return buildPlantUmlObject(state, locale);
+    case "timing":
+      return buildPlantUmlTiming(state, locale);
+    case "wbs":
+      return buildPlantUmlWbs(state, locale);
+    case "nwdiag":
+      return buildPlantUmlNwdiag(state, locale);
+    case "archimate":
+      return buildPlantUmlArchimate(state, locale);
     default:
       return buildPlantUmlSequence(state, locale);
   }
 }
-

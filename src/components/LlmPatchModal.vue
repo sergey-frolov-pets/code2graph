@@ -9,7 +9,7 @@ import {
   generateValidPlantUmlFullEdit,
   generateValidPlantUmlPatch,
 } from "@/services/llm/llm-plantuml-edit";
-import { requestsStructuralDiagramEdit } from "@/constants/llm-wizard";
+import { requestsStructuralDiagramEdit } from "@/services/llm/wizard/edit-prompts";
 import { useActiveLlmLabel } from "@/composables/useActiveLlmLabel";
 import { useLlmConversation } from "@/composables/useLlmConversation";
 import { useLocale } from "@/composables/useLocale";

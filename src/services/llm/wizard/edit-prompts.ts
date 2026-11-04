@@ -11,7 +11,8 @@ export function buildPatchPrompt(
   return [
     "Edit ONLY the selected PlantUML fragment according to the user request.",
     "Return JSON with field replacement containing the NEW text for the selected region (not the full file).",
-    "You MUST apply the user request to the selection. Do not return text identical to the selected fragment.",
+    "You MUST apply the user request fully to the selection — substantive changes, not token-sized edits.",
+    "Do not return text identical to the selected fragment.",
     "Keep syntax valid within the fragment; the app will merge replacement into the full source.",
     "",
     `Selection range: lines ${startLine}-${endLine}`,
@@ -23,6 +24,16 @@ export function buildPatchPrompt(
     selectedFragment,
     "",
     "=== USER REQUEST ===",
+    userPrompt.trim(),
+  ].join("\n");
+}
+
+export function buildPatchFollowUpPrompt(userPrompt: string): string {
+  return [
+    "Follow-up message in the edit chat. Apply it to the diagram edit.",
+    "Return JSON with field replacement containing the NEW text for the selected fragment.",
+    "",
+    "User follow-up:",
     userPrompt.trim(),
   ].join("\n");
 }
@@ -53,8 +64,8 @@ export function buildFullDiagramEditPrompt(
   const lines = [
     "Edit the ENTIRE PlantUML diagram according to the user request.",
     "Return JSON with field plantuml containing the FULL updated source.",
-    "You MUST apply the user request. Do not return text identical to the current source.",
-    "Preserve parts of the diagram that the user did not ask to change unless the request implies a global rewrite.",
+    "You MUST apply the user request completely. Do not return text identical to the current source.",
+    "Include all elements the user asked to add or change; preserve unrelated parts unless the request implies a global rewrite.",
   ];
 
   if (isActivitySwimlaneDiagram(fullSource)) {
@@ -71,6 +82,17 @@ export function buildFullDiagramEditPrompt(
   );
 
   return lines.join("\n");
+}
+
+export function buildFullDiagramFollowUpPrompt(userPrompt: string): string {
+  return [
+    "Follow-up message in the edit chat. Revise the FULL diagram accordingly.",
+    "Return JSON with field plantuml containing the complete updated source.",
+    "The plantuml field MUST differ from the current source when changes are requested.",
+    "",
+    "User follow-up:",
+    userPrompt.trim(),
+  ].join("\n");
 }
 
 export function buildFullDiagramNoChangeRetryPrompt(

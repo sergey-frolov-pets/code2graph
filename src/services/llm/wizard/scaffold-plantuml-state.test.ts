@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_WIZARD_STATE,
-  buildManualScaffold,
   createDefaultStructuralElements,
   createDefaultTypeParams,
 } from "@/constants/llm-wizard";
+import { buildManualScaffold } from "@/services/llm/wizard/manual-scaffold";
 
 describe("PlantUML state diagram scaffold", () => {
   it("declares states with aliases instead of quoted transition labels", () => {

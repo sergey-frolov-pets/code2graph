@@ -20,8 +20,10 @@ import type {
   WizardLanguage,
   WizardParamId,
 } from "@/constants/llm-wizard";
-import type { DiagramFormatPromptContext } from "@/services/llm/diagram-format-rules";
-import { getWizardDiagramFormatRules } from "@/constants/llm-wizard";
+import {
+  getWizardDiagramFormatRules,
+  type DiagramFormatPromptContext,
+} from "@/services/llm/diagram-format-rules";
 import { guideForPlantUmlText } from "@/services/llm/guides/llm-diagram-guides";
 import { runLlmJsonValidationLoop } from "@/services/llm/llm-validation-loop";
 import { validateLlmRegisteredFormat } from "@/services/llm/validate-llm-format";

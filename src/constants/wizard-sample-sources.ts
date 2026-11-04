@@ -1,6 +1,5 @@
 import type { AppLocale } from "@/constants/i18n";
 import {
-  buildManualScaffold,
   createDefaultTypeParams,
   type WizardDiagramType,
   type WizardLanguage,
@@ -10,6 +9,7 @@ import {
   WIZARD_TYPE_PARAM_FIELDS,
   WIZARD_TYPE_STRUCTURAL_ELEMENTS,
 } from "@/constants/llm-wizard";
+import { buildManualScaffold } from "@/services/llm/wizard/manual-scaffold";
 
 function createDemonstrationWizardState(
   diagramType: WizardDiagramType,

@@ -15,16 +15,21 @@ import {
   classLabel,
   componentLabel,
   containerLabel,
+  entityLabel,
   externalSystemLabel,
   hasStructural,
   laneLabel,
+  nodeLabel,
   participantLabel,
   plantUmlStateDeclaration,
   plantUmlStateRef,
+  serverLabel,
+  signalLabel,
   stepLabel,
   subBranchLabel,
   SWIMLANE_COLORS,
   taskLabel,
+  useCaseLabel,
 } from "@/services/llm/wizard/scaffold-shared";
 
 export function buildPlantUmlSequence(
@@ -304,3 +309,222 @@ export function buildPlantUmlMindmap(state: WizardState, locale: AppLocale): str
   return lines.join("\n");
 }
 
+export function buildPlantUmlEr(state: WizardState, locale: AppLocale): string {
+  const count = state.typeParams.entities;
+  const title = locale === "ru" ? "ER-диаграмма" : "ER diagram";
+  const lines = buildPlantUmlHeader(state, title, true);
+
+  for (let index = 1; index <= count; index += 1) {
+    const name = entityLabel(index, locale).replace(/\s+/g, "_");
+    lines.push(`entity ${name} {`, "  * id : int", "  --", "  name : string", "}");
+  }
+
+  if (count >= 2) {
+    const from = entityLabel(1, locale).replace(/\s+/g, "_");
+    const to = entityLabel(2, locale).replace(/\s+/g, "_");
+    lines.push("", `${from} ||--o{ ${to}`);
+  }
+
+  if (hasStructural(state, "note")) {
+    const noteText = locale === "ru" ? "Примечание" : "Note";
+    lines.push("", `note top of ${entityLabel(1, locale).replace(/\s+/g, "_")}: ${noteText}`);
+  }
+
+  lines.push("@enduml");
+  return lines.join("\n");
+}
+
+export function buildPlantUmlUsecase(state: WizardState, locale: AppLocale): string {
+  const actorCount = state.typeParams.actors;
+  const useCaseCount = state.typeParams.components;
+  const title = locale === "ru" ? "Диаграмма вариантов использования" : "Use case diagram";
+  const systemName = locale === "ru" ? "Система" : "System";
+  const lines = buildPlantUmlHeader(state, title, true);
+
+  for (let index = 1; index <= actorCount; index += 1) {
+    lines.push(`actor ${actorLabel(index, locale).replace(/\s+/g, "_")} as "${actorLabel(index, locale)}"`);
+  }
+
+  lines.push("", `rectangle "${systemName}" {`);
+  for (let index = 1; index <= useCaseCount; index += 1) {
+    const label = useCaseLabel(index, locale);
+    lines.push(`  usecase "${label}" as UC${index}`);
+  }
+  lines.push("}");
+
+  if (actorCount >= 1 && useCaseCount >= 1) {
+    lines.push(
+      "",
+      `${actorLabel(1, locale).replace(/\s+/g, "_")} --> UC1`,
+    );
+  }
+
+  if (hasStructural(state, "note")) {
+    const noteText = locale === "ru" ? "Примечание" : "Note";
+    lines.push("", `note right of UC1: ${noteText}`);
+  }
+
+  lines.push("@enduml");
+  return lines.join("\n");
+}
+
+export function buildPlantUmlDeployment(state: WizardState, locale: AppLocale): string {
+  const count = state.typeParams.nodes;
+  const title = locale === "ru" ? "Диаграмма развертывания" : "Deployment diagram";
+  const lines = buildPlantUmlHeader(state, title, true);
+
+  for (let index = 1; index <= count; index += 1) {
+    const label = serverLabel(index, locale);
+    lines.push(`node "${label}" {`);
+    if (hasStructural(state, "artifact")) {
+      const artifact = locale === "ru" ? "Приложение" : "Application";
+      lines.push(`  artifact "${artifact}.war"`);
+    }
+    lines.push("}");
+  }
+
+  if (count >= 2) {
+    lines.push("", `"${serverLabel(1, locale)}" --> "${serverLabel(2, locale)}"`);
+  }
+
+  if (hasStructural(state, "note")) {
+    const noteText = locale === "ru" ? "Примечание" : "Note";
+    lines.push("", `note right of "${serverLabel(1, locale)}": ${noteText}`);
+  }
+
+  lines.push("@enduml");
+  return lines.join("\n");
+}
+
+export function buildPlantUmlObject(state: WizardState, locale: AppLocale): string {
+  const count = state.typeParams.classes;
+  const title = locale === "ru" ? "Диаграмма объектов" : "Object diagram";
+  const lines = buildPlantUmlHeader(state, title, true);
+
+  for (let index = 1; index <= count; index += 1) {
+    const name = classLabel(index, locale);
+    lines.push(`object ${name} {`, `  field${index} = value${index}`, "}");
+  }
+
+  if (count >= 2) {
+    lines.push("", `${classLabel(1, locale)} --> ${classLabel(2, locale)}`);
+  }
+
+  if (hasStructural(state, "note")) {
+    const noteText = locale === "ru" ? "Примечание" : "Note";
+    lines.push("", `note right of ${classLabel(1, locale)}: ${noteText}`);
+  }
+
+  lines.push("@enduml");
+  return lines.join("\n");
+}
+
+export function buildPlantUmlTiming(state: WizardState, locale: AppLocale): string {
+  const signalCount = state.typeParams.participants;
+  const stepCount = state.typeParams.steps;
+  const title = locale === "ru" ? "Диаграмма синхронизации" : "Timing diagram";
+  const lines = buildPlantUmlHeader(state, title, false, false);
+
+  for (let index = 1; index <= signalCount; index += 1) {
+    const label = signalLabel(index, locale);
+    lines.push(`concise "${label}" as S${index}`);
+  }
+
+  lines.push("");
+  const noteText = locale === "ru" ? "Примечание" : "Note";
+  const includeNote = hasStructural(state, "note");
+
+  for (let stepIndex = 0; stepIndex <= stepCount; stepIndex += 1) {
+    const time = stepIndex * 100;
+    lines.push(`@${time}`);
+    for (let signalIndex = 1; signalIndex <= signalCount; signalIndex += 1) {
+      const stateName = stepIndex % 2 === 0 ? "Idle" : "Active";
+      lines.push(`S${signalIndex} is ${stateName}`);
+    }
+    if (includeNote && stepIndex === 0) {
+      lines.push(`note top of S1: ${noteText}`);
+    }
+  }
+
+  lines.push("@enduml");
+  return lines.join("\n");
+}
+
+export function buildPlantUmlWbs(state: WizardState, locale: AppLocale): string {
+  const branchCount = state.typeParams.nodes;
+  const subCount = state.typeParams.steps;
+  const root = locale === "ru" ? "Проект" : "Project";
+  const title = locale === "ru" ? "Иерархия работ" : "Work breakdown";
+  const lines = ["@startwbs", `title ${title}`, "", `* ${root}`];
+
+  for (let branchIndex = 1; branchIndex <= branchCount; branchIndex += 1) {
+    lines.push(`** ${branchLabel(branchIndex, locale)}`);
+    for (let subIndex = 1; subIndex <= subCount; subIndex += 1) {
+      lines.push(`*** ${subBranchLabel(subIndex, locale)}`);
+    }
+  }
+
+  if (hasStructural(state, "note")) {
+    const noteText = locale === "ru" ? "Примечание" : "Note";
+    lines.push(`** ${noteText}`);
+  }
+
+  lines.push("@endwbs");
+  return lines.join("\n");
+}
+
+export function buildPlantUmlNwdiag(state: WizardState, locale: AppLocale): string {
+  const nodeCount = state.typeParams.nodes;
+  const edgeCount = Math.min(state.typeParams.edges, nodeCount > 1 ? nodeCount - 1 : 0);
+  const title = locale === "ru" ? "Сетевая топология" : "Network topology";
+  const lines = [
+    "@startnwdiag",
+    `title ${title}`,
+    "network {",
+    "  address = 192.168.0.0/24",
+  ];
+
+  for (let index = 1; index <= nodeCount; index += 1) {
+    const label = serverLabel(index, locale).replace(/\s+/g, "_").toLowerCase();
+    lines.push(`  ${label} [address = 192.168.0.${index}]`);
+  }
+
+  for (let index = 1; index <= edgeCount; index += 1) {
+    const from = serverLabel(index, locale).replace(/\s+/g, "_").toLowerCase();
+    const to = serverLabel(index + 1, locale).replace(/\s+/g, "_").toLowerCase();
+    lines.push(`  ${from} -- ${to}`);
+  }
+
+  lines.push("}", "@endnwdiag");
+  return lines.join("\n");
+}
+
+export function buildPlantUmlArchimate(state: WizardState, locale: AppLocale): string {
+  const count = state.typeParams.nodes;
+  const title = locale === "ru" ? "ArchiMate" : "ArchiMate";
+  const customer = locale === "ru" ? "Клиент" : "Customer";
+  const application = locale === "ru" ? "Приложение" : "Application";
+  const lines = buildPlantUmlHeader(state, title, true);
+
+  lines.push(
+    "!include <archimate/Archimate>",
+    "",
+    `Business_Actor(customer, "${customer}")`,
+  );
+
+  for (let index = 2; index <= count; index += 1) {
+    const label = nodeLabel(index, locale);
+    lines.push(`Application_Component(app${index}, "${label}")`);
+  }
+
+  lines.push(`Application_Component(app1, "${application}")`);
+  lines.push("", 'Rel_Triggering(customer, app1, "Uses")');
+
+  if (hasStructural(state, "note")) {
+    const noteText = locale === "ru" ? "Примечание" : "Note";
+    lines.push("", `note right of app1: ${noteText}`);
+  }
+
+  lines.push("@enduml");
+  return lines.join("\n");
+}

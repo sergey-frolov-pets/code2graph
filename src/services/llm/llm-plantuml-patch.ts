@@ -5,7 +5,7 @@ import {
   buildPatchNoChangeRetryPrompt,
   buildPatchPrompt,
   requestsStructuralDiagramEdit,
-} from "@/constants/llm-wizard";
+} from "@/services/llm/wizard/edit-prompts";
 import { llmChat } from "@/services/llm/llm-client";
 import {
   buildLlmPatchSystemPrompt,
