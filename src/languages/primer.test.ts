@@ -4,8 +4,38 @@ import { DIAGRAM_LANGUAGE_MODULES } from "@/languages/registry";
 import { LANGUAGE_PRIMERS, type LanguagePrimerType } from "@/languages/primer";
 import { isLocaleKey } from "@/locales/types";
 
-const MAX_TYPES_ON_THE_PAGE = 6;
+const MAX_TYPES_ON_THE_PAGE = 24;
 const MAX_KEYWORDS_ON_THE_PAGE = 8;
+
+const MERMAID_TYPE_IDS = [
+  "flowchart",
+  "sequence",
+  "class",
+  "state",
+  "er",
+  "gantt",
+  "mindmap",
+  "pie",
+  "journey",
+  "gitgraph",
+  "timeline",
+  "sankey",
+  "xychart",
+  "block",
+  "c4_context",
+  "requirement",
+  "quadrant",
+  "architecture",
+  "packet",
+] as const;
+
+const MERMAID_EXT_TYPE_IDS = [
+  "ext-waterfall",
+  "ext-bubble",
+  "ext-heatmap",
+  "ext-orgchart",
+  "ext-ev",
+] as const;
 
 describe("language page primer", () => {
   it("covers every language that has a site page", () => {
@@ -38,6 +68,9 @@ describe("language page primer", () => {
         expect(isLocaleKey(diagramType.summaryKey), diagramType.summaryKey).toBe(
           true,
         );
+        expect(isLocaleKey(diagramType.syntaxKey), diagramType.syntaxKey).toBe(
+          true,
+        );
 
         for (const locale of SUPPORTED_LOCALES) {
           const example = diagramType.example[locale];
@@ -59,6 +92,15 @@ describe("language page primer", () => {
 
       checkTypes(primer.extTypes ?? [], `${languageId}:ext`);
     }
+  });
+
+  it("lists every shipped Mermaid diagram, including the extension", () => {
+    expect(LANGUAGE_PRIMERS.mermaid.types.map((diagramType) => diagramType.id)).toEqual(
+      [...MERMAID_TYPE_IDS],
+    );
+    expect(
+      LANGUAGE_PRIMERS.mermaid.extTypes?.map((diagramType) => diagramType.id),
+    ).toEqual([...MERMAID_EXT_TYPE_IDS]);
   });
 
   it("keeps extension types apart from the language types", () => {
@@ -84,6 +126,7 @@ function checkTypes(
   for (const diagramType of types) {
     expect(isLocaleKey(diagramType.titleKey), diagramType.titleKey).toBe(true);
     expect(isLocaleKey(diagramType.summaryKey), diagramType.summaryKey).toBe(true);
+    expect(isLocaleKey(diagramType.syntaxKey), diagramType.syntaxKey).toBe(true);
 
     for (const locale of SUPPORTED_LOCALES) {
       const example = diagramType.example[locale];

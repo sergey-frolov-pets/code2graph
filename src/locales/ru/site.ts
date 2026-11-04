@@ -36,6 +36,9 @@ export const siteMessages = {
   "site.language.diagramTypes": "Типы диаграмм",
   "site.language.keywords": "Ключевые слова",
   "site.language.example": "Пример",
+  "site.language.syntax": "Синтаксис",
+  "site.language.preview": "Как выглядит: {title}",
+  "site.language.previewFailed": "Пример не отрисовался",
   "site.primer.graphml.type.directed.title": "Направленный граф",
   "site.primer.graphml.type.directed.summary":
     "Рёбра идут от источника к цели. Так Code2Graph рисует GraphML по умолчанию.",
@@ -57,6 +60,18 @@ export const siteMessages = {
     "Развилка в активности: then и else, закрывается endif.",
   "site.primer.plantuml.kw.skinparam":
     "Общий параметр оформления, например цвет фона.",
+  "site.primer.plantuml.syntax.sequence":
+    "actor и participant задают участника, as — короткое имя. Сообщение пишется ->, ответ -->, подпись после двоеточия.",
+  "site.primer.plantuml.syntax.class":
+    "class открывает класс, поля и методы — внутри скобок. Связь --> с кратностью в кавычках.",
+  "site.primer.plantuml.syntax.activity":
+    "start и stop — начало и конец. Шаг — :текст;. Развилка: if () then (), else и endif.",
+  "site.primer.plantuml.syntax.state":
+    "[*] — начало и конец. Переход пишется -->, подпись события — после двоеточия.",
+  "site.primer.plantuml.syntax.usecase":
+    "actor и usecase объявляют актёра и сценарий. Связь — -->, направление — left to right direction.",
+  "site.primer.plantuml.syntax.c4_context":
+    "Person(), System() и Rel() описывают людей, систему и связь. Библиотека подключается через !include.",
   "site.primer.mermaid.kw.participant":
     "Участник последовательности. as подменяет видимую подпись.",
   "site.primer.mermaid.kw.arrow":
@@ -67,6 +82,44 @@ export const siteMessages = {
   "site.primer.mermaid.kw.subgraph": "Группа узлов в блок-схеме. Закрывается end.",
   "site.primer.mermaid.kw.class": "Класс с полями и методами внутри classDiagram.",
   "site.primer.mermaid.kw.section": "Группа задач на диаграмме Ганта.",
+  "site.primer.mermaid.syntax.flowchart":
+    "flowchart TD задаёт направление. Узел-шаг — [текст], решение — {текст}, старт — ([текст]). Стрелка -->, подпись ветки — |да|.",
+  "site.primer.mermaid.syntax.sequence":
+    "sequenceDiagram открывает схему. actor и participant с as задают участника. Запрос — ->>, ответ — -->>.",
+  "site.primer.mermaid.syntax.class":
+    "classDiagram открывает схему. class Имя { } содержит поля +имя тип и методы. Связь — -->.",
+  "site.primer.mermaid.syntax.state":
+    "stateDiagram-v2 открывает схему. [*] — старт. Переход — -->, подпись — после двоеточия.",
+  "site.primer.mermaid.syntax.er":
+    "erDiagram открывает схему. Связь ||--o{ читается «один ко многим», роль — после двоеточия.",
+  "site.primer.mermaid.syntax.gantt":
+    "gantt открывает схему. title — заголовок, dateFormat — формат дат, section — группа. Задача: имя :id, дата, длительность.",
+  "site.primer.mermaid.syntax.mindmap":
+    "mindmap открывает схему. Корень — root((тема)). Вложенность задаётся отступом.",
+  "site.primer.mermaid.syntax.pie":
+    "pie showData показывает числа. title — заголовок. Сектор: \"имя\" : число.",
+  "site.primer.mermaid.syntax.journey":
+    "journey открывает путь. title — заголовок, section — этап. Задача: имя: оценка: роль.",
+  "site.primer.mermaid.syntax.gitgraph":
+    "gitGraph открывает историю. commit — коммит, branch — ветка, checkout — переключение, merge — слияние.",
+  "site.primer.mermaid.syntax.timeline":
+    "timeline открывает шкалу. title — заголовок, section — период. События пишутся после двоеточия.",
+  "site.primer.mermaid.syntax.sankey":
+    "sankey-beta открывает потоки. Каждая строка — источник,цель,вес. Имена узлов в этой строке — латиницей.",
+  "site.primer.mermaid.syntax.xychart":
+    "xychart-beta открывает график. x-axis — категории, y-axis — диапазон, bar и line — серии.",
+  "site.primer.mermaid.syntax.block":
+    "block-beta открывает блоки. columns задаёт число колонок. Блок — id[\"подпись\"], связь — -->.",
+  "site.primer.mermaid.syntax.c4_context":
+    "C4Context открывает контекст. Person() и System() объявляют элементы, Rel() — связь.",
+  "site.primer.mermaid.syntax.requirement":
+    "requirementDiagram открывает схему. Блок requirement { } описывает требование, element { } — элемент, связь — satisfies.",
+  "site.primer.mermaid.syntax.quadrant":
+    "quadrantChart открывает квадранты. x-axis и y-axis — оси, quadrant-1 … quadrant-4 — названия, точка — имя: [x, y].",
+  "site.primer.mermaid.syntax.architecture":
+    "architecture-beta открывает схему. group — группа, service — сервис, связь — сервис:R --> L:сервис.",
+  "site.primer.mermaid.syntax.packet":
+    "packet-beta открывает пакет. title — заголовок. Поле: диапазон бит и подпись, например 0-15: \"Источник\".",
   "site.ext.mermaid.title": "Расширение Mermaid Ext",
   "site.ext.mermaid.lead":
     "Пять типов диаграмм, которых нет в штатном Mermaid: водопад, пузырьковая, тепловая карта, оргструктура и освоенный объём. Рисуются встроенным движком без внешних сервисов.",
@@ -87,6 +140,16 @@ export const siteMessages = {
     "Дерево подчинённости с явными рёбрами: сплошное — основная линия, пунктирное -.-> — второй руководитель. Несколько корней собираются под невидимый корень.",
   "site.ext.mermaid.desc.ev":
     "Три кумулятивные кривые по дням: плановый объём PV, освоенный EV и фактические затраты AC. Плюс отклонения SV и CV в легенде.",
+  "site.ext.mermaid.syntax.waterfall":
+    "waterfall открывает диаграмму. y задаёт ось. = — абсолютная колонка, + и - — шаг, подпись — после двоеточия.",
+  "site.ext.mermaid.syntax.bubble":
+    "bubble открывает диаграмму. x, y и size задают оси и размер. В блоке data точка: имя : x=, y=, size=.",
+  "site.ext.mermaid.syntax.heatmap":
+    "heatmap открывает карту. x и y — подписи осей. В блоке data строка: имя : числа через запятую.",
+  "site.ext.mermaid.syntax.orgchart":
+    "orgchart открывает дерево. Узел — id [роль]. Основное ребро — ->, второй руководитель — -.->.",
+  "site.ext.mermaid.syntax.ev":
+    "ev открывает график. days — дни, pv — план, ev — освоенный объём, ac — фактические затраты.",
   "site.primer.graphml.kw.graphml":
     "Корень документа. Пространство имён GraphML обязательно.",
   "site.primer.graphml.kw.graph":
@@ -96,6 +159,10 @@ export const siteMessages = {
   "site.primer.graphml.kw.key": "Объявление атрибута для узлов или рёбер.",
   "site.primer.graphml.kw.data":
     "Значение атрибута. Видимая подпись лежит здесь, не в id.",
+  "site.primer.graphml.syntax.directed":
+    "graphml — корень, graph edgedefault=\"directed\" — направленный граф. node задаёт вершину, edge source и target — ребро, data — подпись.",
+  "site.primer.graphml.syntax.undirected":
+    "То же устройство, но edgedefault=\"undirected\": ребро только соединяет узлы.",
   "site.primer.wiremark.kw.wireframe":
     "Один экран. Имя после # — якорь для переходов.",
   "site.primer.wiremark.kw.flow":
@@ -108,6 +175,10 @@ export const siteMessages = {
     "Поле ввода. Подпись в кавычках, настройки вроде required — без кавычек.",
   "site.primer.wiremark.kw.button":
     "Кнопка. contained заливает её, to=#id ведёт на другой экран.",
+  "site.primer.wiremark.syntax.wireframe":
+    "Wireframe #якорь открывает экран. Stack собирает колонку, Typography — текст, TextField — поле, Button — кнопку.",
+  "site.primer.wiremark.syntax.flow":
+    "Flow LR связывает экраны слева направо. to=#якорь на кнопке ведёт на другой Wireframe.",
   "site.primer.d2.kw.direction":
     "Направление раскладки: down, right, left или up.",
   "site.primer.d2.kw.shape":
@@ -116,6 +187,16 @@ export const siteMessages = {
   "site.primer.d2.kw.style": "Оформление узла: заливка, обводка, шрифт.",
   "site.primer.d2.kw.constraint":
     "Ограничение колонки SQL: primary_key, foreign_key или unique.",
+  "site.primer.d2.syntax.flowchart":
+    "direction задаёт раскладку. shape: person и shape: cylinder — форма узла. Связь — -> с подписью после двоеточия.",
+  "site.primer.d2.syntax.sequence":
+    "shape: sequence_diagram включает последовательность. Участники — вложенные узлы, сообщение — ->.",
+  "site.primer.d2.syntax.class":
+    "shape: class включает класс. Поля и методы пишутся строками внутри блока, связь — ->.",
+  "site.primer.d2.syntax.er":
+    "shape: sql_table включает таблицу. constraint: primary_key и foreign_key помечают ключи, связь — поле -> поле.",
+  "site.primer.d2.syntax.architecture":
+    "Вложенные блоки группируют узлы. shape задаёт форму, -> — связь с подписью.",
   "site.primer.structurizr.kw.workspace":
     "Корень документа: имя и короткое описание модели.",
   "site.primer.structurizr.kw.person": "Человек, который пользуется системой.",
@@ -127,6 +208,14 @@ export const siteMessages = {
   "site.primer.structurizr.kw.views": "Какие виды нарисовать из модели.",
   "site.primer.structurizr.kw.autolayout":
     "Автораскладка вида: tb сверху вниз или lr слева направо.",
+  "site.primer.structurizr.syntax.c4_context":
+    "workspace открывает документ. person и softwareSystem описывают модель, -> — отношение, systemContext и autolayout — вид.",
+  "site.primer.structurizr.syntax.c4_container":
+    "container внутри softwareSystem задаёт приложение. Вид container и include * собирают контейнеры.",
+  "site.primer.structurizr.syntax.component":
+    "component внутри container описывает модуль. Вид component рисует этот контейнер.",
+  "site.primer.structurizr.syntax.deployment":
+    "deploymentEnvironment и deploymentNode описывают среду. containerInstance ставит контейнер на узел, вид deployment рисует схему.",
   "site.stackLead": "Интерфейс:",
   "site.hero.ctaPrimary": "Открыть редактор без регистрации",
   "site.hero.ctaSecondary": "📲 Установить на ПК / Смартфон",
