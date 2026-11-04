@@ -11,6 +11,7 @@ import {
 } from "@/constants/diagram-example-catalog";
 import {
   diagramExamplePrompt,
+  diagramExampleSearchText,
   diagramExampleTitle,
 } from "@/constants/diagram-example-text";
 import { D2_SAMPLE_IDS } from "@/constants/d2-sample-diagrams";
@@ -84,19 +85,37 @@ describe("diagram example catalog", () => {
     expect(ids).not.toContain("mermaid:pie");
   });
 
-  it("intersects tag filters with the localized title", () => {
+  it("intersects tag filters with text from the title, tags, and source", () => {
     const t = translate("en");
     const visible = filterDiagramExamples(
       DIAGRAM_EXAMPLES,
       [{ axis: "domain", id: "finance" }],
       "gantt",
-      (example) => diagramExampleTitle(example, t),
+      (example) => diagramExampleSearchText(example, t, "en"),
     );
 
     expect(visible.map((example) => example.id).sort()).toEqual([
       "mermaid:gantt",
       "plantuml:gantt",
     ]);
+  });
+
+  it("matches a word from the diagram source when the title does not contain it", () => {
+    const t = translate("en");
+    const visible = filterDiagramExamples(
+      DIAGRAM_EXAMPLES,
+      [],
+      "herbivore",
+      (example) => diagramExampleSearchText(example, t, "en"),
+    );
+    const ids = visible.map((example) => example.id);
+
+    expect(ids).toContain("plantuml:classes");
+    expect(diagramExampleTitle(
+      DIAGRAM_EXAMPLES.find((example) => example.id === "plantuml:classes")!,
+      t,
+    ).toLocaleLowerCase()).not.toContain("herbivore");
+    expect(ids).not.toContain("mermaid:pie");
   });
 
   it("writes a distinct prompt for each example in both locales", () => {

@@ -1,7 +1,7 @@
 export const wizardGalleryMessages = {
   "llm.wizard.gallery.heading": "Choose an example",
-  "llm.wizard.gallery.searchLabel": "Search examples by name",
-  "llm.wizard.gallery.searchPlaceholder": "Name",
+  "llm.wizard.gallery.searchLabel": "Search example text",
+  "llm.wizard.gallery.searchPlaceholder": "Text",
   "llm.wizard.gallery.reset": "Reset",
   "llm.wizard.gallery.empty": "No examples match these conditions",
   "llm.wizard.gallery.cloudLabel": "Example tags",

@@ -345,7 +345,7 @@ export function filterDiagramExamples(
   examples: readonly DiagramExample[],
   selected: readonly ExampleTagRef[],
   query: string,
-  titleFor: (example: DiagramExample) => string,
+  textFor: (example: DiagramExample) => string,
 ): DiagramExample[] {
   const normalizedQuery = query.trim().toLocaleLowerCase();
 
@@ -359,7 +359,7 @@ export function filterDiagramExamples(
       return true;
     }
 
-    return titleFor(example).toLocaleLowerCase().includes(normalizedQuery);
+    return textFor(example).toLocaleLowerCase().includes(normalizedQuery);
   });
 }
 

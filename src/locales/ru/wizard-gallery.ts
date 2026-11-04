@@ -1,7 +1,7 @@
 export const wizardGalleryMessages = {
   "llm.wizard.gallery.heading": "Выберите пример",
-  "llm.wizard.gallery.searchLabel": "Поиск примеров по названию",
-  "llm.wizard.gallery.searchPlaceholder": "Название",
+  "llm.wizard.gallery.searchLabel": "Поиск по тексту примера",
+  "llm.wizard.gallery.searchPlaceholder": "Текст",
   "llm.wizard.gallery.reset": "Сбросить",
   "llm.wizard.gallery.empty": "Нет примеров с этими условиями",
   "llm.wizard.gallery.cloudLabel": "Теги примеров",
