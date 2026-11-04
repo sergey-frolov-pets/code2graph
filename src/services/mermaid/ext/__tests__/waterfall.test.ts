@@ -1140,6 +1140,75 @@ line 50 color=#cf222e style=solid "цель"
     });
   });
 
+  it("line: терпим к тому, как пишут люди", () => {
+    // Один и тот же смысл в разных записях — все должны давать линию 350.
+    const variants = [
+      'line 350 "план"',
+      "line 350 план",
+      "line 350",
+      'line: 350 "план"',
+      'line=350 "план"',
+      'line 350, "план"',
+      'line +350 "план"',
+      'line 350 "план" color=red',
+      'line 350 "план" color="red"',
+      'line 350 "план" stroke=#cf222e',
+      'line 350 "план" width=2px',
+      'line 350 "план" thickness=2',
+      'line 350 "план" style=dashed',
+      'line 350 "план" style=--',
+      'line 350 "план" dash',
+      'line 350 "план" dashed',
+      'line 350 "план" #cf222e',
+      'line 50 color=#cf222e style=solid "цель"',
+    ];
+    for (const v of variants) {
+      const r = waterfallEngine.parse(`waterfall\ny 0 --> 500\n=120 : Q1\n+180 : Q2\n${v}`);
+      expect(r.ok, `${v} → ${JSON.stringify(r.errors)}`).toBe(true);
+      expect((r.value as WaterfallModel).lines, v).toHaveLength(1);
+    }
+  });
+
+  it("line: синонимы параметров дают то же значение", () => {
+    const r = waterfallEngine.parse(`waterfall
+y 0 --> 500
+line 350 "план" stroke=#cf222e thickness=2 style=dashed
+=120 : Q1
++180 : Q2`);
+    expect(r.ok).toBe(true);
+    expect((r.value as WaterfallModel).lines?.[0]).toMatchObject({
+      value: 350,
+      label: "план",
+      color: "#cf222e",
+      width: 2,
+      style: "dash",
+    });
+  });
+
+  it("line: подпись без кавычек + стиль без ключа", () => {
+    const r = waterfallEngine.parse(`waterfall
+y 0 --> 500
+line 350 план dash
+=120 : Q1
++180 : Q2`);
+    expect(r.ok).toBe(true);
+    expect((r.value as WaterfallModel).lines?.[0]).toMatchObject({
+      value: 350,
+      label: "план",
+      style: "dash",
+    });
+  });
+
+  it("line: цвет в CSS-нотации rgb() принимается", () => {
+    const r = waterfallEngine.parse(`waterfall
+y 0 --> 500
+line 350 "план" color=rgb(207,34,46)
+=120 : Q1
++180 : Q2`);
+    expect(r.ok).toBe(true);
+    expect((r.value as WaterfallModel).lines?.[0]).toMatchObject({ color: "rgb(207,34,46)" });
+  });
+
   it("линии рисуются ПОВЕРХ баров: в SVG они идут после них", () => {
     const r = waterfallEngine.parse(src);
     expect(r.ok).toBe(true);

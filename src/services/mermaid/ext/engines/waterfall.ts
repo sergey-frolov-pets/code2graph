@@ -157,9 +157,12 @@ function parseNumber(raw: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** Цвет в CSS-нотации: `rgb(...)`, `rgba(...)`, `hsl(...)`, `hsla(...)`. */
+const CSS_COLOR_FN_RE = /^(?:rgba?|hsla?)\(\s*[-\d.%]+\s*(?:[, ]\s*[-\d.%]+\s*){2,3}\)$/i;
+
 function isColor(raw: string): boolean {
   const t = raw.trim();
-  return COLOR_RE.test(t) || COLOR_NAMES.has(t.toLowerCase());
+  return COLOR_RE.test(t) || COLOR_NAMES.has(t.toLowerCase()) || CSS_COLOR_FN_RE.test(t);
 }
 
 /** Подпись в кавычках + два числа вокруг `-->`. */
@@ -316,6 +319,37 @@ function parseBreak(
   return { brk: { after, before, label: label || undefined } };
 }
 
+/** Стили линии в том виде, как их пишут: dashed/--/-. и т. п. */
+function normalizeLineStyle(raw: string): WaterfallLineStyle | null {
+  const t = raw.trim().toLowerCase().replace(/^["']|["']$/g, "");
+  switch (t) {
+    case "solid":
+    case "none":
+    case "-":
+    case "—":
+      return "solid";
+    case "dash":
+    case "dashed":
+    case "dashes":
+    case "--":
+      return "dash";
+    case "dot":
+    case "dotted":
+    case "dots":
+    case ":":
+    case "..":
+      return "dot";
+    case "dashdot":
+    case "dash-dot":
+    case "dashdotdot":
+    case "-.":
+    case "-.-":
+      return "dashdot";
+    default:
+      return null;
+  }
+}
+
 /**
  * `line <значение> ["подпись"] [color=#hex] [width=<px>] [style=solid|dash|dot|dashdot]`
  *
@@ -326,8 +360,12 @@ function parseLine(
   text: string,
   line: number,
 ): { line?: WaterfallLine; error?: ExtParseError } {
-  const body = text.trim();
-  const valueMatch = /^(-?[\d\s_.]+)(?=\s|$)/.exec(body);
+  // Терпимость к «как пишут люди», а не «как задумано»:
+  //   line: 350      line=350      line 350, "план"     line +350
+  //   width=2px      style=dashed  style=--            color=red (имя)
+  // Всё это — валидные варианты одной и той же директивы.
+  const body = text.trim().replace(/^[:=]\s*/, "").replace(/^\+/, "");
+  const valueMatch = /^(-?[\d\s_.]+)(?=\s|[,;]|$)/.exec(body);
   const value = valueMatch ? parseNumber(valueMatch[1]) : null;
   if (!valueMatch || value === null) {
     return {
@@ -340,7 +378,8 @@ function parseLine(
   }
 
   const result: WaterfallLine = { value };
-  let rest = body.slice(valueMatch[0].length).trim();
+  // Запятая/точка с запятой сразу после числа — просто разделитель.
+  let rest = body.slice(valueMatch[0].length).replace(/^\s*[,;]\s*/, "").trim();
 
   // Подпись может стоять и ПЕРЕД параметрами: `line 400 "цель" color=#cf222e`.
   // Поэтому кавычки снимаются первым проходом, а не после разбора key=value.
@@ -351,11 +390,18 @@ function parseLine(
     rest = rest.slice(leading[0].length);
   }
 
-  const TOKEN_RE = /(?:^|\s)(color|width|style)=("[^"]*"|\S*)\s*/i;
+  // Синонимы ключей: stroke/colour — цвет, thickness — толщина, dash — стиль.
+  const TOKEN_RE = /(?:^|\s)(color|colour|stroke|width|thickness|style|dash)=("[^"]*"|\S*)\s*/i;
   for (let guard = 0; guard < 8; guard += 1) {
     const m = TOKEN_RE.exec(rest);
     if (!m) break;
-    const key = m[1].toLowerCase();
+    const rawKey = m[1].toLowerCase();
+    const key =
+      rawKey === "colour" || rawKey === "stroke"
+        ? "color"
+        : rawKey === "thickness"
+          ? "width"
+          : rawKey;
     const raw = m[2].replace(/^"|"$/g, "");
     if (key === "color") {
       if (!isColor(raw)) {
@@ -369,7 +415,7 @@ function parseLine(
       }
       result.color = raw;
     } else if (key === "width") {
-      const width = parseNumber(raw);
+      const width = parseNumber(raw.replace(/\s*(px|pt)$/i, ""));
       if (width === null || width <= 0) {
         return {
           error: {
@@ -381,8 +427,8 @@ function parseLine(
       }
       result.width = clamp(width, 0.5, 12);
     } else {
-      const style = raw.toLowerCase();
-      if (style !== "solid" && style !== "dash" && style !== "dot" && style !== "dashdot") {
+      const style = normalizeLineStyle(raw);
+      if (!style) {
         return {
           error: {
             message: `стиль линии: ожидается solid|dash|dot|dashdot, получено «${raw}»`,
@@ -394,6 +440,41 @@ function parseLine(
       result.style = style;
     }
     rest = rest.slice(m[0].length);
+  }
+
+  // Хвост без ключей: `line 350 "план" dash`, `line 350 план dash`,
+  // `line 350 "план" #cf222e`. Голый цвет и голый стиль — параметры,
+  // остальное — подпись (в кавычках или одним-двумя словами).
+  rest = rest.trim();
+  // Подпись в кавычках может стоять и ПОСЛЕ параметров: `line 50 color=red "цель"`.
+  if (rest && !result.label) {
+    const quoted = /^"((?:[^"\\]|\\.)*)"\s*/.exec(rest);
+    if (quoted) {
+      result.label = quoted[1].replace(/\\"/g, '"');
+      rest = rest.slice(quoted[0].length).trim();
+    }
+  }
+  if (rest) {
+    const words = rest.startsWith('"') ? [] : rest.split(/\s+/);
+    const kept: string[] = [];
+    for (const word of words) {
+      if (!result.color && isColor(word)) {
+        result.color = word;
+        continue;
+      }
+      if (!result.style) {
+        const bareStyle = normalizeLineStyle(word);
+        if (bareStyle) {
+          result.style = bareStyle;
+          continue;
+        }
+      }
+      kept.push(word);
+    }
+    rest = kept.join(" ");
+    if (!rest && !result.label) {
+      // Всё ушло в параметры — подписи нет.
+    }
   }
 
   // Всё, что осталось, — подпись (в кавычках или как есть). Если подпись
