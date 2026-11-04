@@ -1226,3 +1226,53 @@ line 350 "план" color=rgb(207,34,46)
     if (lastValueLabel >= 0) expect(firstLine).toBeGreaterThan(lastValueLabel);
   });
 });
+
+describe("waterfall: фон и цвет текста", () => {
+  const base = [
+    "waterfall",
+    'y "₽" 0 --> 100',
+    "=40 : Продажи",
+    "+20 : Апсейл",
+    "=60 : Итог",
+  ];
+
+  it("background и textcolor разбираются", () => {
+    const parsed = waterfallEngine.parse([...base, "background #101418", "textcolor #ffcc00"].join("\n"));
+    expect(parsed.ok).toBe(true);
+    expect(parsed.value?.background).toBe("#101418");
+    expect(parsed.value?.textColor).toBe("#ffcc00");
+  });
+
+  it("кривой цвет — ошибка разбора", () => {
+    const parsed = waterfallEngine.parse([...base, "background тёмный"].join("\n"));
+    expect(parsed.ok).toBe(false);
+    expect(parsed.errors[0].message).toContain("background #hex");
+  });
+
+  it("на тёмном фоне текст автоматически становится светлым", () => {
+    const svg = waterfallEngine.render(
+      waterfallEngine.parse([...base, "background #101418"].join("\n")).value as WaterfallModel,
+      { dark: false },
+    );
+    // Подписи колонок рисуются цветом текста палитры — он должен быть светлым.
+    expect(svg).toContain("#e6edf3");
+    expect(svg).not.toContain('fill="#1f2328"');
+  });
+
+  it("textcolor перекрывает автоподбор", () => {
+    const svg = waterfallEngine.render(
+      waterfallEngine.parse([...base, "background #101418", "textcolor #ffcc00"].join("\n"))
+        .value as WaterfallModel,
+      { dark: false },
+    );
+    expect(svg).toContain("#ffcc00");
+  });
+
+  it("опции рендера работают без директив в коде", () => {
+    const svg = waterfallEngine.render(
+      waterfallEngine.parse(base.join("\n")).value as WaterfallModel,
+      { dark: false, background: "#0b0f14" },
+    );
+    expect(svg).toContain("#e6edf3");
+  });
+});

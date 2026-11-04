@@ -57,9 +57,21 @@ export async function waitForMermaidReady(dark: boolean): Promise<void> {
   await ensureMermaidInitialized(dark);
 }
 
+export interface MermaidRenderOptions {
+  dark?: boolean;
+  /** Фон диаграммы — перекрывает плашку холста, текст подбирается под него. */
+  background?: string;
+  /** Цвет текста — ручное перекрытие автоподбора. */
+  textColor?: string;
+  /** Шрифт: id семейства (`sans`, `serif`, `mono`, `rounded`). */
+  fontFamily?: string;
+  fontWeight?: string;
+  fontStyle?: string;
+}
+
 async function renderMermaidOfflineToSvg(
   source: string,
-  options: { dark?: boolean } = {},
+  options: MermaidRenderOptions = {},
 ): Promise<string> {
   const prepared = prepareMermaidSource(source);
   if (!prepared) {
@@ -70,7 +82,14 @@ async function renderMermaidOfflineToSvg(
   // этот блок вместе с import() вырезается на этапе сборки.
   if (__MERMAID_EXT__) {
     const { tryRenderExtension } = await import("@/services/mermaid/ext");
-    const extSvg = await tryRenderExtension(source, { dark: Boolean(options.dark) });
+    const extSvg = await tryRenderExtension(source, {
+      dark: Boolean(options.dark),
+      background: options.background,
+      textColor: options.textColor,
+      fontFamily: options.fontFamily,
+      fontWeight: options.fontWeight,
+      fontStyle: options.fontStyle,
+    });
     if (extSvg) return extSvg;
   }
 
@@ -83,7 +102,7 @@ async function renderMermaidOfflineToSvg(
 
   try {
     const result = await mermaid.render(renderId, prepared, container);
-    return result.svg;
+    return applyAppearanceToSvg(result.svg, options);
   } catch (error) {
     const message =
       error instanceof Error && error.message
@@ -95,9 +114,47 @@ async function renderMermaidOfflineToSvg(
   }
 }
 
+/** Стек шрифтов диаграммы по id из окна «Внешний вид». */
+const DIAGRAM_FONT_STACKS: Record<string, string> = {
+  sans: "system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif",
+  serif: "Georgia, 'Times New Roman', 'PT Serif', serif",
+  mono: "'SFMono-Regular', Consolas, 'Liberation Mono', monospace",
+  rounded: "'Nunito', 'Segoe UI', system-ui, sans-serif",
+};
+
+/**
+ * Оформление поверх готового SVG: шрифт и его стиль задаются на корне, а не
+ * через тему Mermaid — так они действуют и на штатные диаграммы, и на наши
+ * расширения. Фон и цвет текста для расширений уже учтены в рендере, здесь
+ * они не дублируются.
+ */
+function applyAppearanceToSvg(svg: string, options: MermaidRenderOptions): string {
+  if (!svg.includes("<svg")) return svg;
+
+  const stack = options.fontFamily ? DIAGRAM_FONT_STACKS[options.fontFamily] : undefined;
+  const weight = options.fontWeight;
+  const style = options.fontStyle;
+  if (!stack && !weight && !style) return svg;
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svg, "image/svg+xml");
+  const root = doc.documentElement;
+  if (root.tagName.toLowerCase() !== "svg") return svg;
+
+  const declarations: string[] = [];
+  if (stack) declarations.push(`font-family: ${stack}`);
+  if (weight) declarations.push(`font-weight: ${weight}`);
+  if (style) declarations.push(`font-style: ${style}`);
+
+  const existing = root.getAttribute("style") ?? "";
+  root.setAttribute("style", `${existing}${existing && !existing.trim().endsWith(";") ? ";" : ""}${declarations.join("; ")}`);
+
+  return new XMLSerializer().serializeToString(root);
+}
+
 export async function renderMermaidToSvg(
   source: string,
-  options: { dark?: boolean } = {},
+  options: MermaidRenderOptions = {},
   renderMode: RenderMode = DEFAULT_RENDER_MODE,
 ): Promise<string> {
   // Типы расширения mermaid.ink не знает: отправлять их на сервер бессмысленно

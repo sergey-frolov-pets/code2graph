@@ -69,7 +69,14 @@ export const mermaidFormatHandler: FormatHandler = {
   async render(source, context) {
     return renderMermaidToSvg(
       source,
-      { dark: context.diagramDarkMode },
+      {
+        dark: context.diagramDarkMode,
+        background: context.diagramBackground,
+        textColor: context.diagramTextColor,
+        fontFamily: context.diagramFontFamily,
+        fontWeight: context.diagramFontWeight,
+        fontStyle: context.diagramFontStyle,
+      },
       context.renderMode,
     );
   },

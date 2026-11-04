@@ -43,6 +43,83 @@ export function getPalette(dark?: boolean): Palette {
   return dark ? DARK : LIGHT;
 }
 
+// --- Цвет фона и контраст текста ------------------------------------------
+
+/** `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa` → `{ r, g, b }` (0–255). */
+export function parseHexColor(value: string): { r: number; g: number; b: number } | null {
+  const raw = value.trim().replace(/^#/, "");
+  if (!/^[0-9a-f]{3,8}$/i.test(raw)) return null;
+  const expand = (chunk: string) => chunk + chunk;
+  if (raw.length === 3 || raw.length === 4) {
+    const [r, g, b] = [expand(raw[0]), expand(raw[1]), expand(raw[2])];
+    return { r: parseInt(r, 16), g: parseInt(g, 16), b: parseInt(b, 16) };
+  }
+  if (raw.length === 6 || raw.length === 8) {
+    return {
+      r: parseInt(raw.slice(0, 2), 16),
+      g: parseInt(raw.slice(2, 4), 16),
+      b: parseInt(raw.slice(4, 6), 16),
+    };
+  }
+  return null;
+}
+
+/** Относительная яркость по WCAG 2.1 (0 — чёрный, 1 — белый). */
+export function relativeLuminance(color: string): number | null {
+  const rgb = parseHexColor(color);
+  if (!rgb) return null;
+  const channel = (value: number) => {
+    const c = value / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * channel(rgb.r) + 0.7152 * channel(rgb.g) + 0.0722 * channel(rgb.b);
+}
+
+/** Тёмный ли фон: на нём нужен светлый текст. */
+export function isDarkColor(color: string): boolean {
+  const luminance = relativeLuminance(color);
+  return luminance !== null && luminance < 0.45;
+}
+
+/** Цвет, который читается на заданном фоне (или `null`, если фон не hex). */
+export function contrastTextColor(background: string): string | null {
+  const luminance = relativeLuminance(background);
+  if (luminance === null) return null;
+  return luminance < 0.45 ? DARK.fg : LIGHT.fg;
+}
+
+/**
+ * Палитра под конкретный фон диаграммы.
+ *
+ * `background` (директива `background #hex`) переопределяет плашку холста, а
+ * цвет текста подбирается под неё: иначе на тёмном фоне остаётся тёмный текст
+ * и подписи не читаются. `textColor` (`textcolor #hex`) — ручное перекрытие
+ * автоподбора. Без `background` палитра та же, что и раньше (тема dark/light).
+ */
+export function resolvePalette(
+  dark: boolean | undefined,
+  background?: string,
+  textColor?: string,
+): Palette {
+  const base = getPalette(dark);
+  if (!background) {
+    return textColor ? { ...base, fg: textColor } : base;
+  }
+
+  const onDark = isDarkColor(background);
+  const fg = textColor ?? (onDark ? DARK.fg : LIGHT.fg);
+  const fgDim = textColor ?? (onDark ? DARK.fgDim : LIGHT.fgDim);
+  return {
+    ...base,
+    bg: background,
+    fg,
+    fgDim,
+    // Сетка и ось — «тихие» линии: на тёмном фоне светлее, на светлом темнее.
+    grid: onDark ? DARK.grid : LIGHT.grid,
+    axis: onDark ? DARK.axis : LIGHT.axis,
+  };
+}
+
 export const FONT_FAMILY =
   'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 

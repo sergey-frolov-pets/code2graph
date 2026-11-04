@@ -11,10 +11,9 @@ import {
 } from "@/constants/render-settings";
 import {
   DEFAULT_PREVIEW_BG,
-  PREVIEW_BG_PRESETS,
-  TRANSPARENT_PREVIEW_BG,
   isTransparentPreviewBg,
 } from "@/constants/editor-settings";
+import { contrastTextColor } from "@/services/mermaid/ext/common";
 import { useLocale } from "@/composables/useLocale";
 
 const props = defineProps<{
@@ -38,12 +37,22 @@ const emit = defineEmits<{
   setImageWidth: [value: number];
   setImageHeight: [value: number];
   resetImageSize: [];
+  openAppearance: [];
   "update:previewBackground": [value: string];
   "update:diagramDarkMode": [value: boolean];
   "update:renderMode": [value: RenderMode];
 }>();
 
 const { t } = useLocale();
+
+/**
+ * Цвет буквы «A» на кнопке внешнего вида: он же показывает, каким будет текст
+ * на выбранном фоне. Считается тем же правилом контраста, что и в рендере.
+ */
+const previewTextColor = computed(() => {
+  if (isTransparentBg.value) return props.diagramDarkMode ? "#e6edf3" : "#1f2328";
+  return contrastTextColor(props.previewBackground) ?? (props.diagramDarkMode ? "#e6edf3" : "#1f2328");
+});
 
 const isOnlineMode = computed(() => isOnlineRenderMode(props.renderMode));
 
@@ -53,24 +62,10 @@ const defaultPreviewBg = computed(() =>
   props.diagramDarkMode ? DEFAULT_PREVIEW_BG.dark : DEFAULT_PREVIEW_BG.light,
 );
 
-/** Свой цвет — тот, что не совпал ни с одной преднастроенной кнопкой. */
-const isCustomBg = computed(() => {
-  if (isTransparentBg.value) return false;
-  const current = props.previewBackground.trim().toLowerCase();
-  return !PREVIEW_BG_PRESETS.some((preset) => preset.value.toLowerCase() === current);
-});
-
+/** Цвет в образце кнопки: фон предпросмотра или плашка темы, если он прозрачный. */
 const customPreviewBg = computed(() =>
-  isCustomBg.value ? props.previewBackground : defaultPreviewBg.value,
+  isTransparentBg.value ? defaultPreviewBg.value : props.previewBackground,
 );
-
-function setPreviewBackground(value: string): void {
-  emit("update:previewBackground", value);
-}
-
-function onCustomColorInput(event: Event): void {
-  setPreviewBackground((event.target as HTMLInputElement).value);
-}
 
 const themeToggleLabel = computed(() =>
   props.diagramDarkMode ? t("toolbar.themeToLight") : t("toolbar.themeToDark"),
@@ -168,57 +163,30 @@ function toggleRenderMode(): void {
 
 <template>
   <div class="preview-toolbar">
-    <div class="preview-toolbar__bg" role="group" :aria-label="t('toolbar.previewBackground')">
-      <TooltipWrap
-        v-for="preset in PREVIEW_BG_PRESETS"
-        :key="preset.id"
-        :label="t(`toolbar.previewBackgroundPreset.${preset.id}`)"
+    <TooltipWrap :label="t('toolbar.appearance')">
+      <button
+        type="button"
+        class="preview-toolbar__appearance"
+        :aria-label="t('toolbar.appearance')"
+        @click="emit('openAppearance')"
       >
-        <button
-          type="button"
-          class="preview-toolbar__swatch"
-          :class="{ 'is-active': !isTransparentBg && !isCustomBg && preset.value === previewBackground }"
-          :style="{ '--swatch-color': preset.value }"
-          :aria-label="t(`toolbar.previewBackgroundPreset.${preset.id}`)"
-          :aria-pressed="!isTransparentBg && !isCustomBg && preset.value === previewBackground"
-          @click="setPreviewBackground(preset.value)"
-        >
-          <span class="preview-toolbar__swatch-dot" />
-        </button>
-      </TooltipWrap>
-
-      <TooltipWrap :label="t('toolbar.previewBackgroundCustom')">
-        <label
-          class="preview-toolbar__swatch preview-toolbar__swatch--custom"
-          :class="{ 'is-active': isCustomBg }"
+        <span
+          class="preview-toolbar__appearance-swatch"
+          :class="{ 'is-transparent': isTransparentBg }"
           :style="{ '--swatch-color': customPreviewBg }"
         >
-          <span class="sr-only">{{ t("toolbar.previewBackgroundCustom") }}</span>
-          <input
-            class="preview-toolbar__color"
-            type="color"
-            :value="customPreviewBg"
-            :aria-label="t('toolbar.previewBackgroundCustom')"
-            @input="onCustomColorInput"
-          />
-        </label>
-      </TooltipWrap>
+          <span
+            class="preview-toolbar__appearance-glyph"
+            :style="{ color: previewTextColor }"
+          >A</span>
+        </span>
+      </button>
+    </TooltipWrap>
 
-      <TooltipWrap :label="t('toolbar.previewBackgroundTransparent')">
-        <button
-          type="button"
-          class="preview-toolbar__swatch preview-toolbar__swatch--transparent"
-          :class="{ 'is-active': isTransparentBg }"
-          :aria-label="t('toolbar.previewBackgroundTransparent')"
-          :aria-pressed="isTransparentBg"
-          @click="setPreviewBackground(TRANSPARENT_PREVIEW_BG)"
-        >
-          <ActionIcon name="eye-off" />
-        </button>
-      </TooltipWrap>
-    </div>
-
-    <IconButton :label="t('toolbar.zoomOut')" @click="emit('zoomOut')">
+    <IconButton
+      :label="t('toolbar.zoomOut')"
+      @click="emit('zoomOut')"
+    >
       <ActionIcon name="zoom-out" />
     </IconButton>
 
@@ -232,11 +200,17 @@ function toggleRenderMode(): void {
       {{ zoomPercent }}%
     </span>
 
-    <IconButton :label="t('toolbar.zoomIn')" @click="emit('zoomIn')">
+    <IconButton
+      :label="t('toolbar.zoomIn')"
+      @click="emit('zoomIn')"
+    >
       <ActionIcon name="zoom-in" />
     </IconButton>
 
-    <div ref="sizeRef" class="preview-toolbar__size">
+    <div
+      ref="sizeRef"
+      class="preview-toolbar__size"
+    >
       <TooltipWrap :label="imageSizeTitle">
         <button
           ref="sizeButtonRef"
@@ -249,7 +223,11 @@ function toggleRenderMode(): void {
           {{ imageSizeLabel }}
         </button>
       </TooltipWrap>
-      <div v-if="sizeMenuOpen" class="preview-toolbar__size-menu" :style="sizeMenuStyle">
+      <div
+        v-if="sizeMenuOpen"
+        class="preview-toolbar__size-menu"
+        :style="sizeMenuStyle"
+      >
         <label class="preview-toolbar__size-row">
           <span>{{ t("toolbar.imageWidth") }}</span>
           <input
@@ -259,7 +237,7 @@ function toggleRenderMode(): void {
             step="10"
             :value="imageWidth"
             @change="onSizeInput('width', $event)"
-          />
+          >
         </label>
         <label class="preview-toolbar__size-row">
           <span>{{ t("toolbar.imageHeight") }}</span>
@@ -270,9 +248,13 @@ function toggleRenderMode(): void {
             step="10"
             :value="imageHeight"
             @change="onSizeInput('height', $event)"
-          />
+          >
         </label>
-        <button type="button" class="preview-toolbar__size-reset" @click="resetSize">
+        <button
+          type="button"
+          class="preview-toolbar__size-reset"
+          @click="resetSize"
+        >
           {{ t("toolbar.imageSizeReset") }}
         </button>
       </div>
@@ -283,7 +265,10 @@ function toggleRenderMode(): void {
       :pressed="diagramDarkMode"
       @click="toggleDiagramTheme"
     >
-      <ActionIcon :name="diagramDarkMode ? 'sun' : 'moon'" size="large" />
+      <ActionIcon
+        :name="diagramDarkMode ? 'sun' : 'moon'"
+        size="large"
+      />
     </IconButton>
 
     <IconButton
@@ -291,7 +276,10 @@ function toggleRenderMode(): void {
       :pressed="isOnlineMode"
       @click="toggleRenderMode"
     >
-      <ActionIcon :name="isOnlineMode ? 'globe' : 'unlink'" size="large" />
+      <ActionIcon
+        :name="isOnlineMode ? 'globe' : 'unlink'"
+        size="large"
+      />
     </IconButton>
 
     <IconButton

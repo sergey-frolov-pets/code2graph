@@ -5,6 +5,15 @@ export const STORAGE_KEY_EDITOR_SYNTAX_HIGHLIGHT =
 export const STORAGE_KEY_EDITOR_AUTOCOMPLETE =
   "code2graph-editor-autocomplete";
 export const STORAGE_KEY_PREVIEW_BG = "code2graph-preview-bg";
+export const STORAGE_KEY_DIAGRAM_TEXT_COLOR = "code2graph-diagram-text-color";
+export const STORAGE_KEY_DIAGRAM_FONT_FAMILY = "code2graph-diagram-font-family";
+export const STORAGE_KEY_DIAGRAM_FONT_WEIGHT = "code2graph-diagram-font-weight";
+export const STORAGE_KEY_DIAGRAM_FONT_STYLE = "code2graph-diagram-font-style";
+
+/** Шрифт диаграммы по умолчанию: id из списка в AppearanceModal. */
+export const DEFAULT_DIAGRAM_FONT_FAMILY = "sans";
+export const DEFAULT_DIAGRAM_FONT_WEIGHT = "400";
+export const DEFAULT_DIAGRAM_FONT_STYLE = "normal";
 
 export const DEFAULT_PREVIEW_BG = {
   light: "#ffffff",

@@ -41,6 +41,11 @@ export interface AppShellContext {
   editorSyntaxHighlight: Ref<boolean>;
   editorAutocomplete: Ref<boolean>;
   previewBackground: Ref<string>;
+  /** Цвет текста диаграммы; пусто — подбирается под фон. */
+  diagramTextColor: Ref<string>;
+  diagramFontFamily: Ref<string>;
+  diagramFontWeight: Ref<string>;
+  diagramFontStyle: Ref<string>;
   editorFontFamily: ComputedRef<string>;
   svg: Ref<string>;
   error: Ref<string>;
@@ -159,6 +164,10 @@ export function useAppShell(): AppShellContext {
     editorSyntaxHighlight,
     editorAutocomplete,
     previewBackground,
+    diagramTextColor,
+    diagramFontFamily,
+    diagramFontWeight,
+    diagramFontStyle,
     editorFontFamily,
     persistSettings,
     restoreSettings,
@@ -194,6 +203,12 @@ export function useAppShell(): AppShellContext {
     layout,
     diagramDarkMode,
     renderMode,
+    // Фон диаграммы = фон предпросмотра: в окне «Внешний вид» это одна настройка.
+    diagramBackground: previewBackground,
+    diagramTextColor,
+    diagramFontFamily,
+    diagramFontWeight,
+    diagramFontStyle,
     locale,
     t,
     onPersist: persistSettings,
@@ -476,6 +491,10 @@ export function useAppShell(): AppShellContext {
     editorSyntaxHighlight,
     editorAutocomplete,
     previewBackground,
+    diagramTextColor,
+    diagramFontFamily,
+    diagramFontWeight,
+    diagramFontStyle,
     editorFontFamily,
     svg,
     error,

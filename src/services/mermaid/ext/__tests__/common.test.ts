@@ -9,6 +9,9 @@ import {
   measureText,
   niceRange,
   niceTicks,
+  contrastTextColor,
+  parseHexColor,
+  resolvePalette,
   textHeight,
   truncate,
 } from "../common";
@@ -191,5 +194,36 @@ describe("arrowMarker", () => {
     expect(m.markup).toContain("<defs>");
     expect(m.markup).toContain('id="arr1"');
     expect(m.ref).toBe("url(#arr1)");
+  });
+});
+
+describe("parseHexColor / контраст", () => {
+  it("понимает #rgb, #rrggbb и альфу", () => {
+    expect(parseHexColor("#fff")).toEqual({ r: 255, g: 255, b: 255 });
+    expect(parseHexColor("#1f2328")).toEqual({ r: 31, g: 35, b: 40 });
+    expect(parseHexColor("#1f232880")).toEqual({ r: 31, g: 35, b: 40 });
+    expect(parseHexColor("not-a-color")).toBeNull();
+  });
+
+  it("подбирает светлый текст на тёмном фоне и тёмный на светлом", () => {
+    expect(contrastTextColor("#000000")).toBe(getPalette(true).fg);
+    expect(contrastTextColor("#171d24")).toBe(getPalette(true).fg);
+    expect(contrastTextColor("#ffffff")).toBe(getPalette(false).fg);
+    expect(contrastTextColor("transparent")).toBeNull();
+  });
+
+  it("resolvePalette перекрывает фон и текст, но сохраняет цвета баров", () => {
+    const palette = resolvePalette(true, "#ffffff");
+    expect(palette.bg).toBe("#ffffff");
+    expect(palette.fg).toBe(getPalette(false).fg);
+    expect(palette.positive).toBe(getPalette(true).positive);
+
+    const manual = resolvePalette(false, "#000000", "#ffcc00");
+    expect(manual.fg).toBe("#ffcc00");
+  });
+
+  it("без фона палитра та же, что и раньше", () => {
+    expect(resolvePalette(true)).toEqual(getPalette(true));
+    expect(resolvePalette(false, undefined, "#123456").fg).toBe("#123456");
   });
 });

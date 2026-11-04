@@ -35,6 +35,13 @@ import {
   STORAGE_KEY_EDITOR_FONT_SIZE,
   STORAGE_KEY_EDITOR_SYNTAX_HIGHLIGHT,
   STORAGE_KEY_PREVIEW_BG,
+  STORAGE_KEY_DIAGRAM_TEXT_COLOR,
+  STORAGE_KEY_DIAGRAM_FONT_FAMILY,
+  STORAGE_KEY_DIAGRAM_FONT_WEIGHT,
+  STORAGE_KEY_DIAGRAM_FONT_STYLE,
+  DEFAULT_DIAGRAM_FONT_FAMILY,
+  DEFAULT_DIAGRAM_FONT_WEIGHT,
+  DEFAULT_DIAGRAM_FONT_STYLE,
   type EditorFontFamilyId,
   type EditorFontSize,
 } from "@/constants/editor-settings";
@@ -133,6 +140,17 @@ export function usePersistedSettings() {
   const previewBackground = ref(
     readInitialPreviewBackground(diagramDarkMode.value),
   );
+  // Цвет текста: пустая строка — «авто», подбирается под фон диаграммы.
+  const diagramTextColor = ref(readStorageItem(STORAGE_KEY_DIAGRAM_TEXT_COLOR) ?? "");
+  const diagramFontFamily = ref(
+    readStorageItem(STORAGE_KEY_DIAGRAM_FONT_FAMILY) || DEFAULT_DIAGRAM_FONT_FAMILY,
+  );
+  const diagramFontWeight = ref(
+    readStorageItem(STORAGE_KEY_DIAGRAM_FONT_WEIGHT) || DEFAULT_DIAGRAM_FONT_WEIGHT,
+  );
+  const diagramFontStyle = ref(
+    readStorageItem(STORAGE_KEY_DIAGRAM_FONT_STYLE) || DEFAULT_DIAGRAM_FONT_STYLE,
+  );
 
   const editorFontFamily = computed(() =>
     resolveEditorFontFamily(editorFontFamilyId.value),
@@ -155,6 +173,10 @@ export function usePersistedSettings() {
       String(editorAutocomplete.value),
     );
     writeStorageItem(STORAGE_KEY_PREVIEW_BG, previewBackground.value);
+    writeStorageItem(STORAGE_KEY_DIAGRAM_TEXT_COLOR, diagramTextColor.value);
+    writeStorageItem(STORAGE_KEY_DIAGRAM_FONT_FAMILY, diagramFontFamily.value);
+    writeStorageItem(STORAGE_KEY_DIAGRAM_FONT_WEIGHT, diagramFontWeight.value);
+    writeStorageItem(STORAGE_KEY_DIAGRAM_FONT_STYLE, diagramFontStyle.value);
   }
 
   function applyLocaleToStoredSource(): void {
@@ -269,6 +291,10 @@ export function usePersistedSettings() {
     editorSyntaxHighlight,
     editorAutocomplete,
     previewBackground,
+    diagramTextColor,
+    diagramFontFamily,
+    diagramFontWeight,
+    diagramFontStyle,
     editorFontFamily,
     persistSettings,
     restoreSettings,

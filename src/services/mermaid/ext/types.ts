@@ -15,6 +15,17 @@ export interface ExtParseError {
 
 export interface ExtRenderOptions {
   dark?: boolean;
+  /**
+   * Фон диаграммы (`background #hex`) — перекрывает плашку холста. Цвет текста
+   * подбирается под него автоматически, если не задан `textColor`.
+   */
+  background?: string;
+  /** Цвет текста (`textcolor #hex`) — ручное перекрытие автоподбора. */
+  textColor?: string;
+  /** Шрифт и его стиль — задаются в окне «Внешний вид». */
+  fontFamily?: string;
+  fontWeight?: string;
+  fontStyle?: string;
   /** Ошибка вместо фолбэка при нераспознанном типе */
   strict?: boolean;
   /** Обводка каждого элемента + его id (для отладки раскладки) */

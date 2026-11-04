@@ -18,6 +18,16 @@ export interface FormatContext {
   layout: LayoutEngine;
   diagramDarkMode: boolean;
   renderMode: RenderMode;
+  /**
+   * Оформление диаграммы из окна «Внешний вид»: фон, цвет текста, шрифт.
+   * Необязательные — остальные вызовы (валидация, превью библиотеки) работают
+   * с темой по умолчанию.
+   */
+  diagramBackground?: string;
+  diagramTextColor?: string;
+  diagramFontFamily?: string;
+  diagramFontWeight?: string;
+  diagramFontStyle?: string;
 }
 
 /** @deprecated Use FormatContext */

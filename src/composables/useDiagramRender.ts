@@ -38,6 +38,12 @@ export interface UseDiagramRenderOptions {
   layout: Ref<LayoutEngine>;
   diagramDarkMode: Ref<boolean>;
   renderMode: Ref<RenderMode>;
+  /** Оформление из окна «Внешний вид» (фон, текст, шрифт). */
+  diagramBackground?: Ref<string>;
+  diagramTextColor?: Ref<string>;
+  diagramFontFamily?: Ref<string>;
+  diagramFontWeight?: Ref<string>;
+  diagramFontStyle?: Ref<string>;
   locale: Ref<AppLocale>;
   t: TranslateFn;
   onPersist?: () => void;
@@ -50,6 +56,11 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     layout,
     diagramDarkMode,
     renderMode,
+    diagramBackground,
+    diagramTextColor,
+    diagramFontFamily,
+    diagramFontWeight,
+    diagramFontStyle,
     locale,
     t,
     onPersist,
@@ -79,6 +90,11 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
       layout: layout.value,
       diagramDarkMode: diagramDarkMode.value,
       renderMode: renderMode.value,
+      diagramBackground: diagramBackground?.value,
+      diagramTextColor: diagramTextColor?.value,
+      diagramFontFamily: diagramFontFamily?.value,
+      diagramFontWeight: diagramFontWeight?.value,
+      diagramFontStyle: diagramFontStyle?.value,
     };
   }
 
@@ -283,6 +299,21 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     onPersist?.();
     scheduleRender();
   });
+
+  // Оформление меняет только вид — перерисовываем без сброса истории.
+  watch(
+    [
+      diagramBackground ?? ref(""),
+      diagramTextColor ?? ref(""),
+      diagramFontFamily ?? ref(""),
+      diagramFontWeight ?? ref(""),
+      diagramFontStyle ?? ref(""),
+    ],
+    () => {
+      onPersist?.();
+      scheduleRender();
+    },
+  );
 
   watch(locale, () => {
     updateEngineStatusLabel();

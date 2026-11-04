@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import AppearanceModal from "@/components/AppearanceModal.vue";
 import DiagramToolbar from "@/components/DiagramToolbar.vue";
 import LoadingState from "@/components/ui/LoadingState.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
@@ -17,6 +18,12 @@ const props = defineProps<{
   previewBackground: string;
   diagramDarkMode: boolean;
   renderMode: RenderMode;
+  /** Цвет текста диаграммы (`textcolor`); пусто — автоподбор под фон. */
+  textColor: string;
+  /** Семейство шрифта диаграммы (`fontfamily`). */
+  diagramFontFamily: string;
+  diagramFontWeight: string;
+  diagramFontStyle: string;
 }>();
 
 const emit = defineEmits<{
@@ -25,12 +32,17 @@ const emit = defineEmits<{
   exportPng: [];
   "update:previewBackground": [value: string];
   "update:diagramDarkMode": [value: boolean];
+  "update:textColor": [value: string];
+  "update:diagramFontFamily": [value: string];
+  "update:diagramFontWeight": [value: string];
+  "update:diagramFontStyle": [value: string];
   "update:renderMode": [value: RenderMode];
   "update:imageSize": [value: { width: number; height: number } | null];
 }>();
 
 const { t } = useLocale();
 const isFullscreen = ref(false);
+const appearanceOpen = ref(false);
 const viewportRef = ref<HTMLElement | null>(null);
 const contentRef = ref<HTMLElement | null>(null);
 
@@ -91,7 +103,10 @@ watch(isFullscreen, (value) => {
     :aria-label="t('app.previewRegion')"
   >
     <header class="panel-header">
-      <h2 class="panel-title" :title="t('preview.titleTooltip')">
+      <h2
+        class="panel-title"
+        :title="t('preview.titleTooltip')"
+      >
         {{ t("preview.title") }}
       </h2>
       <div class="panel-header__toolbar">
@@ -113,21 +128,39 @@ watch(isFullscreen, (value) => {
           @set-image-width="setWidth"
           @set-image-height="setHeight"
           @reset-image-size="resetSize"
+          @open-appearance="appearanceOpen = true"
           @update:preview-background="emit('update:previewBackground', $event)"
           @update:diagram-dark-mode="emit('update:diagramDarkMode', $event)"
           @update:render-mode="emit('update:renderMode', $event)"
         />
-        <span v-if="isRendering" class="status-pill status-pill--compact">…</span>
+        <span
+          v-if="isRendering"
+          class="status-pill status-pill--compact"
+        >…</span>
       </div>
-      <PanelFullscreenButton :active="isFullscreen" @toggle="toggleFullscreen" />
+      <PanelFullscreenButton
+        :active="isFullscreen"
+        @toggle="toggleFullscreen"
+      />
     </header>
 
     <div class="panel-body">
-      <div v-if="error" class="preview-error">{{ error }}</div>
-      <div v-else-if="isRendering && !previewMarkup" class="preview-frame preview-frame--loading">
+      <div
+        v-if="error"
+        class="preview-error"
+      >
+        {{ error }}
+      </div>
+      <div
+        v-else-if="isRendering && !previewMarkup"
+        class="preview-frame preview-frame--loading"
+      >
         <LoadingState :message="t('preview.rendering')" />
       </div>
-      <div v-else-if="previewMarkup" class="preview-frame">
+      <div
+        v-else-if="previewMarkup"
+        class="preview-frame"
+      >
         <div
           ref="viewportRef"
           class="preview-viewport"
@@ -146,14 +179,38 @@ watch(isFullscreen, (value) => {
             v-html="previewMarkup"
           />
         </div>
-        <div v-if="isRendering" class="preview-loading-overlay">
-          <LoadingState compact :message="t('preview.rendering')" />
+        <div
+          v-if="isRendering"
+          class="preview-loading-overlay"
+        >
+          <LoadingState
+            compact
+            :message="t('preview.rendering')"
+          />
         </div>
       </div>
-      <div v-else class="preview-placeholder">
+      <div
+        v-else
+        class="preview-placeholder"
+      >
         {{ t("preview.placeholder") }}
       </div>
     </div>
+
+    <AppearanceModal
+      :open="appearanceOpen"
+      :background="previewBackground"
+      :text-color="textColor"
+      :font-family="diagramFontFamily"
+      :font-weight="diagramFontWeight"
+      :font-style="diagramFontStyle"
+      @close="appearanceOpen = false"
+      @update:background="emit('update:previewBackground', $event)"
+      @update:text-color="emit('update:textColor', $event)"
+      @update:font-family="emit('update:diagramFontFamily', $event)"
+      @update:font-weight="emit('update:diagramFontWeight', $event)"
+      @update:font-style="emit('update:diagramFontStyle', $event)"
+    />
   </section>
 </template>
 

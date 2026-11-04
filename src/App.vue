@@ -66,6 +66,10 @@ const {
   editorSyntaxHighlight,
   editorAutocomplete,
   previewBackground,
+  diagramTextColor,
+  diagramFontFamily,
+  diagramFontWeight,
+  diagramFontStyle,
   svg,
   error,
   isRendering,
@@ -194,6 +198,10 @@ onUnmounted(() => {
         :is-rendering="isRendering"
         :can-export="canExport"
         v-model:preview-background="previewBackground"
+        v-model:text-color="diagramTextColor"
+        v-model:diagram-font-family="diagramFontFamily"
+        v-model:diagram-font-weight="diagramFontWeight"
+        v-model:diagram-font-style="diagramFontStyle"
         v-model:diagram-dark-mode="diagramDarkMode"
         v-model:render-mode="renderMode"
         @render-now="shell.renderDiagram"

@@ -7,6 +7,8 @@ import {
   measureText,
   niceRange,
   niceTicks,
+  parseHexColor,
+  resolvePalette,
   truncate,
 } from "../common";
 import type { Palette } from "../common";
@@ -94,6 +96,13 @@ export interface WaterfallModel {
   colors?: Partial<WaterfallColors>;
   /** Цвета отдельных серий: `colors s1=#hex s2=#hex` (ключи нормализованы в `sN`). */
   seriesColors?: WaterfallSeriesColors;
+  /**
+   * Фон диаграммы (`background #hex`). Без него — фон темы (dark/light).
+   * Цвет текста подбирается под фон автоматически, чтобы подписи читались.
+   */
+  background?: string;
+  /** Цвет текста (`textcolor #hex`) — перекрывает автоподбор под фон. */
+  textColor?: string;
 }
 
 /** Разрыв оси: значения выше `after` и ниже `before` рисуются вплотную. */
@@ -613,6 +622,8 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
   let mono = false;
   let colors: Partial<WaterfallColors> | undefined;
   let seriesColors: WaterfallSeriesColors | undefined;
+  let background: string | undefined;
+  let textColor: string | undefined;
 
   const lines = source.split(/\r?\n/);
   let seenType = false;
@@ -643,6 +654,34 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
         continue;
       }
       axis = { label: parsed.label, min: parsed.min, max: parsed.max, auto: false };
+      continue;
+    }
+
+    if (/^background\b/i.test(raw)) {
+      const value = raw.replace(/^background\s*/i, "").trim();
+      if (!parseHexColor(value)) {
+        errors.push({
+          message: `ожидается «background #hex», получено «${value}»`,
+          line: lineNo,
+          col: 0,
+        });
+        continue;
+      }
+      background = value;
+      continue;
+    }
+
+    if (/^(?:textcolou?r|fontcolou?r|fgcolou?r)\b/i.test(raw)) {
+      const value = raw.replace(/^(?:textcolou?r|fontcolou?r|fgcolou?r)\s*/i, "").trim();
+      if (!parseHexColor(value)) {
+        errors.push({
+          message: `ожидается «textcolor #hex», получено «${value}»`,
+          line: lineNo,
+          col: 0,
+        });
+        continue;
+      }
+      textColor = value;
       continue;
     }
 
@@ -861,6 +900,8 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
       mono,
       colors,
       seriesColors,
+      background,
+      textColor,
     },
   };
 }
@@ -1119,7 +1160,11 @@ function seriesBarColor(base: string, kind: "total" | "increase" | "decrease"): 
 }
 
 export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions): string {
-  const palette = getPalette(Boolean(options.dark));
+  const palette = resolvePalette(
+    Boolean(options.dark),
+    model.background ?? options.background,
+    model.textColor ?? options.textColor,
+  );
   const { axis, series, labels, title } = model;
   const breaks = model.breaks ?? [];
   const lines = model.lines ?? [];
