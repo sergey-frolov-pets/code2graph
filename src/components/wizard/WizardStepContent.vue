@@ -1,15 +1,9 @@
 <script setup lang="ts">
-import WizardDirectionStep from "@/components/wizard/steps/WizardDirectionStep.vue";
-import WizardParamsStep from "@/components/wizard/steps/WizardParamsStep.vue";
 import WizardContextStep from "@/components/wizard/steps/WizardContextStep.vue";
-import WizardPromptStep from "@/components/wizard/steps/WizardPromptStep.vue";
 import WizardResultStep from "@/components/wizard/steps/WizardResultStep.vue";
 import type {
-  WizardDiagramDirection,
-  WizardParamField,
   WizardState,
   WizardStepId,
-  WizardStructuralElementId,
 } from "@/constants/llm-wizard";
 import type { LlmEditConversationMessage } from "@/types/llm-edit-conversation";
 
@@ -17,14 +11,9 @@ const wizardState = defineModel<WizardState>("wizardState", { required: true });
 
 defineProps<{
   currentStepId: WizardStepId | string;
-  isAiMode: boolean;
   isGenerating: boolean;
-  isManualResultReady: boolean;
   errorMessage: string;
   resultExplanation: string;
-  directionOptions: Array<{ id: WizardDiagramDirection; label: string }>;
-  paramFields: WizardParamField[];
-  structuralElementOptions: Array<{ id: WizardStructuralElementId; label: string }>;
   planningMessages: LlmEditConversationMessage[];
   isPlanningChatBusy: boolean;
   showRefineChat: boolean;
@@ -33,9 +22,6 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "direction-select": [direction: WizardState["direction"]];
-  "param-change": [paramId: WizardParamField["id"], event: Event];
-  "structural-toggle": [elementId: WizardStructuralElementId, event: Event];
   "planning-send": [content: string];
   "planning-clear": [];
   "refine-send": [content: string];
@@ -44,42 +30,18 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <WizardDirectionStep
-    v-if="currentStepId === 'direction'"
-    :wizard-state="wizardState"
-    :direction-options="directionOptions"
-    @direction-select="emit('direction-select', $event)"
-  />
-
-  <WizardParamsStep
-    v-else-if="currentStepId === 'params'"
-    v-model:wizard-state="wizardState"
-    :is-ai-mode="isAiMode"
-    :param-fields="paramFields"
-    :structural-element-options="structuralElementOptions"
-    @param-change="(paramId, event) => emit('param-change', paramId, event)"
-    @structural-toggle="(elementId, event) => emit('structural-toggle', elementId, event)"
-  />
-
   <WizardContextStep
-    v-else-if="currentStepId === 'context'"
+    v-if="currentStepId === 'context'"
     v-model:wizard-state="wizardState"
-    :is-ai-mode="isAiMode"
     :planning-messages="planningMessages"
     :is-planning-chat-busy="isPlanningChatBusy"
     @planning-send="emit('planning-send', $event)"
     @planning-clear="emit('planning-clear')"
   />
 
-  <WizardPromptStep
-    v-else-if="currentStepId === 'prompt'"
-    v-model:wizard-state="wizardState"
-  />
-
   <WizardResultStep
     v-else-if="currentStepId === 'result'"
     :is-generating="isGenerating"
-    :is-manual-result-ready="isManualResultReady"
     :error-message="errorMessage"
     :result-explanation="resultExplanation"
     :show-refine-chat="showRefineChat"

@@ -99,5 +99,4 @@ export const wizardGalleryMessages = {
     "A wireframe of a product card.",
   "llm.wizard.gallery.action.editor": "Open in editor",
   "llm.wizard.gallery.action.llm": "Ask the model",
-  "llm.wizard.gallery.action.params": "Set parameters",
 } as const;

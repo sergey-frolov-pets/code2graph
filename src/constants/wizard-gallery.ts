@@ -1,6 +1,6 @@
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
 
-export const GALLERY_EXAMPLE_ACTIONS = ["editor", "llm", "params"] as const;
+export const GALLERY_EXAMPLE_ACTIONS = ["editor", "llm"] as const;
 
 export type GalleryExampleAction = (typeof GALLERY_EXAMPLE_ACTIONS)[number];
 

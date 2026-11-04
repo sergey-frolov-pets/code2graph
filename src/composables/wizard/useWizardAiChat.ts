@@ -32,7 +32,6 @@ export interface UseWizardAiChatOptions {
   documentKey: Ref<string>;
   wizardState: Ref<WizardState>;
   currentStepId: Ref<WizardStepId>;
-  isAiMode: Ref<boolean>;
   layout: Ref<LayoutEngine>;
   renderMode: Ref<RenderMode>;
   diagramDarkMode: Ref<boolean>;
@@ -54,7 +53,6 @@ export function useWizardAiChat(options: UseWizardAiChatOptions) {
     documentKey,
     wizardState,
     currentStepId,
-    isAiMode,
     layout,
     renderMode,
     diagramDarkMode,
@@ -78,7 +76,6 @@ export function useWizardAiChat(options: UseWizardAiChatOptions) {
 
   const showRefineChat = computed(
     () =>
-      isAiMode.value &&
       currentStepId.value === "result" &&
       resultSource.value.trim().length > 0,
   );

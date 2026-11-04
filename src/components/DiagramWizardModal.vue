@@ -17,6 +17,7 @@ import { trackEvent } from "@/analytics";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
+
 const props = defineProps<{
   open: boolean;
   documentKey: string;
@@ -35,7 +36,6 @@ const { showWizardBanner, dismissWizardBanner } = useWizardOnboarding();
 const { activeLlmDetail } = useActiveLlmLabel();
 
 function trackWizardOpen(): void {
-  // New-diagram wizard opened: exactly one event per opening.
   trackEvent("wizard-open", "Wizard: new diagram");
 }
 
@@ -48,8 +48,6 @@ watch(
   },
 );
 
-// The modal is mounted with `v-if` only while open, so the `open` watcher above
-// never fires on the first opening — count that one on mount.
 onMounted(() => {
   if (props.open) {
     trackWizardOpen();
@@ -72,22 +70,13 @@ const {
   currentStepId,
   totalSteps,
   stepTitle,
-  structuralElementOptions,
   showBackButton,
-  directionOptions,
-  paramFields,
-  isAiMode,
-  isManualResultReady,
   canGoNext,
   wizardSteps,
   openGalleryExample,
-  onDirectionSelect,
-  onParamChange,
-  onStructuralToggle,
   goBack,
   goNext,
   handleApply,
-  handleTransferToEditor,
   handleRegenerate,
   handleAiSetupRetry,
   planningMessages,
@@ -166,13 +155,13 @@ const showLivePreview = computed(
     </p>
 
     <WizardAiSetupPanel
-      v-if="!galleryVisible && aiSetupVisible && isAiMode"
+      v-if="!galleryVisible && aiSetupVisible"
       :reason="aiSetupReason"
       @retry="handleAiSetupRetry"
     />
 
     <LoadingState
-      v-if="!galleryVisible && isGenerating && isAiMode && currentStepId !== 'result'"
+      v-if="!galleryVisible && isGenerating && currentStepId !== 'result'"
       compact
       class="wizard-generating-banner"
       :message="t('llm.wizard.generating')"
@@ -188,22 +177,14 @@ const showLivePreview = computed(
         <WizardStepContent
           v-model:wizard-state="wizardState"
           :current-step-id="currentStepId"
-          :is-ai-mode="isAiMode"
           :is-generating="isGenerating"
-          :is-manual-result-ready="isManualResultReady"
           :error-message="errorMessage"
           :result-explanation="resultExplanation"
-          :direction-options="directionOptions"
-          :param-fields="paramFields"
-          :structural-element-options="structuralElementOptions"
           :planning-messages="planningMessages"
           :is-planning-chat-busy="isPlanningChatBusy"
           :show-refine-chat="showRefineChat"
           :refine-messages="refineMessages"
           :is-refine-chat-busy="isRefineChatBusy"
-          @direction-select="onDirectionSelect($event)"
-          @param-change="onParamChange"
-          @structural-toggle="onStructuralToggle"
           @planning-send="sendPlanningChatMessage"
           @planning-clear="clearPlanningChat"
           @refine-send="sendRefineChatMessage"
@@ -222,14 +203,12 @@ const showLivePreview = computed(
       <WizardModalFooter
         :current-step-id="currentStepId"
         :gallery="galleryVisible"
-        :is-ai-mode="isAiMode"
         :is-generating="isGenerating"
         :can-go-next="canGoNext"
         :show-back-button="showBackButton"
         :result-source="resultSource"
         @back="goBack"
         @close="emit('close')"
-        @transfer-to-editor="handleTransferToEditor"
         @next="goNext"
         @apply="handleApply"
         @regenerate="handleRegenerate"

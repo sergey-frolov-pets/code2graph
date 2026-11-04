@@ -7,7 +7,6 @@ import { useLocale } from "@/composables/useLocale";
 const wizardState = defineModel<WizardState>("wizardState", { required: true });
 
 defineProps<{
-  isAiMode: boolean;
   planningMessages: LlmEditConversationMessage[];
   isPlanningChatBusy: boolean;
 }>();
@@ -22,8 +21,9 @@ const { t } = useLocale();
 
 <template>
   <div class="wizard-step">
-    <label v-if="!isAiMode" class="wizard-field">
-      <span class="wizard-field__label">{{ t("llm.wizard.context") }}</span>
+    <p class="wizard-chat-lead">{{ t("llm.wizard.planningChatLead") }}</p>
+    <label class="wizard-field">
+      <span class="wizard-field__label">{{ t("llm.wizard.description") }}</span>
       <p class="wizard-type-hint">
         <span class="wizard-type-hint__label">{{ t("llm.wizard.promptHintLabel") }}</span>
         {{ t(`llm.wizard.promptHint.${wizardState.diagramType}`) }}
@@ -31,35 +31,18 @@ const { t } = useLocale();
       <textarea
         v-model="wizardState.contextText"
         class="wizard-textarea"
-        rows="6"
+        rows="3"
         :placeholder="t(`llm.wizard.promptHint.${wizardState.diagramType}`)"
       />
     </label>
-
-    <template v-else>
-      <p class="wizard-chat-lead">{{ t("llm.wizard.planningChatLead") }}</p>
-      <label class="wizard-field">
-        <span class="wizard-field__label">{{ t("llm.wizard.description") }}</span>
-        <p class="wizard-type-hint">
-          <span class="wizard-type-hint__label">{{ t("llm.wizard.promptHintLabel") }}</span>
-          {{ t(`llm.wizard.promptHint.${wizardState.diagramType}`) }}
-        </p>
-        <textarea
-          v-model="wizardState.contextText"
-          class="wizard-textarea"
-          rows="3"
-          :placeholder="t(`llm.wizard.promptHint.${wizardState.diagramType}`)"
-        />
-      </label>
-      <LlmChatPanel
-        :messages="planningMessages"
-        :is-busy="isPlanningChatBusy"
-        :placeholder="t('llm.wizard.planningChatPlaceholder')"
-        show-clear
-        @send="emit('planning-send', $event)"
-        @clear="emit('planning-clear')"
-      />
-    </template>
+    <LlmChatPanel
+      :messages="planningMessages"
+      :is-busy="isPlanningChatBusy"
+      :placeholder="t('llm.wizard.planningChatPlaceholder')"
+      show-clear
+      @send="emit('planning-send', $event)"
+      @clear="emit('planning-clear')"
+    />
   </div>
 </template>
 

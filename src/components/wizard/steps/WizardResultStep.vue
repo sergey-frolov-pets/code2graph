@@ -7,7 +7,6 @@ import type { LlmEditConversationMessage } from "@/types/llm-edit-conversation";
 
 defineProps<{
   isGenerating: boolean;
-  isManualResultReady: boolean;
   errorMessage: string;
   resultExplanation: string;
   showRefineChat: boolean;
@@ -34,7 +33,6 @@ const { activeLlmDetail } = useActiveLlmLabel();
     />
     <p v-if="errorMessage" class="wizard-error">{{ errorMessage }}</p>
     <p v-if="resultExplanation" class="wizard-explanation">{{ resultExplanation }}</p>
-    <p v-if="isManualResultReady" class="wizard-hint">{{ t("llm.wizard.manualResultHint") }}</p>
 
     <div v-if="showRefineChat && !isGenerating" class="wizard-refine-chat">
       <p class="wizard-chat-lead">{{ t("llm.wizard.refineChatLead") }}</p>

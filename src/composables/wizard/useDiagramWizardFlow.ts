@@ -18,24 +18,17 @@ import {
   createDefaultStructuralElements,
   createDefaultTypeParams,
   DEFAULT_WIZARD_STATE,
-  getWizardLanguagesForMode,
   getWizardStepTitleKey,
-  getWizardSteps,
-  getWizardStructuralElementsForType,
-  getWizardTypesForLanguage,
-  resolveWizardStateWithDefaults,
-  WIZARD_DIAGRAM_DIRECTIONS,
-  WIZARD_TYPE_PARAM_FIELDS,
-  type WizardParamField,
   type WizardState,
-  type WizardStructuralElementId,
+  type WizardStepId,
 } from "@/constants/llm-wizard";
 import type { RenderMode } from "@/constants/render-settings";
 import { getSampleSource } from "@/constants/sample-diagrams";
 import type { GalleryExampleAction } from "@/constants/wizard-gallery";
 import type { TranslateFn } from "@/locales/types";
-import { buildManualScaffold } from "@/services/llm/wizard/manual-scaffold";
 import { buildWizardPrompt } from "@/services/llm/wizard/wizard-prompts";
+
+const WIZARD_FLOW_STEPS: readonly WizardStepId[] = ["context", "result"];
 
 export interface UseDiagramWizardFlowOptions {
   open: Ref<boolean>;
@@ -66,6 +59,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   const galleryVisible = ref(true);
   const wizardState = ref<WizardState>({
     ...DEFAULT_WIZARD_STATE,
+    creationMode: "ai",
     typeParams: createDefaultTypeParams(),
     structuralElements: createDefaultStructuralElements(),
   });
@@ -79,48 +73,21 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   const { llmConsent, llmProviderId } = useLlmSettings();
   const { hasLlmApiKey } = useLlmApiKeys();
 
-  const wizardSteps = computed(() => getWizardSteps(wizardState.value));
-  const currentStepId = computed(() => wizardSteps.value[stepIndex.value] ?? "mode");
+  const wizardSteps = computed((): WizardStepId[] => [...WIZARD_FLOW_STEPS]);
+  const currentStepId = computed(
+    (): WizardStepId => wizardSteps.value[stepIndex.value] ?? "context",
+  );
   const totalSteps = computed(() => wizardSteps.value.length);
-  const isAiMode = computed(() => wizardState.value.creationMode === "ai");
 
   const stepTitle = computed(() => {
-    if (currentStepId.value === "context" && isAiMode.value) {
+    if (currentStepId.value === "context") {
       return t("llm.wizard.step.description");
     }
 
     return t(getWizardStepTitleKey(currentStepId.value));
   });
 
-  const structuralElementOptions = computed(() =>
-    getWizardStructuralElementsForType(
-      wizardState.value.diagramType,
-      wizardState.value.language,
-    ).map((id) => ({
-      id,
-      label: t(`llm.wizard.structural.${id}`),
-    })),
-  );
-
   const showBackButton = computed(() => !galleryVisible.value);
-
-  const directionOptions = computed(() =>
-    WIZARD_DIAGRAM_DIRECTIONS.map((id) => ({
-      id,
-      label: t(`llm.wizard.direction.${id}`),
-    })),
-  );
-
-  const paramFields = computed((): WizardParamField[] =>
-    WIZARD_TYPE_PARAM_FIELDS[wizardState.value.diagramType],
-  );
-
-  const isManualResultReady = computed(
-    () =>
-      !isAiMode.value &&
-      currentStepId.value === "result" &&
-      resultSource.value.length > 0,
-  );
 
   async function checkAiAccess(): Promise<boolean> {
     const { requireLlmAccess } = useLlmGate();
@@ -143,18 +110,12 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     showLivePreviewPanel,
     resetPreviewState,
     loadPreview,
-    scheduleStepPreview,
   } = useWizardStepPreview({
     wizardState,
-    wizardSteps,
-    stepIndex,
     currentStepId,
-    galleryVisible,
-    isAiMode,
     layout,
     renderMode,
     diagramDarkMode,
-    locale,
     errorMessage,
     t,
   });
@@ -175,7 +136,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     documentKey,
     wizardState,
     currentStepId,
-    isAiMode,
     layout,
     renderMode,
     diagramDarkMode,
@@ -200,10 +160,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
       );
     }
 
-    if (currentStepId.value === "prompt") {
-      return wizardState.value.promptText.trim().length > 0;
-    }
-
     return stepIndex.value < totalSteps.value - 1;
   });
 
@@ -212,6 +168,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     galleryVisible.value = true;
     wizardState.value = {
       ...DEFAULT_WIZARD_STATE,
+      creationMode: "ai",
       typeParams: createDefaultTypeParams(),
       structuralElements: createDefaultStructuralElements(),
     };
@@ -225,57 +182,11 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     clearConversations();
   }
 
-  function clampStepIndex(): void {
-    const maxIndex = Math.max(0, wizardSteps.value.length - 1);
-    if (stepIndex.value > maxIndex) {
-      stepIndex.value = maxIndex;
-    }
-  }
-
-  function syncLanguageForMode(): void {
-    const allowed = getWizardLanguagesForMode(wizardState.value.creationMode);
-    if (!allowed.includes(wizardState.value.language)) {
-      wizardState.value.language = allowed[0];
-    }
-  }
-
-  function syncTypeForLanguage(): void {
-    const allowed = getWizardTypesForLanguage(wizardState.value.language);
-    if (!allowed.includes(wizardState.value.diagramType)) {
-      wizardState.value.diagramType = allowed[0];
-    }
-  }
-
   watch(open, (isOpen) => {
     if (isOpen) {
       resetWizard();
     }
   });
-
-  watch(
-    () => wizardState.value.creationMode,
-    () => {
-      syncLanguageForMode();
-      syncTypeForLanguage();
-      clampStepIndex();
-    },
-  );
-
-  watch(
-    () => wizardState.value.language,
-    () => {
-      syncTypeForLanguage();
-      clampStepIndex();
-    },
-  );
-
-  watch(
-    () => wizardState.value.diagramType,
-    () => {
-      wizardState.value.structuralElements = createDefaultStructuralElements();
-      clampStepIndex();
-    },
-  );
 
   watch([llmConsent, llmProviderId], () => {
     if (aiSetupVisible.value) {
@@ -292,34 +203,11 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     },
   );
 
-  watch(galleryVisible, () => {
-    scheduleStepPreview();
-  });
-
-  watch(currentStepId, (step) => {
-    if (galleryVisible.value) {
-      return;
-    }
-
-    if (isAiMode.value && step === "context") {
+  watch([galleryVisible, currentStepId], ([inGallery, step]) => {
+    if (!inGallery && step === "context") {
       void checkAiAccess();
     }
-
-    scheduleStepPreview();
   });
-
-  watch(
-    () => [
-      wizardState.value.diagramType,
-      wizardState.value.direction,
-      wizardState.value.theme,
-      wizardState.value.typeParams,
-      wizardState.value.structuralElements,
-      wizardState.value.language,
-    ],
-    scheduleStepPreview,
-    { deep: true },
-  );
 
   function openGalleryExample(payload: {
     example: DiagramExample;
@@ -342,44 +230,18 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
 
     wizardState.value = {
       ...DEFAULT_WIZARD_STATE,
-      creationMode: payload.action === "llm" ? "ai" : "manual",
+      creationMode: "ai",
       language: payload.example.format,
       diagramType: payload.example.wizardType,
       direction: exampleDirection(payload.example),
       typeParams: createDefaultTypeParams(),
       structuralElements: createDefaultStructuralElements(),
-      contextText: payload.action === "llm" ? payload.prompt : "",
+      contextText: payload.prompt,
       typeSpecificText: "",
       promptText: "",
     };
     stepIndex.value = 0;
     galleryVisible.value = false;
-  }
-
-  function onDirectionSelect(direction: WizardState["direction"]): void {
-    wizardState.value.direction = direction;
-  }
-
-  function onParamChange(paramId: WizardParamField["id"], event: Event): void {
-    const raw = Number((event.target as HTMLInputElement).value);
-    const field = paramFields.value.find((item) => item.id === paramId);
-    if (!field || Number.isNaN(raw)) {
-      return;
-    }
-
-    wizardState.value.typeParams[paramId] = Math.min(
-      field.max,
-      Math.max(field.min, raw),
-    );
-  }
-
-  function onStructuralToggle(
-    elementId: WizardStructuralElementId,
-    event: Event,
-  ): void {
-    wizardState.value.structuralElements[elementId] = (
-      event.target as HTMLInputElement
-    ).checked;
   }
 
   function goBack(): void {
@@ -395,15 +257,8 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     galleryVisible.value = true;
   }
 
-  async function prepareManualResult(): Promise<void> {
-    errorMessage.value = "";
-    resultExplanation.value = "";
-    resultSource.value = buildManualScaffold(wizardState.value, locale.value);
-    await loadPreview(resultSource.value);
-  }
-
   function goNext(): void {
-    if (currentStepId.value === "context" && isAiMode.value) {
+    if (currentStepId.value === "context") {
       wizardState.value.promptText = buildWizardPrompt(
         wizardState.value,
         locale.value,
@@ -413,34 +268,14 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
       return;
     }
 
-    if (currentStepId.value === "prompt") {
-      wizardState.value.promptText =
-        wizardState.value.promptText.trim() ||
-        buildWizardPrompt(wizardState.value, locale.value);
-      stepIndex.value += 1;
-      void generateDiagram();
-      return;
-    }
-
-    if (currentStepId.value === "params" && !isAiMode.value) {
-      stepIndex.value += 1;
-      void prepareManualResult();
-      return;
-    }
-
     if (canGoNext.value && stepIndex.value < totalSteps.value - 1) {
       stepIndex.value += 1;
     }
   }
 
   function buildApplyLabel(state: WizardState): string {
-    const modeLabel =
-      state.creationMode === "ai"
-        ? t("llm.wizard.mode.ai")
-        : t("llm.wizard.mode.manual");
-
     return t("llm.wizard.historyLabel", {
-      mode: modeLabel,
+      mode: t("llm.wizard.mode.ai"),
       type: t(`llm.wizard.type.${state.diagramType}`),
     });
   }
@@ -458,29 +293,8 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     onClose();
   }
 
-  function handleTransferToEditor(): void {
-    const visitedSteps = wizardSteps.value.slice(0, stepIndex.value + 1);
-    const resolved = resolveWizardStateWithDefaults(
-      wizardState.value,
-      visitedSteps,
-    );
-    const source = buildManualScaffold(resolved, locale.value);
-
-    onApply({
-      source,
-      label: buildApplyLabel(resolved),
-      format: resolved.language,
-    });
-    onClose();
-  }
-
   function handleRegenerate(): void {
-    if (isAiMode.value) {
-      void generateDiagram();
-      return;
-    }
-
-    void prepareManualResult();
+    void generateDiagram();
   }
 
   async function handleAiSetupRetry(): Promise<void> {
@@ -490,7 +304,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     }
 
     if (
-      isAiMode.value &&
       currentStepId.value === "result" &&
       !resultSource.value &&
       !isGenerating.value
@@ -516,21 +329,12 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     currentStepId,
     totalSteps,
     stepTitle,
-    structuralElementOptions,
     showBackButton,
-    directionOptions,
-    paramFields,
-    isAiMode,
-    isManualResultReady,
     canGoNext,
     openGalleryExample,
-    onDirectionSelect,
-    onParamChange,
-    onStructuralToggle,
     goBack,
     goNext,
     handleApply,
-    handleTransferToEditor,
     handleRegenerate,
     handleAiSetupRetry,
     planningMessages,

@@ -8,7 +8,6 @@ import type { WizardStepId } from "@/constants/llm-wizard";
 defineProps<{
   currentStepId: WizardStepId | string;
   gallery: boolean;
-  isAiMode: boolean;
   isGenerating: boolean;
   canGoNext: boolean;
   showBackButton: boolean;
@@ -18,7 +17,6 @@ defineProps<{
 const emit = defineEmits<{
   back: [];
   close: [];
-  "transfer-to-editor": [];
   next: [];
   apply: [];
   regenerate: [];
@@ -52,39 +50,7 @@ const { generatingLabel } = useActiveLlmLabel();
       </IconButton>
 
       <IconButton
-        v-if="!gallery && currentStepId !== 'result'"
-        :label="t('llm.wizard.transferToEditor')"
-        extra-class="wizard-footer__btn"
-        :disabled="isGenerating"
-        @click="emit('transfer-to-editor')"
-      >
-        <ActionIcon name="arrow-down" />
-      </IconButton>
-
-      <IconButton
-        v-if="!gallery && currentStepId !== 'result' && currentStepId !== 'context'"
-        :label="t('llm.wizard.next')"
-        extra-class="wizard-footer__btn"
-        primary
-        :disabled="!canGoNext || isGenerating"
-        @click="emit('next')"
-      >
-        <ActionIcon name="next" />
-      </IconButton>
-
-      <IconButton
-        v-if="!gallery && currentStepId === 'context' && isAiMode"
-        :label="isGenerating ? generatingLabel : t('llm.wizard.generate')"
-        extra-class="wizard-footer__btn"
-        primary
-        :disabled="!canGoNext || isGenerating"
-        @click="emit('next')"
-      >
-        <ActionIcon name="ai" />
-      </IconButton>
-
-      <IconButton
-        v-if="!gallery && currentStepId === 'prompt'"
+        v-if="!gallery && currentStepId === 'context'"
         :label="isGenerating ? generatingLabel : t('llm.wizard.generate')"
         extra-class="wizard-footer__btn"
         primary

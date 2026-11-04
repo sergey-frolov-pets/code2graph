@@ -99,5 +99,4 @@ export const wizardGalleryMessages = {
     "Вайрфрейм карточки товара.",
   "llm.wizard.gallery.action.editor": "В редактор",
   "llm.wizard.gallery.action.llm": "Спросить модель",
-  "llm.wizard.gallery.action.params": "Задать параметры",
 } as const;
