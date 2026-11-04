@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import WizardExampleActions from "@/components/wizard/WizardExampleActions.vue";
 import WizardExampleCard from "@/components/wizard/WizardExampleCard.vue";
+import WizardExampleThumb from "@/components/wizard/WizardExampleThumb.vue";
 import { diagramExampleTitle } from "@/constants/diagram-example-text";
 import type { DiagramExample } from "@/constants/diagram-example-catalog";
 import type { GalleryExampleAction } from "@/constants/wizard-gallery";
@@ -8,7 +9,7 @@ import {
   WIZARD_GALLERY_LONG_PRESS_MOVE_PX,
   WIZARD_GALLERY_LONG_PRESS_MS,
 } from "@/constants/wizard-gallery";
-import { wizardThumbnailUrl } from "@/constants/wizard-thumbnails";
+import { wizardThumbnailSvg } from "@/constants/wizard-thumbnails";
 import { useLocale } from "@/composables/useLocale";
 
 defineProps<{
@@ -77,7 +78,7 @@ function onOpenClick(example: DiagramExample): void {
 }
 
 function thumbnailFor(example: DiagramExample): string | null {
-  return wizardThumbnailUrl(example.format, example.sampleId, locale.value);
+  return wizardThumbnailSvg(example.format, example.sampleId, locale.value);
 }
 </script>
 
@@ -107,12 +108,10 @@ function thumbnailFor(example: DiagramExample): string | null {
         :aria-label="diagramExampleTitle(example, t)"
         @click="onOpenClick(example)"
       >
-        <img
+        <WizardExampleThumb
           v-if="thumbnailFor(example)"
-          class="wizard-example__image"
-          :src="thumbnailFor(example) ?? undefined"
-          alt=""
-        >
+          :svg="thumbnailFor(example)!"
+        />
         <span
           v-else
           class="wizard-example__fallback"

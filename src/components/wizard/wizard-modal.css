@@ -453,10 +453,7 @@
 }
 
 .wizard-tag-cloud {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
+  position: relative;
   margin-bottom: 16px;
 }
 
@@ -465,6 +462,11 @@
   line-height: 1.2;
   padding: 4px 8px;
   background: transparent;
+  white-space: nowrap;
+}
+
+.wizard-tag-cloud .wizard-tag {
+  position: absolute;
 }
 
 .wizard-tag--language { color: var(--accent); }
@@ -508,10 +510,20 @@
 }
 
 .wizard-example__image {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: 104px;
-  object-fit: contain;
+  overflow: hidden;
+}
+
+.wizard-example__image svg {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
 }
 
 .wizard-example__fallback,
@@ -527,8 +539,8 @@
   cursor: pointer;
 }
 
-.wizard-example__card,
-.wizard-example__menu {
+.wizard-example > .wizard-example__card,
+.wizard-example > .wizard-example__menu {
   display: none;
 }
 
@@ -554,7 +566,10 @@
 
 .wizard-example-card__tags {
   display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
   gap: 6px;
   margin: 0;
   padding: 0;
@@ -565,9 +580,15 @@
 .wizard-example-actions__button {
   padding: 4px 8px;
   border-radius: 999px;
-  background: var(--surface-muted);
-  color: var(--text);
+  background: color-mix(in srgb, currentColor 12%, var(--surface));
   font-size: 0.8rem;
+}
+
+.wizard-example-card__tags li {
+  flex: 0 0 auto;
+  width: fit-content;
+  max-width: 100%;
+  white-space: nowrap;
 }
 
 .wizard-example-actions__button {
@@ -577,9 +598,18 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .wizard-example:hover .wizard-example__card,
-  .wizard-example:focus-within .wizard-example__card {
-    display: block;
+  .wizard-example:hover .wizard-example__card {
+    display: flex;
+    position: absolute;
+    z-index: 2;
+    left: 0;
+    right: 0;
+    top: calc(100% - 28px);
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
   }
 
   .wizard-example.is-actions .wizard-example__card {
@@ -589,7 +619,7 @@
 
 .wizard-example.is-pinned .wizard-example__card,
 .wizard-example.is-actions .wizard-example__menu {
-  display: block;
+  display: flex;
   position: absolute;
   z-index: 2;
   left: 0;
