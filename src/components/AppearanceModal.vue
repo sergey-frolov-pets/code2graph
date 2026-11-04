@@ -9,6 +9,13 @@ import {
   isTransparentPreviewBg,
 } from "@/constants/editor-settings";
 import { contrastTextColor, isDarkColor } from "@/services/mermaid/ext/common";
+import {
+  isPreviewPresetActive,
+  normalizePreviewHex,
+  nudgePickerValue,
+  resolveCustomPreviewBackground,
+  shouldNudgeTransparentPicker,
+} from "@/utils/preview-background-color";
 
 /**
  * Окно оформления диаграммы: фон, цвет текста, шрифт и его стиль.
@@ -57,6 +64,10 @@ const isTransparent = computed(() => isTransparentPreviewBg(props.background));
 /** Фон, который реально видно: у прозрачного берём плашку текущей темы. */
 const effectiveBackground = computed(() =>
   isTransparent.value ? props.background : props.background,
+);
+
+const defaultBg = computed(() =>
+  isDarkColor(effectiveBackground.value) ? DEFAULT_PREVIEW_BG.dark : DEFAULT_PREVIEW_BG.light,
 );
 
 /** Автоцвет текста под текущий фон (тот же расчёт, что в рендере). */
@@ -117,8 +128,73 @@ function setBackground(value: string): void {
   if (isAutoText.value) emit("update:textColor", "");
 }
 
-function onBackgroundInput(event: Event): void {
-  setBackground((event.target as HTMLInputElement).value);
+/**
+ * Цвет, на который сдвинули образец перед открытием пикера.
+ * Пока он выбран, это ещё не решение пользователя — прозрачный фон не трогаем.
+ */
+const pickerNudge = ref<string | null>(null);
+
+function pickerInput(event: Event): HTMLInputElement {
+  return event.currentTarget as HTMLInputElement;
+}
+
+function shownPickerColor(): string {
+  return isTransparent.value ? defaultBg.value : props.background;
+}
+
+function onCustomColorPointerDown(event: Event): void {
+  const input = pickerInput(event);
+  pickerNudge.value = null;
+  if (!shouldNudgeTransparentPicker(input.value, isTransparent.value)) {
+    return;
+  }
+  const nudged = nudgePickerValue(input.value);
+  pickerNudge.value = nudged;
+  input.value = nudged;
+}
+
+function isPickerNudge(value: string): boolean {
+  const nudge = pickerNudge.value;
+  if (!nudge) {
+    return false;
+  }
+  return normalizePreviewHex(value) === normalizePreviewHex(nudge);
+}
+
+function restorePickerValue(input: HTMLInputElement): void {
+  input.value = shownPickerColor();
+  pickerNudge.value = null;
+}
+
+function commitCustomColor(value: string): boolean {
+  if (isPickerNudge(value)) {
+    return false;
+  }
+  pickerNudge.value = null;
+  setBackground(resolveCustomPreviewBackground(value));
+  return true;
+}
+
+function onCustomColorInput(event: Event): void {
+  commitCustomColor(pickerInput(event).value);
+}
+
+function onCustomColorChange(event: Event): void {
+  const input = pickerInput(event);
+  if (!commitCustomColor(input.value)) {
+    restorePickerValue(input);
+  }
+}
+
+function onCustomColorBlur(event: Event): void {
+  if (!pickerNudge.value) {
+    return;
+  }
+  restorePickerValue(pickerInput(event));
+}
+
+function isPresetActive(value: string): boolean {
+  return isPreviewPresetActive(props.background, value);
 }
 
 function onTextInput(event: Event): void {
@@ -142,10 +218,6 @@ function onWeightChange(event: Event): void {
 function toggleItalic(): void {
   emit("update:fontStyle", props.fontStyle === "italic" ? "normal" : "italic");
 }
-
-const defaultBg = computed(() =>
-  isDarkColor(effectiveBackground.value) ? DEFAULT_PREVIEW_BG.dark : DEFAULT_PREVIEW_BG.light,
-);
 </script>
 
 <template>
@@ -166,7 +238,10 @@ const defaultBg = computed(() =>
               class="appearance__color"
               type="color"
               :value="isTransparent ? defaultBg : background"
-              @input="onBackgroundInput"
+              @pointerdown="onCustomColorPointerDown"
+              @input="onCustomColorInput"
+              @change="onCustomColorChange"
+              @blur="onCustomColorBlur"
             >
           </label>
           <button
@@ -185,9 +260,9 @@ const defaultBg = computed(() =>
             :key="preset.id"
             type="button"
             class="appearance__preset"
-            :class="{ 'is-active': !isTransparent && preset.value.toLowerCase() === background.toLowerCase() }"
+            :class="{ 'is-active': isPresetActive(preset.value) }"
             :style="{ '--swatch-color': preset.value }"
-            :aria-pressed="!isTransparent && preset.value.toLowerCase() === background.toLowerCase()"
+            :aria-pressed="isPresetActive(preset.value)"
             @click="setBackground(preset.value)"
           >
             <span class="appearance__preset-dot" />
