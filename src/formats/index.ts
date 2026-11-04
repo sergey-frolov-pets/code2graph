@@ -6,6 +6,7 @@ import { plantUmlFormatHandler } from "./plantuml/handler";
 import { structurizrFormatHandler } from "./structurizr/handler";
 import { wiremarkFormatHandler } from "./wiremark/handler";
 import { getLanguageModule } from "@/languages/registry";
+import { applyDiagramTypography } from "@/services/diagram-typography";
 import type { FormatContext, FormatHandler } from "./types";
 import type { SyntaxCheckResult } from "@/utils/plantuml-syntax";
 
@@ -46,7 +47,12 @@ export async function renderDiagram(
   source: string,
   context: FormatContext,
 ): Promise<string> {
-  return getFormatHandler(format).render(source, context);
+  const svg = await getFormatHandler(format).render(source, context);
+  return applyDiagramTypography(svg, {
+    fontFamily: context.diagramFontFamily,
+    fontWeight: context.diagramFontWeight,
+    fontStyle: context.diagramFontStyle,
+  });
 }
 
 export async function bootFormatEngine(

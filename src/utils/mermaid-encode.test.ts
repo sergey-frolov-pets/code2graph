@@ -29,4 +29,10 @@ describe("encodeMermaidStateForInk", () => {
     expect(state.mermaid).toContain("dark");
     expect(state.rough).toBe(false);
   });
+
+  it("sends the selected diagram font to mermaid.ink", () => {
+    const state = buildMermaidLiveState("graph TD\nA-->B", { fontFamily: "serif" });
+    expect(state.mermaid).toContain("Georgia");
+    expect(state.mermaid).toContain("themeVariables");
+  });
 });

@@ -7,6 +7,11 @@ import { loadMermaid } from "@/services/mermaid/mermaid-loader";
 import { renderMermaidOnlineToSvg } from "@/services/mermaid/mermaid-online";
 import { LocalizedAppError } from "@/utils/localized-app-error";
 import { contrastTextColor, parseHexColor } from "@/services/mermaid/ext/common";
+import {
+  applyDiagramTypography,
+  paintDiagramTypography,
+  resolveDiagramFontStack,
+} from "@/services/diagram-typography";
 import { prepareMermaidSource } from "@/utils/mermaid-source";
 import { isMermaidExtDeclaration } from "@/utils/mermaid-syntax";
 
@@ -37,12 +42,17 @@ function createMermaidRenderContainer(): HTMLDivElement {
   return container;
 }
 
-async function ensureMermaidInitialized(dark: boolean): Promise<void> {
+async function ensureMermaidInitialized(
+  dark: boolean,
+  fontFamily?: string,
+): Promise<void> {
   const mermaid = await loadMermaid();
+  const stack = resolveDiagramFontStack(fontFamily);
   mermaid.initialize({
     startOnLoad: false,
     theme: dark ? "dark" : "default",
     securityLevel: "strict",
+    ...(stack ? { fontFamily: stack } : {}),
     gantt: {
       useWidth: 1200,
     },
@@ -91,11 +101,11 @@ async function renderMermaidOfflineToSvg(
       fontWeight: options.fontWeight,
       fontStyle: options.fontStyle,
     });
-    if (extSvg) return extSvg;
+    if (extSvg) return applyDiagramTypography(extSvg, options);
   }
 
   const mermaid = await loadMermaid();
-  await ensureMermaidInitialized(Boolean(options.dark));
+  await ensureMermaidInitialized(Boolean(options.dark), options.fontFamily);
 
   renderCounter += 1;
   const renderId = `mermaid-render-${renderCounter}`;
@@ -114,14 +124,6 @@ async function renderMermaidOfflineToSvg(
     container.remove();
   }
 }
-
-/** Стек шрифтов диаграммы по id из окна «Внешний вид». */
-const DIAGRAM_FONT_STACKS: Record<string, string> = {
-  sans: "system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif",
-  serif: "Georgia, 'Times New Roman', 'PT Serif', serif",
-  mono: "'SFMono-Regular', Consolas, 'Liberation Mono', monospace",
-  rounded: "'Nunito', 'Segoe UI', system-ui, sans-serif",
-};
 
 /** Цвета подписей «страницы», которые следуют за фоном, а не за данными. */
 const PAGE_TEXT_FILLS = new Set([
@@ -161,13 +163,12 @@ function isPageTextFill(value: string | null): boolean {
 function applyAppearanceToSvg(svg: string, options: MermaidRenderOptions): string {
   if (!svg.includes("<svg")) return svg;
 
-  const stack = options.fontFamily ? DIAGRAM_FONT_STACKS[options.fontFamily] : undefined;
-  const weight = options.fontWeight;
-  const fontStyle = options.fontStyle;
   const background = opaqueHex(options.background);
   const manualText = opaqueHex(options.textColor);
   const text = manualText ?? (background ? contrastTextColor(background) : null);
-  if (!stack && !weight && !fontStyle && !background && !text) return svg;
+  if (!options.fontFamily && !options.fontWeight && !options.fontStyle && !background && !text) {
+    return svg;
+  }
 
   const parser = new DOMParser();
   const doc = parser.parseFromString(svg, "image/svg+xml");
@@ -175,9 +176,6 @@ function applyAppearanceToSvg(svg: string, options: MermaidRenderOptions): strin
   if (root.tagName.toLowerCase() !== "svg") return svg;
 
   const declarations: string[] = [];
-  if (stack) declarations.push(`font-family: ${stack}`);
-  if (weight) declarations.push(`font-weight: ${weight}`);
-  if (fontStyle) declarations.push(`font-style: ${fontStyle}`);
   if (background) declarations.push(`background-color: ${background}`);
 
   const existing = root.getAttribute("style") ?? "";
@@ -196,6 +194,7 @@ function applyAppearanceToSvg(svg: string, options: MermaidRenderOptions): strin
     }
   }
 
+  paintDiagramTypography(root, options);
   return new XMLSerializer().serializeToString(root);
 }
 
@@ -215,7 +214,7 @@ export async function renderMermaidToSvg(
     try {
       const svg = await renderMermaidOnlineToSvg(source, options);
       lastRenderUsedOnlineInk = true;
-      return svg;
+      return applyDiagramTypography(svg, options);
     } catch (onlineError) {
       try {
         const svg = await renderMermaidOfflineToSvg(source, options);
