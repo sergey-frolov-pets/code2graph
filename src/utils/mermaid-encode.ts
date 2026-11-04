@@ -1,4 +1,5 @@
 import { deflate } from "pako";
+import { resolveDiagramFontStack } from "@/services/diagram-typography";
 
 export interface MermaidLiveState {
   code: string;
@@ -9,13 +10,21 @@ export interface MermaidLiveState {
 
 export function buildMermaidLiveState(
   source: string,
-  options: { dark?: boolean } = {},
+  options: { dark?: boolean; fontFamily?: string } = {},
 ): MermaidLiveState {
   const theme = options.dark ? "dark" : "default";
+  const stack = resolveDiagramFontStack(options.fontFamily);
+  const config: { theme: string; fontFamily?: string; themeVariables?: { fontFamily: string } } = {
+    theme,
+  };
+  if (stack) {
+    config.fontFamily = stack;
+    config.themeVariables = { fontFamily: stack };
+  }
 
   return {
     code: source,
-    mermaid: JSON.stringify({ theme }),
+    mermaid: JSON.stringify(config),
     updateDiagram: true,
     rough: false,
   };
@@ -38,7 +47,7 @@ function deflateToBase64Url(input: string): string {
 
 export async function encodeMermaidStateForInk(
   source: string,
-  options: { dark?: boolean } = {},
+  options: { dark?: boolean; fontFamily?: string } = {},
 ): Promise<string> {
   const state = buildMermaidLiveState(source, options);
   const serialized = deflateToBase64Url(JSON.stringify(state));

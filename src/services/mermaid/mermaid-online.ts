@@ -97,7 +97,7 @@ export async function probeMermaidInkConnectivity(): Promise<boolean> {
 
 export async function renderMermaidOnlineToSvg(
   source: string,
-  options: { dark?: boolean } = {},
+  options: { dark?: boolean; fontFamily?: string } = {},
 ): Promise<string> {
   if (isFileProtocol()) {
     throw new LocalizedAppError("engine.mermaidOnlineFileProtocol");

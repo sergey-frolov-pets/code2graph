@@ -10,7 +10,7 @@ export const STORAGE_KEY_DIAGRAM_FONT_FAMILY = "code2graph-diagram-font-family";
 export const STORAGE_KEY_DIAGRAM_FONT_WEIGHT = "code2graph-diagram-font-weight";
 export const STORAGE_KEY_DIAGRAM_FONT_STYLE = "code2graph-diagram-font-style";
 
-/** Шрифт диаграммы по умолчанию: id из списка в AppearanceModal. */
+/** Шрифт диаграммы по умолчанию: id из `DIAGRAM_FONT_FAMILIES`. */
 export const DEFAULT_DIAGRAM_FONT_FAMILY = "sans";
 export const DEFAULT_DIAGRAM_FONT_WEIGHT = "400";
 export const DEFAULT_DIAGRAM_FONT_STYLE = "normal";

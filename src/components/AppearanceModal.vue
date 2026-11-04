@@ -9,6 +9,10 @@ import {
   isTransparentPreviewBg,
 } from "@/constants/editor-settings";
 import { contrastTextColor, isDarkColor } from "@/services/mermaid/ext/common";
+import {
+  DIAGRAM_FONT_FAMILIES,
+  DIAGRAM_FONT_WEIGHTS,
+} from "@/services/diagram-typography";
 
 /**
  * Окно оформления диаграммы: фон, цвет текста, шрифт и его стиль.
@@ -37,20 +41,8 @@ const emit = defineEmits<{
 
 const { t } = useLocale();
 
-/** Шрифты диаграммы: пары «id → CSS-стек», id же уходит в директиву `fontfamily`. */
-const FONT_OPTIONS = [
-  { id: "sans", stack: "system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif" },
-  { id: "serif", stack: "Georgia, 'Times New Roman', 'PT Serif', serif" },
-  { id: "mono", stack: "'SFMono-Regular', Consolas, 'Liberation Mono', monospace" },
-  { id: "rounded", stack: "'Nunito', 'Segoe UI', system-ui, sans-serif" },
-] as const;
-
-const WEIGHT_OPTIONS = [
-  { id: "normal", value: "400" },
-  { id: "medium", value: "500" },
-  { id: "semibold", value: "600" },
-  { id: "bold", value: "700" },
-] as const;
+const FONT_OPTIONS = DIAGRAM_FONT_FAMILIES;
+const WEIGHT_OPTIONS = DIAGRAM_FONT_WEIGHTS;
 
 const isTransparent = computed(() => isTransparentPreviewBg(props.background));
 
