@@ -13,20 +13,20 @@ export const WIZARD_TAG_FONT_SIZE_MAX_PX = 28;
 /** Average glyph width relative to the tag font size. */
 export const WIZARD_TAG_CHAR_WIDTH_EM = 0.7;
 
-/** Horizontal padding inside a tag chip, matching the cloud and card styles. */
-export const WIZARD_TAG_PAD_X_PX = 8;
+/** Horizontal padding inside a tag chip in the cloud. */
+export const WIZARD_TAG_PAD_X_PX = 2;
 
-/** Vertical padding inside a tag chip. */
-export const WIZARD_TAG_PAD_Y_PX = 4;
+/** Vertical padding inside a tag chip in the cloud. */
+export const WIZARD_TAG_PAD_Y_PX = 1;
 
-/** Border width of a tag chip, included in the layout box. */
-export const WIZARD_TAG_BORDER_PX = 1;
+/** Cloud tags have no border, so the layout box does not add one. */
+export const WIZARD_TAG_BORDER_PX = 0;
 
-/** Line height used to size a tag chip. */
-export const WIZARD_TAG_LINE_HEIGHT = 1.2;
+/** Line height used to size a tag chip in the cloud. */
+export const WIZARD_TAG_LINE_HEIGHT = 1.05;
 
-/** Gap between tag rows and the cloud edge. */
-export const WIZARD_TAG_CLOUD_GAP_PX = 8;
+/** Space between neighboring tags in the cloud, horizontally and vertically. */
+export const WIZARD_TAG_CLOUD_GAP_PX = 2;
 
 /** Width used before the cloud element has been measured. */
 export const WIZARD_TAG_CLOUD_FALLBACK_WIDTH_PX = 640;

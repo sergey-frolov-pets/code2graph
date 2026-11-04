@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { WIZARD_TAG_CLOUD_GAP_PX } from "@/constants/wizard-gallery";
 import { layoutWizardTagCloud } from "@/constants/wizard-tag-cloud-layout";
 
 const CLOUD_WIDTH_PX = 640;
@@ -33,7 +34,7 @@ describe("wizard tag cloud layout", () => {
     expect(distance("large")).toBeLessThan(distance("small-f"));
   });
 
-  it("keeps every tag inside the rectangle and spans its width", () => {
+  it("packs neighboring tags tightly inside the rectangle", () => {
     const layout = layoutWizardTagCloud(
       [
         { key: "large", fontSizePx: 28, textLength: 12 },
@@ -51,9 +52,20 @@ describe("wizard tag cloud layout", () => {
       expect(tag.topPx + tag.heightPx).toBeLessThanOrEqual(layout.heightPx);
     }
 
-    const left = Math.min(...layout.placements.map((tag) => tag.leftPx));
-    const right = Math.max(...layout.placements.map((tag) => tag.leftPx + tag.widthPx));
-    expect(left).toBeLessThan(CLOUD_WIDTH_PX * 0.2);
-    expect(right).toBeGreaterThan(CLOUD_WIDTH_PX * 0.8);
+    const row = [...layout.placements].sort((left, right) => left.leftPx - right.leftPx);
+    const sameRow = (left: (typeof row)[number], right: (typeof row)[number]) =>
+      left.topPx < right.topPx + right.heightPx && right.topPx < left.topPx + left.heightPx;
+    let compared = 0;
+    for (let index = 1; index < row.length; index += 1) {
+      const previous = row[index - 1];
+      const current = row[index];
+      if (!sameRow(previous, current)) {
+        continue;
+      }
+      const gap = current.leftPx - (previous.leftPx + previous.widthPx);
+      expect(gap).toBeCloseTo(WIZARD_TAG_CLOUD_GAP_PX, 5);
+      compared += 1;
+    }
+    expect(compared).toBeGreaterThan(0);
   });
 });

@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { exampleTagKey, type WizardCloudTag } from "@/constants/diagram-example-catalog";
 import { exampleTagLabel } from "@/constants/diagram-example-text";
 import { WIZARD_TAG_CLOUD_FALLBACK_WIDTH_PX } from "@/constants/wizard-gallery";
-import { layoutWizardTagCloud } from "@/constants/wizard-tag-cloud-layout";
+import {
+  layoutWizardTagBoxes,
+  wizardTagChipSize,
+} from "@/constants/wizard-tag-cloud-layout";
 import { useLocale } from "@/composables/useLocale";
 
 const props = defineProps<{
@@ -18,15 +21,39 @@ const emit = defineEmits<{
 const { t } = useLocale();
 const root = ref<HTMLElement | null>(null);
 const widthPx = ref(WIZARD_TAG_CLOUD_FALLBACK_WIDTH_PX);
+const measuredSizes = ref(new Map<string, { widthPx: number; heightPx: number }>());
 let resizeObserver: ResizeObserver | null = null;
 
+function readSizes(): void {
+  const element = root.value;
+  if (!element) {
+    return;
+  }
+
+  const next = new Map<string, { widthPx: number; heightPx: number }>();
+  for (const node of element.querySelectorAll<HTMLElement>("[data-tag-key]")) {
+    const key = node.dataset.tagKey;
+    if (!key || node.offsetWidth <= 0) {
+      continue;
+    }
+    next.set(key, { widthPx: node.offsetWidth, heightPx: node.offsetHeight });
+  }
+  measuredSizes.value = next;
+}
+
 const layout = computed(() =>
-  layoutWizardTagCloud(
-    props.tags.map((tag) => ({
-      key: exampleTagKey(tag),
-      fontSizePx: tag.fontSizePx,
-      textLength: exampleTagLabel(tag, t).length,
-    })),
+  layoutWizardTagBoxes(
+    props.tags.map((tag) => {
+      const key = exampleTagKey(tag);
+      const measured = measuredSizes.value.get(key);
+      const fallback = wizardTagChipSize(tag.fontSizePx, exampleTagLabel(tag, t).length);
+      return {
+        key,
+        fontSizePx: tag.fontSizePx,
+        widthPx: measured?.widthPx ?? fallback.widthPx,
+        heightPx: measured?.heightPx ?? fallback.heightPx,
+      };
+    }),
     widthPx.value,
   ),
 );
@@ -40,7 +67,16 @@ function placementFor(tag: WizardCloudTag) {
   return placementByKey.value.get(exampleTagKey(tag));
 }
 
+watch(
+  () => props.tags.map((tag) => `${exampleTagKey(tag)}:${exampleTagLabel(tag, t)}`).join("|"),
+  async () => {
+    await nextTick();
+    readSizes();
+  },
+);
+
 onMounted(() => {
+  readSizes();
   const element = root.value;
   if (!element || typeof ResizeObserver === "undefined") {
     return;
@@ -51,6 +87,7 @@ onMounted(() => {
     if (width > 0) {
       widthPx.value = width;
     }
+    readSizes();
   });
   resizeObserver.observe(element);
 });
@@ -74,6 +111,7 @@ onBeforeUnmount(() => {
       type="button"
       class="wizard-tag"
       :class="`wizard-tag--${tag.axis}`"
+      :data-tag-key="exampleTagKey(tag)"
       :style="{
         fontSize: `${tag.fontSizePx}px`,
         left: `${placementFor(tag)?.leftPx ?? 0}px`,

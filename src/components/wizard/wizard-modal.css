@@ -467,6 +467,12 @@
 
 .wizard-tag-cloud .wizard-tag {
   position: absolute;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  padding: 1px 2px;
+  line-height: 1.05;
+  border-radius: 4px;
 }
 
 .wizard-tag--language { color: var(--accent); }
@@ -478,6 +484,11 @@
 .wizard-tag[aria-pressed="true"] {
   background: color-mix(in srgb, currentColor 12%, var(--surface));
   box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.wizard-tag-cloud .wizard-tag[aria-pressed="true"] {
+  box-shadow: none;
+  font-weight: 700;
 }
 
 .wizard-gallery__empty {
