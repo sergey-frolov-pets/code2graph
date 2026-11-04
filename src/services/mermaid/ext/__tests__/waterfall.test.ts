@@ -1275,4 +1275,13 @@ describe("waterfall: фон и цвет текста", () => {
     );
     expect(svg).toContain("#e6edf3");
   });
+
+  it("пустой textColor из окна оформления не затирает автоконтраст", () => {
+    const svg = waterfallEngine.render(
+      waterfallEngine.parse(base.join("\n")).value as WaterfallModel,
+      { dark: false, background: "#0b0f14", textColor: "" },
+    );
+    expect(svg).toContain('fill="#e6edf3"');
+    expect(svg).toContain('fill="#0b0f14"');
+  });
 });

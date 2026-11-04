@@ -226,4 +226,19 @@ describe("parseHexColor / контраст", () => {
     expect(resolvePalette(true)).toEqual(getPalette(true));
     expect(resolvePalette(false, undefined, "#123456").fg).toBe("#123456");
   });
+
+  it("пустая строка цвета текста — это автоподбор, а не пустая заливка", () => {
+    const onDark = resolvePalette(false, "#101418", "");
+    expect(onDark.bg).toBe("#101418");
+    expect(onDark.fg).toBe(getPalette(true).fg);
+
+    const onLight = resolvePalette(true, "#e8f5ec", "");
+    expect(onLight.bg).toBe("#e8f5ec");
+    expect(onLight.fg).toBe(getPalette(false).fg);
+  });
+
+  it("альфа в цвете фона отбрасывается: заливка сплошная", () => {
+    expect(resolvePalette(false, "#ff880080").bg).toBe("#ff8800");
+    expect(resolvePalette(false, "transparent").bg).toBe(getPalette(false).bg);
+  });
 });

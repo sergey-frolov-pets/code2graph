@@ -2,7 +2,7 @@ import {
   clamp,
   createSvg,
   fmt,
-  getPalette,
+  resolvePalette,
   measureText,
   niceRange,
   niceTicks,
@@ -204,7 +204,7 @@ const PLOT_HEIGHT = 240;
 const FONT = 11;
 
 export function renderEv(model: EvModel, options: ExtRenderOptions): string {
-  const palette = getPalette(options.dark);
+  const palette = resolvePalette(options.dark, options.background, options.textColor);
   const { days, pv, ev, ac, title } = model;
 
   const count = Math.max(1, days.length);

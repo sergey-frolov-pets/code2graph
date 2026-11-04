@@ -566,9 +566,16 @@ a {
   display: flex;
   border: 1px dashed var(--border);
   border-radius: 8px;
-  /* Шахматка видна только когда фон прозрачный: под непрозрачным цветом
-     она перекрыта заливкой background-color. */
+  /* Шахматка — только у прозрачного фона. Поверх сплошного цвета она
+     читается как полупрозрачная клетка; на чёрном тёмная клетка почти не видна. */
   background-color: var(--preview-bg);
+  background-image: none;
+  color: var(--text);
+  padding: 12px;
+}
+
+.preview-frame.is-transparent-bg {
+  background-color: transparent;
   background-image:
     linear-gradient(45deg, var(--preview-checker) 25%, transparent 25%),
     linear-gradient(-45deg, var(--preview-checker) 25%, transparent 25%),
@@ -576,8 +583,6 @@ a {
     linear-gradient(-45deg, transparent 75%, var(--preview-checker) 75%);
   background-size: 16px 16px;
   background-position: 0 0, 0 8px, 8px -8px, -8px 0;
-  color: var(--text);
-  padding: 12px;
 }
 
 .preview-viewport {

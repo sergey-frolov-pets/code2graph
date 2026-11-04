@@ -1,4 +1,4 @@
-import { clamp, createSvg, esc, fmt, getPalette, measureText, truncate } from "../common";
+import { clamp, createSvg, esc, fmt, measureText, resolvePalette, truncate } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
 // --- Модель ---------------------------------------------------------------
@@ -347,7 +347,7 @@ function readableOn(color: string): string {
 }
 
 export function renderHeatmap(model: HeatmapModel, options: ExtRenderOptions): string {
-  const palette = getPalette(Boolean(options.dark));
+  const palette = resolvePalette(options.dark, options.background, options.textColor);
   const labelFontSize = 11;
 
   const cols = Math.max(1, model.x.length);

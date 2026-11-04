@@ -89,6 +89,21 @@ export function contrastTextColor(background: string): string | null {
 }
 
 /**
+ * Пустая строка и «transparent» — это «не задано», а не цвет.
+ * Окно оформления хранит автоподбор текста именно пустой строкой.
+ */
+function explicitPaint(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed) return undefined;
+  const lower = trimmed.toLowerCase();
+  if (lower === "transparent" || lower === "none") return undefined;
+  const rgb = parseHexColor(trimmed);
+  if (!rgb) return trimmed;
+  const channel = (part: number) => part.toString(16).padStart(2, "0");
+  return `#${channel(rgb.r)}${channel(rgb.g)}${channel(rgb.b)}`;
+}
+
+/**
  * Палитра под конкретный фон диаграммы.
  *
  * `background` (директива `background #hex`) переопределяет плашку холста, а
@@ -102,16 +117,19 @@ export function resolvePalette(
   textColor?: string,
 ): Palette {
   const base = getPalette(dark);
-  if (!background) {
-    return textColor ? { ...base, fg: textColor } : base;
+  // "" из окна «Внешний вид» значит «подобрать автоматически», а не «без заливки».
+  const manual = explicitPaint(textColor);
+  const paint = explicitPaint(background);
+  if (!paint) {
+    return manual ? { ...base, fg: manual, fgDim: manual } : base;
   }
 
-  const onDark = isDarkColor(background);
-  const fg = textColor ?? (onDark ? DARK.fg : LIGHT.fg);
-  const fgDim = textColor ?? (onDark ? DARK.fgDim : LIGHT.fgDim);
+  const onDark = isDarkColor(paint);
+  const fg = manual ?? (onDark ? DARK.fg : LIGHT.fg);
+  const fgDim = manual ?? (onDark ? DARK.fgDim : LIGHT.fgDim);
   return {
     ...base,
-    bg: background,
+    bg: paint,
     fg,
     fgDim,
     // Сетка и ось — «тихие» линии: на тёмном фоне светлее, на светлом темнее.
