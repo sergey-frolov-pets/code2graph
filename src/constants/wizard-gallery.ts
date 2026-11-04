@@ -19,14 +19,14 @@ export const WIZARD_TAG_PAD_X_PX = 8;
 /** Vertical padding inside a tag chip. */
 export const WIZARD_TAG_PAD_Y_PX = 4;
 
-/** Border width of a tag chip, included in the layout box. */
-export const WIZARD_TAG_BORDER_PX = 1;
+/** Cloud tags have no border, so the layout box does not add one. */
+export const WIZARD_TAG_BORDER_PX = 0;
 
 /** Line height used to size a tag chip. */
 export const WIZARD_TAG_LINE_HEIGHT = 1.2;
 
-/** Gap between tag rows and the cloud edge. */
-export const WIZARD_TAG_CLOUD_GAP_PX = 8;
+/** Space between neighboring tags in the cloud, horizontally and vertically. */
+export const WIZARD_TAG_CLOUD_GAP_PX = 2;
 
 /** Width used before the cloud element has been measured. */
 export const WIZARD_TAG_CLOUD_FALLBACK_WIDTH_PX = 640;

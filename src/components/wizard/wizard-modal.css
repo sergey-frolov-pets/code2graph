@@ -467,6 +467,13 @@
 
 .wizard-tag-cloud .wizard-tag {
   position: absolute;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.wizard-tag-cloud .wizard-tag[aria-pressed="true"] {
+  box-shadow: none;
 }
 
 .wizard-tag--language { color: var(--accent); }

@@ -27,7 +27,9 @@ export interface CloudTagLayout {
   placements: CloudTagPlacement[];
 }
 
-interface SizedTag extends CloudTagMeasure {
+interface SizedTag {
+  key: string;
+  fontSizePx: number;
   widthPx: number;
   heightPx: number;
 }
@@ -145,12 +147,8 @@ function placeRow(
     return [];
   }
 
-  const gapCount = Math.max(ordered.length + 1, 1);
+  const gap = WIZARD_TAG_CLOUD_GAP_PX;
   const contentWidth = ordered.reduce((sum, tag) => sum + tag.widthPx, 0);
-  const gap = Math.max(
-    WIZARD_TAG_CLOUD_GAP_PX,
-    (widthPx - contentWidth) / gapCount,
-  );
   const largestIndex = ordered.indexOf(largest);
   const leftWidth = ordered
     .slice(0, largestIndex)
@@ -188,13 +186,12 @@ function placeRow(
   return placements;
 }
 
-export function layoutWizardTagCloud(
-  tags: readonly CloudTagMeasure[],
+export function layoutWizardTagBoxes(
+  tags: readonly SizedTag[],
   widthPx: number,
 ): CloudTagLayout {
   const safeWidth = Math.max(1, widthPx);
   const sized = [...tags]
-    .map((tag) => ({ ...tag, ...wizardTagChipSize(tag.fontSizePx, tag.textLength) }))
     .sort((left, right) => right.fontSizePx - left.fontSizePx || left.key.localeCompare(right.key));
   const packed = rowsAroundCenter(packRows(sized, safeWidth));
   const placements: CloudTagPlacement[] = [];
@@ -210,4 +207,18 @@ export function layoutWizardTagCloud(
     heightPx: packed.length === 0 ? 0 : top,
     placements,
   };
+}
+
+export function layoutWizardTagCloud(
+  tags: readonly CloudTagMeasure[],
+  widthPx: number,
+): CloudTagLayout {
+  return layoutWizardTagBoxes(
+    tags.map((tag) => ({
+      key: tag.key,
+      fontSizePx: tag.fontSizePx,
+      ...wizardTagChipSize(tag.fontSizePx, tag.textLength),
+    })),
+    widthPx,
+  );
 }
