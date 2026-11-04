@@ -2,14 +2,22 @@ import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node
 import { execSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  C4_LIBRARY_ID,
+  gitLibrary,
+  libraryVersionLabel,
+  readCatalog,
+} from "./render-libraries.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const appRoot = path.resolve(scriptDir, "..");
+const c4Library = gitLibrary(readCatalog(), C4_LIBRARY_ID);
 const targetDir = path.join(appRoot, "public", "plantuml-lib", "C4");
-const c4SourceDir = path.join(appRoot, "vendor", "C4-PlantUML");
+const c4SourceDir = path.join(appRoot, c4Library.vendorDir);
 
-const C4_REPO = "https://github.com/plantuml-stdlib/C4-PlantUML.git";
-const C4_TAG = "release/v2.13.0";
+const C4_REPO = c4Library.cloneUrl;
+const C4_TAG = c4Library.ref;
+const C4_VERSION_LABEL = libraryVersionLabel(c4Library.version);
 
 const C4_PUML_FILES = [
   "C4.puml",
@@ -33,7 +41,7 @@ function ensureC4Source() {
     return;
   }
 
-  mkdirSync(path.join(appRoot, "vendor"), { recursive: true });
+  mkdirSync(path.dirname(c4SourceDir), { recursive: true });
   execSync(
     `git clone --depth 1 --branch ${C4_TAG} ${C4_REPO} ${c4SourceDir}`,
     { stdio: "inherit" },
@@ -66,7 +74,7 @@ function copyC4Library() {
     path.join(targetDir, "README.md"),
     `# C4-PlantUML (local copy)
 
-Version: v2.13.0 — https://github.com/plantuml-stdlib/C4-PlantUML
+Version: ${C4_VERSION_LABEL} — https://github.com/plantuml-stdlib/C4-PlantUML
 
 Usage in diagrams:
 

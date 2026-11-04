@@ -55,6 +55,9 @@
     "metrics:refactor": "node scripts/refactor-metrics.mjs",
     "check:i18n": "node scripts/check-i18n-keys.mjs",
     "version:bump": "node scripts/bump-version.mjs",
+    "render-libs:check": "node scripts/check-render-libraries.mjs",
+    "render-libs:update": "node scripts/check-render-libraries.mjs --update",
+    "render-libs:test": "node --test scripts/render-libraries.test.mjs scripts/require-repo-admin.test.mjs",
     "postinstall": "node scripts/copy-vendor.mjs && node scripts/copy-c4-lib.mjs && node scripts/copy-archimate-lib.mjs && node scripts/generate-pwa-icons.mjs"
   },
   "dependencies": {
