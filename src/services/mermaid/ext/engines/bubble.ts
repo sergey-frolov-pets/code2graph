@@ -1,4 +1,4 @@
-import { clamp, createSvg, getPalette, measureText } from "../common";
+import { clamp, createSvg, measureText, resolvePalette } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
 // --- Модель ---------------------------------------------------------------
@@ -336,7 +336,7 @@ function wrapLabel(text: string, maxWidth: number, fontSize: number): string[] {
 }
 
 export function renderBubble(model: BubbleModel, options: ExtRenderOptions): string {
-  const palette = getPalette(options.dark);
+  const palette = resolvePalette(options.dark, options.background, options.textColor);
   const groupColors = options.dark ? GROUP_COLORS_DARK : GROUP_COLORS;
 
   const fontSize = clamp(model.fontSize ?? FONT_BASE, FONT_MIN, FONT_MAX);

@@ -7,6 +7,7 @@ import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
 import { useLocale } from "@/composables/useLocale";
 import { useImageSize } from "@/composables/useImageSize";
 import { usePreviewPanZoom } from "@/composables/usePreviewPanZoom";
+import { isTransparentPreviewBg } from "@/constants/editor-settings";
 import { sanitizeSvgForPreview } from "@/utils/export";
 import type { RenderMode } from "@/constants/render-settings";
 
@@ -41,6 +42,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
+const transparentPreview = computed(() => isTransparentPreviewBg(props.previewBackground));
 const isFullscreen = ref(false);
 const appearanceOpen = ref(false);
 const viewportRef = ref<HTMLElement | null>(null);
@@ -154,12 +156,14 @@ watch(isFullscreen, (value) => {
       <div
         v-else-if="isRendering && !previewMarkup"
         class="preview-frame preview-frame--loading"
+        :class="{ 'is-transparent-bg': transparentPreview }"
       >
         <LoadingState :message="t('preview.rendering')" />
       </div>
       <div
         v-else-if="previewMarkup"
         class="preview-frame"
+        :class="{ 'is-transparent-bg': transparentPreview }"
       >
         <div
           ref="viewportRef"

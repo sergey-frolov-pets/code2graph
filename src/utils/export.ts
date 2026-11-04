@@ -24,6 +24,17 @@ function normalizeColor(value: string): string {
   return value.trim().toLowerCase();
 }
 
+/** Залить сам элемент `<svg>`, чтобы выбранный цвет не зависел от плашки. */
+function setSvgBackgroundColor(root: Element, color: string): void {
+  const style = root.getAttribute("style") ?? "";
+  const without = style
+    .replace(/(?:^|;)\s*background(?:-color)?\s*:[^;]*/gi, "")
+    .replace(/^;+|;+$/g, "")
+    .trim();
+  const next = without ? `${without};background-color:${color}` : `background-color:${color}`;
+  root.setAttribute("style", next);
+}
+
 function isInsideSvgPaintContainer(element: Element): boolean {
   let parent = element.parentElement;
   while (parent) {
@@ -143,16 +154,15 @@ function removeCanvasBackground(root: Element): void {
  * вырез, нарисованный цветом тёмной темы, выглядит дырой, а при прозрачном
  * фоне вырез на баре становится прозрачным и бар «рвётся».
  *
- * @param background выбранный фон предпросмотра (`transparent` — берём белый)
+ * @param background выбранный фон предпросмотра (`transparent` — вырезы белые, холст прозрачный)
  */
 export function applyPreviewBackground(svg: string, background: string): string {
   if (!svg.includes("<svg")) {
     return svg;
   }
 
-  const fill = isTransparentBackground(background)
-    ? "#ffffff"
-    : toOpaqueColor(background);
+  const transparent = isTransparentBackground(background);
+  const fill = transparent ? "#ffffff" : toOpaqueColor(background);
   if (!fill) {
     return svg;
   }
@@ -169,8 +179,15 @@ export function applyPreviewBackground(svg: string, background: string): string 
   markCanvasBackground(root);
   const canvas = root.querySelector("rect[data-bg='canvas']");
   if (canvas) {
-    canvas.setAttribute("fill", fill);
+    canvas.setAttribute("fill", transparent ? "transparent" : fill);
+    if (!transparent) {
+      canvas.removeAttribute("fill-opacity");
+      canvas.removeAttribute("opacity");
+    }
   }
+  // Плашку превью потом снимает: цвет должен остаться на самом <svg>,
+  // иначе под ним видна шахматка и любой фон кроме чёрного кажется прозрачным.
+  setSvgBackgroundColor(root, transparent ? "transparent" : fill);
 
   for (const rect of root.querySelectorAll(
     "rect[data-break-gap], rect[data-line-gap], rect[data-bg-fill]",

@@ -6,6 +6,7 @@ import {
 import { loadMermaid } from "@/services/mermaid/mermaid-loader";
 import { renderMermaidOnlineToSvg } from "@/services/mermaid/mermaid-online";
 import { LocalizedAppError } from "@/utils/localized-app-error";
+import { contrastTextColor, parseHexColor } from "@/services/mermaid/ext/common";
 import { prepareMermaidSource } from "@/utils/mermaid-source";
 import { isMermaidExtDeclaration } from "@/utils/mermaid-syntax";
 
@@ -122,19 +123,51 @@ const DIAGRAM_FONT_STACKS: Record<string, string> = {
   rounded: "'Nunito', 'Segoe UI', system-ui, sans-serif",
 };
 
+/** Цвета подписей «страницы», которые следуют за фоном, а не за данными. */
+const PAGE_TEXT_FILLS = new Set([
+  "#000000",
+  "#333333",
+  "#1f2328",
+  "#656d76",
+  "#e6edf3",
+  "#8b949e",
+  "#24292f",
+  "#cccccc",
+]);
+
+function opaqueHex(value: string | undefined): string | null {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
+  if (lower === "transparent" || lower === "none") return null;
+  if (lower === "black") return "#000000";
+  const rgb = parseHexColor(trimmed);
+  if (!rgb) return null;
+  const channel = (part: number) => part.toString(16).padStart(2, "0");
+  return `#${channel(rgb.r)}${channel(rgb.g)}${channel(rgb.b)}`;
+}
+
+function isPageTextFill(value: string | null): boolean {
+  if (!value || !value.trim()) return false;
+  const hex = opaqueHex(value);
+  return hex !== null && PAGE_TEXT_FILLS.has(hex);
+}
+
 /**
- * Оформление поверх готового SVG: шрифт и его стиль задаются на корне, а не
- * через тему Mermaid — так они действуют и на штатные диаграммы, и на наши
- * расширения. Фон и цвет текста для расширений уже учтены в рендере, здесь
- * они не дублируются.
+ * Оформление поверх готового SVG штатной диаграммы.
+ * Расширения красят фон и текст сами; здесь — шрифт для всех и фон/текст
+ * для диаграмм, которые тема Mermaid рисует без учёта окна «Внешний вид».
  */
 function applyAppearanceToSvg(svg: string, options: MermaidRenderOptions): string {
   if (!svg.includes("<svg")) return svg;
 
   const stack = options.fontFamily ? DIAGRAM_FONT_STACKS[options.fontFamily] : undefined;
   const weight = options.fontWeight;
-  const style = options.fontStyle;
-  if (!stack && !weight && !style) return svg;
+  const fontStyle = options.fontStyle;
+  const background = opaqueHex(options.background);
+  const manualText = opaqueHex(options.textColor);
+  const text = manualText ?? (background ? contrastTextColor(background) : null);
+  if (!stack && !weight && !fontStyle && !background && !text) return svg;
 
   const parser = new DOMParser();
   const doc = parser.parseFromString(svg, "image/svg+xml");
@@ -144,10 +177,24 @@ function applyAppearanceToSvg(svg: string, options: MermaidRenderOptions): strin
   const declarations: string[] = [];
   if (stack) declarations.push(`font-family: ${stack}`);
   if (weight) declarations.push(`font-weight: ${weight}`);
-  if (style) declarations.push(`font-style: ${style}`);
+  if (fontStyle) declarations.push(`font-style: ${fontStyle}`);
+  if (background) declarations.push(`background-color: ${background}`);
 
   const existing = root.getAttribute("style") ?? "";
-  root.setAttribute("style", `${existing}${existing && !existing.trim().endsWith(";") ? ";" : ""}${declarations.join("; ")}`);
+  const withoutBackground = existing
+    .replace(/(?:^|;)\s*background(?:-color)?\s*:[^;]*/gi, "")
+    .replace(/^;+|;+$/g, "")
+    .trim();
+  const style = [withoutBackground, declarations.join("; ")].filter(Boolean).join("; ");
+  if (style) root.setAttribute("style", style);
+
+  if (text) {
+    for (const node of root.querySelectorAll("text, tspan")) {
+      if (isPageTextFill(node.getAttribute("fill"))) {
+        node.setAttribute("fill", text);
+      }
+    }
+  }
 
   return new XMLSerializer().serializeToString(root);
 }

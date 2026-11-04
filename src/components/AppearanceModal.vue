@@ -126,9 +126,10 @@ function onTextInput(event: Event): void {
   emit("update:textColor", (event.target as HTMLInputElement).value);
 }
 
-function useAutoText(): void {
-  isAutoText.value = true;
-  emit("update:textColor", "");
+function onAutoToggle(event: Event): void {
+  const checked = (event.target as HTMLInputElement).checked;
+  isAutoText.value = checked;
+  emit("update:textColor", checked ? "" : autoTextColor.value);
 }
 
 function onFontFamilyChange(event: Event): void {
@@ -207,7 +208,7 @@ const defaultBg = computed(() =>
               class="appearance__color"
               type="color"
               :value="manualTextColor"
-              :disabled="isAutoText"
+              :aria-label="t('appearance.textColor')"
               @input="onTextInput"
             >
           </label>
@@ -215,7 +216,7 @@ const defaultBg = computed(() =>
             <input
               type="checkbox"
               :checked="isAutoText"
-              @change="useAutoText"
+              @change="onAutoToggle"
             >
             <span>{{ t("appearance.textAuto") }}</span>
           </label>
@@ -282,7 +283,7 @@ const defaultBg = computed(() =>
         <h3 class="appearance__heading">
           {{ t("appearance.preview") }}
         </h3>
-        <div
+        <label
           class="appearance__sample"
           :class="{ 'is-transparent': isTransparent }"
           :style="{
@@ -293,8 +294,15 @@ const defaultBg = computed(() =>
             fontStyle,
           }"
         >
-          {{ t("appearance.sampleText") }}
-        </div>
+          <span>{{ t("appearance.sampleText") }}</span>
+          <input
+            class="appearance__sample-input"
+            type="color"
+            :value="manualTextColor"
+            :aria-label="t('appearance.textColor')"
+            @input="onTextInput"
+          >
+        </label>
       </section>
     </div>
 
@@ -372,9 +380,16 @@ const defaultBg = computed(() =>
   cursor: pointer;
 }
 
-.appearance__color:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+.appearance__sample-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .appearance__check {
@@ -451,6 +466,7 @@ const defaultBg = computed(() =>
 }
 
 .appearance__sample {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -460,6 +476,7 @@ const defaultBg = computed(() =>
   border-radius: 10px;
   font-size: 1rem;
   text-align: center;
+  cursor: pointer;
 }
 
 .appearance__sample.is-transparent {

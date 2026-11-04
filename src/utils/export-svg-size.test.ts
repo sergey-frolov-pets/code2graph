@@ -140,6 +140,7 @@ describe("applyPreviewBackground", () => {
     const doc = new DOMParser().parseFromString(out, "image/svg+xml");
 
     expect(doc.querySelector("rect[data-bg='canvas']")?.getAttribute("fill")).toBe("#fdf6e3");
+    expect(doc.documentElement.getAttribute("style")).toContain("background-color:#fdf6e3");
 
     expect(doc.querySelector("rect[data-break-gap]")?.getAttribute("fill")).toBe("#fdf6e3");
     expect(doc.querySelector("rect[data-line-gap]")?.getAttribute("fill")).toBe("#fdf6e3");
@@ -151,6 +152,15 @@ describe("applyPreviewBackground", () => {
 
     expect(doc.querySelector("rect[data-break-gap]")?.getAttribute("fill")).toBe("#ffffff");
     expect(doc.querySelector("rect[data-line-gap]")?.getAttribute("fill")).toBe("#ffffff");
+    expect(doc.documentElement.getAttribute("style")).toContain("background-color:transparent");
+  });
+
+  it("восьмизначный hex фона становится сплошным цветом без альфы", () => {
+    const out = applyPreviewBackground(svgWithGaps, "#00aa0080");
+    const doc = new DOMParser().parseFromString(out, "image/svg+xml");
+
+    expect(doc.querySelector("rect[data-bg='canvas']")?.getAttribute("fill")).toBe("#00aa00");
+    expect(doc.documentElement.getAttribute("style")).toContain("background-color:#00aa00");
   });
 
   it("не ломается на пустой строке и мусоре", () => {
