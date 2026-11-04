@@ -1,11 +1,15 @@
 import { mermaidSampleCatalog } from "@/constants/mermaid-sample-diagrams";
 import { mermaidFormatHandler } from "@/formats/mermaid/handler";
+import type { FormatHandler } from "@/formats/types";
+import { withKeywordCompletions } from "@/languages/keyword-completion";
 import { mermaidLanguageKeywords } from "@/languages/keywords/mermaid";
 import type { DiagramLanguageModule } from "@/languages/types";
 import { isCompleteMermaidDiagram } from "@/utils/mermaid-source";
 
 const MERMAID_TYPE =
   /^(graph|flowchart|sequencediagram|classdiagram|statediagram|erdiagram|journey|gantt|pie|mindmap|timeline|gitgraph|sankey-beta|xychart-beta|block-beta|waterfall|bubble|heatmap|orgchart|ev)\b/i;
+
+let cachedHandler: FormatHandler | null = null;
 
 export const mermaidLanguageModule: DiagramLanguageModule = {
   id: "mermaid",
@@ -41,8 +45,12 @@ export const mermaidLanguageModule: DiagramLanguageModule = {
   keywords: mermaidLanguageKeywords,
   onlineProbe: "mermaid",
   samples: mermaidSampleCatalog,
-  get handler() {
-    return mermaidFormatHandler;
+  get handler(): FormatHandler {
+    cachedHandler ??= withKeywordCompletions(
+      mermaidFormatHandler,
+      mermaidLanguageKeywords,
+    );
+    return cachedHandler;
   },
   site: {
     purposeKey: "site.formats.mermaid.purpose",

@@ -1,8 +1,12 @@
 import { graphmlSampleCatalog } from "@/constants/graphml-sample-diagrams";
 import { graphmlFormatHandler } from "@/formats/graphml/handler";
+import type { FormatHandler } from "@/formats/types";
+import { withKeywordCompletions } from "@/languages/keyword-completion";
 import { graphmlLanguageKeywords } from "@/languages/keywords/graphml";
 import type { DiagramLanguageModule } from "@/languages/types";
 import { isCompleteGraphmlDocument } from "@/utils/graphml-source";
+
+let cachedHandler: FormatHandler | null = null;
 
 export const graphmlLanguageModule: DiagramLanguageModule = {
   id: "graphml",
@@ -37,8 +41,12 @@ export const graphmlLanguageModule: DiagramLanguageModule = {
   supportsAutocomplete: true,
   keywords: graphmlLanguageKeywords,
   samples: graphmlSampleCatalog,
-  get handler() {
-    return graphmlFormatHandler;
+  get handler(): FormatHandler {
+    cachedHandler ??= withKeywordCompletions(
+      graphmlFormatHandler,
+      graphmlLanguageKeywords,
+    );
+    return cachedHandler;
   },
   site: {
     purposeKey: "site.formats.graphml.purpose",

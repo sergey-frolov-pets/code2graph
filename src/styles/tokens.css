@@ -1,0 +1,118 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --status-bar-height: 42px;
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --surface-muted: #eef1f4;
+  --text: #1a1f24;
+  --text-muted: #5b6670;
+  --border: #d5dde5;
+  --accent: #0f6cbd;
+  --accent-hover: #0b5aa3;
+  --danger: #c4314b;
+  --success: #0f7b4d;
+  --preview-bg: #ffffff;
+  --preview-checker: rgba(15, 23, 42, 0.08);
+  --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --radius: 12px;
+  --z-modal: 1000;
+  --z-library: 1100;
+  --z-dialog: 1200;
+  --z-tooltip: 10000;
+  --overlay: color-mix(in srgb, var(--text) 55%, transparent);
+  --star-active: #f5a623;
+  --btn-sm: 32px;
+  --btn-md: 40px;
+  --btn-touch: 44px;
+  --font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --syntax-comment: #6a737d;
+  --syntax-directive: #8250df;
+  --syntax-preprocessor: #8250df;
+  --syntax-keyword: #0550ae;
+  --syntax-string: #0a3069;
+  --syntax-arrow: #cf222e;
+  --syntax-color: #953800;
+  --syntax-stereotype: #116329;
+  --syntax-number: #0550ae;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #171d24;
+  --surface-muted: #222a33;
+  --text: #edf2f7;
+  --text-muted: #9aa7b5;
+  --border: #2f3a45;
+  --accent: #4da3ff;
+  --accent-hover: #7bb8ff;
+  --danger: #ff6b81;
+  --success: #3dd68c;
+  --preview-bg: #171d24;
+  --preview-checker: rgba(255, 255, 255, 0.08);
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --syntax-comment: #8b949e;
+  --syntax-directive: #d2a8ff;
+  --syntax-preprocessor: #d2a8ff;
+  --syntax-keyword: #79c0ff;
+  --syntax-string: #a5d6ff;
+  --syntax-arrow: #ff7b72;
+  --syntax-color: #ffa657;
+  --syntax-stereotype: #7ee787;
+  --syntax-number: #79c0ff;
+}
+
+.code-editor__line-content .tok-comment {
+  color: var(--syntax-comment);
+  font-style: italic;
+}
+
+.code-editor__line-content .tok-directive {
+  color: var(--syntax-directive);
+  font-weight: 600;
+}
+
+.code-editor__line-content .tok-preprocessor {
+  color: var(--syntax-preprocessor);
+}
+
+.code-editor__line-content .tok-keyword {
+  color: var(--syntax-keyword);
+  font-weight: 600;
+}
+
+.code-editor__line-content .tok-string {
+  color: var(--syntax-string);
+}
+
+.code-editor__line-content .tok-arrow {
+  color: var(--syntax-arrow);
+}
+
+.code-editor__line-content .tok-color {
+  color: var(--syntax-color);
+}
+
+.code-editor__line-content .tok-stereotype {
+  color: var(--syntax-stereotype);
+}
+
+.code-editor__line-content .tok-number {
+  color: var(--syntax-number);
+}
+
+.code-editor__line-content .tok-variable {
+  color: var(--syntax-preprocessor);
+}
+
+.code-editor__line-content .tok-plain {
+  color: var(--text);
+}

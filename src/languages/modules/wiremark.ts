@@ -1,11 +1,15 @@
 import { wiremarkSampleCatalog } from "@/constants/wiremark-sample-diagrams";
 import { wiremarkFormatHandler } from "@/formats/wiremark/handler";
+import type { FormatHandler } from "@/formats/types";
+import { withKeywordCompletions } from "@/languages/keyword-completion";
 import { wiremarkLanguageKeywords } from "@/languages/keywords/wiremark";
 import type { DiagramLanguageModule } from "@/languages/types";
 import {
   isCompleteWiremarkDocument,
   looksLikeWiremarkSource,
 } from "@/utils/wiremark-source";
+
+let cachedHandler: FormatHandler | null = null;
 
 export const wiremarkLanguageModule: DiagramLanguageModule = {
   id: "wiremark",
@@ -40,8 +44,12 @@ export const wiremarkLanguageModule: DiagramLanguageModule = {
   supportsAutocomplete: true,
   keywords: wiremarkLanguageKeywords,
   samples: wiremarkSampleCatalog,
-  get handler() {
-    return wiremarkFormatHandler;
+  get handler(): FormatHandler {
+    cachedHandler ??= withKeywordCompletions(
+      wiremarkFormatHandler,
+      wiremarkLanguageKeywords,
+    );
+    return cachedHandler;
   },
   site: {
     purposeKey: "site.formats.wiremark.purpose",

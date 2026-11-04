@@ -1,10 +1,14 @@
-import { plantUmlFormatHandler } from "@/formats/plantuml/handler";
 import { plantUmlSampleCatalog } from "@/constants/plantuml-sample-diagrams";
+import { plantUmlFormatHandler } from "@/formats/plantuml/handler";
+import { withKeywordCompletions } from "@/languages/keyword-completion";
 import { plantumlLanguageKeywords } from "@/languages/keywords/plantuml";
 import type { DiagramLanguageModule } from "@/languages/types";
+import type { FormatHandler } from "@/formats/types";
 
 const PLANTUML_START =
   /@startuml|@enduml|@startgantt|@start(mindmap|wbs|json|yaml|ditaa|salt|dot|chen|nwdiag|chronology|ebnf|regex|board|math|latex)\b/i;
+
+let cachedHandler: FormatHandler | null = null;
 
 export const plantumlLanguageModule: DiagramLanguageModule = {
   id: "plantuml",
@@ -40,8 +44,12 @@ export const plantumlLanguageModule: DiagramLanguageModule = {
   keywords: plantumlLanguageKeywords,
   onlineProbe: "plantuml",
   samples: plantUmlSampleCatalog,
-  get handler() {
-    return plantUmlFormatHandler;
+  get handler(): FormatHandler {
+    cachedHandler ??= withKeywordCompletions(
+      plantUmlFormatHandler,
+      plantumlLanguageKeywords,
+    );
+    return cachedHandler;
   },
   site: {
     purposeKey: "site.formats.plantuml.purpose",

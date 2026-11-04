@@ -1,24 +1,16 @@
 <script setup lang="ts">
-import { computed, nextTick, onUnmounted, ref, watch } from "vue";
+import { computed, ref, toRef } from "vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import SnippetEditorModal from "@/components/SnippetEditorModal.vue";
-import {
-  SNIPPETS_PANEL_MARGIN,
-  SNIPPETS_PANEL_WIDTH,
-} from "@/constants/snippets-settings";
+import SnippetCard from "@/components/snippets/SnippetCard.vue";
 import { useAppDialog } from "@/composables/useAppDialog";
+import { useDraggableFloatingPanel } from "@/composables/useDraggableFloatingPanel";
 import { useLocale } from "@/composables/useLocale";
 import { useMediaQuery } from "@/composables/useMediaQuery";
 import { useSnippets } from "@/composables/useSnippets";
-import type { CustomSnippet, SnippetListItem } from "@/types/snippets";
-import {
-  clampSnippetsPanelPosition,
-  getDefaultSnippetsPanelPosition,
-  loadSnippetsPanelPosition,
-  saveSnippetsPanelPosition,
-  SNIPPETS_IMPORT_ACCEPT,
-} from "@/storage/snippets";
+import { SNIPPETS_IMPORT_ACCEPT } from "@/storage/snippets";
+import type { CustomSnippet } from "@/types/snippets";
 
 const props = defineProps<{
   open: boolean;
@@ -39,20 +31,18 @@ const panelRef = ref<HTMLElement | null>(null);
 const importInputRef = ref<HTMLInputElement | null>(null);
 const editorOpen = ref(false);
 const editingSnippet = ref<CustomSnippet | null>(null);
-const panelPosition = ref(getDefaultSnippetsPanelPosition(SNIPPETS_PANEL_WIDTH));
-const isDragging = ref(false);
 
-const dragState = {
-  pointerId: -1,
-  offsetX: 0,
-  offsetY: 0,
-};
-
-const panelStyle = computed(() => ({
-  left: `${panelPosition.value.x}px`,
-  top: `${panelPosition.value.y}px`,
-  width: `min(${SNIPPETS_PANEL_WIDTH}px, calc(100vw - ${SNIPPETS_PANEL_MARGIN * 2}px))`,
-}));
+const {
+  isDragging,
+  panelStyle,
+  onHeaderPointerDown,
+  onHeaderPointerMove,
+  onHeaderPointerUp,
+} = useDraggableFloatingPanel({
+  open: toRef(props, "open"),
+  panelRef,
+  isMobileSheet,
+});
 
 const categoryTabs = computed(() => [
   { id: "all" as const, label: t("snippets.category.all") },
@@ -64,135 +54,6 @@ const categoryTabs = computed(() => [
 ]);
 
 const filteredItems = computed(() => snippets.filterItems(t));
-
-function clampPanelToViewport(): void {
-  const panel = panelRef.value;
-  if (!panel) {
-    return;
-  }
-
-  panelPosition.value = clampSnippetsPanelPosition(
-    panelPosition.value,
-    panel.offsetWidth,
-    panel.offsetHeight,
-    SNIPPETS_PANEL_MARGIN,
-  );
-}
-
-function persistPanelPosition(): void {
-  saveSnippetsPanelPosition(panelPosition.value);
-}
-
-function onHeaderPointerDown(event: PointerEvent): void {
-  if (isMobileSheet.value) {
-    return;
-  }
-
-  if ((event.target as Element).closest("button")) {
-    return;
-  }
-
-  const panel = panelRef.value;
-  if (!panel) {
-    return;
-  }
-
-  isDragging.value = true;
-  dragState.pointerId = event.pointerId;
-  dragState.offsetX = event.clientX - panelPosition.value.x;
-  dragState.offsetY = event.clientY - panelPosition.value.y;
-  panel.setPointerCapture(event.pointerId);
-}
-
-function onHeaderPointerMove(event: PointerEvent): void {
-  if (!isDragging.value || event.pointerId !== dragState.pointerId) {
-    return;
-  }
-
-  const panel = panelRef.value;
-  if (!panel) {
-    return;
-  }
-
-  panelPosition.value = clampSnippetsPanelPosition(
-    {
-      x: event.clientX - dragState.offsetX,
-      y: event.clientY - dragState.offsetY,
-    },
-    panel.offsetWidth,
-    panel.offsetHeight,
-    SNIPPETS_PANEL_MARGIN,
-  );
-}
-
-function onHeaderPointerUp(event: PointerEvent): void {
-  if (event.pointerId !== dragState.pointerId) {
-    return;
-  }
-
-  isDragging.value = false;
-  dragState.pointerId = -1;
-  panelRef.value?.releasePointerCapture(event.pointerId);
-  persistPanelPosition();
-}
-
-function onWindowResize(): void {
-  clampPanelToViewport();
-  persistPanelPosition();
-}
-
-watch(
-  () => props.open,
-  async (open) => {
-    if (!open) {
-      return;
-    }
-
-    const saved = loadSnippetsPanelPosition();
-    panelPosition.value =
-      saved ?? getDefaultSnippetsPanelPosition(SNIPPETS_PANEL_WIDTH);
-
-    await nextTick();
-    clampPanelToViewport();
-  },
-);
-
-onUnmounted(() => {
-  window.removeEventListener("resize", onWindowResize);
-});
-
-watch(
-  () => props.open,
-  (open) => {
-    if (open) {
-      window.addEventListener("resize", onWindowResize);
-    } else {
-      window.removeEventListener("resize", onWindowResize);
-    }
-  },
-);
-
-function getItemTitle(item: SnippetListItem): string {
-  if (item.kind === "builtin") {
-    return t(item.titleKey);
-  }
-  return item.snippet.title;
-}
-
-function getItemDescription(item: SnippetListItem): string {
-  if (item.kind === "builtin" && item.descriptionKey) {
-    return t(item.descriptionKey);
-  }
-  return item.kind === "custom" ? item.snippet.description ?? "" : "";
-}
-
-function getItemContent(item: SnippetListItem): string {
-  return item.kind === "builtin" ? item.content : item.snippet.content;
-}
-
-function insertItem(item: SnippetListItem): void {
-  emit("insert", getItemContent(item));
-}
 
 function openAddEditor(): void {
   editingSnippet.value = null;
@@ -386,53 +247,14 @@ async function onImportFileSelected(event: Event): Promise<void> {
           {{ t("snippets.noResults") }}
         </p>
 
-        <article
+        <SnippetCard
           v-for="item in filteredItems"
           :key="item.kind === 'builtin' ? item.id : item.snippet.id"
-          class="snippet-card"
-        >
-          <div class="snippet-card__main">
-            <h4 class="snippet-card__title">
-              {{ getItemTitle(item) }}
-              <span
-                v-if="item.kind === 'custom'"
-                class="snippet-card__badge"
-              >
-                {{ t("snippets.customBadge") }}
-              </span>
-            </h4>
-            <p v-if="getItemDescription(item)" class="snippet-card__desc">
-              {{ getItemDescription(item) }}
-            </p>
-            <pre class="snippet-card__preview">{{ getItemContent(item) }}</pre>
-          </div>
-
-          <div class="snippet-card__actions">
-            <button
-              class="btn btn-primary btn-sm"
-              type="button"
-              @click="insertItem(item)"
-            >
-              {{ t("snippets.insert") }}
-            </button>
-            <template v-if="item.kind === 'custom'">
-              <button
-                class="btn btn-sm"
-                type="button"
-                @click="openEditEditor(item.snippet)"
-              >
-                {{ t("snippets.edit") }}
-              </button>
-              <button
-                class="btn btn-sm"
-                type="button"
-                @click="requestDelete(item.snippet)"
-              >
-                {{ t("app.delete") }}
-              </button>
-            </template>
-          </div>
-        </article>
+          :item="item"
+          @insert="emit('insert', $event)"
+          @edit="openEditEditor"
+          @delete="requestDelete"
+        />
       </div>
 
       <input
@@ -567,65 +389,6 @@ async function onImportFileSelected(event: Event): Promise<void> {
   margin: 0;
   color: var(--text-muted);
   font-size: 0.85rem;
-}
-
-.snippet-card {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px;
-  background: var(--surface-muted);
-}
-
-.snippet-card__title {
-  margin: 0 0 4px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.snippet-card__badge {
-  font-size: 0.68rem;
-  font-weight: 500;
-  color: var(--accent);
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
-  border-radius: 999px;
-  padding: 1px 6px;
-}
-
-.snippet-card__desc {
-  margin: 0 0 6px;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
-
-.snippet-card__preview {
-  margin: 0;
-  padding: 8px;
-  border-radius: 6px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  line-height: 1.4;
-  white-space: pre-wrap;
-  max-height: 96px;
-  overflow: auto;
-}
-
-.snippet-card__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.btn-sm {
-  min-height: 28px;
-  padding: 0 10px;
-  font-size: 0.78rem;
 }
 
 .sr-only {

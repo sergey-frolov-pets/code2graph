@@ -1,350 +1,41 @@
-import { LocalizedAppError } from "@/utils/localized-app-error";
 import type { LocaleKey } from "@/locales/types";
+import {
+  identifierFromName,
+  splitTags,
+  tokenize,
+} from "@/services/structurizr/dsl-lexer";
+import {
+  DATABASE_STYLE,
+  DEFAULT_DIRECTION,
+  DEFAULT_TAGS,
+  ELEMENT_FIELDS,
+  ELEMENT_KINDS,
+  StructurizrParseError,
+  VIEW_TYPES,
+  type PendingInstance,
+  type PendingRelationship,
+  type PendingView,
+  type StructurizrDirection,
+  type StructurizrElement,
+  type StructurizrElementKind,
+  type StructurizrRelationship,
+  type StructurizrView,
+  type StructurizrViewType,
+  type StructurizrWorkspace,
+  type Token,
+  type TokenKind,
+} from "@/services/structurizr/dsl-types";
 
-const IDENT_START = /[A-Za-z_\u0400-\u04FF!]/;
-const IDENT_PART = /[A-Za-z0-9_\u0400-\u04FF]/;
-const DATABASE_STYLE = "cylinder";
-
-const PERSON_FIELDS = 3;
-const SOFTWARE_SYSTEM_FIELDS = 3;
-const CONTAINER_FIELDS = 4;
-const COMPONENT_FIELDS = 4;
-const DEPLOYMENT_NODE_FIELDS = 4;
-const DEPLOYMENT_ENVIRONMENT_FIELDS = 2;
-
-type TokenKind =
-  | "ident"
-  | "string"
-  | "number"
-  | "color"
-  | "arrow"
-  | "lbrace"
-  | "rbrace"
-  | "equals"
-  | "star"
-  | "dot"
-  | "eof";
-
-interface Token {
-  kind: TokenKind;
-  text: string;
-  line: number;
-}
-
-export type StructurizrElementKind =
-  | "person"
-  | "softwareSystem"
-  | "container"
-  | "component"
-  | "deploymentNode"
-  | "deploymentEnvironment";
-
-export type StructurizrViewType =
-  | "systemLandscape"
-  | "systemContext"
-  | "container"
-  | "component"
-  | "deployment";
-
-export type StructurizrDirection = "tb" | "bt" | "lr" | "rl";
-
-export interface StructurizrElement {
-  kind: StructurizrElementKind;
-  name: string;
-  description: string;
-  technology: string;
-  tags: string[];
-  localId: string;
-  canonicalId: string;
-  parent: StructurizrElement | null;
-  children: StructurizrElement[];
-  group: string | null;
-  instanceOf: StructurizrElement | null;
-  line: number;
-}
-
-export interface StructurizrRelationship {
-  source: StructurizrElement;
-  destination: StructurizrElement;
-  description: string;
-  technology: string;
-  line: number;
-}
-
-export interface StructurizrView {
-  type: StructurizrViewType;
-  key: string;
-  description: string;
-  scope: StructurizrElement | null;
-  environment: StructurizrElement | null;
-  includeAll: boolean;
-  includes: StructurizrElement[];
-  excludes: StructurizrElement[];
-  direction: StructurizrDirection;
-  line: number;
-}
-
-export interface StructurizrWorkspace {
-  name: string;
-  description: string;
-  impliedRelationships: boolean;
-  elements: StructurizrElement[];
-  relationships: StructurizrRelationship[];
-  views: StructurizrView[];
-  cylinderTags: ReadonlySet<string>;
-}
-
-export class StructurizrParseError extends LocalizedAppError {
-  readonly line: number;
-
-  constructor(
-    line: number,
-    messageKey: LocaleKey,
-    messageParams?: Record<string, string | number>,
-  ) {
-    super(messageKey, { line, ...messageParams });
-    this.name = "StructurizrParseError";
-    this.line = line;
-  }
-}
-
-interface PendingRelationship {
-  sourceRef: string;
-  destinationRef: string;
-  description: string;
-  technology: string;
-  line: number;
-}
-
-interface PendingInstance {
-  assignedId: string | null;
-  targetRef: string;
-  parent: StructurizrElement | null;
-  group: string | null;
-  line: number;
-  kind: "container" | "softwareSystem";
-}
-
-interface PendingView {
-  type: StructurizrViewType;
-  key: string;
-  description: string;
-  scopeRef: string | null;
-  environmentRef: string;
-  includeAll: boolean;
-  includeRefs: string[];
-  excludeRefs: string[];
-  direction: StructurizrDirection;
-  line: number;
-}
-
-const VIEW_TYPES: Record<string, StructurizrViewType> = {
-  systemlandscape: "systemLandscape",
-  systemcontext: "systemContext",
-  container: "container",
-  component: "component",
-  deployment: "deployment",
+export {
+  StructurizrParseError,
+  type StructurizrDirection,
+  type StructurizrElement,
+  type StructurizrElementKind,
+  type StructurizrRelationship,
+  type StructurizrView,
+  type StructurizrViewType,
+  type StructurizrWorkspace,
 };
-
-const ELEMENT_FIELDS: Record<string, number> = {
-  person: PERSON_FIELDS,
-  softwaresystem: SOFTWARE_SYSTEM_FIELDS,
-  container: CONTAINER_FIELDS,
-  component: COMPONENT_FIELDS,
-  deploymentnode: DEPLOYMENT_NODE_FIELDS,
-  infrastructurenode: DEPLOYMENT_NODE_FIELDS,
-  deploymentenvironment: DEPLOYMENT_ENVIRONMENT_FIELDS,
-};
-
-const ELEMENT_KINDS: Record<string, StructurizrElementKind> = {
-  person: "person",
-  softwaresystem: "softwareSystem",
-  container: "container",
-  component: "component",
-  deploymentnode: "deploymentNode",
-  infrastructurenode: "deploymentNode",
-  deploymentenvironment: "deploymentEnvironment",
-};
-
-const DEFAULT_TAGS: Record<StructurizrElementKind, readonly string[]> = {
-  person: ["Element", "Person"],
-  softwareSystem: ["Element", "Software System"],
-  container: ["Element", "Container"],
-  component: ["Element", "Component"],
-  deploymentNode: ["Element", "Deployment Node"],
-  deploymentEnvironment: ["Deployment Environment"],
-};
-
-const DEFAULT_DIRECTION: StructurizrDirection = "tb";
-
-function tokenize(source: string): Token[] {
-  const tokens: Token[] = [];
-  let index = source.charCodeAt(0) === 0xfeff ? 1 : 0;
-  let line = 1;
-
-  const push = (kind: TokenKind, text: string, tokenLine: number) => {
-    tokens.push({ kind, text, line: tokenLine });
-  };
-
-  while (index < source.length) {
-    const current = source[index];
-
-    if (current === "\n") {
-      line += 1;
-      index += 1;
-      continue;
-    }
-
-    if (current === "\r" || current === " " || current === "\t") {
-      index += 1;
-      continue;
-    }
-
-    if (current === "/" && source[index + 1] === "/") {
-      while (index < source.length && source[index] !== "\n") {
-        index += 1;
-      }
-      continue;
-    }
-
-    if (current === "/" && source[index + 1] === "*") {
-      const startLine = line;
-      index += 2;
-      while (
-        index < source.length &&
-        !(source[index] === "*" && source[index + 1] === "/")
-      ) {
-        if (source[index] === "\n") {
-          line += 1;
-        }
-        index += 1;
-      }
-      if (index >= source.length) {
-        throw new StructurizrParseError(startLine, "structurizr.unclosedBlock");
-      }
-      index += 2;
-      continue;
-    }
-
-    if (current === '"') {
-      const startLine = line;
-      index += 1;
-      let value = "";
-      while (index < source.length && source[index] !== '"') {
-        if (source[index] === "\\" && index + 1 < source.length) {
-          value += source[index + 1];
-          index += 2;
-          continue;
-        }
-        if (source[index] === "\n") {
-          line += 1;
-        }
-        value += source[index];
-        index += 1;
-      }
-      if (source[index] !== '"') {
-        throw new StructurizrParseError(startLine, "structurizr.unclosedString");
-      }
-      index += 1;
-      push("string", value, startLine);
-      continue;
-    }
-
-    if (current === "{") {
-      push("lbrace", "{", line);
-      index += 1;
-      continue;
-    }
-
-    if (current === "}") {
-      push("rbrace", "}", line);
-      index += 1;
-      continue;
-    }
-
-    if (current === "=") {
-      push("equals", "=", line);
-      index += 1;
-      continue;
-    }
-
-    if (current === "-" && source[index + 1] === ">") {
-      push("arrow", "->", line);
-      index += 2;
-      continue;
-    }
-
-    if (current === "*") {
-      push("star", "*", line);
-      index += 1;
-      continue;
-    }
-
-    if (current === ".") {
-      push("dot", ".", line);
-      index += 1;
-      continue;
-    }
-
-    if (current === "#") {
-      const start = index;
-      index += 1;
-      while (index < source.length && /[0-9A-Fa-f]/.test(source[index])) {
-        index += 1;
-      }
-      push("color", source.slice(start, index), line);
-      continue;
-    }
-
-    if (/\d/.test(current)) {
-      const start = index;
-      while (index < source.length && /[\d.]/.test(source[index])) {
-        index += 1;
-      }
-      push("number", source.slice(start, index), line);
-      continue;
-    }
-
-    if (IDENT_START.test(current)) {
-      const start = index;
-      index += 1;
-      while (index < source.length && IDENT_PART.test(source[index])) {
-        index += 1;
-      }
-      push("ident", source.slice(start, index), line);
-      continue;
-    }
-
-    throw new StructurizrParseError(line, "structurizr.unexpected", {
-      token: current,
-    });
-  }
-
-  push("eof", "", line);
-  return tokens;
-}
-
-function splitTags(value: string): string[] {
-  return value
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter((tag) => tag.length > 0);
-}
-
-function identifierFromName(name: string): string {
-  const parts = name.match(/[A-Za-z0-9]+/g) ?? [];
-  const camel = parts
-    .map((part, partIndex) => {
-      const lower = part.toLowerCase();
-      if (partIndex === 0) {
-        return lower;
-      }
-      return lower.charAt(0).toUpperCase() + lower.slice(1);
-    })
-    .join("");
-
-  return /^[A-Za-z]/.test(camel) ? camel : "element";
-}
 
 class Parser {
   private index = 0;

@@ -2,23 +2,22 @@
 import { computed, onMounted, ref } from "vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
+import LibrarySubscriptionGrantsEditor from "@/components/library/LibrarySubscriptionGrantsEditor.vue";
 import LibrarySubscriptionModal from "@/components/library/LibrarySubscriptionModal.vue";
+import { useAppDialog } from "@/composables/useAppDialog";
+import { useLocale } from "@/composables/useLocale";
 import type {
   GrantedSubscriptionDto,
   SubscriptionDto,
 } from "@/constants/diagram-library";
-import { useAppDialog } from "@/composables/useAppDialog";
-import { useLocale } from "@/composables/useLocale";
-import type { FlatSectionOption } from "@/shared/library/section-tree";
 import {
   buildSubscriptionAccessUrl,
   deleteSubscription,
   fetchMySubscriptions,
   fetchSubscriptionGrants,
   fetchSubscriptions,
-  grantSubscription,
-  revokeSubscriptionGrant,
 } from "@/services/library/api/subscriptions";
+import type { FlatSectionOption } from "@/shared/library/section-tree";
 
 const props = defineProps<{
   flatSectionOptions: FlatSectionOption[];
@@ -52,11 +51,6 @@ const expandedSubscriptionId = ref<string | null>(null);
 const grantsBySubscription = ref<
   Record<string, Awaited<ReturnType<typeof fetchSubscriptionGrants>>["grants"]>
 >({});
-const grantUsernames = ref("");
-const grantPermanent = ref(true);
-const grantExpiresAt = ref("");
-const isGrantSaving = ref(false);
-const grantError = ref("");
 const expandedMySubscriptionId = ref<string | null>(null);
 
 const manageableSections = computed(() => props.flatSectionOptions);
@@ -136,8 +130,6 @@ async function toggleGrants(subscriptionId: string): Promise<void> {
   }
 
   expandedSubscriptionId.value = subscriptionId;
-  grantUsernames.value = "";
-  grantError.value = "";
 
   if (!grantsBySubscription.value[subscriptionId]) {
     try {
@@ -147,66 +139,20 @@ async function toggleGrants(subscriptionId: string): Promise<void> {
         [subscriptionId]: response.grants,
       };
     } catch (error) {
-      grantError.value =
+      errorMessage.value =
         error instanceof Error ? error.message : t("library.subscriptionGrantsLoadError");
     }
   }
 }
 
-function parseUsernames(raw: string): string[] {
-  return raw
-    .split(/[\n,;]+/)
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-}
-
-async function onGrant(subscriptionId: string): Promise<void> {
-  const usernames = parseUsernames(grantUsernames.value);
-  if (usernames.length === 0) {
-    return;
-  }
-
-  isGrantSaving.value = true;
-  grantError.value = "";
-  try {
-    const response = await grantSubscription(
-      subscriptionId,
-      {
-        usernames,
-        permanent: grantPermanent.value,
-        expiresAt: grantPermanent.value ? null : grantExpiresAt.value || null,
-      },
-      props.libraryApiUrl,
-    );
-    grantUsernames.value = "";
-    grantsBySubscription.value = {
-      ...grantsBySubscription.value,
-      [subscriptionId]: response.grants,
-    };
-  } catch (error) {
-    grantError.value =
-      error instanceof Error ? error.message : t("library.subscriptionGrantError");
-  } finally {
-    isGrantSaving.value = false;
-  }
-}
-
-async function onRevokeGrant(subscriptionId: string, userId: string): Promise<void> {
-  isGrantSaving.value = true;
-  grantError.value = "";
-  try {
-    await revokeSubscriptionGrant(subscriptionId, userId, props.libraryApiUrl);
-    const response = await fetchSubscriptionGrants(subscriptionId, props.libraryApiUrl);
-    grantsBySubscription.value = {
-      ...grantsBySubscription.value,
-      [subscriptionId]: response.grants,
-    };
-  } catch (error) {
-    grantError.value =
-      error instanceof Error ? error.message : t("library.subscriptionRevokeError");
-  } finally {
-    isGrantSaving.value = false;
-  }
+function updateGrantsForSubscription(
+  subscriptionId: string,
+  grants: Awaited<ReturnType<typeof fetchSubscriptionGrants>>["grants"],
+): void {
+  grantsBySubscription.value = {
+    ...grantsBySubscription.value,
+    [subscriptionId]: grants,
+  };
 }
 
 function toggleMySubscriptionDetails(subscriptionId: string): void {
@@ -414,61 +360,13 @@ onMounted(() => {
             </li>
           </ul>
 
-          <div
+          <LibrarySubscriptionGrantsEditor
             v-if="expandedSubscriptionId === subscription.id"
-            class="subscription-card__grants"
-          >
-            <label class="settings-field">
-              <span class="settings-field__label">{{ t("library.subscriptionGrantUsers") }}</span>
-              <textarea
-                v-model="grantUsernames"
-                class="textarea"
-                rows="3"
-                :placeholder="t('library.subscriptionGrantUsersPlaceholder')"
-              />
-            </label>
-            <label class="settings-field settings-field--checkbox">
-              <input v-model="grantPermanent" type="checkbox" />
-              <span>{{ t("library.accessPermanent") }}</span>
-            </label>
-            <label v-if="!grantPermanent" class="settings-field">
-              <span class="settings-field__label">{{ t("library.accessExpiresAt") }}</span>
-              <input v-model="grantExpiresAt" class="select" type="datetime-local" />
-            </label>
-            <button
-              class="btn btn-primary"
-              type="button"
-              :disabled="isGrantSaving || !grantUsernames.trim()"
-              @click="onGrant(subscription.id)"
-            >
-              {{ isGrantSaving ? t("app.loading") : t("library.subscriptionGrantAction") }}
-            </button>
-            <p v-if="grantError" class="settings-field__error">{{ grantError }}</p>
-            <ul class="subscription-grants-list">
-              <li
-                v-for="grant in grantsBySubscription[subscription.id] ?? []"
-                :key="grant.userId"
-                class="subscription-grants-list__item"
-              >
-                <span>{{ grant.username }}</span>
-                <span class="subscription-grants-list__meta">
-                  {{
-                    grant.permanent
-                      ? t("library.accessPermanentBadge")
-                      : t("library.accessUntil", { date: grant.expiresAt ?? "" })
-                  }}
-                </span>
-                <button
-                  class="btn"
-                  type="button"
-                  :disabled="isGrantSaving"
-                  @click="onRevokeGrant(subscription.id, grant.userId)"
-                >
-                  {{ t("library.accessRevoke") }}
-                </button>
-              </li>
-            </ul>
-          </div>
+            :subscription-id="subscription.id"
+            :library-api-url="libraryApiUrl"
+            :initial-grants="grantsBySubscription[subscription.id]"
+            @update:grants="updateGrantsForSubscription(subscription.id, $event)"
+          />
         </article>
       </template>
     </div>
@@ -532,7 +430,6 @@ onMounted(() => {
   color: var(--accent-color, #1a56db);
 }
 
-.subscription-card__grants,
 .subscription-card__details {
   margin-top: 12px;
   padding-top: 12px;
@@ -554,24 +451,5 @@ onMounted(() => {
 
 .subscription-card__link .select {
   flex: 1;
-}
-
-.subscription-grants-list {
-  list-style: none;
-  margin: 12px 0 0;
-  padding: 0;
-}
-
-.subscription-grants-list__item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 0;
-}
-
-.subscription-grants-list__meta {
-  flex: 1;
-  font-size: 0.85rem;
-  color: var(--text-muted, #666);
 }
 </style>

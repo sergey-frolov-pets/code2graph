@@ -17,6 +17,7 @@ import { useLibraryDiagramPreview } from "@/composables/useLibraryDiagramPreview
 import { useLibraryModalTarget } from "@/composables/library/useLibraryModalTarget";
 import { useLibraryShareFlow } from "@/composables/library/useLibraryShareFlow";
 import { useLibraryPreviewFlow } from "@/composables/library/useLibraryPreviewFlow";
+import { useLibrarySubscriptionAccess } from "@/composables/library/useLibrarySubscriptionAccess";
 import { useTransientNotice } from "@/composables/useTransientNotice";
 import { waitForEngineReady } from "@/composables/usePlantUml";
 import { waitForMermaidReady } from "@/services/mermaid/mermaid-engine";
@@ -24,21 +25,11 @@ import {
   addDiagramFavorite,
   removeDiagramFavorite,
 } from "@/services/library/api";
-import { PENDING_SUBSCRIPTION_STORAGE_KEY } from "@/constants/library-subscription";
-import {
-  fetchSubscriptionAccess,
-  fetchSubscriptionAccessDiagram,
-  fetchSubscriptionAccessSectionDiagrams,
-} from "@/services/library/api/subscriptions";
 import { RATINGS_SECTION_ID } from "@/constants/diagram-library";
 import type { LayoutEngine } from "@/constants";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { RenderMode } from "@/constants/render-settings";
-import type {
-  DiagramDto,
-  GrantedSubscriptionDto,
-  SubscriptionDto,
-} from "@/constants/diagram-library";
+import type { DiagramDto } from "@/constants/diagram-library";
 import {
   readLibraryBrowseSession,
   restoreLibraryBrowseSession,
@@ -95,10 +86,8 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
     clearNotice: clearTransientNotice,
   } = useTransientNotice();
 
-  const onSectionPickRef = ref<(sectionId: string | null) => Promise<void>>(
-    async () => {},
-  );
-  const onTransferRefreshRef = ref<() => Promise<void>>(async () => {});
+  let sectionPickHandler: (sectionId: string | null) => Promise<void> = async () => {};
+  let transferRefreshHandler: () => Promise<void> = async () => {};
 
   const {
     isEditing,
@@ -144,8 +133,8 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
     browseStep,
     uploadError,
     isAdmin,
-    onSectionPick: (sectionId) => onSectionPickRef.value(sectionId),
-    onTransferRefresh: () => onTransferRefreshRef.value(),
+    onSectionPick: (sectionId) => sectionPickHandler(sectionId),
+    onTransferRefresh: () => transferRefreshHandler(),
     t,
     prompt,
     confirm,
@@ -170,7 +159,7 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
     t,
   });
 
-  onSectionPickRef.value = onSectionPick;
+  sectionPickHandler = onSectionPick;
 
   const {
     transferSections,
@@ -195,7 +184,7 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
     t,
   });
 
-  onTransferRefreshRef.value = () => loadTransferData();
+  transferRefreshHandler = () => loadTransferData();
 
   const {
     uploadTitle,
@@ -254,81 +243,24 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
     t,
   });
 
-  const subscriptionBrowseContext = ref<{
-    token: string;
-    canDownload: boolean;
-    readOnly: boolean;
-  } | null>(null);
-
-  function clearSubscriptionBrowseContext(): void {
-    subscriptionBrowseContext.value = null;
-  }
-
-  function consumePendingSubscriptionToken(): string | null {
-    const pending = sessionStorage.getItem(PENDING_SUBSCRIPTION_STORAGE_KEY);
-    if (!pending) {
-      return null;
-    }
-
-    sessionStorage.removeItem(PENDING_SUBSCRIPTION_STORAGE_KEY);
-    return pending;
-  }
-
-  async function handleIncomingSubscriptionToken(token: string): Promise<void> {
-    try {
-      const payload = await fetchSubscriptionAccess(token, libraryApiUrl.value);
-      subscriptionBrowseContext.value = {
-        token,
-        canDownload: payload.canDownload,
-        readOnly: payload.readOnly,
-      };
-
-      if (payload.primaryTarget?.type === "diagram") {
-        const preview = await fetchSubscriptionAccessDiagram(
-          token,
-          payload.primaryTarget.id,
-          libraryApiUrl.value,
-        );
-        library.selectedDiagram.value = preview.diagram;
-        browseStep.value = "detail";
-        return;
-      }
-
-      if (payload.primaryTarget?.type === "section") {
-        uploadError.value = t("library.subscriptionSectionHint", {
-          title: payload.subscription.title,
-        });
-        library.selectedSectionId.value = payload.primaryTarget.id;
-        const sectionPayload = await fetchSubscriptionAccessSectionDiagrams(
-          token,
-          payload.primaryTarget.id,
-          libraryApiUrl.value,
-        );
-        library.diagrams.value = sectionPayload.diagrams;
-        browseStep.value = "diagrams";
-        return;
-      }
-
-      browseStep.value = "subscriptions";
-    } catch (error) {
-      uploadError.value =
-        error instanceof Error ? error.message : t("library.subscriptionOpenError");
-    }
-  }
-
-  async function onOpenSubscriptionTarget(payload: {
-    type: "section" | "diagram";
-    id: string;
-    subscription?: GrantedSubscriptionDto | SubscriptionDto;
-  }): Promise<void> {
-    clearSubscriptionBrowseContext();
-    if (payload.type === "diagram") {
-      await browseDiagramPick(payload.id);
-      return;
-    }
-
-    await onSectionPick(payload.id);
-  }
+  const {
+    clearSubscriptionBrowseContext,
+    consumePendingSubscriptionToken,
+    handleIncomingSubscriptionToken,
+    onOpenSubscriptionTarget,
+    openSubscriptionDiagramPreviewIfActive,
+    handleSubscriptionGoBack,
+  } = useLibrarySubscriptionAccess({
+    library,
+    libraryApiUrl,
+    browseStep,
+    uploadError,
+    previewFlow,
+    resetEditForm,
+    browseDiagramPick,
+    onSectionPick,
+    t,
+  });
 
   const showAdminTab = computed(
     () =>
@@ -574,18 +506,7 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
   });
 
   async function handleDiagramPick(diagramId: string): Promise<void> {
-    if (subscriptionBrowseContext.value) {
-      try {
-        await previewFlow.openSubscriptionDiagramPreview(
-          subscriptionBrowseContext.value.token,
-          diagramId,
-        );
-      } catch (error) {
-        uploadError.value =
-          error instanceof Error
-            ? error.message
-            : t("library.subscriptionOpenError");
-      }
+    if (await openSubscriptionDiagramPreviewIfActive(diagramId)) {
       return;
     }
 
@@ -593,17 +514,7 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
   }
 
   async function handleGoBack(): Promise<void> {
-    if (browseStep.value === "diagrams" && subscriptionBrowseContext.value) {
-      clearSubscriptionBrowseContext();
-      browseStep.value = "sections";
-      resetEditForm();
-      void library.refresh();
-      return;
-    }
-
-    if (browseStep.value === "detail" && subscriptionBrowseContext.value) {
-      browseStep.value = "diagrams";
-      resetEditForm();
+    if (handleSubscriptionGoBack()) {
       return;
     }
 
@@ -611,18 +522,10 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
   }
 
   async function onPreviewDiagram(): Promise<void> {
-    if (subscriptionBrowseContext.value && library.selectedDiagram.value) {
-      try {
-        await previewFlow.openSubscriptionDiagramPreview(
-          subscriptionBrowseContext.value.token,
-          library.selectedDiagram.value.id,
-        );
-      } catch (error) {
-        uploadError.value =
-          error instanceof Error
-            ? error.message
-            : t("library.subscriptionOpenError");
-      }
+    if (
+      library.selectedDiagram.value &&
+      (await openSubscriptionDiagramPreviewIfActive(library.selectedDiagram.value.id))
+    ) {
       return;
     }
 

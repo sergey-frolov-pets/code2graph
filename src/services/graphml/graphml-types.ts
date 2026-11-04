@@ -1,0 +1,137 @@
+export const NODE_WIDTH = 140;
+export const NODE_HEIGHT = 44;
+export const NODE_RX = 6;
+export const NODE_CHAR_WIDTH = 8;
+export const NODE_LABEL_PADDING = 28;
+export const GROUP_MIN_WIDTH = 220;
+export const GROUP_MIN_HEIGHT = 120;
+export const GROUP_LABEL_OUTSET = 18;
+export const GRAPH_MARGIN = 24;
+export const HEXAGON_INSET_RATIO = 0.22;
+export const DASHED_STROKE_PATTERN = "6 4";
+export const LABEL_ATTR_NAMES = ["label", "nodeLabel", "edgeLabel"] as const;
+export const SHAPE_ATTR_NAME = "shape";
+export const STYLE_ATTR_NAME = "style";
+export const FILL_ATTR_NAME = "fill";
+export const STROKE_ATTR_NAME = "stroke";
+export const COLOR_ATTR_NAME = "color";
+export const DASHED_STYLE = "dashed";
+export const UNDIRECTED_EDGE_DEFAULT = "undirected";
+export const DIRECTED_EDGE_FLAG = "true";
+export const UNDIRECTED_EDGE_FLAG = "false";
+export const NON_LABEL_ATTRS = new Set([
+  SHAPE_ATTR_NAME,
+  STYLE_ATTR_NAME,
+  FILL_ATTR_NAME,
+  STROKE_ATTR_NAME,
+  COLOR_ATTR_NAME,
+]);
+export const HEX_COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+export const RANK_DIRECTIONS = ["TB", "LR", "BT", "RL"] as const;
+export const LAYOUT_NODE_SEP = 56;
+export const LAYOUT_RANK_SEP = 84;
+export const LAYOUT_EDGE_SEP = 28;
+export const FONT_FAMILY = "system-ui, sans-serif";
+export const STROKE_WIDTH = 1.5;
+export const EDGE_LABEL_FONT_SIZE = 11;
+export const EDGE_LABEL_CHAR_WIDTH = 7;
+export const EDGE_LABEL_LINE_HEIGHT = 16;
+export const EDGE_LABEL_PAD_X = 5;
+export const EDGE_LABEL_GAP = 6;
+export const EDGE_LABEL_SAMPLE_STEP = 12;
+export const LABEL_SEPARATION_STEPS = 32;
+export const GROUP_LABEL_FONT_SIZE = 12;
+export const GROUP_LABEL_CHAR_WIDTH = 7.2;
+export const GROUP_LABEL_INSET_X = 10;
+export const GROUP_LABEL_BASELINE_GAP = 6;
+export const GROUP_LABEL_ASCENT = 12;
+export const GROUP_LABEL_DESCENT = 4;
+export const OBSTACLE_PAD = 4;
+export const LIGHT_TEXT = "#0f172a";
+export const DARK_TEXT = "#f8fafc";
+export const LIGHT_CANVAS = "#ffffff";
+export const DARK_CANVAS = "#171d24";
+export const TEXT_LUMINANCE_THRESHOLD = 0.55;
+export const SRGB_LINEAR_THRESHOLD = 0.03928;
+export const SRGB_OFFSET = 0.055;
+export const SRGB_SCALE = 1.055;
+export const SRGB_GAMMA = 2.4;
+export const SRGB_SLOPE = 12.92;
+export const LUMA_RED = 0.2126;
+export const LUMA_GREEN = 0.7152;
+export const LUMA_BLUE = 0.0722;
+export const HEX_CHANNEL_BASE = 16;
+export const HEX_BYTE_MAX = 255;
+
+export const NODE_SHAPES = ["rectangle", "ellipse", "diamond", "hexagon"] as const;
+
+export type GraphmlNodeShape = (typeof NODE_SHAPES)[number];
+export type GraphmlRankDirection = (typeof RANK_DIRECTIONS)[number];
+
+export interface GraphmlNode {
+  id: string;
+  label: string;
+  shape: GraphmlNodeShape;
+  fill?: string;
+  stroke?: string;
+  parentId?: string;
+  isGroup: boolean;
+}
+
+export interface GraphmlEdge {
+  source: string;
+  target: string;
+  label?: string;
+  color?: string;
+  directed: boolean;
+  dashed: boolean;
+}
+
+export interface ParsedGraphml {
+  nodes: GraphmlNode[];
+  edges: GraphmlEdge[];
+  direction: GraphmlRankDirection;
+}
+
+export interface DataEntry {
+  name?: string;
+  value: string;
+}
+
+export interface ThemeColors {
+  nodeFill: string;
+  nodeStroke: string;
+  textFill: string;
+  edgeStroke: string;
+  groupFill: string;
+  groupStroke: string;
+  canvas: string;
+}
+
+export interface AxisBox {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+export interface PolyPoint {
+  x: number;
+  y: number;
+}
+
+export interface PlacedEdgeLabel {
+  text: string;
+  cx: number;
+  cy: number;
+  width: number;
+  height: number;
+}
+
+export interface EdgeLayout {
+  label?: string;
+  color?: string;
+  directed: boolean;
+  dashed: boolean;
+  points: PolyPoint[];
+}

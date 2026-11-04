@@ -1,8 +1,12 @@
 import { d2SampleCatalog } from "@/constants/d2-sample-diagrams";
 import { d2FormatHandler } from "@/formats/d2/handler";
+import type { FormatHandler } from "@/formats/types";
+import { withKeywordCompletions } from "@/languages/keyword-completion";
 import { d2LanguageKeywords } from "@/languages/keywords/d2";
 import type { DiagramLanguageModule } from "@/languages/types";
 import { looksLikeD2Source } from "@shared/d2-source";
+
+let cachedHandler: FormatHandler | null = null;
 
 export const d2LanguageModule: DiagramLanguageModule = {
   id: "d2",
@@ -37,8 +41,12 @@ export const d2LanguageModule: DiagramLanguageModule = {
   supportsAutocomplete: true,
   keywords: d2LanguageKeywords,
   samples: d2SampleCatalog,
-  get handler() {
-    return d2FormatHandler;
+  get handler(): FormatHandler {
+    cachedHandler ??= withKeywordCompletions(
+      d2FormatHandler,
+      d2LanguageKeywords,
+    );
+    return cachedHandler;
   },
   site: {
     purposeKey: "site.formats.d2.purpose",

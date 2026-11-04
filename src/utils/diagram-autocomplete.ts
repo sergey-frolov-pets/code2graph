@@ -1,11 +1,1 @@
-export type {
-  CompletionItem,
-  CompletionKind,
-  CompletionPrefixInfo,
-  CompletionQuery,
-} from "@/utils/completion-types";
-
-export {
-  extractDiagramCompletionPrefix,
-  getDiagramCompletions,
-} from "@/formats";
+export * from "@/services/editor/autocomplete/diagram-autocomplete";

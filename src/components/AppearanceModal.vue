@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import AppearanceFontSection from "@/components/AppearanceFontSection.vue";
 import AppModal from "@/components/AppModal.vue";
 import { useLocale } from "@/composables/useLocale";
 import {
@@ -9,18 +10,7 @@ import {
   isTransparentPreviewBg,
 } from "@/constants/editor-settings";
 import { contrastTextColor, isDarkColor } from "@/services/mermaid/ext/common";
-import {
-  DIAGRAM_FONT_FAMILIES,
-  DIAGRAM_FONT_WEIGHTS,
-} from "@/services/diagram-typography";
 
-/**
- * Окно оформления диаграммы: фон, цвет текста, шрифт и его стиль.
- *
- * Фон и текст живут здесь, а не в тулбаре: на панели осталась одна кнопка,
- * открывающая это окно. Цвет текста по умолчанию следует за фоном (автоконтраст),
- * но его можно задать вручную — тогда автоподбор отключается.
- */
 const props = defineProps<{
   open: boolean;
   background: string;
@@ -41,17 +31,8 @@ const emit = defineEmits<{
 
 const { t } = useLocale();
 
-const FONT_OPTIONS = DIAGRAM_FONT_FAMILIES;
-const WEIGHT_OPTIONS = DIAGRAM_FONT_WEIGHTS;
-
 const isTransparent = computed(() => isTransparentPreviewBg(props.background));
 
-/** Фон, который реально видно: у прозрачного берём плашку текущей темы. */
-const effectiveBackground = computed(() =>
-  isTransparent.value ? props.background : props.background,
-);
-
-/** Автоцвет текста под текущий фон (тот же расчёт, что в рендере). */
 const autoTextColor = computed(() => {
   const base = isTransparent.value ? "#ffffff" : props.background;
   return contrastTextColor(base) ?? "#1f2328";
@@ -63,7 +44,6 @@ const manualTextColor = computed(() =>
   props.textColor || autoTextColor.value,
 );
 
-/** Контраст выбранной пары — чтобы было видно, читается ли текст. */
 const contrastRatio = computed(() => {
   const fg = manualTextColor.value;
   const bg = isTransparent.value ? "#ffffff" : props.background;
@@ -92,10 +72,6 @@ const contrastLevel = computed(() => {
   return "low";
 });
 
-const previewStack = computed(
-  () => FONT_OPTIONS.find((f) => f.id === props.fontFamily)?.stack ?? FONT_OPTIONS[0].stack,
-);
-
 watch(
   () => props.open,
   (isOpen) => {
@@ -105,7 +81,6 @@ watch(
 
 function setBackground(value: string): void {
   emit("update:background", value);
-  // Автоцвет следует за фоном: после смены фона пересчитываем его заново.
   if (isAutoText.value) emit("update:textColor", "");
 }
 
@@ -113,9 +88,13 @@ function onBackgroundInput(event: Event): void {
   setBackground((event.target as HTMLInputElement).value);
 }
 
-function onTextInput(event: Event): void {
+function onTextColorChange(value: string): void {
   isAutoText.value = false;
-  emit("update:textColor", (event.target as HTMLInputElement).value);
+  emit("update:textColor", value);
+}
+
+function onTextInput(event: Event): void {
+  onTextColorChange((event.target as HTMLInputElement).value);
 }
 
 function onAutoToggle(event: Event): void {
@@ -124,20 +103,8 @@ function onAutoToggle(event: Event): void {
   emit("update:textColor", checked ? "" : autoTextColor.value);
 }
 
-function onFontFamilyChange(event: Event): void {
-  emit("update:fontFamily", (event.target as HTMLSelectElement).value);
-}
-
-function onWeightChange(event: Event): void {
-  emit("update:fontWeight", (event.target as HTMLSelectElement).value);
-}
-
-function toggleItalic(): void {
-  emit("update:fontStyle", props.fontStyle === "italic" ? "normal" : "italic");
-}
-
 const defaultBg = computed(() =>
-  isDarkColor(effectiveBackground.value) ? DEFAULT_PREVIEW_BG.dark : DEFAULT_PREVIEW_BG.light,
+  isDarkColor(props.background) ? DEFAULT_PREVIEW_BG.dark : DEFAULT_PREVIEW_BG.light,
 );
 </script>
 
@@ -224,78 +191,18 @@ const defaultBg = computed(() =>
         </p>
       </section>
 
-      <section class="appearance__section">
-        <h3 class="appearance__heading">
-          {{ t("appearance.font") }}
-        </h3>
-        <div class="appearance__row">
-          <label class="appearance__field appearance__field--grow">
-            <span>{{ t("appearance.fontFamily") }}</span>
-            <select
-              :value="fontFamily"
-              @change="onFontFamilyChange"
-            >
-              <option
-                v-for="font in FONT_OPTIONS"
-                :key="font.id"
-                :value="font.id"
-              >
-                {{ t(`appearance.fontFamilyId.${font.id}`) }}
-              </option>
-            </select>
-          </label>
-          <label class="appearance__field">
-            <span>{{ t("appearance.fontWeight") }}</span>
-            <select
-              :value="fontWeight"
-              @change="onWeightChange"
-            >
-              <option
-                v-for="w in WEIGHT_OPTIONS"
-                :key="w.id"
-                :value="w.value"
-              >
-                {{ t(`appearance.fontWeightId.${w.id}`) }}
-              </option>
-            </select>
-          </label>
-          <button
-            type="button"
-            class="appearance__toggle appearance__toggle--italic"
-            :class="{ 'is-active': fontStyle === 'italic' }"
-            :aria-pressed="fontStyle === 'italic'"
-            @click="toggleItalic"
-          >
-            {{ t("appearance.italic") }}
-          </button>
-        </div>
-      </section>
-
-      <section class="appearance__section">
-        <h3 class="appearance__heading">
-          {{ t("appearance.preview") }}
-        </h3>
-        <label
-          class="appearance__sample"
-          :class="{ 'is-transparent': isTransparent }"
-          :style="{
-            background: isTransparent ? undefined : background,
-            color: manualTextColor,
-            fontFamily: previewStack,
-            fontWeight,
-            fontStyle,
-          }"
-        >
-          <span>{{ t("appearance.sampleText") }}</span>
-          <input
-            class="appearance__sample-input"
-            type="color"
-            :value="manualTextColor"
-            :aria-label="t('appearance.textColor')"
-            @input="onTextInput"
-          >
-        </label>
-      </section>
+      <AppearanceFontSection
+        :font-family="fontFamily"
+        :font-weight="fontWeight"
+        :font-style="fontStyle"
+        :is-transparent="isTransparent"
+        :background="background"
+        :manual-text-color="manualTextColor"
+        @update:font-family="emit('update:fontFamily', $event)"
+        @update:font-weight="emit('update:fontWeight', $event)"
+        @update:font-style="emit('update:fontStyle', $event)"
+        @update:text-color="onTextColorChange"
+      />
     </div>
 
     <template #footer>
@@ -348,20 +255,6 @@ const defaultBg = computed(() =>
   color: var(--text-muted);
 }
 
-.appearance__field--grow {
-  flex: 1 1 180px;
-}
-
-.appearance__field select {
-  height: 32px;
-  padding: 0 8px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
-  font-size: 0.82rem;
-}
-
 .appearance__color {
   width: 64px;
   height: 32px;
@@ -369,18 +262,6 @@ const defaultBg = computed(() =>
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
-  cursor: pointer;
-}
-
-.appearance__sample-input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  opacity: 0;
   cursor: pointer;
 }
 
@@ -408,10 +289,6 @@ const defaultBg = computed(() =>
   border-color: var(--accent, #8250df);
   color: var(--text);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #8250df) 30%, transparent);
-}
-
-.appearance__toggle--italic {
-  font-style: italic;
 }
 
 .appearance__presets {
@@ -455,30 +332,6 @@ const defaultBg = computed(() =>
 
 .appearance__hint.is-low {
   color: #cf222e;
-}
-
-.appearance__sample {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 64px;
-  padding: 12px 16px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  font-size: 1rem;
-  text-align: center;
-  cursor: pointer;
-}
-
-.appearance__sample.is-transparent {
-  background-image:
-    linear-gradient(45deg, var(--preview-checker) 25%, transparent 25%),
-    linear-gradient(-45deg, var(--preview-checker) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, var(--preview-checker) 75%),
-    linear-gradient(-45deg, transparent 75%, var(--preview-checker) 75%);
-  background-size: 12px 12px;
-  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
 }
 
 .appearance__done {

@@ -1,8 +1,12 @@
 import { structurizrSampleCatalog } from "@/constants/structurizr-sample-diagrams";
 import { structurizrFormatHandler } from "@/formats/structurizr/handler";
+import type { FormatHandler } from "@/formats/types";
+import { withKeywordCompletions } from "@/languages/keyword-completion";
 import { structurizrLanguageKeywords } from "@/languages/keywords/structurizr";
 import type { DiagramLanguageModule } from "@/languages/types";
 import { looksLikeStructurizrSource } from "@shared/structurizr-source";
+
+let cachedHandler: FormatHandler | null = null;
 
 export const structurizrLanguageModule: DiagramLanguageModule = {
   id: "structurizr",
@@ -37,8 +41,12 @@ export const structurizrLanguageModule: DiagramLanguageModule = {
   supportsAutocomplete: true,
   keywords: structurizrLanguageKeywords,
   samples: structurizrSampleCatalog,
-  get handler() {
-    return structurizrFormatHandler;
+  get handler(): FormatHandler {
+    cachedHandler ??= withKeywordCompletions(
+      structurizrFormatHandler,
+      structurizrLanguageKeywords,
+    );
+    return cachedHandler;
   },
   site: {
     purposeKey: "site.formats.structurizr.purpose",
