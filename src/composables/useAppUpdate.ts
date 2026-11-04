@@ -2,15 +2,25 @@ import { onMounted, onUnmounted, ref } from "vue";
 import { registerAppServiceWorker } from "@/pwa/serviceWorkerRegistration";
 
 const UPDATE_CHECK_INTERVAL_MS = 30 * 60 * 1000;
+export const UPDATE_RELOAD_FALLBACK_MS = 1_500;
+const SKIP_WAITING_MESSAGE = { type: "SKIP_WAITING" } as const;
 
-let waitingWorker: ServiceWorker | null = null;
+function defaultReload(): void {
+  window.location.reload();
+}
 
-export function useAppUpdate() {
+export function useAppUpdate(reloadPage: () => void = defaultReload) {
   const updateAvailable = ref(false);
   let registration: ServiceWorkerRegistration | null = null;
   let checkTimer: number | null = null;
+  let updateListenerBound = false;
+  let waitingWorker: ServiceWorker | null = null;
+  let updateInProgress = false;
 
   function markUpdateAvailable(worker: ServiceWorker): void {
+    if (updateInProgress) {
+      return;
+    }
     waitingWorker = worker;
     updateAvailable.value = true;
   }
@@ -33,12 +43,15 @@ export function useAppUpdate() {
       markUpdateAvailable(registration.waiting);
     }
 
-    registration.addEventListener("updatefound", () => {
-      const installingWorker = registration?.installing;
-      if (installingWorker) {
-        trackInstallingWorker(installingWorker);
-      }
-    });
+    if (!updateListenerBound) {
+      updateListenerBound = true;
+      registration.addEventListener("updatefound", () => {
+        const installingWorker = registration?.installing;
+        if (installingWorker) {
+          trackInstallingWorker(installingWorker);
+        }
+      });
+    }
 
     try {
       await registration.update();
@@ -48,19 +61,36 @@ export function useAppUpdate() {
   }
 
   function applyUpdate(): void {
-    if (!waitingWorker) {
-      window.location.reload();
+    updateInProgress = true;
+    updateAvailable.value = false;
+
+    const worker = waitingWorker;
+    const alreadyActive =
+      !worker || worker.state === "activated" || worker.state === "redundant";
+    if (alreadyActive) {
+      reloadPage();
       return;
     }
 
-    const reloadOnControl = (): void => {
-      window.location.reload();
+    let reloaded = false;
+    const reloadOnce = (): void => {
+      if (reloaded) {
+        return;
+      }
+      reloaded = true;
+      reloadPage();
     };
 
-    navigator.serviceWorker.addEventListener("controllerchange", reloadOnControl, {
+    navigator.serviceWorker.addEventListener("controllerchange", reloadOnce, {
       once: true,
     });
-    waitingWorker.postMessage({ type: "SKIP_WAITING" });
+    window.setTimeout(reloadOnce, UPDATE_RELOAD_FALLBACK_MS);
+
+    try {
+      worker.postMessage(SKIP_WAITING_MESSAGE);
+    } catch {
+      reloadOnce();
+    }
   }
 
   function dismissUpdate(): void {
