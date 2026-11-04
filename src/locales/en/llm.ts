@@ -121,7 +121,7 @@ export const llmMessages = {
   "llm.wizard.aiSetupHint": "Enable consent and configure the AI provider without leaving the wizard.",
   "llm.wizard.aiSetupRetry": "Retry generation",
   "llm.wizard.onboardingTitle": "Welcome to the diagram wizard",
-  "llm.wizard.onboardingBody": "Pick AI or manual mode, choose a diagram type, and preview the scaffold before applying it to the editor.",
+  "llm.wizard.onboardingBody": "Filter examples by tags or name. A short press opens three actions; a long press opens the example card.",
   "llm.wizard.onboardingDismiss": "Got it",
   "llm.wizard.foldOnboardingTitle": "Tip: fold large diagrams",
   "llm.wizard.foldOnboardingBody": "Use intervals and bookmarks in the line gutter to collapse sections of long wizard scaffolds.",

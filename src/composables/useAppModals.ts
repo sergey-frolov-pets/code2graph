@@ -1,5 +1,4 @@
 import { ref } from "vue";
-import type { WizardCreationMode } from "@/constants/llm-wizard";
 
 export function useAppModals() {
   const isSyntaxModalOpen = ref(false);
@@ -12,7 +11,6 @@ export function useAppModals() {
   const isWizardModalOpen = ref(false);
   const isSaveToLibraryModalOpen = ref(false);
   const isConvertModalOpen = ref(false);
-  const wizardInitialCreationMode = ref<WizardCreationMode | null>(null);
 
   return {
     isSyntaxModalOpen,
@@ -25,7 +23,6 @@ export function useAppModals() {
     isWizardModalOpen,
     isSaveToLibraryModalOpen,
     isConvertModalOpen,
-    wizardInitialCreationMode,
     openVersionsModal: () => {
       isVersionsModalOpen.value = true;
     },
@@ -36,12 +33,10 @@ export function useAppModals() {
       isLibraryModalOpen.value = true;
     },
     openWizardModal: () => {
-      wizardInitialCreationMode.value = null;
       isWizardModalOpen.value = true;
     },
     closeWizardModal: () => {
       isWizardModalOpen.value = false;
-      wizardInitialCreationMode.value = null;
     },
     openSyntaxAskModal: () => {
       isSyntaxAskModalOpen.value = true;

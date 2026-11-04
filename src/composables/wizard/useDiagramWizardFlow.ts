@@ -8,6 +8,12 @@ import {
 import { useLlmConversation } from "@/composables/useLlmConversation";
 import { toLlmChatMessages } from "@/utils/llm-edit-conversation";
 import type { DiagramFormat } from "@/constants/diagram-formats";
+import {
+  exampleDirection,
+  type DiagramExample,
+} from "@/constants/diagram-example-catalog";
+import { getSampleSource } from "@/constants/sample-diagrams";
+import type { GalleryExampleAction } from "@/constants/wizard-gallery";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
 import {
@@ -21,9 +27,6 @@ import {
   getWizardSteps,
   getWizardStructuralElementsForType,
   getWizardTypesForLanguage,
-  isWizardCreationMode,
-  isWizardDiagramType,
-  isWizardLanguage,
   resolveWizardStateWithDefaults,
   WIZARD_DIAGRAM_DIRECTIONS,
   WIZARD_TYPE_PARAM_FIELDS,
@@ -31,7 +34,6 @@ import {
   type WizardState,
   type WizardStepId,
   type WizardStructuralElementId,
-  type WizardCreationMode,
 } from "@/constants/llm-wizard";
 import { LlmClientError } from "@/services/llm/llm-types";
 import { renderDiagram } from "@/formats";
@@ -70,7 +72,6 @@ export interface UseDiagramWizardFlowOptions {
   diagramDarkMode: Ref<boolean>;
   locale: Ref<AppLocale>;
   t: TranslateFn;
-  initialCreationMode?: Ref<WizardCreationMode | null>;
   onApply: (payload: { source: string; label: string; format: DiagramFormat }) => void;
   onClose: () => void;
 }
@@ -89,6 +90,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   } = options;
 
   const stepIndex = ref(0);
+  const galleryVisible = ref(true);
   const wizardState = ref<WizardState>({
     ...DEFAULT_WIZARD_STATE,
     typeParams: createDefaultTypeParams(),
@@ -133,22 +135,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     })),
   );
 
-  const showBackButton = computed(() => stepIndex.value > 0);
-
-  const languageOptions = computed(() =>
-    getWizardLanguagesForMode(wizardState.value.creationMode).map((id) => ({
-      id,
-      label: t(`llm.wizard.language.${id}`),
-    })),
-  );
-
-  const typeOptions = computed(() =>
-    getWizardTypesForLanguage(wizardState.value.language).map((id) => ({
-      id,
-      label: t(`llm.wizard.type.${id}`),
-      description: t(`llm.wizard.typeDesc.${id}`),
-    })),
-  );
+  const showBackButton = computed(() => !galleryVisible.value);
 
   const directionOptions = computed(() =>
     WIZARD_DIAGRAM_DIRECTIONS.map((id) => ({
@@ -162,9 +149,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   );
 
   const isAiMode = computed(() => wizardState.value.creationMode === "ai");
-  const selectedModeDescription = computed(() =>
-    t(`llm.wizard.mode.${wizardState.value.creationMode}Desc`),
-  );
   const isManualResultReady = computed(
     () =>
       !isAiMode.value &&
@@ -208,19 +192,12 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
 
   function resetWizard(): void {
     stepIndex.value = 0;
-    const launchMode = options.initialCreationMode?.value;
+    galleryVisible.value = true;
     wizardState.value = {
       ...DEFAULT_WIZARD_STATE,
-      creationMode:
-        launchMode && isWizardCreationMode(launchMode)
-          ? launchMode
-          : DEFAULT_WIZARD_STATE.creationMode,
       typeParams: createDefaultTypeParams(),
       structuralElements: createDefaultStructuralElements(),
     };
-    if (options.initialCreationMode) {
-      options.initialCreationMode.value = null;
-    }
     isGenerating.value = false;
     errorMessage.value = "";
     resultSource.value = "";
@@ -302,6 +279,15 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   }
 
   function scheduleStepPreview(): void {
+    if (galleryVisible.value) {
+      if (stepPreviewTimer) {
+        clearTimeout(stepPreviewTimer);
+        stepPreviewTimer = null;
+      }
+      previewSvg.value = "";
+      return;
+    }
+
     if (stepPreviewTimer) {
       clearTimeout(stepPreviewTimer);
     }
@@ -312,7 +298,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   }
 
   async function refreshStepPreview(): Promise<void> {
-    if (currentStepId.value === "result") {
+    if (galleryVisible.value || currentStepId.value === "result") {
       return;
     }
 
@@ -346,7 +332,15 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     },
   );
 
+  watch(galleryVisible, () => {
+    scheduleStepPreview();
+  });
+
   watch(currentStepId, (step) => {
+    if (galleryVisible.value) {
+      return;
+    }
+
     if (isAiMode.value && step === "context") {
       void checkAiAccess();
     }
@@ -393,22 +387,39 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     { deep: true },
   );
 
-  function onModeSelect(mode: string): void {
-    if (isWizardCreationMode(mode)) {
-      wizardState.value.creationMode = mode;
+  function openGalleryExample(payload: {
+    example: DiagramExample;
+    action: GalleryExampleAction;
+    label: string;
+    prompt: string;
+  }): void {
+    if (payload.action === "editor") {
+      onApply({
+        source: getSampleSource(
+          { format: payload.example.format, id: payload.example.sampleId },
+          locale.value,
+        ),
+        label: payload.label,
+        format: payload.example.format,
+      });
+      onClose();
+      return;
     }
-  }
 
-  function onLanguageSelect(language: string): void {
-    if (isWizardLanguage(language)) {
-      wizardState.value.language = language;
-    }
-  }
-
-  function onTypeSelect(diagramType: string): void {
-    if (isWizardDiagramType(diagramType)) {
-      wizardState.value.diagramType = diagramType;
-    }
+    wizardState.value = {
+      ...DEFAULT_WIZARD_STATE,
+      creationMode: payload.action === "llm" ? "ai" : "manual",
+      language: payload.example.format,
+      diagramType: payload.example.wizardType,
+      direction: exampleDirection(payload.example),
+      typeParams: createDefaultTypeParams(),
+      structuralElements: createDefaultStructuralElements(),
+      contextText: payload.action === "llm" ? payload.prompt : "",
+      typeSpecificText: "",
+      promptText: "",
+    };
+    stepIndex.value = 0;
+    galleryVisible.value = false;
   }
 
   function onDirectionSelect(direction: WizardState["direction"]): void {
@@ -438,9 +449,16 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   }
 
   function goBack(): void {
-    if (stepIndex.value > 0 && !isGenerating.value) {
-      stepIndex.value -= 1;
+    if (isGenerating.value || galleryVisible.value) {
+      return;
     }
+
+    if (stepIndex.value > 0) {
+      stepIndex.value -= 1;
+      return;
+    }
+
+    galleryVisible.value = true;
   }
 
   async function loadPreview(source: string): Promise<void> {
@@ -775,6 +793,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
 
   return {
     stepIndex,
+    galleryVisible,
     wizardState,
     isGenerating,
     errorMessage,
@@ -791,17 +810,12 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     stepTitle,
     structuralElementOptions,
     showBackButton,
-    languageOptions,
-    typeOptions,
     directionOptions,
     paramFields,
     isAiMode,
-    selectedModeDescription,
     isManualResultReady,
     canGoNext,
-    onModeSelect,
-    onLanguageSelect,
-    onTypeSelect,
+    openGalleryExample,
     onDirectionSelect,
     onParamChange,
     onStructuralToggle,

@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import WizardModeStep from "@/components/wizard/steps/WizardModeStep.vue";
-import WizardLanguageStep from "@/components/wizard/steps/WizardLanguageStep.vue";
-import WizardTypeStep from "@/components/wizard/steps/WizardTypeStep.vue";
 import WizardDirectionStep from "@/components/wizard/steps/WizardDirectionStep.vue";
 import WizardParamsStep from "@/components/wizard/steps/WizardParamsStep.vue";
 import WizardContextStep from "@/components/wizard/steps/WizardContextStep.vue";
@@ -25,9 +22,6 @@ defineProps<{
   isManualResultReady: boolean;
   errorMessage: string;
   resultExplanation: string;
-  selectedModeDescription: string;
-  languageOptions: Array<{ id: string; label: string }>;
-  typeOptions: Array<{ id: string; label: string; description: string }>;
   directionOptions: Array<{ id: WizardDiagramDirection; label: string }>;
   paramFields: WizardParamField[];
   structuralElementOptions: Array<{ id: WizardStructuralElementId; label: string }>;
@@ -39,9 +33,6 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "mode-select": [mode: string];
-  "language-select": [language: string];
-  "type-select": [diagramType: string];
   "direction-select": [direction: WizardState["direction"]];
   "param-change": [paramId: WizardParamField["id"], event: Event];
   "structural-toggle": [elementId: WizardStructuralElementId, event: Event];
@@ -53,30 +44,8 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <WizardModeStep
-    v-if="currentStepId === 'mode'"
-    :wizard-state="wizardState"
-    :selected-mode-description="selectedModeDescription"
-    @mode-select="emit('mode-select', $event)"
-  />
-
-  <WizardLanguageStep
-    v-else-if="currentStepId === 'language'"
-    :wizard-state="wizardState"
-    :is-ai-mode="isAiMode"
-    :language-options="languageOptions"
-    @language-select="emit('language-select', $event)"
-  />
-
-  <WizardTypeStep
-    v-else-if="currentStepId === 'type'"
-    :wizard-state="wizardState"
-    :type-options="typeOptions"
-    @type-select="emit('type-select', $event)"
-  />
-
   <WizardDirectionStep
-    v-else-if="currentStepId === 'direction'"
+    v-if="currentStepId === 'direction'"
     :wizard-state="wizardState"
     :direction-options="directionOptions"
     @direction-select="emit('direction-select', $event)"

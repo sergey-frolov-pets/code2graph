@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="292" viewBox="0 0 860 292" role="img">
+  <defs>
+    <marker id="graphml-arrow-64748b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+<marker id="graphml-arrow-2563eb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
+    </marker>
+<marker id="graphml-arrow-0284c7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0284c7"/>
+    </marker>
+<marker id="graphml-arrow-d97706" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#d97706"/>
+    </marker>
+<marker id="graphml-arrow-7c3aed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7c3aed"/>
+    </marker>
+  </defs>
+  
+  <g class="graphml-edge">
+  <path d="M 164 146 L 206 146 L 248 146" fill="none" stroke="#2563eb" stroke-width="1.5" marker-end="url(#graphml-arrow-2563eb)"/>
+  <rect class="graphml-edge-label" x="183.5" y="138" width="45" height="16" rx="6" fill="#ffffff"/>
+  <text x="206" y="146" fill="#0f172a" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" dominant-baseline="middle">HTTPS</text>
+</g>
+<g class="graphml-edge">
+  <path d="M 388 146 L 430 146 L 472 146" fill="none" stroke="#0284c7" stroke-width="1.5" marker-end="url(#graphml-arrow-0284c7)"/>
+  <rect class="graphml-edge-label" x="407.5" y="138" width="45" height="16" rx="6" fill="#ffffff"/>
+  <text x="430" y="146" fill="#0f172a" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" dominant-baseline="middle">Вызов</text>
+</g>
+<g class="graphml-edge">
+  <path d="M 566.64 124 L 654 46 L 696 46" fill="none" stroke="#d97706" stroke-width="1.5" marker-end="url(#graphml-arrow-d97706)"/>
+  <rect class="graphml-edge-label" x="610.5" y="53.6" width="52" height="16" rx="6" fill="#ffffff"/>
+  <text x="636.5" y="61.6" fill="#0f172a" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" dominant-baseline="middle">Запрос</text>
+</g>
+<g class="graphml-edge">
+  <path d="M 612 146 L 654 146 L 696 146" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#graphml-arrow-7c3aed)"/>
+  <rect class="graphml-edge-label" x="624.5" y="138" width="59" height="16" rx="6" fill="#ffffff"/>
+  <text x="654" y="146" fill="#0f172a" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" dominant-baseline="middle">Событие</text>
+</g>
+<g class="graphml-edge">
+  <path d="M 566.64 168 L 654 246 L 696 246" fill="none" stroke="#d97706" stroke-width="1.5" marker-end="url(#graphml-arrow-d97706)"/>
+  <rect class="graphml-edge-label" x="617.5" y="222.4" width="38" height="16" rx="6" fill="#ffffff"/>
+  <text x="636.5" y="230.4" fill="#0f172a" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" dominant-baseline="middle">Шлюз</text>
+</g>
+  <g class="graphml-node">
+  <ellipse cx="94" cy="146" rx="70" ry="22" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="94" y="146" fill="#0f172a" font-family="system-ui, sans-serif" font-size="13" text-anchor="middle" dominant-baseline="middle">Пользователь</text>
+</g>
+<g class="graphml-node">
+  <rect x="248" y="124" width="140" height="44" rx="6" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.5"/>
+  <text x="318" y="146" fill="#0f172a" font-family="system-ui, sans-serif" font-size="13" text-anchor="middle" dominant-baseline="middle">Веб</text>
+</g>
+<g class="graphml-node">
+  <polygon points="502.8,124 581.2,124 612,146 581.2,168 502.8,168 472,146" fill="#dcfce7" stroke="#15803d" stroke-width="1.5"/>
+  <text x="542" y="146" fill="#0f172a" font-family="system-ui, sans-serif" font-size="13" text-anchor="middle" dominant-baseline="middle">API</text>
+</g>
+<g class="graphml-node">
+  <rect x="696" y="124" width="140" height="44" rx="6" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="766" y="146" fill="#0f172a" font-family="system-ui, sans-serif" font-size="13" text-anchor="middle" dominant-baseline="middle">Очередь</text>
+</g>
+<g class="graphml-node">
+  <rect x="696" y="24" width="140" height="44" rx="6" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="766" y="46" fill="#0f172a" font-family="system-ui, sans-serif" font-size="13" text-anchor="middle" dominant-baseline="middle">База</text>
+</g>
+<g class="graphml-node">
+  <polygon points="766,224 836,246 766,268 696,246" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="766" y="246" fill="#0f172a" font-family="system-ui, sans-serif" font-size="13" text-anchor="middle" dominant-baseline="middle">Шлюз</text>
+</g>
+</svg>

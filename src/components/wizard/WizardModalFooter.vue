@@ -7,6 +7,7 @@ import type { WizardStepId } from "@/constants/llm-wizard";
 
 defineProps<{
   currentStepId: WizardStepId | string;
+  gallery: boolean;
   isAiMode: boolean;
   isGenerating: boolean;
   canGoNext: boolean;
@@ -51,7 +52,7 @@ const { generatingLabel } = useActiveLlmLabel();
       </IconButton>
 
       <IconButton
-        v-if="currentStepId !== 'result'"
+        v-if="!gallery && currentStepId !== 'result'"
         :label="t('llm.wizard.transferToEditor')"
         extra-class="wizard-footer__btn"
         :disabled="isGenerating"
@@ -61,7 +62,7 @@ const { generatingLabel } = useActiveLlmLabel();
       </IconButton>
 
       <IconButton
-        v-if="currentStepId !== 'result' && currentStepId !== 'context'"
+        v-if="!gallery && currentStepId !== 'result' && currentStepId !== 'context'"
         :label="t('llm.wizard.next')"
         extra-class="wizard-footer__btn"
         primary
@@ -72,7 +73,7 @@ const { generatingLabel } = useActiveLlmLabel();
       </IconButton>
 
       <IconButton
-        v-if="currentStepId === 'context' && isAiMode"
+        v-if="!gallery && currentStepId === 'context' && isAiMode"
         :label="isGenerating ? generatingLabel : t('llm.wizard.generate')"
         extra-class="wizard-footer__btn"
         primary
@@ -83,7 +84,7 @@ const { generatingLabel } = useActiveLlmLabel();
       </IconButton>
 
       <IconButton
-        v-if="currentStepId === 'prompt'"
+        v-if="!gallery && currentStepId === 'prompt'"
         :label="isGenerating ? generatingLabel : t('llm.wizard.generate')"
         extra-class="wizard-footer__btn"
         primary
@@ -94,7 +95,7 @@ const { generatingLabel } = useActiveLlmLabel();
       </IconButton>
 
       <IconButton
-        v-if="currentStepId === 'result'"
+        v-if="!gallery && currentStepId === 'result'"
         :label="t('llm.wizard.apply')"
         extra-class="wizard-footer__btn"
         primary
@@ -105,7 +106,7 @@ const { generatingLabel } = useActiveLlmLabel();
       </IconButton>
 
       <IconButton
-        v-if="currentStepId === 'result' && !isGenerating"
+        v-if="!gallery && currentStepId === 'result' && !isGenerating"
         :label="t('llm.wizard.regenerate')"
         extra-class="wizard-footer__btn"
         @click="emit('regenerate')"

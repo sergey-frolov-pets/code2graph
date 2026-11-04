@@ -103,7 +103,8 @@ describe("llm-wizard", () => {
     );
 
     expect(steps).not.toContain("direction");
-    expect(steps[0]).toBe("mode");
+    expect(steps[0]).toBe("params");
+    expect(steps).not.toContain("mode");
     expect(steps).toContain("params");
   });
 
@@ -113,7 +114,7 @@ describe("llm-wizard", () => {
 
     expect(manualSteps).not.toContain("context");
     expect(manualSteps).not.toContain("prompt");
-    expect(aiSteps).toEqual(["mode", "language", "type", "context", "result"]);
+    expect(aiSteps).toEqual(["context", "result"]);
     expect(aiSteps).not.toContain("prompt");
     expect(aiSteps).not.toContain("params");
   });
