@@ -17,6 +17,8 @@ export interface LanguagePrimerType {
   readonly id: string;
   readonly titleKey: LocaleKey;
   readonly summaryKey: LocaleKey;
+  /** Одна строка: ключевые слова этого типа и как их писать. */
+  readonly syntaxKey: LocaleKey;
   readonly example: LocalizedExample;
 }
 
@@ -62,6 +64,7 @@ const PLANTUML_PRIMER: LanguagePrimer = {
       id: "sequence",
       titleKey: "llm.wizard.type.sequence",
       summaryKey: "llm.wizard.typeDesc.sequence",
+      syntaxKey: "site.primer.plantuml.syntax.sequence",
       example: both(
         lines(
           "@startuml",
@@ -85,6 +88,7 @@ const PLANTUML_PRIMER: LanguagePrimer = {
       id: "class",
       titleKey: "llm.wizard.type.class",
       summaryKey: "llm.wizard.typeDesc.class",
+      syntaxKey: "site.primer.plantuml.syntax.class",
       example: both(
         lines(
           "@startuml",
@@ -116,6 +120,7 @@ const PLANTUML_PRIMER: LanguagePrimer = {
       id: "activity",
       titleKey: "llm.wizard.type.activity",
       summaryKey: "llm.wizard.typeDesc.activity",
+      syntaxKey: "site.primer.plantuml.syntax.activity",
       example: both(
         lines(
           "@startuml",
@@ -145,6 +150,7 @@ const PLANTUML_PRIMER: LanguagePrimer = {
       id: "state",
       titleKey: "llm.wizard.type.state",
       summaryKey: "llm.wizard.typeDesc.state",
+      syntaxKey: "site.primer.plantuml.syntax.state",
       example: both(
         lines(
           "@startuml",
@@ -166,6 +172,7 @@ const PLANTUML_PRIMER: LanguagePrimer = {
       id: "usecase",
       titleKey: "llm.wizard.type.usecase",
       summaryKey: "llm.wizard.typeDesc.usecase",
+      syntaxKey: "site.primer.plantuml.syntax.usecase",
       example: both(
         lines(
           "@startuml",
@@ -189,6 +196,7 @@ const PLANTUML_PRIMER: LanguagePrimer = {
       id: "c4_context",
       titleKey: "llm.wizard.type.c4_context",
       summaryKey: "llm.wizard.typeDesc.c4_context",
+      syntaxKey: "site.primer.plantuml.syntax.c4_context",
       example: both(
         lines(
           "@startuml",
@@ -273,6 +281,7 @@ const MERMAID_PRIMER: LanguagePrimer = {
       id: "flowchart",
       titleKey: "llm.wizard.type.flowchart",
       summaryKey: "llm.wizard.typeDesc.flowchart",
+      syntaxKey: "site.primer.mermaid.syntax.flowchart",
       example: both(
         lines(
           "flowchart TD",
@@ -292,6 +301,7 @@ const MERMAID_PRIMER: LanguagePrimer = {
       id: "sequence",
       titleKey: "llm.wizard.type.sequence",
       summaryKey: "llm.wizard.typeDesc.sequence",
+      syntaxKey: "site.primer.mermaid.syntax.sequence",
       example: both(
         lines(
           "sequenceDiagram",
@@ -313,6 +323,7 @@ const MERMAID_PRIMER: LanguagePrimer = {
       id: "class",
       titleKey: "llm.wizard.type.class",
       summaryKey: "llm.wizard.typeDesc.class",
+      syntaxKey: "site.primer.mermaid.syntax.class",
       example: both(
         lines(
           "classDiagram",
@@ -342,6 +353,7 @@ const MERMAID_PRIMER: LanguagePrimer = {
       id: "state",
       titleKey: "llm.wizard.type.state",
       summaryKey: "llm.wizard.typeDesc.state",
+      syntaxKey: "site.primer.mermaid.syntax.state",
       example: both(
         lines(
           "stateDiagram-v2",
@@ -359,6 +371,7 @@ const MERMAID_PRIMER: LanguagePrimer = {
       id: "er",
       titleKey: "llm.wizard.type.er",
       summaryKey: "llm.wizard.typeDesc.er",
+      syntaxKey: "site.primer.mermaid.syntax.er",
       example: both(
         lines("erDiagram", "  USER ||--o{ ORDER : оформляет"),
         lines("erDiagram", "  USER ||--o{ ORDER : places"),
@@ -368,6 +381,7 @@ const MERMAID_PRIMER: LanguagePrimer = {
       id: "gantt",
       titleKey: "llm.wizard.type.gantt",
       summaryKey: "llm.wizard.typeDesc.gantt",
+      syntaxKey: "site.primer.mermaid.syntax.gantt",
       example: both(
         lines(
           "gantt",
@@ -382,6 +396,301 @@ const MERMAID_PRIMER: LanguagePrimer = {
           "  dateFormat YYYY-MM-DD",
           "  section Work",
           "  Task :a1, 2026-01-06, 3d",
+        ),
+      ),
+    },
+    {
+      id: "mindmap",
+      titleKey: "llm.wizard.type.mindmap",
+      summaryKey: "llm.wizard.typeDesc.mindmap",
+      syntaxKey: "site.primer.mermaid.syntax.mindmap",
+      example: both(
+        lines(
+          "mindmap",
+          "  root((Тема))",
+          "    Идея",
+          "      Деталь",
+          "    План",
+        ),
+        lines(
+          "mindmap",
+          "  root((Topic))",
+          "    Idea",
+          "      Detail",
+          "    Plan",
+        ),
+      ),
+    },
+    {
+      id: "pie",
+      titleKey: "llm.wizard.type.pie",
+      summaryKey: "llm.wizard.typeDesc.pie",
+      syntaxKey: "site.primer.mermaid.syntax.pie",
+      example: both(
+        lines(
+          "pie showData",
+          "  title Доли",
+          '  "Заказы" : 40',
+          '  "Отказы" : 25',
+          '  "Возвраты" : 10',
+        ),
+        lines(
+          "pie showData",
+          "  title Shares",
+          '  "Orders" : 40',
+          '  "Drops" : 25',
+          '  "Returns" : 10',
+        ),
+      ),
+    },
+    {
+      id: "journey",
+      titleKey: "llm.wizard.type.journey",
+      summaryKey: "llm.wizard.typeDesc.journey",
+      syntaxKey: "site.primer.mermaid.syntax.journey",
+      example: both(
+        lines(
+          "journey",
+          "  title Покупка",
+          "  section Выбор",
+          "    Каталог: 5: Покупатель",
+          "  section Оплата",
+          "    Карта: 3: Покупатель",
+        ),
+        lines(
+          "journey",
+          "  title Checkout",
+          "  section Browse",
+          "    Catalog: 5: Customer",
+          "  section Pay",
+          "    Card: 3: Customer",
+        ),
+      ),
+    },
+    {
+      id: "gitgraph",
+      titleKey: "llm.wizard.type.gitgraph",
+      summaryKey: "llm.wizard.typeDesc.gitgraph",
+      syntaxKey: "site.primer.mermaid.syntax.gitgraph",
+      example: same(
+        lines(
+          "gitGraph",
+          '  commit id: "Start"',
+          "  branch feature",
+          "  checkout feature",
+          '  commit id: "Work"',
+          "  checkout main",
+          "  merge feature",
+        ),
+      ),
+    },
+    {
+      id: "timeline",
+      titleKey: "llm.wizard.type.timeline",
+      summaryKey: "llm.wizard.typeDesc.timeline",
+      syntaxKey: "site.primer.mermaid.syntax.timeline",
+      example: both(
+        lines(
+          "timeline",
+          "  title План",
+          "  section 2026",
+          "    Январь : Редактор",
+          "           : Превью",
+        ),
+        lines(
+          "timeline",
+          "  title Plan",
+          "  section 2026",
+          "    January : Editor",
+          "            : Preview",
+        ),
+      ),
+    },
+    {
+      id: "sankey",
+      titleKey: "llm.wizard.type.sankey",
+      summaryKey: "llm.wizard.typeDesc.sankey",
+      syntaxKey: "site.primer.mermaid.syntax.sankey",
+      example: both(
+        lines(
+          "sankey-beta",
+          "%% Визит, каталог, заказ",
+          "Visit,Catalog,40",
+          "Catalog,Order,25",
+        ),
+        lines(
+          "sankey-beta",
+          "%% Visit, catalog, order",
+          "Visit,Catalog,40",
+          "Catalog,Order,25",
+        ),
+      ),
+    },
+    {
+      id: "xychart",
+      titleKey: "llm.wizard.type.xychart",
+      summaryKey: "llm.wizard.typeDesc.xychart",
+      syntaxKey: "site.primer.mermaid.syntax.xychart",
+      example: both(
+        lines(
+          "xychart-beta",
+          '  x-axis ["Q1", "Q2", "Q3"]',
+          '  y-axis "Заказы" 0 --> 100',
+          "  bar [20, 45, 70]",
+        ),
+        lines(
+          "xychart-beta",
+          '  x-axis ["Q1", "Q2", "Q3"]',
+          '  y-axis "Orders" 0 --> 100',
+          "  bar [20, 45, 70]",
+        ),
+      ),
+    },
+    {
+      id: "block",
+      titleKey: "llm.wizard.type.block",
+      summaryKey: "llm.wizard.typeDesc.block",
+      syntaxKey: "site.primer.mermaid.syntax.block",
+      example: both(
+        lines(
+          "block-beta",
+          "  columns 2",
+          '  web["Веб"]',
+          '  api["API"]',
+          "  web --> api",
+        ),
+        lines(
+          "block-beta",
+          "  columns 2",
+          '  web["Web"]',
+          '  api["API"]',
+          "  web --> api",
+        ),
+      ),
+    },
+    {
+      id: "c4_context",
+      titleKey: "llm.wizard.type.c4_context",
+      summaryKey: "llm.wizard.typeDesc.c4_context",
+      syntaxKey: "site.primer.mermaid.syntax.c4_context",
+      example: both(
+        lines(
+          "C4Context",
+          '  Person(user, "Покупатель", "Заказывает")',
+          '  System(shop, "Магазин", "Принимает заказы")',
+          '  Rel(user, shop, "Использует")',
+        ),
+        lines(
+          "C4Context",
+          '  Person(user, "Customer", "Places orders")',
+          '  System(shop, "Shop", "Takes orders")',
+          '  Rel(user, shop, "Uses")',
+        ),
+      ),
+    },
+    {
+      id: "requirement",
+      titleKey: "llm.wizard.type.requirement",
+      summaryKey: "llm.wizard.typeDesc.requirement",
+      syntaxKey: "site.primer.mermaid.syntax.requirement",
+      example: both(
+        lines(
+          "requirementDiagram",
+          "  requirement orderReq {",
+          "    id: 1",
+          '    text: "Покупатель оформляет заказ"',
+          "    risk: high",
+          "    verifymethod: test",
+          "  }",
+          "  element shop {",
+          "    type: system",
+          "  }",
+          "  shop - satisfies -> orderReq",
+        ),
+        lines(
+          "requirementDiagram",
+          "  requirement orderReq {",
+          "    id: 1",
+          '    text: "The customer places an order"',
+          "    risk: high",
+          "    verifymethod: test",
+          "  }",
+          "  element shop {",
+          "    type: system",
+          "  }",
+          "  shop - satisfies -> orderReq",
+        ),
+      ),
+    },
+    {
+      id: "quadrant",
+      titleKey: "llm.wizard.type.quadrant",
+      summaryKey: "llm.wizard.typeDesc.quadrant",
+      syntaxKey: "site.primer.mermaid.syntax.quadrant",
+      example: both(
+        lines(
+          "quadrantChart",
+          "  title Приоритеты",
+          "  x-axis Низко --> Высоко",
+          "  y-axis Мало --> Много",
+          "  quadrant-1 Сначала",
+          "  quadrant-2 Проверить",
+          "  quadrant-3 Позже",
+          "  quadrant-4 Быстро",
+          "  Редактор: [0.8, 0.3]",
+        ),
+        lines(
+          "quadrantChart",
+          "  title Priorities",
+          "  x-axis Low --> High",
+          "  y-axis Few --> Many",
+          "  quadrant-1 First",
+          "  quadrant-2 Check",
+          "  quadrant-3 Later",
+          "  quadrant-4 Quick",
+          "  Editor: [0.8, 0.3]",
+        ),
+      ),
+    },
+    {
+      id: "architecture",
+      titleKey: "llm.wizard.type.architecture",
+      summaryKey: "llm.wizard.typeDesc.architecture",
+      syntaxKey: "site.primer.mermaid.syntax.architecture",
+      example: both(
+        lines(
+          "architecture-beta",
+          '  group core(server)["Ядро"]',
+          "  service api(server)[API] in core",
+          '  service db(database)["База"] in core',
+          "  api:B --> T:db",
+        ),
+        lines(
+          "architecture-beta",
+          "  group core(server)[Core]",
+          "  service api(server)[API] in core",
+          "  service db(database)[Database] in core",
+          "  api:B --> T:db",
+        ),
+      ),
+    },
+    {
+      id: "packet",
+      titleKey: "llm.wizard.type.packet",
+      summaryKey: "llm.wizard.typeDesc.packet",
+      syntaxKey: "site.primer.mermaid.syntax.packet",
+      example: both(
+        lines(
+          "packet-beta",
+          "  title Заголовок",
+          '  0-15: "Источник"',
+          '  16-31: "Назначение"',
+        ),
+        lines(
+          "packet-beta",
+          "  title Header",
+          '  0-15: "Source"',
+          '  16-31: "Destination"',
         ),
       ),
     },
@@ -411,12 +720,46 @@ const MERMAID_PRIMER: LanguagePrimer = {
         lines("alt failed", "  API-->>Web: 402", "else paid", "  API-->>Web: 200", "end"),
       ),
     },
+    {
+      id: "note",
+      token: "note",
+      hintKey: "site.primer.mermaid.kw.note",
+      example: both(
+        "note right of API: Проверить токен",
+        "note right of API: Check the token",
+      ),
+    },
+    {
+      id: "subgraph",
+      token: "subgraph",
+      hintKey: "site.primer.mermaid.kw.subgraph",
+      example: both(
+        lines("subgraph Оплата", "  pay[Оплатить]", "end"),
+        lines("subgraph Payment", "  pay[Pay]", "end"),
+      ),
+    },
+    {
+      id: "class",
+      token: "class",
+      hintKey: "site.primer.mermaid.kw.class",
+      example: same(lines("class User {", "  +id int", "}")),
+    },
+    {
+      id: "section",
+      token: "section",
+      hintKey: "site.primer.mermaid.kw.section",
+      example: both(
+        lines("section Работа", "Задача :a1, 2026-01-06, 3d"),
+        lines("section Work", "Task :a1, 2026-01-06, 3d"),
+      ),
+    },
   ],
   extTypes: [
     {
       id: "ext-waterfall",
       titleKey: "site.ext.mermaid.type.waterfall",
       summaryKey: "site.ext.mermaid.desc.waterfall",
+      syntaxKey: "site.ext.mermaid.syntax.waterfall",
       example: both(
         lines(
           "waterfall",
@@ -440,6 +783,7 @@ const MERMAID_PRIMER: LanguagePrimer = {
       id: "ext-bubble",
       titleKey: "site.ext.mermaid.type.bubble",
       summaryKey: "site.ext.mermaid.desc.bubble",
+      syntaxKey: "site.ext.mermaid.syntax.bubble",
       example: both(
         lines(
           "bubble",
@@ -465,6 +809,7 @@ const MERMAID_PRIMER: LanguagePrimer = {
       id: "ext-heatmap",
       titleKey: "site.ext.mermaid.type.heatmap",
       summaryKey: "site.ext.mermaid.desc.heatmap",
+      syntaxKey: "site.ext.mermaid.syntax.heatmap",
       example: both(
         lines(
           "heatmap",
@@ -488,6 +833,7 @@ const MERMAID_PRIMER: LanguagePrimer = {
       id: "ext-orgchart",
       titleKey: "site.ext.mermaid.type.orgchart",
       summaryKey: "site.ext.mermaid.desc.orgchart",
+      syntaxKey: "site.ext.mermaid.syntax.orgchart",
       example: both(
         lines(
           "orgchart",
@@ -511,6 +857,7 @@ const MERMAID_PRIMER: LanguagePrimer = {
       id: "ext-ev",
       titleKey: "site.ext.mermaid.type.ev",
       summaryKey: "site.ext.mermaid.desc.ev",
+      syntaxKey: "site.ext.mermaid.syntax.ev",
       example: both(
         lines(
           "ev",
@@ -536,6 +883,7 @@ const GRAPHML_PRIMER: LanguagePrimer = {
       id: "directed",
       titleKey: "site.primer.graphml.type.directed.title",
       summaryKey: "site.primer.graphml.type.directed.summary",
+      syntaxKey: "site.primer.graphml.syntax.directed",
       example: both(
         lines(
           '<?xml version="1.0" encoding="UTF-8"?>',
@@ -565,6 +913,7 @@ const GRAPHML_PRIMER: LanguagePrimer = {
       id: "undirected",
       titleKey: "site.primer.graphml.type.undirected.title",
       summaryKey: "site.primer.graphml.type.undirected.summary",
+      syntaxKey: "site.primer.graphml.syntax.undirected",
       example: same(
         lines(
           '<?xml version="1.0" encoding="UTF-8"?>',
@@ -632,6 +981,7 @@ const WIREMARK_PRIMER: LanguagePrimer = {
       id: "wireframe",
       titleKey: "llm.wizard.type.wireframe",
       summaryKey: "llm.wizard.typeDesc.wireframe",
+      syntaxKey: "site.primer.wiremark.syntax.wireframe",
       example: both(
         lines(
           "Wireframe #login mobile",
@@ -653,6 +1003,7 @@ const WIREMARK_PRIMER: LanguagePrimer = {
       id: "flow",
       titleKey: "site.primer.wiremark.type.flow.title",
       summaryKey: "site.primer.wiremark.type.flow.summary",
+      syntaxKey: "site.primer.wiremark.syntax.flow",
       example: both(
         lines(
           "Flow LR",
@@ -720,6 +1071,7 @@ const D2_PRIMER: LanguagePrimer = {
       id: "flowchart",
       titleKey: "llm.wizard.type.flowchart",
       summaryKey: "llm.wizard.typeDesc.flowchart",
+      syntaxKey: "site.primer.d2.syntax.flowchart",
       example: both(
         lines(
           "direction: right",
@@ -751,6 +1103,7 @@ const D2_PRIMER: LanguagePrimer = {
       id: "sequence",
       titleKey: "llm.wizard.type.sequence",
       summaryKey: "llm.wizard.typeDesc.sequence",
+      syntaxKey: "site.primer.d2.syntax.sequence",
       example: both(
         lines(
           "direction: down",
@@ -776,6 +1129,7 @@ const D2_PRIMER: LanguagePrimer = {
       id: "class",
       titleKey: "llm.wizard.type.class",
       summaryKey: "llm.wizard.typeDesc.class",
+      syntaxKey: "site.primer.d2.syntax.class",
       example: both(
         lines(
           "direction: down",
@@ -809,6 +1163,7 @@ const D2_PRIMER: LanguagePrimer = {
       id: "er",
       titleKey: "llm.wizard.type.er",
       summaryKey: "llm.wizard.typeDesc.er",
+      syntaxKey: "site.primer.d2.syntax.er",
       example: same(
         lines(
           "direction: right",
@@ -830,6 +1185,7 @@ const D2_PRIMER: LanguagePrimer = {
       id: "architecture",
       titleKey: "llm.wizard.type.architecture",
       summaryKey: "llm.wizard.typeDesc.architecture",
+      syntaxKey: "site.primer.d2.syntax.architecture",
       example: both(
         lines(
           "direction: right",
@@ -899,6 +1255,7 @@ const STRUCTURIZR_PRIMER: LanguagePrimer = {
       id: "c4_context",
       titleKey: "llm.wizard.type.c4_context",
       summaryKey: "llm.wizard.typeDesc.c4_context",
+      syntaxKey: "site.primer.structurizr.syntax.c4_context",
       example: both(
         lines(
           'workspace "Магазин" "Покупка" {',
@@ -936,6 +1293,7 @@ const STRUCTURIZR_PRIMER: LanguagePrimer = {
       id: "c4_container",
       titleKey: "llm.wizard.type.c4_container",
       summaryKey: "llm.wizard.typeDesc.c4_container",
+      syntaxKey: "site.primer.structurizr.syntax.c4_container",
       example: both(
         lines(
           'workspace "Магазин" "Контейнеры" {',
@@ -981,6 +1339,7 @@ const STRUCTURIZR_PRIMER: LanguagePrimer = {
       id: "component",
       titleKey: "llm.wizard.type.component",
       summaryKey: "llm.wizard.typeDesc.component",
+      syntaxKey: "site.primer.structurizr.syntax.component",
       example: both(
         lines(
           'workspace "Магазин" "Компоненты" {',
@@ -1026,6 +1385,7 @@ const STRUCTURIZR_PRIMER: LanguagePrimer = {
       id: "deployment",
       titleKey: "llm.wizard.type.deployment",
       summaryKey: "llm.wizard.typeDesc.deployment",
+      syntaxKey: "site.primer.structurizr.syntax.deployment",
       example: both(
         lines(
           'workspace "Магазин" "Развёртывание" {',

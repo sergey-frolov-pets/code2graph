@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import LanguageDiagramThumb from "@/components/site/LanguageDiagramThumb.vue";
 import SiteFooter from "@/components/site/SiteFooter.vue";
 import SiteHeader from "@/components/site/SiteHeader.vue";
 import { useAppRouter } from "@/composables/useAppRouter";
@@ -96,6 +97,11 @@ const libraryLinks = computed(() => resources.value.filter((link) => link.kind =
               class="language-entry"
               :aria-labelledby="`diagram-type-${diagramType.id}`"
             >
+              <LanguageDiagramThumb
+                :format="language.id"
+                :source="exampleOf(diagramType.example)"
+                :title="t(diagramType.titleKey)"
+              />
               <h3 :id="`diagram-type-${diagramType.id}`">
                 {{ t(diagramType.titleKey) }}
               </h3>
@@ -165,8 +171,17 @@ const libraryLinks = computed(() => resources.value.filter((link) => link.kind =
               :key="diagramType.id"
               class="language-card"
             >
+              <LanguageDiagramThumb
+                :format="language.id"
+                :source="exampleText(diagramType.example)"
+                :title="t(diagramType.titleKey)"
+              />
               <h3>{{ t(diagramType.titleKey) }}</h3>
               <p>{{ t(diagramType.summaryKey) }}</p>
+              <p class="language-syntax">
+                <span class="language-syntax-label">{{ t("site.language.syntax") }}</span>
+                {{ t(diagramType.syntaxKey) }}
+              </p>
               <pre
                 class="language-example"
                 :aria-label="t('site.language.example')"
@@ -191,8 +206,17 @@ const libraryLinks = computed(() => resources.value.filter((link) => link.kind =
               :key="diagramType.id"
               class="language-card"
             >
+              <LanguageDiagramThumb
+                :format="language.id"
+                :source="exampleText(diagramType.example)"
+                :title="t(diagramType.titleKey)"
+              />
               <h3>{{ t(diagramType.titleKey) }}</h3>
               <p>{{ t(diagramType.summaryKey) }}</p>
+              <p class="language-syntax">
+                <span class="language-syntax-label">{{ t("site.language.syntax") }}</span>
+                {{ t(diagramType.syntaxKey) }}
+              </p>
               <pre
                 class="language-example"
                 :aria-label="t('site.language.example')"
@@ -278,7 +302,7 @@ const libraryLinks = computed(() => resources.value.filter((link) => link.kind =
 
 <style scoped>
 .language-main {
-  width: min(840px, calc(100% - 32px));
+  width: min(1080px, calc(100% - 32px));
   margin: 0 auto;
   padding: 32px 0 64px;
   display: grid;
@@ -340,6 +364,23 @@ const libraryLinks = computed(() => resources.value.filter((link) => link.kind =
   margin: 0;
   padding: 0;
   gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.language-syntax {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.language-syntax-label {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .language-card {

@@ -36,6 +36,9 @@ export const siteMessages = {
   "site.language.diagramTypes": "Diagram types",
   "site.language.keywords": "Keywords",
   "site.language.example": "Example",
+  "site.language.syntax": "Syntax",
+  "site.language.preview": "How it looks: {title}",
+  "site.language.previewFailed": "The sample could not be drawn",
   "site.primer.graphml.type.directed.title": "Directed graph",
   "site.primer.graphml.type.directed.summary":
     "Edges run from a source to a target. This is how Code2Graph draws GraphML by default.",
@@ -57,6 +60,18 @@ export const siteMessages = {
     "An activity decision: then and else, closed with endif.",
   "site.primer.plantuml.kw.skinparam":
     "A shared style setting, such as the background color.",
+  "site.primer.plantuml.syntax.sequence":
+    "actor and participant name a lifeline, as is the short alias. A message is ->, a reply is -->, and the label follows the colon.",
+  "site.primer.plantuml.syntax.class":
+    "class opens a class; fields and methods sit inside the braces. A link is --> with multiplicity in quotes.",
+  "site.primer.plantuml.syntax.activity":
+    "start and stop are the ends. A step is :text;. A decision is if () then (), else, and endif.",
+  "site.primer.plantuml.syntax.state":
+    "[*] is the start and the end. A transition is -->, and the event label follows the colon.",
+  "site.primer.plantuml.syntax.usecase":
+    "actor and usecase declare the actor and the case. The link is -->, the direction is left to right direction.",
+  "site.primer.plantuml.syntax.c4_context":
+    "Person(), System(), and Rel() describe people, the system, and a link. The library is pulled in with !include.",
   "site.primer.mermaid.kw.participant":
     "A sequence participant. as replaces the visible label.",
   "site.primer.mermaid.kw.arrow":
@@ -67,6 +82,44 @@ export const siteMessages = {
   "site.primer.mermaid.kw.subgraph": "A group of flowchart nodes. Close it with end.",
   "site.primer.mermaid.kw.class": "A class with fields and methods inside classDiagram.",
   "site.primer.mermaid.kw.section": "A group of tasks on a Gantt chart.",
+  "site.primer.mermaid.syntax.flowchart":
+    "flowchart TD sets the direction. A step is [text], a decision is {text}, a start is ([text]). An arrow is -->, a branch label is |yes|.",
+  "site.primer.mermaid.syntax.sequence":
+    "sequenceDiagram opens the diagram. actor and participant with as name a lifeline. A request is ->>, a reply is -->>.",
+  "site.primer.mermaid.syntax.class":
+    "classDiagram opens the diagram. class Name { } holds +name type fields and methods. A link is -->.",
+  "site.primer.mermaid.syntax.state":
+    "stateDiagram-v2 opens the diagram. [*] is the start. A transition is -->, and the label follows the colon.",
+  "site.primer.mermaid.syntax.er":
+    "erDiagram opens the diagram. ||--o{ reads as one-to-many, and the role follows the colon.",
+  "site.primer.mermaid.syntax.gantt":
+    "gantt opens the chart. title is the heading, dateFormat is the date pattern, section is a group. A task is name :id, date, duration.",
+  "site.primer.mermaid.syntax.mindmap":
+    "mindmap opens the map. The root is root((topic)). Indentation sets the nesting.",
+  "site.primer.mermaid.syntax.pie":
+    "pie showData prints the numbers. title is the heading. A slice is \"name\" : number.",
+  "site.primer.mermaid.syntax.journey":
+    "journey opens the path. title is the heading, section is a stage. A task is name: score: role.",
+  "site.primer.mermaid.syntax.gitgraph":
+    "gitGraph opens the history. commit is a commit, branch is a branch, checkout switches, merge joins.",
+  "site.primer.mermaid.syntax.timeline":
+    "timeline opens the scale. title is the heading, section is a period. Events follow the colon.",
+  "site.primer.mermaid.syntax.sankey":
+    "sankey-beta opens the flows. Each line is source,target,weight.",
+  "site.primer.mermaid.syntax.xychart":
+    "xychart-beta opens the chart. x-axis is the categories, y-axis is the range, bar and line are series.",
+  "site.primer.mermaid.syntax.block":
+    "block-beta opens the blocks. columns sets how many columns. A block is id[\"label\"], a link is -->.",
+  "site.primer.mermaid.syntax.c4_context":
+    "C4Context opens the context. Person() and System() declare elements, Rel() is a link.",
+  "site.primer.mermaid.syntax.requirement":
+    "requirementDiagram opens the diagram. requirement { } is a requirement, element { } is an element, the link is satisfies.",
+  "site.primer.mermaid.syntax.quadrant":
+    "quadrantChart opens the quadrants. x-axis and y-axis are the axes, quadrant-1 … quadrant-4 are the names, a point is name: [x, y].",
+  "site.primer.mermaid.syntax.architecture":
+    "architecture-beta opens the diagram. group is a group, service is a service, a link is service:R --> L:service.",
+  "site.primer.mermaid.syntax.packet":
+    "packet-beta opens the packet. title is the heading. A field is a bit range and a label, for example 0-15: \"Source\".",
   "site.ext.mermaid.title": "Mermaid Ext extension",
   "site.ext.mermaid.lead":
     "Five diagram types that plain Mermaid does not have: waterfall, bubble, heatmap, org chart, and earned value. Drawn by a built-in engine, with no external services.",
@@ -87,6 +140,16 @@ export const siteMessages = {
     "A reporting tree with explicit edges: solid is the main line, dotted -.-> is a secondary manager. Several roots are gathered under an invisible root.",
   "site.ext.mermaid.desc.ev":
     "Three cumulative curves by day: planned value PV, earned value EV, and actual cost AC. Plus SV and CV deviations in the legend.",
+  "site.ext.mermaid.syntax.waterfall":
+    "waterfall opens the chart. y sets the axis. = is an absolute column, + and - are a step, and the label follows the colon.",
+  "site.ext.mermaid.syntax.bubble":
+    "bubble opens the chart. x, y, and size set the axes and the size. Inside data a point is name : x=, y=, size=.",
+  "site.ext.mermaid.syntax.heatmap":
+    "heatmap opens the map. x and y are the axis labels. Inside data a row is name : comma-separated numbers.",
+  "site.ext.mermaid.syntax.orgchart":
+    "orgchart opens the tree. A node is id [role]. A solid edge is ->, a secondary manager is -.->.",
+  "site.ext.mermaid.syntax.ev":
+    "ev opens the chart. days are the days, pv is the plan, ev is earned value, ac is actual cost.",
   "site.primer.graphml.kw.graphml":
     "The document root. The GraphML namespace is required.",
   "site.primer.graphml.kw.graph":
@@ -96,6 +159,10 @@ export const siteMessages = {
   "site.primer.graphml.kw.key": "Declares an attribute for nodes or edges.",
   "site.primer.graphml.kw.data":
     "An attribute value. The visible label lives here, not in the id.",
+  "site.primer.graphml.syntax.directed":
+    "graphml is the root, graph edgedefault=\"directed\" is a directed graph. node is a vertex, edge source and target is an edge, data is the label.",
+  "site.primer.graphml.syntax.undirected":
+    "The same shape, with edgedefault=\"undirected\": an edge only connects nodes.",
   "site.primer.wiremark.kw.wireframe":
     "One screen. The name after # is the anchor other screens link to.",
   "site.primer.wiremark.kw.flow":
@@ -108,6 +175,10 @@ export const siteMessages = {
     "An input. The label is quoted, settings such as required are not.",
   "site.primer.wiremark.kw.button":
     "A button. contained fills it, to=#id jumps to another screen.",
+  "site.primer.wiremark.syntax.wireframe":
+    "Wireframe #anchor opens a screen. Stack builds a column, Typography is text, TextField is an input, Button is a button.",
+  "site.primer.wiremark.syntax.flow":
+    "Flow LR links screens from left to right. to=#anchor on a button jumps to another Wireframe.",
   "site.primer.d2.kw.direction":
     "Layout direction: down, right, left, or up.",
   "site.primer.d2.kw.shape":
@@ -116,6 +187,16 @@ export const siteMessages = {
   "site.primer.d2.kw.style": "Node styling: fill, stroke, and font.",
   "site.primer.d2.kw.constraint":
     "A SQL column constraint: primary_key, foreign_key, or unique.",
+  "site.primer.d2.syntax.flowchart":
+    "direction sets the layout. shape: person and shape: cylinder are node shapes. A link is -> with a label after the colon.",
+  "site.primer.d2.syntax.sequence":
+    "shape: sequence_diagram turns the block into a sequence. Participants are nested nodes, a message is ->.",
+  "site.primer.d2.syntax.class":
+    "shape: class turns the block into a class. Fields and methods are lines inside the block, a link is ->.",
+  "site.primer.d2.syntax.er":
+    "shape: sql_table turns the block into a table. constraint: primary_key and foreign_key mark keys, a link is field -> field.",
+  "site.primer.d2.syntax.architecture":
+    "Nested blocks group nodes. shape sets the form, -> is a labeled link.",
   "site.primer.structurizr.kw.workspace":
     "The document root: a name and a short description of the model.",
   "site.primer.structurizr.kw.person": "A person who uses the system.",
@@ -127,6 +208,14 @@ export const siteMessages = {
   "site.primer.structurizr.kw.views": "Which views to draw from the model.",
   "site.primer.structurizr.kw.autolayout":
     "Automatic view layout: tb is top to bottom, lr is left to right.",
+  "site.primer.structurizr.syntax.c4_context":
+    "workspace opens the document. person and softwareSystem describe the model, -> is a relationship, systemContext and autolayout build the view.",
+  "site.primer.structurizr.syntax.c4_container":
+    "container inside softwareSystem is an application. A container view and include * collect the containers.",
+  "site.primer.structurizr.syntax.component":
+    "component inside container describes a module. A component view draws that container.",
+  "site.primer.structurizr.syntax.deployment":
+    "deploymentEnvironment and deploymentNode describe the environment. containerInstance places a container on a node, a deployment view draws the diagram.",
   "site.stackLead": "Interface:",
   "site.hero.ctaPrimary": "Open editor without sign-up",
   "site.hero.ctaSecondary": "📲 Install on desktop / phone",
