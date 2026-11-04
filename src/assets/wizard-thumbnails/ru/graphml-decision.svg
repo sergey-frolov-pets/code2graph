@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="348" viewBox="0 0 384 348" role="img">
+  <defs>
+    <marker id="graphml-arrow-64748b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+<marker id="graphml-arrow-15803d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#15803d"/>
+    </marker>
+<marker id="graphml-arrow-dc2626" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/>
+    </marker>
+<marker id="graphml-arrow-d97706" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#d97706"/>
+    </marker>
+  </defs>
+  
+  <g class="graphml-edge">
+  <path d="M 206 68 L 206 110 L 206 152" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#graphml-arrow-64748b)"/>
+  
+</g>
+<g class="graphml-edge">
+  <path d="M 167.5 196 L 94 238 L 94 280" fill="none" stroke="#15803d" stroke-width="1.5" marker-end="url(#graphml-arrow-15803d)"/>
+  <rect class="graphml-edge-label" x="92.5" y="224" width="24" height="16" rx="6" fill="#ffffff"/>
+  <text x="104.5" y="232" fill="#0f172a" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" dominant-baseline="middle">Да</text>
+</g>
+<g class="graphml-edge">
+  <path d="M 206 196 L 206 238 L 261.125 280" fill="none" stroke="#dc2626" stroke-width="1.5" marker-end="url(#graphml-arrow-dc2626)"/>
+  <rect class="graphml-edge-label" x="199.7" y="237" width="31" height="16" rx="6" fill="#ffffff"/>
+  <text x="215.2" y="245" fill="#0f172a" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" dominant-baseline="middle">Нет</text>
+</g>
+<g class="graphml-edge">
+  <path d="M 294.8125 280 L 304 238 L 239.6875 196" fill="none" stroke="#d97706" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#graphml-arrow-d97706)"/>
+  <rect class="graphml-edge-label" x="263.8" y="223" width="59" height="16" rx="6" fill="#ffffff"/>
+  <text x="293.3" y="231" fill="#0f172a" font-family="system-ui, sans-serif" font-size="11" text-anchor="middle" dominant-baseline="middle">Ещё раз</text>
+</g>
+  <g class="graphml-node">
+  <ellipse cx="206" cy="46" rx="70" ry="22" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="206" y="46" fill="#0f172a" font-family="system-ui, sans-serif" font-size="13" text-anchor="middle" dominant-baseline="middle">Старт</text>
+</g>
+<g class="graphml-node">
+  <polygon points="206,152 276,174 206,196 136,174" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="206" y="174" fill="#0f172a" font-family="system-ui, sans-serif" font-size="13" text-anchor="middle" dominant-baseline="middle">Проверка</text>
+</g>
+<g class="graphml-node">
+  <rect x="24" y="280" width="140" height="44" rx="6" fill="#dcfce7" stroke="#15803d" stroke-width="1.5"/>
+  <text x="94" y="302" fill="#0f172a" font-family="system-ui, sans-serif" font-size="13" text-anchor="middle" dominant-baseline="middle">Готово</text>
+</g>
+<g class="graphml-node">
+  <rect x="220" y="280" width="140" height="44" rx="6" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="290" y="302" fill="#0f172a" font-family="system-ui, sans-serif" font-size="13" text-anchor="middle" dominant-baseline="middle">Повтор</text>
+</g>
+</svg>

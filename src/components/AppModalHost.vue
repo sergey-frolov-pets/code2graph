@@ -53,7 +53,6 @@ const {
   closeSaveToLibraryModal,
   closeConvertModal,
   closeWizardModal,
-  wizardInitialCreationMode,
 } = modals;
 
 const { guideModalOpen, guideProviderId, closeLlmKeysGuide } = llmKeysGuide;
@@ -172,7 +171,6 @@ function onWizardApply(payload: {
     :layout="layout"
     :render-mode="renderMode"
     :diagram-dark-mode="diagramDarkMode"
-    :initial-creation-mode="wizardInitialCreationMode"
     @close="closeWizardModal"
     @apply="onWizardApply"
   />

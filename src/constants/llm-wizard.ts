@@ -409,12 +409,11 @@ export function wizardTypeSupportsDirection(
 }
 
 export function getWizardSteps(state: WizardState): WizardStepId[] {
-  const steps: WizardStepId[] = ["mode", "language", "type"];
-
   if (state.creationMode === "ai") {
-    steps.push("context", "result");
-    return steps;
+    return ["context", "result"];
   }
+
+  const steps: WizardStepId[] = [];
 
   if (wizardTypeSupportsDirection(state.diagramType, state.language)) {
     steps.push("direction");
@@ -445,15 +444,9 @@ export function resolveWizardStateWithDefaults(
 ): WizardState {
   const visited = new Set(visitedStepIds);
   const resolved: WizardState = {
-    creationMode: visited.has("mode")
-      ? state.creationMode
-      : DEFAULT_WIZARD_STATE.creationMode,
-    language: visited.has("language")
-      ? state.language
-      : DEFAULT_WIZARD_STATE.language,
-    diagramType: visited.has("type")
-      ? state.diagramType
-      : DEFAULT_WIZARD_STATE.diagramType,
+    creationMode: state.creationMode,
+    language: state.language,
+    diagramType: state.diagramType,
     theme: DEFAULT_WIZARD_STATE.theme,
     direction: visited.has("direction")
       ? state.direction

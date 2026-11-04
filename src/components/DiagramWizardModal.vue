@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, toRef, watch } from "vue";
+import { computed, onMounted, toRef, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
 import LoadingState from "@/components/ui/LoadingState.vue";
+import WizardExampleGallery from "@/components/wizard/WizardExampleGallery.vue";
 import WizardOnboardingBanner from "@/components/wizard/WizardOnboardingBanner.vue";
 import WizardAiSetupPanel from "@/components/wizard/WizardAiSetupPanel.vue";
 import WizardLivePreview from "@/components/wizard/WizardLivePreview.vue";
@@ -16,15 +17,12 @@ import { trackEvent } from "@/analytics";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
-import type { WizardCreationMode } from "@/constants/llm-wizard";
-
 const props = defineProps<{
   open: boolean;
   documentKey: string;
   layout: LayoutEngine;
   renderMode: RenderMode;
   diagramDarkMode: boolean;
-  initialCreationMode?: WizardCreationMode | null;
 }>();
 
 const emit = defineEmits<{
@@ -36,8 +34,6 @@ const { t, locale } = useLocale();
 const { showWizardBanner, dismissWizardBanner } = useWizardOnboarding();
 const { activeLlmDetail } = useActiveLlmLabel();
 
-const pendingLaunchMode = ref<WizardCreationMode | null>(null);
-
 function trackWizardOpen(): void {
   // New-diagram wizard opened: exactly one event per opening.
   trackEvent("wizard-open", "Wizard: new diagram");
@@ -47,7 +43,6 @@ watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
-      pendingLaunchMode.value = props.initialCreationMode ?? null;
       trackWizardOpen();
     }
   },
@@ -63,6 +58,7 @@ onMounted(() => {
 
 const {
   stepIndex,
+  galleryVisible,
   wizardState,
   isGenerating,
   errorMessage,
@@ -78,18 +74,13 @@ const {
   stepTitle,
   structuralElementOptions,
   showBackButton,
-  languageOptions,
-  typeOptions,
   directionOptions,
   paramFields,
   isAiMode,
-  selectedModeDescription,
   isManualResultReady,
   canGoNext,
   wizardSteps,
-  onModeSelect,
-  onLanguageSelect,
-  onTypeSelect,
+  openGalleryExample,
   onDirectionSelect,
   onParamChange,
   onStructuralToggle,
@@ -116,7 +107,6 @@ const {
   diagramDarkMode: toRef(props, "diagramDarkMode"),
   locale,
   t,
-  initialCreationMode: pendingLaunchMode,
   onApply: (payload) => {
     trackEvent("wizard-apply", "Wizard: apply");
     emit("apply", payload);
@@ -143,9 +133,14 @@ const showLivePreview = computed(
     />
 
     <p class="wizard-step-title">
-      {{ stepTitle }}
+      {{ galleryVisible ? t("llm.wizard.gallery.heading") : stepTitle }}
     </p>
+    <WizardExampleGallery
+      v-if="galleryVisible"
+      @choose="openGalleryExample"
+    />
     <div
+      v-if="!galleryVisible"
       class="wizard-progress"
       role="progressbar"
       :aria-valuenow="stepIndex + 1"
@@ -159,21 +154,25 @@ const showLivePreview = computed(
       />
     </div>
     <WizardProgressSteps
+      v-if="!galleryVisible"
       :steps="wizardSteps"
       :step-index="stepIndex"
     />
-    <p class="wizard-step-meta">
+    <p
+      v-if="!galleryVisible"
+      class="wizard-step-meta"
+    >
       {{ t("llm.wizard.stepCounter", { current: stepIndex + 1, total: totalSteps }) }}
     </p>
 
     <WizardAiSetupPanel
-      v-if="aiSetupVisible && isAiMode"
+      v-if="!galleryVisible && aiSetupVisible && isAiMode"
       :reason="aiSetupReason"
       @retry="handleAiSetupRetry"
     />
 
     <LoadingState
-      v-if="isGenerating && isAiMode && currentStepId !== 'result'"
+      v-if="!galleryVisible && isGenerating && isAiMode && currentStepId !== 'result'"
       compact
       class="wizard-generating-banner"
       :message="t('llm.wizard.generating')"
@@ -181,6 +180,7 @@ const showLivePreview = computed(
     />
 
     <div
+      v-if="!galleryVisible"
       class="wizard-body"
       :class="{ 'wizard-body--with-preview': showLivePreview }"
     >
@@ -193,9 +193,6 @@ const showLivePreview = computed(
           :is-manual-result-ready="isManualResultReady"
           :error-message="errorMessage"
           :result-explanation="resultExplanation"
-          :selected-mode-description="selectedModeDescription"
-          :language-options="languageOptions"
-          :type-options="typeOptions"
           :direction-options="directionOptions"
           :param-fields="paramFields"
           :structural-element-options="structuralElementOptions"
@@ -204,9 +201,6 @@ const showLivePreview = computed(
           :show-refine-chat="showRefineChat"
           :refine-messages="refineMessages"
           :is-refine-chat-busy="isRefineChatBusy"
-          @mode-select="onModeSelect($event)"
-          @language-select="onLanguageSelect($event)"
-          @type-select="onTypeSelect($event)"
           @direction-select="onDirectionSelect($event)"
           @param-change="onParamChange"
           @structural-toggle="onStructuralToggle"
@@ -227,6 +221,7 @@ const showLivePreview = computed(
     <template #footer>
       <WizardModalFooter
         :current-step-id="currentStepId"
+        :gallery="galleryVisible"
         :is-ai-mode="isAiMode"
         :is-generating="isGenerating"
         :can-go-next="canGoNext"

@@ -8,6 +8,7 @@ import { miscMessages } from "./misc";
 import { conversionMessages } from "./conversion";
 import { siteMessages } from "./site";
 import { wiremarkGuideMessages } from "./wiremark-guide";
+import { wizardGalleryMessages } from "./wizard-gallery";
 
 export const ruMessages = {
   ...appMessages,
@@ -20,4 +21,5 @@ export const ruMessages = {
   ...conversionMessages,
   ...siteMessages,
   ...wiremarkGuideMessages,
+  ...wizardGalleryMessages,
 } as const;
