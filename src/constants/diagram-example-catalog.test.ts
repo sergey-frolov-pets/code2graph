@@ -25,6 +25,7 @@ import {
   wizardTagFontSizePx,
 } from "@/constants/wizard-gallery";
 import { wizardThumbnailFileName } from "@/constants/wizard-gallery";
+import { sanitizeThumbnailSvg, wizardThumbnailSvg } from "@/constants/wizard-thumbnails";
 import type { AppLocale } from "@/constants/i18n";
 import { formatMessage } from "@/locales/messages";
 import { enMessages } from "@/locales/en";
@@ -128,6 +129,13 @@ describe("diagram example catalog", () => {
     expect(finance!.fontSizePx).toBeGreaterThan(organization!.fontSizePx);
   });
 
+  it("drops a repeated xmlns so PlantUML thumbnails stay valid images", () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" width="10"></svg>';
+    const sanitized = sanitizeThumbnailSvg(svg);
+    expect(sanitized.match(/xmlns=/g)).toHaveLength(1);
+  });
+
   it("stores a light thumbnail for every example in both locales", () => {
     for (const example of DIAGRAM_EXAMPLES) {
       for (const locale of ["ru", "en"] as const) {
@@ -137,6 +145,9 @@ describe("diagram example catalog", () => {
           wizardThumbnailFileName(example.format, example.sampleId),
         );
         expect(existsSync(filePath), filePath).toBe(true);
+        const svg = wizardThumbnailSvg(example.format, example.sampleId, locale);
+        expect(svg, example.id).toContain("<svg");
+        expect(svg?.match(/<svg\b[^>]*\sxmlns="[^"]*"\sxmlns="/), example.id).toBeNull();
       }
     }
   });
