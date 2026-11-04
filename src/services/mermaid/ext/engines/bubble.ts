@@ -274,14 +274,29 @@ const MAX_R = 40;
 const FONT_BASE = 11;
 const FONT_MIN = 6;
 const FONT_MAX = 28;
+/** Доля радиуса, внутри которой подпись ещё считается «внутри пузырька». */
+const LABEL_INSIDE_RATIO = 0.86;
+/** Зазор между нижней кромкой пузырька и подписью снаружи, px. */
+const LABEL_BELOW_GAP = 4;
+/** Базовая линия первой внешней строки, доля font-size (верх глифа ≈ край + зазор). */
+const LABEL_BELOW_BASELINE_RATIO = 0.8;
+/** Смещение базовой линии строки относительно её оптического центра, доля font-size. */
+const LABEL_BASELINE_RATIO = 0.35;
+/** Насколько подпись свисает ниже базовой линии, доля font-size. */
+const LABEL_DESCENT_RATIO = 0.25;
+/** Ширина строки подписи под пузырьком: радиусы и пределы в px. */
+const LABEL_BELOW_WIDTH_RATIO = 3.2;
+const LABEL_BELOW_MIN_WIDTH = 72;
+const LABEL_BELOW_MAX_WIDTH = 168;
+/** Поле от края холста, чтобы внешняя подпись не обрезалась. */
+const LABEL_CANVAS_MARGIN = 4;
 
 const GROUP_COLORS = ["#0969da", "#8250df", "#bf8700", "#1a7f37", "#cf222e", "#6e7781"];
 const GROUP_COLORS_DARK = ["#58a6ff", "#a371f7", "#d29922", "#3fb950", "#f85149", "#8b949e"];
 
 /**
- * Самое длинное слово подписи. Нужно, чтобы выбрать ширину строки:
- * слово, которое не влезает в круг, выводится целиком (за край),
- * а не режется по буквам.
+ * Самое длинное слово подписи. Ширина строки под пузырьком
+ * не уже этого слова, чтобы не резать его по буквам.
  */
 function longestWord(text: string): string {
   let best = "";
@@ -335,6 +350,105 @@ function wrapLabel(text: string, maxWidth: number, fontSize: number): string[] {
   return lines;
 }
 
+function normalizedLabel(text: string): string {
+  return String(text ?? "").trim().replace(/\s+/g, " ");
+}
+
+/** Строки собраны из целых слов исходной подписи, без разрезания по буквам. */
+function keepsWholeWords(label: string, lines: string[]): boolean {
+  return lines.length > 0 && lines.join(" ") === normalizedLabel(label);
+}
+
+function labelStep(fontSize: number): number {
+  return Math.round(fontSize * 1.15);
+}
+
+/** Прямоугольник строк вписан в круг радиуса `innerRadius`. */
+function blockFitsCircle(
+  lines: string[],
+  fontSize: number,
+  step: number,
+  innerRadius: number,
+): boolean {
+  const width = Math.max(...lines.map((line) => measureText(line, fontSize)));
+  const height = lines.length * step;
+  const halfW = width / 2;
+  const halfH = height / 2;
+  return halfW * halfW + halfH * halfH <= innerRadius * innerRadius;
+}
+
+/**
+ * Подпись внутри пузырька: перенос по словам так, чтобы блок влез в круг.
+ * Если целое слово не помещается — null, подпись уйдёт под пузырёк.
+ */
+function linesInsideBubble(label: string, fontSize: number, radius: number): string[] | null {
+  const step = labelStep(fontSize);
+  const innerR = radius * LABEL_INSIDE_RATIO;
+  if (step / 2 >= innerR) return null;
+  const maxLines = Math.max(1, Math.floor((innerR * 2) / step));
+  for (let lineCount = 1; lineCount <= maxLines; lineCount += 1) {
+    const halfH = (lineCount * step) / 2;
+    if (halfH >= innerR) break;
+    const maxWidth = 2 * Math.sqrt(innerR * innerR - halfH * halfH);
+    const lines = wrapLabel(label, maxWidth, fontSize);
+    if (
+      lines.length <= lineCount &&
+      keepsWholeWords(label, lines) &&
+      blockFitsCircle(lines, fontSize, step, innerR)
+    ) {
+      return lines;
+    }
+  }
+  return null;
+}
+
+interface PointLabelLayout {
+  lines: string[];
+  fontSize: number;
+  inside: boolean;
+  startY: number;
+  step: number;
+}
+
+function layoutPointLabel(
+  label: string,
+  cy: number,
+  radius: number,
+  fontSize: number,
+): PointLabelLayout {
+  const step = labelStep(fontSize);
+  const insideLines = linesInsideBubble(label, fontSize, radius);
+  if (insideLines) {
+    const startY = cy - ((insideLines.length - 1) * step) / 2 + fontSize * LABEL_BASELINE_RATIO;
+    return { lines: insideLines, fontSize, inside: true, startY, step };
+  }
+  const belowWidth = Math.max(
+    clamp(radius * LABEL_BELOW_WIDTH_RATIO, LABEL_BELOW_MIN_WIDTH, LABEL_BELOW_MAX_WIDTH),
+    measureText(longestWord(label), fontSize),
+  );
+  const lines = wrapLabel(label, belowWidth, fontSize);
+  const startY = cy + radius + LABEL_BELOW_GAP + fontSize * LABEL_BELOW_BASELINE_RATIO;
+  return { lines, fontSize, inside: false, startY, step };
+}
+
+function labelBottom(layout: PointLabelLayout): number {
+  if (layout.lines.length === 0) return 0;
+  const lastBaseline = layout.startY + (layout.lines.length - 1) * layout.step;
+  return lastBaseline + layout.fontSize * LABEL_DESCENT_RATIO;
+}
+
+/** Внешняя подпись остаётся на холсте: якорь сдвигается, если строка шире поля. */
+function clampLabelX(
+  cx: number,
+  lines: string[],
+  fontSize: number,
+  canvasWidth: number,
+): number {
+  const half = Math.max(0, ...lines.map((line) => measureText(line, fontSize))) / 2;
+  if (half * 2 + LABEL_CANVAS_MARGIN * 2 >= canvasWidth) return canvasWidth / 2;
+  return clamp(cx, half + LABEL_CANVAS_MARGIN, canvasWidth - half - LABEL_CANVAS_MARGIN);
+}
+
 export function renderBubble(model: BubbleModel, options: ExtRenderOptions): string {
   const palette = getPalette(options.dark);
   const groupColors = options.dark ? GROUP_COLORS_DARK : GROUP_COLORS;
@@ -376,17 +490,6 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
   }
   const legendHeight = legendRows.length * legendRowHeight;
 
-  const width = PADDING.left + PLOT_WIDTH + PADDING.right;
-  const height =
-    PADDING.top + PLOT_HEIGHT + PADDING.bottom + Math.max(0, legendHeight - legendRowHeight);
-  const svg = createSvg({
-    width,
-    height,
-    palette,
-    title: model.title,
-    debugFrames: options.debugFrames,
-  });
-
   const plotLeft = PADDING.left;
   const plotTop = PADDING.top;
   const plotBottom = plotTop + PLOT_HEIGHT;
@@ -397,6 +500,52 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
   const ySpan = yAxis.max - yAxis.min || 1;
   const px = (v: number): number => plotLeft + clamp((v - xAxis.min) / xSpan, 0, 1) * PLOT_WIDTH;
   const py = (v: number): number => plotBottom - clamp((v - yAxis.min) / ySpan, 0, 1) * PLOT_HEIGHT;
+
+  // Радиусы: площадь ∝ size
+  const sizes = model.points.map((p) => Math.abs(p.size));
+  const maxSize = sizes.length ? Math.max(...sizes) : 0;
+  const minSize = sizes.length ? Math.min(...sizes) : 0;
+  const radiusOf = (size: number): number => {
+    const s = Math.abs(size);
+    if (maxSize <= 0) return MIN_R;
+    if (maxSize === minSize) return (MIN_R + MAX_R) / 2;
+    const t = Math.sqrt(clamp((s - minSize) / (maxSize - minSize), 0, 1));
+    return MIN_R + t * (MAX_R - MIN_R);
+  };
+
+  // Точки: сначала крупные, чтобы мелкие были сверху.
+  // Подпись, которая не влезает в круг, считается заранее: от неё зависит высота холста.
+  const ordered = [...model.points].sort((a, b) => Math.abs(b.size) - Math.abs(a.size));
+  const placed = ordered.map((point) => {
+    const cx = px(point.x);
+    const cy = py(point.y);
+    const r = radiusOf(point.size);
+    const labelLayout = point.label
+      ? layoutPointLabel(point.label, cy, r, fontSize)
+      : null;
+    return { point, cx, cy, r, labelLayout };
+  });
+
+  let labelOverflow = 0;
+  for (const item of placed) {
+    if (!item.labelLayout || item.labelLayout.inside) continue;
+    labelOverflow = Math.max(labelOverflow, labelBottom(item.labelLayout) - plotBottom);
+  }
+
+  const width = PADDING.left + PLOT_WIDTH + PADDING.right;
+  const height =
+    PADDING.top +
+    PLOT_HEIGHT +
+    PADDING.bottom +
+    Math.max(0, legendHeight - legendRowHeight) +
+    labelOverflow;
+  const svg = createSvg({
+    width,
+    height,
+    palette,
+    title: model.title,
+    debugFrames: options.debugFrames,
+  });
 
   if (model.title) {
     svg.text(width / 2, 24, model.title, {
@@ -455,9 +604,10 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
     drawQuadrant(q4, plotRight - inset, plotBottom - inset, rightWidth, "end", true);
   }
 
-  // Подписи осей
+  // Подписи осей. Если подпись точки ушла под пузырёк и ниже области,
+  // ось и легенда сдвигаются вниз, чтобы не накрыть её.
   if (xAxis.label) {
-    svg.text((plotLeft + plotRight) / 2, plotBottom + 34, xAxis.label, {
+    svg.text((plotLeft + plotRight) / 2, plotBottom + 34 + labelOverflow, xAxis.label, {
       "font-size": axisSize,
       fill: palette.fgDim,
     });
@@ -473,18 +623,6 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
     });
   }
 
-  // Радиусы: площадь ∝ size
-  const sizes = model.points.map((p) => Math.abs(p.size));
-  const maxSize = sizes.length ? Math.max(...sizes) : 0;
-  const minSize = sizes.length ? Math.min(...sizes) : 0;
-  const radiusOf = (size: number): number => {
-    const s = Math.abs(size);
-    if (maxSize <= 0) return MIN_R;
-    if (maxSize === minSize) return (MIN_R + MAX_R) / 2;
-    const t = Math.sqrt(clamp((s - minSize) / (maxSize - minSize), 0, 1));
-    return MIN_R + t * (MAX_R - MIN_R);
-  };
-
   // Группы → цвета (список groups собран выше, при раскладке легенды)
   const colorOf = (group?: string): string => {
     if (!group) return palette.neutral;
@@ -492,41 +630,30 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
     return groupColors[idx % groupColors.length];
   };
 
-  // Точки: сначала крупные, чтобы мелкие были сверху
-  const ordered = [...model.points].sort((a, b) => Math.abs(b.size) - Math.abs(a.size));
-  for (const point of ordered) {
-    const cx = px(point.x);
-    const cy = py(point.y);
-    const r = radiusOf(point.size);
+  for (const item of placed) {
+    const { point, cx, cy, r, labelLayout } = item;
     svg.circle(cx, cy, r, {
       fill: colorOf(point.group),
       "fill-opacity": 0.55,
       stroke: colorOf(point.group),
       "stroke-width": 1.5,
     });
-    const label = point.label;
-    if (label) {
-      // Подпись выводится целиком — без «…». Шрифт подстраивается под круг,
-      // но не мельче FONT_MIN; ширина строки — по кругу, однако слово,
-      // которое в круг не влезает, не режется по буквам, а выходит за край:
-      // читаемость важнее геометрии.
-      const lineFs = clamp(Math.min(fontSize, r * 0.85), FONT_MIN, fontSize);
-      const innerWidth = Math.max(measureText(longestWord(label), lineFs), r * 1.7);
-      const lines = wrapLabel(label, innerWidth, lineFs);
-      const step = Math.round(lineFs * 1.15);
-      const startY = cy - ((lines.length - 1) * step) / 2 + lineFs * 0.35;
-      lines.forEach((line, idx) => {
-        svg.text(cx, startY + idx * step, line, {
-          "font-size": lineFs,
-          fill: palette.fg,
-          "font-weight": 600,
-        });
+    if (!labelLayout || labelLayout.lines.length === 0) continue;
+    // Внутри круга — по центру. Не влезла целиком — под пузырьком, без «…».
+    const x = labelLayout.inside
+      ? cx
+      : clampLabelX(cx, labelLayout.lines, labelLayout.fontSize, width);
+    labelLayout.lines.forEach((line, idx) => {
+      svg.text(x, labelLayout.startY + idx * labelLayout.step, line, {
+        "font-size": labelLayout.fontSize,
+        fill: palette.fg,
+        "font-weight": 600,
       });
-    }
+    });
   }
 
   // Легенда групп + подпись размера: строки переносятся по ширине графика.
-  const legendTop = plotBottom + 50;
+  const legendTop = plotBottom + 50 + labelOverflow;
   legendRows.forEach((row, rowIdx) => {
     const y = legendTop + rowIdx * legendRowHeight;
     for (const item of row) {
