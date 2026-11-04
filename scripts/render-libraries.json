@@ -12,8 +12,8 @@
       "repository": "plantuml-stdlib/C4-PlantUML",
       "cloneUrl": "https://github.com/plantuml-stdlib/C4-PlantUML.git",
       "refKind": "release-branch",
-      "ref": "release/v2.13.0",
-      "version": "2.13.0",
+      "ref": "release/v2.14.0",
+      "version": "2.14.0",
       "vendorDir": "vendor/C4-PlantUML",
       "copyScript": "scripts/copy-c4-lib.mjs"
     },

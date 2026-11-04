@@ -1,6 +1,6 @@
 # C4-PlantUML (local copy)
 
-Version: v2.13.0 — https://github.com/plantuml-stdlib/C4-PlantUML
+Version: v2.14.0 — https://github.com/plantuml-stdlib/C4-PlantUML
 
 Usage in diagrams:
 
