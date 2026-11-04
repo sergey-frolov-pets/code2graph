@@ -27,8 +27,7 @@ self.addEventListener("install", (event) => {
       )
       .then(() => caches.open(PRECACHE))
       .then((cache) => cache.addAll(PRECACHE_URLS))
-      .then(() => self.skipWaiting())
-      .catch(() => self.skipWaiting()),
+      .catch(() => undefined),
   );
 });
 
@@ -38,7 +37,9 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
-    self.skipWaiting();
+    // Keep the worker alive until it leaves the waiting phase. Without
+    // waitUntil the click on "Обновить" returns and the page never reloads.
+    event.waitUntil(self.skipWaiting());
     return;
   }
 
