@@ -1,0 +1,107 @@
+# Ручной запуск: Actions → Render libraries (admin) → Run workflow.
+# По умолчанию только отчёт. «Обновить» ставит новые версии и открывает pull request.
+# Запуск доступен только администратору репозитория.
+
+name: Render libraries (admin)
+
+on:
+  workflow_dispatch:
+    inputs:
+      update:
+        description: Обновить библиотеки до последних версий и открыть pull request
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: render-libraries
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Check versions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Require repository admin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/require-repo-admin.mjs
+
+      - name: Test version checker
+        run: npm run render-libs:test
+
+      - name: Check library versions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RENDER_LIBS_REPORT: ${{ runner.temp }}/render-libraries-report.json
+        run: node scripts/check-render-libraries.mjs
+
+  update:
+    name: Update and open pull request
+    needs: check
+    if: inputs.update == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Require repository admin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/require-repo-admin.mjs
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update render libraries
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RENDER_LIBS_COMMIT_MESSAGE: ${{ runner.temp }}/render-libraries-commit.txt
+          RENDER_LIBS_PR_BODY: ${{ runner.temp }}/render-libraries-pr.md
+        run: node scripts/check-render-libraries.mjs --update
+
+      - name: Open pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_MESSAGE_PATH: ${{ runner.temp }}/render-libraries-commit.txt
+          PR_BODY_PATH: ${{ runner.temp }}/render-libraries-pr.md
+          UPDATE_BRANCH: chore/update-render-libraries
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$UPDATE_BRANCH"
+          git add package.json package-lock.json scripts/render-libraries.json public/plantuml-lib
+          if git diff --staged --quiet; then
+            echo "No library updates to commit"
+            exit 0
+          fi
+          git commit -F "$COMMIT_MESSAGE_PATH"
+          git fetch origin "$UPDATE_BRANCH" || true
+          git push --force-with-lease -u origin HEAD
+          if gh pr view "$UPDATE_BRANCH" >/dev/null 2>&1; then
+            gh pr edit "$UPDATE_BRANCH" --body-file "$PR_BODY_PATH"
+            exit 0
+          fi
+          gh pr create \
+            --base main \
+            --head "$UPDATE_BRANCH" \
+            --title "chore: update diagram render libraries" \
+            --body-file "$PR_BODY_PATH"

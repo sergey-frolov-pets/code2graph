@@ -1,0 +1,32 @@
+{
+  "npm": [
+    "@plantuml/core",
+    "mermaid",
+    "@d2lang/d2",
+    "@wiremark/core"
+  ],
+  "git": [
+    {
+      "id": "c4",
+      "title": "C4-PlantUML",
+      "repository": "plantuml-stdlib/C4-PlantUML",
+      "cloneUrl": "https://github.com/plantuml-stdlib/C4-PlantUML.git",
+      "refKind": "release-branch",
+      "ref": "release/v2.13.0",
+      "version": "2.13.0",
+      "vendorDir": "vendor/C4-PlantUML",
+      "copyScript": "scripts/copy-c4-lib.mjs"
+    },
+    {
+      "id": "archimate",
+      "title": "Archimate-PlantUML",
+      "repository": "plantuml-stdlib/Archimate-PlantUML",
+      "cloneUrl": "https://github.com/plantuml-stdlib/Archimate-PlantUML.git",
+      "refKind": "tag",
+      "ref": "v3.2.2",
+      "version": "3.2.2",
+      "vendorDir": "vendor/Archimate-PlantUML",
+      "copyScript": "scripts/copy-archimate-lib.mjs"
+    }
+  ]
+}

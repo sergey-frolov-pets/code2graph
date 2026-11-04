@@ -2,22 +2,29 @@ import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node
 import { execSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  ARCHIMATE_LIBRARY_ID,
+  gitLibrary,
+  libraryVersionLabel,
+  readCatalog,
+} from "./render-libraries.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const appRoot = path.resolve(scriptDir, "..");
+const archimateLibrary = gitLibrary(readCatalog(), ARCHIMATE_LIBRARY_ID);
 const targetDir = path.join(appRoot, "public", "plantuml-lib", "archimate");
 const archimateSourceDir = path.join(
   appRoot,
-  "vendor",
-  "Archimate-PlantUML",
+  archimateLibrary.vendorDir,
   "dist",
   "plantuml-stdlib",
   "stdlib",
   "archimate",
 );
 
-const ARCHIMATE_REPO = "https://github.com/plantuml-stdlib/Archimate-PlantUML.git";
-const ARCHIMATE_TAG = "v3.2.2";
+const ARCHIMATE_REPO = archimateLibrary.cloneUrl;
+const ARCHIMATE_TAG = archimateLibrary.ref;
+const ARCHIMATE_VERSION_LABEL = libraryVersionLabel(archimateLibrary.version);
 
 const ARCHIMATE_PUML_FILES = [
   "Archimate.puml",
@@ -86,12 +93,12 @@ function patchArchimateThemeForLocal(content) {
 }
 
 function ensureArchimateSource() {
-  const vendorDir = path.join(appRoot, "vendor", "Archimate-PlantUML");
+  const vendorDir = path.join(appRoot, archimateLibrary.vendorDir);
   if (existsSync(vendorDir)) {
     return;
   }
 
-  mkdirSync(path.join(appRoot, "vendor"), { recursive: true });
+  mkdirSync(path.dirname(vendorDir), { recursive: true });
   execSync(
     `git clone --depth 1 --branch ${ARCHIMATE_TAG} ${ARCHIMATE_REPO} ${vendorDir}`,
     { stdio: "inherit" },
@@ -143,7 +150,7 @@ function copyArchimateLibrary() {
     path.join(targetDir, "README.md"),
     `# Archimate-PlantUML (local copy)
 
-Version: v3.2.2 — https://github.com/plantuml-stdlib/Archimate-PlantUML
+Version: ${ARCHIMATE_VERSION_LABEL} — https://github.com/plantuml-stdlib/Archimate-PlantUML
 
 Usage in diagrams:
 
