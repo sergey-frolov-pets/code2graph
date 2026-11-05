@@ -30,12 +30,22 @@ import {
 } from "./scale-and-colors";
 import type { WaterfallModel } from "./types";
 
+/** «transparent» / «none» из окна оформления — фон диаграммы не залит. */
+function isTransparentChartBackground(value: string | undefined): boolean {
+  const normalized = value?.trim().toLowerCase() ?? "";
+  return normalized === "transparent" || normalized === "none";
+}
+
 export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions): string {
+  const chartBackground = model.background ?? options.background;
   const palette = resolvePalette(
     Boolean(options.dark),
-    model.background ?? options.background,
+    chartBackground,
     model.textColor ?? options.textColor,
   );
+  // Вырезы под числа и подпись разрыва повторяют фон диаграммы.
+  // Прозрачный фон — прозрачная плашка, иначе на шахматке остаётся цвет темы.
+  const breakTextFill = isTransparentChartBackground(chartBackground) ? "transparent" : palette.bg;
   const { axis, series, labels, title } = model;
   const breaks = model.breaks ?? [];
   const lines = model.lines ?? [];
@@ -178,8 +188,8 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       const boxTop = upperBaseline - labelFontSize;
       const boxBottom = lowerBaseline + Math.round(labelFontSize * 0.25);
       svg.rect(edgeLabelX - edgeTextW - 3, boxTop - 1, edgeTextW + 7, boxBottom - boxTop + 2, {
-        fill: palette.bg,
-        "data-break-gap": "1",
+        fill: breakTextFill,
+        "data-break-text-bg": "1",
       });
       // Нижнее число — минимум вырезанного участка: базлайн ниже линии.
       svg.text(edgeLabelX, lowerBaseline, fmt(b.after), {
@@ -251,8 +261,8 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       const textX = Math.max(lastBarRight + Math.round((6 * fontSize) / FONT_BASE), rightEdge - textWidth);
       // Вырез под подпись: иначе текст лежит на линии разрыва и не читается.
       svg.rect(textX - 2, y - breakFs * 0.75, textWidth + 4, breakFs * 1.5, {
-        fill: palette.bg,
-        "data-break-gap": "1",
+        fill: breakTextFill,
+        "data-break-text-bg": "1",
       });
       svg.text(textX, y + Math.round((4 * fontSize) / FONT_BASE), text, {
         "text-anchor": "start",

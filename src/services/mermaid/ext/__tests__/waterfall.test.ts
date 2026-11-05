@@ -1317,6 +1317,43 @@ describe("waterfall: фон и цвет текста", () => {
     expect(svg).toContain("#e6edf3");
   });
 
+  it("прозрачный фон диаграммы делает плашки чисел и подписи разрыва прозрачными", () => {
+    const svg = waterfallEngine.render(
+      waterfallEngine.parse(
+        [
+          ...base,
+          "break 40 --> 70 \"разрыв\"",
+        ].join("\n"),
+      ).value as WaterfallModel,
+      { dark: false, background: "transparent" },
+    );
+    const textBackgrounds = [...svg.matchAll(/<rect[^>]*data-break-text-bg="1"[^>]*>/g)].map(
+      (match) => match[0],
+    );
+    expect(textBackgrounds.length).toBeGreaterThanOrEqual(2);
+    for (const rect of textBackgrounds) {
+      expect(rect).toContain('fill="transparent"');
+    }
+    // Вырез зигзага на столбце остаётся сплошным: иначе куски бара сливаются.
+    expect(svg).toContain('data-break-gap="1"');
+    expect(svg).not.toMatch(/data-break-gap="1"[^>]*fill="transparent"/);
+    expect(svg).not.toMatch(/fill="transparent"[^>]*data-break-gap="1"/);
+  });
+
+  it("сплошной фон оставляет плашки чисел и подписи разрыва цветом диаграммы", () => {
+    const svg = waterfallEngine.render(
+      waterfallEngine.parse([...base, 'break 40 --> 70 "разрыв"'].join("\n")).value as WaterfallModel,
+      { dark: false, background: "#0b0f14" },
+    );
+    const textBackgrounds = [...svg.matchAll(/<rect[^>]*data-break-text-bg="1"[^>]*>/g)].map(
+      (match) => match[0],
+    );
+    expect(textBackgrounds.length).toBeGreaterThanOrEqual(2);
+    for (const rect of textBackgrounds) {
+      expect(rect).toContain('fill="#0b0f14"');
+    }
+  });
+
   it("пустой textColor из окна оформления не затирает автоконтраст", () => {
     const svg = waterfallEngine.render(
       waterfallEngine.parse(base.join("\n")).value as WaterfallModel,
