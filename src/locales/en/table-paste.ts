@@ -67,7 +67,7 @@ export const tablePasteMessages = {
   "tablePaste.expected.heatmap.columns":
     "Matrix at least 2×2: first row has X column headers, first column has Y row labels, inner cells hold numbers (or empty cells).",
   "tablePaste.expected.heatmap.rules":
-    "Generates x, y directives and the data block. Empty cells become null slots.",
+    "The x and y lines are inserted before the scale block. If scale is missing, a scale from the minimum to the maximum value is added, blue to red. Empty cells become null slots.",
   "tablePaste.expected.heatmap.headers": "Period|Mon|Tue|Wed",
   "tablePaste.expected.bubble.columns":
     "4 or 5 columns: 'Label', 'X (number)', 'Y (number)', 'Size (number)', ['Group (optional)'].",
