@@ -137,7 +137,7 @@ export const siteMessages = {
   "site.ext.mermaid.desc.heatmap":
     "A value matrix with a color scale. Scale ranges are explicit, an empty cell (two separators in a row) is drawn gray.",
   "site.ext.mermaid.desc.orgchart":
-    "A reporting tree with explicit edges: solid is the main line, dotted -.-> is a secondary manager. Several roots are gathered under an invisible root.",
+    "A reporting tree with explicit edges: solid is the main line, dotted -.-> is a secondary manager. A block can set its fill (color) and its border (border, style). Several roots are gathered under an invisible root.",
   "site.ext.mermaid.desc.ev":
     "Three cumulative curves by day: planned value PV, earned value EV, and actual cost AC. Plus SV and CV deviations in the legend.",
   "site.ext.mermaid.syntax.waterfall":
@@ -147,7 +147,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.heatmap":
     "heatmap opens the map. x and y are the axis labels. Inside data a row is name : comma-separated numbers.",
   "site.ext.mermaid.syntax.orgchart":
-    "orgchart opens the tree. A node is id [role\\nname] (\\n breaks the line, the box fits the text). A solid edge is ->, a secondary manager is -.->.",
+    "orgchart opens the tree. A node is id [role\\nname] (\\n breaks the line, the box fits the text); color=#hex sets the fill, border=#hex and style=solid|dash|dot|dashdot set the border color and style. A solid edge is ->, a secondary manager is -.->.",
   "site.ext.mermaid.syntax.ev":
     "ev opens the chart. days are the days, pv is the plan, ev is earned value, ac is actual cost.",
   "site.primer.graphml.kw.graphml":
