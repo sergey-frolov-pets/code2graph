@@ -35,6 +35,11 @@ const MERMAID_EXT_TYPE_IDS = [
   "ext-heatmap",
   "ext-orgchart",
   "ext-ev",
+  "ext-boxplot",
+  "ext-treemap",
+  "ext-radar",
+  "ext-voronoi",
+  "ext-clustered",
 ] as const;
 
 describe("language page primer", () => {

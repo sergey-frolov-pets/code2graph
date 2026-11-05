@@ -47,16 +47,27 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.tag.setting.direction-lr": "Слева направо",
   "llm.wizard.gallery.tag.setting.swimlane": "Дорожки",
   "llm.wizard.gallery.tag.setting.noLines": "Без соединительных линий",
+  "llm.wizard.gallery.tag.setting.rotate90": "Поворот 90°",
   "llm.wizard.gallery.tag.diagramType.waterfall": "Водопад",
   "llm.wizard.gallery.tag.diagramType.bubble": "Пузырьковая диаграмма",
   "llm.wizard.gallery.tag.diagramType.heatmap": "Тепловая карта",
   "llm.wizard.gallery.tag.diagramType.orgchart": "Оргсхема",
   "llm.wizard.gallery.tag.diagramType.ev": "Освоенный объём",
+  "llm.wizard.gallery.tag.diagramType.boxplot": "Ящик с усами",
+  "llm.wizard.gallery.tag.diagramType.treemap": "Древовидная карта",
+  "llm.wizard.gallery.tag.diagramType.radar": "Лепестковая диаграмма",
+  "llm.wizard.gallery.tag.diagramType.voronoi": "Диаграмма Вороного",
+  "llm.wizard.gallery.tag.diagramType.clustered": "Кластеризованная диаграмма",
   "llm.wizard.gallery.tag.diagramType.decision": "Решение",
   "llm.wizard.gallery.desc.bubble": "Точки на двух осях, размер задаёт третье значение.",
   "llm.wizard.gallery.desc.heatmap": "Матрица, цвет ячейки показывает величину.",
   "llm.wizard.gallery.desc.orgchart": "Люди и команды в дереве подчинения.",
   "llm.wizard.gallery.desc.ev": "План, освоенный объём и фактические затраты.",
+  "llm.wizard.gallery.desc.boxplot": "Распределение по квартилям, медиане, усам и выбросам.",
+  "llm.wizard.gallery.desc.treemap": "Вложенные прямоугольники, площадь которых пропорциональна весу.",
+  "llm.wizard.gallery.desc.radar": "Сравнение нескольких серий по осям-лучам из одного центра.",
+  "llm.wizard.gallery.desc.voronoi": "Разбиение плоскости на зоны ближайших опорных точек.",
+  "llm.wizard.gallery.desc.clustered": "Сгруппированные столбцы нескольких серий по категориям.",
   "llm.wizard.gallery.desc.decision": "Поток, который ветвится на решении.",
   "llm.wizard.gallery.example.mermaid.waterfall.title": "Водопад",
   "llm.wizard.gallery.example.mermaid.waterfall.description":
@@ -79,6 +90,13 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.waterfallThresholds.title": "Водопад с порогами",
   "llm.wizard.gallery.example.mermaid.waterfallThresholds.description":
     "Пороговые линии поверх водопада.",
+  "llm.wizard.gallery.example.mermaid.clustered.title": "Кластеризованная диаграмма",
+  "llm.wizard.gallery.example.mermaid.clustered.description":
+    "Сгруппированные вертикальные столбцы нескольких серий по категориям.",
+  "llm.wizard.gallery.example.mermaid.clusteredRotated.title":
+    "Кластеризованная диаграмма (поворот 90°)",
+  "llm.wizard.gallery.example.mermaid.clusteredRotated.description":
+    "Горизонтальные сгруппированные полосы с поворотом на 90 градусов (rotate 90).",
   "llm.wizard.gallery.example.wiremark.login.title": "Макет входа",
   "llm.wizard.gallery.example.wiremark.login.description":
     "Вайрфрейм входа: поля, вкладки и основное действие.",

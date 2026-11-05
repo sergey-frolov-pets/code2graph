@@ -24,6 +24,13 @@ import {
   parseTimelineTable,
   parseWiremarkTable,
 } from "./parsers/category-b-parsers";
+import {
+  parseBoxplotTable,
+  parseClusteredTable,
+  parseRadarTable,
+  parseTreemapTable,
+  parseVoronoiTable,
+} from "./parsers/mermaid-ext-parsers";
 import { parseWaterfallTable } from "./parsers/waterfall-table-parser";
 import { makeTablePasteError } from "./replace-data-section";
 import type {
@@ -100,6 +107,21 @@ export function applyTableFromClipboardText(input: {
       break;
     case "ev":
       result = parseEvTable(grid, source, format);
+      break;
+    case "boxplot":
+      result = parseBoxplotTable(grid, source, format);
+      break;
+    case "treemap":
+      result = parseTreemapTable(grid, source, format);
+      break;
+    case "radar":
+      result = parseRadarTable(grid, source, format);
+      break;
+    case "voronoi":
+      result = parseVoronoiTable(grid, source, format);
+      break;
+    case "clustered":
+      result = parseClusteredTable(grid, source, format);
       break;
     case "xychart":
       result = parseXyChartTable(grid, source, format);

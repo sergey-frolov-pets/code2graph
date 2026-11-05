@@ -10,7 +10,8 @@ const MERMAID_DIAGRAM_DECLARATION_PATTERN =
  * статический чек ругался бы «missingDeclaration» ещё до нашего парсера.
  * Список — только ключевые слова, без алиасов: алиасы проверяет движок.
  */
-const MERMAID_EXT_DECLARATION_PATTERN = /^(waterfall|bubble|heatmap|orgchart|ev)\b/i;
+const MERMAID_EXT_DECLARATION_PATTERN =
+  /^(waterfall(?:-variance|-multi|-scenario)?|bubble(?:chart)?|heat-?map|org(?:chart)?|ev(?:chart)?|box(?:-?plot)?|tree-?map|radar(?:chart)?|spider|voronoi(?:-diagram)?|clustered(?:-bar|-barchart)?|barchart-clustered)\b/i;
 
 const FENCED_MERMAID_START_PATTERN = /^```mermaid\b/i;
 

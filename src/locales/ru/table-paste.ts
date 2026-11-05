@@ -42,6 +42,11 @@ export const tablePasteMessages = {
   "tablePaste.type.heatmap": "Тепловая карта (Heatmap)",
   "tablePaste.type.bubble": "Пузырьковая диаграмма (Bubble)",
   "tablePaste.type.ev": "Освоенный объём (Earned Value)",
+  "tablePaste.type.boxplot": "Ящик с усами (Box plot)",
+  "tablePaste.type.treemap": "Древовидная карта (Tree map)",
+  "tablePaste.type.radar": "Лепестковая диаграмма (Radar)",
+  "tablePaste.type.voronoi": "Диаграмма Вороного (Voronoi)",
+  "tablePaste.type.clustered": "Кластеризованная диаграмма (Clustered Bar)",
   "tablePaste.type.xychart": "XY-график (Bar / Line)",
   "tablePaste.type.quadrant": "Квадрант (Quadrant Chart)",
   "tablePaste.type.sankey": "Диаграмма Санки (Sankey)",
@@ -79,6 +84,31 @@ export const tablePasteMessages = {
   "tablePaste.expected.ev.rules":
     "Формирует ряды days, pv, ev и ac для графика освоенного объёма.",
   "tablePaste.expected.ev.headers": "Период|PV|EV|AC",
+  "tablePaste.expected.boxplot.columns":
+    "6 колонок («Категория», «Min», «Q1», «Median», «Q3», «Max») либо от 4 колонок с сырыми замерами («Категория», «Замер 1», «Замер 2», «Замер 3»…).",
+  "tablePaste.expected.boxplot.rules":
+    "Из 5 квантилей формирует строку min=..., q1=..., median=..., q3=..., max=...; из сырой выборки — values=... с автоматическим расчётом квартилей и выбросов.",
+  "tablePaste.expected.boxplot.headers": "Категория|Min|Q1|Median|Q3|Max",
+  "tablePaste.expected.treemap.columns":
+    "От 2 до 4 колонок: «Элемент | Вес» или «Группа | Элемент | Вес [| Цвет]».",
+  "tablePaste.expected.treemap.rules":
+    "Формирует иерархические блоки «Группа / Элемент : Вес» (вес должен быть > 0).",
+  "tablePaste.expected.treemap.headers": "Группа|Элемент|Вес",
+  "tablePaste.expected.radar.columns":
+    "Матрица минимум из 4 колонок: первая строка — названия осей (минимум 3 оси), первый столбец — названия серий, внутри — числа.",
+  "tablePaste.expected.radar.rules":
+    "Формирует директиву axes из шапки и строки series «Имя : зн1, зн2, …».",
+  "tablePaste.expected.radar.headers": "Серия|Скорость|Надёжность|Удобство|Безопасность",
+  "tablePaste.expected.voronoi.columns":
+    "От 3 до 5 колонок: «Точка», «X (число)», «Y (число)», [«Группа»], [«Цвет»].",
+  "tablePaste.expected.voronoi.rules":
+    "Каждая строка превращается в центр ячейки Вороного: Точка : x=..., y=..., group=...",
+  "tablePaste.expected.voronoi.headers": "Точка|X|Y|Группа",
+  "tablePaste.expected.clustered.columns":
+    "Матрица минимум 2×2: первый столбец — категории, первая строка — названия серий (или наоборот, если шапка начинается со слова «Серия»).",
+  "tablePaste.expected.clustered.rules":
+    "Формирует categories и строки series. Сохраняет директиву поворота rotate 90 и цвета.",
+  "tablePaste.expected.clustered.headers": "Категория|Москва|Регионы|Экспорт",
   "tablePaste.expected.xychart.columns":
     "2 или 3 колонки: «Категория X», «Столбцы (Bar)», [«Линия (Line, необязательно)»].",
   "tablePaste.expected.xychart.rules":

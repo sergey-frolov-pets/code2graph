@@ -522,16 +522,58 @@ function buildSyntaxRules(
   }
 }
 
+function detectMermaidExtPromptRules(promptText: string): string[] | null {
+  if (/\b(?:box\s*plot|boxplot|ящик\s+с\s+усами)\b/i.test(promptText)) {
+    return [
+      "Format: Mermaid Ext boxplot.",
+      "Start with keyword `boxplot` on the first line, optional `title ...`, `y \"label\" min --> max`, `grid`, and `colors outlier=#hex s1=#hex ...`.",
+      "Each category row is `<Category> : min=<n>, q1=<n>, median=<n>, q3=<n>, max=<n> [, mean=<n>] [, outliers=<n1;n2>] [, color=#hex]` or `<Category> : values=<v1>, <v2>, ...`.",
+    ];
+  }
+  if (/\b(?:tree\s*map|treemap|древовидн\w+\s+карт)\b/i.test(promptText)) {
+    return [
+      "Format: Mermaid Ext treemap.",
+      "Start with keyword `treemap` on the first line, optional `title ...`, `labels both|values|percent|none`, and `colors s1=#hex s2=#hex ...`.",
+      "Each item row is `<Group> / <Item> : <positive_weight> [color=#hex]`.",
+    ];
+  }
+  if (/\b(?:radar|spider|лепестков\w+\s+диаграмм)\b/i.test(promptText)) {
+    return [
+      "Format: Mermaid Ext radar chart.",
+      "Start with keyword `radar`, then `axes <Axis 1>, <Axis 2>, <Axis 3>, ...` (at least 3 axes), optional `scale 0 --> 100`, `rings 5`, `fill 0.22`, and `colors s1=#hex s2=#hex ...`.",
+      "Each series row is `series <Name> : <v1>, <v2>, ... [color=#hex]` with one number per axis.",
+    ];
+  }
+  if (/\b(?:voronoi|вороного)\b/i.test(promptText)) {
+    return [
+      "Format: Mermaid Ext voronoi diagram.",
+      "Start with keyword `voronoi`, optional `title ...`, `x \"label\" 0 --> 100`, `y \"label\" 0 --> 100`, `colors s1=#hex ...`, then `data`.",
+      "Each site row is `<Label> : x=<num>, y=<num> [, group=<name>] [, color=#hex]`.",
+    ];
+  }
+  if (/\b(?:clustered|кластеризованн\w+\s+диаграмм)\b/i.test(promptText)) {
+    const rotate = /90|поворот|rotat|horizontal/i.test(promptText);
+    return [
+      "Format: Mermaid Ext clustered bar chart.",
+      `Start with keyword \`clustered\`,${rotate ? " include `rotate 90` for 90-degree horizontal orientation," : ""} \`categories <C1>, <C2>, ...\`, optional \`y "label" min --> max\`, \`grid\`, and \`colors s1=#hex s2=#hex ...\`.`,
+      "Each series row is `series <Name> : <v1>, <v2>, ... [color=#hex]` matching the number of categories.",
+    ];
+  }
+  return null;
+}
+
 export function buildDiagramFormatRules(
   language: WizardLanguage,
   diagramType: WizardDiagramType,
   typeParams: DiagramFormatTypeParams = {},
   promptContext?: DiagramFormatPromptContext,
 ): string {
-  const syntax = buildSyntaxRules(language, diagramType);
+  const promptText = combinePromptContextText(promptContext);
+  const extSyntax =
+    language === "mermaid" ? detectMermaidExtPromptRules(promptText) : null;
+  const syntax = extSyntax ?? buildSyntaxRules(language, diagramType);
 
   const typeCompleteness = buildTypeParamCompleteness(diagramType, typeParams);
-  const promptText = combinePromptContextText(promptContext);
   const exhaustiveRules = buildExhaustiveCoverageRules(diagramType, promptText);
   const taxonomyRules = buildHierarchicalTaxonomyRules(diagramType, promptText);
 

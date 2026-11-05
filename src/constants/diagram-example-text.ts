@@ -18,6 +18,9 @@ const TITLE_KEYS: Record<string, LocaleKey> = {
   "mermaid:waterfallNoLines": "llm.wizard.gallery.example.mermaid.waterfallNoLines.title",
   "mermaid:waterfallThresholds":
     "llm.wizard.gallery.example.mermaid.waterfallThresholds.title",
+  "mermaid:clustered": "llm.wizard.gallery.example.mermaid.clustered.title",
+  "mermaid:clusteredRotated":
+    "llm.wizard.gallery.example.mermaid.clusteredRotated.title",
   "wiremark:login": "llm.wizard.gallery.example.wiremark.login.title",
   "wiremark:dashboard": "llm.wizard.gallery.example.wiremark.dashboard.title",
   "wiremark:form": "llm.wizard.gallery.example.wiremark.form.title",
@@ -40,6 +43,10 @@ const DESCRIPTION_KEYS: Record<string, LocaleKey> = {
     "llm.wizard.gallery.example.mermaid.waterfallNoLines.description",
   "mermaid:waterfallThresholds":
     "llm.wizard.gallery.example.mermaid.waterfallThresholds.description",
+  "mermaid:clustered":
+    "llm.wizard.gallery.example.mermaid.clustered.description",
+  "mermaid:clusteredRotated":
+    "llm.wizard.gallery.example.mermaid.clusteredRotated.description",
   "wiremark:login": "llm.wizard.gallery.example.wiremark.login.description",
   "wiremark:dashboard": "llm.wizard.gallery.example.wiremark.dashboard.description",
   "wiremark:form": "llm.wizard.gallery.example.wiremark.form.description",
@@ -54,6 +61,11 @@ const EXTRA_DIAGRAM_LABELS: Partial<Record<DiagramTypeTag, LocaleKey>> = {
   heatmap: "llm.wizard.gallery.tag.diagramType.heatmap",
   orgchart: "llm.wizard.gallery.tag.diagramType.orgchart",
   ev: "llm.wizard.gallery.tag.diagramType.ev",
+  boxplot: "llm.wizard.gallery.tag.diagramType.boxplot",
+  treemap: "llm.wizard.gallery.tag.diagramType.treemap",
+  radar: "llm.wizard.gallery.tag.diagramType.radar",
+  voronoi: "llm.wizard.gallery.tag.diagramType.voronoi",
+  clustered: "llm.wizard.gallery.tag.diagramType.clustered",
   decision: "llm.wizard.gallery.tag.diagramType.decision",
 };
 
@@ -62,6 +74,11 @@ const EXTRA_DIAGRAM_DESCRIPTIONS: Partial<Record<DiagramTypeTag, LocaleKey>> = {
   heatmap: "llm.wizard.gallery.desc.heatmap",
   orgchart: "llm.wizard.gallery.desc.orgchart",
   ev: "llm.wizard.gallery.desc.ev",
+  boxplot: "llm.wizard.gallery.desc.boxplot",
+  treemap: "llm.wizard.gallery.desc.treemap",
+  radar: "llm.wizard.gallery.desc.radar",
+  voronoi: "llm.wizard.gallery.desc.voronoi",
+  clustered: "llm.wizard.gallery.desc.clustered",
   decision: "llm.wizard.gallery.desc.decision",
 };
 

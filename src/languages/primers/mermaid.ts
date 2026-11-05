@@ -600,5 +600,113 @@ export const MERMAID_PRIMER: LanguagePrimer = {
         ),
       ),
     },
+    {
+      id: "ext-boxplot",
+      titleKey: "site.ext.mermaid.type.boxplot",
+      summaryKey: "site.ext.mermaid.desc.boxplot",
+      syntaxKey: "site.ext.mermaid.syntax.boxplot",
+      example: both(
+        lines(
+          "boxplot",
+          'y "мс" 0 --> 150',
+          "API : min=18, q1=32, median=48, q3=74, max=115, outliers=142, color=#0969da",
+          "Поиск : values=12, 22, 28, 35, 45, 62, 130 color=#8250df",
+        ),
+        lines(
+          "boxplot",
+          'y "ms" 0 --> 150',
+          "API : min=18, q1=32, median=48, q3=74, max=115, outliers=142, color=#0969da",
+          "Search : values=12, 22, 28, 35, 45, 62, 130 color=#8250df",
+        ),
+      ),
+    },
+    {
+      id: "ext-treemap",
+      titleKey: "site.ext.mermaid.type.treemap",
+      summaryKey: "site.ext.mermaid.desc.treemap",
+      syntaxKey: "site.ext.mermaid.syntax.treemap",
+      example: both(
+        lines(
+          "treemap",
+          "colors s1=#0969da s2=#8250df",
+          "Инфраструктура / Облако : 420",
+          "Инфраструктура / Сеть : 180",
+          "Разработка / Бэкенд : 360",
+        ),
+        lines(
+          "treemap",
+          "colors s1=#0969da s2=#8250df",
+          "Infrastructure / Cloud : 420",
+          "Infrastructure / Network : 180",
+          "Engineering / Backend : 360",
+        ),
+      ),
+    },
+    {
+      id: "ext-radar",
+      titleKey: "site.ext.mermaid.type.radar",
+      summaryKey: "site.ext.mermaid.desc.radar",
+      syntaxKey: "site.ext.mermaid.syntax.radar",
+      example: both(
+        lines(
+          "radar",
+          "axes Скорость, Надёжность, Безопасность, Удобство",
+          "scale 0 --> 100",
+          "series Платформа А : 90, 88, 85, 80 color=#0969da",
+          "series Платформа Б : 78, 92, 90, 88 color=#2da44e",
+        ),
+        lines(
+          "radar",
+          "axes Speed, Reliability, Security, Usability",
+          "scale 0 --> 100",
+          "series Platform A : 90, 88, 85, 80 color=#0969da",
+          "series Platform B : 78, 92, 90, 88 color=#2da44e",
+        ),
+      ),
+    },
+    {
+      id: "ext-voronoi",
+      titleKey: "site.ext.mermaid.type.voronoi",
+      summaryKey: "site.ext.mermaid.desc.voronoi",
+      syntaxKey: "site.ext.mermaid.syntax.voronoi",
+      example: both(
+        lines(
+          "voronoi",
+          "data",
+          "Север : x=48, y=82, group=Магистраль",
+          "Запад : x=20, y=50, group=Город",
+          "Восток : x=82, y=54, group=Город, color=#f97316",
+        ),
+        lines(
+          "voronoi",
+          "data",
+          "North : x=48, y=82, group=Trunk",
+          "West : x=20, y=50, group=City",
+          "East : x=82, y=54, group=City, color=#f97316",
+        ),
+      ),
+    },
+    {
+      id: "ext-clustered",
+      titleKey: "site.ext.mermaid.type.clustered",
+      summaryKey: "site.ext.mermaid.desc.clustered",
+      syntaxKey: "site.ext.mermaid.syntax.clustered",
+      example: both(
+        lines(
+          "clustered",
+          "rotate 90",
+          "categories Q1, Q2, Q3",
+          "series Онлайн : 120, 145, 165 color=#0969da",
+          "series Розница : 85, 95, 110 color=#8250df",
+        ),
+        lines(
+          "clustered",
+          "rotate 90",
+          "categories Q1, Q2, Q3",
+          "series Online : 120, 145, 165 color=#0969da",
+          "series Retail : 85, 95, 110 color=#8250df",
+        ),
+      ),
+    },
   ],
 };

@@ -130,6 +130,11 @@ export const siteMessages = {
   "site.ext.mermaid.type.heatmap": "Тепловая карта",
   "site.ext.mermaid.type.orgchart": "Оргструктура",
   "site.ext.mermaid.type.ev": "Освоенный объём",
+  "site.ext.mermaid.type.boxplot": "Ящик с усами (Box plot)",
+  "site.ext.mermaid.type.treemap": "Древовидная карта (Tree map)",
+  "site.ext.mermaid.type.radar": "Лепестковая (Radar)",
+  "site.ext.mermaid.type.voronoi": "Диаграмма Вороного",
+  "site.ext.mermaid.type.clustered": "Кластеризованная диаграмма",
   "site.ext.mermaid.desc.waterfall":
     "Как начальное значение превращается в итоговое через шаги + и −. Абсолютные колонки начинаются с =, несколько сценариев задаются через series. Есть разрывы шкалы, чёрно-белый режим (mono) и свои цвета (colors, series ... color=#hex).",
   "site.ext.mermaid.desc.bubble":
@@ -140,6 +145,16 @@ export const siteMessages = {
     "Дерево подчинённости с явными рёбрами: сплошное — основная линия, пунктирное -.-> — второй руководитель. У блока можно задать заливку (color) и границу (border, style). Несколько корней собираются под невидимый корень.",
   "site.ext.mermaid.desc.ev":
     "Три кумулятивные кривые по дням: плановый объём PV, освоенный EV и фактические затраты AC. Плюс отклонения SV и CV в легенде.",
+  "site.ext.mermaid.desc.boxplot":
+    "Распределение по категориям: минимум, нижний и верхний квартили (Q1, Q3), медиана, максимум, среднее и выбросы. Принимает как готовую пятёрку статистик, так и сырую выборку (values=).",
+  "site.ext.mermaid.desc.treemap":
+    "Иерархическое разбиение прямоугольника по группам и элементам пропорционально числовому весу с автоматическим расчётом долей в процентах и оттенков цвета.",
+  "site.ext.mermaid.desc.radar":
+    "Сравнение нескольких серий по осям-лучам из одного центра с настраиваемым числом колец сетки, прозрачностью заливки и палитрой.",
+  "site.ext.mermaid.desc.voronoi":
+    "Геометрическое разбиение плоскости на выпуклые ячейки ближайших опорных точек с поддержкой цветовых групп и подписей в центроидах.",
+  "site.ext.mermaid.desc.clustered":
+    "Сгруппированные столбцы нескольких серий по категориям с опцией поворота на 90 градусов (rotate 90), подписями значений и настройкой цветов.",
   "site.ext.mermaid.syntax.waterfall":
     "waterfall открывает диаграмму. y задаёт ось. = — абсолютная колонка, + и - — шаг, подпись — после двоеточия.",
   "site.ext.mermaid.syntax.bubble":
@@ -150,6 +165,16 @@ export const siteMessages = {
     "orgchart открывает дерево. Узел — id [роль\\nимя] (\\n переносит строку, блок подгоняется под текст); color=#hex задаёт заливку, border=#hex и style=solid|dash|dot|dashdot — цвет и стиль границы. Основное ребро — ->, второй руководитель — -.->.",
   "site.ext.mermaid.syntax.ev":
     "ev открывает график. days — дни, pv — план, ev — освоенный объём, ac — фактические затраты.",
+  "site.ext.mermaid.syntax.boxplot":
+    "boxplot открывает график. Категория: Имя : min=, q1=, median=, q3=, max= (или values=ч1, ч2, …) с опциональным color=#hex.",
+  "site.ext.mermaid.syntax.treemap":
+    "treemap открывает карту. Строка: Группа / Элемент : вес [color=#hex]. labels задаёт вывод чисел и процентов.",
+  "site.ext.mermaid.syntax.radar":
+    "radar открывает диаграмму. axes — список осей через запятую, series Имя : зн1, зн2, … — значения серии.",
+  "site.ext.mermaid.syntax.voronoi":
+    "voronoi открывает разбиение. В блоке data точка: Имя : x=, y=, group=, color=#hex.",
+  "site.ext.mermaid.syntax.clustered":
+    "clustered открывает график. categories — категории, series Имя : зн1, зн2, … — серии, rotate 90 поворачивает диаграмму на 90 градусов.",
   "site.primer.graphml.kw.graphml":
     "Корень документа. Пространство имён GraphML обязательно.",
   "site.primer.graphml.kw.graph":

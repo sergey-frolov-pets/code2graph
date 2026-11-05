@@ -28,6 +28,16 @@ const DIAGRAM_KEYWORDS = new Set([
   "quadrantchart",
   "architecture-beta",
   "packet-beta",
+  "waterfall",
+  "bubble",
+  "heatmap",
+  "orgchart",
+  "ev",
+  "boxplot",
+  "treemap",
+  "radar",
+  "voronoi",
+  "clustered",
 ]);
 
 const KEYWORDS = new Set([
@@ -81,6 +91,22 @@ const KEYWORDS = new Set([
   "title",
   "x-axis",
   "y-axis",
+  "axes",
+  "categories",
+  "colors",
+  "connectors",
+  "data",
+  "dots",
+  "fontsize",
+  "grid",
+  "labels",
+  "mono",
+  "orientation",
+  "rings",
+  "rotate",
+  "scale",
+  "series",
+  "sites",
 ]);
 
 const DIRECTIONS = new Set(["tb", "td", "bt", "lr", "rl"]);

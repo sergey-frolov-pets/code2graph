@@ -39,6 +39,12 @@ export const MERMAID_SAMPLE_IDS = [
   "heatmap",
   "orgchart",
   "ev",
+  "boxplot",
+  "treemap",
+  "radar",
+  "voronoi",
+  "clustered",
+  "clusteredRotated",
 ] as const;
 
 export type MermaidSampleId = (typeof MERMAID_SAMPLE_IDS)[number];
@@ -59,6 +65,12 @@ export const MERMAID_EXT_SAMPLE_IDS = [
   "heatmap",
   "orgchart",
   "ev",
+  "boxplot",
+  "treemap",
+  "radar",
+  "voronoi",
+  "clustered",
+  "clusteredRotated",
 ] as const satisfies readonly MermaidSampleId[];
 
 export type MermaidExtSampleId = (typeof MERMAID_EXT_SAMPLE_IDS)[number];
@@ -113,6 +125,12 @@ export const MERMAID_SAMPLE_WIZARD_TYPES: Record<MermaidSampleId, import("@/cons
   heatmap: "flowchart",
   orgchart: "flowchart",
   ev: "flowchart",
+  boxplot: "xychart",
+  treemap: "pie",
+  radar: "xychart",
+  voronoi: "quadrant",
+  clustered: "xychart",
+  clusteredRotated: "xychart",
 };
 
 import {

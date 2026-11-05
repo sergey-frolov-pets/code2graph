@@ -47,16 +47,27 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.tag.setting.direction-lr": "Left to right",
   "llm.wizard.gallery.tag.setting.swimlane": "Swimlanes",
   "llm.wizard.gallery.tag.setting.noLines": "No connector lines",
+  "llm.wizard.gallery.tag.setting.rotate90": "Rotated 90°",
   "llm.wizard.gallery.tag.diagramType.waterfall": "Waterfall",
   "llm.wizard.gallery.tag.diagramType.bubble": "Bubble chart",
   "llm.wizard.gallery.tag.diagramType.heatmap": "Heatmap",
   "llm.wizard.gallery.tag.diagramType.orgchart": "Org chart",
   "llm.wizard.gallery.tag.diagramType.ev": "Earned value",
+  "llm.wizard.gallery.tag.diagramType.boxplot": "Box plot",
+  "llm.wizard.gallery.tag.diagramType.treemap": "Tree map",
+  "llm.wizard.gallery.tag.diagramType.radar": "Radar chart",
+  "llm.wizard.gallery.tag.diagramType.voronoi": "Voronoi diagram",
+  "llm.wizard.gallery.tag.diagramType.clustered": "Clustered bar chart",
   "llm.wizard.gallery.tag.diagramType.decision": "Decision",
   "llm.wizard.gallery.desc.bubble": "Points sized by a third value on two axes.",
   "llm.wizard.gallery.desc.heatmap": "A matrix colored by value.",
   "llm.wizard.gallery.desc.orgchart": "People and teams in a reporting tree.",
   "llm.wizard.gallery.desc.ev": "Planned value, earned value, and actual cost.",
+  "llm.wizard.gallery.desc.boxplot": "Distribution by quartiles, median, whiskers, and outliers.",
+  "llm.wizard.gallery.desc.treemap": "Nested rectangles sized proportionally to their numeric weights.",
+  "llm.wizard.gallery.desc.radar": "Compares multiple series across radial axes from a shared center.",
+  "llm.wizard.gallery.desc.voronoi": "Partitions a plane into nearest-neighbor coverage cells.",
+  "llm.wizard.gallery.desc.clustered": "Grouped multi-series bars compared across categories.",
   "llm.wizard.gallery.desc.decision": "A flow that branches on a decision.",
   "llm.wizard.gallery.example.mermaid.waterfall.title": "Waterfall",
   "llm.wizard.gallery.example.mermaid.waterfall.description":
@@ -79,6 +90,13 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.waterfallThresholds.title": "Waterfall with thresholds",
   "llm.wizard.gallery.example.mermaid.waterfallThresholds.description":
     "Threshold lines drawn across the waterfall.",
+  "llm.wizard.gallery.example.mermaid.clustered.title": "Clustered bar chart",
+  "llm.wizard.gallery.example.mermaid.clustered.description":
+    "Vertical grouped bars comparing several series across categories.",
+  "llm.wizard.gallery.example.mermaid.clusteredRotated.title":
+    "Clustered bar chart (rotated 90°)",
+  "llm.wizard.gallery.example.mermaid.clusteredRotated.description":
+    "Horizontal grouped bars rotated by 90 degrees (rotate 90).",
   "llm.wizard.gallery.example.wiremark.login.title": "Login screen",
   "llm.wizard.gallery.example.wiremark.login.description":
     "A sign-in wireframe with fields, tabs, and a primary action.",

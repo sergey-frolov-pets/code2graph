@@ -188,6 +188,110 @@ pv 10, 25, 45, 65, 90
 ev 8, 20, 40, 58, 80
 ac 12, 28, 50, 72, 95
 grid`,
+  boxplot: `boxplot
+%% Ящик с усами (Box plot): распределение, квартили Q1/Q2/Q3, усы и выбросы.
+%% Два способа задать данные категории:
+%%   1) Готовые квантили: Категория : min=15, q1=30, median=45, q3=70, max=110, mean=48, outliers=165;180, color=#hex
+%%   2) Сырая выборка:    Категория : values=20, 28, 35, 42, 50, 62, 145 color=#hex (квартили и выбросы по Тьюки)
+%% Опции работы с цветом:
+%%   colors box=#hex median=#hex whisker=#hex outlier=#hex s1=#hex s2=#hex
+%%   mono — чёрно-белый режим для печати
+title Время отклика сервисов
+y "мс" 0 --> 200
+grid 50
+colors outlier=#cf222e s1=#0969da s2=#8250df s3=#2da44e s4=#bf8700
+API шлюз : min=18, q1=32, median=48, q3=74, max=115, mean=52, outliers=165;182
+Платежи : min=25, q1=40, median=58, q3=86, max=130, mean=62, outliers=175
+Поиск : values=12, 22, 28, 34, 38, 45, 52, 68, 148
+Аналитика : 30, 55, 78, 110, 155 color=#0f766e`,
+  treemap: `treemap
+%% Древовидная карта (Tree map): площадь каждого блока пропорциональна весу.
+%% Синтаксис строк: Группа / Элемент : <вес> [color=#hex]
+%% Директива labels: values | percent | both | none (по умолчанию both — вес и доля в %).
+%% Опции цвета: colors s1=#hex s2=#hex ..., color=#hex у элемента или группы, либо mono.
+title ИТ-бюджет по направлениям (млн ₽)
+labels both
+colors s1=#0969da s2=#8250df s3=#2da44e
+Инфраструктура / Облако и K8s : 420
+Инфраструктура / Сеть и CDN : 180
+Инфраструктура / Хранилища : 140
+Разработка / Бэкенд и API : 360
+Разработка / Веб и мобильные : 260
+Разработка / QA и автотесты : 140
+Данные и ИИ / Хранилище DWH : 240
+Данные и ИИ / ML-модели : 160 color=#0f766e`,
+  radar: `radar
+%% Лепестковая / паутинная диаграмма (Radar): сравнение серий по N >= 3 осям.
+%% Директивы:
+%%   axes Ось 1, Ось 2, ...   список лучей (минимум 3)
+%%   scale 0 --> 100          шкала значений
+%%   rings 5                  число концентрических колец сетки
+%%   fill 0.22                прозрачность заливки (0..1 или off)
+%%   dots on|off              точки на вершинах
+%%   colors s1=#hex s2=#hex   палитра серий (или color=#hex в строке серии, или mono)
+title Сравнение облачных платформ
+axes Производительность, Надёжность, Безопасность, Удобство DX, Экосистема, Стоимость
+scale 0 --> 100
+rings 5
+fill 0.22
+colors s1=#0969da s2=#8250df s3=#2da44e
+series Платформа А : 90, 92, 88, 82, 95, 70
+series Платформа Б : 78, 85, 94, 90, 80, 86
+series Платформа В : 84, 76, 80, 88, 74, 92 color=#f97316`,
+  voronoi: `voronoi
+%% Диаграмма Вороного (Voronoi tessellation): разбивает плоскость на ячейки ближайших центров.
+%% Директивы:
+%%   x "подпись" min --> max   ось X (по умолчанию 0 --> 100)
+%%   y "подпись" min --> max   ось Y (по умолчанию 0 --> 100)
+%%   sites on|off              рисовать точки-центры
+%%   labels on|off             рисовать подписи внутри ячеек
+%%   colors s1=#hex s2=#hex    цвета групп/ячеек (или color=#hex у точки, или mono)
+title Зоны покрытия логистических хабов
+x "Запад — Восток, км" 0 --> 100
+y "Юг — Север, км" 0 --> 100
+sites on
+labels on
+colors s1=#0969da s2=#8250df s3=#2da44e
+data
+Северный хаб : x=48, y=82, group=Магистраль
+Южный хаб : x=52, y=18, group=Магистраль
+Западный терминал : x=20, y=54, group=Регион
+Восточный терминал : x=82, y=56, group=Регион
+Центральный склад : x=50, y=50, group=Центр
+Юго-Запад : x=24, y=22, group=Регион, color=#f97316`,
+  clustered: `clustered
+%% Кластеризованная столбчатая диаграмма (Clustered bar chart).
+%% Несколько серий рисуются рядом в каждой категории.
+%% Повернуть диаграмму на 90 градусов (горизонтальные полосы): добавьте строку rotate 90
+%% Директивы:
+%%   categories К1, К2, ...    категории по оси (синоним: x К1, К2, ...)
+%%   y "подпись" min --> max   шкала значений
+%%   labels above|inside|none  подписи чисел
+%%   colors s1=#hex s2=#hex    цвета серий (или color=#hex в строке series, или mono)
+title Выручка по каналам продаж
+categories Q1, Q2, Q3, Q4
+y "млн ₽" 0 --> 200
+grid 50
+labels above
+colors s1=#0969da s2=#8250df s3=#2da44e
+series Онлайн : 120, 145, 165, 190
+series Розница : 85, 95, 110, 130
+series Партнёры : 45, 60, 75, 95 color=#f97316`,
+  clusteredRotated: `clustered
+%% Кластеризованная диаграмма С ПОВОРОТОМ НА 90 ГРАДУСОВ (rotate 90).
+%% Директива rotate 90 (или orientation horizontal) разворачивает оси:
+%% категории идут сверху вниз слева, а полосы серий растут слева направо.
+%% Вернуть классический вертикальный вид: rotate 0 (или убрать строку rotate 90).
+title Выручка по каналам (поворот 90°)
+rotate 90
+categories Q1, Q2, Q3, Q4
+y "млн ₽" 0 --> 200
+grid 50
+labels above
+colors s1=#0969da s2=#8250df s3=#2da44e
+series Онлайн : 120, 145, 165, 190
+series Розница : 85, 95, 110, 130
+series Партнёры : 45, 60, 75, 95 color=#f97316`,
 };
 
 export const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
@@ -379,4 +483,107 @@ pv 10, 25, 45, 65, 90
 ev 8, 20, 40, 58, 80
 ac 12, 28, 50, 72, 95
 grid`,
+  boxplot: `boxplot
+%% Box plot: quartiles Q1/Q2/Q3, whiskers, mean diamond, and outliers.
+%% Two ways to define a category row:
+%%   1) Explicit five-number summary: Category : min=15, q1=30, median=45, q3=70, max=110, mean=48, outliers=165;180, color=#hex
+%%   2) Raw sample observations:      Category : values=20, 28, 35, 42, 50, 62, 145 color=#hex (Tukey 1.5*IQR whiskers)
+%% Colour options:
+%%   colors box=#hex median=#hex whisker=#hex outlier=#hex s1=#hex s2=#hex
+%%   mono — black-and-white print mode
+title Service latency distribution
+y "ms" 0 --> 200
+grid 50
+colors outlier=#cf222e s1=#0969da s2=#8250df s3=#2da44e s4=#bf8700
+API gateway : min=18, q1=32, median=48, q3=74, max=115, mean=52, outliers=165;182
+Payments : min=25, q1=40, median=58, q3=86, max=130, mean=62, outliers=175
+Search : values=12, 22, 28, 34, 38, 45, 52, 68, 148
+Analytics : 30, 55, 78, 110, 155 color=#0f766e`,
+  treemap: `treemap
+%% Tree map: each rectangle area is proportional to its numeric weight.
+%% Row syntax: Group / Item : <weight> [color=#hex]
+%% labels directive: values | percent | both | none (default is both — value and % share).
+%% Colour options: colors s1=#hex s2=#hex ..., color=#hex on a group/item, or mono.
+title IT budget breakdown (M USD)
+labels both
+colors s1=#0969da s2=#8250df s3=#2da44e
+Infrastructure / Cloud & K8s : 420
+Infrastructure / Network & CDN : 180
+Infrastructure / Storage : 140
+Engineering / Backend & API : 360
+Engineering / Web & Mobile : 260
+Engineering / QA & Automation : 140
+Data & AI / Data Warehouse : 240
+Data & AI / ML Models : 160 color=#0f766e`,
+  radar: `radar
+%% Radar / spider chart: compares multiple series across N >= 3 axes.
+%% Directives:
+%%   axes Axis 1, Axis 2, ...  spoke labels (at least 3)
+%%   scale 0 --> 100           value range along spokes
+%%   rings 5                   number of concentric polygon rings
+%%   fill 0.22                 polygon fill opacity (0..1 or off)
+%%   dots on|off               vertex markers
+%%   colors s1=#hex s2=#hex    series palette (or color=#hex per series, or mono)
+title Cloud platform comparison
+axes Performance, Reliability, Security, Developer UX, Ecosystem, Cost efficiency
+scale 0 --> 100
+rings 5
+fill 0.22
+colors s1=#0969da s2=#8250df s3=#2da44e
+series Platform A : 90, 92, 88, 82, 95, 70
+series Platform B : 78, 85, 94, 90, 80, 86
+series Platform C : 84, 76, 80, 88, 74, 92 color=#f97316`,
+  voronoi: `voronoi
+%% Voronoi tessellation: partitions a plane into nearest-site convex cells.
+%% Directives:
+%%   x "label" min --> max     X axis (default 0 --> 100)
+%%   y "label" min --> max     Y axis (default 0 --> 100)
+%%   sites on|off              draw site center dots
+%%   labels on|off             draw cell labels at polygon centroids
+%%   colors s1=#hex s2=#hex    group/cell palette (or color=#hex per site, or mono)
+title Logistics hub coverage zones
+x "West — East, km" 0 --> 100
+y "South — North, km" 0 --> 100
+sites on
+labels on
+colors s1=#0969da s2=#8250df s3=#2da44e
+data
+North Hub : x=48, y=82, group=Trunk
+South Hub : x=52, y=18, group=Trunk
+West Terminal : x=20, y=54, group=Regional
+East Terminal : x=82, y=56, group=Regional
+Central Depot : x=50, y=50, group=Core
+Southwest : x=24, y=22, group=Regional, color=#f97316`,
+  clustered: `clustered
+%% Clustered bar chart: groups multiple series side by side for each category.
+%% To rotate the chart by 90 degrees (horizontal bars), add: rotate 90
+%% Directives:
+%%   categories C1, C2, ...    category labels (alias: x C1, C2, ...)
+%%   y "label" min --> max     value axis scale
+%%   labels above|inside|none  value labels
+%%   colors s1=#hex s2=#hex    series palette (or color=#hex on a series row, or mono)
+title Revenue by sales channel
+categories Q1, Q2, Q3, Q4
+y "M USD" 0 --> 200
+grid 50
+labels above
+colors s1=#0969da s2=#8250df s3=#2da44e
+series Online : 120, 145, 165, 190
+series Retail : 85, 95, 110, 130
+series Partners : 45, 60, 75, 95 color=#f97316`,
+  clusteredRotated: `clustered
+%% Clustered bar chart ROTATED BY 90 DEGREES (rotate 90).
+%% The rotate 90 directive (or orientation horizontal) swaps the axes:
+%% categories run top-to-bottom on the left, and grouped bars grow left-to-right.
+%% Switch back to vertical bars with: rotate 0 (or remove rotate 90).
+title Revenue by channel (rotated 90°)
+rotate 90
+categories Q1, Q2, Q3, Q4
+y "M USD" 0 --> 200
+grid 50
+labels above
+colors s1=#0969da s2=#8250df s3=#2da44e
+series Online : 120, 145, 165, 190
+series Retail : 85, 95, 110, 130
+series Partners : 45, 60, 75, 95 color=#f97316`,
 };

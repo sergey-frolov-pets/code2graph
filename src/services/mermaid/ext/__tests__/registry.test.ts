@@ -2,12 +2,17 @@ import { describe, expect, it } from "vitest";
 import { detectType, firstMeaningfulLine, listTypes } from "../registry";
 
 describe("detectType", () => {
-  it("распознаёт все 5 канонических типов", () => {
+  it("распознаёт все 10 канонических типов", () => {
     expect(detectType("waterfall\n=10 : A")).toBe("waterfall");
     expect(detectType('bubble\nx "X" 0 --> 1')).toBe("bubble");
     expect(detectType("heatmap\nx A, B")).toBe("heatmap");
     expect(detectType("orgchart\nA -> B")).toBe("orgchart");
     expect(detectType("ev\ndays 1, 2")).toBe("ev");
+    expect(detectType("boxplot\nA : 10, 20, 30, 40, 50")).toBe("boxplot");
+    expect(detectType("treemap\nA : 40")).toBe("treemap");
+    expect(detectType("radar\naxes A, B, C\nS : 1, 2, 3")).toBe("radar");
+    expect(detectType("voronoi\nA : x=10, y=20")).toBe("voronoi");
+    expect(detectType("clustered\ncategories A, B\nS : 10, 20")).toBe("clustered");
   });
 
   it("понимает алиасы", () => {
@@ -18,6 +23,15 @@ describe("detectType", () => {
     expect(detectType("heat-map")).toBe("heatmap");
     expect(detectType("org")).toBe("orgchart");
     expect(detectType("evchart")).toBe("ev");
+    expect(detectType("box-plot")).toBe("boxplot");
+    expect(detectType("box")).toBe("boxplot");
+    expect(detectType("tree-map")).toBe("treemap");
+    expect(detectType("radarchart")).toBe("radar");
+    expect(detectType("spider")).toBe("radar");
+    expect(detectType("voronoi-diagram")).toBe("voronoi");
+    expect(detectType("clustered-bar")).toBe("clustered");
+    expect(detectType("clustered-barchart")).toBe("clustered");
+    expect(detectType("barchart-clustered")).toBe("clustered");
   });
 
   it("регистр не важен", () => {
@@ -59,11 +73,22 @@ describe("firstMeaningfulLine", () => {
 });
 
 describe("listTypes", () => {
-  it("перечисляет ровно 5 типов", () => {
+  it("перечисляет ровно 10 типов", () => {
     const types = listTypes();
-    expect(types).toHaveLength(5);
+    expect(types).toHaveLength(10);
     expect(new Set(types)).toEqual(
-      new Set(["waterfall", "bubble", "heatmap", "orgchart", "ev"]),
+      new Set([
+        "waterfall",
+        "bubble",
+        "heatmap",
+        "orgchart",
+        "ev",
+        "boxplot",
+        "treemap",
+        "radar",
+        "voronoi",
+        "clustered",
+      ]),
     );
   });
 });

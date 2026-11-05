@@ -7,6 +7,11 @@ import { bubbleEngine } from "./engines/bubble";
 import { heatmapEngine } from "./engines/heatmap";
 import { orgchartEngine } from "./engines/orgchart";
 import { evEngine } from "./engines/ev";
+import { boxplotEngine } from "./engines/boxplot";
+import { treemapEngine } from "./engines/treemap";
+import { radarEngine } from "./engines/radar";
+import { voronoiEngine } from "./engines/voronoi";
+import { clusteredEngine } from "./engines/clustered";
 
 /**
  * Точка входа расширения.
@@ -67,6 +72,16 @@ function loadEngineSync(type: ExtDiagramType) {
       return orgchartEngine;
     case "ev":
       return evEngine;
+    case "boxplot":
+      return boxplotEngine;
+    case "treemap":
+      return treemapEngine;
+    case "radar":
+      return radarEngine;
+    case "voronoi":
+      return voronoiEngine;
+    case "clustered":
+      return clusteredEngine;
   }
 }
 
@@ -82,6 +97,16 @@ async function loadEngine(type: ExtDiagramType) {
       return (await import("./engines/orgchart")).orgchartEngine;
     case "ev":
       return (await import("./engines/ev")).evEngine;
+    case "boxplot":
+      return (await import("./engines/boxplot")).boxplotEngine;
+    case "treemap":
+      return (await import("./engines/treemap")).treemapEngine;
+    case "radar":
+      return (await import("./engines/radar")).radarEngine;
+    case "voronoi":
+      return (await import("./engines/voronoi")).voronoiEngine;
+    case "clustered":
+      return (await import("./engines/clustered")).clusteredEngine;
   }
 }
 

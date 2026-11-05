@@ -12,6 +12,11 @@ describe("detectTableDiagramType & supportsTablePaste", () => {
     expect(detectTableDiagramType("heatmap\nx A, B\ndata\nR : 1, 2", "mermaid")).toBe("heatmap");
     expect(detectTableDiagramType("bubble\ndata", "mermaid")).toBe("bubble");
     expect(detectTableDiagramType("ev\ndays 1, 2", "mermaid")).toBe("ev");
+    expect(detectTableDiagramType("boxplot\nA : 1, 2, 3, 4, 5", "mermaid")).toBe("boxplot");
+    expect(detectTableDiagramType("treemap\nA : 10", "mermaid")).toBe("treemap");
+    expect(detectTableDiagramType("radar\naxes A, B, C", "mermaid")).toBe("radar");
+    expect(detectTableDiagramType("voronoi\ndata", "mermaid")).toBe("voronoi");
+    expect(detectTableDiagramType("clustered\nrotate 90", "mermaid")).toBe("clustered");
     expect(detectTableDiagramType("xychart-beta\nbar [1, 2]", "mermaid")).toBe("xychart");
     expect(detectTableDiagramType("quadrantChart\nA: [0.5, 0.5]", "mermaid")).toBe("quadrant");
     expect(detectTableDiagramType("sankey-beta\nA,B,10", "mermaid")).toBe("sankey");
@@ -264,6 +269,67 @@ describe("Category A & B table parsers", () => {
       expect(wiremarkRes.fullSource).toContain("TableCell \"Название\"");
       expect(wiremarkRes.fullSource).toContain("TableCell \"128\" align=right");
       expect(wiremarkRes.fullSource).not.toContain("TableCell \"Old\"");
+    }
+  });
+
+  it("parses boxplot, treemap, radar, voronoi, and clustered tables while preserving directives", () => {
+    const boxRes = applyTableFromClipboardText({
+      clipboardText: "Сервис\tMin\tQ1\tMedian\tQ3\tMax\nAPI\t15\t30\t45\t70\t110",
+      source: "boxplot\ntitle Отклик\ncolors box=#0969da\nOld : 1, 2, 3, 4, 5",
+      format: "mermaid",
+    });
+    expect(boxRes.ok).toBe(true);
+    if (boxRes.ok) {
+      expect(boxRes.fullSource).toContain("colors box=#0969da");
+      expect(boxRes.fullSource).toContain("API : min=15, q1=30, median=45, q3=70, max=110");
+      expect(boxRes.fullSource).not.toContain("Old");
+    }
+
+    const treeRes = applyTableFromClipboardText({
+      clipboardText: "Группа\tЭлемент\tВес\tЦвет\nИТ\tОблако\t420\t#0969da\nИТ\tСеть\t180\t",
+      source: "treemap\ntitle Бюджет\nOld : 10",
+      format: "mermaid",
+    });
+    expect(treeRes.ok).toBe(true);
+    if (treeRes.ok) {
+      expect(treeRes.fullSource).toContain("ИТ / Облако : 420 color=#0969da");
+      expect(treeRes.fullSource).toContain("ИТ / Сеть : 180");
+    }
+
+    const radarRes = applyTableFromClipboardText({
+      clipboardText: "Серия\tСкорость\tНадёжность\tУдобство\nПлатформа А\t85\t90\t78",
+      source: "radar\ntitle Оценка\nscale 0 --> 100\naxes X, Y, Z\nseries Old : 1, 2, 3",
+      format: "mermaid",
+    });
+    expect(radarRes.ok).toBe(true);
+    if (radarRes.ok) {
+      expect(radarRes.fullSource).toContain("axes Скорость, Надёжность, Удобство");
+      expect(radarRes.fullSource).toContain("series Платформа А : 85, 90, 78");
+      expect(radarRes.fullSource).toContain("scale 0 --> 100");
+    }
+
+    const voronoiRes = applyTableFromClipboardText({
+      clipboardText: "Склад\tX\tY\tГруппа\nСевер\t48\t82\tМагистраль",
+      source: "voronoi\ntitle Склады\ndata\nOld : x=1, y=2",
+      format: "mermaid",
+    });
+    expect(voronoiRes.ok).toBe(true);
+    if (voronoiRes.ok) {
+      expect(voronoiRes.fullSource).toContain("Север : x=48, y=82, group=Магистраль");
+      expect(voronoiRes.fullSource).not.toContain("Old");
+    }
+
+    const clusteredRes = applyTableFromClipboardText({
+      clipboardText: "Квартал\tМосква\tРегионы\nQ1\t120\t80\nQ2\t145\t95",
+      source: "clustered\ntitle Выручка\nrotate 90\ncolors s1=#0969da s2=#8250df\ncategories A\nseries S : 1",
+      format: "mermaid",
+    });
+    expect(clusteredRes.ok).toBe(true);
+    if (clusteredRes.ok) {
+      expect(clusteredRes.fullSource).toContain("rotate 90");
+      expect(clusteredRes.fullSource).toContain("categories Q1, Q2");
+      expect(clusteredRes.fullSource).toContain("series Москва : 120, 145");
+      expect(clusteredRes.fullSource).toContain("series Регионы : 80, 95");
     }
   });
 });

@@ -10,6 +10,11 @@ export const TYPE_ALIASES: Record<ExtDiagramType, string[]> = {
   heatmap: ["heatmap", "heat-map"],
   orgchart: ["orgchart", "org"],
   ev: ["ev", "evchart"],
+  boxplot: ["boxplot", "box-plot", "box"],
+  treemap: ["treemap", "tree-map"],
+  radar: ["radar", "radarchart", "spider"],
+  voronoi: ["voronoi", "voronoi-diagram"],
+  clustered: ["clustered", "clustered-bar", "clustered-barchart", "barchart-clustered"],
 };
 
 const ALIAS_TO_TYPE = new Map<string, ExtDiagramType>();

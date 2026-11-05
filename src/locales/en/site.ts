@@ -130,6 +130,11 @@ export const siteMessages = {
   "site.ext.mermaid.type.heatmap": "Heatmap",
   "site.ext.mermaid.type.orgchart": "Org chart",
   "site.ext.mermaid.type.ev": "Earned value",
+  "site.ext.mermaid.type.boxplot": "Box plot",
+  "site.ext.mermaid.type.treemap": "Tree map",
+  "site.ext.mermaid.type.radar": "Radar chart",
+  "site.ext.mermaid.type.voronoi": "Voronoi tessellation",
+  "site.ext.mermaid.type.clustered": "Clustered bar chart",
   "site.ext.mermaid.desc.waterfall":
     "How a starting value turns into a total through + and − steps. Absolute columns start with =, several scenarios are declared with series. Axis breaks, a black-and-white mode (mono) and custom colours (colors, series ... color=#hex) are supported.",
   "site.ext.mermaid.desc.bubble":
@@ -140,6 +145,16 @@ export const siteMessages = {
     "A reporting tree with explicit edges: solid is the main line, dotted -.-> is a secondary manager. A block can set its fill (color) and its border (border, style). Several roots are gathered under an invisible root.",
   "site.ext.mermaid.desc.ev":
     "Three cumulative curves by day: planned value PV, earned value EV, and actual cost AC. Plus SV and CV deviations in the legend.",
+  "site.ext.mermaid.desc.boxplot":
+    "Distribution across categories: minimum, lower and upper quartiles (Q1, Q3), median, maximum, mean, and outliers. Accepts either an explicit five-number summary or raw observations (values=).",
+  "site.ext.mermaid.desc.treemap":
+    "Hierarchical rectangle partitioning across groups and items proportional to numeric weight, with automatic percentage shares and colour shading.",
+  "site.ext.mermaid.desc.radar":
+    "Compares multiple series across radial axes from a shared center, with configurable grid rings, fill opacity, and custom colours.",
+  "site.ext.mermaid.desc.voronoi":
+    "Geometric partitioning of a plane into convex nearest-neighbor cells with colour groups and centroid labels.",
+  "site.ext.mermaid.desc.clustered":
+    "Grouped bars for multiple series across categories with a 90-degree rotation option (rotate 90), value labels, and custom colours.",
   "site.ext.mermaid.syntax.waterfall":
     "waterfall opens the chart. y sets the axis. = is an absolute column, + and - are a step, and the label follows the colon.",
   "site.ext.mermaid.syntax.bubble":
@@ -150,6 +165,16 @@ export const siteMessages = {
     "orgchart opens the tree. A node is id [role\\nname] (\\n breaks the line, the box fits the text); color=#hex sets the fill, border=#hex and style=solid|dash|dot|dashdot set the border color and style. A solid edge is ->, a secondary manager is -.->.",
   "site.ext.mermaid.syntax.ev":
     "ev opens the chart. days are the days, pv is the plan, ev is earned value, ac is actual cost.",
+  "site.ext.mermaid.syntax.boxplot":
+    "boxplot opens the chart. Category row: Name : min=, q1=, median=, q3=, max= (or values=v1, v2, …) with optional color=#hex.",
+  "site.ext.mermaid.syntax.treemap":
+    "treemap opens the map. Row: Group / Item : weight [color=#hex]. labels controls value and percentage display.",
+  "site.ext.mermaid.syntax.radar":
+    "radar opens the chart. axes lists spoke labels, series Name : v1, v2, … defines a data series.",
+  "site.ext.mermaid.syntax.voronoi":
+    "voronoi opens the tessellation. Inside data a site is Name : x=, y=, group=, color=#hex.",
+  "site.ext.mermaid.syntax.clustered":
+    "clustered opens the chart. categories lists categories, series Name : v1, v2, … defines a series, rotate 90 rotates the chart by 90 degrees.",
   "site.primer.graphml.kw.graphml":
     "The document root. The GraphML namespace is required.",
   "site.primer.graphml.kw.graph":

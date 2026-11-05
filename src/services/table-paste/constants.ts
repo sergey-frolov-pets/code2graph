@@ -24,6 +24,15 @@ export const NWDIAG_MIN_COLUMNS = 2;
 export const NWDIAG_MAX_COLUMNS = 3;
 export const HEATMAP_MIN_COLUMNS = 2;
 export const HEATMAP_MIN_ROWS = 2;
+export const BOXPLOT_MIN_COLUMNS = 4;
+export const TREEMAP_MIN_COLUMNS = 2;
+export const TREEMAP_MAX_COLUMNS = 4;
+export const RADAR_MIN_COLUMNS = 4;
+export const RADAR_MIN_ROWS = 2;
+export const VORONOI_MIN_COLUMNS = 3;
+export const VORONOI_MAX_COLUMNS = 5;
+export const CLUSTERED_MIN_COLUMNS = 2;
+export const CLUSTERED_MIN_ROWS = 2;
 
 export const DEFAULT_JOURNEY_SCORE = 5;
 export const MIN_JOURNEY_SCORE = 1;
@@ -91,6 +100,60 @@ const EXPECTED_SPECS_BY_TYPE: Record<
       ["1", "10", "8", "12"],
       ["2", "25", "20", "28"],
       ["3", "45", "40", "50"],
+    ],
+  },
+  boxplot: {
+    titleKey: "tablePaste.type.boxplot",
+    columnsKey: "tablePaste.expected.boxplot.columns",
+    rulesKey: "tablePaste.expected.boxplot.rules",
+    sampleHeadersKey: "tablePaste.expected.boxplot.headers",
+    sampleRows: [
+      ["API шлюз", "18", "32", "48", "74", "115"],
+      ["Платежи", "25", "38", "52", "68", "105"],
+      ["Поиск", "12", "24", "35", "52", "88"],
+    ],
+  },
+  treemap: {
+    titleKey: "tablePaste.type.treemap",
+    columnsKey: "tablePaste.expected.treemap.columns",
+    rulesKey: "tablePaste.expected.treemap.rules",
+    sampleHeadersKey: "tablePaste.expected.treemap.headers",
+    sampleRows: [
+      ["Инфраструктура", "Облако", "420"],
+      ["Инфраструктура", "Сеть", "180"],
+      ["Разработка", "Бэкенд", "350"],
+    ],
+  },
+  radar: {
+    titleKey: "tablePaste.type.radar",
+    columnsKey: "tablePaste.expected.radar.columns",
+    rulesKey: "tablePaste.expected.radar.rules",
+    sampleHeadersKey: "tablePaste.expected.radar.headers",
+    sampleRows: [
+      ["Платформа А", "85", "90", "78", "88"],
+      ["Платформа Б", "72", "84", "92", "76"],
+    ],
+  },
+  voronoi: {
+    titleKey: "tablePaste.type.voronoi",
+    columnsKey: "tablePaste.expected.voronoi.columns",
+    rulesKey: "tablePaste.expected.voronoi.rules",
+    sampleHeadersKey: "tablePaste.expected.voronoi.headers",
+    sampleRows: [
+      ["Север", "48", "82", "Магистраль"],
+      ["Запад", "20", "50", "Город"],
+      ["Восток", "82", "54", "Город"],
+    ],
+  },
+  clustered: {
+    titleKey: "tablePaste.type.clustered",
+    columnsKey: "tablePaste.expected.clustered.columns",
+    rulesKey: "tablePaste.expected.clustered.rules",
+    sampleHeadersKey: "tablePaste.expected.clustered.headers",
+    sampleRows: [
+      ["Q1", "120", "80", "45"],
+      ["Q2", "145", "95", "55"],
+      ["Q3", "160", "115", "70"],
     ],
   },
   xychart: {

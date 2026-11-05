@@ -3,7 +3,17 @@
  * Код изолирован: в прод попадает только при __MERMAID_EXT__ = true.
  */
 
-export type ExtDiagramType = "waterfall" | "bubble" | "heatmap" | "orgchart" | "ev";
+export type ExtDiagramType =
+  | "waterfall"
+  | "bubble"
+  | "heatmap"
+  | "orgchart"
+  | "ev"
+  | "boxplot"
+  | "treemap"
+  | "radar"
+  | "voronoi"
+  | "clustered";
 
 export interface ExtParseError {
   message: string;

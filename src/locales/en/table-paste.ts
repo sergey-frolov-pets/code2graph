@@ -42,6 +42,11 @@ export const tablePasteMessages = {
   "tablePaste.type.heatmap": "Heatmap",
   "tablePaste.type.bubble": "Bubble chart",
   "tablePaste.type.ev": "Earned Value (EV)",
+  "tablePaste.type.boxplot": "Box plot",
+  "tablePaste.type.treemap": "Tree map",
+  "tablePaste.type.radar": "Radar chart",
+  "tablePaste.type.voronoi": "Voronoi diagram",
+  "tablePaste.type.clustered": "Clustered bar chart",
   "tablePaste.type.xychart": "XY Chart (Bar / Line)",
   "tablePaste.type.quadrant": "Quadrant Chart",
   "tablePaste.type.sankey": "Sankey diagram",
@@ -79,6 +84,31 @@ export const tablePasteMessages = {
   "tablePaste.expected.ev.rules":
     "Generates days, pv, ev, and ac series for the Earned Value chart.",
   "tablePaste.expected.ev.headers": "Period|PV|EV|AC",
+  "tablePaste.expected.boxplot.columns":
+    "6 columns ('Category', 'Min', 'Q1', 'Median', 'Q3', 'Max') or 4+ columns of raw observations ('Category', 'Sample 1', 'Sample 2', 'Sample 3'...).",
+  "tablePaste.expected.boxplot.rules":
+    "Generates min=..., q1=..., median=..., q3=..., max=... for 5-number summaries, or values=... for raw sample observations.",
+  "tablePaste.expected.boxplot.headers": "Category|Min|Q1|Median|Q3|Max",
+  "tablePaste.expected.treemap.columns":
+    "2 to 4 columns: 'Item | Weight' or 'Group | Item | Weight [| Color]'.",
+  "tablePaste.expected.treemap.rules":
+    "Generates hierarchical blocks 'Group / Item : Weight' (weight must be > 0).",
+  "tablePaste.expected.treemap.headers": "Group|Item|Weight",
+  "tablePaste.expected.radar.columns":
+    "Matrix with at least 4 columns: first row holds axis names (at least 3 axes), first column holds series names, inner cells hold numbers.",
+  "tablePaste.expected.radar.rules":
+    "Generates the axes directive from the header row and 'series Name : v1, v2, ...' rows.",
+  "tablePaste.expected.radar.headers": "Series|Speed|Reliability|Usability|Security",
+  "tablePaste.expected.voronoi.columns":
+    "3 to 5 columns: 'Site', 'X (number)', 'Y (number)', ['Group'], ['Color'].",
+  "tablePaste.expected.voronoi.rules":
+    "Each row becomes a Voronoi site: Site : x=..., y=..., group=...",
+  "tablePaste.expected.voronoi.headers": "Site|X|Y|Group",
+  "tablePaste.expected.clustered.columns":
+    "Matrix at least 2×2: first column has categories, first row has series names (or transposed when header starts with 'Series').",
+  "tablePaste.expected.clustered.rules":
+    "Generates categories and series lines while keeping rotate 90 and color directives.",
+  "tablePaste.expected.clustered.headers": "Category|North|South|Export",
   "tablePaste.expected.xychart.columns":
     "2 or 3 columns: 'X Category', 'Bar value', ['Line value (optional)'].",
   "tablePaste.expected.xychart.rules":
