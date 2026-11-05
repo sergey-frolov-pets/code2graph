@@ -265,6 +265,7 @@ function onTextareaClick(): void {
 }
 
 function onTextareaBlur(): void {
+  emit("select");
   props.autocomplete.close();
 }
 
