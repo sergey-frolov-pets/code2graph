@@ -73,14 +73,35 @@ Rel(orders, events, "Публикует", "async")`,
       SVG
       PNG
       Библиотека`,
-  pie: `pie showData
+  pie: `%%{init: {'theme': 'base', 'pie': {'textPosition': 0.72, 'donutHole': 0.42, 'legendPosition': 'bottom', 'highlightSlice': 'Mermaid'}, 'themeVariables': {'pie1': '#1f6feb', 'pie2': '#2da44e', 'pie3': '#8250df', 'pie4': '#bf8700', 'pie5': '#cf222e', 'pie6': '#57606a', 'pieTitleTextSize': '20px', 'pieSectionTextSize': '14px', 'pieLegendTextSize': '14px', 'pieStrokeColor': '#ffffff', 'pieStrokeWidth': '2px', 'pieOuterStrokeWidth': '3px', 'pieOuterStrokeColor': '#ffffff', 'pieOpacity': '0.9'}}}%%
+pie showData
     title Доля языков в примерах
+    accTitle: Доли языков в примерах
+    accDescr: Круговая диаграмма доли языков в примерах Code2Graph
     "PlantUML" : 28
     "Mermaid" : 24
     "D2" : 16
     "GraphML" : 12
     "Structurizr" : 12
-    "WireMark" : 8`,
+    "WireMark" : 8
+    %% Первая строка — pie. showData необязателен: в легенде будет «Mermaid [24]», без него — только имя.
+    %% Заголовок на той же строке: pie title Текст   или   pie showData title Текст
+    %% Заголовок отдельной строкой: title Текст заголовка. Кавычки вокруг заголовка не нужны.
+    %% Сектор: "Подпись" : число. Кавычки обязательны. Дробь пишется точкой: 10.25 (в документации — до двух знаков).
+    %% Знак процента писать нельзя. Угол = значение / сумма всех значений, сумма не обязана быть 100.
+    %% Отрицательное значение — ошибка. Сектор меньше 1% суммы остаётся в легенде и не рисуется дугой.
+    %% Одинаковая подпись второй раз игнорируется. Секторы идут по часовой стрелке в порядке строк.
+    %% Комментарий — строка %%. Строка %%{ ... }%% — это директива настройки, не комментарий.
+    %% config.pie.textPosition — подпись на радиусе: 0 в центре, 1 на внешнем крае. По умолчанию 0.75.
+    %% config.pie.donutHole — дырка пончика от 0 до 0.9. 0 — обычный круг.
+    %% config.pie.legendPosition — top, bottom, left, right, center. По умолчанию right.
+    %% config.pie.highlightSlice — точное имя сектора, который выделен. hover выделяет сектор под курсором.
+    %% Свои цвета pie1..pie12 задают на теме base: pie1 красит первый сектор, pie2 — второй, и так до pie12.
+    %% themeVariables: pieTitleTextSize (25px), pieTitleTextColor, pieSectionTextSize (17px), pieSectionTextColor
+    %% pieLegendTextSize (17px), pieLegendTextColor, pieStrokeColor (black), pieStrokeWidth (2px)
+    %% pieOuterStrokeWidth (2px), pieOuterStrokeColor (black), pieOpacity (0.7)
+    %% accTitle: короткий заголовок для скринридера
+    %% accDescr: описание для скринридера. Несколько строк: accDescr { текст }`,
   journey: `journey
     title Покупка в магазине
     section Выбор
@@ -363,14 +384,35 @@ Rel(orders, events, "Publishes", "async")`,
       SVG
       PNG
       Library`,
-  pie: `pie showData
+  pie: `%%{init: {'theme': 'base', 'pie': {'textPosition': 0.72, 'donutHole': 0.42, 'legendPosition': 'bottom', 'highlightSlice': 'Mermaid'}, 'themeVariables': {'pie1': '#1f6feb', 'pie2': '#2da44e', 'pie3': '#8250df', 'pie4': '#bf8700', 'pie5': '#cf222e', 'pie6': '#57606a', 'pieTitleTextSize': '20px', 'pieSectionTextSize': '14px', 'pieLegendTextSize': '14px', 'pieStrokeColor': '#ffffff', 'pieStrokeWidth': '2px', 'pieOuterStrokeWidth': '3px', 'pieOuterStrokeColor': '#ffffff', 'pieOpacity': '0.9'}}}%%
+pie showData
     title Share of sample languages
+    accTitle: Share of sample languages
+    accDescr: Pie chart of language shares in Code2Graph samples
     "PlantUML" : 28
     "Mermaid" : 24
     "D2" : 16
     "GraphML" : 12
     "Structurizr" : 12
-    "WireMark" : 8`,
+    "WireMark" : 8
+    %% The first line is pie. showData is optional: the legend then reads "Mermaid [24]"; without it, only the name.
+    %% Title on the same line: pie title Text    or    pie showData title Text
+    %% Title on its own line: title Chart title. Quotes around the title are not required.
+    %% A slice is "Label" : number. Quotes are required. Decimals use a dot: 10.25 (docs: up to two places).
+    %% Do not write a percent sign. The angle is value / sum of all values; the sum does not have to be 100.
+    %% A negative value is an error. A slice under 1% of the sum stays in the legend and is not drawn as an arc.
+    %% A repeated label is ignored. Slices run clockwise in source order.
+    %% A comment is a %% line. A %%{ ... }%% line is a config directive, not a comment.
+    %% config.pie.textPosition places the slice label on the radius: 0 at the center, 1 at the outer edge. Default 0.75.
+    %% config.pie.donutHole is the hole ratio from 0 to 0.9. 0 is a solid pie.
+    %% config.pie.legendPosition is top, bottom, left, right, or center. Default right.
+    %% config.pie.highlightSlice is the exact slice label to emphasize. hover emphasizes the slice under the pointer.
+    %% Custom pie1..pie12 colors apply on the base theme: pie1 fills the first slice, pie2 the second, through pie12.
+    %% themeVariables: pieTitleTextSize (25px), pieTitleTextColor, pieSectionTextSize (17px), pieSectionTextColor
+    %% pieLegendTextSize (17px), pieLegendTextColor, pieStrokeColor (black), pieStrokeWidth (2px)
+    %% pieOuterStrokeWidth (2px), pieOuterStrokeColor (black), pieOpacity (0.7)
+    %% accTitle: short title for screen readers
+    %% accDescr: description for screen readers. Several lines: accDescr { text }`,
   journey: `journey
     title Shop purchase
     section Browse
