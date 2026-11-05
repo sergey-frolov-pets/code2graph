@@ -878,19 +878,35 @@ line <подпись> : зн1, зн2, … [color=#hex] [style=solid|dash|dot|das
 
 `label` заменяет и число, и `prefix`.
 
-```mermaid
+Все параметры линии в одном примере: четыре `style`, свой `color` и `width`, пропуск через `-`, пустой слот и `null`.
+
+```
 series
-title Выручка по каналам (поворот 90°)
-rotate 90
+title Факт и ориентиры
 categories Q1, Q2, Q3, Q4
-y "млн ₽" 0 --> 200
-grid 50
-labels above
-colors s1=#0969da s2=#8250df s3=#2da44e
-series Онлайн : 120, 145, 165, 190
-cagr 1, 4, format="0.0%", prefix="CAGR: "
-series Розница : 85, 95, 110, 130
-series Партнёры : 45, 60, 75, 95 color=#f97316
+y "млн ₽" 0 --> 220
+series Факт : 120, 145, 165, 190
+line Сплошная : 110, 130, 150, 180 color=#0969da style=solid width=2
+line Пунктир : 100, -, 160, 175 color=#8250df style=dash
+line Точки : 90, , 155, 170 color=#2da44e style=dot width=1
+line Штрих-точка : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
+```
+
+Все параметры CAGR: `cagr` до серий (к первой серии, первый бар → последний, `format="0%"`), диапазон баров, `format` с дробью и с плюсом, доля без `%`, `prefix` и `label`. Два `cagr` подряд после «Партнёры» относятся к этой серии; `label` заменяет и число, и `prefix`.
+
+```
+series
+title Рост по каналам
+categories Q1, Q2, Q3, Q4
+y "млн ₽" 0 --> 220
+cagr format="0%"
+series Онлайн : 100, 120, 150, 180
+series Розница : 80, 90, 110, 140
+cagr 1, 4 format="0.0%" prefix="CAGR: "
+cagr 2, 4 format="+0.0%"
+series Партнёры : 40, 55, 70, 90
+cagr 1, 3 format="0.00" prefix="×"
+cagr label="цель" prefix="не пишется"
 ```
 
 ---

@@ -46,6 +46,8 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.tag.setting.rotate90": "Rotated 90°",
   "llm.wizard.gallery.tag.setting.stacked": "Stacked",
   "llm.wizard.gallery.tag.setting.monoInvert": "Inverted mono",
+  "llm.wizard.gallery.tag.setting.line": "Line",
+  "llm.wizard.gallery.tag.setting.cagr": "CAGR",
   "llm.wizard.gallery.tag.diagramType.waterfall": "Waterfall",
   "llm.wizard.gallery.tag.diagramType.bubble": "Bubble chart",
   "llm.wizard.gallery.tag.diagramType.heatmap": "Heatmap",
@@ -104,6 +106,12 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.clusteredMonoInvert.title": "Inverted mono series bars",
   "llm.wizard.gallery.example.mermaid.clusteredMonoInvert.description":
     "Light grey bars on a dark canvas for dark themes.",
+  "llm.wizard.gallery.example.mermaid.seriesLines.title": "Series chart — lines",
+  "llm.wizard.gallery.example.mermaid.seriesLines.description":
+    "Lines over the bars: solid, dash, dot and dash-dot, custom colour and width, and a skipped category via an empty slot, \"-\" or null.",
+  "llm.wizard.gallery.example.mermaid.seriesCagr.title": "Series chart — CAGR",
+  "llm.wizard.gallery.example.mermaid.seriesCagr.description":
+    "CAGR arrows: the whole series and chosen bars, format, prefix and label. Consecutive cagr lines belong to one series.",
   "llm.wizard.gallery.example.wiremark.login.title": "Login screen",
   "llm.wizard.gallery.example.wiremark.login.description":
     "A sign-in wireframe with fields, tabs, and a primary action.",

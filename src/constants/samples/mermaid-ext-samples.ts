@@ -329,6 +329,44 @@ grid 50
 series Онлайн : 120, 145, 165, 190
 series Розница : 85, 95, 110, 130
 series Партнёры : 45, 60, 75, 95`,
+  seriesLines: `series
+%% Линия поверх столбцов: line Подпись : зн1, зн2, … [color=#hex] [style=…] [width=N]
+%% style: solid | dash | dot | dashdot. По умолчанию solid и толщина 1.75.
+%% Пропуск категории: пустой слот, «-» или null. Линия соединяет точки по сторонам пропуска.
+%% Подпись стоит справа от края зоны графика, на высоте последней заданной точки.
+title Факт и ориентиры
+categories Q1, Q2, Q3, Q4
+y "млн ₽" 0 --> 220
+grid 20
+labels above
+series Факт : 120, 145, 165, 190
+line Сплошная : 110, 130, 150, 180 color=#0969da style=solid width=2
+line Пунктир : 100, -, 160, 175 color=#8250df style=dash
+line Точки : 90, , 155, 170 color=#2da44e style=dot width=1
+line Штрих-точка : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5`,
+  seriesCagr: `series
+%% CAGR — стрелка между барами одной серии и овал с процентом.
+%% cagr                         первый бар → последний
+%% cagr 1, 4                    номера баров с единицы
+%% format="0%"                  целое, по умолчанию
+%% format="0.0%"                один знак; «+» в шаблоне добавляет плюс
+%% format="0.00"                доля, без знака процента
+%% prefix="CAGR: "              текст перед числом
+%% label="цель"                 овал как есть, без расчёта (prefix тогда не пишется)
+%% Несколько cagr подряд относятся к серии, объявленной прямо перед ними.
+%% Строка cagr до любой серии относится к первой серии.
+title Рост по каналам
+categories Q1, Q2, Q3, Q4
+y "млн ₽" 0 --> 220
+grid 20
+cagr format="0%"
+series Онлайн : 100, 120, 150, 180
+series Розница : 80, 90, 110, 140
+cagr 1, 4 format="0.0%" prefix="CAGR: "
+cagr 2, 4 format="+0.0%"
+series Партнёры : 40, 55, 70, 90
+cagr 1, 3 format="0.00" prefix="×"
+cagr label="цель" prefix="не пишется"`,
 };
 
 export const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
@@ -660,4 +698,42 @@ grid 50
 series Online : 120, 145, 165, 190
 series Retail : 85, 95, 110, 130
 series Partners : 45, 60, 75, 95`,
+  seriesLines: `series
+%% A line over the bars: line Label : v1, v2, … [color=#hex] [style=…] [width=N]
+%% style: solid | dash | dot | dashdot. Defaults are solid and width 1.75.
+%% Skip a category with an empty slot, "-", or null. The line joins the points on either side.
+%% The label sits to the right of the plot, at the height of the last given point.
+title Actuals and guides
+categories Q1, Q2, Q3, Q4
+y "M USD" 0 --> 220
+grid 20
+labels above
+series Actual : 120, 145, 165, 190
+line Solid : 110, 130, 150, 180 color=#0969da style=solid width=2
+line Dashed : 100, -, 160, 175 color=#8250df style=dash
+line Dotted : 90, , 155, 170 color=#2da44e style=dot width=1
+line Dash-dot : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5`,
+  seriesCagr: `series
+%% CAGR draws an arrow between two bars of one series and an oval with the rate.
+%% cagr                         first bar → last bar
+%% cagr 1, 4                    bar numbers, starting at 1
+%% format="0%"                  integer, the default
+%% format="0.0%"                one decimal; "+" in the pattern adds a plus sign
+%% format="0.00"                a ratio, without a percent sign
+%% prefix="CAGR: "              text before the number
+%% label="target"               oval text as-is, no calculation (prefix is then ignored)
+%% Consecutive cagr lines belong to the series declared immediately before them.
+%% A cagr line before any series belongs to the first series.
+title Growth by channel
+categories Q1, Q2, Q3, Q4
+y "M USD" 0 --> 220
+grid 20
+cagr format="0%"
+series Online : 100, 120, 150, 180
+series Retail : 80, 90, 110, 140
+cagr 1, 4 format="0.0%" prefix="CAGR: "
+cagr 2, 4 format="+0.0%"
+series Partners : 40, 55, 70, 90
+cagr 1, 3 format="0.00" prefix="×"
+cagr label="target" prefix="ignored"`,
 };

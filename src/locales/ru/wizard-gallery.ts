@@ -46,6 +46,8 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.tag.setting.rotate90": "Поворот 90°",
   "llm.wizard.gallery.tag.setting.stacked": "Стопка",
   "llm.wizard.gallery.tag.setting.monoInvert": "Ч/б инверсия",
+  "llm.wizard.gallery.tag.setting.line": "Линия",
+  "llm.wizard.gallery.tag.setting.cagr": "CAGR",
   "llm.wizard.gallery.tag.diagramType.waterfall": "Водопад",
   "llm.wizard.gallery.tag.diagramType.bubble": "Пузырьковая диаграмма",
   "llm.wizard.gallery.tag.diagramType.heatmap": "Тепловая карта",
@@ -104,6 +106,12 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.clusteredMonoInvert.title": "Серийная — ч/б для тёмной темы",
   "llm.wizard.gallery.example.mermaid.clusteredMonoInvert.description":
     "Светлые серые столбцы на тёмном холсте.",
+  "llm.wizard.gallery.example.mermaid.seriesLines.title": "Серийная — линии",
+  "llm.wizard.gallery.example.mermaid.seriesLines.description":
+    "Линии поверх столбцов: solid, dash, dot и dashdot, свой цвет и толщина, пропуск категории через пусто, «-» или null.",
+  "llm.wizard.gallery.example.mermaid.seriesCagr.title": "Серийная — CAGR",
+  "llm.wizard.gallery.example.mermaid.seriesCagr.description":
+    "Стрелки CAGR: весь ряд и выбранные бары, format, prefix и label. Несколько cagr подряд относятся к одной серии.",
   "llm.wizard.gallery.example.wiremark.login.title": "Макет входа",
   "llm.wizard.gallery.example.wiremark.login.description":
     "Вайрфрейм входа: поля, вкладки и основное действие.",

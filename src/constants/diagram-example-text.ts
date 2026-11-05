@@ -26,6 +26,8 @@ const TITLE_KEYS: Record<string, LocaleKey> = {
   "mermaid:clusteredMono": "llm.wizard.gallery.example.mermaid.clusteredMono.title",
   "mermaid:clusteredMonoInvert":
     "llm.wizard.gallery.example.mermaid.clusteredMonoInvert.title",
+  "mermaid:seriesLines": "llm.wizard.gallery.example.mermaid.seriesLines.title",
+  "mermaid:seriesCagr": "llm.wizard.gallery.example.mermaid.seriesCagr.title",
   "wiremark:login": "llm.wizard.gallery.example.wiremark.login.title",
   "wiremark:dashboard": "llm.wizard.gallery.example.wiremark.dashboard.title",
   "wiremark:form": "llm.wizard.gallery.example.wiremark.form.title",
@@ -58,6 +60,8 @@ const DESCRIPTION_KEYS: Record<string, LocaleKey> = {
     "llm.wizard.gallery.example.mermaid.clusteredMono.description",
   "mermaid:clusteredMonoInvert":
     "llm.wizard.gallery.example.mermaid.clusteredMonoInvert.description",
+  "mermaid:seriesLines": "llm.wizard.gallery.example.mermaid.seriesLines.description",
+  "mermaid:seriesCagr": "llm.wizard.gallery.example.mermaid.seriesCagr.description",
   "wiremark:login": "llm.wizard.gallery.example.wiremark.login.description",
   "wiremark:dashboard": "llm.wizard.gallery.example.wiremark.dashboard.description",
   "wiremark:form": "llm.wizard.gallery.example.wiremark.form.description",
