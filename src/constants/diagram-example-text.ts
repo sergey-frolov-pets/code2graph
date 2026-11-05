@@ -4,6 +4,8 @@ import {
   type DiagramTypeTag,
   type ExampleTagRef,
 } from "@/constants/diagram-example-catalog";
+import { getSampleSource } from "@/constants/sample-diagrams";
+import type { AppLocale } from "@/constants/i18n";
 import type { LocaleKey, TranslateFn } from "@/locales/types";
 import { isLocaleKey } from "@/locales/types";
 
@@ -127,6 +129,25 @@ export function diagramExampleDescription(
   }
 
   return t(requireLocaleKey(`llm.wizard.typeDesc.${example.diagramType}`));
+}
+
+export function diagramExampleSearchText(
+  example: DiagramExample,
+  t: TranslateFn,
+  locale: AppLocale,
+): string {
+  const labels = example.tags.map((tag) => exampleTagLabel(tag, t));
+  const source = getSampleSource(
+    { format: example.format, id: example.sampleId },
+    locale,
+  );
+
+  return [
+    diagramExampleTitle(example, t),
+    diagramExampleDescription(example, t),
+    labels.join("\n"),
+    source,
+  ].join("\n");
 }
 
 export function diagramExamplePrompt(example: DiagramExample, t: TranslateFn): string {

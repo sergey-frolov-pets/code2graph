@@ -6,10 +6,12 @@ import {
   listDiagramExamples,
   type ExampleTagRef,
 } from "@/constants/diagram-example-catalog";
-import { diagramExampleTitle } from "@/constants/diagram-example-text";
+import { diagramExampleSearchText } from "@/constants/diagram-example-text";
+import { useLocale } from "@/composables/useLocale";
 import type { TranslateFn } from "@/locales/types";
 
 export function useWizardExampleGallery(t: TranslateFn) {
+  const { locale } = useLocale();
   const selectedTags = ref<ExampleTagRef[]>([]);
   const query = ref("");
   const examples = listDiagramExamples();
@@ -21,7 +23,7 @@ export function useWizardExampleGallery(t: TranslateFn) {
       examples,
       selectedTags.value,
       query.value,
-      (example) => diagramExampleTitle(example, t),
+      (example) => diagramExampleSearchText(example, t, locale.value),
     ),
   );
 
