@@ -16,6 +16,7 @@ export {
 } from "@/services/export/svg-geometry";
 
 export {
+  copyPngBlobToClipboard,
   downloadBlob,
   downloadTextFile,
   svgToPngBlob,

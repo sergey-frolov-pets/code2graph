@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   diagramAnalyticsKind,
   resolveDiagramTypeSlug,
+  trackClipboardImageCopy,
   trackClipboardPaste,
   trackDiagramExport,
   trackDiagramOpen,
@@ -103,6 +104,15 @@ describe("typed diagram events", () => {
     expect(count).toHaveBeenCalledWith({
       path: "save-diagram-mermaid-xychart",
       title: "Save diagram: mermaid / xychart",
+      event: true,
+    });
+  });
+
+  it("reports a copied PNG with the diagram type", () => {
+    trackClipboardImageCopy("mermaid", XY_CHART);
+    expect(count).toHaveBeenCalledWith({
+      path: "copy-image-png-mermaid-xychart",
+      title: "Copy PNG: mermaid / xychart",
       event: true,
     });
   });

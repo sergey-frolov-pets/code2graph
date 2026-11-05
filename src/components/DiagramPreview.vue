@@ -25,6 +25,7 @@ const props = defineProps<{
   diagramFontFamily: string;
   diagramFontWeight: string;
   diagramFontStyle: string;
+  copyPng: () => Promise<boolean>;
 }>();
 
 const emit = defineEmits<{
@@ -122,6 +123,7 @@ watch(isFullscreen, (value) => {
           :image-width="activeSize.width"
           :image-height="activeSize.height"
           :image-size-custom="isCustom"
+          :copy-png="copyPng"
           @render-now="emit('renderNow')"
           @export-svg="emit('exportSvg')"
           @export-png="emit('exportPng')"

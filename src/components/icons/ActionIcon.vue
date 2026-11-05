@@ -9,6 +9,7 @@ import {
   Braces,
   CircleCheck,
   CircleHelp,
+  ClipboardCopy,
   Cloud,
   Download,
   Ellipsis,
@@ -49,6 +50,7 @@ export type ActionIconName =
   | "folder-open"
   | "save"
   | "check"
+  | "clipboard-copy"
   | "trash"
   | "refresh"
   | "sun"
@@ -99,6 +101,7 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   "folder-open": FolderOpen,
   save: Save,
   check: CircleCheck,
+  "clipboard-copy": ClipboardCopy,
   trash: Trash2,
   refresh: RefreshCw,
   sun: Sun,

@@ -44,5 +44,7 @@ export const appMessages = {
   "app.wait": "Подождите…",
   "app.unknownRenderError": "Неизвестная ошибка рендеринга",
   "app.exportPngFailed": "Не удалось экспортировать PNG",
+  "app.copyPngFailed": "Не удалось скопировать PNG в буфер обмена",
+  "app.copyPngUnsupported": "Этот браузер не умеет копировать PNG в буфер обмена",
   "app.engineLoadError": "Ошибка загрузки движка",
 } as const satisfies LocaleMessages;

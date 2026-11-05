@@ -162,6 +162,12 @@ export function trackDiagramExport(
   trackSave(`image-${action}-${kind}`, `Export ${image}: ${label}`);
 }
 
+/** User copied the current diagram PNG to the clipboard. */
+export function trackClipboardImageCopy(format: string, source: string): void {
+  const kind = resolveTypedDiagramKind(format, source);
+  trackEvent(`copy-image-png-${kind}`, `Copy PNG: ${typeTitle(format, source)}`);
+}
+
 /**
  * User inserted something from the clipboard.
  * `table` is the toolbar action; `source` is a pasted diagram in the editor.
