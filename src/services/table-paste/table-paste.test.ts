@@ -233,6 +233,43 @@ describe("Category A & B table parsers", () => {
   });
 
   it("parses orgchart, gantt, timeline, journey, packet, wbs, mindmap, nwdiag, and wiremark Table", () => {
+    const ganttHeaderless = applyTableFromClipboardText({
+      clipboardText:
+        "Задача анализа\t2026-01-02\t5d\tСекция 1\nЭтап прототипа\t2026-01-08\t4d\tПодготовка",
+      source: "@startgantt\nproject starts 2026-01-01\n@endgantt",
+      format: "plantuml",
+    });
+    expect(ganttHeaderless.ok).toBe(true);
+    if (ganttHeaderless.ok) {
+      expect(ganttHeaderless.fullSource).toContain("[Задача анализа] lasts 5 days");
+      expect(ganttHeaderless.fullSource).toContain("[Задача анализа] starts 2026-01-02");
+      expect(ganttHeaderless.fullSource).toContain("[Этап прототипа] lasts 4 days");
+    }
+
+    const ganttWithHeader = applyTableFromClipboardText({
+      clipboardText:
+        "Задача\tНачало\tДлительность\tСекция\nАнализ\t2026-01-02\t5d\tПодготовка\nПрототип\t2026-01-08\t4d\tПодготовка",
+      source: "@startgantt\n@endgantt",
+      format: "plantuml",
+    });
+    expect(ganttWithHeader.ok).toBe(true);
+    if (ganttWithHeader.ok) {
+      expect(ganttWithHeader.fullSource).not.toContain("[Задача]");
+      expect(ganttWithHeader.fullSource).toContain("[Анализ] lasts 5 days");
+      expect(ganttWithHeader.fullSource).toContain("[Прототип] starts 2026-01-08");
+    }
+
+    const ganttNamedRows = applyTableFromClipboardText({
+      clipboardText: "Этап 1\t5\nStart design\t3 days",
+      source: "@startgantt\n@endgantt",
+      format: "plantuml",
+    });
+    expect(ganttNamedRows.ok).toBe(true);
+    if (ganttNamedRows.ok) {
+      expect(ganttNamedRows.fullSource).toContain("[Этап 1] lasts 5 days");
+      expect(ganttNamedRows.fullSource).toContain("[Start design] lasts 3 days");
+    }
+
     const orgRes = applyTableFromClipboardText({
       clipboardText: "Руководитель\tПодчинённый\tСвязь\nCEO\tCTO\t\nCFO\tBackend\tdotted",
       source: "orgchart\nA -> B",
