@@ -214,6 +214,8 @@ cagr label="+30% p.a."`);
     expect(rotated).toContain('data-cagr-label="30%"');
     expect(svg).toContain('data-line-label="План"');
     expect(svg).toContain('stroke-dasharray="7 4"');
+    const planLine = /<polyline[^>]*points="([^"]+)"[^>]*data-line="0"/.exec(svg);
+    expect(planLine?.[1].trim().split(/\s+/)).toHaveLength(3);
     expect(svg).toContain('data-cagr-label="30%"');
     expect(svg).toContain('data-cagr-label="CAGR: ');
     expect(svg).toMatch(/data-cagr-label="CAGR: \d+\.\d%"/);

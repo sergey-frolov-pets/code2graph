@@ -964,38 +964,29 @@ function drawSeriesLines(
     const color = line.color ?? palette.fg;
     const width = line.width ?? 1.75;
     const dash = LINE_DASH[line.style ?? "solid"];
-    let run: PlotPoint[] = [];
     const drawnPoints: PlotPoint[] = [];
 
-    const flush = (): void => {
-      if (run.length >= 2) {
-        svg.polyline(
-          run.map((point) => `${fmt(point.x)},${fmt(point.y)}`).join(" "),
-          {
-            stroke: color,
-            "stroke-width": width,
-            "stroke-linejoin": "round",
-            "stroke-linecap": "round",
-            ...(dash ? { "stroke-dasharray": dash } : {}),
-            "data-line": lineIdx,
-          },
-        );
-      } else if (run.length === 1) {
-        svg.circle(run[0].x, run[0].y, Math.max(2.5, width), { fill: color, "data-line": lineIdx });
-      }
-      run = [];
-    };
-
     line.values.forEach((value, index) => {
-      if (value === null) {
-        flush();
-        return;
-      }
-      const point = pointAt(index, value);
-      drawnPoints.push(point);
-      run.push(point);
+      if (value === null) return;
+      drawnPoints.push(pointAt(index, value));
     });
-    flush();
+
+    if (drawnPoints.length >= 2) {
+      svg.polyline(
+        drawnPoints.map((point) => `${fmt(point.x)},${fmt(point.y)}`).join(" "),
+        {
+          stroke: color,
+          "stroke-width": width,
+          "stroke-linejoin": "round",
+          "stroke-linecap": "round",
+          ...(dash ? { "stroke-dasharray": dash } : {}),
+          "data-line": lineIdx,
+        },
+      );
+    } else if (drawnPoints.length === 1) {
+      const only = drawnPoints[0];
+      svg.circle(only.x, only.y, Math.max(2.5, width), { fill: color, "data-line": lineIdx });
+    }
 
     const labelAnchor = drawnPoints[drawnPoints.length - 1];
     if (line.label && labelAnchor) {
