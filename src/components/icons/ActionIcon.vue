@@ -30,6 +30,7 @@ import {
   SquarePen,
   Star,
   Sun,
+  Table,
   Trash2,
   Undo2,
   Unlink,
@@ -77,7 +78,8 @@ export type ActionIconName =
   | "unlink"
   | "user"
   | "more"
-  | "code";
+  | "code"
+  | "table-paste";
 
 const props = withDefaults(
   defineProps<{
@@ -127,6 +129,7 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   user: User,
   more: Ellipsis,
   code: Braces,
+  "table-paste": Table,
 };
 
 const iconComponent = computed(() => ICON_MAP[props.name]);
