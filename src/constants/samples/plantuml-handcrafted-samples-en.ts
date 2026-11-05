@@ -320,15 +320,49 @@ Rel(spa, cdn, "Static assets", "HTTPS")
 SHOW_LEGEND()
 @enduml`,
   gantt: `@startgantt
-' Gantt chart: tasks, dependencies, and milestones
+' Gantt chart: calendar, tasks, dependencies, colors, milestones, and resources
+' project starts YYYY-MM-DD — project start; the first task without its own date begins here
+' language ru|en|de|ja|zh|ko — calendar label language
+' saturday are closed / sunday are closed — weekends are non-working days
+' YYYY-MM-DD is closed — close one day; YYYY-MM-DD to YYYY-MM-DD are closed — close a range
+' YYYY-MM-DD is open — reopen a closed day
+' printscale|ganttscale|projectscale daily|weekly|monthly|quarterly|yearly — time axis scale
+' zoom 1.5 — display zoom; today is colored in Coral — highlight today
+' [Name] lasts N days|weeks|months — calendar duration
+' [Name] requires N days — workload: closed days do not shorten a week
+' [Name] starts YYYY-MM-DD / ends YYYY-MM-DD — absolute start and end dates
+' [Name] starts D+N — start N days after the project start
+' [Name] starts at [Other]'s end|start — depend on another task's end or start
+' [Name] starts N days after|before [Other]'s end — dependency with a delay
+' [Name] ends at [Other]'s end|start — tie this task's end to another task
+' then [Name] lasts N days — the next task follows the previous one immediately
+' [A] -> [B] — dependency arrow; -[dotted]-> and -[#RRGGBB]-> — link style
+' [Full name] as [ID] — short alias used in references
+' and is colored in Color or StartColor/EndColor — task bar color
+' is N% completed|complete — completion percent; is deleted — discarded task
+' [Milestone] happens YYYY-MM-DD — milestone on a date; happens at [Task]'s end — milestone at a task end
+' displays on same row as [Name] — draw on the same row
+' pauses N days / pauses on YYYY-MM-DD — pause inside a task
+' on {Resource} and on {Resource:50%} — assign a resource and its load
+' hide resources names / hide resources footbox / hide footbox — hide resource labels and the bottom scale
+' -- Phase -- — horizontal separator between task groups
+' Separator just at [Name]'s end — vertical separator on a task date
+' note bottom ... end note — note under a task
+' Label on first column and left aligned — labels in the first column (also last column, right aligned)
+' [[https://example.com]] next to a name — hyperlink on a task
+
+' Project start and closed weekends
 project starts 2026-01-06
 saturday are closed
 sunday are closed
 
+' Five-day task with a bar color
 [Requirements analysis] lasts 5 days and is colored in LightGreen
+' Start when the previous task ends
 [UI prototype] lasts 4 days and starts at [Requirements analysis]'s end
 [Development] lasts 10 days and starts at [UI prototype]'s end
 [Testing] lasts 5 days and starts at [Development]'s end
+' Milestone on a fixed date, with its own color
 [Release] happens at 2026-02-20 and is colored in Coral
 @endgantt`,
   mindmap: `@startmindmap

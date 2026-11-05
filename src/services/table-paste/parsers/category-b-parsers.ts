@@ -130,11 +130,75 @@ export function parseOrgChartTable(
 // ---------------------------------------------------------------------------
 // 2. GANTT (Mermaid & PlantUML)
 // ---------------------------------------------------------------------------
+const GANTT_DATE_CELL = /^\d{4}-\d{2}-\d{2}$/;
+const GANTT_DURATION_CELL =
+  /^\d+(?:[.,]\d+)?(?:\s*(?:d|day|days|w|week|weeks|h|hour|hours|month|months|д|дн|дня|дней|н|нед|ч|мес))?$/i;
+const GANTT_HEADER_WORD_LIMIT = 4;
+const GANTT_HEADER_WORDS = new Set([
+  "task",
+  "tasks",
+  "name",
+  "title",
+  "start",
+  "end",
+  "date",
+  "duration",
+  "section",
+  "milestone",
+  "days",
+  "of",
+  "the",
+  "задача",
+  "задачи",
+  "название",
+  "имя",
+  "начало",
+  "старт",
+  "дата",
+  "начала",
+  "окончания",
+  "окончание",
+  "конец",
+  "длительность",
+  "срок",
+  "секция",
+  "раздел",
+  "этап",
+  "этапы",
+]);
+
+function isGanttDateCell(raw: string): boolean {
+  return GANTT_DATE_CELL.test(raw.trim());
+}
+
+function isGanttDurationCell(raw: string): boolean {
+  const trimmed = raw.trim();
+  return trimmed.length > 0 && GANTT_DURATION_CELL.test(trimmed);
+}
+
+function isGanttHeaderCell(raw: string): boolean {
+  const words = raw
+    .replace(/\([^)]*\)/g, " ")
+    .trim()
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((word) => word.length > 0);
+  if (words.length === 0 || words.length > GANTT_HEADER_WORD_LIMIT) {
+    return false;
+  }
+  return words.every((word) => GANTT_HEADER_WORDS.has(word));
+}
+
+/** True when every cell is a column title and none is a date or a duration. */
 function looksLikeGanttHeader(row: readonly string[]): boolean {
-  const joined = row.join(" ").toLowerCase();
-  return /(?:task|задач|этап|start|начал|дата|duration|длительн|секци|section)/i.test(
-    joined,
-  );
+  const cells = row.map((cell) => cell.trim()).filter((cell) => cell.length > 0);
+  if (cells.length < 2) {
+    return false;
+  }
+  if (cells.some((cell) => isGanttDateCell(cell) || isGanttDurationCell(cell))) {
+    return false;
+  }
+  return cells.every((cell) => isGanttHeaderCell(cell));
 }
 
 function normalizeDurationMermaid(raw: string): string {
