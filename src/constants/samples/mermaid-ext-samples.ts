@@ -162,11 +162,11 @@ data
 День : 60, 75, 85, 70, 55
 Вечер : 40, 45, 65, 50, 35`,
   orgchart: `orgchart
-Гендиректор [Генеральный директор]
-Техдир [Технический директор]
-Финдир [Финансовый директор]
-Бэкенд [Руководитель бэкенда]
-Фронтенд [Руководитель фронтенда]
+Гендиректор [Генеральный директор\\nИван Петров]
+Техдир [Технический директор\\nАнна Смирнова]
+Финдир [Финансовый директор\\nОльга Орлова]
+Бэкенд [Руководитель серверной разработки\\nСергей Волков]
+Фронтенд [Руководитель клиентской разработки\\nМария Соколова]
 Гендиректор -> Техдир
 Гендиректор -> Финдир
 Техдир -> Бэкенд
@@ -344,11 +344,11 @@ Morning : 20, 35, 50, 30, 25
 Day : 60, 75, 85, 70, 55
 Evening : 40, 45, 65, 50, 35`,
   orgchart: `orgchart
-CEO [Chief executive officer]
-CTO [Chief technology officer]
-CFO [Chief financial officer]
-Backend [Head of backend]
-Frontend [Head of frontend]
+CEO [Chief executive officer\\nAlex Morgan]
+CTO [Chief technology officer\\nElena Chen]
+CFO [Chief financial officer\\nDavid Miller]
+Backend [Head of backend engineering\\nSamir Patel]
+Frontend [Head of frontend engineering\\nClaire Dubois]
 CEO -> CTO
 CEO -> CFO
 CTO -> Backend

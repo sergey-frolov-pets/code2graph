@@ -1,11 +1,9 @@
 import {
   arrowMarker,
-  clamp,
   createSvg,
   fmt,
   getPalette,
   measureText,
-  truncate,
 } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
@@ -47,16 +45,31 @@ function unquote(raw: string): string {
   return t;
 }
 
+/** Разбивает подпись узла на строки по `\n` (экранированному `\\n` или переводу строки). */
+export function splitLabelLines(label: string): string[] {
+  const parts = String(label ?? "")
+    .split(/\\n|\r?\n/)
+    .map((line) => line.trim());
+  const nonEmpty = parts.filter((line) => line.length > 0);
+  return nonEmpty.length > 0 ? nonEmpty : [""];
+}
+
+function unquoteLabel(raw: string): string {
+  const base = unquote(raw).replace(/\\\[/g, "[").replace(/\\\]/g, "]");
+  if (!base) return "";
+  return splitLabelLines(base).join("\n");
+}
+
 /** `A [Подпись]` → { id: "A", label: "Подпись" } */
 function parseNodeLine(raw: string): OrgNode {
   const bracket = /^(.*?)\s*\[(.*)\]\s*$/.exec(raw);
   if (bracket) {
     const id = unquote(bracket[1]);
-    const label = unquote(bracket[2]);
+    const label = unquoteLabel(bracket[2]);
     return { id, label: label || id };
   }
   const id = unquote(raw);
-  return { id, label: id };
+  return { id, label: unquoteLabel(raw) || id };
 }
 
 /**
@@ -187,20 +200,30 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
 
 interface PlacedNode {
   node: OrgNode;
+  lines: string[];
   depth: number;
   x: number;
   y: number;
   width: number;
   height: number;
+  rowHeight: number;
 }
 
 const FONT = 11;
+const LINE_HEIGHT = FONT * 1.2;
 const NODE_PADDING_X = 14;
 const NODE_PADDING_Y = 9;
 const NODE_MIN_WIDTH = 72;
-const NODE_MAX_WIDTH = 180;
 const H_GAP = 18;
 const V_GAP = 52;
+
+function measureNode(node: OrgNode): { lines: string[]; width: number; height: number } {
+  const lines = splitLabelLines(node.label);
+  const maxTextWidth = Math.max(0, ...lines.map((line) => measureText(line, FONT)));
+  const width = Math.max(NODE_MIN_WIDTH, maxTextWidth + NODE_PADDING_X * 2);
+  const height = Math.max(1, lines.length) * LINE_HEIGHT + NODE_PADDING_Y * 2;
+  return { lines, width, height };
+}
 
 /** Глубина узла от корня; циклы не разворачиваем повторно. */
 function computeDepths(model: OrgModel): Map<string, number> {
@@ -263,41 +286,47 @@ function layout(model: OrgModel): { placed: PlacedNode[]; width: number; height:
   const placed: PlacedNode[] = [];
   const levelKeys = [...levels.keys()].sort((a, b) => a - b);
 
-  let maxRowWidth = 0;
-  const rowWidths = new Map<number, number>();
-  for (const d of levelKeys) {
-    const row = levels.get(d) as OrgNode[];
-    const widths = row.map((n) =>
-      clamp(measureText(n.label, FONT) + NODE_PADDING_X * 2, NODE_MIN_WIDTH, NODE_MAX_WIDTH),
-    );
-    const total = widths.reduce((a, b) => a + b, 0) + H_GAP * Math.max(0, row.length - 1);
-    rowWidths.set(d, total);
-    maxRowWidth = Math.max(maxRowWidth, total);
+  const measuredById = new Map<string, { lines: string[]; width: number; height: number }>();
+  for (const n of model.nodes) {
+    measuredById.set(n.id, measureNode(n));
   }
 
-  const contentWidth = Math.max(maxRowWidth, NODE_MIN_WIDTH);
+  let maxRowWidth = 0;
+  const rowWidths = new Map<number, number>();
   const rowHeights = new Map<number, number>();
   for (const d of levelKeys) {
     const row = levels.get(d) as OrgNode[];
-    const h = row.reduce((acc, n) => {
-      const lines = Math.max(1, Math.ceil(measureText(n.label, FONT) / (NODE_MAX_WIDTH - NODE_PADDING_X * 2)));
-      return Math.max(acc, lines * FONT * 1.2 + NODE_PADDING_Y * 2);
-    }, NODE_PADDING_Y * 2 + FONT);
-    rowHeights.set(d, h);
+    const widths = row.map((n) => measuredById.get(n.id)!.width);
+    const heights = row.map((n) => measuredById.get(n.id)!.height);
+    const total = widths.reduce((a, b) => a + b, 0) + H_GAP * Math.max(0, row.length - 1);
+    rowWidths.set(d, total);
+    maxRowWidth = Math.max(maxRowWidth, total);
+    rowHeights.set(d, Math.max(NODE_PADDING_Y * 2 + FONT, ...heights));
   }
+
+  const contentWidth = Math.max(maxRowWidth, NODE_MIN_WIDTH);
 
   let y = 0;
   for (const d of levelKeys) {
     const row = levels.get(d) as OrgNode[];
     const total = rowWidths.get(d) ?? 0;
     let x = (contentWidth - total) / 2;
-    const h = rowHeights.get(d) ?? 40;
+    const rowH = rowHeights.get(d) ?? 40;
     for (const n of row) {
-      const w = clamp(measureText(n.label, FONT) + NODE_PADDING_X * 2, NODE_MIN_WIDTH, NODE_MAX_WIDTH);
-      placed.push({ node: n, depth: d, x, y, width: w, height: h });
-      x += w + H_GAP;
+      const m = measuredById.get(n.id)!;
+      placed.push({
+        node: n,
+        lines: m.lines,
+        depth: d,
+        x,
+        y,
+        width: m.width,
+        height: m.height,
+        rowHeight: rowH,
+      });
+      x += m.width + H_GAP;
     }
-    y += h + V_GAP;
+    y += rowH + V_GAP;
   }
 
   const height = Math.max(0, y - V_GAP);
@@ -327,6 +356,7 @@ interface DrawableEdge {
   to: PlacedNode;
   y1: number;
   y2: number;
+  corridorTop: number;
 }
 
 function uniqueStyles(edges: DrawableEdge[], pick: (item: DrawableEdge) => boolean): OrgEdgeStyle[] {
@@ -392,19 +422,23 @@ export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): stri
     const from = byId.get(edge.from);
     const to = byId.get(edge.to);
     if (!from || !to) continue;
+    const y1 = offsetY + from.y + from.height;
+    const y2 = offsetY + to.y;
+    const corridorTop = from.depth < to.depth ? offsetY + from.y + from.rowHeight : y1;
     drawable.push({
       edge,
       from,
       to,
-      y1: offsetY + from.y + from.height,
-      y2: offsetY + to.y,
+      y1,
+      y2,
+      corridorTop,
     });
   }
 
   const mixedCorridors = new Set<string>();
   const stylesByCorridor = new Map<string, OrgEdgeStyle[]>();
   for (const item of drawable) {
-    const key = corridorKey(item.y1, item.y2);
+    const key = corridorKey(item.corridorTop, item.y2);
     const styles = stylesByCorridor.get(key) ?? [];
     if (!styles.includes(item.edge.style)) styles.push(item.edge.style);
     stylesByCorridor.set(key, styles);
@@ -414,13 +448,18 @@ export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): stri
   // Рёбра — под узлами. Сплошная и пунктирная линии не делят одну точку
   // контакта на карточке и не ложатся на общий горизонтальный участок.
   for (const item of drawable) {
-    const { edge, from, to, y1, y2 } = item;
+    const { edge, from, to, y1, y2, corridorTop } = item;
     const outStyles = uniqueStyles(drawable, (candidate) => candidate.edge.from === edge.from);
     const inStyles = uniqueStyles(drawable, (candidate) => candidate.edge.to === edge.to);
     const x1 =
       offsetX + from.x + from.width / 2 + styleContactShift(from.width, outStyles, edge.style);
     const x2 = offsetX + to.x + to.width / 2 + styleContactShift(to.width, inStyles, edge.style);
-    const midY = elbowY(y1, y2, edge.style, mixedCorridors.has(corridorKey(y1, y2)));
+    const midY = elbowY(
+      corridorTop,
+      y2,
+      edge.style,
+      mixedCorridors.has(corridorKey(corridorTop, y2)),
+    );
     const d = `M ${fmt(x1)} ${fmt(y1)} L ${fmt(x1)} ${fmt(midY)} L ${fmt(x2)} ${fmt(midY)} L ${fmt(x2)} ${fmt(y2)}`;
     const attrs: Record<string, string | number> = {
       d,
@@ -444,10 +483,12 @@ export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): stri
       "stroke-width": 1.2,
       rx: 4,
     });
-    const label = truncate(p.node.label, p.width - NODE_PADDING_X * 2, FONT);
-    svg.text(x + p.width / 2, y + p.height / 2 + 4, label, {
-      "font-size": FONT,
-      fill: isRoot ? palette.bg : palette.fg,
+    const firstLineY = y + p.height / 2 - ((p.lines.length - 1) * LINE_HEIGHT) / 2 + 4;
+    p.lines.forEach((line, idx) => {
+      svg.text(x + p.width / 2, firstLineY + idx * LINE_HEIGHT, line, {
+        "font-size": FONT,
+        fill: isRoot ? palette.bg : palette.fg,
+      });
     });
   }
 

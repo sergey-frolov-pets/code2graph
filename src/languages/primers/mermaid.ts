@@ -562,17 +562,17 @@ export const MERMAID_PRIMER: LanguagePrimer = {
       example: both(
         lines(
           "orgchart",
-          "Гендиректор [Генеральный директор]",
-          "Техдир [Технический директор]",
-          "Бэкенд [Руководитель бэкенда]",
+          "Гендиректор [Генеральный директор\\nИван Петров]",
+          "Техдир [Технический директор\\nАнна Смирнова]",
+          "Бэкенд [Руководитель серверной разработки\\nСергей Волков]",
           "Гендиректор -> Техдир",
           "Техдир -> Бэкенд",
         ),
         lines(
           "orgchart",
-          "CEO [Chief executive officer]",
-          "CTO [Chief technology officer]",
-          "Backend [Head of backend]",
+          "CEO [Chief executive officer\\nAlex Morgan]",
+          "CTO [Chief technology officer\\nElena Chen]",
+          "Backend [Head of backend engineering\\nSamir Patel]",
           "CEO -> CTO",
           "CTO -> Backend",
         ),

@@ -147,7 +147,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.heatmap":
     "heatmap открывает карту. x и y — подписи осей. В блоке data строка: имя : числа через запятую.",
   "site.ext.mermaid.syntax.orgchart":
-    "orgchart открывает дерево. Узел — id [роль]. Основное ребро — ->, второй руководитель — -.->.",
+    "orgchart открывает дерево. Узел — id [роль\\nимя] (\\n переносит строку, блок подгоняется под текст). Основное ребро — ->, второй руководитель — -.->.",
   "site.ext.mermaid.syntax.ev":
     "ev открывает график. days — дни, pv — план, ev — освоенный объём, ac — фактические затраты.",
   "site.primer.graphml.kw.graphml":

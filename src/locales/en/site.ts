@@ -147,7 +147,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.heatmap":
     "heatmap opens the map. x and y are the axis labels. Inside data a row is name : comma-separated numbers.",
   "site.ext.mermaid.syntax.orgchart":
-    "orgchart opens the tree. A node is id [role]. A solid edge is ->, a secondary manager is -.->.",
+    "orgchart opens the tree. A node is id [role\\nname] (\\n breaks the line, the box fits the text). A solid edge is ->, a secondary manager is -.->.",
   "site.ext.mermaid.syntax.ev":
     "ev opens the chart. days are the days, pv is the plan, ev is earned value, ac is actual cost.",
   "site.primer.graphml.kw.graphml":

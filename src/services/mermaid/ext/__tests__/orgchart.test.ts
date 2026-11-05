@@ -9,6 +9,7 @@ interface Point {
 
 interface OrgCard {
   label: string;
+  lines: string[];
   x: number;
   y: number;
   width: number;
@@ -33,14 +34,30 @@ function edgePaths(svg: string): EdgePath[] {
 
 function cardsIn(svg: string): OrgCard[] {
   const rects = [...svg.matchAll(/<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)"/g)];
-  const labels = [...svg.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map((match) => match[1]);
-  return rects.map((match, index) => ({
-    label: labels[index] ?? "",
+  const texts = [
+    ...svg.matchAll(/<text x="([\d.]+)" y="([\d.]+)"[^>]*>([^<]*)<\/text>/g),
+  ].map((match) => ({
     x: Number(match[1]),
     y: Number(match[2]),
-    width: Number(match[3]),
-    height: Number(match[4]),
+    text: match[3],
   }));
+  return rects.map((match) => {
+    const x = Number(match[1]);
+    const y = Number(match[2]);
+    const width = Number(match[3]);
+    const height = Number(match[4]);
+    const lines = texts
+      .filter((t) => t.x >= x && t.x <= x + width && t.y >= y && t.y <= y + height)
+      .map((t) => t.text);
+    return {
+      label: lines.join("\n"),
+      lines,
+      x,
+      y,
+      width,
+      height,
+    };
+  });
 }
 
 function touchesBottom(path: EdgePath, card: OrgCard): boolean {
@@ -110,6 +127,23 @@ describe("orgchart: разбор", () => {
     expect(m.nodes[0]).toMatchObject({ id: "Гендиректор", label: "Генеральный директор" });
     expect(m.edges).toHaveLength(1);
     expect(m.edges[0]).toMatchObject({ from: "Гендиректор", to: "Техдир", style: "solid" });
+  });
+
+  it("читает многострочные подписи через \\n", () => {
+    const r = orgchartEngine.parse(`orgchart
+Гендиректор [Генеральный директор\\nИван Петров]
+Техдир [Технический директор\\nАнна Смирнова]
+Гендиректор -> Техдир`);
+    expect(r.ok).toBe(true);
+    const m = r.value as OrgModel;
+    expect(m.nodes[0]).toMatchObject({
+      id: "Гендиректор",
+      label: "Генеральный директор\nИван Петров",
+    });
+    expect(m.nodes[1]).toMatchObject({
+      id: "Техдир",
+      label: "Технический директор\nАнна Смирнова",
+    });
   });
 
   it("понимает пунктирное ребро", () => {
@@ -312,6 +346,44 @@ A -.-> B`);
       paths[1].points[paths[1].points.length - 1].x,
       2,
     );
+  });
+
+  it("длинный текст не обрезается многоточием, а расширяет блок", () => {
+    const longLabel =
+      "Старший вице-президент по развитию международной партнёрской сети и цифровой трансформации";
+    const r = orgchartEngine.parse(`orgchart
+CEO [${longLabel}]
+CTO [Техдир]
+CEO -> CTO`);
+    const svg = orgchartEngine.render(r.value as OrgModel, {});
+    expect(svg).toContain(longLabel);
+    expect(svg).not.toContain("…");
+    const [ceo, cto] = cardsIn(svg);
+    expect(ceo.label).toBe(longLabel);
+    expect(ceo.width).toBeGreaterThan(300);
+    expect(ceo.width).toBeGreaterThan(cto.width);
+    expect(ceo.height).toBeCloseTo(cto.height, 2);
+  });
+
+  it("поддерживает несколько строк через \\n и подгоняет высоту и ширину блока", () => {
+    const r = orgchartEngine.parse(`orgchart
+CEO [Генеральный директор\\nИван Петров\\nДепартамент управления]
+CTO [Техдир]
+CEO -> CTO`);
+    const svg = orgchartEngine.render(r.value as OrgModel, {});
+    const [ceo, cto] = cardsIn(svg);
+    expect(ceo.lines).toEqual([
+      "Генеральный директор",
+      "Иван Петров",
+      "Департамент управления",
+    ]);
+    expect(cto.lines).toEqual(["Техдир"]);
+    expect(ceo.height).toBeGreaterThan(cto.height * 1.5);
+    expect(ceo.width).toBeGreaterThan(cto.width);
+
+    const path = edgePaths(svg)[0];
+    expect(touchesBottom(path, ceo)).toBe(true);
+    expect(touchesTop(path, cto)).toBe(true);
   });
 
   it("циклическое ребро не ломает рендер", () => {
