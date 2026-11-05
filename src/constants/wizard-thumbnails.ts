@@ -65,6 +65,24 @@ export function svgNaturalSize(svg: string): SvgNaturalSize | null {
   return { width, height };
 }
 
+/** Scale that fits a diagram into a frame without cropping. */
+export function svgFitScale(
+  natural: SvgNaturalSize,
+  frameWidth: number,
+  frameHeight: number,
+): number {
+  if (
+    frameWidth <= 0 ||
+    frameHeight <= 0 ||
+    natural.width <= 0 ||
+    natural.height <= 0
+  ) {
+    return 1;
+  }
+
+  return Math.min(frameWidth / natural.width, frameHeight / natural.height);
+}
+
 /** Set the root size from the viewBox so a zoomed copy is not scaled to its container. */
 export function svgAtNaturalSize(svg: string): string {
   const size = svgNaturalSize(svg);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -168,6 +168,28 @@ describe("diagram example catalog", () => {
         expect(svg, example.id).toContain("<svg");
         expect(svg?.match(/<svg\b[^>]*\sxmlns="[^"]*"\sxmlns="/), example.id).toBeNull();
       }
+    }
+  });
+
+  it("keeps PlantUML activity labels inside their boxes", () => {
+    const labels = {
+      ru: "Ввести PlantUML код",
+      en: "Enter PlantUML code",
+    } as const;
+
+    for (const locale of ["ru", "en"] as const) {
+      const svg = readFileSync(
+        path.join(thumbnailRoot, locale, "plantuml-activity.svg"),
+        "utf8",
+      );
+      const label = labels[locale];
+      const labelAt = svg.indexOf(label);
+      expect(labelAt, locale).toBeGreaterThan(0);
+      const previousRects = [
+        ...svg.slice(0, labelAt).matchAll(/<rect\b[^>]*\swidth="([\d.]+)"/g),
+      ];
+      const boxWidth = Number(previousRects.at(-1)?.[1]);
+      expect(boxWidth, locale).toBeGreaterThan(label.length * 6);
     }
   });
 });

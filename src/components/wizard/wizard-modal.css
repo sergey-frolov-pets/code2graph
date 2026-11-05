@@ -452,7 +452,10 @@
 }
 
 .wizard-tag-cloud {
-  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
   margin-bottom: 16px;
 }
 
@@ -464,14 +467,13 @@
   white-space: nowrap;
 }
 
-.wizard-tag-cloud .wizard-tag {
-  position: absolute;
-  border: none;
-  box-shadow: none;
-  background: transparent;
-  padding: 1px 2px;
-  line-height: 1.05;
-  border-radius: 4px;
+.wizard-tag--badge {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 10%, var(--surface));
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.45;
 }
 
 .wizard-tag--language { color: var(--accent); }
@@ -481,13 +483,8 @@
 .wizard-tag--setting { color: var(--syntax-color); }
 
 .wizard-tag[aria-pressed="true"] {
-  background: color-mix(in srgb, currentColor 12%, var(--surface));
+  background: color-mix(in srgb, currentColor 18%, var(--surface));
   box-shadow: inset 0 0 0 1px currentColor;
-}
-
-.wizard-tag-cloud .wizard-tag[aria-pressed="true"] {
-  box-shadow: none;
-  font-weight: 700;
 }
 
 .wizard-gallery__empty {
@@ -534,12 +531,26 @@
   overflow: hidden;
 }
 
-.wizard-example__image svg {
+.wizard-example__fit {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+}
+
+.wizard-example__sheet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+}
+
+.wizard-example__sheet svg,
+.wizard-example__image > svg {
   display: block;
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
 }
 
 .wizard-example__fallback,
@@ -590,14 +601,6 @@
   list-style: none;
 }
 
-.wizard-example-card__tags li,
-.wizard-example-actions__button {
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, currentColor 12%, var(--surface));
-  font-size: 0.8rem;
-}
-
 .wizard-example-card__tags li {
   flex: 0 0 auto;
   width: fit-content;
@@ -606,7 +609,10 @@
 }
 
 .wizard-example-actions__button {
+  padding: 4px 8px;
   border-radius: 8px;
+  background: color-mix(in srgb, currentColor 12%, var(--surface));
+  font-size: 0.8rem;
   text-align: left;
   cursor: pointer;
 }
