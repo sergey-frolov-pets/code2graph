@@ -846,6 +846,24 @@ mono может быть
     expect(r.ok).toBe(false);
     expect(r.errors[0].message).toMatch(/mono/);
   });
+
+  it("mono invert светлит бары и холст даже без тёмной темы", () => {
+    const r = waterfallEngine.parse(`waterfall
+mono invert
+y "" 0 --> 100
+=40 : Q1
++20 : Q2
+-10 : Q3`);
+    expect(r.ok).toBe(true);
+    const model = r.value as WaterfallModel;
+    expect(model.mono).toBe(true);
+    expect(model.monoInvert).toBe(true);
+    const svg = waterfallEngine.render(model, {});
+    expect(svg).toContain('fill="#1a1d21"');
+    expect(svg).toContain('fill="#f0f0f0"');
+    expect(svg).toContain('fill="#7a7a7a"');
+    expect(svg).not.toContain("#2da44e");
+  });
 });
 
 describe("waterfall: свои цвета (colors)", () => {

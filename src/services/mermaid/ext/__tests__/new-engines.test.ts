@@ -165,4 +165,24 @@ series Экспорт : 45, 55, 70, 90 color=#f97316`;
     const viaEntry = await tryRenderExtension(`${baseSource}\nrotate 90`);
     expect(viaEntry).toContain("<svg");
   });
+
+  it("stacks series into one column and supports inverted mono", () => {
+    const stacked = clusteredEngine.parse(`${baseSource}\nstacked`);
+    expect(stacked.ok).toBe(true);
+    expect(stacked.value?.stack).toBe(true);
+    const svg = clusteredEngine.render(stacked.value as ClusteredModel, {});
+    const bar00 = /<rect[^>]*x="([\d.]+)"[^>]*data-bar="0-0"/.exec(svg);
+    const bar01 = /<rect[^>]*x="([\d.]+)"[^>]*data-bar="0-1"/.exec(svg);
+    expect(bar00?.[1]).toBe(bar01?.[1]);
+    const y0 = Number(/<rect[^>]*y="([\d.]+)"[^>]*data-bar="0-0"/.exec(svg)?.[1]);
+    const y1 = Number(/<rect[^>]*y="([\d.]+)"[^>]*data-bar="0-1"/.exec(svg)?.[1]);
+    expect(y0).not.toBeCloseTo(y1, 0);
+
+    const mono = clusteredEngine.parse(`${baseSource.replace(/colors[^\n]*\n/, "").replace(/ color=#f97316/, "")}\nmono invert`);
+    expect(mono.ok).toBe(true);
+    expect(mono.value?.monoInvert).toBe(true);
+    const monoSvg = clusteredEngine.render(mono.value as ClusteredModel, {});
+    expect(monoSvg).toContain('fill="#1a1d21"');
+    expect(monoSvg).not.toContain("#0969da");
+  });
 });

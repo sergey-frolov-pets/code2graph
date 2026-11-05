@@ -8,7 +8,12 @@ import {
   hasLabelBreak,
   labelLineStep,
   measureText,
+  monoFlagsFromMode,
+  monoGray,
+  monoPaint,
+  parseMonoDirective,
   splitLabelLines,
+  usesInvertedMono,
 } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 import { isColor } from "./waterfall/directive-parsers";
@@ -41,6 +46,10 @@ export interface OrgEdge {
 
 export interface OrgModel {
   title?: string;
+  /** `mono` — блоки отличаются светлотой, а не цветом. */
+  mono?: boolean;
+  /** `mono invert` — светлая серая шкала для тёмного фона. */
+  monoInvert?: boolean;
   nodes: OrgNode[];
   edges: OrgEdge[];
   /** id реального корня; null — корней несколько. */
@@ -333,6 +342,8 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
   const lines = source.split(/\r?\n/);
 
   let title: string | undefined;
+  let mono = false;
+  let monoInvert = false;
   const nodes: OrgNode[] = [];
   const nodeIndex = new Map<string, OrgNode>();
   const edges: OrgEdge[] = [];
@@ -364,6 +375,18 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
 
     if (/^title\b/i.test(raw)) {
       title = raw.replace(/^title\s*/i, "").trim() || undefined;
+      continue;
+    }
+
+    if (/^mono\b/i.test(raw)) {
+      const parsed = parseMonoDirective(raw.replace(/^mono\s*/i, ""));
+      if ("error" in parsed) {
+        errors.push({ message: parsed.error, line: lineNo, col: 0 });
+      } else {
+        const flags = monoFlagsFromMode(parsed.mode);
+        mono = flags.mono;
+        monoInvert = flags.monoInvert;
+      }
       continue;
     }
 
@@ -431,6 +454,8 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
     errors: [],
     value: {
       title,
+      mono,
+      monoInvert,
       nodes,
       edges,
       root: virtualRoot ? null : roots[0],
@@ -747,7 +772,9 @@ function assignElbowLanes(groups: EdgeLaneGroup[]): Map<string, { lane: number; 
 }
 
 export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): string {
-  const palette = getPalette(Boolean(options.dark));
+  const themeDark = Boolean(options.dark) || usesInvertedMono(model.mono, model.monoInvert, false);
+  const invertedMono = usesInvertedMono(model.mono, model.monoInvert, options.dark);
+  const palette = getPalette(themeDark);
   const { placed, width: contentWidth, height: contentHeight } = layout(model);
 
   const titleLines = model.title && hasLabelBreak(model.title) ? splitLabelLines(model.title) : null;
@@ -762,7 +789,8 @@ export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): stri
     title: model.title,
     debugFrames: options.debugFrames,
     // Тесты считают прямоугольники по тегам: фон дал бы лишний <rect>.
-    background: false,
+    // У инвертированного ч/б тёмный холст нужен, иначе светлые блоки теряются.
+    background: model.monoInvert ? true : false,
   });
 
   if (model.title) {
@@ -865,13 +893,25 @@ export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): stri
     const x = offsetX + p.x;
     const y = offsetY + p.y;
     const isRoot = !model.virtualRoot && p.node.id === model.root;
-    const fill = p.node.fill ?? (isRoot ? palette.accent : palette.bg);
-    const stroke = p.node.border ?? (p.node.fill ? p.node.fill : isRoot ? palette.accent : palette.axis);
-    const textFill = p.node.fill
-      ? (contrastTextColor(colorForContrast(p.node.fill)) ?? palette.fg)
-      : isRoot
-        ? palette.bg
-        : palette.fg;
+    const rawFill = p.node.fill ?? (isRoot ? palette.accent : palette.bg);
+    const rawStroke = p.node.border ?? (p.node.fill ? p.node.fill : isRoot ? palette.accent : palette.axis);
+    const fill = model.mono
+      ? p.node.fill
+        ? monoPaint(colorForContrast(p.node.fill), invertedMono)
+        : monoGray(isRoot ? 0 : 1, 2, invertedMono)
+      : rawFill;
+    const stroke = model.mono
+      ? p.node.border
+        ? monoPaint(colorForContrast(p.node.border), invertedMono)
+        : fill
+      : rawStroke;
+    const textFill = model.mono
+      ? (contrastTextColor(fill) ?? palette.fg)
+      : p.node.fill
+        ? (contrastTextColor(colorForContrast(p.node.fill)) ?? palette.fg)
+        : isRoot
+          ? palette.bg
+          : palette.fg;
     const dash = p.node.borderStyle ? BORDER_DASH[p.node.borderStyle] : undefined;
     svg.rect(x, y, p.width, p.height, {
       fill,

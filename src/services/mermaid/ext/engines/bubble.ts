@@ -7,8 +7,12 @@ import {
   labelLineStep,
   measureLabelWidth,
   measureText,
+  monoFlagsFromMode,
+  monoGray,
+  parseMonoDirective,
   resolvePalette,
   splitLabelLines,
+  usesInvertedMono,
 } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
@@ -36,6 +40,10 @@ export interface BubbleModel {
    * заголовок, оси и квадранты масштабируются относительно него.
    */
   fontSize?: number;
+  /** `mono` — группы отличаются светлотой, а не цветом. */
+  mono?: boolean;
+  /** `mono invert` — светлая серая шкала для тёмного фона. */
+  monoInvert?: boolean;
 }
 
 // --- Разбор ---------------------------------------------------------------
@@ -142,6 +150,8 @@ export function parseBubble(source: string): ExtParseResult<BubbleModel> {
   let quadrants: [string, string, string, string] | undefined;
   let midRaw: { x?: number; y?: number } | null = null;
   let fontSize: number | undefined;
+  let mono = false;
+  let monoInvert = false;
   const points: BubblePoint[] = [];
 
   let inData = false;
@@ -222,6 +232,17 @@ export function parseBubble(source: string): ExtParseResult<BubbleModel> {
       midRaw = found;
       continue;
     }
+    if (/^mono\b/i.test(raw)) {
+      const parsed = parseMonoDirective(raw.replace(/^mono\s*/i, ""));
+      if ("error" in parsed) {
+        errors.push({ message: parsed.error, line: lineNo, col: 0 });
+      } else {
+        const flags = monoFlagsFromMode(parsed.mode);
+        mono = flags.mono;
+        monoInvert = flags.monoInvert;
+      }
+      continue;
+    }
     if (/^fontsize\b/i.test(raw)) {
       const parsed = parseNumber(raw.replace(/^fontsize\s*/i, ""));
       if (parsed === null || !(parsed > 0)) {
@@ -242,7 +263,7 @@ export function parseBubble(source: string): ExtParseResult<BubbleModel> {
     }
 
     errors.push({
-      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, x, y, size, quadrants, mid, fontsize, data)`,
+      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, x, y, size, quadrants, mid, fontsize, mono, data)`,
       line: lineNo,
       col: 0,
     });
@@ -270,7 +291,7 @@ export function parseBubble(source: string): ExtParseResult<BubbleModel> {
   return {
     ok: true,
     errors: [],
-    value: { title, x: xAxis, y: yAxis, sizeLabel, quadrants, mid, points, fontSize },
+    value: { title, x: xAxis, y: yAxis, sizeLabel, quadrants, mid, points, fontSize, mono, monoInvert },
   };
 }
 
@@ -476,8 +497,10 @@ function clampLabelX(
 }
 
 export function renderBubble(model: BubbleModel, options: ExtRenderOptions): string {
-  const palette = resolvePalette(options.dark, options.background, options.textColor);
-  const groupColors = options.dark ? GROUP_COLORS_DARK : GROUP_COLORS;
+  const themeDark = Boolean(options.dark) || usesInvertedMono(model.mono, model.monoInvert, false);
+  const palette = resolvePalette(themeDark, options.background, options.textColor);
+  const groupColors = themeDark ? GROUP_COLORS_DARK : GROUP_COLORS;
+  const invertedMono = usesInvertedMono(model.mono, model.monoInvert, options.dark);
 
   const fontSize = clamp(model.fontSize ?? FONT_BASE, FONT_MIN, FONT_MAX);
   // Заголовок и оси масштабируются вместе с подписями, но не 1:1 —
@@ -667,6 +690,10 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
 
   // Группы → цвета (список groups собран выше, при раскладке легенды)
   const colorOf = (group?: string): string => {
+    if (model.mono) {
+      const idx = group ? Math.max(0, groups.indexOf(group)) : 0;
+      return monoGray(idx, Math.max(groups.length, 1), invertedMono);
+    }
     if (!group) return palette.neutral;
     const idx = groups.indexOf(group);
     return groupColors[idx % groupColors.length];

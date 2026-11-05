@@ -9,8 +9,12 @@ import {
   labelLineStep,
   measureLabelWidth,
   measureText,
+  monoFlagsFromMode,
+  monoGray,
+  parseMonoDirective,
   resolvePalette,
   truncateLabel,
+  usesInvertedMono,
 } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
@@ -38,6 +42,10 @@ export interface HeatmapModel {
   /** true — шкала встроенная, а не задана блоком `scale`. */
   scaleAuto: boolean;
   rows: HeatmapRow[];
+  /** `mono` — полосы шкалы становятся серыми. */
+  mono?: boolean;
+  /** `mono invert` — светлая серая шкала для тёмного фона. */
+  monoInvert?: boolean;
 }
 
 // --- Разбор ---------------------------------------------------------------
@@ -115,6 +123,8 @@ export function parseHeatmap(source: string): ExtParseResult<HeatmapModel> {
   const lines = source.split(/\r?\n/);
 
   let title: string | undefined;
+  let mono = false;
+  let monoInvert = false;
   let xLabels: string[] | null = null;
   let yLabels: string[] | null = null;
   const bands: HeatmapBand[] = [];
@@ -225,6 +235,17 @@ export function parseHeatmap(source: string): ExtParseResult<HeatmapModel> {
       continue;
     }
 
+    if (/^mono\b/i.test(raw)) {
+      const parsed = parseMonoDirective(raw.replace(/^mono\s*/i, ""));
+      if ("error" in parsed) {
+        errors.push({ message: parsed.error, line: lineNo, col: 0 });
+      } else {
+        const flags = monoFlagsFromMode(parsed.mode);
+        mono = flags.mono;
+        monoInvert = flags.monoInvert;
+      }
+      continue;
+    }
     if (/^title\b/i.test(raw)) {
       title = unquote(raw.replace(/^title\s*/i, "")) || undefined;
       continue;
@@ -259,7 +280,7 @@ export function parseHeatmap(source: string): ExtParseResult<HeatmapModel> {
     }
 
     errors.push({
-      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, x, y, scale, data)`,
+      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, x, y, scale, data, mono)`,
       line: lineNo,
       col: 0,
     });
@@ -323,6 +344,8 @@ export function parseHeatmap(source: string): ExtParseResult<HeatmapModel> {
       scale,
       scaleAuto,
       rows: orderedRows,
+      mono,
+      monoInvert,
     },
   };
 }
@@ -360,7 +383,15 @@ function readableOn(color: string): string {
 }
 
 export function renderHeatmap(model: HeatmapModel, options: ExtRenderOptions): string {
-  const palette = resolvePalette(options.dark, options.background, options.textColor);
+  const themeDark = Boolean(options.dark) || usesInvertedMono(model.mono, model.monoInvert, false);
+  const invertedMono = usesInvertedMono(model.mono, model.monoInvert, options.dark);
+  const palette = resolvePalette(themeDark, options.background, options.textColor);
+  const scale = model.mono
+    ? model.scale.map((band, index) => ({
+        ...band,
+        color: monoGray(index, model.scale.length, invertedMono),
+      }))
+    : model.scale;
   const labelFontSize = 11;
 
   const cols = Math.max(1, model.x.length);
@@ -401,7 +432,8 @@ export function renderHeatmap(model: HeatmapModel, options: ExtRenderOptions): s
     title: model.title,
     debugFrames: options.debugFrames,
     // Тесты считают элементы по тегам: фон-плашка дала бы лишний <rect>.
-    background: false,
+    // У инвертированного ч/б тёмный холст нужен, иначе светлые ячейки пропадают.
+    background: model.monoInvert ? true : false,
   });
 
   const gridLeft = PADDING.left + rowLabelWidth;
@@ -437,7 +469,7 @@ export function renderHeatmap(model: HeatmapModel, options: ExtRenderOptions): s
     );
   }
 
-  const emptyFill = options.dark ? EMPTY_FILL_DARK : EMPTY_FILL;
+  const emptyFill = themeDark ? EMPTY_FILL_DARK : EMPTY_FILL;
 
   let rowTop = gridTop;
   for (let r = 0; r < rows; r += 1) {
@@ -463,12 +495,12 @@ export function renderHeatmap(model: HeatmapModel, options: ExtRenderOptions): s
       const value = row.values[c] ?? null;
       const x = colLeft(c);
       const colW = colWidths[c] ?? CELL_W;
-      const fill = colorFor(value, model.scale);
+      const fill = colorFor(value, scale);
       if (fill === null) {
         // Пустая ячейка: только контур, чтобы не спорить с фоном и с легендой
         svg.rect(x, y, colW, rowH, {
           fill: "none",
-          stroke: options.dark ? palette.grid : emptyFill,
+          stroke: themeDark ? palette.grid : emptyFill,
           "stroke-width": 1.5,
           "stroke-dasharray": "4 3",
           rx: 3,
@@ -490,7 +522,7 @@ export function renderHeatmap(model: HeatmapModel, options: ExtRenderOptions): s
   const legendY = gridTop + gridHeight + 26;
   const barWidth = Math.max(48, gridWidth);
   const barHeight = 8;
-  const bands = model.scale.length > 0 ? model.scale : [];
+  const bands = scale.length > 0 ? scale : [];
   let legendX = gridLeft;
   if (bands.length > 0) {
     const stops = bands

@@ -136,7 +136,7 @@ export const siteMessages = {
   "site.ext.mermaid.type.voronoi": "Диаграмма Вороного",
   "site.ext.mermaid.type.clustered": "Кластеризованная диаграмма",
   "site.ext.mermaid.desc.waterfall":
-    "Как начальное значение превращается в итоговое через шаги + и −. Абсолютные колонки начинаются с =, несколько сценариев задаются через series. Есть разрывы шкалы, чёрно-белый режим (mono) и свои цвета (colors, series ... color=#hex).",
+    "Как начальное значение превращается в итоговое через шаги + и −. Абсолютные колонки начинаются с =, несколько сценариев задаются через series. Есть разрывы шкалы, чёрно-белый режим (mono и mono invert) и свои цвета.",
   "site.ext.mermaid.desc.bubble":
     "Три измерения сразу: x, y и размер пузыря. Опционально — квадранты BCG и группы по цвету.",
   "site.ext.mermaid.desc.heatmap":
@@ -154,7 +154,7 @@ export const siteMessages = {
   "site.ext.mermaid.desc.voronoi":
     "Геометрическое разбиение плоскости на выпуклые ячейки ближайших опорных точек с поддержкой цветовых групп и подписей в центроидах.",
   "site.ext.mermaid.desc.clustered":
-    "Сгруппированные столбцы нескольких серий по категориям с опцией поворота на 90 градусов (rotate 90), подписями значений и настройкой цветов.",
+    "Столбцы нескольких серий по категориям: рядом или стопкой (stacked), с поворотом на 90 градусов (rotate 90), подписями и чёрно-белым режимом (mono, mono invert).",
   "site.ext.mermaid.syntax.waterfall":
     "waterfall открывает диаграмму. y задаёт ось. = — абсолютная колонка, + и - — шаг, подпись — после двоеточия. \\n в подписи переносит строку.",
   "site.ext.mermaid.syntax.bubble":
@@ -174,7 +174,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.voronoi":
     "voronoi открывает разбиение. В блоке data точка: Имя : x=, y=, group=, color=#hex. \\n в имени переносит строку.",
   "site.ext.mermaid.syntax.clustered":
-    "clustered открывает график. categories — категории, series Имя : зн1, зн2, … — серии, rotate 90 поворачивает диаграмму на 90 градусов. \\n в подписи переносит строку.",
+    "clustered открывает график. categories — категории, series Имя : зн1, зн2, … — серии. stacked складывает серии, rotate 90 поворачивает диаграмму, mono и mono invert включают чёрно-белый режим. \\n в подписи переносит строку.",
   "site.primer.graphml.kw.graphml":
     "Корень документа. Пространство имён GraphML обязательно.",
   "site.primer.graphml.kw.graph":

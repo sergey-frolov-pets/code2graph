@@ -172,3 +172,34 @@ R : 10,,`);
     });
   });
 });
+
+describe("heatmap: чёрно-белый режим", () => {
+  it("mono заменяет цвета шкалы серым рядом", () => {
+    const r = heatmapEngine.parse(`heatmap
+mono
+x A, B
+y Строка
+scale
+0-40 : #e8f5e9
+40+ : #ffebee
+data
+Строка : 10, 80`);
+    expect(r.ok).toBe(true);
+    const svg = heatmapEngine.render(r.value as HeatmapModel, {});
+    expect(svg).not.toContain("#e8f5e9");
+    expect(svg).not.toContain("#ffebee");
+    expect(svg).toMatch(/fill="#([0-9a-f]{2})\1\1"/);
+  });
+
+  it("mono invert рисует тёмный холст", () => {
+    const r = heatmapEngine.parse(`heatmap
+mono invert
+x A
+y Строка
+data
+Строка : 10`);
+    const svg = heatmapEngine.render(r.value as HeatmapModel, {});
+    expect(svg).toContain('fill="#1a1d21"');
+    expect((r.value as HeatmapModel).monoInvert).toBe(true);
+  });
+});

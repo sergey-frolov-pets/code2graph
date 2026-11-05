@@ -7,9 +7,13 @@ import {
   measureLabelWidth,
   measureText,
   niceRange,
+  monoFlagsFromMode,
+  monoGray,
   niceTicks,
+  parseMonoDirective,
   resolvePalette,
   truncateLabel,
+  usesInvertedMono,
 } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
@@ -33,6 +37,10 @@ export interface EvModel {
   ac: number[];
   /** Рисовать горизонтальные линии сетки. */
   grid: boolean;
+  /** `mono` — три кривые отличаются светлотой. */
+  mono?: boolean;
+  /** `mono invert` — светлая серая шкала для тёмного фона. */
+  monoInvert?: boolean;
   summary: EvSummary;
 }
 
@@ -76,6 +84,8 @@ export function parseEv(source: string): ExtParseResult<EvModel> {
   const values: Partial<Record<EvSeriesKey, number[]>> = {};
   const seriesLine: Partial<Record<EvSeriesKey, number>> = {};
   let grid = false;
+  let mono = false;
+  let monoInvert = false;
   let seenType = false;
 
   for (let i = 0; i < lines.length; i += 1) {
@@ -95,6 +105,18 @@ export function parseEv(source: string): ExtParseResult<EvModel> {
 
     if (/^grid$/i.test(raw)) {
       grid = true;
+      continue;
+    }
+
+    if (/^mono\b/i.test(raw)) {
+      const parsed = parseMonoDirective(raw.replace(/^mono\s*/i, ""));
+      if ("error" in parsed) {
+        errors.push({ message: parsed.error, line: lineNo, col: 0 });
+      } else {
+        const flags = monoFlagsFromMode(parsed.mode);
+        mono = flags.mono;
+        monoInvert = flags.monoInvert;
+      }
       continue;
     }
 
@@ -141,7 +163,7 @@ export function parseEv(source: string): ExtParseResult<EvModel> {
     }
 
     errors.push({
-      message: `неизвестная строка «${raw}»: ожидается title, days, pv/ev/ac или grid`,
+      message: `неизвестная строка «${raw}»: ожидается title, days, pv/ev/ac, grid или mono`,
       line: lineNo,
       col: 0,
     });
@@ -195,6 +217,8 @@ export function parseEv(source: string): ExtParseResult<EvModel> {
       ev,
       ac,
       grid,
+      mono,
+      monoInvert,
       summary: { sv: ev[last] - pv[last], cv: ev[last] - ac[last] },
     },
   };
@@ -207,7 +231,9 @@ const PLOT_HEIGHT = 240;
 const FONT = 11;
 
 export function renderEv(model: EvModel, options: ExtRenderOptions): string {
-  const palette = resolvePalette(options.dark, options.background, options.textColor);
+  const themeDark = Boolean(options.dark) || usesInvertedMono(model.mono, model.monoInvert, false);
+  const invertedMono = usesInvertedMono(model.mono, model.monoInvert, options.dark);
+  const palette = resolvePalette(themeDark, options.background, options.textColor);
   const { days, pv, ev, ac, title } = model;
 
   const count = Math.max(1, days.length);
@@ -266,11 +292,17 @@ export function renderEv(model: EvModel, options: ExtRenderOptions): string {
     "stroke-width": 1,
   });
 
-  const series: { name: string; data: number[]; color: string }[] = [
-    { name: "PV", data: pv, color: palette.neutral },
-    { name: "EV", data: ev, color: palette.positive },
-    { name: "AC", data: ac, color: palette.negative },
-  ];
+  const series: { name: string; data: number[]; color: string }[] = model.mono
+    ? [
+        { name: "PV", data: pv, color: monoGray(0, 3, invertedMono) },
+        { name: "EV", data: ev, color: monoGray(1, 3, invertedMono) },
+        { name: "AC", data: ac, color: monoGray(2, 3, invertedMono) },
+      ]
+    : [
+        { name: "PV", data: pv, color: palette.neutral },
+        { name: "EV", data: ev, color: palette.positive },
+        { name: "AC", data: ac, color: palette.negative },
+      ];
 
   for (const s of series) {
     const points = s.data.map((v, i) => `${fmt(xOf(i))},${fmt(yOf(v))}`).join(" ");

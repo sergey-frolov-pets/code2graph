@@ -138,6 +138,73 @@ export function resolvePalette(
   };
 }
 
+/** `mono` — серое на светлом; `mono invert` — серое на тёмном. */
+export type MonoDirectiveMode = "off" | "on" | "invert";
+
+export interface MonoFlags {
+  mono: boolean;
+  /** Светлая серая шкала и тёмный холст (`mono invert`). */
+  monoInvert: boolean;
+}
+
+const MONO_ON = new Set(["", "on", "true", "yes", "bw"]);
+const MONO_OFF = new Set(["off", "false", "no", "color", "colour"]);
+const MONO_INVERT = new Set(["invert", "inverted", "inverse"]);
+
+/**
+ * Хвост директивы `mono` (без самого слова).
+ * `mono`, `mono on` — ч/б; `mono invert` — инверсия для тёмной темы; `mono off` — цвет.
+ */
+export function parseMonoDirective(token: string): { mode: MonoDirectiveMode } | { error: string } {
+  const normalized = token.trim().toLowerCase();
+  if (MONO_ON.has(normalized)) return { mode: "on" };
+  if (MONO_OFF.has(normalized)) return { mode: "off" };
+  if (MONO_INVERT.has(normalized)) return { mode: "invert" };
+  return {
+    error: `ожидается «mono», «mono invert» или «mono off», получено «${token.trim()}»`,
+  };
+}
+
+export function monoFlagsFromMode(mode: MonoDirectiveMode): MonoFlags {
+  if (mode === "off") return { mono: false, monoInvert: false };
+  if (mode === "invert") return { mono: true, monoInvert: true };
+  return { mono: true, monoInvert: false };
+}
+
+/** `mono` на тёмной теме сам разворачивает шкалу; `mono invert` разворачивает всегда. */
+export function usesInvertedMono(
+  mono: boolean | undefined,
+  monoInvert: boolean | undefined,
+  dark?: boolean,
+): boolean {
+  if (monoInvert) return true;
+  return Boolean(mono) && Boolean(dark);
+}
+
+/**
+ * Серый из ряда `index` / `count`.
+ * Обычный режим — от тёмного к светлому (печать). Инверсия — от светлого к тёмному.
+ */
+export function monoGray(index: number, count: number, invert: boolean): string {
+  const slots = Math.max(count, 1);
+  const t = slots === 1 ? 0.45 : index / (slots - 1);
+  const light = invert ? 0.92 - t * 0.5 : 0.12 + t * 0.62;
+  const v = Math.round(clamp(light, 0, 1) * 255);
+  const hex = v.toString(16).padStart(2, "0");
+  return `#${hex}${hex}${hex}`;
+}
+
+/** Цвет → серый той же светлоты. `invert` зеркалит светлоту для тёмного фона. */
+export function monoPaint(color: string, invert: boolean): string {
+  const luminance = relativeLuminance(color);
+  if (luminance === null) return invert ? "#d4d4d4" : "#404040";
+  const shifted = invert ? 1 - luminance : luminance;
+  const light = 0.18 + shifted * 0.68;
+  const v = Math.round(clamp(light, 0, 1) * 255);
+  const hex = v.toString(16).padStart(2, "0");
+  return `#${hex}${hex}${hex}`;
+}
+
 export const FONT_FAMILY =
   'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 

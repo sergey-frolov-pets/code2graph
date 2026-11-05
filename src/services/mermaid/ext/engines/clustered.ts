@@ -2,6 +2,7 @@ import {
   extractTrailingColorAttr,
   parseExtColorsDirective,
   parseExtNumber,
+  chartIsDark,
   parseMonoDirective,
   readableTextOnFill,
   resolveSeriesColor,
@@ -37,12 +38,16 @@ export interface ClusteredModel {
   y?: { label?: string; min?: number; max?: number };
   /** Поворот на 90 градусов: горизонтальные сгруппированные полосы вместо вертикальных столбцов. */
   rotate90: boolean;
+  /** `stacked` — серии в одном столбце, а не рядом. */
+  stack: boolean;
   grid: boolean;
   gridStep?: number;
   axis: boolean;
   labels: ClusteredLabelsMode;
   fontSize?: number;
   mono: boolean;
+  /** `mono invert` — светлая серая шкала на тёмном холсте. */
+  monoInvert: boolean;
   seriesColors: Record<string, string>;
   series: ClusteredSeries[];
 }
@@ -208,12 +213,14 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
   let categories: string[] | null = null;
   let yAxis: ClusteredModel["y"];
   let rotate90 = false;
+  let stack = false;
   let grid = true;
   let gridStep: number | undefined;
   let axis = true;
   let labels: ClusteredLabelsMode = "above";
   let fontSize: number | undefined;
   let mono = false;
+  let monoInvert = false;
   const seriesColors: Record<string, string> = {};
   const series: ClusteredSeries[] = [];
 
@@ -328,10 +335,35 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
         continue;
       }
 
+      if (/^(?:stacked|bars|layout)\b/i.test(raw) && !raw.includes(":")) {
+        const token = raw.replace(/^(?:stacked|bars|layout)\s*/i, "").trim().toLowerCase();
+        if (raw.toLowerCase() === "stacked" || token === "stacked" || token === "stack" || token === "on") {
+          stack = true;
+        } else if (
+          raw.toLowerCase() === "clustered" ||
+          token === "clustered" ||
+          token === "grouped" ||
+          token === "off" ||
+          token === ""
+        ) {
+          stack = false;
+        } else {
+          errors.push({
+            message: `ожидается «stacked» или «bars clustered», получено «${raw}»`,
+            line: lineNo,
+            col: 0,
+          });
+        }
+        continue;
+      }
+
       if (/^mono\b/i.test(raw) && !raw.includes(":")) {
         const parsed = parseMonoDirective(raw, lineNo);
         if (parsed.error) errors.push(parsed.error);
-        else if (parsed.mono !== undefined) mono = parsed.mono;
+        else if (parsed.mono !== undefined) {
+          mono = parsed.mono;
+          monoInvert = Boolean(parsed.monoInvert);
+        }
         continue;
       }
 
@@ -356,7 +388,7 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
     }
 
     errors.push({
-      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, rotate 90, categories, y, grid, axis, labels, fontsize, mono, colors, series)`,
+      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, rotate 90, categories, y, grid, axis, labels, fontsize, mono, stacked, colors, series)`,
       line: lineNo,
       col: 0,
     });
@@ -400,16 +432,35 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
       categories,
       y: yAxis,
       rotate90,
+      stack,
       grid,
       gridStep,
       axis,
       labels,
       fontSize,
       mono,
+      monoInvert,
       seriesColors,
       series,
     },
   };
+}
+
+/** Сегменты стопки: положительные складываются вверх от нуля, отрицательные — вниз. */
+export function stackedSpans(
+  model: ClusteredModel,
+  category: number,
+): Array<{ start: number; end: number }> {
+  let positive = 0;
+  let negative = 0;
+  return model.series.map((series) => {
+    const value = series.values[category] ?? 0;
+    const start = value >= 0 ? positive : negative;
+    const end = start + value;
+    if (value >= 0) positive = end;
+    else negative = end;
+    return { start, end };
+  });
 }
 
 function computeValueScale(model: ClusteredModel): {
@@ -417,9 +468,22 @@ function computeValueScale(model: ClusteredModel): {
   max: number;
   ticks: number[];
 } {
-  const allVals = model.series.flatMap((s) => s.values);
-  const rawMin = Math.min(0, ...allVals);
-  const rawMax = Math.max(0, ...allVals);
+  let rawMin = 0;
+  let rawMax = 0;
+  if (model.stack && model.series.length > 0) {
+    const cats = Math.max(...model.series.map((series) => series.values.length));
+    for (let category = 0; category < cats; category += 1) {
+      const spans = stackedSpans(model, category);
+      for (const span of spans) {
+        rawMin = Math.min(rawMin, span.start, span.end);
+        rawMax = Math.max(rawMax, span.start, span.end);
+      }
+    }
+  } else {
+    const allVals = model.series.flatMap((s) => s.values);
+    rawMin = Math.min(0, ...allVals);
+    rawMax = Math.max(0, ...allVals);
+  }
   const auto = niceRange(rawMin, rawMax, 5);
   const min = model.y?.min ?? Math.min(0, auto.min);
   const max = model.y?.max ?? (auto.max <= min ? min + 10 : auto.max);
@@ -444,7 +508,7 @@ function renderLegend(
       explicitColor: s.color,
       seriesColors: model.seriesColors,
       mono: model.mono,
-      dark: options.dark,
+      dark: chartIsDark(options.dark, model.monoInvert),
     });
     svg.rect(lx, legendY - swatch + 2, swatch, swatch, { fill: color, rx: 2 });
     drawLabelLines(svg, lx + swatch + 6, legendY, s.name, fontSize, {
@@ -457,20 +521,25 @@ function renderLegend(
 }
 
 function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOptions): string {
-  const palette = resolvePalette(options.dark, options.background, options.textColor);
+  const palette = resolvePalette(
+    chartIsDark(options.dark, model.monoInvert),
+    options.background,
+    options.textColor,
+  );
   const fontSize = clamp(model.fontSize ?? FONT_BASE, FONT_MIN, FONT_MAX);
   const scaleFactor = fontSize / FONT_BASE;
   const titleSize = clamp(Math.round(fontSize * 1.36), 14, 26);
 
   const catCount = Math.max(1, model.categories.length);
   const seriesCount = Math.max(1, model.series.length);
+  const layoutCount = model.stack ? 1 : seriesCount;
 
   const barWidth = clamp(
-    Math.round(24 * scaleFactor - Math.max(0, seriesCount - 2) * 2),
+    Math.round(24 * scaleFactor - Math.max(0, layoutCount - 2) * 2),
     MIN_BAR_THICKNESS,
     MAX_BAR_THICKNESS,
   );
-  const barsGroupWidth = seriesCount * barWidth + (seriesCount - 1) * INNER_BAR_GAP;
+  const barsGroupWidth = layoutCount * barWidth + (layoutCount - 1) * INNER_BAR_GAP;
   const longestCat = model.categories.reduce(
     (max, cat) => Math.max(max, measureLabelWidth(cat, fontSize)),
     0,
@@ -489,7 +558,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
   const plotHeight = Math.round(PLOT_HEIGHT_VERTICAL * Math.max(1, (scaleFactor - 1) * 0.4 + 1));
 
   const padLeft = (model.axis ? 68 : 28) + yExtra;
-  const padRight = 28;
+  const padRight = model.stack && model.labels !== "none" ? 72 : 28;
   const padTop = (model.title ? 52 : 28) + (model.labels === "above" ? fontSize + 6 : 0) + titleExtra;
   const padBottom = 68 + catExtra + seriesExtra;
 
@@ -555,18 +624,21 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     const clusterCenter = plotLeft + (c + 0.5) * colWidth;
     const clusterLeft = clusterCenter - barsGroupWidth / 2;
 
+    const spans = model.stack ? stackedSpans(model, c) : null;
     model.series.forEach((s, sIdx) => {
       const val = s.values[c] ?? 0;
+      const span = spans?.[sIdx];
       const color = resolveSeriesColor(sIdx, {
         explicitColor: s.color,
         seriesColors: model.seriesColors,
         mono: model.mono,
-        dark: options.dark,
+        dark: chartIsDark(options.dark, model.monoInvert),
       });
-      const bx = clusterLeft + sIdx * (barWidth + INNER_BAR_GAP);
-      const yVal = yOf(val);
-      const barTop = Math.min(yZero, yVal);
-      const barH = Math.max(1.5, Math.abs(yVal - yZero));
+      const bx = span ? clusterLeft : clusterLeft + sIdx * (barWidth + INNER_BAR_GAP);
+      const yStart = yOf(span ? span.start : 0);
+      const yEnd = yOf(span ? span.end : val);
+      const barTop = Math.min(span ? yStart : yZero, span ? yEnd : yOf(val));
+      const barH = Math.max(1.5, Math.abs((span ? yEnd : yOf(val)) - (span ? yStart : yZero)));
 
       svg.rect(bx, barTop, barWidth, barH, {
         fill: color,
@@ -581,12 +653,20 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
           barH >= fontSize + 6 &&
           measureText(valText, fontSize - 1) <= barWidth - 2;
 
-        if (insideFits) {
+        const stackedInside =
+          Boolean(span) && barH >= fontSize + 4 && measureText(valText, fontSize - 1) <= barWidth - 2;
+        if (insideFits || stackedInside) {
           const textFill = readableTextOnFill(color, palette.fg);
           svg.text(bx + barWidth / 2, barTop + barH / 2 + fontSize * 0.35, valText, {
             "font-size": Math.max(8, fontSize - 1),
             "font-weight": 600,
             fill: textFill,
+          });
+        } else if (span) {
+          svg.text(bx + barWidth + 4, barTop + barH / 2 + fontSize * 0.35, valText, {
+            "text-anchor": "start",
+            "font-size": Math.max(8, fontSize - 1),
+            fill: palette.fgDim,
           });
         } else {
           const labelY = val >= 0 ? barTop - 5 : barTop + barH + fontSize + 2;
@@ -623,20 +703,25 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
 }
 
 function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOptions): string {
-  const palette = resolvePalette(options.dark, options.background, options.textColor);
+  const palette = resolvePalette(
+    chartIsDark(options.dark, model.monoInvert),
+    options.background,
+    options.textColor,
+  );
   const fontSize = clamp(model.fontSize ?? FONT_BASE, FONT_MIN, FONT_MAX);
   const scaleFactor = fontSize / FONT_BASE;
   const titleSize = clamp(Math.round(fontSize * 1.36), 14, 26);
 
   const catCount = Math.max(1, model.categories.length);
   const seriesCount = Math.max(1, model.series.length);
+  const layoutCount = model.stack ? 1 : seriesCount;
 
   const barHeight = clamp(
-    Math.round(20 * scaleFactor - Math.max(0, seriesCount - 2) * 1.5),
+    Math.round(20 * scaleFactor - Math.max(0, layoutCount - 2) * 1.5),
     MIN_BAR_THICKNESS,
     MAX_BAR_THICKNESS,
   );
-  const barsGroupHeight = seriesCount * barHeight + (seriesCount - 1) * INNER_BAR_GAP;
+  const barsGroupHeight = layoutCount * barHeight + (layoutCount - 1) * INNER_BAR_GAP;
   const catExtra = Math.max(0, ...model.categories.map((cat) => labelBlockExtra(cat, fontSize)));
   const rowHeight = Math.max(Math.round(barsGroupHeight / (1 - CLUSTER_PADDING_RATIO)), 42) + catExtra;
 
@@ -728,18 +813,21 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
       "center",
     );
 
+    const spans = model.stack ? stackedSpans(model, c) : null;
     model.series.forEach((s, sIdx) => {
       const val = s.values[c] ?? 0;
+      const span = spans?.[sIdx];
       const color = resolveSeriesColor(sIdx, {
         explicitColor: s.color,
         seriesColors: model.seriesColors,
         mono: model.mono,
-        dark: options.dark,
+        dark: chartIsDark(options.dark, model.monoInvert),
       });
-      const by = clusterTop + sIdx * (barHeight + INNER_BAR_GAP);
-      const xVal = xOf(val);
-      const barLeft = Math.min(xZero, xVal);
-      const barW = Math.max(1.5, Math.abs(xVal - xZero));
+      const by = span ? clusterTop : clusterTop + sIdx * (barHeight + INNER_BAR_GAP);
+      const xStart = xOf(span ? span.start : 0);
+      const xEnd = xOf(span ? span.end : val);
+      const barLeft = Math.min(span ? xStart : xZero, span ? xEnd : xOf(val));
+      const barW = Math.max(1.5, Math.abs((span ? xEnd : xOf(val)) - (span ? xStart : xZero)));
 
       svg.rect(barLeft, by, barW, barHeight, {
         fill: color,
@@ -754,12 +842,21 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
           barW >= measureText(valText, fontSize - 1) + 10 &&
           barHeight >= fontSize;
 
-        if (insideFits) {
+        const stackedInside =
+          Boolean(span) &&
+          barW >= measureText(valText, fontSize - 1) + 8 &&
+          barHeight >= fontSize;
+        if (insideFits || stackedInside) {
           const textFill = readableTextOnFill(color, palette.fg);
           svg.text(barLeft + barW / 2, by + barHeight / 2 + fontSize * 0.35, valText, {
             "font-size": Math.max(8, fontSize - 1),
             "font-weight": 600,
             fill: textFill,
+          });
+        } else if (span) {
+          svg.text(barLeft + barW / 2, by - 3, valText, {
+            "font-size": Math.max(8, fontSize - 1),
+            fill: palette.fgDim,
           });
         } else {
           const lx = val >= 0 ? barLeft + barW + 6 : barLeft - 6;

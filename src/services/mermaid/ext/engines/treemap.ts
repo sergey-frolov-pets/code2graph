@@ -2,6 +2,7 @@ import {
   extractTrailingColorAttr,
   parseExtColorsDirective,
   parseExtNumber,
+  chartIsDark,
   parseMonoDirective,
   readableTextOnFill,
   resolveSeriesColor,
@@ -44,6 +45,7 @@ export interface TreemapModel {
   labels: TreemapLabelsMode;
   fontSize?: number;
   mono: boolean;
+  monoInvert: boolean;
   seriesColors: Record<string, string>;
   groups: TreemapGroup[];
   total: number;
@@ -206,6 +208,7 @@ export function parseTreemap(source: string): ExtParseResult<TreemapModel> {
   let labels: TreemapLabelsMode = "both";
   let fontSize: number | undefined;
   let mono = false;
+  let monoInvert = false;
   const seriesColors: Record<string, string> = {};
 
   const groupsMap = new Map<string, TreemapGroup>();
@@ -280,7 +283,10 @@ export function parseTreemap(source: string): ExtParseResult<TreemapModel> {
     if (/^mono\b/i.test(raw) && !raw.includes(":")) {
       const parsed = parseMonoDirective(raw, lineNo);
       if (parsed.error) errors.push(parsed.error);
-      else if (parsed.mono !== undefined) mono = parsed.mono;
+      else if (parsed.mono !== undefined) {
+        mono = parsed.mono;
+        monoInvert = Boolean(parsed.monoInvert);
+      }
       continue;
     }
 
@@ -395,6 +401,7 @@ export function parseTreemap(source: string): ExtParseResult<TreemapModel> {
       labels,
       fontSize,
       mono,
+      monoInvert,
       seriesColors,
       groups: nonEmptyGroups,
       total,
@@ -411,7 +418,7 @@ function formatSubLabel(value: number, total: number, mode: TreemapLabelsMode): 
 }
 
 export function renderTreemap(model: TreemapModel, options: ExtRenderOptions): string {
-  const palette = resolvePalette(options.dark, options.background, options.textColor);
+  const palette = resolvePalette(chartIsDark(options.dark, model.monoInvert), options.background, options.textColor);
   const fontSize = clamp(model.fontSize ?? FONT_BASE, FONT_MIN, FONT_MAX);
   const scaleFactor = fontSize / FONT_BASE;
   const titleSize = clamp(Math.round(fontSize * 1.36), 14, 26);
@@ -466,7 +473,7 @@ export function renderTreemap(model: TreemapModel, options: ExtRenderOptions): s
       explicitColor: group.color,
       seriesColors: model.seriesColors,
       mono: model.mono,
-      dark: options.dark,
+      dark: chartIsDark(options.dark, model.monoInvert),
     });
 
     const showGroupHeader =
@@ -522,7 +529,7 @@ export function renderTreemap(model: TreemapModel, options: ExtRenderOptions): s
         fill = resolveSeriesColor(leafIdx, {
           seriesColors: model.seriesColors,
           mono: model.mono,
-          dark: options.dark,
+          dark: chartIsDark(options.dark, model.monoInvert),
         });
       } else {
         const shadeStep =
@@ -595,7 +602,7 @@ export function renderTreemap(model: TreemapModel, options: ExtRenderOptions): s
         explicitColor: group.color,
         seriesColors: model.seriesColors,
         mono: model.mono,
-        dark: options.dark,
+        dark: chartIsDark(options.dark, model.monoInvert),
       });
       svg.rect(lx, ly - swatch + 2, swatch, swatch, { fill: color, rx: 2 });
       const label = hasLabelBreak(group.name)

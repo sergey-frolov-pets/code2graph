@@ -3,6 +3,7 @@ import {
   isValidExtColor,
   parseExtColorsDirective,
   parseExtNumber,
+  chartIsDark,
   parseMonoDirective,
   readableTextOnFill,
   resolveSeriesColor,
@@ -37,6 +38,7 @@ export interface VoronoiModel {
   showLabels: boolean;
   fontSize?: number;
   mono: boolean;
+  monoInvert: boolean;
   seriesColors: Record<string, string>;
   sites: VoronoiSite[];
 }
@@ -267,6 +269,7 @@ export function parseVoronoi(source: string): ExtParseResult<VoronoiModel> {
   let showLabels = true;
   let fontSize: number | undefined;
   let mono = false;
+  let monoInvert = false;
   const seriesColors: Record<string, string> = {};
   const sites: VoronoiSite[] = [];
 
@@ -368,7 +371,10 @@ export function parseVoronoi(source: string): ExtParseResult<VoronoiModel> {
       if (/^mono\b/i.test(raw) && !raw.includes(":")) {
         const parsed = parseMonoDirective(raw, lineNo);
         if (parsed.error) errors.push(parsed.error);
-        else if (parsed.mono !== undefined) mono = parsed.mono;
+        else if (parsed.mono !== undefined) {
+          mono = parsed.mono;
+          monoInvert = Boolean(parsed.monoInvert);
+        }
         continue;
       }
 
@@ -427,6 +433,7 @@ export function parseVoronoi(source: string): ExtParseResult<VoronoiModel> {
       showLabels,
       fontSize,
       mono,
+      monoInvert,
       seriesColors,
       sites,
     },
@@ -434,7 +441,7 @@ export function parseVoronoi(source: string): ExtParseResult<VoronoiModel> {
 }
 
 export function renderVoronoi(model: VoronoiModel, options: ExtRenderOptions): string {
-  const palette = resolvePalette(options.dark, options.background, options.textColor);
+  const palette = resolvePalette(chartIsDark(options.dark, model.monoInvert), options.background, options.textColor);
   const fontSize = clamp(model.fontSize ?? FONT_BASE, FONT_MIN, FONT_MAX);
   const titleSize = clamp(Math.round(fontSize * 1.36), 14, 26);
 
@@ -515,7 +522,7 @@ export function renderVoronoi(model: VoronoiModel, options: ExtRenderOptions): s
       explicitColor: site.color,
       seriesColors: model.seriesColors,
       mono: model.mono,
-      dark: options.dark,
+      dark: chartIsDark(options.dark, model.monoInvert),
     });
     const fill = shadeColor(baseColor, options.dark ? -0.15 : 0.35);
 
@@ -546,7 +553,7 @@ export function renderVoronoi(model: VoronoiModel, options: ExtRenderOptions): s
       explicitColor: site.color,
       seriesColors: model.seriesColors,
       mono: model.mono,
-      dark: options.dark,
+      dark: chartIsDark(options.dark, model.monoInvert),
     });
     const cellFill = shadeColor(baseColor, options.dark ? -0.15 : 0.35);
     const textFill = readableTextOnFill(cellFill, palette.fg);
@@ -611,7 +618,7 @@ export function renderVoronoi(model: VoronoiModel, options: ExtRenderOptions): s
       const color = resolveSeriesColor(idx, {
         seriesColors: model.seriesColors,
         mono: model.mono,
-        dark: options.dark,
+        dark: chartIsDark(options.dark, model.monoInvert),
       });
       svg.rect(lx, ly - swatch + 2, swatch, swatch, { fill: color, rx: 2 });
       drawLabelLines(svg, lx + swatch + 6, ly, grp, fontSize, {
