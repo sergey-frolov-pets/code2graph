@@ -5,7 +5,7 @@ import {
 } from "@/constants/diagram-formats";
 import { MAX_PUML_FILE_BYTES } from "@/constants/diagram-library";
 import { downloadTextFile } from "@/utils/export";
-import { trackSave } from "@/analytics";
+import { trackDiagramExport } from "@/analytics";
 import { LocalizedAppError } from "@/utils/localized-app-error";
 import { readFileAsText } from "@/utils/puml-files";
 
@@ -83,5 +83,5 @@ export function saveDiagramSource(
     resolveDiagramFileName(fileName, format),
     definition.mimeType,
   );
-  trackSave(`diagram-${format}`, `Save diagram: ${format}`);
+  trackDiagramExport("source", format, source);
 }

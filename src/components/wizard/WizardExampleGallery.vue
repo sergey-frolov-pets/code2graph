@@ -16,7 +16,7 @@ import {
   WIZARD_GALLERY_SEARCH_TRACK_MS,
   type GalleryExampleAction,
 } from "@/constants/wizard-gallery";
-import { trackEvent } from "@/analytics";
+import { diagramAnalyticsKind, trackEvent } from "@/analytics";
 import { useLocale } from "@/composables/useLocale";
 
 const emit = defineEmits<{
@@ -96,9 +96,10 @@ function onEnlarge(example: DiagramExample): void {
 }
 
 function onChoose(example: DiagramExample, action: GalleryExampleAction): void {
+  const kind = diagramAnalyticsKind(example.format, example.diagramType);
   trackEvent(
-    "wizard-gallery-open-example",
-    `Wizard gallery ${action}: ${example.id}`,
+    `wizard-gallery-${action}-${kind}`,
+    `Wizard gallery ${action}: ${example.format} / ${example.diagramType}`,
   );
   emit("choose", {
     example,

@@ -14,6 +14,7 @@ import EditorCodeSurface from "@/components/editor/EditorCodeSurface.vue";
 import EditorFoldOnboardingBanner from "@/components/editor/EditorFoldOnboardingBanner.vue";
 import EditorFoldRegionsModal from "@/components/editor/EditorFoldRegionsModal.vue";
 import TablePasteErrorModal from "@/components/TablePasteErrorModal.vue";
+import { trackClipboardPaste } from "@/analytics";
 import { useLocale } from "@/composables/useLocale";
 import type { EditorFontSize } from "@/constants/editor-settings";
 import {
@@ -269,6 +270,7 @@ async function onPasteTableFromClipboard(): Promise<void> {
     return;
   }
 
+  trackClipboardPaste("table", diagramFormat.value, result.diagramType);
   resetFolds();
   source.value = result.fullSource;
 }

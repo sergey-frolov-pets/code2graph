@@ -257,6 +257,8 @@ export function useAppShell(): AppShellContext {
     error,
     isRendering,
     previewBackground,
+    source,
+    diagramFormat,
   });
 
   const {

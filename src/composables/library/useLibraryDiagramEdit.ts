@@ -3,6 +3,7 @@ import type { TranslateFn } from "@/locales/types";
 import type { DiagramLanguage, DiagramVisibility } from "@/constants/diagram-library";
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import type { DiagramFormat } from "@/constants/diagram-formats";
+import { trackDiagramOpen } from "@/analytics";
 import { resolveLibraryDiagramFormat } from "@/utils/diagram-format";
 import { parseTagsInput } from "@/utils/library-tags";
 import type { BrowseStep } from "./useLibraryBrowseFlow";
@@ -85,14 +86,16 @@ export function useLibraryDiagramEdit(options: {
     if (!library.selectedDiagram.value) return;
     if (library.selectedDiagram.value.canDownload === false) return;
     const diagram = library.selectedDiagram.value;
+    const format = resolveLibraryDiagramFormat(
+      diagram.source,
+      diagram.fileName,
+      diagram.language,
+    );
+    trackDiagramOpen(format, diagram.source, "Open library diagram");
     onOpenDiagram({
       content: diagram.source,
       fileName: diagram.fileName,
-      format: resolveLibraryDiagramFormat(
-        diagram.source,
-        diagram.fileName,
-        diagram.language,
-      ),
+      format,
       diagramId: diagram.id,
     });
     onClose();

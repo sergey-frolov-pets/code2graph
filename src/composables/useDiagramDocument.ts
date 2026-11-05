@@ -14,6 +14,7 @@ import { useAppDialog } from "@/composables/useAppDialog";
 import { useLocale } from "@/composables/useLocale";
 import { readStorageItem, writeStorageItem } from "@/core/safe-storage";
 import { extractLeadingMermaidDiagram } from "@/utils/mermaid-source";
+import { trackDiagramOpen } from "@/analytics";
 import {
   detectDiagramFormat,
   detectDiagramFormatFromSource,
@@ -158,6 +159,8 @@ export function useDiagramDocument(options: UseDiagramDocumentOptions) {
 
     const shared = await consumeSharedLaunch();
     if (shared) {
+      const format = detectDiagramFormat(shared.content, shared.fileName);
+      trackDiagramOpen(format, shared.content, "Open shared file");
       applyLoadedSource(shared.content, shared.fileName);
     }
   }

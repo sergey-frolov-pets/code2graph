@@ -1,4 +1,12 @@
 export {
+  diagramAnalyticsKind,
+  resolveDiagramTypeSlug,
+  resolveTypedDiagramKind,
+  trackClipboardPaste,
+  trackDiagramExport,
+  trackDiagramOpen,
+} from "./diagram-type";
+export {
   resolveOpenKind,
   trackEvent,
   trackOpen,
