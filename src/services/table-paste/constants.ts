@@ -23,6 +23,18 @@ export const NWDIAG_MIN_COLUMNS = 2;
 export const NWDIAG_MAX_COLUMNS = 3;
 export const HEATMAP_MIN_COLUMNS = 2;
 export const HEATMAP_MIN_ROWS = 2;
+/** Число ступеней шкалы, которую вставка добавляет, если блока scale нет. */
+export const HEATMAP_DEFAULT_SCALE_BANDS = 4;
+/** Нижняя граница шкалы, когда в матрице нет чисел. */
+export const HEATMAP_SCALE_EMPTY_MIN = 0;
+/** Ширина шкалы, когда все числа совпали или чисел нет. */
+export const HEATMAP_SCALE_EMPTY_SPAN = 1;
+/** Минимальный шаг границы после округления до 4 знаков. */
+export const HEATMAP_SCALE_BOUND_STEP = 0.0001;
+/** Цвет минимума вставляемой шкалы. */
+export const HEATMAP_SCALE_COLOR_LOW = "#1565c0";
+/** Цвет максимума вставляемой шкалы. */
+export const HEATMAP_SCALE_COLOR_HIGH = "#c62828";
 
 export const DEFAULT_JOURNEY_SCORE = 5;
 export const MIN_JOURNEY_SCORE = 1;

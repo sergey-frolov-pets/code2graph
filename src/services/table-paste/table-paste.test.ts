@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { heatmapEngine } from "../mermaid/ext/engines/heatmap";
+import {
+  HEATMAP_SCALE_COLOR_HIGH,
+  HEATMAP_SCALE_COLOR_LOW,
+} from "./constants";
 import {
   applyTableFromClipboardText,
   detectTableDiagramType,
@@ -171,6 +176,38 @@ describe("Category A & B table parsers", () => {
       expect(res.fullSource).toContain("y Утро, День");
       expect(res.fullSource).toContain("Утро : 20, 35");
       expect(res.fullSource).toContain("День : , 75");
+      const xAt = res.fullSource.indexOf("x Пн, Вт");
+      const yAt = res.fullSource.indexOf("y Утро, День");
+      const scaleAt = res.fullSource.indexOf("\nscale\n");
+      const dataAt = res.fullSource.indexOf("\ndata\n");
+      expect(xAt).toBeGreaterThan(-1);
+      expect(yAt).toBeGreaterThan(xAt);
+      expect(scaleAt).toBeGreaterThan(yAt);
+      expect(dataAt).toBeGreaterThan(scaleAt);
+      expect(res.fullSource).toContain(`20-33.75 : ${HEATMAP_SCALE_COLOR_LOW}`);
+      expect(res.fullSource).toContain(`61.25+ : ${HEATMAP_SCALE_COLOR_HIGH}`);
+      expect(heatmapEngine.parse(res.fullSource).ok).toBe(true);
+    }
+  });
+
+  it("keeps an existing heatmap scale and places x and y before it", () => {
+    const res = applyTableFromClipboardText({
+      clipboardText: "Смена\tПн\tВт\nУтро\t20\t35\nДень\t40\t75",
+      source: "heatmap\ntitle Нагрузка\nscale\n0-40 : #e8f5e9\n40+ : #ffebee\nx A, B\ny R1\ndata\nR1 : 1, 2",
+      format: "mermaid",
+    });
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      const xAt = res.fullSource.indexOf("x Пн, Вт");
+      const yAt = res.fullSource.indexOf("y Утро, День");
+      const scaleAt = res.fullSource.indexOf("\nscale\n");
+      expect(xAt).toBeGreaterThan(res.fullSource.indexOf("title Нагрузка"));
+      expect(yAt).toBeGreaterThan(xAt);
+      expect(scaleAt).toBeGreaterThan(yAt);
+      expect(res.fullSource).toContain("0-40 : #e8f5e9");
+      expect(res.fullSource).toContain("40+ : #ffebee");
+      expect(res.fullSource).not.toContain(HEATMAP_SCALE_COLOR_LOW);
+      expect(heatmapEngine.parse(res.fullSource).ok).toBe(true);
     }
   });
 

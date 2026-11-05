@@ -3,8 +3,14 @@ import {
   BUBBLE_MAX_COLUMNS,
   BUBBLE_MIN_COLUMNS,
   EV_EXPECTED_COLUMNS,
+  HEATMAP_DEFAULT_SCALE_BANDS,
   HEATMAP_MIN_COLUMNS,
   HEATMAP_MIN_ROWS,
+  HEATMAP_SCALE_BOUND_STEP,
+  HEATMAP_SCALE_COLOR_HIGH,
+  HEATMAP_SCALE_COLOR_LOW,
+  HEATMAP_SCALE_EMPTY_MIN,
+  HEATMAP_SCALE_EMPTY_SPAN,
   PERCENT_NORMALIZATION_DIVISOR,
   PIE_EXPECTED_COLUMNS,
   QUADRANT_EXPECTED_COLUMNS,
@@ -110,6 +116,111 @@ export function parsePieTable(
 // ---------------------------------------------------------------------------
 // 2. HEATMAP (Mermaid Ext)
 // ---------------------------------------------------------------------------
+
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
+const COLOR_CHANNEL_MAX = 255;
+const HEX_RADIX = 16;
+const HEX_CHANNEL_WIDTH = 2;
+
+function mixHeatmapScaleColor(fromHex: string, toHex: string, t: number): string {
+  const blend = (start: number, end: number): string => {
+    const channel = Math.round(start + (end - start) * t);
+    const clamped = Math.max(0, Math.min(COLOR_CHANNEL_MAX, channel));
+    return clamped.toString(HEX_RADIX).padStart(HEX_CHANNEL_WIDTH, "0");
+  };
+  if (!HEX_COLOR_PATTERN.test(fromHex) || !HEX_COLOR_PATTERN.test(toHex)) {
+    return fromHex;
+  }
+  const from = Number.parseInt(fromHex.slice(1), HEX_RADIX);
+  const to = Number.parseInt(toHex.slice(1), HEX_RADIX);
+  const red = blend((from >> 16) & COLOR_CHANNEL_MAX, (to >> 16) & COLOR_CHANNEL_MAX);
+  const green = blend((from >> 8) & COLOR_CHANNEL_MAX, (to >> 8) & COLOR_CHANNEL_MAX);
+  const blue = blend(from & COLOR_CHANNEL_MAX, to & COLOR_CHANNEL_MAX);
+  return `#${red}${green}${blue}`;
+}
+
+/** Шкала от min до max: первая ступень синяя, последняя красная. */
+function buildDefaultHeatmapScaleLines(values: readonly number[]): string[] {
+  const finite = values.filter((value) => Number.isFinite(value));
+  const min = finite.length > 0 ? Math.min(...finite) : HEATMAP_SCALE_EMPTY_MIN;
+  const max =
+    finite.length > 0 ? Math.max(...finite) : HEATMAP_SCALE_EMPTY_MIN + HEATMAP_SCALE_EMPTY_SPAN;
+  const span = max - min || HEATMAP_SCALE_EMPTY_SPAN;
+  const bands = Math.max(1, HEATMAP_DEFAULT_SCALE_BANDS);
+  const lines = ["scale"];
+  let previous = Number(formatCleanNumber(min));
+
+  for (let i = 0; i < bands; i += 1) {
+    const colorT = bands === 1 ? 0 : i / (bands - 1);
+    const color = mixHeatmapScaleColor(HEATMAP_SCALE_COLOR_LOW, HEATMAP_SCALE_COLOR_HIGH, colorT);
+    const isLast = i === bands - 1;
+    if (isLast) {
+      lines.push(`${formatCleanNumber(previous)}+ : ${color}`);
+      break;
+    }
+    let next = Number(formatCleanNumber(min + (span * (i + 1)) / bands));
+    if (!(next > previous)) {
+      next = Number(formatCleanNumber(previous + HEATMAP_SCALE_BOUND_STEP));
+    }
+    lines.push(`${formatCleanNumber(previous)}-${formatCleanNumber(next)} : ${color}`);
+    previous = next;
+  }
+
+  return lines;
+}
+
+function splitHeatmapSourceForPaste(source: string): {
+  headerLines: string[];
+  scaleLines: string[];
+} {
+  const headerLines: string[] = [];
+  const scaleLines: string[] = [];
+  let inScale = false;
+  let inData = false;
+
+  for (const rawLine of source.split(/\r?\n/)) {
+    const trimmed = rawLine.trim();
+    if (!inScale && /^scale$/i.test(trimmed)) {
+      inScale = true;
+      inData = false;
+      scaleLines.push(rawLine);
+      continue;
+    }
+    if (inScale) {
+      if (/^data$/i.test(trimmed)) {
+        inScale = false;
+        inData = true;
+        continue;
+      }
+      // Оси, оказавшиеся внутри scale, заменяются новыми строками x/y перед блоком.
+      if (/^[xy]\b/i.test(trimmed)) {
+        continue;
+      }
+      scaleLines.push(rawLine);
+      if (/^end$/i.test(trimmed)) {
+        inScale = false;
+      }
+      continue;
+    }
+    if (/^data$/i.test(trimmed)) {
+      inData = true;
+      continue;
+    }
+    if (inData) {
+      if (/^end$/i.test(trimmed)) {
+        inData = false;
+      }
+      continue;
+    }
+    if (/^[xy]\b/i.test(trimmed)) {
+      continue;
+    }
+    headerLines.push(rawLine);
+  }
+
+  return { headerLines, scaleLines };
+}
+
 export function parseHeatmapTable(
   grid: ParsedClipboardGrid,
   source: string,
@@ -151,6 +262,7 @@ export function parseHeatmapTable(
 
   const yLabels: string[] = [];
   const dataLines: string[] = [];
+  const numericValues: number[] = [];
 
   for (let i = 0; i < matrixRows.length; i += 1) {
     const row = matrixRows[i];
@@ -176,6 +288,7 @@ export function parseHeatmapTable(
         );
       }
       formattedCells.push(formatCleanNumber(num));
+      numericValues.push(num);
     }
 
     yLabels.push(rowLabel);
@@ -185,57 +298,27 @@ export function parseHeatmapTable(
   const formatAxisItem = (label: string): string =>
     label.includes(",") ? `"${label}"` : label;
 
+  const { headerLines, scaleLines } = splitHeatmapSourceForPaste(source);
+  const header =
+    headerLines.some((line) => line.trim().length > 0)
+      ? headerLines.join("\n").replace(/\n+$/, "")
+      : "heatmap";
+  const scaleBlock = (
+    scaleLines.length > 0 ? scaleLines : buildDefaultHeatmapScaleLines(numericValues)
+  )
+    .join("\n")
+    .replace(/^\n+|\n+$/g, "");
+
+  // x и y обязаны идти до scale: внутри блока scale парсер читает только диапазоны.
   const newSectionLines = [
     `x ${xLabels.map(formatAxisItem).join(", ")}`,
     `y ${yLabels.map(formatAxisItem).join(", ")}`,
+    scaleBlock,
     "data",
     ...dataLines,
   ];
 
-  // Keep title and scale block if present, replace x, y, and data block
-  const lines = source.split(/\r?\n/);
-  const keptLines: string[] = [];
-  let inScale = false;
-  let inData = false;
-
-  for (const rawLine of lines) {
-    const trimmed = rawLine.trim();
-    if (/^scale$/i.test(trimmed)) {
-      inScale = true;
-      inData = false;
-      keptLines.push(rawLine);
-      continue;
-    }
-    if (/^data$/i.test(trimmed)) {
-      inData = true;
-      inScale = false;
-      continue;
-    }
-    if (inScale) {
-      if (/^end$/i.test(trimmed)) {
-        inScale = false;
-      }
-      keptLines.push(rawLine);
-      continue;
-    }
-    if (inData) {
-      if (/^end$/i.test(trimmed)) {
-        inData = false;
-      }
-      continue;
-    }
-    if (/^[xy]\b/i.test(trimmed)) {
-      continue;
-    }
-    keptLines.push(rawLine);
-  }
-
-  const baseHeader =
-    keptLines.filter((l) => l.trim().length > 0).length > 0
-      ? keptLines.join("\n")
-      : "heatmap";
-
-  const fullSource = `${baseHeader}\n${newSectionLines.join("\n")}`;
+  const fullSource = `${header}\n${newSectionLines.join("\n")}`;
   return {
     ok: true,
     snippet: newSectionLines.join("\n"),
