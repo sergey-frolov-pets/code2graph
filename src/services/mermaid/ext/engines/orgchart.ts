@@ -5,11 +5,14 @@ import {
   createSvg,
   fmt,
   getPalette,
+  hasLabelBreak,
+  labelLineStep,
   measureText,
   monoFlagsFromMode,
   monoGray,
   monoPaint,
   parseMonoDirective,
+  splitLabelLines,
   usesInvertedMono,
 } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
@@ -68,19 +71,16 @@ function unquote(raw: string): string {
   return t;
 }
 
-/** Разбивает подпись узла на строки по `\n` (экранированному `\\n` или переводу строки). */
-export function splitLabelLines(label: string): string[] {
-  const parts = String(label ?? "")
-    .split(/\\n|\r?\n/)
-    .map((line) => line.trim());
-  const nonEmpty = parts.filter((line) => line.length > 0);
-  return nonEmpty.length > 0 ? nonEmpty : [""];
-}
+export { splitLabelLines } from "../common";
 
 function unquoteLabel(raw: string): string {
   const base = unquote(raw).replace(/\\\[/g, "[").replace(/\\\]/g, "]");
   if (!base) return "";
-  return splitLabelLines(base).join("\n");
+  // Всегда нормализуем: `\n` становится настоящим переводом строки,
+  // пробелы по краям строк снимаются — как до выноса splitLabelLines в common.
+  const parts = base.split(/\\n|\r?\n/).map((line) => line.trim());
+  const nonEmpty = parts.filter((line) => line.length > 0);
+  return (nonEmpty.length > 0 ? nonEmpty : [""]).join("\n");
 }
 
 const DEFAULT_NODE_STROKE_WIDTH = 1.2;
@@ -777,8 +777,10 @@ export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): stri
   const palette = getPalette(themeDark);
   const { placed, width: contentWidth, height: contentHeight } = layout(model);
 
+  const titleLines = model.title && hasLabelBreak(model.title) ? splitLabelLines(model.title) : null;
+  const titleExtra = titleLines ? (titleLines.length - 1) * labelLineStep(15) : 0;
   const width = PADDING.left + contentWidth + PADDING.right;
-  const height = PADDING.top + contentHeight + PADDING.bottom;
+  const height = PADDING.top + titleExtra + contentHeight + PADDING.bottom;
 
   const svg = createSvg({
     width,
@@ -792,12 +794,20 @@ export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): stri
   });
 
   if (model.title) {
-    svg.text(width / 2, 24, model.title, { "font-size": 15, "font-weight": 600, fill: palette.fg });
+    const lines = titleLines ?? [model.title];
+    const step = labelLineStep(15);
+    lines.forEach((line, idx) => {
+      svg.text(width / 2, 24 + idx * step, line, {
+        "font-size": 15,
+        "font-weight": 600,
+        fill: palette.fg,
+      });
+    });
   }
 
   const byId = new Map(placed.map((p) => [p.node.id, p]));
   const offsetX = PADDING.left;
-  const offsetY = PADDING.top;
+  const offsetY = PADDING.top + titleExtra;
 
   const marker = arrowMarker(palette, "ext-org-arrow");
   svg.raw(marker.markup);

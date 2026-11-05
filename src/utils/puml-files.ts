@@ -1,6 +1,13 @@
 import { MAX_PUML_FILE_BYTES } from "@/constants/diagram-library";
 import { downloadTextFile } from "@/utils/export";
-import { resolveOpenKind, trackOpen, trackSave } from "@/analytics";
+import {
+  resolveOpenKind,
+  trackDiagramExport,
+  trackDiagramOpen,
+  trackOpen,
+} from "@/analytics";
+import { isDiagramFormat } from "@/constants/diagram-format-ids";
+import { detectDiagramFormatFromSource } from "@/utils/diagram-format";
 import { LocalizedAppError } from "@/utils/localized-app-error";
 import {
   detectLanguageFromFileName,
@@ -58,8 +65,16 @@ export async function loadPumlFromFile(file: File): Promise<{
     throw new LocalizedAppError("file.empty");
   }
 
-  const kind = resolveOpenKind(file.name, detectLanguageFromFileName(file.name));
-  trackOpen(kind, `Open shared file: ${kind}`);
+  const fileFormat = detectLanguageFromFileName(file.name);
+  const detected =
+    detectDiagramFormatFromSource(content) ??
+    (fileFormat && isDiagramFormat(fileFormat) ? fileFormat : null);
+  if (detected) {
+    trackDiagramOpen(detected, content, "Open shared file");
+  } else {
+    const kind = resolveOpenKind(file.name, fileFormat);
+    trackOpen(kind, `Open shared file: ${kind}`);
+  }
 
   return {
     content,
@@ -69,5 +84,5 @@ export async function loadPumlFromFile(file: File): Promise<{
 
 export function savePumlSource(source: string, fileName: string): void {
   downloadTextFile(source, resolvePumlFileName(fileName), PUML_MIME_TYPE);
-  trackSave("diagram-puml", "Save diagram: puml");
+  trackDiagramExport("source", "plantuml", source);
 }

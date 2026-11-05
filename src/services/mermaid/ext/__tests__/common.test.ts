@@ -6,9 +6,13 @@ import {
   esc,
   fmt,
   getPalette,
+  hasLabelBreak,
+  labelBlockExtra,
+  measureLabelWidth,
   measureText,
   niceRange,
   niceTicks,
+  splitLabelLines,
   contrastTextColor,
   monoFlagsFromMode,
   monoGray,
@@ -74,6 +78,22 @@ describe("measureText", () => {
 describe("textHeight", () => {
   it("1.2 от размера шрифта", () => {
     expect(textHeight(10)).toBeCloseTo(12, 5);
+  });
+});
+
+describe("splitLabelLines", () => {
+  it("без \\n оставляет строку как есть", () => {
+    expect(hasLabelBreak("Q1")).toBe(false);
+    expect(splitLabelLines("Q1")).toEqual(["Q1"]);
+    expect(labelBlockExtra("Q1", 11)).toBe(0);
+    expect(measureLabelWidth("Q1", 12)).toBe(measureText("Q1", 12));
+  });
+
+  it("режет экранированный \\n и перевод строки", () => {
+    expect(splitLabelLines("Роль\\nИмя")).toEqual(["Роль", "Имя"]);
+    expect(splitLabelLines("Роль\nИмя")).toEqual(["Роль", "Имя"]);
+    expect(labelBlockExtra("Роль\\nИмя", 10)).toBeCloseTo(12, 5);
+    expect(measureLabelWidth("Роль\\nИмя", 12)).toBe(Math.max(measureText("Роль", 12), measureText("Имя", 12)));
   });
 });
 

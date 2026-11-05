@@ -13,7 +13,11 @@ import { useDiagramWizardFlow } from "@/composables/wizard/useDiagramWizardFlow"
 import { useActiveLlmLabel } from "@/composables/useActiveLlmLabel";
 import { useWizardOnboarding } from "@/composables/wizard/useWizardOnboarding";
 import { useLocale } from "@/composables/useLocale";
-import { trackEvent } from "@/analytics";
+import {
+  diagramAnalyticsKind,
+  resolveDiagramTypeSlug,
+  trackEvent,
+} from "@/analytics";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
@@ -97,7 +101,10 @@ const {
   locale,
   t,
   onApply: (payload) => {
-    trackEvent("wizard-apply", "Wizard: apply");
+    const type = resolveDiagramTypeSlug(payload.source, payload.format);
+    const kind = diagramAnalyticsKind(payload.format, type);
+    const label = type ? `${payload.format} / ${type}` : payload.format;
+    trackEvent(`wizard-apply-${kind}`, `Wizard apply: ${label}`);
     emit("apply", payload);
   },
   onClose: () => emit("close"),

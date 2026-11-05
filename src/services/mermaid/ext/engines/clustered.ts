@@ -11,13 +11,16 @@ import {
 import {
   clamp,
   createSvg,
+  drawLabelLines,
   fixedTicks,
   fmt,
+  labelBlockExtra,
+  measureLabelWidth,
   measureText,
   niceRange,
   niceTicks,
   resolvePalette,
-  truncate,
+  truncateLabel,
 } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
@@ -508,12 +511,12 @@ function renderLegend(
       dark: chartIsDark(options.dark, model.monoInvert),
     });
     svg.rect(lx, legendY - swatch + 2, swatch, swatch, { fill: color, rx: 2 });
-    svg.text(lx + swatch + 6, legendY, s.name, {
+    drawLabelLines(svg, lx + swatch + 6, legendY, s.name, fontSize, {
       "text-anchor": "start",
       "font-size": fontSize,
       fill: fgDim,
     });
-    lx += swatch + 6 + measureText(s.name, fontSize) + 18;
+    lx += swatch + 6 + measureLabelWidth(s.name, fontSize) + 18;
   });
 }
 
@@ -538,7 +541,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
   );
   const barsGroupWidth = layoutCount * barWidth + (layoutCount - 1) * INNER_BAR_GAP;
   const longestCat = model.categories.reduce(
-    (max, cat) => Math.max(max, measureText(cat, fontSize)),
+    (max, cat) => Math.max(max, measureLabelWidth(cat, fontSize)),
     0,
   );
   const colWidth = Math.max(
@@ -546,14 +549,18 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     Math.ceil(longestCat) + 20,
     72,
   );
+  const catExtra = Math.max(0, ...model.categories.map((cat) => labelBlockExtra(cat, fontSize)));
+  const titleExtra = labelBlockExtra(model.title, titleSize);
+  const seriesExtra = Math.max(0, ...model.series.map((series) => labelBlockExtra(series.name, fontSize)));
+  const yExtra = labelBlockExtra(model.y?.label, fontSize);
 
   const plotWidth = Math.max(260, colWidth * catCount);
   const plotHeight = Math.round(PLOT_HEIGHT_VERTICAL * Math.max(1, (scaleFactor - 1) * 0.4 + 1));
 
-  const padLeft = model.axis ? 68 : 28;
+  const padLeft = (model.axis ? 68 : 28) + yExtra;
   const padRight = model.stack && model.labels !== "none" ? 72 : 28;
-  const padTop = (model.title ? 52 : 28) + (model.labels === "above" ? fontSize + 6 : 0);
-  const padBottom = 68;
+  const padTop = (model.title ? 52 : 28) + (model.labels === "above" ? fontSize + 6 : 0) + titleExtra;
+  const padBottom = 68 + catExtra + seriesExtra;
 
   const width = padLeft + plotWidth + padRight;
   const height = padTop + plotHeight + padBottom;
@@ -577,7 +584,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
   });
 
   if (model.title) {
-    svg.text(width / 2, 26, model.title, {
+    drawLabelLines(svg, width / 2, 26, model.title, titleSize, {
       "font-size": titleSize,
       "font-weight": 600,
       fill: palette.fg,
@@ -603,14 +610,14 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
   }
 
   if (model.axis && model.y?.label) {
-    const cx = 18;
+    const cx = 18 + yExtra;
     const cy = plotTop + plotHeight / 2;
-    svg.text(cx, cy, model.y.label, {
+    drawLabelLines(svg, cx, cy, model.y.label, fontSize, {
       "text-anchor": "middle",
       "font-size": fontSize,
       fill: palette.fgDim,
       transform: `rotate(-90 ${fmt(cx)} ${fmt(cy)})`,
-    });
+    }, "up");
   }
 
   for (let c = 0; c < catCount; c += 1) {
@@ -671,10 +678,12 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
       }
     });
 
-    svg.text(
+    drawLabelLines(
+      svg,
       clusterCenter,
       plotBottom + fontSize + 8,
-      truncate(model.categories[c] ?? "", colWidth - 6, fontSize),
+      truncateLabel(model.categories[c] ?? "", colWidth - 6, fontSize),
+      fontSize,
       {
         "font-size": fontSize,
         fill: palette.fg,
@@ -689,7 +698,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     });
   }
 
-  renderLegend(svg, model, options, plotLeft, height - 16, fontSize, palette.fgDim);
+  renderLegend(svg, model, options, plotLeft, height - 16 - seriesExtra, fontSize, palette.fgDim);
   return svg.toString();
 }
 
@@ -713,16 +722,20 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
     MAX_BAR_THICKNESS,
   );
   const barsGroupHeight = layoutCount * barHeight + (layoutCount - 1) * INNER_BAR_GAP;
-  const rowHeight = Math.max(Math.round(barsGroupHeight / (1 - CLUSTER_PADDING_RATIO)), 42);
+  const catExtra = Math.max(0, ...model.categories.map((cat) => labelBlockExtra(cat, fontSize)));
+  const rowHeight = Math.max(Math.round(barsGroupHeight / (1 - CLUSTER_PADDING_RATIO)), 42) + catExtra;
 
   const longestCat = model.categories.reduce(
-    (max, cat) => Math.max(max, measureText(cat, fontSize)),
+    (max, cat) => Math.max(max, measureLabelWidth(cat, fontSize)),
     0,
   );
+  const titleExtra = labelBlockExtra(model.title, titleSize);
+  const seriesExtra = Math.max(0, ...model.series.map((series) => labelBlockExtra(series.name, fontSize)));
+  const yExtra = labelBlockExtra(model.y?.label, fontSize);
   const padLeft = clamp(Math.ceil(longestCat) + 28, 76, 180);
   const padRight = model.labels === "above" ? 56 : 28;
-  const padTop = model.title ? 48 : 24;
-  const padBottom = (model.y?.label ? 80 : 62);
+  const padTop = (model.title ? 48 : 24) + titleExtra;
+  const padBottom = (model.y?.label ? 80 : 62) + yExtra + seriesExtra;
 
   const plotWidth = Math.round(PLOT_WIDTH_HORIZONTAL * Math.max(1, (scaleFactor - 1) * 0.35 + 1));
   const plotHeight = rowHeight * catCount;
@@ -749,7 +762,7 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
   });
 
   if (model.title) {
-    svg.text(width / 2, 26, model.title, {
+    drawLabelLines(svg, width / 2, 26, model.title, titleSize, {
       "font-size": titleSize,
       "font-weight": 600,
       fill: palette.fg,
@@ -775,7 +788,7 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
   }
 
   if (model.axis && model.y?.label) {
-    svg.text((plotLeft + plotRight) / 2, plotBottom + fontSize * 2 + 16, model.y.label, {
+    drawLabelLines(svg, (plotLeft + plotRight) / 2, plotBottom + fontSize * 2 + 16, model.y.label, fontSize, {
       "text-anchor": "middle",
       "font-size": fontSize,
       fill: palette.fgDim,
@@ -786,15 +799,18 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
     const rowCenter = plotTop + (c + 0.5) * rowHeight;
     const clusterTop = rowCenter - barsGroupHeight / 2;
 
-    svg.text(
+    drawLabelLines(
+      svg,
       plotLeft - 10,
       rowCenter + fontSize * 0.35,
-      truncate(model.categories[c] ?? "", padLeft - 18, fontSize),
+      truncateLabel(model.categories[c] ?? "", padLeft - 18, fontSize),
+      fontSize,
       {
         "text-anchor": "end",
         "font-size": fontSize,
         fill: palette.fg,
       },
+      "center",
     );
 
     const spans = model.stack ? stackedSpans(model, c) : null;
@@ -862,7 +878,7 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
     });
   }
 
-  renderLegend(svg, model, options, plotLeft, height - 16, fontSize, palette.fgDim);
+  renderLegend(svg, model, options, plotLeft, height - 16 - seriesExtra, fontSize, palette.fgDim);
   return svg.toString();
 }
 

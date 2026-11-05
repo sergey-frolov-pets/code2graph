@@ -294,6 +294,83 @@ export function measureText(text: string, fontSize: number): number {
   return em * fontSize;
 }
 
+/**
+ * Разделитель строк в подписи: экранированный `\\n` из исходника
+ * или настоящий перевод строки.
+ */
+const LABEL_LINE_BREAK = /\\n|\r?\n/;
+
+/** В подписи есть явный перенос `\n`. */
+export function hasLabelBreak(label: string): boolean {
+  return LABEL_LINE_BREAK.test(String(label ?? ""));
+}
+
+/**
+ * Строки подписи. Без `\n` возвращает исходный текст одной строкой,
+ * чтобы раскладка однострочных диаграмм не менялась.
+ * Пустые строки по краям отбрасываются; если текста нет — одна пустая строка.
+ */
+export function splitLabelLines(label: string): string[] {
+  const src = String(label ?? "");
+  if (!hasLabelBreak(src)) return [src];
+  const parts = src.split(LABEL_LINE_BREAK).map((line) => line.trim());
+  const nonEmpty = parts.filter((line) => line.length > 0);
+  return nonEmpty.length > 0 ? nonEmpty : [""];
+}
+
+/** Сколько строк займёт подпись. Без `\n` — всегда одна. */
+export function labelLineCount(label: string | undefined): number {
+  if (!label || !hasLabelBreak(label)) return 1;
+  return splitLabelLines(label).length;
+}
+
+/** Вертикальный шаг строк подписи, как у блока оргструктуры. */
+export function labelLineStep(fontSize: number): number {
+  return fontSize * 1.2;
+}
+
+/** Насколько подпись выше одной строки. Без `\n` — ноль, раскладка не меняется. */
+export function labelBlockExtra(label: string | undefined, fontSize: number): number {
+  return (labelLineCount(label) - 1) * labelLineStep(fontSize);
+}
+
+export interface LabelTextTarget {
+  text(x: number, y: number, content: string, attrs?: Record<string, string | number>): void;
+}
+
+/**
+ * Рисует подпись. Без `\n` это один `<text>` в точке (x, y) — как прямой вызов.
+ * `down` — следующие строки ниже, `up` — выше (для повёрнутой подписи оси),
+ * `center` — блок выровнен по центру вокруг y.
+ */
+export function drawLabelLines(
+  svg: LabelTextTarget,
+  x: number,
+  y: number,
+  label: string,
+  fontSize: number,
+  attrs: Record<string, string | number> = {},
+  placement: "down" | "up" | "center" = "down",
+): void {
+  const lines = hasLabelBreak(label) ? splitLabelLines(label) : [label];
+  const step = labelLineStep(fontSize);
+  const direction = placement === "up" ? -1 : 1;
+  const origin =
+    placement === "center" ? y - ((lines.length - 1) * step) / 2 : y;
+  lines.forEach((line, idx) => {
+    svg.text(x, origin + idx * step * direction, line, attrs);
+  });
+}
+
+/**
+ * Ширина подписи: у многострочной — самая длинная строка,
+ * у обычной — ширина всего текста, без разбора `\n`.
+ */
+export function measureLabelWidth(label: string, fontSize: number): number {
+  if (!hasLabelBreak(label)) return measureText(label, fontSize);
+  return Math.max(0, ...splitLabelLines(label).map((line) => measureText(line, fontSize)));
+}
+
 export function textHeight(fontSize: number): number {
   return fontSize * 1.2;
 }
@@ -313,6 +390,14 @@ export function truncate(text: string, maxWidth: number, fontSize: number): stri
     width += w;
   }
   return out ? out + ellipsis : ellipsis;
+}
+
+/** Обрезка подписи: каждая строка `\n` режется отдельно, однострочная — как раньше. */
+export function truncateLabel(label: string, maxWidth: number, fontSize: number): string {
+  if (!hasLabelBreak(label)) return truncate(label, maxWidth, fontSize);
+  return splitLabelLines(label)
+    .map((line) => truncate(line, maxWidth, fontSize))
+    .join("\n");
 }
 
 // --- Оси ------------------------------------------------------------------

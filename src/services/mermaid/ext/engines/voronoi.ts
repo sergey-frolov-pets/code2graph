@@ -10,7 +10,16 @@ import {
   shadeColor,
   unquoteExtText,
 } from "../color-utils";
-import { clamp, createSvg, fmt, measureText, resolvePalette, truncate } from "../common";
+import {
+  clamp,
+  createSvg,
+  drawLabelLines,
+  fmt,
+  labelBlockExtra,
+  measureLabelWidth,
+  resolvePalette,
+  truncateLabel,
+} from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
 export interface VoronoiSite {
@@ -441,11 +450,15 @@ export function renderVoronoi(model: VoronoiModel, options: ExtRenderOptions): s
     if (s.group && !groups.includes(s.group)) groups.push(s.group);
   }
   const hasGroups = groups.length > 0;
-  const legendExtraHeight = hasGroups ? 28 : 0;
+  const groupExtra = hasGroups ? Math.max(0, ...groups.map((group) => labelBlockExtra(group, fontSize))) : 0;
+  const legendExtraHeight = hasGroups ? 28 + groupExtra : 0;
+  const titleExtra = labelBlockExtra(model.title, titleSize);
+  const yExtra = labelBlockExtra(model.y.label, fontSize);
+  const xExtra = labelBlockExtra(model.x.label, fontSize);
 
-  const padTop = model.title ? PADDING.top : 24;
-  const padLeft = model.y.label ? PADDING.left : 32;
-  const padBottom = (model.x.label ? PADDING.bottom : 28) + legendExtraHeight;
+  const padTop = (model.title ? PADDING.top : 24) + titleExtra;
+  const padLeft = (model.y.label ? PADDING.left : 32) + yExtra;
+  const padBottom = (model.x.label ? PADDING.bottom : 28) + legendExtraHeight + xExtra;
   const width = padLeft + PLOT_WIDTH + PADDING.right;
   const height = padTop + PLOT_HEIGHT + padBottom;
 
@@ -470,7 +483,7 @@ export function renderVoronoi(model: VoronoiModel, options: ExtRenderOptions): s
   });
 
   if (model.title) {
-    svg.text(width / 2, 26, model.title, {
+    drawLabelLines(svg, width / 2, 26, model.title, titleSize, {
       "font-size": titleSize,
       "font-weight": 600,
       fill: palette.fg,
@@ -563,36 +576,44 @@ export function renderVoronoi(model: VoronoiModel, options: ExtRenderOptions): s
           ? centroid.y - fontSize * 0.75
           : centroid.y + fontSize * 0.35;
 
-      svg.text(centroid.x, labelY, truncate(site.label, maxLabelW, fontSize), {
-        "font-size": fontSize,
-        "font-weight": 600,
-        fill: textFill,
-      });
+      drawLabelLines(
+        svg,
+        centroid.x,
+        labelY,
+        truncateLabel(site.label, maxLabelW, fontSize),
+        fontSize,
+        {
+          "font-size": fontSize,
+          "font-weight": 600,
+          fill: textFill,
+        },
+        "center",
+      );
     }
   });
 
   if (model.x.label) {
-    svg.text((plotLeft + plotRight) / 2, plotBottom + 26, model.x.label, {
+    drawLabelLines(svg, (plotLeft + plotRight) / 2, plotBottom + 26, model.x.label, fontSize, {
       "font-size": fontSize,
       fill: palette.fgDim,
     });
   }
 
   if (model.y.label) {
-    const cx = 18;
+    const cx = 18 + yExtra;
     const cy = plotTop + PLOT_HEIGHT / 2;
-    svg.text(cx, cy, model.y.label, {
+    drawLabelLines(svg, cx, cy, model.y.label, fontSize, {
       "text-anchor": "middle",
       "font-size": fontSize,
       fill: palette.fgDim,
       transform: `rotate(-90 ${fmt(cx)} ${fmt(cy)})`,
-    });
+    }, "up");
   }
 
   if (hasGroups) {
     const swatch = 10;
     let lx = plotLeft;
-    const ly = height - 14;
+    const ly = height - 14 - groupExtra;
     groups.forEach((grp, idx) => {
       const color = resolveSeriesColor(idx, {
         seriesColors: model.seriesColors,
@@ -600,12 +621,12 @@ export function renderVoronoi(model: VoronoiModel, options: ExtRenderOptions): s
         dark: chartIsDark(options.dark, model.monoInvert),
       });
       svg.rect(lx, ly - swatch + 2, swatch, swatch, { fill: color, rx: 2 });
-      svg.text(lx + swatch + 6, ly, grp, {
+      drawLabelLines(svg, lx + swatch + 6, ly, grp, fontSize, {
         "text-anchor": "start",
         "font-size": fontSize,
         fill: palette.fgDim,
       });
-      lx += swatch + 6 + measureText(grp, fontSize) + 18;
+      lx += swatch + 6 + measureLabelWidth(grp, fontSize) + 18;
     });
   }
 

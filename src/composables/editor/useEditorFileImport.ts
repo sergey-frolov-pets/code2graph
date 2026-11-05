@@ -1,5 +1,6 @@
 import { computed, ref, type Ref } from "vue";
-import { resolveOpenKind, trackOpen } from "@/analytics";
+import { resolveOpenKind, trackDiagramOpen, trackOpen } from "@/analytics";
+import { detectDiagramFormatFromSource } from "@/utils/diagram-format";
 import {
   getDefaultFileNameForSample,
   getSampleCatalog,
@@ -47,10 +48,17 @@ export function useEditorFileImport(options: {
   }
 
   async function importFile(file: File): Promise<void> {
-    const kind = resolveOpenKind(file.name, detectFormatFromFileName(file.name));
     try {
       const loaded = await loadDiagramFromFile(file);
-      trackOpen(kind, `Open file: ${kind}`);
+      const detected =
+        detectDiagramFormatFromSource(loaded.content) ??
+        detectFormatFromFileName(file.name);
+      if (detected) {
+        trackDiagramOpen(detected, loaded.content, "Open file");
+      } else {
+        const kind = resolveOpenKind(file.name, null);
+        trackOpen(kind, `Open file: ${kind}`);
+      }
       resetFolds();
       source.value = loaded.content;
       diagramFormat.value = loaded.format;

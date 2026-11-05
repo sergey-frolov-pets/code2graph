@@ -156,25 +156,25 @@ export const siteMessages = {
   "site.ext.mermaid.desc.clustered":
     "Столбцы нескольких серий по категориям: рядом или стопкой (stacked), с поворотом на 90 градусов (rotate 90), подписями и чёрно-белым режимом (mono, mono invert).",
   "site.ext.mermaid.syntax.waterfall":
-    "waterfall открывает диаграмму. y задаёт ось. = — абсолютная колонка, + и - — шаг, подпись — после двоеточия.",
+    "waterfall открывает диаграмму. y задаёт ось. = — абсолютная колонка, + и - — шаг, подпись — после двоеточия. \\n в подписи переносит строку.",
   "site.ext.mermaid.syntax.bubble":
-    "bubble открывает диаграмму. x, y и size задают оси и размер. В блоке data точка: имя : x=, y=, size=.",
+    "bubble открывает диаграмму. x, y и size задают оси и размер. В блоке data точка: имя : x=, y=, size=. \\n в имени переносит строку.",
   "site.ext.mermaid.syntax.heatmap":
-    "heatmap открывает карту. x и y — подписи осей. В блоке data строка: имя : числа через запятую.",
+    "heatmap открывает карту. x и y — подписи осей. В блоке data строка: имя : числа через запятую. \\n в подписи переносит строку.",
   "site.ext.mermaid.syntax.orgchart":
     "orgchart открывает дерево. Узел — id [роль\\nимя] (\\n переносит строку, блок подгоняется под текст); color=#hex задаёт заливку, border=#hex и style=solid|dash|dot|dashdot — цвет и стиль границы. Основное ребро — ->, второй руководитель — -.->.",
   "site.ext.mermaid.syntax.ev":
-    "ev открывает график. days — дни, pv — план, ev — освоенный объём, ac — фактические затраты.",
+    "ev открывает график. days — дни, pv — план, ev — освоенный объём, ac — фактические затраты. \\n в подписи дня переносит строку.",
   "site.ext.mermaid.syntax.boxplot":
-    "boxplot открывает график. Категория: Имя : min=, q1=, median=, q3=, max= (или values=ч1, ч2, …) с опциональным color=#hex.",
+    "boxplot открывает график. Категория: Имя : min=, q1=, median=, q3=, max= (или values=ч1, ч2, …) с опциональным color=#hex. \\n в имени переносит строку.",
   "site.ext.mermaid.syntax.treemap":
-    "treemap открывает карту. Строка: Группа / Элемент : вес [color=#hex]. labels задаёт вывод чисел и процентов.",
+    "treemap открывает карту. Строка: Группа / Элемент : вес [color=#hex]. labels задаёт вывод чисел и процентов. \\n в имени переносит строку.",
   "site.ext.mermaid.syntax.radar":
-    "radar открывает диаграмму. axes — список осей через запятую, series Имя : зн1, зн2, … — значения серии.",
+    "radar открывает диаграмму. axes — список осей через запятую, series Имя : зн1, зн2, … — значения серии. \\n в подписи переносит строку.",
   "site.ext.mermaid.syntax.voronoi":
-    "voronoi открывает разбиение. В блоке data точка: Имя : x=, y=, group=, color=#hex.",
+    "voronoi открывает разбиение. В блоке data точка: Имя : x=, y=, group=, color=#hex. \\n в имени переносит строку.",
   "site.ext.mermaid.syntax.clustered":
-    "clustered открывает график. categories — категории, series Имя : зн1, зн2, … — серии. stacked складывает серии, rotate 90 поворачивает диаграмму, mono и mono invert включают чёрно-белый режим.",
+    "clustered открывает график. categories — категории, series Имя : зн1, зн2, … — серии. stacked складывает серии, rotate 90 поворачивает диаграмму, mono и mono invert включают чёрно-белый режим. \\n в подписи переносит строку.",
   "site.primer.graphml.kw.graphml":
     "Корень документа. Пространство имён GraphML обязательно.",
   "site.primer.graphml.kw.graph":

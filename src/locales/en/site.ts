@@ -156,25 +156,25 @@ export const siteMessages = {
   "site.ext.mermaid.desc.clustered":
     "Bars for multiple series across categories, side by side or stacked, with a 90-degree rotation (rotate 90), value labels, and black-and-white mode (mono, mono invert).",
   "site.ext.mermaid.syntax.waterfall":
-    "waterfall opens the chart. y sets the axis. = is an absolute column, + and - are a step, and the label follows the colon.",
+    "waterfall opens the chart. y sets the axis. = is an absolute column, + and - are a step, and the label follows the colon. \\n in a label breaks the line.",
   "site.ext.mermaid.syntax.bubble":
-    "bubble opens the chart. x, y, and size set the axes and the size. Inside data a point is name : x=, y=, size=.",
+    "bubble opens the chart. x, y, and size set the axes and the size. Inside data a point is name : x=, y=, size=. \\n in a name breaks the line.",
   "site.ext.mermaid.syntax.heatmap":
-    "heatmap opens the map. x and y are the axis labels. Inside data a row is name : comma-separated numbers.",
+    "heatmap opens the map. x and y are the axis labels. Inside data a row is name : comma-separated numbers. \\n in a label breaks the line.",
   "site.ext.mermaid.syntax.orgchart":
     "orgchart opens the tree. A node is id [role\\nname] (\\n breaks the line, the box fits the text); color=#hex sets the fill, border=#hex and style=solid|dash|dot|dashdot set the border color and style. A solid edge is ->, a secondary manager is -.->.",
   "site.ext.mermaid.syntax.ev":
-    "ev opens the chart. days are the days, pv is the plan, ev is earned value, ac is actual cost.",
+    "ev opens the chart. days are the days, pv is the plan, ev is earned value, ac is actual cost. \\n in a day label breaks the line.",
   "site.ext.mermaid.syntax.boxplot":
-    "boxplot opens the chart. Category row: Name : min=, q1=, median=, q3=, max= (or values=v1, v2, …) with optional color=#hex.",
+    "boxplot opens the chart. Category row: Name : min=, q1=, median=, q3=, max= (or values=v1, v2, …) with optional color=#hex. \\n in a name breaks the line.",
   "site.ext.mermaid.syntax.treemap":
-    "treemap opens the map. Row: Group / Item : weight [color=#hex]. labels controls value and percentage display.",
+    "treemap opens the map. Row: Group / Item : weight [color=#hex]. labels controls value and percentage display. \\n in a name breaks the line.",
   "site.ext.mermaid.syntax.radar":
-    "radar opens the chart. axes lists spoke labels, series Name : v1, v2, … defines a data series.",
+    "radar opens the chart. axes lists spoke labels, series Name : v1, v2, … defines a data series. \\n in a label breaks the line.",
   "site.ext.mermaid.syntax.voronoi":
-    "voronoi opens the tessellation. Inside data a site is Name : x=, y=, group=, color=#hex.",
+    "voronoi opens the tessellation. Inside data a site is Name : x=, y=, group=, color=#hex. \\n in a name breaks the line.",
   "site.ext.mermaid.syntax.clustered":
-    "clustered opens the chart. categories lists categories, series Name : v1, v2, … defines a series. stacked piles the series, rotate 90 turns the chart, mono and mono invert switch to black and white.",
+    "clustered opens the chart. categories lists categories, series Name : v1, v2, … defines a series. stacked piles the series, rotate 90 turns the chart, mono and mono invert switch to black and white. \\n in a label breaks the line.",
   "site.primer.graphml.kw.graphml":
     "The document root. The GraphML namespace is required.",
   "site.primer.graphml.kw.graph":
