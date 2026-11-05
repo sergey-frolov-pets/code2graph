@@ -7,6 +7,7 @@ import {
   niceTicks,
   resolvePalette,
   truncate,
+  usesInvertedMono,
 } from "../../common";
 import type { ExtRenderOptions } from "../../types";
 import {
@@ -38,8 +39,9 @@ function isTransparentChartBackground(value: string | undefined): boolean {
 
 export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions): string {
   const chartBackground = model.background ?? options.background;
+  const themeDark = Boolean(options.dark) || usesInvertedMono(model.mono, model.monoInvert, false);
   const palette = resolvePalette(
-    Boolean(options.dark),
+    themeDark,
     chartBackground,
     model.textColor ?? options.textColor,
   );
@@ -51,7 +53,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
   const lines = model.lines ?? [];
   const valueLabels = model.valueLabels ?? { above: true, inside: false };
   const axisHidden = Boolean(axis.hidden);
-  const colors = resolveColors(model, Boolean(options.dark));
+  const colors = resolveColors(model, themeDark);
 
   const groups = Math.max(1, series.length);
   const columns = Math.max(1, labels.length);
@@ -333,7 +335,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
         const x2 = x1 + columnWidth - barWidth;
         // Зазор между барами почти съедался: линия была длиной ~12 px и терялась
         // на фоне сетки. Делаем её контрастнее и толще — как в Excel/McKinsey.
-        const stroke = options.dark ? palette.fgDim : palette.axis;
+        const stroke = themeDark ? palette.fgDim : palette.axis;
         const dash = "4 3";
         const y1 = yClamped(from);
         const y2 = yClamped(to);
@@ -446,7 +448,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       // В мульти-серии у каждой группы свой базовый цвет, а внутри группы
       // тип шага различается светлотой (итог / рост / падение) — так все бары
       // различимы. В одиночной серии цвет задаёт ТИП шага (total/increase/decrease).
-      const ownSeries = groups > 1 ? seriesColor(model, g, colors, options.dark) : undefined;
+      const ownSeries = groups > 1 ? seriesColor(model, g, colors, themeDark) : undefined;
       if (step.kind === "absolute") {
         // Абсолютная колонка рисуется от нуля; если ноль вне шкалы — от её края.
         const zero = clamp(0, axis.min, axis.max);
@@ -545,7 +547,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       const name = series[g].name ?? `Группа ${g + 1}`;
       const swatch = Math.round(fontSize * 0.91);
       svg.rect(legendX, legendY - swatch + 2, swatch, swatch, {
-        fill: seriesColor(model, g, colors, options.dark) ?? colors.total,
+        fill: seriesColor(model, g, colors, themeDark) ?? colors.total,
         rx: 2,
       });
       svg.text(legendX + swatch + 6, legendY, name, {

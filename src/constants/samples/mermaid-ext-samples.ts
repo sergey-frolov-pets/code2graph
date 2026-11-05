@@ -292,6 +292,43 @@ colors s1=#0969da s2=#8250df s3=#2da44e
 series Онлайн : 120, 145, 165, 190
 series Розница : 85, 95, 110, 130
 series Партнёры : 45, 60, 75, 95 color=#f97316`,
+  clusteredStacked: `clustered
+%% Стопка: серии в одном столбце, а не рядом.
+%% stacked / bars stacked / layout stacked
+%% Вернуть бары рядом: stacked off или bars clustered
+%% Положительные значения растут вверх от нуля, отрицательные — вниз.
+title Состав выручки
+stacked
+categories Q1, Q2, Q3, Q4
+y "млн ₽" 0 --> 400
+grid 50
+labels inside
+colors s1=#0969da s2=#8250df s3=#2da44e
+series Продукт : 80, 90, 70, 110
+series Услуги : 50, 60, 55, 70
+series Партнёры : 30, 25, 40, 35`,
+  clusteredMono: `clustered
+%% Чёрно-белый режим: серии различаются светлотой, а не цветом.
+%% Явные colors перекрывают серую шкалу, поэтому здесь их нет.
+title Выручка, ч/б
+mono
+categories Q1, Q2, Q3, Q4
+y "млн ₽" 0 --> 200
+grid 50
+series Онлайн : 120, 145, 165, 190
+series Розница : 85, 95, 110, 130
+series Партнёры : 45, 60, 75, 95`,
+  clusteredMonoInvert: `clustered
+%% Инвертированный ч/б: светлые серые столбцы на тёмном холсте.
+%% Для тёмной темы и тёмных слайдов. mono off возвращает цвет.
+title Выручка, ч/б инверсия
+mono invert
+categories Q1, Q2, Q3, Q4
+y "млн ₽" 0 --> 200
+grid 50
+series Онлайн : 120, 145, 165, 190
+series Розница : 85, 95, 110, 130
+series Партнёры : 45, 60, 75, 95`,
 };
 
 export const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
@@ -586,4 +623,41 @@ colors s1=#0969da s2=#8250df s3=#2da44e
 series Online : 120, 145, 165, 190
 series Retail : 85, 95, 110, 130
 series Partners : 45, 60, 75, 95 color=#f97316`,
+  clusteredStacked: `clustered
+%% Stacked bars: series share one column instead of sitting side by side.
+%% stacked / bars stacked / layout stacked
+%% Side by side again: stacked off or bars clustered
+%% Positive values grow up from zero, negative values grow down.
+title Revenue mix
+stacked
+categories Q1, Q2, Q3, Q4
+y "M USD" 0 --> 400
+grid 50
+labels inside
+colors s1=#0969da s2=#8250df s3=#2da44e
+series Product : 80, 90, 70, 110
+series Services : 50, 60, 55, 70
+series Partners : 30, 25, 40, 35`,
+  clusteredMono: `clustered
+%% Black-and-white: series differ by lightness, not hue.
+%% Explicit colors override the grey scale, so this sample leaves them out.
+title Revenue, mono
+mono
+categories Q1, Q2, Q3, Q4
+y "M USD" 0 --> 200
+grid 50
+series Online : 120, 145, 165, 190
+series Retail : 85, 95, 110, 130
+series Partners : 45, 60, 75, 95`,
+  clusteredMonoInvert: `clustered
+%% Inverted black-and-white: light grey bars on a dark canvas.
+%% For dark themes and dark slides. mono off brings colour back.
+title Revenue, inverted mono
+mono invert
+categories Q1, Q2, Q3, Q4
+y "M USD" 0 --> 200
+grid 50
+series Online : 120, 145, 165, 190
+series Retail : 85, 95, 110, 130
+series Partners : 45, 60, 75, 95`,
 };

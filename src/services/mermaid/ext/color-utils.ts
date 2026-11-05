@@ -209,17 +209,23 @@ export function extractTrailingColorAttr(
 export function parseMonoDirective(
   raw: string,
   line: number,
-): { mono?: boolean; error?: ExtParseError } {
+): { mono?: boolean; monoInvert?: boolean; error?: ExtParseError } {
   const arg = raw.replace(/^mono\b/i, "").trim().toLowerCase();
-  if (!arg || arg === "on" || arg === "true") return { mono: true };
-  if (arg === "off" || arg === "false") return { mono: false };
+  if (!arg || arg === "on" || arg === "true" || arg === "yes") return { mono: true, monoInvert: false };
+  if (arg === "off" || arg === "false" || arg === "no") return { mono: false, monoInvert: false };
+  if (arg === "invert" || arg === "inverted" || arg === "inverse") return { mono: true, monoInvert: true };
   return {
     error: {
-      message: `ожидается «mono», «mono on» или «mono off», получено «${raw}»`,
+      message: `ожидается «mono», «mono invert» или «mono off», получено «${raw}»`,
       line,
       col: 0,
     },
   };
+}
+
+/** `mono invert` включает тёмную палитру, даже если тема редактора светлая. */
+export function chartIsDark(dark?: boolean, monoInvert?: boolean): boolean {
+  return Boolean(dark) || Boolean(monoInvert);
 }
 
 /**

@@ -3,6 +3,7 @@ import {
   isValidExtColor,
   parseExtColorsDirective,
   parseExtNumber,
+  chartIsDark,
   parseMonoDirective,
   resolveSeriesColor,
   shadeColor,
@@ -47,6 +48,7 @@ export interface BoxplotModel {
   gridStep?: number;
   fontSize?: number;
   mono: boolean;
+  monoInvert: boolean;
   colors: BoxplotNamedColors;
   seriesColors: Record<string, string>;
   items: BoxplotItem[];
@@ -416,6 +418,7 @@ export function parseBoxplot(source: string): ExtParseResult<BoxplotModel> {
   let gridStep: number | undefined;
   let fontSize: number | undefined;
   let mono = false;
+  let monoInvert = false;
   const colors: BoxplotNamedColors = {};
   const seriesColors: Record<string, string> = {};
   const items: BoxplotItem[] = [];
@@ -494,7 +497,10 @@ export function parseBoxplot(source: string): ExtParseResult<BoxplotModel> {
       if (/^mono\b/i.test(raw)) {
         const parsed = parseMonoDirective(raw, lineNo);
         if (parsed.error) errors.push(parsed.error);
-        else if (parsed.mono !== undefined) mono = parsed.mono;
+        else if (parsed.mono !== undefined) {
+          mono = parsed.mono;
+          monoInvert = Boolean(parsed.monoInvert);
+        }
         continue;
       }
 
@@ -553,6 +559,7 @@ export function parseBoxplot(source: string): ExtParseResult<BoxplotModel> {
       gridStep,
       fontSize,
       mono,
+      monoInvert,
       colors,
       seriesColors,
       items,
@@ -561,7 +568,7 @@ export function parseBoxplot(source: string): ExtParseResult<BoxplotModel> {
 }
 
 export function renderBoxplot(model: BoxplotModel, options: ExtRenderOptions): string {
-  const palette = resolvePalette(options.dark, options.background, options.textColor);
+  const palette = resolvePalette(chartIsDark(options.dark, model.monoInvert), options.background, options.textColor);
   const fontSize = clamp(model.fontSize ?? FONT_BASE, FONT_MIN, FONT_MAX);
   const scaleFactor = fontSize / FONT_BASE;
   const titleSize = clamp(Math.round(fontSize * 1.36), 14, 26);
@@ -672,11 +679,12 @@ export function renderBoxplot(model: BoxplotModel, options: ExtRenderOptions): s
       resolveSeriesColor(idx, {
         seriesColors: model.seriesColors,
         mono: model.mono,
-        dark: options.dark,
+        dark: chartIsDark(options.dark, model.monoInvert),
       });
 
-    const whiskerColor = model.colors.whisker ?? shadeColor(baseColor, options.dark ? 0.15 : -0.2);
-    const medianColor = model.colors.median ?? shadeColor(baseColor, options.dark ? 0.35 : -0.38);
+    const onDark = chartIsDark(options.dark, model.monoInvert);
+    const whiskerColor = model.colors.whisker ?? shadeColor(baseColor, onDark ? 0.15 : -0.2);
+    const medianColor = model.colors.median ?? shadeColor(baseColor, onDark ? 0.35 : -0.38);
     const outlierColor = model.colors.outlier ?? (model.mono ? whiskerColor : palette.negative);
 
     const yMinPx = yOf(item.min);

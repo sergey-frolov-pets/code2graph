@@ -44,6 +44,8 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.tag.setting.swimlane": "Дорожки",
   "llm.wizard.gallery.tag.setting.noLines": "Без соединительных линий",
   "llm.wizard.gallery.tag.setting.rotate90": "Поворот 90°",
+  "llm.wizard.gallery.tag.setting.stacked": "Стопка",
+  "llm.wizard.gallery.tag.setting.monoInvert": "Ч/б инверсия",
   "llm.wizard.gallery.tag.diagramType.waterfall": "Водопад",
   "llm.wizard.gallery.tag.diagramType.bubble": "Пузырьковая диаграмма",
   "llm.wizard.gallery.tag.diagramType.heatmap": "Тепловая карта",
@@ -93,6 +95,15 @@ export const wizardGalleryMessages = {
     "Кластеризованная диаграмма (поворот 90°)",
   "llm.wizard.gallery.example.mermaid.clusteredRotated.description":
     "Горизонтальные сгруппированные полосы с поворотом на 90 градусов (rotate 90).",
+  "llm.wizard.gallery.example.mermaid.clusteredStacked.title": "Кластеризованная — стопка",
+  "llm.wizard.gallery.example.mermaid.clusteredStacked.description":
+    "Серии сложены в один столбец: положительные вверх от нуля, отрицательные вниз.",
+  "llm.wizard.gallery.example.mermaid.clusteredMono.title": "Кластеризованная — ч/б",
+  "llm.wizard.gallery.example.mermaid.clusteredMono.description":
+    "Те же столбцы серыми оттенками для печати и документов без цвета.",
+  "llm.wizard.gallery.example.mermaid.clusteredMonoInvert.title": "Кластеризованная — ч/б для тёмной темы",
+  "llm.wizard.gallery.example.mermaid.clusteredMonoInvert.description":
+    "Светлые серые столбцы на тёмном холсте.",
   "llm.wizard.gallery.example.wiremark.login.title": "Макет входа",
   "llm.wizard.gallery.example.wiremark.login.description":
     "Вайрфрейм входа: поля, вкладки и основное действие.",

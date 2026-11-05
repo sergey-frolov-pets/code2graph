@@ -151,3 +151,25 @@ grid`;
     });
   });
 });
+
+describe("ev: чёрно-белый режим", () => {
+  const rows = `days 1, 2
+pv 10, 25
+ev 8, 20
+ac 12, 28`;
+
+  it("mono убирает цвет кривых", () => {
+    const r = evEngine.parse(`ev\nmono\n${rows}`);
+    expect(r.ok).toBe(true);
+    const svg = evEngine.render(r.value as EvModel, {});
+    expect(svg).not.toContain("#2da44e");
+    expect(svg).not.toContain("#cf222e");
+  });
+
+  it("mono invert включает тёмный холст", () => {
+    const r = evEngine.parse(`ev\nmono invert\n${rows}`);
+    const svg = evEngine.render(r.value as EvModel, {});
+    expect(svg).toContain('fill="#1a1d21"');
+    expect((r.value as EvModel).monoInvert).toBe(true);
+  });
+});

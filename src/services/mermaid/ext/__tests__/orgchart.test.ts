@@ -561,3 +561,28 @@ C -> B`);
     }
   });
 });
+
+describe("orgchart: чёрно-белый режим", () => {
+  it("mono обесцвечивает заливку", () => {
+    const r = orgchartEngine.parse(`orgchart
+mono
+A [A] color=#8250df
+B [B]
+A -> B`);
+    expect(r.ok).toBe(true);
+    const svg = orgchartEngine.render(r.value as OrgModel, {});
+    expect(svg).not.toContain("#8250df");
+    expect(svg).toMatch(/fill="#([0-9a-f]{2})\1\1"/);
+  });
+
+  it("mono invert рисует тёмный холст", () => {
+    const r = orgchartEngine.parse(`orgchart
+mono invert
+A [A]
+B [B]
+A -> B`);
+    const svg = orgchartEngine.render(r.value as OrgModel, {});
+    expect(svg).toContain('fill="#1a1d21"');
+    expect((r.value as OrgModel).monoInvert).toBe(true);
+  });
+});

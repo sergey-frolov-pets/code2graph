@@ -2,6 +2,7 @@ import {
   extractTrailingColorAttr,
   parseExtColorsDirective,
   parseExtNumber,
+  chartIsDark,
   parseMonoDirective,
   resolveSeriesColor,
   unquoteExtText,
@@ -25,6 +26,7 @@ export interface RadarModel {
   dots: boolean;
   fontSize?: number;
   mono: boolean;
+  monoInvert: boolean;
   seriesColors: Record<string, string>;
   series: RadarSeries[];
 }
@@ -139,6 +141,7 @@ export function parseRadar(source: string): ExtParseResult<RadarModel> {
   let dots = true;
   let fontSize: number | undefined;
   let mono = false;
+  let monoInvert = false;
   const seriesColors: Record<string, string> = {};
   const series: RadarSeries[] = [];
 
@@ -287,7 +290,10 @@ export function parseRadar(source: string): ExtParseResult<RadarModel> {
       if (/^mono\b/i.test(raw) && !raw.includes(":")) {
         const parsed = parseMonoDirective(raw, lineNo);
         if (parsed.error) errors.push(parsed.error);
-        else if (parsed.mono !== undefined) mono = parsed.mono;
+        else if (parsed.mono !== undefined) {
+          mono = parsed.mono;
+          monoInvert = Boolean(parsed.monoInvert);
+        }
         continue;
       }
 
@@ -368,6 +374,7 @@ export function parseRadar(source: string): ExtParseResult<RadarModel> {
       dots,
       fontSize,
       mono,
+      monoInvert,
       seriesColors,
       series,
     },
@@ -375,7 +382,7 @@ export function parseRadar(source: string): ExtParseResult<RadarModel> {
 }
 
 export function renderRadar(model: RadarModel, options: ExtRenderOptions): string {
-  const palette = resolvePalette(options.dark, options.background, options.textColor);
+  const palette = resolvePalette(chartIsDark(options.dark, model.monoInvert), options.background, options.textColor);
   const fontSize = clamp(model.fontSize ?? FONT_BASE, FONT_MIN, FONT_MAX);
   const scaleFactor = fontSize / FONT_BASE;
   const titleSize = clamp(Math.round(fontSize * 1.36), 14, 26);
@@ -471,7 +478,7 @@ export function renderRadar(model: RadarModel, options: ExtRenderOptions): strin
       explicitColor: s.color,
       seriesColors: model.seriesColors,
       mono: model.mono,
-      dark: options.dark,
+      dark: chartIsDark(options.dark, model.monoInvert),
     });
 
     const coords: Array<{ x: number; y: number }> = s.values.map((val, axisIdx) => {
@@ -519,7 +526,7 @@ export function renderRadar(model: RadarModel, options: ExtRenderOptions): strin
       explicitColor: s.color,
       seriesColors: model.seriesColors,
       mono: model.mono,
-      dark: options.dark,
+      dark: chartIsDark(options.dark, model.monoInvert),
     });
     svg.rect(lx, ly - swatch + 2, swatch, swatch, { fill: color, rx: 2 });
     svg.text(lx + swatch + 6, ly, s.name, {

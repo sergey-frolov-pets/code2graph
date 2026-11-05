@@ -53,6 +53,8 @@ export const SETTING_IDS = [
   "swimlane",
   "noLines",
   "rotate90",
+  "stacked",
+  "monoInvert",
 ] as const;
 
 export type SettingId = (typeof SETTING_IDS)[number];
@@ -214,6 +216,9 @@ const DIAGRAM_TYPE_OVERRIDE: Record<string, DiagramTypeTag> = {
   "mermaid:voronoi": "voronoi",
   "mermaid:clustered": "clustered",
   "mermaid:clusteredRotated": "clustered",
+  "mermaid:clusteredStacked": "clustered",
+  "mermaid:clusteredMono": "clustered",
+  "mermaid:clusteredMonoInvert": "clustered",
   "graphml:flow": "flowchart",
   "graphml:decision": "decision",
   "graphml:architecture": "architecture",
@@ -239,6 +244,9 @@ const DOMAIN_OVERRIDE: Record<string, readonly DomainId[]> = {
   "mermaid:voronoi": ["analytics", "data"],
   "mermaid:clustered": ["analytics"],
   "mermaid:clusteredRotated": ["analytics"],
+  "mermaid:clusteredStacked": ["analytics"],
+  "mermaid:clusteredMono": ["analytics"],
+  "mermaid:clusteredMonoInvert": ["analytics"],
   "graphml:flow": ["businessProcess", "architecture"],
   "graphml:decision": ["businessProcess"],
   "graphml:architecture": ["architecture"],
@@ -259,6 +267,9 @@ const SETTINGS_BY_EXAMPLE: Record<string, readonly SettingId[]> = {
   "mermaid:voronoi": ["color", "labels"],
   "mermaid:clustered": ["color", "labels"],
   "mermaid:clusteredRotated": ["rotate90", "color", "labels"],
+  "mermaid:clusteredStacked": ["stacked", "color"],
+  "mermaid:clusteredMono": ["mono"],
+  "mermaid:clusteredMonoInvert": ["monoInvert"],
   "plantuml:activity": ["swimlane", "color"],
   "d2:flow": ["direction-lr", "color"],
   "d2:sequence": ["direction-tb"],

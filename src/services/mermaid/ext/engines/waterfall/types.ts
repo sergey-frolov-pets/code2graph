@@ -86,6 +86,8 @@ export interface WaterfallModel {
   fontSize?: number;
   /** `mono` — чёрно-белый режим: бары различаются светлотой, а не цветом. */
   mono?: boolean;
+  /** `mono invert` — светлая серая шкала и тёмный холст. */
+  monoInvert?: boolean;
   /** Свои цвета: `colors total=#hex increase=#hex decrease=#hex`. */
   colors?: Partial<WaterfallColors>;
   /** Цвета отдельных серий: `colors s1=#hex s2=#hex` (ключи нормализованы в `sN`). */

@@ -333,3 +333,28 @@ A : x=5, y=5, size=10`);
     }
   });
 });
+
+describe("bubble: чёрно-белый режим", () => {
+  const source = `bubble
+x "X" 0 --> 10
+y "Y" 0 --> 10
+data
+A : x=2, y=3, size=10, group=One
+B : x=8, y=7, size=20, group=Two`;
+
+  it("mono красит группы серым", () => {
+    const r = bubbleEngine.parse(source.replace("bubble\n", "bubble\nmono\n"));
+    expect(r.ok).toBe(true);
+    expect((r.value as BubbleModel).mono).toBe(true);
+    const svg = bubbleEngine.render(r.value as BubbleModel, {});
+    expect(svg).not.toContain("#0969da");
+    expect(svg).toMatch(/fill="#([0-9a-f]{2})\1\1"/);
+  });
+
+  it("mono invert включает тёмный холст", () => {
+    const r = bubbleEngine.parse(source.replace("bubble\n", "bubble\nmono invert\n"));
+    const svg = bubbleEngine.render(r.value as BubbleModel, {});
+    expect(svg).toContain('fill="#1a1d21"');
+    expect((r.value as BubbleModel).monoInvert).toBe(true);
+  });
+});

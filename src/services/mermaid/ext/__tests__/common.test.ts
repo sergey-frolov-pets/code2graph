@@ -10,7 +10,11 @@ import {
   niceRange,
   niceTicks,
   contrastTextColor,
+  monoFlagsFromMode,
+  monoGray,
+  monoPaint,
   parseHexColor,
+  parseMonoDirective,
   resolvePalette,
   textHeight,
   truncate,
@@ -240,5 +244,21 @@ describe("parseHexColor / контраст", () => {
   it("альфа в цвете фона отбрасывается: заливка сплошная", () => {
     expect(resolvePalette(false, "#ff880080").bg).toBe("#ff8800");
     expect(resolvePalette(false, "transparent").bg).toBe(getPalette(false).bg);
+  });
+});
+
+describe("mono", () => {
+  it("понимает включение, инверсию и выключение", () => {
+    expect(parseMonoDirective("")).toEqual({ mode: "on" });
+    expect(parseMonoDirective("invert")).toEqual({ mode: "invert" });
+    expect(parseMonoDirective("off")).toEqual({ mode: "off" });
+    expect(monoFlagsFromMode("invert")).toEqual({ mono: true, monoInvert: true });
+    expect("error" in parseMonoDirective("может быть")).toBe(true);
+  });
+
+  it("серый ряд и обесцвечивание остаются в оттенках серого", () => {
+    expect(monoGray(0, 3, false)).toMatch(/^#[0-9a-f]{6}$/);
+    expect(monoGray(0, 3, true)).not.toBe(monoGray(0, 3, false));
+    expect(monoPaint("#0969da", false)).toMatch(/^#([0-9a-f]{2})\1\1$/);
   });
 });

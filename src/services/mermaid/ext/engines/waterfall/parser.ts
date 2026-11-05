@@ -1,4 +1,4 @@
-import { fmt, niceRange, parseHexColor } from "../../common";
+import { fmt, monoFlagsFromMode, niceRange, parseHexColor, parseMonoDirective } from "../../common";
 import type { ExtParseError, ExtParseResult } from "../../types";
 import {
   parseAxis,
@@ -34,6 +34,7 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
   let connectors = true;
   let fontSize: number | undefined;
   let mono = false;
+  let monoInvert = false;
   let colors: Partial<WaterfallColors> | undefined;
   let seriesColors: WaterfallSeriesColors | undefined;
   let background: string | undefined;
@@ -167,17 +168,13 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
     }
 
     if (/^mono\b/i.test(raw)) {
-      const token = raw.replace(/^mono\s*/i, "").trim().toLowerCase();
-      if (token === "" || token === "on" || token === "true" || token === "yes") {
-        mono = true;
-      } else if (token === "off" || token === "false" || token === "no") {
-        mono = false;
+      const parsed = parseMonoDirective(raw.replace(/^mono\s*/i, ""));
+      if ("error" in parsed) {
+        errors.push({ message: parsed.error, line: lineNo, col: 0 });
       } else {
-        errors.push({
-          message: `ожидается «mono» (или «mono on|off»), получено «${token}»`,
-          line: lineNo,
-          col: 0,
-        });
+        const flags = monoFlagsFromMode(parsed.mode);
+        mono = flags.mono;
+        monoInvert = flags.monoInvert;
       }
       continue;
     }
@@ -312,6 +309,7 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
       connectors,
       fontSize,
       mono,
+      monoInvert,
       colors,
       seriesColors,
       background,

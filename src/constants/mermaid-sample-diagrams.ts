@@ -45,6 +45,9 @@ export const MERMAID_SAMPLE_IDS = [
   "voronoi",
   "clustered",
   "clusteredRotated",
+  "clusteredStacked",
+  "clusteredMono",
+  "clusteredMonoInvert",
 ] as const;
 
 export type MermaidSampleId = (typeof MERMAID_SAMPLE_IDS)[number];
@@ -71,6 +74,9 @@ export const MERMAID_EXT_SAMPLE_IDS = [
   "voronoi",
   "clustered",
   "clusteredRotated",
+  "clusteredStacked",
+  "clusteredMono",
+  "clusteredMonoInvert",
 ] as const satisfies readonly MermaidSampleId[];
 
 export type MermaidExtSampleId = (typeof MERMAID_EXT_SAMPLE_IDS)[number];
@@ -131,6 +137,9 @@ export const MERMAID_SAMPLE_WIZARD_TYPES: Record<MermaidSampleId, import("@/cons
   voronoi: "quadrant",
   clustered: "xychart",
   clusteredRotated: "xychart",
+  clusteredStacked: "xychart",
+  clusteredMono: "xychart",
+  clusteredMonoInvert: "xychart",
 };
 
 import {
