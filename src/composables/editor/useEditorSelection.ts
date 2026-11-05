@@ -137,10 +137,26 @@ export function useEditorSelection(options: {
     });
   }
 
+  function getSelectionRangeInSource(): { start: number; end: number } {
+    const textarea = textareaRef.value;
+    if (textarea) {
+      const liveDisplayStart = textarea.selectionStart;
+      const liveDisplayEnd = textarea.selectionEnd;
+      if (liveDisplayEnd > liveDisplayStart) {
+        return mapDisplaySelectionToSource(liveDisplayStart, liveDisplayEnd);
+      }
+    }
+    if (selectionEnd.value > selectionStart.value) {
+      return { start: selectionStart.value, end: selectionEnd.value };
+    }
+    return { start: 0, end: 0 };
+  }
+
   return {
     hasTextSelection,
     updateSelectionState,
     requestAiPatch,
     insertSnippetAtCursor,
+    getSelectionRangeInSource,
   };
 }

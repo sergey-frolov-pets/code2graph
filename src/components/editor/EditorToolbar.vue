@@ -32,6 +32,7 @@ const props = defineProps<{
   canConvert: boolean;
   canAiPatch: boolean;
   canAiSyntaxAsk: boolean;
+  canPasteTable?: boolean;
   snippetsOpen: boolean;
   isFullscreen: boolean;
 }>();
@@ -43,6 +44,7 @@ const emit = defineEmits<{
   saveToLibrary: [];
   aiPatch: [];
   aiSyntaxAsk: [];
+  pasteTable: [];
   validateSyntax: [];
   undo: [];
   redo: [];
@@ -74,10 +76,6 @@ const sampleOptions = computed(() =>
       },
     ];
   }),
-);
-
-const validateLabel = computed(() =>
-  props.isValidating ? t("editor.validating") : t("editor.validate"),
 );
 
 const showAiAssistantMenu = computed(
@@ -235,12 +233,13 @@ function onSampleChange(event: Event): void {
         <ActionIcon name="syntax-help" />
       </IconButton>
       <IconButton
-        v-if="formatDefinition.supportsSyntaxValidation"
-        :label="validateLabel"
-        :disabled="isValidating || isRendering"
-        @click="emit('validateSyntax')"
+        v-if="formatDefinition.editable && canPasteTable"
+        :label="t('editor.pasteTable')"
+        :disabled="isRendering"
+        data-testid="editor-paste-table-button"
+        @click="emit('pasteTable')"
       >
-        <ActionIcon name="check" />
+        <ActionIcon name="table-paste" />
       </IconButton>
       <IconButton
         v-if="formatDefinition.editable"

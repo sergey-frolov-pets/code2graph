@@ -13,6 +13,7 @@ import EditorCodeGutter from "@/components/editor/EditorCodeGutter.vue";
 import EditorCodeSurface from "@/components/editor/EditorCodeSurface.vue";
 import EditorFoldOnboardingBanner from "@/components/editor/EditorFoldOnboardingBanner.vue";
 import EditorFoldRegionsModal from "@/components/editor/EditorFoldRegionsModal.vue";
+import TablePasteErrorModal from "@/components/TablePasteErrorModal.vue";
 import { useLocale } from "@/composables/useLocale";
 import type { EditorFontSize } from "@/constants/editor-settings";
 import {
@@ -21,6 +22,12 @@ import {
   type DiagramFormat,
 } from "@/constants/diagram-formats";
 import { getLanguageModule } from "@/languages/registry";
+import {
+  applyTableFromClipboardText,
+  createClipboardReadError,
+  supportsTablePaste,
+  type TablePasteErrorInfo,
+} from "@/services/table-paste";
 import { useEditorFoldOnboarding } from "@/composables/wizard/useWizardOnboarding";
 import { useEditorAutocomplete } from "@/composables/useEditorAutocomplete";
 import { useCodeFolds } from "@/composables/editor/useCodeFolds";
@@ -81,6 +88,11 @@ const effectiveAutocomplete = computed(
   () =>
     props.autocompleteEnabled && languageModule.value.supportsAutocomplete,
 );
+const canPasteTable = computed(() =>
+  supportsTablePaste(source.value, diagramFormat.value),
+);
+const tablePasteError = ref<TablePasteErrorInfo | null>(null);
+const tablePasteErrorModalOpen = ref(false);
 
 const gutterComponentRef = ref<InstanceType<typeof EditorCodeGutter> | null>(
   null,
@@ -204,15 +216,60 @@ const {
   onCleared: () => emit("cleared"),
 });
 
-const { updateSelectionState, requestAiPatch, insertSnippetAtCursor } =
-  useEditorSelection({
-    source,
-    folds,
-    textareaRef,
-    displayText,
-    syncScroll,
-    onAiPatch: (payload) => emit("aiPatch", payload),
+const {
+  updateSelectionState,
+  requestAiPatch,
+  insertSnippetAtCursor,
+  getSelectionRangeInSource,
+} = useEditorSelection({
+  source,
+  folds,
+  textareaRef,
+  displayText,
+  syncScroll,
+  onAiPatch: (payload) => emit("aiPatch", payload),
+});
+
+async function onPasteTableFromClipboard(): Promise<void> {
+  if (!navigator.clipboard || typeof navigator.clipboard.readText !== "function") {
+    tablePasteError.value = createClipboardReadError(
+      source.value,
+      diagramFormat.value,
+    );
+    tablePasteErrorModalOpen.value = true;
+    return;
+  }
+
+  let clipboardText = "";
+  try {
+    clipboardText = await navigator.clipboard.readText();
+  } catch {
+    tablePasteError.value = createClipboardReadError(
+      source.value,
+      diagramFormat.value,
+    );
+    tablePasteErrorModalOpen.value = true;
+    return;
+  }
+
+  const selectionRange = getSelectionRangeInSource();
+  const result = applyTableFromClipboardText({
+    clipboardText,
+    source: source.value,
+    format: diagramFormat.value,
+    selectionRange:
+      selectionRange.end > selectionRange.start ? selectionRange : undefined,
   });
+
+  if (!result.ok) {
+    tablePasteError.value = result.error;
+    tablePasteErrorModalOpen.value = true;
+    return;
+  }
+
+  resetFolds();
+  source.value = result.fullSource;
+}
 
 const autocomplete = useEditorAutocomplete({
   source,
@@ -303,6 +360,7 @@ onUnmounted(() => {
       :can-convert="canClear"
       :can-ai-patch="canClear"
       :can-ai-syntax-ask="canClear"
+      :can-paste-table="canPasteTable"
       :snippets-open="snippetsOpen"
       :is-fullscreen="isFullscreen"
       @open-file="openFilePicker"
@@ -311,6 +369,7 @@ onUnmounted(() => {
       @save-to-library="emit('saveToLibrary')"
       @ai-patch="requestAiPatch"
       @ai-syntax-ask="emit('aiSyntaxAsk')"
+      @paste-table="onPasteTableFromClipboard"
       @validate-syntax="emit('validateSyntax')"
       @undo="emit('undo')"
       @redo="emit('redo')"
@@ -398,6 +457,12 @@ onUnmounted(() => {
       @submit="onRegionSubmit"
       @remove="removeFold($event)"
       @navigate="onRegionNavigate"
+    />
+
+    <TablePasteErrorModal
+      :open="tablePasteErrorModalOpen"
+      :error="tablePasteError"
+      @close="tablePasteErrorModalOpen = false"
     />
   </section>
 </template>
