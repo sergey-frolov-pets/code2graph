@@ -174,6 +174,65 @@ describe("Category A & B table parsers", () => {
     }
   });
 
+  it("builds xychart series from one, two, and many columns", () => {
+    const oneColumn = applyTableFromClipboardText({
+      clipboardText: "Значение\n10\n25\n40",
+      source: 'xychart-beta\n    title T\n    x-axis ["A", "B", "C"]\n    y-axis "Y" 0 --> 50\n    bar [1, 2, 3]\n    line [4, 5, 6]',
+      format: "mermaid",
+    });
+    expect(oneColumn.ok).toBe(true);
+    if (oneColumn.ok) {
+      expect(oneColumn.fullSource).toContain("bar [1, 2, 3]");
+      expect(oneColumn.fullSource).toContain("bar [10, 25, 40]");
+      expect(oneColumn.fullSource).toContain('y-axis "Y" 0 --> 50');
+      expect(oneColumn.fullSource).toContain("line [4, 5, 6]");
+      expect(oneColumn.fullSource).not.toContain('y-axis ""');
+    }
+
+    const newlineColumn = applyTableFromClipboardText({
+      clipboardText: "10\n25\n40",
+      source: "xychart-beta\n    title T",
+      format: "mermaid",
+    });
+    expect(newlineColumn.ok).toBe(true);
+    if (newlineColumn.ok) {
+      expect(newlineColumn.fullSource).toContain("bar [10, 25, 40]");
+      expect(newlineColumn.fullSource).not.toContain("x-axis");
+      expect(newlineColumn.fullSource).not.toContain("y-axis");
+    }
+
+    const twoColumns = applyTableFromClipboardText({
+      clipboardText: "Янв\t20\nФев\t35",
+      source: 'xychart-beta\n    title Заказы\n    %% x-axis [не трогать комментарий]\n    x-axis ["Старое"]\n    y-axis "Заказы" 0 --> 100\n    bar [7]\n    line [9]',
+      format: "mermaid",
+    });
+    expect(twoColumns.ok).toBe(true);
+    if (twoColumns.ok) {
+      expect(twoColumns.fullSource).toContain('x-axis ["Янв", "Фев"]');
+      expect(twoColumns.fullSource).not.toContain('x-axis ["Старое"]');
+      expect(twoColumns.fullSource).toContain("%% x-axis [не трогать комментарий]");
+      expect(twoColumns.fullSource).toContain('y-axis "Заказы" 0 --> 100');
+      expect(twoColumns.fullSource).not.toContain('y-axis ""');
+      expect(twoColumns.fullSource).toContain("bar [20, 35]");
+      expect(twoColumns.fullSource).not.toContain("bar [7]");
+      expect(twoColumns.fullSource).toContain("line [9]");
+    }
+
+    const manyColumns = applyTableFromClipboardText({
+      clipboardText: "Месяц\tПлан\tФакт\tПрогноз\nЯнв\t1\t2\t3\nФев\t4\t5\t6",
+      source: "xychart-beta\n    title Заказы",
+      format: "mermaid",
+    });
+    expect(manyColumns.ok).toBe(true);
+    if (manyColumns.ok) {
+      expect(manyColumns.fullSource).toContain('x-axis ["Янв", "Фев"]');
+      expect(manyColumns.fullSource).toContain('y-axis "" 0 --> 11');
+      expect(manyColumns.fullSource).toContain("bar [1, 4]");
+      expect(manyColumns.fullSource).toContain("bar [2, 5]");
+      expect(manyColumns.fullSource).toContain("bar [3, 6]");
+    }
+  });
+
   it("parses bubble, ev, xychart, quadrant, and sankey tables", () => {
     const bubbleRes = applyTableFromClipboardText({
       clipboardText: "Name\tX\tY\tSize\tGroup\nProd A\t5\t10\t200\tSaaS",
@@ -206,8 +265,10 @@ describe("Category A & B table parsers", () => {
     expect(xyRes.ok).toBe(true);
     if (xyRes.ok) {
       expect(xyRes.fullSource).toContain("x-axis [\"Янв\", \"Фев\"]");
+      expect(xyRes.fullSource).toContain('y-axis "" 0 --> 39');
       expect(xyRes.fullSource).toContain("bar [20, 35]");
-      expect(xyRes.fullSource).toContain("line [18, 30]");
+      expect(xyRes.fullSource).toContain("bar [18, 30]");
+      expect(xyRes.fullSource).not.toContain("line [");
     }
 
     const quadRes = applyTableFromClipboardText({

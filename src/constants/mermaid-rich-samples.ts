@@ -125,12 +125,39 @@ Rel(orders, events, "Публикует", "async")`,
     Cart,Payment,60
     Payment,Order,55
     Payment,Drop,5`,
-  xychart: `xychart-beta
+  xychart: `%%{init: {'themeVariables': {'xyChart': {'plotColorPalette': '#2563eb, #f59e0b'}}}}%%
+xychart-beta
     title "Заказы по месяцам"
     x-axis ["Янв", "Фев", "Мар", "Апр", "Май", "Июн"]
     y-axis "Заказы" 0 --> 120
     bar [20, 35, 40, 55, 70, 90]
-    line [18, 30, 42, 50, 68, 88]`,
+    line [18, 30, 42, 50, 68, 88]
+    %% plotColorPalette красит серии по порядку объявления: первый цвет — bar, второй — line
+    %% Команды: xychart, xychart-beta, horizontal, vertical, title, x-axis, y-axis, bar, line, accTitle, accDescr
+    %% xychart-beta horizontal — столбцы в строку; vertical — обычная ориентация, её можно не писать
+    %% title "Текст заголовка"
+    %% x-axis [кат, "кат с пробелом"] — категории; длина списка равна длине каждой серии
+    %% x-axis "Заголовок X" [кат1, кат2] — категории с подписью оси
+    %% x-axis "Заголовок X" min --> max — числовая ось X
+    %% y-axis "Заголовок Y" min --> max — подпись и диапазон
+    %% y-axis "Заголовок Y" — только подпись, диапазон считается по данным
+    %% y-axis min --> max — диапазон без подписи
+    %% bar [n, n, n] — один ряд столбцов; несколько строк bar [...] — несколько рядов
+    %% bar "Имя серии" [n, n, n] — имя попадает в легенду
+    %% line [n, n, n] — линия на тех же осях
+    %% line "Имя серии" [n, n, n]
+    %% line [n "Подпись точки", n] — подпись у точки линии, для bar подпись игнорируется
+    %% accTitle: короткий заголовок для скринридера
+    %% accDescr: описание для скринридера
+    %% Раскраска серий: директива init, ключ themeVariables.xyChart.plotColorPalette = "#цвет1, #цвет2"
+    %% Ключи темы xyChart: backgroundColor, titleColor, dataLabelColor, legendTextColor, plotColorPalette
+    %% xAxisLabelColor, xAxisTitleColor, xAxisTickColor, xAxisLineColor
+    %% yAxisLabelColor, yAxisTitleColor, yAxisTickColor, yAxisLineColor
+    %% Ключи config.xyChart: width, height, titlePadding, titleFontSize, showTitle, showLegend
+    %% legendFontSize, legendPadding, chartOrientation, plotReservedSpacePercent
+    %% showDataLabel, showDataLabelOutsideBar
+    %% Ключи оси xAxis и yAxis: showLabel, labelFontSize, labelPadding, showTitle, titleFontSize, titlePadding
+    %% showTick, tickLength, tickWidth, showAxisLine, axisLineWidth, labelRotation`,
   block: `block-beta
     columns 3
     web["Веб"]:2
@@ -316,12 +343,39 @@ Rel(orders, events, "Publishes", "async")`,
     Cart,Payment,60
     Payment,Order,55
     Payment,Drop,5`,
-  xychart: `xychart-beta
+  xychart: `%%{init: {'themeVariables': {'xyChart': {'plotColorPalette': '#2563eb, #f59e0b'}}}}%%
+xychart-beta
     title "Orders by month"
     x-axis [Jan, Feb, Mar, Apr, May, Jun]
     y-axis "Orders" 0 --> 120
     bar [20, 35, 40, 55, 70, 90]
-    line [18, 30, 42, 50, 68, 88]`,
+    line [18, 30, 42, 50, 68, 88]
+    %% plotColorPalette colors series in declaration order: first color is bar, second is line
+    %% Commands: xychart, xychart-beta, horizontal, vertical, title, x-axis, y-axis, bar, line, accTitle, accDescr
+    %% xychart-beta horizontal draws bars as rows; vertical is the default and can be omitted
+    %% title "Chart title"
+    %% x-axis [cat, "cat with space"] — categories; the list length matches every series
+    %% x-axis "X title" [cat1, cat2] — categories with an axis title
+    %% x-axis "X title" min --> max — numeric X axis
+    %% y-axis "Y title" min --> max — title and range
+    %% y-axis "Y title" — title only, the range is fitted to the data
+    %% y-axis min --> max — range without a title
+    %% bar [n, n, n] — one bar series; several bar [...] lines — several series
+    %% bar "Series name" [n, n, n] — the name is shown in the legend
+    %% line [n, n, n] — a line on the same axes
+    %% line "Series name" [n, n, n]
+    %% line [n "Point label", n] — a label on a line point; bar accepts the syntax and ignores the label
+    %% accTitle: short title for screen readers
+    %% accDescr: description for screen readers
+    %% Series colors: init directive, themeVariables.xyChart.plotColorPalette = "#color1, #color2"
+    %% xyChart theme keys: backgroundColor, titleColor, dataLabelColor, legendTextColor, plotColorPalette
+    %% xAxisLabelColor, xAxisTitleColor, xAxisTickColor, xAxisLineColor
+    %% yAxisLabelColor, yAxisTitleColor, yAxisTickColor, yAxisLineColor
+    %% config.xyChart keys: width, height, titlePadding, titleFontSize, showTitle, showLegend
+    %% legendFontSize, legendPadding, chartOrientation, plotReservedSpacePercent
+    %% showDataLabel, showDataLabelOutsideBar
+    %% xAxis and yAxis keys: showLabel, labelFontSize, labelPadding, showTitle, titleFontSize, titlePadding
+    %% showTick, tickLength, tickWidth, showAxisLine, axisLineWidth, labelRotation`,
   block: `block-beta
     columns 3
     web["Web"]:2

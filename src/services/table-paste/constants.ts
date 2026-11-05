@@ -10,8 +10,7 @@ export const SANKEY_EXPECTED_COLUMNS = 3;
 export const EV_EXPECTED_COLUMNS = 4;
 export const BUBBLE_MIN_COLUMNS = 4;
 export const BUBBLE_MAX_COLUMNS = 5;
-export const XYCHART_MIN_COLUMNS = 2;
-export const XYCHART_MAX_COLUMNS = 3;
+export const XYCHART_MIN_COLUMNS = 1;
 export const ORGCHART_MIN_COLUMNS = 2;
 export const ORGCHART_MAX_COLUMNS = 3;
 export const GANTT_MIN_COLUMNS = 2;
@@ -99,9 +98,9 @@ const EXPECTED_SPECS_BY_TYPE: Record<
     rulesKey: "tablePaste.expected.xychart.rules",
     sampleHeadersKey: "tablePaste.expected.xychart.headers",
     sampleRows: [
-      ["Янв", "20", "18"],
-      ["Фев", "35", "30"],
-      ["Мар", "40", "42"],
+      ["Янв", "20", "18", "16"],
+      ["Фев", "35", "30", "28"],
+      ["Мар", "40", "42", "39"],
     ],
   },
   quadrant: {
