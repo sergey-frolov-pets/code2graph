@@ -69,7 +69,12 @@ export const plantUmlFormatHandler: FormatHandler = {
     const lines = splitSourceLines(prepared);
     return renderPlantUmlToSvg(
       lines,
-      { dark: context.diagramDarkMode },
+      {
+        dark: context.diagramDarkMode,
+        fontFamily: context.diagramFontFamily,
+        fontWeight: context.diagramFontWeight,
+        fontStyle: context.diagramFontStyle,
+      },
       context.renderMode,
     );
   },
