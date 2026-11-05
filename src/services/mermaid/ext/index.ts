@@ -11,7 +11,7 @@ import { boxplotEngine } from "./engines/boxplot";
 import { treemapEngine } from "./engines/treemap";
 import { radarEngine } from "./engines/radar";
 import { voronoiEngine } from "./engines/voronoi";
-import { clusteredEngine } from "./engines/clustered";
+import { seriesEngine } from "./engines/clustered";
 
 /**
  * Точка входа расширения.
@@ -80,8 +80,8 @@ function loadEngineSync(type: ExtDiagramType) {
       return radarEngine;
     case "voronoi":
       return voronoiEngine;
-    case "clustered":
-      return clusteredEngine;
+    case "series":
+      return seriesEngine;
   }
 }
 
@@ -105,8 +105,8 @@ async function loadEngine(type: ExtDiagramType) {
       return (await import("./engines/radar")).radarEngine;
     case "voronoi":
       return (await import("./engines/voronoi")).voronoiEngine;
-    case "clustered":
-      return (await import("./engines/clustered")).clusteredEngine;
+    case "series":
+      return (await import("./engines/clustered")).seriesEngine;
   }
 }
 

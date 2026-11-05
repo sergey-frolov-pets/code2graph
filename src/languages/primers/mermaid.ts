@@ -701,17 +701,21 @@ export const MERMAID_PRIMER: LanguagePrimer = {
       syntaxKey: "site.ext.mermaid.syntax.clustered",
       example: both(
         lines(
-          "clustered",
+          "series",
           "rotate 90",
           "categories Q1, Q2, Q3",
           "series Онлайн : 120, 145, 165 color=#0969da",
+          "cagr prefix=\"+\"",
+          "line План : 100, -, 160 style=dash",
           "series Розница : 85, 95, 110 color=#8250df",
         ),
         lines(
-          "clustered",
+          "series",
           "rotate 90",
           "categories Q1, Q2, Q3",
           "series Online : 120, 145, 165 color=#0969da",
+          "cagr prefix=\"+\"",
+          "line Plan : 100, -, 160 style=dash",
           "series Retail : 85, 95, 110 color=#8250df",
         ),
       ),

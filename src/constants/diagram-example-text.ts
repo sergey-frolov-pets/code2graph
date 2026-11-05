@@ -76,7 +76,7 @@ const EXTRA_DIAGRAM_LABELS: Partial<Record<DiagramTypeTag, LocaleKey>> = {
   treemap: "llm.wizard.gallery.tag.diagramType.treemap",
   radar: "llm.wizard.gallery.tag.diagramType.radar",
   voronoi: "llm.wizard.gallery.tag.diagramType.voronoi",
-  clustered: "llm.wizard.gallery.tag.diagramType.clustered",
+  series: "llm.wizard.gallery.tag.diagramType.clustered",
   decision: "llm.wizard.gallery.tag.diagramType.decision",
 };
 
@@ -89,7 +89,7 @@ const EXTRA_DIAGRAM_DESCRIPTIONS: Partial<Record<DiagramTypeTag, LocaleKey>> = {
   treemap: "llm.wizard.gallery.desc.treemap",
   radar: "llm.wizard.gallery.desc.radar",
   voronoi: "llm.wizard.gallery.desc.voronoi",
-  clustered: "llm.wizard.gallery.desc.clustered",
+  series: "llm.wizard.gallery.desc.clustered",
   decision: "llm.wizard.gallery.desc.decision",
 };
 

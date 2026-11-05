@@ -69,7 +69,7 @@ export const EXTRA_DIAGRAM_TYPE_IDS = [
   "treemap",
   "radar",
   "voronoi",
-  "clustered",
+  "series",
   "decision",
 ] as const;
 
@@ -171,7 +171,7 @@ const CHART_FAMILY_BY_DIAGRAM_TYPE: Record<DiagramTypeTag, ChartFamily> = {
   treemap: "chart",
   radar: "chart",
   voronoi: "chart",
-  clustered: "chart",
+  series: "chart",
   decision: "behavior",
 };
 
@@ -214,11 +214,11 @@ const DIAGRAM_TYPE_OVERRIDE: Record<string, DiagramTypeTag> = {
   "mermaid:treemap": "treemap",
   "mermaid:radar": "radar",
   "mermaid:voronoi": "voronoi",
-  "mermaid:clustered": "clustered",
-  "mermaid:clusteredRotated": "clustered",
-  "mermaid:clusteredStacked": "clustered",
-  "mermaid:clusteredMono": "clustered",
-  "mermaid:clusteredMonoInvert": "clustered",
+  "mermaid:clustered": "series",
+  "mermaid:clusteredRotated": "series",
+  "mermaid:clusteredStacked": "series",
+  "mermaid:clusteredMono": "series",
+  "mermaid:clusteredMonoInvert": "series",
   "graphml:flow": "flowchart",
   "graphml:decision": "decision",
   "graphml:architecture": "architecture",

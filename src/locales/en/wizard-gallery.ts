@@ -55,7 +55,7 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.tag.diagramType.treemap": "Tree map",
   "llm.wizard.gallery.tag.diagramType.radar": "Radar chart",
   "llm.wizard.gallery.tag.diagramType.voronoi": "Voronoi diagram",
-  "llm.wizard.gallery.tag.diagramType.clustered": "Clustered bar chart",
+  "llm.wizard.gallery.tag.diagramType.clustered": "Series chart",
   "llm.wizard.gallery.tag.diagramType.decision": "Decision",
   "llm.wizard.gallery.desc.bubble": "Points sized by a third value on two axes.",
   "llm.wizard.gallery.desc.heatmap": "A matrix colored by value.",
@@ -88,20 +88,20 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.waterfallThresholds.title": "Waterfall with thresholds",
   "llm.wizard.gallery.example.mermaid.waterfallThresholds.description":
     "Threshold lines drawn across the waterfall.",
-  "llm.wizard.gallery.example.mermaid.clustered.title": "Clustered bar chart",
+  "llm.wizard.gallery.example.mermaid.clustered.title": "Series chart",
   "llm.wizard.gallery.example.mermaid.clustered.description":
     "Vertical grouped bars comparing several series across categories.",
   "llm.wizard.gallery.example.mermaid.clusteredRotated.title":
-    "Clustered bar chart (rotated 90°)",
+    "Series chart (rotated 90°)",
   "llm.wizard.gallery.example.mermaid.clusteredRotated.description":
     "Horizontal grouped bars rotated by 90 degrees (rotate 90).",
   "llm.wizard.gallery.example.mermaid.clusteredStacked.title": "Stacked bar chart",
   "llm.wizard.gallery.example.mermaid.clusteredStacked.description":
     "Series piled into one column: positives grow up from zero, negatives grow down.",
-  "llm.wizard.gallery.example.mermaid.clusteredMono.title": "Monochrome clustered bars",
+  "llm.wizard.gallery.example.mermaid.clusteredMono.title": "Monochrome series bars",
   "llm.wizard.gallery.example.mermaid.clusteredMono.description":
     "The same bars in shades of grey for print and colourless documents.",
-  "llm.wizard.gallery.example.mermaid.clusteredMonoInvert.title": "Inverted mono clustered bars",
+  "llm.wizard.gallery.example.mermaid.clusteredMonoInvert.title": "Inverted mono series bars",
   "llm.wizard.gallery.example.mermaid.clusteredMonoInvert.description":
     "Light grey bars on a dark canvas for dark themes.",
   "llm.wizard.gallery.example.wiremark.login.title": "Login screen",

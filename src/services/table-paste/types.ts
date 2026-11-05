@@ -11,7 +11,7 @@ export const TABLE_PASTE_DIAGRAM_TYPES = [
   "treemap",
   "radar",
   "voronoi",
-  "clustered",
+  "series",
   "xychart",
   "quadrant",
   "sankey",

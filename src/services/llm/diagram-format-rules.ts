@@ -552,12 +552,15 @@ function detectMermaidExtPromptRules(promptText: string): string[] | null {
       "Each site row is `<Label> : x=<num>, y=<num> [, group=<name>] [, color=#hex]`.",
     ];
   }
-  if (/\b(?:clustered|кластеризованн\w+\s+диаграмм)\b/i.test(promptText)) {
+  if (/\b(?:clustered|series\s+chart|кластеризованн\w+\s+диаграмм|серийн\w+\s+диаграмм)\b/i.test(promptText)) {
     const rotate = /90|поворот|rotat|horizontal/i.test(promptText);
     return [
-      "Format: Mermaid Ext clustered bar chart.",
-      `Start with keyword \`clustered\`,${rotate ? " include `rotate 90` for 90-degree horizontal orientation," : ""} \`categories <C1>, <C2>, ...\`, optional \`y "label" min --> max\`, \`grid\`, and \`colors s1=#hex s2=#hex ...\`.`,
-      "Each series row is `series <Name> : <v1>, <v2>, ... [color=#hex]` matching the number of categories.",
+      "Format: Mermaid Ext series chart (grouped bars).",
+      "The opening keyword is `series` only. Do not emit `clustered`.",
+      `Start with keyword \`series\`,${rotate ? " include `rotate 90` for 90-degree horizontal orientation," : ""} \`categories <C1>, <C2>, ...\`, optional \`y "label" min --> max\`, \`grid\`, and \`colors s1=#hex s2=#hex ...\`.`,
+      "Each bar series is `series <Name> : <v1>, <v2>, ... [color=#hex]` matching the number of categories. An empty slot, `-`, or `null` skips that category.",
+      "A line is `line <Label> : <v1>, <v2>, ... [color=#hex] [style=solid|dash|dot|dashdot] [width=N]`. The label is drawn to the right of the plot. Skipped slots break the line.",
+      "CAGR arrows: `cagr` (first to last bar of the preceding series, or the first series if it comes first), `cagr <bar1>, <bar2>`, optional `format=\"0.0%\"`, `prefix=\"CAGR: \"` (prepended to the percent) or `label=\"...\"` (oval text as-is). Consecutive `cagr` lines apply to the same series.",
     ];
   }
   return null;

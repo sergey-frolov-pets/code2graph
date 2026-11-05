@@ -1,5 +1,6 @@
 import {
   extractTrailingColorAttr,
+  isValidExtColor,
   parseExtColorsDirective,
   parseExtNumber,
   chartIsDark,
@@ -9,9 +10,11 @@ import {
   unquoteExtText,
 } from "../color-utils";
 import {
+  arrowMarker,
   clamp,
   createSvg,
   drawLabelLines,
+  esc,
   fixedTicks,
   fmt,
   labelBlockExtra,
@@ -21,15 +24,44 @@ import {
   niceTicks,
   resolvePalette,
   truncateLabel,
+  type Palette,
 } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
 export type ClusteredLabelsMode = "above" | "inside" | "none";
 
+/** Пропуск на горизонтальной шкале: бара или точки линии в этой категории нет. */
+export type SeriesSlot = number | null;
+
+export type SeriesLineStyle = "solid" | "dash" | "dot" | "dashdot";
+
 export interface ClusteredSeries {
   name: string;
-  values: number[];
+  values: SeriesSlot[];
   color?: string;
+}
+
+/** Ломаная поверх столбцов. Подпись рисуется справа от края зоны графика. */
+export interface SeriesLine {
+  label?: string;
+  values: SeriesSlot[];
+  color?: string;
+  width?: number;
+  style?: SeriesLineStyle;
+}
+
+/**
+ * CAGR между двумя барами одной серии.
+ * `from` / `to` — индексы категорий с нуля. Стрелка идёт от `from` к `to`.
+ * `label` заменяет текст овала целиком; иначе овал — `prefix` + отформатированный процент.
+ */
+export interface SeriesCagr {
+  seriesIndex: number;
+  from: number;
+  to: number;
+  format?: string;
+  prefix?: string;
+  label?: string;
 }
 
 export interface ClusteredModel {
@@ -50,6 +82,8 @@ export interface ClusteredModel {
   monoInvert: boolean;
   seriesColors: Record<string, string>;
   series: ClusteredSeries[];
+  lines: SeriesLine[];
+  cagrs: SeriesCagr[];
 }
 
 const FONT_BASE = 11;
@@ -135,6 +169,287 @@ function parseRotateDirective(
   return {};
 }
 
+const SKIP_SLOT_RE = /^(?:null|nil|na|n\/a|none|~|\*|—|–|-)?$/i;
+
+/** Пусто, `-`, `null`, `~`, `*` — пропуск категории. Иначе число или ошибка. */
+function parseSeriesSlot(part: string): SeriesSlot | undefined {
+  const token = part.trim();
+  if (SKIP_SLOT_RE.test(token)) return null;
+  const n = parseExtNumber(token);
+  return n === null ? undefined : n;
+}
+
+function splitValueParts(raw: string): string[] {
+  const parts = raw.split(",").map((s) => s.trim());
+  if (parts.length > 1 && parts[parts.length - 1] === "" && /,\s*$/.test(raw)) {
+    parts.pop();
+  }
+  return parts;
+}
+
+function parseSlotList(
+  raw: string,
+  lineNo: number,
+  owner: string,
+  expectedCount: number | null,
+): { values?: SeriesSlot[]; error?: ExtParseError } {
+  const parts = splitValueParts(raw);
+  if (parts.length === 0 || parts.every((part) => part.length === 0)) {
+    return {
+      error: { message: `${owner}: пустой список значений`, line: lineNo, col: 0 },
+    };
+  }
+  if (expectedCount !== null && parts.length !== expectedCount) {
+    return {
+      error: {
+        message: `${owner}: ожидается ${expectedCount} значений (по числу категорий), получено ${parts.length}`,
+        line: lineNo,
+        col: 0,
+      },
+    };
+  }
+
+  const values: SeriesSlot[] = [];
+  for (const part of parts) {
+    const slot = parseSeriesSlot(part);
+    if (slot === undefined) {
+      return {
+        error: {
+          message: `${owner}: не удалось разобрать число «${part}» (пропуск — пусто, «-» или null)`,
+          line: lineNo,
+          col: 0,
+        },
+      };
+    }
+    values.push(slot);
+  }
+
+  if (values.every((value) => value === null)) {
+    return {
+      error: { message: `${owner}: нет ни одного числа`, line: lineNo, col: 0 },
+    };
+  }
+
+  return { values };
+}
+
+export function normalizeSeriesLineStyle(raw: string): SeriesLineStyle | null {
+  const token = raw.trim().toLowerCase().replace(/^["']|["']$/g, "");
+  switch (token) {
+    case "solid":
+    case "none":
+    case "-":
+    case "—":
+      return "solid";
+    case "dash":
+    case "dashed":
+    case "dashes":
+    case "--":
+      return "dash";
+    case "dot":
+    case "dotted":
+    case "dots":
+    case ":":
+    case "..":
+      return "dot";
+    case "dashdot":
+    case "dash-dot":
+    case "dashdotdot":
+    case "-.":
+    case "-.-":
+      return "dashdot";
+    default:
+      return null;
+  }
+}
+
+const LINE_ATTR_RE =
+  /\s+(color|colour|fill|stroke|style|dash|width|thickness)\s*=\s*("[^"]*"|'[^']*'|\S+)\s*$/i;
+
+function extractLineAttrs(
+  raw: string,
+  lineNo: number,
+): { rest: string; color?: string; style?: SeriesLineStyle; width?: number; error?: ExtParseError } {
+  let rest = raw.trim();
+  let color: string | undefined;
+  let style: SeriesLineStyle | undefined;
+  let width: number | undefined;
+
+  for (let guard = 0; guard < 8; guard += 1) {
+    const match = LINE_ATTR_RE.exec(rest);
+    if (!match) break;
+    const key = match[1].toLowerCase();
+    const value = unquoteExtText(match[2]);
+    rest = rest.slice(0, match.index).trim().replace(/,\s*$/, "");
+    if (key === "color" || key === "colour" || key === "fill" || key === "stroke") {
+      if (!isValidExtColor(value)) {
+        return {
+          rest,
+          error: {
+            message: `не удалось разобрать цвет линии «${value}» (ожидается #rgb, #rrggbb или имя цвета)`,
+            line: lineNo,
+            col: 0,
+          },
+        };
+      }
+      color = value;
+    } else if (key === "width" || key === "thickness") {
+      const parsed = parseExtNumber(value.replace(/\s*(px|pt)$/i, ""));
+      if (parsed === null || !(parsed > 0)) {
+        return {
+          rest,
+          error: {
+            message: `толщина линии: ожидается положительное число, получено «${value}»`,
+            line: lineNo,
+            col: 0,
+          },
+        };
+      }
+      width = clamp(parsed, 0.5, 12);
+    } else {
+      const parsed = normalizeSeriesLineStyle(value);
+      if (!parsed) {
+        return {
+          rest,
+          error: {
+            message: `стиль линии: ожидается solid|dash|dot|dashdot, получено «${value}»`,
+            line: lineNo,
+            col: 0,
+          },
+        };
+      }
+      style = parsed;
+    }
+  }
+
+  return { rest, color, style, width };
+}
+
+function parseLineRow(
+  rawLine: string,
+  lineNo: number,
+  expectedCount: number | null,
+): { line?: SeriesLine; error?: ExtParseError } {
+  const body = rawLine.replace(/^line\b/i, "").trim().replace(/^[:=]\s*/, "");
+  const colonIdx = body.indexOf(":");
+  if (colonIdx < 0) {
+    return {
+      error: {
+        message: `ожидается «line Подпись : зн1, зн2, … [color=#hex] [style=solid|dash|dot|dashdot] [width=N]», получено «${rawLine}»`,
+        line: lineNo,
+        col: 0,
+      },
+    };
+  }
+
+  const headAttrs = extractLineAttrs(body.slice(0, colonIdx), lineNo);
+  if (headAttrs.error) return { error: headAttrs.error };
+  const tailAttrs = extractLineAttrs(body.slice(colonIdx + 1), lineNo);
+  if (tailAttrs.error) return { error: tailAttrs.error };
+
+  const label = unquoteExtText(headAttrs.rest) || undefined;
+  const slots = parseSlotList(tailAttrs.rest, lineNo, label ? `линия «${label}»` : "линия", expectedCount);
+  if (slots.error || !slots.values) return { error: slots.error };
+
+  return {
+    line: {
+      label,
+      values: slots.values,
+      color: tailAttrs.color ?? headAttrs.color,
+      style: tailAttrs.style ?? headAttrs.style,
+      width: tailAttrs.width ?? headAttrs.width,
+    },
+  };
+}
+
+interface CagrDraft {
+  from?: number;
+  to?: number;
+  format?: string;
+  prefix?: string;
+  label?: string;
+  line: number;
+}
+
+const CAGR_NAMED_RE =
+  /\b(format|prefix|label)\s*=\s*("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[^\s,]+)/gi;
+
+function parseCagrDirective(rawLine: string, lineNo: number): { draft?: CagrDraft; error?: ExtParseError } {
+  CAGR_NAMED_RE.lastIndex = 0;
+  const body = rawLine.replace(/^cagr\b/i, "").trim();
+  let format: string | undefined;
+  let prefix: string | undefined;
+  let label: string | undefined;
+  const unnamed = body
+    .replace(CAGR_NAMED_RE, (_full, key: string, rawValue: string) => {
+      const value = unquoteExtText(rawValue);
+      const normalized = key.toLowerCase();
+      if (normalized === "format") format = value;
+      else if (normalized === "prefix") prefix = value;
+      else label = value;
+      return " ";
+    })
+    .replace(/,/g, " ")
+    .trim();
+
+  const tokens = unnamed.split(/\s+/).filter(Boolean);
+  if (tokens.length !== 0 && tokens.length !== 2) {
+    return {
+      error: {
+        message: `ожидается «cagr», «cagr <бар1>, <бар2>» или параметры format, prefix, label, получено «${rawLine}»`,
+        line: lineNo,
+        col: 0,
+      },
+    };
+  }
+
+  let from: number | undefined;
+  let to: number | undefined;
+  if (tokens.length === 2) {
+    from = Number(tokens[0]);
+    to = Number(tokens[1]);
+    if (!Number.isInteger(from) || !Number.isInteger(to) || from < 1 || to < 1) {
+      return {
+        error: {
+          message: `номера баров в cagr — целые числа от 1, получено «${tokens[0]}, ${tokens[1]}»`,
+          line: lineNo,
+          col: 0,
+        },
+      };
+    }
+  }
+
+  return { draft: { from, to, format, prefix, label, line: lineNo } };
+}
+
+/** CAGR за `periods` шагов. Не считается, если старт или финиш не положительные. */
+export function computeCagrRatio(start: number, end: number, periods: number): number | null {
+  if (!(periods > 0) || !(start > 0) || !(end > 0)) return null;
+  const ratio = (end / start) ** (1 / periods) - 1;
+  return Number.isFinite(ratio) ? ratio : null;
+}
+
+/** `0%` → целое, `0.0%` → один знак. `+` в шаблоне добавляет плюс к положительному числу. */
+export function formatCagrNumber(ratio: number, format?: string): string {
+  const pattern = (format && format.trim()) || "0%";
+  const decimals = /\.([0#]+)/.exec(pattern)?.[1].length ?? 0;
+  const asPercent = pattern.includes("%");
+  const showPlus = pattern.includes("+");
+  const value = asPercent ? ratio * 100 : ratio;
+  const factor = 10 ** decimals;
+  const rounded = Math.round(value * factor) / factor;
+  const abs = Math.abs(rounded).toFixed(decimals);
+  const sign = rounded < 0 ? "-" : showPlus && rounded > 0 ? "+" : "";
+  const body = `${sign}${abs}`;
+  return asPercent ? `${body}%` : body;
+}
+
+export function cagrOvalText(cagr: Pick<SeriesCagr, "format" | "prefix" | "label">, ratio: number | null): string {
+  if (cagr.label !== undefined && cagr.label !== "") return cagr.label;
+  const body = ratio === null ? "н/д" : formatCagrNumber(ratio, cagr.format);
+  return `${cagr.prefix ?? ""}${body}`;
+}
+
 function parseSeriesRow(
   rawLine: string,
   lineNo: number,
@@ -166,43 +481,10 @@ function parseSeriesRow(
   }
 
   const color = tailColor.color ?? headColor.color;
-  const parts = tailColor.rest
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const slots = parseSlotList(tailColor.rest, lineNo, `серия «${name}»`, expectedCount);
+  if (slots.error || !slots.values) return { error: slots.error };
 
-  if (parts.length === 0) {
-    return {
-      error: { message: `серия «${name}»: пустой список значений`, line: lineNo, col: 0 },
-    };
-  }
-
-  if (expectedCount !== null && parts.length !== expectedCount) {
-    return {
-      error: {
-        message: `серия «${name}»: ожидается ${expectedCount} значений (по числу категорий), получено ${parts.length}`,
-        line: lineNo,
-        col: 0,
-      },
-    };
-  }
-
-  const values: number[] = [];
-  for (const part of parts) {
-    const n = parseExtNumber(part);
-    if (n === null) {
-      return {
-        error: {
-          message: `серия «${name}»: не удалось разобрать число «${part}»`,
-          line: lineNo,
-          col: 0,
-        },
-      };
-    }
-    values.push(n);
-  }
-
-  return { series: { name, values, color } };
+  return { series: { name, values: slots.values, color } };
 }
 
 export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
@@ -223,6 +505,10 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
   let monoInvert = false;
   const seriesColors: Record<string, string> = {};
   const series: ClusteredSeries[] = [];
+  const linesOut: SeriesLine[] = [];
+  const cagrDrafts: Array<CagrDraft & { seriesIndex: number }> = [];
+  const leadingCagrs: CagrDraft[] = [];
+  let lastSeriesIndex = -1;
 
   let seenType = false;
   let inData = false;
@@ -339,17 +625,11 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
         const token = raw.replace(/^(?:stacked|bars|layout)\s*/i, "").trim().toLowerCase();
         if (raw.toLowerCase() === "stacked" || token === "stacked" || token === "stack" || token === "on") {
           stack = true;
-        } else if (
-          raw.toLowerCase() === "clustered" ||
-          token === "clustered" ||
-          token === "grouped" ||
-          token === "off" ||
-          token === ""
-        ) {
+        } else if (token === "grouped" || token === "off" || token === "") {
           stack = false;
         } else {
           errors.push({
-            message: `ожидается «stacked» или «bars clustered», получено «${raw}»`,
+            message: `ожидается «stacked» или «stacked off», получено «${raw}»`,
             line: lineNo,
             col: 0,
           });
@@ -380,18 +660,49 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
       }
     }
 
+    if (/^line\b/i.test(raw)) {
+      const parsed = parseLineRow(raw, lineNo, categories ? categories.length : null);
+      if (parsed.error) errors.push(parsed.error);
+      else if (parsed.line) linesOut.push(parsed.line);
+      continue;
+    }
+
+    if (/^cagr\b/i.test(raw)) {
+      const parsed = parseCagrDirective(raw, lineNo);
+      if (parsed.error || !parsed.draft) {
+        errors.push(parsed.error ?? { message: `неверная директива «cagr»`, line: lineNo, col: 0 });
+      } else if (lastSeriesIndex < 0) {
+        leadingCagrs.push(parsed.draft);
+      } else {
+        cagrDrafts.push({ ...parsed.draft, seriesIndex: lastSeriesIndex });
+      }
+      continue;
+    }
+
     if (raw.includes(":")) {
       const parsed = parseSeriesRow(raw, lineNo, categories ? categories.length : null);
       if (parsed.error) errors.push(parsed.error);
-      else if (parsed.series) series.push(parsed.series);
+      else if (parsed.series) {
+        series.push(parsed.series);
+        lastSeriesIndex = series.length - 1;
+        if (lastSeriesIndex === 0 && leadingCagrs.length > 0) {
+          for (const draft of leadingCagrs) cagrDrafts.push({ ...draft, seriesIndex: 0 });
+          leadingCagrs.length = 0;
+        }
+      }
       continue;
     }
 
     errors.push({
-      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, rotate 90, categories, y, grid, axis, labels, fontsize, mono, stacked, colors, series)`,
+      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, rotate 90, categories, y, grid, axis, labels, fontsize, mono, stacked, colors, series, line, cagr)`,
       line: lineNo,
       col: 0,
     });
+  }
+
+  if (leadingCagrs.length > 0 && series.length > 0) {
+    for (const draft of leadingCagrs) cagrDrafts.push({ ...draft, seriesIndex: 0 });
+    leadingCagrs.length = 0;
   }
 
   if (!categories) {
@@ -410,6 +721,7 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
     });
   }
 
+  const cagrs: SeriesCagr[] = [];
   if (categories) {
     for (const s of series) {
       if (s.values.length !== categories.length) {
@@ -419,6 +731,83 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
           col: 0,
         });
       }
+    }
+    for (const line of linesOut) {
+      if (line.values.length !== categories.length) {
+        const who = line.label ? `линия «${line.label}»` : "линия";
+        errors.push({
+          message: `${who}: ожидается ${categories.length} значений (по числу категорий), получено ${line.values.length}`,
+          line: 1,
+          col: 0,
+        });
+      }
+    }
+    for (const draft of cagrDrafts) {
+      const count = categories.length;
+      const fromBar = draft.from ?? 1;
+      const toBar = draft.to ?? count;
+      const owner = series[draft.seriesIndex];
+      if (!owner) {
+        errors.push({
+          message: `cagr: нет серии, к которой его можно применить`,
+          line: draft.line,
+          col: 0,
+        });
+        continue;
+      }
+      if (count < 2) {
+        errors.push({
+          message: `cagr: нужны хотя бы две категории`,
+          line: draft.line,
+          col: 0,
+        });
+        continue;
+      }
+      if (fromBar < 1 || toBar < 1 || fromBar > count || toBar > count) {
+        errors.push({
+          message: `cagr: номера баров должны быть от 1 до ${count}, получено ${fromBar}, ${toBar}`,
+          line: draft.line,
+          col: 0,
+        });
+        continue;
+      }
+      if (fromBar === toBar) {
+        errors.push({
+          message: `cagr: нужны два разных бара, получено ${fromBar}, ${toBar}`,
+          line: draft.line,
+          col: 0,
+        });
+        continue;
+      }
+      const from = fromBar - 1;
+      const to = toBar - 1;
+      if (owner.values[from] === null || owner.values[to] === null) {
+        const missing = owner.values[from] === null ? fromBar : toBar;
+        errors.push({
+          message: `cagr: у серии «${owner.name}» нет значения в баре ${missing}`,
+          line: draft.line,
+          col: 0,
+        });
+        continue;
+      }
+      cagrs.push({
+        seriesIndex: draft.seriesIndex,
+        from,
+        to,
+        format: draft.format,
+        prefix: draft.prefix,
+        label: draft.label,
+      });
+    }
+  }
+
+  if (leadingCagrs.length > 0) {
+    for (const draft of leadingCagrs) {
+      errors.push({
+        message: `cagr задан, но нет ни одной серии`,
+        line: draft.line,
+        col: 0,
+      });
     }
   }
 
@@ -442,6 +831,8 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
       monoInvert,
       seriesColors,
       series,
+      lines: linesOut,
+      cagrs,
     },
   };
 }
@@ -454,13 +845,18 @@ export function stackedSpans(
   let positive = 0;
   let negative = 0;
   return model.series.map((series) => {
-    const value = series.values[category] ?? 0;
+    const value = series.values[category];
+    if (value === null || value === undefined) return { start: positive, end: positive };
     const start = value >= 0 ? positive : negative;
     const end = start + value;
     if (value >= 0) positive = end;
     else negative = end;
     return { start, end };
   });
+}
+
+function finiteSlots(values: readonly SeriesSlot[]): number[] {
+  return values.filter((value): value is number => value !== null);
 }
 
 function computeValueScale(model: ClusteredModel): {
@@ -480,9 +876,17 @@ function computeValueScale(model: ClusteredModel): {
       }
     }
   } else {
-    const allVals = model.series.flatMap((s) => s.values);
-    rawMin = Math.min(0, ...allVals);
-    rawMax = Math.max(0, ...allVals);
+    const allVals = model.series.flatMap((s) => finiteSlots(s.values));
+    if (allVals.length > 0) {
+      rawMin = Math.min(0, ...allVals);
+      rawMax = Math.max(0, ...allVals);
+    }
+  }
+  for (const line of model.lines) {
+    for (const value of finiteSlots(line.values)) {
+      rawMin = Math.min(rawMin, value);
+      rawMax = Math.max(rawMax, value);
+    }
   }
   const auto = niceRange(rawMin, rawMax, 5);
   const min = model.y?.min ?? Math.min(0, auto.min);
@@ -517,6 +921,218 @@ function renderLegend(
       fill: fgDim,
     });
     lx += swatch + 6 + measureLabelWidth(s.name, fontSize) + 18;
+  });
+}
+
+const LINE_DASH: Record<SeriesLineStyle, string | undefined> = {
+  solid: undefined,
+  dash: "7 4",
+  dot: "1.5 3.5",
+  dashdot: "8 3 1.5 3",
+};
+
+interface PlotPoint {
+  x: number;
+  y: number;
+}
+
+function lineLabelGutter(model: ClusteredModel, fontSize: number): number {
+  let gutter = 0;
+  for (const line of model.lines) {
+    if (!line.label) continue;
+    gutter = Math.max(gutter, measureLabelWidth(line.label, fontSize) + 16);
+  }
+  return gutter;
+}
+
+function cagrHeadroom(model: ClusteredModel, fontSize: number): number {
+  if (model.cagrs.length === 0) return 0;
+  return Math.round(48 + fontSize * 2.2);
+}
+
+function drawSeriesLines(
+  svg: ReturnType<typeof createSvg>,
+  model: ClusteredModel,
+  palette: Palette,
+  fontSize: number,
+  plotRight: number,
+  pointAt: (index: number, value: number) => PlotPoint,
+): void {
+  const labels: Array<{ y: number; text: string; color: string }> = [];
+
+  model.lines.forEach((line, lineIdx) => {
+    const color = line.color ?? palette.fg;
+    const width = line.width ?? 1.75;
+    const dash = LINE_DASH[line.style ?? "solid"];
+    let run: PlotPoint[] = [];
+    const drawnPoints: PlotPoint[] = [];
+
+    const flush = (): void => {
+      if (run.length >= 2) {
+        svg.polyline(
+          run.map((point) => `${fmt(point.x)},${fmt(point.y)}`).join(" "),
+          {
+            stroke: color,
+            "stroke-width": width,
+            "stroke-linejoin": "round",
+            "stroke-linecap": "round",
+            ...(dash ? { "stroke-dasharray": dash } : {}),
+            "data-line": lineIdx,
+          },
+        );
+      } else if (run.length === 1) {
+        svg.circle(run[0].x, run[0].y, Math.max(2.5, width), { fill: color, "data-line": lineIdx });
+      }
+      run = [];
+    };
+
+    line.values.forEach((value, index) => {
+      if (value === null) {
+        flush();
+        return;
+      }
+      const point = pointAt(index, value);
+      drawnPoints.push(point);
+      run.push(point);
+    });
+    flush();
+
+    const labelAnchor = drawnPoints[drawnPoints.length - 1];
+    if (line.label && labelAnchor) {
+      labels.push({ y: labelAnchor.y, text: line.label, color });
+    }
+  });
+
+  const minGap = fontSize + 3;
+  let prevY = Number.NEGATIVE_INFINITY;
+  for (const item of [...labels].sort((a, b) => a.y - b.y)) {
+    const y = item.y < prevY + minGap ? prevY + minGap : item.y;
+    prevY = y;
+    svg.text(plotRight + 8, y + fontSize * 0.35, item.text, {
+      "text-anchor": "start",
+      "font-size": fontSize,
+      fill: item.color,
+      "data-line-label": item.text,
+    });
+  }
+}
+
+function cagrRatio(model: ClusteredModel, cagr: SeriesCagr): number | null {
+  const series = model.series[cagr.seriesIndex];
+  if (!series) return null;
+  const start = series.values[cagr.from];
+  const end = series.values[cagr.to];
+  if (start === null || end === null || start === undefined || end === undefined) return null;
+  return computeCagrRatio(start, end, Math.abs(cagr.to - cagr.from));
+}
+
+function drawCagrAnnotations(
+  svg: ReturnType<typeof createSvg>,
+  model: ClusteredModel,
+  palette: Palette,
+  fontSize: number,
+  anchors: Array<Array<PlotPoint | null>>,
+  obstacles: number[],
+  vertical: boolean,
+  bounds: { minX: number; minY: number; maxX: number; maxY: number },
+): void {
+  if (model.cagrs.length === 0) return;
+  const marker = arrowMarker(palette, "ext-series-cagr-arrow", palette.fg);
+  svg.raw(marker.markup);
+
+  model.cagrs.forEach((cagr, index) => {
+    const start = anchors[cagr.seriesIndex]?.[cagr.from];
+    const end = anchors[cagr.seriesIndex]?.[cagr.to];
+    if (!start || !end) return;
+
+    const text = cagrOvalText(cagr, cagrRatio(model, cagr));
+    const textWidth = measureText(text, fontSize);
+    const rx = textWidth / 2 + 12;
+    const ry = fontSize * 0.62 + 7;
+    const i0 = Math.min(cagr.from, cagr.to);
+    const i1 = Math.max(cagr.from, cagr.to);
+    const spanIndex = cagr.to - cagr.from || 1;
+    let shift = 18 + index * 16;
+
+    if (vertical) {
+      for (let category = i0; category <= i1; category += 1) {
+        const t = (category - cagr.from) / spanIndex;
+        const lineY = start.y + (end.y - start.y) * t;
+        const obstacle = obstacles[category];
+        if (Number.isFinite(obstacle)) shift = Math.max(shift, lineY - obstacle + 12);
+      }
+      let y1 = start.y - shift;
+      let y2 = end.y - shift;
+      const top = bounds.minY + ry + 4;
+      const minY = Math.min(y1, y2);
+      if (minY < top) {
+        y1 += top - minY;
+        y2 += top - minY;
+      }
+      paintCagrArrow(svg, palette, fontSize, cagr, index, start.x, y1, end.x, y2, text, rx, ry, marker.ref, bounds);
+      return;
+    }
+
+    for (let category = i0; category <= i1; category += 1) {
+      const t = (category - cagr.from) / spanIndex;
+      const lineX = start.x + (end.x - start.x) * t;
+      const obstacle = obstacles[category];
+      if (Number.isFinite(obstacle)) shift = Math.max(shift, obstacle - lineX + 12);
+    }
+    let x1 = start.x + shift;
+    let x2 = end.x + shift;
+    const right = bounds.maxX - rx - 4;
+    const maxX = Math.max(x1, x2);
+    if (maxX > right) {
+      x1 -= maxX - right;
+      x2 -= maxX - right;
+    }
+    paintCagrArrow(svg, palette, fontSize, cagr, index, x1, start.y, x2, end.y, text, rx, ry, marker.ref, bounds);
+  });
+}
+
+function paintCagrArrow(
+  svg: ReturnType<typeof createSvg>,
+  palette: Palette,
+  fontSize: number,
+  cagr: SeriesCagr,
+  index: number,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  text: string,
+  rx: number,
+  ry: number,
+  markerRef: string,
+  bounds: { minX: number; minY: number; maxX: number; maxY: number },
+): void {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len;
+  const uy = dy / len;
+  const tip = 12;
+  svg.line(x1 - ux * 6, y1 - uy * 6, x2 + ux * tip, y2 + uy * tip, {
+    stroke: palette.fg,
+    "stroke-width": 1.8,
+    "stroke-linecap": "round",
+    "marker-end": markerRef,
+    "data-cagr": `${cagr.seriesIndex}:${cagr.from + 1}-${cagr.to + 1}`,
+  });
+
+  let cx = (x1 + x2) / 2;
+  let cy = (y1 + y2) / 2;
+  cx = clamp(cx, bounds.minX + rx + 2, bounds.maxX - rx - 2);
+  cy = clamp(cy, bounds.minY + ry + 2, bounds.maxY - ry - 2);
+  svg.raw(
+    `<ellipse data-cagr-oval="${index}" cx="${fmt(cx)}" cy="${fmt(cy)}" rx="${fmt(rx)}" ry="${fmt(ry)}" fill="${esc(palette.bg)}" stroke="${esc(palette.fg)}" stroke-width="1.3"/>`,
+  );
+  svg.text(cx, cy + fontSize * 0.35, text, {
+    "font-size": fontSize,
+    "font-weight": 600,
+    fill: palette.fg,
+    "data-cagr-label": text,
   });
 }
 
@@ -558,8 +1174,12 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
   const plotHeight = Math.round(PLOT_HEIGHT_VERTICAL * Math.max(1, (scaleFactor - 1) * 0.4 + 1));
 
   const padLeft = (model.axis ? 68 : 28) + yExtra;
-  const padRight = model.stack && model.labels !== "none" ? 72 : 28;
-  const padTop = (model.title ? 52 : 28) + (model.labels === "above" ? fontSize + 6 : 0) + titleExtra;
+  const padRight = (model.stack && model.labels !== "none" ? 72 : 28) + lineLabelGutter(model, fontSize);
+  const padTop =
+    (model.title ? 52 : 28) +
+    (model.labels === "above" ? fontSize + 6 : 0) +
+    titleExtra +
+    cagrHeadroom(model, fontSize);
   const padBottom = 68 + catExtra + seriesExtra;
 
   const width = padLeft + plotWidth + padRight;
@@ -620,13 +1240,23 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     }, "up");
   }
 
+  const anchors: Array<Array<PlotPoint | null>> = model.series.map(() =>
+    Array.from({ length: catCount }, () => null),
+  );
+  const obstacles = Array.from({ length: catCount }, () => Number.POSITIVE_INFINITY);
+
   for (let c = 0; c < catCount; c += 1) {
     const clusterCenter = plotLeft + (c + 0.5) * colWidth;
     const clusterLeft = clusterCenter - barsGroupWidth / 2;
 
     const spans = model.stack ? stackedSpans(model, c) : null;
     model.series.forEach((s, sIdx) => {
-      const val = s.values[c] ?? 0;
+      const rawVal = s.values[c];
+      if (rawVal === null || rawVal === undefined) {
+        anchors[sIdx][c] = null;
+        return;
+      }
+      const val = rawVal;
       const span = spans?.[sIdx];
       const color = resolveSeriesColor(sIdx, {
         explicitColor: s.color,
@@ -645,6 +1275,10 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
         rx: 2,
         "data-bar": `${c}-${sIdx}`,
       });
+      const valueY = span ? yOf(span.end) : yOf(val);
+      anchors[sIdx][c] = { x: bx + barWidth / 2, y: valueY };
+      const labelClear = model.labels === "above" && !span && val >= 0 ? fontSize + 8 : 2;
+      obstacles[c] = Math.min(obstacles[c], barTop - labelClear);
 
       if (model.labels !== "none") {
         const valText = fmt(val);
@@ -698,6 +1332,17 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     });
   }
 
+  drawSeriesLines(svg, model, palette, fontSize, plotRight, (index, value) => ({
+    x: plotLeft + (index + 0.5) * colWidth,
+    y: yOf(value),
+  }));
+  drawCagrAnnotations(svg, model, palette, fontSize, anchors, obstacles, true, {
+    minX: 4,
+    minY: model.title ? 28 + titleSize * 0.4 + titleExtra : 8,
+    maxX: width - 4,
+    maxY: plotBottom,
+  });
+
   renderLegend(svg, model, options, plotLeft, height - 16 - seriesExtra, fontSize, palette.fgDim);
   return svg.toString();
 }
@@ -733,7 +1378,8 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
   const seriesExtra = Math.max(0, ...model.series.map((series) => labelBlockExtra(series.name, fontSize)));
   const yExtra = labelBlockExtra(model.y?.label, fontSize);
   const padLeft = clamp(Math.ceil(longestCat) + 28, 76, 180);
-  const padRight = model.labels === "above" ? 56 : 28;
+  const padRight =
+    (model.labels === "above" ? 56 : 28) + lineLabelGutter(model, fontSize) + cagrHeadroom(model, fontSize);
   const padTop = (model.title ? 48 : 24) + titleExtra;
   const padBottom = (model.y?.label ? 80 : 62) + yExtra + seriesExtra;
 
@@ -795,6 +1441,11 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
     });
   }
 
+  const anchors: Array<Array<PlotPoint | null>> = model.series.map(() =>
+    Array.from({ length: catCount }, () => null),
+  );
+  const obstacles = Array.from({ length: catCount }, () => Number.NEGATIVE_INFINITY);
+
   for (let c = 0; c < catCount; c += 1) {
     const rowCenter = plotTop + (c + 0.5) * rowHeight;
     const clusterTop = rowCenter - barsGroupHeight / 2;
@@ -815,7 +1466,12 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
 
     const spans = model.stack ? stackedSpans(model, c) : null;
     model.series.forEach((s, sIdx) => {
-      const val = s.values[c] ?? 0;
+      const rawVal = s.values[c];
+      if (rawVal === null || rawVal === undefined) {
+        anchors[sIdx][c] = null;
+        return;
+      }
+      const val = rawVal;
       const span = spans?.[sIdx];
       const color = resolveSeriesColor(sIdx, {
         explicitColor: s.color,
@@ -834,6 +1490,10 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
         rx: 2,
         "data-bar": `${c}-${sIdx}`,
       });
+      anchors[sIdx][c] = { x: span ? xOf(span.end) : xOf(val), y: by + barHeight / 2 };
+      const labelClear =
+        model.labels === "above" && !span && val >= 0 ? measureText(fmt(val), fontSize - 1) + 10 : 4;
+      obstacles[c] = Math.max(obstacles[c], barLeft + barW + labelClear);
 
       if (model.labels !== "none") {
         const valText = fmt(val);
@@ -878,6 +1538,17 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
     });
   }
 
+  drawSeriesLines(svg, model, palette, fontSize, plotRight, (index, value) => ({
+    x: xOf(value),
+    y: plotTop + (index + 0.5) * rowHeight,
+  }));
+  drawCagrAnnotations(svg, model, palette, fontSize, anchors, obstacles, false, {
+    minX: plotLeft,
+    minY: plotTop,
+    maxX: width - 4,
+    maxY: height - 4,
+  });
+
   renderLegend(svg, model, options, plotLeft, height - 16 - seriesExtra, fontSize, palette.fgDim);
   return svg.toString();
 }
@@ -888,9 +1559,12 @@ export function renderClustered(model: ClusteredModel, options: ExtRenderOptions
     : renderVerticalClustered(model, options);
 }
 
-export const clusteredEngine: ExtEngine<ClusteredModel> = {
-  type: "clustered",
-  aliases: ["clustered", "clustered-bar", "clustered-barchart", "barchart-clustered"],
+export const seriesEngine: ExtEngine<ClusteredModel> = {
+  type: "series",
+  aliases: ["series"],
   parse: parseClustered,
   render: renderClustered,
 };
+
+/** Старое имя экспорта. Синтаксис `clustered` больше не распознаётся. */
+export const clusteredEngine = seriesEngine;

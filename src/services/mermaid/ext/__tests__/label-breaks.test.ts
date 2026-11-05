@@ -107,11 +107,11 @@ data
 
   it("clustered переносит категорию и в вертикальном, и в повёрнутом виде", () => {
     const vertical = clusteredEngine.render(
-      clusteredEngine.parse('clustered\ncategories "Кат\\n1", Кат2\nseries План : 4, 6').value as ClusteredModel,
+      clusteredEngine.parse('series\ncategories "Кат\\n1", Кат2\nseries План : 4, 6').value as ClusteredModel,
       {},
     );
     const horizontal = clusteredEngine.render(
-      clusteredEngine.parse('clustered\nrotate 90\ncategories "Кат\\n1", Кат2\nseries План : 4, 6').value as ClusteredModel,
+      clusteredEngine.parse('series\nrotate 90\ncategories "Кат\\n1", Кат2\nseries План : 4, 6').value as ClusteredModel,
       {},
     );
     expect(textLines(vertical)).toEqual(expect.arrayContaining(["Кат", "1", "Кат2"]));

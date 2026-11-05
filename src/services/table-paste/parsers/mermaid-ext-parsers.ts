@@ -419,7 +419,7 @@ export function parseClusteredTable(
 ): TablePasteResult {
   if (grid.colCount < CLUSTERED_MIN_COLUMNS) {
     return makeTablePasteError(
-      "clustered",
+      "series",
       format,
       "too_few_columns",
       "tablePaste.error.tooFewColumnsMin",
@@ -428,7 +428,7 @@ export function parseClusteredTable(
   }
   if (grid.rowCount < CLUSTERED_MIN_ROWS) {
     return makeTablePasteError(
-      "clustered",
+      "series",
       format,
       "too_few_rows",
       "tablePaste.error.tooFewRowsMin",
@@ -443,7 +443,7 @@ export function parseClusteredTable(
 
   const dataRows = hasHeader ? grid.rows.slice(1) : grid.rows;
   if (dataRows.length === 0) {
-    return makeTablePasteError("clustered", format, "no_valid_rows", "tablePaste.error.noDataRows");
+    return makeTablePasteError("series", format, "no_valid_rows", "tablePaste.error.noDataRows");
   }
 
   const formatCat = (c: string) => (c.includes(",") ? `"${c}"` : c);
@@ -464,7 +464,7 @@ export function parseClusteredTable(
         const n = parseTableNumber(raw);
         if (n === null) {
           return makeTablePasteError(
-            "clustered",
+            "series",
             format,
             "invalid_number",
             "tablePaste.error.invalidNumberAtRow",
@@ -479,16 +479,17 @@ export function parseClusteredTable(
     const generated = [`categories ${categories.map(formatCat).join(", ")}`, ...seriesLines];
     return replaceDataLinesInSource(
       source,
-      "clustered",
+      "series",
       generated,
       (trimmed) =>
         !trimmed.startsWith("%%") &&
-        (/^(?:categories|x|series)\b/i.test(trimmed) ||
-          (!/^(?:clustered|clustered-bar|clustered-barchart|barchart-clustered|title|rotate|orientation|horizontal|vertical|y|grid|axis|labels|fontsize|mono|colors|data|end)\b/i.test(
+        (/^(?:categories|x)\b/i.test(trimmed) ||
+          (/^series\b/i.test(trimmed) && trimmed.includes(":")) ||
+          (!/^(?:series|title|rotate|orientation|horizontal|vertical|y|grid|axis|labels|fontsize|mono|colors|stacked|bars|layout|line|cagr|data|end)\b/i.test(
             trimmed,
           ) &&
             trimmed.includes(":"))),
-      "clustered",
+      "series",
     );
   }
 
@@ -512,7 +513,7 @@ export function parseClusteredTable(
       const n = parseTableNumber(rawCell);
       if (n === null) {
         return makeTablePasteError(
-          "clustered",
+          "series",
           format,
           "invalid_number",
           "tablePaste.error.invalidNumberAtRow",
@@ -530,15 +531,16 @@ export function parseClusteredTable(
 
   return replaceDataLinesInSource(
     source,
-    "clustered",
+    "series",
     generated,
     (trimmed) =>
       !trimmed.startsWith("%%") &&
-      (/^(?:categories|x|series)\b/i.test(trimmed) ||
-        (!/^(?:clustered|clustered-bar|clustered-barchart|barchart-clustered|title|rotate|orientation|horizontal|vertical|y|grid|axis|labels|fontsize|mono|colors|data|end)\b/i.test(
+      (/^(?:categories|x)\b/i.test(trimmed) ||
+        (/^series\b/i.test(trimmed) && trimmed.includes(":")) ||
+        (!/^(?:series|title|rotate|orientation|horizontal|vertical|y|grid|axis|labels|fontsize|mono|colors|stacked|bars|layout|line|cagr|data|end)\b/i.test(
           trimmed,
         ) &&
           trimmed.includes(":"))),
-    "clustered",
+    "series",
   );
 }

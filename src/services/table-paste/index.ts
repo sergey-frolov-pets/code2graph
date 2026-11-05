@@ -125,7 +125,7 @@ export function applyTableFromClipboardText(input: {
     case "voronoi":
       result = parseVoronoiTable(grid, source, format);
       break;
-    case "clustered":
+    case "series":
       result = parseClusteredTable(grid, source, format);
       break;
     case "xychart":
