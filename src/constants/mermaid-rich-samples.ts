@@ -117,14 +117,84 @@ Rel(orders, events, "Публикует", "async")`,
       2026 : Structurizr
            : WireMark`,
   sankey: `sankey-beta
-    %% Визит, каталог, поиск, корзина, оплата, заказ, отказ
-    Visit,Catalog,80
-    Visit,Search,40
-    Catalog,Cart,50
-    Search,Cart,25
-    Cart,Payment,60
-    Payment,Order,55
-    Payment,Drop,5`,
+%% Воронка магазина: несколько входов, ветвления и слияния.
+%% Строка — CSV из трёх колонок: источник,приёмник,вес.
+%% Вес — положительное число, дробь тоже можно (10.5). Строки-заголовка нет.
+%% Пустая строка между блоками допустима и на схему не попадает.
+%% Запятая или кавычка в имени: завернуть в кавычки, кавычку внутри удвоить.
+%%   "Pay, card",Paid,48
+%%   "Drop, ""no pay""",Lost,1
+%% Строка из одних %% без текста ломает разбор: после %% нужен текст.
+%% Имена узлов только латиницей: парсер sankey-beta принимает ASCII.
+%% Опции не пишутся в CSV. Их задают YAML-шапкой НАД sankey-beta
+%% (или в mermaid.initialize). Блок ниже — комментарий: копируют без %%.
+%% ---
+%% config:
+%%   sankey:
+%%     showValues: true       числа у узлов: true | false (по умолчанию true)
+%%     prefix: ""             текст перед числом, например "$"
+%%     suffix: ""             текст после числа, например " pcs"
+%%     linkColor: gradient    source | target | gradient | цвет CSS, например "#aabbcc"
+%%     nodeAlignment: justify одно из: justify, left, right, center
+%%     width: 600             ширина, px (по умолчанию 600)
+%%     height: 400            высота, px (по умолчанию 400)
+%%     useMaxWidth: false     true — занять доступную ширину (по умолчанию false)
+%%     nodeWidth: 10          толщина узла, px (с Mermaid 11.15, по умолчанию 10)
+%%     nodePadding: 12        вертикальный зазор между узлами, px (с 11.15, по умолчанию 12)
+%%     labelStyle: legacy     legacy | outlined — обводка подписи (с 11.15)
+%%     nodeColors:            свои цвета узлов; остальные берутся из темы (с 11.15)
+%%       Paid: "#2e7d32"
+%%       Abandoned: "#c62828"
+%% Выравнивание nodeAlignment:
+%%   justify — входы слева, узлы без исходящих у правого края (по умолчанию)
+%%   left — все узлы прижаты влево
+%%   right — выходы прижаты вправо
+%%   center — как left, но узлы без входящих сдвигаются вправо
+%% Цвет связей linkColor:
+%%   gradient — переход от цвета источника к цвету приёмника (по умолчанию)
+%%   source — цвет узла-источника
+%%   target — цвет узла-приёмника
+%%   #hex или имя CSS — один цвет на все связи
+
+%% Входы на сайт: 90+40+25+15 = 170
+Ads,Site,90
+Direct,Site,40
+Email,Site,25
+Referral,Site,15
+
+%% Сайт расходится на каталог, поиск и отказ
+Site,Catalog,80
+Site,Search,50
+Site,"Bounce, no click",40
+
+%% Каталог и поиск сходятся в товар и сравнение
+Catalog,Product,55
+Catalog,Compare,25
+Search,Product,30
+Search,Compare,20
+
+%% Товар и сравнение: корзина, список, уход
+Product,Cart,60
+Product,Wishlist,25
+Compare,Cart,30
+Compare,"Leave, compare",15
+
+%% Список возвращает часть потока в корзину
+Wishlist,Cart,10
+Wishlist,"Saved, later",15
+
+%% Корзина, оплата и исход
+Cart,Checkout,85
+Cart,Abandoned,15
+Checkout,"Pay, card",50
+Checkout,"Pay, invoice",25
+Checkout,"Drop, checkout",10
+"Pay, card",Paid,48
+"Pay, card","Fail, card",2
+"Pay, invoice",Paid,22
+"Pay, invoice",Unpaid,3
+Paid,Repeat,28
+Paid,One-off order,42`,
   xychart: `xychart-beta
     title "Заказы по месяцам"
     x-axis ["Янв", "Фев", "Мар", "Апр", "Май", "Июн"]
@@ -309,13 +379,84 @@ Rel(orders, events, "Publishes", "async")`,
       2026 : Structurizr
            : WireMark`,
   sankey: `sankey-beta
-    Visit,Catalog,80
-    Visit,Search,40
-    Catalog,Cart,50
-    Search,Cart,25
-    Cart,Payment,60
-    Payment,Order,55
-    Payment,Drop,5`,
+%% Shop funnel: several entries, splits, and merges.
+%% A row is CSV with three columns: source,target,value.
+%% The value is a positive number; decimals are allowed (10.5). No header row.
+%% A blank line between groups is allowed and draws nothing.
+%% A comma or a quote in a name: wrap the name in quotes, double an inner quote.
+%%   "Pay, card",Paid,48
+%%   "Drop, ""no pay""",Lost,1
+%% A line that is only %% with no text breaks the parser: put text after %%.
+%% Node names are ASCII only: the sankey-beta parser rejects other characters.
+%% Options are not CSV columns. Set them in a YAML header ABOVE sankey-beta
+%% (or in mermaid.initialize). The block below is a comment: copy it without %%.
+%% ---
+%% config:
+%%   sankey:
+%%     showValues: true       numbers on nodes: true | false (default true)
+%%     prefix: ""             text before the number, for example "$"
+%%     suffix: ""             text after the number, for example " pcs"
+%%     linkColor: gradient    source | target | gradient | a CSS color, for example "#aabbcc"
+%%     nodeAlignment: justify one of: justify, left, right, center
+%%     width: 600             width in px (default 600)
+%%     height: 400            height in px (default 400)
+%%     useMaxWidth: false     true — use the available width (default false)
+%%     nodeWidth: 10          node thickness in px (Mermaid 11.15+, default 10)
+%%     nodePadding: 12        vertical gap between nodes in px (11.15+, default 12)
+%%     labelStyle: legacy     legacy | outlined — a stroke behind the label (11.15+)
+%%     nodeColors:            per-node colors; other nodes keep the theme (11.15+)
+%%       Paid: "#2e7d32"
+%%       Abandoned: "#c62828"
+%% nodeAlignment:
+%%   justify — inputs on the left, nodes with no outgoing link on the far right (default)
+%%   left — every node packed to the left
+%%   right — outputs packed to the right
+%%   center — like left, but nodes with no incoming link move right
+%% linkColor:
+%%   gradient — blend from the source color to the target color (default)
+%%   source — the source node color
+%%   target — the target node color
+%%   #hex or a CSS color name — one color for every link
+
+%% Entries into the site: 90+40+25+15 = 170
+Ads,Site,90
+Direct,Site,40
+Email,Site,25
+Referral,Site,15
+
+%% The site splits into catalog, search, and a bounce
+Site,Catalog,80
+Site,Search,50
+Site,"Bounce, no click",40
+
+%% Catalog and search meet at the product and at compare
+Catalog,Product,55
+Catalog,Compare,25
+Search,Product,30
+Search,Compare,20
+
+%% Product and compare: cart, wishlist, leave
+Product,Cart,60
+Product,Wishlist,25
+Compare,Cart,30
+Compare,"Leave, compare",15
+
+%% The wishlist sends part of its flow back to the cart
+Wishlist,Cart,10
+Wishlist,"Saved, later",15
+
+%% Cart, checkout, and outcome
+Cart,Checkout,85
+Cart,Abandoned,15
+Checkout,"Pay, card",50
+Checkout,"Pay, invoice",25
+Checkout,"Drop, checkout",10
+"Pay, card",Paid,48
+"Pay, card","Fail, card",2
+"Pay, invoice",Paid,22
+"Pay, invoice",Unpaid,3
+Paid,Repeat,28
+Paid,One-off order,42`,
   xychart: `xychart-beta
     title "Orders by month"
     x-axis [Jan, Feb, Mar, Apr, May, Jun]

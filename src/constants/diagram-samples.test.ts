@@ -22,6 +22,7 @@ import {
   MERMAID_SAMPLE_WIZARD_TYPES,
   getMermaidSampleSource,
 } from "@/constants/mermaid-sample-diagrams";
+import { parseSankeyMermaid } from "@/services/conversion/parse/mermaid-kind-parsers";
 import {
   PLANTUML_SAMPLE_IDS,
   PLANTUML_SAMPLE_WIZARD_TYPES,
@@ -240,6 +241,11 @@ describe("diagram samples coverage", () => {
       "gitGraph",
       "timeline",
       "sankey-beta",
+      "linkColor",
+      "nodeAlignment",
+      "showValues",
+      "nodeColors",
+      "labelStyle",
       "xychart-beta",
       "block-beta",
       "C4Context",
@@ -252,6 +258,38 @@ describe("diagram samples coverage", () => {
       "classDef",
     ]) {
       expect(mermaid, token).toContain(token);
+    }
+  });
+
+  it("keeps the mermaid sankey sample balanced and documents options", () => {
+    for (const locale of ["ru", "en"] as const) {
+      const source = getMermaidSampleSource("sankey", locale);
+      expect(source).toContain("linkColor");
+      expect(source).toContain("nodeAlignment");
+      expect(source).toContain("showValues");
+      expect(source).toContain("nodeColors");
+      expect(source).toContain('"Pay, card"');
+
+      const flows = parseSankeyMermaid(source, "mermaid").extras?.sankeyFlows ?? [];
+      expect(flows).toHaveLength(28);
+
+      const incoming = new Map<string, number>();
+      const outgoing = new Map<string, number>();
+      for (const flow of flows) {
+        outgoing.set(flow.source, (outgoing.get(flow.source) ?? 0) + flow.value);
+        incoming.set(flow.target, (incoming.get(flow.target) ?? 0) + flow.value);
+      }
+
+      for (const node of new Set([...incoming.keys(), ...outgoing.keys()])) {
+        const inn = incoming.get(node) ?? 0;
+        const out = outgoing.get(node) ?? 0;
+        if (inn > 0 && out > 0) {
+          expect(out, `${locale}:${node}`).toBe(inn);
+        }
+      }
+
+      expect(outgoing.get("Site")).toBe(170);
+      expect(incoming.get("Paid")).toBe(70);
     }
   });
 

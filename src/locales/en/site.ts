@@ -105,7 +105,7 @@ export const siteMessages = {
   "site.primer.mermaid.syntax.timeline":
     "timeline opens the scale. title is the heading, section is a period. Events follow the colon.",
   "site.primer.mermaid.syntax.sankey":
-    "sankey-beta opens the flows. Each line is source,target,weight.",
+    "sankey-beta opens the flows. Each line is source,target,weight. Node names are ASCII; quote a name that contains a comma. Options are not CSV columns: set them in a config.sankey YAML header before the keyword (showValues, prefix, suffix, linkColor, nodeAlignment, width, height, useMaxWidth, nodeWidth, nodePadding, labelStyle, nodeColors).",
   "site.primer.mermaid.syntax.xychart":
     "xychart-beta opens the chart. x-axis is the categories, y-axis is the range, bar and line are series.",
   "site.primer.mermaid.syntax.block":
