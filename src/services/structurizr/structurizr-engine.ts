@@ -73,6 +73,9 @@ export function stackDiagramSvgs(svgs: readonly string[]): string {
 export interface StructurizrRenderOptions {
   dark?: boolean;
   layout: LayoutEngine;
+  fontFamily?: string;
+  fontWeight?: string;
+  fontStyle?: string;
 }
 
 export async function renderStructurizrToSvg(
@@ -91,7 +94,12 @@ export async function renderStructurizrToSvg(
     svgs.push(
       await renderPlantUmlToSvg(
         splitSourceLines(plantUml),
-        { dark: options.dark },
+        {
+          dark: options.dark,
+          fontFamily: options.fontFamily,
+          fontWeight: options.fontWeight,
+          fontStyle: options.fontStyle,
+        },
         "offline",
       ),
     );

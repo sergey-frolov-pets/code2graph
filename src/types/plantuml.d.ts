@@ -1,5 +1,8 @@
 export interface PlantUmlRenderOptions {
   dark?: boolean;
+  fontFamily?: string;
+  fontWeight?: string;
+  fontStyle?: string;
 }
 
 export interface PlantUmlApi {

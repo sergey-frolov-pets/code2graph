@@ -51,6 +51,9 @@ export const structurizrFormatHandler: FormatHandler = {
     return renderStructurizrToSvg(source, {
       dark: context.diagramDarkMode,
       layout: context.layout,
+      fontFamily: context.diagramFontFamily,
+      fontWeight: context.diagramFontWeight,
+      fontStyle: context.diagramFontStyle,
     });
   },
 };

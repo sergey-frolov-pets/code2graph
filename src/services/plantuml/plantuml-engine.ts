@@ -3,10 +3,16 @@ import {
   isOnlineRenderMode,
   type RenderMode,
 } from "@/constants/render-settings";
+import {
+  applyPlantUmlMeasurementFont,
+  plantUmlMeasuresItalic,
+  withItalicTextMeasurement,
+} from "@/services/plantuml/plantuml-measurement-font";
 import { renderPlantUmlOnlineToSvg } from "@/services/plantuml/plantuml-online";
 import { enqueueRender } from "@/services/plantuml/render-queue";
 import { loadEngine } from "@/services/plantuml/vendor-loader";
 import type { PlantUmlRenderOptions } from "@/types/plantuml";
+import { splitSourceLines } from "@/utils/plantuml-source";
 
 let lastRenderUsedOnlineServer = false;
 
@@ -19,17 +25,20 @@ async function renderPlantUmlOfflineToSvg(
   options: PlantUmlRenderOptions = {},
 ): Promise<string> {
   const engine = await loadEngine();
+  const measured = applyPlantUmlMeasurementFont(lines.join("\n"), options);
+  const measuredLines = measured === lines.join("\n") ? lines : splitSourceLines(measured);
 
-  return enqueueRender(
-    () =>
+  return enqueueRender(() =>
+    withItalicTextMeasurement(plantUmlMeasuresItalic(options), () =>
       new Promise<string>((resolve, reject) => {
         engine.renderToString(
-          lines,
+          measuredLines,
           (svg) => resolve(svg),
           (message) => reject(new Error(message)),
-          options,
+          { dark: options.dark },
         );
       }),
+    ),
   );
 }
 

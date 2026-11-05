@@ -8,11 +8,23 @@ import { LAYOUT_ENGINES } from "@/constants";
 import type { AppLocale } from "@/constants/i18n";
 import { wizardThumbnailFileName } from "@/constants/wizard-gallery";
 import { renderDiagramToSvg } from "@/services/diagram-render";
+import { estimateDiagramTextWidth } from "@/services/plantuml/plantuml-measurement-font";
 import type { PlantUmlApi } from "@/types/plantuml";
 import { LocalizedAppError } from "@/utils/localized-app-error";
 
 const LOCALES: readonly AppLocale[] = ["ru", "en"];
 const THUMBNAIL_RENDER_TIMEOUT_MS = 45_000;
+const SHIM_FONT_SIZE_PX = 14;
+const SHIM_LINE_HEIGHT_EM = 1.2;
+
+function shimFontSize(font: string): number {
+  const size = Number.parseFloat(/(\d+(?:\.\d+)?)px/.exec(font)?.[1] ?? "");
+  return Number.isFinite(size) && size > 0 ? size : SHIM_FONT_SIZE_PX;
+}
+
+function shimIsBold(font: string): boolean {
+  return /\bbold\b|[6-9]00/.test(font);
+}
 
 const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -23,21 +35,35 @@ export function installJsdomDiagramShims(): void {
     return;
   }
 
-  const textLength = (element: SVGElement): number =>
-    Math.max(8, (element.textContent ?? "").length * 8);
+  const textLength = (element: SVGElement): number => {
+    if (element.localName === "text" || element.localName === "tspan") {
+      const size = shimFontSize(element.getAttribute("font-size") ?? "");
+      const width = estimateDiagramTextWidth(
+        element.textContent ?? "",
+        size,
+        shimIsBold(element.getAttribute("font-weight") ?? ""),
+      );
+      return width > 0 ? width : 0;
+    }
+    return Math.max(8, (element.textContent ?? "").length * 8);
+  };
   const svgPrototype = SVGElement.prototype as SVGElement & {
     getBBox: () => DOMRect;
   };
   svgPrototype.getBBox = function getBBox(this: SVGElement) {
     const width = textLength(this);
+    const fontSize = shimFontSize(this.getAttribute("font-size") ?? "");
+    const height = this.localName === "text" || this.localName === "tspan"
+      ? fontSize * SHIM_LINE_HEIGHT_EM
+      : 18;
     return {
       x: 0,
-      y: -12,
+      y: -height * 0.8,
       width,
-      height: 18,
-      top: -12,
+      height,
+      top: -height * 0.8,
       right: width,
-      bottom: 6,
+      bottom: height * 0.2,
       left: 0,
     } as DOMRect;
   };
@@ -48,7 +74,12 @@ export function installJsdomDiagramShims(): void {
   Object.assign(Element.prototype, { getComputedTextLength: computedTextLength });
   HTMLCanvasElement.prototype.getContext = (() => ({
     font: "",
-    measureText: () => ({ width: 12 }),
+    measureText(text: string) {
+      const font = String(this.font ?? "");
+      return {
+        width: estimateDiagramTextWidth(String(text ?? ""), shimFontSize(font), shimIsBold(font)),
+      };
+    },
     fillText() {},
     strokeText() {},
     fillRect() {},
