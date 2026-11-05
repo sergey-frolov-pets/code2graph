@@ -67,7 +67,7 @@ export function highlightD2Line(line: string): HighlightToken[] {
       if (word) {
         pushToken(
           tokens,
-          D2_KEYWORD_SET.has(word[0]) ? "keyword" : "plain",
+          D2_KEYWORD_SET.has(word[0].toLowerCase()) ? "keyword" : "plain",
           word[0],
         );
         index += word[0].length;

@@ -13,4 +13,14 @@ describe("d2 highlight", () => {
     expect(connection).toContain("tok-arrow");
     expect(connection).toContain("tok-string");
   });
+
+  it("highlights shape names and style values", () => {
+    const html = renderD2HighlightedLine("style.fill-pattern: dots");
+    expect(html).toContain("tok-keyword");
+    expect(html).toContain("fill-pattern");
+    expect(html).toContain("dots");
+
+    const shape = renderD2HighlightedLine("shape: code");
+    expect(shape).toContain(">code</span>");
+  });
 });

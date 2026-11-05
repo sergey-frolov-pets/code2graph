@@ -1,4 +1,8 @@
-import { WIREMARK_DIRECTIVES } from "@/languages/keywords/wiremark";
+import {
+  WIREMARK_COMPONENTS,
+  WIREMARK_DIRECTIVES,
+  WIREMARK_MODIFIERS,
+} from "@/languages/keywords/wiremark";
 import {
   escapeHtml,
   type HighlightToken,
@@ -6,6 +10,10 @@ import {
 } from "@/utils/plantuml-highlight";
 
 const DIRECTIVES = new Set<string>(WIREMARK_DIRECTIVES);
+const COMPONENTS = new Set<string>(WIREMARK_COMPONENTS);
+const MODIFIERS = new Set<string>(
+  WIREMARK_MODIFIERS.map((modifier) => modifier.toLowerCase()),
+);
 
 function pushToken(
   tokens: HighlightToken[],
@@ -60,17 +68,33 @@ export function highlightWiremarkLine(line: string): HighlightToken[] {
       }
     }
 
-    if (!seenComponent && /[A-Z]/.test(current)) {
-      const name = line.slice(index).match(/^[A-Z][A-Za-z0-9]*/);
-      const previous = index === 0 ? " " : line[index - 1];
-      if (name && /\s/.test(previous)) {
-        pushToken(
-          tokens,
-          DIRECTIVES.has(name[0]) ? "directive" : "keyword",
-          name[0],
-        );
-        seenComponent = true;
-        index += name[0].length;
+    if (/[A-Za-z_]/.test(current)) {
+      const name = line.slice(index).match(/^[A-Za-z_][\w]*/);
+      if (name) {
+        const text = name[0];
+        const next = line[index + text.length];
+        const previous = index === 0 ? " " : line[index - 1];
+        let type: HighlightTokenType = "plain";
+
+        if (DIRECTIVES.has(text)) {
+          type = "directive";
+          seenComponent = true;
+        } else if (COMPONENTS.has(text)) {
+          type = "keyword";
+          seenComponent = true;
+        } else if (
+          !seenComponent &&
+          /^[A-Z]/.test(text) &&
+          /\s/.test(previous)
+        ) {
+          type = "keyword";
+          seenComponent = true;
+        } else if (MODIFIERS.has(text.toLowerCase()) || next === "=") {
+          type = "keyword";
+        }
+
+        pushToken(tokens, type, text);
+        index += text.length;
         continue;
       }
     }
