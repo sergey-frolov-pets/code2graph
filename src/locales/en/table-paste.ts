@@ -127,7 +127,7 @@ export const tablePasteMessages = {
   "tablePaste.expected.mindmap.columns":
     "2 or more columns representing tree depth: 'Root', 'Branch', 'Sub-branch', etc.",
   "tablePaste.expected.mindmap.rules":
-    "Builds a mindmap tree, automatically merging identical parent nodes.",
+    "Builds a mindmap tree, merging identical parents. Nodes are inserted on the blank line at the caret, replace the selection, or replace every map node. Legend, title, header, footer, caption, style, and comments are kept.",
   "tablePaste.expected.mindmap.headers": "Root|Branch|Leaf",
   "tablePaste.expected.nwdiag.columns":
     "2 or 3 columns: 'Node', 'IP address', ['Network (optional)'].",

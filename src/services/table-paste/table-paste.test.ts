@@ -365,3 +365,232 @@ describe("Category A & B table parsers", () => {
     }
   });
 });
+
+const PLANTUML_MINDMAP_WITH_CHROME = `@startmindmap
+' комментарий
+top to bottom direction
+title Карта
+header Шапка
+footer Подвал
+caption Подпись
+<style>
+mindmapDiagram {
+  node {
+    BackgroundColor lightBlue
+  }
+}
+</style>
+legend right
+  * — OrgMode
+  +/-- — арифметика
+  _ — без рамки
+endlegend
+
+*[#1565C0] Старый корень
+**:Многострочный узел
+Редактор и превью
+в одном окне;
+' между узлами
+left side
+--[#E65100] Старая ветка
+@endmindmap
+`;
+
+const MINDMAP_TABLE = "Корень\tВетка\tЛист\nКарта\tРаздел\tПункт";
+const MINDMAP_TREE = "* Карта\n** Раздел\n*** Пункт";
+
+function expectMindmapChromePreserved(source: string): void {
+  expect(source).toContain("' комментарий");
+  expect(source).toContain("top to bottom direction");
+  expect(source).toContain("title Карта");
+  expect(source).toContain("header Шапка");
+  expect(source).toContain("footer Подвал");
+  expect(source).toContain("caption Подпись");
+  expect(source).toContain("<style>");
+  expect(source).toContain("BackgroundColor lightBlue");
+  expect(source).toContain("</style>");
+  expect(source).toContain("legend right\n  * — OrgMode\n  +/-- — арифметика\n  _ — без рамки\nendlegend");
+  expect(source).toContain("' между узлами");
+  expect(source).toContain("left side");
+  expect(source.startsWith("@startmindmap")).toBe(true);
+  expect(source).toContain("@endmindmap");
+  expect(source.indexOf("legend right")).toBeLessThan(source.indexOf("* Карта"));
+  expect(source.indexOf("left side")).toBeLessThan(source.lastIndexOf("@endmindmap"));
+}
+
+describe("plantuml mindmap table paste", () => {
+  it("replaces nodes and keeps legend, style, and other chrome", () => {
+    const res = applyTableFromClipboardText({
+      clipboardText: MINDMAP_TABLE,
+      source: PLANTUML_MINDMAP_WITH_CHROME,
+      format: "plantuml",
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+
+    expect(res.fullSource).toContain(MINDMAP_TREE);
+    expectMindmapChromePreserved(res.fullSource);
+    expect(res.fullSource).not.toContain("Старый корень");
+    expect(res.fullSource).not.toContain("Многострочный узел");
+    expect(res.fullSource).not.toContain("Редактор и превью");
+    expect(res.fullSource).not.toContain("Старая ветка");
+    expect(res.fullSource.indexOf("* Карта")).toBeLessThan(res.fullSource.indexOf("left side"));
+  });
+
+  it("replaces all nodes when the caret sits inside a node label", () => {
+    const cursorOffset = PLANTUML_MINDMAP_WITH_CHROME.indexOf("Старый корень");
+    const res = applyTableFromClipboardText({
+      clipboardText: MINDMAP_TABLE,
+      source: PLANTUML_MINDMAP_WITH_CHROME,
+      format: "plantuml",
+      cursorOffset,
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+
+    expect(res.fullSource).toContain(MINDMAP_TREE);
+    expectMindmapChromePreserved(res.fullSource);
+    expect(res.fullSource).not.toContain("Старый корень");
+  });
+
+  it("does not inject nodes into the legend when the caret is on a legend line", () => {
+    const cursorOffset = PLANTUML_MINDMAP_WITH_CHROME.indexOf("  * — OrgMode");
+    const res = applyTableFromClipboardText({
+      clipboardText: MINDMAP_TABLE,
+      source: PLANTUML_MINDMAP_WITH_CHROME,
+      format: "plantuml",
+      cursorOffset,
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+
+    expect(res.fullSource).toContain(
+      "legend right\n  * — OrgMode\n  +/-- — арифметика\n  _ — без рамки\nendlegend",
+    );
+    expect(res.fullSource.indexOf("endlegend")).toBeLessThan(res.fullSource.indexOf("* Карта"));
+    expect(res.fullSource).not.toContain("Старый корень");
+  });
+
+  it("inserts the tree at a blank line inside the diagram and keeps existing nodes", () => {
+    const cursorOffset =
+      PLANTUML_MINDMAP_WITH_CHROME.indexOf("endlegend\n") + "endlegend\n".length;
+    const res = applyTableFromClipboardText({
+      clipboardText: MINDMAP_TABLE,
+      source: PLANTUML_MINDMAP_WITH_CHROME,
+      format: "plantuml",
+      cursorOffset,
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+
+    expect(res.fullSource).toContain(MINDMAP_TREE);
+    expect(res.fullSource).toContain("*[#1565C0] Старый корень");
+    expect(res.fullSource).toContain("**:Многострочный узел");
+    expect(res.fullSource).toContain("Редактор и превью");
+    expectMindmapChromePreserved(res.fullSource);
+    expect(res.fullSource.indexOf("* Карта")).toBeLessThan(
+      res.fullSource.indexOf("*[#1565C0] Старый корень"),
+    );
+    expect(res.fullSource.indexOf("endlegend")).toBeLessThan(res.fullSource.indexOf("* Карта"));
+  });
+
+  it("inserts the tree just before @endmindmap when the caret is there", () => {
+    const cursorOffset = PLANTUML_MINDMAP_WITH_CHROME.indexOf("@endmindmap");
+    const res = applyTableFromClipboardText({
+      clipboardText: MINDMAP_TABLE,
+      source: PLANTUML_MINDMAP_WITH_CHROME,
+      format: "plantuml",
+      cursorOffset,
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+
+    expect(res.fullSource).toContain(`${MINDMAP_TREE}\n@endmindmap`);
+    expect(res.fullSource).toContain("Старый корень");
+    expect(res.fullSource).toContain("legend right");
+  });
+
+  it("replaces only the selected fragment", () => {
+    const start = PLANTUML_MINDMAP_WITH_CHROME.indexOf("*[#1565C0] Старый корень");
+    const end = PLANTUML_MINDMAP_WITH_CHROME.indexOf("' между узлами");
+    const res = applyTableFromClipboardText({
+      clipboardText: MINDMAP_TABLE,
+      source: PLANTUML_MINDMAP_WITH_CHROME,
+      format: "plantuml",
+      selectionRange: { start, end },
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+
+    expect(res.fullSource).toContain(MINDMAP_TREE);
+    expect(res.fullSource).not.toContain("Старый корень");
+    expect(res.fullSource).not.toContain("Многострочный узел");
+    expect(res.fullSource).toContain("--[#E65100] Старая ветка");
+    expect(res.fullSource).toContain("' между узлами");
+    expectMindmapChromePreserved(res.fullSource);
+  });
+
+  it("keeps legend when the whole buffer is selected", () => {
+    const res = applyTableFromClipboardText({
+      clipboardText: MINDMAP_TABLE,
+      source: PLANTUML_MINDMAP_WITH_CHROME,
+      format: "plantuml",
+      selectionRange: { start: 0, end: PLANTUML_MINDMAP_WITH_CHROME.length },
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+
+    expect(res.fullSource).toContain(MINDMAP_TREE);
+    expectMindmapChromePreserved(res.fullSource);
+    expect(res.fullSource).not.toContain("Старый корень");
+    expect(res.fullSource).not.toContain("Старая ветка");
+  });
+
+  it("still replaces a mermaid mindmap and a plantuml wbs as data sections", () => {
+    const mermaidRes = applyTableFromClipboardText({
+      clipboardText: MINDMAP_TABLE,
+      source: "mindmap\n  root((Old))\n    Old branch",
+      format: "mermaid",
+    });
+    expect(mermaidRes.ok).toBe(true);
+    if (mermaidRes.ok) {
+      expect(mermaidRes.fullSource).toContain("mindmap");
+      expect(mermaidRes.fullSource).toContain("root((Карта))");
+      expect(mermaidRes.fullSource).not.toContain("Old");
+    }
+
+    const wbsRes = applyTableFromClipboardText({
+      clipboardText: MINDMAP_TABLE,
+      source: "@startwbs\n* Old\n@endwbs",
+      format: "plantuml",
+    });
+    expect(wbsRes.ok).toBe(true);
+    if (wbsRes.ok) {
+      expect(wbsRes.fullSource).toContain("* Карта\n** Раздел\n*** Пункт");
+      expect(wbsRes.fullSource).not.toContain("* Old");
+      expect(wbsRes.fullSource).toContain("@startwbs");
+      expect(wbsRes.fullSource).toContain("@endwbs");
+    }
+  });
+});

@@ -25,6 +25,7 @@ import {
   parseWiremarkTable,
 } from "./parsers/category-b-parsers";
 import { parseWaterfallTable } from "./parsers/waterfall-table-parser";
+import { applyPlantUmlMindmapPlacement } from "./plantuml-mindmap-paste";
 import { makeTablePasteError } from "./replace-data-section";
 import type {
   TablePasteDiagramType,
@@ -60,8 +61,10 @@ export function applyTableFromClipboardText(input: {
   source: string;
   format: DiagramFormat;
   selectionRange?: { start: number; end: number };
+  /** Caret offset in `source`. Used by PlantUML mindmap paste. */
+  cursorOffset?: number;
 }): TablePasteResult {
-  const { clipboardText, source, format, selectionRange } = input;
+  const { clipboardText, source, format, selectionRange, cursorOffset } = input;
   const diagramType = detectTableDiagramType(source, format) ?? "waterfall";
 
   if (!clipboardText || clipboardText.trim().length === 0) {
@@ -141,12 +144,21 @@ export function applyTableFromClipboardText(input: {
       break;
   }
 
+  if (!result.ok) {
+    return result;
+  }
+
+  if (format === "plantuml" && diagramType === "mindmap") {
+    return applyPlantUmlMindmapPlacement({
+      source,
+      snippet: result.snippet,
+      selectionRange,
+      cursorOffset,
+    });
+  }
+
   // If the user explicitly selected a text range in the editor, replace that selection with `snippet`
-  if (
-    result.ok &&
-    selectionRange &&
-    selectionRange.end > selectionRange.start
-  ) {
+  if (selectionRange && selectionRange.end > selectionRange.start) {
     const before = source.slice(0, selectionRange.start);
     const after = source.slice(selectionRange.end);
     const fullSource = `${before}${result.snippet}${after}`;
