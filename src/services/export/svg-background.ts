@@ -89,7 +89,9 @@ function markCanvasBackground(root: Element): void {
 
     const fill = rect.getAttribute("fill") ?? "";
     if (normalizeColor(fill)) {
-      for (const knockout of root.querySelectorAll("rect[data-break-gap], rect[data-line-gap]")) {
+      for (const knockout of root.querySelectorAll(
+        "rect[data-break-gap], rect[data-line-gap], rect[data-break-text-bg]",
+      )) {
         if (!knockout.getAttribute("data-bg-fill")) {
           knockout.setAttribute("data-bg-fill", fill);
         }
@@ -196,9 +198,12 @@ export function applyPreviewBackground(svg: string, background: string): string 
   setSvgBackgroundColor(root, transparent ? "transparent" : fill);
 
   for (const rect of root.querySelectorAll(
-    "rect[data-break-gap], rect[data-line-gap], rect[data-bg-fill]",
+    "rect[data-break-gap], rect[data-line-gap], rect[data-break-text-bg], rect[data-bg-fill]",
   )) {
-    rect.setAttribute("fill", fill);
+    // Числа и подпись разрыва водопада: прозрачный фон диаграммы — прозрачная
+    // плашка. Вырез на столбце (data-break-gap) остаётся белым, иначе в баре дыра.
+    const breakText = rect.getAttribute("data-break-text-bg") === "1";
+    rect.setAttribute("fill", transparent && breakText ? "transparent" : fill);
   }
 
   return new XMLSerializer().serializeToString(root);

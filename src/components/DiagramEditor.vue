@@ -220,6 +220,7 @@ const {
   updateSelectionState,
   requestAiPatch,
   insertSnippetAtCursor,
+  getCaretOffsetInSource,
   getSelectionRangeInSource,
 } = useEditorSelection({
   source,
@@ -253,12 +254,13 @@ async function onPasteTableFromClipboard(): Promise<void> {
   }
 
   const selectionRange = getSelectionRangeInSource();
+  const hasSelection = selectionRange.end > selectionRange.start;
   const result = applyTableFromClipboardText({
     clipboardText,
     source: source.value,
     format: diagramFormat.value,
-    selectionRange:
-      selectionRange.end > selectionRange.start ? selectionRange : undefined,
+    selectionRange: hasSelection ? selectionRange : undefined,
+    cursorOffset: hasSelection ? undefined : getCaretOffsetInSource(),
   });
 
   if (!result.ok) {

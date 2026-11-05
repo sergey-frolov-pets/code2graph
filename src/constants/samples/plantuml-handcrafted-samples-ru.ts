@@ -388,15 +388,49 @@ Rel(spa, cdn, "Статика", "HTTPS")
 SHOW_LEGEND()
 @enduml`,
   gantt: `@startgantt
-' Диаграмма Ганта: задачи, зависимости и вехи
+' Диаграмма Ганта: календарь, задачи, зависимости, цвет, вехи и ресурсы
+' project starts YYYY-MM-DD — дата старта проекта; первая задача без своей даты начинается отсюда
+' language ru|en|de|ja|zh|ko — язык подписей календаря
+' saturday are closed / sunday are closed — выходные не входят в рабочие дни
+' YYYY-MM-DD is closed — закрыть один день; YYYY-MM-DD to YYYY-MM-DD are closed — закрыть диапазон
+' YYYY-MM-DD is open — снова открыть закрытый день
+' printscale|ganttscale|projectscale daily|weekly|monthly|quarterly|yearly — масштаб оси
+' zoom 1.5 — крупность шкалы; today is colored in Coral — выделить сегодняшний день
+' [Имя] lasts N days|weeks|months — длительность по календарю
+' [Имя] requires N days — трудозатраты: закрытые дни не укорачивают неделю
+' [Имя] starts YYYY-MM-DD / ends YYYY-MM-DD — абсолютные даты начала и конца
+' [Имя] starts D+N — старт через N дней после начала проекта
+' [Имя] starts at [Другая]'s end|start — зависимость от конца или начала
+' [Имя] starts N days after|before [Другая]'s end — зависимость со сдвигом
+' [Имя] ends at [Другая]'s end|start — привязать окончание к другой задаче
+' then [Имя] lasts N days — следующая задача сразу после предыдущей
+' [A] -> [B] — стрелка зависимости; -[dotted]-> и -[#RRGGBB]-> — стиль связи
+' [Полное имя] as [Код] — псевдоним для ссылок
+' and is colored in Color или StartColor/EndColor — заливка задачи
+' is N% completed|complete — процент выполнения; is deleted — снятая задача
+' [Веха] happens YYYY-MM-DD — веха на дату; happens at [Задача]'s end — веха в конце задачи
+' displays on same row as [Имя] — нарисовать на той же строке
+' pauses N days / pauses on YYYY-MM-DD — пауза внутри задачи
+' on {Ресурс} и on {Ресурс:50%} — назначить ресурс и долю загрузки
+' hide resources names / hide resources footbox / hide footbox — скрыть подписи ресурсов и нижнюю шкалу
+' -- Фаза -- — горизонтальный разделитель групп задач
+' Separator just at [Имя]'s end — вертикальный разделитель на дате задачи
+' note bottom ... end note — пояснение под задачей
+' Label on first column and left aligned — подписи в первой колонке (также last column, right aligned)
+' [[https://example.com]] рядом с именем — ссылка на задаче
+
+' Старт проекта и закрытые выходные
 project starts 2026-01-06
 saturday are closed
 sunday are closed
 
+' Задача на 5 дней с цветом полосы
 [Анализ требований] lasts 5 days and is colored in LightGreen
+' Старт в конце предыдущей задачи
 [Прототип UI] lasts 4 days and starts at [Анализ требований]'s end
 [Разработка] lasts 10 days and starts at [Прототип UI]'s end
 [Тестирование] lasts 5 days and starts at [Разработка]'s end
+' Веха на фиксированную дату и со своим цветом
 [Релиз] happens at 2026-02-20 and is colored in Coral
 @endgantt`,
   mindmap: `@startmindmap

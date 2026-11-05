@@ -72,7 +72,7 @@ export const tablePasteMessages = {
   "tablePaste.expected.heatmap.columns":
     "Матрица минимум 2×2: первая строка — подписи колонок X, первый столбец — подписи строк Y, внутри — числа (или пустые ячейки).",
   "tablePaste.expected.heatmap.rules":
-    "Генерирует оси x, y и блок data. Пустые ячейки остаются пустыми пропусками.",
+    "Строки x и y вставляются перед блоком scale. Если scale нет, добавляется шкала от минимума до максимума значений, от синего к красному. Пустые ячейки остаются пустыми пропусками.",
   "tablePaste.expected.heatmap.headers": "Период|Пн|Вт|Ср",
   "tablePaste.expected.bubble.columns":
     "4 или 5 колонок: «Подпись», «X (число)», «Y (число)», «Размер (число)», [«Группа (необязательно)»].",
@@ -110,10 +110,10 @@ export const tablePasteMessages = {
     "Формирует categories и строки series. Сохраняет директиву поворота rotate 90 и цвета.",
   "tablePaste.expected.clustered.headers": "Категория|Москва|Регионы|Экспорт",
   "tablePaste.expected.xychart.columns":
-    "2 или 3 колонки: «Категория X», «Столбцы (Bar)», [«Линия (Line, необязательно)»].",
+    "От 1 колонки. Одна колонка — числа для bar [Val 1, ..., Val n]. Две — «Категория X» и «Значение bar». Три и больше — «Категория X» и отдельный bar на каждую следующую колонку.",
   "tablePaste.expected.xychart.rules":
-    "Формирует x-axis, y-axis, ряд bar [...] и при наличии 3-й колонки — line [...].",
-  "tablePaste.expected.xychart.headers": "Месяц|Столбцы|Линия",
+    "Одна колонка добавляет строку bar [значения]. Две и больше колонок заменяют или добавляют x-axis и по одному bar [...] на каждую числовую колонку. Если оси Y ещё нет, добавляется y-axis \"\" min --> max.",
+  "tablePaste.expected.xychart.headers": "Месяц|План|Факт|Прогноз",
   "tablePaste.expected.quadrant.columns":
     "3 колонки: «Название точки», «X (0..1 или 0..100%)», «Y (0..1 или 0..100%)».",
   "tablePaste.expected.quadrant.rules":
@@ -157,7 +157,7 @@ export const tablePasteMessages = {
   "tablePaste.expected.mindmap.columns":
     "2 и более колонок по уровням дерева: «Корень», «Ветка 1-го уровня», «Ветка 2-го уровня» и т.д.",
   "tablePaste.expected.mindmap.rules":
-    "Строит дерево интеллект-карты, автоматически объединяя одинаковые родительские узлы.",
+    "Строит дерево интеллект-карты, объединяя одинаковых родителей. Узлы встают на пустую строку у курсора, заменяют выделение или заменяют все узлы карты. Legend, title, header, footer, caption, style и комментарии сохраняются.",
   "tablePaste.expected.mindmap.headers": "Корень|Ветка|Подветка",
   "tablePaste.expected.nwdiag.columns":
     "2 или 3 колонки: «Узел», «IP-адрес», [«Сеть (необязательно)»].",

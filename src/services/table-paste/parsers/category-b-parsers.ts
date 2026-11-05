@@ -130,11 +130,88 @@ export function parseOrgChartTable(
 // ---------------------------------------------------------------------------
 // 2. GANTT (Mermaid & PlantUML)
 // ---------------------------------------------------------------------------
-function looksLikeGanttHeader(row: readonly string[]): boolean {
-  const joined = row.join(" ").toLowerCase();
-  return /(?:task|задач|этап|start|начал|дата|duration|длительн|секци|section)/i.test(
-    joined,
+/** Two columns are Task | Duration. Wider tables put Start in the second column and Duration in the third. */
+const GANTT_TWO_COLUMN_LAYOUT = 2;
+const GANTT_FIRST_VALUE_COLUMN = 1;
+const GANTT_SECOND_VALUE_COLUMN = 2;
+/** A lone title cell is only stripped when the sheet has a start column too. */
+const GANTT_TITLE_MIN_COLUMNS = 3;
+
+const GANTT_DATE_CELL =
+  /^(?:\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2})?)?|\d{1,2}[./]\d{1,2}[./]\d{2,4})$/;
+const GANTT_DURATION_CELL =
+  /^\d+(?:[.,]\d+)?(?:\s*(?:[dwmyh]|days?|weeks?|months?|hours?|years?|дн(?:я|ей|ь|\.)?|нед\.?|недел(?:я|и|ь|ю)|мес\.?|месяц(?:а|ев)?|год(?:а|ов)?))?$/i;
+const GANTT_PLACEHOLDER_CELLS = new Set([
+  "-",
+  "—",
+  "–",
+  "tbd",
+  "n/a",
+  "na",
+  "н/д",
+  "н.д.",
+  "?",
+]);
+
+function isBlankGanttCell(raw: string): boolean {
+  const cell = raw.trim().toLowerCase();
+  return cell.length === 0 || GANTT_PLACEHOLDER_CELLS.has(cell);
+}
+
+/** Date, duration, or plain number — a real task cell, not a column title. */
+function cellLooksLikeGanttDataValue(raw: string): boolean {
+  const cell = raw.trim();
+  if (isBlankGanttCell(cell)) return false;
+  if (GANTT_DATE_CELL.test(cell)) return true;
+  if (/^after\b/i.test(cell)) return true;
+  if (parseTableNumber(cell) !== null) return true;
+  return GANTT_DURATION_CELL.test(cell);
+}
+
+function ganttValueColumnIndexes(columnCount: number): readonly number[] {
+  if (columnCount <= GANTT_TWO_COLUMN_LAYOUT) {
+    return [GANTT_FIRST_VALUE_COLUMN];
+  }
+  return [GANTT_FIRST_VALUE_COLUMN, GANTT_SECOND_VALUE_COLUMN];
+}
+
+function isGanttDataRow(row: readonly string[], columnCount: number): boolean {
+  return ganttValueColumnIndexes(columnCount).some((columnIndex) =>
+    cellLooksLikeGanttDataValue(row[columnIndex] ?? ""),
   );
+}
+
+/**
+ * Leading title/header rows have words (or a single title) where tasks have
+ * dates and durations. A task named "Задача 1" / "Этап" is kept when its
+ * start or duration cell is a real value.
+ */
+function isLeadingGanttHeaderRow(row: readonly string[], columnCount: number): boolean {
+  if (isGanttDataRow(row, columnCount)) return false;
+
+  const cells = row.map((cell) => cell.trim());
+  const valueLabels = ganttValueColumnIndexes(columnCount)
+    .map((columnIndex) => cells[columnIndex] ?? "")
+    .filter((cell) => !isBlankGanttCell(cell));
+  if (valueLabels.length > 0) return true;
+
+  const meaningfulCount = cells.filter((cell) => !isBlankGanttCell(cell)).length;
+  return meaningfulCount === 1 && columnCount >= GANTT_TITLE_MIN_COLUMNS;
+}
+
+function ganttRowsWithoutHeaders(
+  rows: readonly (readonly string[])[],
+): readonly (readonly string[])[] {
+  const columnCount = rows[0]?.length ?? 0;
+  if (!rows.some((row) => isGanttDataRow(row, columnCount))) {
+    return rows;
+  }
+
+  let startIndex = 0;
+  while (startIndex < rows.length && isLeadingGanttHeaderRow(rows[startIndex], columnCount)) {
+    startIndex += 1;
+  }
+  return startIndex === 0 ? rows : rows.slice(startIndex);
 }
 
 function normalizeDurationMermaid(raw: string): string {
@@ -171,9 +248,7 @@ export function parseGanttTable(
     );
   }
 
-  const skipHeader =
-    grid.rows.length > 1 && looksLikeGanttHeader(grid.rows[0]);
-  const dataRows = skipHeader ? grid.rows.slice(1) : grid.rows;
+  const dataRows = ganttRowsWithoutHeaders(grid.rows);
   if (dataRows.length === 0) {
     return makeTablePasteError("gantt", format, "no_valid_rows", "tablePaste.error.noDataRows");
   }

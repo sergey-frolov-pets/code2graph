@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { heatmapEngine } from "../mermaid/ext/engines/heatmap";
+import {
+  HEATMAP_SCALE_COLOR_HIGH,
+  HEATMAP_SCALE_COLOR_LOW,
+} from "./constants";
 import {
   applyTableFromClipboardText,
   detectTableDiagramType,
@@ -176,6 +181,97 @@ describe("Category A & B table parsers", () => {
       expect(res.fullSource).toContain("y Утро, День");
       expect(res.fullSource).toContain("Утро : 20, 35");
       expect(res.fullSource).toContain("День : , 75");
+      const xAt = res.fullSource.indexOf("x Пн, Вт");
+      const yAt = res.fullSource.indexOf("y Утро, День");
+      const scaleAt = res.fullSource.indexOf("\nscale\n");
+      const dataAt = res.fullSource.indexOf("\ndata\n");
+      expect(xAt).toBeGreaterThan(-1);
+      expect(yAt).toBeGreaterThan(xAt);
+      expect(scaleAt).toBeGreaterThan(yAt);
+      expect(dataAt).toBeGreaterThan(scaleAt);
+      expect(res.fullSource).toContain(`20-33.75 : ${HEATMAP_SCALE_COLOR_LOW}`);
+      expect(res.fullSource).toContain(`61.25+ : ${HEATMAP_SCALE_COLOR_HIGH}`);
+      expect(heatmapEngine.parse(res.fullSource).ok).toBe(true);
+    }
+  });
+
+  it("keeps an existing heatmap scale and places x and y before it", () => {
+    const res = applyTableFromClipboardText({
+      clipboardText: "Смена\tПн\tВт\nУтро\t20\t35\nДень\t40\t75",
+      source: "heatmap\ntitle Нагрузка\nscale\n0-40 : #e8f5e9\n40+ : #ffebee\nx A, B\ny R1\ndata\nR1 : 1, 2",
+      format: "mermaid",
+    });
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      const xAt = res.fullSource.indexOf("x Пн, Вт");
+      const yAt = res.fullSource.indexOf("y Утро, День");
+      const scaleAt = res.fullSource.indexOf("\nscale\n");
+      expect(xAt).toBeGreaterThan(res.fullSource.indexOf("title Нагрузка"));
+      expect(yAt).toBeGreaterThan(xAt);
+      expect(scaleAt).toBeGreaterThan(yAt);
+      expect(res.fullSource).toContain("0-40 : #e8f5e9");
+      expect(res.fullSource).toContain("40+ : #ffebee");
+      expect(res.fullSource).not.toContain(HEATMAP_SCALE_COLOR_LOW);
+      expect(heatmapEngine.parse(res.fullSource).ok).toBe(true);
+    }
+  });
+
+  it("builds xychart series from one, two, and many columns", () => {
+    const oneColumn = applyTableFromClipboardText({
+      clipboardText: "Значение\n10\n25\n40",
+      source: 'xychart-beta\n    title T\n    x-axis ["A", "B", "C"]\n    y-axis "Y" 0 --> 50\n    bar [1, 2, 3]\n    line [4, 5, 6]',
+      format: "mermaid",
+    });
+    expect(oneColumn.ok).toBe(true);
+    if (oneColumn.ok) {
+      expect(oneColumn.fullSource).toContain("bar [1, 2, 3]");
+      expect(oneColumn.fullSource).toContain("bar [10, 25, 40]");
+      expect(oneColumn.fullSource).toContain('y-axis "Y" 0 --> 50');
+      expect(oneColumn.fullSource).toContain("line [4, 5, 6]");
+      expect(oneColumn.fullSource).not.toContain('y-axis ""');
+    }
+
+    const newlineColumn = applyTableFromClipboardText({
+      clipboardText: "10\n25\n40",
+      source: "xychart-beta\n    title T",
+      format: "mermaid",
+    });
+    expect(newlineColumn.ok).toBe(true);
+    if (newlineColumn.ok) {
+      expect(newlineColumn.fullSource).toContain("bar [10, 25, 40]");
+      expect(newlineColumn.fullSource).not.toContain("x-axis");
+      expect(newlineColumn.fullSource).not.toContain("y-axis");
+    }
+
+    const twoColumns = applyTableFromClipboardText({
+      clipboardText: "Янв\t20\nФев\t35",
+      source: 'xychart-beta\n    title Заказы\n    %% x-axis [не трогать комментарий]\n    x-axis ["Старое"]\n    y-axis "Заказы" 0 --> 100\n    bar [7]\n    line [9]',
+      format: "mermaid",
+    });
+    expect(twoColumns.ok).toBe(true);
+    if (twoColumns.ok) {
+      expect(twoColumns.fullSource).toContain('x-axis ["Янв", "Фев"]');
+      expect(twoColumns.fullSource).not.toContain('x-axis ["Старое"]');
+      expect(twoColumns.fullSource).toContain("%% x-axis [не трогать комментарий]");
+      expect(twoColumns.fullSource).toContain('y-axis "Заказы" 0 --> 100');
+      expect(twoColumns.fullSource).not.toContain('y-axis ""');
+      expect(twoColumns.fullSource).toContain("bar [20, 35]");
+      expect(twoColumns.fullSource).not.toContain("bar [7]");
+      expect(twoColumns.fullSource).toContain("line [9]");
+    }
+
+    const manyColumns = applyTableFromClipboardText({
+      clipboardText: "Месяц\tПлан\tФакт\tПрогноз\nЯнв\t1\t2\t3\nФев\t4\t5\t6",
+      source: "xychart-beta\n    title Заказы",
+      format: "mermaid",
+    });
+    expect(manyColumns.ok).toBe(true);
+    if (manyColumns.ok) {
+      expect(manyColumns.fullSource).toContain('x-axis ["Янв", "Фев"]');
+      expect(manyColumns.fullSource).toContain('y-axis "" 0 --> 11');
+      expect(manyColumns.fullSource).toContain("bar [1, 4]");
+      expect(manyColumns.fullSource).toContain("bar [2, 5]");
+      expect(manyColumns.fullSource).toContain("bar [3, 6]");
     }
   });
 
@@ -197,10 +293,11 @@ describe("Category A & B table parsers", () => {
     });
     expect(evRes.ok).toBe(true);
     if (evRes.ok) {
-      expect(evRes.fullSource).toContain("days 1, 2");
-      expect(evRes.fullSource).toContain("pv 10, 25");
-      expect(evRes.fullSource).toContain("ev 8, 20");
-      expect(evRes.fullSource).toContain("ac 12, 28");
+      expect(evRes.fullSource).toBe(
+        ["ev", "title Бюджет", "days 1, 2", "pv 10, 25", "ev 8, 20", "ac 12, 28", "grid"].join(
+          "\n",
+        ),
+      );
     }
 
     const xyRes = applyTableFromClipboardText({
@@ -211,8 +308,10 @@ describe("Category A & B table parsers", () => {
     expect(xyRes.ok).toBe(true);
     if (xyRes.ok) {
       expect(xyRes.fullSource).toContain("x-axis [\"Янв\", \"Фев\"]");
+      expect(xyRes.fullSource).toContain('y-axis "" 0 --> 39');
       expect(xyRes.fullSource).toContain("bar [20, 35]");
-      expect(xyRes.fullSource).toContain("line [18, 30]");
+      expect(xyRes.fullSource).toContain("bar [18, 30]");
+      expect(xyRes.fullSource).not.toContain("line [");
     }
 
     const quadRes = applyTableFromClipboardText({
@@ -237,7 +336,73 @@ describe("Category A & B table parsers", () => {
     }
   });
 
+  it("keeps the ev diagram header and places pasted series after title", () => {
+    const clipboardText = "Day\tPV\tEV\tAC\n1\t10\t8\t12\n2\t25\t20\t28";
+
+    const headerOnly = applyTableFromClipboardText({
+      clipboardText,
+      source: "ev\ntitle Бюджет\ngrid",
+      format: "mermaid",
+    });
+    expect(headerOnly.ok).toBe(true);
+    if (headerOnly.ok) {
+      expect(headerOnly.fullSource).toBe(
+        ["ev", "title Бюджет", "grid", "days 1, 2", "pv 10, 25", "ev 8, 20", "ac 12, 28"].join(
+          "\n",
+        ),
+      );
+    }
+
+    const evchart = applyTableFromClipboardText({
+      clipboardText,
+      source: "evchart\ntitle Бюджет\ndays 1\npv 1\nev 1\nac 1",
+      format: "mermaid",
+    });
+    expect(evchart.ok).toBe(true);
+    if (evchart.ok) {
+      expect(evchart.fullSource.startsWith("evchart\ntitle Бюджет\n")).toBe(true);
+      expect(evchart.fullSource).toContain("days 1, 2");
+    }
+  });
+
   it("parses orgchart, gantt, timeline, journey, packet, wbs, mindmap, nwdiag, and wiremark Table", () => {
+    const ganttHeaderless = applyTableFromClipboardText({
+      clipboardText:
+        "Задача анализа\t2026-01-02\t5d\tСекция 1\nЭтап прототипа\t2026-01-08\t4d\tПодготовка",
+      source: "@startgantt\nproject starts 2026-01-01\n@endgantt",
+      format: "plantuml",
+    });
+    expect(ganttHeaderless.ok).toBe(true);
+    if (ganttHeaderless.ok) {
+      expect(ganttHeaderless.fullSource).toContain("[Задача анализа] lasts 5 days");
+      expect(ganttHeaderless.fullSource).toContain("[Задача анализа] starts 2026-01-02");
+      expect(ganttHeaderless.fullSource).toContain("[Этап прототипа] lasts 4 days");
+    }
+
+    const ganttWithHeader = applyTableFromClipboardText({
+      clipboardText:
+        "Задача\tНачало\tДлительность\tСекция\nАнализ\t2026-01-02\t5d\tПодготовка\nПрототип\t2026-01-08\t4d\tПодготовка",
+      source: "@startgantt\n@endgantt",
+      format: "plantuml",
+    });
+    expect(ganttWithHeader.ok).toBe(true);
+    if (ganttWithHeader.ok) {
+      expect(ganttWithHeader.fullSource).not.toContain("[Задача]");
+      expect(ganttWithHeader.fullSource).toContain("[Анализ] lasts 5 days");
+      expect(ganttWithHeader.fullSource).toContain("[Прототип] starts 2026-01-08");
+    }
+
+    const ganttNamedRows = applyTableFromClipboardText({
+      clipboardText: "Этап 1\t5\nStart design\t3 days",
+      source: "@startgantt\n@endgantt",
+      format: "plantuml",
+    });
+    expect(ganttNamedRows.ok).toBe(true);
+    if (ganttNamedRows.ok) {
+      expect(ganttNamedRows.fullSource).toContain("[Этап 1] lasts 5 days");
+      expect(ganttNamedRows.fullSource).toContain("[Start design] lasts 3 days");
+    }
+
     const orgRes = applyTableFromClipboardText({
       clipboardText: "Руководитель\tПодчинённый\tСвязь\nCEO\tCTO\t\nCFO\tBackend\tdotted",
       source: "orgchart\nA -> B",
@@ -331,5 +496,345 @@ describe("Category A & B table parsers", () => {
       expect(clusteredRes.fullSource).toContain("series Москва : 120, 145");
       expect(clusteredRes.fullSource).toContain("series Регионы : 80, 95");
     }
+  });
+});
+
+const PLANTUML_MINDMAP_WITH_CHROME = `@startmindmap
+' комментарий
+top to bottom direction
+title Карта
+header Шапка
+footer Подвал
+caption Подпись
+<style>
+mindmapDiagram {
+  node {
+    BackgroundColor lightBlue
+  }
+}
+</style>
+legend right
+  * — OrgMode
+  +/-- — арифметика
+  _ — без рамки
+endlegend
+
+*[#1565C0] Старый корень
+**:Многострочный узел
+Редактор и превью
+в одном окне;
+' между узлами
+left side
+--[#E65100] Старая ветка
+@endmindmap
+`;
+
+const MINDMAP_TABLE = "Корень\tВетка\tЛист\nКарта\tРаздел\tПункт";
+const MINDMAP_TREE = "* Карта\n** Раздел\n*** Пункт";
+
+function expectMindmapChromePreserved(source: string): void {
+  expect(source).toContain("' комментарий");
+  expect(source).toContain("top to bottom direction");
+  expect(source).toContain("title Карта");
+  expect(source).toContain("header Шапка");
+  expect(source).toContain("footer Подвал");
+  expect(source).toContain("caption Подпись");
+  expect(source).toContain("<style>");
+  expect(source).toContain("BackgroundColor lightBlue");
+  expect(source).toContain("</style>");
+  expect(source).toContain("legend right\n  * — OrgMode\n  +/-- — арифметика\n  _ — без рамки\nendlegend");
+  expect(source).toContain("' между узлами");
+  expect(source).toContain("left side");
+  expect(source.startsWith("@startmindmap")).toBe(true);
+  expect(source).toContain("@endmindmap");
+  expect(source.indexOf("legend right")).toBeLessThan(source.indexOf("* Карта"));
+  expect(source.indexOf("left side")).toBeLessThan(source.lastIndexOf("@endmindmap"));
+}
+
+describe("plantuml mindmap table paste", () => {
+  it("replaces nodes and keeps legend, style, and other chrome", () => {
+    const res = applyTableFromClipboardText({
+      clipboardText: MINDMAP_TABLE,
+      source: PLANTUML_MINDMAP_WITH_CHROME,
+      format: "plantuml",
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+
+    expect(res.fullSource).toContain(MINDMAP_TREE);
+    expectMindmapChromePreserved(res.fullSource);
+    expect(res.fullSource).not.toContain("Старый корень");
+    expect(res.fullSource).not.toContain("Многострочный узел");
+    expect(res.fullSource).not.toContain("Редактор и превью");
+    expect(res.fullSource).not.toContain("Старая ветка");
+    expect(res.fullSource.indexOf("* Карта")).toBeLessThan(res.fullSource.indexOf("left side"));
+  });
+
+  it("replaces all nodes when the caret sits inside a node label", () => {
+    const cursorOffset = PLANTUML_MINDMAP_WITH_CHROME.indexOf("Старый корень");
+    const res = applyTableFromClipboardText({
+      clipboardText: MINDMAP_TABLE,
+      source: PLANTUML_MINDMAP_WITH_CHROME,
+      format: "plantuml",
+      cursorOffset,
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+
+    expect(res.fullSource).toContain(MINDMAP_TREE);
+    expectMindmapChromePreserved(res.fullSource);
+    expect(res.fullSource).not.toContain("Старый корень");
+  });
+
+  it("does not inject nodes into the legend when the caret is on a legend line", () => {
+    const cursorOffset = PLANTUML_MINDMAP_WITH_CHROME.indexOf("  * — OrgMode");
+    const res = applyTableFromClipboardText({
+      clipboardText: MINDMAP_TABLE,
+      source: PLANTUML_MINDMAP_WITH_CHROME,
+      format: "plantuml",
+      cursorOffset,
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+
+    expect(res.fullSource).toContain(
+      "legend right\n  * — OrgMode\n  +/-- — арифметика\n  _ — без рамки\nendlegend",
+    );
+    expect(res.fullSource.indexOf("endlegend")).toBeLessThan(res.fullSource.indexOf("* Карта"));
+    expect(res.fullSource).not.toContain("Старый корень");
+  });
+
+  it("inserts the tree at a blank line inside the diagram and keeps existing nodes", () => {
+    const cursorOffset =
+      PLANTUML_MINDMAP_WITH_CHROME.indexOf("endlegend\n") + "endlegend\n".length;
+    const res = applyTableFromClipboardText({
+      clipboardText: MINDMAP_TABLE,
+      source: PLANTUML_MINDMAP_WITH_CHROME,
+      format: "plantuml",
+      cursorOffset,
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+
+    expect(res.fullSource).toContain(MINDMAP_TREE);
+    expect(res.fullSource).toContain("*[#1565C0] Старый корень");
+    expect(res.fullSource).toContain("**:Многострочный узел");
+    expect(res.fullSource).toContain("Редактор и превью");
+    expectMindmapChromePreserved(res.fullSource);
+    expect(res.fullSource.indexOf("* Карта")).toBeLessThan(
+      res.fullSource.indexOf("*[#1565C0] Старый корень"),
+    );
+    expect(res.fullSource.indexOf("endlegend")).toBeLessThan(res.fullSource.indexOf("* Карта"));
+  });
+
+  it("inserts the tree just before @endmindmap when the caret is there", () => {
+    const cursorOffset = PLANTUML_MINDMAP_WITH_CHROME.indexOf("@endmindmap");
+    const res = applyTableFromClipboardText({
+      clipboardText: MINDMAP_TABLE,
+      source: PLANTUML_MINDMAP_WITH_CHROME,
+      format: "plantuml",
+      cursorOffset,
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+
+    expect(res.fullSource).toContain(`${MINDMAP_TREE}\n@endmindmap`);
+    expect(res.fullSource).toContain("Старый корень");
+    expect(res.fullSource).toContain("legend right");
+  });
+
+  it("replaces only the selected fragment", () => {
+    const start = PLANTUML_MINDMAP_WITH_CHROME.indexOf("*[#1565C0] Старый корень");
+    const end = PLANTUML_MINDMAP_WITH_CHROME.indexOf("' между узлами");
+    const res = applyTableFromClipboardText({
+      clipboardText: MINDMAP_TABLE,
+      source: PLANTUML_MINDMAP_WITH_CHROME,
+      format: "plantuml",
+      selectionRange: { start, end },
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+
+    expect(res.fullSource).toContain(MINDMAP_TREE);
+    expect(res.fullSource).not.toContain("Старый корень");
+    expect(res.fullSource).not.toContain("Многострочный узел");
+    expect(res.fullSource).toContain("--[#E65100] Старая ветка");
+    expect(res.fullSource).toContain("' между узлами");
+    expectMindmapChromePreserved(res.fullSource);
+  });
+
+  it("keeps legend when the whole buffer is selected", () => {
+    const res = applyTableFromClipboardText({
+      clipboardText: MINDMAP_TABLE,
+      source: PLANTUML_MINDMAP_WITH_CHROME,
+      format: "plantuml",
+      selectionRange: { start: 0, end: PLANTUML_MINDMAP_WITH_CHROME.length },
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+
+    expect(res.fullSource).toContain(MINDMAP_TREE);
+    expectMindmapChromePreserved(res.fullSource);
+    expect(res.fullSource).not.toContain("Старый корень");
+    expect(res.fullSource).not.toContain("Старая ветка");
+  });
+
+  it("still replaces a mermaid mindmap and a plantuml wbs as data sections", () => {
+    const mermaidRes = applyTableFromClipboardText({
+      clipboardText: MINDMAP_TABLE,
+      source: "mindmap\n  root((Old))\n    Old branch",
+      format: "mermaid",
+    });
+    expect(mermaidRes.ok).toBe(true);
+    if (mermaidRes.ok) {
+      expect(mermaidRes.fullSource).toContain("mindmap");
+      expect(mermaidRes.fullSource).toContain("root((Карта))");
+      expect(mermaidRes.fullSource).not.toContain("Old");
+    }
+
+    const wbsRes = applyTableFromClipboardText({
+      clipboardText: MINDMAP_TABLE,
+      source: "@startwbs\n* Old\n@endwbs",
+      format: "plantuml",
+    });
+    expect(wbsRes.ok).toBe(true);
+    if (wbsRes.ok) {
+      expect(wbsRes.fullSource).toContain("* Карта\n** Раздел\n*** Пункт");
+      expect(wbsRes.fullSource).not.toContain("* Old");
+      expect(wbsRes.fullSource).toContain("@startwbs");
+      expect(wbsRes.fullSource).toContain("@endwbs");
+    }
+  });
+});
+
+describe("mermaid gantt table paste", () => {
+  const ganttSource = [
+    "gantt",
+    "title План релиза",
+    "dateFormat YYYY-MM-DD",
+    "excludes weekends",
+    "",
+    "section Старое",
+    "Черновик :old, 2024-01-01, 2d",
+  ].join("\n");
+
+  it("keeps the first task when its name looks like a column title", () => {
+    const res = applyTableFromClipboardText({
+      clipboardText: [
+        "Задача 1\t2026-01-06\t3\tЭтапы",
+        "Задача 2\t2026-01-09\t5\tЭтапы",
+        "Этап подготовки\t2026-01-14\t2\tЭтапы",
+      ].join("\n"),
+      source: ganttSource,
+      format: "mermaid",
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.fullSource).toContain("title План релиза");
+    expect(res.fullSource).toContain("dateFormat YYYY-MM-DD");
+    expect(res.fullSource).toContain("section Этапы");
+    expect(res.fullSource).toContain("Задача 1 :t1, 2026-01-06, 3d");
+    expect(res.fullSource).toContain("Задача 2 :t2, 2026-01-09, 5d");
+    expect(res.fullSource).toContain("Этап подготовки :t3, 2026-01-14, 2d");
+    expect(res.fullSource).not.toContain("Черновик");
+    expect(res.fullSource).not.toContain("section Старое");
+  });
+
+  it("drops a title row and column headers that are not task data", () => {
+    const res = applyTableFromClipboardText({
+      clipboardText: [
+        "План релиза",
+        "Название\tСтарт\tСрок\tГруппа",
+        "Дизайн\t2026-01-06\t5\tПодготовка",
+        "Код\t06.01.2026\t4 дня\tРазработка",
+      ].join("\n"),
+      source: ganttSource,
+      format: "mermaid",
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.fullSource).toContain("section Подготовка");
+    expect(res.fullSource).toContain("Дизайн :t1, 2026-01-06, 5d");
+    expect(res.fullSource).toContain("section Разработка");
+    expect(res.fullSource).toContain("Код :t2, 06.01.2026, 4 дня");
+    expect(res.fullSource).not.toContain("Название :");
+    expect(res.fullSource).not.toContain("План релиза :");
+    expect(res.fullSource).not.toContain("section Группа");
+  });
+
+  it("drops recognized headers and keeps every task in a two-column sheet", () => {
+    const res = applyTableFromClipboardText({
+      clipboardText: ["Task\tDuration", "Design\t3d", "Build\t5"].join("\n"),
+      source: "gantt\ndateFormat YYYY-MM-DD",
+      format: "mermaid",
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.fullSource).toContain("Design :t1, 2026-01-01, 3d");
+    expect(res.fullSource).toContain("Build :t2, after t1, 5d");
+    expect(res.fullSource).not.toContain("Task :");
+    expect(res.fullSource).not.toContain("Duration");
+  });
+
+  it("does not turn a task with a blank duration into a header", () => {
+    const res = applyTableFromClipboardText({
+      clipboardText: [
+        "Согласование\t\t\tПодготовка",
+        "Дизайн\t2026-01-06\t4\tПодготовка",
+      ].join("\n"),
+      source: "gantt\ndateFormat YYYY-MM-DD",
+      format: "mermaid",
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.fullSource).toContain("Согласование :t1, 2026-01-01, 3d");
+    expect(res.fullSource).toContain("Дизайн :t2, 2026-01-06, 4d");
+  });
+});
+
+describe("plantuml gantt table paste", () => {
+  it("keeps a first task whose name contains a header word and drops the header row", () => {
+    const res = applyTableFromClipboardText({
+      clipboardText: [
+        "Задача\tНачало\tДлительность",
+        "Этап подготовки\t2026-01-06\t4",
+        "Сборка\t2026-01-10\t2",
+      ].join("\n"),
+      source: "@startgantt\n[Черновик] lasts 1 days\n@endgantt",
+      format: "plantuml",
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.fullSource).toContain("[Этап подготовки] lasts 4 days");
+    expect(res.fullSource).toContain("[Этап подготовки] starts 2026-01-06");
+    expect(res.fullSource).toContain("[Сборка] lasts 2 days");
+    expect(res.fullSource).not.toContain("[Задача]");
+    expect(res.fullSource).not.toContain("[Черновик]");
   });
 });

@@ -137,6 +137,29 @@ export function useEditorSelection(options: {
     });
   }
 
+  function getCaretOffsetInSource(): number | undefined {
+    const textarea = textareaRef.value;
+    if (textarea && textarea.selectionStart !== textarea.selectionEnd) {
+      return undefined;
+    }
+
+    const textareaFocused =
+      textarea !== null && document.activeElement === textarea;
+    if (textareaFocused && textarea) {
+      return mapDisplayOffsetToSourceOffset(
+        textarea.selectionStart,
+        source.value,
+        folds.value,
+      );
+    }
+
+    if (selectionStart.value === selectionEnd.value) {
+      return selectionStart.value;
+    }
+
+    return undefined;
+  }
+
   function getSelectionRangeInSource(): { start: number; end: number } {
     const textarea = textareaRef.value;
     if (textarea) {
@@ -157,6 +180,7 @@ export function useEditorSelection(options: {
     updateSelectionState,
     requestAiPatch,
     insertSnippetAtCursor,
+    getCaretOffsetInSource,
     getSelectionRangeInSource,
   };
 }

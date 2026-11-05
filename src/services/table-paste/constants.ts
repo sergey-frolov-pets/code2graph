@@ -10,8 +10,7 @@ export const SANKEY_EXPECTED_COLUMNS = 3;
 export const EV_EXPECTED_COLUMNS = 4;
 export const BUBBLE_MIN_COLUMNS = 4;
 export const BUBBLE_MAX_COLUMNS = 5;
-export const XYCHART_MIN_COLUMNS = 2;
-export const XYCHART_MAX_COLUMNS = 3;
+export const XYCHART_MIN_COLUMNS = 1;
 export const ORGCHART_MIN_COLUMNS = 2;
 export const ORGCHART_MAX_COLUMNS = 3;
 export const GANTT_MIN_COLUMNS = 2;
@@ -33,6 +32,18 @@ export const VORONOI_MIN_COLUMNS = 3;
 export const VORONOI_MAX_COLUMNS = 5;
 export const CLUSTERED_MIN_COLUMNS = 2;
 export const CLUSTERED_MIN_ROWS = 2;
+/** Число ступеней шкалы, которую вставка добавляет, если блока scale нет. */
+export const HEATMAP_DEFAULT_SCALE_BANDS = 4;
+/** Нижняя граница шкалы, когда в матрице нет чисел. */
+export const HEATMAP_SCALE_EMPTY_MIN = 0;
+/** Ширина шкалы, когда все числа совпали или чисел нет. */
+export const HEATMAP_SCALE_EMPTY_SPAN = 1;
+/** Минимальный шаг границы после округления до 4 знаков. */
+export const HEATMAP_SCALE_BOUND_STEP = 0.0001;
+/** Цвет минимума вставляемой шкалы. */
+export const HEATMAP_SCALE_COLOR_LOW = "#1565c0";
+/** Цвет максимума вставляемой шкалы. */
+export const HEATMAP_SCALE_COLOR_HIGH = "#c62828";
 
 export const DEFAULT_JOURNEY_SCORE = 5;
 export const MIN_JOURNEY_SCORE = 1;
@@ -162,9 +173,9 @@ const EXPECTED_SPECS_BY_TYPE: Record<
     rulesKey: "tablePaste.expected.xychart.rules",
     sampleHeadersKey: "tablePaste.expected.xychart.headers",
     sampleRows: [
-      ["Янв", "20", "18"],
-      ["Фев", "35", "30"],
-      ["Мар", "40", "42"],
+      ["Янв", "20", "18", "16"],
+      ["Фев", "35", "30", "28"],
+      ["Мар", "40", "42", "39"],
     ],
   },
   quadrant: {

@@ -8,6 +8,10 @@ import { LAYOUT_ENGINES } from "@/constants";
 import type { AppLocale } from "@/constants/i18n";
 import { wizardThumbnailFileName } from "@/constants/wizard-gallery";
 import { renderDiagramToSvg } from "@/services/diagram-render";
+import {
+  canvasTextMetrics,
+  estimateElementTextBox,
+} from "@/services/diagram-text-metrics";
 import type { PlantUmlApi } from "@/types/plantuml";
 import { LocalizedAppError } from "@/utils/localized-app-error";
 
@@ -23,32 +27,57 @@ export function installJsdomDiagramShims(): void {
     return;
   }
 
-  const textLength = (element: SVGElement): number =>
-    Math.max(8, (element.textContent ?? "").length * 8);
   const svgPrototype = SVGElement.prototype as SVGElement & {
     getBBox: () => DOMRect;
   };
   svgPrototype.getBBox = function getBBox(this: SVGElement) {
-    const width = textLength(this);
-    return {
-      x: 0,
-      y: -12,
-      width,
-      height: 18,
-      top: -12,
-      right: width,
-      bottom: 6,
-      left: 0,
-    } as DOMRect;
+    const tag = this.tagName.toLowerCase();
+    if (tag !== "text" && tag !== "tspan") {
+      return {
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+      } as DOMRect;
+    }
+
+    return estimateElementTextBox(this) as DOMRect;
+  };
+  const originalRect = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function getBoundingClientRect(
+    this: Element,
+  ): DOMRect {
+    if (!isTextLabel(this)) {
+      return originalRect.call(this);
+    }
+
+    const box = estimateElementTextBox(this);
+    return new DOMRect(0, 0, box.width, box.height);
   };
   const computedTextLength = function computedTextLength(this: SVGElement) {
-    return textLength(this);
+    const tag = this.tagName.toLowerCase();
+    if (tag !== "text" && tag !== "tspan") {
+      return 0;
+    }
+
+    return estimateElementTextBox(this).width;
   };
   Object.assign(SVGElement.prototype, { getComputedTextLength: computedTextLength });
   Object.assign(Element.prototype, { getComputedTextLength: computedTextLength });
-  HTMLCanvasElement.prototype.getContext = (() => ({
-    font: "",
-    measureText: () => ({ width: 12 }),
+  HTMLCanvasElement.prototype.getContext = (() => {
+    const state = { font: "10px sans-serif" };
+    return {
+    get font() {
+      return state.font;
+    },
+    set font(value: string) {
+      state.font = value;
+    },
+    measureText: (text: string) => canvasTextMetrics(String(text ?? ""), state.font),
     fillText() {},
     strokeText() {},
     fillRect() {},
@@ -74,7 +103,25 @@ export function installJsdomDiagramShims(): void {
     scale() {},
     translate() {},
     setTransform() {},
-  })) as unknown as HTMLCanvasElement["getContext"];
+  };
+  }) as unknown as HTMLCanvasElement["getContext"];
+}
+
+const LABEL_TAGS = new Set(["text", "tspan", "span", "p", "div", "foreignobject"]);
+
+function isTextLabel(element: Element): boolean {
+  const tag = element.tagName.toLowerCase();
+  if (!LABEL_TAGS.has(tag)) {
+    return false;
+  }
+
+  if (!(element.textContent ?? "").trim()) {
+    return false;
+  }
+
+  return [...element.children].every((child) =>
+    LABEL_TAGS.has(child.tagName.toLowerCase()),
+  );
 }
 
 function installLocalPlantUmlLibraryFetch(): void {
@@ -129,13 +176,19 @@ export async function writeWizardThumbnails(): Promise<void> {
   }
 
   for (const example of examples) {
+    // Mermaid sizes the finished svg with getBBox() on the root. jsdom has no
+    // real font layout, so rebuilding those thumbnails here blows up the viewBox.
+    if (example.format === "mermaid") {
+      continue;
+    }
+
     for (const locale of LOCALES) {
       const filePath = path.join(
         thumbnailRoot,
         locale,
         wizardThumbnailFileName(example.format, example.sampleId),
       );
-      if (existsSync(filePath)) {
+      if (process.env.WIZARD_THUMBNAIL_FORCE !== "1" && existsSync(filePath)) {
         continue;
       }
 

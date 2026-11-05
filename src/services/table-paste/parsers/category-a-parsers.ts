@@ -3,13 +3,18 @@ import {
   BUBBLE_MAX_COLUMNS,
   BUBBLE_MIN_COLUMNS,
   EV_EXPECTED_COLUMNS,
+  HEATMAP_DEFAULT_SCALE_BANDS,
   HEATMAP_MIN_COLUMNS,
   HEATMAP_MIN_ROWS,
+  HEATMAP_SCALE_BOUND_STEP,
+  HEATMAP_SCALE_COLOR_HIGH,
+  HEATMAP_SCALE_COLOR_LOW,
+  HEATMAP_SCALE_EMPTY_MIN,
+  HEATMAP_SCALE_EMPTY_SPAN,
   PERCENT_NORMALIZATION_DIVISOR,
   PIE_EXPECTED_COLUMNS,
   QUADRANT_EXPECTED_COLUMNS,
   SANKEY_EXPECTED_COLUMNS,
-  XYCHART_MAX_COLUMNS,
   XYCHART_MIN_COLUMNS,
 } from "../constants";
 import {
@@ -111,6 +116,111 @@ export function parsePieTable(
 // ---------------------------------------------------------------------------
 // 2. HEATMAP (Mermaid Ext)
 // ---------------------------------------------------------------------------
+
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
+const COLOR_CHANNEL_MAX = 255;
+const HEX_RADIX = 16;
+const HEX_CHANNEL_WIDTH = 2;
+
+function mixHeatmapScaleColor(fromHex: string, toHex: string, t: number): string {
+  const blend = (start: number, end: number): string => {
+    const channel = Math.round(start + (end - start) * t);
+    const clamped = Math.max(0, Math.min(COLOR_CHANNEL_MAX, channel));
+    return clamped.toString(HEX_RADIX).padStart(HEX_CHANNEL_WIDTH, "0");
+  };
+  if (!HEX_COLOR_PATTERN.test(fromHex) || !HEX_COLOR_PATTERN.test(toHex)) {
+    return fromHex;
+  }
+  const from = Number.parseInt(fromHex.slice(1), HEX_RADIX);
+  const to = Number.parseInt(toHex.slice(1), HEX_RADIX);
+  const red = blend((from >> 16) & COLOR_CHANNEL_MAX, (to >> 16) & COLOR_CHANNEL_MAX);
+  const green = blend((from >> 8) & COLOR_CHANNEL_MAX, (to >> 8) & COLOR_CHANNEL_MAX);
+  const blue = blend(from & COLOR_CHANNEL_MAX, to & COLOR_CHANNEL_MAX);
+  return `#${red}${green}${blue}`;
+}
+
+/** Шкала от min до max: первая ступень синяя, последняя красная. */
+function buildDefaultHeatmapScaleLines(values: readonly number[]): string[] {
+  const finite = values.filter((value) => Number.isFinite(value));
+  const min = finite.length > 0 ? Math.min(...finite) : HEATMAP_SCALE_EMPTY_MIN;
+  const max =
+    finite.length > 0 ? Math.max(...finite) : HEATMAP_SCALE_EMPTY_MIN + HEATMAP_SCALE_EMPTY_SPAN;
+  const span = max - min || HEATMAP_SCALE_EMPTY_SPAN;
+  const bands = Math.max(1, HEATMAP_DEFAULT_SCALE_BANDS);
+  const lines = ["scale"];
+  let previous = Number(formatCleanNumber(min));
+
+  for (let i = 0; i < bands; i += 1) {
+    const colorT = bands === 1 ? 0 : i / (bands - 1);
+    const color = mixHeatmapScaleColor(HEATMAP_SCALE_COLOR_LOW, HEATMAP_SCALE_COLOR_HIGH, colorT);
+    const isLast = i === bands - 1;
+    if (isLast) {
+      lines.push(`${formatCleanNumber(previous)}+ : ${color}`);
+      break;
+    }
+    let next = Number(formatCleanNumber(min + (span * (i + 1)) / bands));
+    if (!(next > previous)) {
+      next = Number(formatCleanNumber(previous + HEATMAP_SCALE_BOUND_STEP));
+    }
+    lines.push(`${formatCleanNumber(previous)}-${formatCleanNumber(next)} : ${color}`);
+    previous = next;
+  }
+
+  return lines;
+}
+
+function splitHeatmapSourceForPaste(source: string): {
+  headerLines: string[];
+  scaleLines: string[];
+} {
+  const headerLines: string[] = [];
+  const scaleLines: string[] = [];
+  let inScale = false;
+  let inData = false;
+
+  for (const rawLine of source.split(/\r?\n/)) {
+    const trimmed = rawLine.trim();
+    if (!inScale && /^scale$/i.test(trimmed)) {
+      inScale = true;
+      inData = false;
+      scaleLines.push(rawLine);
+      continue;
+    }
+    if (inScale) {
+      if (/^data$/i.test(trimmed)) {
+        inScale = false;
+        inData = true;
+        continue;
+      }
+      // Оси, оказавшиеся внутри scale, заменяются новыми строками x/y перед блоком.
+      if (/^[xy]\b/i.test(trimmed)) {
+        continue;
+      }
+      scaleLines.push(rawLine);
+      if (/^end$/i.test(trimmed)) {
+        inScale = false;
+      }
+      continue;
+    }
+    if (/^data$/i.test(trimmed)) {
+      inData = true;
+      continue;
+    }
+    if (inData) {
+      if (/^end$/i.test(trimmed)) {
+        inData = false;
+      }
+      continue;
+    }
+    if (/^[xy]\b/i.test(trimmed)) {
+      continue;
+    }
+    headerLines.push(rawLine);
+  }
+
+  return { headerLines, scaleLines };
+}
+
 export function parseHeatmapTable(
   grid: ParsedClipboardGrid,
   source: string,
@@ -152,6 +262,7 @@ export function parseHeatmapTable(
 
   const yLabels: string[] = [];
   const dataLines: string[] = [];
+  const numericValues: number[] = [];
 
   for (let i = 0; i < matrixRows.length; i += 1) {
     const row = matrixRows[i];
@@ -177,6 +288,7 @@ export function parseHeatmapTable(
         );
       }
       formattedCells.push(formatCleanNumber(num));
+      numericValues.push(num);
     }
 
     yLabels.push(rowLabel);
@@ -186,57 +298,27 @@ export function parseHeatmapTable(
   const formatAxisItem = (label: string): string =>
     label.includes(",") ? `"${label}"` : label;
 
+  const { headerLines, scaleLines } = splitHeatmapSourceForPaste(source);
+  const header =
+    headerLines.some((line) => line.trim().length > 0)
+      ? headerLines.join("\n").replace(/\n+$/, "")
+      : "heatmap";
+  const scaleBlock = (
+    scaleLines.length > 0 ? scaleLines : buildDefaultHeatmapScaleLines(numericValues)
+  )
+    .join("\n")
+    .replace(/^\n+|\n+$/g, "");
+
+  // x и y обязаны идти до scale: внутри блока scale парсер читает только диапазоны.
   const newSectionLines = [
     `x ${xLabels.map(formatAxisItem).join(", ")}`,
     `y ${yLabels.map(formatAxisItem).join(", ")}`,
+    scaleBlock,
     "data",
     ...dataLines,
   ];
 
-  // Keep title and scale block if present, replace x, y, and data block
-  const lines = source.split(/\r?\n/);
-  const keptLines: string[] = [];
-  let inScale = false;
-  let inData = false;
-
-  for (const rawLine of lines) {
-    const trimmed = rawLine.trim();
-    if (/^scale$/i.test(trimmed)) {
-      inScale = true;
-      inData = false;
-      keptLines.push(rawLine);
-      continue;
-    }
-    if (/^data$/i.test(trimmed)) {
-      inData = true;
-      inScale = false;
-      continue;
-    }
-    if (inScale) {
-      if (/^end$/i.test(trimmed)) {
-        inScale = false;
-      }
-      keptLines.push(rawLine);
-      continue;
-    }
-    if (inData) {
-      if (/^end$/i.test(trimmed)) {
-        inData = false;
-      }
-      continue;
-    }
-    if (/^[xy]\b/i.test(trimmed)) {
-      continue;
-    }
-    keptLines.push(rawLine);
-  }
-
-  const baseHeader =
-    keptLines.filter((l) => l.trim().length > 0).length > 0
-      ? keptLines.join("\n")
-      : "heatmap";
-
-  const fullSource = `${baseHeader}\n${newSectionLines.join("\n")}`;
+  const fullSource = `${header}\n${newSectionLines.join("\n")}`;
   return {
     ok: true,
     snippet: newSectionLines.join("\n"),
@@ -321,6 +403,17 @@ export function parseBubbleTable(
 // ---------------------------------------------------------------------------
 // 4. EV / Earned Value (Mermaid Ext)
 // ---------------------------------------------------------------------------
+
+/**
+ * A series row always carries values (`days 1, 2`, `ev 8, 20`).
+ * A bare `ev` (or `evchart`) is the diagram opener and must stay in place.
+ */
+const EV_SERIES_LINE_PATTERN = /^(?:days|pv|ev|ac)\b\s+\S/i;
+
+function isEvSeriesLine(trimmed: string): boolean {
+  return EV_SERIES_LINE_PATTERN.test(trimmed);
+}
+
 export function parseEvTable(
   grid: ParsedClipboardGrid,
   source: string,
@@ -368,7 +461,7 @@ export function parseEvTable(
       source,
       "ev",
       evLines,
-      (trimmed) => /^(?:days|pv|ev|ac)\b/i.test(trimmed),
+      isEvSeriesLine,
       "ev",
     );
   }
@@ -432,7 +525,7 @@ export function parseEvTable(
     source,
     "ev",
     evLines,
-    (trimmed) => /^(?:days|pv|ev|ac)\b/i.test(trimmed),
+    isEvSeriesLine,
     "ev",
   );
 }
@@ -440,86 +533,242 @@ export function parseEvTable(
 // ---------------------------------------------------------------------------
 // 5. XYCHART (Mermaid xychart-beta)
 // ---------------------------------------------------------------------------
-export function parseXyChartTable(
-  grid: ParsedClipboardGrid,
-  source: string,
+const XYCHART_LINE_INDENT = "    ";
+const XYCHART_Y_RANGE_MIN_FLOOR = 0;
+const XYCHART_Y_RANGE_MAX_FLOOR = 10;
+const XYCHART_Y_RANGE_HEADROOM = 1.1;
+const XYCHART_EMPTY_Y_AXIS_TITLE = '""';
+const XYCHART_DEFAULT_HEADER = "xychart-beta";
+const MERMAID_COMMENT_PREFIX = "%%";
+const X_AXIS_DIRECTIVE = /^x-axis\b/i;
+const Y_AXIS_DIRECTIVE = /^y-axis\b/i;
+const BAR_DIRECTIVE = /^bar\b/i;
+const END_BLOCK_DIRECTIVE = /^@end/i;
+
+function trimTrailingEmptyColumns(grid: ParsedClipboardGrid): ParsedClipboardGrid {
+  let colCount = grid.colCount;
+  while (
+    colCount > 1 &&
+    grid.rows.every((row) => (row[colCount - 1] ?? "").trim() === "")
+  ) {
+    colCount -= 1;
+  }
+  if (colCount === grid.colCount) {
+    return grid;
+  }
+  return {
+    rows: grid.rows.map((row) => row.slice(0, colCount)),
+    rowCount: grid.rowCount,
+    colCount,
+  };
+}
+
+function isActiveDiagramLine(line: string, pattern: RegExp): boolean {
+  const trimmed = line.trim();
+  if (trimmed.startsWith(MERMAID_COMMENT_PREFIX)) {
+    return false;
+  }
+  return pattern.test(trimmed);
+}
+
+function formatXyCategory(raw: string, index: number): string {
+  const category = raw.trim().replace(/"/g, "'") || `${index + 1}`;
+  return `"${category}"`;
+}
+
+function buildYAxisLine(numbers: readonly number[]): string {
+  const minVal = Math.min(XYCHART_Y_RANGE_MIN_FLOOR, ...numbers);
+  const maxVal = Math.ceil(
+    Math.max(XYCHART_Y_RANGE_MAX_FLOOR, ...numbers) * XYCHART_Y_RANGE_HEADROOM,
+  );
+  return `${XYCHART_LINE_INDENT}y-axis ${XYCHART_EMPTY_Y_AXIS_TITLE} ${formatCleanNumber(minVal)} --> ${formatCleanNumber(maxVal)}`;
+}
+
+function buildBarLine(values: readonly string[]): string {
+  return `${XYCHART_LINE_INDENT}bar [${values.join(", ")}]`;
+}
+
+function readNumericColumn(
+  rows: readonly (readonly string[])[],
+  colIndex: number,
+  firstRowNumber: number,
   format: DiagramFormat,
-): TablePasteResult {
-  if (grid.colCount < XYCHART_MIN_COLUMNS || grid.colCount > XYCHART_MAX_COLUMNS) {
-    return makeTablePasteError(
-      "xychart",
-      format,
-      "invalid_column_count",
-      "tablePaste.error.expectedColumnRange",
-      { min: XYCHART_MIN_COLUMNS, max: XYCHART_MAX_COLUMNS, actual: grid.colCount },
-    );
-  }
-
-  const numericCols = grid.colCount === 3 ? [1, 2] : [1];
-  const skipHeader = shouldSkipHeaderRow(grid.rows, numericCols);
-  const dataRows = skipHeader ? grid.rows.slice(1) : grid.rows;
-  if (dataRows.length === 0) {
-    return makeTablePasteError("xychart", format, "no_valid_rows", "tablePaste.error.noDataRows");
-  }
-
-  const xCategories: string[] = [];
-  const barValues: string[] = [];
-  const lineValues: string[] = [];
-  const allNumbers: number[] = [];
-
-  for (let i = 0; i < dataRows.length; i += 1) {
-    const row = dataRows[i];
-    const rowNum = skipHeader ? i + 2 : i + 1;
-    const category = (row[0] ?? "").trim().replace(/"/g, "'") || `${i + 1}`;
-    const barNum = parseTableNumber(row[1] ?? "");
-    if (barNum === null) {
+): { values: string[]; numbers: number[] } | TablePasteResult {
+  const values: string[] = [];
+  const numbers: number[] = [];
+  for (let i = 0; i < rows.length; i += 1) {
+    const raw = (rows[i]?.[colIndex] ?? "").trim();
+    const num = parseTableNumber(raw);
+    if (num === null) {
       return makeTablePasteError(
         "xychart",
         format,
         "invalid_number",
         "tablePaste.error.invalidNumberAtRow",
-        { row: rowNum, value: (row[1] ?? "").trim() },
+        { row: firstRowNumber + i, value: raw },
       );
     }
-
-    xCategories.push(`"${category}"`);
-    barValues.push(formatCleanNumber(barNum));
-    allNumbers.push(barNum);
-
-    if (grid.colCount === 3) {
-      const lineNum = parseTableNumber(row[2] ?? "");
-      if (lineNum === null) {
-        return makeTablePasteError(
-          "xychart",
-          format,
-          "invalid_number",
-          "tablePaste.error.invalidNumberAtRow",
-          { row: rowNum, value: (row[2] ?? "").trim() },
-        );
-      }
-      lineValues.push(formatCleanNumber(lineNum));
-      allNumbers.push(lineNum);
-    }
+    values.push(formatCleanNumber(num));
+    numbers.push(num);
   }
+  return { values, numbers };
+}
 
-  const minVal = Math.min(0, ...allNumbers);
-  const maxVal = Math.ceil(Math.max(10, ...allNumbers) * 1.1);
+function isTablePasteResult(
+  value: { values: string[]; numbers: number[] } | TablePasteResult,
+): value is TablePasteResult {
+  return "ok" in value;
+}
 
-  const generatedLines = [
-    `    x-axis [${xCategories.join(", ")}]`,
-    `    y-axis ${minVal} --> ${maxVal}`,
-    `    bar [${barValues.join(", ")}]`,
-  ];
-  if (lineValues.length > 0) {
-    generatedLines.push(`    line [${lineValues.join(", ")}]`);
-  }
-
+function appendXyChartLines(source: string, newLines: readonly string[]): TablePasteResult {
   return replaceDataLinesInSource(
     source,
     "xychart",
-    generatedLines,
-    (trimmed) => /^(?:x-axis|y-axis|bar|line)\b/i.test(trimmed),
-    "xychart-beta",
+    newLines,
+    () => false,
+    XYCHART_DEFAULT_HEADER,
+  );
+}
+
+function mergeXyChartAxesAndBars(
+  source: string,
+  xAxisLine: string,
+  yAxisLine: string,
+  barLines: readonly string[],
+): TablePasteResult {
+  const hasYAxis = source
+    .split(/\r?\n/)
+    .some((line) => isActiveDiagramLine(line, Y_AXIS_DIRECTIVE));
+  const inserted = hasYAxis ? [xAxisLine, ...barLines] : [xAxisLine, yAxisLine, ...barLines];
+  const snippet = inserted.join("\n");
+
+  if (!source.trim()) {
+    return {
+      ok: true,
+      snippet,
+      fullSource: `${XYCHART_DEFAULT_HEADER}\n${snippet}`,
+      replaceRange: { start: 0, end: source.length },
+      diagramType: "xychart",
+    };
+  }
+
+  const output: string[] = [];
+  let xPlaced = false;
+  let barsPlaced = false;
+
+  const placeX = (): void => {
+    if (xPlaced) {
+      return;
+    }
+    output.push(xAxisLine);
+    if (!hasYAxis) {
+      output.push(yAxisLine);
+    }
+    xPlaced = true;
+  };
+
+  const placeBars = (): void => {
+    if (barsPlaced) {
+      return;
+    }
+    placeX();
+    for (const barLine of barLines) {
+      output.push(barLine);
+    }
+    barsPlaced = true;
+  };
+
+  for (const line of source.split(/\r?\n/)) {
+    if (isActiveDiagramLine(line, X_AXIS_DIRECTIVE)) {
+      placeX();
+      continue;
+    }
+    if (isActiveDiagramLine(line, BAR_DIRECTIVE)) {
+      placeBars();
+      continue;
+    }
+    output.push(line);
+  }
+
+  if (!xPlaced || !barsPlaced) {
+    const tail: string[] = [];
+    if (!xPlaced) {
+      tail.push(xAxisLine);
+      if (!hasYAxis) {
+        tail.push(yAxisLine);
+      }
+    }
+    if (!barsPlaced) {
+      tail.push(...barLines);
+    }
+    const endIdx = output.findIndex((line) => END_BLOCK_DIRECTIVE.test(line.trim()));
+    if (endIdx >= 0) {
+      output.splice(endIdx, 0, ...tail);
+    } else {
+      output.push(...tail);
+    }
+  }
+
+  return {
+    ok: true,
+    snippet,
+    fullSource: output.join("\n"),
+    replaceRange: { start: 0, end: source.length },
+    diagramType: "xychart",
+  };
+}
+
+export function parseXyChartTable(
+  grid: ParsedClipboardGrid,
+  source: string,
+  format: DiagramFormat,
+): TablePasteResult {
+  const normalized = trimTrailingEmptyColumns(grid);
+  if (normalized.colCount < XYCHART_MIN_COLUMNS) {
+    return makeTablePasteError(
+      "xychart",
+      format,
+      "too_few_columns",
+      "tablePaste.error.tooFewColumnsMin",
+      { min: XYCHART_MIN_COLUMNS, actual: normalized.colCount },
+    );
+  }
+
+  const valueColumns =
+    normalized.colCount === 1
+      ? [0]
+      : Array.from({ length: normalized.colCount - 1 }, (_, index) => index + 1);
+  const skipHeader = shouldSkipHeaderRow(normalized.rows, valueColumns);
+  const dataRows = skipHeader ? normalized.rows.slice(1) : normalized.rows;
+  if (dataRows.length === 0) {
+    return makeTablePasteError("xychart", format, "no_valid_rows", "tablePaste.error.noDataRows");
+  }
+
+  const firstRowNumber = skipHeader ? 2 : 1;
+  const barSeries: string[][] = [];
+  const allNumbers: number[] = [];
+
+  for (const colIndex of valueColumns) {
+    const column = readNumericColumn(dataRows, colIndex, firstRowNumber, format);
+    if (isTablePasteResult(column)) {
+      return column;
+    }
+    barSeries.push(column.values);
+    allNumbers.push(...column.numbers);
+  }
+
+  const barLines = barSeries.map((values) => buildBarLine(values));
+
+  if (normalized.colCount === 1) {
+    return appendXyChartLines(source, barLines);
+  }
+
+  const xCategories = dataRows.map((row, index) => formatXyCategory(row[0] ?? "", index));
+  return mergeXyChartAxesAndBars(
+    source,
+    `${XYCHART_LINE_INDENT}x-axis [${xCategories.join(", ")}]`,
+    buildYAxisLine(allNumbers),
+    barLines,
   );
 }
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   namespaceSvgIds,
   svgAtNaturalSize,
+  svgFitScale,
   svgNaturalSize,
 } from "@/constants/wizard-thumbnails";
 
@@ -21,6 +22,12 @@ describe("wizard thumbnail svg", () => {
     expect(sized).toContain('height="824.5"');
     expect(sized).not.toContain("max-width");
     expect(sized).not.toContain('width="100%"');
+  });
+
+  it("fits the whole diagram into the frame", () => {
+    expect(svgFitScale({ width: 800, height: 400 }, 160, 100)).toBeCloseTo(0.2);
+    expect(svgFitScale({ width: 100, height: 400 }, 160, 100)).toBeCloseTo(0.25);
+    expect(svgFitScale({ width: 0, height: 10 }, 100, 100)).toBe(1);
   });
 
   it("gives each copy unique ids, including style selectors", () => {

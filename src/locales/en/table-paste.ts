@@ -72,7 +72,7 @@ export const tablePasteMessages = {
   "tablePaste.expected.heatmap.columns":
     "Matrix at least 2×2: first row has X column headers, first column has Y row labels, inner cells hold numbers (or empty cells).",
   "tablePaste.expected.heatmap.rules":
-    "Generates x, y directives and the data block. Empty cells become null slots.",
+    "The x and y lines are inserted before the scale block. If scale is missing, a scale from the minimum to the maximum value is added, blue to red. Empty cells become null slots.",
   "tablePaste.expected.heatmap.headers": "Period|Mon|Tue|Wed",
   "tablePaste.expected.bubble.columns":
     "4 or 5 columns: 'Label', 'X (number)', 'Y (number)', 'Size (number)', ['Group (optional)'].",
@@ -110,10 +110,10 @@ export const tablePasteMessages = {
     "Generates categories and series lines while keeping rotate 90 and color directives.",
   "tablePaste.expected.clustered.headers": "Category|North|South|Export",
   "tablePaste.expected.xychart.columns":
-    "2 or 3 columns: 'X Category', 'Bar value', ['Line value (optional)'].",
+    "1 or more columns. One column is numbers for bar [Val 1, ..., Val n]. Two columns are 'X category' and 'Bar value'. Three or more are 'X category' plus one bar series per extra column.",
   "tablePaste.expected.xychart.rules":
-    "Generates x-axis, y-axis, bar [...] series, and optional line [...] series.",
-  "tablePaste.expected.xychart.headers": "Month|Bar|Line",
+    "One column appends a bar [values] line. Two or more columns replace or add x-axis and one bar [...] series per value column. If the chart has no y-axis yet, y-axis \"\" min --> max is added.",
+  "tablePaste.expected.xychart.headers": "Month|Plan|Actual|Forecast",
   "tablePaste.expected.quadrant.columns":
     "3 columns: 'Point label', 'X (0..1 or 0..100%)', 'Y (0..1 or 0..100%)'.",
   "tablePaste.expected.quadrant.rules":
@@ -157,7 +157,7 @@ export const tablePasteMessages = {
   "tablePaste.expected.mindmap.columns":
     "2 or more columns representing tree depth: 'Root', 'Branch', 'Sub-branch', etc.",
   "tablePaste.expected.mindmap.rules":
-    "Builds a mindmap tree, automatically merging identical parent nodes.",
+    "Builds a mindmap tree, merging identical parents. Nodes are inserted on the blank line at the caret, replace the selection, or replace every map node. Legend, title, header, footer, caption, style, and comments are kept.",
   "tablePaste.expected.mindmap.headers": "Root|Branch|Leaf",
   "tablePaste.expected.nwdiag.columns":
     "2 or 3 columns: 'Node', 'IP address', ['Network (optional)'].",

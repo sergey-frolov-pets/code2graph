@@ -588,10 +588,17 @@ const CONTACT_STYLE_GAP = 16;
 /** Точка контакта не ближе этого отступа к боковому краю карточки. */
 const CONTACT_EDGE_INSET = 8;
 /**
- * На одном горизонтальном коридоре сплошной и пунктирный «локоть»
- * разводятся по вертикали, иначе общий участок ложится друг на друга.
+ * Зазор между горизонтальными «шинами» одного коридора.
+ * У каждой пары «источник + стиль» своя шина, если линии иначе слиплись бы.
  */
-const ELBOW_STYLE_SEPARATION = 10;
+const ELBOW_LANE_GAP = 10;
+/**
+ * Если точка прихода стоит на вертикали чужого ребра, её сдвигаем к своему
+ * источнику, чтобы стрелки не читались как одна непрерывная линия.
+ */
+const ARRIVAL_ALIGN_NUDGE = 16;
+/** Ближе этого зазора вертикали считаются одной линией. */
+const ALIGN_EPS = 0.75;
 
 interface DrawableEdge {
   edge: OrgEdge;
@@ -600,6 +607,15 @@ interface DrawableEdge {
   y1: number;
   y2: number;
   corridorTop: number;
+  x1: number;
+  x2: number;
+}
+
+interface EdgeLaneGroup {
+  key: string;
+  x: number;
+  style: OrgEdgeStyle;
+  edges: DrawableEdge[];
 }
 
 function uniqueStyles(edges: DrawableEdge[], pick: (item: DrawableEdge) => boolean): OrgEdgeStyle[] {
@@ -623,13 +639,111 @@ function corridorKey(y1: number, y2: number): string {
   return `${fmt(y1)}|${fmt(y2)}`;
 }
 
-function elbowY(y1: number, y2: number, style: OrgEdgeStyle, separateStyles: boolean): number {
+function rangesOverlap(a0: number, a1: number, b0: number, b1: number): boolean {
+  const overlap =
+    Math.min(Math.max(a0, a1), Math.max(b0, b1)) - Math.max(Math.min(a0, a1), Math.min(b0, b1));
+  return overlap > 0.5;
+}
+
+function xsAlign(a: number, b: number): boolean {
+  return Math.abs(a - b) < ALIGN_EPS;
+}
+
+/** Горизонтали пересекаются или вертикали стоят на одной прямой. */
+function edgesWouldMerge(left: DrawableEdge, right: DrawableEdge): boolean {
+  if (
+    xsAlign(left.x1, right.x1) ||
+    xsAlign(left.x1, right.x2) ||
+    xsAlign(left.x2, right.x1) ||
+    xsAlign(left.x2, right.x2)
+  ) {
+    return true;
+  }
+  return rangesOverlap(left.x1, left.x2, right.x1, right.x2);
+}
+
+function groupsWouldMerge(left: EdgeLaneGroup, right: EdgeLaneGroup): boolean {
+  for (const a of left.edges) {
+    for (const b of right.edges) {
+      if (edgesWouldMerge(a, b)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Середина коридора, если шина одна. Несколько шин стоят симметрично вокруг
+ * середины с шагом ELBOW_LANE_GAP (для двух шин это прежние ±5 px).
+ */
+function elbowLaneY(y1: number, y2: number, lane: number, laneCount: number): number {
   const mid = y1 + (y2 - y1) / 2;
-  if (!separateStyles) return mid;
-  const room = Math.abs(y2 - y1) / 2;
-  const half = Math.min(ELBOW_STYLE_SEPARATION / 2, room / 2);
-  if (half <= 0) return mid;
-  return style === "solid" ? mid - half : mid + half;
+  if (laneCount <= 1) return mid;
+  const room = Math.abs(y2 - y1);
+  const gap = Math.min(ELBOW_LANE_GAP, room / laneCount);
+  if (gap <= 0) return mid;
+  const span = gap * (laneCount - 1);
+  return mid - span / 2 + lane * gap;
+}
+
+function contactLimits(card: PlacedNode, offsetX: number): { left: number; right: number } {
+  const left = offsetX + card.x + CONTACT_EDGE_INSET;
+  const right = offsetX + card.x + card.width - CONTACT_EDGE_INSET;
+  if (right <= left) {
+    const center = offsetX + card.x + card.width / 2;
+    return { left: center, right: center };
+  }
+  return { left, right };
+}
+
+/** Сдвигает приход с чужой вертикали, не выходя за края карточки. */
+function nudgeArrival(edge: DrawableEdge, blocked: readonly number[], offsetX: number): number {
+  const { left, right } = contactLimits(edge.to, offsetX);
+  const origin = edge.x2;
+  let dir = Math.sign(edge.x1 - origin);
+  if (dir === 0) dir = 1;
+  const steps = [1, -1, 2, -2];
+  for (const step of steps) {
+    const raw = origin + dir * step * ARRIVAL_ALIGN_NUDGE;
+    const next = clamp(raw, left, right);
+    if (Math.abs(next - origin) < 1) continue;
+    if (blocked.some((x) => xsAlign(x, next))) continue;
+    return next;
+  }
+  return origin;
+}
+
+function separateMergedArrivals(groups: readonly EdgeLaneGroup[], offsetX: number): void {
+  for (const group of groups) {
+    const blocked: number[] = [];
+    for (const other of groups) {
+      if (other === group) continue;
+      for (const edge of other.edges) blocked.push(edge.x1, edge.x2);
+    }
+    for (const edge of group.edges) {
+      if (!blocked.some((x) => xsAlign(x, edge.x2))) continue;
+      edge.x2 = nudgeArrival(edge, blocked, offsetX);
+    }
+  }
+}
+
+function assignElbowLanes(groups: EdgeLaneGroup[]): Map<string, { lane: number; laneCount: number }> {
+  const sorted = [...groups].sort((a, b) => {
+    if (a.x !== b.x) return a.x - b.x;
+    if (a.style === b.style) return 0;
+    return a.style === "solid" ? -1 : 1;
+  });
+  const laneOf = new Map<string, number>();
+  for (const group of sorted) {
+    let lane = 0;
+    while (sorted.some((other) => laneOf.get(other.key) === lane && groupsWouldMerge(group, other))) {
+      lane += 1;
+    }
+    laneOf.set(group.key, lane);
+  }
+  const laneCount = Math.max(1, ...[...laneOf.values()].map((lane) => lane + 1));
+  const assigned = new Map<string, { lane: number; laneCount: number }>();
+  for (const [key, lane] of laneOf) assigned.set(key, { lane, laneCount });
+  return assigned;
 }
 
 export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): string {
@@ -675,34 +789,55 @@ export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): stri
       y1,
       y2,
       corridorTop,
+      x1: offsetX + from.x + from.width / 2,
+      x2: offsetX + to.x + to.width / 2,
     });
   }
 
-  const mixedCorridors = new Set<string>();
-  const stylesByCorridor = new Map<string, OrgEdgeStyle[]>();
   for (const item of drawable) {
-    const key = corridorKey(item.corridorTop, item.y2);
-    const styles = stylesByCorridor.get(key) ?? [];
-    if (!styles.includes(item.edge.style)) styles.push(item.edge.style);
-    stylesByCorridor.set(key, styles);
-    if (styles.length > 1) mixedCorridors.add(key);
+    const outStyles = uniqueStyles(drawable, (candidate) => candidate.edge.from === item.edge.from);
+    const inStyles = uniqueStyles(drawable, (candidate) => candidate.edge.to === item.edge.to);
+    item.x1 =
+      offsetX + item.from.x + item.from.width / 2 + styleContactShift(item.from.width, outStyles, item.edge.style);
+    item.x2 =
+      offsetX + item.to.x + item.to.width / 2 + styleContactShift(item.to.width, inStyles, item.edge.style);
   }
 
-  // Рёбра — под узлами. Сплошная и пунктирная линии не делят одну точку
-  // контакта на карточке и не ложатся на общий горизонтальный участок.
+  const corridors = new Map<string, DrawableEdge[]>();
   for (const item of drawable) {
-    const { edge, from, to, y1, y2, corridorTop } = item;
-    const outStyles = uniqueStyles(drawable, (candidate) => candidate.edge.from === edge.from);
-    const inStyles = uniqueStyles(drawable, (candidate) => candidate.edge.to === edge.to);
-    const x1 =
-      offsetX + from.x + from.width / 2 + styleContactShift(from.width, outStyles, edge.style);
-    const x2 = offsetX + to.x + to.width / 2 + styleContactShift(to.width, inStyles, edge.style);
-    const midY = elbowY(
-      corridorTop,
-      y2,
-      edge.style,
-      mixedCorridors.has(corridorKey(corridorTop, y2)),
-    );
+    const key = corridorKey(item.corridorTop, item.y2);
+    const list = corridors.get(key) ?? [];
+    list.push(item);
+    corridors.set(key, list);
+  }
+
+  const laneByEdge = new Map<DrawableEdge, { lane: number; laneCount: number }>();
+  for (const items of corridors.values()) {
+    const groups = new Map<string, EdgeLaneGroup>();
+    for (const item of items) {
+      const key = `${item.edge.from}|${item.edge.style}`;
+      const group = groups.get(key) ?? { key, x: item.x1, style: item.edge.style, edges: [] };
+      group.edges.push(item);
+      groups.set(key, group);
+    }
+    const groupList = [...groups.values()];
+    // Сначала разводим шины по тем x, с которыми линии реально слипаются,
+    // и только потом сдвигаем точку прихода — иначе сдвиг спрячет причину.
+    const lanes = assignElbowLanes(groupList);
+    separateMergedArrivals(groupList, offsetX);
+    for (const group of groupList) {
+      const lane = lanes.get(group.key) ?? { lane: 0, laneCount: 1 };
+      for (const item of group.edges) laneByEdge.set(item, lane);
+    }
+  }
+
+  // Рёбра — под узлами. Сплошная и пунктирная не делят точку контакта.
+  // Шины разных руководителей не ложатся на одну горизонталь и не продолжают
+  // чужую вертикаль, иначе непонятно, от кого стрелка и к кому она приходит.
+  for (const item of drawable) {
+    const { edge, y1, y2, corridorTop, x1, x2 } = item;
+    const lane = laneByEdge.get(item) ?? { lane: 0, laneCount: 1 };
+    const midY = elbowLaneY(corridorTop, y2, lane.lane, lane.laneCount);
     const d = `M ${fmt(x1)} ${fmt(y1)} L ${fmt(x1)} ${fmt(midY)} L ${fmt(x2)} ${fmt(midY)} L ${fmt(x2)} ${fmt(y2)}`;
     const attrs: Record<string, string | number> = {
       d,

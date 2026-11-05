@@ -68,7 +68,7 @@ function labelFor(tag: ExampleTagRef): string {
       <li
         v-for="tag in domainTags"
         :key="exampleTagKey(tag)"
-        class="wizard-tag"
+        class="wizard-tag wizard-tag--badge"
         :class="`wizard-tag--${tag.axis}`"
       >
         {{ labelFor(tag) }}
@@ -81,7 +81,7 @@ function labelFor(tag: ExampleTagRef): string {
       <li
         v-for="tag in otherTags"
         :key="exampleTagKey(tag)"
-        class="wizard-tag"
+        class="wizard-tag wizard-tag--badge"
         :class="`wizard-tag--${tag.axis}`"
       >
         {{ labelFor(tag) }}
