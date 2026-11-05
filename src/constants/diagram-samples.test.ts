@@ -293,6 +293,22 @@ describe("diagram samples coverage", () => {
     }
   });
 
+  it("shows every series line and cagr option", () => {
+    for (const locale of ["ru", "en"] as const) {
+      const lines = getMermaidSampleSource("seriesLines", locale);
+      for (const token of ["style=solid", "style=dash", "style=dot", "style=dashdot", "width=", "color=#", ", -", ", ,", "null"]) {
+        expect(lines, `${locale}:${token}`).toContain(token);
+      }
+
+      const cagr = getMermaidSampleSource("seriesCagr", locale);
+      expect(cagr).toMatch(/^cagr format="0%"/m);
+      expect(cagr).toContain('cagr 1, 4 format="0.0%" prefix=');
+      expect(cagr).toContain('cagr 2, 4 format="+0.0%"');
+      expect(cagr).toContain('cagr 1, 3 format="0.00" prefix=');
+      expect(cagr).toMatch(/^cagr label=/m);
+    }
+  });
+
   it("lists samples only for the selected language", () => {
     expect(listSampleIds("plantuml")).toEqual([...PLANTUML_SAMPLE_IDS]);
     expect(listSampleIds("mermaid")).toEqual([...MERMAID_SAMPLE_IDS]);

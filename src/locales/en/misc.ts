@@ -75,6 +75,8 @@ export const miscMessages = {
   "samples.mermaid.clusteredStacked": "Series chart — stacked",
   "samples.mermaid.clusteredMono": "Series chart — mono",
   "samples.mermaid.clusteredMonoInvert": "Series chart — inverted mono",
+  "samples.mermaid.seriesLines": "Series chart — lines",
+  "samples.mermaid.seriesCagr": "Series chart — CAGR",
   "samples.wiremark.login": "Sign in",
   "samples.wiremark.dashboard": "Dashboard",
   "samples.wiremark.form": "Form",

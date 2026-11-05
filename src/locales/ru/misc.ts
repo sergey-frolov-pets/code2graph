@@ -75,6 +75,8 @@ export const miscMessages = {
   "samples.mermaid.clusteredStacked": "Серийная — стопка",
   "samples.mermaid.clusteredMono": "Серийная — ч/б",
   "samples.mermaid.clusteredMonoInvert": "Серийная — ч/б инверсия",
+  "samples.mermaid.seriesLines": "Серийная — линии",
+  "samples.mermaid.seriesCagr": "Серийная — CAGR",
   "samples.wiremark.login": "Вход",
   "samples.wiremark.dashboard": "Дашборд",
   "samples.wiremark.form": "Форма",

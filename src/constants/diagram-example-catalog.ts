@@ -55,6 +55,8 @@ export const SETTING_IDS = [
   "rotate90",
   "stacked",
   "monoInvert",
+  "line",
+  "cagr",
 ] as const;
 
 export type SettingId = (typeof SETTING_IDS)[number];
@@ -219,6 +221,8 @@ const DIAGRAM_TYPE_OVERRIDE: Record<string, DiagramTypeTag> = {
   "mermaid:clusteredStacked": "series",
   "mermaid:clusteredMono": "series",
   "mermaid:clusteredMonoInvert": "series",
+  "mermaid:seriesLines": "series",
+  "mermaid:seriesCagr": "series",
   "graphml:flow": "flowchart",
   "graphml:decision": "decision",
   "graphml:architecture": "architecture",
@@ -247,6 +251,8 @@ const DOMAIN_OVERRIDE: Record<string, readonly DomainId[]> = {
   "mermaid:clusteredStacked": ["analytics"],
   "mermaid:clusteredMono": ["analytics"],
   "mermaid:clusteredMonoInvert": ["analytics"],
+  "mermaid:seriesLines": ["analytics"],
+  "mermaid:seriesCagr": ["analytics"],
   "graphml:flow": ["businessProcess", "architecture"],
   "graphml:decision": ["businessProcess"],
   "graphml:architecture": ["architecture"],
@@ -270,6 +276,8 @@ const SETTINGS_BY_EXAMPLE: Record<string, readonly SettingId[]> = {
   "mermaid:clusteredStacked": ["stacked", "color"],
   "mermaid:clusteredMono": ["mono"],
   "mermaid:clusteredMonoInvert": ["monoInvert"],
+  "mermaid:seriesLines": ["line", "color", "labels"],
+  "mermaid:seriesCagr": ["cagr", "labels"],
   "plantuml:activity": ["swimlane", "color"],
   "d2:flow": ["direction-lr", "color"],
   "d2:sequence": ["direction-tb"],
