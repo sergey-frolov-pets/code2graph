@@ -11,13 +11,15 @@ import {
 import {
   clamp,
   createSvg,
+  drawLabelLines,
   fixedTicks,
   fmt,
-  measureText,
+  labelBlockExtra,
+  measureLabelWidth,
   niceRange,
   niceTicks,
   resolvePalette,
-  truncate,
+  truncateLabel,
 } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
@@ -568,7 +570,7 @@ export function renderBoxplot(model: BoxplotModel, options: ExtRenderOptions): s
 
   const count = Math.max(1, model.items.length);
   const longestLabel = model.items.reduce(
-    (max, item) => Math.max(max, measureText(item.label, fontSize)),
+    (max, item) => Math.max(max, measureLabelWidth(item.label, fontSize)),
     0,
   );
   const colWidth = clamp(
@@ -579,10 +581,13 @@ export function renderBoxplot(model: BoxplotModel, options: ExtRenderOptions): s
   const plotWidth = Math.max(260, colWidth * count);
   const plotHeight = Math.round(PLOT_HEIGHT_BASE * Math.max(1, (scaleFactor - 1) * 0.5 + 1));
 
-  const padLeft = Math.round(PADDING_BASE.left * Math.max(1, scaleFactor * 0.9));
+  const yExtra = labelBlockExtra(model.y?.label, fontSize);
+  const titleExtra = labelBlockExtra(model.title, titleSize);
+  const catExtra = Math.max(0, ...model.items.map((item) => labelBlockExtra(item.label, fontSize)));
+  const padLeft = Math.round(PADDING_BASE.left * Math.max(1, scaleFactor * 0.9)) + yExtra;
   const padRight = PADDING_BASE.right;
-  const padTop = model.title ? Math.round(PADDING_BASE.top * Math.max(1, scaleFactor * 0.9)) : 28;
-  const padBottom = Math.round(PADDING_BASE.bottom * Math.max(1, scaleFactor * 0.9));
+  const padTop = (model.title ? Math.round(PADDING_BASE.top * Math.max(1, scaleFactor * 0.9)) : 28) + titleExtra;
+  const padBottom = Math.round(PADDING_BASE.bottom * Math.max(1, scaleFactor * 0.9)) + catExtra;
 
   const width = padLeft + plotWidth + padRight;
   const height = padTop + plotHeight + padBottom;
@@ -615,7 +620,8 @@ export function renderBoxplot(model: BoxplotModel, options: ExtRenderOptions): s
   });
 
   if (model.title) {
-    svg.text(width / 2, Math.round(padTop * 0.55), model.title, {
+    const titleY = Math.round((padTop - titleExtra) * 0.55);
+    drawLabelLines(svg, width / 2, titleY, model.title, titleSize, {
       "font-size": titleSize,
       "font-weight": 600,
       fill: palette.fg,
@@ -644,14 +650,14 @@ export function renderBoxplot(model: BoxplotModel, options: ExtRenderOptions): s
   }
 
   if (model.y?.label) {
-    const cx = 18;
+    const cx = 18 + yExtra;
     const cy = plotTop + plotHeight / 2;
-    svg.text(cx, cy, model.y.label, {
+    drawLabelLines(svg, cx, cy, model.y.label, fontSize, {
       "text-anchor": "middle",
       "font-size": fontSize,
       fill: palette.fgDim,
       transform: `rotate(-90 ${fmt(cx)} ${fmt(cy)})`,
-    });
+    }, "up");
   }
 
   svg.line(plotLeft, plotTop, plotLeft, plotBottom, { stroke: palette.axis, "stroke-width": 1 });
@@ -747,8 +753,8 @@ export function renderBoxplot(model: BoxplotModel, options: ExtRenderOptions): s
     }
 
     // Подпись категории под осью X
-    const labelText = truncate(item.label, colWidth - 8, fontSize);
-    svg.text(cx, plotBottom + fontSize + 10, labelText, {
+    const labelText = truncateLabel(item.label, colWidth - 8, fontSize);
+    drawLabelLines(svg, cx, plotBottom + fontSize + 10, labelText, fontSize, {
       "font-size": fontSize,
       fill: palette.fg,
     });

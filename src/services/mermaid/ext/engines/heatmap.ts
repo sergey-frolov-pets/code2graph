@@ -1,4 +1,17 @@
-import { clamp, createSvg, esc, fmt, measureText, resolvePalette, truncate } from "../common";
+import {
+  clamp,
+  createSvg,
+  drawLabelLines,
+  esc,
+  fmt,
+  labelBlockExtra,
+  labelLineCount,
+  labelLineStep,
+  measureLabelWidth,
+  measureText,
+  resolvePalette,
+  truncateLabel,
+} from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
 // --- Модель ---------------------------------------------------------------
@@ -354,16 +367,32 @@ export function renderHeatmap(model: HeatmapModel, options: ExtRenderOptions): s
   const rows = model.rows.length;
 
   const longestRow = model.rows.reduce(
-    (acc, r) => Math.max(acc, measureText(r.label, labelFontSize)),
+    (acc, r) => Math.max(acc, measureLabelWidth(r.label, labelFontSize)),
     0,
   );
   const rowLabelWidth = clamp(longestRow + 20, 64, 160);
+  const labelStep = labelLineStep(labelFontSize);
+  const titleExtra = labelBlockExtra(model.title, 15);
+  const headerExtra = Math.max(0, ...model.x.map((label) => labelBlockExtra(label, labelFontSize)));
 
-  const gridWidth = cols * CELL_W + (cols - 1) * CELL_GAP;
-  const gridHeight = rows * CELL_H + Math.max(0, rows - 1) * CELL_GAP;
+  const colWidths = Array.from({ length: cols }, (_, index) => {
+    const label = model.x[index] ?? "";
+    if (labelBlockExtra(label, labelFontSize) === 0) return CELL_W;
+    return Math.max(CELL_W, measureLabelWidth(label, labelFontSize) + 12);
+  });
+  const rowHeights = model.rows.map((row) => {
+    const extra = labelBlockExtra(row.label, labelFontSize);
+    if (extra === 0) return CELL_H;
+    return Math.max(CELL_H, labelLineCount(row.label) * labelStep + 10);
+  });
+
+  const gridWidth =
+    colWidths.reduce((sum, w) => sum + w, 0) + Math.max(0, cols - 1) * CELL_GAP;
+  const gridHeight =
+    rowHeights.reduce((sum, h) => sum + h, 0) + Math.max(0, rows - 1) * CELL_GAP;
 
   const width = PADDING.left + rowLabelWidth + gridWidth + PADDING.right;
-  const height = PADDING.top + gridHeight + PADDING.bottom;
+  const height = PADDING.top + titleExtra + headerExtra + gridHeight + PADDING.bottom;
 
   const svg = createSvg({
     width,
@@ -376,40 +405,68 @@ export function renderHeatmap(model: HeatmapModel, options: ExtRenderOptions): s
   });
 
   const gridLeft = PADDING.left + rowLabelWidth;
-  const gridTop = PADDING.top;
+  const gridTop = PADDING.top + titleExtra + headerExtra;
+  const colLeft = (index: number): number => {
+    let x = gridLeft;
+    for (let i = 0; i < index; i += 1) x += (colWidths[i] ?? CELL_W) + CELL_GAP;
+    return x;
+  };
 
   if (model.title) {
-    svg.text(width / 2, 24, model.title, { "font-size": 15, "font-weight": 600, fill: palette.fg });
+    drawLabelLines(svg, width / 2, 24, model.title, 15, {
+      "font-size": 15,
+      "font-weight": 600,
+      fill: palette.fg,
+    });
   }
 
   // Подписи колонок сверху
   for (let c = 0; c < cols; c += 1) {
-    const cx = gridLeft + c * (CELL_W + CELL_GAP) + CELL_W / 2;
-    svg.text(cx, gridTop - 10, truncate(model.x[c] ?? "", CELL_W, labelFontSize), {
-      "font-size": labelFontSize,
-      fill: palette.fg,
-    });
+    const colW = colWidths[c] ?? CELL_W;
+    const cx = colLeft(c) + colW / 2;
+    drawLabelLines(
+      svg,
+      cx,
+      gridTop - 10 - headerExtra,
+      truncateLabel(model.x[c] ?? "", colW, labelFontSize),
+      labelFontSize,
+      {
+        "font-size": labelFontSize,
+        fill: palette.fg,
+      },
+    );
   }
 
   const emptyFill = options.dark ? EMPTY_FILL_DARK : EMPTY_FILL;
 
+  let rowTop = gridTop;
   for (let r = 0; r < rows; r += 1) {
     const row = model.rows[r];
-    const y = gridTop + r * (CELL_H + CELL_GAP);
+    const rowH = rowHeights[r] ?? CELL_H;
+    const y = rowTop;
 
-    svg.text(gridLeft - 10, y + CELL_H / 2 + 4, truncate(row.label, rowLabelWidth - 16, labelFontSize), {
-      "text-anchor": "end",
-      "font-size": labelFontSize,
-      fill: palette.fg,
-    });
+    drawLabelLines(
+      svg,
+      gridLeft - 10,
+      y + rowH / 2 + 4,
+      truncateLabel(row.label, rowLabelWidth - 16, labelFontSize),
+      labelFontSize,
+      {
+        "text-anchor": "end",
+        "font-size": labelFontSize,
+        fill: palette.fg,
+      },
+      "center",
+    );
 
     for (let c = 0; c < cols; c += 1) {
       const value = row.values[c] ?? null;
-      const x = gridLeft + c * (CELL_W + CELL_GAP);
+      const x = colLeft(c);
+      const colW = colWidths[c] ?? CELL_W;
       const fill = colorFor(value, model.scale);
       if (fill === null) {
         // Пустая ячейка: только контур, чтобы не спорить с фоном и с легендой
-        svg.rect(x, y, CELL_W, CELL_H, {
+        svg.rect(x, y, colW, rowH, {
           fill: "none",
           stroke: options.dark ? palette.grid : emptyFill,
           "stroke-width": 1.5,
@@ -418,13 +475,14 @@ export function renderHeatmap(model: HeatmapModel, options: ExtRenderOptions): s
         });
         continue;
       }
-      svg.rect(x, y, CELL_W, CELL_H, { fill, rx: 3 });
-      svg.text(x + CELL_W / 2, y + CELL_H / 2 + 4, fmt(value ?? 0), {
+      svg.rect(x, y, colW, rowH, { fill, rx: 3 });
+      svg.text(x + colW / 2, y + rowH / 2 + 4, fmt(value ?? 0), {
         "font-size": labelFontSize,
         "font-weight": 600,
         fill: readableOn(fill),
       });
     }
+    rowTop += rowH + CELL_GAP;
   }
 
   // Легенда шкалы: одна полоса-градиент + подписи диапазонов.

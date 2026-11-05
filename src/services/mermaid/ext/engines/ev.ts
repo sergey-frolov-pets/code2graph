@@ -1,12 +1,15 @@
 import {
   clamp,
   createSvg,
+  drawLabelLines,
   fmt,
-  resolvePalette,
+  labelBlockExtra,
+  measureLabelWidth,
   measureText,
   niceRange,
   niceTicks,
-  truncate,
+  resolvePalette,
+  truncateLabel,
 } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
@@ -208,17 +211,19 @@ export function renderEv(model: EvModel, options: ExtRenderOptions): string {
   const { days, pv, ev, ac, title } = model;
 
   const count = Math.max(1, days.length);
-  const longestDay = days.reduce((acc, d) => Math.max(acc, measureText(d, FONT)), 0);
+  const longestDay = days.reduce((acc, d) => Math.max(acc, measureLabelWidth(d, FONT)), 0);
   const columnWidth = clamp(longestDay + 32, 56, 140);
   const plotWidth = columnWidth * count;
+  const dayExtra = Math.max(0, ...days.map((day) => labelBlockExtra(day, FONT)));
+  const titleExtra = labelBlockExtra(title, 15);
 
   const width = PADDING.left + plotWidth + PADDING.right;
-  const height = PADDING.top + PLOT_HEIGHT + PADDING.bottom;
+  const height = PADDING.top + titleExtra + PLOT_HEIGHT + PADDING.bottom + dayExtra;
 
   const svg = createSvg({ width, height, palette, title, debugFrames: options.debugFrames });
 
   const plotLeft = PADDING.left;
-  const plotTop = PADDING.top;
+  const plotTop = PADDING.top + titleExtra;
   const plotBottom = plotTop + PLOT_HEIGHT;
 
   const all = [...pv, ...ev, ...ac];
@@ -233,7 +238,11 @@ export function renderEv(model: EvModel, options: ExtRenderOptions): string {
     plotLeft + (count === 1 ? columnWidth / 2 : (index / (count - 1)) * plotWidth);
 
   if (title) {
-    svg.text(width / 2, 24, title, { "font-size": 15, "font-weight": 600, fill: palette.fg });
+    drawLabelLines(svg, width / 2, 24, title, 15, {
+      "font-size": 15,
+      "font-weight": 600,
+      fill: palette.fg,
+    });
   }
 
   if (model.grid) {
@@ -269,13 +278,13 @@ export function renderEv(model: EvModel, options: ExtRenderOptions): string {
   }
 
   for (let i = 0; i < count; i += 1) {
-    const label = truncate(days[i] ?? "", columnWidth - 6, FONT);
-    svg.text(xOf(i), plotBottom + 18, label, { "font-size": FONT, fill: palette.fg });
+    const label = truncateLabel(days[i] ?? "", columnWidth - 6, FONT);
+    drawLabelLines(svg, xOf(i), plotBottom + 18, label, FONT, { "font-size": FONT, fill: palette.fg });
   }
 
   // Легенда
   let legendX = plotLeft;
-  const legendY = plotBottom + 42;
+  const legendY = plotBottom + 42 + dayExtra;
   for (const s of series) {
     const swatch = 10;
     svg.rect(legendX, legendY - swatch + 2, swatch, swatch, { fill: s.color, rx: 2 });

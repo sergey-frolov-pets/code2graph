@@ -1,12 +1,18 @@
 import {
   clamp,
   createSvg,
+  drawLabelLines,
   fixedTicks,
   fmt,
+  hasLabelBreak,
+  labelLineCount,
+  labelLineStep,
+  measureLabelWidth,
   measureText,
   niceTicks,
   resolvePalette,
-  truncate,
+  splitLabelLines,
+  truncateLabel,
 } from "../../common";
 import type { ExtRenderOptions } from "../../types";
 import {
@@ -67,12 +73,31 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
   const titleFontSize = clamp(Math.round(fontSize * 1.36), 15, 26);
   // При базовом шрифте отступы остаются прежними (44 / 52 / 64) — эталоны
   // рендера не должны меняться от одной только правки масштабирования.
-  const padTop = Math.round((PADDING.top * fontSize) / FONT_BASE);
-  const padBottom = Math.round((PADDING.bottom * fontSize) / FONT_BASE);
+  const titleExtra = (labelLineCount(title) - 1) * labelLineStep(titleFontSize);
+  let maxValueLines = 1;
+  for (const group of series) {
+    for (const step of group.steps) {
+      maxValueLines = Math.max(
+        maxValueLines,
+        labelLineCount(step.valueText),
+        labelLineCount(step.insideText),
+        labelLineCount(step.aboveText),
+      );
+    }
+  }
+  const valueLabelExtra = (maxValueLines - 1) * labelLineStep(valueFontSize);
+  const colLabelExtra = (Math.max(1, ...labels.map((label) => labelLineCount(label))) - 1) * labelLineStep(labelFontSize);
+  const seriesExtra =
+    (groups > 1
+      ? Math.max(1, ...series.map((item) => labelLineCount(item.name))) - 1
+      : 0) * labelLineStep(labelFontSize);
+
+  const padTop = Math.round((PADDING.top * fontSize) / FONT_BASE) + titleExtra + valueLabelExtra;
+  const padBottom = Math.round((PADDING.bottom * fontSize) / FONT_BASE) + colLabelExtra + seriesExtra;
   const padLeft = Math.round((PADDING.left * fontSize) / FONT_BASE);
   const plotHeight = Math.round(PLOT_HEIGHT * scale);
 
-  const longestLabel = labels.reduce((acc, l) => Math.max(acc, measureText(l, labelFontSize)), 0);
+  const longestLabel = labels.reduce((acc, l) => Math.max(acc, measureLabelWidth(l, labelFontSize)), 0);
   // Запас по 2.5em с каждой стороны давал зазор между барами всего ~12 px:
   // соединительные линии были неразличимы. 3.2em оставляет читаемый просвет.
   const columnWidth = clamp(longestLabel + Math.round(fontSize * 3.2), 64, Math.round(150 * scale));
@@ -92,7 +117,9 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
     0,
   );
   const tickRoom = Math.round((10 * fontSize) / FONT_BASE) + Math.max(tickTextWidth, edgeTextWidth);
-  const leftPad = axisHidden ? 16 : Math.max(padLeft, tickRoom);
+  const axisExtra =
+    !axisHidden && axis.label ? (labelLineCount(axis.label) - 1) * labelLineStep(labelFontSize) : 0;
+  const leftPad = (axisHidden ? 16 : Math.max(padLeft, tickRoom)) + axisExtra;
   // Подпись разрыва живёт справа от самого правого бара — под неё нужен запас
   // по ширине, иначе она обрезается краем SVG.
   const breakLabels = breaks.filter((b) => Boolean(b.label));
@@ -103,7 +130,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
     breakLabels.length
       ? Math.max(
           ...breakLabels.map(
-            (b) => measureText(b.label ?? "", Math.round(fontSize * 0.91)) + Math.round(fontSize * 1.2),
+            (b) => measureLabelWidth(b.label ?? "", Math.round(fontSize * 0.91)) + Math.round(fontSize * 1.2),
           ),
         )
       : 0,
@@ -111,7 +138,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       ? Math.max(
           ...lineLabels.map(
             (l) =>
-              measureText(`${fmt(l.value)} ${l.label ?? ""}`.trim(), Math.round(fontSize * 0.91)) +
+              measureLabelWidth(`${fmt(l.value)} ${l.label ?? ""}`.trim(), Math.round(fontSize * 0.91)) +
               Math.round(fontSize * 1.2),
           ),
         )
@@ -140,10 +167,15 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
   const { yOf, yClamped, inGap } = createScale(axis, breaks, plotTop, plotBottom);
 
   if (title) {
-    svg.text(width / 2, Math.round((24 * fontSize) / FONT_BASE), title, {
-      "font-size": titleFontSize,
-      "font-weight": 600,
-      fill: palette.fg,
+    const titleLines = hasLabelBreak(title) ? splitLabelLines(title) : [title];
+    const titleY = Math.round((24 * fontSize) / FONT_BASE);
+    const titleStep = labelLineStep(titleFontSize);
+    titleLines.forEach((line, idx) => {
+      svg.text(width / 2, titleY + idx * titleStep, line, {
+        "font-size": titleFontSize,
+        "font-weight": 600,
+        fill: palette.fg,
+      });
     });
   }
 
@@ -208,13 +240,19 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
     }
 
     if (axis.label) {
-      const cx = Math.round((16 * fontSize) / FONT_BASE);
+      const cx = Math.round((16 * fontSize) / FONT_BASE) + axisExtra;
       const cy = plotTop + plotHeight / 2;
-      svg.text(cx, cy, axis.label, {
-        "text-anchor": "middle",
-        "font-size": labelFontSize,
-        fill: palette.fgDim,
-        transform: `rotate(-90 ${cx} ${cy})`,
+      const axisLines = hasLabelBreak(axis.label) ? splitLabelLines(axis.label) : [axis.label];
+      const axisStep = labelLineStep(labelFontSize);
+      // Поворот −90°: локальный сдвиг вверх становится сдвигом влево,
+      // и следующая строка уходит от графика, а не в столбики.
+      axisLines.forEach((line, idx) => {
+        svg.text(cx, cy - idx * axisStep, line, {
+          "text-anchor": "middle",
+          "font-size": labelFontSize,
+          fill: palette.fgDim,
+          transform: `rotate(-90 ${cx} ${cy})`,
+        });
       });
     }
 
@@ -256,20 +294,29 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       // обрезается по фактически свободному месту.
       const rightEdge = width - PADDING.right;
       const freeWidth = Math.max(24, rightEdge - lastBarRight - Math.round((6 * fontSize) / FONT_BASE));
-      const text = truncate(b.label, freeWidth, breakFs);
-      const textWidth = measureText(text, breakFs);
+      const text = truncateLabel(b.label, freeWidth, breakFs);
+      const textWidth = measureLabelWidth(text, breakFs);
       const textX = Math.max(lastBarRight + Math.round((6 * fontSize) / FONT_BASE), rightEdge - textWidth);
+      const breakLines = labelLineCount(text);
+      const breakStep = labelLineStep(breakFs);
+      const breakBlock = (breakLines - 1) * breakStep;
       // Вырез под подпись: иначе текст лежит на линии разрыва и не читается.
-      svg.rect(textX - 2, y - breakFs * 0.75, textWidth + 4, breakFs * 1.5, {
-        fill: breakTextFill,
-        "data-break-text-bg": "1",
-      });
-      svg.text(textX, y + Math.round((4 * fontSize) / FONT_BASE), text, {
+      svg.rect(
+        textX - 2,
+        y - breakFs * 0.75 - breakBlock / 2,
+        textWidth + 4,
+        breakFs * 1.5 + breakBlock,
+        {
+          fill: breakTextFill,
+          "data-break-text-bg": "1",
+        },
+      );
+      drawLabelLines(svg, textX, y + Math.round((4 * fontSize) / FONT_BASE), text, breakFs, {
         "text-anchor": "start",
         "font-size": breakFs,
         fill: palette.fgDim,
         "data-break-label": "1",
-      });
+      }, "center");
     }
   }
 
@@ -488,20 +535,33 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       const wantInside = explicitPlacement ? step.labelInside === true : valueLabels.inside;
       const wantAbove = explicitPlacement ? step.labelAbove === true : valueLabels.above;
 
-      const fittedInside = truncate(insideText, barWidth - 4, valueFontSize);
+      const fittedInside = truncateLabel(insideText, barWidth - 4, valueFontSize);
+      const insideLines = hasLabelBreak(fittedInside) ? splitLabelLines(fittedInside) : [fittedInside];
+      const insideNeeds =
+        insideLines.length > 1
+          ? insideLines.length * labelLineStep(valueFontSize) + 2
+          : valueFontSize + 2;
       const fitsInside =
-        barHeight >= Math.max(INSIDE_MIN_HEIGHT, valueFontSize + 2) &&
-        measureText(fittedInside, valueFontSize) <= barWidth - 4;
+        barHeight >= Math.max(INSIDE_MIN_HEIGHT, insideNeeds) &&
+        insideLines.every((line) => measureText(line, valueFontSize) <= barWidth - 4);
 
       // Подпись ВНУТРИ бара. При включённом `above` она не «съедает» надпись
       // над баром: обе рисуются независимо (это и есть режим `labels both`).
       const drewInside = wantInside && fitsInside;
       if (drewInside) {
-        svg.text(x + barWidth / 2, top + barHeight / 2 + valueFontSize * 0.35, fittedInside, {
-          "font-size": valueFontSize,
-          fill: INSIDE_TEXT,
-          "font-weight": 600,
-        });
+        drawLabelLines(
+          svg,
+          x + barWidth / 2,
+          top + barHeight / 2 + valueFontSize * 0.35,
+          fittedInside,
+          valueFontSize,
+          {
+            "font-size": valueFontSize,
+            fill: INSIDE_TEXT,
+            "font-weight": 600,
+          },
+          "center",
+        );
       }
 
       // Подпись НАД баром — только если её просили. Если просили лишь inside
@@ -513,26 +573,41 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
         const aboveY = top - Math.round((5 * fontSize) / FONT_BASE);
         // Сдвиг вверх, если подпись налезает на соседнюю колонку слева:
         // иначе «+80» наезжает на бар Q1, а «−40» — на «+80».
-        const halfW = measureText(drawnAbove, valueFontSize) / 2;
+        const halfW = measureLabelWidth(drawnAbove, valueFontSize) / 2;
         const leftBound = col === 0 ? plotLeft : columnLeft;
         const shiftUp =
           halfW > barWidth / 2 + Math.round((6 * fontSize) / FONT_BASE) &&
           x + barWidth / 2 - halfW < leftBound
             ? Math.round(valueFontSize * 1.15)
             : 0;
-        svg.text(x + barWidth / 2, aboveY - shiftUp, drawnAbove, {
-          "font-size": valueFontSize,
-          fill: palette.fgDim,
-          "data-value-label": "1",
-        });
+        drawLabelLines(
+          svg,
+          x + barWidth / 2,
+          aboveY - shiftUp,
+          drawnAbove,
+          valueFontSize,
+          {
+            "font-size": valueFontSize,
+            fill: palette.fgDim,
+            "data-value-label": "1",
+          },
+          "up",
+        );
       }
     }
 
-    const label = truncate(labels[col] ?? "", columnWidth - 6, labelFontSize);
-    svg.text(columnLeft + columnWidth / 2, plotBottom + Math.round((18 * fontSize) / FONT_BASE), label, {
-      "font-size": labelFontSize,
-      fill: palette.fg,
-    });
+    const label = truncateLabel(labels[col] ?? "", columnWidth - 6, labelFontSize);
+    drawLabelLines(
+      svg,
+      columnLeft + columnWidth / 2,
+      plotBottom + Math.round((18 * fontSize) / FONT_BASE),
+      label,
+      labelFontSize,
+      {
+        "font-size": labelFontSize,
+        fill: palette.fg,
+      },
+    );
   }
 
   // Легенда: при мульти-серии у каждой группы свой цвет — цвета всех групп
@@ -540,7 +615,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
   // группы получают цвета по кругу из общей палитры.
   if (groups > 1) {
     let legendX = plotLeft;
-    const legendY = plotBottom + Math.round((40 * fontSize) / FONT_BASE);
+    const legendY = plotBottom + Math.round((40 * fontSize) / FONT_BASE) + colLabelExtra;
     for (let g = 0; g < groups; g += 1) {
       const name = series[g].name ?? `Группа ${g + 1}`;
       const swatch = Math.round(fontSize * 0.91);
@@ -548,12 +623,12 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
         fill: seriesColor(model, g, colors, options.dark) ?? colors.total,
         rx: 2,
       });
-      svg.text(legendX + swatch + 6, legendY, name, {
+      drawLabelLines(svg, legendX + swatch + 6, legendY, name, labelFontSize, {
         "text-anchor": "start",
         "font-size": labelFontSize,
         fill: palette.fgDim,
       });
-      legendX += swatch + Math.round(fontSize * 1.1) + measureText(name, labelFontSize) + Math.round(fontSize * 1.45);
+      legendX += swatch + Math.round(fontSize * 1.1) + measureLabelWidth(name, labelFontSize) + Math.round(fontSize * 1.45);
     }
   }
 
@@ -578,19 +653,32 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
     });
 
     if (item.label) {
-      const text = `${fmt(item.value)} ${item.label}`;
-      const textWidth = measureText(text, lineFontSize);
+      const text = hasLabelBreak(item.label)
+        ? splitLabelLines(item.label)
+            .map((line, idx) => (idx === 0 ? `${fmt(item.value)} ${line}` : line))
+            .join("\n")
+        : `${fmt(item.value)} ${item.label}`;
+      const textWidth = measureLabelWidth(text, lineFontSize);
+      const lineCount = labelLineCount(text);
+      const lineStep = labelLineStep(lineFontSize);
+      const lineBlock = (lineCount - 1) * lineStep;
       // Вырез под подпись — цветом плашки холста: иначе текст лежит на линии.
-      svg.rect(lineLabelX - 2, y - lineFontSize * 0.8, textWidth + 4, lineFontSize * 1.6, {
-        fill: palette.bg,
-        "data-line-gap": "1",
-      });
-      svg.text(lineLabelX, y + Math.round((4 * fontSize) / FONT_BASE), text, {
+      svg.rect(
+        lineLabelX - 2,
+        y - lineFontSize * 0.8 - lineBlock / 2,
+        textWidth + 4,
+        lineFontSize * 1.6 + lineBlock,
+        {
+          fill: palette.bg,
+          "data-line-gap": "1",
+        },
+      );
+      drawLabelLines(svg, lineLabelX, y + Math.round((4 * fontSize) / FONT_BASE), text, lineFontSize, {
         "text-anchor": "start",
         "font-size": lineFontSize,
         fill: stroke,
         "data-threshold-label": "1",
-      });
+      }, "center");
     }
   }
 
