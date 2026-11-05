@@ -156,7 +156,7 @@ const EXPECTED_SPECS_BY_TYPE: Record<
       ["Восток", "82", "54", "Город"],
     ],
   },
-  clustered: {
+  series: {
     titleKey: "tablePaste.type.clustered",
     columnsKey: "tablePaste.expected.clustered.columns",
     rulesKey: "tablePaste.expected.clustered.rules",

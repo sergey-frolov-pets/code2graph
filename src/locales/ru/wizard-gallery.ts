@@ -55,7 +55,7 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.tag.diagramType.treemap": "Древовидная карта",
   "llm.wizard.gallery.tag.diagramType.radar": "Лепестковая диаграмма",
   "llm.wizard.gallery.tag.diagramType.voronoi": "Диаграмма Вороного",
-  "llm.wizard.gallery.tag.diagramType.clustered": "Кластеризованная диаграмма",
+  "llm.wizard.gallery.tag.diagramType.clustered": "Серийная диаграмма",
   "llm.wizard.gallery.tag.diagramType.decision": "Решение",
   "llm.wizard.gallery.desc.bubble": "Точки на двух осях, размер задаёт третье значение.",
   "llm.wizard.gallery.desc.heatmap": "Матрица, цвет ячейки показывает величину.",
@@ -88,20 +88,20 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.waterfallThresholds.title": "Водопад с порогами",
   "llm.wizard.gallery.example.mermaid.waterfallThresholds.description":
     "Пороговые линии поверх водопада.",
-  "llm.wizard.gallery.example.mermaid.clustered.title": "Кластеризованная диаграмма",
+  "llm.wizard.gallery.example.mermaid.clustered.title": "Серийная диаграмма",
   "llm.wizard.gallery.example.mermaid.clustered.description":
     "Сгруппированные вертикальные столбцы нескольких серий по категориям.",
   "llm.wizard.gallery.example.mermaid.clusteredRotated.title":
-    "Кластеризованная диаграмма (поворот 90°)",
+    "Серийная диаграмма (поворот 90°)",
   "llm.wizard.gallery.example.mermaid.clusteredRotated.description":
     "Горизонтальные сгруппированные полосы с поворотом на 90 градусов (rotate 90).",
-  "llm.wizard.gallery.example.mermaid.clusteredStacked.title": "Кластеризованная — стопка",
+  "llm.wizard.gallery.example.mermaid.clusteredStacked.title": "Серийная — стопка",
   "llm.wizard.gallery.example.mermaid.clusteredStacked.description":
     "Серии сложены в один столбец: положительные вверх от нуля, отрицательные вниз.",
-  "llm.wizard.gallery.example.mermaid.clusteredMono.title": "Кластеризованная — ч/б",
+  "llm.wizard.gallery.example.mermaid.clusteredMono.title": "Серийная — ч/б",
   "llm.wizard.gallery.example.mermaid.clusteredMono.description":
     "Те же столбцы серыми оттенками для печати и документов без цвета.",
-  "llm.wizard.gallery.example.mermaid.clusteredMonoInvert.title": "Кластеризованная — ч/б для тёмной темы",
+  "llm.wizard.gallery.example.mermaid.clusteredMonoInvert.title": "Серийная — ч/б для тёмной темы",
   "llm.wizard.gallery.example.mermaid.clusteredMonoInvert.description":
     "Светлые серые столбцы на тёмном холсте.",
   "llm.wizard.gallery.example.wiremark.login.title": "Макет входа",

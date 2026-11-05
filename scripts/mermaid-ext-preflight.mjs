@@ -197,7 +197,7 @@ const MINIMAL_SOURCES = {
   treemap: "treemap\nГруппа / A : 60\nГруппа / B : 40",
   radar: "radar\naxes A, B, C\nseries S : 50, 70, 90",
   voronoi: "voronoi\ndata\nA : x=25, y=50\nB : x=75, y=50",
-  clustered: "clustered\nrotate 90\ncategories Q1, Q2\nseries A : 10, 20\nseries B : 15, 25",
+  series: "series\nrotate 90\ncategories Q1, Q2\nseries A : 10, 20\nseries B : 15, 25",
 };
 
 async function checkWiring() {

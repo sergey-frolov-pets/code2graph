@@ -65,10 +65,7 @@ const DIAGRAM_KEYWORDS = new Set([
   "spider",
   "voronoi",
   "voronoi-diagram",
-  "clustered",
-  "clustered-bar",
-  "clustered-barchart",
-  "barchart-clustered",
+  "series",
 ]);
 
 const KEYWORDS = new Set([
@@ -81,6 +78,7 @@ const KEYWORDS = new Set([
   "bar",
   "branch",
   "checkout",
+  "cagr",
   "class",
   "classdef",
   "click",
@@ -254,7 +252,7 @@ const KEYWORDS = new Set([
   "updateelementstyle",
   "updaterelstyle",
 
-  // Mermaid Ext: waterfall, bubble, heatmap, org, ev, boxplot, treemap, radar, voronoi, clustered
+  // Mermaid Ext: waterfall, bubble, heatmap, org, ev, boxplot, treemap, radar, voronoi, series
   "above",
   "auto",
   "axis",
@@ -293,6 +291,8 @@ const KEYWORDS = new Set([
   "none",
   "off",
   "on",
+  "prefix",
+  "format",
   "outlier",
   "outliers",
   "whisker",

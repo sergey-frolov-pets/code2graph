@@ -127,7 +127,7 @@ data
 });
 
 describe("clustered bar chart engine (vertical & rotated 90°)", () => {
-  const baseSource = `clustered
+  const baseSource = `series
 title Выручка по регионам
 categories Q1, Q2, Q3, Q4
 y "млн ₽" 0 --> 200
@@ -184,5 +184,61 @@ series Экспорт : 45, 55, 70, 90 color=#f97316`;
     const monoSvg = clusteredEngine.render(mono.value as ClusteredModel, {});
     expect(monoSvg).toContain('fill="#1a1d21"');
     expect(monoSvg).not.toContain("#0969da");
+  });
+
+  it("рисует линию с пропуском и подписью справа, а cagr — в овале", () => {
+    const parsed = clusteredEngine.parse(`series
+categories 2022, 2023, 2024, 2025
+series Выручка : 18.9, 29.8, 35.1, 41.3
+cagr
+cagr 1, 3, format="0.0%", prefix="CAGR: "
+line План : 20, -, 40, 50 color=#111111 style=dash
+series Прочее : 5, 6, 7, 8
+cagr label="+30% p.a."`);
+    expect(parsed.ok).toBe(true);
+    const model = parsed.value as ClusteredModel;
+    expect(model.lines).toHaveLength(1);
+    expect(model.lines[0]?.values).toEqual([20, null, 40, 50]);
+    expect(model.lines[0]?.style).toBe("dash");
+    expect(model.lines[0]?.color).toBe("#111111");
+    expect(model.series[0]?.values[1]).toBe(29.8);
+    expect(model.cagrs.map((mark) => [mark.seriesIndex, mark.from, mark.to, mark.prefix, mark.label])).toEqual([
+      [0, 0, 3, undefined, undefined],
+      [0, 0, 2, "CAGR: ", undefined],
+      [1, 0, 3, undefined, "+30% p.a."],
+    ]);
+
+    const svg = clusteredEngine.render(model, {});
+    const rotated = clusteredEngine.render({ ...model, rotate90: true }, {});
+    expect(rotated).toContain('data-line-label="План"');
+    expect(rotated).toContain('data-cagr-label="30%"');
+    expect(svg).toContain('data-line-label="План"');
+    expect(svg).toContain('stroke-dasharray="7 4"');
+    const planLine = /<polyline[^>]*points="([^"]+)"[^>]*data-line="0"/.exec(svg);
+    expect(planLine?.[1].trim().split(/\s+/)).toHaveLength(3);
+    expect(svg).toContain('data-cagr-label="30%"');
+    expect(svg).toContain('data-cagr-label="CAGR: ');
+    expect(svg).toMatch(/data-cagr-label="CAGR: \d+\.\d%"/);
+    expect(svg).toContain('data-cagr-label="+30% p.a."');
+    expect(svg).toContain("<ellipse");
+    expect(svg).toContain("ext-series-cagr-arrow");
+  });
+
+  it("не рисует пропущенный бар и отвергает cagr на пустом слоте", () => {
+    const parsed = clusteredEngine.parse(`series
+categories A, B, C
+series Ряд : 10, -, 30`);
+    expect(parsed.ok).toBe(true);
+    const svg = clusteredEngine.render(parsed.value as ClusteredModel, {});
+    expect(svg).not.toContain('data-bar="1-0"');
+    expect(svg).toContain('data-bar="0-0"');
+    expect(svg).toContain('data-bar="2-0"');
+
+    const broken = clusteredEngine.parse(`series
+categories A, B, C
+series Ряд : 10, -, 30
+cagr 1, 2`);
+    expect(broken.ok).toBe(false);
+    expect(broken.errors[0]?.message).toContain("нет значения в баре 2");
   });
 });

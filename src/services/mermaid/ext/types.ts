@@ -13,7 +13,7 @@ export type ExtDiagramType =
   | "treemap"
   | "radar"
   | "voronoi"
-  | "clustered";
+  | "series";
 
 export interface ExtParseError {
   message: string;

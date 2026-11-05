@@ -46,7 +46,7 @@ export const tablePasteMessages = {
   "tablePaste.type.treemap": "Древовидная карта (Tree map)",
   "tablePaste.type.radar": "Лепестковая диаграмма (Radar)",
   "tablePaste.type.voronoi": "Диаграмма Вороного (Voronoi)",
-  "tablePaste.type.clustered": "Кластеризованная диаграмма (Clustered Bar)",
+  "tablePaste.type.clustered": "Серийная диаграмма (series)",
   "tablePaste.type.xychart": "XY-график (Bar / Line)",
   "tablePaste.type.quadrant": "Квадрант (Quadrant Chart)",
   "tablePaste.type.sankey": "Диаграмма Санки (Sankey)",

@@ -259,8 +259,8 @@ data
 Восточный терминал : x=82, y=56, group=Регион
 Центральный склад : x=50, y=50, group=Центр
 Юго-Запад : x=24, y=22, group=Регион, color=#f97316`,
-  clustered: `clustered
-%% Кластеризованная столбчатая диаграмма (Clustered bar chart).
+  clustered: `series
+%% Серийная диаграмма: столбцы нескольких серий по категориям.
 %% Несколько серий рисуются рядом в каждой категории.
 %% Повернуть диаграмму на 90 градусов (горизонтальные полосы): добавьте строку rotate 90
 %% Директивы:
@@ -277,8 +277,8 @@ colors s1=#0969da s2=#8250df s3=#2da44e
 series Онлайн : 120, 145, 165, 190
 series Розница : 85, 95, 110, 130
 series Партнёры : 45, 60, 75, 95 color=#f97316`,
-  clusteredRotated: `clustered
-%% Кластеризованная диаграмма С ПОВОРОТОМ НА 90 ГРАДУСОВ (rotate 90).
+  clusteredRotated: `series
+%% Серийная диаграмма С ПОВОРОТОМ НА 90 ГРАДУСОВ (rotate 90).
 %% Директива rotate 90 (или orientation horizontal) разворачивает оси:
 %% категории идут сверху вниз слева, а полосы серий растут слева направо.
 %% Вернуть классический вертикальный вид: rotate 0 (или убрать строку rotate 90).
@@ -292,10 +292,10 @@ colors s1=#0969da s2=#8250df s3=#2da44e
 series Онлайн : 120, 145, 165, 190
 series Розница : 85, 95, 110, 130
 series Партнёры : 45, 60, 75, 95 color=#f97316`,
-  clusteredStacked: `clustered
+  clusteredStacked: `series
 %% Стопка: серии в одном столбце, а не рядом.
 %% stacked / bars stacked / layout stacked
-%% Вернуть бары рядом: stacked off или bars clustered
+%% Вернуть бары рядом: stacked off или bars grouped
 %% Положительные значения растут вверх от нуля, отрицательные — вниз.
 title Состав выручки
 stacked
@@ -307,7 +307,7 @@ colors s1=#0969da s2=#8250df s3=#2da44e
 series Продукт : 80, 90, 70, 110
 series Услуги : 50, 60, 55, 70
 series Партнёры : 30, 25, 40, 35`,
-  clusteredMono: `clustered
+  clusteredMono: `series
 %% Чёрно-белый режим: серии различаются светлотой, а не цветом.
 %% Явные colors перекрывают серую шкалу, поэтому здесь их нет.
 title Выручка, ч/б
@@ -318,7 +318,7 @@ grid 50
 series Онлайн : 120, 145, 165, 190
 series Розница : 85, 95, 110, 130
 series Партнёры : 45, 60, 75, 95`,
-  clusteredMonoInvert: `clustered
+  clusteredMonoInvert: `series
 %% Инвертированный ч/б: светлые серые столбцы на тёмном холсте.
 %% Для тёмной темы и тёмных слайдов. mono off возвращает цвет.
 title Выручка, ч/б инверсия
@@ -591,8 +591,8 @@ West Terminal : x=20, y=54, group=Regional
 East Terminal : x=82, y=56, group=Regional
 Central Depot : x=50, y=50, group=Core
 Southwest : x=24, y=22, group=Regional, color=#f97316`,
-  clustered: `clustered
-%% Clustered bar chart: groups multiple series side by side for each category.
+  clustered: `series
+%% Series chart: groups multiple series side by side for each category.
 %% To rotate the chart by 90 degrees (horizontal bars), add: rotate 90
 %% Directives:
 %%   categories C1, C2, ...    category labels (alias: x C1, C2, ...)
@@ -608,8 +608,8 @@ colors s1=#0969da s2=#8250df s3=#2da44e
 series Online : 120, 145, 165, 190
 series Retail : 85, 95, 110, 130
 series Partners : 45, 60, 75, 95 color=#f97316`,
-  clusteredRotated: `clustered
-%% Clustered bar chart ROTATED BY 90 DEGREES (rotate 90).
+  clusteredRotated: `series
+%% Series chart ROTATED BY 90 DEGREES (rotate 90).
 %% The rotate 90 directive (or orientation horizontal) swaps the axes:
 %% categories run top-to-bottom on the left, and grouped bars grow left-to-right.
 %% Switch back to vertical bars with: rotate 0 (or remove rotate 90).
@@ -623,10 +623,10 @@ colors s1=#0969da s2=#8250df s3=#2da44e
 series Online : 120, 145, 165, 190
 series Retail : 85, 95, 110, 130
 series Partners : 45, 60, 75, 95 color=#f97316`,
-  clusteredStacked: `clustered
+  clusteredStacked: `series
 %% Stacked bars: series share one column instead of sitting side by side.
 %% stacked / bars stacked / layout stacked
-%% Side by side again: stacked off or bars clustered
+%% Side by side again: stacked off or bars grouped
 %% Positive values grow up from zero, negative values grow down.
 title Revenue mix
 stacked
@@ -638,7 +638,7 @@ colors s1=#0969da s2=#8250df s3=#2da44e
 series Product : 80, 90, 70, 110
 series Services : 50, 60, 55, 70
 series Partners : 30, 25, 40, 35`,
-  clusteredMono: `clustered
+  clusteredMono: `series
 %% Black-and-white: series differ by lightness, not hue.
 %% Explicit colors override the grey scale, so this sample leaves them out.
 title Revenue, mono
@@ -649,7 +649,7 @@ grid 50
 series Online : 120, 145, 165, 190
 series Retail : 85, 95, 110, 130
 series Partners : 45, 60, 75, 95`,
-  clusteredMonoInvert: `clustered
+  clusteredMonoInvert: `series
 %% Inverted black-and-white: light grey bars on a dark canvas.
 %% For dark themes and dark slides. mono off brings colour back.
 title Revenue, inverted mono
