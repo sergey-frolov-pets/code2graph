@@ -6,7 +6,19 @@ import {
   resolveSeriesColor,
   unquoteExtText,
 } from "../color-utils";
-import { clamp, createSvg, fmt, measureText, niceRange, resolvePalette } from "../common";
+import {
+  clamp,
+  createSvg,
+  drawLabelLines,
+  fmt,
+  hasLabelBreak,
+  labelBlockExtra,
+  labelLineStep,
+  measureLabelWidth,
+  niceRange,
+  resolvePalette,
+  splitLabelLines,
+} from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
 export interface RadarSeries {
@@ -382,13 +394,16 @@ export function renderRadar(model: RadarModel, options: ExtRenderOptions): strin
 
   const radius = Math.round(RADIUS_BASE * Math.max(1, (scaleFactor - 1) * 0.45 + 1));
   const longestAxis = model.axes.reduce(
-    (max, axis) => Math.max(max, measureText(axis, fontSize)),
+    (max, axis) => Math.max(max, measureLabelWidth(axis, fontSize)),
     0,
   );
-  const sideMargin = Math.max(76, Math.ceil(longestAxis) + LABEL_OFFSET + 20);
-  const topMargin = (model.title ? 58 : 28) + fontSize + LABEL_OFFSET;
-  const legendHeight = 36;
-  const bottomMargin = 28 + fontSize + LABEL_OFFSET + legendHeight;
+  const axisExtra = Math.max(0, ...model.axes.map((axis) => labelBlockExtra(axis, fontSize)));
+  const titleExtra = labelBlockExtra(model.title, titleSize);
+  const seriesExtra = Math.max(0, ...model.series.map((series) => labelBlockExtra(series.name, fontSize)));
+  const sideMargin = Math.max(76, Math.ceil(longestAxis) + LABEL_OFFSET + 20) + axisExtra;
+  const topMargin = (model.title ? 58 : 28) + fontSize + LABEL_OFFSET + axisExtra + titleExtra;
+  const legendHeight = 36 + seriesExtra;
+  const bottomMargin = 28 + fontSize + LABEL_OFFSET + legendHeight + axisExtra;
 
   const width = radius * 2 + sideMargin * 2;
   const height = topMargin + radius * 2 + bottomMargin;
@@ -404,7 +419,7 @@ export function renderRadar(model: RadarModel, options: ExtRenderOptions): strin
   });
 
   if (model.title) {
-    svg.text(width / 2, 26, model.title, {
+    drawLabelLines(svg, width / 2, 26, model.title, titleSize, {
       "font-size": titleSize,
       "font-weight": 600,
       fill: palette.fg,
@@ -454,14 +469,18 @@ export function renderRadar(model: RadarModel, options: ExtRenderOptions): strin
       "stroke-width": 1,
     });
 
-    const lx = cx + (radius + LABEL_OFFSET) * cos;
-    const ly = cy + (radius + LABEL_OFFSET) * sin + fontSize * 0.35;
     const anchor = Math.abs(cos) < 0.18 ? "middle" : cos > 0 ? "start" : "end";
-    svg.text(lx, ly, model.axes[i], {
-      "text-anchor": anchor,
-      "font-size": fontSize,
-      "font-weight": 500,
-      fill: palette.fg,
+    const axisLines = hasLabelBreak(model.axes[i]) ? splitLabelLines(model.axes[i]) : [model.axes[i]];
+    axisLines.forEach((line, lineIdx) => {
+      const dist = radius + LABEL_OFFSET + lineIdx * labelLineStep(fontSize);
+      const lx = cx + dist * cos;
+      const ly = cy + dist * sin + fontSize * 0.35;
+      svg.text(lx, ly, line, {
+        "text-anchor": anchor,
+        "font-size": fontSize,
+        "font-weight": 500,
+        fill: palette.fg,
+      });
     });
   }
 
@@ -508,11 +527,11 @@ export function renderRadar(model: RadarModel, options: ExtRenderOptions): strin
   // Легенда серий внизу
   const swatch = 10;
   const totalLegendWidth = model.series.reduce(
-    (acc, s) => acc + swatch + 6 + measureText(s.name, fontSize) + 18,
+    (acc, s) => acc + swatch + 6 + measureLabelWidth(s.name, fontSize) + 18,
     -18,
   );
   let lx = Math.max(16, (width - totalLegendWidth) / 2);
-  const ly = height - 16;
+  const ly = height - 16 - seriesExtra;
 
   model.series.forEach((s, idx) => {
     const color = resolveSeriesColor(idx, {
@@ -522,12 +541,12 @@ export function renderRadar(model: RadarModel, options: ExtRenderOptions): strin
       dark: options.dark,
     });
     svg.rect(lx, ly - swatch + 2, swatch, swatch, { fill: color, rx: 2 });
-    svg.text(lx + swatch + 6, ly, s.name, {
+    drawLabelLines(svg, lx + swatch + 6, ly, s.name, fontSize, {
       "text-anchor": "start",
       "font-size": fontSize,
       fill: palette.fgDim,
     });
-    lx += swatch + 6 + measureText(s.name, fontSize) + 18;
+    lx += swatch + 6 + measureLabelWidth(s.name, fontSize) + 18;
   });
 
   return svg.toString();

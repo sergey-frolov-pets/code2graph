@@ -1,4 +1,15 @@
-import { clamp, createSvg, measureText, resolvePalette } from "../common";
+import {
+  clamp,
+  createSvg,
+  drawLabelLines,
+  hasLabelBreak,
+  labelBlockExtra,
+  labelLineStep,
+  measureLabelWidth,
+  measureText,
+  resolvePalette,
+  splitLabelLines,
+} from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
 // --- Модель ---------------------------------------------------------------
@@ -300,8 +311,11 @@ const GROUP_COLORS_DARK = ["#58a6ff", "#a371f7", "#d29922", "#3fb950", "#f85149"
  */
 function longestWord(text: string): string {
   let best = "";
-  for (const word of String(text ?? "").split(/\s+/)) {
-    if (measureText(word, 1) > measureText(best, 1)) best = word;
+  const chunks = hasLabelBreak(text) ? splitLabelLines(text) : [String(text ?? "")];
+  for (const chunk of chunks) {
+    for (const word of chunk.split(/\s+/)) {
+      if (measureText(word, 1) > measureText(best, 1)) best = word;
+    }
   }
   return best;
 }
@@ -311,9 +325,7 @@ function longestWord(text: string): string {
  * в `maxWidth`. Слишком длинное слово режется по символам. Подпись не
  * теряется: выводится целиком, просто в несколько строк.
  */
-function wrapLabel(text: string, maxWidth: number, fontSize: number): string[] {
-  const src = String(text ?? "").trim();
-  if (!src) return [];
+function wrapSegment(src: string, maxWidth: number, fontSize: number): string[] {
   if (measureText(src, fontSize) <= maxWidth) return [src];
 
   const lines: string[] = [];
@@ -350,8 +362,22 @@ function wrapLabel(text: string, maxWidth: number, fontSize: number): string[] {
   return lines;
 }
 
+/** Сначала явный `\n`, затем перенос по словам внутри каждой строки. */
+function wrapLabel(text: string, maxWidth: number, fontSize: number): string[] {
+  const src = String(text ?? "").trim();
+  if (!src) return [];
+  if (!hasLabelBreak(src)) return wrapSegment(src, maxWidth, fontSize);
+  const lines: string[] = [];
+  for (const segment of splitLabelLines(src)) {
+    if (!segment) continue;
+    lines.push(...wrapSegment(segment, maxWidth, fontSize));
+  }
+  return lines;
+}
+
 function normalizedLabel(text: string): string {
-  return String(text ?? "").trim().replace(/\s+/g, " ");
+  const src = hasLabelBreak(text) ? splitLabelLines(text).join(" ") : String(text ?? "").trim();
+  return src.replace(/\s+/g, " ").trim();
 }
 
 /** Строки собраны из целых слов исходной подписи, без разрезания по буквам. */
@@ -460,6 +486,9 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
   const axisSize = clamp(Math.round(fontSize * 1.09), 12, 20);
   const quadrantSize = clamp(Math.round(fontSize), 11, 18);
   const lineHeight = Math.round(fontSize * 1.15);
+  const titleExtra = labelBlockExtra(model.title, titleSize);
+  const yAxisExtra = labelBlockExtra(model.y.label, axisSize);
+  const xAxisExtra = labelBlockExtra(model.x.label, axisSize);
 
   // --- Раскладка легенды (до создания SVG: от неё зависит высота) ---------
   const groups: string[] = [];
@@ -477,7 +506,7 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
     let row: { text: string; group?: string; x: number }[] = [];
     let x = 0;
     for (const item of legendItems) {
-      const itemWidth = measureText(item.text, fontSize) + (item.group ? swatch + 6 : 0);
+      const itemWidth = measureLabelWidth(item.text, fontSize) + (item.group ? swatch + 6 : 0);
       if (row.length > 0 && x + itemWidth > PLOT_WIDTH) {
         legendRows.push(row);
         row = [];
@@ -488,10 +517,15 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
     }
     if (row.length > 0) legendRows.push(row);
   }
-  const legendHeight = legendRows.length * legendRowHeight;
+  const legendRowHeights = legendRows.map((row) => {
+    const lines = Math.max(1, ...row.map((item) => (hasLabelBreak(item.text) ? splitLabelLines(item.text).length : 1)));
+    if (lines <= 1) return legendRowHeight;
+    return Math.max(legendRowHeight, lines * labelLineStep(fontSize) + 6);
+  });
+  const legendHeight = legendRowHeights.reduce((sum, rowHeight) => sum + rowHeight, 0);
 
-  const plotLeft = PADDING.left;
-  const plotTop = PADDING.top;
+  const plotLeft = PADDING.left + yAxisExtra;
+  const plotTop = PADDING.top + titleExtra;
   const plotBottom = plotTop + PLOT_HEIGHT;
   const plotRight = plotLeft + PLOT_WIDTH;
 
@@ -532,13 +566,14 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
     labelOverflow = Math.max(labelOverflow, labelBottom(item.labelLayout) - plotBottom);
   }
 
-  const width = PADDING.left + PLOT_WIDTH + PADDING.right;
+  const width = plotLeft + PLOT_WIDTH + PADDING.right;
   const height =
-    PADDING.top +
+    plotTop +
     PLOT_HEIGHT +
     PADDING.bottom +
     Math.max(0, legendHeight - legendRowHeight) +
-    labelOverflow;
+    labelOverflow +
+    xAxisExtra;
   const svg = createSvg({
     width,
     height,
@@ -548,7 +583,7 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
   });
 
   if (model.title) {
-    svg.text(width / 2, 24, model.title, {
+    drawLabelLines(svg, width / 2, 24, model.title, titleSize, {
       "font-size": titleSize,
       "font-weight": 600,
       fill: palette.fg,
@@ -607,20 +642,27 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
   // Подписи осей. Если подпись точки ушла под пузырёк и ниже области,
   // ось и легенда сдвигаются вниз, чтобы не накрыть её.
   if (xAxis.label) {
-    svg.text((plotLeft + plotRight) / 2, plotBottom + 34 + labelOverflow, xAxis.label, {
-      "font-size": axisSize,
-      fill: palette.fgDim,
-    });
+    drawLabelLines(
+      svg,
+      (plotLeft + plotRight) / 2,
+      plotBottom + 34 + labelOverflow,
+      xAxis.label,
+      axisSize,
+      {
+        "font-size": axisSize,
+        fill: palette.fgDim,
+      },
+    );
   }
   if (yAxis.label) {
-    const cx = 18;
+    const cx = 18 + yAxisExtra;
     const cy = plotTop + PLOT_HEIGHT / 2;
-    svg.text(cx, cy, yAxis.label, {
+    drawLabelLines(svg, cx, cy, yAxis.label, axisSize, {
       "text-anchor": "middle",
       "font-size": axisSize,
       fill: palette.fgDim,
       transform: `rotate(-90 ${cx} ${cy})`,
-    });
+    }, "up");
   }
 
   // Группы → цвета (список groups собран выше, при раскладке легенды)
@@ -653,9 +695,10 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
   }
 
   // Легенда групп + подпись размера: строки переносятся по ширине графика.
-  const legendTop = plotBottom + 50 + labelOverflow;
+  const legendTop = plotBottom + 50 + labelOverflow + xAxisExtra;
+  let legendBaseline = legendTop;
   legendRows.forEach((row, rowIdx) => {
-    const y = legendTop + rowIdx * legendRowHeight;
+    const y = legendBaseline;
     for (const item of row) {
       const x = plotLeft + item.x;
       if (item.group) {
@@ -664,19 +707,20 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
           "fill-opacity": 0.7,
           stroke: colorOf(item.group),
         });
-        svg.text(x + swatch + 6, y, item.text, {
+        drawLabelLines(svg, x + swatch + 6, y, item.text, fontSize, {
           "text-anchor": "start",
           "font-size": fontSize,
           fill: palette.fgDim,
         });
       } else {
-        svg.text(x, y, item.text, {
+        drawLabelLines(svg, x, y, item.text, fontSize, {
           "text-anchor": "start",
           "font-size": fontSize,
           fill: palette.fgDim,
         });
       }
     }
+    legendBaseline += legendRowHeights[rowIdx] ?? legendRowHeight;
   });
 
   return svg.toString();

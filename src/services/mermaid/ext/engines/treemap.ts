@@ -8,7 +8,19 @@ import {
   shadeColor,
   unquoteExtText,
 } from "../color-utils";
-import { clamp, createSvg, fmt, measureText, resolvePalette, truncate } from "../common";
+import {
+  clamp,
+  createSvg,
+  drawLabelLines,
+  fmt,
+  hasLabelBreak,
+  labelBlockExtra,
+  measureLabelWidth,
+  resolvePalette,
+  splitLabelLines,
+  truncate,
+  truncateLabel,
+} from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
 export type TreemapLabelsMode = "values" | "percent" | "both" | "none";
@@ -405,9 +417,13 @@ export function renderTreemap(model: TreemapModel, options: ExtRenderOptions): s
   const titleSize = clamp(Math.round(fontSize * 1.36), 14, 26);
 
   const hasNamedGroups = model.groups.some((g) => g.name.length > 0);
-  const legendRowHeight = hasNamedGroups ? Math.round(fontSize * 1.8) : 0;
+  const legendExtra = hasNamedGroups
+    ? Math.max(0, ...model.groups.map((group) => labelBlockExtra(group.name, fontSize)))
+    : 0;
+  const legendRowHeight = hasNamedGroups ? Math.round(fontSize * 1.8) + legendExtra : 0;
+  const titleExtra = labelBlockExtra(model.title, titleSize);
 
-  const padTop = model.title ? PADDING.top : 20;
+  const padTop = (model.title ? PADDING.top : 20) + titleExtra;
   const width = CANVAS_WIDTH;
   const height = padTop + PLOT_HEIGHT + PADDING.bottom + legendRowHeight;
 
@@ -420,7 +436,7 @@ export function renderTreemap(model: TreemapModel, options: ExtRenderOptions): s
   });
 
   if (model.title) {
-    svg.text(width / 2, 26, model.title, {
+    drawLabelLines(svg, width / 2, 26, model.title, titleSize, {
       "font-size": titleSize,
       "font-weight": 600,
       fill: palette.fg,
@@ -466,18 +482,14 @@ export function renderTreemap(model: TreemapModel, options: ExtRenderOptions): s
         "stroke-width": 1.2,
         rx: 5,
       });
-      const headerLabel = truncate(group.name, groupRect.w - 12, Math.max(9, fontSize - 1));
-      svg.text(
-        groupRect.x + 8,
-        groupRect.y + headerH * 0.72,
-        headerLabel,
-        {
-          "text-anchor": "start",
-          "font-size": Math.max(9, fontSize - 1),
-          "font-weight": 600,
-          fill: palette.fg,
-        },
-      );
+      const headerSize = Math.max(9, fontSize - 1);
+      const headerLabel = truncateLabel(group.name, groupRect.w - 12, headerSize);
+      drawLabelLines(svg, groupRect.x + 8, groupRect.y + headerH * 0.72, headerLabel, headerSize, {
+        "text-anchor": "start",
+        "font-size": headerSize,
+        "font-weight": 600,
+        fill: palette.fg,
+      });
     }
 
     const leavesBounds: LayoutRect = {
@@ -532,11 +544,12 @@ export function renderTreemap(model: TreemapModel, options: ExtRenderOptions): s
         const canFitTwoLines =
           subLabel !== null && cell.h >= MIN_SUBLABEL_RECT_HEIGHT * scaleFactor;
 
-        const mainText = truncate(leaf.label, cell.w - 10, fontSize);
+        const mainText = truncateLabel(leaf.label, cell.w - 10, fontSize);
         const cx = cell.x + cell.w / 2;
         const cy = cell.y + cell.h / 2;
+        const mainLines = hasLabelBreak(mainText) ? splitLabelLines(mainText) : [mainText];
 
-        if (canFitTwoLines && subLabel) {
+        if (canFitTwoLines && subLabel && mainLines.length === 1) {
           svg.text(cx, cy - 2, mainText, {
             "font-size": fontSize,
             "font-weight": 600,
@@ -547,12 +560,26 @@ export function renderTreemap(model: TreemapModel, options: ExtRenderOptions): s
             "font-size": subFontSize,
             fill: textFill,
           });
-        } else {
+        } else if (mainLines.length === 1) {
           svg.text(cx, cy + fontSize * 0.35, mainText, {
             "font-size": fontSize,
             "font-weight": 600,
             fill: textFill,
           });
+        } else {
+          drawLabelLines(svg, cx, cy + fontSize * 0.35, mainText, fontSize, {
+            "font-size": fontSize,
+            "font-weight": 600,
+            fill: textFill,
+          }, "center");
+          const subFontSize = Math.max(8, fontSize - 1);
+          if (canFitTwoLines && subLabel) {
+            const below = cy + fontSize * 0.35 + ((mainLines.length - 1) * fontSize * 1.2) / 2 + subFontSize + 2;
+            svg.text(cx, below, truncate(subLabel, cell.w - 10, subFontSize), {
+              "font-size": subFontSize,
+              fill: textFill,
+            });
+          }
         }
       }
     }
@@ -571,13 +598,17 @@ export function renderTreemap(model: TreemapModel, options: ExtRenderOptions): s
         dark: options.dark,
       });
       svg.rect(lx, ly - swatch + 2, swatch, swatch, { fill: color, rx: 2 });
-      const label = `${group.name} (${fmt(group.total)})`;
-      svg.text(lx + swatch + 6, ly, label, {
+      const label = hasLabelBreak(group.name)
+        ? splitLabelLines(group.name)
+            .map((line, idx) => (idx === 0 ? `${line} (${fmt(group.total)})` : line))
+            .join("\n")
+        : `${group.name} (${fmt(group.total)})`;
+      drawLabelLines(svg, lx + swatch + 6, ly, label, fontSize, {
         "text-anchor": "start",
         "font-size": fontSize,
         fill: palette.fgDim,
       });
-      lx += swatch + 6 + measureText(label, fontSize) + 18;
+      lx += swatch + 6 + measureLabelWidth(label, fontSize) + 18;
     });
   }
 
