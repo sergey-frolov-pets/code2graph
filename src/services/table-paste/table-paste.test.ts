@@ -192,10 +192,11 @@ describe("Category A & B table parsers", () => {
     });
     expect(evRes.ok).toBe(true);
     if (evRes.ok) {
-      expect(evRes.fullSource).toContain("days 1, 2");
-      expect(evRes.fullSource).toContain("pv 10, 25");
-      expect(evRes.fullSource).toContain("ev 8, 20");
-      expect(evRes.fullSource).toContain("ac 12, 28");
+      expect(evRes.fullSource).toBe(
+        ["ev", "title Бюджет", "days 1, 2", "pv 10, 25", "ev 8, 20", "ac 12, 28", "grid"].join(
+          "\n",
+        ),
+      );
     }
 
     const xyRes = applyTableFromClipboardText({
@@ -229,6 +230,35 @@ describe("Category A & B table parsers", () => {
     if (sankeyRes.ok) {
       expect(sankeyRes.fullSource).toContain("Visit,Catalog,80");
       expect(sankeyRes.fullSource).not.toContain("Old,Node,10");
+    }
+  });
+
+  it("keeps the ev diagram header and places pasted series after title", () => {
+    const clipboardText = "Day\tPV\tEV\tAC\n1\t10\t8\t12\n2\t25\t20\t28";
+
+    const headerOnly = applyTableFromClipboardText({
+      clipboardText,
+      source: "ev\ntitle Бюджет\ngrid",
+      format: "mermaid",
+    });
+    expect(headerOnly.ok).toBe(true);
+    if (headerOnly.ok) {
+      expect(headerOnly.fullSource).toBe(
+        ["ev", "title Бюджет", "grid", "days 1, 2", "pv 10, 25", "ev 8, 20", "ac 12, 28"].join(
+          "\n",
+        ),
+      );
+    }
+
+    const evchart = applyTableFromClipboardText({
+      clipboardText,
+      source: "evchart\ntitle Бюджет\ndays 1\npv 1\nev 1\nac 1",
+      format: "mermaid",
+    });
+    expect(evchart.ok).toBe(true);
+    if (evchart.ok) {
+      expect(evchart.fullSource.startsWith("evchart\ntitle Бюджет\n")).toBe(true);
+      expect(evchart.fullSource).toContain("days 1, 2");
     }
   });
 

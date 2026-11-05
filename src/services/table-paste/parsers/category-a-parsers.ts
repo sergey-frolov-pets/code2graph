@@ -321,6 +321,17 @@ export function parseBubbleTable(
 // ---------------------------------------------------------------------------
 // 4. EV / Earned Value (Mermaid Ext)
 // ---------------------------------------------------------------------------
+
+/**
+ * A series row always carries values (`days 1, 2`, `ev 8, 20`).
+ * A bare `ev` (or `evchart`) is the diagram opener and must stay in place.
+ */
+const EV_SERIES_LINE_PATTERN = /^(?:days|pv|ev|ac)\b\s+\S/i;
+
+function isEvSeriesLine(trimmed: string): boolean {
+  return EV_SERIES_LINE_PATTERN.test(trimmed);
+}
+
 export function parseEvTable(
   grid: ParsedClipboardGrid,
   source: string,
@@ -368,7 +379,7 @@ export function parseEvTable(
       source,
       "ev",
       evLines,
-      (trimmed) => /^(?:days|pv|ev|ac)\b/i.test(trimmed),
+      isEvSeriesLine,
       "ev",
     );
   }
@@ -432,7 +443,7 @@ export function parseEvTable(
     source,
     "ev",
     evLines,
-    (trimmed) => /^(?:days|pv|ev|ac)\b/i.test(trimmed),
+    isEvSeriesLine,
     "ev",
   );
 }
