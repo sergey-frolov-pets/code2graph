@@ -120,6 +120,7 @@ export const miscMessages = {
   "engine.plantumlOnlineOfflineFallback": "plantuml.com unavailable — preview via offline PlantUML",
   "engine.onlineFileProtocol": "Online rendering is unavailable over file:// — use the hosted site or PWA",
   "include.fetchFailed": "Failed to load include: {path}",
+  "include.remoteBlocked": "Offline rendering does not load external includes: {path}",
   "preview.title": "Preview",
   "preview.titleTooltip": "Diagram preview",
   "preview.placeholder": "Enter diagram source on the left — the preview will appear here.",

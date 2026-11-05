@@ -1,3 +1,6 @@
+import { normalizeSvgRootSize, parseViewBoxSize } from "@/services/export/svg-geometry";
+import { stripOffDeviceSvgResources } from "@/utils/offline-render-network";
+
 const SVG_XMLNS = "http://www.w3.org/2000/svg";
 const LIGHT_SVG_FILLS = new Set(["#ffffff", "#fff", "white"]);
 
@@ -11,8 +14,6 @@ const SVG_PAINT_CONTAINER_TAGS = new Set([
 ]);
 
 const SVG_LABEL_KNOCKOUT_MAX_SHORTER_EDGE_PX = 32;
-
-import { normalizeSvgRootSize, parseViewBoxSize } from "@/services/export/svg-geometry";
 
 function normalizeColor(value: string): string {
   return value.trim().toLowerCase();
@@ -255,6 +256,7 @@ export function withTransparentSvgBackground(svg: string): string {
 }
 
 export function sanitizeSvgForPreview(svg: string): string {
+  svg = stripOffDeviceSvgResources(svg);
   if (!svg.includes("<svg")) {
     return svg;
   }
