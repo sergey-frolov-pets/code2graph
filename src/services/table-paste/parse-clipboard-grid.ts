@@ -85,6 +85,32 @@ function detectDelimiter(lines: readonly string[]): "\t" | "pipe" | ";" | null {
   return null;
 }
 
+/**
+ * One value per line, with no column delimiter.
+ * Excel and Google Sheets copy a single column this way.
+ */
+export function parseSingleColumnClipboard(rawClipboardText: string): ParsedClipboardGrid | null {
+  const normalizedText = String(rawClipboardText ?? "").replace(/\r\n?/g, "\n");
+  const lines = normalizedText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  if (lines.length === 0) {
+    return null;
+  }
+  if (lines.some((line) => line.includes("\t") || line.includes(";") || line.includes("|"))) {
+    return null;
+  }
+
+  const rows = lines.map((line) => [unquoteClipboardCell(line)]);
+  return {
+    rows,
+    rowCount: rows.length,
+    colCount: 1,
+  };
+}
+
 export function parseClipboardGrid(rawClipboardText: string): ParsedClipboardGrid | null {
   const normalizedText = String(rawClipboardText ?? "").replace(/\r\n?/g, "\n");
   const nonEmptyLines = normalizedText

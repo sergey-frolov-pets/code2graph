@@ -4,7 +4,7 @@ import {
   detectTableDiagramType,
   supportsTablePaste,
 } from "./detect-table-diagram-type";
-import { parseClipboardGrid } from "./parse-clipboard-grid";
+import { parseClipboardGrid, parseSingleColumnClipboard } from "./parse-clipboard-grid";
 import {
   parseBubbleTable,
   parseEvTable,
@@ -73,7 +73,9 @@ export function applyTableFromClipboardText(input: {
     );
   }
 
-  const grid = parseClipboardGrid(clipboardText);
+  const grid =
+    parseClipboardGrid(clipboardText) ??
+    (diagramType === "xychart" ? parseSingleColumnClipboard(clipboardText) : null);
   if (!grid) {
     return makeTablePasteError(
       diagramType,

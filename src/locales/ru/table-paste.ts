@@ -80,10 +80,10 @@ export const tablePasteMessages = {
     "Формирует ряды days, pv, ev и ac для графика освоенного объёма.",
   "tablePaste.expected.ev.headers": "Период|PV|EV|AC",
   "tablePaste.expected.xychart.columns":
-    "2 или 3 колонки: «Категория X», «Столбцы (Bar)», [«Линия (Line, необязательно)»].",
+    "От 1 колонки. Одна колонка — числа для bar [Val 1, ..., Val n]. Две — «Категория X» и «Значение bar». Три и больше — «Категория X» и отдельный bar на каждую следующую колонку.",
   "tablePaste.expected.xychart.rules":
-    "Формирует x-axis, y-axis, ряд bar [...] и при наличии 3-й колонки — line [...].",
-  "tablePaste.expected.xychart.headers": "Месяц|Столбцы|Линия",
+    "Одна колонка добавляет строку bar [значения]. Две и больше колонок заменяют или добавляют x-axis и по одному bar [...] на каждую числовую колонку. Если оси Y ещё нет, добавляется y-axis \"\" min --> max.",
+  "tablePaste.expected.xychart.headers": "Месяц|План|Факт|Прогноз",
   "tablePaste.expected.quadrant.columns":
     "3 колонки: «Название точки», «X (0..1 или 0..100%)», «Y (0..1 или 0..100%)».",
   "tablePaste.expected.quadrant.rules":

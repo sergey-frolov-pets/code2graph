@@ -80,10 +80,10 @@ export const tablePasteMessages = {
     "Generates days, pv, ev, and ac series for the Earned Value chart.",
   "tablePaste.expected.ev.headers": "Period|PV|EV|AC",
   "tablePaste.expected.xychart.columns":
-    "2 or 3 columns: 'X Category', 'Bar value', ['Line value (optional)'].",
+    "1 or more columns. One column is numbers for bar [Val 1, ..., Val n]. Two columns are 'X category' and 'Bar value'. Three or more are 'X category' plus one bar series per extra column.",
   "tablePaste.expected.xychart.rules":
-    "Generates x-axis, y-axis, bar [...] series, and optional line [...] series.",
-  "tablePaste.expected.xychart.headers": "Month|Bar|Line",
+    "One column appends a bar [values] line. Two or more columns replace or add x-axis and one bar [...] series per value column. If the chart has no y-axis yet, y-axis \"\" min --> max is added.",
+  "tablePaste.expected.xychart.headers": "Month|Plan|Actual|Forecast",
   "tablePaste.expected.quadrant.columns":
     "3 columns: 'Point label', 'X (0..1 or 0..100%)', 'Y (0..1 or 0..100%)'.",
   "tablePaste.expected.quadrant.rules":
