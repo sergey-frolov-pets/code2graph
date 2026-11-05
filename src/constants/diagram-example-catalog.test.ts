@@ -59,6 +59,29 @@ describe("diagram example catalog", () => {
     expect(ids.sort()).toEqual([...expected].sort());
   });
 
+  it("keeps one domain tag where meanings used to overlap", () => {
+    const domainIds = new Set(
+      DIAGRAM_EXAMPLES.flatMap((example) => exampleDomains(example)),
+    );
+
+    expect([...domainIds].sort()).toEqual([
+      "analytics",
+      "architecture",
+      "businessProcess",
+      "data",
+      "organization",
+      "product",
+      "project",
+      "software",
+      "ux",
+    ]);
+
+    for (const example of DIAGRAM_EXAMPLES) {
+      const domains = exampleDomains(example);
+      expect(new Set(domains).size, example.id).toBe(domains.length);
+    }
+  });
+
   it("gives every example a language, a diagram type, and a domain", () => {
     for (const example of DIAGRAM_EXAMPLES) {
       expect(example.tags.some((tag) => tag.axis === "language")).toBe(true);
@@ -71,7 +94,7 @@ describe("diagram example catalog", () => {
     const visible = filterDiagramExamples(
       DIAGRAM_EXAMPLES,
       [
-        { axis: "domain", id: "finance" },
+        { axis: "domain", id: "analytics" },
         { axis: "domain", id: "project" },
       ],
       "",
@@ -89,7 +112,7 @@ describe("diagram example catalog", () => {
     const t = translate("en");
     const visible = filterDiagramExamples(
       DIAGRAM_EXAMPLES,
-      [{ axis: "domain", id: "finance" }],
+      [{ axis: "domain", id: "analytics" }],
       "gantt",
       (example) => diagramExampleSearchText(example, t, "en"),
     );
@@ -142,10 +165,10 @@ describe("diagram example catalog", () => {
     expect(wizardTagFontSizePx(5, 1, 5)).toBe(WIZARD_TAG_FONT_SIZE_MAX_PX);
 
     const cloud = listCloudTags(DIAGRAM_EXAMPLES);
-    const finance = cloud.find((tag) => exampleTagKey(tag) === "domain:finance");
+    const analytics = cloud.find((tag) => exampleTagKey(tag) === "domain:analytics");
     const organization = cloud.find((tag) => exampleTagKey(tag) === "domain:organization");
-    expect(finance!.count).toBeGreaterThan(organization!.count);
-    expect(finance!.fontSizePx).toBeGreaterThan(organization!.fontSizePx);
+    expect(analytics!.count).toBeGreaterThan(organization!.count);
+    expect(analytics!.fontSizePx).toBeGreaterThan(organization!.fontSizePx);
   });
 
   it("drops a repeated xmlns so PlantUML thumbnails stay valid images", () => {
