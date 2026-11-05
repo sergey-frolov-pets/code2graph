@@ -8,6 +8,7 @@ import { wiremarkFormatHandler } from "./wiremark/handler";
 import { getLanguageModule } from "@/languages/registry";
 import { applyDiagramTypography } from "@/services/diagram-typography";
 import { fitPlantUmlSvgText } from "@/services/plantuml/plantuml-text-fit";
+import { stripOffDeviceSvgResources } from "@/utils/offline-render-network";
 import type { FormatContext, FormatHandler } from "./types";
 import type { SyntaxCheckResult } from "@/utils/plantuml-syntax";
 
@@ -54,10 +55,11 @@ export async function renderDiagram(
     fontWeight: context.diagramFontWeight,
     fontStyle: context.diagramFontStyle,
   });
-  if (format === "plantuml" || format === "structurizr") {
-    return fitPlantUmlSvgText(painted);
-  }
-  return painted;
+  const fitted =
+    format === "plantuml" || format === "structurizr"
+      ? fitPlantUmlSvgText(painted)
+      : painted;
+  return stripOffDeviceSvgResources(fitted);
 }
 
 export async function bootFormatEngine(

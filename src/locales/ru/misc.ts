@@ -120,6 +120,7 @@ export const miscMessages = {
   "engine.plantumlOnlineOfflineFallback": "plantuml.com недоступен — превью через оффлайн PlantUML",
   "engine.onlineFileProtocol": "Онлайн-рендер недоступен при открытии через file:// — используйте сайт или PWA",
   "include.fetchFailed": "Не удалось загрузить include: {path}",
+  "include.remoteBlocked": "Оффлайн-рендер не загружает внешние include: {path}",
   "preview.title": "Просмотр",
   "preview.titleTooltip": "Предпросмотр",
   "preview.placeholder": "Введите код диаграммы слева — превью появится здесь.",

@@ -1,4 +1,8 @@
 import { LocalizedAppError } from "@/utils/localized-app-error";
+import {
+  isBundledPlantUmlLibraryUrl,
+  offlineRenderPageHref,
+} from "@/utils/offline-render-network";
 
 const INCLUDE_LINE_PATTERN =
   /^\s*!include(?:_once|url)?(?:\s+many)?\s+(.+?)\s*$/m;
@@ -84,7 +88,14 @@ function resolveIncludeUrl(includePath: string, parentUrl?: string): string {
   return resolvePlantUmlIncludeUrl(includePath, parentUrl);
 }
 
-async function fetchIncludeContent(url: string): Promise<string> {
+async function fetchIncludeContent(
+  url: string,
+  pageHref: string,
+): Promise<string> {
+  if (!isBundledPlantUmlLibraryUrl(url, pageHref)) {
+    throw new LocalizedAppError("include.remoteBlocked", { path: url });
+  }
+
   const cached = includeCache.get(url);
   if (cached !== undefined) {
     return cached;
@@ -102,8 +113,9 @@ async function fetchIncludeContent(url: string): Promise<string> {
 
 async function resolveIncludesInSource(
   source: string,
-  parentUrl?: string,
-  includedUrls: Set<string> = new Set(),
+  parentUrl: string | undefined,
+  includedUrls: Set<string>,
+  pageHref: string,
 ): Promise<string> {
   const lines = source.split(/\r\n|\r|\n/);
   const resolvedLines: string[] = [];
@@ -124,11 +136,12 @@ async function resolveIncludesInSource(
     }
 
     includedUrls.add(includeUrl);
-    const includedSource = await fetchIncludeContent(includeUrl);
+    const includedSource = await fetchIncludeContent(includeUrl, pageHref);
     const nested = await resolveIncludesInSource(
       includedSource,
       includeUrl,
       includedUrls,
+      pageHref,
     );
     resolvedLines.push(nested);
   }
@@ -141,7 +154,12 @@ export async function resolvePlantUmlIncludes(source: string): Promise<string> {
     return source;
   }
 
-  return resolveIncludesInSource(source);
+  return resolveIncludesInSource(
+    source,
+    undefined,
+    new Set(),
+    offlineRenderPageHref(),
+  );
 }
 
 export function clearPlantUmlIncludeCache(): void {
