@@ -44,5 +44,7 @@ export const appMessages = {
   "app.wait": "Please wait…",
   "app.unknownRenderError": "Unknown rendering error",
   "app.exportPngFailed": "Failed to export PNG",
+  "app.copyPngFailed": "Failed to copy PNG to the clipboard",
+  "app.copyPngUnsupported": "This browser cannot copy a PNG image to the clipboard",
   "app.engineLoadError": "Engine loading error",
 } as const satisfies LocaleMessages;

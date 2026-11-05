@@ -170,6 +170,8 @@ export const miscMessages = {
   "toolbar.imageHeight": "Высота, px",
   "toolbar.imageSizeReset": "Натуральный размер",
   "toolbar.exportPng": "Экспорт PNG",
+  "toolbar.copyPng": "Копировать PNG в буфер обмена",
+  "toolbar.copyPngDone": "PNG скопирован в буфер обмена",
   "toolbar.renderModeToOnline": "Переключить на онлайн-рендер",
   "toolbar.renderModeToOffline": "Переключить на оффлайн-рендер",
   "toolbar.overflow": "Ещё действия",

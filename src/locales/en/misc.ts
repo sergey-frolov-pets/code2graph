@@ -170,6 +170,8 @@ export const miscMessages = {
   "toolbar.imageHeight": "Height, px",
   "toolbar.imageSizeReset": "Natural size",
   "toolbar.exportPng": "Export PNG",
+  "toolbar.copyPng": "Copy PNG to clipboard",
+  "toolbar.copyPngDone": "PNG copied to clipboard",
   "toolbar.renderModeToOnline": "Switch to online rendering",
   "toolbar.renderModeToOffline": "Switch to offline rendering",
   "toolbar.overflow": "More actions",

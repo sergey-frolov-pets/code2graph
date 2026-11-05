@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onUnmounted, ref } from "vue";
 import DiagramSizeControls from "@/components/DiagramSizeControls.vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import FileBadgeIcon from "@/components/icons/FileBadgeIcon.vue";
@@ -27,7 +27,10 @@ const props = defineProps<{
   imageWidth?: number;
   imageHeight?: number;
   imageSizeCustom?: boolean;
+  copyPng: () => Promise<boolean>;
 }>();
+
+const COPY_PNG_ACK_MS = 1600;
 
 const emit = defineEmits<{
   exportSvg: [];
@@ -81,6 +84,38 @@ function toggleRenderMode(): void {
     "update:renderMode",
     isOnlineMode.value ? RENDER_MODES.offline : RENDER_MODES.online,
   );
+}
+
+const copiedPng = ref(false);
+let copyAckTimer = 0;
+let copyInFlight = false;
+
+onUnmounted(() => {
+  window.clearTimeout(copyAckTimer);
+});
+
+function onCopyPng(): void {
+  void acknowledgeCopiedPng();
+}
+
+async function acknowledgeCopiedPng(): Promise<void> {
+  if (copyInFlight) {
+    return;
+  }
+  copyInFlight = true;
+  try {
+    const copied = await props.copyPng();
+    if (!copied) {
+      return;
+    }
+    copiedPng.value = true;
+    window.clearTimeout(copyAckTimer);
+    copyAckTimer = window.setTimeout(() => {
+      copiedPng.value = false;
+    }, COPY_PNG_ACK_MS);
+  } finally {
+    copyInFlight = false;
+  }
 }
 </script>
 
@@ -187,6 +222,17 @@ function toggleRenderMode(): void {
       @click="emit('exportPng')"
     >
       <FileBadgeIcon format="PNG" />
+    </IconButton>
+
+    <IconButton
+      :label="copiedPng ? t('toolbar.copyPngDone') : t('toolbar.copyPng')"
+      primary
+      format
+      :disabled="!canExport"
+      :pressed="copiedPng"
+      @click="onCopyPng"
+    >
+      <ActionIcon :name="copiedPng ? 'check' : 'clipboard-copy'" />
     </IconButton>
   </div>
 </template>

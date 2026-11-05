@@ -2,6 +2,7 @@ export {
   diagramAnalyticsKind,
   resolveDiagramTypeSlug,
   resolveTypedDiagramKind,
+  trackClipboardImageCopy,
   trackClipboardPaste,
   trackDiagramExport,
   trackDiagramOpen,

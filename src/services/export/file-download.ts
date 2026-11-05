@@ -6,6 +6,8 @@ import {
 } from "@/services/export/svg-geometry";
 import { LocalizedAppError } from "@/utils/localized-app-error";
 
+const PNG_MIME_TYPE = "image/png";
+
 function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -74,11 +76,77 @@ export async function svgToPngBlob(
           return;
         }
         reject(new LocalizedAppError("engine.pngCreateFailed"));
-      }, "image/png");
+      }, PNG_MIME_TYPE);
     });
 
     return pngBlob;
   } finally {
     URL.revokeObjectURL(objectUrl);
+  }
+}
+
+type ClipboardWrite = (items: ClipboardItem[]) => Promise<void>;
+
+function clipboardWrite(): ClipboardWrite | null {
+  if (typeof navigator === "undefined" || typeof ClipboardItem === "undefined") {
+    return null;
+  }
+
+  const clipboard = navigator.clipboard;
+  if (!clipboard || typeof clipboard.write !== "function") {
+    return null;
+  }
+
+  return clipboard.write.bind(clipboard);
+}
+
+function asPngBlob(blob: Blob): Blob {
+  return blob.type === PNG_MIME_TYPE ? blob : new Blob([blob], { type: PNG_MIME_TYPE });
+}
+
+function clipboardItem(
+  payload: Blob | Promise<Blob>,
+): ClipboardItem | null {
+  try {
+    return new ClipboardItem({ [PNG_MIME_TYPE]: payload });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Кладёт PNG в буфер обмена.
+ * Promise передаётся в ClipboardItem сразу, пока ещё жив жест пользователя:
+ * Safari отклоняет запись, если растр дожидаются до вызова write.
+ */
+export async function copyPngBlobToClipboard(png: Promise<Blob>): Promise<void> {
+  const write = clipboardWrite();
+  if (!write) {
+    throw new LocalizedAppError("app.copyPngUnsupported");
+  }
+
+  const pngBlob = png.then(asPngBlob);
+  const pendingItem = clipboardItem(pngBlob);
+  if (pendingItem) {
+    try {
+      await write([pendingItem]);
+      return;
+    } catch {
+      await pngBlob;
+    }
+  }
+
+  try {
+    const blob = await pngBlob;
+    const readyItem = clipboardItem(blob);
+    if (!readyItem) {
+      throw new LocalizedAppError("app.copyPngUnsupported");
+    }
+    await write([readyItem]);
+  } catch (error) {
+    if (error instanceof LocalizedAppError) {
+      throw error;
+    }
+    throw new LocalizedAppError("app.copyPngFailed");
   }
 }

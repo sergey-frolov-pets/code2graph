@@ -103,6 +103,7 @@ export interface AppShellContext {
   renderDiagram: () => Promise<void>;
   exportSvg: () => Promise<void>;
   exportPng: () => void;
+  copyPng: () => Promise<boolean>;
   boot: () => void;
 }
 
@@ -252,7 +253,7 @@ export function useAppShell(): AppShellContext {
     editorDocumentsApi.initDocuments();
   }
 
-  const { canExport, exportSvg, exportPng } = useDiagramExport({
+  const { canExport, exportSvg, exportPng, copyPng } = useDiagramExport({
     svg,
     error,
     isRendering,
@@ -541,6 +542,7 @@ export function useAppShell(): AppShellContext {
     renderDiagram,
     exportSvg,
     exportPng,
+    copyPng,
     boot,
   };
 }

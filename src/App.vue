@@ -197,6 +197,7 @@ onUnmounted(() => {
         :error="error"
         :is-rendering="isRendering"
         :can-export="canExport"
+        :copy-png="shell.copyPng"
         v-model:preview-background="previewBackground"
         v-model:text-color="diagramTextColor"
         v-model:diagram-font-family="diagramFontFamily"
