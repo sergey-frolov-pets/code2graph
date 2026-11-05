@@ -98,5 +98,7 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.wiremark.product.description":
     "A wireframe of a product card.",
   "llm.wizard.gallery.action.editor": "Open in editor",
-  "llm.wizard.gallery.action.llm": "Ask the model",
+  "llm.wizard.gallery.action.enlarge": "Enlarge",
+  "llm.wizard.gallery.action.llm": "Create with LLM",
+  "llm.wizard.gallery.zoomLabel": "Diagram at its natural size",
 } as const;

@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { GALLERY_EXAMPLE_ACTIONS, type GalleryExampleAction } from "@/constants/wizard-gallery";
+import type { GalleryExampleAction } from "@/constants/wizard-gallery";
 import { useLocale } from "@/composables/useLocale";
 
 defineProps<{
   label: string;
+  llmAvailable: boolean;
+  canEnlarge: boolean;
 }>();
 
 const emit = defineEmits<{
   choose: [action: GalleryExampleAction];
+  enlarge: [];
 }>();
 
 const { t } = useLocale();
@@ -20,14 +23,32 @@ const { t } = useLocale();
     :aria-label="label"
   >
     <button
-      v-for="action in GALLERY_EXAMPLE_ACTIONS"
-      :key="action"
       type="button"
       class="wizard-example-actions__button"
       role="menuitem"
-      @click="emit('choose', action)"
+      @click="emit('choose', 'editor')"
     >
-      {{ t(`llm.wizard.gallery.action.${action}`) }}
+      {{ t("llm.wizard.gallery.action.editor") }}
+    </button>
+    <button
+      v-if="canEnlarge"
+      type="button"
+      class="wizard-example-actions__button"
+      role="menuitem"
+      data-testid="wizard-example-enlarge"
+      @click="emit('enlarge')"
+    >
+      {{ t("llm.wizard.gallery.action.enlarge") }}
+    </button>
+    <button
+      v-if="llmAvailable"
+      type="button"
+      class="wizard-example-actions__button"
+      role="menuitem"
+      data-testid="wizard-example-llm"
+      @click="emit('choose', 'llm')"
+    >
+      {{ t("llm.wizard.gallery.action.llm") }}
     </button>
   </div>
 </template>

@@ -40,6 +40,24 @@ export const WIZARD_GALLERY_LONG_PRESS_MOVE_PX = 10;
 /** Delay before a search string is recorded in analytics. */
 export const WIZARD_GALLERY_SEARCH_TRACK_MS = 400;
 
+/** Gap between a floating example card and the wizard window edge. */
+export const WIZARD_GALLERY_POPOVER_MARGIN_PX = 8;
+
+/** How far the floating card overlaps the example it belongs to. */
+export const WIZARD_GALLERY_POPOVER_OVERLAP_PX = 28;
+
+/** Class of the floating example card, used to keep outside clicks from closing it. */
+export const WIZARD_GALLERY_POPOVER_CLASS = "wizard-example-popover";
+
+/** Stack the floating card just above the wizard dialog that opened it. */
+export const WIZARD_GALLERY_POPOVER_Z_INDEX_OFFSET = 1;
+
+/** Used when the wizard dialog has not published a z-index yet. */
+export const WIZARD_GALLERY_POPOVER_Z_INDEX_FALLBACK = 1000;
+
+/** How long the pointer may leave an example before its hover card closes. */
+export const WIZARD_GALLERY_HOVER_CLOSE_MS = 160;
+
 export function wizardThumbnailFileName(
   format: DiagramFormat,
   sampleId: string,
