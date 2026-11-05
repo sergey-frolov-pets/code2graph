@@ -1,6 +1,7 @@
 import { computed, type Ref } from "vue";
-import { trackSave } from "@/analytics";
+import { trackDiagramExport } from "@/analytics";
 import { useAppDialog } from "@/composables/useAppDialog";
+import type { DiagramFormat } from "@/constants/diagram-formats";
 import { useDiagramIrCache } from "@/composables/useDiagramIrCache";
 import { useLocale } from "@/composables/useLocale";
 import { embedSvgMetadata } from "@/services/conversion/metadata/svg-metadata";
@@ -19,12 +20,15 @@ export interface UseDiagramExportOptions {
   error: Ref<string>;
   isRendering: Ref<boolean>;
   previewBackground: Ref<string>;
+  source: Ref<string>;
+  diagramFormat: Ref<DiagramFormat>;
   /** Размер готового PNG; null/undefined — натуральный размер SVG. */
   imageSize?: Ref<{ width: number; height: number } | null>;
 }
 
 export function useDiagramExport(options: UseDiagramExportOptions) {
-  const { svg, error, isRendering, previewBackground, imageSize } = options;
+  const { svg, error, isRendering, previewBackground, imageSize, source, diagramFormat } =
+    options;
   const { alert } = useAppDialog();
   const { t } = useLocale();
   const { getLastDiagramIr } = useDiagramIrCache();
@@ -48,7 +52,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     const base = transparent ? withTransparentSvgBackground(themed) : themed;
     const payload = ir ? await embedSvgMetadata(base, ir) : base;
     downloadTextFile(payload, "diagram.svg", "image/svg+xml;charset=utf-8");
-    trackSave("image-svg", "Save image: SVG");
+    trackDiagramExport("svg", diagramFormat.value, source.value);
   }
 
   async function exportPng(): Promise<void> {
@@ -68,7 +72,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
         imageSize?.value ?? undefined,
       );
       downloadBlob(pngBlob, "diagram.png");
-      trackSave("image-png", "Save image: PNG");
+      trackDiagramExport("png", diagramFormat.value, source.value);
     } catch (exportError) {
       const message = resolveLocalizedErrorMessage(
         exportError,
