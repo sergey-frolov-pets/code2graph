@@ -267,3 +267,114 @@ describe("Category A & B table parsers", () => {
     }
   });
 });
+
+describe("mermaid gantt table paste", () => {
+  const ganttSource = [
+    "gantt",
+    "title План релиза",
+    "dateFormat YYYY-MM-DD",
+    "excludes weekends",
+    "",
+    "section Старое",
+    "Черновик :old, 2024-01-01, 2d",
+  ].join("\n");
+
+  it("keeps the first task when its name looks like a column title", () => {
+    const res = applyTableFromClipboardText({
+      clipboardText: [
+        "Задача 1\t2026-01-06\t3\tЭтапы",
+        "Задача 2\t2026-01-09\t5\tЭтапы",
+        "Этап подготовки\t2026-01-14\t2\tЭтапы",
+      ].join("\n"),
+      source: ganttSource,
+      format: "mermaid",
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.fullSource).toContain("title План релиза");
+    expect(res.fullSource).toContain("dateFormat YYYY-MM-DD");
+    expect(res.fullSource).toContain("section Этапы");
+    expect(res.fullSource).toContain("Задача 1 :t1, 2026-01-06, 3d");
+    expect(res.fullSource).toContain("Задача 2 :t2, 2026-01-09, 5d");
+    expect(res.fullSource).toContain("Этап подготовки :t3, 2026-01-14, 2d");
+    expect(res.fullSource).not.toContain("Черновик");
+    expect(res.fullSource).not.toContain("section Старое");
+  });
+
+  it("drops a title row and column headers that are not task data", () => {
+    const res = applyTableFromClipboardText({
+      clipboardText: [
+        "План релиза",
+        "Название\tСтарт\tСрок\tГруппа",
+        "Дизайн\t2026-01-06\t5\tПодготовка",
+        "Код\t06.01.2026\t4 дня\tРазработка",
+      ].join("\n"),
+      source: ganttSource,
+      format: "mermaid",
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.fullSource).toContain("section Подготовка");
+    expect(res.fullSource).toContain("Дизайн :t1, 2026-01-06, 5d");
+    expect(res.fullSource).toContain("section Разработка");
+    expect(res.fullSource).toContain("Код :t2, 06.01.2026, 4 дня");
+    expect(res.fullSource).not.toContain("Название :");
+    expect(res.fullSource).not.toContain("План релиза :");
+    expect(res.fullSource).not.toContain("section Группа");
+  });
+
+  it("drops recognized headers and keeps every task in a two-column sheet", () => {
+    const res = applyTableFromClipboardText({
+      clipboardText: ["Task\tDuration", "Design\t3d", "Build\t5"].join("\n"),
+      source: "gantt\ndateFormat YYYY-MM-DD",
+      format: "mermaid",
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.fullSource).toContain("Design :t1, 2026-01-01, 3d");
+    expect(res.fullSource).toContain("Build :t2, after t1, 5d");
+    expect(res.fullSource).not.toContain("Task :");
+    expect(res.fullSource).not.toContain("Duration");
+  });
+
+  it("does not turn a task with a blank duration into a header", () => {
+    const res = applyTableFromClipboardText({
+      clipboardText: [
+        "Согласование\t\t\tПодготовка",
+        "Дизайн\t2026-01-06\t4\tПодготовка",
+      ].join("\n"),
+      source: "gantt\ndateFormat YYYY-MM-DD",
+      format: "mermaid",
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.fullSource).toContain("Согласование :t1, 2026-01-01, 3d");
+    expect(res.fullSource).toContain("Дизайн :t2, 2026-01-06, 4d");
+  });
+});
+
+describe("plantuml gantt table paste", () => {
+  it("keeps a first task whose name contains a header word and drops the header row", () => {
+    const res = applyTableFromClipboardText({
+      clipboardText: [
+        "Задача\tНачало\tДлительность",
+        "Этап подготовки\t2026-01-06\t4",
+        "Сборка\t2026-01-10\t2",
+      ].join("\n"),
+      source: "@startgantt\n[Черновик] lasts 1 days\n@endgantt",
+      format: "plantuml",
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.fullSource).toContain("[Этап подготовки] lasts 4 days");
+    expect(res.fullSource).toContain("[Этап подготовки] starts 2026-01-06");
+    expect(res.fullSource).toContain("[Сборка] lasts 2 days");
+    expect(res.fullSource).not.toContain("[Задача]");
+    expect(res.fullSource).not.toContain("[Черновик]");
+  });
+});
