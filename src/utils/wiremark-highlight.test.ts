@@ -18,5 +18,13 @@ describe("wiremark highlight", () => {
     expect(html).toContain('class="tok-keyword"');
     expect(html).toContain('class="tok-string"');
     expect(html).toContain("Sign in");
+    expect(html).toContain(">contained</span>");
+  });
+
+  it("marks layout modifiers and keyed properties", () => {
+    const html = renderWiremarkHighlightedLine("  Stack column gap=2");
+    expect(html).toContain(">Stack</span>");
+    expect(html).toContain(">column</span>");
+    expect(html).toContain(">gap</span>");
   });
 });

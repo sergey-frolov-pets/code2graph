@@ -17,4 +17,16 @@ describe("structurizr highlight", () => {
     expect(element).toContain("tok-keyword");
     expect(element).toContain("softwareSystem");
   });
+
+  it("highlights style and view keywords", () => {
+    const html = renderStructurizrHighlightedLine(
+      "shape Cylinder background #08427b",
+    );
+    expect(html).toContain(">shape</span>");
+    expect(html).toContain(">Cylinder</span>");
+    expect(html).toContain(">background</span>");
+
+    const scope = renderStructurizrHighlightedLine("scope softwaresystem");
+    expect(scope).toContain(">scope</span>");
+  });
 });
