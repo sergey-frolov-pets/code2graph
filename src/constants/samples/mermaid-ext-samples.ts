@@ -50,11 +50,18 @@ series Факт color=#8250df
   waterfallLabels: `waterfall
 %% ПОДПИСИ И ЛИНИИ — две вещи, которых чаще всего не хватает.
 %%
-%% 1) ДВЕ ПОДПИСИ НА ОДНОМ БАРЕ (внутри И над) — оба флага в строке данных:
-%%      +60 : Q2 inside above
-%%    Порядок флагов любой, регистр не важен, флаги — на каждый бар отдельно.
-%%    Для всех баров сразу:  labels both
-%%    Внутри подпись белая, над баром — серая: они не мешают друг другу.
+%% 1) inside и above — куда писать подпись значения.
+%%    Флаги в конце строки данных, порядок любой, регистр не важен.
+%%    Указан только один — вторая позиция не рисуется и не дублирует первую:
+%%      =90 : Q1 inside          только внутри (над баром пусто)
+%%      -25 : Q3 above           только над баром
+%%    Вместе — можно, и тексты могут быть разными:
+%%      +60 : Q2 inside="60" above="+60 млн"
+%%    Обе позиции с одним и тем же числом:
+%%      = : Итог inside above
+%%    Для всех баров сразу:  labels inside | above | both | none
+%%    Внутри подпись белая, над баром — серая.
+%%    Если текст не влезает внутрь, он переносится над бар одной копией.
 %%
 %% 2) ЛИНИИ между барами — это ДИРЕКТИВА, отдельная строка (не флаг):
 %%      connectors on    включить (по умолчанию включены)
@@ -62,8 +69,8 @@ series Факт color=#8250df
 %%    Пунктир идёт от рабочего края бара к следующему:
 %%    рост — от верха, падение — от низа. Если уровни разные — ступенькой.
 %%
-%% 3) Своя подпись значения:  label="+60 млн"
-%%    Без подписи вообще:      no-label
+%% 3) Общий текст, если у позиции нет своего:  label="+60 млн"
+%%    Без подписи вообще:                       no-label
 %%
 %% 4) Цвета: colors total= increase= decrease=
 title Подписи и линии
@@ -71,8 +78,8 @@ y "млн ₽" 0 --> 200
 grid 50
 connectors on
 colors total=#1f6feb increase=#2da44e decrease=#cf222e
-=90 : Q1 inside above
-+60 : Q2 inside above label="+60 млн"
+=90 : Q1 inside
++60 : Q2 inside="60" above="+60 млн"
 -25 : Q3 above
 = : Итог inside above`,
   waterfallNoLines: `waterfall
@@ -89,8 +96,8 @@ y "млн ₽" 0 --> 200
 grid 50
 connectors off
 colors total=#1f6feb increase=#2da44e decrease=#cf222e
-=90 : Q1 inside above
-+60 : Q2 inside above label="+60 млн"
+=90 : Q1 inside
++60 : Q2 inside="60" above="+60 млн"
 -25 : Q3 above
 = : Итог inside above`,
   waterfallThresholds: `waterfall
@@ -231,11 +238,18 @@ series Actual color=#8250df
   waterfallLabels: `waterfall
 %% LABELS AND LINES — the two things people miss most.
 %%
-%% 1) TWO LABELS ON ONE BAR (inside AND above) — write both flags in the row:
-%%      +60 : Q2 inside above
-%%    Flags are per-bar, order-independent, case-insensitive.
-%%    For every bar at once:  labels both
-%%    The inside label is white, the one above the bar is grey — they never clash.
+%% 1) inside and above choose where the value label goes.
+%%    Flags sit at the end of a data row; order does not matter, case neither.
+%%    One flag does not draw the other, so inside alone is not copied above:
+%%      =90 : Q1 inside           inside only (nothing above the bar)
+%%      -25 : Q3 above            above the bar only
+%%    Both at once are allowed, and each can carry its own text:
+%%      +60 : Q2 inside="60" above="+60 M"
+%%    Both positions with the same number:
+%%      = : Total inside above
+%%    For every bar at once:  labels inside | above | both | none
+%%    The inside label is white, the one above the bar is grey.
+%%    Text that does not fit inside the bar is moved above it, once.
 %%
 %% 2) LINES between bars are a DIRECTIVE on its own line (not a flag):
 %%      connectors on    enable (on by default)
@@ -244,8 +258,8 @@ series Actual color=#8250df
 %%    growth — from the top, decline — from the bottom. Different levels
 %%    are joined with a step.
 %%
-%% 3) Custom value label:  label="+60 M"
-%%    No label at all:     no-label
+%% 3) Shared text when a position has none of its own:  label="+60 M"
+%%    No label at all:                                  no-label
 %%
 %% 4) Colours: colors total= increase= decrease=
 title Labels and lines
@@ -253,8 +267,8 @@ y "M USD" 0 --> 200
 grid 50
 connectors on
 colors total=#1f6feb increase=#2da44e decrease=#cf222e
-=90 : Q1 inside above
-+60 : Q2 inside above label="+60 M"
+=90 : Q1 inside
++60 : Q2 inside="60" above="+60 M"
 -25 : Q3 above
 = : Total inside above`,
   waterfallNoLines: `waterfall
@@ -271,8 +285,8 @@ y "M USD" 0 --> 200
 grid 50
 connectors off
 colors total=#1f6feb increase=#2da44e decrease=#cf222e
-=90 : Q1 inside above
-+60 : Q2 inside above label="+60 M"
+=90 : Q1 inside
++60 : Q2 inside="60" above="+60 M"
 -25 : Q3 above
 = : Total inside above`,
   waterfallThresholds: `waterfall

@@ -396,6 +396,8 @@ y "" 0 --> 100
     expect(r.ok).toBe(true);
     const svg = waterfallEngine.render(r.value as WaterfallModel, {});
     expect(svg).toContain("#ffffff"); // белый текст внутри бара
+    // Режим inside не дублирует то же значение над баром.
+    expect(svg).not.toContain('data-value-label="1"');
   });
 
   it("labels none — подписей значений нет", () => {
@@ -412,12 +414,17 @@ y "" 0 --> 100
 
   it("per-step флаг inside перекрывает общий режим", () => {
     const r = waterfallEngine.parse(`waterfall
-y "" 0 --> 100
+y "" 0 --> 200
 =40 : Q1
 +50 : Q2 inside`);
     const m = r.value as WaterfallModel;
     expect(m.series[0].steps[1].labelInside).toBe(true);
+    expect(m.series[0].steps[1].labelAbove).toBeUndefined();
     expect(m.valueLabels.inside).toBe(false);
+    const svg = waterfallEngine.render(m, {});
+    // Только inside: «+50» белым внутри и ни разу над баром.
+    expect(svg).toMatch(/fill="#ffffff"[^>]*>\+50</);
+    expect(svg).not.toMatch(/data-value-label="1">\+50</);
   });
 
   it("per-step no-label убирает подпись значения", () => {
@@ -993,6 +1000,39 @@ y "" 0 --> 200
     expect(n90).toBeGreaterThanOrEqual(2);
   });
 
+  it("только inside не дублирует подпись над баром", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 200
+=90 : Q1 inside
++60 : Q2 above`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect((svg.match(/>90</g) ?? []).length).toBe(1);
+    expect(svg).toMatch(/fill="#ffffff"[^>]*>90</);
+    expect(svg).not.toMatch(/data-value-label="1">90</);
+    expect(svg).not.toMatch(/fill="#ffffff"[^>]*>\+60</);
+    expect(svg).toMatch(/data-value-label="1">\+60</);
+  });
+
+  it("inside и above на одном баре держат разные тексты", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 200
+=90 : Q1
++60 : Q2 inside="60" above="+60 млн"`);
+    expect(r.ok).toBe(true);
+    const step = (r.value as WaterfallModel).series[0].steps[1];
+    expect(step).toMatchObject({
+      labelInside: true,
+      labelAbove: true,
+      insideText: "60",
+      aboveText: "+60 млн",
+    });
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    expect(svg).toMatch(/fill="#ffffff"[^>]*>60</);
+    expect(svg).toMatch(/data-value-label="1">\+60 млн</);
+    expect(svg).not.toMatch(/fill="#ffffff"[^>]*>\+60 млн</);
+    expect(svg).not.toMatch(/data-value-label="1">60</);
+  });
+
   it("`labels both` глобально даёт обе подписи", () => {
     const r = waterfallEngine.parse(`waterfall
 labels both
@@ -1050,8 +1090,8 @@ y "млн ₽" 0 --> 200
 grid 50
 connectors on
 colors total=#1f6feb increase=#2da44e decrease=#cf222e
-=90 : Q1 inside above
-+60 : Q2 inside above label="+60 млн"
+=90 : Q1 inside
++60 : Q2 inside="60" above="+60 млн"
 -25 : Q3 above
 = : Итог inside above`;
 
@@ -1060,15 +1100,12 @@ colors total=#1f6feb increase=#2da44e decrease=#cf222e
     expect(r.ok).toBe(true);
   });
 
-  it("на баре Q2 обе подписи: внутри (белая, жирная) и над (fgDim)", () => {
+  it("на баре Q2 разные подписи: внутри «60», над баром «+60 млн»", () => {
     const r = waterfallEngine.parse(SAMPLE);
     const svg = waterfallEngine.render(r.value as WaterfallModel, {});
-    // Своя подпись label="+60 млн" стоит и внутри бара, и над ним.
-    const occurrences = (svg.match(/\+60 млн/g) ?? []).length;
-    expect(occurrences).toBe(2);
-    // Внутри — белым жирным, над баром — цветом fgDim.
-    expect(svg).toMatch(/fill="#ffffff" font-size="[\d.]+" text-anchor="middle" font-weight="600">\+60 млн</);
-    const inside = [...svg.matchAll(/<text x="([\d.]+)" y="([\d.]+)" fill="#ffffff"[^>]*>\+60 млн</g)];
+    expect((svg.match(/\+60 млн/g) ?? []).length).toBe(1);
+    expect(svg).toMatch(/fill="#ffffff" font-size="[\d.]+" text-anchor="middle" font-weight="600">60</);
+    const inside = [...svg.matchAll(/<text x="([\d.]+)" y="([\d.]+)" fill="#ffffff"[^>]*>60</g)];
     const above = [...svg.matchAll(/<text x="([\d.]+)" y="([\d.]+)" fill="#656d76"[^>]*>\+60 млн</g)];
     expect(inside.length).toBe(1);
     expect(above.length).toBe(1);
@@ -1076,6 +1113,9 @@ colors total=#1f6feb increase=#2da44e decrease=#cf222e
     expect(Number(above[0][2])).toBeLessThan(Number(inside[0][2]));
     // X совпадает — обе подписи центрированы по одному бару.
     expect(above[0][1]).toBe(inside[0][1]);
+    // Q1 просит только inside — «90» не дублируется над баром.
+    expect((svg.match(/>90</g) ?? []).length).toBe(1);
+    expect(svg).not.toMatch(/data-value-label="1">90</);
   });
 
   it("линии включены: коннекторы есть", () => {
@@ -1096,7 +1136,8 @@ colors total=#1f6feb increase=#2da44e decrease=#cf222e
     expect((withLines.match(/data-connector="1"/g) ?? []).length).toBeGreaterThan(0);
     expect((withoutLines.match(/data-connector="1"/g) ?? []).length).toBe(0);
     // Подписи от выключения линий не страдают.
-    expect((withoutLines.match(/\+60 млн/g) ?? []).length).toBe(2);
+    expect((withoutLines.match(/\+60 млн/g) ?? []).length).toBe(1);
+    expect((withoutLines.match(/>60</g) ?? []).length).toBe(1);
   });
 });
 
