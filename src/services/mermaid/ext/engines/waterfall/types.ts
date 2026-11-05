@@ -9,10 +9,22 @@ export interface WaterfallStep {
    */
   value: number | null;
   label: string;
-  /** Подпись внутри бара (перекрывает общую настройку `labels inside`). */
+  /**
+   * Подпись внутри бара. Заданное значение (и `true`, и `false`)
+   * заменяет общий режим `labels` целиком, вместе с `labelAbove`.
+   */
   labelInside?: boolean;
-  /** Подпись над баром (перекрывает общую настройку `labels above`). */
+  /**
+   * Подпись над баром. Заданное значение заменяет общий режим `labels`
+   * целиком, вместе с `labelInside`: один флаг `inside` не включает `above`.
+   */
   labelAbove?: boolean;
+  /** Общий свой текст значения (`label=`), если у позиции нет своего. */
+  valueText?: string;
+  /** Свой текст подписи внутри бара (`inside="..."`). */
+  insideText?: string;
+  /** Свой текст подписи над баром (`above="..."`). */
+  aboveText?: string;
 }
 
 export interface WaterfallSeries {

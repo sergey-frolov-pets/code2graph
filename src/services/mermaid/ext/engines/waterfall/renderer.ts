@@ -28,7 +28,7 @@ import {
   seriesColor,
   ZIGZAG_HEIGHT,
 } from "./scale-and-colors";
-import type { WaterfallModel, WaterfallStep } from "./types";
+import type { WaterfallModel } from "./types";
 
 export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions): string {
   const palette = resolvePalette(
@@ -465,46 +465,52 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       const bottom = yOf(Math.min(visLo, visHi));
       const barHeight = Math.max(1.5, bottom - top);
 
-      const valueText =
-        (step as WaterfallStep & { valueText?: string }).valueText ??
-        (step.kind === "absolute" ? fmt(stepValue) : `${stepValue > 0 ? "+" : ""}${fmt(stepValue)}`);
+      const formatted =
+        step.kind === "absolute" ? fmt(stepValue) : `${stepValue > 0 ? "+" : ""}${fmt(stepValue)}`;
+      // У inside и above свои тексты. `label=` — запасной, если у позиции
+      // своего нет. Поэтому на одном баре можно показать разные подписи.
+      const insideText = step.insideText ?? step.valueText ?? formatted;
+      const aboveText = step.aboveText ?? step.valueText ?? formatted;
 
-      // Per-step флаги перекрывают общий режим `labels`.
-      const wantInside = step.labelInside ?? valueLabels.inside;
-      const wantAbove = step.labelAbove ?? valueLabels.above;
-      const hide = step.labelInside === false && step.labelAbove === false;
+      // Флаги строки задают позиции целиком и не наследуют вторую
+      // из общего режима. Только `inside` — над баром ничего не дублируем.
+      const explicitPlacement = step.labelInside !== undefined || step.labelAbove !== undefined;
+      const wantInside = explicitPlacement ? step.labelInside === true : valueLabels.inside;
+      const wantAbove = explicitPlacement ? step.labelAbove === true : valueLabels.above;
 
-      const fitted = truncate(valueText, barWidth - 4, valueFontSize);
+      const fittedInside = truncate(insideText, barWidth - 4, valueFontSize);
       const fitsInside =
         barHeight >= Math.max(INSIDE_MIN_HEIGHT, valueFontSize + 2) &&
-        measureText(fitted, valueFontSize) <= barWidth - 4;
+        measureText(fittedInside, valueFontSize) <= barWidth - 4;
 
       // Подпись ВНУТРИ бара. При включённом `above` она не «съедает» надпись
       // над баром: обе рисуются независимо (это и есть режим `labels both`).
-      const drewInside = !hide && wantInside && fitsInside;
+      const drewInside = wantInside && fitsInside;
       if (drewInside) {
-        svg.text(x + barWidth / 2, top + barHeight / 2 + valueFontSize * 0.35, fitted, {
+        svg.text(x + barWidth / 2, top + barHeight / 2 + valueFontSize * 0.35, fittedInside, {
           "font-size": valueFontSize,
           fill: INSIDE_TEXT,
           "font-weight": 600,
         });
       }
 
-      // Подпись НАД баром. Если внутри не поместилось (или inside не просили),
-      // значение выносится сюда — иначе оно бы пропало совсем.
-      const needAbove = !hide && (wantAbove || (wantInside && !fitsInside));
+      // Подпись НАД баром — только если её просили. Если просили лишь inside
+      // и текст не влез в бар, та же подпись переносится сюда одной копией.
+      const liftInside = wantInside && !fitsInside && !wantAbove;
+      const needAbove = wantAbove || liftInside;
       if (needAbove) {
+        const drawnAbove = liftInside ? insideText : aboveText;
         const aboveY = top - Math.round((5 * fontSize) / FONT_BASE);
         // Сдвиг вверх, если подпись налезает на соседнюю колонку слева:
         // иначе «+80» наезжает на бар Q1, а «−40» — на «+80».
-        const halfW = measureText(valueText, valueFontSize) / 2;
+        const halfW = measureText(drawnAbove, valueFontSize) / 2;
         const leftBound = col === 0 ? plotLeft : columnLeft;
         const shiftUp =
           halfW > barWidth / 2 + Math.round((6 * fontSize) / FONT_BASE) &&
           x + barWidth / 2 - halfW < leftBound
             ? Math.round(valueFontSize * 1.15)
             : 0;
-        svg.text(x + barWidth / 2, aboveY - shiftUp, valueText, {
+        svg.text(x + barWidth / 2, aboveY - shiftUp, drawnAbove, {
           "font-size": valueFontSize,
           fill: palette.fgDim,
           "data-value-label": "1",

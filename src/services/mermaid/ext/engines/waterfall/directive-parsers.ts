@@ -66,13 +66,35 @@ export function parseAxis(line: string): { label?: string; min: number; max: num
   return { label: label || undefined, min, max };
 }
 
+const FLAG_VALUE_RE = '(?:"(?:[^"\\\\]|\\\\.)*"|\\S+)';
+/**
+ * Флаги хвоста строки данных. `inside` и `above` можно писать вместе,
+ * и у каждого может быть свой текст: `inside="60" above="+60 млн"`.
+ * Один только `inside` не включает подпись над баром.
+ */
+const STEP_FLAG_RE = new RegExp(
+  `\\s+(inside(?:=${FLAG_VALUE_RE})?|above(?:=${FLAG_VALUE_RE})?|no-label|label=${FLAG_VALUE_RE})\\s*$`,
+  "i",
+);
+
+function unquoteFlagValue(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
+    return trimmed.slice(1, -1).replace(/\\"/g, '"');
+  }
+  return trimmed;
+}
+
 /**
  * Разбор хвоста строки данных.
  * Поддерживаются флаги (порядок любой, регистр не важен):
- *   `inside`  — подпись внутри бара
- *   `above`   — подпись над баром
+ *   `inside` / `inside="<текст>"` — подпись внутри бара (свой текст опционален)
+ *   `above` / `above="<текст>"` — подпись над баром (свой текст опционален)
  *   `no-label` — без подписи значения
- *   `label=<текст>` — своя подпись значения (например, «−12 %»)
+ *   `label=<текст>` — общий текст для позиции, у которой нет своего
+ *
+ * `inside` и `above` можно ставить одновременно с разными текстами.
+ * Указан только один из них — вторая позиция не рисуется.
  */
 export function parseStepFlags(tail: string): {
   rest: string;
@@ -80,31 +102,40 @@ export function parseStepFlags(tail: string): {
   above: boolean;
   hide: boolean;
   valueLabel?: string;
+  insideLabel?: string;
+  aboveLabel?: string;
 } {
   let rest = tail;
   let inside = false;
   let above = false;
   let hide = false;
   let valueLabel: string | undefined;
+  let insideLabel: string | undefined;
+  let aboveLabel: string | undefined;
 
-  const FLAG_RE = /\s+(inside|above|no-label|label=(?:"(?:[^"\\]|\\.)*"|\S+))\s*$/i;
   for (let guard = 0; guard < 8; guard += 1) {
-    const m = FLAG_RE.exec(rest);
+    const m = STEP_FLAG_RE.exec(rest);
     if (!m) break;
-    const token = m[1].toLowerCase();
-    if (token === "inside") inside = true;
-    else if (token === "above") above = true;
-    else if (token === "no-label") hide = true;
+    const rawToken = m[1];
+    const token = rawToken.toLowerCase();
+    if (token === "inside" || token.startsWith("inside=")) {
+      inside = true;
+      if (token.startsWith("inside=")) {
+        insideLabel = unquoteFlagValue(rawToken.slice("inside=".length));
+      }
+    } else if (token === "above" || token.startsWith("above=")) {
+      above = true;
+      if (token.startsWith("above=")) {
+        aboveLabel = unquoteFlagValue(rawToken.slice("above=".length));
+      }
+    } else if (token === "no-label") hide = true;
     else if (token.startsWith("label=")) {
-      const raw = m[1].slice("label=".length).trim();
-      valueLabel = raw.startsWith('"') && raw.endsWith('"')
-        ? raw.slice(1, -1).replace(/\\"/g, '"')
-        : raw;
+      valueLabel = unquoteFlagValue(rawToken.slice("label=".length));
     }
     rest = rest.slice(0, m.index);
   }
 
-  return { rest: rest.trim(), inside, above, hide, valueLabel };
+  return { rest: rest.trim(), inside, above, hide, valueLabel, insideLabel, aboveLabel };
 }
 
 export function parseStep(
@@ -164,10 +195,9 @@ export function parseStep(
     step.labelInside = false;
     step.labelAbove = false;
   }
-  if (flags.valueLabel !== undefined) {
-    // Своя подпись значения хранится в отдельном поле, чтобы не путать с подписью колонки.
-    (step as WaterfallStep & { valueText?: string }).valueText = flags.valueLabel;
-  }
+  if (flags.valueLabel !== undefined) step.valueText = flags.valueLabel;
+  if (flags.insideLabel !== undefined) step.insideText = flags.insideLabel;
+  if (flags.aboveLabel !== undefined) step.aboveText = flags.aboveLabel;
   return { step };
 }
 
