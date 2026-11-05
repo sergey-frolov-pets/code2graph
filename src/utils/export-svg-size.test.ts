@@ -155,6 +155,32 @@ describe("applyPreviewBackground", () => {
     expect(doc.documentElement.getAttribute("style")).toContain("background-color:transparent");
   });
 
+  it("плашки чисел и подписи разрыва становятся прозрачными вместе с фоном", () => {
+    const svg =
+      '<svg viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">' +
+      '<rect x="0" y="0" width="200" height="100" fill="#ffffff"/>' +
+      '<rect x="0" y="40" width="30" height="8" fill="#171d24" data-break-gap="1"/>' +
+      '<rect x="4" y="20" width="28" height="22" fill="#171d24" data-break-text-bg="1"/>' +
+      "</svg>";
+    const out = applyPreviewBackground(svg, "transparent");
+    const doc = new DOMParser().parseFromString(out, "image/svg+xml");
+
+    expect(doc.querySelector("rect[data-break-text-bg]")?.getAttribute("fill")).toBe("transparent");
+    expect(doc.querySelector("rect[data-break-gap]")?.getAttribute("fill")).toBe("#ffffff");
+  });
+
+  it("сплошной фон красит и плашки подписи разрыва", () => {
+    const svg =
+      '<svg viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">' +
+      '<rect x="0" y="0" width="200" height="100" fill="#ffffff"/>' +
+      '<rect x="4" y="20" width="28" height="22" fill="#171d24" data-break-text-bg="1"/>' +
+      "</svg>";
+    const out = applyPreviewBackground(svg, "#fdf6e3");
+    const doc = new DOMParser().parseFromString(out, "image/svg+xml");
+
+    expect(doc.querySelector("rect[data-break-text-bg]")?.getAttribute("fill")).toBe("#fdf6e3");
+  });
+
   it("восьмизначный hex фона становится сплошным цветом без альфы", () => {
     const out = applyPreviewBackground(svgWithGaps, "#00aa0080");
     const doc = new DOMParser().parseFromString(out, "image/svg+xml");
