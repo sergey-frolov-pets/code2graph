@@ -11,6 +11,7 @@ const props = defineProps<{
   open: boolean;
   variant?: "default" | "success" | "error";
   wide?: boolean;
+  viewport?: boolean;
   layer?: "default" | "above-library";
   testId?: string;
 }>();
@@ -55,7 +56,7 @@ function onBackdropClick(event: MouseEvent): void {
       <div
         ref="dialogRef"
         class="modal"
-        :class="{ 'modal--wide': wide }"
+        :class="{ 'modal--wide': wide, 'modal--viewport': viewport }"
         role="dialog"
         :aria-labelledby="titleId"
         aria-modal="true"
@@ -115,6 +116,11 @@ function onBackdropClick(event: MouseEvent): void {
 .modal--wide {
   width: min(760px, 100%);
   max-height: min(90vh, 860px);
+}
+
+.modal--viewport {
+  width: min(96vw, 100%);
+  max-height: min(94vh, 100%);
 }
 
 .modal-header {

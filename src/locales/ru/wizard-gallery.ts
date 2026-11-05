@@ -98,5 +98,7 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.wiremark.product.description":
     "Вайрфрейм карточки товара.",
   "llm.wizard.gallery.action.editor": "В редактор",
-  "llm.wizard.gallery.action.llm": "Спросить модель",
+  "llm.wizard.gallery.action.enlarge": "Увеличить",
+  "llm.wizard.gallery.action.llm": "Создать с LLM",
+  "llm.wizard.gallery.zoomLabel": "Диаграмма в натуральную величину",
 } as const;

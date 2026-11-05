@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from "vue";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import WizardExampleGrid from "@/components/wizard/WizardExampleGrid.vue";
 import WizardExampleSearch from "@/components/wizard/WizardExampleSearch.vue";
+import WizardExampleZoom from "@/components/wizard/WizardExampleZoom.vue";
 import WizardTagCloud from "@/components/wizard/WizardTagCloud.vue";
+import { useHasActiveLlm } from "@/composables/useHasActiveLlm";
 import { useWizardExampleGallery } from "@/composables/wizard/useWizardExampleGallery";
 import { exampleTagKey, type DiagramExample } from "@/constants/diagram-example-catalog";
 import {
@@ -10,6 +12,7 @@ import {
   diagramExampleTitle,
 } from "@/constants/diagram-example-text";
 import {
+  WIZARD_GALLERY_POPOVER_CLASS,
   WIZARD_GALLERY_SEARCH_TRACK_MS,
   type GalleryExampleAction,
 } from "@/constants/wizard-gallery";
@@ -26,6 +29,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
+const { hasActiveLlm, refreshActiveLlmAvailability } = useHasActiveLlm();
 const {
   query,
   cloudTags,
@@ -38,6 +42,7 @@ const {
 
 const pinnedId = ref<string | null>(null);
 const actionsId = ref<string | null>(null);
+const zoomExample = ref<DiagramExample | null>(null);
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 watch(query, (value) => {
@@ -84,6 +89,12 @@ function onPinCard(example: DiagramExample): void {
   pinnedId.value = example.id;
 }
 
+function onEnlarge(example: DiagramExample): void {
+  pinnedId.value = null;
+  actionsId.value = null;
+  zoomExample.value = example;
+}
+
 function onChoose(example: DiagramExample, action: GalleryExampleAction): void {
   trackEvent(
     "wizard-gallery-open-example",
@@ -117,13 +128,17 @@ function onWindowPointerDown(event: PointerEvent): void {
     return;
   }
 
-  if (target.closest(".wizard-example")) {
+  if (target.closest(`.wizard-example, .${WIZARD_GALLERY_POPOVER_CLASS}`)) {
     return;
   }
 
   pinnedId.value = null;
   actionsId.value = null;
 }
+
+onMounted(() => {
+  void refreshActiveLlmAvailability();
+});
 
 window.addEventListener("keydown", onKeydown);
 window.addEventListener("pointerdown", onWindowPointerDown);
@@ -168,9 +183,15 @@ onBeforeUnmount(() => {
       :examples="visibleExamples"
       :pinned-id="pinnedId"
       :actions-id="actionsId"
+      :llm-available="hasActiveLlm"
       @open-actions="onOpenActions"
       @pin-card="onPinCard"
       @choose="onChoose"
+      @enlarge="onEnlarge"
+    />
+    <WizardExampleZoom
+      :example="zoomExample"
+      @close="zoomExample = null"
     />
   </section>
 </template>
