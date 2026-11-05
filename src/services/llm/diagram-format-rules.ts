@@ -552,12 +552,16 @@ function detectMermaidExtPromptRules(promptText: string): string[] | null {
       "Each site row is `<Label> : x=<num>, y=<num> [, group=<name>] [, color=#hex]`.",
     ];
   }
-  if (/\b(?:clustered|кластеризованн\w+\s+диаграмм)\b/i.test(promptText)) {
+  if (
+    /\b(?:series\s*(?:chart|bar|diagram)|clustered(?:-bar|-barchart)?|barchart-clustered|кластеризованн\w+|диаграмм\w+\s+серий)\b/i.test(
+      promptText,
+    )
+  ) {
     const rotate = /90|поворот|rotat|horizontal/i.test(promptText);
     return [
-      "Format: Mermaid Ext clustered bar chart.",
-      `Start with keyword \`clustered\`,${rotate ? " include `rotate 90` for 90-degree horizontal orientation," : ""} \`categories <C1>, <C2>, ...\`, optional \`y "label" min --> max\`, \`grid\`, and \`colors s1=#hex s2=#hex ...\`.`,
-      "Each series row is `series <Name> : <v1>, <v2>, ... [color=#hex]` matching the number of categories.",
+      "Format: Mermaid Ext series bar chart.",
+      `Start with keyword \`series\`,${rotate ? " include `rotate 90` for 90-degree horizontal orientation," : ""} \`categories <C1>, <C2>, ...\`, optional \`y "label" min --> max\`, \`grid\`, and \`colors s1=#hex s2=#hex ...\`.`,
+      "Each series row is `series <Name> : <v1>, <v2>, ... [color=#hex]` matching the number of categories. The old opener `clustered` is still accepted.",
     ];
   }
   return null;

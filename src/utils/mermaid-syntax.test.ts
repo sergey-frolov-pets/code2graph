@@ -92,6 +92,8 @@ describe("parseMermaidErrorMessage", () => {
 describe("isMermaidExtDeclaration", () => {
   it("detects extension keywords, aliases and skips comments", () => {
     expect(isMermaidExtDeclaration("waterfall\n=1 : A")).toBe(true);
+    expect(isMermaidExtDeclaration("series\ncategories A, B")).toBe(true);
+    expect(isMermaidExtDeclaration("clustered\ncategories A, B")).toBe(true);
     expect(isMermaidExtDeclaration("%% note\nheatmap\nx A")).toBe(true);
     expect(isMermaidExtDeclaration("flowchart TD\nA --> B")).toBe(false);
     expect(isMermaidExtDeclaration("")).toBe(false);

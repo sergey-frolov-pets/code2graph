@@ -942,7 +942,7 @@ export function renderClustered(model: ClusteredModel, options: ExtRenderOptions
 
 export const clusteredEngine: ExtEngine<ClusteredModel> = {
   type: "clustered",
-  aliases: ["clustered", "clustered-bar", "clustered-barchart", "barchart-clustered"],
+  aliases: ["series", "clustered", "clustered-bar", "clustered-barchart", "barchart-clustered"],
   parse: parseClustered,
   render: renderClustered,
 };

@@ -53,6 +53,7 @@ describe("highlightMermaidLine", () => {
       "treemap",
       "radar",
       "voronoi",
+      "series",
       "clustered",
       "spider",
       "kanban",

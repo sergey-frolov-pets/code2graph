@@ -89,7 +89,7 @@ describe("графики растягиваются под ratio", () => {
   });
 
   it("столбцы clustered занимают кадр 4x3", () => {
-    const parsed = clusteredEngine.parse(`clustered\nratio 4x3\ncategories A, B, C\nseries Один : 10, 20, 15`);
+    const parsed = clusteredEngine.parse(`series\nratio 4x3\ncategories A, B, C\nseries Один : 10, 20, 15`);
     expect(parsed.ok).toBe(true);
     const svg = clusteredEngine.render(parsed.value!, {});
     const box = svgBox(svg);

@@ -21,6 +21,7 @@ describe("detectTableDiagramType & supportsTablePaste", () => {
     expect(detectTableDiagramType("treemap\nA : 10", "mermaid")).toBe("treemap");
     expect(detectTableDiagramType("radar\naxes A, B, C", "mermaid")).toBe("radar");
     expect(detectTableDiagramType("voronoi\ndata", "mermaid")).toBe("voronoi");
+    expect(detectTableDiagramType("series\nrotate 90", "mermaid")).toBe("clustered");
     expect(detectTableDiagramType("clustered\nrotate 90", "mermaid")).toBe("clustered");
     expect(detectTableDiagramType("xychart-beta\nbar [1, 2]", "mermaid")).toBe("xychart");
     expect(detectTableDiagramType("quadrantChart\nA: [0.5, 0.5]", "mermaid")).toBe("quadrant");
@@ -486,11 +487,12 @@ describe("Category A & B table parsers", () => {
 
     const clusteredRes = applyTableFromClipboardText({
       clipboardText: "Квартал\tМосква\tРегионы\nQ1\t120\t80\nQ2\t145\t95",
-      source: "clustered\ntitle Выручка\nrotate 90\ncolors s1=#0969da s2=#8250df\ncategories A\nseries S : 1",
+      source: "series\ntitle Выручка\nrotate 90\ncolors s1=#0969da s2=#8250df\ncategories A\nseries S : 1",
       format: "mermaid",
     });
     expect(clusteredRes.ok).toBe(true);
     if (clusteredRes.ok) {
+      expect(clusteredRes.fullSource.startsWith("series\n")).toBe(true);
       expect(clusteredRes.fullSource).toContain("rotate 90");
       expect(clusteredRes.fullSource).toContain("categories Q1, Q2");
       expect(clusteredRes.fullSource).toContain("series Москва : 120, 145");

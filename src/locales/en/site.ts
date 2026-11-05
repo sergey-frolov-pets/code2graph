@@ -134,7 +134,7 @@ export const siteMessages = {
   "site.ext.mermaid.type.treemap": "Tree map",
   "site.ext.mermaid.type.radar": "Radar chart",
   "site.ext.mermaid.type.voronoi": "Voronoi tessellation",
-  "site.ext.mermaid.type.clustered": "Clustered bar chart",
+  "site.ext.mermaid.type.clustered": "Series chart",
   "site.ext.mermaid.desc.waterfall":
     "How a starting value turns into a total through + and − steps. Absolute columns start with =, several scenarios are declared with series. Axis breaks, black-and-white mode (mono and mono invert) and custom colours are supported.",
   "site.ext.mermaid.desc.bubble":
@@ -154,7 +154,7 @@ export const siteMessages = {
   "site.ext.mermaid.desc.voronoi":
     "Geometric partitioning of a plane into convex nearest-neighbor cells with colour groups and centroid labels.",
   "site.ext.mermaid.desc.clustered":
-    "Bars for multiple series across categories, side by side or stacked, with a 90-degree rotation (rotate 90), value labels, and black-and-white mode (mono, mono invert).",
+    "Bars for multiple series across categories, side by side or stacked, with a 90-degree rotation (rotate 90), value labels, and black-and-white mode (mono, mono invert). The keyword is series.",
   "site.ext.mermaid.syntax.waterfall":
     "waterfall opens the chart. y sets the axis. = is an absolute column, + and - are a step, and the label follows the colon. \\n in a label breaks the line.",
   "site.ext.mermaid.syntax.bubble":
@@ -174,7 +174,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.voronoi":
     "voronoi opens the tessellation. Inside data a site is Name : x=, y=, group=, color=#hex. \\n in a name breaks the line.",
   "site.ext.mermaid.syntax.clustered":
-    "clustered opens the chart. categories lists categories, series Name : v1, v2, … defines a series. stacked piles the series, rotate 90 turns the chart, mono and mono invert switch to black and white. \\n in a label breaks the line.",
+    "series opens the chart. categories lists categories, series Name : v1, v2, … defines a series. stacked piles the series, rotate 90 turns the chart, mono and mono invert switch to black and white. The old name clustered still opens the chart. \\n in a label breaks the line.",
   "site.primer.graphml.kw.graphml":
     "The document root. The GraphML namespace is required.",
   "site.primer.graphml.kw.graph":

@@ -29,7 +29,7 @@
   | `treemap` | `tree-map` |
   | `radar` | `radarchart`, `spider` |
   | `voronoi` | `voronoi-diagram` |
-  | `clustered` | `clustered-bar`, `clustered-barchart`, `barchart-clustered` |
+  | `series` | `clustered`, `clustered-bar`, `clustered-barchart`, `barchart-clustered` |
 
   Алиасы — **синонимы**: `waterfall-variance` не включает отдельный режим,
   он лишь подсказывает, что данные будут с отрицательными шагами.
@@ -79,7 +79,7 @@ mono off        # снова цвет
 | `heatmap` | полосы `scale` заменяются серым рядом той же длины |
 | `orgchart` | заливка и граница блоков |
 | `ev` | линии PV, EV и AC |
-| `boxplot`, `treemap`, `radar`, `voronoi`, `clustered` | цвета серий. Явный `color=` и `colors sN=` побеждают серую шкалу |
+| `boxplot`, `treemap`, `radar`, `voronoi`, `series` | цвета серий. Явный `color=` и `colors sN=` побеждают серую шкалу |
 
 ```
 bubble
@@ -824,16 +824,18 @@ data
 
 ---
 
-## 10. `clustered` — кластеризованная диаграмма с опцией поворота на 90°
+## 10. `series` — диаграмма серий с опцией поворота на 90°
 
-Сгруппированные столбцы нескольких серий по категориям. Директива `rotate 90` (синонимы `rotate`, `horizontal`, `orientation horizontal`) поворачивает диаграмму на 90 градусов (категории сверху вниз слева, полосы растут слева направо).
+Сгруппированные столбцы нескольких серий по категориям. Каноническое слово — `series`. Прежние `clustered`, `clustered-bar`, `clustered-barchart` и `barchart-clustered` остаются синонимами.
+
+Директива `rotate 90` (синонимы `rotate`, `horizontal`, `orientation horizontal`) поворачивает диаграмму на 90 градусов (категории сверху вниз слева, полосы растут слева направо).
 
 `stacked` (синонимы `bars stacked`, `layout stacked`) складывает серии в **один** столбец: положительные значения растут вверх от нуля, отрицательные — вниз. `bars clustered` или `stacked off` возвращает бары рядом. Шкала сама расширяется до суммы сегментов, если `y` не задан.
 
 `mono` и `mono invert` — чёрно-белый режим, см. §0.
 
 ```
-clustered
+series
 title Состав выручки
 stacked
 categories Q1, Q2, Q3, Q4
@@ -843,7 +845,7 @@ series Услуги : 50, 60, 55, 70
 ```
 
 ```mermaid
-clustered
+series
 title Выручка по каналам (поворот 90°)
 rotate 90
 categories Q1, Q2, Q3, Q4

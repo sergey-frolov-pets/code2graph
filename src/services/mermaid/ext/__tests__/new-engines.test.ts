@@ -127,7 +127,7 @@ data
 });
 
 describe("clustered bar chart engine (vertical & rotated 90°)", () => {
-  const baseSource = `clustered
+  const baseSource = `series
 title Выручка по регионам
 categories Q1, Q2, Q3, Q4
 y "млн ₽" 0 --> 200

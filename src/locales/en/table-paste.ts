@@ -46,7 +46,7 @@ export const tablePasteMessages = {
   "tablePaste.type.treemap": "Tree map",
   "tablePaste.type.radar": "Radar chart",
   "tablePaste.type.voronoi": "Voronoi diagram",
-  "tablePaste.type.clustered": "Clustered bar chart",
+  "tablePaste.type.clustered": "Series chart",
   "tablePaste.type.xychart": "XY Chart (Bar / Line)",
   "tablePaste.type.quadrant": "Quadrant Chart",
   "tablePaste.type.sankey": "Sankey diagram",

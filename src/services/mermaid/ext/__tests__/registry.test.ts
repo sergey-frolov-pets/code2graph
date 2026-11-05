@@ -12,7 +12,7 @@ describe("detectType", () => {
     expect(detectType("treemap\nA : 40")).toBe("treemap");
     expect(detectType("radar\naxes A, B, C\nS : 1, 2, 3")).toBe("radar");
     expect(detectType("voronoi\nA : x=10, y=20")).toBe("voronoi");
-    expect(detectType("clustered\ncategories A, B\nS : 10, 20")).toBe("clustered");
+    expect(detectType("series\ncategories A, B\nseries Один : 10, 20")).toBe("clustered");
   });
 
   it("понимает алиасы", () => {
@@ -29,6 +29,7 @@ describe("detectType", () => {
     expect(detectType("radarchart")).toBe("radar");
     expect(detectType("spider")).toBe("radar");
     expect(detectType("voronoi-diagram")).toBe("voronoi");
+    expect(detectType("clustered")).toBe("clustered");
     expect(detectType("clustered-bar")).toBe("clustered");
     expect(detectType("clustered-barchart")).toBe("clustered");
     expect(detectType("barchart-clustered")).toBe("clustered");

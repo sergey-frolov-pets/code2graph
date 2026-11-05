@@ -481,14 +481,8 @@ export function parseClusteredTable(
       source,
       "clustered",
       generated,
-      (trimmed) =>
-        !trimmed.startsWith("%%") &&
-        (/^(?:categories|x|series)\b/i.test(trimmed) ||
-          (!/^(?:clustered|clustered-bar|clustered-barchart|barchart-clustered|title|rotate|orientation|horizontal|vertical|y|grid|axis|labels|fontsize|mono|colors|ratio|aspect|data|end)\b/i.test(
-            trimmed,
-          ) &&
-            trimmed.includes(":"))),
-      "clustered",
+      isSeriesChartDataLine,
+      "series",
     );
   }
 
@@ -532,13 +526,19 @@ export function parseClusteredTable(
     source,
     "clustered",
     generated,
-    (trimmed) =>
-      !trimmed.startsWith("%%") &&
-      (/^(?:categories|x|series)\b/i.test(trimmed) ||
-        (!/^(?:clustered|clustered-bar|clustered-barchart|barchart-clustered|title|rotate|orientation|horizontal|vertical|y|grid|axis|labels|fontsize|mono|colors|ratio|aspect|data|end)\b/i.test(
-          trimmed,
-        ) &&
-          trimmed.includes(":"))),
-    "clustered",
+    isSeriesChartDataLine,
+    "series",
+  );
+}
+
+/** Строка данных диаграммы серий. Голая декларация `series` данными не считается. */
+function isSeriesChartDataLine(trimmed: string): boolean {
+  if (trimmed.startsWith("%%")) return false;
+  if (/^(?:categories|x)\b/i.test(trimmed)) return true;
+  if (/^series\s+\S/i.test(trimmed)) return true;
+  return (
+    !/^(?:series|clustered|clustered-bar|clustered-barchart|barchart-clustered|title|rotate|orientation|horizontal|vertical|y|grid|axis|labels|fontsize|mono|colors|ratio|aspect|data|end|stacked|bars|layout)\b/i.test(
+      trimmed,
+    ) && trimmed.includes(":")
   );
 }
