@@ -411,6 +411,46 @@ Alpha -> Beta`);
     }
   });
 
+  it("рёбра разных руководителей на одном уровне не сливаются", () => {
+    const r = orgchartEngine.parse(`orgchart
+ACS [ACS]
+task1 [task1]
+AnI [AnI]
+task2 [task2]
+task3 [task3]
+task4 [task4]
+ACS -> task1
+AnI -> task2
+AnI -> task3
+AnI -> task4`);
+    expect(r.ok).toBe(true);
+    const svg = orgchartEngine.render(r.value as OrgModel, {});
+    const paths = edgePaths(svg);
+    const cards = cardsIn(svg);
+    const card = (label: string) => cards.find((item) => item.label === label) as OrgCard;
+    const acs = card("ACS");
+    const ani = card("AnI");
+    const task1 = card("task1");
+    const task2 = card("task2");
+
+    const fromAcs = paths.filter((path) => touchesBottom(path, acs));
+    const fromAni = paths.filter((path) => touchesBottom(path, ani));
+    expect(fromAcs).toHaveLength(1);
+    expect(fromAni).toHaveLength(3);
+    expect(touchesTop(fromAcs[0], task1)).toBe(true);
+    expect(uniqueAxis(fromAni, 0)).toHaveLength(1);
+
+    const acsBus = fromAcs[0].points[1].y;
+    for (const path of fromAni) {
+      expect(strokesOverlay(fromAcs[0].points, path.points)).toBe(false);
+      expect(path.points[1].y).not.toBeCloseTo(acsBus, 1);
+    }
+
+    const intoTask2 = fromAni.find((path) => touchesTop(path, task2)) as EdgePath;
+    expect(intoTask2.points[intoTask2.points.length - 1].x).not.toBeCloseTo(fromAcs[0].points[0].x, 1);
+    expect(Math.abs(intoTask2.points[1].y - acsBus)).toBeGreaterThanOrEqual(8);
+  });
+
   it("пара сплошного и пунктирного ребра между одними карточками не совпадает", () => {
     const r = orgchartEngine.parse(`orgchart
 A [A]
