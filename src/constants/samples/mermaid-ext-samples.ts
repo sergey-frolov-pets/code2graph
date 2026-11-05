@@ -169,9 +169,11 @@ data
 День : 60, 75, 85, 70, 55
 Вечер : 40, 45, 65, 50, 35`,
   orgchart: `orgchart
-Гендиректор [Генеральный директор\\nИван Петров]
-Техдир [Технический директор\\nАнна Смирнова]
-Финдир [Финансовый директор\\nОльга Орлова]
+%% Заливка — color=#hex (fill=). Граница — border=#hex и style=solid|dash|dot|dashdot.
+%% Ключи можно сочетать и менять местами. Внутри [скобок] color= остаётся текстом.
+Гендиректор [Генеральный директор\\nИван Петров] color=#8250df
+Техдир [Технический директор\\nАнна Смирнова] color=#ddf4ff border=#0969da
+Финдир [Финансовый директор\\nОльга Орлова] border=#9a6700 style=dash
 Бэкенд [Руководитель серверной разработки\\nСергей Волков]
 Фронтенд [Руководитель клиентской разработки\\nМария Соколова]
 Гендиректор -> Техдир
@@ -358,9 +360,11 @@ Morning : 20, 35, 50, 30, 25
 Day : 60, 75, 85, 70, 55
 Evening : 40, 45, 65, 50, 35`,
   orgchart: `orgchart
-CEO [Chief executive officer\\nAlex Morgan]
-CTO [Chief technology officer\\nElena Chen]
-CFO [Chief financial officer\\nDavid Miller]
+%% Fill is color=#hex (or fill=). Border is border=#hex and style=solid|dash|dot|dashdot.
+%% Keys combine in any order. Inside [brackets] color= stays part of the label.
+CEO [Chief executive officer\\nAlex Morgan] color=#8250df
+CTO [Chief technology officer\\nElena Chen] color=#ddf4ff border=#0969da
+CFO [Chief financial officer\\nDavid Miller] border=#9a6700 style=dash
 Backend [Head of backend engineering\\nSamir Patel]
 Frontend [Head of frontend engineering\\nClaire Dubois]
 CEO -> CTO

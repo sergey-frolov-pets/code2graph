@@ -218,6 +218,86 @@ A => B`);
     expect(r.errors[0].message).toMatch(/ребро|недопустим/i);
   });
 
+  it("читает заливку, цвет и стиль границы", () => {
+    const r = orgchartEngine.parse(`orgchart
+Рук [Руководитель] color=#1f6feb border=#0a3069 style=dash width=2
+Зам [Заместитель] fill=#ddf4ff stroke=navy border-style=dotted
+Стажёр style=dot
+Рук -> Зам
+Зам -> Стажёр`);
+    expect(r.ok).toBe(true);
+    const m = r.value as OrgModel;
+    expect(m.nodes[0]).toMatchObject({
+      id: "Рук",
+      label: "Руководитель",
+      fill: "#1f6feb",
+      border: "#0a3069",
+      borderStyle: "dash",
+      borderWidth: 2,
+    });
+    expect(m.nodes[1]).toMatchObject({
+      fill: "#ddf4ff",
+      border: "navy",
+      borderStyle: "dot",
+    });
+    expect(m.nodes[2]).toMatchObject({ id: "Стажёр", borderStyle: "dot" });
+    expect(m.nodes[2].fill).toBeUndefined();
+  });
+
+  it("параметры можно писать в любом порядке, border=dash задаёт стиль", () => {
+    const r = orgchartEngine.parse(`orgchart
+A [Альфа] style="dashed" width=2px color="#8250df"
+B border=dot
+A -> B`);
+    expect(r.ok).toBe(true);
+    const m = r.value as OrgModel;
+    expect(m.nodes[0]).toMatchObject({
+      fill: "#8250df",
+      borderStyle: "dash",
+      borderWidth: 2,
+    });
+    expect(m.nodes[1]).toMatchObject({ id: "B", borderStyle: "dot" });
+  });
+
+  it("color= внутри подписи остаётся текстом", () => {
+    const r = orgchartEngine.parse(`orgchart
+A [роль color=#fff]
+A -> B`);
+    expect(r.ok).toBe(true);
+    const m = r.value as OrgModel;
+    expect(m.nodes[0]).toMatchObject({ label: "роль color=#fff" });
+    expect(m.nodes[0].fill).toBeUndefined();
+  });
+
+  it("оформление дописывается к узлу, созданному ребром", () => {
+    const r = orgchartEngine.parse(`orgchart
+A -> B
+B [Бета] color=red style=dashdot`);
+    expect(r.ok).toBe(true);
+    const beta = (r.value as OrgModel).nodes.find((node) => node.id === "B");
+    expect(beta).toMatchObject({ label: "Бета", fill: "red", borderStyle: "dashdot" });
+  });
+
+  it("ошибка: плохой цвет, стиль или неизвестный параметр", () => {
+    const badColor = orgchartEngine.parse(`orgchart
+A [A] color=not-a-color
+A -> B`);
+    expect(badColor.ok).toBe(false);
+    expect(badColor.errors[0].message).toMatch(/цвет блока/i);
+
+    const badStyle = orgchartEngine.parse(`orgchart
+A [A] style=wavy
+A -> B`);
+    expect(badStyle.ok).toBe(false);
+    expect(badStyle.errors[0].message).toMatch(/стиль границы/i);
+
+    const badKey = orgchartEngine.parse(`orgchart
+A [A] glow=1
+A -> B`);
+    expect(badKey.ok).toBe(false);
+    expect(badKey.errors[0].message).toMatch(/неизвестный параметр/i);
+  });
+
   it("parse никогда не бросает исключение", () => {
     for (const src of ["", "orgchart", "orgchart\n->", "orgchart\nA -> "]) {
       expect(() => orgchartEngine.parse(src)).not.toThrow();
@@ -384,6 +464,49 @@ CEO -> CTO`);
     const path = edgePaths(svg)[0];
     expect(touchesBottom(path, ceo)).toBe(true);
     expect(touchesTop(path, cto)).toBe(true);
+  });
+
+  it("заливка, граница и её стиль попадают в SVG, текст остаётся контрастным", () => {
+    const r = orgchartEngine.parse(`orgchart
+Тёмная [Тёмная] color=#1f2328 border=#cf222e style=dash width=2.5
+Светлая [Светлая] fill=#ddf4ff style=dot
+Обычная [Обычная]
+Тёмная -> Светлая
+Тёмная -> Обычная`);
+    expect(r.ok).toBe(true);
+    const svg = orgchartEngine.render(r.value as OrgModel, {});
+    const rects = [
+      ...svg.matchAll(
+        /<rect x="[\d.]+" y="[\d.]+" width="[\d.]+" height="[\d.]+"([^>]*)\/>/g,
+      ),
+    ].map((match) => match[1]);
+    const dark = rects.find((attrs) => attrs.includes('fill="#1f2328"'));
+    const light = rects.find((attrs) => attrs.includes('fill="#ddf4ff"'));
+    const plain = rects.find((attrs) => attrs.includes('fill="#ffffff"'));
+    expect(dark).toContain('stroke="#cf222e"');
+    expect(dark).toContain('stroke-width="2.5"');
+    expect(dark).toContain('stroke-dasharray="7 4"');
+    expect(light).toContain('stroke="#ddf4ff"');
+    expect(light).toContain('stroke-dasharray="1.5 3.5"');
+    expect(plain).toContain('stroke="#656d76"');
+    expect(plain).not.toContain("stroke-dasharray");
+
+    expect(svg).toMatch(/<text[^>]*fill="#e6edf3"[^>]*>Тёмная<\/text>/);
+    expect(svg).toMatch(/<text[^>]*fill="#1f2328"[^>]*>Светлая<\/text>/);
+    expect(svg).toMatch(/<text[^>]*fill="#1f2328"[^>]*>Обычная<\/text>/);
+  });
+
+  it("корень без своего цвета остаётся акцентным", () => {
+    const r = orgchartEngine.parse(`orgchart
+A [A]
+B [B] style=solid
+A -> B`);
+    const svg = orgchartEngine.render(r.value as OrgModel, {});
+    expect(svg).toContain('fill="#8250df"');
+    expect(svg).toContain('stroke="#8250df"');
+    const plain = svg.match(/<rect[^>]*fill="#ffffff"[^>]*>/)?.[0] ?? "";
+    expect(plain).toContain('stroke="#656d76"');
+    expect(plain).not.toContain("stroke-dasharray");
   });
 
   it("циклическое ребро не ломает рендер", () => {

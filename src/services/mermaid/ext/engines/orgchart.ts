@@ -1,19 +1,33 @@
 import {
   arrowMarker,
+  clamp,
+  contrastTextColor,
   createSvg,
   fmt,
   getPalette,
   measureText,
 } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
+import { isColor } from "./waterfall/directive-parsers";
 
 // --- Модель ---------------------------------------------------------------
 
 export type OrgEdgeStyle = "solid" | "dotted";
 
+/** Стиль обводки блока: сплошная, штрих, точки, штрих-пунктир. */
+export type OrgBorderStyle = "solid" | "dash" | "dot" | "dashdot";
+
 export interface OrgNode {
   id: string;
   label: string;
+  /** Заливка (`color=` / `fill=`). */
+  fill?: string;
+  /** Цвет границы (`border=` / `stroke=`). */
+  border?: string;
+  /** Стиль границы (`style=` или `border=dash`). */
+  borderStyle?: OrgBorderStyle;
+  /** Толщина границы в px (`width=`). */
+  borderWidth?: number;
 }
 
 export interface OrgEdge {
@@ -60,16 +74,235 @@ function unquoteLabel(raw: string): string {
   return splitLabelLines(base).join("\n");
 }
 
-/** `A [Подпись]` → { id: "A", label: "Подпись" } */
-function parseNodeLine(raw: string): OrgNode {
-  const bracket = /^(.*?)\s*\[(.*)\]\s*$/.exec(raw);
-  if (bracket) {
-    const id = unquote(bracket[1]);
-    const label = unquoteLabel(bracket[2]);
-    return { id, label: label || id };
+const DEFAULT_NODE_STROKE_WIDTH = 1.2;
+const MIN_NODE_STROKE_WIDTH = 0.5;
+const MAX_NODE_STROKE_WIDTH = 8;
+
+/** Штрих границы. `solid` — без dasharray. */
+const BORDER_DASH: Record<OrgBorderStyle, string | undefined> = {
+  solid: undefined,
+  dash: "7 4",
+  dot: "1.5 3.5",
+  dashdot: "8 3 1.5 3",
+};
+
+const FILL_KEYS = new Set(["color", "colour", "fill"]);
+const BORDER_KEYS = new Set(["border", "stroke"]);
+const STYLE_KEYS = new Set(["style", "borderstyle", "border-style"]);
+const WIDTH_KEYS = new Set(["width", "thickness", "borderwidth", "border-width"]);
+
+const NODE_ATTR_RE =
+  /^(border-style|borderstyle|border-width|borderwidth|color|colour|fill|border|stroke|style|width|thickness)=("[^"]*"|'[^']*'|\S*)\s*/i;
+
+/** Имена, которые принимает `isColor`, в hex — чтобы подобрать контрастный текст. */
+const NAMED_COLORS: Record<string, string> = {
+  black: "#000000",
+  white: "#ffffff",
+  gray: "#808080",
+  grey: "#808080",
+  silver: "#c0c0c0",
+  red: "#ff0000",
+  green: "#008000",
+  blue: "#0000ff",
+  orange: "#ffa500",
+  purple: "#800080",
+  teal: "#008080",
+  navy: "#000080",
+  maroon: "#800000",
+  olive: "#808000",
+  gold: "#ffd700",
+  crimson: "#dc143c",
+  steelblue: "#4682b4",
+  darkgreen: "#006400",
+  darkred: "#8b0000",
+  darkblue: "#00008b",
+};
+
+interface OrgNodePaint {
+  fill?: string;
+  border?: string;
+  borderStyle?: OrgBorderStyle;
+  borderWidth?: number;
+}
+
+function unquoteAttr(raw: string): string {
+  const t = raw.trim();
+  if ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))) {
+    return t.slice(1, -1);
   }
-  const id = unquote(raw);
-  return { id, label: unquoteLabel(raw) || id };
+  return t;
+}
+
+function normalizeBorderStyle(raw: string): OrgBorderStyle | null {
+  const t = raw.trim().toLowerCase();
+  switch (t) {
+    case "solid":
+    case "none":
+    case "-":
+      return "solid";
+    case "dash":
+    case "dashed":
+    case "dashes":
+    case "--":
+      return "dash";
+    case "dot":
+    case "dotted":
+    case "dots":
+    case "..":
+      return "dot";
+    case "dashdot":
+    case "dash-dot":
+    case "-.":
+      return "dashdot";
+    default:
+      return null;
+  }
+}
+
+function lastUnescaped(raw: string, ch: string): number {
+  let last = -1;
+  for (let i = 0; i < raw.length; i += 1) {
+    if (raw[i] === "\\") {
+      i += 1;
+      continue;
+    }
+    if (raw[i] === ch) last = i;
+  }
+  return last;
+}
+
+function firstUnescaped(raw: string, ch: string): number {
+  for (let i = 0; i < raw.length; i += 1) {
+    if (raw[i] === "\\") {
+      i += 1;
+      continue;
+    }
+    if (raw[i] === ch) return i;
+  }
+  return -1;
+}
+
+/**
+ * Подпись в `[...]` остаётся подписью, даже если внутри есть `color=`.
+ * Параметры пишутся после закрывающей скобки: `id [роль] color=#hex style=dash`.
+ * Без скобок параметры — хвост из `key=value`.
+ */
+const NODE_ATTR_START_RE =
+  /(?:^|\s)(?:border-style|borderstyle|border-width|borderwidth|color|colour|fill|border|stroke|style|width|thickness)=/i;
+
+function splitNodeAttrs(raw: string): { body: string; tail: string } {
+  const open = firstUnescaped(raw, "[");
+  const close = lastUnescaped(raw, "]");
+  if (open >= 0 && close > open) {
+    return { body: raw.slice(0, close + 1).trim(), tail: raw.slice(close + 1).trim() };
+  }
+  const attrAt = NODE_ATTR_START_RE.exec(raw);
+  if (attrAt && attrAt.index > 0) {
+    return { body: raw.slice(0, attrAt.index).trim(), tail: raw.slice(attrAt.index).trim() };
+  }
+  if (attrAt && attrAt.index === 0) return { body: "", tail: raw.trim() };
+  return { body: raw.trim(), tail: "" };
+}
+
+function parseNodeAttrs(
+  tail: string,
+): { paint?: OrgNodePaint; error?: string } {
+  if (!tail) return { paint: {} };
+  const paint: OrgNodePaint = {};
+  let rest = tail.trim();
+  for (let guard = 0; guard < 12 && rest; guard += 1) {
+    const match = NODE_ATTR_RE.exec(rest);
+    if (!match) {
+      return {
+        error: `неизвестный параметр узла «${rest}» (ожидается color=, border=, style= или width=)`,
+      };
+    }
+    const key = match[1].toLowerCase();
+    const value = unquoteAttr(match[2]);
+    if (FILL_KEYS.has(key)) {
+      if (!isColor(value)) {
+        return {
+          error: `не удалось разобрать цвет блока «${value}» (ожидается #rgb, #rrggbb или имя цвета)`,
+        };
+      }
+      paint.fill = value;
+    } else if (BORDER_KEYS.has(key)) {
+      const asStyle = key === "border" ? normalizeBorderStyle(value) : null;
+      if (asStyle) {
+        paint.borderStyle = asStyle;
+      } else if (isColor(value)) {
+        paint.border = value;
+      } else {
+        return {
+          error: `граница блока: ожидается цвет (#hex или имя) или стиль solid|dash|dot|dashdot, получено «${value}»`,
+        };
+      }
+    } else if (STYLE_KEYS.has(key)) {
+      const style = normalizeBorderStyle(value);
+      if (!style) {
+        return {
+          error: `стиль границы: ожидается solid|dash|dot|dashdot, получено «${value}»`,
+        };
+      }
+      paint.borderStyle = style;
+    } else if (WIDTH_KEYS.has(key)) {
+      const width = Number(value.replace(/\s*(px|pt)$/i, "").replace(",", "."));
+      if (!Number.isFinite(width) || width <= 0) {
+        return {
+          error: `толщина границы: ожидается положительное число, получено «${value}»`,
+        };
+      }
+      paint.borderWidth = clamp(width, MIN_NODE_STROKE_WIDTH, MAX_NODE_STROKE_WIDTH);
+    }
+    rest = rest.slice(match[0].length).trim();
+  }
+  if (rest) {
+    return {
+      error: `неизвестный параметр узла «${rest}» (ожидается color=, border=, style= или width=)`,
+    };
+  }
+  return { paint };
+}
+
+/** `A [Подпись] color=#hex style=dash` → узел с заливкой и границей. */
+function parseNodeLine(raw: string): { node?: OrgNode; error?: string } {
+  const { body, tail } = splitNodeAttrs(raw);
+  const attrs = parseNodeAttrs(tail);
+  if (attrs.error) return { error: attrs.error };
+
+  const bracket = /^(.*?)\s*\[(.*)\]\s*$/.exec(body);
+  let id: string;
+  let label: string;
+  if (bracket) {
+    id = unquote(bracket[1]);
+    const parsedLabel = unquoteLabel(bracket[2]);
+    label = parsedLabel || id;
+  } else {
+    id = unquote(body);
+    label = unquoteLabel(body) || id;
+  }
+  return { node: { id, label, ...attrs.paint } };
+}
+
+function applyPaint(node: OrgNode, paint?: OrgNodePaint): void {
+  if (!paint) return;
+  if (paint.fill) node.fill = paint.fill;
+  if (paint.border) node.border = paint.border;
+  if (paint.borderStyle) node.borderStyle = paint.borderStyle;
+  if (paint.borderWidth) node.borderWidth = paint.borderWidth;
+}
+
+/** Hex или имя → цвет, по которому можно посчитать контраст текста. */
+function colorForContrast(color: string): string {
+  const named = NAMED_COLORS[color.trim().toLowerCase()];
+  if (named) return named;
+  const rgb = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/i.exec(color.trim());
+  if (!rgb) return color;
+  const channel = (part: string) =>
+    Math.max(0, Math.min(255, Math.round(Number(part))))
+      .toString(16)
+      .padStart(2, "0");
+  return `#${channel(rgb[1])}${channel(rgb[2])}${channel(rgb[3])}`;
 }
 
 /**
@@ -105,13 +338,15 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
   const edges: OrgEdge[] = [];
   let seenType = false;
 
-  const ensureNode = (id: string, label?: string): OrgNode => {
+  const ensureNode = (id: string, label?: string, paint?: OrgNodePaint): OrgNode => {
     const existing = nodeIndex.get(id);
     if (existing) {
       if (label && existing.label === existing.id) existing.label = label;
+      applyPaint(existing, paint);
       return existing;
     }
     const node: OrgNode = { id, label: label || id };
+    applyPaint(node, paint);
     nodeIndex.set(id, node);
     nodes.push(node);
     return node;
@@ -150,12 +385,20 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
       continue;
     }
 
-    const node = parseNodeLine(raw);
-    if (!node.id) {
+    const parsedNode = parseNodeLine(raw);
+    if (parsedNode.error || !parsedNode.node) {
+      errors.push({
+        message: parsedNode.error ?? `пустой идентификатор узла в строке «${raw}»`,
+        line: lineNo,
+        col: 0,
+      });
+      continue;
+    }
+    if (!parsedNode.node.id) {
       errors.push({ message: `пустой идентификатор узла в строке «${raw}»`, line: lineNo, col: 0 });
       continue;
     }
-    ensureNode(node.id, node.label);
+    ensureNode(parsedNode.node.id, parsedNode.node.label, parsedNode.node);
   }
 
   if (edges.length === 0) {
@@ -477,17 +720,26 @@ export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): stri
     const x = offsetX + p.x;
     const y = offsetY + p.y;
     const isRoot = !model.virtualRoot && p.node.id === model.root;
+    const fill = p.node.fill ?? (isRoot ? palette.accent : palette.bg);
+    const stroke = p.node.border ?? (p.node.fill ? p.node.fill : isRoot ? palette.accent : palette.axis);
+    const textFill = p.node.fill
+      ? (contrastTextColor(colorForContrast(p.node.fill)) ?? palette.fg)
+      : isRoot
+        ? palette.bg
+        : palette.fg;
+    const dash = p.node.borderStyle ? BORDER_DASH[p.node.borderStyle] : undefined;
     svg.rect(x, y, p.width, p.height, {
-      fill: isRoot ? palette.accent : palette.bg,
-      stroke: isRoot ? palette.accent : palette.axis,
-      "stroke-width": 1.2,
+      fill,
+      stroke,
+      "stroke-width": p.node.borderWidth ?? DEFAULT_NODE_STROKE_WIDTH,
+      ...(dash ? { "stroke-dasharray": dash } : {}),
       rx: 4,
     });
     const firstLineY = y + p.height / 2 - ((p.lines.length - 1) * LINE_HEIGHT) / 2 + 4;
     p.lines.forEach((line, idx) => {
       svg.text(x + p.width / 2, firstLineY + idx * LINE_HEIGHT, line, {
         "font-size": FONT,
-        fill: isRoot ? palette.bg : palette.fg,
+        fill: textFill,
       });
     });
   }

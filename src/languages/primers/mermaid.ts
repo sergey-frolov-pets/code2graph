@@ -563,7 +563,7 @@ export const MERMAID_PRIMER: LanguagePrimer = {
         lines(
           "orgchart",
           "Гендиректор [Генеральный директор\\nИван Петров]",
-          "Техдир [Технический директор\\nАнна Смирнова]",
+          "Техдир [Технический директор\\nАнна Смирнова] color=#ddf4ff border=#0969da style=dash",
           "Бэкенд [Руководитель серверной разработки\\nСергей Волков]",
           "Гендиректор -> Техдир",
           "Техдир -> Бэкенд",
@@ -571,7 +571,7 @@ export const MERMAID_PRIMER: LanguagePrimer = {
         lines(
           "orgchart",
           "CEO [Chief executive officer\\nAlex Morgan]",
-          "CTO [Chief technology officer\\nElena Chen]",
+          "CTO [Chief technology officer\\nElena Chen] color=#ddf4ff border=#0969da style=dash",
           "Backend [Head of backend engineering\\nSamir Patel]",
           "CEO -> CTO",
           "CTO -> Backend",
