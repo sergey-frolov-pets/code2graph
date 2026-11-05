@@ -16,6 +16,7 @@ import {
   type RenderMode,
 } from "@/constants/render-settings";
 import { contrastTextColor } from "@/services/mermaid/ext/common";
+import type { AspectRatio } from "@/utils/export";
 
 const props = defineProps<{
   isRendering: boolean;
@@ -40,6 +41,7 @@ const emit = defineEmits<{
   zoomOut: [];
   setImageWidth: [value: number];
   setImageHeight: [value: number];
+  setImageAspect: [ratio: AspectRatio];
   resetImageSize: [];
   openAppearance: [];
   "update:previewBackground": [value: string];
@@ -171,6 +173,7 @@ async function acknowledgeCopiedPng(): Promise<void> {
       :image-size-custom="imageSizeCustom"
       @set-image-width="emit('setImageWidth', $event)"
       @set-image-height="emit('setImageHeight', $event)"
+      @set-image-aspect="emit('setImageAspect', $event)"
       @reset-image-size="emit('resetImageSize')"
     />
 

@@ -8,10 +8,16 @@ export {
 
 export {
   applySvgSize,
+  aspectRatiosMatch,
+  fitSizeToAspectRatio,
+  IMAGE_ASPECT_PRESETS,
+  matchingAspectPreset,
   MAX_IMAGE_SIDE,
   MIN_IMAGE_SIDE,
   normalizeSvgRootSize,
+  parseAspectRatio,
   parseSvgSize,
+  type AspectRatio,
   type ImageSize,
 } from "@/services/export/svg-geometry";
 

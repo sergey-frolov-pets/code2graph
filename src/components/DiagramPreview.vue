@@ -49,7 +49,7 @@ const appearanceOpen = ref(false);
 const viewportRef = ref<HTMLElement | null>(null);
 const contentRef = ref<HTMLElement | null>(null);
 
-const { activeSize, isCustom, sizedMarkup, setWidth, setHeight, resetSize } = useImageSize(
+const { activeSize, isCustom, sizedMarkup, setWidth, setHeight, setAspectRatio, resetSize } = useImageSize(
   computed(() => props.svg),
   computed(() => props.previewBackground),
 );
@@ -131,6 +131,7 @@ watch(isFullscreen, (value) => {
           @zoom-out="zoomOut"
           @set-image-width="setWidth"
           @set-image-height="setHeight"
+          @set-image-aspect="setAspectRatio"
           @reset-image-size="resetSize"
           @open-appearance="appearanceOpen = true"
           @update:preview-background="emit('update:previewBackground', $event)"

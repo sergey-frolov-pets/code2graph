@@ -5,8 +5,10 @@ import type { DiagramFormat } from "@/constants/diagram-formats";
 import { useDiagramIrCache } from "@/composables/useDiagramIrCache";
 import { useLocale } from "@/composables/useLocale";
 import { embedSvgMetadata } from "@/services/conversion/metadata/svg-metadata";
+import { readStoredImageSize } from "@/composables/useImageSize";
 import {
   applyPreviewBackground,
+  applySvgSize,
   copyPngBlobToClipboard,
   downloadBlob,
   downloadTextFile,
@@ -51,9 +53,11 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     const themed = applyPreviewBackground(svg.value, previewBackground.value);
     // Прозрачный фон предпросмотра = прозрачный фон файла: снимаем плашку,
     // иначе в SVG и PNG остаётся непрозрачный прямоугольник на весь холст.
-    return isTransparentBackground(previewBackground.value)
+    const painted = isTransparentBackground(previewBackground.value)
       ? withTransparentSvgBackground(themed)
       : themed;
+    const frame = readStoredImageSize();
+    return frame ? applySvgSize(painted, frame) : painted;
   }
 
   function createPngBlob(): Promise<Blob> {

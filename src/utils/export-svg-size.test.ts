@@ -4,12 +4,65 @@ import { getWiremarkSampleSource } from "@/constants/wiremark-sample-diagrams";
 import { renderWiremarkToSvg } from "@/services/wiremark/wiremark-engine";
 import {
   applyPreviewBackground,
+  applySvgSize,
+  fitSizeToAspectRatio,
   isTransparentBackground,
   normalizeSvgRootSize,
+  parseAspectRatio,
   parseSvgSize,
   sanitizeSvgForPreview,
   withTransparentSvgBackground,
 } from "@/utils/export";
+
+describe("пропорции кадра", () => {
+  it("принимает 4x3, 16x9 и те же доли через двоеточие, слэш и кириллическую х", () => {
+    expect(parseAspectRatio("4x3")).toEqual({ width: 4, height: 3 });
+    expect(parseAspectRatio("16×9")).toEqual({ width: 16, height: 9 });
+    expect(parseAspectRatio("16:9")).toEqual({ width: 16, height: 9 });
+    expect(parseAspectRatio("16/9")).toEqual({ width: 16, height: 9 });
+    expect(parseAspectRatio("4х3")).toEqual({ width: 4, height: 3 });
+  });
+
+  it("отклоняет пустую строку, нули и слишком вытянутый кадр", () => {
+    expect(parseAspectRatio("")).toBeNull();
+    expect(parseAspectRatio("widescreen")).toBeNull();
+    expect(parseAspectRatio("0x9")).toBeNull();
+    expect(parseAspectRatio("100x1")).toBeNull();
+  });
+
+  it("расширяет короткую сторону, не обрезая диаграмму", () => {
+    expect(fitSizeToAspectRatio({ width: 800, height: 600 }, { width: 16, height: 9 })).toEqual({
+      width: 1067,
+      height: 600,
+    });
+    expect(fitSizeToAspectRatio({ width: 400, height: 800 }, { width: 1, height: 1 })).toEqual({
+      width: 800,
+      height: 800,
+    });
+  });
+
+  it("вписывает содержимое в кадр 16×9 без растяжения квадрата", () => {
+    const source =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100" width="200" height="100">' +
+      '<rect id="token" x="10" y="10" width="20" height="20" fill="#000"/>' +
+      "</svg>";
+
+    const framed = applySvgSize(source, { width: 160, height: 90 });
+    const doc = new DOMParser().parseFromString(framed, "image/svg+xml");
+    const root = doc.documentElement;
+    const token = doc.getElementById("token");
+    const frame = doc.querySelector("rect[data-aspect-frame]");
+
+    expect(root.getAttribute("viewBox")).toBe("0 0 160 90");
+    expect(root.getAttribute("width")).toBe("160");
+    expect(root.getAttribute("height")).toBe("90");
+    expect(token?.getAttribute("width")).toBe("20");
+    expect(token?.getAttribute("height")).toBe("20");
+    expect(token?.parentElement?.getAttribute("transform")).toContain("scale(0.8)");
+    expect(frame?.getAttribute("width")).toBe("160");
+    expect(frame?.getAttribute("height")).toBe("90");
+  });
+});
 
 describe("parseSvgSize", () => {
   it("prefers viewBox over percentage width", () => {
