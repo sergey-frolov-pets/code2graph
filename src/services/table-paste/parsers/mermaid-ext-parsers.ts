@@ -134,7 +134,7 @@ export function parseBoxplotTable(
     lines,
     (trimmed) =>
       !trimmed.startsWith("%%") &&
-      !/^(?:boxplot|box-plot|box|title|y|grid|fontsize|mono|colors|data|end)\b/i.test(trimmed) &&
+      !/^(?:boxplot|box-plot|box|title|y|grid|fontsize|mono|colors|ratio|aspect|data|end)\b/i.test(trimmed) &&
       trimmed.includes(":"),
     "boxplot",
   );
@@ -240,7 +240,7 @@ export function parseTreemapTable(
     (trimmed) =>
       !trimmed.startsWith("%%") &&
       (/^(?:group|section)\b/i.test(trimmed) ||
-        (!/^(?:treemap|tree-map|title|labels|fontsize|mono|colors|data|end)\b/i.test(trimmed) &&
+        (!/^(?:treemap|tree-map|title|labels|fontsize|mono|colors|ratio|aspect|data|end)\b/i.test(trimmed) &&
           trimmed.includes(":"))),
     "treemap",
   );
@@ -320,7 +320,7 @@ export function parseRadarTable(
     (trimmed) =>
       !trimmed.startsWith("%%") &&
       (/^(?:axes|axis|series)\b/i.test(trimmed) ||
-        (!/^(?:radar|radarchart|spider|title|scale|max|rings|fill|dots|fontsize|mono|colors|data|end)\b/i.test(
+        (!/^(?:radar|radarchart|spider|title|scale|max|rings|fill|dots|fontsize|mono|colors|ratio|aspect|data|end)\b/i.test(
           trimmed,
         ) &&
           trimmed.includes(":"))),
@@ -401,7 +401,7 @@ export function parseVoronoiTable(
     newLines,
     (trimmed) =>
       !trimmed.startsWith("%%") &&
-      !/^(?:voronoi|voronoi-diagram|title|x|y|sites|labels|fontsize|mono|colors|data|end)\b/i.test(
+      !/^(?:voronoi|voronoi-diagram|title|x|y|sites|labels|fontsize|mono|colors|ratio|aspect|data|end)\b/i.test(
         trimmed,
       ) &&
       trimmed.includes(":"),
@@ -484,7 +484,7 @@ export function parseClusteredTable(
       (trimmed) =>
         !trimmed.startsWith("%%") &&
         (/^(?:categories|x|series)\b/i.test(trimmed) ||
-          (!/^(?:clustered|clustered-bar|clustered-barchart|barchart-clustered|title|rotate|orientation|horizontal|vertical|y|grid|axis|labels|fontsize|mono|colors|data|end)\b/i.test(
+          (!/^(?:clustered|clustered-bar|clustered-barchart|barchart-clustered|title|rotate|orientation|horizontal|vertical|y|grid|axis|labels|fontsize|mono|colors|ratio|aspect|data|end)\b/i.test(
             trimmed,
           ) &&
             trimmed.includes(":"))),
@@ -535,7 +535,7 @@ export function parseClusteredTable(
     (trimmed) =>
       !trimmed.startsWith("%%") &&
       (/^(?:categories|x|series)\b/i.test(trimmed) ||
-        (!/^(?:clustered|clustered-bar|clustered-barchart|barchart-clustered|title|rotate|orientation|horizontal|vertical|y|grid|axis|labels|fontsize|mono|colors|data|end)\b/i.test(
+        (!/^(?:clustered|clustered-bar|clustered-barchart|barchart-clustered|title|rotate|orientation|horizontal|vertical|y|grid|axis|labels|fontsize|mono|colors|ratio|aspect|data|end)\b/i.test(
           trimmed,
         ) &&
           trimmed.includes(":"))),

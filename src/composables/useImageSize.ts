@@ -4,9 +4,7 @@ import {
   MIN_IMAGE_SIDE,
   applyPreviewBackground,
   applySvgSize,
-  fitSizeToAspectRatio,
   parseSvgSize,
-  type AspectRatio,
   type ImageSize,
 } from "@/utils/export";
 
@@ -20,7 +18,7 @@ function clampSide(value: number): number {
   return Math.min(MAX_IMAGE_SIDE, Math.max(MIN_IMAGE_SIDE, Math.round(value)));
 }
 
-export function readStoredImageSize(): ImageSizeOverride {
+function readStoredSize(): ImageSizeOverride {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_IMAGE_SIZE);
     if (!raw) return null;
@@ -34,10 +32,9 @@ export function readStoredImageSize(): ImageSizeOverride {
 
 /**
  * Размер генерируемого изображения.
- * Хранит «ручной» размер (или null — натуральный) и отдаёт SVG этого кадра.
- * Пропорции задаются отдельно (4×3, 16×9):
- * содержимое вписывается в кадр без растяжения. Ширина и высота после этого
- * меняются вместе, сохраняя выбранные пропорции.
+ * Хранит «ручной» размер (или null — натуральный) и отдаёт SVG,
+ * растянутый до этого размера. Пропорции не навязываются: пользователь
+ * задаёт и ширину, и высоту явно.
  *
  * @param svgMarkup исходный SVG
  * @param previewBackground текущий фон предпросмотра — им закрашиваются
@@ -47,7 +44,7 @@ export function useImageSize(
   svgMarkup: Ref<string>,
   previewBackground?: Ref<string>,
 ) {
-  const override = ref<ImageSizeOverride>(readStoredImageSize());
+  const override = ref<ImageSizeOverride>(readStoredSize());
 
   /** Натуральный размер текущего SVG — для кнопки «сбросить». */
   const naturalSize = computed<ImageSize>(() => {
@@ -90,11 +87,6 @@ export function useImageSize(
     setSize(clampSide(next * ratio), next);
   }
 
-  function setAspectRatio(ratio: AspectRatio): void {
-    const fitted = fitSizeToAspectRatio(naturalSize.value, ratio);
-    setSize(fitted.width, fitted.height);
-  }
-
   function resetSize(): void {
     override.value = null;
   }
@@ -123,7 +115,6 @@ export function useImageSize(
     setSize,
     setWidth,
     setHeight,
-    setAspectRatio,
     resetSize,
   };
 }

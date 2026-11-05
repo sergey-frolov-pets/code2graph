@@ -17,6 +17,7 @@ import {
   usesInvertedMono,
 } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
+import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
 
 // --- Модель ---------------------------------------------------------------
 
@@ -46,6 +47,8 @@ export interface HeatmapModel {
   mono?: boolean;
   /** `mono invert` — светлая серая шкала для тёмного фона. */
   monoInvert?: boolean;
+  /** `ratio 16x9` — ячейки растягиваются под пропорции изображения. */
+  ratio?: ChartAspect;
 }
 
 // --- Разбор ---------------------------------------------------------------
@@ -123,6 +126,7 @@ export function parseHeatmap(source: string): ExtParseResult<HeatmapModel> {
   const lines = source.split(/\r?\n/);
 
   let title: string | undefined;
+  let ratio: ChartAspect | undefined;
   let mono = false;
   let monoInvert = false;
   let xLabels: string[] | null = null;
@@ -143,6 +147,15 @@ export function parseHeatmap(source: string): ExtParseResult<HeatmapModel> {
     if (!seenType) {
       seenType = true;
       continue;
+    }
+
+    if (section === "none") {
+      const aspect = parseAspectDirective(raw);
+      if (aspect) {
+        if ("error" in aspect) errors.push({ message: aspect.error, line: lineNo, col: 0 });
+        else ratio = aspect.aspect;
+        continue;
+      }
     }
 
     if (section === "scale") {
@@ -280,7 +293,7 @@ export function parseHeatmap(source: string): ExtParseResult<HeatmapModel> {
     }
 
     errors.push({
-      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, x, y, scale, data, mono)`,
+      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, x, y, scale, data, mono, ratio)`,
       line: lineNo,
       col: 0,
     });
@@ -346,6 +359,7 @@ export function parseHeatmap(source: string): ExtParseResult<HeatmapModel> {
       rows: orderedRows,
       mono,
       monoInvert,
+      ratio,
     },
   };
 }
@@ -417,10 +431,34 @@ export function renderHeatmap(model: HeatmapModel, options: ExtRenderOptions): s
     return Math.max(CELL_H, labelLineCount(row.label) * labelStep + 10);
   });
 
+  let gapX = CELL_GAP;
+  let gapY = CELL_GAP;
+  if (model.ratio && colWidths.length > 0 && rowHeights.length > 0) {
+    const baseGridWidth =
+      colWidths.reduce((sum, w) => sum + w, 0) + Math.max(0, cols - 1) * gapX;
+    const baseGridHeight =
+      rowHeights.reduce((sum, h) => sum + h, 0) + Math.max(0, rows - 1) * gapY;
+    const grown = growPlotToAspect(
+      {
+        plotWidth: baseGridWidth,
+        plotHeight: baseGridHeight,
+        totalWidth: PADDING.left + rowLabelWidth + baseGridWidth + PADDING.right,
+        totalHeight: PADDING.top + titleExtra + headerExtra + baseGridHeight + PADDING.bottom,
+      },
+      model.ratio,
+    );
+    const scaleX = baseGridWidth > 0 ? grown.plotWidth / baseGridWidth : 1;
+    const scaleY = baseGridHeight > 0 ? grown.plotHeight / baseGridHeight : 1;
+    for (let index = 0; index < colWidths.length; index += 1) colWidths[index] *= scaleX;
+    for (let index = 0; index < rowHeights.length; index += 1) rowHeights[index] *= scaleY;
+    gapX *= scaleX;
+    gapY *= scaleY;
+  }
+
   const gridWidth =
-    colWidths.reduce((sum, w) => sum + w, 0) + Math.max(0, cols - 1) * CELL_GAP;
+    colWidths.reduce((sum, w) => sum + w, 0) + Math.max(0, cols - 1) * gapX;
   const gridHeight =
-    rowHeights.reduce((sum, h) => sum + h, 0) + Math.max(0, rows - 1) * CELL_GAP;
+    rowHeights.reduce((sum, h) => sum + h, 0) + Math.max(0, rows - 1) * gapY;
 
   const width = PADDING.left + rowLabelWidth + gridWidth + PADDING.right;
   const height = PADDING.top + titleExtra + headerExtra + gridHeight + PADDING.bottom;
@@ -440,7 +478,7 @@ export function renderHeatmap(model: HeatmapModel, options: ExtRenderOptions): s
   const gridTop = PADDING.top + titleExtra + headerExtra;
   const colLeft = (index: number): number => {
     let x = gridLeft;
-    for (let i = 0; i < index; i += 1) x += (colWidths[i] ?? CELL_W) + CELL_GAP;
+    for (let i = 0; i < index; i += 1) x += (colWidths[i] ?? CELL_W) + gapX;
     return x;
   };
 
@@ -514,7 +552,7 @@ export function renderHeatmap(model: HeatmapModel, options: ExtRenderOptions): s
         fill: readableOn(fill),
       });
     }
-    rowTop += rowH + CELL_GAP;
+    rowTop += rowH + gapY;
   }
 
   // Легенда шкалы: одна полоса-градиент + подписи диапазонов.

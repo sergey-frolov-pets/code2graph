@@ -23,6 +23,7 @@ import {
   truncateLabel,
 } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
+import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
 
 export type ClusteredLabelsMode = "above" | "inside" | "none";
 
@@ -50,6 +51,8 @@ export interface ClusteredModel {
   monoInvert: boolean;
   seriesColors: Record<string, string>;
   series: ClusteredSeries[];
+  /** `ratio 16x9` — столбцы растягиваются под пропорции изображения. */
+  ratio?: ChartAspect;
 }
 
 const FONT_BASE = 11;
@@ -221,6 +224,7 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
   let fontSize: number | undefined;
   let mono = false;
   let monoInvert = false;
+  let ratio: ChartAspect | undefined;
   const seriesColors: Record<string, string> = {};
   const series: ClusteredSeries[] = [];
 
@@ -243,6 +247,13 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
     }
 
     if (!inData) {
+      const aspect = parseAspectDirective(raw);
+      if (aspect) {
+        if ("error" in aspect) errors.push({ message: aspect.error, line: lineNo, col: 0 });
+        else ratio = aspect.aspect;
+        continue;
+      }
+
       if (/^title\b/i.test(raw) && !raw.includes(":")) {
         title = unquoteExtText(raw.replace(/^title\s*/i, "")) || undefined;
         continue;
@@ -388,7 +399,7 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
     }
 
     errors.push({
-      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, rotate 90, categories, y, grid, axis, labels, fontsize, mono, stacked, colors, series)`,
+      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, rotate 90, categories, y, grid, axis, labels, fontsize, mono, stacked, colors, ratio, series)`,
       line: lineNo,
       col: 0,
     });
@@ -442,6 +453,7 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
       monoInvert,
       seriesColors,
       series,
+      ratio,
     },
   };
 }
@@ -534,17 +546,17 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
   const seriesCount = Math.max(1, model.series.length);
   const layoutCount = model.stack ? 1 : seriesCount;
 
-  const barWidth = clamp(
+  let barWidth = clamp(
     Math.round(24 * scaleFactor - Math.max(0, layoutCount - 2) * 2),
     MIN_BAR_THICKNESS,
     MAX_BAR_THICKNESS,
   );
-  const barsGroupWidth = layoutCount * barWidth + (layoutCount - 1) * INNER_BAR_GAP;
+  let barsGroupWidth = layoutCount * barWidth + (layoutCount - 1) * INNER_BAR_GAP;
   const longestCat = model.categories.reduce(
     (max, cat) => Math.max(max, measureLabelWidth(cat, fontSize)),
     0,
   );
-  const colWidth = Math.max(
+  let colWidth = Math.max(
     Math.round(barsGroupWidth / (1 - CLUSTER_PADDING_RATIO)),
     Math.ceil(longestCat) + 20,
     72,
@@ -554,13 +566,33 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
   const seriesExtra = Math.max(0, ...model.series.map((series) => labelBlockExtra(series.name, fontSize)));
   const yExtra = labelBlockExtra(model.y?.label, fontSize);
 
-  const plotWidth = Math.max(260, colWidth * catCount);
-  const plotHeight = Math.round(PLOT_HEIGHT_VERTICAL * Math.max(1, (scaleFactor - 1) * 0.4 + 1));
+  let plotWidth = Math.max(260, colWidth * catCount);
+  let plotHeight = Math.round(PLOT_HEIGHT_VERTICAL * Math.max(1, (scaleFactor - 1) * 0.4 + 1));
 
   const padLeft = (model.axis ? 68 : 28) + yExtra;
   const padRight = model.stack && model.labels !== "none" ? 72 : 28;
   const padTop = (model.title ? 52 : 28) + (model.labels === "above" ? fontSize + 6 : 0) + titleExtra;
   const padBottom = 68 + catExtra + seriesExtra;
+
+  if (model.ratio) {
+    const grown = growPlotToAspect(
+      {
+        plotWidth,
+        plotHeight,
+        totalWidth: padLeft + plotWidth + padRight,
+        totalHeight: padTop + plotHeight + padBottom,
+      },
+      model.ratio,
+    );
+    if (grown.plotWidth > plotWidth) {
+      const factor = grown.plotWidth / (colWidth * catCount);
+      barWidth *= factor;
+      barsGroupWidth *= factor;
+      colWidth = grown.plotWidth / catCount;
+      plotWidth = grown.plotWidth;
+    }
+    plotHeight = grown.plotHeight;
+  }
 
   const width = padLeft + plotWidth + padRight;
   const height = padTop + plotHeight + padBottom;
@@ -716,14 +748,14 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
   const seriesCount = Math.max(1, model.series.length);
   const layoutCount = model.stack ? 1 : seriesCount;
 
-  const barHeight = clamp(
+  let barHeight = clamp(
     Math.round(20 * scaleFactor - Math.max(0, layoutCount - 2) * 1.5),
     MIN_BAR_THICKNESS,
     MAX_BAR_THICKNESS,
   );
-  const barsGroupHeight = layoutCount * barHeight + (layoutCount - 1) * INNER_BAR_GAP;
+  let barsGroupHeight = layoutCount * barHeight + (layoutCount - 1) * INNER_BAR_GAP;
   const catExtra = Math.max(0, ...model.categories.map((cat) => labelBlockExtra(cat, fontSize)));
-  const rowHeight = Math.max(Math.round(barsGroupHeight / (1 - CLUSTER_PADDING_RATIO)), 42) + catExtra;
+  let rowHeight = Math.max(Math.round(barsGroupHeight / (1 - CLUSTER_PADDING_RATIO)), 42) + catExtra;
 
   const longestCat = model.categories.reduce(
     (max, cat) => Math.max(max, measureLabelWidth(cat, fontSize)),
@@ -737,8 +769,28 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
   const padTop = (model.title ? 48 : 24) + titleExtra;
   const padBottom = (model.y?.label ? 80 : 62) + yExtra + seriesExtra;
 
-  const plotWidth = Math.round(PLOT_WIDTH_HORIZONTAL * Math.max(1, (scaleFactor - 1) * 0.35 + 1));
-  const plotHeight = rowHeight * catCount;
+  let plotWidth = Math.round(PLOT_WIDTH_HORIZONTAL * Math.max(1, (scaleFactor - 1) * 0.35 + 1));
+  let plotHeight = rowHeight * catCount;
+
+  if (model.ratio) {
+    const grown = growPlotToAspect(
+      {
+        plotWidth,
+        plotHeight,
+        totalWidth: padLeft + plotWidth + padRight,
+        totalHeight: padTop + plotHeight + padBottom,
+      },
+      model.ratio,
+    );
+    if (grown.plotHeight > plotHeight) {
+      const factor = grown.plotHeight / plotHeight;
+      barHeight *= factor;
+      barsGroupHeight *= factor;
+      rowHeight *= factor;
+      plotHeight = rowHeight * catCount;
+    }
+    if (grown.plotWidth > plotWidth) plotWidth = grown.plotWidth;
+  }
 
   const width = padLeft + plotWidth + padRight;
   const height = padTop + plotHeight + padBottom;

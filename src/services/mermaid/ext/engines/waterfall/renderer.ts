@@ -35,6 +35,7 @@ import {
   seriesColor,
   ZIGZAG_HEIGHT,
 } from "./scale-and-colors";
+import { growPlotToAspect } from "../../chart-aspect";
 import type { WaterfallModel } from "./types";
 
 /** «transparent» / «none» из окна оформления — фон диаграммы не залит. */
@@ -97,13 +98,13 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
   const padTop = Math.round((PADDING.top * fontSize) / FONT_BASE) + titleExtra + valueLabelExtra;
   const padBottom = Math.round((PADDING.bottom * fontSize) / FONT_BASE) + colLabelExtra + seriesExtra;
   const padLeft = Math.round((PADDING.left * fontSize) / FONT_BASE);
-  const plotHeight = Math.round(PLOT_HEIGHT * scale);
+  let plotHeight = Math.round(PLOT_HEIGHT * scale);
 
   const longestLabel = labels.reduce((acc, l) => Math.max(acc, measureLabelWidth(l, labelFontSize)), 0);
   // Запас по 2.5em с каждой стороны давал зазор между барами всего ~12 px:
   // соединительные линии были неразличимы. 3.2em оставляет читаемый просвет.
-  const columnWidth = clamp(longestLabel + Math.round(fontSize * 3.2), 64, Math.round(150 * scale));
-  const plotWidth = columnWidth * columns;
+  let columnWidth = clamp(longestLabel + Math.round(fontSize * 3.2), 64, Math.round(150 * scale));
+  let plotWidth = columnWidth * columns;
 
   const ticks =
     axis.gridStep !== undefined
@@ -146,17 +147,38 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
         )
       : 0,
   );
-  const breakLabelRoom = rightLabelRoom;  // Раскладка бара — ДО расчёта ширины SVG: подпись разрыва должна знать,
-  // где кончается последний бар, чтобы встать в свободном поле справа от него.
-  const barWidth = clamp((columnWidth * (1 - BAR_GAP)) / groups, MIN_BAR_WIDTH, MAX_BAR_WIDTH);
-  const groupSpan = barWidth * groups + (groups - 1) * 4;
-  const rightBarEdge = leftPad + (columns - 1) * columnWidth + (columnWidth + groupSpan) / 2;
+  const breakLabelRoom = rightLabelRoom;
   // Свободное поле справа от последнего бара: PADDING.right + запас на зазор.
   const breakLabelGap = Math.round((6 * fontSize) / FONT_BASE);
   const rightRoomForBreak = Math.max(
     PADDING.right,
     breakLabelRoom ? breakLabelRoom + breakLabelGap + PADDING.right : PADDING.right,
   );
+  if (model.ratio) {
+    const grown = growPlotToAspect(
+      {
+        plotWidth,
+        plotHeight,
+        totalWidth: leftPad + plotWidth + rightRoomForBreak,
+        totalHeight: padTop + plotHeight + padBottom,
+      },
+      model.ratio,
+    );
+    if (grown.plotWidth > plotWidth) {
+      columnWidth = grown.plotWidth / columns;
+      plotWidth = columnWidth * columns;
+    }
+    plotHeight = grown.plotHeight;
+  }
+  // Раскладка бара — до ширины SVG: подпись разрыва знает, где кончается последний бар.
+  // С `ratio` бар занимает колонку целиком (минус зазор), иначе шире 64 px он не растёт.
+  const barWidth = clamp(
+    (columnWidth * (1 - BAR_GAP)) / groups,
+    MIN_BAR_WIDTH,
+    model.ratio ? columnWidth : MAX_BAR_WIDTH,
+  );
+  const groupSpan = barWidth * groups + (groups - 1) * 4;
+  const rightBarEdge = leftPad + (columns - 1) * columnWidth + (columnWidth + groupSpan) / 2;
   const width = leftPad + plotWidth + rightRoomForBreak;
   const height = padTop + plotHeight + padBottom;
 

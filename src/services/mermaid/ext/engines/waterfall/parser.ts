@@ -10,6 +10,7 @@ import {
   parseSeriesHeader,
   parseStep,
 } from "./directive-parsers";
+import { parseAspectDirective, type ChartAspect } from "../../chart-aspect";
 import type {
   WaterfallAxis,
   WaterfallBreak,
@@ -33,6 +34,7 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
   let valueLabels = { above: true, inside: false };
   let connectors = true;
   let fontSize: number | undefined;
+  let ratio: ChartAspect | undefined;
   let mono = false;
   let monoInvert = false;
   let colors: Partial<WaterfallColors> | undefined;
@@ -150,6 +152,13 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
           col: 0,
         });
       }
+      continue;
+    }
+
+    const aspect = parseAspectDirective(raw);
+    if (aspect) {
+      if ("error" in aspect) errors.push({ message: aspect.error, line: lineNo, col: 0 });
+      else ratio = aspect.aspect;
       continue;
     }
 
@@ -308,6 +317,7 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
       valueLabels,
       connectors,
       fontSize,
+      ratio,
       mono,
       monoInvert,
       colors,

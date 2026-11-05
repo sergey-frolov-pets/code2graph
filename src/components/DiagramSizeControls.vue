@@ -2,12 +2,6 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import TooltipWrap from "@/components/TooltipWrap.vue";
 import { useLocale } from "@/composables/useLocale";
-import {
-  IMAGE_ASPECT_PRESETS,
-  aspectRatiosMatch,
-  parseAspectRatio,
-  type AspectRatio,
-} from "@/utils/export";
 
 const props = defineProps<{
   imageWidth?: number;
@@ -18,7 +12,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   setImageWidth: [value: number];
   setImageHeight: [value: number];
-  setImageAspect: [ratio: AspectRatio];
   resetImageSize: [];
 }>();
 
@@ -28,17 +21,6 @@ const sizeMenuOpen = ref(false);
 const sizeRef = ref<HTMLElement | null>(null);
 const sizeButtonRef = ref<HTMLElement | null>(null);
 const sizeMenuStyle = ref<Record<string, string>>({});
-const customAspect = ref("");
-const aspectError = ref("");
-
-const aspectPresets = IMAGE_ASPECT_PRESETS;
-
-const activePreset = computed(() => {
-  const width = props.imageWidth;
-  const height = props.imageHeight;
-  if (!width || !height) return null;
-  return aspectPresets.find((preset) => aspectRatiosMatch({ width, height }, preset)) ?? null;
-});
 
 const imageSizeLabel = computed(() =>
   props.imageWidth && props.imageHeight
@@ -54,7 +36,7 @@ function positionSizeMenu(): void {
   const button = sizeButtonRef.value;
   if (!button) return;
   const rect = button.getBoundingClientRect();
-  const menuWidth = 280;
+  const menuWidth = 220;
   const left = Math.max(8, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8));
   sizeMenuStyle.value = {
     left: `${Math.round(left)}px`,
@@ -100,31 +82,7 @@ function onSizeInput(axis: "width" | "height", event: Event): void {
   else emit("setImageHeight", value);
 }
 
-function isPresetActive(preset: AspectRatio): boolean {
-  const current = activePreset.value;
-  return current?.width === preset.width && current.height === preset.height;
-}
-
-function applyAspect(ratio: AspectRatio): void {
-  aspectError.value = "";
-  emit("setImageAspect", ratio);
-}
-
-function onAspectInput(event: Event): void {
-  const value = (event.target as HTMLInputElement).value;
-  customAspect.value = value;
-  const ratio = parseAspectRatio(value);
-  if (!ratio) {
-    aspectError.value = value.trim() ? t("toolbar.imageAspectInvalid") : "";
-    return;
-  }
-
-  applyAspect(ratio);
-}
-
 function resetSize(): void {
-  customAspect.value = "";
-  aspectError.value = "";
   emit("resetImageSize");
   sizeMenuOpen.value = false;
 }
@@ -174,46 +132,6 @@ function resetSize(): void {
           @change="onSizeInput('height', $event)"
         >
       </label>
-      <p class="preview-toolbar__aspect-label">
-        {{ t("toolbar.imageAspect") }}
-      </p>
-      <div
-        class="preview-toolbar__aspect-presets"
-        role="group"
-        :aria-label="t('toolbar.imageAspect')"
-      >
-        <button
-          v-for="preset in aspectPresets"
-          :key="`${preset.width}x${preset.height}`"
-          type="button"
-          class="preview-toolbar__aspect-preset"
-          :class="{ 'is-active': isPresetActive(preset) }"
-          :aria-pressed="isPresetActive(preset)"
-          @click="applyAspect(preset)"
-        >
-          {{ preset.width }}×{{ preset.height }}
-        </button>
-      </div>
-      <label class="preview-toolbar__aspect-custom">
-        <span>{{ t("toolbar.imageAspectCustom") }}</span>
-        <input
-          type="text"
-          :placeholder="t('toolbar.imageAspectPlaceholder')"
-          :value="customAspect"
-          :aria-invalid="Boolean(aspectError)"
-          @change="onAspectInput"
-          @keydown.enter.prevent="onAspectInput"
-        >
-      </label>
-      <p
-        v-if="aspectError"
-        class="preview-toolbar__aspect-error"
-      >
-        {{ aspectError }}
-      </p>
-      <p class="preview-toolbar__aspect-hint">
-        {{ t("toolbar.imageAspectHint") }}
-      </p>
       <button
         type="button"
         class="preview-toolbar__size-reset"
@@ -281,59 +199,6 @@ function resetSize(): void {
   color: var(--text);
   font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
-}
-
-.preview-toolbar__aspect-label,
-.preview-toolbar__aspect-hint,
-.preview-toolbar__aspect-error {
-  margin: 0;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.preview-toolbar__aspect-presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.preview-toolbar__aspect-preset {
-  padding: 4px 8px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-}
-
-.preview-toolbar__aspect-preset.is-active {
-  border-color: var(--accent, #8250df);
-  color: var(--text);
-}
-
-.preview-toolbar__aspect-custom {
-  display: grid;
-  grid-template-columns: 1fr 80px;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
-
-.preview-toolbar__aspect-custom input {
-  width: 100%;
-  padding: 4px 6px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text);
-  font-size: 0.78rem;
-}
-
-.preview-toolbar__aspect-error {
-  color: var(--danger, #cf222e);
 }
 
 .preview-toolbar__size-reset {

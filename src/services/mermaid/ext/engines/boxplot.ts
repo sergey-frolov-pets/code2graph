@@ -9,6 +9,7 @@ import {
   shadeColor,
   unquoteExtText,
 } from "../color-utils";
+import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
 import {
   clamp,
   createSvg,
@@ -54,6 +55,8 @@ export interface BoxplotModel {
   colors: BoxplotNamedColors;
   seriesColors: Record<string, string>;
   items: BoxplotItem[];
+  /** `ratio 16x9` — ящики растягиваются под пропорции изображения. */
+  ratio?: ChartAspect;
 }
 
 const FONT_BASE = 11;
@@ -419,6 +422,7 @@ export function parseBoxplot(source: string): ExtParseResult<BoxplotModel> {
   let grid = true;
   let gridStep: number | undefined;
   let fontSize: number | undefined;
+  let ratio: ChartAspect | undefined;
   let mono = false;
   let monoInvert = false;
   const colors: BoxplotNamedColors = {};
@@ -481,6 +485,13 @@ export function parseBoxplot(source: string): ExtParseResult<BoxplotModel> {
         continue;
       }
 
+      const aspect = parseAspectDirective(raw);
+      if (aspect) {
+        if ("error" in aspect) errors.push({ message: aspect.error, line: lineNo, col: 0 });
+        else ratio = aspect.aspect;
+        continue;
+      }
+
       if (/^fontsize\b/i.test(raw)) {
         const arg = raw.replace(/^fontsize\s*/i, "").trim();
         const parsed = parseExtNumber(arg);
@@ -535,7 +546,7 @@ export function parseBoxplot(source: string): ExtParseResult<BoxplotModel> {
     }
 
     errors.push({
-      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, y, grid, fontsize, mono, colors, data или строка «Категория : …»)`,
+      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, y, grid, fontsize, mono, colors, ratio, data или строка «Категория : …»)`,
       line: lineNo,
       col: 0,
     });
@@ -565,6 +576,7 @@ export function parseBoxplot(source: string): ExtParseResult<BoxplotModel> {
       colors,
       seriesColors,
       items,
+      ratio,
     },
   };
 }
@@ -580,13 +592,13 @@ export function renderBoxplot(model: BoxplotModel, options: ExtRenderOptions): s
     (max, item) => Math.max(max, measureLabelWidth(item.label, fontSize)),
     0,
   );
-  const colWidth = clamp(
+  let colWidth = clamp(
     Math.max(longestLabel + 24, MIN_COL_WIDTH * scaleFactor),
     MIN_COL_WIDTH,
     MAX_COL_WIDTH * scaleFactor,
   );
-  const plotWidth = Math.max(260, colWidth * count);
-  const plotHeight = Math.round(PLOT_HEIGHT_BASE * Math.max(1, (scaleFactor - 1) * 0.5 + 1));
+  let plotWidth = Math.max(260, colWidth * count);
+  let plotHeight = Math.round(PLOT_HEIGHT_BASE * Math.max(1, (scaleFactor - 1) * 0.5 + 1));
 
   const yExtra = labelBlockExtra(model.y?.label, fontSize);
   const titleExtra = labelBlockExtra(model.title, titleSize);
@@ -595,6 +607,23 @@ export function renderBoxplot(model: BoxplotModel, options: ExtRenderOptions): s
   const padRight = PADDING_BASE.right;
   const padTop = (model.title ? Math.round(PADDING_BASE.top * Math.max(1, scaleFactor * 0.9)) : 28) + titleExtra;
   const padBottom = Math.round(PADDING_BASE.bottom * Math.max(1, scaleFactor * 0.9)) + catExtra;
+
+  if (model.ratio) {
+    const grown = growPlotToAspect(
+      {
+        plotWidth,
+        plotHeight,
+        totalWidth: padLeft + plotWidth + padRight,
+        totalHeight: padTop + plotHeight + padBottom,
+      },
+      model.ratio,
+    );
+    if (grown.plotWidth > plotWidth) {
+      colWidth = grown.plotWidth / count;
+      plotWidth = colWidth * count;
+    }
+    plotHeight = grown.plotHeight;
+  }
 
   const width = padLeft + plotWidth + padRight;
   const height = padTop + plotHeight + padBottom;
@@ -673,7 +702,9 @@ export function renderBoxplot(model: BoxplotModel, options: ExtRenderOptions): s
     "stroke-width": 1,
   });
 
-  const boxWidth = clamp(colWidth * BOX_WIDTH_RATIO, 22, 68);
+  const boxWidth = model.ratio
+    ? Math.max(22, colWidth * BOX_WIDTH_RATIO)
+    : clamp(colWidth * BOX_WIDTH_RATIO, 22, 68);
   const capHalfWidth = Math.max(6, (colWidth * CAP_WIDTH_RATIO) / 2);
 
   model.items.forEach((item, idx) => {

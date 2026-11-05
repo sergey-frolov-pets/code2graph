@@ -10,6 +10,7 @@ import {
   shadeColor,
   unquoteExtText,
 } from "../color-utils";
+import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
 import {
   clamp,
   createSvg,
@@ -41,6 +42,8 @@ export interface VoronoiModel {
   monoInvert: boolean;
   seriesColors: Record<string, string>;
   sites: VoronoiSite[];
+  /** `ratio 16x9` — ячейки растягиваются под пропорции изображения. */
+  ratio?: ChartAspect;
 }
 
 interface Point2D {
@@ -268,6 +271,7 @@ export function parseVoronoi(source: string): ExtParseResult<VoronoiModel> {
   let showSites = true;
   let showLabels = true;
   let fontSize: number | undefined;
+  let ratio: ChartAspect | undefined;
   let mono = false;
   let monoInvert = false;
   const seriesColors: Record<string, string> = {};
@@ -292,6 +296,13 @@ export function parseVoronoi(source: string): ExtParseResult<VoronoiModel> {
     }
 
     if (!inData) {
+      const aspect = parseAspectDirective(raw);
+      if (aspect) {
+        if ("error" in aspect) errors.push({ message: aspect.error, line: lineNo, col: 0 });
+        else ratio = aspect.aspect;
+        continue;
+      }
+
       if (/^title\b/i.test(raw) && !raw.includes(":")) {
         title = unquoteExtText(raw.replace(/^title\s*/i, "")) || undefined;
         continue;
@@ -399,7 +410,7 @@ export function parseVoronoi(source: string): ExtParseResult<VoronoiModel> {
     }
 
     errors.push({
-      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, x, y, sites, labels, fontsize, mono, colors, data или строка точки)`,
+      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, x, y, sites, labels, fontsize, mono, colors, ratio, data или строка точки)`,
       line: lineNo,
       col: 0,
     });
@@ -436,6 +447,7 @@ export function parseVoronoi(source: string): ExtParseResult<VoronoiModel> {
       monoInvert,
       seriesColors,
       sites,
+      ratio,
     },
   };
 }
@@ -459,20 +471,36 @@ export function renderVoronoi(model: VoronoiModel, options: ExtRenderOptions): s
   const padTop = (model.title ? PADDING.top : 24) + titleExtra;
   const padLeft = (model.y.label ? PADDING.left : 32) + yExtra;
   const padBottom = (model.x.label ? PADDING.bottom : 28) + legendExtraHeight + xExtra;
-  const width = padLeft + PLOT_WIDTH + PADDING.right;
-  const height = padTop + PLOT_HEIGHT + padBottom;
+  let plotWidth = PLOT_WIDTH;
+  let plotHeight = PLOT_HEIGHT;
+  if (model.ratio) {
+    const grown = growPlotToAspect(
+      {
+        plotWidth,
+        plotHeight,
+        totalWidth: padLeft + plotWidth + PADDING.right,
+        totalHeight: padTop + plotHeight + padBottom,
+      },
+      model.ratio,
+    );
+    plotWidth = grown.plotWidth;
+    plotHeight = grown.plotHeight;
+  }
+
+  const width = padLeft + plotWidth + PADDING.right;
+  const height = padTop + plotHeight + padBottom;
 
   const plotLeft = padLeft;
   const plotTop = padTop;
-  const plotRight = plotLeft + PLOT_WIDTH;
-  const plotBottom = plotTop + PLOT_HEIGHT;
+  const plotRight = plotLeft + plotWidth;
+  const plotBottom = plotTop + plotHeight;
 
   const xSpan = model.x.max - model.x.min || 1;
   const ySpan = model.y.max - model.y.min || 1;
 
-  const px = (vx: number): number => plotLeft + clamp((vx - model.x.min) / xSpan, 0, 1) * PLOT_WIDTH;
+  const px = (vx: number): number => plotLeft + clamp((vx - model.x.min) / xSpan, 0, 1) * plotWidth;
   const py = (vy: number): number =>
-    plotBottom - clamp((vy - model.y.min) / ySpan, 0, 1) * PLOT_HEIGHT;
+    plotBottom - clamp((vy - model.y.min) / ySpan, 0, 1) * plotHeight;
 
   const svg = createSvg({
     width,
@@ -538,7 +566,7 @@ export function renderVoronoi(model: VoronoiModel, options: ExtRenderOptions): s
   });
 
   // Внешняя рамка области Вороного
-  svg.rect(plotLeft, plotTop, PLOT_WIDTH, PLOT_HEIGHT, {
+  svg.rect(plotLeft, plotTop, plotWidth, plotHeight, {
     fill: "none",
     stroke: palette.axis,
     "stroke-width": 1.2,
@@ -601,7 +629,7 @@ export function renderVoronoi(model: VoronoiModel, options: ExtRenderOptions): s
 
   if (model.y.label) {
     const cx = 18 + yExtra;
-    const cy = plotTop + PLOT_HEIGHT / 2;
+    const cy = plotTop + plotHeight / 2;
     drawLabelLines(svg, cx, cy, model.y.label, fontSize, {
       "text-anchor": "middle",
       "font-size": fontSize,
