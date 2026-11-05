@@ -9,6 +9,7 @@ import {
   shadeColor,
   unquoteExtText,
 } from "../color-utils";
+import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
 import {
   clamp,
   createSvg,
@@ -49,6 +50,8 @@ export interface TreemapModel {
   seriesColors: Record<string, string>;
   groups: TreemapGroup[];
   total: number;
+  /** `ratio 16x9` — прямоугольники растягиваются под пропорции изображения. */
+  ratio?: ChartAspect;
 }
 
 const FONT_BASE = 11;
@@ -207,6 +210,7 @@ export function parseTreemap(source: string): ExtParseResult<TreemapModel> {
   let title: string | undefined;
   let labels: TreemapLabelsMode = "both";
   let fontSize: number | undefined;
+  let ratio: ChartAspect | undefined;
   let mono = false;
   let monoInvert = false;
   const seriesColors: Record<string, string> = {};
@@ -236,6 +240,13 @@ export function parseTreemap(source: string): ExtParseResult<TreemapModel> {
 
     if (!seenType) {
       seenType = true;
+      continue;
+    }
+
+    const aspect = parseAspectDirective(raw);
+    if (aspect) {
+      if ("error" in aspect) errors.push({ message: aspect.error, line: lineNo, col: 0 });
+      else ratio = aspect.aspect;
       continue;
     }
 
@@ -374,7 +385,7 @@ export function parseTreemap(source: string): ExtParseResult<TreemapModel> {
     }
 
     errors.push({
-      message: `неизвестная строка «${raw}» (ожидается title, labels, fontsize, mono, colors, group или «Группа / Элемент : вес»)`,
+      message: `неизвестная строка «${raw}» (ожидается title, labels, fontsize, mono, colors, ratio, group или «Группа / Элемент : вес»)`,
       line: lineNo,
       col: 0,
     });
@@ -405,6 +416,7 @@ export function parseTreemap(source: string): ExtParseResult<TreemapModel> {
       seriesColors,
       groups: nonEmptyGroups,
       total,
+      ratio,
     },
   };
 }
@@ -431,8 +443,23 @@ export function renderTreemap(model: TreemapModel, options: ExtRenderOptions): s
   const titleExtra = labelBlockExtra(model.title, titleSize);
 
   const padTop = (model.title ? PADDING.top : 20) + titleExtra;
-  const width = CANVAS_WIDTH;
-  const height = padTop + PLOT_HEIGHT + PADDING.bottom + legendRowHeight;
+  let plotW = CANVAS_WIDTH - PADDING.left - PADDING.right;
+  let plotH = PLOT_HEIGHT;
+  if (model.ratio) {
+    const grown = growPlotToAspect(
+      {
+        plotWidth: plotW,
+        plotHeight: plotH,
+        totalWidth: PADDING.left + plotW + PADDING.right,
+        totalHeight: padTop + plotH + PADDING.bottom + legendRowHeight,
+      },
+      model.ratio,
+    );
+    plotW = grown.plotWidth;
+    plotH = grown.plotHeight;
+  }
+  const width = PADDING.left + plotW + PADDING.right;
+  const height = padTop + plotH + PADDING.bottom + legendRowHeight;
 
   const svg = createSvg({
     width,
@@ -453,8 +480,8 @@ export function renderTreemap(model: TreemapModel, options: ExtRenderOptions): s
   const outerBounds: LayoutRect = {
     x: PADDING.left,
     y: padTop,
-    w: width - PADDING.left - PADDING.right,
-    h: PLOT_HEIGHT,
+    w: plotW,
+    h: plotH,
   };
 
   const groupNodes: WeightedNode<{ group: TreemapGroup; index: number }>[] = model.groups.map(
@@ -594,7 +621,7 @@ export function renderTreemap(model: TreemapModel, options: ExtRenderOptions): s
 
   if (hasNamedGroups) {
     let lx = PADDING.left;
-    const ly = padTop + PLOT_HEIGHT + 22;
+    const ly = padTop + plotH + 22;
     const swatch = 10;
     model.groups.forEach((group, idx) => {
       if (!group.name) return;

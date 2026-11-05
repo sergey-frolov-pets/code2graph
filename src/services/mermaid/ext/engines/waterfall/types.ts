@@ -1,3 +1,5 @@
+import type { ChartAspect } from "../../chart-aspect";
+
 export type StepKind = "absolute" | "delta";
 
 export interface WaterfallStep {
@@ -99,6 +101,8 @@ export interface WaterfallModel {
   background?: string;
   /** Цвет текста (`textcolor #hex`) — перекрывает автоподбор под фон. */
   textColor?: string;
+  /** `ratio 16x9` — бары растягиваются, чтобы изображение заняло эти пропорции. */
+  ratio?: ChartAspect;
 }
 
 /** Разрыв оси: значения выше `after` и ниже `before` рисуются вплотную. */

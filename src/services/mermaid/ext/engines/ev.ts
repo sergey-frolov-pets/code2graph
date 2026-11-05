@@ -16,6 +16,7 @@ import {
   usesInvertedMono,
 } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
+import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
 
 // --- Модель ---------------------------------------------------------------
 
@@ -41,6 +42,8 @@ export interface EvModel {
   mono?: boolean;
   /** `mono invert` — светлая серая шкала для тёмного фона. */
   monoInvert?: boolean;
+  /** `ratio 16x9` — кривые растягиваются под пропорции изображения. */
+  ratio?: ChartAspect;
   summary: EvSummary;
 }
 
@@ -84,6 +87,7 @@ export function parseEv(source: string): ExtParseResult<EvModel> {
   const values: Partial<Record<EvSeriesKey, number[]>> = {};
   const seriesLine: Partial<Record<EvSeriesKey, number>> = {};
   let grid = false;
+  let ratio: ChartAspect | undefined;
   let mono = false;
   let monoInvert = false;
   let seenType = false;
@@ -96,6 +100,13 @@ export function parseEv(source: string): ExtParseResult<EvModel> {
     if (!seenType) {
       seenType = true;
       continue; // первая значимая строка — ключевое слово типа
+    }
+
+    const aspect = parseAspectDirective(raw);
+    if (aspect) {
+      if ("error" in aspect) errors.push({ message: aspect.error, line: lineNo, col: 0 });
+      else ratio = aspect.aspect;
+      continue;
     }
 
     if (/^title\b/i.test(raw)) {
@@ -163,7 +174,7 @@ export function parseEv(source: string): ExtParseResult<EvModel> {
     }
 
     errors.push({
-      message: `неизвестная строка «${raw}»: ожидается title, days, pv/ev/ac, grid или mono`,
+      message: `неизвестная строка «${raw}»: ожидается title, days, pv/ev/ac, grid, mono или ratio`,
       line: lineNo,
       col: 0,
     });
@@ -219,6 +230,7 @@ export function parseEv(source: string): ExtParseResult<EvModel> {
       grid,
       mono,
       monoInvert,
+      ratio,
       summary: { sv: ev[last] - pv[last], cv: ev[last] - ac[last] },
     },
   };
@@ -238,19 +250,37 @@ export function renderEv(model: EvModel, options: ExtRenderOptions): string {
 
   const count = Math.max(1, days.length);
   const longestDay = days.reduce((acc, d) => Math.max(acc, measureLabelWidth(d, FONT)), 0);
-  const columnWidth = clamp(longestDay + 32, 56, 140);
-  const plotWidth = columnWidth * count;
+  let columnWidth = clamp(longestDay + 32, 56, 140);
+  let plotWidth = columnWidth * count;
+  let plotHeight = PLOT_HEIGHT;
   const dayExtra = Math.max(0, ...days.map((day) => labelBlockExtra(day, FONT)));
   const titleExtra = labelBlockExtra(title, 15);
 
+  if (model.ratio) {
+    const grown = growPlotToAspect(
+      {
+        plotWidth,
+        plotHeight,
+        totalWidth: PADDING.left + plotWidth + PADDING.right,
+        totalHeight: PADDING.top + titleExtra + plotHeight + PADDING.bottom + dayExtra,
+      },
+      model.ratio,
+    );
+    if (grown.plotWidth > plotWidth) {
+      columnWidth = grown.plotWidth / count;
+      plotWidth = columnWidth * count;
+    }
+    plotHeight = grown.plotHeight;
+  }
+
   const width = PADDING.left + plotWidth + PADDING.right;
-  const height = PADDING.top + titleExtra + PLOT_HEIGHT + PADDING.bottom + dayExtra;
+  const height = PADDING.top + titleExtra + plotHeight + PADDING.bottom + dayExtra;
 
   const svg = createSvg({ width, height, palette, title, debugFrames: options.debugFrames });
 
   const plotLeft = PADDING.left;
   const plotTop = PADDING.top + titleExtra;
-  const plotBottom = plotTop + PLOT_HEIGHT;
+  const plotBottom = plotTop + plotHeight;
 
   const all = [...pv, ...ev, ...ac];
   const rawMin = Math.min(0, ...all);
@@ -259,7 +289,7 @@ export function renderEv(model: EvModel, options: ExtRenderOptions): string {
   const min = range.min;
   const max = range.max === range.min ? range.min + 1 : range.max;
 
-  const yOf = (value: number): number => plotBottom - ((value - min) / (max - min)) * PLOT_HEIGHT;
+  const yOf = (value: number): number => plotBottom - ((value - min) / (max - min)) * plotHeight;
   const xOf = (index: number): number =>
     plotLeft + (count === 1 ? columnWidth / 2 : (index / (count - 1)) * plotWidth);
 

@@ -485,7 +485,7 @@ export function parseClusteredTable(
         !trimmed.startsWith("%%") &&
         (/^(?:categories|x)\b/i.test(trimmed) ||
           (/^series\b/i.test(trimmed) && trimmed.includes(":")) ||
-          (!/^(?:series|title|rotate|orientation|horizontal|vertical|y|grid|axis|labels|fontsize|mono|colors|stacked|bars|layout|line|cagr|data|end)\b/i.test(
+          (!/^(?:series|title|rotate|orientation|horizontal|vertical|y|grid|axis|labels|fontsize|mono|colors|ratio|aspect|stacked|bars|layout|line|cagr|data|end)\b/i.test(
             trimmed,
           ) &&
             trimmed.includes(":"))),
@@ -537,7 +537,7 @@ export function parseClusteredTable(
       !trimmed.startsWith("%%") &&
       (/^(?:categories|x)\b/i.test(trimmed) ||
         (/^series\b/i.test(trimmed) && trimmed.includes(":")) ||
-        (!/^(?:series|title|rotate|orientation|horizontal|vertical|y|grid|axis|labels|fontsize|mono|colors|stacked|bars|layout|line|cagr|data|end)\b/i.test(
+        (!/^(?:series|title|rotate|orientation|horizontal|vertical|y|grid|axis|labels|fontsize|mono|colors|ratio|aspect|stacked|bars|layout|line|cagr|data|end)\b/i.test(
           trimmed,
         ) &&
           trimmed.includes(":"))),

@@ -15,6 +15,7 @@ import {
   usesInvertedMono,
 } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
+import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
 
 // --- Модель ---------------------------------------------------------------
 
@@ -44,6 +45,8 @@ export interface BubbleModel {
   mono?: boolean;
   /** `mono invert` — светлая серая шкала для тёмного фона. */
   monoInvert?: boolean;
+  /** `ratio 16x9` — поле графика растягивается под пропорции изображения. */
+  ratio?: ChartAspect;
 }
 
 // --- Разбор ---------------------------------------------------------------
@@ -152,6 +155,7 @@ export function parseBubble(source: string): ExtParseResult<BubbleModel> {
   let fontSize: number | undefined;
   let mono = false;
   let monoInvert = false;
+  let ratio: ChartAspect | undefined;
   const points: BubblePoint[] = [];
 
   let inData = false;
@@ -243,6 +247,12 @@ export function parseBubble(source: string): ExtParseResult<BubbleModel> {
       }
       continue;
     }
+    const aspect = parseAspectDirective(raw);
+    if (aspect) {
+      if ("error" in aspect) errors.push({ message: aspect.error, line: lineNo, col: 0 });
+      else ratio = aspect.aspect;
+      continue;
+    }
     if (/^fontsize\b/i.test(raw)) {
       const parsed = parseNumber(raw.replace(/^fontsize\s*/i, ""));
       if (parsed === null || !(parsed > 0)) {
@@ -263,7 +273,7 @@ export function parseBubble(source: string): ExtParseResult<BubbleModel> {
     }
 
     errors.push({
-      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, x, y, size, quadrants, mid, fontsize, mono, data)`,
+      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, x, y, size, quadrants, mid, fontsize, mono, ratio, data)`,
       line: lineNo,
       col: 0,
     });
@@ -291,7 +301,7 @@ export function parseBubble(source: string): ExtParseResult<BubbleModel> {
   return {
     ok: true,
     errors: [],
-    value: { title, x: xAxis, y: yAxis, sizeLabel, quadrants, mid, points, fontSize, mono, monoInvert },
+    value: { title, x: xAxis, y: yAxis, sizeLabel, quadrants, mid, points, fontSize, mono, monoInvert, ratio },
   };
 }
 
@@ -524,22 +534,58 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
   if (model.sizeLabel) legendItems.push({ text: `размер: ${model.sizeLabel}` });
   for (const group of groups) legendItems.push({ text: group, group });
 
-  const legendRows: { text: string; group?: string; x: number }[][] = [];
-  {
+  const plotLeft = PADDING.left + yAxisExtra;
+  const plotTop = PADDING.top + titleExtra;
+  let plotWidth = PLOT_WIDTH;
+  let plotHeight = PLOT_HEIGHT;
+
+  const layoutLegend = (maxWidth: number) => {
+    const rows: { text: string; group?: string; x: number }[][] = [];
     let row: { text: string; group?: string; x: number }[] = [];
     let x = 0;
     for (const item of legendItems) {
       const itemWidth = measureLabelWidth(item.text, fontSize) + (item.group ? swatch + 6 : 0);
-      if (row.length > 0 && x + itemWidth > PLOT_WIDTH) {
-        legendRows.push(row);
+      if (row.length > 0 && x + itemWidth > maxWidth) {
+        rows.push(row);
         row = [];
         x = 0;
       }
       row.push({ ...item, x });
       x += itemWidth + 16;
     }
-    if (row.length > 0) legendRows.push(row);
+    if (row.length > 0) rows.push(row);
+    return rows;
+  };
+
+  let legendRows = layoutLegend(plotWidth);
+  const legendBlockHeight = (rows: typeof legendRows): number =>
+    rows
+      .map((row) => {
+        const lines = Math.max(
+          1,
+          ...row.map((item) => (hasLabelBreak(item.text) ? splitLabelLines(item.text).length : 1)),
+        );
+        if (lines <= 1) return legendRowHeight;
+        return Math.max(legendRowHeight, lines * labelLineStep(fontSize) + 6);
+      })
+      .reduce((sum, rowHeight) => sum + rowHeight, 0);
+
+  if (model.ratio) {
+    const legendExtra = Math.max(0, legendBlockHeight(legendRows) - legendRowHeight);
+    const grown = growPlotToAspect(
+      {
+        plotWidth,
+        plotHeight,
+        totalWidth: plotLeft + plotWidth + PADDING.right,
+        totalHeight: plotTop + plotHeight + PADDING.bottom + legendExtra + xAxisExtra,
+      },
+      model.ratio,
+    );
+    plotWidth = grown.plotWidth;
+    plotHeight = grown.plotHeight;
+    legendRows = layoutLegend(plotWidth);
   }
+
   const legendRowHeights = legendRows.map((row) => {
     const lines = Math.max(1, ...row.map((item) => (hasLabelBreak(item.text) ? splitLabelLines(item.text).length : 1)));
     if (lines <= 1) return legendRowHeight;
@@ -547,16 +593,14 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
   });
   const legendHeight = legendRowHeights.reduce((sum, rowHeight) => sum + rowHeight, 0);
 
-  const plotLeft = PADDING.left + yAxisExtra;
-  const plotTop = PADDING.top + titleExtra;
-  const plotBottom = plotTop + PLOT_HEIGHT;
-  const plotRight = plotLeft + PLOT_WIDTH;
+  const plotBottom = plotTop + plotHeight;
+  const plotRight = plotLeft + plotWidth;
 
   const { x: xAxis, y: yAxis } = model;
   const xSpan = xAxis.max - xAxis.min || 1;
   const ySpan = yAxis.max - yAxis.min || 1;
-  const px = (v: number): number => plotLeft + clamp((v - xAxis.min) / xSpan, 0, 1) * PLOT_WIDTH;
-  const py = (v: number): number => plotBottom - clamp((v - yAxis.min) / ySpan, 0, 1) * PLOT_HEIGHT;
+  const px = (v: number): number => plotLeft + clamp((v - xAxis.min) / xSpan, 0, 1) * plotWidth;
+  const py = (v: number): number => plotBottom - clamp((v - yAxis.min) / ySpan, 0, 1) * plotHeight;
 
   // Радиусы: площадь ∝ size
   const sizes = model.points.map((p) => Math.abs(p.size));
@@ -589,10 +633,10 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
     labelOverflow = Math.max(labelOverflow, labelBottom(item.labelLayout) - plotBottom);
   }
 
-  const width = plotLeft + PLOT_WIDTH + PADDING.right;
+  const width = plotLeft + plotWidth + PADDING.right;
   const height =
     plotTop +
-    PLOT_HEIGHT +
+    plotHeight +
     PADDING.bottom +
     Math.max(0, legendHeight - legendRowHeight) +
     labelOverflow +
@@ -614,7 +658,7 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
   }
 
   // Рамка области
-  svg.rect(plotLeft, plotTop, PLOT_WIDTH, PLOT_HEIGHT, {
+  svg.rect(plotLeft, plotTop, plotWidth, plotHeight, {
     fill: "none",
     stroke: palette.axis,
     "stroke-width": 1,
@@ -679,7 +723,7 @@ export function renderBubble(model: BubbleModel, options: ExtRenderOptions): str
   }
   if (yAxis.label) {
     const cx = 18 + yAxisExtra;
-    const cy = plotTop + PLOT_HEIGHT / 2;
+    const cy = plotTop + plotHeight / 2;
     drawLabelLines(svg, cx, cy, yAxis.label, axisSize, {
       "text-anchor": "middle",
       "font-size": axisSize,
