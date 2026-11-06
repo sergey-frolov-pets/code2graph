@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { boxplotEngine, type BoxplotModel } from "../engines/boxplot";
 import { bubbleEngine, type BubbleModel } from "../engines/bubble";
-import { clusteredEngine, type ClusteredModel } from "../engines/clustered";
+import { clusteredEngine, type ClusteredModel } from "../engines/series";
 import { evEngine, type EvModel } from "../engines/ev";
 import { heatmapEngine, type HeatmapModel } from "../engines/heatmap";
 import { radarEngine, type RadarModel } from "../engines/radar";
