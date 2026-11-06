@@ -13,7 +13,7 @@ test("plantuml mindmap sample renders offline in preview", async ({ page }) => {
   await waitForPreviewReady(page);
   await expect(page.locator(".preview-error")).toHaveCount(0);
 
-  const previewText = await page.locator(".preview-content").innerText();
-  expect(previewText).not.toMatch(/Syntax Error/i);
-  expect(previewText).toContain("Code2Graph");
+  const preview = page.locator(".preview-content");
+  await expect(preview).toContainText("Code2Graph", { timeout: 30_000 });
+  await expect(preview).not.toContainText(/Syntax Error/i);
 });
