@@ -9,6 +9,7 @@ import {
 } from "vue";
 import SnippetsPanel from "@/components/SnippetsPanel.vue";
 import EditorToolbar from "@/components/editor/EditorToolbar.vue";
+import InlineDiagramBuilder from "@/components/editor/InlineDiagramBuilder.vue";
 import EditorCodeGutter from "@/components/editor/EditorCodeGutter.vue";
 import EditorCodeSurface from "@/components/editor/EditorCodeSurface.vue";
 import EditorFoldOnboardingBanner from "@/components/editor/EditorFoldOnboardingBanner.vue";
@@ -29,6 +30,7 @@ import {
   supportsTablePaste,
   type TablePasteErrorInfo,
 } from "@/services/table-paste";
+import { supportsDiagramBuilder } from "@/services/diagram-builder";
 import { useEditorFoldOnboarding } from "@/composables/wizard/useWizardOnboarding";
 import { useEditorAutocomplete } from "@/composables/useEditorAutocomplete";
 import { useCodeFolds } from "@/composables/editor/useCodeFolds";
@@ -66,7 +68,6 @@ const emit = defineEmits<{
   undo: [];
   redo: [];
   convert: [];
-  openBuilder: [];
   aiPatch: [payload: { start: number; end: number }];
   aiSyntaxAsk: [];
   "editor-focus": [];
@@ -105,6 +106,28 @@ const regionsModalRef = ref<InstanceType<typeof EditorFoldRegionsModal> | null>(
 const codeSurfaceRef = ref<InstanceType<typeof EditorCodeSurface> | null>(null);
 const isFullscreen = ref(false);
 const snippetsOpen = ref(false);
+const surfaceMode = ref<"code" | "builder">("code");
+const builderAvailable = computed(
+  () =>
+    formatDefinition.value.editable &&
+    supportsDiagramBuilder(formatDefinition.value.id),
+);
+
+watch(builderAvailable, (available) => {
+  if (!available) {
+    surfaceMode.value = "code";
+  }
+});
+
+function setSurfaceMode(mode: "code" | "builder"): void {
+  if (mode === "builder" && !builderAvailable.value) {
+    return;
+  }
+  if (mode === "builder") {
+    snippetsOpen.value = false;
+  }
+  surfaceMode.value = mode;
+}
 
 const textareaRef = computed(
   () => codeSurfaceRef.value?.textareaEl ?? null,
@@ -368,6 +391,9 @@ onUnmounted(() => {
       :can-paste-table="canPasteTable"
       :snippets-open="snippetsOpen"
       :is-fullscreen="isFullscreen"
+      :surface-mode="surfaceMode"
+      :builder-available="builderAvailable"
+      @set-surface-mode="setSurfaceMode"
       @open-file="openFilePicker"
       @open-versions="emit('openVersions')"
       @save-puml="emit('savePuml')"
@@ -375,7 +401,6 @@ onUnmounted(() => {
       @ai-patch="requestAiPatch"
       @ai-syntax-ask="emit('aiSyntaxAsk')"
       @paste-table="onPasteTableFromClipboard"
-      @open-builder="emit('openBuilder')"
       @validate-syntax="emit('validateSyntax')"
       @undo="emit('undo')"
       @redo="emit('redo')"
@@ -402,7 +427,16 @@ onUnmounted(() => {
         @change="handleSelectedFile"
       />
 
-      <div class="code-editor">
+      <InlineDiagramBuilder
+        v-if="surfaceMode === 'builder'"
+        v-model:source="source"
+        :format="diagramFormat"
+      />
+
+      <div
+        v-else
+        class="code-editor"
+      >
         <EditorCodeGutter
           ref="gutterComponentRef"
           :gutter-rows="gutterRows"
@@ -438,7 +472,10 @@ onUnmounted(() => {
         />
       </div>
 
-      <p class="drop-hint">
+      <p
+        v-if="surfaceMode === 'code'"
+        class="drop-hint"
+      >
         {{
           isReadOnly
             ? t("editor.dropHintViewOnly")

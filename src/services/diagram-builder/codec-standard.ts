@@ -497,6 +497,8 @@ export function parseStandardDiagramToBuilderState(
     }
 
     default: {
+      state.graphNodes = [];
+      state.graphEdges = [];
       // Graph / Structural / Behavioral diagrams via DiagramIR
       const { ir } = safeParseSourceToIr(source, format);
       if (ir) {
@@ -666,13 +668,21 @@ export function emitStandardDiagramFromBuilderState(
 
     case "gantt": {
       if (format === "plantuml") {
-        const tsv = serializeGridToClipboardTsv(state.rows);
-        const res = applyTableFromClipboardText({
-          clipboardText: tsv,
-          source: originalSource || "@startgantt\n@endgantt",
-          format: "plantuml",
+        const lines = ["@startgantt"];
+        if (canvas.title.trim()) lines.push(`title ${canvas.title.trim()}`);
+        lines.push("project starts 2026-01-01");
+        state.rows.forEach((row, idx) => {
+          const task = (row[0] ?? "").trim().replace(/[[\]]/g, "") || `Task ${idx + 1}`;
+          const start = (row[1] ?? "").trim();
+          const durMatch = /^(\d+)/.exec((row[2] ?? "").trim());
+          const days = durMatch ? Math.max(1, Number(durMatch[1])) : 3;
+          lines.push(`[${task}] lasts ${days} days`);
+          if (/^\d{4}-\d{2}-\d{2}$/.test(start)) {
+            lines.push(`[${task}] starts ${start}`);
+          }
         });
-        if (res.ok) return res.fullSource;
+        lines.push("@endgantt");
+        return lines.join("\n");
       }
       const lines = ["gantt"];
       if (canvas.title.trim()) lines.push(`    title ${canvas.title.trim()}`);
@@ -698,53 +708,172 @@ export function emitStandardDiagramFromBuilderState(
       return lines.join("\n");
     }
 
-    case "timeline":
-    case "journey":
-    case "packet":
-    case "wbs":
-    case "mindmap":
-    case "nwdiag": {
-      const tsv = serializeGridToClipboardTsv(state.rows);
-      let baseSource =
-        canvas.title.trim() && format === "mermaid"
-          ? `${diagramType === "packet" ? "packet-beta" : diagramType}\n    title ${canvas.title.trim()}`
-          : originalSource;
+    case "timeline": {
+      if (format === "plantuml") {
+        const lines = ["@startchronology"];
+        if (canvas.title.trim()) lines.push(`title ${canvas.title.trim()}`);
+        state.rows.forEach((row, idx) => {
+          const period = (row[0] ?? "").trim() || `${2026 + idx}`;
+          const event = (row[1] ?? "").trim() || `Event ${idx + 1}`;
+          lines.push(`[${period}] is {${event}}`);
+        });
+        lines.push("@endchronology");
+        return lines.join("\n");
+      }
+      const lines = ["timeline"];
+      if (canvas.title.trim()) lines.push(`    title ${canvas.title.trim()}`);
+      let currentSec = "";
+      state.rows.forEach((row, idx) => {
+        const period = (row[0] ?? "").trim() || `${2026 + idx}`;
+        const event = (row[1] ?? "").trim() || `Event ${idx + 1}`;
+        const sec = (row[2] ?? "").trim();
+        if (sec && sec !== currentSec) {
+          currentSec = sec;
+          lines.push(`    section ${currentSec}`);
+        }
+        lines.push(`${currentSec ? "      " : "    "}${period} : ${event}`);
+      });
+      return lines.join("\n");
+    }
 
-      if (format === "plantuml" && diagramType === "mindmap") {
-        const dirDirective =
-          canvas.direction === "LR" || canvas.direction === "RL"
-            ? "left to right direction"
-            : "top to bottom direction";
-        if (/(?:top\s+to\s+bottom|left\s+to\s+right)\s+direction/i.test(baseSource)) {
-          baseSource = baseSource.replace(
-            /(?:top\s+to\s+bottom|left\s+to\s+right)\s+direction/gi,
-            dirDirective,
-          );
-        } else if (/@startmindmap\b/i.test(baseSource)) {
-          baseSource = baseSource.replace(
-            /@startmindmap\b/i,
-            `@startmindmap\n${dirDirective}`,
-          );
-        } else {
-          baseSource = `@startmindmap\n${dirDirective}\n@endmindmap`;
+    case "journey": {
+      const lines = ["journey"];
+      if (canvas.title.trim()) lines.push(`    title ${canvas.title.trim()}`);
+      let currentSec = "";
+      state.rows.forEach((row, idx) => {
+        const step = (row[0] ?? "").trim().replace(/:/g, " -") || `Step ${idx + 1}`;
+        const scoreNum = Number((row[1] ?? "5").trim());
+        const score = Number.isFinite(scoreNum)
+          ? Math.max(1, Math.min(5, Math.round(scoreNum)))
+          : 5;
+        const actors = (row[2] ?? "").trim() || "User";
+        const sec = (row[3] ?? "").trim();
+        if (sec && sec !== currentSec) {
+          currentSec = sec;
+          lines.push(`    section ${currentSec}`);
+        }
+        lines.push(`      ${step}: ${score}: ${actors}`);
+      });
+      return lines.join("\n");
+    }
+
+    case "packet": {
+      const lines = ["packet-beta"];
+      if (canvas.title.trim()) lines.push(`    title ${canvas.title.trim()}`);
+      state.rows.forEach((row, idx) => {
+        const rawBits = (row[0] ?? "").trim();
+        const bits = /^\d+(?:\s*-\s*\d+)?$/.test(rawBits)
+          ? rawBits.replace(/\s+/g, "")
+          : `${idx * 16}-${(idx + 1) * 16 - 1}`;
+        const label = ((row[1] ?? "").trim() || `Field ${idx + 1}`).replace(/"/g, "'");
+        lines.push(`    ${bits}: "${label}"`);
+      });
+      return lines.join("\n");
+    }
+
+    case "wbs":
+    case "mindmap": {
+      const roots = new Map<string, Map<string, string[]>>();
+      let lastL1 = "Root";
+      let lastL2 = "";
+      for (const row of state.rows) {
+        const l1 = (row[0] ?? "").trim() || lastL1 || "Root";
+        const l2 = (row[1] ?? "").trim();
+        const l3 = (row[2] ?? "").trim();
+        lastL1 = l1;
+        if (!roots.has(l1)) {
+          roots.set(l1, new Map());
+        }
+        const branchMap = roots.get(l1)!;
+        const effL2 = l2 || (l3 ? lastL2 || "Branch 1" : "");
+        if (effL2) {
+          lastL2 = effL2;
+          if (!branchMap.has(effL2)) {
+            branchMap.set(effL2, []);
+          }
+          if (l3) {
+            branchMap.get(effL2)!.push(l3);
+          }
         }
       }
-
-      const res = applyTableFromClipboardText({
-        clipboardText: tsv,
-        source: baseSource,
-        format,
-      });
-      if (res.ok) {
-        return res.fullSource;
+      if (roots.size === 0) {
+        roots.set("Root", new Map([["Branch 1", []]]));
       }
-      return baseSource;
+
+      if (format === "plantuml") {
+        const startTag = diagramType === "wbs" ? "@startwbs" : "@startmindmap";
+        const endTag = diagramType === "wbs" ? "@endwbs" : "@endmindmap";
+        const lines = [startTag];
+        if (diagramType === "mindmap") {
+          lines.push(
+            canvas.direction === "LR" || canvas.direction === "RL"
+              ? "left to right direction"
+              : "top to bottom direction",
+          );
+        }
+        if (canvas.title.trim()) lines.push(`title ${canvas.title.trim()}`);
+        for (const [rLabel, branches] of roots.entries()) {
+          lines.push(`* ${rLabel}`);
+          for (const [bLabel, leaves] of branches.entries()) {
+            lines.push(`** ${bLabel}`);
+            for (const leaf of leaves) {
+              lines.push(`*** ${leaf}`);
+            }
+          }
+        }
+        lines.push(endTag);
+        return lines.join("\n");
+      }
+
+      const lines = ["mindmap"];
+      const firstRoot = [...roots.entries()][0];
+      if (firstRoot) {
+        lines.push(`  root((${firstRoot[0]}))`);
+        for (const [bLabel, leaves] of firstRoot[1].entries()) {
+          lines.push(`    ${bLabel}`);
+          for (const leaf of leaves) {
+            lines.push(`      ${leaf}`);
+          }
+        }
+      }
+      return lines.join("\n");
+    }
+
+    case "nwdiag": {
+      const lines = ["@startnwdiag"];
+      if (canvas.title.trim()) lines.push(`title ${canvas.title.trim()}`);
+      lines.push("nwdiag {");
+      const networks = new Map<string, { node: string; addr: string }[]>();
+      state.rows.forEach((row, idx) => {
+        const node = ((row[0] ?? "").trim() || `node_${idx + 1}`).replace(/\s+/g, "_");
+        const addr = (row[1] ?? "").trim().replace(/"/g, "");
+        const net = ((row[2] ?? "").trim() || "lan").replace(/\s+/g, "_");
+        const list = networks.get(net) ?? [];
+        list.push({ node, addr });
+        networks.set(net, list);
+      });
+      for (const [net, list] of networks.entries()) {
+        lines.push(`  network ${net} {`);
+        for (const item of list) {
+          lines.push(
+            item.addr
+              ? `    ${item.node} [address = "${item.addr}"]`
+              : `    ${item.node}`,
+          );
+        }
+        lines.push("  }");
+      }
+      lines.push("}", "@endnwdiag");
+      return lines.join("\n");
     }
 
     case "wireframe": {
       const gridRows = [
-        ["Item", ...state.matrixHeaders],
-        ...state.matrixRows,
+        ["Item", ...state.matrixHeaders.map((h, i) => h.trim() || `Col ${i + 1}`)],
+        ...state.matrixRows.map((r, i) => [
+          (r[0] ?? "").trim() || `Row ${i + 1}`,
+          ...state.matrixHeaders.map((_, cIdx) => (r[cIdx + 1] ?? "").trim() || "—"),
+        ]),
       ];
       const tsv = serializeGridToClipboardTsv(gridRows);
       const res = applyTableFromClipboardText({
@@ -766,37 +895,85 @@ export function emitStandardDiagramFromBuilderState(
       }
 
       const groupsSet = new Map<string, string>();
-      const nodes: DiagramNode[] = state.graphNodes.map((n, idx) => {
-        const id = sanitizeDiagramId(n.id || n.label || `N${idx + 1}`);
+      const nodeById = new Map<string, DiagramNode>();
+      const nodeIdByLabel = new Map<string, string>();
+
+      state.graphNodes.forEach((n, idx) => {
+        const rawId = n.id.trim() || n.label.trim();
+        if (!rawId) return;
+        const id = sanitizeDiagramId(rawId || `N${idx + 1}`);
         let groupId: string | undefined;
         if (n.group.trim()) {
           const gId = sanitizeDiagramId(n.group.trim());
           groupsSet.set(gId, n.group.trim());
           groupId = gId;
         }
-        return {
+        const label = n.label.trim() || n.id.trim() || id;
+        const diagramNode: DiagramNode = {
           id,
-          label: n.label || id,
+          label,
           kind: (n.kind || "default") as DiagramNodeSemanticKind,
           groupId,
           visual: n.color.trim() ? { fill: n.color.trim() } : undefined,
           matchConfidence: 1,
         };
+        nodeById.set(id, diagramNode);
+        nodeIdByLabel.set(label.toLowerCase(), id);
+        if (n.id.trim()) {
+          nodeIdByLabel.set(n.id.trim().toLowerCase(), id);
+        }
       });
 
-      ir.nodes = nodes;
-      ir.groups = [...groupsSet.entries()].map(([id, label]) => ({ id, label }));
+      const resolveOrAddEndpoint = (rawEndpoint: string, fallbackIdx: number): string => {
+        const trimmed = rawEndpoint.trim();
+        const existingByLabel = nodeIdByLabel.get(trimmed.toLowerCase());
+        if (existingByLabel && nodeById.has(existingByLabel)) {
+          return existingByLabel;
+        }
+        const sanitized = sanitizeDiagramId(trimmed || `N${fallbackIdx}`);
+        if (nodeById.has(sanitized)) {
+          return sanitized;
+        }
+        const newNode: DiagramNode = {
+          id: sanitized,
+          label: trimmed || sanitized,
+          kind: "default",
+          matchConfidence: 1,
+        };
+        nodeById.set(sanitized, newNode);
+        nodeIdByLabel.set((trimmed || sanitized).toLowerCase(), sanitized);
+        return sanitized;
+      };
 
       const edges: DiagramEdge[] = state.graphEdges
-        .filter((e) => e.source.trim() && e.target.trim())
-        .map((e, idx) => ({
-          id: `e${idx + 1}`,
-          source: sanitizeDiagramId(e.source),
-          target: sanitizeDiagramId(e.target),
-          label: e.label.trim() || undefined,
-          kind: (e.kind || "arrow") as DiagramEdge["kind"],
+        .filter((e) => e.source.trim() || e.target.trim())
+        .map((e, idx) => {
+          const srcId = resolveOrAddEndpoint(e.source || `N${idx * 2 + 1}`, idx * 2 + 1);
+          const tgtId = resolveOrAddEndpoint(e.target || `N${idx * 2 + 2}`, idx * 2 + 2);
+          return {
+            id: `e${idx + 1}`,
+            source: srcId,
+            target: tgtId,
+            label: e.label.trim() || undefined,
+            kind: (e.kind || "arrow") as DiagramEdge["kind"],
+            matchConfidence: 1,
+          };
+        });
+
+      if (nodeById.size === 0 && edges.length === 0) {
+        nodeById.set("N1", { id: "N1", label: "N1", kind: "default", matchConfidence: 1 });
+        nodeById.set("N2", { id: "N2", label: "N2", kind: "default", matchConfidence: 1 });
+        edges.push({
+          id: "e1",
+          source: "N1",
+          target: "N2",
+          kind: "arrow",
           matchConfidence: 1,
-        }));
+        });
+      }
+
+      ir.nodes = [...nodeById.values()];
+      ir.groups = [...groupsSet.entries()].map(([id, label]) => ({ id, label }));
       ir.edges = edges;
 
       switch (format) {

@@ -79,6 +79,49 @@
   color: var(--text-muted);
 }
 
+.builder-card--collapsible {
+  gap: 10px;
+}
+
+.builder-card__header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.builder-card__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  text-align: left;
+  cursor: pointer;
+}
+
+.builder-card__toggle:hover,
+.builder-card__toggle:hover .builder-card__title {
+  color: var(--accent);
+}
+
+.builder-card__chevron {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.builder-advanced-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
 .builder-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
@@ -232,6 +275,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+.builder-data-table__color-col {
+  width: 64px;
+  white-space: nowrap;
+}
+
 .builder-data-table__actions {
   width: 76px;
   text-align: right;
@@ -336,6 +384,10 @@
   flex-wrap: wrap;
   gap: 4px;
   margin-top: 4px;
+}
+
+.builder-swatches--inline {
+  margin-top: 0;
 }
 
 .builder-swatch {
@@ -847,12 +899,54 @@
   cursor: pointer;
 }
 
+.wizard-tag-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.wizard-tag-section__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.wizard-tag-section__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wizard-tag-section__toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.wizard-tag-section__chevron {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
 .wizard-tag-cloud {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-bottom: 16px;
+}
+
+.wizard-tag-cloud--collapsed {
+  margin: 0;
 }
 
 .wizard-tag {

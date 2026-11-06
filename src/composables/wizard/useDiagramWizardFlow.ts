@@ -29,9 +29,9 @@ import type { GalleryExampleAction } from "@/constants/wizard-gallery";
 import type { TranslateFn } from "@/locales/types";
 import {
   createDefaultBuilderState,
-  detectBuilderDiagramType,
   emitSourceFromBuilderState,
   parseSourceToBuilderState,
+  supportsDiagramBuilder,
   type BuilderApplyTarget,
   type DiagramBuilderState,
 } from "@/services/diagram-builder";
@@ -41,7 +41,6 @@ const AI_WIZARD_FLOW_STEPS: readonly WizardStepId[] = ["context", "result"];
 const BUILDER_WIZARD_FLOW_STEPS: readonly WizardStepId[] = [
   "builder-data",
   "builder-canvas",
-  "builder-options",
 ];
 
 export interface UseDiagramWizardFlowOptions {
@@ -50,9 +49,6 @@ export interface UseDiagramWizardFlowOptions {
   layout: Ref<LayoutEngine>;
   renderMode: Ref<RenderMode>;
   diagramDarkMode: Ref<boolean>;
-  currentEditorSource?: Ref<string>;
-  currentEditorFormat?: Ref<DiagramFormat>;
-  startInBuilder?: Ref<boolean>;
   locale: Ref<AppLocale>;
   t: TranslateFn;
   onApply: (payload: {
@@ -71,9 +67,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     layout,
     renderMode,
     diagramDarkMode,
-    currentEditorSource,
-    currentEditorFormat,
-    startInBuilder,
     locale,
     t,
     onApply,
@@ -246,16 +239,17 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     syncBuilderToSource(true);
   }
 
-  function openBuilderForSource(input: {
-    source: string;
+  function openBuilderForType(input: {
     format: DiagramFormat;
-    diagramType?: DiagramBuilderState["diagramType"];
+    diagramType: DiagramBuilderState["diagramType"];
     target: BuilderApplyTarget;
   }): void {
-    const detectedType =
-      input.diagramType ?? detectBuilderDiagramType(input.source, input.format);
-    const wizType = isWizardDiagramType(detectedType)
-      ? detectedType
+    if (!supportsDiagramBuilder(input.format)) {
+      return;
+    }
+
+    const wizType = isWizardDiagramType(input.diagramType)
+      ? input.diagramType
       : "flowchart";
 
     wizardState.value = {
@@ -266,11 +260,10 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
       typeParams: createDefaultTypeParams(),
       structuralElements: createDefaultStructuralElements(),
     };
-    builderBaseSource.value = input.source;
-    builderState.value = parseSourceToBuilderState(
-      input.source,
+    builderBaseSource.value = "";
+    builderState.value = createDefaultBuilderState(
       input.format,
-      detectedType,
+      input.diagramType,
     );
     applyTarget.value = input.target;
     stepIndex.value = 0;
@@ -278,16 +271,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     aiSetupVisible.value = false;
     aiSetupReason.value = null;
     syncBuilderToSource(true);
-  }
-
-  function openCurrentDiagramInBuilder(): void {
-    const src = currentEditorSource?.value ?? "";
-    const fmt = currentEditorFormat?.value ?? "plantuml";
-    openBuilderForSource({
-      source: src,
-      format: fmt,
-      target: "current",
-    });
   }
 
   function resetWizard(): void {
@@ -308,17 +291,17 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     aiSetupVisible.value = false;
     aiSetupReason.value = null;
     clearConversations();
-
-    if (startInBuilder?.value) {
-      openCurrentDiagramInBuilder();
-    }
   }
 
-  watch(open, (isOpen) => {
-    if (isOpen) {
-      resetWizard();
-    }
-  });
+  watch(
+    open,
+    (isOpen) => {
+      if (isOpen) {
+        resetWizard();
+      }
+    },
+    { immediate: true },
+  );
 
   watch([llmConsent, llmProviderId], () => {
     if (aiSetupVisible.value) {
@@ -347,6 +330,15 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     label: string;
     prompt: string;
   }): void {
+    if (payload.action === "builder") {
+      openBuilderForType({
+        format: payload.example.format,
+        diagramType: payload.example.diagramType,
+        target: "new-tab",
+      });
+      return;
+    }
+
     const sampleSource = getSampleSource(
       { format: payload.example.format, id: payload.example.sampleId },
       locale.value,
@@ -360,16 +352,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
         target: "new-tab",
       });
       onClose();
-      return;
-    }
-
-    if (payload.action === "builder") {
-      openBuilderForSource({
-        source: sampleSource,
-        format: payload.example.format,
-        diagramType: payload.example.diagramType,
-        target: "new-tab",
-      });
       return;
     }
 
@@ -497,7 +479,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     showBackButton,
     canGoNext,
     openGalleryExample,
-    openCurrentDiagramInBuilder,
     handleBuilderChange,
     handleBuilderPasteSource,
     selectStep,

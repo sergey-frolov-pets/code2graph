@@ -100,15 +100,38 @@ export function createDefaultBuilderState(
     cagrs: [],
   };
 
+  const initialColCount = diagramType === "radar" ? 3 : 2;
+  const rows =
+    schema.tableMode === "rows"
+      ? [
+          schema.columns.map((col) =>
+            col.type === "select" ? (col.options?.[0]?.value ?? "") : "",
+          ),
+        ]
+      : [];
+  const matrixHeaders =
+    schema.tableMode === "matrix"
+      ? Array.from({ length: initialColCount }, () => "")
+      : [];
+  const matrixRows =
+    schema.tableMode === "matrix"
+      ? [["", ...Array.from({ length: initialColCount }, () => "")]]
+      : [];
+  const graphNodes: DiagramBuilderState["graphNodes"] = [];
+  const graphEdges =
+    schema.tableMode === "graph-ir"
+      ? [{ source: "", target: "", kind: "arrow", label: "" }]
+      : [];
+
   return {
     format,
     diagramType,
     tableMode: schema.tableMode,
-    rows: [],
-    matrixHeaders: [],
-    matrixRows: [],
-    graphNodes: [],
-    graphEdges: [],
+    rows,
+    matrixHeaders,
+    matrixRows,
+    graphNodes,
+    graphEdges,
     canvas,
     options,
     preservedComments: [],

@@ -333,8 +333,14 @@ line План : 100, 140, 200, 220 style=dash`);
     expect(pieces.length).toBeGreaterThanOrEqual(2);
     expect(svg).toContain('data-break-zigzag="1"');
     expect(svg).toContain('data-break-label="1"');
-    expect(svg).toContain('data-break-edge="after"');
-    expect(svg).toContain('data-break-edge="before"');
+    // 200 уже стоит на сетке, 700 схлопнулось с ним и подписывается отдельно.
+    expect(svg).not.toContain('data-break-edge="after"');
+    expect(svg).toContain('data-break-edge="before">700');
+    const tick200 = Number(/<text x="[\d.]+" y="([\d.]+)"[^>]*>200<\/text>/.exec(svg)![1]);
+    const upper700 = Number(
+      /<text x="[\d.]+" y="([\d.]+)"[^>]*data-break-edge="before">700<\/text>/.exec(svg)![1],
+    );
+    expect(upper700).toBeLessThanOrEqual(tick200 - 11);
     expect(svg).toContain('data-threshold-line="1"');
     expect(svg).toContain('data-threshold-label="1"');
     expect(svg).toContain("план");
@@ -342,6 +348,8 @@ line План : 100, 140, 200, 220 style=dash`);
 
     const rotated = clusteredEngine.render({ ...model, rotate90: true }, {});
     expect(rotated).toContain('data-break-zigzag="1"');
+    expect(rotated).not.toContain('data-break-edge="after"');
+    expect(rotated).toContain('data-break-edge="before">700');
     expect(rotated).toContain('data-threshold-line="1"');
     expect(rotated.match(/data-bar="2-0"/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
 
@@ -353,6 +361,16 @@ break 30 --> 60
 series Ряд : 20, 80`);
     expect(overlap.ok).toBe(false);
     expect(overlap.errors[0]?.message).toContain("пересекаются");
+
+    const offGrid = clusteredEngine.parse(`series
+categories A, B
+y "" 0 --> 100
+grid 10
+break 25 --> 73
+series Ряд : 20, 80`);
+    const offGridSvg = clusteredEngine.render(offGrid.value as ClusteredModel, {});
+    expect(offGridSvg).toContain('data-break-edge="after">25');
+    expect(offGridSvg).toContain('data-break-edge="before">73');
 
     const reversed = clusteredEngine.parse(`series
 categories A, B

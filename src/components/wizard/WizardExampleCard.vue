@@ -12,6 +12,7 @@ import {
 } from "@/constants/diagram-example-text";
 import type { GalleryExampleAction } from "@/constants/wizard-gallery";
 import { useLocale } from "@/composables/useLocale";
+import { supportsDiagramBuilder } from "@/services/diagram-builder";
 import { computed } from "vue";
 
 const props = defineProps<{
@@ -91,6 +92,7 @@ function labelFor(tag: ExampleTagRef): string {
       :label="t('llm.wizard.gallery.actionsLabel')"
       :llm-available="llmAvailable"
       :can-enlarge="canEnlarge"
+      :can-builder="supportsDiagramBuilder(example.format)"
       @choose="emit('choose', $event)"
       @enlarge="emit('enlarge')"
     />

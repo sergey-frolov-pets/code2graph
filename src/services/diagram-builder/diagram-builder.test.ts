@@ -2,12 +2,15 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  createDefaultBuilderState,
   detectBuilderDiagramType,
   emitSourceFromBuilderState,
   getDiagramBuilderSchema,
+  hasBuilderOptionsCapabilities,
   parseRawTextToGrid,
   parseSourceToBuilderState,
   serializeGridToClipboardTsv,
+  supportsDiagramBuilder,
   transposeMatrixData,
 } from "./index";
 import { parseWaterfall } from "@/services/mermaid/ext/engines/waterfall/parser";
@@ -384,5 +387,51 @@ describe("diagram-builder core", () => {
     expect(getDiagramBuilderSchema("plantuml", "sequence").capabilities.supportsDirection).toBe(false);
     expect(getDiagramBuilderSchema("mermaid", "sequence").capabilities.supportsDirection).toBe(false);
     expect(getDiagramBuilderSchema("d2", "sequence").capabilities.supportsDirection).toBe(true);
+  });
+
+  it("disables step-by-step builder for graphml while supporting all other formats", () => {
+    expect(supportsDiagramBuilder("graphml")).toBe(false);
+    expect(supportsDiagramBuilder("plantuml")).toBe(true);
+    expect(supportsDiagramBuilder("mermaid")).toBe(true);
+    expect(supportsDiagramBuilder("d2")).toBe(true);
+    expect(supportsDiagramBuilder("structurizr")).toBe(true);
+    expect(supportsDiagramBuilder("wiremark")).toBe(true);
+  });
+
+  it("creates blank manual builder state from diagram type only without sample values", () => {
+    const wfState = createDefaultBuilderState("mermaid", "waterfall");
+    expect(wfState.canvas.title).toBe("");
+    expect(wfState.rows).toHaveLength(1);
+    expect(wfState.rows[0][0]).toBe("");
+    expect(wfState.rows[0][1]).toBe("=");
+    expect(wfState.rows[0][2]).toBe("");
+    expect(wfState.options.breaks).toHaveLength(0);
+    expect(wfState.options.thresholds).toHaveLength(0);
+
+    const seriesState = createDefaultBuilderState("mermaid", "series");
+    expect(seriesState.matrixHeaders).toEqual(["", ""]);
+    expect(seriesState.matrixRows).toEqual([["", "", ""]]);
+
+    const graphState = createDefaultBuilderState("plantuml", "sequence");
+    expect(graphState.graphNodes).toHaveLength(0);
+    expect(graphState.graphEdges).toEqual([
+      { source: "", target: "", kind: "arrow", label: "" },
+    ]);
+
+    graphState.graphEdges = [
+      { source: "Client", target: "API Gateway", kind: "arrow", label: "POST /orders" },
+      { source: "API Gateway", target: "Database", kind: "dashed", label: "INSERT" },
+    ];
+    const emittedSeq = emitSourceFromBuilderState(graphState);
+    expect(emittedSeq).toContain("Client");
+    expect(emittedSeq).toContain("API Gateway");
+    expect(emittedSeq).toContain("Database");
+    expect(emittedSeq).toContain("POST /orders");
+
+    const flowSchema = getDiagramBuilderSchema("mermaid", "flowchart");
+    expect(hasBuilderOptionsCapabilities(flowSchema.capabilities)).toBe(false);
+
+    const waterfallSchema = getDiagramBuilderSchema("mermaid", "waterfall");
+    expect(hasBuilderOptionsCapabilities(waterfallSchema.capabilities)).toBe(true);
   });
 });

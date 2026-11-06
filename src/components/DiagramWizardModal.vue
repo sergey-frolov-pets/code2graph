@@ -25,23 +25,13 @@ import type { RenderMode } from "@/constants/render-settings";
 import type { BuilderApplyTarget } from "@/services/diagram-builder";
 import type { TablePasteErrorInfo } from "@/services/table-paste/types";
 
-const props = withDefaults(
-  defineProps<{
-    open: boolean;
-    documentKey: string;
-    layout: LayoutEngine;
-    renderMode: RenderMode;
-    diagramDarkMode: boolean;
-    currentEditorSource?: string;
-    currentEditorFormat?: DiagramFormat;
-    startInBuilder?: boolean;
-  }>(),
-  {
-    currentEditorSource: "",
-    currentEditorFormat: "plantuml",
-    startInBuilder: false,
-  },
-);
+const props = defineProps<{
+  open: boolean;
+  documentKey: string;
+  layout: LayoutEngine;
+  renderMode: RenderMode;
+  diagramDarkMode: boolean;
+}>();
 
 const emit = defineEmits<{
   close: [];
@@ -109,7 +99,6 @@ const {
   canGoNext,
   wizardSteps,
   openGalleryExample,
-  openCurrentDiagramInBuilder,
   handleBuilderChange,
   handleBuilderPasteSource,
   selectStep,
@@ -133,9 +122,6 @@ const {
   layout: toRef(props, "layout"),
   renderMode: toRef(props, "renderMode"),
   diagramDarkMode: toRef(props, "diagramDarkMode"),
-  currentEditorSource: toRef(props, "currentEditorSource"),
-  currentEditorFormat: toRef(props, "currentEditorFormat"),
-  startInBuilder: toRef(props, "startInBuilder"),
   locale,
   t,
   onApply: (payload) => {
@@ -150,10 +136,6 @@ const {
 
 const showLivePreview = computed(
   () => showLivePreviewPanel.value && !aiSetupVisible.value,
-);
-
-const canEditCurrentDiagram = computed(
-  () => (props.currentEditorSource ?? "").trim().length > 0,
 );
 </script>
 
@@ -170,19 +152,13 @@ const canEditCurrentDiagram = computed(
       @dismiss="dismissWizardBanner"
     />
 
-    <div class="wizard-top-bar">
+    <div
+      v-if="!galleryVisible && !isBuilderMode"
+      class="wizard-top-bar"
+    >
       <p class="wizard-step-title">
-        {{ galleryVisible ? t("llm.wizard.gallery.heading") : stepTitle }}
+        {{ stepTitle }}
       </p>
-      <button
-        v-if="galleryVisible && canEditCurrentDiagram"
-        type="button"
-        class="btn builder-btn"
-        data-testid="wizard-edit-current-diagram-btn"
-        @click="openCurrentDiagramInBuilder"
-      >
-        {{ t("builder.editCurrentFromGallery") }}
-      </button>
     </div>
 
     <WizardExampleGallery
@@ -190,7 +166,7 @@ const canEditCurrentDiagram = computed(
       @choose="openGalleryExample"
     />
     <div
-      v-if="!galleryVisible"
+      v-if="!galleryVisible && !isBuilderMode"
       class="wizard-progress"
       role="progressbar"
       :aria-valuenow="stepIndex + 1"
@@ -211,7 +187,7 @@ const canEditCurrentDiagram = computed(
       @select-step="selectStep"
     />
     <p
-      v-if="!galleryVisible"
+      v-if="!galleryVisible && !isBuilderMode"
       class="wizard-step-meta"
     >
       {{ t("llm.wizard.stepCounter", { current: stepIndex + 1, total: totalSteps }) }}

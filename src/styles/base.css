@@ -66,6 +66,17 @@ a {
   border-color: var(--accent-hover);
 }
 
+.btn-success {
+  background: var(--success-btn, var(--success));
+  border-color: var(--success-btn, var(--success));
+  color: #ffffff;
+}
+
+.btn-success:hover:not(:disabled) {
+  background: var(--success-btn-hover, var(--success-hover, var(--success)));
+  border-color: var(--success-btn-hover, var(--success-hover, var(--success)));
+}
+
 .btn-lg {
   padding: 12px 20px;
   font-size: 1rem;

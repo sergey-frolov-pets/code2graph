@@ -16,6 +16,7 @@ import {
   drawLabelLines,
   esc,
   fixedTicks,
+  breakEdgeBaselines,
   fmt,
   labelBlockExtra,
   labelLineCount,
@@ -1739,6 +1740,10 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
   }
 
   const drawnTickY = new Set<number>();
+  // Подписи делений, которые реально стоят слева. Граница разрыва с тем же
+  // текстом не дублируется: схлопнутое деление (вторая граница на той же
+  // высоте) в набор не попадает и подписывается отдельно.
+  const drawnTickLabels = new Set<string>();
   for (const tick of ticks) {
     if (inValueGap(tick)) continue;
     const y = yOf(tick);
@@ -1760,6 +1765,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
         "font-size": fontSize,
         fill: palette.fgDim,
       });
+      drawnTickLabels.add(fmt(tick));
     }
   }
 
@@ -1903,18 +1909,29 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     const y = yOf(item.after);
     if (model.axis) {
       const edgeGap = Math.round((3 * fontSize) / FONT_BASE);
-      svg.text(plotLeft - 8, y + edgeGap + fontSize, fmt(item.after), {
-        "text-anchor": "end",
-        "font-size": fontSize,
-        fill: palette.fgDim,
-        "data-break-edge": "after",
-      });
-      svg.text(plotLeft - 8, y - edgeGap, fmt(item.before), {
-        "text-anchor": "end",
-        "font-size": fontSize,
-        fill: palette.fgDim,
-        "data-break-edge": "before",
-      });
+      const yKey = Math.round(y * 100) / 100;
+      const baselines = breakEdgeBaselines(
+        y,
+        fontSize,
+        edgeGap,
+        drawnTickY.has(yKey) ? y + fontSize * 0.35 : null,
+      );
+      if (!drawnTickLabels.has(fmt(item.after))) {
+        svg.text(plotLeft - 8, baselines.after, fmt(item.after), {
+          "text-anchor": "end",
+          "font-size": fontSize,
+          fill: palette.fgDim,
+          "data-break-edge": "after",
+        });
+      }
+      if (!drawnTickLabels.has(fmt(item.before))) {
+        svg.text(plotLeft - 8, baselines.before, fmt(item.before), {
+          "text-anchor": "end",
+          "font-size": fontSize,
+          fill: palette.fgDim,
+          "data-break-edge": "before",
+        });
+      }
     }
     if (item.label) {
       const textWidth = measureLabelWidth(item.label, breakLabelSize);
@@ -2062,6 +2079,8 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
   }
 
   const drawnTickX = new Set<number>();
+  const drawnTickLabels = new Set<string>();
+  const drawnTickLabelsAt = new Map<number, string>();
   for (const tick of ticks) {
     if (inValueGap(tick)) continue;
     const x = xOf(tick);
@@ -2083,6 +2102,8 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
         "font-size": fontSize,
         fill: palette.fgDim,
       });
+      drawnTickLabels.add(fmt(tick));
+      drawnTickLabelsAt.set(Math.round(x * 100) / 100, fmt(tick));
     }
   }
 
@@ -2228,18 +2249,26 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
   for (const item of model.breaks) {
     const x = xOf(item.after);
     if (model.axis) {
-      svg.text(x - 6, plotBottom + fontSize + 6, fmt(item.after), {
-        "text-anchor": "end",
-        "font-size": fontSize,
-        fill: palette.fgDim,
-        "data-break-edge": "after",
-      });
-      svg.text(x + 6, plotBottom + fontSize + 6, fmt(item.before), {
-        "text-anchor": "start",
-        "font-size": fontSize,
-        fill: palette.fgDim,
-        "data-break-edge": "before",
-      });
+      const xKey = Math.round(x * 100) / 100;
+      const tickLabel = drawnTickLabelsAt.get(xKey);
+      const half = tickLabel ? measureText(tickLabel, fontSize) / 2 + 4 : 6;
+      const labelY = plotBottom + fontSize + 6;
+      if (!drawnTickLabels.has(fmt(item.after))) {
+        svg.text(x - half, labelY, fmt(item.after), {
+          "text-anchor": "end",
+          "font-size": fontSize,
+          fill: palette.fgDim,
+          "data-break-edge": "after",
+        });
+      }
+      if (!drawnTickLabels.has(fmt(item.before))) {
+        svg.text(x + half, labelY, fmt(item.before), {
+          "text-anchor": "start",
+          "font-size": fontSize,
+          fill: palette.fgDim,
+          "data-break-edge": "before",
+        });
+      }
     }
     if (item.label) {
       const textWidth = measureLabelWidth(item.label, breakLabelSize);
