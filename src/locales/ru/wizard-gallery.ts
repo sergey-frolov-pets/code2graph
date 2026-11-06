@@ -121,6 +121,9 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.seriesThresholds.title": "Серийная — горизонтальные линии",
   "llm.wizard.gallery.example.mermaid.seriesThresholds.description":
     "Линии плана, цели и порога поверх столбцов.",
+  "llm.wizard.gallery.example.mermaid.seriesUnnamed.title": "Серийная — без названий",
+  "llm.wizard.gallery.example.mermaid.seriesUnnamed.description":
+    "Столбцы и линии без имён: легенды и подписей у линий нет.",
   "llm.wizard.gallery.example.wiremark.login.title": "Макет входа",
   "llm.wizard.gallery.example.wiremark.login.description":
     "Вайрфрейм входа: поля, вкладки и основное действие.",

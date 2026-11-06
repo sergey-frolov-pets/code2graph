@@ -121,6 +121,9 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.seriesThresholds.title": "Series chart — horizontal lines",
   "llm.wizard.gallery.example.mermaid.seriesThresholds.description":
     "Plan, target and threshold lines drawn across the bars.",
+  "llm.wizard.gallery.example.mermaid.seriesUnnamed.title": "Series chart — no names",
+  "llm.wizard.gallery.example.mermaid.seriesUnnamed.description":
+    "Bars and lines with no names: no legend entries and no line captions.",
   "llm.wizard.gallery.example.wiremark.login.title": "Login screen",
   "llm.wizard.gallery.example.wiremark.login.description":
     "A sign-in wireframe with fields, tabs, and a primary action.",

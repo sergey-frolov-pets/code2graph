@@ -128,6 +128,10 @@ const MIN_BAR_THICKNESS = 12;
 const MAX_BAR_THICKNESS = 36;
 const INNER_BAR_GAP = 3;
 const CLUSTER_PADDING_RATIO = 0.26;
+/** Нижний отступ вертикальной диаграммы без легенды: подписи категорий. */
+const VERTICAL_BOTTOM_PAD = 40;
+/** Полоса легенды. Вместе с VERTICAL_BOTTOM_PAD даёт прежние 68 px, если у серий есть имена. */
+const NAMED_LEGEND_BAND = 28;
 /** Полоса «зигзага» на баре, пересекающем разрыв. Сам разрыв места не занимает. */
 const BREAK_ZIGZAG_HEIGHT = 8;
 /** Зазор между двумя штрихами линии разрыва. */
@@ -366,15 +370,26 @@ function extractLineAttrs(
   return { rest, color, style, width };
 }
 
+/** Второй элемент списка похож на значение линии, а не на подпись уровня. */
+function looksLikeLineSlot(part: string): boolean {
+  const head = part.trim().split(/\s+/)[0] ?? "";
+  if (/^(?:null|nil|na|n\/a|none|~|\*|—|–|-)?$/i.test(head)) return true;
+  return parseExtNumber(head) !== null;
+}
+
 /**
  * Горизонтальная линия уровня, а не ломаная по категориям.
- * Ломаная всегда содержит двоеточие между подписью и списком значений.
- * Уровень начинается с числа: `line 160 "план"`, `line: 160`, `line=160`.
+ * Уровень: `line 160 "план"`, `line: 160`, `line 160, "план"`.
+ * Ломаная без подписи тоже начинается с двоеточия, но дальше идёт список:
+ * `line : 8, 12, 16`.
  */
 function isSeriesThresholdLine(raw: string): boolean {
   const body = raw.replace(/^line\b/i, "").trim().replace(/^[:=]\s*/, "").replace(/^\+/, "");
   if (body.includes(":")) return false;
-  return /^-?[\d\s_.]+(?=\s|[,;]|$)/.test(body);
+  if (!/^-?[\d\s_.]+(?=\s|[,;]|$)/.test(body)) return false;
+  const parts = body.split(",");
+  if (parts.length < 2) return true;
+  return !looksLikeLineSlot(parts[1] ?? "");
 }
 
 function parseLineRow(
@@ -382,7 +397,13 @@ function parseLineRow(
   lineNo: number,
   expectedCount: number | null,
 ): { line?: SeriesLine; error?: ExtParseError } {
-  const body = rawLine.replace(/^line\b/i, "").trim().replace(/^[:=]\s*/, "");
+  let body = rawLine.replace(/^line\b/i, "").trim().replace(/^=\s*/, "");
+  // `line: Подпись : 1, 2` — первое двоеточие не отделяет пустую подпись.
+  // `line : 1, 2, 3` — подписи нет, двоеточие стоит перед списком значений.
+  const leadingColon = /^:\s*/.exec(body);
+  if (leadingColon && body.slice(leadingColon[0].length).includes(":")) {
+    body = body.slice(leadingColon[0].length);
+  }
   const colonIdx = body.indexOf(":");
   if (colonIdx < 0) {
     return {
@@ -571,15 +592,9 @@ function parseSeriesRow(
   const tailColor = extractTrailingColorAttr(rawLine.slice(colonIdx + 1), lineNo);
   if (tailColor.error) return { error: tailColor.error };
 
-  const name = unquoteExtText(headColor.rest);
-  if (!name) {
-    return {
-      error: { message: `пустое имя серии перед «:»`, line: lineNo, col: 0 },
-    };
-  }
-
+  const name = unquoteExtText(headColor.rest).trim();
   const color = tailColor.color ?? headColor.color;
-  const slots = parseSlotList(tailColor.rest, lineNo, `серия «${name}»`, expectedCount);
+  const slots = parseSlotList(tailColor.rest, lineNo, seriesMention(name), expectedCount);
   if (slots.error || !slots.values) return { error: slots.error };
 
   return { series: { name, values: slots.values, color } };
@@ -836,7 +851,7 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
 
   if (series.length === 0 && errors.length === 0) {
     errors.push({
-      message: `нет данных: ожидается хотя бы одна серия «series Имя : зн1, зн2, …»`,
+      message: `нет данных: ожидается хотя бы одна серия «series [Имя] : зн1, зн2, …»`,
       line: 1,
       col: 0,
     });
@@ -847,7 +862,7 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
     for (const s of series) {
       if (s.values.length !== categories.length) {
         errors.push({
-          message: `серия «${s.name}»: ожидается ${categories.length} значений (по числу категорий), получено ${s.values.length}`,
+          message: `${seriesMention(s.name)}: ожидается ${categories.length} значений (по числу категорий), получено ${s.values.length}`,
           line: 1,
           col: 0,
         });
@@ -905,7 +920,7 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
       if (owner.values[from] === null || owner.values[to] === null) {
         const missing = owner.values[from] === null ? fromBar : toBar;
         errors.push({
-          message: `cagr: у серии «${owner.name}» нет значения в баре ${missing}`,
+          message: `cagr: у ${seriesMention(owner.name)} нет значения в баре ${missing}`,
           line: draft.line,
           col: 0,
         });
@@ -1183,6 +1198,15 @@ function defaultThresholdColor(palette: Palette, dark: boolean): string {
   return dark ? palette.fgDim : palette.axis;
 }
 
+function seriesMention(name: string): string {
+  const trimmed = name.trim();
+  return trimmed ? `серия «${trimmed}»` : "серия";
+}
+
+function hasNamedSeries(model: ClusteredModel): boolean {
+  return model.series.some((item) => item.name.trim().length > 0);
+}
+
 function renderLegend(
   svg: ReturnType<typeof createSvg>,
   model: ClusteredModel,
@@ -1195,6 +1219,7 @@ function renderLegend(
   const swatch = 10;
   let lx = plotLeft;
   model.series.forEach((s, idx) => {
+    if (!s.name.trim()) return;
     const color = resolveSeriesColor(idx, {
       explicitColor: s.color,
       seriesColors: model.seriesColors,
@@ -1655,7 +1680,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     (model.labels === "above" ? fontSize + 6 : 0) +
     titleExtra +
     cagrHeadroom(model, fontSize);
-  const padBottom = 68 + catExtra + seriesExtra;
+  const padBottom = VERTICAL_BOTTOM_PAD + (hasNamedSeries(model) ? NAMED_LEGEND_BAND : 0) + catExtra + seriesExtra;
 
   if (model.ratio) {
     const grown = growPlotToAspect(
@@ -1971,7 +1996,11 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
   const padRight =
     (model.labels === "above" ? 56 : 28) + annotationGutter(model, fontSize) + cagrHeadroom(model, fontSize);
   const padTop = (model.title ? 48 : 24) + titleExtra + rotatedMarkRoom(model, fontSize);
-  const padBottom = (model.y?.label ? 80 : 62) + yExtra + seriesExtra;
+  const padBottom =
+    (model.y?.label ? 80 : 62) -
+    (hasNamedSeries(model) ? 0 : NAMED_LEGEND_BAND) +
+    yExtra +
+    seriesExtra;
 
   let plotWidth = Math.round(PLOT_WIDTH_HORIZONTAL * Math.max(1, (scaleFactor - 1) * 0.35 + 1));
   let plotHeight = rowHeight * catCount;

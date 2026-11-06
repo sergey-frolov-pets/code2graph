@@ -401,6 +401,19 @@ line 200 "цель" color=#cf222e width=2
 line 120 "порог" style=dot width=1
 series Факт : 120, 145, 165, 190
 series Ориентир : 110, 130, 150, 180`,
+  seriesUnnamed: `series
+%% Имя серии и подпись линии можно не писать.
+%%   series : зн1, зн2, …     столбцы без строки в легенде
+%%   line : зн1, зн2, …       линия без подписи справа
+%% color и style задаются как обычно.
+title Кварталы без названий
+categories Q1, Q2, Q3, Q4
+y "млн ₽" 0 --> 220
+grid 20
+series : 120, 145, 165, 190
+series : 80, 95, 110, 130 color=#8250df
+line : 110, 130, 155, 180 color=#0969da style=dash width=2
+line : 70, 100, 120, 150 style=dot`,
 };
 
 export const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
@@ -804,4 +817,17 @@ line 200 "target" color=#cf222e width=2
 line 120 "threshold" style=dot width=1
 series Actual : 120, 145, 165, 190
 series Guide : 110, 130, 150, 180`,
+  seriesUnnamed: `series
+%% The series name and the line label can be left out.
+%%   series : v1, v2, …     bars with no legend row
+%%   line : v1, v2, …       a line with no caption on the right
+%% color and style still apply.
+title Quarters with no names
+categories Q1, Q2, Q3, Q4
+y "M USD" 0 --> 220
+grid 20
+series : 120, 145, 165, 190
+series : 80, 95, 110, 130 color=#8250df
+line : 110, 130, 155, 180 color=#0969da style=dash width=2
+line : 70, 100, 120, 150 style=dot`,
 };

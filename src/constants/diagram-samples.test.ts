@@ -319,6 +319,12 @@ describe("diagram samples coverage", () => {
       expect(levels).toMatch(/^line \d+ /m);
       expect(levels).toContain("color=#cf222e");
       expect(levels).toContain("style=dot");
+
+      const unnamed = getMermaidSampleSource("seriesUnnamed", locale);
+      expect(unnamed).toMatch(/^series : /m);
+      expect(unnamed).toMatch(/^line : /m);
+      expect(unnamed).toContain("color=#8250df");
+      expect(unnamed).toContain("style=dash");
     }
   });
 

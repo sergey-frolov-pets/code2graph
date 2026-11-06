@@ -361,4 +361,29 @@ series Ряд : 20, 80`);
     expect(reversed.ok).toBe(false);
     expect(reversed.errors[0]?.message).toContain("должно быть больше");
   });
+
+  it("рисует серии и линии без названий и не ставит их в легенду", () => {
+    const parsed = clusteredEngine.parse(`series
+categories A, B, C
+series : 10, 20, 30 color=#0969da
+series Имя : 4, 5, 6
+line : 8, 12, 16 style=dash color=#8250df
+line План : 9, 11, 14`);
+    expect(parsed.ok).toBe(true);
+    const model = parsed.value as ClusteredModel;
+    expect(model.series.map((item) => item.name)).toEqual(["", "Имя"]);
+    expect(model.series[0]?.color).toBe("#0969da");
+    expect(model.lines.map((item) => item.label)).toEqual([undefined, "План"]);
+    expect(model.lines[0]?.style).toBe("dash");
+
+    const svg = clusteredEngine.render(model, {});
+    expect(svg).toContain('data-bar="0-0"');
+    expect(svg).toContain('data-bar="0-1"');
+    expect(svg).toContain('data-line="0"');
+    expect(svg).toContain('data-line-label="План"');
+    expect(svg).toContain(">Имя<");
+    expect(svg).not.toMatch(/data-line-label=""/);
+    const legendNames = svg.match(/<text[^>]*>Имя<\/text>/g) ?? [];
+    expect(legendNames.length).toBeGreaterThan(0);
+  });
 });
