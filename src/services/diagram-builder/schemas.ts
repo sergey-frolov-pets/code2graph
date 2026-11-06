@@ -138,6 +138,31 @@ export const CAGR_FORMAT_OPTIONS: readonly BuilderSelectOption[] = [
   { value: "0.00", labelKey: "builder.cagr.format.ratio" },
 ];
 
+export function supportsDiagramBuilder(format: DiagramFormat): boolean {
+  return format !== "graphml";
+}
+
+export function hasBuilderOptionsCapabilities(
+  cap: DiagramBuilderCapability,
+): boolean {
+  return Boolean(
+    cap.supportsLabelsMode ||
+      cap.supportsConnectors ||
+      cap.supportsStacked ||
+      cap.supportsPieShowData ||
+      cap.supportsVoronoiToggles ||
+      cap.supportsRadarVisuals ||
+      cap.supportsMono ||
+      cap.supportsWaterfallColors ||
+      cap.supportsBoxplotColors ||
+      cap.supportsSeriesColors ||
+      cap.supportsHeatmapScale ||
+      cap.supportsBreaks ||
+      cap.supportsThresholds ||
+      cap.supportsCagr,
+  );
+}
+
 export function detectBuilderDiagramType(
   source: string,
   format: DiagramFormat,

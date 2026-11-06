@@ -5,6 +5,8 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.reset": "Сбросить",
   "llm.wizard.gallery.empty": "Нет примеров с этими условиями",
   "llm.wizard.gallery.cloudLabel": "Теги примеров",
+  "llm.wizard.gallery.expandTags": "Теги ({count})",
+  "llm.wizard.gallery.collapseTags": "Свернуть теги",
   "llm.wizard.gallery.gridLabel": "Миниатюры примеров",
   "llm.wizard.gallery.details": "Подробнее",
   "llm.wizard.gallery.actionsLabel": "Что сделать с примером",

@@ -47,16 +47,12 @@ function notifyChange(): void {
 
 function addFlatRow(): void {
   const colCount = schema.value.columns.length;
-  const newRow = schema.value.columns.map((col, idx) => {
+  const newRow = schema.value.columns.map((col) => {
     if (col.type === "select" && col.options && col.options.length > 0) {
       return builderState.value.rows.length > 0 && col.id === "kind"
         ? "+"
         : col.options[0].value;
     }
-    if (col.type === "date") return "2026-01-15";
-    if (col.type === "duration") return "3d";
-    if (col.type === "number") return "10";
-    if (idx === 0) return `Item ${builderState.value.rows.length + 1}`;
     return "";
   });
   builderState.value.rows.push(
@@ -82,10 +78,7 @@ function moveFlatRow(rowIndex: number, delta: -1 | 1): void {
 
 function addMatrixRow(): void {
   const colCount = builderState.value.matrixHeaders.length;
-  const newRow = [
-    `Row ${builderState.value.matrixRows.length + 1}`,
-    ...Array.from({ length: colCount }, () => "10"),
-  ];
+  const newRow = ["", ...Array.from({ length: colCount }, () => "")];
   builderState.value.matrixRows.push(newRow);
   notifyChange();
 }
@@ -106,11 +99,9 @@ function moveMatrixRow(rowIndex: number, delta: -1 | 1): void {
 }
 
 function addMatrixColumn(): void {
-  const prefix = schema.value.matrixColHeaderPrefix ?? "Col";
-  const nextIndex = builderState.value.matrixHeaders.length + 1;
-  builderState.value.matrixHeaders.push(`${prefix} ${nextIndex}`);
+  builderState.value.matrixHeaders.push("");
   for (const row of builderState.value.matrixRows) {
-    row.push("10");
+    row.push("");
   }
   notifyChange();
 }
@@ -139,7 +130,7 @@ function addGraphNode(): void {
   const nextIdx = builderState.value.graphNodes.length + 1;
   builderState.value.graphNodes.push({
     id: `N${nextIdx}`,
-    label: `Node ${nextIdx}`,
+    label: "",
     kind: "default",
     group: "",
     color: "",
@@ -348,14 +339,6 @@ async function handlePasteFromClipboard(): Promise<void> {
             }}
           </span>
         </button>
-
-        <label class="builder-inline-check">
-          <input
-            v-model="includeHeadersOnCopy"
-            type="checkbox"
-          />
-          <span>{{ t("builder.table.copyWithHeaders") }}</span>
-        </label>
       </div>
 
       <div class="builder-table-toolbar__group">
@@ -540,6 +523,7 @@ async function handlePasteFromClipboard(): Promise<void> {
                 :step="col.step ?? 'any'"
                 :min="col.min"
                 :max="col.max"
+                :placeholder="t(col.labelKey)"
                 class="builder-cell-input builder-cell-input--num"
                 :disabled="builderState.diagramType === 'waterfall' && row[1] === '=subtotal'"
                 @input="notifyChange"
@@ -549,6 +533,7 @@ async function handlePasteFromClipboard(): Promise<void> {
                 v-else
                 v-model="row[colIndex]"
                 type="text"
+                :placeholder="t(col.labelKey)"
                 class="builder-cell-input"
                 @input="notifyChange"
               />
@@ -613,6 +598,7 @@ async function handlePasteFromClipboard(): Promise<void> {
                 <input
                   v-model="builderState.matrixHeaders[colIdx]"
                   type="text"
+                  :placeholder="`${schema.matrixColHeaderPrefix ?? 'Col'} ${colIdx + 1}`"
                   class="builder-cell-input builder-cell-input--header"
                   @input="notifyChange"
                 />
@@ -640,6 +626,11 @@ async function handlePasteFromClipboard(): Promise<void> {
               <input
                 v-model="row[0]"
                 type="text"
+                :placeholder="
+                  schema.matrixRowHeaderLabelKey
+                    ? t(schema.matrixRowHeaderLabelKey)
+                    : t('builder.col.category')
+                "
                 class="builder-cell-input"
                 @input="notifyChange"
               />
@@ -732,6 +723,7 @@ async function handlePasteFromClipboard(): Promise<void> {
               <input
                 v-model="node.label"
                 type="text"
+                :placeholder="t('builder.col.label')"
                 class="builder-cell-input"
                 @input="notifyChange"
               />
