@@ -5,6 +5,8 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.reset": "Сбросить",
   "llm.wizard.gallery.empty": "Нет примеров с этими условиями",
   "llm.wizard.gallery.cloudLabel": "Теги примеров",
+  "llm.wizard.gallery.expandTags": "Теги ({count})",
+  "llm.wizard.gallery.collapseTags": "Свернуть теги",
   "llm.wizard.gallery.gridLabel": "Миниатюры примеров",
   "llm.wizard.gallery.details": "Подробнее",
   "llm.wizard.gallery.actionsLabel": "Что сделать с примером",
@@ -143,6 +145,7 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.wiremark.product.description":
     "Вайрфрейм карточки товара.",
   "llm.wizard.gallery.action.editor": "В редактор",
+  "llm.wizard.gallery.action.builder": "Создать по шагам",
   "llm.wizard.gallery.action.enlarge": "Увеличить",
   "llm.wizard.gallery.action.llm": "Создать с LLM",
   "llm.wizard.gallery.zoomLabel": "Диаграмма в натуральную величину",

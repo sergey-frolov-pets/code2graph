@@ -32,6 +32,7 @@ const {
   onFileLoaded,
   onSyntaxAskFromValidation,
   applyAiPlantUml,
+  applyWizardDiagram,
   applyWizardDiagramToNewTab,
   onVersionRestore,
 } = useAppShellContext();
@@ -65,7 +66,13 @@ function onWizardApply(payload: {
   source: string;
   label: string;
   format: DiagramFormat;
+  target?: "current" | "new-tab";
 }) {
+  if (payload.target === "current") {
+    diagramFormat.value = payload.format;
+    applyWizardDiagram(payload.source, payload.label);
+    return;
+  }
   applyWizardDiagramToNewTab(payload.source, payload.label, payload.format);
 }
 </script>

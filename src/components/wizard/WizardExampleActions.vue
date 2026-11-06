@@ -2,11 +2,17 @@
 import type { GalleryExampleAction } from "@/constants/wizard-gallery";
 import { useLocale } from "@/composables/useLocale";
 
-defineProps<{
-  label: string;
-  llmAvailable: boolean;
-  canEnlarge: boolean;
-}>();
+withDefaults(
+  defineProps<{
+    label: string;
+    llmAvailable: boolean;
+    canEnlarge: boolean;
+    canBuilder?: boolean;
+  }>(),
+  {
+    canBuilder: true,
+  },
+);
 
 const emit = defineEmits<{
   choose: [action: GalleryExampleAction];
@@ -29,6 +35,16 @@ const { t } = useLocale();
       @click="emit('choose', 'editor')"
     >
       {{ t("llm.wizard.gallery.action.editor") }}
+    </button>
+    <button
+      v-if="canBuilder"
+      type="button"
+      class="wizard-example-actions__button"
+      role="menuitem"
+      data-testid="wizard-example-builder"
+      @click="emit('choose', 'builder')"
+    >
+      {{ t("llm.wizard.gallery.action.builder") }}
     </button>
     <button
       v-if="canEnlarge"

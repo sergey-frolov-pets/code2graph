@@ -5,6 +5,8 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.reset": "Reset",
   "llm.wizard.gallery.empty": "No examples match these conditions",
   "llm.wizard.gallery.cloudLabel": "Example tags",
+  "llm.wizard.gallery.expandTags": "Tags ({count})",
+  "llm.wizard.gallery.collapseTags": "Collapse tags",
   "llm.wizard.gallery.gridLabel": "Example thumbnails",
   "llm.wizard.gallery.details": "Details",
   "llm.wizard.gallery.actionsLabel": "What to do with this example",
@@ -143,6 +145,7 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.wiremark.product.description":
     "A wireframe of a product card.",
   "llm.wizard.gallery.action.editor": "Open in editor",
+  "llm.wizard.gallery.action.builder": "Create step-by-step",
   "llm.wizard.gallery.action.enlarge": "Enlarge",
   "llm.wizard.gallery.action.llm": "Create with LLM",
   "llm.wizard.gallery.zoomLabel": "Diagram at its natural size",

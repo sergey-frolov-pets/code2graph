@@ -27,6 +27,7 @@ import {
   Save,
   Settings,
   Shield,
+  SlidersHorizontal,
   Sparkles,
   SquarePen,
   Star,
@@ -81,7 +82,8 @@ export type ActionIconName =
   | "user"
   | "more"
   | "code"
-  | "table-paste";
+  | "table-paste"
+  | "builder";
 
 const props = withDefaults(
   defineProps<{
@@ -133,6 +135,7 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   more: Ellipsis,
   code: Braces,
   "table-paste": Table,
+  builder: SlidersHorizontal,
 };
 
 const iconComponent = computed(() => ICON_MAP[props.name]);

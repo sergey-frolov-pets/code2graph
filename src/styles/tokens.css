@@ -18,6 +18,9 @@
   --accent-hover: #0b5aa3;
   --danger: #c4314b;
   --success: #0f7b4d;
+  --success-hover: #0c633e;
+  --success-btn: var(--success);
+  --success-btn-hover: var(--success-hover);
   --preview-bg: #ffffff;
   --preview-checker: rgba(15, 23, 42, 0.08);
   --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
@@ -56,6 +59,9 @@
   --accent-hover: #7bb8ff;
   --danger: #ff6b81;
   --success: #3dd68c;
+  --success-hover: #2bc47b;
+  --success-btn: #0f7b4d;
+  --success-btn-hover: #13965f;
   --preview-bg: #171d24;
   --preview-checker: rgba(255, 255, 255, 0.08);
   --shadow: 0 8px 24px rgba(0, 0, 0, 0.35);

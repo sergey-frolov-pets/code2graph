@@ -19,6 +19,7 @@ import {
   createDefaultTypeParams,
   DEFAULT_WIZARD_STATE,
   getWizardStepTitleKey,
+  isWizardDiagramType,
   type WizardState,
   type WizardStepId,
 } from "@/constants/llm-wizard";
@@ -26,9 +27,21 @@ import type { RenderMode } from "@/constants/render-settings";
 import { getSampleSource } from "@/constants/sample-diagrams";
 import type { GalleryExampleAction } from "@/constants/wizard-gallery";
 import type { TranslateFn } from "@/locales/types";
+import {
+  createDefaultBuilderState,
+  emitSourceFromBuilderState,
+  parseSourceToBuilderState,
+  supportsDiagramBuilder,
+  type BuilderApplyTarget,
+  type DiagramBuilderState,
+} from "@/services/diagram-builder";
 import { buildWizardPrompt } from "@/services/llm/wizard/wizard-prompts";
 
-const WIZARD_FLOW_STEPS: readonly WizardStepId[] = ["context", "result"];
+const AI_WIZARD_FLOW_STEPS: readonly WizardStepId[] = ["context", "result"];
+const BUILDER_WIZARD_FLOW_STEPS: readonly WizardStepId[] = [
+  "builder-data",
+  "builder-canvas",
+];
 
 export interface UseDiagramWizardFlowOptions {
   open: Ref<boolean>;
@@ -38,7 +51,12 @@ export interface UseDiagramWizardFlowOptions {
   diagramDarkMode: Ref<boolean>;
   locale: Ref<AppLocale>;
   t: TranslateFn;
-  onApply: (payload: { source: string; label: string; format: DiagramFormat }) => void;
+  onApply: (payload: {
+    source: string;
+    label: string;
+    format: DiagramFormat;
+    target?: BuilderApplyTarget;
+  }) => void;
   onClose: () => void;
 }
 
@@ -63,6 +81,12 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     typeParams: createDefaultTypeParams(),
     structuralElements: createDefaultStructuralElements(),
   });
+  const builderState = ref<DiagramBuilderState>(
+    createDefaultBuilderState("mermaid", "waterfall"),
+  );
+  const builderBaseSource = ref("");
+  const applyTarget = ref<BuilderApplyTarget>("new-tab");
+
   const isGenerating = ref(false);
   const errorMessage = ref("");
   const resultSource = ref("");
@@ -73,7 +97,15 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   const { llmConsent, llmProviderId } = useLlmSettings();
   const { hasLlmApiKey } = useLlmApiKeys();
 
-  const wizardSteps = computed((): WizardStepId[] => [...WIZARD_FLOW_STEPS]);
+  const isBuilderMode = computed(
+    () => wizardState.value.creationMode === "builder",
+  );
+
+  const wizardSteps = computed((): WizardStepId[] =>
+    isBuilderMode.value
+      ? [...BUILDER_WIZARD_FLOW_STEPS]
+      : [...AI_WIZARD_FLOW_STEPS],
+  );
   const currentStepId = computed(
     (): WizardStepId => wizardSteps.value[stepIndex.value] ?? "context",
   );
@@ -163,9 +195,82 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     return stepIndex.value < totalSteps.value - 1;
   });
 
+  let builderPreviewTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function syncBuilderToSource(immediate = false): void {
+    const emitted = emitSourceFromBuilderState(
+      builderState.value,
+      builderBaseSource.value,
+    );
+    resultSource.value = emitted;
+    errorMessage.value = "";
+
+    if (builderPreviewTimer) {
+      clearTimeout(builderPreviewTimer);
+      builderPreviewTimer = null;
+    }
+
+    if (immediate) {
+      void loadPreview(emitted);
+    } else {
+      builderPreviewTimer = setTimeout(() => {
+        void loadPreview(emitted);
+      }, 120);
+    }
+  }
+
+  function handleBuilderChange(): void {
+    syncBuilderToSource(false);
+  }
+
+  function handleBuilderPasteSource(pastedFullSource: string): void {
+    builderBaseSource.value = pastedFullSource;
+    builderState.value = parseSourceToBuilderState(
+      pastedFullSource,
+      builderState.value.format,
+      builderState.value.diagramType,
+    );
+    syncBuilderToSource(true);
+  }
+
+  function openBuilderForType(input: {
+    format: DiagramFormat;
+    diagramType: DiagramBuilderState["diagramType"];
+    target: BuilderApplyTarget;
+  }): void {
+    if (!supportsDiagramBuilder(input.format)) {
+      return;
+    }
+
+    const wizType = isWizardDiagramType(input.diagramType)
+      ? input.diagramType
+      : "flowchart";
+
+    wizardState.value = {
+      ...DEFAULT_WIZARD_STATE,
+      creationMode: "builder",
+      language: input.format,
+      diagramType: wizType,
+      typeParams: createDefaultTypeParams(),
+      structuralElements: createDefaultStructuralElements(),
+    };
+    builderBaseSource.value = "";
+    builderState.value = createDefaultBuilderState(
+      input.format,
+      input.diagramType,
+    );
+    applyTarget.value = input.target;
+    stepIndex.value = 0;
+    galleryVisible.value = false;
+    aiSetupVisible.value = false;
+    aiSetupReason.value = null;
+    syncBuilderToSource(true);
+  }
+
   function resetWizard(): void {
     stepIndex.value = 0;
     galleryVisible.value = true;
+    applyTarget.value = "new-tab";
     wizardState.value = {
       ...DEFAULT_WIZARD_STATE,
       creationMode: "ai",
@@ -182,11 +287,15 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     clearConversations();
   }
 
-  watch(open, (isOpen) => {
-    if (isOpen) {
-      resetWizard();
-    }
-  });
+  watch(
+    open,
+    (isOpen) => {
+      if (isOpen) {
+        resetWizard();
+      }
+    },
+    { immediate: true },
+  );
 
   watch([llmConsent, llmProviderId], () => {
     if (aiSetupVisible.value) {
@@ -215,19 +324,32 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     label: string;
     prompt: string;
   }): void {
+    if (payload.action === "builder") {
+      openBuilderForType({
+        format: payload.example.format,
+        diagramType: payload.example.diagramType,
+        target: "new-tab",
+      });
+      return;
+    }
+
+    const sampleSource = getSampleSource(
+      { format: payload.example.format, id: payload.example.sampleId },
+      locale.value,
+    );
+
     if (payload.action === "editor") {
       onApply({
-        source: getSampleSource(
-          { format: payload.example.format, id: payload.example.sampleId },
-          locale.value,
-        ),
+        source: sampleSource,
         label: payload.label,
         format: payload.example.format,
+        target: "new-tab",
       });
       onClose();
       return;
     }
 
+    applyTarget.value = "new-tab";
     wizardState.value = {
       ...DEFAULT_WIZARD_STATE,
       creationMode: "ai",
@@ -242,6 +364,17 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     };
     stepIndex.value = 0;
     galleryVisible.value = false;
+  }
+
+  function selectStep(index: number): void {
+    if (
+      !isBuilderMode.value ||
+      index < 0 ||
+      index >= totalSteps.value
+    ) {
+      return;
+    }
+    stepIndex.value = index;
   }
 
   function goBack(): void {
@@ -274,8 +407,12 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   }
 
   function buildApplyLabel(state: WizardState): string {
+    const modeLabel =
+      state.creationMode === "builder"
+        ? t("llm.wizard.gallery.action.builder")
+        : t("llm.wizard.mode.ai");
     return t("llm.wizard.historyLabel", {
-      mode: t("llm.wizard.mode.ai"),
+      mode: modeLabel,
       type: t(`llm.wizard.type.${state.diagramType}`),
     });
   }
@@ -289,6 +426,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
       source: resultSource.value,
       label: buildApplyLabel(wizardState.value),
       format: wizardState.value.language,
+      target: applyTarget.value,
     });
     onClose();
   }
@@ -316,6 +454,9 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     stepIndex,
     galleryVisible,
     wizardState,
+    builderState,
+    applyTarget,
+    isBuilderMode,
     isGenerating,
     errorMessage,
     resultSource,
@@ -332,6 +473,9 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     showBackButton,
     canGoNext,
     openGalleryExample,
+    handleBuilderChange,
+    handleBuilderPasteSource,
+    selectStep,
     goBack,
     goNext,
     handleApply,

@@ -10,6 +10,7 @@ import { siteMessages } from "./site";
 import { wiremarkGuideMessages } from "./wiremark-guide";
 import { wizardGalleryMessages } from "./wizard-gallery";
 import { tablePasteMessages } from "./table-paste";
+import { builderMessages } from "./builder";
 
 export const enMessages = {
   ...appMessages,
@@ -24,4 +25,5 @@ export const enMessages = {
   ...wiremarkGuideMessages,
   ...wizardGalleryMessages,
   ...tablePasteMessages,
+  ...builderMessages,
 } as const;

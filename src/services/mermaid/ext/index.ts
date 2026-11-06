@@ -11,7 +11,7 @@ import { boxplotEngine } from "./engines/boxplot";
 import { treemapEngine } from "./engines/treemap";
 import { radarEngine } from "./engines/radar";
 import { voronoiEngine } from "./engines/voronoi";
-import { seriesEngine } from "./engines/clustered";
+import { seriesEngine } from "./engines/series";
 
 /**
  * Точка входа расширения.
@@ -106,7 +106,7 @@ async function loadEngine(type: ExtDiagramType) {
     case "voronoi":
       return (await import("./engines/voronoi")).voronoiEngine;
     case "series":
-      return (await import("./engines/clustered")).seriesEngine;
+      return (await import("./engines/series")).seriesEngine;
   }
 }
 
