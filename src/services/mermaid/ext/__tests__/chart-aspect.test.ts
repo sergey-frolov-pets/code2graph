@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { bubbleEngine } from "../engines/bubble";
 import { waterfallEngine } from "../engines/waterfall";
-import { clusteredEngine } from "../engines/clustered";
+import { clusteredEngine } from "../engines/series";
 import { growPlotToAspect, parseAspectDirective } from "../chart-aspect";
 
 function svgBox(svg: string): { width: number; height: number } {
