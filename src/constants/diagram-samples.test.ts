@@ -309,8 +309,8 @@ describe("diagram samples coverage", () => {
       expect(ranges).toContain('cagr 2, 3 format="0.00" prefix=');
       expect(ranges).toContain('cagr 3, 5 format="0.0%" prefix=');
       expect(ranges).toMatch(/^cagr 5, 6 label=/m);
-      expect(ranges).toContain('cagr 6, 7 format="+0.0%"');
-      expect(ranges).toContain('cagr 8, 9 format="0%" prefix=');
+      expect(ranges).toContain('cagr 6, 7 format="0%" prefix=');
+      expect(ranges).toContain('cagr 8, 9 format="+0.0%"');
     }
   });
 

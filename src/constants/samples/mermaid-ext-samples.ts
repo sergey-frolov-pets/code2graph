@@ -370,8 +370,8 @@ cagr 2, 3 format="0.00" prefix="×"
 cagr 3, 5 format="0.0%" prefix="CAGR: "
 cagr 5, 6 label="цель"
 
-cagr 6, 7 format="+0.0%"
-cagr 8, 9 format="0%" prefix="+"`,
+cagr 6, 7 format="0%" prefix="+"
+cagr 8, 9 format="+0.0%"`,
 };
 
 export const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
@@ -744,6 +744,6 @@ cagr 2, 3 format="0.00" prefix="×"
 cagr 3, 5 format="0.0%" prefix="CAGR: "
 cagr 5, 6 label="target"
 
-cagr 6, 7 format="+0.0%"
-cagr 8, 9 format="0%" prefix="+"`,
+cagr 6, 7 format="0%" prefix="+"
+cagr 8, 9 format="+0.0%"`,
 };
