@@ -228,6 +228,28 @@ export function fmt(n: number): string {
   return String(rounded);
 }
 
+/**
+ * Базлайны чисел у вертикального разрыва.
+ * `after` — нижняя граница, ниже линии; `before` — верхняя, выше линии.
+ * Если на этой высоте уже стоит деление сетки, числа отодвигаются за его кегль,
+ * иначе подпись границы наезжает на число сетки.
+ */
+export function breakEdgeBaselines(
+  line: number,
+  fontSize: number,
+  edgeGap: number,
+  tickBaseline: number | null,
+): { after: number; before: number } {
+  let after = line + edgeGap + fontSize;
+  let before = line - edgeGap;
+  if (tickBaseline === null) return { after, before };
+  // Запас перекрывает и сам кегль, и плашку под числом (она ниже базлайна).
+  const clear = fontSize * 0.25 + 2;
+  before = Math.min(before, tickBaseline - fontSize - clear);
+  after = Math.max(after, tickBaseline + clear + fontSize);
+  return { after, before };
+}
+
 export function clamp(v: number, min: number, max: number): number {
   return v < min ? min : v > max ? max : v;
 }
