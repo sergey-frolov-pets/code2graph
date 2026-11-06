@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { boxplotEngine, type BoxplotModel } from "../engines/boxplot";
 import {
   assignCagrLanes,
+  cagrEndpointInset,
   clusteredEngine,
   formatCagrNumber,
   type ClusteredModel,
@@ -264,7 +265,29 @@ cagr 2, 4`);
     });
     const yOf = (id: string) => arrows.find((arrow) => arrow.cagr === id)?.y1;
     expect(yOf("0:1-3")).toBe(yOf("0:3-4"));
-    expect(yOf("0:2-4")).toBeLessThan(yOf("0:1-3") ?? 0);
+    expect((yOf("0:1-3") ?? 0) - (yOf("0:2-4") ?? 0)).toBeCloseTo(16);
+
+    const lineOf = (id: string) => {
+      const attrs = [...svg.matchAll(/<line\b([^>]*)>/g)]
+        .map((match) => match[1] ?? "")
+        .find((item) => item.includes(`data-cagr="${id}"`));
+      return {
+        x1: Number(/x1="([\d.]+)"/.exec(attrs ?? "")?.[1]),
+        x2: Number(/x2="([\d.]+)"/.exec(attrs ?? "")?.[1]),
+      };
+    };
+    const centerOf = (barId: string) => {
+      const attrs = [...svg.matchAll(/<rect\b([^>]*)>/g)]
+        .map((match) => match[1] ?? "")
+        .find((item) => item.includes(`data-bar="${barId}"`));
+      const x = Number(/x="([\d.]+)"/.exec(attrs ?? "")?.[1]);
+      const width = Number(/width="([\d.]+)"/.exec(attrs ?? "")?.[1]);
+      return x + width / 2;
+    };
+    const firstSpan = lineOf("0:1-3");
+    expect(firstSpan.x1).toBeGreaterThan(centerOf("0-0"));
+    expect(firstSpan.x2).toBeLessThan(centerOf("2-0"));
+    expect(cagrEndpointInset(80, 20)).toBeCloseTo(7);
   });
 
   it("не рисует пропущенный бар и отвергает cagr на пустом слоте", () => {

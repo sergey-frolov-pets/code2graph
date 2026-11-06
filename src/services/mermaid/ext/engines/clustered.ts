@@ -435,6 +435,15 @@ export function computeCagrRatio(start: number, end: number, periods: number): n
 /** Насколько первая стрелка отстоит от баров и шаг следующего уровня. */
 const CAGR_LANE_BASE_SHIFT = 18;
 const CAGR_LANE_STEP = 16;
+/** Доля толщины бара: хвост правее центра первого, остриё левее центра последнего. */
+const CAGR_ENDPOINT_INSET_RATIO = 0.35;
+
+/** Сдвиг конца стрелки от центра бара внутрь диапазона. Короткая стрелка не схлопывается. */
+export function cagrEndpointInset(span: number, barThickness: number): number {
+  const room = Math.abs(span) / 2 - 1;
+  if (!(room > 0) || !(barThickness > 0)) return 0;
+  return Math.min(barThickness * CAGR_ENDPOINT_INSET_RATIO, room);
+}
 
 /**
  * Диапазоны пересекаются, если делят бар не только общим концом.
@@ -1075,6 +1084,7 @@ function drawCagrAnnotations(
   anchors: Array<Array<PlotPoint | null>>,
   obstacles: number[],
   vertical: boolean,
+  barThickness: number,
   bounds: { minX: number; minY: number; maxX: number; maxY: number },
 ): void {
   if (model.cagrs.length === 0) return;
@@ -1094,15 +1104,17 @@ function drawCagrAnnotations(
     const i0 = Math.min(cagr.from, cagr.to);
     const i1 = Math.max(cagr.from, cagr.to);
     const spanIndex = cagr.to - cagr.from || 1;
-    let shift = CAGR_LANE_BASE_SHIFT + (lanes[index] ?? 0) * CAGR_LANE_STEP;
+    const laneLift = (lanes[index] ?? 0) * CAGR_LANE_STEP;
+    let clearance = CAGR_LANE_BASE_SHIFT;
 
     if (vertical) {
       for (let category = i0; category <= i1; category += 1) {
         const t = (category - cagr.from) / spanIndex;
         const lineY = start.y + (end.y - start.y) * t;
         const obstacle = obstacles[category];
-        if (Number.isFinite(obstacle)) shift = Math.max(shift, lineY - obstacle + 12);
+        if (Number.isFinite(obstacle)) clearance = Math.max(clearance, lineY - obstacle + 12);
       }
+      const shift = clearance + laneLift;
       let y1 = start.y - shift;
       let y2 = end.y - shift;
       const top = bounds.minY + ry + 4;
@@ -1111,7 +1123,14 @@ function drawCagrAnnotations(
         y1 += top - minY;
         y2 += top - minY;
       }
-      paintCagrArrow(svg, palette, fontSize, cagr, index, start.x, y1, end.x, y2, text, rx, ry, marker.ref, bounds);
+      const direction = Math.sign(end.x - start.x) || 1;
+      const inset = cagrEndpointInset(end.x - start.x, barThickness);
+      paintCagrArrow(
+        svg, palette, fontSize, cagr, index,
+        start.x + direction * inset, y1,
+        end.x - direction * inset, y2,
+        text, rx, ry, marker.ref, bounds,
+      );
       return;
     }
 
@@ -1119,8 +1138,9 @@ function drawCagrAnnotations(
       const t = (category - cagr.from) / spanIndex;
       const lineX = start.x + (end.x - start.x) * t;
       const obstacle = obstacles[category];
-      if (Number.isFinite(obstacle)) shift = Math.max(shift, obstacle - lineX + 12);
+      if (Number.isFinite(obstacle)) clearance = Math.max(clearance, obstacle - lineX + 12);
     }
+    const shift = clearance + laneLift;
     let x1 = start.x + shift;
     let x2 = end.x + shift;
     const right = bounds.maxX - rx - 4;
@@ -1129,7 +1149,14 @@ function drawCagrAnnotations(
       x1 -= maxX - right;
       x2 -= maxX - right;
     }
-    paintCagrArrow(svg, palette, fontSize, cagr, index, x1, start.y, x2, end.y, text, rx, ry, marker.ref, bounds);
+    const direction = Math.sign(end.y - start.y) || 1;
+    const inset = cagrEndpointInset(end.y - start.y, barThickness);
+    paintCagrArrow(
+      svg, palette, fontSize, cagr, index,
+      x1, start.y + direction * inset,
+      x2, end.y - direction * inset,
+      text, rx, ry, marker.ref, bounds,
+    );
   });
 }
 
@@ -1149,13 +1176,7 @@ function paintCagrArrow(
   markerRef: string,
   bounds: { minX: number; minY: number; maxX: number; maxY: number },
 ): void {
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const len = Math.hypot(dx, dy) || 1;
-  const ux = dx / len;
-  const uy = dy / len;
-  const tip = 12;
-  svg.line(x1 - ux * 6, y1 - uy * 6, x2 + ux * tip, y2 + uy * tip, {
+  svg.line(x1, y1, x2, y2, {
     stroke: palette.fg,
     "stroke-width": 1.8,
     "stroke-linecap": "round",
@@ -1398,7 +1419,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     x: plotLeft + (index + 0.5) * colWidth,
     y: yOf(value),
   }));
-  drawCagrAnnotations(svg, model, palette, fontSize, anchors, obstacles, true, {
+  drawCagrAnnotations(svg, model, palette, fontSize, anchors, obstacles, true, barWidth, {
     minX: 4,
     minY: model.title ? 28 + titleSize * 0.4 + titleExtra : 8,
     maxX: width - 4,
@@ -1624,7 +1645,7 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
     x: xOf(value),
     y: plotTop + (index + 0.5) * rowHeight,
   }));
-  drawCagrAnnotations(svg, model, palette, fontSize, anchors, obstacles, false, {
+  drawCagrAnnotations(svg, model, palette, fontSize, anchors, obstacles, false, barHeight, {
     minX: plotLeft,
     minY: plotTop,
     maxX: width - 4,
