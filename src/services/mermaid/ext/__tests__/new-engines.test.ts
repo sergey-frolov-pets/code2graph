@@ -6,7 +6,7 @@ import {
   clusteredEngine,
   formatCagrNumber,
   type ClusteredModel,
-} from "../engines/clustered";
+} from "../engines/series";
 import { radarEngine, type RadarModel } from "../engines/radar";
 import { treemapEngine, type TreemapModel } from "../engines/treemap";
 import { voronoiEngine, type VoronoiModel } from "../engines/voronoi";
