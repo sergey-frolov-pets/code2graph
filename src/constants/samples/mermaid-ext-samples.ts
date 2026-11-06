@@ -361,6 +361,7 @@ cagr`,
 %% prefix="CAGR: "    текст перед числом
 %% label="цель"       овал как есть, без расчёта (prefix тогда не пишется)
 title CAGR по диапазонам
+ratio 16x6
 categories 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025
 y "млн ₽" 0 --> 220
 grid 20
@@ -370,8 +371,8 @@ cagr 2, 3 format="0.00" prefix="×"
 cagr 3, 5 format="0.0%" prefix="CAGR: "
 cagr 5, 6 label="цель"
 
-cagr 6, 7 format="0%" prefix="+"
-cagr 8, 9 format="+0.0%"`,
+cagr 8, 9 format="+0.0%"
+cagr 6, 7 format="0%" prefix="+"`,
 };
 
 export const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
@@ -735,6 +736,7 @@ cagr`,
 %% prefix="CAGR: "    text before the number
 %% label="target"     oval text as-is, no calculation (prefix is then ignored)
 title CAGR by range
+ratio 16x6
 categories 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025
 y "M USD" 0 --> 220
 grid 20
@@ -744,6 +746,6 @@ cagr 2, 3 format="0.00" prefix="×"
 cagr 3, 5 format="0.0%" prefix="CAGR: "
 cagr 5, 6 label="target"
 
-cagr 6, 7 format="0%" prefix="+"
-cagr 8, 9 format="+0.0%"`,
+cagr 8, 9 format="+0.0%"
+cagr 6, 7 format="0%" prefix="+"`,
 };

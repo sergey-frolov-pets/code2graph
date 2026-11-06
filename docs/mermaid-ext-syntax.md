@@ -910,6 +910,7 @@ cagr
 ```
 series
 title CAGR по диапазонам
+ratio 16x6
 categories 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025
 y "млн ₽" 0 --> 220
 series Онлайн : 34, 39, 68, 74, 90, 108, 118, 140, 130
@@ -917,8 +918,8 @@ cagr 1, 2 format="0%"
 cagr 2, 3 format="0.00" prefix="×"
 cagr 3, 5 format="0.0%" prefix="CAGR: "
 cagr 5, 6 label="цель"
-cagr 6, 7 format="0%" prefix="+"
 cagr 8, 9 format="+0.0%"
+cagr 6, 7 format="0%" prefix="+"
 ```
 
 ---
