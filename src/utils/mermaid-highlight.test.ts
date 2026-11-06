@@ -70,6 +70,8 @@ describe("highlightMermaidLine", () => {
 
   it("highlights chart keywords that used to stay plain", () => {
     const cases: Array<[string, string]> = [
+      ["ratio 16x6", "ratio"],
+      ["aspect 4:3", "aspect"],
       ["stacked", "stacked"],
       ["bars stacked", "bars"],
       ["layout stacked", "layout"],
