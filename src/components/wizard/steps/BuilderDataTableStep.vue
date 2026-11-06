@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import { useLocale } from "@/composables/useLocale";
+import { sanitizeDiagramId } from "@/services/conversion/diagram-ir";
 import {
   getDiagramBuilderSchema,
   GRAPH_EDGE_KIND_OPTIONS,
@@ -37,12 +38,45 @@ const schema = computed(() =>
   ),
 );
 
-const activeGraphSubTab = ref<"nodes" | "edges">("nodes");
-const includeHeadersOnCopy = ref(true);
+const isGraphNodesOpen = ref(false);
 const copyFeedback = ref(false);
 
 function notifyChange(): void {
   emit("change");
+}
+
+function syncGraphNodesFromEdges(): void {
+  const nodes = builderState.value.graphNodes;
+  const knownKeys = new Set<string>();
+  for (const n of nodes) {
+    if (n.id.trim()) knownKeys.add(n.id.trim().toLowerCase());
+    if (n.label.trim()) knownKeys.add(n.label.trim().toLowerCase());
+  }
+
+  for (const edge of builderState.value.graphEdges) {
+    for (const endpoint of [edge.source, edge.target]) {
+      const trimmed = endpoint.trim();
+      if (!trimmed) continue;
+      const key = trimmed.toLowerCase();
+      if (knownKeys.has(key)) continue;
+      const safeId = sanitizeDiagramId(trimmed || `N${nodes.length + 1}`);
+      if (knownKeys.has(safeId.toLowerCase())) continue;
+      nodes.push({
+        id: safeId,
+        label: trimmed,
+        kind: "default",
+        group: "",
+        color: "",
+      });
+      knownKeys.add(key);
+      knownKeys.add(safeId.toLowerCase());
+    }
+  }
+}
+
+function onGraphEdgeEndpointChange(): void {
+  syncGraphNodesFromEdges();
+  notifyChange();
 }
 
 function addFlatRow(): void {
@@ -145,19 +179,26 @@ function removeGraphNode(index: number): void {
 }
 
 function addGraphEdge(): void {
-  const nodes = builderState.value.graphNodes;
-  const first = nodes[0]?.id ?? "A";
-  const second = nodes[1]?.id ?? first;
   builderState.value.graphEdges.push({
-    source: first,
-    target: second,
+    source: "",
+    target: "",
     kind: "arrow",
     label: "",
   });
   notifyChange();
 }
 
+function moveGraphEdge(index: number, delta: -1 | 1): void {
+  const target = index + delta;
+  if (target < 0 || target >= builderState.value.graphEdges.length) return;
+  const edges = builderState.value.graphEdges;
+  const [moved] = edges.splice(index, 1);
+  edges.splice(target, 0, moved);
+  notifyChange();
+}
+
 function removeGraphEdge(index: number): void {
+  if (builderState.value.graphEdges.length <= 1) return;
   builderState.value.graphEdges.splice(index, 1);
   notifyChange();
 }
@@ -167,7 +208,7 @@ function buildCopyTsv(): string {
   if (mode === "rows") {
     const headers = schema.value.columns.map((col) => t(col.labelKey));
     return serializeGridToClipboardTsv(builderState.value.rows, {
-      includeHeaders: includeHeadersOnCopy.value,
+      includeHeaders: true,
       headers,
     });
   }
@@ -178,28 +219,7 @@ function buildCopyTsv(): string {
       : "Item";
     const headers = [rowHeaderTitle, ...builderState.value.matrixHeaders];
     return serializeGridToClipboardTsv(builderState.value.matrixRows, {
-      includeHeaders: includeHeadersOnCopy.value,
-      headers,
-    });
-  }
-
-  if (activeGraphSubTab.value === "nodes") {
-    const headers = [
-      t("builder.col.id"),
-      t("builder.col.label"),
-      t("builder.col.nodeType"),
-      t("builder.col.group"),
-      t("builder.col.color"),
-    ];
-    const rows = builderState.value.graphNodes.map((n) => [
-      n.id,
-      n.label,
-      n.kind,
-      n.group,
-      n.color,
-    ]);
-    return serializeGridToClipboardTsv(rows, {
-      includeHeaders: includeHeadersOnCopy.value,
+      includeHeaders: true,
       headers,
     });
   }
@@ -207,17 +227,17 @@ function buildCopyTsv(): string {
   const headers = [
     t("builder.col.source"),
     t("builder.col.target"),
-    t("builder.col.edgeStyle"),
     t("builder.col.label"),
+    t("builder.col.edgeStyle"),
   ];
   const rows = builderState.value.graphEdges.map((e) => [
     e.source,
     e.target,
-    e.kind,
     e.label,
+    e.kind,
   ]);
   return serializeGridToClipboardTsv(rows, {
-    includeHeaders: includeHeadersOnCopy.value,
+    includeHeaders: true,
     headers,
   });
 }
@@ -240,22 +260,13 @@ function applyRawTextPaste(clipboardText: string): void {
   if (schema.value.tableMode === "graph-ir") {
     const grid = parseRawTextToGrid(clipboardText);
     if (!grid) return;
-    if (activeGraphSubTab.value === "nodes") {
-      builderState.value.graphNodes = grid.rows.map((r, idx) => ({
-        id: (r[0] ?? "").trim() || `N${idx + 1}`,
-        label: (r[1] ?? r[0] ?? "").trim() || `Node ${idx + 1}`,
-        kind: (r[2] ?? "default").trim() || "default",
-        group: (r[3] ?? "").trim(),
-        color: (r[4] ?? "").trim(),
-      }));
-    } else {
-      builderState.value.graphEdges = grid.rows.map((r) => ({
-        source: (r[0] ?? "").trim(),
-        target: (r[1] ?? "").trim(),
-        kind: (r[2] ?? "arrow").trim() || "arrow",
-        label: (r[3] ?? "").trim(),
-      }));
-    }
+    builderState.value.graphEdges = grid.rows.map((r) => ({
+      source: (r[0] ?? "").trim(),
+      target: (r[1] ?? "").trim(),
+      label: (r[2] ?? "").trim(),
+      kind: (r[3] ?? "arrow").trim() || "arrow",
+    }));
+    syncGraphNodesFromEdges();
     notifyChange();
     return;
   }
@@ -271,7 +282,6 @@ function applyRawTextPaste(clipboardText: string): void {
     return;
   }
 
-  // Fallback direct grid import if table-paste rejected due to header or extra cols
   const grid = parseRawTextToGrid(clipboardText, true);
   if (grid && schema.value.tableMode === "matrix" && grid.colCount >= 2 && grid.rowCount >= 2) {
     builderState.value.matrixHeaders = grid.rows[0]
@@ -385,40 +395,7 @@ async function handlePasteFromClipboard(): Promise<void> {
         </template>
 
         <template v-else-if="schema.tableMode === 'graph-ir'">
-          <div class="builder-subtabs" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              class="builder-subtabs__tab"
-              :class="{ 'is-active': activeGraphSubTab === 'nodes' }"
-              :aria-selected="activeGraphSubTab === 'nodes'"
-              @click="activeGraphSubTab = 'nodes'"
-            >
-              {{ t("builder.graph.nodesTab") }} ({{ builderState.graphNodes.length }})
-            </button>
-            <button
-              type="button"
-              role="tab"
-              class="builder-subtabs__tab"
-              :class="{ 'is-active': activeGraphSubTab === 'edges' }"
-              :aria-selected="activeGraphSubTab === 'edges'"
-              @click="activeGraphSubTab = 'edges'"
-            >
-              {{ t("builder.graph.edgesTab") }} ({{ builderState.graphEdges.length }})
-            </button>
-          </div>
           <button
-            v-if="activeGraphSubTab === 'nodes'"
-            type="button"
-            class="btn builder-btn"
-            data-testid="builder-add-node-btn"
-            @click="addGraphNode"
-          >
-            <ActionIcon name="plus" />
-            <span>{{ t("builder.graph.addNode") }}</span>
-          </button>
-          <button
-            v-else
             type="button"
             class="btn builder-btn"
             data-testid="builder-add-edge-btn"
@@ -443,6 +420,7 @@ async function handlePasteFromClipboard(): Promise<void> {
             <th
               v-for="col in schema.columns"
               :key="col.id"
+              :class="{ 'builder-data-table__color-col': col.type === 'color' }"
             >
               {{ t(col.labelKey) }}
             </th>
@@ -458,6 +436,7 @@ async function handlePasteFromClipboard(): Promise<void> {
             <td
               v-for="(col, colIndex) in schema.columns"
               :key="col.id"
+              :class="{ 'builder-data-table__color-col': col.type === 'color' }"
             >
               <select
                 v-if="col.type === 'select'"
@@ -482,18 +461,12 @@ async function handlePasteFromClipboard(): Promise<void> {
                   type="color"
                   class="builder-color-picker"
                   :value="row[colIndex] && /^#[0-9a-fA-F]{6}$/.test(row[colIndex]) ? row[colIndex] : '#0969da'"
+                  :title="row[colIndex] || t('builder.option.auto')"
                   @input="
                     row[colIndex] = ($event.target as HTMLInputElement).value;
                     notifyChange();
                   "
-                />
-                <input
-                  v-model="row[colIndex]"
-                  type="text"
-                  class="builder-cell-input builder-cell-input--color-hex"
-                  placeholder="#hex"
-                  @input="notifyChange"
-                />
+                >
                 <button
                   v-if="row[colIndex]"
                   type="button"
@@ -514,7 +487,7 @@ async function handlePasteFromClipboard(): Promise<void> {
                 type="date"
                 class="builder-cell-input"
                 @input="notifyChange"
-              />
+              >
 
               <input
                 v-else-if="col.type === 'number'"
@@ -527,7 +500,7 @@ async function handlePasteFromClipboard(): Promise<void> {
                 class="builder-cell-input builder-cell-input--num"
                 :disabled="builderState.diagramType === 'waterfall' && row[1] === '=subtotal'"
                 @input="notifyChange"
-              />
+              >
 
               <input
                 v-else
@@ -536,7 +509,7 @@ async function handlePasteFromClipboard(): Promise<void> {
                 :placeholder="t(col.labelKey)"
                 class="builder-cell-input"
                 @input="notifyChange"
-              />
+              >
             </td>
             <td class="builder-data-table__actions">
               <div class="builder-row-actions">
@@ -601,7 +574,7 @@ async function handlePasteFromClipboard(): Promise<void> {
                   :placeholder="`${schema.matrixColHeaderPrefix ?? 'Col'} ${colIdx + 1}`"
                   class="builder-cell-input builder-cell-input--header"
                   @input="notifyChange"
-                />
+                >
                 <button
                   type="button"
                   class="builder-icon-mini builder-icon-mini--danger"
@@ -633,7 +606,7 @@ async function handlePasteFromClipboard(): Promise<void> {
                 "
                 class="builder-cell-input"
                 @input="notifyChange"
-              />
+              >
             </td>
             <td
               v-for="(_, colIdx) in builderState.matrixHeaders"
@@ -646,7 +619,7 @@ async function handlePasteFromClipboard(): Promise<void> {
                 class="builder-cell-input builder-cell-input--num"
                 placeholder="—"
                 @input="notifyChange"
-              />
+              >
             </td>
             <td class="builder-data-table__actions">
               <div class="builder-row-actions">
@@ -684,193 +657,253 @@ async function handlePasteFromClipboard(): Promise<void> {
       </table>
     </div>
 
-    <!-- MODE 3: GRAPH NODES & EDGES -->
-    <div
-      v-else-if="schema.tableMode === 'graph-ir'"
-      class="builder-table-scroll"
-    >
-      <table
-        v-if="activeGraphSubTab === 'nodes'"
-        class="builder-data-table"
-        data-testid="builder-graph-nodes-table"
-      >
-        <thead>
-          <tr>
-            <th class="builder-data-table__idx">#</th>
-            <th>{{ t("builder.col.id") }}</th>
-            <th>{{ t("builder.col.label") }}</th>
-            <th>{{ t("builder.col.nodeType") }}</th>
-            <th>{{ t("builder.col.group") }}</th>
-            <th>{{ t("builder.col.color") }}</th>
-            <th class="builder-data-table__actions" />
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(node, idx) in builderState.graphNodes"
-            :key="idx"
-          >
-            <td class="builder-data-table__idx">{{ idx + 1 }}</td>
-            <td>
-              <input
-                v-model="node.id"
-                type="text"
-                class="builder-cell-input"
-                @input="notifyChange"
-              />
-            </td>
-            <td>
-              <input
-                v-model="node.label"
-                type="text"
-                :placeholder="t('builder.col.label')"
-                class="builder-cell-input"
-                @input="notifyChange"
-              />
-            </td>
-            <td>
-              <select
-                v-model="node.kind"
-                class="select builder-cell-input"
-                @change="notifyChange"
-              >
-                <option
-                  v-for="opt in GRAPH_NODE_KIND_OPTIONS"
-                  :key="opt.value"
-                  :value="opt.value"
-                >
-                  {{ t(opt.labelKey) }}
-                </option>
-              </select>
-            </td>
-            <td>
-              <input
-                v-model="node.group"
-                type="text"
-                class="builder-cell-input"
-                @input="notifyChange"
-              />
-            </td>
-            <td>
-              <div class="builder-color-cell">
-                <input
-                  type="color"
-                  class="builder-color-picker"
-                  :value="node.color && /^#[0-9a-fA-F]{6}$/.test(node.color) ? node.color : '#0969da'"
-                  @input="
-                    node.color = ($event.target as HTMLInputElement).value;
-                    notifyChange();
-                  "
-                />
-                <input
-                  v-model="node.color"
-                  type="text"
-                  class="builder-cell-input builder-cell-input--color-hex"
-                  placeholder="#hex"
-                  @input="notifyChange"
-                />
-              </div>
-            </td>
-            <td class="builder-data-table__actions">
-              <button
-                type="button"
-                class="builder-icon-mini builder-icon-mini--danger"
-                :disabled="builderState.graphNodes.length <= 1"
-                @click="removeGraphNode(idx)"
-              >
-                ×
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- MODE 3: GRAPH EDGES FIRST + COLLAPSIBLE NODES & GROUPS -->
+    <template v-else-if="schema.tableMode === 'graph-ir'">
+      <datalist id="builder-graph-node-datalist">
+        <option
+          v-for="node in builderState.graphNodes"
+          :key="node.id"
+          :value="node.label || node.id"
+        />
+      </datalist>
 
-      <table
-        v-else
-        class="builder-data-table"
-        data-testid="builder-graph-edges-table"
-      >
-        <thead>
-          <tr>
-            <th class="builder-data-table__idx">#</th>
-            <th>{{ t("builder.col.source") }}</th>
-            <th>{{ t("builder.col.target") }}</th>
-            <th>{{ t("builder.col.edgeStyle") }}</th>
-            <th>{{ t("builder.col.label") }}</th>
-            <th class="builder-data-table__actions" />
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(edge, idx) in builderState.graphEdges"
-            :key="idx"
+      <div class="builder-table-scroll">
+        <table
+          class="builder-data-table"
+          data-testid="builder-graph-edges-table"
+        >
+          <thead>
+            <tr>
+              <th class="builder-data-table__idx">#</th>
+              <th>{{ t("builder.col.source") }}</th>
+              <th>{{ t("builder.col.target") }}</th>
+              <th>{{ t("builder.col.label") }}</th>
+              <th>{{ t("builder.col.edgeStyle") }}</th>
+              <th class="builder-data-table__actions" />
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="(edge, idx) in builderState.graphEdges"
+              :key="idx"
+            >
+              <td class="builder-data-table__idx">{{ idx + 1 }}</td>
+              <td>
+                <input
+                  v-model="edge.source"
+                  type="text"
+                  list="builder-graph-node-datalist"
+                  :placeholder="t('builder.col.source')"
+                  class="builder-cell-input"
+                  @input="onGraphEdgeEndpointChange"
+                >
+              </td>
+              <td>
+                <input
+                  v-model="edge.target"
+                  type="text"
+                  list="builder-graph-node-datalist"
+                  :placeholder="t('builder.col.target')"
+                  class="builder-cell-input"
+                  @input="onGraphEdgeEndpointChange"
+                >
+              </td>
+              <td>
+                <input
+                  v-model="edge.label"
+                  type="text"
+                  :placeholder="t('builder.col.label')"
+                  class="builder-cell-input"
+                  @input="notifyChange"
+                >
+              </td>
+              <td>
+                <select
+                  v-model="edge.kind"
+                  class="select builder-cell-input"
+                  @change="notifyChange"
+                >
+                  <option
+                    v-for="opt in GRAPH_EDGE_KIND_OPTIONS"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ t(opt.labelKey) }}
+                  </option>
+                </select>
+              </td>
+              <td class="builder-data-table__actions">
+                <div class="builder-row-actions">
+                  <button
+                    type="button"
+                    class="builder-icon-mini"
+                    :disabled="idx === 0"
+                    :title="t('builder.table.moveUp')"
+                    @click="moveGraphEdge(idx, -1)"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    class="builder-icon-mini"
+                    :disabled="idx === builderState.graphEdges.length - 1"
+                    :title="t('builder.table.moveDown')"
+                    @click="moveGraphEdge(idx, 1)"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    class="builder-icon-mini builder-icon-mini--danger"
+                    :disabled="builderState.graphEdges.length <= 1"
+                    @click="removeGraphEdge(idx)"
+                  >
+                    ×
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- COLLAPSIBLE NODES & GROUPS SECTION -->
+      <section class="builder-card builder-card--collapsible">
+        <div class="builder-card__header-row">
+          <button
+            type="button"
+            class="builder-card__toggle"
+            :aria-expanded="isGraphNodesOpen"
+            data-testid="builder-graph-nodes-toggle"
+            @click="isGraphNodesOpen = !isGraphNodesOpen"
           >
-            <td class="builder-data-table__idx">{{ idx + 1 }}</td>
-            <td>
-              <select
-                v-model="edge.source"
-                class="select builder-cell-input"
-                @change="notifyChange"
+            <span class="builder-card__title">
+              {{ t("builder.graph.nodesSection", { count: builderState.graphNodes.length }) }}
+            </span>
+            <span class="builder-card__chevron" aria-hidden="true">
+              {{ isGraphNodesOpen ? "▾" : "▸" }}
+            </span>
+          </button>
+
+          <button
+            v-if="isGraphNodesOpen"
+            type="button"
+            class="btn builder-btn"
+            data-testid="builder-add-node-btn"
+            @click="addGraphNode"
+          >
+            <ActionIcon name="plus" />
+            <span>{{ t("builder.graph.addNode") }}</span>
+          </button>
+        </div>
+
+        <div
+          v-if="isGraphNodesOpen"
+          class="builder-table-scroll"
+        >
+          <table
+            class="builder-data-table"
+            data-testid="builder-graph-nodes-table"
+          >
+            <thead>
+              <tr>
+                <th class="builder-data-table__idx">#</th>
+                <th>{{ t("builder.col.id") }}</th>
+                <th>{{ t("builder.col.label") }}</th>
+                <th>{{ t("builder.col.nodeType") }}</th>
+                <th>{{ t("builder.col.group") }}</th>
+                <th class="builder-data-table__color-col">{{ t("builder.col.color") }}</th>
+                <th class="builder-data-table__actions" />
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(node, idx) in builderState.graphNodes"
+                :key="idx"
               >
-                <option
-                  v-for="node in builderState.graphNodes"
-                  :key="node.id"
-                  :value="node.id"
-                >
-                  {{ node.label || node.id }} ({{ node.id }})
-                </option>
-              </select>
-            </td>
-            <td>
-              <select
-                v-model="edge.target"
-                class="select builder-cell-input"
-                @change="notifyChange"
-              >
-                <option
-                  v-for="node in builderState.graphNodes"
-                  :key="node.id"
-                  :value="node.id"
-                >
-                  {{ node.label || node.id }} ({{ node.id }})
-                </option>
-              </select>
-            </td>
-            <td>
-              <select
-                v-model="edge.kind"
-                class="select builder-cell-input"
-                @change="notifyChange"
-              >
-                <option
-                  v-for="opt in GRAPH_EDGE_KIND_OPTIONS"
-                  :key="opt.value"
-                  :value="opt.value"
-                >
-                  {{ t(opt.labelKey) }}
-                </option>
-              </select>
-            </td>
-            <td>
-              <input
-                v-model="edge.label"
-                type="text"
-                class="builder-cell-input"
-                @input="notifyChange"
-              />
-            </td>
-            <td class="builder-data-table__actions">
-              <button
-                type="button"
-                class="builder-icon-mini builder-icon-mini--danger"
-                @click="removeGraphEdge(idx)"
-              >
-                ×
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+                <td class="builder-data-table__idx">{{ idx + 1 }}</td>
+                <td>
+                  <input
+                    v-model="node.id"
+                    type="text"
+                    class="builder-cell-input"
+                    @input="notifyChange"
+                  >
+                </td>
+                <td>
+                  <input
+                    v-model="node.label"
+                    type="text"
+                    :placeholder="t('builder.col.label')"
+                    class="builder-cell-input"
+                    @input="notifyChange"
+                  >
+                </td>
+                <td>
+                  <select
+                    v-model="node.kind"
+                    class="select builder-cell-input"
+                    @change="notifyChange"
+                  >
+                    <option
+                      v-for="opt in GRAPH_NODE_KIND_OPTIONS"
+                      :key="opt.value"
+                      :value="opt.value"
+                    >
+                      {{ t(opt.labelKey) }}
+                    </option>
+                  </select>
+                </td>
+                <td>
+                  <input
+                    v-model="node.group"
+                    type="text"
+                    :placeholder="t('builder.col.group')"
+                    class="builder-cell-input"
+                    @input="notifyChange"
+                  >
+                </td>
+                <td class="builder-data-table__color-col">
+                  <div class="builder-color-cell">
+                    <input
+                      type="color"
+                      class="builder-color-picker"
+                      :value="node.color && /^#[0-9a-fA-F]{6}$/.test(node.color) ? node.color : '#0969da'"
+                      :title="node.color || t('builder.option.auto')"
+                      @input="
+                        node.color = ($event.target as HTMLInputElement).value;
+                        notifyChange();
+                      "
+                    >
+                    <button
+                      v-if="node.color"
+                      type="button"
+                      class="builder-icon-mini"
+                      :title="t('builder.option.reset')"
+                      @click="
+                        node.color = '';
+                        notifyChange();
+                      "
+                    >
+                      ×
+                    </button>
+                  </div>
+                </td>
+                <td class="builder-data-table__actions">
+                  <button
+                    type="button"
+                    class="builder-icon-mini builder-icon-mini--danger"
+                    :disabled="builderState.graphNodes.length <= 1"
+                    @click="removeGraphNode(idx)"
+                  >
+                    ×
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </template>
   </div>
 </template>

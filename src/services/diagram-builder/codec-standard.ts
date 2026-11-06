@@ -884,37 +884,85 @@ export function emitStandardDiagramFromBuilderState(
       }
 
       const groupsSet = new Map<string, string>();
-      const nodes: DiagramNode[] = state.graphNodes.map((n, idx) => {
-        const id = sanitizeDiagramId(n.id || n.label || `N${idx + 1}`);
+      const nodeById = new Map<string, DiagramNode>();
+      const nodeIdByLabel = new Map<string, string>();
+
+      state.graphNodes.forEach((n, idx) => {
+        const rawId = n.id.trim() || n.label.trim();
+        if (!rawId) return;
+        const id = sanitizeDiagramId(rawId || `N${idx + 1}`);
         let groupId: string | undefined;
         if (n.group.trim()) {
           const gId = sanitizeDiagramId(n.group.trim());
           groupsSet.set(gId, n.group.trim());
           groupId = gId;
         }
-        return {
+        const label = n.label.trim() || n.id.trim() || id;
+        const diagramNode: DiagramNode = {
           id,
-          label: n.label || id,
+          label,
           kind: (n.kind || "default") as DiagramNodeSemanticKind,
           groupId,
           visual: n.color.trim() ? { fill: n.color.trim() } : undefined,
           matchConfidence: 1,
         };
+        nodeById.set(id, diagramNode);
+        nodeIdByLabel.set(label.toLowerCase(), id);
+        if (n.id.trim()) {
+          nodeIdByLabel.set(n.id.trim().toLowerCase(), id);
+        }
       });
 
-      ir.nodes = nodes;
-      ir.groups = [...groupsSet.entries()].map(([id, label]) => ({ id, label }));
+      const resolveOrAddEndpoint = (rawEndpoint: string, fallbackIdx: number): string => {
+        const trimmed = rawEndpoint.trim();
+        const existingByLabel = nodeIdByLabel.get(trimmed.toLowerCase());
+        if (existingByLabel && nodeById.has(existingByLabel)) {
+          return existingByLabel;
+        }
+        const sanitized = sanitizeDiagramId(trimmed || `N${fallbackIdx}`);
+        if (nodeById.has(sanitized)) {
+          return sanitized;
+        }
+        const newNode: DiagramNode = {
+          id: sanitized,
+          label: trimmed || sanitized,
+          kind: "default",
+          matchConfidence: 1,
+        };
+        nodeById.set(sanitized, newNode);
+        nodeIdByLabel.set((trimmed || sanitized).toLowerCase(), sanitized);
+        return sanitized;
+      };
 
       const edges: DiagramEdge[] = state.graphEdges
-        .filter((e) => e.source.trim() && e.target.trim())
-        .map((e, idx) => ({
-          id: `e${idx + 1}`,
-          source: sanitizeDiagramId(e.source),
-          target: sanitizeDiagramId(e.target),
-          label: e.label.trim() || undefined,
-          kind: (e.kind || "arrow") as DiagramEdge["kind"],
+        .filter((e) => e.source.trim() || e.target.trim())
+        .map((e, idx) => {
+          const srcId = resolveOrAddEndpoint(e.source || `N${idx * 2 + 1}`, idx * 2 + 1);
+          const tgtId = resolveOrAddEndpoint(e.target || `N${idx * 2 + 2}`, idx * 2 + 2);
+          return {
+            id: `e${idx + 1}`,
+            source: srcId,
+            target: tgtId,
+            label: e.label.trim() || undefined,
+            kind: (e.kind || "arrow") as DiagramEdge["kind"],
+            matchConfidence: 1,
+          };
+        });
+
+      if (nodeById.size === 0 && edges.length === 0) {
+        nodeById.set("N1", { id: "N1", label: "N1", kind: "default", matchConfidence: 1 });
+        nodeById.set("N2", { id: "N2", label: "N2", kind: "default", matchConfidence: 1 });
+        edges.push({
+          id: "e1",
+          source: "N1",
+          target: "N2",
+          kind: "arrow",
           matchConfidence: 1,
-        }));
+        });
+      }
+
+      ir.nodes = [...nodeById.values()];
+      ir.groups = [...groupsSet.entries()].map(([id, label]) => ({ id, label }));
       ir.edges = edges;
 
       switch (format) {

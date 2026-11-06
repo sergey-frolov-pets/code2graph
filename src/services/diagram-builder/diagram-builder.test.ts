@@ -289,9 +289,20 @@ describe("diagram-builder core", () => {
     expect(seriesState.matrixRows).toEqual([["", "", ""]]);
 
     const graphState = createDefaultBuilderState("plantuml", "sequence");
-    expect(graphState.graphNodes).toHaveLength(2);
-    expect(graphState.graphNodes[0].label).toBe("");
-    expect(graphState.graphEdges).toHaveLength(1);
+    expect(graphState.graphNodes).toHaveLength(0);
+    expect(graphState.graphEdges).toEqual([
+      { source: "", target: "", kind: "arrow", label: "" },
+    ]);
+
+    graphState.graphEdges = [
+      { source: "Client", target: "API Gateway", kind: "arrow", label: "POST /orders" },
+      { source: "API Gateway", target: "Database", kind: "dashed", label: "INSERT" },
+    ];
+    const emittedSeq = emitSourceFromBuilderState(graphState);
+    expect(emittedSeq).toContain("Client");
+    expect(emittedSeq).toContain("API Gateway");
+    expect(emittedSeq).toContain("Database");
+    expect(emittedSeq).toContain("POST /orders");
 
     const flowSchema = getDiagramBuilderSchema("mermaid", "flowchart");
     expect(hasBuilderOptionsCapabilities(flowSchema.capabilities)).toBe(false);

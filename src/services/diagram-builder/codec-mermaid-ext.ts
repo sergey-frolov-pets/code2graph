@@ -117,16 +117,10 @@ export function createDefaultBuilderState(
     schema.tableMode === "matrix"
       ? [["", ...Array.from({ length: initialColCount }, () => "")]]
       : [];
-  const graphNodes =
-    schema.tableMode === "graph-ir"
-      ? [
-          { id: "N1", label: "", kind: "default", group: "", color: "" },
-          { id: "N2", label: "", kind: "default", group: "", color: "" },
-        ]
-      : [];
+  const graphNodes: DiagramBuilderState["graphNodes"] = [];
   const graphEdges =
     schema.tableMode === "graph-ir"
-      ? [{ source: "N1", target: "N2", kind: "arrow", label: "" }]
+      ? [{ source: "", target: "", kind: "arrow", label: "" }]
       : [];
 
   return {

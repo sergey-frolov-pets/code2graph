@@ -31,8 +31,6 @@ import {
   createDefaultBuilderState,
   detectBuilderDiagramType,
   emitSourceFromBuilderState,
-  getDiagramBuilderSchema,
-  hasBuilderOptionsCapabilities,
   parseSourceToBuilderState,
   supportsDiagramBuilder,
   type BuilderApplyTarget,
@@ -44,7 +42,6 @@ const AI_WIZARD_FLOW_STEPS: readonly WizardStepId[] = ["context", "result"];
 const BUILDER_WIZARD_FLOW_STEPS: readonly WizardStepId[] = [
   "builder-data",
   "builder-canvas",
-  "builder-options",
 ];
 
 export interface UseDiagramWizardFlowOptions {
@@ -111,18 +108,11 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     () => wizardState.value.creationMode === "builder",
   );
 
-  const wizardSteps = computed((): WizardStepId[] => {
-    if (!isBuilderMode.value) {
-      return [...AI_WIZARD_FLOW_STEPS];
-    }
-    const schema = getDiagramBuilderSchema(
-      builderState.value.format,
-      builderState.value.diagramType,
-    );
-    return hasBuilderOptionsCapabilities(schema.capabilities)
+  const wizardSteps = computed((): WizardStepId[] =>
+    isBuilderMode.value
       ? [...BUILDER_WIZARD_FLOW_STEPS]
-      : ["builder-data", "builder-canvas"];
-  });
+      : [...AI_WIZARD_FLOW_STEPS],
+  );
   const currentStepId = computed(
     (): WizardStepId => wizardSteps.value[stepIndex.value] ?? "context",
   );
