@@ -49,7 +49,8 @@ const { t } = useLocale();
       <HeaderControls />
       <IconButton
         :label="t('app.aiNewDiagram')"
-        extra-class="app-header__icon-btn"
+        success
+        extra-class="app-header__icon-btn app-header__icon-btn--new-diagram"
         @click="emit('openWizard')"
       >
         <ActionIcon name="plus" />
@@ -157,6 +158,22 @@ const { t } = useLocale();
   height: 40px;
   min-height: 40px;
   padding: 0;
+}
+
+.app-header__icon-btn--new-diagram {
+  background: var(--success-btn, var(--success));
+  border-color: var(--success-btn, var(--success));
+  color: #ffffff;
+}
+
+.app-header__icon-btn--new-diagram:hover:not(:disabled) {
+  background: var(--success-btn-hover, var(--success-hover, var(--success)));
+  border-color: var(--success-btn-hover, var(--success-hover, var(--success)));
+  color: #ffffff;
+}
+
+.app-header__icon-btn--new-diagram :deep(.action-icon) {
+  color: #ffffff;
 }
 
 .app-header__gear-icon {
