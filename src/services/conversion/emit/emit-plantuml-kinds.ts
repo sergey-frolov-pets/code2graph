@@ -7,6 +7,7 @@ import {
   flattenPlantUmlLabel,
   formatPlantUmlEdgeSuffix,
 } from "@/services/conversion/emit/plantuml-emit-utils";
+import { plantUmlColorToken } from "@/services/conversion/parse/plantuml-style";
 import { buildGraphIndex } from "@/services/conversion/graph/graph-analysis";
 
 function plantUmlArrowForDirection(
@@ -225,9 +226,12 @@ export function emitPlantUmlGraph(ir: DiagramIR): string {
       continue;
     }
 
-    lines.push(`package "${escapePlantUmlQuoted(group.label ?? group.id)}" {`);
+    const groupColor = plantUmlColorToken(group.fill);
+    lines.push(
+      `package "${escapePlantUmlQuoted(group.label ?? group.id)}"${groupColor ? ` ${groupColor}` : ""} {`,
+    );
     for (const node of groupNodes) {
-      lines.push(`  ${emitPlantUmlComponentNode(node.id, node.label)}`);
+      lines.push(`  ${emitPlantUmlComponentNode(node.id, node.label, node.visual?.fill)}`);
       groupedNodeIds.add(node.id);
     }
     lines.push("}", "");
@@ -237,7 +241,7 @@ export function emitPlantUmlGraph(ir: DiagramIR): string {
     if (groupedNodeIds.has(node.id) || groupIds.has(node.id)) {
       continue;
     }
-    lines.push(emitPlantUmlComponentNode(node.id, node.label));
+    lines.push(emitPlantUmlComponentNode(node.id, node.label, node.visual?.fill));
   }
 
   for (const edge of ir.edges) {

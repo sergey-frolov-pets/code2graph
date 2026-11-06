@@ -1,3 +1,4 @@
+import { normalizeSvgPaintColors } from "@/services/export/svg-paint";
 import { normalizeSvgRootSize, parseViewBoxSize } from "@/services/export/svg-geometry";
 import { stripOffDeviceSvgResources } from "@/utils/offline-render-network";
 
@@ -256,7 +257,7 @@ export function withTransparentSvgBackground(svg: string): string {
 }
 
 export function sanitizeSvgForPreview(svg: string): string {
-  svg = stripOffDeviceSvgResources(svg);
+  svg = normalizeSvgPaintColors(stripOffDeviceSvgResources(svg));
   if (!svg.includes("<svg")) {
     return svg;
   }

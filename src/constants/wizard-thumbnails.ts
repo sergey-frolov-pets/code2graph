@@ -1,4 +1,5 @@
 import type { AppLocale } from "@/constants/i18n";
+import { normalizeSvgPaintColors } from "@/services/export/svg-paint";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
 import { wizardThumbnailFileName } from "@/constants/wizard-gallery";
 
@@ -136,5 +137,5 @@ export function wizardThumbnailSvg(
     return null;
   }
 
-  return sanitizeThumbnailSvg(match[1]);
+  return normalizeSvgPaintColors(sanitizeThumbnailSvg(match[1]));
 }

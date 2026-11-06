@@ -9,6 +9,7 @@ import { getLanguageModule } from "@/languages/registry";
 import { applyDiagramAppearance } from "@/services/diagram-appearance";
 import { applyDiagramTypography } from "@/services/diagram-typography";
 import { fitPlantUmlSvgText } from "@/services/plantuml/plantuml-text-fit";
+import { normalizeSvgPaintColors } from "@/services/export/svg-paint";
 import { stripOffDeviceSvgResources } from "@/utils/offline-render-network";
 import type { FormatContext, FormatHandler } from "./types";
 import type { SyntaxCheckResult } from "@/utils/plantuml-syntax";
@@ -50,7 +51,9 @@ export async function renderDiagram(
   source: string,
   context: FormatContext,
 ): Promise<string> {
-  const svg = await getFormatHandler(format).render(source, context);
+  const svg = normalizeSvgPaintColors(
+    await getFormatHandler(format).render(source, context),
+  );
   const painted = applyDiagramTypography(svg, {
     fontFamily: context.diagramFontFamily,
     fontWeight: context.diagramFontWeight,

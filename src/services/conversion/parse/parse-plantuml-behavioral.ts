@@ -285,13 +285,20 @@ export function parseActivityPlantUml(
       continue;
     }
 
-    const swimlaneMatch = line.match(/^\|(?:#[\w]+\|)?([^|]+)\|$/);
+    const swimlaneMatch = line.match(/^\|(?:#([A-Za-z0-9]+)\|)?([^|]+)\|$/);
     if (swimlaneMatch) {
-      const laneName = swimlaneMatch[1].trim();
+      const laneColor = swimlaneMatch[1];
+      const laneName = swimlaneMatch[2].trim();
       let grp = groups.find((entry) => entry.label === laneName);
       if (!grp) {
-        grp = { id: uniqueDiagramId(laneName, usedIds), label: laneName };
+        grp = {
+          id: uniqueDiagramId(laneName, usedIds),
+          label: laneName,
+          fill: laneColor ? `#${laneColor}` : undefined,
+        };
         groups.push(grp);
+      } else if (laneColor && !grp.fill) {
+        grp.fill = `#${laneColor}`;
       }
       currentGroupId = grp.id;
       continue;
@@ -318,9 +325,15 @@ export function parseActivityPlantUml(
       continue;
     }
 
-    const stepMatch = line.match(/^:\s*([^;]+);/);
+    const stepMatch = line.match(/^:\s*([^;]+);\s*(?:<<#([A-Za-z0-9]+)>>)?/);
     if (stepMatch) {
-      addStepNode(stepMatch[1].trim(), "default");
+      const id = addStepNode(stepMatch[1].trim(), "default");
+      if (stepMatch[2]) {
+        const node = ir.nodes.find((entry) => entry.id === id);
+        if (node) {
+          node.visual = { ...node.visual, fill: `#${stepMatch[2]}` };
+        }
+      }
     }
   }
 

@@ -688,4 +688,39 @@ Site,"Bounce, no click",40`,
     expect(radarSource).not.toContain("%% ratio");
     expect(parseSourceToBuilderState(radarSource, "mermaid").canvas.aspectRatio).toBe("16x9");
   });
+
+  it("keeps PlantUML package, swimlane and skinparam colors through step editing", () => {
+    const component = `@startuml
+skinparam componentStyle rectangle
+package "Клиент" #E3F2FD {
+  [Vue SPA] as spa #BBDEFB
+}
+@enduml`;
+    const componentState = parseSourceToBuilderState(component, "plantuml");
+    expect(componentState.groupColors?.["Клиент"]).toBe("#E3F2FD");
+    expect(componentState.graphNodes.find((node) => node.label === "Vue SPA")?.color).toBe("#BBDEFB");
+    expect(componentState.plantUmlSkin).toEqual(["skinparam componentStyle rectangle"]);
+    const componentEmitted = emitSourceFromBuilderState(componentState, component);
+    expect(componentEmitted).toContain('package "Клиент" #E3F2FD');
+    expect(componentEmitted).toContain("[Vue SPA] as spa #BBDEFB");
+    expect(componentEmitted).toContain("skinparam componentStyle rectangle");
+
+    const activity = `@startuml
+skinparam activity {
+  BackgroundColor #E8F5E9
+}
+|#E3F2FD|Клиент|
+:Показать ошибку; <<#Pink>>
+stop
+@enduml`;
+    const activityState = parseSourceToBuilderState(activity, "plantuml");
+    expect(activityState.diagramType).toBe("activity");
+    expect(activityState.groupColors?.["Клиент"]).toBe("#E3F2FD");
+    expect(activityState.graphNodes.some((node) => node.color === "#Pink")).toBe(true);
+    expect(activityState.plantUmlSkin?.join("\n")).toContain("BackgroundColor #E8F5E9");
+    const activityEmitted = emitSourceFromBuilderState(activityState, activity);
+    expect(activityEmitted).toContain("|#E3F2FD|Клиент|");
+    expect(activityEmitted).toContain("<<#Pink>>");
+    expect(activityEmitted).toContain("BackgroundColor #E8F5E9");
+  });
 });

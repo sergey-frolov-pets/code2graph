@@ -12,6 +12,7 @@ import {
 import { safeParseSourceToIr } from "@/services/conversion/parse/parse-source-to-ir";
 import { emitMermaidFromIr } from "@/services/conversion/emit/emit-mermaid";
 import { emitPlantUmlFromIr } from "@/services/conversion/emit/emit-plantuml";
+import { extractPlantUmlStyleDirectives } from "@/services/conversion/parse/plantuml-style";
 import { emitD2FromIr } from "@/services/conversion/emit/emit-d2";
 import { emitGraphmlFromIr } from "@/services/conversion/emit/emit-graphml";
 import { emitStructurizrFromIr } from "@/services/conversion/emit/emit-structurizr";
@@ -556,6 +557,16 @@ export function parseStandardDiagramToBuilderState(
           group: node.groupId ? (groupMap.get(node.groupId) ?? node.groupId) : "",
           color: node.visual?.fill ?? "",
         }));
+        if (format === "plantuml") {
+          const groupColors: Record<string, string> = {};
+          for (const group of ir.groups ?? []) {
+            if (group.fill && group.label) {
+              groupColors[group.label] = group.fill;
+            }
+          }
+          state.groupColors = groupColors;
+          state.plantUmlSkin = extractPlantUmlStyleDirectives(source);
+        }
         state.graphEdges = ir.edges.map((edge) => ({
           source: edge.source,
           target: edge.target,
@@ -1073,8 +1084,15 @@ function emitStandardDiagramBody(
       }
 
       ir.nodes = [...nodeById.values()];
-      ir.groups = [...groupsSet.entries()].map(([id, label]) => ({ id, label }));
+      ir.groups = [...groupsSet.entries()].map(([id, label]) => ({
+        id,
+        label,
+        fill: state.groupColors?.[label],
+      }));
       ir.edges = edges;
+      if (format === "plantuml" && state.plantUmlSkin?.length) {
+        ir.extras = { ...ir.extras, plantUmlSkin: state.plantUmlSkin };
+      }
 
       switch (format) {
         case "mermaid":

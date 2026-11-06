@@ -94,6 +94,8 @@ export interface DiagramGroup {
   id: string;
   label?: string;
   parentId?: string;
+  /** PlantUML `#RRGGBB` на пакете, рамке или дорожке. */
+  fill?: string;
 }
 
 export interface DiagramSlice {
@@ -252,6 +254,8 @@ export interface DiagramIRExtras {
   systemBoundary?: string;
   quadrantAxes?: { xFrom?: string; xTo?: string; yFrom?: string; yTo?: string };
   blockColumns?: number;
+  /** skinparam и <style>, которые пошаговый редактор возвращает в исходник. */
+  plantUmlSkin?: string[];
 }
 
 export type ConversionModeKind =
