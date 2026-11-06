@@ -88,6 +88,10 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          # Успешная публикация уже занимает ~8 минут. Дефолт 10 минут
+          # обрывает updating_pages и отменяет деплой.
+          timeout: 1800000
 
   sync-version:
     needs: [build, deploy]
