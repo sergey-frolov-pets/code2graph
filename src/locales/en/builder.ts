@@ -250,6 +250,7 @@ export const builderMessages = {
   "builder.annotations.thresholds": "Threshold lines (line)",
   "builder.annotations.addThreshold": "Threshold line",
   "builder.annotations.cagr": "CAGR growth arrows (cagr)",
+  "builder.cagr.series": "Series",
   "builder.annotations.addCagr": "CAGR",
   "builder.lineStyle.dash": "Dashed (dash)",
   "builder.lineStyle.solid": "Solid (solid)",

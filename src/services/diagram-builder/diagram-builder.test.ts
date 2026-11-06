@@ -122,13 +122,22 @@ describe("diagram-builder core", () => {
     expect(state.matrixHeaders).toEqual(["Online", "Retail"]);
     expect(state.matrixRows).toHaveLength(3);
     expect(state.options.cagrs).toHaveLength(1);
+    expect(state.options.cagrs[0]?.seriesIndex).toBe(0);
 
+    state.options.cagrs[0]!.seriesIndex = 1;
     const emitted = emitSourceFromBuilderState(state);
+    const onlineAt = emitted.indexOf("series Online");
+    const retailAt = emitted.indexOf("series Retail");
+    const cagrAt = emitted.indexOf("cagr");
+    expect(onlineAt).toBeGreaterThanOrEqual(0);
+    expect(retailAt).toBeGreaterThan(onlineAt);
+    expect(cagrAt).toBeGreaterThan(retailAt);
     const reParsed = parseClustered(emitted);
     expect(reParsed.ok).toBe(true);
     expect(reParsed.value?.rotate90).toBe(true);
     expect(reParsed.value?.stack).toBe(true);
     expect(reParsed.value?.cagrs).toHaveLength(1);
+    expect(reParsed.value?.cagrs[0]?.seriesIndex).toBe(1);
   });
 
   it("round-trips all remaining Mermaid Ext engines (bubble, heatmap, boxplot, treemap, radar, voronoi, orgchart, ev)", () => {

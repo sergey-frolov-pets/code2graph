@@ -250,6 +250,7 @@ export const builderMessages = {
   "builder.annotations.thresholds": "Пороговые линии (line)",
   "builder.annotations.addThreshold": "Линия уровня",
   "builder.annotations.cagr": "Стрелки роста (CAGR)",
+  "builder.cagr.series": "Ряд",
   "builder.annotations.addCagr": "CAGR",
   "builder.lineStyle.dash": "Пунктир (dash)",
   "builder.lineStyle.solid": "Сплошная (solid)",

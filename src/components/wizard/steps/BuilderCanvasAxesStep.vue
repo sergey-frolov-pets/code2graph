@@ -61,6 +61,28 @@ const seriesCount = computed(() => {
   return 0;
 });
 
+const cagrSeriesOptions = computed(() => {
+  const options: { index: number; label: string }[] = [];
+  let barIndex = 0;
+  for (const header of builderState.value.matrixHeaders) {
+    if (/^line:/i.test(header.trim())) {
+      continue;
+    }
+    options.push({
+      index: barIndex,
+      label: header.trim() || `${t("builder.col.series")} ${barIndex + 1}`,
+    });
+    barIndex += 1;
+  }
+  if (options.length === 0) {
+    options.push({
+      index: 0,
+      label: `${t("builder.col.series")} 1`,
+    });
+  }
+  return options;
+});
+
 const hasAdvancedCapabilities = computed(() =>
   Boolean(
     cap.value.supportsFontSize ||
@@ -1915,6 +1937,22 @@ function removeHeatmapBand(idx: number): void {
               :key="idx"
               class="builder-list-row"
             >
+              <select
+                v-model.number="cagr.seriesIndex"
+                class="select builder-input"
+                data-testid="builder-cagr-series"
+                :aria-label="t('builder.cagr.series')"
+                :title="t('builder.cagr.series')"
+                @change="notifyChange"
+              >
+                <option
+                  v-for="series in cagrSeriesOptions"
+                  :key="series.index"
+                  :value="series.index"
+                >
+                  {{ series.label }}
+                </option>
+              </select>
               <input
                 v-model.number="cagr.from"
                 type="number"
