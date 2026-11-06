@@ -18,14 +18,76 @@ export interface EditorHistorySnapshot {
 export const MIN_EDITOR_HISTORY_ENTRIES = 10;
 const MAX_EDITOR_HISTORY_ENTRIES = 50;
 
-const undoStack = ref<EditorHistoryEntry[]>([]);
-const redoStack = ref<EditorHistoryEntry[]>([]);
+interface DocumentHistoryStacks {
+  undo: EditorHistoryEntry[];
+  redo: EditorHistoryEntry[];
+}
+
+const DEFAULT_DOCUMENT_ID = "current";
+const activeDocumentId = ref(DEFAULT_DOCUMENT_ID);
+const stacks = ref<Record<string, DocumentHistoryStacks>>({});
+
+function stacksFor(documentId: string): DocumentHistoryStacks {
+  const existing = stacks.value[documentId];
+  if (existing) {
+    return existing;
+  }
+
+  const created: DocumentHistoryStacks = { undo: [], redo: [] };
+  stacks.value = {
+    ...stacks.value,
+    [documentId]: created,
+  };
+  return created;
+}
 
 export function useEditorHistory() {
-  const canUndo = computed(() => undoStack.value.length > 0);
-  const canRedo = computed(() => redoStack.value.length > 0);
-  const lastUndoLabel = computed(() => undoStack.value.at(-1)?.label ?? "");
-  const lastRedoLabel = computed(() => redoStack.value.at(-1)?.label ?? "");
+  const activeUndo = computed(
+    () => stacks.value[activeDocumentId.value]?.undo ?? [],
+  );
+  const activeRedo = computed(
+    () => stacks.value[activeDocumentId.value]?.redo ?? [],
+  );
+  const canUndo = computed(() => activeUndo.value.length > 0);
+  const canRedo = computed(() => activeRedo.value.length > 0);
+  const lastUndoLabel = computed(() => activeUndo.value.at(-1)?.label ?? "");
+  const lastRedoLabel = computed(() => activeRedo.value.at(-1)?.label ?? "");
+
+  function setActiveDocument(documentId: string): void {
+    if (!documentId || documentId === activeDocumentId.value) {
+      return;
+    }
+
+    const previousId = activeDocumentId.value;
+    activeDocumentId.value = documentId;
+
+    const previous = stacks.value[previousId];
+    const destination = stacks.value[documentId];
+    const adoptBootHistory =
+      previousId === DEFAULT_DOCUMENT_ID &&
+      previous !== undefined &&
+      (previous.undo.length > 0 || previous.redo.length > 0) &&
+      destination === undefined;
+
+    if (!adoptBootHistory) {
+      stacksFor(documentId);
+      return;
+    }
+
+    const next = { ...stacks.value, [documentId]: previous };
+    delete next[DEFAULT_DOCUMENT_ID];
+    stacks.value = next;
+  }
+
+  function forgetDocument(documentId: string): void {
+    if (!stacks.value[documentId]) {
+      return;
+    }
+
+    const next = { ...stacks.value };
+    delete next[documentId];
+    stacks.value = next;
+  }
 
   function pushHistoryEntry(
     entry: Pick<
@@ -33,22 +95,22 @@ export function useEditorHistory() {
       "before" | "after" | "label" | "beforeFormat" | "afterFormat"
     >,
   ): void {
-    undoStack.value = [
-      ...undoStack.value,
+    const documentStacks = stacksFor(activeDocumentId.value);
+    documentStacks.undo = [
+      ...documentStacks.undo,
       {
         ...entry,
         timestamp: Date.now(),
       },
     ].slice(-Math.max(MIN_EDITOR_HISTORY_ENTRIES, MAX_EDITOR_HISTORY_ENTRIES));
-
-    redoStack.value = [];
+    documentStacks.redo = [];
   }
 
   function undo(
     currentSource: string,
     currentFormat?: DiagramFormat,
   ): EditorHistorySnapshot | null {
-    const entry = undoStack.value.at(-1);
+    const entry = stacksFor(activeDocumentId.value).undo.at(-1);
     if (!entry) {
       return null;
     }
@@ -65,14 +127,15 @@ export function useEditorHistory() {
       return null;
     }
 
-    undoStack.value = undoStack.value.slice(0, -1);
-    redoStack.value = [
-      ...redoStack.value,
+    const documentStacks = stacksFor(activeDocumentId.value);
+    documentStacks.undo = documentStacks.undo.slice(0, -1);
+    documentStacks.redo = [
+      ...documentStacks.redo,
       {
-        before: entry.after,
-        after: entry.before,
-        beforeFormat: entry.afterFormat,
-        afterFormat: entry.beforeFormat,
+        before: entry.before,
+        after: entry.after,
+        beforeFormat: entry.beforeFormat,
+        afterFormat: entry.afterFormat,
         label: entry.label,
         timestamp: Date.now(),
       },
@@ -88,7 +151,7 @@ export function useEditorHistory() {
     currentSource: string,
     currentFormat?: DiagramFormat,
   ): EditorHistorySnapshot | null {
-    const entry = redoStack.value.at(-1);
+    const entry = stacksFor(activeDocumentId.value).redo.at(-1);
     if (!entry) {
       return null;
     }
@@ -105,9 +168,10 @@ export function useEditorHistory() {
       return null;
     }
 
-    redoStack.value = redoStack.value.slice(0, -1);
-    undoStack.value = [
-      ...undoStack.value,
+    const documentStacks = stacksFor(activeDocumentId.value);
+    documentStacks.redo = documentStacks.redo.slice(0, -1);
+    documentStacks.undo = [
+      ...documentStacks.undo,
       {
         before: entry.before,
         after: entry.after,
@@ -125,8 +189,9 @@ export function useEditorHistory() {
   }
 
   function clearHistory(): void {
-    undoStack.value = [];
-    redoStack.value = [];
+    const documentStacks = stacksFor(activeDocumentId.value);
+    documentStacks.undo = [];
+    documentStacks.redo = [];
   }
 
   return {
@@ -134,6 +199,8 @@ export function useEditorHistory() {
     canRedo,
     lastUndoLabel,
     lastRedoLabel,
+    setActiveDocument,
+    forgetDocument,
     pushHistoryEntry,
     undo,
     redo,

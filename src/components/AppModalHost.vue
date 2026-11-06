@@ -69,8 +69,7 @@ function onWizardApply(payload: {
   target?: "current" | "new-tab";
 }) {
   if (payload.target === "current") {
-    diagramFormat.value = payload.format;
-    applyWizardDiagram(payload.source, payload.label);
+    applyWizardDiagram(payload.source, payload.label, payload.format);
     return;
   }
   applyWizardDiagramToNewTab(payload.source, payload.label, payload.format);

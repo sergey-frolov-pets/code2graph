@@ -3,6 +3,7 @@ import {
   inject,
   provide,
   ref,
+  watch,
   type ComputedRef,
   type InjectionKey,
   type Ref,
@@ -88,7 +89,11 @@ export interface AppShellContext {
   onAiSyntaxAskOpen: (initialQuestion?: string) => void;
   onSyntaxAskFromValidation: () => void;
   applyAiPlantUml: (source: string, label: string) => void;
-  applyWizardDiagram: (source: string, label: string) => void;
+  applyWizardDiagram: (
+    source: string,
+    label: string,
+    format?: DiagramFormat,
+  ) => void;
   applyWizardDiagramToNewTab: (
     source: string,
     label: string,
@@ -141,6 +146,8 @@ export function useAppShell(): AppShellContext {
     redo: redoHistory,
     clearHistory,
     pushHistoryEntry,
+    setActiveDocument,
+    forgetDocument,
   } = useEditorHistory();
 
   const historyEditLabel = computed(() => t("editor.history.edit"));
@@ -253,6 +260,16 @@ export function useAppShell(): AppShellContext {
     editorDocumentsApi.initDocuments();
   }
 
+  watch(
+    () => editorDocumentsApi.activeDocumentId.value,
+    (documentId) => {
+      if (documentId) {
+        setActiveDocument(documentId);
+      }
+    },
+    { immediate: true },
+  );
+
   const { canExport, exportSvg, exportPng, copyPng } = useDiagramExport({
     svg,
     error,
@@ -271,6 +288,7 @@ export function useAppShell(): AppShellContext {
     onWizardDiagramApplied,
   } = useAiSourceApply({
     source,
+    diagramFormat,
     error,
     syntaxErrorLines,
     persistSettings,
@@ -406,11 +424,34 @@ export function useAppShell(): AppShellContext {
     });
   }
 
-  function applyWizardDiagramWithHistory(wizardSource: string, label: string): void {
+  function applyWizardDiagramWithHistory(
+    wizardSource: string,
+    label: string,
+    format?: DiagramFormat,
+  ): void {
     flushPendingHistory();
     withSuppressedSourceHistory(() => {
-      applyWizardDiagram(wizardSource, label);
+      applyWizardDiagram(wizardSource, label, format);
     });
+  }
+
+  function switchEditorTab(documentId: string): void {
+    flushPendingHistory();
+    withSuppressedSourceHistory(() => {
+      editorDocumentsApi.switchTab(documentId);
+    });
+  }
+
+  function closeEditorTab(documentId: string): void {
+    if (editorDocumentsApi.documents.value.length <= 1) {
+      return;
+    }
+
+    flushPendingHistory();
+    withSuppressedSourceHistory(() => {
+      editorDocumentsApi.closeTab(documentId);
+    });
+    forgetDocument(documentId);
   }
 
   function applyWizardDiagramToNewTab(
@@ -535,8 +576,8 @@ export function useAppShell(): AppShellContext {
     applyWizardDiagramToNewTab,
     editorDocuments: editorDocumentsApi.documents,
     activeDocumentId: editorDocumentsApi.activeDocumentId,
-    switchEditorTab: editorDocumentsApi.switchTab,
-    closeEditorTab: editorDocumentsApi.closeTab,
+    switchEditorTab,
+    closeEditorTab,
     savePuml,
     onVersionRestore: onVersionRestoreWithHistory,
     renderDiagram,
