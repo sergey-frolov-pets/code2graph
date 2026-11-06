@@ -56,4 +56,37 @@ describe("useEditorSourceHistory", () => {
 
     vi.useRealTimers();
   });
+
+  it("remembers a format change that arrives with the edit", async () => {
+    vi.useFakeTimers();
+
+    const source = ref("flowchart TD\n  A");
+    const diagramFormat = ref<"mermaid" | "plantuml">("mermaid");
+    const isSuppressed = ref(false);
+    const pushHistoryEntry = vi.fn();
+
+    useEditorSourceHistory({
+      source,
+      diagramFormat,
+      pushHistoryEntry,
+      historyEditLabel: computed(() => "Edit"),
+      isSuppressed,
+    });
+
+    source.value = "@startuml\nA -> B\n@enduml";
+    await nextTick();
+    diagramFormat.value = "plantuml";
+    await vi.advanceTimersByTimeAsync(400);
+    await nextTick();
+
+    expect(pushHistoryEntry).toHaveBeenCalledWith({
+      before: "flowchart TD\n  A",
+      after: "@startuml\nA -> B\n@enduml",
+      label: "Edit",
+      beforeFormat: "mermaid",
+      afterFormat: "plantuml",
+    });
+
+    vi.useRealTimers();
+  });
 });

@@ -10,6 +10,8 @@ export interface UseEditorSourceHistoryOptions {
     before: string;
     after: string;
     label: string;
+    beforeFormat?: DiagramFormat;
+    afterFormat?: DiagramFormat;
   }) => void;
   historyEditLabel: ComputedRef<string>;
   isSuppressed: Ref<boolean>;
@@ -23,12 +25,14 @@ export function useEditorSourceHistory(
 } {
   const {
     source,
+    diagramFormat,
     pushHistoryEntry,
     historyEditLabel,
     isSuppressed,
   } = options;
 
   let pendingBefore: string | null = null;
+  let pendingBeforeFormat: DiagramFormat | null = null;
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   function flushPendingHistory(): void {
@@ -39,14 +43,18 @@ export function useEditorSourceHistory(
 
     if (pendingBefore === null || isSuppressed.value) {
       pendingBefore = null;
+      pendingBeforeFormat = null;
       return;
     }
 
     const before = pendingBefore;
+    const beforeFormat = pendingBeforeFormat ?? diagramFormat.value;
     const after = source.value;
+    const afterFormat = diagramFormat.value;
     pendingBefore = null;
+    pendingBeforeFormat = null;
 
-    if (before === after) {
+    if (before === after && beforeFormat === afterFormat) {
       return;
     }
 
@@ -54,6 +62,9 @@ export function useEditorSourceHistory(
       before,
       after,
       label: historyEditLabel.value,
+      ...(beforeFormat === afterFormat
+        ? {}
+        : { beforeFormat, afterFormat }),
     });
   }
 
@@ -64,6 +75,7 @@ export function useEditorSourceHistory(
     }
 
     pendingBefore = null;
+    pendingBeforeFormat = null;
   }
 
   function scheduleFlush(): void {
@@ -82,6 +94,7 @@ export function useEditorSourceHistory(
     (_newValue, oldValue) => {
       if (isSuppressed.value) {
         pendingBefore = null;
+        pendingBeforeFormat = null;
         if (debounceTimer) {
           clearTimeout(debounceTimer);
           debounceTimer = null;
@@ -91,6 +104,7 @@ export function useEditorSourceHistory(
 
       if (pendingBefore === null) {
         pendingBefore = oldValue;
+        pendingBeforeFormat = diagramFormat.value;
       }
 
       scheduleFlush();

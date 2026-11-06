@@ -1,8 +1,10 @@
 import { ref, type Ref } from "vue";
+import type { DiagramFormat } from "@/constants/diagram-formats";
 import { useEditorFoldOnboarding } from "@/composables/wizard/useWizardOnboarding";
 
 export interface UseAiSourceApplyOptions {
   source: Ref<string>;
+  diagramFormat: Ref<DiagramFormat>;
   error: Ref<string>;
   syntaxErrorLines: Ref<number[]>;
   persistSettings: () => void;
@@ -11,12 +13,15 @@ export interface UseAiSourceApplyOptions {
     before: string;
     after: string;
     label: string;
+    beforeFormat?: DiagramFormat;
+    afterFormat?: DiagramFormat;
   }) => void;
 }
 
 export function useAiSourceApply(options: UseAiSourceApplyOptions) {
   const {
     source,
+    diagramFormat,
     error,
     syntaxErrorLines,
     persistSettings,
@@ -33,22 +38,42 @@ export function useAiSourceApply(options: UseAiSourceApplyOptions) {
     patchSelectionEnd.value = payload.end;
   }
 
-  function applyAiPlantUml(plantuml: string, label: string): void {
+  function applyAiPlantUml(
+    plantuml: string,
+    label: string,
+    nextFormat?: DiagramFormat,
+  ): void {
     const before = source.value;
-    if (before === plantuml) {
+    const beforeFormat = diagramFormat.value;
+    const afterFormat = nextFormat ?? beforeFormat;
+    if (before === plantuml && beforeFormat === afterFormat) {
       return;
     }
 
-    pushHistoryEntry({ before, after: plantuml, label });
+    pushHistoryEntry({
+      before,
+      after: plantuml,
+      label,
+      ...(beforeFormat === afterFormat
+        ? {}
+        : { beforeFormat, afterFormat }),
+    });
     source.value = plantuml;
+    if (afterFormat !== beforeFormat) {
+      diagramFormat.value = afterFormat;
+    }
     syntaxErrorLines.value = [];
     error.value = "";
     persistSettings();
     scheduleRender();
   }
 
-  function applyWizardDiagram(source: string, label: string): void {
-    applyAiPlantUml(source, label);
+  function applyWizardDiagram(
+    nextSource: string,
+    label: string,
+    nextFormat?: DiagramFormat,
+  ): void {
+    applyAiPlantUml(nextSource, label, nextFormat);
     maybeShowAfterWizardApply();
   }
 
