@@ -558,6 +558,7 @@ function detectMermaidExtPromptRules(promptText: string): string[] | null {
       "Format: Mermaid Ext series chart (grouped bars).",
       "The opening keyword is `series` only. Do not emit `clustered`.",
       `Start with keyword \`series\`,${rotate ? " include `rotate 90` for 90-degree horizontal orientation," : ""} \`categories <C1>, <C2>, ...\`, optional \`y "label" min --> max\`, \`grid\`, and \`colors s1=#hex s2=#hex ...\`.`,
+      "With `rotate 90`, categories run top to bottom. `invert y` flips that vertical axis so the first category is at the bottom. `invert y off` restores top-to-bottom order. Without `rotate 90` the directive is kept but does not move the bars.",
       "Each bar series is `series <Name> : <v1>, <v2>, ... [color=#hex]` matching the number of categories. The name may be omitted: `series : <v1>, <v2>, ...`. An unnamed series is drawn but not listed in the legend. An empty slot, `-`, or `null` skips that category.",
       "A line is `line <Label> : <v1>, <v2>, ... [color=#hex] [style=solid|dash|dot|dashdot] [width=N]`. The label is drawn to the right of the plot. The label may be omitted: `line : <v1>, <v2>, ...` draws the line with no caption. A skipped slot does not break the line: connect the point before the gap to the point after it.",
       "A horizontal level (plan, target, threshold) is `line <value> [\"label\"] [color=#hex] [width=N] [style=solid|dash|dot|dashdot]` with no colon. Default style is dash.",

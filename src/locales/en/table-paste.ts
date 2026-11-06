@@ -107,7 +107,7 @@ export const tablePasteMessages = {
   "tablePaste.expected.clustered.columns":
     "Matrix at least 2×2: first column has categories, first row has series names (or transposed when header starts with 'Series').",
   "tablePaste.expected.clustered.rules":
-    "Generates categories and series lines while keeping rotate 90 and color directives.",
+    "Generates categories and series lines while keeping rotate 90, invert y, and color directives.",
   "tablePaste.expected.clustered.headers": "Category|North|South|Export",
   "tablePaste.expected.xychart.columns":
     "1 or more columns. One column is numbers for bar [Val 1, ..., Val n]. Two columns are 'X category' and 'Bar value'. Three or more are 'X category' plus one bar series per extra column.",

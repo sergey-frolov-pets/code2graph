@@ -185,6 +185,51 @@ series Экспорт : 45, 55, 70, 90 color=#f97316`;
     expect(viaEntry).toContain("<svg");
   });
 
+  it("invert y flips the vertical category axis only together with rotate 90", () => {
+    const barY = (svg: string, id: string): number =>
+      Number(new RegExp(`<rect[^>]*y="([\\d.]+)"[^>]*data-bar="${id}"`).exec(svg)?.[1]);
+
+    const rotated = clusteredEngine.parse(`${baseSource}\nrotate 90`);
+    const inverted = clusteredEngine.parse(`${baseSource}\nrotate 90\ninvert y`);
+    const reverted = clusteredEngine.parse(`${baseSource}\nrotate 90\ninvert vertical\ninvert y off`);
+    expect(rotated.ok).toBe(true);
+    expect(inverted.ok).toBe(true);
+    expect(reverted.ok).toBe(true);
+    expect(rotated.value?.invertY).toBe(false);
+    expect(inverted.value?.invertY).toBe(true);
+    expect(reverted.value?.invertY).toBe(false);
+
+    const svgRotated = clusteredEngine.render(rotated.value as ClusteredModel, {});
+    const svgInverted = clusteredEngine.render(inverted.value as ClusteredModel, {});
+    expect(barY(svgRotated, "0-0")).toBeLessThan(barY(svgRotated, "3-0"));
+    expect(barY(svgInverted, "0-0")).toBeGreaterThan(barY(svgInverted, "3-0"));
+    expect(barY(svgInverted, "0-0")).toBeCloseTo(barY(svgRotated, "3-0"));
+
+    const withLine = clusteredEngine.parse(`series
+rotate 90
+invert y
+categories A, B
+series S : 1, 2
+line L : 3, 4`);
+    expect(withLine.ok).toBe(true);
+    const lineSvg = clusteredEngine.render(withLine.value as ClusteredModel, {});
+    const points = /<polyline[^>]*points="([^"]+)"[^>]*data-line="0"/.exec(lineSvg)?.[1] ?? "";
+    const ys = points.trim().split(/\s+/).map((pair) => Number(pair.split(",")[1]));
+    expect(ys[0]).toBeGreaterThan(ys[1]);
+
+    const vertical = clusteredEngine.parse(baseSource);
+    const verticalInverted = clusteredEngine.parse(`${baseSource}\ninvert y`);
+    expect(verticalInverted.value?.invertY).toBe(true);
+    const svgVertical = clusteredEngine.render(vertical.value as ClusteredModel, {});
+    const svgVerticalInverted = clusteredEngine.render(verticalInverted.value as ClusteredModel, {});
+    expect(barY(svgVerticalInverted, "0-0")).toBe(barY(svgVertical, "0-0"));
+    expect(barY(svgVerticalInverted, "3-0")).toBe(barY(svgVertical, "3-0"));
+
+    const broken = clusteredEngine.parse(`${baseSource}\ninvert x`);
+    expect(broken.ok).toBe(false);
+    expect(broken.errors[0]?.message).toContain("invert y");
+  });
+
   it("stacks series into one column and supports inverted mono", () => {
     const stacked = clusteredEngine.parse(`${baseSource}\nstacked`);
     expect(stacked.ok).toBe(true);

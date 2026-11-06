@@ -281,6 +281,7 @@ series Партнёры : 45, 60, 75, 95 color=#f97316`,
 %% Серийная диаграмма С ПОВОРОТОМ НА 90 ГРАДУСОВ (rotate 90).
 %% Директива rotate 90 (или orientation horizontal) разворачивает оси:
 %% категории идут сверху вниз слева, а полосы серий растут слева направо.
+%% Первая категория снизу: добавьте invert y (снять — invert y off).
 %% Вернуть классический вертикальный вид: rotate 0 (или убрать строку rotate 90).
 title Выручка по каналам (поворот 90°)
 rotate 90
@@ -697,6 +698,7 @@ series Partners : 45, 60, 75, 95 color=#f97316`,
 %% Series chart ROTATED BY 90 DEGREES (rotate 90).
 %% The rotate 90 directive (or orientation horizontal) swaps the axes:
 %% categories run top-to-bottom on the left, and grouped bars grow left-to-right.
+%% Put the first category at the bottom with: invert y (revert with invert y off).
 %% Switch back to vertical bars with: rotate 0 (or remove rotate 90).
 title Revenue by channel (rotated 90°)
 rotate 90

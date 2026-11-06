@@ -487,12 +487,13 @@ describe("Category A & B table parsers", () => {
 
     const clusteredRes = applyTableFromClipboardText({
       clipboardText: "Квартал\tМосква\tРегионы\nQ1\t120\t80\nQ2\t145\t95",
-      source: "series\ntitle Выручка\nrotate 90\ncolors s1=#0969da s2=#8250df\ncategories A\nseries S : 1",
+      source: "series\ntitle Выручка\nrotate 90\ninvert y\ncolors s1=#0969da s2=#8250df\ncategories A\nseries S : 1",
       format: "mermaid",
     });
     expect(clusteredRes.ok).toBe(true);
     if (clusteredRes.ok) {
       expect(clusteredRes.fullSource).toContain("rotate 90");
+      expect(clusteredRes.fullSource).toContain("invert y");
       expect(clusteredRes.fullSource).toContain("categories Q1, Q2");
       expect(clusteredRes.fullSource).toContain("series Москва : 120, 145");
       expect(clusteredRes.fullSource).toContain("series Регионы : 80, 95");

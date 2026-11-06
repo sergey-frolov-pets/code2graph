@@ -97,11 +97,12 @@ describe("diagram-builder core", () => {
     expect(reParsed.value?.lines).toHaveLength(1);
   });
 
-  it("round-trips series (clustered) diagram with rotate 90, stacked, breaks, lines, and cagr", () => {
+  it("round-trips series (clustered) diagram with rotate 90, invert y, stacked, breaks, lines, and cagr", () => {
     const source = [
       "series",
       "title Quarterly Sales",
       "rotate 90",
+      "invert y",
       "stacked",
       "ratio 16x9",
       "categories Q1, Q2, Q3",
@@ -117,6 +118,7 @@ describe("diagram-builder core", () => {
     const state = parseSourceToBuilderState(source, "mermaid");
     expect(state.diagramType).toBe("series");
     expect(state.canvas.rotate90).toBe(true);
+    expect(state.canvas.invertY).toBe(true);
     expect(state.options.stacked).toBe(true);
     expect(state.canvas.aspectRatio).toBe("16x9");
     expect(state.matrixHeaders).toEqual(["Online", "Retail"]);
@@ -135,7 +137,13 @@ describe("diagram-builder core", () => {
     const reParsed = parseClustered(emitted);
     expect(reParsed.ok).toBe(true);
     expect(reParsed.value?.rotate90).toBe(true);
+    expect(reParsed.value?.invertY).toBe(true);
+    expect(emitted).toContain("invert y");
     expect(reParsed.value?.stack).toBe(true);
+    state.canvas.invertY = false;
+    const upright = emitSourceFromBuilderState(state);
+    expect(upright).not.toContain("invert y");
+    expect(parseClustered(upright).value?.invertY).toBe(false);
     expect(reParsed.value?.cagrs).toHaveLength(1);
     expect(reParsed.value?.cagrs[0]?.seriesIndex).toBe(1);
   });

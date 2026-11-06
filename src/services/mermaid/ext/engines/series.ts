@@ -98,6 +98,11 @@ export interface ClusteredModel {
   y?: { label?: string; min?: number; max?: number };
   /** Поворот на 90 градусов: горизонтальные сгруппированные полосы вместо вертикальных столбцов. */
   rotate90: boolean;
+  /**
+   * Вместе с `rotate 90` переворачивает вертикальную ось категорий:
+   * первая категория оказывается снизу. Без поворота на раскладку не влияет.
+   */
+  invertY: boolean;
   /** `stacked` — серии в одном столбце, а не рядом. */
   stack: boolean;
   grid: boolean;
@@ -213,6 +218,27 @@ function parseRotateDirective(
     };
   }
   return {};
+}
+
+function parseInvertYDirective(
+  raw: string,
+  lineNo: number,
+): { invertY?: boolean; error?: ExtParseError } {
+  const body = raw.replace(/^invert\s+/i, "").trim().toLowerCase();
+  const [axis, flag, extra] = body.split(/\s+/).filter(Boolean);
+  const knownAxis = axis === "y" || axis === "vertical";
+  const turnsOn = !flag || flag === "on" || flag === "true" || flag === "yes";
+  const turnsOff = flag === "off" || flag === "false" || flag === "no";
+  if (!knownAxis || extra || (!turnsOn && !turnsOff)) {
+    return {
+      error: {
+        message: `ожидается «invert y» или «invert y off», получено «${raw}»`,
+        line: lineNo,
+        col: 0,
+      },
+    };
+  }
+  return { invertY: turnsOn };
 }
 
 const SKIP_SLOT_RE = /^(?:null|nil|na|n\/a|none|~|\*|—|–|-)?$/i;
@@ -609,6 +635,7 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
   let categories: string[] | null = null;
   let yAxis: ClusteredModel["y"];
   let rotate90 = false;
+  let invertY = false;
   let stack = false;
   let grid = true;
   let gridStep: number | undefined;
@@ -662,6 +689,13 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
         const parsed = parseRotateDirective(raw, lineNo);
         if (parsed.error) errors.push(parsed.error);
         else if (parsed.rotate90 !== undefined) rotate90 = parsed.rotate90;
+        continue;
+      }
+
+      if (/^invert\b/i.test(raw) && !raw.includes(":")) {
+        const parsed = parseInvertYDirective(raw, lineNo);
+        if (parsed.error) errors.push(parsed.error);
+        else if (parsed.invertY !== undefined) invertY = parsed.invertY;
         continue;
       }
 
@@ -831,7 +865,7 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
     }
 
     errors.push({
-      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, rotate 90, categories, y, grid, axis, labels, fontsize, mono, stacked, colors, ratio, series, line, break, cagr)`,
+      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, rotate 90, invert y, categories, y, grid, axis, labels, fontsize, mono, stacked, colors, ratio, series, line, break, cagr)`,
       line: lineNo,
       col: 0,
     });
@@ -982,6 +1016,7 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
       categories,
       y: yAxis,
       rotate90,
+      invertY,
       stack,
       grid,
       gridStep,
@@ -1979,6 +2014,11 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
   return svg.toString();
 }
 
+/** Ряд категории на вертикальной оси после поворота. `invert y` ставит первую категорию вниз. */
+function categoryRowSlot(index: number, count: number, invertY: boolean): number {
+  return invertY ? count - 1 - index : index;
+}
+
 function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOptions): string {
   const palette = resolvePalette(
     chartIsDark(options.dark, model.monoInvert),
@@ -2133,7 +2173,7 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
   const obstacles = Array.from({ length: catCount }, () => Number.NEGATIVE_INFINITY);
 
   for (let c = 0; c < catCount; c += 1) {
-    const rowCenter = plotTop + (c + 0.5) * rowHeight;
+    const rowCenter = plotTop + (categoryRowSlot(c, catCount, model.invertY) + 0.5) * rowHeight;
     const clusterTop = rowCenter - barsGroupHeight / 2;
 
     drawLabelLines(
@@ -2289,7 +2329,7 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
 
   drawSeriesLines(svg, model, palette, fontSize, plotRight, (index, value) => ({
     x: xClamped(value),
-    y: plotTop + (index + 0.5) * rowHeight,
+    y: plotTop + (categoryRowSlot(index, catCount, model.invertY) + 0.5) * rowHeight,
   }));
   drawCagrAnnotations(svg, model, palette, fontSize, anchors, obstacles, false, barHeight, {
     minX: plotLeft,

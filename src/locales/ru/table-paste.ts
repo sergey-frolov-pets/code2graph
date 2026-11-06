@@ -107,7 +107,7 @@ export const tablePasteMessages = {
   "tablePaste.expected.clustered.columns":
     "Матрица минимум 2×2: первый столбец — категории, первая строка — названия серий (или наоборот, если шапка начинается со слова «Серия»).",
   "tablePaste.expected.clustered.rules":
-    "Формирует categories и строки series. Сохраняет директиву поворота rotate 90 и цвета.",
+    "Формирует categories и строки series. Сохраняет директивы rotate 90, invert y и цвета.",
   "tablePaste.expected.clustered.headers": "Категория|Москва|Регионы|Экспорт",
   "tablePaste.expected.xychart.columns":
     "От 1 колонки. Одна колонка — числа для bar [Val 1, ..., Val n]. Две — «Категория X» и «Значение bar». Три и больше — «Категория X» и отдельный bar на каждую следующую колонку.",
