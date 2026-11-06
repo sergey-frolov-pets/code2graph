@@ -7,6 +7,7 @@ const props = defineProps<{
   disabled?: boolean;
   pressed?: boolean;
   primary?: boolean;
+  success?: boolean;
   format?: boolean;
   extraClass?: string;
   preventMousedownDefault?: boolean;
@@ -56,6 +57,7 @@ function onClick(event: MouseEvent): void {
       props.extraClass,
       {
         'btn-primary': primary,
+        'btn-success': success,
         'btn-format': format,
         'icon-btn--pressed': pressed,
       },
