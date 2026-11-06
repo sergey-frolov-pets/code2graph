@@ -15,8 +15,11 @@ export interface EditorHistorySnapshot {
   format?: DiagramFormat;
 }
 
-export const MIN_EDITOR_HISTORY_ENTRIES = 10;
-const MAX_EDITOR_HISTORY_ENTRIES = 50;
+export const MAX_EDITOR_HISTORY_ENTRIES = 10;
+
+function trimHistory(entries: EditorHistoryEntry[]): EditorHistoryEntry[] {
+  return entries.slice(-MAX_EDITOR_HISTORY_ENTRIES);
+}
 
 interface DocumentHistoryStacks {
   undo: EditorHistoryEntry[];
@@ -96,13 +99,13 @@ export function useEditorHistory() {
     >,
   ): void {
     const documentStacks = stacksFor(activeDocumentId.value);
-    documentStacks.undo = [
+    documentStacks.undo = trimHistory([
       ...documentStacks.undo,
       {
         ...entry,
         timestamp: Date.now(),
       },
-    ].slice(-Math.max(MIN_EDITOR_HISTORY_ENTRIES, MAX_EDITOR_HISTORY_ENTRIES));
+    ]);
     documentStacks.redo = [];
   }
 
@@ -129,7 +132,7 @@ export function useEditorHistory() {
 
     const documentStacks = stacksFor(activeDocumentId.value);
     documentStacks.undo = documentStacks.undo.slice(0, -1);
-    documentStacks.redo = [
+    documentStacks.redo = trimHistory([
       ...documentStacks.redo,
       {
         before: entry.before,
@@ -139,7 +142,7 @@ export function useEditorHistory() {
         label: entry.label,
         timestamp: Date.now(),
       },
-    ];
+    ]);
 
     return {
       source: entry.before,
@@ -170,7 +173,7 @@ export function useEditorHistory() {
 
     const documentStacks = stacksFor(activeDocumentId.value);
     documentStacks.redo = documentStacks.redo.slice(0, -1);
-    documentStacks.undo = [
+    documentStacks.undo = trimHistory([
       ...documentStacks.undo,
       {
         before: entry.before,
@@ -180,7 +183,7 @@ export function useEditorHistory() {
         label: entry.label,
         timestamp: Date.now(),
       },
-    ];
+    ]);
 
     return {
       source: entry.after,
