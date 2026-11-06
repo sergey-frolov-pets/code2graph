@@ -17,6 +17,7 @@ import {
   type DiagramFormat,
   type DiagramFormatDefinition,
 } from "@/constants/diagram-formats";
+import { isMermaidExtSampleId } from "@/constants/mermaid-sample-diagrams";
 import { DIAGRAM_LANGUAGE_MODULES, getLanguageModule } from "@/languages/registry";
 import { isLocaleKey } from "@/locales/types";
 import { SNIPPETS_KEYBOARD_SHORTCUT } from "@/constants/snippets-settings";
@@ -73,6 +74,7 @@ const sampleOptions = computed(() =>
       {
         value: `${props.formatDefinition.id}:${id}`,
         label: t(key),
+        ext: props.formatDefinition.id === "mermaid" && isMermaidExtSampleId(id),
       },
     ];
   }),
@@ -302,6 +304,8 @@ function onSampleChange(event: Event): void {
               v-for="sample in sampleOptions"
               :key="sample.value"
               :value="sample.value"
+              :class="{ 'sample-option--ext': sample.ext }"
+              :style="sample.ext ? { fontStyle: 'italic' } : undefined"
             >
               {{ sample.label }}
             </option>
@@ -385,6 +389,10 @@ function onSampleChange(event: Event): void {
   min-height: 32px;
   padding: 0 8px;
   font-size: 0.78rem;
+}
+
+.sample-option--ext {
+  font-style: italic;
 }
 
 .sr-only {
