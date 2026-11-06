@@ -46,7 +46,6 @@ const {
   isPatchModalOpen,
   isSyntaxAskModalOpen,
   isWizardModalOpen,
-  isWizardStartInBuilder,
   isSaveToLibraryModalOpen,
   isConvertModalOpen,
   openSettingsModal,
@@ -179,9 +178,6 @@ function onWizardApply(payload: {
     :layout="layout"
     :render-mode="renderMode"
     :diagram-dark-mode="diagramDarkMode"
-    :current-editor-source="source"
-    :current-editor-format="diagramFormat"
-    :start-in-builder="isWizardStartInBuilder"
     @close="closeWizardModal"
     @apply="onWizardApply"
   />

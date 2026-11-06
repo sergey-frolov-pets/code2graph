@@ -21,7 +21,6 @@ import { isMermaidExtSampleId } from "@/constants/mermaid-sample-diagrams";
 import { DIAGRAM_LANGUAGE_MODULES, getLanguageModule } from "@/languages/registry";
 import { isLocaleKey } from "@/locales/types";
 import { SNIPPETS_KEYBOARD_SHORTCUT } from "@/constants/snippets-settings";
-import { supportsDiagramBuilder } from "@/services/diagram-builder";
 
 const props = defineProps<{
   formatDefinition: DiagramFormatDefinition;
@@ -37,6 +36,8 @@ const props = defineProps<{
   canPasteTable?: boolean;
   snippetsOpen: boolean;
   isFullscreen: boolean;
+  surfaceMode: "code" | "builder";
+  builderAvailable: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -47,7 +48,7 @@ const emit = defineEmits<{
   aiPatch: [];
   aiSyntaxAsk: [];
   pasteTable: [];
-  openBuilder: [];
+  setSurfaceMode: [mode: "code" | "builder"];
   validateSyntax: [];
   undo: [];
   redo: [];
@@ -151,7 +152,40 @@ function onSampleChange(event: Event): void {
 <template>
   <header class="panel-header">
     <div class="panel-title-group">
-      <h2 class="panel-title panel-title--editor" :title="titleTooltip">
+      <div
+        v-if="builderAvailable"
+        class="editor-surface-switch"
+        role="radiogroup"
+        :aria-label="t('editor.surface.label')"
+      >
+        <button
+          type="button"
+          class="editor-surface-switch__option"
+          role="radio"
+          :aria-checked="surfaceMode === 'code'"
+          :class="{ 'is-active': surfaceMode === 'code' }"
+          data-testid="editor-surface-code"
+          @click="emit('setSurfaceMode', 'code')"
+        >
+          {{ t("editor.title") }}
+        </button>
+        <button
+          type="button"
+          class="editor-surface-switch__option"
+          role="radio"
+          :aria-checked="surfaceMode === 'builder'"
+          :class="{ 'is-active': surfaceMode === 'builder' }"
+          data-testid="editor-surface-builder"
+          @click="emit('setSurfaceMode', 'builder')"
+        >
+          {{ t("editor.surface.builder") }}
+        </button>
+      </div>
+      <h2
+        v-else
+        class="panel-title panel-title--editor"
+        :title="titleTooltip"
+      >
         {{ t("editor.title") }}
       </h2>
       <label class="format-select-wrap">
@@ -246,15 +280,6 @@ function onSampleChange(event: Event): void {
         <ActionIcon name="table-paste" />
       </IconButton>
       <IconButton
-        v-if="formatDefinition.editable && supportsDiagramBuilder(formatDefinition.id)"
-        :label="t('builder.openFromEditor')"
-        :disabled="isRendering || !canClear"
-        data-testid="editor-open-builder-button"
-        @click="emit('openBuilder')"
-      >
-        <ActionIcon name="builder" />
-      </IconButton>
-      <IconButton
         v-if="formatDefinition.editable"
         :label="t('editor.undo')"
         :disabled="!canUndo"
@@ -340,6 +365,35 @@ function onSampleChange(event: Event): void {
   flex: 0 0 auto;
   min-width: 0;
   overflow: visible;
+}
+
+.editor-surface-switch {
+  display: inline-flex;
+  align-items: stretch;
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.editor-surface-switch__option {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 5px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.editor-surface-switch__option.is-active {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  color: var(--accent);
 }
 
 .panel-title--editor {
