@@ -15,6 +15,7 @@ import {
   splitLabelLines,
   usesInvertedMono,
 } from "../common";
+import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 import { isColor } from "./waterfall/directive-parsers";
 
@@ -56,6 +57,7 @@ export interface OrgModel {
   root: string | null;
   /** true — корней несколько, рисуется виртуальный корень. */
   virtualRoot: boolean;
+  ratio?: ChartAspect;
 }
 
 /** Служебный id виртуального корня. */
@@ -344,6 +346,7 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
   let title: string | undefined;
   let mono = false;
   let monoInvert = false;
+  let ratio: ChartAspect | undefined;
   const nodes: OrgNode[] = [];
   const nodeIndex = new Map<string, OrgNode>();
   const edges: OrgEdge[] = [];
@@ -375,6 +378,16 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
 
     if (/^title\b/i.test(raw)) {
       title = raw.replace(/^title\s*/i, "").trim() || undefined;
+      continue;
+    }
+
+    const aspect = parseAspectDirective(raw);
+    if (aspect) {
+      if ("error" in aspect) {
+        errors.push({ message: aspect.error, line: lineNo, col: 0 });
+      } else {
+        ratio = aspect.aspect;
+      }
       continue;
     }
 
@@ -460,6 +473,7 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
       edges,
       root: virtualRoot ? null : roots[0],
       virtualRoot,
+      ratio,
     },
   };
 }
@@ -779,8 +793,25 @@ export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): stri
 
   const titleLines = model.title && hasLabelBreak(model.title) ? splitLabelLines(model.title) : null;
   const titleExtra = titleLines ? (titleLines.length - 1) * labelLineStep(15) : 0;
-  const width = PADDING.left + contentWidth + PADDING.right;
-  const height = PADDING.top + titleExtra + contentHeight + PADDING.bottom;
+  let width = PADDING.left + contentWidth + PADDING.right;
+  let height = PADDING.top + titleExtra + contentHeight + PADDING.bottom;
+  let padX = 0;
+  let padY = 0;
+  if (model.ratio) {
+    const grown = growPlotToAspect(
+      {
+        plotWidth: contentWidth,
+        plotHeight: contentHeight,
+        totalWidth: width,
+        totalHeight: height,
+      },
+      model.ratio,
+    );
+    padX = Math.max(0, grown.plotWidth - contentWidth);
+    padY = Math.max(0, grown.plotHeight - contentHeight);
+    width += padX;
+    height += padY;
+  }
 
   const svg = createSvg({
     width,
@@ -806,8 +837,8 @@ export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): stri
   }
 
   const byId = new Map(placed.map((p) => [p.node.id, p]));
-  const offsetX = PADDING.left;
-  const offsetY = PADDING.top + titleExtra;
+  const offsetX = PADDING.left + padX / 2;
+  const offsetY = PADDING.top + titleExtra + padY / 2;
 
   const marker = arrowMarker(palette, "ext-org-arrow");
   svg.raw(marker.markup);

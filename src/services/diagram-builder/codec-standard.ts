@@ -24,6 +24,12 @@ import { formatCleanNumber } from "@/services/table-paste/parse-clipboard-grid";
 import { applyTableFromClipboardText } from "@/services/table-paste";
 import { detectDiagramDirection } from "@/services/conversion/classify-diagram-kind";
 import {
+  aspectFieldsFromMarker,
+  canvasAspectToken,
+  insertAspectMarker,
+  readAspectMarker,
+} from "@/utils/svg-aspect-frame";
+import {
   applyAppearanceFromConfig,
   buildMermaidConfigHeader,
   injectSequenceAutonumber,
@@ -95,6 +101,13 @@ export function parseStandardDiagramToBuilderState(
   diagramType: DiagramTypeTag,
 ): DiagramBuilderState {
   const state = createDefaultBuilderState(format, diagramType);
+  const markedAspect = readAspectMarker(source);
+  if (markedAspect) {
+    const fields = aspectFieldsFromMarker(markedAspect);
+    state.canvas.aspectRatio = fields.preset;
+    state.canvas.customAspectWidth = fields.customW;
+    state.canvas.customAspectHeight = fields.customH;
+  }
   const frontmatter = splitMermaidFrontmatter(source);
   applyAppearanceFromConfig(state.appearance, frontmatter.config);
   source = frontmatter.body;
@@ -560,11 +573,15 @@ export function emitStandardDiagramFromBuilderState(
   originalSource = "",
 ): string {
   const source = emitStandardDiagramBody(state, originalSource);
-  if (state.appearance.sequenceAutonumber && state.diagramType === "sequence") {
-    const withNumbers = injectSequenceAutonumber(source, state.format);
-    return prependMermaidConfig(state, withNumbers);
-  }
-  return prependMermaidConfig(state, source);
+  const withNumbers =
+    state.appearance.sequenceAutonumber && state.diagramType === "sequence"
+      ? injectSequenceAutonumber(source, state.format)
+      : source;
+  return insertAspectMarker(
+    prependMermaidConfig(state, withNumbers),
+    state.format,
+    canvasAspectToken(state.canvas),
+  );
 }
 
 function prependMermaidConfig(state: DiagramBuilderState, source: string): string {

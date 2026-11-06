@@ -352,6 +352,7 @@ function applyAppearanceCapabilities(
   format: DiagramFormat,
   diagramType: DiagramTypeTag,
 ): void {
+  cap.supportsAspectRatio = true;
   cap.supportsTitle = builderShowsTitle(format, diagramType);
   const mermaid = format === "mermaid";
   cap.supportsSankeyStyle = mermaid && diagramType === "sankey";

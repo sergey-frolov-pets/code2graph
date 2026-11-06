@@ -1,6 +1,7 @@
 import { D2, type CompileOptions } from "@d2lang/d2";
 import { unwrapD2Source } from "@shared/d2-source";
 import { LocalizedAppError } from "@/utils/localized-app-error";
+import { applyMarkedAspectFrame } from "@/utils/svg-aspect-frame";
 
 /** Neutral Default. See D2 theme ids. */
 const D2_THEME_NEUTRAL = 0;
@@ -66,5 +67,5 @@ export async function renderD2ToSvg(
     ...compileOptions,
   });
   ready = true;
-  return svg;
+  return applyMarkedAspectFrame(prepared, svg);
 }

@@ -14,6 +14,7 @@ import {
 } from "@/services/diagram-typography";
 import { prepareMermaidSource } from "@/utils/mermaid-source";
 import { isMermaidExtDeclaration } from "@/utils/mermaid-syntax";
+import { applyMarkedAspectFrame } from "@/utils/svg-aspect-frame";
 
 let initialized = false;
 let renderCounter = 0;
@@ -205,6 +206,18 @@ export async function renderMermaidToSvg(
 ): Promise<string> {
   // Типы расширения mermaid.ink не знает: отправлять их на сервер бессмысленно
   // (вернётся ошибка разбора). Рисуем сразу своим движком.
+  const svg = await renderMermaidSvg(source, options, renderMode);
+  if (__MERMAID_EXT__ && isMermaidExtDeclaration(source)) {
+    return svg;
+  }
+  return applyMarkedAspectFrame(source, svg);
+}
+
+async function renderMermaidSvg(
+  source: string,
+  options: MermaidRenderOptions,
+  renderMode: RenderMode,
+): Promise<string> {
   if (__MERMAID_EXT__ && isMermaidExtDeclaration(source)) {
     lastRenderUsedOnlineInk = false;
     return renderMermaidOfflineToSvg(source, options);

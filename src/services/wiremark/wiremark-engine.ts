@@ -1,5 +1,6 @@
 import { render, WiremarkError } from "@wiremark/core";
 import { LocalizedAppError } from "@/utils/localized-app-error";
+import { applyMarkedAspectFrame } from "@/utils/svg-aspect-frame";
 import { unwrapWiremarkSource } from "@/utils/wiremark-source";
 
 /** MUI spacing units. 2 × 8px matches WireMark's documented frame inset. */
@@ -106,7 +107,7 @@ export function renderWiremarkToSvg(
       });
     }
 
-    return expandSvgMargin(svg, WIREMARK_VIEWBOX_MARGIN_PX);
+    return applyMarkedAspectFrame(unwrapped, expandSvgMargin(svg, WIREMARK_VIEWBOX_MARGIN_PX));
   } catch (error) {
     if (error instanceof LocalizedAppError) {
       throw error;

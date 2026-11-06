@@ -562,4 +562,38 @@ Site,"Bounce, no click",40`,
     flow.canvas.direction = "BT";
     expect(emitSourceFromBuilderState(flow)).toContain("flowchart BT");
   });
+
+  it("offers an aspect ratio on every diagram and writes it into the source", () => {
+    const types = ["flowchart", "sankey", "pie", "sequence", "mindmap", "gantt", "radar", "orgchart"] as const;
+    for (const diagramType of types) {
+      expect(getDiagramBuilderSchema("mermaid", diagramType).capabilities.supportsAspectRatio).toBe(true);
+    }
+    expect(getDiagramBuilderSchema("plantuml", "sequence").capabilities.supportsAspectRatio).toBe(true);
+    expect(getDiagramBuilderSchema("d2", "flowchart").capabilities.supportsAspectRatio).toBe(true);
+    expect(getDiagramBuilderSchema("wiremark", "wireframe").capabilities.supportsAspectRatio).toBe(true);
+
+    const flow = parseSourceToBuilderState("flowchart LR\n  A[Start] --> B[End]", "mermaid");
+    flow.canvas.aspectRatio = "16x9";
+    const emitted = emitSourceFromBuilderState(flow);
+    expect(emitted.startsWith("%% ratio 16x9\n")).toBe(true);
+    const again = parseSourceToBuilderState(emitted, "mermaid");
+    expect(again.canvas.aspectRatio).toBe("16x9");
+    expect(again.graphNodes.length).toBe(flow.graphNodes.length);
+
+    const plant = parseSourceToBuilderState("@startuml\nAlice -> Bob\n@enduml", "plantuml");
+    plant.canvas.aspectRatio = "4x3";
+    const plantSource = emitSourceFromBuilderState(plant);
+    expect(plantSource).toContain("' ratio 4x3");
+    expect(parseSourceToBuilderState(plantSource, "plantuml").canvas.aspectRatio).toBe("4x3");
+
+    const radar = parseSourceToBuilderState(
+      "radar\naxes A, B, C\nseries One : 10, 20, 30",
+      "mermaid",
+    );
+    radar.canvas.aspectRatio = "16x9";
+    const radarSource = emitSourceFromBuilderState(radar);
+    expect(radarSource).toContain("ratio 16x9");
+    expect(radarSource).not.toContain("%% ratio");
+    expect(parseSourceToBuilderState(radarSource, "mermaid").canvas.aspectRatio).toBe("16x9");
+  });
 });

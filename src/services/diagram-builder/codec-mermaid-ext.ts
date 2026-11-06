@@ -489,6 +489,10 @@ export function parseMermaidExtToBuilderState(
       const model = parsed.value;
       state.canvas.title = model.title ?? "";
       state.canvas.fontSize = model.fontSize ?? DEFAULT_FONT_SIZE;
+      const aspect = aspectRatioToString(model.ratio);
+      state.canvas.aspectRatio = aspect.preset;
+      state.canvas.customAspectWidth = aspect.customW;
+      state.canvas.customAspectHeight = aspect.customH;
       state.canvas.radarMin = fmt(model.min);
       state.canvas.radarMax = fmt(model.max);
       state.canvas.radarRings = model.rings;
@@ -560,6 +564,10 @@ export function parseMermaidExtToBuilderState(
       if (!parsed.ok || !parsed.value) return null;
       const model = parsed.value;
       state.canvas.title = model.title ?? "";
+      const aspect = aspectRatioToString(model.ratio);
+      state.canvas.aspectRatio = aspect.preset;
+      state.canvas.customAspectWidth = aspect.customW;
+      state.canvas.customAspectHeight = aspect.customH;
       state.options.monoMode = model.monoInvert
         ? "invert"
         : model.mono
@@ -1095,6 +1103,8 @@ export function emitMermaidExtFromBuilderState(
     case "radar": {
       lines.push("radar");
       if (canvas.title.trim()) lines.push(`title ${canvas.title.trim()}`);
+      const ratioLine = emitAspectDirective(canvas);
+      if (ratioLine) lines.push(ratioLine);
       if (canvas.fontSize && canvas.fontSize !== DEFAULT_FONT_SIZE) {
         lines.push(`fontsize ${canvas.fontSize}`);
       }
@@ -1205,6 +1215,8 @@ export function emitMermaidExtFromBuilderState(
     case "orgchart": {
       lines.push("orgchart");
       if (canvas.title.trim()) lines.push(`title ${canvas.title.trim()}`);
+      const ratioLine = emitAspectDirective(canvas);
+      if (ratioLine) lines.push(ratioLine);
       const monoLine = emitMonoDirective(options.monoMode);
       if (monoLine) lines.push(monoLine);
 

@@ -14,6 +14,7 @@ import { loadEngine } from "@/services/plantuml/vendor-loader";
 import { installPlantUmlStdlibNetworkGuard } from "@/utils/offline-render-network";
 import type { PlantUmlRenderOptions } from "@/types/plantuml";
 import { splitSourceLines } from "@/utils/plantuml-source";
+import { applyMarkedAspectFrame } from "@/utils/svg-aspect-frame";
 
 let lastRenderUsedOnlineServer = false;
 
@@ -48,6 +49,15 @@ export async function renderPlantUmlToSvg(
   lines: string[],
   options: PlantUmlRenderOptions = {},
   renderMode: RenderMode = DEFAULT_RENDER_MODE,
+): Promise<string> {
+  const svg = await renderPlantUmlSvg(lines, options, renderMode);
+  return applyMarkedAspectFrame(lines.join("\n"), svg);
+}
+
+async function renderPlantUmlSvg(
+  lines: string[],
+  options: PlantUmlRenderOptions,
+  renderMode: RenderMode,
 ): Promise<string> {
   if (isOnlineRenderMode(renderMode)) {
     try {

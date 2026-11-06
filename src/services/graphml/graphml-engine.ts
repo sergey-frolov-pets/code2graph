@@ -14,6 +14,7 @@ import {
   parseRankDirection,
   textColorForFill,
 } from "@/services/graphml/graphml-parser";
+import { applyMarkedAspectFrame } from "@/utils/svg-aspect-frame";
 import {
   DASHED_STROKE_PATTERN,
   EDGE_LABEL_FONT_SIZE,
@@ -311,5 +312,8 @@ export async function renderGraphmlToSvg(
   const graph = parseGraphml(source);
   const rankdir = parseRankDirection(options.direction ?? graph.direction);
   const dagreGraph = layoutGraph(graph, rankdir);
-  return renderGraphmlSvg(graph, dagreGraph, Boolean(options.dark));
+  return applyMarkedAspectFrame(
+    source,
+    renderGraphmlSvg(graph, dagreGraph, Boolean(options.dark)),
+  );
 }
