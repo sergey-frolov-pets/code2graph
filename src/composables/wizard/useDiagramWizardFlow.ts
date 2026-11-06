@@ -29,7 +29,6 @@ import type { GalleryExampleAction } from "@/constants/wizard-gallery";
 import type { TranslateFn } from "@/locales/types";
 import {
   createDefaultBuilderState,
-  detectBuilderDiagramType,
   emitSourceFromBuilderState,
   parseSourceToBuilderState,
   supportsDiagramBuilder,
@@ -50,9 +49,6 @@ export interface UseDiagramWizardFlowOptions {
   layout: Ref<LayoutEngine>;
   renderMode: Ref<RenderMode>;
   diagramDarkMode: Ref<boolean>;
-  currentEditorSource?: Ref<string>;
-  currentEditorFormat?: Ref<DiagramFormat>;
-  startInBuilder?: Ref<boolean>;
   locale: Ref<AppLocale>;
   t: TranslateFn;
   onApply: (payload: {
@@ -71,9 +67,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     layout,
     renderMode,
     diagramDarkMode,
-    currentEditorSource,
-    currentEditorFormat,
-    startInBuilder,
     locale,
     t,
     onApply,
@@ -126,11 +119,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     return t(getWizardStepTitleKey(currentStepId.value));
   });
 
-  const showBackButton = computed(
-    () =>
-      !galleryVisible.value &&
-      (!startInBuilder?.value || stepIndex.value > 0),
-  );
+  const showBackButton = computed(() => !galleryVisible.value);
 
   async function checkAiAccess(): Promise<boolean> {
     const { requireLlmAccess } = useLlmGate();
@@ -278,57 +267,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     syncBuilderToSource(true);
   }
 
-  function openBuilderForSource(input: {
-    source: string;
-    format: DiagramFormat;
-    diagramType?: DiagramBuilderState["diagramType"];
-    target: BuilderApplyTarget;
-  }): void {
-    if (!supportsDiagramBuilder(input.format)) {
-      return;
-    }
-
-    const detectedType =
-      input.diagramType ?? detectBuilderDiagramType(input.source, input.format);
-    const wizType = isWizardDiagramType(detectedType)
-      ? detectedType
-      : "flowchart";
-
-    wizardState.value = {
-      ...DEFAULT_WIZARD_STATE,
-      creationMode: "builder",
-      language: input.format,
-      diagramType: wizType,
-      typeParams: createDefaultTypeParams(),
-      structuralElements: createDefaultStructuralElements(),
-    };
-    builderBaseSource.value = input.source;
-    builderState.value = parseSourceToBuilderState(
-      input.source,
-      input.format,
-      detectedType,
-    );
-    applyTarget.value = input.target;
-    stepIndex.value = 0;
-    galleryVisible.value = false;
-    aiSetupVisible.value = false;
-    aiSetupReason.value = null;
-    syncBuilderToSource(true);
-  }
-
-  function openCurrentDiagramInBuilder(): void {
-    const src = currentEditorSource?.value ?? "";
-    const fmt = currentEditorFormat?.value ?? "plantuml";
-    if (!supportsDiagramBuilder(fmt)) {
-      return;
-    }
-    openBuilderForSource({
-      source: src,
-      format: fmt,
-      target: "current",
-    });
-  }
-
   function resetWizard(): void {
     stepIndex.value = 0;
     galleryVisible.value = true;
@@ -347,15 +285,11 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     aiSetupVisible.value = false;
     aiSetupReason.value = null;
     clearConversations();
-
-    if (startInBuilder?.value) {
-      openCurrentDiagramInBuilder();
-    }
   }
 
   watch(
-    [open, () => startInBuilder?.value],
-    ([isOpen]) => {
+    open,
+    (isOpen) => {
       if (isOpen) {
         resetWizard();
       }
@@ -539,7 +473,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     showBackButton,
     canGoNext,
     openGalleryExample,
-    openCurrentDiagramInBuilder,
     handleBuilderChange,
     handleBuilderPasteSource,
     selectStep,

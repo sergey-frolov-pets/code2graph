@@ -25,23 +25,13 @@ import type { RenderMode } from "@/constants/render-settings";
 import type { BuilderApplyTarget } from "@/services/diagram-builder";
 import type { TablePasteErrorInfo } from "@/services/table-paste/types";
 
-const props = withDefaults(
-  defineProps<{
-    open: boolean;
-    documentKey: string;
-    layout: LayoutEngine;
-    renderMode: RenderMode;
-    diagramDarkMode: boolean;
-    currentEditorSource?: string;
-    currentEditorFormat?: DiagramFormat;
-    startInBuilder?: boolean;
-  }>(),
-  {
-    currentEditorSource: "",
-    currentEditorFormat: "plantuml",
-    startInBuilder: false,
-  },
-);
+const props = defineProps<{
+  open: boolean;
+  documentKey: string;
+  layout: LayoutEngine;
+  renderMode: RenderMode;
+  diagramDarkMode: boolean;
+}>();
 
 const emit = defineEmits<{
   close: [];
@@ -132,9 +122,6 @@ const {
   layout: toRef(props, "layout"),
   renderMode: toRef(props, "renderMode"),
   diagramDarkMode: toRef(props, "diagramDarkMode"),
-  currentEditorSource: toRef(props, "currentEditorSource"),
-  currentEditorFormat: toRef(props, "currentEditorFormat"),
-  startInBuilder: toRef(props, "startInBuilder"),
   locale,
   t,
   onApply: (payload) => {
