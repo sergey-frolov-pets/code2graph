@@ -12,30 +12,11 @@ import type {
 } from "./types";
 
 const YAML_BARE = /^[A-Za-z0-9_./%+-]+$/;
+const TITLE_DIRECTIVE = /^\s*title\s+\S/im;
 
 type YamlScalar = string | number | boolean;
 type YamlNode = YamlScalar | YamlMap;
 type YamlMap = { [key: string]: YamlNode };
-
-const TITLE_TYPES_MERMAID = new Set<DiagramTypeTag>([
-  "pie",
-  "xychart",
-  "quadrant",
-  "gantt",
-  "timeline",
-  "journey",
-  "packet",
-  "c4_context",
-  "c4_container",
-]);
-
-const TITLE_TYPES_PLANTUML = new Set<DiagramTypeTag>([
-  "gantt",
-  "timeline",
-  "mindmap",
-  "wbs",
-  "nwdiag",
-]);
 
 export function createDefaultDiagramAppearance(): BuilderDiagramAppearance {
   return {
@@ -101,35 +82,32 @@ export function createDefaultDiagramAppearance(): BuilderDiagramAppearance {
 
 export function builderShowsTitle(
   format: DiagramFormat,
-  diagramType: DiagramTypeTag,
+  _diagramType: DiagramTypeTag,
 ): boolean {
-  if (format === "mermaid") {
-    return TITLE_TYPES_MERMAID.has(diagramType);
-  }
-  if (format === "plantuml") {
-    return TITLE_TYPES_PLANTUML.has(diagramType);
-  }
-  if (format === "structurizr") {
-    return true;
-  }
-  return false;
+  return format !== "graphml";
 }
 
 export function splitMermaidFrontmatter(source: string): {
   config: YamlMap;
+  title: string;
   body: string;
 } {
   const match = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*\r?\n?/.exec(source);
   if (!match) {
-    return { config: {}, body: source };
+    return { config: {}, title: "", body: source };
   }
 
   const parsed = parseSimpleYaml(match[1]);
   const config = parsed.config;
   return {
     config: isYamlMap(config) ? config : {},
+    title: yamlTitle(parsed.title),
     body: source.slice(match[0].length),
   };
+}
+
+export function sourceHasTitleDirective(source: string): boolean {
+  return TITLE_DIRECTIVE.test(splitMermaidFrontmatter(source).body);
 }
 
 export function applyAppearanceFromConfig(
@@ -211,18 +189,22 @@ export function applyAppearanceFromConfig(
   }
 }
 
-export function buildMermaidConfigHeader(appearance: BuilderDiagramAppearance, diagramType: DiagramTypeTag): string {
+export function buildMermaidConfigHeader(
+  appearance: BuilderDiagramAppearance,
+  diagramType: DiagramTypeTag,
+  title = "",
+): string {
   const section = configSection(appearance, diagramType);
-  if (!section) {
+  const titleLine = title.trim() ? `title: ${formatYamlScalar(title.trim())}\n` : "";
+  const body = section ? emitYamlMap(section.values, 4) : "";
+  if (!titleLine && !body) {
     return "";
   }
-
-  const body = emitYamlMap(section.values, 4);
-  if (!body) {
-    return "";
+  if (!body || !section) {
+    return `---\n${titleLine}---\n`;
   }
 
-  return `---\nconfig:\n  ${section.key}:\n${body}\n---\n`;
+  return `---\n${titleLine}config:\n  ${section.key}:\n${body}\n---\n`;
 }
 
 export function sourceHasSequenceAutonumber(source: string): boolean {
@@ -449,6 +431,12 @@ function unquoteYaml(raw: string): string {
     }
   }
   return raw;
+}
+
+function yamlTitle(value: YamlNode | undefined): string {
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return "";
 }
 
 function isYamlMap(value: YamlNode | undefined): value is YamlMap {
