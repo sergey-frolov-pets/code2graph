@@ -2,7 +2,7 @@ import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { DiagramTypeTag } from "@/constants/diagram-example-catalog";
 import { parseBoxplot } from "@/services/mermaid/ext/engines/boxplot";
 import { parseBubble } from "@/services/mermaid/ext/engines/bubble";
-import { parseClustered } from "@/services/mermaid/ext/engines/clustered";
+import { parseClustered } from "@/services/mermaid/ext/engines/series";
 import { parseEv } from "@/services/mermaid/ext/engines/ev";
 import { parseHeatmap } from "@/services/mermaid/ext/engines/heatmap";
 import { parseOrgchart } from "@/services/mermaid/ext/engines/orgchart";

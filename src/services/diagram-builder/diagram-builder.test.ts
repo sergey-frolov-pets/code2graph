@@ -9,7 +9,7 @@ import {
   transposeMatrixData,
 } from "./index";
 import { parseWaterfall } from "@/services/mermaid/ext/engines/waterfall/parser";
-import { parseClustered } from "@/services/mermaid/ext/engines/clustered";
+import { parseClustered } from "@/services/mermaid/ext/engines/series";
 import { parseHeatmap } from "@/services/mermaid/ext/engines/heatmap";
 import { parseBubble } from "@/services/mermaid/ext/engines/bubble";
 import { parseBoxplot } from "@/services/mermaid/ext/engines/boxplot";
