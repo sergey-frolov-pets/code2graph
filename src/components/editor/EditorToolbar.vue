@@ -46,6 +46,7 @@ const emit = defineEmits<{
   aiPatch: [];
   aiSyntaxAsk: [];
   pasteTable: [];
+  openBuilder: [];
   validateSyntax: [];
   undo: [];
   redo: [];
@@ -242,6 +243,14 @@ function onSampleChange(event: Event): void {
         @click="emit('pasteTable')"
       >
         <ActionIcon name="table-paste" />
+      </IconButton>
+      <IconButton
+        :label="t('builder.openFromEditor')"
+        :disabled="isRendering || !canClear"
+        data-testid="editor-open-builder-button"
+        @click="emit('openBuilder')"
+      >
+        <ActionIcon name="edit" />
       </IconButton>
       <IconButton
         v-if="formatDefinition.editable"

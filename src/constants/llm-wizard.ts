@@ -61,7 +61,7 @@ export const WIZARD_DIAGRAM_THEMES = ["default", "dark"] as const;
 
 export type WizardDiagramTheme = (typeof WIZARD_DIAGRAM_THEMES)[number];
 
-export const WIZARD_CREATION_MODES = ["ai", "manual"] as const;
+export const WIZARD_CREATION_MODES = ["ai", "manual", "builder"] as const;
 
 export type WizardCreationMode = (typeof WIZARD_CREATION_MODES)[number];
 
@@ -120,6 +120,9 @@ export const WIZARD_STEP_IDS = [
   "context",
   "prompt",
   "result",
+  "builder-data",
+  "builder-canvas",
+  "builder-options",
 ] as const;
 
 export type WizardStepId = (typeof WIZARD_STEP_IDS)[number];

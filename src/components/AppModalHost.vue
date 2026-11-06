@@ -32,6 +32,7 @@ const {
   onFileLoaded,
   onSyntaxAskFromValidation,
   applyAiPlantUml,
+  applyWizardDiagram,
   applyWizardDiagramToNewTab,
   onVersionRestore,
 } = useAppShellContext();
@@ -45,6 +46,7 @@ const {
   isPatchModalOpen,
   isSyntaxAskModalOpen,
   isWizardModalOpen,
+  isWizardStartInBuilder,
   isSaveToLibraryModalOpen,
   isConvertModalOpen,
   openSettingsModal,
@@ -65,7 +67,13 @@ function onWizardApply(payload: {
   source: string;
   label: string;
   format: DiagramFormat;
+  target?: "current" | "new-tab";
 }) {
+  if (payload.target === "current") {
+    diagramFormat.value = payload.format;
+    applyWizardDiagram(payload.source, payload.label);
+    return;
+  }
   applyWizardDiagramToNewTab(payload.source, payload.label, payload.format);
 }
 </script>
@@ -171,6 +179,9 @@ function onWizardApply(payload: {
     :layout="layout"
     :render-mode="renderMode"
     :diagram-dark-mode="diagramDarkMode"
+    :current-editor-source="source"
+    :current-editor-format="diagramFormat"
+    :start-in-builder="isWizardStartInBuilder"
     @close="closeWizardModal"
     @apply="onWizardApply"
   />

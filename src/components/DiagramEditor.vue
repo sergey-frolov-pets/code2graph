@@ -66,6 +66,7 @@ const emit = defineEmits<{
   undo: [];
   redo: [];
   convert: [];
+  openBuilder: [];
   aiPatch: [payload: { start: number; end: number }];
   aiSyntaxAsk: [];
   "editor-focus": [];
@@ -374,6 +375,7 @@ onUnmounted(() => {
       @ai-patch="requestAiPatch"
       @ai-syntax-ask="emit('aiSyntaxAsk')"
       @paste-table="onPasteTableFromClipboard"
+      @open-builder="emit('openBuilder')"
       @validate-syntax="emit('validateSyntax')"
       @undo="emit('undo')"
       @redo="emit('redo')"

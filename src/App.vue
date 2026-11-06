@@ -168,6 +168,7 @@ onUnmounted(() => {
         @undo="shell.applySourceUndo"
         @redo="shell.applySourceRedo"
         @convert="modals.openConvertModal"
+        @open-builder="modals.openBuilderModal"
         @ai-patch="shell.onAiPatchRequestOpen"
         @ai-syntax-ask="shell.onAiSyntaxAskOpen()"
         @editor-focus="onEditorFocus"
