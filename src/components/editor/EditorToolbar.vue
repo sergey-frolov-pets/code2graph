@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import FileBadgeIcon from "@/components/icons/FileBadgeIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import TooltipWrap from "@/components/TooltipWrap.vue";
 import ToolbarOverflowMenu from "@/components/ui/ToolbarOverflowMenu.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
+import { useHasActiveLlm } from "@/composables/useHasActiveLlm";
 import { useLocale } from "@/composables/useLocale";
 import {
   listSampleIds,
@@ -61,6 +62,11 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
+const { hasActiveLlm, refreshActiveLlmAvailability } = useHasActiveLlm();
+
+onMounted(() => {
+  void refreshActiveLlmAvailability();
+});
 
 const languageModule = computed(() =>
   getLanguageModule(props.formatDefinition.id),
@@ -83,8 +89,16 @@ const sampleOptions = computed(() =>
   }),
 );
 
+const showAiControls = computed(
+  () =>
+    hasActiveLlm.value &&
+    (props.formatDefinition.supportsAiPatch ||
+      props.formatDefinition.supportsAiSyntaxAsk),
+);
+
 const showAiAssistantMenu = computed(
   () =>
+    showAiControls.value &&
     props.formatDefinition.supportsAiPatch &&
     props.formatDefinition.supportsAiSyntaxAsk,
 );
@@ -253,7 +267,7 @@ function onSampleChange(event: Event): void {
         @action="onAiAssistantAction"
       />
       <IconButton
-        v-else-if="formatDefinition.supportsAiPatch"
+        v-else-if="showAiControls && formatDefinition.supportsAiPatch"
         :label="t('editor.aiPatch')"
         :disabled="!canAiPatch"
         prevent-mousedown-default
@@ -262,7 +276,7 @@ function onSampleChange(event: Event): void {
         <ActionIcon name="ai" />
       </IconButton>
       <IconButton
-        v-else-if="formatDefinition.supportsAiSyntaxAsk"
+        v-else-if="showAiControls && formatDefinition.supportsAiSyntaxAsk"
         :label="t('editor.aiSyntaxAsk')"
         :disabled="!canAiSyntaxAsk"
         prevent-mousedown-default
