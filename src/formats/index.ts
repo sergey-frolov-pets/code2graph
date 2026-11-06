@@ -6,6 +6,7 @@ import { plantUmlFormatHandler } from "./plantuml/handler";
 import { structurizrFormatHandler } from "./structurizr/handler";
 import { wiremarkFormatHandler } from "./wiremark/handler";
 import { getLanguageModule } from "@/languages/registry";
+import { applyDiagramAppearance } from "@/services/diagram-appearance";
 import { applyDiagramTypography } from "@/services/diagram-typography";
 import { fitPlantUmlSvgText } from "@/services/plantuml/plantuml-text-fit";
 import { stripOffDeviceSvgResources } from "@/utils/offline-render-network";
@@ -59,7 +60,14 @@ export async function renderDiagram(
     format === "plantuml" || format === "structurizr"
       ? fitPlantUmlSvgText(painted)
       : painted;
-  return stripOffDeviceSvgResources(fitted);
+  const stripped = stripOffDeviceSvgResources(fitted);
+  // Mermaid уже красит подписи в своём движке. Повторный проход задел бы
+  // серии расширений, у которых текст специально лежит на цветной фигуре.
+  if (format === "mermaid") return stripped;
+  return applyDiagramAppearance(stripped, {
+    background: context.diagramBackground,
+    textColor: context.diagramTextColor,
+  });
 }
 
 export async function bootFormatEngine(
