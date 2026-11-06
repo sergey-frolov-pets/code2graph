@@ -84,10 +84,16 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      # Очередь Pages плюс updating_pages стабильно занимают больше
+      # стандартных 10 минут, и экшен отменяет ещё живой деплой.
+      PAGES_DEPLOY_TIMEOUT_MS: "1800000"
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          timeout: ${{ env.PAGES_DEPLOY_TIMEOUT_MS }}
 
   sync-version:
     needs: [build, deploy]
