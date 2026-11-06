@@ -3,6 +3,7 @@ import {
   createSvg,
   drawLabelLines,
   fixedTicks,
+  breakEdgeBaselines,
   fmt,
   hasLabelBreak,
   labelLineCount,
@@ -206,6 +207,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
   // Деления на границах разрыва схлопываются в одну линию (300 и 800 лежат
   // на той же высоте) — рисуем только первое из них.
   const drawnTickYs = new Set<number>();
+  const drawnTickLabels = new Set<string>();
   if (!axisHidden) {
     for (const tick of ticks) {
       if (breaks.some((b) => tick > b.after && tick < b.before)) continue;
@@ -219,48 +221,60 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
         "font-size": labelFontSize,
         fill: palette.fgDim,
       });
+      drawnTickLabels.add(fmt(tick));
     }
 
-    // Границы разрыва подписываем всегда, но только когда шкала показана:
-    // минимум вырезанного участка — НИЖЕ линии разрыва, максимум — ВЫШЕ.
+    // Граница разрыва подписывается, только если сетка это число уже не
+    // показывает. Минимум вырезанного участка — НИЖЕ линии, максимум — ВЫШЕ.
     // Числа стоят целиком по свою сторону линии, поэтому линия их не
-    // перечёркивает. Границы разрыва заменяют собой деления сетки, попавшие
-    // на стык (300 и 800 лежат на одной высоте), поэтому подписи идут тем же
-    // кеглем и с тем же отступом от линии графика, что и обычные деления —
-    // иначе они «плавают» относительно шкалы.
-    // Отступ от линии графика тот же, что у обычных делений, иначе границы
-    // разрыва стоят не в колонке чисел.
+    // перечёркивает. Деление, схлопнутое со вторым на той же высоте, на шкале
+    // нет — эту границу подписываем сами, тем же кеглем и с тем же отступом.
     const edgeLabelX = plotLeft - Math.round((8 * fontSize) / FONT_BASE);
     const edgeGap = Math.round((3 * fontSize) / FONT_BASE);
     const edgeTextW = edgeTextWidth;
+    const tickBaselineOffset = Math.round((4 * fontSize) / FONT_BASE);
     for (const b of breaks) {
       const y = yOf(b.after);
-      // Базлайны: низ верхнего числа ровно на зазоре над линией, верх нижнего —
-      // на зазоре под линией.
-      const lowerBaseline = y + edgeGap + labelFontSize;
-      const upperBaseline = y - edgeGap;
-      // Вырез под оба числа: от верха верхнего до низа нижнего (+ запас на
-      // выносные элементы). Иначе цифры лежат на линии разрыва.
-      const boxTop = upperBaseline - labelFontSize;
-      const boxBottom = lowerBaseline + Math.round(labelFontSize * 0.25);
-      svg.rect(edgeLabelX - edgeTextW - 3, boxTop - 1, edgeTextW + 7, boxBottom - boxTop + 2, {
-        fill: breakTextFill,
-        "data-break-text-bg": "1",
-      });
-      // Нижнее число — минимум вырезанного участка: базлайн ниже линии.
-      svg.text(edgeLabelX, lowerBaseline, fmt(b.after), {
-        "text-anchor": "end",
-        "font-size": labelFontSize,
-        fill: palette.fgDim,
-        "data-break-edge": "after",
-      });
-      // Верхнее число — максимум вырезанного участка: базлайн выше линии.
-      svg.text(edgeLabelX, upperBaseline, fmt(b.before), {
-        "text-anchor": "end",
-        "font-size": labelFontSize,
-        fill: palette.fgDim,
-        "data-break-edge": "before",
-      });
+      const yKey = Math.round(y * 100) / 100;
+      // Базлайны: низ верхнего числа выше линии, верх нижнего — ниже.
+      // Если деление сетки уже стоит на этой высоте, второе число отодвигается,
+      // чтобы плашка не закрыла подпись сетки.
+      const placed = breakEdgeBaselines(
+        y,
+        labelFontSize,
+        edgeGap,
+        drawnTickYs.has(yKey) ? y + tickBaselineOffset : null,
+      );
+      const showAfter = !drawnTickLabels.has(fmt(b.after));
+      const showBefore = !drawnTickLabels.has(fmt(b.before));
+      if (showAfter || showBefore) {
+        const baselines = [
+          ...(showBefore ? [placed.before] : []),
+          ...(showAfter ? [placed.after] : []),
+        ];
+        const boxTop = Math.min(...baselines) - labelFontSize;
+        const boxBottom = Math.max(...baselines) + Math.round(labelFontSize * 0.25);
+        svg.rect(edgeLabelX - edgeTextW - 3, boxTop - 1, edgeTextW + 7, boxBottom - boxTop + 2, {
+          fill: breakTextFill,
+          "data-break-text-bg": "1",
+        });
+      }
+      if (showAfter) {
+        svg.text(edgeLabelX, placed.after, fmt(b.after), {
+          "text-anchor": "end",
+          "font-size": labelFontSize,
+          fill: palette.fgDim,
+          "data-break-edge": "after",
+        });
+      }
+      if (showBefore) {
+        svg.text(edgeLabelX, placed.before, fmt(b.before), {
+          "text-anchor": "end",
+          "font-size": labelFontSize,
+          fill: palette.fgDim,
+          "data-break-edge": "before",
+        });
+      }
     }
 
     if (axis.label) {

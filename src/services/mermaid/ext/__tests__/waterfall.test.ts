@@ -287,13 +287,11 @@ y "" 0 --> 1000
 grid 100
 =100 : A
 +900 : B
-break 300 --> 800`);
+break 250 --> 740`);
     const svg = waterfallEngine.render(r.value as WaterfallModel, {});
-    // Сетка не подписывает вырезанный участок (800 нет среди делений)…
-    expect([...svg.matchAll(/<text[^>]*>800<\/text>/g)]).toHaveLength(1);
-    // …но границы разрыва подписаны всегда: «после» ниже линии, «до» — выше.
-    const after = /<text x="[\d.]+" y="([\d.]+)"[^>]*data-break-edge="after">300<\/text>/.exec(svg);
-    const before = /<text x="[\d.]+" y="([\d.]+)"[^>]*data-break-edge="before">800<\/text>/.exec(svg);
+    // Границы не лежат на делениях сетки — обе подписаны: «после» ниже, «до» выше.
+    const after = /<text x="[\d.]+" y="([\d.]+)"[^>]*data-break-edge="after">250<\/text>/.exec(svg);
+    const before = /<text x="[\d.]+" y="([\d.]+)"[^>]*data-break-edge="before">740<\/text>/.exec(svg);
     expect(after).not.toBeNull();
     expect(before).not.toBeNull();
     expect(Number(after![1])).toBeGreaterThan(Number(before![1]));
@@ -305,6 +303,44 @@ break 300 --> 800`);
     const fs = 11;
     expect(Number(after![1]) - fs).toBeGreaterThan(lineY);
     expect(Number(before![1])).toBeLessThan(lineY);
+  });
+
+  it("не дублирует слева границу разрыва, которая уже стоит на сетке", () => {
+    const r = waterfallEngine.parse(`waterfall
+y "" 0 --> 1000
+grid 100
+=100 : A
++900 : B
+break 300 --> 800`);
+    const svg = waterfallEngine.render(r.value as WaterfallModel, {});
+    // 300 нарисовано делением сетки. 800 лежит на той же высоте и схлопывается,
+    // поэтому его на сетке нет — остаётся только подпись верхней границы.
+    expect(svg).not.toContain('data-break-edge="after"');
+    expect(svg).toContain('data-break-edge="before">800');
+    expect([...svg.matchAll(/<text[^>]*>300<\/text>/g)]).toHaveLength(1);
+    expect([...svg.matchAll(/<text[^>]*>800<\/text>/g)]).toHaveLength(1);
+    const tick300 = Number(/<text x="[\d.]+" y="([\d.]+)"[^>]*>300<\/text>/.exec(svg)![1]);
+    const upper800 = Number(
+      /<text x="[\d.]+" y="([\d.]+)"[^>]*data-break-edge="before">800<\/text>/.exec(svg)![1],
+    );
+    expect(upper800).toBeLessThanOrEqual(tick300 - 11);
+    const edgePlate = [...svg.matchAll(/<rect x="([\d.]+)" y="([\d.]+)" width="[\d.]+" height="([\d.]+)"[^>]*data-break-text-bg="1"/g)]
+      .map((match) => ({ x: Number(match[1]), y: Number(match[2]), bottom: Number(match[2]) + Number(match[3]) }))
+      .sort((a, b) => a.x - b.x)[0];
+    expect(edgePlate.bottom).toBeLessThanOrEqual(tick300 - 8);
+
+    const upperOnly = waterfallEngine.render(
+      waterfallEngine.parse(`waterfall
+y "" 0 --> 1000
+grid 100
+=100 : A
++900 : B
+break 250 --> 800`).value as WaterfallModel,
+      {},
+    );
+    expect(upperOnly).toContain('data-break-edge="after">250');
+    expect(upperOnly).not.toContain('data-break-edge="before"');
+    expect([...upperOnly.matchAll(/<text[^>]*>800<\/text>/g)]).toHaveLength(1);
   });
 
   it("подпись разрыва — справа от самого правого бара", () => {
