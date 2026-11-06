@@ -18,6 +18,7 @@ import { emitStructurizrFromIr } from "@/services/conversion/emit/emit-structuri
 import { emitWiremarkFromIr } from "@/services/conversion/emit/emit-wiremark";
 import { formatCleanNumber, parseTableNumber } from "@/services/table-paste/parse-clipboard-grid";
 import { applyTableFromClipboardText } from "@/services/table-paste";
+import { detectDiagramDirection } from "@/services/conversion/classify-diagram-kind";
 import { createDefaultBuilderState } from "./codec-mermaid-ext";
 import { serializeGridToClipboardTsv } from "./table-clipboard";
 import type { DiagramBuilderState } from "./types";
@@ -395,6 +396,9 @@ export function parseStandardDiagramToBuilderState(
 
     case "wbs":
     case "mindmap": {
+      if (format === "plantuml" && diagramType === "mindmap") {
+        state.canvas.direction = detectDiagramDirection(source, format) ?? "TB";
+      }
       const rows = parseHierarchyLinesToFlatRows(
         lines,
         format === "mermaid" && diagramType === "mindmap",
@@ -701,10 +705,31 @@ export function emitStandardDiagramFromBuilderState(
     case "mindmap":
     case "nwdiag": {
       const tsv = serializeGridToClipboardTsv(state.rows);
-      const baseSource =
+      let baseSource =
         canvas.title.trim() && format === "mermaid"
           ? `${diagramType === "packet" ? "packet-beta" : diagramType}\n    title ${canvas.title.trim()}`
           : originalSource;
+
+      if (format === "plantuml" && diagramType === "mindmap") {
+        const dirDirective =
+          canvas.direction === "LR" || canvas.direction === "RL"
+            ? "left to right direction"
+            : "top to bottom direction";
+        if (/(?:top\s+to\s+bottom|left\s+to\s+right)\s+direction/i.test(baseSource)) {
+          baseSource = baseSource.replace(
+            /(?:top\s+to\s+bottom|left\s+to\s+right)\s+direction/gi,
+            dirDirective,
+          );
+        } else if (/@startmindmap\b/i.test(baseSource)) {
+          baseSource = baseSource.replace(
+            /@startmindmap\b/i,
+            `@startmindmap\n${dirDirective}`,
+          );
+        } else {
+          baseSource = `@startmindmap\n${dirDirective}\n@endmindmap`;
+        }
+      }
+
       const res = applyTableFromClipboardText({
         clipboardText: tsv,
         source: baseSource,
@@ -713,7 +738,7 @@ export function emitStandardDiagramFromBuilderState(
       if (res.ok) {
         return res.fullSource;
       }
-      return originalSource;
+      return baseSource;
     }
 
     case "wireframe": {

@@ -51,6 +51,7 @@ export function parseStateMermaid(
       !line ||
       line.startsWith("%%") ||
       /^stateDiagram(?:-v2)?\b/i.test(line) ||
+      /^direction\s+/i.test(line) ||
       /^note\b/i.test(line) ||
       /^end\s+note\b/i.test(line)
     ) {
@@ -224,6 +225,7 @@ export function parseErMermaid(
   format: DiagramFormat,
 ): DiagramIR {
   const ir = createEmptyDiagramIR("er");
+  ir.direction = detectDiagramDirection(source, format);
   ir.metadata = { sourceFormat: format };
   const usedIds = new Set<string>();
   const idByLabel = new Map<string, string>();
@@ -252,7 +254,12 @@ export function parseErMermaid(
 
   for (const rawLine of source.split(/\r?\n/)) {
     const line = rawLine.trim();
-    if (!line || line.startsWith("%%") || /^erDiagram\b/i.test(line)) {
+    if (
+      !line ||
+      line.startsWith("%%") ||
+      /^erDiagram\b/i.test(line) ||
+      /^direction\s+/i.test(line)
+    ) {
       continue;
     }
 

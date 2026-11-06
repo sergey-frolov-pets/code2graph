@@ -19,7 +19,10 @@ const XYCHART_DEFAULT_Y_MAX = 100;
 const XYCHART_HEADROOM_RATIO = 1.1;
 
 function flowDirection(ir: DiagramIR): string {
-  return ir.direction === "LR" ? "LR" : "TD";
+  if (ir.direction === "LR" || ir.direction === "RL" || ir.direction === "BT") {
+    return ir.direction;
+  }
+  return "TD";
 }
 
 function formatXychartLabel(label: string): string {
@@ -215,6 +218,9 @@ export function emitMermaidC4(ir: DiagramIR): string {
       : "";
     lines.push(`    Rel(${edge.source}, ${edge.target}${label}${tech})`);
   }
+  if (ir.direction === "TB") {
+    lines.push("    UpdateLayoutConfig($c4ShapeInRow=\"1\", $c4BoundaryInRow=\"1\")");
+  }
   return lines.join("\n");
 }
 
@@ -297,10 +303,19 @@ export function emitMermaidArchitecture(ir: DiagramIR): string {
     );
   }
 
+  const [sourcePort, targetPort] =
+    ir.direction === "TB"
+      ? ["B", "T"]
+      : ir.direction === "BT"
+        ? ["T", "B"]
+        : ir.direction === "RL"
+          ? ["L", "R"]
+          : ["R", "L"];
+
   for (const edge of ir.edges) {
     const source = serviceIdMap.get(edge.source) ?? toMermaidArchitectureServiceId(edge.source);
     const target = serviceIdMap.get(edge.target) ?? toMermaidArchitectureServiceId(edge.target);
-    lines.push(`    ${source}:R --> L:${target}`);
+    lines.push(`    ${source}:${sourcePort} --> ${targetPort}:${target}`);
   }
 
   return lines.join("\n");
@@ -412,8 +427,8 @@ export function emitMermaidGantt(ir: DiagramIR): string {
 
 export function emitMermaidClass(ir: DiagramIR): string {
   const lines = ["classDiagram"];
-  if (ir.direction === "LR") {
-    lines.push("  direction LR");
+  if (ir.direction === "LR" || ir.direction === "RL" || ir.direction === "BT") {
+    lines.push(`  direction ${ir.direction}`);
   }
   for (const node of ir.nodes) {
     const members = ir.extras?.classMembers?.[node.id] ?? [];
@@ -455,6 +470,9 @@ export function emitMermaidClass(ir: DiagramIR): string {
 
 export function emitMermaidState(ir: DiagramIR): string {
   const lines = ["stateDiagram-v2"];
+  if (ir.direction === "LR" || ir.direction === "RL" || ir.direction === "BT") {
+    lines.push(`  direction ${ir.direction}`);
+  }
   for (const node of ir.nodes) {
     if (node.label !== node.id) {
       lines.push(`  state "${escapeMermaidQuoted(node.label)}" as ${node.id}`);
@@ -503,6 +521,9 @@ export function emitMermaidSequence(ir: DiagramIR): string {
 
 export function emitMermaidEr(ir: DiagramIR): string {
   const lines = ["erDiagram"];
+  if (ir.direction === "LR" || ir.direction === "RL" || ir.direction === "BT") {
+    lines.push(`  direction ${ir.direction}`);
+  }
   for (const node of ir.nodes) {
     const attrs = ir.extras?.entityAttributes?.[node.id] ?? [
       { name: "id", type: "int", isPrimaryKey: true },

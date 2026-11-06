@@ -85,6 +85,16 @@ function layoutCall(direction: StructurizrDirection): string {
   return "LAYOUT_TOP_DOWN()";
 }
 
+function relationMacro(direction: StructurizrDirection): string {
+  if (direction === "bt") {
+    return "Rel_Up";
+  }
+  if (direction === "rl") {
+    return "Rel_Left";
+  }
+  return "Rel";
+}
+
 function elementMacro(
   element: StructurizrElement,
   external: boolean,
@@ -373,8 +383,9 @@ function relationshipLines(
       continue;
     }
     seen.add(key);
+    const relMacro = relationMacro(view.direction);
     lines.push(
-      `Rel(${leftAlias}, ${rightAlias}, ${plantUmlString(relationship.description || " ")}, ${plantUmlString(relationship.technology)})`,
+      `${relMacro}(${leftAlias}, ${rightAlias}, ${plantUmlString(relationship.description || " ")}, ${plantUmlString(relationship.technology)})`,
     );
   }
 

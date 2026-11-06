@@ -1,4 +1,5 @@
 import type { DiagramFormat } from "@/constants/diagram-formats";
+import { detectDiagramDirection } from "@/services/conversion/classify-diagram-kind";
 import {
   createEmptyDiagramIR,
   type DiagramGroup,
@@ -363,6 +364,7 @@ export function parseC4Mermaid(
   kind: "c4_context" | "c4_container",
 ): DiagramIR {
   const ir = createEmptyDiagramIR(kind);
+  ir.direction = detectDiagramDirection(source, format);
   ir.metadata = { sourceFormat: format };
   const usedIds = new Set<string>();
   const aliasToId = new Map<string, string>();
@@ -570,6 +572,17 @@ export function parseQuadrantMermaid(source: string, format: DiagramFormat): Dia
 
 export function parseArchitectureMermaid(source: string, format: DiagramFormat): DiagramIR {
   const ir = createEmptyDiagramIR("architecture");
+  if (/[\p{L}\p{N}_-]+:B\s*(?:-->|--)\s*T:/iu.test(source)) {
+    ir.direction = "TB";
+  } else if (/[\p{L}\p{N}_-]+:T\s*(?:-->|--)\s*B:/iu.test(source)) {
+    ir.direction = "BT";
+  } else if (/[\p{L}\p{N}_-]+:L\s*(?:-->|--)\s*R:/iu.test(source)) {
+    ir.direction = "RL";
+  } else if (/[\p{L}\p{N}_-]+:R\s*(?:-->|--)\s*L:/iu.test(source)) {
+    ir.direction = "LR";
+  } else {
+    ir.direction = detectDiagramDirection(source, format);
+  }
   ir.metadata = { sourceFormat: format };
   const usedIds = new Set<string>();
   const architectureServices: Array<{ id: string; label: string; group?: string; icon?: string }> = [];

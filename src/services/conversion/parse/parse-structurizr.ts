@@ -6,6 +6,7 @@ import {
 } from "@/services/conversion/classify-diagram-kind";
 import {
   createEmptyDiagramIR,
+  type DiagramDirection,
   type DiagramGroup,
   type DiagramIR,
   type DiagramNodeSemanticKind,
@@ -79,7 +80,15 @@ export function parseStructurizrToIr(
     const ir = createEmptyDiagramIR(resolvedKind);
     const viewDir = workspace.views[0]?.direction;
     ir.direction =
-      viewDir === "lr" || viewDir === "rl" ? "LR" : direction ?? "TB";
+      viewDir === "lr"
+        ? "LR"
+        : viewDir === "rl"
+          ? "RL"
+          : viewDir === "bt"
+            ? "BT"
+            : viewDir === "tb"
+              ? "TB"
+              : direction ?? "TB";
     ir.metadata = { sourceFormat: format };
 
     if (workspace.name) {
@@ -210,7 +219,7 @@ function parseStructurizrFallback(
   source: string,
   format: DiagramFormat,
   kind: ReturnType<typeof classifyDiagramKind>,
-  direction: "TB" | "LR" | undefined,
+  direction: DiagramDirection | undefined,
 ): DiagramIR {
   const ir = createEmptyDiagramIR(kind);
   ir.direction = direction;

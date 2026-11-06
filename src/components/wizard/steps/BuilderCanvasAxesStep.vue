@@ -64,6 +64,7 @@ function setPresetBackground(hex: string): void {
           <select
             v-model="builderState.canvas.direction"
             class="select builder-input"
+            data-testid="builder-direction-select"
             @change="notifyChange"
           >
             <option value="TB">{{ t("llm.wizard.direction.TB") }}</option>

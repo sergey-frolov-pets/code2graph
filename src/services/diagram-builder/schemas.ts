@@ -444,6 +444,11 @@ export function getDiagramBuilderSchema(
       case "gantt":
         cap.supportsGanttDateOptions = true;
         break;
+      case "mindmap":
+        if (format === "plantuml") {
+          cap.supportsDirection = true;
+        }
+        break;
       default:
         break;
     }
@@ -457,6 +462,18 @@ export function getDiagramBuilderSchema(
     };
   }
 
+  const nonDirectionalTypes = new Set<string>([
+    "sequence",
+    "timing",
+    "block",
+    "requirement",
+  ]);
+  const supportsDir =
+    format === "d2" ||
+    (format !== "wiremark" &&
+      !nonDirectionalTypes.has(diagramType) &&
+      !(format === "plantuml" && diagramType === "activity"));
+
   return {
     format,
     diagramType,
@@ -464,7 +481,7 @@ export function getDiagramBuilderSchema(
     columns: [],
     capabilities: {
       ...BASE_CAPABILITY,
-      supportsDirection: format !== "wiremark",
+      supportsDirection: supportsDir,
     },
   };
 }
