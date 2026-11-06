@@ -1,12 +1,61 @@
 import { describe, expect, it } from "vitest";
 import {
-  MIN_EDITOR_HISTORY_ENTRIES,
+  MAX_EDITOR_HISTORY_ENTRIES,
   useEditorHistory,
 } from "@/composables/useEditorHistory";
 
 describe("useEditorHistory", () => {
-  it("keeps at least the minimum number of history entries", () => {
-    expect(MIN_EDITOR_HISTORY_ENTRIES).toBeGreaterThanOrEqual(10);
+  it("keeps only the last 10 undo and redo changes", () => {
+    expect(MAX_EDITOR_HISTORY_ENTRIES).toBe(10);
+
+    const { pushHistoryEntry, undo, redo, setActiveDocument, clearHistory } =
+      useEditorHistory();
+    const documentId = "history-limit";
+    const total = MAX_EDITOR_HISTORY_ENTRIES + 2;
+
+    setActiveDocument(documentId);
+    clearHistory();
+
+    for (let index = 0; index < total; index += 1) {
+      pushHistoryEntry({
+        before: `v${index}`,
+        after: `v${index + 1}`,
+        label: `Edit ${index + 1}`,
+      });
+    }
+
+    const undone: string[] = [];
+    let current = `v${total}`;
+    for (let step = 0; step < total; step += 1) {
+      const snapshot = undo(current);
+      if (!snapshot) {
+        break;
+      }
+      undone.push(snapshot.source);
+      current = snapshot.source;
+    }
+
+    expect(undone).toHaveLength(MAX_EDITOR_HISTORY_ENTRIES);
+    expect(undone[0]).toBe(`v${total - 1}`);
+    expect(undone.at(-1)).toBe(`v${total - MAX_EDITOR_HISTORY_ENTRIES}`);
+    expect(undo(current)).toBeNull();
+
+    const redone: string[] = [];
+    for (let step = 0; step < total; step += 1) {
+      const snapshot = redo(current);
+      if (!snapshot) {
+        break;
+      }
+      redone.push(snapshot.source);
+      current = snapshot.source;
+    }
+
+    expect(redone).toHaveLength(MAX_EDITOR_HISTORY_ENTRIES);
+    expect(redone.at(-1)).toBe(`v${total}`);
+    expect(redo(current)).toBeNull();
+
+    setActiveDocument("current");
+    clearHistory();
   });
 
   it("restores source and format on undo after conversion", () => {
