@@ -161,6 +161,10 @@ export interface DiagramBuilderState {
   appearance: BuilderDiagramAppearance;
   /** Preserved comments or custom lines where applicable */
   preservedComments: string[];
+  /** skinparam и <style> PlantUML, чтобы «По шагам» не стирал цвета. */
+  plantUmlSkin?: string[];
+  /** Цвет пакета или дорожки по подписи. */
+  groupColors?: Record<string, string>;
 }
 
 export type SankeyNodeAlignment = "justify" | "left" | "right" | "center";

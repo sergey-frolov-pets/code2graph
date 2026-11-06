@@ -31,6 +31,7 @@ interface ActivityEmitContext {
   index: DiagramGraphIndex;
   rank: Map<string, number>;
   laneLabelById: Map<string, string>;
+  laneFillById: Map<string, string | undefined>;
   emitted: Set<string>;
   lines: string[];
   /** Nodes emitted on the current path; a back edge to one at the same depth closes a `repeat`. */
@@ -46,6 +47,18 @@ function pushLine(context: ActivityEmitContext, depth: number, text: string): vo
   context.lines.push(`${indentOf(depth)}${text}`);
 }
 
+function activityAction(node: DiagramNode): string {
+  const label = formatPlantUmlActivityLabel(node.label);
+  const fill = node.visual?.fill?.trim().replace(/^#/, "");
+  return fill ? `:${label}; <<#${fill}>>` : `:${label};`;
+}
+
+function laneHeader(label: string, fill?: string): string {
+  const name = flattenPlantUmlLabel(label);
+  const color = fill?.trim().replace(/^#/, "");
+  return color ? `|#${color}|${name}|` : `|${name}|`;
+}
+
 function switchLane(context: ActivityEmitContext, node: DiagramNode): void {
   if (!node.groupId || node.groupId === context.currentLaneId) {
     return;
@@ -55,7 +68,7 @@ function switchLane(context: ActivityEmitContext, node: DiagramNode): void {
     return;
   }
   context.currentLaneId = node.groupId;
-  context.lines.push(`|${flattenPlantUmlLabel(laneLabel)}|`);
+  context.lines.push(laneHeader(laneLabel, context.laneFillById.get(node.groupId)));
 }
 
 function forwardEdges(context: ActivityEmitContext, nodeId: string): DiagramEdge[] {
@@ -176,7 +189,7 @@ function emitChain(context: ActivityEmitContext, chain: readonly DiagramNode[], 
   for (const node of chain) {
     context.emitted.add(node.id);
     switchLane(context, node);
-    pushLine(context, depth, `:${formatPlantUmlActivityLabel(node.label)};`);
+    pushLine(context, depth, activityAction(node));
   }
 }
 
@@ -349,7 +362,7 @@ function emitSequence(
         pushLine(context, depth, `-> ${formatPlantUmlActivityLabel(pendingArrowLabel)};`);
       }
       if (node.kind !== "decision") {
-        pushLine(context, depth, `:${formatPlantUmlActivityLabel(node.label)};`);
+        pushLine(context, depth, activityAction(node));
       }
     }
     pendingArrowLabel = undefined;
@@ -374,15 +387,19 @@ function emitSequence(
   context.loopCandidates.length = Math.min(context.loopCandidates.length, loopStackBase);
 }
 
-function emitLinearActivity(ir: DiagramIR, laneLabelById: Map<string, string>): string[] {
+function emitLinearActivity(
+  ir: DiagramIR,
+  laneLabelById: Map<string, string>,
+  laneFillById: Map<string, string | undefined>,
+): string[] {
   const lines = ["start"];
   let currentLaneId: string | undefined;
   for (const node of ir.nodes) {
     if (node.groupId && node.groupId !== currentLaneId && laneLabelById.has(node.groupId)) {
       currentLaneId = node.groupId;
-      lines.push(`|${flattenPlantUmlLabel(laneLabelById.get(node.groupId)!)}|`);
+      lines.push(laneHeader(laneLabelById.get(node.groupId)!, laneFillById.get(node.groupId)));
     }
-    lines.push(`:${formatPlantUmlActivityLabel(node.label)};`);
+    lines.push(activityAction(node));
   }
   lines.push("stop");
   return lines;
@@ -397,9 +414,12 @@ export function emitPlantUmlActivityBody(ir: DiagramIR): string[] {
   const laneLabelById = new Map(
     (ir.groups ?? []).map((group) => [group.id, group.label || group.id]),
   );
+  const laneFillById = new Map(
+    (ir.groups ?? []).map((group) => [group.id, group.fill]),
+  );
 
   if (ir.edges.length === 0) {
-    return emitLinearActivity(ir, laneLabelById);
+    return emitLinearActivity(ir, laneLabelById, laneFillById);
   }
 
   const index = buildGraphIndex(ir);
@@ -408,6 +428,7 @@ export function emitPlantUmlActivityBody(ir: DiagramIR): string[] {
     index,
     rank: buildRankMap(ordered),
     laneLabelById,
+    laneFillById,
     emitted: new Set<string>(),
     lines: [],
     loopCandidates: [],

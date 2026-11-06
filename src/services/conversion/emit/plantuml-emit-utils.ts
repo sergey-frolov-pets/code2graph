@@ -25,14 +25,19 @@ export function needsQuotedPlantUmlComponentLabel(rawLabel: string): boolean {
   return /[[\]"]/.test(label);
 }
 
-export function emitPlantUmlComponentNode(id: string, rawLabel: string): string {
+export function emitPlantUmlComponentNode(
+  id: string,
+  rawLabel: string,
+  fill?: string,
+): string {
   const label = flattenPlantUmlLabel(rawLabel) || "node";
+  const color = fill?.trim() ? ` ${fill.trim().startsWith("#") ? fill.trim() : `#${fill.trim()}`}` : "";
 
   if (needsQuotedPlantUmlComponentLabel(rawLabel)) {
-    return `rectangle "${escapePlantUmlQuoted(label)}" as ${id}`;
+    return `rectangle "${escapePlantUmlQuoted(label)}" as ${id}${color}`;
   }
 
-  return `[${label}] as ${id}`;
+  return `[${label}] as ${id}${color}`;
 }
 
 export function formatPlantUmlEdgeSuffix(rawLabel: string | undefined): string {

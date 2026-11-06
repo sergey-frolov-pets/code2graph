@@ -53,6 +53,7 @@ export function parseComponentPlantUml(
     explicitLabel?: string,
     kind: DiagramNode["kind"] = "default",
     groupId?: string,
+    fill?: string,
   ): string {
     const key = unquote(rawAliasOrLabel.replace(/^\[|\]$/g, "").replace(/^\(|\)$/g, ""));
     if (!key) {
@@ -71,6 +72,9 @@ export function parseComponentPlantUml(
         if (groupId && !node.groupId) {
           node.groupId = groupId;
         }
+        if (fill && !node.visual?.fill) {
+          node.visual = { ...node.visual, fill };
+        }
       }
       return existing;
     }
@@ -84,6 +88,7 @@ export function parseComponentPlantUml(
       label,
       kind,
       groupId,
+      visual: fill ? { fill } : undefined,
       matchConfidence: 1,
     });
     return id;
@@ -115,14 +120,15 @@ export function parseComponentPlantUml(
     }
 
     const groupMatch = line.match(
-      /^(?:package|frame|folder|cloud|node|rectangle|database|storage)\s+(?:"([^"]+)"|([\p{L}\p{N}_.-]+))(?:\s+as\s+([\p{L}\p{N}_-]+))?(?:\s*<<[^>]+>>)?(?:\s*#[\w]+)?\s*\{$/iu,
+      /^(?:package|frame|folder|cloud|node|rectangle|database|storage)\s+(?:"([^"]+)"|([\p{L}\p{N}_.-]+))(?:\s+as\s+([\p{L}\p{N}_-]+))?(?:\s*<<[^>]+>>)?(?:\s*#([A-Za-z0-9]+))?\s*\{$/iu,
     );
     if (groupMatch) {
       const label = (groupMatch[1] || groupMatch[2] || "").trim();
       const alias = (groupMatch[3] || label).trim();
       const id = uniqueDiagramId(alias, usedIds);
       const parentId = groupStack[groupStack.length - 1];
-      groups.push({ id, label, parentId });
+      const fill = groupMatch[4] ? `#${groupMatch[4]}` : undefined;
+      groups.push({ id, label, parentId, fill });
       registerAlias(aliasToId, alias, id);
       registerAlias(aliasToId, label, id);
       groupStack.push(id);
@@ -132,20 +138,21 @@ export function parseComponentPlantUml(
     const currentGroup = groupStack[groupStack.length - 1];
 
     const bracketDecl = line.match(
-      /^\[([^\]]+)\](?:\s+as\s+([\p{L}\p{N}_-]+))?(?:\s*<<[^>]+>>)?(?:\s*#[\w]+)?$/u,
+      /^\[([^\]]+)\](?:\s+as\s+([\p{L}\p{N}_-]+))?(?:\s*<<[^>]+>>)?(?:\s*#([A-Za-z0-9]+))?$/u,
     );
     if (bracketDecl) {
       const label = bracketDecl[1].trim();
       if (!label.includes("lasts")) {
         const alias = bracketDecl[2]?.trim() || label;
-        const id = ensureNode(alias, label, "default", currentGroup);
+        const fill = bracketDecl[3] ? `#${bracketDecl[3]}` : undefined;
+        const id = ensureNode(alias, label, "default", currentGroup, fill);
         registerAlias(aliasToId, label, id);
       }
       continue;
     }
 
     const namedDecl = line.match(
-      /^(component|rectangle|node|database|queue|cloud|storage|artifact|interface|actor|usecase)\s+(?:"([^"]+)"|\[([^\]]+)\]|([\p{L}\p{N}_.-]+))(?:\s+as\s+(?:"([^"]+)"|([\p{L}\p{N}_-]+)))?(?:\s*<<[^>]+>>)?(?:\s*#[\w]+)?$/iu,
+      /^(component|rectangle|node|database|queue|cloud|storage|artifact|interface|actor|usecase)\s+(?:"([^"]+)"|\[([^\]]+)\]|([\p{L}\p{N}_.-]+))(?:\s+as\s+(?:"([^"]+)"|([\p{L}\p{N}_-]+)))?(?:\s*<<[^>]+>>)?(?:\s*#([A-Za-z0-9]+))?$/iu,
     );
     if (namedDecl) {
       const kw = namedDecl[1].toLowerCase();
@@ -164,7 +171,8 @@ export function parseComponentPlantUml(
               : kw === "artifact"
                 ? "artifact"
                 : "default";
-      const id = ensureNode(alias, label, kind, currentGroup);
+      const fill = namedDecl[7] ? `#${namedDecl[7]}` : undefined;
+      const id = ensureNode(alias, label, kind, currentGroup, fill);
       registerAlias(aliasToId, firstText, id);
       if (secondText) {
         registerAlias(aliasToId, secondText, id);

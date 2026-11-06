@@ -1,3 +1,5 @@
+export { normalizeSvgPaintColors } from "@/services/export/svg-paint";
+
 export {
   applyPreviewBackground,
   isTransparentBackground,

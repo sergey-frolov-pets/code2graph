@@ -19,7 +19,23 @@ import {
   emitPlantUmlWbs,
 } from "@/services/conversion/emit/emit-kind-diagrams";
 
+function withPlantUmlSkin(source: string, ir: DiagramIR): string {
+  const skin = ir.extras?.plantUmlSkin?.filter((line) => line.trim());
+  if (!skin?.length) {
+    return source;
+  }
+  const block = skin.join("\n");
+  if (/@start\w+/i.test(source)) {
+    return source.replace(/(@start\w+[^\n]*\r?\n)/i, `$1${block}\n`);
+  }
+  return `${block}\n${source}`;
+}
+
 export function emitPlantUmlFromIr(ir: DiagramIR): string {
+  return withPlantUmlSkin(emitPlantUmlBody(ir), ir);
+}
+
+function emitPlantUmlBody(ir: DiagramIR): string {
   switch (ir.kind) {
     case "class":
       return emitPlantUmlClass(ir);
