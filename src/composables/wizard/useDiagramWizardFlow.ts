@@ -198,6 +198,12 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   let builderPreviewTimer: ReturnType<typeof setTimeout> | null = null;
 
   function syncBuilderToSource(immediate = false): void {
+    if (
+      builderState.value.canvas.direction === "TB" ||
+      builderState.value.canvas.direction === "LR"
+    ) {
+      wizardState.value.direction = builderState.value.canvas.direction;
+    }
     const emitted = emitSourceFromBuilderState(
       builderState.value,
       builderBaseSource.value,

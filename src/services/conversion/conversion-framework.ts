@@ -10,6 +10,7 @@ import {
 } from "@/services/conversion/classify-diagram-kind";
 import {
   createEmptyDiagramIR,
+  type DiagramDirection,
   type DiagramEdge,
   type DiagramIR,
   type DiagramKind,
@@ -81,7 +82,7 @@ export interface DiagramConversionAdapter {
   readonly id: DiagramFormat;
   readonly nativeKinds: readonly DiagramKind[];
   classifyKind(source: string): DiagramKind;
-  detectDirection(source: string): "TB" | "LR" | undefined;
+  detectDirection(source: string): DiagramDirection | undefined;
   parseToIr(source: string, kind: DiagramKind): DiagramIR;
   emitFromIr(ir: DiagramIR): string;
 }

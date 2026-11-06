@@ -1,5 +1,5 @@
 import type { DiagramFormat } from "@/constants/diagram-formats";
-import type { DiagramKind } from "@/services/conversion/diagram-ir";
+import type { DiagramDirection, DiagramKind } from "@/services/conversion/diagram-ir";
 
 function stripCommentsAndFences(source: string): string {
   return source
@@ -317,27 +317,38 @@ export function classifyDiagramKind(
 export function detectDiagramDirection(
   source: string,
   format: DiagramFormat,
-): "TB" | "LR" | undefined {
+): DiagramDirection | undefined {
   const text = stripCommentsAndFences(source);
 
-  if (format === "graphml" && /rankdir\s*=\s*["']?(?:lr|rl)["']?/i.test(text)) {
-    return "LR";
+  if (format === "graphml") {
+    const rankdirMatch = /rankdir\s*=\s*["']?(tb|td|bt|lr|rl)["']?/i.exec(text);
+    if (rankdirMatch) {
+      const dir = rankdirMatch[1].toUpperCase();
+      if (dir === "LR" || dir === "RL" || dir === "BT") {
+        return dir;
+      }
+      return "TB";
+    }
   }
 
   if (format === "d2") {
-    if (/^\s*direction\s*:\s*(?:right|left)\b/im.test(text)) {
-      return "LR";
-    }
-    if (/^\s*direction\s*:\s*(?:down|up)\b/im.test(text)) {
+    const d2Match = /^\s*direction\s*:\s*(right|left|down|up)\b/im.exec(text);
+    if (d2Match) {
+      const kw = d2Match[1].toLowerCase();
+      if (kw === "right") return "LR";
+      if (kw === "left") return "RL";
+      if (kw === "up") return "BT";
       return "TB";
     }
   }
 
   if (format === "structurizr") {
-    if (/\bautolayout\s+(?:lr|rl)\b/i.test(text)) {
-      return "LR";
-    }
-    if (/\bautolayout\s+(?:tb|bt)\b/i.test(text)) {
+    const autoMatch = /\bautolayout\s+(tb|bt|lr|rl)\b/i.exec(text);
+    if (autoMatch) {
+      const dir = autoMatch[1].toUpperCase();
+      if (dir === "LR" || dir === "RL" || dir === "BT") {
+        return dir;
+      }
       return "TB";
     }
   }
@@ -355,15 +366,21 @@ export function detectDiagramDirection(
     return "LR";
   }
 
-  if (/(?:flowchart|graph)\s+(?:lr|rl)\b/i.test(text)) {
-    return "LR";
+  const flowHeaderMatch = /(?:flowchart|graph)\s+(tb|td|bt|lr|rl)\b/i.exec(text);
+  if (flowHeaderMatch) {
+    const dir = flowHeaderMatch[1].toUpperCase();
+    if (dir === "LR" || dir === "RL" || dir === "BT") {
+      return dir;
+    }
+    return "TB";
   }
 
-  if (/direction\s+(?:lr|rl)\b/i.test(text)) {
-    return "LR";
-  }
-
-  if (format === "mermaid" && /(?:flowchart|graph)\s+(?:td|tb|bt)\b/i.test(text)) {
+  const dirStmtMatch = /\bdirection\s+(tb|td|bt|lr|rl)\b/i.exec(text);
+  if (dirStmtMatch) {
+    const dir = dirStmtMatch[1].toUpperCase();
+    if (dir === "LR" || dir === "RL" || dir === "BT") {
+      return dir;
+    }
     return "TB";
   }
 

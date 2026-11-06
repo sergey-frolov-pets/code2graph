@@ -20,8 +20,17 @@ function safeD2Identifier(value: string, fallbackIndex = 1): string {
   return /^\d/.test(sanitized) ? `n_${sanitized}` : sanitized;
 }
 
-function d2DirectionKeyword(ir: DiagramIR): "right" | "down" {
-  return ir.direction === "LR" ? "right" : "down";
+function d2DirectionKeyword(ir: DiagramIR): "right" | "left" | "up" | "down" {
+  switch (ir.direction) {
+    case "LR":
+      return "right";
+    case "RL":
+      return "left";
+    case "BT":
+      return "up";
+    default:
+      return "down";
+  }
 }
 
 function mapSemanticToD2Shape(

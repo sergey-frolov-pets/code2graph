@@ -9,11 +9,31 @@ import {
 } from "@/services/conversion/emit/plantuml-emit-utils";
 import { buildGraphIndex } from "@/services/conversion/graph/graph-analysis";
 
-export function emitPlantUmlEr(ir: DiagramIR): string {
-  const lines: string[] = [];
-  if (ir.direction === "LR") {
+function plantUmlArrowForDirection(
+  direction: DiagramIR["direction"],
+  dashed = false,
+): string {
+  const dirPart =
+    direction === "BT"
+      ? "up"
+      : direction === "RL"
+        ? "left"
+        : "";
+  if (dashed) {
+    return dirPart ? `.${dirPart}.>` : "..>";
+  }
+  return dirPart ? `-${dirPart}->` : "-->";
+}
+
+function pushPlantUmlDirection(lines: string[], direction: DiagramIR["direction"]): void {
+  if (direction === "LR" || direction === "RL") {
     lines.push("left to right direction", "");
   }
+}
+
+export function emitPlantUmlEr(ir: DiagramIR): string {
+  const lines: string[] = [];
+  pushPlantUmlDirection(lines, ir.direction);
   for (const node of ir.nodes) {
     const attrs = ir.extras?.entityAttributes?.[node.id] ?? [
       { name: "id", type: "int", isPrimaryKey: true },
@@ -45,8 +65,10 @@ export function emitPlantUmlEr(ir: DiagramIR): string {
 
 export function emitPlantUmlMindmap(ir: DiagramIR): string {
   const lines = ["@startmindmap"];
-  if (ir.direction === "LR") {
+  if (ir.direction === "LR" || ir.direction === "RL") {
     lines.push("left to right direction");
+  } else if (ir.direction === "TB" || ir.direction === "BT") {
+    lines.push("top to bottom direction");
   }
   for (const item of resolveHierarchyItems(ir)) {
     lines.push(`${"*".repeat(Math.max(1, item.level))} ${flattenPlantUmlLabel(item.label)}`);
@@ -57,9 +79,7 @@ export function emitPlantUmlMindmap(ir: DiagramIR): string {
 
 export function emitPlantUmlUsecase(ir: DiagramIR): string {
   const lines: string[] = [];
-  if (ir.direction === "LR") {
-    lines.push("left to right direction", "");
-  }
+  pushPlantUmlDirection(lines, ir.direction);
   const actors = ir.nodes.filter((node) => node.kind === "actor");
   const useCases = ir.nodes.filter((node) => node.kind !== "actor");
   for (const actor of actors) {
@@ -74,7 +94,7 @@ export function emitPlantUmlUsecase(ir: DiagramIR): string {
     lines.push("}");
   }
   for (const edge of ir.edges) {
-    const arrow = edge.kind === "dashed" ? "..>" : "-->";
+    const arrow = plantUmlArrowForDirection(ir.direction, edge.kind === "dashed");
     lines.push(`${edge.source} ${arrow} ${edge.target}${formatPlantUmlEdgeSuffix(edge.label)}`);
   }
   return wrapPlantUml(lines.join("\n"));
@@ -82,9 +102,7 @@ export function emitPlantUmlUsecase(ir: DiagramIR): string {
 
 export function emitPlantUmlDeployment(ir: DiagramIR): string {
   const lines: string[] = [];
-  if (ir.direction === "LR") {
-    lines.push("left to right direction", "");
-  }
+  pushPlantUmlDirection(lines, ir.direction);
   for (const node of ir.nodes) {
     const kw =
       node.kind === "system"
@@ -94,17 +112,16 @@ export function emitPlantUmlDeployment(ir: DiagramIR): string {
           : "node";
     lines.push(`${kw} "${escapePlantUmlQuoted(node.label)}" as ${node.id}`);
   }
+  const arrow = plantUmlArrowForDirection(ir.direction);
   for (const edge of ir.edges) {
-    lines.push(`${edge.source} --> ${edge.target}${formatPlantUmlEdgeSuffix(edge.label)}`);
+    lines.push(`${edge.source} ${arrow} ${edge.target}${formatPlantUmlEdgeSuffix(edge.label)}`);
   }
   return wrapPlantUml(lines.join("\n"));
 }
 
 export function emitPlantUmlObject(ir: DiagramIR): string {
   const lines: string[] = [];
-  if (ir.direction === "LR") {
-    lines.push("left to right direction", "");
-  }
+  pushPlantUmlDirection(lines, ir.direction);
   for (const node of ir.nodes) {
     const fields = ir.extras?.objectFields?.[node.id] ?? [];
     lines.push(`object "${escapePlantUmlQuoted(node.label)}" as ${node.id} {`);
@@ -113,8 +130,9 @@ export function emitPlantUmlObject(ir: DiagramIR): string {
     }
     lines.push("}");
   }
+  const arrow = plantUmlArrowForDirection(ir.direction);
   for (const edge of ir.edges) {
-    lines.push(`${edge.source} --> ${edge.target}${formatPlantUmlEdgeSuffix(edge.label)}`);
+    lines.push(`${edge.source} ${arrow} ${edge.target}${formatPlantUmlEdgeSuffix(edge.label)}`);
   }
   return wrapPlantUml(lines.join("\n"));
 }
@@ -174,25 +192,27 @@ export function emitPlantUmlNwdiag(ir: DiagramIR): string {
 
 export function emitPlantUmlArchimate(ir: DiagramIR): string {
   const lines = ["!include <archimate/Archimate>", ""];
-  if (ir.direction === "LR") {
-    lines.push("left to right direction", "");
-  }
+  pushPlantUmlDirection(lines, ir.direction);
   for (const node of ir.nodes) {
     const type = String(node.semantic?.archimateType ?? "Application_Component");
     lines.push(`${type}(${node.id}, "${escapePlantUmlQuoted(node.label)}")`);
   }
+  const relMacro =
+    ir.direction === "BT"
+      ? "Rel_Flow_Up"
+      : ir.direction === "RL"
+        ? "Rel_Flow_Left"
+        : "Rel_Flow";
   for (const edge of ir.edges) {
     const label = edge.label ? escapePlantUmlQuoted(edge.label) : "Uses";
-    lines.push(`Rel_Flow(${edge.source}, ${edge.target}, "${label}")`);
+    lines.push(`${relMacro}(${edge.source}, ${edge.target}, "${label}")`);
   }
   return wrapPlantUml(lines.join("\n"));
 }
 
 export function emitPlantUmlGraph(ir: DiagramIR): string {
   const lines: string[] = [];
-  if (ir.direction === "LR") {
-    lines.push("left to right direction", "");
-  }
+  pushPlantUmlDirection(lines, ir.direction);
 
   const groupedNodeIds = new Set<string>();
   const groupIds = new Set((ir.groups ?? []).map((group) => group.id));
@@ -221,7 +241,7 @@ export function emitPlantUmlGraph(ir: DiagramIR): string {
   }
 
   for (const edge of ir.edges) {
-    const arrow = edge.kind === "dashed" ? "..>" : "-->";
+    const arrow = plantUmlArrowForDirection(ir.direction, edge.kind === "dashed");
     lines.push(`${edge.source} ${arrow} ${edge.target}${formatPlantUmlEdgeSuffix(edge.label)}`);
   }
   return wrapPlantUml(lines.join("\n"));
@@ -274,9 +294,7 @@ export function emitPlantUmlGantt(ir: DiagramIR): string {
 
 export function emitPlantUmlClass(ir: DiagramIR): string {
   const lines: string[] = [];
-  if (ir.direction === "LR") {
-    lines.push("left to right direction", "");
-  }
+  pushPlantUmlDirection(lines, ir.direction);
   for (const node of ir.nodes) {
     const stereo = node.semantic?.stereotype ? String(node.semantic.stereotype) : undefined;
     const kw =
@@ -296,15 +314,26 @@ export function emitPlantUmlClass(ir: DiagramIR): string {
     }
     lines.push("}", "");
   }
+  const dirHint =
+    ir.direction === "BT"
+      ? "up"
+      : ir.direction === "RL"
+        ? "left"
+        : "";
   for (const edge of ir.edges) {
     const suffix = formatPlantUmlEdgeSuffix(edge.label);
     if (edge.kind === "inherit") {
-      const arrow = edge.semantic?.relationType === "realization" ? "..|>" : "--|>";
+      const isRealization = edge.semantic?.relationType === "realization";
+      const arrow = isRealization
+        ? dirHint ? `.${dirHint}.|>` : "..|>"
+        : dirHint ? `-${dirHint}-|>` : "--|>";
       lines.push(`${edge.source} ${arrow} ${edge.target}${suffix}`);
     } else if (edge.kind === "dashed") {
-      lines.push(`${edge.source} ..> ${edge.target}${suffix}`);
+      const arrow = plantUmlArrowForDirection(ir.direction, true);
+      lines.push(`${edge.source} ${arrow} ${edge.target}${suffix}`);
     } else {
-      lines.push(`${edge.source} --> ${edge.target}${suffix}`);
+      const arrow = plantUmlArrowForDirection(ir.direction, false);
+      lines.push(`${edge.source} ${arrow} ${edge.target}${suffix}`);
     }
   }
   return wrapPlantUml(lines.join("\n"));
@@ -312,9 +341,7 @@ export function emitPlantUmlClass(ir: DiagramIR): string {
 
 export function emitPlantUmlState(ir: DiagramIR): string {
   const lines: string[] = [];
-  if (ir.direction === "LR") {
-    lines.push("left to right direction", "");
-  }
+  pushPlantUmlDirection(lines, ir.direction);
   for (const node of ir.nodes) {
     if (node.label !== node.id) {
       lines.push(`state "${escapePlantUmlQuoted(node.label)}" as ${node.id}`);
@@ -323,24 +350,25 @@ export function emitPlantUmlState(ir: DiagramIR): string {
       lines.push(`state ${node.id} <<choice>>`);
     }
   }
+  const arrow = plantUmlArrowForDirection(ir.direction);
   const initialNodes = ir.nodes.filter((n) => n.semantic?.isInitial);
   if (initialNodes.length > 0) {
     for (const init of initialNodes) {
-      lines.push(`[*] --> ${init.id}`);
+      lines.push(`[*] ${arrow} ${init.id}`);
     }
   } else if (ir.edges.length > 0) {
-    lines.push(`[*] --> ${ir.edges[0]!.source}`);
+    lines.push(`[*] ${arrow} ${ir.edges[0]!.source}`);
   } else if (ir.nodes.length > 0) {
-    lines.push(`[*] --> ${ir.nodes[0]!.id}`);
+    lines.push(`[*] ${arrow} ${ir.nodes[0]!.id}`);
   }
 
   for (const edge of ir.edges) {
-    lines.push(`${edge.source} --> ${edge.target}${formatPlantUmlEdgeSuffix(edge.label)}`);
+    lines.push(`${edge.source} ${arrow} ${edge.target}${formatPlantUmlEdgeSuffix(edge.label)}`);
   }
 
   for (const node of ir.nodes) {
     if (node.semantic?.isFinal) {
-      lines.push(`${node.id} --> [*]`);
+      lines.push(`${node.id} ${arrow} [*]`);
     }
   }
   return wrapPlantUml(lines.join("\n"));
@@ -377,7 +405,13 @@ export function emitPlantUmlC4(ir: DiagramIR): string {
     ir.kind === "c4_container"
       ? "!include ./plantuml-lib/C4/C4_Container.puml"
       : "!include ./plantuml-lib/C4/C4_Context.puml";
-  const lines = [include, ""];
+  const lines = [include];
+  if (ir.direction === "LR" || ir.direction === "RL") {
+    lines.push("LAYOUT_LEFT_RIGHT()");
+  } else if (ir.direction === "TB" || ir.direction === "BT") {
+    lines.push("LAYOUT_TOP_DOWN()");
+  }
+  lines.push("");
   for (const node of ir.nodes) {
     const rawType = String(
       node.semantic?.c4Type ??
@@ -400,12 +434,18 @@ export function emitPlantUmlC4(ir: DiagramIR): string {
       );
     }
   }
+  const relCall =
+    ir.direction === "BT"
+      ? "Rel_Up"
+      : ir.direction === "RL"
+        ? "Rel_Left"
+        : "Rel";
   for (const edge of ir.edges) {
     const label = edge.label ? `, "${escapePlantUmlQuoted(edge.label)}"` : ', "Uses"';
     const tech = edge.semantic?.technology
       ? `, "${escapePlantUmlQuoted(String(edge.semantic.technology))}"`
       : "";
-    lines.push(`Rel(${edge.source}, ${edge.target}${label}${tech})`);
+    lines.push(`${relCall}(${edge.source}, ${edge.target}${label}${tech})`);
   }
   return wrapPlantUml(lines.join("\n"));
 }

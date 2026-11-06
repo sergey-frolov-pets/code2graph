@@ -51,9 +51,10 @@ export function useWizardStepPreview(options: UseWizardStepPreviewOptions) {
   async function renderWizardPreviewSvg(source: string): Promise<string> {
     const language = wizardState.value.language;
     if (language === "graphml") {
+      const isBuilderStep = currentStepId.value.startsWith("builder-");
       return renderGraphmlToSvg(source, {
         dark: diagramDarkMode.value,
-        direction: wizardState.value.direction,
+        direction: isBuilderStep ? undefined : wizardState.value.direction,
       });
     }
 

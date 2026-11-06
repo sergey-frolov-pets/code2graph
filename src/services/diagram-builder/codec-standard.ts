@@ -18,6 +18,7 @@ import { emitStructurizrFromIr } from "@/services/conversion/emit/emit-structuri
 import { emitWiremarkFromIr } from "@/services/conversion/emit/emit-wiremark";
 import { formatCleanNumber, parseTableNumber } from "@/services/table-paste/parse-clipboard-grid";
 import { applyTableFromClipboardText } from "@/services/table-paste";
+import { detectDiagramDirection } from "@/services/conversion/classify-diagram-kind";
 import { createDefaultBuilderState } from "./codec-mermaid-ext";
 import { serializeGridToClipboardTsv } from "./table-clipboard";
 import type { DiagramBuilderState } from "./types";
@@ -395,6 +396,9 @@ export function parseStandardDiagramToBuilderState(
 
     case "wbs":
     case "mindmap": {
+      if (format === "plantuml" && diagramType === "mindmap") {
+        state.canvas.direction = detectDiagramDirection(source, format) ?? "TB";
+      }
       const rows = parseHierarchyLinesToFlatRows(
         lines,
         format === "mermaid" && diagramType === "mindmap",
@@ -800,6 +804,13 @@ export function emitStandardDiagramFromBuilderState(
         const startTag = diagramType === "wbs" ? "@startwbs" : "@startmindmap";
         const endTag = diagramType === "wbs" ? "@endwbs" : "@endmindmap";
         const lines = [startTag];
+        if (diagramType === "mindmap") {
+          lines.push(
+            canvas.direction === "LR" || canvas.direction === "RL"
+              ? "left to right direction"
+              : "top to bottom direction",
+          );
+        }
         if (canvas.title.trim()) lines.push(`title ${canvas.title.trim()}`);
         for (const [rLabel, branches] of roots.entries()) {
           lines.push(`* ${rLabel}`);

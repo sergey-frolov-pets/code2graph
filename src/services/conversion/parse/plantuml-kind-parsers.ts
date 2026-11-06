@@ -174,7 +174,7 @@ export function parseUsecasePlantUml(source: string, format: DiagramFormat): Dia
   for (const rawLine of source.split(/\r?\n/)) {
     const line = rawLine.trim();
     const relMatch = line.match(
-      /^(?::([^:]+):|\(([^)]+)\)|"([^"]+)"|([\p{L}\p{N}_-]+))\s*(-->|<--|\.\.>|<-\.+|--)\s*(?::([^:]+):|\(([^)]+)\)|"([^"]+)"|([\p{L}\p{N}_-]+))(?:\s*:\s*(.+))?$/u,
+      /^(?::([^:]+):|\(([^)]+)\)|"([^"]+)"|([\p{L}\p{N}_-]+))\s*(-->|<--|\.\.>|<-\.+|--|-[-\w]*>+|\.[.\w]*>+)\s*(?::([^:]+):|\(([^)]+)\)|"([^"]+)"|([\p{L}\p{N}_-]+))(?:\s*:\s*(.+))?$/u,
     );
     if (!relMatch) {
       continue;
@@ -275,12 +275,12 @@ export function parseDeploymentPlantUml(source: string, format: DiagramFormat): 
   for (const rawLine of source.split(/\r?\n/)) {
     const line = rawLine.trim();
     const edgeMatch = line.match(
-      /^(?:"([^"]+)"|([\p{L}\p{N}_.-]+))\s*(-->|\.\.>|--)\s*(?:"([^"]+)"|([\p{L}\p{N}_.-]+))(?:\s*:\s*(.+))?$/u,
+      /^([\p{L}\p{N}_.-]+)\s*:\s*\{[^}]*\}\s*$|^(?:"([^"]+)"|([\p{L}\p{N}_.-]+))\s*(-->|\.\.>|--|-[-\w]*>+|\.[.\w]*>+)\s*(?:"([^"]+)"|([\p{L}\p{N}_.-]+))(?:\s*:\s*(.+))?$/u,
     );
-    if (edgeMatch) {
-      const fromKey = (edgeMatch[1] || edgeMatch[2] || "").trim();
-      const toKey = (edgeMatch[4] || edgeMatch[5] || "").trim();
-      const label = edgeMatch[6]?.trim();
+    if (edgeMatch && edgeMatch[4]) {
+      const fromKey = (edgeMatch[2] || edgeMatch[3] || "").trim();
+      const toKey = (edgeMatch[5] || edgeMatch[6] || "").trim();
+      const label = edgeMatch[7]?.trim();
       const from = idByRef.get(fromKey) ?? registerNode(fromKey, fromKey, "container");
       const to = idByRef.get(toKey) ?? registerNode(toKey, toKey, "container");
       if (from && to) {
@@ -337,7 +337,7 @@ export function parseObjectPlantUml(source: string, format: DiagramFormat): Diag
   ir.extras = { ...ir.extras, objectFields };
 
   for (const match of source.matchAll(
-    /([\p{L}\p{N}_-]+)\s*(?:-->|\*--|o--|--)\s*([\p{L}\p{N}_-]+)(?:\s*:\s*(.+))?$/gmu,
+    /([\p{L}\p{N}_-]+)\s*(?:-->|\*--|o--|--|-[-\w]*>+)\s*([\p{L}\p{N}_-]+)(?:\s*:\s*(.+))?$/gmu,
   )) {
     const from = idByRef.get(match[1]);
     const to = idByRef.get(match[2]);

@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { describe, expect, it } from "vitest";
 import {
   createDefaultBuilderState,
@@ -263,6 +265,128 @@ describe("diagram-builder core", () => {
     flowState.canvas.direction = "TB";
     const flowEmitted = emitSourceFromBuilderState(flowState);
     expect(flowEmitted).toContain("flowchart TD");
+  });
+
+  it("supports all 4 graph directions (TB, LR, BT, RL) across Mermaid, PlantUML, D2, Structurizr, and GraphML", () => {
+    // 1. Mermaid flowchart: TB, LR, BT, RL
+    const mermaidFlow = parseSourceToBuilderState(
+      "flowchart RL\n  A[Start] --> B[End]",
+      "mermaid",
+    );
+    expect(mermaidFlow.canvas.direction).toBe("RL");
+    expect(emitSourceFromBuilderState(mermaidFlow)).toContain("flowchart RL");
+    mermaidFlow.canvas.direction = "BT";
+    expect(emitSourceFromBuilderState(mermaidFlow)).toContain("flowchart BT");
+
+    // 2. Mermaid class / state / er / architecture
+    const mermaidState = parseSourceToBuilderState(
+      "stateDiagram-v2\n  direction BT\n  [*] --> Idle\n  Idle --> Active",
+      "mermaid",
+    );
+    expect(mermaidState.canvas.direction).toBe("BT");
+    expect(emitSourceFromBuilderState(mermaidState)).toContain("direction BT");
+
+    const mermaidEr = parseSourceToBuilderState(
+      "erDiagram\n  CUSTOMER ||--o{ ORDER : places",
+      "mermaid",
+    );
+    mermaidEr.canvas.direction = "LR";
+    expect(emitSourceFromBuilderState(mermaidEr)).toContain("direction LR");
+
+    const mermaidArch = parseSourceToBuilderState(
+      "architecture-beta\n  group api(cloud)[API]\n  service web(server)[Web] in api\n  service db(database)[DB] in api\n  web:B --> T:db",
+      "mermaid",
+    );
+    expect(mermaidArch.canvas.direction).toBe("TB");
+    mermaidArch.canvas.direction = "RL";
+    expect(emitSourceFromBuilderState(mermaidArch)).toContain(":L --> R:");
+
+    // 3. D2: down (TB), right (LR), up (BT), left (RL)
+    const d2Arch = parseSourceToBuilderState(
+      'direction: left\nweb: "Web"\napi: "API"\nweb -> api',
+      "d2",
+    );
+    expect(d2Arch.canvas.direction).toBe("RL");
+    expect(emitSourceFromBuilderState(d2Arch)).toContain("direction: left");
+    d2Arch.canvas.direction = "BT";
+    expect(emitSourceFromBuilderState(d2Arch)).toContain("direction: up");
+    d2Arch.canvas.direction = "LR";
+    expect(emitSourceFromBuilderState(d2Arch)).toContain("direction: right");
+    d2Arch.canvas.direction = "TB";
+    expect(emitSourceFromBuilderState(d2Arch)).toContain("direction: down");
+
+    // 4. Structurizr: autolayout tb, lr, bt, rl
+    const dslSource = [
+      'workspace "Shop" "Context" {',
+      "  model {",
+      '    user = person "User"',
+      '    shop = softwareSystem "Shop"',
+      '    user -> shop "Uses"',
+      "  }",
+      "  views {",
+      '    systemContext shop "Context" {',
+      "      include *",
+      "      autolayout rl",
+      "    }",
+      "  }",
+      "}",
+    ].join("\n");
+    const dslState = parseSourceToBuilderState(dslSource, "structurizr");
+    expect(dslState.canvas.direction).toBe("RL");
+    expect(emitSourceFromBuilderState(dslState)).toContain("autolayout rl");
+    dslState.canvas.direction = "BT";
+    expect(emitSourceFromBuilderState(dslState)).toContain("autolayout bt");
+
+    // 5. GraphML: rankdir="TB" | "LR" | "BT" | "RL"
+    const graphmlSource = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<graphml xmlns="http://graphml.graphdrawing.org/xmlns">',
+      '  <graph edgedefault="directed" rankdir="RL">',
+      '    <node id="A"/>',
+      '    <node id="B"/>',
+      '    <edge source="A" target="B"/>',
+      "  </graph>",
+      "</graphml>",
+    ].join("\n");
+    const gmlState = parseSourceToBuilderState(graphmlSource, "graphml");
+    expect(gmlState.canvas.direction).toBe("RL");
+    expect(emitSourceFromBuilderState(gmlState)).toContain('rankdir="RL"');
+    gmlState.canvas.direction = "BT";
+    expect(emitSourceFromBuilderState(gmlState)).toContain('rankdir="BT"');
+
+    // 6. PlantUML C4, Class, Component, Mindmap
+    const pumlC4 = parseSourceToBuilderState(
+      '@startuml\n!include ./plantuml-lib/C4/C4_Context.puml\nPerson(u, "User")\nSystem(s, "Sys")\nRel(u, s, "Uses")\n@enduml',
+      "plantuml",
+    );
+    pumlC4.canvas.direction = "LR";
+    expect(emitSourceFromBuilderState(pumlC4)).toContain("LAYOUT_LEFT_RIGHT()");
+    pumlC4.canvas.direction = "BT";
+    expect(emitSourceFromBuilderState(pumlC4)).toContain("Rel_Up(");
+
+    const pumlClass = parseSourceToBuilderState(
+      "@startuml\nclass User\nclass Order\nUser --> Order\n@enduml",
+      "plantuml",
+    );
+    pumlClass.canvas.direction = "BT";
+    expect(emitSourceFromBuilderState(pumlClass)).toContain("-up->");
+    pumlClass.canvas.direction = "RL";
+    const emittedRlClass = emitSourceFromBuilderState(pumlClass);
+    expect(emittedRlClass).toContain("left to right direction");
+    expect(emittedRlClass).toContain("-left->");
+
+    const pumlMindmapSource = "@startmindmap\ntop to bottom direction\n* Root\n** Branch\n@endmindmap";
+    const pumlMindmap = parseSourceToBuilderState(pumlMindmapSource, "plantuml");
+    expect(getDiagramBuilderSchema("plantuml", "mindmap").capabilities.supportsDirection).toBe(true);
+    pumlMindmap.canvas.direction = "LR";
+    expect(emitSourceFromBuilderState(pumlMindmap, pumlMindmapSource)).toContain(
+      "left to right direction",
+    );
+
+    // 7. Sequence diagrams in PlantUML/Mermaid do not expose unsupported direction toggle
+    expect(getDiagramBuilderSchema("plantuml", "sequence").capabilities.supportsDirection).toBe(false);
+    expect(getDiagramBuilderSchema("mermaid", "sequence").capabilities.supportsDirection).toBe(false);
+    expect(getDiagramBuilderSchema("d2", "sequence").capabilities.supportsDirection).toBe(true);
   });
 
   it("disables step-by-step builder for graphml while supporting all other formats", () => {

@@ -28,8 +28,19 @@ function safeDslIdentifier(value: string, used: Set<string>, prefix = "el"): str
   return candidate;
 }
 
-function resolveAutoLayout(ir: DiagramIR): "lr" | "tb" {
-  return ir.direction === "LR" ? "lr" : "tb";
+type StructurizrAutoLayout = "lr" | "rl" | "bt" | "tb";
+
+function resolveAutoLayout(ir: DiagramIR): StructurizrAutoLayout {
+  switch (ir.direction) {
+    case "LR":
+      return "lr";
+    case "RL":
+      return "rl";
+    case "BT":
+      return "bt";
+    default:
+      return "tb";
+  }
 }
 
 function isNodePerson(node: DiagramIR["nodes"][number]): boolean {
@@ -52,7 +63,7 @@ function isNodeDatabase(node: DiagramIR["nodes"][number]): boolean {
 function emitDeploymentDsl(
   ir: DiagramIR,
   workspaceTitle: string,
-  layout: "lr" | "tb",
+  layout: StructurizrAutoLayout,
 ): string {
   const usedIds = new Set<string>(["shop", "live", "cluster"]);
   const containerAliases = new Map<string, string>();
@@ -125,7 +136,7 @@ function emitDeploymentDsl(
 function emitContextDsl(
   ir: DiagramIR,
   workspaceTitle: string,
-  layout: "lr" | "tb",
+  layout: StructurizrAutoLayout,
 ): string {
   const usedIds = new Set<string>();
   const aliasById = new Map<string, string>();
@@ -200,7 +211,7 @@ function emitContextDsl(
 function emitContainerDsl(
   ir: DiagramIR,
   workspaceTitle: string,
-  layout: "lr" | "tb",
+  layout: StructurizrAutoLayout,
 ): string {
   const usedIds = new Set<string>(["coreSystem"]);
   const aliasById = new Map<string, string>();
