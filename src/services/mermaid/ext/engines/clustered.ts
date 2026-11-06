@@ -18,6 +18,8 @@ import {
   fixedTicks,
   fmt,
   labelBlockExtra,
+  labelLineCount,
+  labelLineStep,
   measureLabelWidth,
   measureText,
   niceRange,
@@ -28,6 +30,7 @@ import {
 } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
+import { parseBreak, parseLine } from "./waterfall/directive-parsers";
 
 export type ClusteredLabelsMode = "above" | "inside" | "none";
 
@@ -46,6 +49,29 @@ export interface ClusteredSeries {
 export interface SeriesLine {
   label?: string;
   values: SeriesSlot[];
+  color?: string;
+  width?: number;
+  style?: SeriesLineStyle;
+}
+
+/**
+ * Разрыв шкалы значений, как в waterfall: участок `(after, before)` вырезается.
+ * `break <после> --> <до> ["подпись"]`
+ */
+export interface SeriesAxisBreak {
+  after: number;
+  before: number;
+  label?: string;
+}
+
+/**
+ * Горизонтальная линия уровня (план, цель, порог).
+ * `line <значение> ["подпись"] [color=#hex] [width=<px>] [style=solid|dash|dot|dashdot]`
+ * Ломаная по категориям — другая форма: `line Подпись : зн1, зн2, …`.
+ */
+export interface SeriesThreshold {
+  value: number;
+  label?: string;
   color?: string;
   width?: number;
   style?: SeriesLineStyle;
@@ -84,6 +110,10 @@ export interface ClusteredModel {
   seriesColors: Record<string, string>;
   series: ClusteredSeries[];
   lines: SeriesLine[];
+  /** Разрывы шкалы значений (`break`). */
+  breaks: SeriesAxisBreak[];
+  /** Горизонтальные линии уровня (`line <значение>`, без двоеточия). */
+  thresholds: SeriesThreshold[];
   cagrs: SeriesCagr[];
   /** `ratio 16x9` — столбцы растягиваются под пропорции изображения. */
   ratio?: ChartAspect;
@@ -98,6 +128,14 @@ const MIN_BAR_THICKNESS = 12;
 const MAX_BAR_THICKNESS = 36;
 const INNER_BAR_GAP = 3;
 const CLUSTER_PADDING_RATIO = 0.26;
+/** Полоса «зигзага» на баре, пересекающем разрыв. Сам разрыв места не занимает. */
+const BREAK_ZIGZAG_HEIGHT = 8;
+/** Зазор между двумя штрихами линии разрыва. */
+const BREAK_LINE_GAP = 3;
+/** Толщина горизонтальной линии уровня, если `width` не задан. */
+const THRESHOLD_WIDTH = 1.5;
+/** Доля базового шрифта у подписи разрыва и линии уровня. */
+const MARK_FONT_RATIO = 0.91;
 
 function splitCsvLabels(raw: string): string[] {
   return raw
@@ -328,6 +366,17 @@ function extractLineAttrs(
   return { rest, color, style, width };
 }
 
+/**
+ * Горизонтальная линия уровня, а не ломаная по категориям.
+ * Ломаная всегда содержит двоеточие между подписью и списком значений.
+ * Уровень начинается с числа: `line 160 "план"`, `line: 160`, `line=160`.
+ */
+function isSeriesThresholdLine(raw: string): boolean {
+  const body = raw.replace(/^line\b/i, "").trim().replace(/^[:=]\s*/, "").replace(/^\+/, "");
+  if (body.includes(":")) return false;
+  return /^-?[\d\s_.]+(?=\s|[,;]|$)/.test(body);
+}
+
 function parseLineRow(
   rawLine: string,
   lineNo: number,
@@ -556,6 +605,8 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
   const seriesColors: Record<string, string> = {};
   const series: ClusteredSeries[] = [];
   const linesOut: SeriesLine[] = [];
+  const breaks: SeriesAxisBreak[] = [];
+  const thresholds: SeriesThreshold[] = [];
   const cagrDrafts: Array<CagrDraft & { seriesIndex: number }> = [];
   const leadingCagrs: CagrDraft[] = [];
   let lastSeriesIndex = -1;
@@ -717,10 +768,23 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
       }
     }
 
-    if (/^line\b/i.test(raw)) {
-      const parsed = parseLineRow(raw, lineNo, categories ? categories.length : null);
+    if (/^break\b/i.test(raw)) {
+      const parsed = parseBreak(raw.replace(/^break\b/i, ""), lineNo);
       if (parsed.error) errors.push(parsed.error);
-      else if (parsed.line) linesOut.push(parsed.line);
+      else if (parsed.brk) breaks.push(parsed.brk);
+      continue;
+    }
+
+    if (/^line\b/i.test(raw)) {
+      if (isSeriesThresholdLine(raw)) {
+        const parsed = parseLine(raw.replace(/^line\b/i, ""), lineNo);
+        if (parsed.error) errors.push(parsed.error);
+        else if (parsed.line) thresholds.push(parsed.line);
+      } else {
+        const parsed = parseLineRow(raw, lineNo, categories ? categories.length : null);
+        if (parsed.error) errors.push(parsed.error);
+        else if (parsed.line) linesOut.push(parsed.line);
+      }
       continue;
     }
 
@@ -751,7 +815,7 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
     }
 
     errors.push({
-      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, rotate 90, categories, y, grid, axis, labels, fontsize, mono, stacked, colors, ratio, series, line, cagr)`,
+      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, rotate 90, categories, y, grid, axis, labels, fontsize, mono, stacked, colors, ratio, series, line, break, cagr)`,
       line: lineNo,
       col: 0,
     });
@@ -870,6 +934,30 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
 
   if (errors.length > 0 || !categories) return { ok: false, errors };
 
+  const bounds = resolveValueBounds({
+    series,
+    lines: linesOut,
+    stack,
+    y: yAxis,
+    thresholds,
+  });
+  const visibleBreaks = breaks
+    .filter((item) => item.after >= bounds.min && item.before <= bounds.max)
+    .sort((a, b) => a.after - b.after);
+  for (let index = 1; index < visibleBreaks.length; index += 1) {
+    const prev = visibleBreaks[index - 1];
+    const next = visibleBreaks[index];
+    if (next.after < prev.before) {
+      errors.push({
+        message: `разрывы пересекаются: «${fmt(prev.after)} --> ${fmt(prev.before)}» и «${fmt(next.after)} --> ${fmt(next.before)}»`,
+        line: 1,
+        col: 0,
+      });
+      break;
+    }
+  }
+  if (errors.length > 0) return { ok: false, errors };
+
   return {
     ok: true,
     errors: [],
@@ -889,6 +977,8 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
       seriesColors,
       series,
       lines: linesOut,
+      breaks: visibleBreaks,
+      thresholds: [...thresholds].sort((a, b) => a.value - b.value),
       cagrs,
       ratio,
     },
@@ -917,17 +1007,15 @@ function finiteSlots(values: readonly SeriesSlot[]): number[] {
   return values.filter((value): value is number => value !== null);
 }
 
-function computeValueScale(model: ClusteredModel): {
-  min: number;
-  max: number;
-  ticks: number[];
-} {
+function resolveValueBounds(
+  model: Pick<ClusteredModel, "series" | "lines" | "stack" | "y" | "thresholds">,
+): { min: number; max: number } {
   let rawMin = 0;
   let rawMax = 0;
   if (model.stack && model.series.length > 0) {
     const cats = Math.max(...model.series.map((series) => series.values.length));
     for (let category = 0; category < cats; category += 1) {
-      const spans = stackedSpans(model, category);
+      const spans = stackedSpans(model as ClusteredModel, category);
       for (const span of spans) {
         rawMin = Math.min(rawMin, span.start, span.end);
         rawMax = Math.max(rawMax, span.start, span.end);
@@ -946,12 +1034,153 @@ function computeValueScale(model: ClusteredModel): {
       rawMax = Math.max(rawMax, value);
     }
   }
+  for (const mark of model.thresholds) {
+    rawMin = Math.min(rawMin, mark.value);
+    rawMax = Math.max(rawMax, mark.value);
+  }
   const auto = niceRange(rawMin, rawMax, 5);
   const min = model.y?.min ?? Math.min(0, auto.min);
   const max = model.y?.max ?? (auto.max <= min ? min + 10 : auto.max);
+  return { min, max };
+}
+
+function computeValueScale(model: ClusteredModel): {
+  min: number;
+  max: number;
+  ticks: number[];
+} {
+  const { min, max } = resolveValueBounds(model);
   const ticks =
     model.gridStep && model.gridStep > 0 ? fixedTicks(min, max, model.gridStep) : niceTicks(min, max, 5);
   return { min, max, ticks };
+}
+
+interface ValueScale {
+  pos: (value: number) => number;
+  clamped: (value: number) => number;
+  inGap: (value: number) => boolean;
+}
+
+/** Шкала с вырезами. Пиксель `pixelAtMin` — значение `min`, `pixelAtMax` — `max`. */
+function createValueScale(
+  min: number,
+  max: number,
+  breaks: readonly SeriesAxisBreak[],
+  pixelAtMin: number,
+  pixelAtMax: number,
+): ValueScale {
+  const active = breaks
+    .filter((item) => item.after >= min && item.before <= max && item.before > item.after)
+    .sort((a, b) => a.after - b.after);
+  const ranges: Array<[number, number]> = [];
+  let cursor = min;
+  for (const item of active) {
+    const lo = Math.max(min, item.after);
+    const hi = Math.min(max, item.before);
+    if (lo > cursor) ranges.push([cursor, lo]);
+    cursor = Math.max(cursor, hi);
+  }
+  if (cursor < max) ranges.push([cursor, max]);
+  if (ranges.length === 0) ranges.push([min, max]);
+
+  const visibleSpan = ranges.reduce((sum, [lo, hi]) => sum + (hi - lo), 0) || 1;
+  const pixelSpan = pixelAtMax - pixelAtMin;
+
+  const pos = (value: number): number => {
+    const clamped = Math.min(max, Math.max(min, value));
+    let visible = 0;
+    for (const [lo, hi] of ranges) {
+      const top = Math.min(Math.max(clamped, lo), hi);
+      if (top > lo) visible += top - lo;
+    }
+    return pixelAtMin + (visible / visibleSpan) * pixelSpan;
+  };
+
+  const inGap = (value: number): boolean =>
+    active.some((item) => value > item.after && value < item.before);
+
+  const clamped = (value: number): number => {
+    for (const item of active) {
+      if (value > item.after && value < item.before) {
+        return value - item.after <= item.before - value ? pos(item.after) : pos(item.before);
+      }
+    }
+    return pos(value);
+  };
+
+  return { pos, clamped, inGap };
+}
+
+/** Непрерывные куски [lo, hi] за вычетом разрывов. */
+function valueSegments(
+  lo: number,
+  hi: number,
+  breaks: readonly SeriesAxisBreak[],
+): Array<[number, number]> {
+  const cuts = breaks
+    .filter((item) => item.after < hi && item.before > lo)
+    .sort((a, b) => a.after - b.after);
+  const segments: Array<[number, number]> = [];
+  let cursor = lo;
+  for (const item of cuts) {
+    const segEnd = Math.min(hi, item.after);
+    if (segEnd > cursor) segments.push([cursor, segEnd]);
+    cursor = Math.max(cursor, Math.min(hi, item.before));
+  }
+  if (cursor < hi) segments.push([cursor, hi]);
+  if (segments.length === 0) segments.push([lo, hi]);
+  return segments;
+}
+
+function markFontSize(fontSize: number): number {
+  return Math.round(fontSize * MARK_FONT_RATIO);
+}
+
+function annotationGutter(model: ClusteredModel, fontSize: number): number {
+  const labelSize = markFontSize(fontSize);
+  let gutter = lineLabelGutter(model, fontSize);
+  for (const item of model.thresholds) {
+    if (!item.label) continue;
+    gutter = Math.max(gutter, measureLabelWidth(`${fmt(item.value)} ${item.label}`, labelSize) + 16);
+  }
+  for (const item of model.breaks) {
+    if (!item.label) continue;
+    gutter = Math.max(gutter, measureLabelWidth(item.label, labelSize) + 16);
+  }
+  return gutter;
+}
+
+function breakEdgeRoom(model: ClusteredModel, fontSize: number): number {
+  let width = 0;
+  for (const item of model.breaks) {
+    width = Math.max(
+      width,
+      measureText(fmt(item.after), fontSize),
+      measureText(fmt(item.before), fontSize),
+    );
+  }
+  return width > 0 ? width + 14 : 0;
+}
+
+/** Запас сверху у повёрнутой диаграммы: подписи разрыва и линий уровня. */
+function rotatedMarkRoom(model: ClusteredModel, fontSize: number): number {
+  const labeled =
+    model.breaks.some((item) => Boolean(item.label)) ||
+    model.thresholds.some((item) => Boolean(item.label));
+  return labeled ? fontSize + 12 : 0;
+}
+
+function gapFill(background: string | undefined, fallback: string): string {
+  const normalized = background?.trim().toLowerCase() ?? "";
+  return normalized === "transparent" || normalized === "none" ? "transparent" : fallback;
+}
+
+function thresholdDash(style: SeriesLineStyle | undefined): string | undefined {
+  return LINE_DASH[style ?? "dash"];
+}
+
+function defaultThresholdColor(palette: Palette, dark: boolean): string {
+  return dark ? palette.fgDim : palette.axis;
 }
 
 function renderLegend(
@@ -1199,6 +1428,189 @@ function paintCagrArrow(
   });
 }
 
+function drawVerticalBarPieces(
+  svg: ReturnType<typeof createSvg>,
+  x: number,
+  thickness: number,
+  from: number,
+  to: number,
+  color: string,
+  barId: string,
+  yOf: (value: number) => number,
+  breaks: readonly SeriesAxisBreak[],
+  holeFill: string,
+): { barTop: number; barH: number; valueY: number } {
+  const lo = Math.min(from, to);
+  const hi = Math.max(from, to);
+  const segments = valueSegments(lo, hi, breaks);
+  const tip = to >= from ? hi : lo;
+  let tipSeg = segments[segments.length - 1];
+  for (const seg of segments) {
+    if (tip >= seg[0] && tip <= seg[1]) tipSeg = seg;
+  }
+  for (const [segLo, segHi] of segments) {
+    const top = yOf(segHi);
+    const bottom = yOf(segLo);
+    svg.rect(x, top, thickness, Math.max(1.5, bottom - top), {
+      fill: color,
+      rx: 2,
+      "data-bar": barId,
+    });
+  }
+  for (const item of breaks) {
+    if (!(item.after < hi && item.before > lo)) continue;
+    const y = yOf(item.after);
+    const mid = x + thickness / 2;
+    svg.rect(x, y - BREAK_ZIGZAG_HEIGHT / 2, thickness, BREAK_ZIGZAG_HEIGHT, {
+      fill: holeFill,
+      "data-break-gap": "1",
+    });
+    svg.path(
+      `M${fmt(x)} ${fmt(y - 2)} L${fmt(mid)} ${fmt(y + 2)} L${fmt(x + thickness)} ${fmt(y - 2)}`,
+      { fill: "none", stroke: color, "stroke-width": 1.2, "data-break-zigzag": "1" },
+    );
+  }
+  const top = yOf(tipSeg[1]);
+  const bottom = yOf(tipSeg[0]);
+  return { barTop: top, barH: Math.max(1.5, bottom - top), valueY: yOf(tip) };
+}
+
+function drawHorizontalBarPieces(
+  svg: ReturnType<typeof createSvg>,
+  y: number,
+  thickness: number,
+  from: number,
+  to: number,
+  color: string,
+  barId: string,
+  xOf: (value: number) => number,
+  breaks: readonly SeriesAxisBreak[],
+  holeFill: string,
+): { barLeft: number; barW: number; valueX: number } {
+  const lo = Math.min(from, to);
+  const hi = Math.max(from, to);
+  const segments = valueSegments(lo, hi, breaks);
+  const tip = to >= from ? hi : lo;
+  let tipSeg = segments[segments.length - 1];
+  for (const seg of segments) {
+    if (tip >= seg[0] && tip <= seg[1]) tipSeg = seg;
+  }
+  for (const [segLo, segHi] of segments) {
+    const left = xOf(segLo);
+    const right = xOf(segHi);
+    svg.rect(left, y, Math.max(1.5, right - left), thickness, {
+      fill: color,
+      rx: 2,
+      "data-bar": barId,
+    });
+  }
+  for (const item of breaks) {
+    if (!(item.after < hi && item.before > lo)) continue;
+    const x = xOf(item.after);
+    const mid = y + thickness / 2;
+    svg.rect(x - BREAK_ZIGZAG_HEIGHT / 2, y, BREAK_ZIGZAG_HEIGHT, thickness, {
+      fill: holeFill,
+      "data-break-gap": "1",
+    });
+    svg.path(
+      `M${fmt(x - 2)} ${fmt(y)} L${fmt(x + 2)} ${fmt(mid)} L${fmt(x - 2)} ${fmt(y + thickness)}`,
+      { fill: "none", stroke: color, "stroke-width": 1.2, "data-break-zigzag": "1" },
+    );
+  }
+  const left = xOf(tipSeg[0]);
+  const right = xOf(tipSeg[1]);
+  return { barLeft: left, barW: Math.max(1.5, right - left), valueX: xOf(tip) };
+}
+
+function drawVerticalThresholds(
+  svg: ReturnType<typeof createSvg>,
+  model: ClusteredModel,
+  palette: Palette,
+  fontSize: number,
+  dark: boolean,
+  plotLeft: number,
+  plotRight: number,
+  yMin: number,
+  yMax: number,
+  yOf: (value: number) => number,
+  holeFill: string,
+): void {
+  const labelSize = markFontSize(fontSize);
+  for (const item of model.thresholds) {
+    if (item.value < yMin || item.value > yMax) continue;
+    const y = yOf(item.value);
+    const stroke = item.color ?? defaultThresholdColor(palette, dark);
+    const dash = thresholdDash(item.style);
+    svg.line(plotLeft, y, plotRight, y, {
+      stroke,
+      "stroke-width": item.width ?? THRESHOLD_WIDTH,
+      ...(dash ? { "stroke-dasharray": dash } : {}),
+      "stroke-linecap": "butt",
+      "data-threshold-line": "1",
+    });
+    if (!item.label) continue;
+    const text = `${fmt(item.value)} ${item.label}`;
+    const textWidth = measureLabelWidth(text, labelSize);
+    const textX = plotRight + 6;
+    const block = (labelLineCount(text) - 1) * labelLineStep(labelSize);
+    svg.rect(textX - 2, y - labelSize * 0.8 - block / 2, textWidth + 4, labelSize * 1.6 + block, {
+      fill: holeFill,
+      "data-line-gap": "1",
+    });
+    drawLabelLines(svg, textX, y + 4, text, labelSize, {
+      "text-anchor": "start",
+      "font-size": labelSize,
+      fill: stroke,
+      "data-threshold-label": "1",
+    }, "center");
+  }
+}
+
+function drawHorizontalThresholds(
+  svg: ReturnType<typeof createSvg>,
+  model: ClusteredModel,
+  palette: Palette,
+  fontSize: number,
+  dark: boolean,
+  plotTop: number,
+  plotBottom: number,
+  xMin: number,
+  xMax: number,
+  xOf: (value: number) => number,
+  holeFill: string,
+): void {
+  const labelSize = markFontSize(fontSize);
+  for (const item of model.thresholds) {
+    if (item.value < xMin || item.value > xMax) continue;
+    const x = xOf(item.value);
+    const stroke = item.color ?? defaultThresholdColor(palette, dark);
+    const dash = thresholdDash(item.style);
+    svg.line(x, plotTop, x, plotBottom, {
+      stroke,
+      "stroke-width": item.width ?? THRESHOLD_WIDTH,
+      ...(dash ? { "stroke-dasharray": dash } : {}),
+      "stroke-linecap": "butt",
+      "data-threshold-line": "1",
+    });
+    if (!item.label) continue;
+    const text = `${fmt(item.value)} ${item.label}`;
+    const textWidth = measureLabelWidth(text, labelSize);
+    const textX = x + 6;
+    const textY = plotTop + labelSize;
+    const block = (labelLineCount(text) - 1) * labelLineStep(labelSize);
+    svg.rect(textX - 2, textY - labelSize * 0.85 - block / 2, textWidth + 4, labelSize * 1.6 + block, {
+      fill: holeFill,
+      "data-line-gap": "1",
+    });
+    drawLabelLines(svg, textX, textY, text, labelSize, {
+      "text-anchor": "start",
+      "font-size": labelSize,
+      fill: stroke,
+      "data-threshold-label": "1",
+    }, "center");
+  }
+}
+
 function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOptions): string {
   const palette = resolvePalette(
     chartIsDark(options.dark, model.monoInvert),
@@ -1236,8 +1648,8 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
   let plotWidth = Math.max(260, colWidth * catCount);
   let plotHeight = Math.round(PLOT_HEIGHT_VERTICAL * Math.max(1, (scaleFactor - 1) * 0.4 + 1));
 
-  const padLeft = (model.axis ? 68 : 28) + yExtra;
-  const padRight = (model.stack && model.labels !== "none" ? 72 : 28) + lineLabelGutter(model, fontSize);
+  const padLeft = (model.axis ? Math.max(68, breakEdgeRoom(model, fontSize)) : 28) + yExtra;
+  const padRight = (model.stack && model.labels !== "none" ? 72 : 28) + annotationGutter(model, fontSize);
   const padTop =
     (model.title ? 52 : 28) +
     (model.labels === "above" ? fontSize + 6 : 0) +
@@ -1275,8 +1687,15 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
 
   const { min: yMin, max: yMax, ticks } = computeValueScale(model);
   const ySpan = yMax - yMin || 1;
-  const yOf = (val: number): number => plotBottom - clamp((val - yMin) / ySpan, 0, 1) * plotHeight;
+  const linearY = (val: number): number => plotBottom - clamp((val - yMin) / ySpan, 0, 1) * plotHeight;
+  const brokenScale = model.breaks.length
+    ? createValueScale(yMin, yMax, model.breaks, plotBottom, plotTop)
+    : null;
+  const yOf = brokenScale ? brokenScale.pos : linearY;
+  const yClamped = brokenScale ? brokenScale.clamped : linearY;
+  const inValueGap = brokenScale ? brokenScale.inGap : () => false;
   const yZero = yOf(clamp(0, yMin, yMax));
+  const holeFill = gapFill(options.background, palette.bg);
 
   const svg = createSvg({
     width,
@@ -1294,8 +1713,15 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     });
   }
 
+  const drawnTickY = new Set<number>();
   for (const tick of ticks) {
+    if (inValueGap(tick)) continue;
     const y = yOf(tick);
+    if (model.breaks.length > 0) {
+      const key = Math.round(y * 100) / 100;
+      if (drawnTickY.has(key)) continue;
+      drawnTickY.add(key);
+    }
     if (model.grid) {
       svg.line(plotLeft, y, plotRight, y, {
         stroke: palette.grid,
@@ -1323,6 +1749,18 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     }, "up");
   }
 
+  for (const item of model.breaks) {
+    const y = yOf(item.after);
+    for (const delta of [-BREAK_LINE_GAP / 2, BREAK_LINE_GAP / 2]) {
+      svg.line(plotLeft, y + delta, plotRight, y + delta, {
+        stroke: palette.axis,
+        "stroke-width": 1,
+        "stroke-dasharray": "6 4",
+        "data-break": "1",
+      });
+    }
+  }
+
   const anchors: Array<Array<PlotPoint | null>> = model.series.map(() =>
     Array.from({ length: catCount }, () => null),
   );
@@ -1348,17 +1786,37 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
         dark: chartIsDark(options.dark, model.monoInvert),
       });
       const bx = span ? clusterLeft : clusterLeft + sIdx * (barWidth + INNER_BAR_GAP);
-      const yStart = yOf(span ? span.start : 0);
-      const yEnd = yOf(span ? span.end : val);
-      const barTop = Math.min(span ? yStart : yZero, span ? yEnd : yOf(val));
-      const barH = Math.max(1.5, Math.abs((span ? yEnd : yOf(val)) - (span ? yStart : yZero)));
-
-      svg.rect(bx, barTop, barWidth, barH, {
-        fill: color,
-        rx: 2,
-        "data-bar": `${c}-${sIdx}`,
-      });
-      const valueY = span ? yOf(span.end) : yOf(val);
+      let barTop: number;
+      let barH: number;
+      let valueY: number;
+      if (model.breaks.length > 0) {
+        const pieces = drawVerticalBarPieces(
+          svg,
+          bx,
+          barWidth,
+          span ? span.start : 0,
+          span ? span.end : val,
+          color,
+          `${c}-${sIdx}`,
+          yOf,
+          model.breaks,
+          holeFill,
+        );
+        barTop = pieces.barTop;
+        barH = pieces.barH;
+        valueY = pieces.valueY;
+      } else {
+        const yStart = yOf(span ? span.start : 0);
+        const yEnd = yOf(span ? span.end : val);
+        barTop = Math.min(span ? yStart : yZero, span ? yEnd : yOf(val));
+        barH = Math.max(1.5, Math.abs((span ? yEnd : yOf(val)) - (span ? yStart : yZero)));
+        svg.rect(bx, barTop, barWidth, barH, {
+          fill: color,
+          rx: 2,
+          "data-bar": `${c}-${sIdx}`,
+        });
+        valueY = span ? yOf(span.end) : yOf(val);
+      }
       anchors[sIdx][c] = { x: bx + barWidth / 2, y: valueY };
       const labelClear = model.labels === "above" && !span && val >= 0 ? fontSize + 8 : 2;
       obstacles[c] = Math.min(obstacles[c], barTop - labelClear);
@@ -1408,16 +1866,51 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     );
   }
 
-  if (model.axis) {
+  if (model.axis && !inValueGap(0)) {
     svg.line(plotLeft, yZero, plotRight, yZero, {
       stroke: palette.axis,
       "stroke-width": 1.2,
     });
   }
 
+  const breakLabelSize = markFontSize(fontSize);
+  for (const item of model.breaks) {
+    const y = yOf(item.after);
+    if (model.axis) {
+      const edgeGap = Math.round((3 * fontSize) / FONT_BASE);
+      svg.text(plotLeft - 8, y + edgeGap + fontSize, fmt(item.after), {
+        "text-anchor": "end",
+        "font-size": fontSize,
+        fill: palette.fgDim,
+        "data-break-edge": "after",
+      });
+      svg.text(plotLeft - 8, y - edgeGap, fmt(item.before), {
+        "text-anchor": "end",
+        "font-size": fontSize,
+        fill: palette.fgDim,
+        "data-break-edge": "before",
+      });
+    }
+    if (item.label) {
+      const textWidth = measureLabelWidth(item.label, breakLabelSize);
+      const textX = plotRight + 6;
+      const block = (labelLineCount(item.label) - 1) * labelLineStep(breakLabelSize);
+      svg.rect(textX - 2, y - breakLabelSize * 0.8 - block / 2, textWidth + 4, breakLabelSize * 1.6 + block, {
+        fill: holeFill,
+        "data-break-text-bg": "1",
+      });
+      drawLabelLines(svg, textX, y + 4, item.label, breakLabelSize, {
+        "text-anchor": "start",
+        "font-size": breakLabelSize,
+        fill: palette.fgDim,
+        "data-break-label": "1",
+      }, "center");
+    }
+  }
+
   drawSeriesLines(svg, model, palette, fontSize, plotRight, (index, value) => ({
     x: plotLeft + (index + 0.5) * colWidth,
-    y: yOf(value),
+    y: yClamped(value),
   }));
   drawCagrAnnotations(svg, model, palette, fontSize, anchors, obstacles, true, barWidth, {
     minX: 4,
@@ -1425,6 +1918,20 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     maxX: width - 4,
     maxY: plotBottom,
   });
+
+  drawVerticalThresholds(
+    svg,
+    model,
+    palette,
+    fontSize,
+    chartIsDark(options.dark, model.monoInvert),
+    plotLeft,
+    plotRight,
+    yMin,
+    yMax,
+    yClamped,
+    holeFill,
+  );
 
   renderLegend(svg, model, options, plotLeft, height - 16 - seriesExtra, fontSize, palette.fgDim);
   return svg.toString();
@@ -1462,8 +1969,8 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
   const yExtra = labelBlockExtra(model.y?.label, fontSize);
   const padLeft = clamp(Math.ceil(longestCat) + 28, 76, 180);
   const padRight =
-    (model.labels === "above" ? 56 : 28) + lineLabelGutter(model, fontSize) + cagrHeadroom(model, fontSize);
-  const padTop = (model.title ? 48 : 24) + titleExtra;
+    (model.labels === "above" ? 56 : 28) + annotationGutter(model, fontSize) + cagrHeadroom(model, fontSize);
+  const padTop = (model.title ? 48 : 24) + titleExtra + rotatedMarkRoom(model, fontSize);
   const padBottom = (model.y?.label ? 80 : 62) + yExtra + seriesExtra;
 
   let plotWidth = Math.round(PLOT_WIDTH_HORIZONTAL * Math.max(1, (scaleFactor - 1) * 0.35 + 1));
@@ -1499,8 +2006,15 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
 
   const { min: xMin, max: xMax, ticks } = computeValueScale(model);
   const xSpan = xMax - xMin || 1;
-  const xOf = (val: number): number => plotLeft + clamp((val - xMin) / xSpan, 0, 1) * plotWidth;
+  const linearX = (val: number): number => plotLeft + clamp((val - xMin) / xSpan, 0, 1) * plotWidth;
+  const brokenScale = model.breaks.length
+    ? createValueScale(xMin, xMax, model.breaks, plotLeft, plotRight)
+    : null;
+  const xOf = brokenScale ? brokenScale.pos : linearX;
+  const xClamped = brokenScale ? brokenScale.clamped : linearX;
+  const inValueGap = brokenScale ? brokenScale.inGap : () => false;
   const xZero = xOf(clamp(0, xMin, xMax));
+  const holeFill = gapFill(options.background, palette.bg);
 
   const svg = createSvg({
     width,
@@ -1518,8 +2032,15 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
     });
   }
 
+  const drawnTickX = new Set<number>();
   for (const tick of ticks) {
+    if (inValueGap(tick)) continue;
     const x = xOf(tick);
+    if (model.breaks.length > 0) {
+      const key = Math.round(x * 100) / 100;
+      if (drawnTickX.has(key)) continue;
+      drawnTickX.add(key);
+    }
     if (model.grid) {
       svg.line(x, plotTop, x, plotBottom, {
         stroke: palette.grid,
@@ -1542,6 +2063,18 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
       "font-size": fontSize,
       fill: palette.fgDim,
     });
+  }
+
+  for (const item of model.breaks) {
+    const x = xOf(item.after);
+    for (const delta of [-BREAK_LINE_GAP / 2, BREAK_LINE_GAP / 2]) {
+      svg.line(x + delta, plotTop, x + delta, plotBottom, {
+        stroke: palette.axis,
+        "stroke-width": 1,
+        "stroke-dasharray": "6 4",
+        "data-break": "1",
+      });
+    }
   }
 
   const anchors: Array<Array<PlotPoint | null>> = model.series.map(() =>
@@ -1583,17 +2116,38 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
         dark: chartIsDark(options.dark, model.monoInvert),
       });
       const by = span ? clusterTop : clusterTop + sIdx * (barHeight + INNER_BAR_GAP);
-      const xStart = xOf(span ? span.start : 0);
-      const xEnd = xOf(span ? span.end : val);
-      const barLeft = Math.min(span ? xStart : xZero, span ? xEnd : xOf(val));
-      const barW = Math.max(1.5, Math.abs((span ? xEnd : xOf(val)) - (span ? xStart : xZero)));
-
-      svg.rect(barLeft, by, barW, barHeight, {
-        fill: color,
-        rx: 2,
-        "data-bar": `${c}-${sIdx}`,
-      });
-      anchors[sIdx][c] = { x: span ? xOf(span.end) : xOf(val), y: by + barHeight / 2 };
+      let barLeft: number;
+      let barW: number;
+      let valueX: number;
+      if (model.breaks.length > 0) {
+        const pieces = drawHorizontalBarPieces(
+          svg,
+          by,
+          barHeight,
+          span ? span.start : 0,
+          span ? span.end : val,
+          color,
+          `${c}-${sIdx}`,
+          xOf,
+          model.breaks,
+          holeFill,
+        );
+        barLeft = pieces.barLeft;
+        barW = pieces.barW;
+        valueX = pieces.valueX;
+      } else {
+        const xStart = xOf(span ? span.start : 0);
+        const xEnd = xOf(span ? span.end : val);
+        barLeft = Math.min(span ? xStart : xZero, span ? xEnd : xOf(val));
+        barW = Math.max(1.5, Math.abs((span ? xEnd : xOf(val)) - (span ? xStart : xZero)));
+        svg.rect(barLeft, by, barW, barHeight, {
+          fill: color,
+          rx: 2,
+          "data-bar": `${c}-${sIdx}`,
+        });
+        valueX = span ? xOf(span.end) : xOf(val);
+      }
+      anchors[sIdx][c] = { x: valueX, y: by + barHeight / 2 };
       const labelClear =
         model.labels === "above" && !span && val >= 0 ? measureText(fmt(val), fontSize - 1) + 10 : 4;
       obstacles[c] = Math.max(obstacles[c], barLeft + barW + labelClear);
@@ -1634,15 +2188,49 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
     });
   }
 
-  if (model.axis) {
+  if (model.axis && !inValueGap(0)) {
     svg.line(xZero, plotTop, xZero, plotBottom, {
       stroke: palette.axis,
       "stroke-width": 1.2,
     });
   }
 
+  const breakLabelSize = markFontSize(fontSize);
+  for (const item of model.breaks) {
+    const x = xOf(item.after);
+    if (model.axis) {
+      svg.text(x - 6, plotBottom + fontSize + 6, fmt(item.after), {
+        "text-anchor": "end",
+        "font-size": fontSize,
+        fill: palette.fgDim,
+        "data-break-edge": "after",
+      });
+      svg.text(x + 6, plotBottom + fontSize + 6, fmt(item.before), {
+        "text-anchor": "start",
+        "font-size": fontSize,
+        fill: palette.fgDim,
+        "data-break-edge": "before",
+      });
+    }
+    if (item.label) {
+      const textWidth = measureLabelWidth(item.label, breakLabelSize);
+      const textX = x - textWidth / 2;
+      const textY = plotTop - 8;
+      svg.rect(textX - 2, textY - breakLabelSize, textWidth + 4, breakLabelSize + 4, {
+        fill: holeFill,
+        "data-break-text-bg": "1",
+      });
+      drawLabelLines(svg, textX, textY, item.label, breakLabelSize, {
+        "text-anchor": "start",
+        "font-size": breakLabelSize,
+        fill: palette.fgDim,
+        "data-break-label": "1",
+      });
+    }
+  }
+
   drawSeriesLines(svg, model, palette, fontSize, plotRight, (index, value) => ({
-    x: xOf(value),
+    x: xClamped(value),
     y: plotTop + (index + 0.5) * rowHeight,
   }));
   drawCagrAnnotations(svg, model, palette, fontSize, anchors, obstacles, false, barHeight, {
@@ -1651,6 +2239,20 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
     maxX: width - 4,
     maxY: height - 4,
   });
+
+  drawHorizontalThresholds(
+    svg,
+    model,
+    palette,
+    fontSize,
+    chartIsDark(options.dark, model.monoInvert),
+    plotTop,
+    plotBottom,
+    xMin,
+    xMax,
+    xClamped,
+    holeFill,
+  );
 
   renderLegend(svg, model, options, plotLeft, height - 16 - seriesExtra, fontSize, palette.fgDim);
   return svg.toString();

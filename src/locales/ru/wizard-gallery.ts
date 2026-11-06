@@ -115,6 +115,12 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.seriesCagrRanges.title": "Серийная — CAGR по диапазонам",
   "llm.wizard.gallery.example.mermaid.seriesCagrRanges.description":
     "Разные опции CAGR на диапазонах 1–2, 2–3, 3–5, 5–6, 6–7 и 8–9: format, prefix и label.",
+  "llm.wizard.gallery.example.mermaid.seriesBreak.title": "Серийная — разрыв шкалы",
+  "llm.wizard.gallery.example.mermaid.seriesBreak.description":
+    "Участок шкалы вырезан, столбцы через разрыв рисуются с зигзагом.",
+  "llm.wizard.gallery.example.mermaid.seriesThresholds.title": "Серийная — горизонтальные линии",
+  "llm.wizard.gallery.example.mermaid.seriesThresholds.description":
+    "Линии плана, цели и порога поверх столбцов.",
   "llm.wizard.gallery.example.wiremark.login.title": "Макет входа",
   "llm.wizard.gallery.example.wiremark.login.description":
     "Вайрфрейм входа: поля, вкладки и основное действие.",

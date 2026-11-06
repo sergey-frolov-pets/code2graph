@@ -373,6 +373,34 @@ cagr 5, 6 label="цель"
 
 cagr 8, 9 format="+0.0%"
 cagr 6, 7 format="0%" prefix="+"`,
+  seriesBreak: `series
+%% Разрыв шкалы: участок 200..700 ВЫРЕЗАН, чтобы мелкие столбцы стали крупнее.
+%% Бар, проходящий через разрыв, рисуется кусками с «зигзагом» на линии.
+%% Синтаксис — как у waterfall: break <после> --> <до> ["подпись"]
+title Выручка с разрывом шкалы
+categories Q1, Q2, Q3, Q4
+y "млн ₽" 0 --> 1000
+grid 100
+break 200 --> 700 "разрыв шкалы"
+series Онлайн : 120, 180, 860, 240
+series Розница : 80, 140, 790, 190`,
+  seriesThresholds: `series
+%% ГОРИЗОНТАЛЬНЫЕ ЛИНИИ — уровень плана, цель, порог.
+%% Это НЕ ломаная по категориям: у линии уровня нет двоеточия.
+%%
+%%   line <значение> ["подпись"] [color=#hex] [width=<px>] [style=solid|dash|dot|dashdot]
+%%   line Подпись : зн1, зн2, …   — по-прежнему ломаная поверх столбцов
+%%
+%% Линия рисуется по всей ширине графика, подпись — справа, с вырезом под текст.
+title Выручка против плана
+categories Q1, Q2, Q3, Q4
+y "млн ₽" 0 --> 250
+grid 50
+line 160 "план"
+line 200 "цель" color=#cf222e width=2
+line 120 "порог" style=dot width=1
+series Факт : 120, 145, 165, 190
+series Ориентир : 110, 130, 150, 180`,
 };
 
 export const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
@@ -748,4 +776,32 @@ cagr 5, 6 label="target"
 
 cagr 8, 9 format="+0.0%"
 cagr 6, 7 format="0%" prefix="+"`,
+  seriesBreak: `series
+%% Axis break: the 200..700 span is CUT so small bars become bigger.
+%% A bar crossing the break is drawn in pieces with a zigzag on the line.
+%% Same syntax as waterfall: break <after> --> <before> ["label"]
+title Revenue with an axis break
+categories Q1, Q2, Q3, Q4
+y "M USD" 0 --> 1000
+grid 100
+break 200 --> 700 "axis break"
+series Online : 120, 180, 860, 240
+series Retail : 80, 140, 790, 190`,
+  seriesThresholds: `series
+%% HORIZONTAL LINES — plan, target, threshold.
+%% This is NOT a line across categories: a level line has no colon.
+%%
+%%   line <value> ["label"] [color=#hex] [width=<px>] [style=solid|dash|dot|dashdot]
+%%   line Label : v1, v2, …   — still a polyline over the bars
+%%
+%% The line spans the plot; the label sits on the right, with a gap behind the text.
+title Revenue against plan
+categories Q1, Q2, Q3, Q4
+y "M USD" 0 --> 250
+grid 50
+line 160 "plan"
+line 200 "target" color=#cf222e width=2
+line 120 "threshold" style=dot width=1
+series Actual : 120, 145, 165, 190
+series Guide : 110, 130, 150, 180`,
 };

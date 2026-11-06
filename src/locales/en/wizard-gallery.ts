@@ -115,6 +115,12 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.seriesCagrRanges.title": "Series chart — CAGR ranges",
   "llm.wizard.gallery.example.mermaid.seriesCagrRanges.description":
     "Different CAGR options on ranges 1–2, 2–3, 3–5, 5–6, 6–7 and 8–9: format, prefix and label.",
+  "llm.wizard.gallery.example.mermaid.seriesBreak.title": "Series chart — axis break",
+  "llm.wizard.gallery.example.mermaid.seriesBreak.description":
+    "A span of the value axis is cut out, and bars that cross it are drawn with a zigzag.",
+  "llm.wizard.gallery.example.mermaid.seriesThresholds.title": "Series chart — horizontal lines",
+  "llm.wizard.gallery.example.mermaid.seriesThresholds.description":
+    "Plan, target and threshold lines drawn across the bars.",
   "llm.wizard.gallery.example.wiremark.login.title": "Login screen",
   "llm.wizard.gallery.example.wiremark.login.description":
     "A sign-in wireframe with fields, tabs, and a primary action.",

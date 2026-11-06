@@ -29,6 +29,8 @@ const TITLE_KEYS: Record<string, LocaleKey> = {
   "mermaid:seriesLines": "llm.wizard.gallery.example.mermaid.seriesLines.title",
   "mermaid:seriesCagr": "llm.wizard.gallery.example.mermaid.seriesCagr.title",
   "mermaid:seriesCagrRanges": "llm.wizard.gallery.example.mermaid.seriesCagrRanges.title",
+  "mermaid:seriesBreak": "llm.wizard.gallery.example.mermaid.seriesBreak.title",
+  "mermaid:seriesThresholds": "llm.wizard.gallery.example.mermaid.seriesThresholds.title",
   "wiremark:login": "llm.wizard.gallery.example.wiremark.login.title",
   "wiremark:dashboard": "llm.wizard.gallery.example.wiremark.dashboard.title",
   "wiremark:form": "llm.wizard.gallery.example.wiremark.form.title",
@@ -65,6 +67,9 @@ const DESCRIPTION_KEYS: Record<string, LocaleKey> = {
   "mermaid:seriesCagr": "llm.wizard.gallery.example.mermaid.seriesCagr.description",
   "mermaid:seriesCagrRanges":
     "llm.wizard.gallery.example.mermaid.seriesCagrRanges.description",
+  "mermaid:seriesBreak": "llm.wizard.gallery.example.mermaid.seriesBreak.description",
+  "mermaid:seriesThresholds":
+    "llm.wizard.gallery.example.mermaid.seriesThresholds.description",
   "wiremark:login": "llm.wizard.gallery.example.wiremark.login.description",
   "wiremark:dashboard": "llm.wizard.gallery.example.wiremark.dashboard.description",
   "wiremark:form": "llm.wizard.gallery.example.wiremark.form.description",

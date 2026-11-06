@@ -59,6 +59,8 @@ export const MERMAID_SAMPLE_IDS = [
   "seriesLines",
   "seriesCagr",
   "seriesCagrRanges",
+  "seriesBreak",
+  "seriesThresholds",
 ] as const;
 
 export type MermaidSampleId = (typeof MERMAID_SAMPLE_IDS)[number];
@@ -91,6 +93,8 @@ export const MERMAID_EXT_SAMPLE_IDS = [
   "seriesLines",
   "seriesCagr",
   "seriesCagrRanges",
+  "seriesBreak",
+  "seriesThresholds",
 ] as const satisfies readonly MermaidSampleId[];
 
 export type MermaidExtSampleId = (typeof MERMAID_EXT_SAMPLE_IDS)[number];
@@ -157,6 +161,8 @@ export const MERMAID_SAMPLE_WIZARD_TYPES: Record<MermaidSampleId, import("@/cons
   seriesLines: "xychart",
   seriesCagr: "xychart",
   seriesCagrRanges: "xychart",
+  seriesBreak: "xychart",
+  seriesThresholds: "xychart",
 };
 
 import {

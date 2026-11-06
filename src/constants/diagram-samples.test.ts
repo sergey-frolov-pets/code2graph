@@ -311,6 +311,14 @@ describe("diagram samples coverage", () => {
       expect(ranges).toMatch(/^cagr 5, 6 label=/m);
       expect(ranges).toMatch(/^title .+\nratio 16x6$/m);
       expect(ranges).toContain('cagr 8, 9 format="+0.0%"\ncagr 6, 7 format="0%" prefix=');
+
+      const axisBreak = getMermaidSampleSource("seriesBreak", locale);
+      expect(axisBreak).toMatch(/^break \d+ --> \d+/m);
+
+      const levels = getMermaidSampleSource("seriesThresholds", locale);
+      expect(levels).toMatch(/^line \d+ /m);
+      expect(levels).toContain("color=#cf222e");
+      expect(levels).toContain("style=dot");
     }
   });
 

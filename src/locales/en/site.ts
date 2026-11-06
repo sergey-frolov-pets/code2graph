@@ -154,7 +154,7 @@ export const siteMessages = {
   "site.ext.mermaid.desc.voronoi":
     "Geometric partitioning of a plane into convex nearest-neighbor cells with colour groups and centroid labels.",
   "site.ext.mermaid.desc.clustered":
-    "Bars for multiple series across categories, side by side or stacked, with overlay lines, CAGR callouts, a 90-degree rotation (rotate 90), and black-and-white mode (mono, mono invert).",
+    "Bars for multiple series across categories, side by side or stacked, with overlay lines, horizontal levels, an axis break, CAGR callouts, a 90-degree rotation (rotate 90), and black-and-white mode (mono, mono invert).",
   "site.ext.mermaid.syntax.waterfall":
     "waterfall opens the chart. y sets the axis. = is an absolute column, + and - are a step, and the label follows the colon. \\n in a label breaks the line.",
   "site.ext.mermaid.syntax.bubble":
@@ -174,7 +174,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.voronoi":
     "voronoi opens the tessellation. Inside data a site is Name : x=, y=, group=, color=#hex. \\n in a name breaks the line.",
   "site.ext.mermaid.syntax.clustered":
-    "series opens the chart. categories lists categories, series Name : v1, v2, … draws bars; an empty slot, \"-\" or null skips a bar. line Label : v1, v2, … draws a line (a skipped slot joins the points on either side) with its label to the right of the plot; color and style=solid|dash|dot|dashdot set the stroke. cagr is the CAGR from the first bar to the last, cagr 2, 7 joins those bars; format, prefix and label control the oval. format=\"±0.0%\" adds a plus only when the value is positive. Arrows that do not overlap share one level. Consecutive cagr lines apply to one series. stacked piles the series, stacked off puts bars side by side, rotate 90 turns the chart. \\n in a label breaks the line.",
+    "series opens the chart. categories lists categories, series Name : v1, v2, … draws bars; an empty slot, \"-\" or null skips a bar. line Label : v1, v2, … draws a line (a skipped slot joins the points on either side) with its label to the right of the plot; color and style=solid|dash|dot|dashdot set the stroke. line 160 \"plan\" draws a horizontal level (no colon). break 200 --> 700 cuts a span out of the axis. cagr is the CAGR from the first bar to the last, cagr 2, 7 joins those bars; format, prefix and label control the oval. format=\"±0.0%\" adds a plus only when the value is positive. Arrows that do not overlap share one level. Consecutive cagr lines apply to one series. stacked piles the series, stacked off puts bars side by side, rotate 90 turns the chart. \\n in a label breaks the line.",
   "site.primer.graphml.kw.graphml":
     "The document root. The GraphML namespace is required.",
   "site.primer.graphml.kw.graph":

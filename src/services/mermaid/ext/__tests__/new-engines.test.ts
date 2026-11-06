@@ -307,4 +307,58 @@ cagr 1, 2`);
     expect(broken.ok).toBe(false);
     expect(broken.errors[0]?.message).toContain("нет значения в баре 2");
   });
+
+  it("режет шкалу разрывом и рисует горизонтальные линии уровня", () => {
+    const parsed = clusteredEngine.parse(`series
+categories Q1, Q2, Q3, Q4
+y "млн ₽" 0 --> 1000
+grid 100
+break 200 --> 700 "разрыв шкалы"
+line 160 "план"
+line 900 "цель" color=#cf222e width=2 style=solid
+series Факт : 120, 180, 860, 240
+line План : 100, 140, 200, 220 style=dash`);
+    expect(parsed.ok).toBe(true);
+    const model = parsed.value as ClusteredModel;
+    expect(model.breaks).toEqual([{ after: 200, before: 700, label: "разрыв шкалы" }]);
+    expect(model.thresholds.map((item) => [item.value, item.label, item.style, item.color])).toEqual([
+      [160, "план", undefined, undefined],
+      [900, "цель", "solid", "#cf222e"],
+    ]);
+    expect(model.lines).toHaveLength(1);
+    expect(model.lines[0]?.label).toBe("План");
+
+    const svg = clusteredEngine.render(model, {});
+    const pieces = svg.match(/data-bar="2-0"/g) ?? [];
+    expect(pieces.length).toBeGreaterThanOrEqual(2);
+    expect(svg).toContain('data-break-zigzag="1"');
+    expect(svg).toContain('data-break-label="1"');
+    expect(svg).toContain('data-break-edge="after"');
+    expect(svg).toContain('data-break-edge="before"');
+    expect(svg).toContain('data-threshold-line="1"');
+    expect(svg).toContain('data-threshold-label="1"');
+    expect(svg).toContain("план");
+    expect(svg).toContain('data-line-label="План"');
+
+    const rotated = clusteredEngine.render({ ...model, rotate90: true }, {});
+    expect(rotated).toContain('data-break-zigzag="1"');
+    expect(rotated).toContain('data-threshold-line="1"');
+    expect(rotated.match(/data-bar="2-0"/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
+
+    const overlap = clusteredEngine.parse(`series
+categories A, B
+y "" 0 --> 100
+break 10 --> 40
+break 30 --> 60
+series Ряд : 20, 80`);
+    expect(overlap.ok).toBe(false);
+    expect(overlap.errors[0]?.message).toContain("пересекаются");
+
+    const reversed = clusteredEngine.parse(`series
+categories A, B
+break 40 --> 10
+series Ряд : 20, 80`);
+    expect(reversed.ok).toBe(false);
+    expect(reversed.errors[0]?.message).toContain("должно быть больше");
+  });
 });

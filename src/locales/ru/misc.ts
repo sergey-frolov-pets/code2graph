@@ -78,6 +78,8 @@ export const miscMessages = {
   "samples.mermaid.seriesLines": "Серийная — линии",
   "samples.mermaid.seriesCagr": "Серийная — CAGR",
   "samples.mermaid.seriesCagrRanges": "Серийная — CAGR по диапазонам",
+  "samples.mermaid.seriesBreak": "Серийная — разрыв шкалы",
+  "samples.mermaid.seriesThresholds": "Серийная — горизонтальные линии",
   "samples.wiremark.login": "Вход",
   "samples.wiremark.dashboard": "Дашборд",
   "samples.wiremark.form": "Форма",
