@@ -240,11 +240,18 @@ async function acknowledgeCopiedPng(): Promise<void> {
 <style scoped>
 .preview-toolbar {
   display: flex;
-  flex: 1;
-  flex-wrap: nowrap;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
   align-items: center;
+  align-content: flex-start;
   gap: 4px;
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
+}
+
+.preview-toolbar > * {
+  flex-shrink: 0;
 }
 
 .preview-toolbar__zoom-level {
