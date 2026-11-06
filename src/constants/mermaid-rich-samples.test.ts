@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import {
   MERMAID_EXT_SAMPLE_IDS,
+  MERMAID_EXT_SAMPLE_NOTICE,
   MERMAID_SAMPLE_IDS,
   getMermaidSampleSource,
   isMermaidExtSampleId,
@@ -41,6 +42,10 @@ describe("mermaid samples render", () => {
     for (const id of MERMAID_EXT_SAMPLE_IDS) {
       for (const locale of ["en", "ru"] as const) {
         const source = getMermaidSampleSource(id, locale);
+        if (!source.startsWith(`${MERMAID_EXT_SAMPLE_NOTICE[locale]}\n`)) {
+          failures.push(`${id}/${locale}: нет комментария про расширение Mermaid`);
+          continue;
+        }
         const result = validateExtensionSource(source);
         if (!result) {
           failures.push(`${id}/${locale}: тип не распознан как расширение`);

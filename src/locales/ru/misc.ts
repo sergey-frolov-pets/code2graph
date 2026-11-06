@@ -77,6 +77,7 @@ export const miscMessages = {
   "samples.mermaid.clusteredMonoInvert": "Серийная — ч/б инверсия",
   "samples.mermaid.seriesLines": "Серийная — линии",
   "samples.mermaid.seriesCagr": "Серийная — CAGR",
+  "samples.mermaid.seriesCagrRanges": "Серийная — CAGR по диапазонам",
   "samples.wiremark.login": "Вход",
   "samples.wiremark.dashboard": "Дашборд",
   "samples.wiremark.form": "Форма",

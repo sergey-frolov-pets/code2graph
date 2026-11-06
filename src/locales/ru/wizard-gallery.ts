@@ -111,7 +111,10 @@ export const wizardGalleryMessages = {
     "Линии поверх столбцов: solid, dash, dot и dashdot, свой цвет и толщина, пропуск категории через пусто, «-» или null.",
   "llm.wizard.gallery.example.mermaid.seriesCagr.title": "Серийная — CAGR",
   "llm.wizard.gallery.example.mermaid.seriesCagr.description":
-    "Стрелки CAGR: весь ряд и выбранные бары, format, prefix и label. Несколько cagr подряд относятся к одной серии.",
+    "Одна стрелка CAGR от первого бара серии к последнему.",
+  "llm.wizard.gallery.example.mermaid.seriesCagrRanges.title": "Серийная — CAGR по диапазонам",
+  "llm.wizard.gallery.example.mermaid.seriesCagrRanges.description":
+    "Разные опции CAGR на барах 1–3, 4–6 и 7–9: format, prefix и label.",
   "llm.wizard.gallery.example.wiremark.login.title": "Макет входа",
   "llm.wizard.gallery.example.wiremark.login.description":
     "Вайрфрейм входа: поля, вкладки и основное действие.",

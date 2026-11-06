@@ -111,7 +111,10 @@ export const wizardGalleryMessages = {
     "Lines over the bars: solid, dash, dot and dash-dot, custom colour and width, and a skipped category via an empty slot, \"-\" or null.",
   "llm.wizard.gallery.example.mermaid.seriesCagr.title": "Series chart — CAGR",
   "llm.wizard.gallery.example.mermaid.seriesCagr.description":
-    "CAGR arrows: the whole series and chosen bars, format, prefix and label. Consecutive cagr lines belong to one series.",
+    "One CAGR arrow from the first bar of the series to the last.",
+  "llm.wizard.gallery.example.mermaid.seriesCagrRanges.title": "Series chart — CAGR ranges",
+  "llm.wizard.gallery.example.mermaid.seriesCagrRanges.description":
+    "Different CAGR options on bars 1–3, 4–6 and 7–9: format, prefix and label.",
   "llm.wizard.gallery.example.wiremark.login.title": "Login screen",
   "llm.wizard.gallery.example.wiremark.login.description":
     "A sign-in wireframe with fields, tabs, and a primary action.",

@@ -345,28 +345,33 @@ line Пунктир : 100, -, 160, 175 color=#8250df style=dash
 line Точки : 90, , 155, 170 color=#2da44e style=dot width=1
 line Штрих-точка : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5`,
   seriesCagr: `series
-%% CAGR — стрелка между барами одной серии и овал с процентом.
-%% cagr                         первый бар → последний
-%% cagr 1, 4                    номера баров с единицы
-%% format="0%"                  целое, по умолчанию
-%% format="0.0%"                один знак; «+» в шаблоне добавляет плюс
-%% format="0.00"                доля, без знака процента
-%% prefix="CAGR: "              текст перед числом
-%% label="цель"                 овал как есть, без расчёта (prefix тогда не пишется)
-%% Несколько cagr подряд относятся к серии, объявленной прямо перед ними.
-%% Строка cagr до любой серии относится к первой серии.
-title Рост по каналам
-categories Q1, Q2, Q3, Q4
+%% cagr без номеров — стрелка от первого бара к последнему.
+title Рост выручки
+categories 2021, 2022, 2023, 2024
 y "млн ₽" 0 --> 220
 grid 20
-cagr format="0%"
-series Онлайн : 100, 120, 150, 180
-series Розница : 80, 90, 110, 140
-cagr 1, 4 format="0.0%" prefix="CAGR: "
-cagr 2, 4 format="+0.0%"
-series Партнёры : 40, 55, 70, 90
+series Выручка : 80, 110, 150, 190
+cagr`,
+  seriesCagrRanges: `series
+%% Разные опции cagr на диапазонах баров 1–3, 4–6 и 7–9.
+%% Номера баров с единицы. Несколько cagr подряд относятся к серии перед ними.
+%% format="0%"        целое, по умолчанию
+%% format="0.0%"      один знак; «+» в шаблоне добавляет плюс
+%% format="0.00"      доля, без знака процента
+%% prefix="CAGR: "    текст перед числом
+%% label="цель"       овал как есть, без расчёта (prefix тогда не пишется)
+title CAGR по диапазонам
+categories 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025
+y "млн ₽" 0 --> 220
+grid 20
+series Онлайн : 40, 52, 68, 74, 90, 108, 118, 140, 168
+cagr 1, 3 format="0%"
+cagr 4, 6 format="0.0%" prefix="CAGR: "
+cagr 7, 9 format="+0.0%"
+series Розница : 30, 36, 44, 48, 56, 64, 70, 82, 96
 cagr 1, 3 format="0.00" prefix="×"
-cagr label="цель" prefix="не пишется"`,
+cagr 4, 6 label="цель"
+cagr 7, 9 format="0%" prefix="+"`,
 };
 
 export const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
@@ -714,26 +719,31 @@ line Dashed : 100, -, 160, 175 color=#8250df style=dash
 line Dotted : 90, , 155, 170 color=#2da44e style=dot width=1
 line Dash-dot : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5`,
   seriesCagr: `series
-%% CAGR draws an arrow between two bars of one series and an oval with the rate.
-%% cagr                         first bar → last bar
-%% cagr 1, 4                    bar numbers, starting at 1
-%% format="0%"                  integer, the default
-%% format="0.0%"                one decimal; "+" in the pattern adds a plus sign
-%% format="0.00"                a ratio, without a percent sign
-%% prefix="CAGR: "              text before the number
-%% label="target"               oval text as-is, no calculation (prefix is then ignored)
-%% Consecutive cagr lines belong to the series declared immediately before them.
-%% A cagr line before any series belongs to the first series.
-title Growth by channel
-categories Q1, Q2, Q3, Q4
+%% Plain cagr draws an arrow from the first bar to the last.
+title Revenue growth
+categories 2021, 2022, 2023, 2024
 y "M USD" 0 --> 220
 grid 20
-cagr format="0%"
-series Online : 100, 120, 150, 180
-series Retail : 80, 90, 110, 140
-cagr 1, 4 format="0.0%" prefix="CAGR: "
-cagr 2, 4 format="+0.0%"
-series Partners : 40, 55, 70, 90
+series Revenue : 80, 110, 150, 190
+cagr`,
+  seriesCagrRanges: `series
+%% Different cagr options on bar ranges 1–3, 4–6 and 7–9.
+%% Bar numbers start at 1. Consecutive cagr lines belong to the series just above them.
+%% format="0%"        integer, the default
+%% format="0.0%"      one decimal; "+" in the pattern adds a plus sign
+%% format="0.00"      a ratio, without a percent sign
+%% prefix="CAGR: "    text before the number
+%% label="target"     oval text as-is, no calculation (prefix is then ignored)
+title CAGR by range
+categories 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025
+y "M USD" 0 --> 220
+grid 20
+series Online : 40, 52, 68, 74, 90, 108, 118, 140, 168
+cagr 1, 3 format="0%"
+cagr 4, 6 format="0.0%" prefix="CAGR: "
+cagr 7, 9 format="+0.0%"
+series Retail : 30, 36, 44, 48, 56, 64, 70, 82, 96
 cagr 1, 3 format="0.00" prefix="×"
-cagr label="target" prefix="ignored"`,
+cagr 4, 6 label="target"
+cagr 7, 9 format="0%" prefix="+"`,
 };

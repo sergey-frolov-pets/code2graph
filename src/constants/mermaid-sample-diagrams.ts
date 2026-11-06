@@ -3,6 +3,14 @@ import { getMermaidRichSample } from "@/constants/mermaid-rich-samples";
 import { buildWizardDiagramSample } from "@/constants/wizard-sample-sources";
 import type { SampleCatalog } from "@/languages/sample-catalog";
 
+/**
+ * Первая строка примера расширения: штатный Mermaid этот синтаксис не рисует.
+ */
+export const MERMAID_EXT_SAMPLE_NOTICE: Record<AppLocale, string> = {
+  ru: "%% Это расширение Mermaid и не поддерживается стандартным Mermaid.",
+  en: "%% This is a Mermaid extension and is not supported by standard Mermaid.",
+};
+
 export const MERMAID_SAMPLE_IDS = [
   "flowchart",
   "sequence",
@@ -50,6 +58,7 @@ export const MERMAID_SAMPLE_IDS = [
   "clusteredMonoInvert",
   "seriesLines",
   "seriesCagr",
+  "seriesCagrRanges",
 ] as const;
 
 export type MermaidSampleId = (typeof MERMAID_SAMPLE_IDS)[number];
@@ -81,11 +90,12 @@ export const MERMAID_EXT_SAMPLE_IDS = [
   "clusteredMonoInvert",
   "seriesLines",
   "seriesCagr",
+  "seriesCagrRanges",
 ] as const satisfies readonly MermaidSampleId[];
 
 export type MermaidExtSampleId = (typeof MERMAID_EXT_SAMPLE_IDS)[number];
 
-export function isMermaidExtSampleId(id: MermaidSampleId): id is MermaidExtSampleId {
+export function isMermaidExtSampleId(id: string): id is MermaidExtSampleId {
   return (MERMAID_EXT_SAMPLE_IDS as readonly string[]).includes(id);
 }
 
@@ -146,6 +156,7 @@ export const MERMAID_SAMPLE_WIZARD_TYPES: Record<MermaidSampleId, import("@/cons
   clusteredMonoInvert: "xychart",
   seriesLines: "xychart",
   seriesCagr: "xychart",
+  seriesCagrRanges: "xychart",
 };
 
 import {
@@ -179,9 +190,18 @@ function isHandcraftedMermaidSampleId(
   return (HANDCRAFTED_MERMAID_SAMPLE_IDS as readonly string[]).includes(id);
 }
 
+function withMermaidExtNotice(source: string, locale: AppLocale): string {
+  const notice = MERMAID_EXT_SAMPLE_NOTICE[locale];
+  if (source.startsWith(`${notice}\n`) || source === notice) {
+    return source;
+  }
+
+  return `${notice}\n${source}`;
+}
+
 function buildMermaidSampleSource(id: MermaidSampleId, locale: AppLocale): string {
   if (isMermaidExtSampleId(id)) {
-    return MERMAID_EXT_SOURCES_BY_LOCALE[locale][id];
+    return withMermaidExtNotice(MERMAID_EXT_SOURCES_BY_LOCALE[locale][id], locale);
   }
 
   if (isHandcraftedMermaidSampleId(id)) {
