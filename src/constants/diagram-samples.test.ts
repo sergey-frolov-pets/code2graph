@@ -305,12 +305,12 @@ describe("diagram samples coverage", () => {
       expect(cagr).not.toMatch(/^cagr \d/m);
 
       const ranges = getMermaidSampleSource("seriesCagrRanges", locale);
-      expect(ranges).toContain('cagr 1, 3 format="0%"');
-      expect(ranges).toContain('cagr 4, 6 format="0.0%" prefix=');
-      expect(ranges).toContain('cagr 7, 9 format="+0.0%"');
-      expect(ranges).toContain('cagr 1, 3 format="0.00" prefix=');
-      expect(ranges).toMatch(/^cagr 4, 6 label=/m);
-      expect(ranges).toContain('cagr 7, 9 format="0%" prefix=');
+      expect(ranges).toContain('cagr 1, 2 format="0%"');
+      expect(ranges).toContain('cagr 2, 3 format="0.00" prefix=');
+      expect(ranges).toContain('cagr 3, 5 format="0.0%" prefix=');
+      expect(ranges).toMatch(/^cagr 5, 6 label=/m);
+      expect(ranges).toContain('cagr 6, 7 format="+0.0%"');
+      expect(ranges).toContain('cagr 8, 9 format="0%" prefix=');
     }
   });
 

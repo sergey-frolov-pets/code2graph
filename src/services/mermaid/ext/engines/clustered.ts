@@ -432,12 +432,49 @@ export function computeCagrRatio(start: number, end: number, periods: number): n
   return Number.isFinite(ratio) ? ratio : null;
 }
 
-/** `0%` → целое, `0.0%` → один знак. `+` в шаблоне добавляет плюс к положительному числу. */
+/** Насколько первая стрелка отстоит от баров и шаг следующего уровня. */
+const CAGR_LANE_BASE_SHIFT = 18;
+const CAGR_LANE_STEP = 16;
+
+/**
+ * Диапазоны пересекаются, если делят бар не только общим концом.
+ * `1–3` и `3–4` не пересекаются, `1–3` и `2–4` пересекаются.
+ */
+export function cagrRangesOverlap(fromA: number, toA: number, fromB: number, toB: number): boolean {
+  const aMin = Math.min(fromA, toA);
+  const aMax = Math.max(fromA, toA);
+  const bMin = Math.min(fromB, toB);
+  const bMax = Math.max(fromB, toB);
+  return aMax > bMin && bMax > aMin;
+}
+
+/**
+ * Уровень каждой стрелки в порядке объявления.
+ * Непересекающиеся диапазоны остаются на одном уровне, пересекающаяся уходит выше.
+ */
+export function assignCagrLanes(cagrs: ReadonlyArray<{ from: number; to: number }>): number[] {
+  const occupied: Array<Array<{ from: number; to: number }>> = [];
+  return cagrs.map((cagr) => {
+    for (let lane = 0; lane < occupied.length; lane += 1) {
+      const blocked = occupied[lane].some((placed) =>
+        cagrRangesOverlap(placed.from, placed.to, cagr.from, cagr.to),
+      );
+      if (!blocked) {
+        occupied[lane].push({ from: cagr.from, to: cagr.to });
+        return lane;
+      }
+    }
+    occupied.push([{ from: cagr.from, to: cagr.to }]);
+    return occupied.length - 1;
+  });
+}
+
+/** `0%` → целое, `0.0%` → один знак. `+` и `±` добавляют плюс только к положительному числу. */
 export function formatCagrNumber(ratio: number, format?: string): string {
   const pattern = (format && format.trim()) || "0%";
   const decimals = /\.([0#]+)/.exec(pattern)?.[1].length ?? 0;
   const asPercent = pattern.includes("%");
-  const showPlus = pattern.includes("+");
+  const showPlus = pattern.includes("+") || pattern.includes("±");
   const value = asPercent ? ratio * 100 : ratio;
   const factor = 10 ** decimals;
   const rounded = Math.round(value * factor) / factor;
@@ -958,8 +995,9 @@ function lineLabelGutter(model: ClusteredModel, fontSize: number): number {
 }
 
 function cagrHeadroom(model: ClusteredModel, fontSize: number): number {
-  if (model.cagrs.length === 0) return 0;
-  return Math.round(48 + fontSize * 2.2);
+  const laneCount = assignCagrLanes(model.cagrs).reduce((max, lane) => Math.max(max, lane + 1), 0);
+  if (laneCount === 0) return 0;
+  return Math.round(48 + fontSize * 2.2 + (laneCount - 1) * CAGR_LANE_STEP);
 }
 
 function drawSeriesLines(
@@ -1042,6 +1080,7 @@ function drawCagrAnnotations(
   if (model.cagrs.length === 0) return;
   const marker = arrowMarker(palette, "ext-series-cagr-arrow", palette.fg);
   svg.raw(marker.markup);
+  const lanes = assignCagrLanes(model.cagrs);
 
   model.cagrs.forEach((cagr, index) => {
     const start = anchors[cagr.seriesIndex]?.[cagr.from];
@@ -1055,7 +1094,7 @@ function drawCagrAnnotations(
     const i0 = Math.min(cagr.from, cagr.to);
     const i1 = Math.max(cagr.from, cagr.to);
     const spanIndex = cagr.to - cagr.from || 1;
-    let shift = 18 + index * 16;
+    let shift = CAGR_LANE_BASE_SHIFT + (lanes[index] ?? 0) * CAGR_LANE_STEP;
 
     if (vertical) {
       for (let category = i0; category <= i1; category += 1) {

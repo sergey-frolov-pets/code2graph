@@ -364,14 +364,14 @@ title CAGR по диапазонам
 categories 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025
 y "млн ₽" 0 --> 220
 grid 20
-series Онлайн : 40, 52, 68, 74, 90, 108, 118, 140, 168
-cagr 1, 3 format="0%"
-cagr 4, 6 format="0.0%" prefix="CAGR: "
-cagr 7, 9 format="+0.0%"
-series Розница : 30, 36, 44, 48, 56, 64, 70, 82, 96
-cagr 1, 3 format="0.00" prefix="×"
-cagr 4, 6 label="цель"
-cagr 7, 9 format="0%" prefix="+"`,
+series Онлайн : 34, 39, 68, 74, 90, 108, 118, 140, 130
+cagr 1, 2 format="0%"
+cagr 2, 3 format="0.00" prefix="×"
+cagr 3, 5 format="0.0%" prefix="CAGR: "
+cagr 5, 6 label="цель"
+
+cagr 6, 7 format="+0.0%"
+cagr 8, 9 format="0%" prefix="+"`,
 };
 
 export const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
@@ -738,12 +738,12 @@ title CAGR by range
 categories 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025
 y "M USD" 0 --> 220
 grid 20
-series Online : 40, 52, 68, 74, 90, 108, 118, 140, 168
-cagr 1, 3 format="0%"
-cagr 4, 6 format="0.0%" prefix="CAGR: "
-cagr 7, 9 format="+0.0%"
-series Retail : 30, 36, 44, 48, 56, 64, 70, 82, 96
-cagr 1, 3 format="0.00" prefix="×"
-cagr 4, 6 label="target"
-cagr 7, 9 format="0%" prefix="+"`,
+series Online : 34, 39, 68, 74, 90, 108, 118, 140, 130
+cagr 1, 2 format="0%"
+cagr 2, 3 format="0.00" prefix="×"
+cagr 3, 5 format="0.0%" prefix="CAGR: "
+cagr 5, 6 label="target"
+
+cagr 6, 7 format="+0.0%"
+cagr 8, 9 format="0%" prefix="+"`,
 };

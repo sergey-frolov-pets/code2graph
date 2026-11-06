@@ -114,7 +114,7 @@ export const wizardGalleryMessages = {
     "One CAGR arrow from the first bar of the series to the last.",
   "llm.wizard.gallery.example.mermaid.seriesCagrRanges.title": "Series chart — CAGR ranges",
   "llm.wizard.gallery.example.mermaid.seriesCagrRanges.description":
-    "Different CAGR options on bars 1–3, 4–6 and 7–9: format, prefix and label.",
+    "Different CAGR options on ranges 1–2, 2–3, 3–5, 5–6, 6–7 and 8–9: format, prefix and label.",
   "llm.wizard.gallery.example.wiremark.login.title": "Login screen",
   "llm.wizard.gallery.example.wiremark.login.description":
     "A sign-in wireframe with fields, tabs, and a primary action.",

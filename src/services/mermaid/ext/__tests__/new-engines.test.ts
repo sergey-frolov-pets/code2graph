@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { boxplotEngine, type BoxplotModel } from "../engines/boxplot";
-import { clusteredEngine, type ClusteredModel } from "../engines/clustered";
+import {
+  assignCagrLanes,
+  clusteredEngine,
+  formatCagrNumber,
+  type ClusteredModel,
+} from "../engines/clustered";
 import { radarEngine, type RadarModel } from "../engines/radar";
 import { treemapEngine, type TreemapModel } from "../engines/treemap";
 import { voronoiEngine, type VoronoiModel } from "../engines/voronoi";
@@ -222,6 +227,44 @@ cagr label="+30% p.a."`);
     expect(svg).toContain('data-cagr-label="+30% p.a."');
     expect(svg).toContain("<ellipse");
     expect(svg).toContain("ext-series-cagr-arrow");
+  });
+
+  it("ставит плюс из ± только у положительного CAGR", () => {
+    expect(formatCagrNumber(1.2, "±0")).toBe("+1");
+    expect(formatCagrNumber(0.193, "±0%")).toBe("+19%");
+    expect(formatCagrNumber(0.193, "±0.0%")).toBe("+19.3%");
+    expect(formatCagrNumber(-1.2, "±0")).toBe("-1");
+    expect(formatCagrNumber(-0.193, "±0%")).toBe("-19%");
+    expect(formatCagrNumber(-0.193, "±0.0%")).toBe("-19.3%");
+    expect(formatCagrNumber(-0.193, "+0.0%")).toBe("-19.3%");
+    expect(formatCagrNumber(-0.193, "±0.0%")).not.toContain("+");
+  });
+
+  it("держит непересекающиеся стрелки CAGR на одном уровне", () => {
+    expect(assignCagrLanes([
+      { from: 0, to: 2 },
+      { from: 2, to: 3 },
+      { from: 1, to: 3 },
+    ])).toEqual([0, 0, 1]);
+
+    const parsed = clusteredEngine.parse(`series
+categories A, B, C, D
+y "" 0 --> 20
+series Ровно : 10, 10, 10, 10
+cagr 1, 3
+cagr 3, 4
+cagr 2, 4`);
+    expect(parsed.ok).toBe(true);
+    const svg = clusteredEngine.render(parsed.value as ClusteredModel, {});
+    const arrows = [...svg.matchAll(/<line\b([^>]*)>/g)].flatMap((match) => {
+      const attrs = match[1] ?? "";
+      const cagr = /data-cagr="([^"]+)"/.exec(attrs)?.[1];
+      const y1 = Number(/y1="([\d.]+)"/.exec(attrs)?.[1]);
+      return cagr ? [{ cagr, y1 }] : [];
+    });
+    const yOf = (id: string) => arrows.find((arrow) => arrow.cagr === id)?.y1;
+    expect(yOf("0:1-3")).toBe(yOf("0:3-4"));
+    expect(yOf("0:2-4")).toBeLessThan(yOf("0:1-3") ?? 0);
   });
 
   it("не рисует пропущенный бар и отвергает cagr на пустом слоте", () => {
