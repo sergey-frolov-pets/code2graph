@@ -579,8 +579,8 @@ export function parseMermaidExtToBuilderState(
         const fromNode = nodeMap.get(edge.from);
         const toNode = nodeMap.get(edge.to);
         return [
-          (fromNode?.label || edge.from).replace(/\n/g, " — "),
-          (toNode?.label || edge.to).replace(/\n/g, " — "),
+          orgTableLabel(fromNode?.label || edge.from),
+          orgTableLabel(toNode?.label || edge.to),
           edge.style,
           toNode?.fill ?? toNode?.border ?? "",
         ];
@@ -707,6 +707,16 @@ export function parseMermaidExtToBuilderState(
     default:
       return null;
   }
+}
+
+/** Подпись узла в ячейке таблицы: перевод строки виден как `\n`. */
+function orgTableLabel(label: string): string {
+  return label.replace(/\r?\n/g, "\\n");
+}
+
+/** Подпись в исходнике остаётся одной строкой, `\n` снова переносит текст в блоке. */
+function orgSourceLabel(label: string): string {
+  return label.trim().replace(/\r?\n/g, "\\n");
 }
 
 function emitAspectDirective(canvas: BuilderCanvasSettings): string | null {
@@ -1229,8 +1239,8 @@ export function emitMermaidExtFromBuilderState(
           .replace(/[^\p{L}\p{N}_-]/gu, "") || `Node_${fallback}`;
 
       state.rows.forEach((row, idx) => {
-        const mgrLabel = (row[0] ?? "").trim();
-        const empLabel = (row[1] ?? "").trim();
+        const mgrLabel = orgSourceLabel(row[0] ?? "");
+        const empLabel = orgSourceLabel(row[1] ?? "");
         if (!mgrLabel && !empLabel) return;
         const style = (row[2] ?? "solid").trim();
         const color = (row[3] ?? "").trim();

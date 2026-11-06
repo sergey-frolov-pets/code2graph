@@ -563,6 +563,31 @@ Site,"Bounce, no click",40`,
     expect(emitSourceFromBuilderState(flow)).toContain("flowchart BT");
   });
 
+  it("keeps an orgchart line break in the step table", () => {
+    const source = [
+      "orgchart",
+      "CEO [Chief\\nExecutive]",
+      "CTO [Tech\\nLead]",
+      "CEO -> CTO",
+    ].join("\n");
+    const state = parseSourceToBuilderState(source, "mermaid");
+    expect(state.rows[0]).toEqual(["Chief\\nExecutive", "Tech\\nLead", "solid", ""]);
+
+    const emitted = emitSourceFromBuilderState(state);
+    expect(emitted).toContain("[Chief\\nExecutive]");
+    expect(emitted).toContain("[Tech\\nLead]");
+    const again = parseSourceToBuilderState(emitted, "mermaid");
+    expect(again.rows[0]?.[0]).toBe("Chief\\nExecutive");
+    expect(again.rows[0]?.[1]).toBe("Tech\\nLead");
+
+    const model = parseOrgchart(emitted);
+    expect(model.ok).toBe(true);
+    expect(model.value?.nodes.map((node) => node.label)).toEqual([
+      "Chief\nExecutive",
+      "Tech\nLead",
+    ]);
+  });
+
   it("offers an aspect ratio on every diagram and writes it into the source", () => {
     const types = ["flowchart", "sankey", "pie", "sequence", "mindmap", "gantt", "radar", "orgchart"] as const;
     for (const diagramType of types) {
