@@ -31,6 +31,15 @@ const { t } = useLocale();
       {{ t("llm.wizard.gallery.action.editor") }}
     </button>
     <button
+      type="button"
+      class="wizard-example-actions__button"
+      role="menuitem"
+      data-testid="wizard-example-builder"
+      @click="emit('choose', 'builder')"
+    >
+      {{ t("llm.wizard.gallery.action.builder") }}
+    </button>
+    <button
       v-if="canEnlarge"
       type="button"
       class="wizard-example-actions__button"

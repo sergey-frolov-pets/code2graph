@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, toRef, watch } from "vue";
+import { computed, onMounted, ref, toRef, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
+import TablePasteErrorModal from "@/components/TablePasteErrorModal.vue";
 import LoadingState from "@/components/ui/LoadingState.vue";
 import WizardExampleGallery from "@/components/wizard/WizardExampleGallery.vue";
 import WizardOnboardingBanner from "@/components/wizard/WizardOnboardingBanner.vue";
@@ -21,23 +22,50 @@ import {
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
+import type { BuilderApplyTarget } from "@/services/diagram-builder";
+import type { TablePasteErrorInfo } from "@/services/table-paste/types";
 
-const props = defineProps<{
-  open: boolean;
-  documentKey: string;
-  layout: LayoutEngine;
-  renderMode: RenderMode;
-  diagramDarkMode: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    open: boolean;
+    documentKey: string;
+    layout: LayoutEngine;
+    renderMode: RenderMode;
+    diagramDarkMode: boolean;
+    currentEditorSource?: string;
+    currentEditorFormat?: DiagramFormat;
+    startInBuilder?: boolean;
+  }>(),
+  {
+    currentEditorSource: "",
+    currentEditorFormat: "plantuml",
+    startInBuilder: false,
+  },
+);
 
 const emit = defineEmits<{
   close: [];
-  apply: [payload: { source: string; label: string; format: DiagramFormat }];
+  apply: [
+    payload: {
+      source: string;
+      label: string;
+      format: DiagramFormat;
+      target?: BuilderApplyTarget;
+    },
+  ];
 }>();
 
 const { t, locale } = useLocale();
 const { showWizardBanner, dismissWizardBanner } = useWizardOnboarding();
 const { activeLlmDetail } = useActiveLlmLabel();
+
+const pasteErrorInfo = ref<TablePasteErrorInfo | null>(null);
+const pasteErrorModalOpen = ref(false);
+
+function onBuilderPasteError(error: TablePasteErrorInfo): void {
+  pasteErrorInfo.value = error;
+  pasteErrorModalOpen.value = true;
+}
 
 function trackWizardOpen(): void {
   trackEvent("wizard-open", "Wizard: new diagram");
@@ -62,6 +90,9 @@ const {
   stepIndex,
   galleryVisible,
   wizardState,
+  builderState,
+  applyTarget,
+  isBuilderMode,
   isGenerating,
   errorMessage,
   resultSource,
@@ -78,6 +109,10 @@ const {
   canGoNext,
   wizardSteps,
   openGalleryExample,
+  openCurrentDiagramInBuilder,
+  handleBuilderChange,
+  handleBuilderPasteSource,
+  selectStep,
   goBack,
   goNext,
   handleApply,
@@ -98,6 +133,9 @@ const {
   layout: toRef(props, "layout"),
   renderMode: toRef(props, "renderMode"),
   diagramDarkMode: toRef(props, "diagramDarkMode"),
+  currentEditorSource: toRef(props, "currentEditorSource"),
+  currentEditorFormat: toRef(props, "currentEditorFormat"),
+  startInBuilder: toRef(props, "startInBuilder"),
   locale,
   t,
   onApply: (payload) => {
@@ -112,6 +150,10 @@ const {
 
 const showLivePreview = computed(
   () => showLivePreviewPanel.value && !aiSetupVisible.value,
+);
+
+const canEditCurrentDiagram = computed(
+  () => (props.currentEditorSource ?? "").trim().length > 0,
 );
 </script>
 
@@ -128,9 +170,21 @@ const showLivePreview = computed(
       @dismiss="dismissWizardBanner"
     />
 
-    <p class="wizard-step-title">
-      {{ galleryVisible ? t("llm.wizard.gallery.heading") : stepTitle }}
-    </p>
+    <div class="wizard-top-bar">
+      <p class="wizard-step-title">
+        {{ galleryVisible ? t("llm.wizard.gallery.heading") : stepTitle }}
+      </p>
+      <button
+        v-if="galleryVisible && canEditCurrentDiagram"
+        type="button"
+        class="btn builder-btn"
+        data-testid="wizard-edit-current-diagram-btn"
+        @click="openCurrentDiagramInBuilder"
+      >
+        {{ t("builder.editCurrentFromGallery") }}
+      </button>
+    </div>
+
     <WizardExampleGallery
       v-if="galleryVisible"
       @choose="openGalleryExample"
@@ -153,6 +207,8 @@ const showLivePreview = computed(
       v-if="!galleryVisible"
       :steps="wizardSteps"
       :step-index="stepIndex"
+      :clickable="isBuilderMode"
+      @select-step="selectStep"
     />
     <p
       v-if="!galleryVisible"
@@ -183,10 +239,12 @@ const showLivePreview = computed(
       <div class="wizard-body__main">
         <WizardStepContent
           v-model:wizard-state="wizardState"
+          v-model:builder-state="builderState"
           :current-step-id="currentStepId"
           :is-generating="isGenerating"
           :error-message="errorMessage"
           :result-explanation="resultExplanation"
+          :result-source="resultSource"
           :planning-messages="planningMessages"
           :is-planning-chat-busy="isPlanningChatBusy"
           :show-refine-chat="showRefineChat"
@@ -196,6 +254,9 @@ const showLivePreview = computed(
           @planning-clear="clearPlanningChat"
           @refine-send="sendRefineChatMessage"
           @refine-clear="clearRefineChat"
+          @builder-change="handleBuilderChange"
+          @builder-paste-source="handleBuilderPasteSource"
+          @builder-paste-error="onBuilderPasteError"
         />
       </div>
 
@@ -203,13 +264,22 @@ const showLivePreview = computed(
         v-if="showLivePreview"
         :preview-svg="previewSvg"
         :is-preview-loading="isPreviewLoading"
+        :source-code="isBuilderMode ? resultSource : undefined"
       />
     </div>
 
+    <TablePasteErrorModal
+      :open="pasteErrorModalOpen"
+      :error="pasteErrorInfo"
+      @close="pasteErrorModalOpen = false"
+    />
+
     <template #footer>
       <WizardModalFooter
+        v-model:apply-target="applyTarget"
         :current-step-id="currentStepId"
         :gallery="galleryVisible"
+        :is-builder-mode="isBuilderMode"
         :is-generating="isGenerating"
         :can-go-next="canGoNext"
         :show-back-button="showBackButton"

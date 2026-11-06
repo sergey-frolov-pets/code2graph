@@ -35,8 +35,11 @@ export function useWizardStepPreview(options: UseWizardStepPreviewOptions) {
 
   const showLivePreviewPanel = computed(
     () =>
-      currentStepId.value === "result" &&
-      (previewSvg.value.length > 0 || isPreviewLoading.value),
+      (currentStepId.value === "result" ||
+        currentStepId.value.startsWith("builder-")) &&
+      (previewSvg.value.length > 0 ||
+        isPreviewLoading.value ||
+        currentStepId.value.startsWith("builder-")),
   );
 
   function resetPreviewState(): void {

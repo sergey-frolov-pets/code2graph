@@ -19,6 +19,7 @@ import {
   createDefaultTypeParams,
   DEFAULT_WIZARD_STATE,
   getWizardStepTitleKey,
+  isWizardDiagramType,
   type WizardState,
   type WizardStepId,
 } from "@/constants/llm-wizard";
@@ -26,9 +27,22 @@ import type { RenderMode } from "@/constants/render-settings";
 import { getSampleSource } from "@/constants/sample-diagrams";
 import type { GalleryExampleAction } from "@/constants/wizard-gallery";
 import type { TranslateFn } from "@/locales/types";
+import {
+  createDefaultBuilderState,
+  detectBuilderDiagramType,
+  emitSourceFromBuilderState,
+  parseSourceToBuilderState,
+  type BuilderApplyTarget,
+  type DiagramBuilderState,
+} from "@/services/diagram-builder";
 import { buildWizardPrompt } from "@/services/llm/wizard/wizard-prompts";
 
-const WIZARD_FLOW_STEPS: readonly WizardStepId[] = ["context", "result"];
+const AI_WIZARD_FLOW_STEPS: readonly WizardStepId[] = ["context", "result"];
+const BUILDER_WIZARD_FLOW_STEPS: readonly WizardStepId[] = [
+  "builder-data",
+  "builder-canvas",
+  "builder-options",
+];
 
 export interface UseDiagramWizardFlowOptions {
   open: Ref<boolean>;
@@ -36,9 +50,17 @@ export interface UseDiagramWizardFlowOptions {
   layout: Ref<LayoutEngine>;
   renderMode: Ref<RenderMode>;
   diagramDarkMode: Ref<boolean>;
+  currentEditorSource?: Ref<string>;
+  currentEditorFormat?: Ref<DiagramFormat>;
+  startInBuilder?: Ref<boolean>;
   locale: Ref<AppLocale>;
   t: TranslateFn;
-  onApply: (payload: { source: string; label: string; format: DiagramFormat }) => void;
+  onApply: (payload: {
+    source: string;
+    label: string;
+    format: DiagramFormat;
+    target?: BuilderApplyTarget;
+  }) => void;
   onClose: () => void;
 }
 
@@ -49,6 +71,9 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     layout,
     renderMode,
     diagramDarkMode,
+    currentEditorSource,
+    currentEditorFormat,
+    startInBuilder,
     locale,
     t,
     onApply,
@@ -63,6 +88,12 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     typeParams: createDefaultTypeParams(),
     structuralElements: createDefaultStructuralElements(),
   });
+  const builderState = ref<DiagramBuilderState>(
+    createDefaultBuilderState("mermaid", "waterfall"),
+  );
+  const builderBaseSource = ref("");
+  const applyTarget = ref<BuilderApplyTarget>("new-tab");
+
   const isGenerating = ref(false);
   const errorMessage = ref("");
   const resultSource = ref("");
@@ -73,7 +104,15 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   const { llmConsent, llmProviderId } = useLlmSettings();
   const { hasLlmApiKey } = useLlmApiKeys();
 
-  const wizardSteps = computed((): WizardStepId[] => [...WIZARD_FLOW_STEPS]);
+  const isBuilderMode = computed(
+    () => wizardState.value.creationMode === "builder",
+  );
+
+  const wizardSteps = computed((): WizardStepId[] =>
+    isBuilderMode.value
+      ? [...BUILDER_WIZARD_FLOW_STEPS]
+      : [...AI_WIZARD_FLOW_STEPS],
+  );
   const currentStepId = computed(
     (): WizardStepId => wizardSteps.value[stepIndex.value] ?? "context",
   );
@@ -163,9 +202,92 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     return stepIndex.value < totalSteps.value - 1;
   });
 
+  let builderPreviewTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function syncBuilderToSource(immediate = false): void {
+    const emitted = emitSourceFromBuilderState(
+      builderState.value,
+      builderBaseSource.value,
+    );
+    resultSource.value = emitted;
+    errorMessage.value = "";
+
+    if (builderPreviewTimer) {
+      clearTimeout(builderPreviewTimer);
+      builderPreviewTimer = null;
+    }
+
+    if (immediate) {
+      void loadPreview(emitted);
+    } else {
+      builderPreviewTimer = setTimeout(() => {
+        void loadPreview(emitted);
+      }, 120);
+    }
+  }
+
+  function handleBuilderChange(): void {
+    syncBuilderToSource(false);
+  }
+
+  function handleBuilderPasteSource(pastedFullSource: string): void {
+    builderBaseSource.value = pastedFullSource;
+    builderState.value = parseSourceToBuilderState(
+      pastedFullSource,
+      builderState.value.format,
+      builderState.value.diagramType,
+    );
+    syncBuilderToSource(true);
+  }
+
+  function openBuilderForSource(input: {
+    source: string;
+    format: DiagramFormat;
+    diagramType?: DiagramBuilderState["diagramType"];
+    target: BuilderApplyTarget;
+  }): void {
+    const detectedType =
+      input.diagramType ?? detectBuilderDiagramType(input.source, input.format);
+    const wizType = isWizardDiagramType(detectedType)
+      ? detectedType
+      : "flowchart";
+
+    wizardState.value = {
+      ...DEFAULT_WIZARD_STATE,
+      creationMode: "builder",
+      language: input.format,
+      diagramType: wizType,
+      typeParams: createDefaultTypeParams(),
+      structuralElements: createDefaultStructuralElements(),
+    };
+    builderBaseSource.value = input.source;
+    builderState.value = parseSourceToBuilderState(
+      input.source,
+      input.format,
+      detectedType,
+    );
+    applyTarget.value = input.target;
+    stepIndex.value = 0;
+    galleryVisible.value = false;
+    aiSetupVisible.value = false;
+    aiSetupReason.value = null;
+    syncBuilderToSource(true);
+  }
+
+  function openCurrentDiagramInBuilder(): void {
+    const src = currentEditorSource?.value ?? "";
+    const fmt = currentEditorFormat?.value ?? "plantuml";
+    openBuilderForSource({
+      source: src,
+      format: fmt,
+      target: "current",
+    });
+  }
+
   function resetWizard(): void {
     stepIndex.value = 0;
     galleryVisible.value = true;
+    applyTarget.value = "new-tab";
     wizardState.value = {
       ...DEFAULT_WIZARD_STATE,
       creationMode: "ai",
@@ -180,6 +302,10 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     aiSetupVisible.value = false;
     aiSetupReason.value = null;
     clearConversations();
+
+    if (startInBuilder?.value) {
+      openCurrentDiagramInBuilder();
+    }
   }
 
   watch(open, (isOpen) => {
@@ -215,19 +341,33 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     label: string;
     prompt: string;
   }): void {
+    const sampleSource = getSampleSource(
+      { format: payload.example.format, id: payload.example.sampleId },
+      locale.value,
+    );
+
     if (payload.action === "editor") {
       onApply({
-        source: getSampleSource(
-          { format: payload.example.format, id: payload.example.sampleId },
-          locale.value,
-        ),
+        source: sampleSource,
         label: payload.label,
         format: payload.example.format,
+        target: "new-tab",
       });
       onClose();
       return;
     }
 
+    if (payload.action === "builder") {
+      openBuilderForSource({
+        source: sampleSource,
+        format: payload.example.format,
+        diagramType: payload.example.diagramType,
+        target: "new-tab",
+      });
+      return;
+    }
+
+    applyTarget.value = "new-tab";
     wizardState.value = {
       ...DEFAULT_WIZARD_STATE,
       creationMode: "ai",
@@ -242,6 +382,17 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     };
     stepIndex.value = 0;
     galleryVisible.value = false;
+  }
+
+  function selectStep(index: number): void {
+    if (
+      !isBuilderMode.value ||
+      index < 0 ||
+      index >= totalSteps.value
+    ) {
+      return;
+    }
+    stepIndex.value = index;
   }
 
   function goBack(): void {
@@ -274,8 +425,12 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   }
 
   function buildApplyLabel(state: WizardState): string {
+    const modeLabel =
+      state.creationMode === "builder"
+        ? t("llm.wizard.gallery.action.builder")
+        : t("llm.wizard.mode.ai");
     return t("llm.wizard.historyLabel", {
-      mode: t("llm.wizard.mode.ai"),
+      mode: modeLabel,
       type: t(`llm.wizard.type.${state.diagramType}`),
     });
   }
@@ -289,6 +444,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
       source: resultSource.value,
       label: buildApplyLabel(wizardState.value),
       format: wizardState.value.language,
+      target: applyTarget.value,
     });
     onClose();
   }
@@ -316,6 +472,9 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     stepIndex,
     galleryVisible,
     wizardState,
+    builderState,
+    applyTarget,
+    isBuilderMode,
     isGenerating,
     errorMessage,
     resultSource,
@@ -332,6 +491,10 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     showBackButton,
     canGoNext,
     openGalleryExample,
+    openCurrentDiagramInBuilder,
+    handleBuilderChange,
+    handleBuilderPasteSource,
+    selectStep,
     goBack,
     goNext,
     handleApply,
