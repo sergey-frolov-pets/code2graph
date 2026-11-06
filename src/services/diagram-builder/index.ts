@@ -17,8 +17,10 @@ import {
   getDiagramBuilderSchema,
   GRAPH_EDGE_KIND_OPTIONS,
   GRAPH_NODE_KIND_OPTIONS,
+  hasBuilderOptionsCapabilities,
   LINE_STYLE_OPTIONS,
   MONO_MODE_OPTIONS,
+  supportsDiagramBuilder,
 } from "./schemas";
 import {
   parseRawTextToGrid,
@@ -36,10 +38,12 @@ export {
   getDiagramBuilderSchema,
   GRAPH_EDGE_KIND_OPTIONS,
   GRAPH_NODE_KIND_OPTIONS,
+  hasBuilderOptionsCapabilities,
   LINE_STYLE_OPTIONS,
   MONO_MODE_OPTIONS,
   parseRawTextToGrid,
   serializeGridToClipboardTsv,
+  supportsDiagramBuilder,
   transposeMatrixData,
 };
 

@@ -21,6 +21,7 @@ import { isMermaidExtSampleId } from "@/constants/mermaid-sample-diagrams";
 import { DIAGRAM_LANGUAGE_MODULES, getLanguageModule } from "@/languages/registry";
 import { isLocaleKey } from "@/locales/types";
 import { SNIPPETS_KEYBOARD_SHORTCUT } from "@/constants/snippets-settings";
+import { supportsDiagramBuilder } from "@/services/diagram-builder";
 
 const props = defineProps<{
   formatDefinition: DiagramFormatDefinition;
@@ -245,12 +246,13 @@ function onSampleChange(event: Event): void {
         <ActionIcon name="table-paste" />
       </IconButton>
       <IconButton
+        v-if="formatDefinition.editable && supportsDiagramBuilder(formatDefinition.id)"
         :label="t('builder.openFromEditor')"
         :disabled="isRendering || !canClear"
         data-testid="editor-open-builder-button"
         @click="emit('openBuilder')"
       >
-        <ActionIcon name="edit" />
+        <ActionIcon name="builder" />
       </IconButton>
       <IconButton
         v-if="formatDefinition.editable"

@@ -109,7 +109,6 @@ const {
   canGoNext,
   wizardSteps,
   openGalleryExample,
-  openCurrentDiagramInBuilder,
   handleBuilderChange,
   handleBuilderPasteSource,
   selectStep,
@@ -151,10 +150,6 @@ const {
 const showLivePreview = computed(
   () => showLivePreviewPanel.value && !aiSetupVisible.value,
 );
-
-const canEditCurrentDiagram = computed(
-  () => (props.currentEditorSource ?? "").trim().length > 0,
-);
 </script>
 
 <template>
@@ -170,19 +165,13 @@ const canEditCurrentDiagram = computed(
       @dismiss="dismissWizardBanner"
     />
 
-    <div class="wizard-top-bar">
+    <div
+      v-if="!galleryVisible && !isBuilderMode"
+      class="wizard-top-bar"
+    >
       <p class="wizard-step-title">
-        {{ galleryVisible ? t("llm.wizard.gallery.heading") : stepTitle }}
+        {{ stepTitle }}
       </p>
-      <button
-        v-if="galleryVisible && canEditCurrentDiagram"
-        type="button"
-        class="btn builder-btn"
-        data-testid="wizard-edit-current-diagram-btn"
-        @click="openCurrentDiagramInBuilder"
-      >
-        {{ t("builder.editCurrentFromGallery") }}
-      </button>
     </div>
 
     <WizardExampleGallery
@@ -190,7 +179,7 @@ const canEditCurrentDiagram = computed(
       @choose="openGalleryExample"
     />
     <div
-      v-if="!galleryVisible"
+      v-if="!galleryVisible && !isBuilderMode"
       class="wizard-progress"
       role="progressbar"
       :aria-valuenow="stepIndex + 1"
@@ -211,7 +200,7 @@ const canEditCurrentDiagram = computed(
       @select-step="selectStep"
     />
     <p
-      v-if="!galleryVisible"
+      v-if="!galleryVisible && !isBuilderMode"
       class="wizard-step-meta"
     >
       {{ t("llm.wizard.stepCounter", { current: stepIndex + 1, total: totalSteps }) }}

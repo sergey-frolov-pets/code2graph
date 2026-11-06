@@ -137,7 +137,7 @@ export const llmMessages = {
   "llm.wizard.step.prompt": "Prompt",
   "llm.wizard.step.result": "Result",
   "llm.wizard.step.builder-data": "Data",
-  "llm.wizard.step.builder-canvas": "Canvas & axes",
+  "llm.wizard.step.builder-canvas": "Appearance",
   "llm.wizard.step.builder-options": "Options & colors",
   "llm.wizard.modeHint": "Choose how to create the diagram: with AI or manually from a scaffold template.",
   "llm.wizard.mode.ai": "With AI",

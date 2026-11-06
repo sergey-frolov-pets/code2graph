@@ -5,6 +5,8 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.reset": "Reset",
   "llm.wizard.gallery.empty": "No examples match these conditions",
   "llm.wizard.gallery.cloudLabel": "Example tags",
+  "llm.wizard.gallery.expandTags": "Tags ({count})",
+  "llm.wizard.gallery.collapseTags": "Collapse tags",
   "llm.wizard.gallery.gridLabel": "Example thumbnails",
   "llm.wizard.gallery.details": "Details",
   "llm.wizard.gallery.actionsLabel": "What to do with this example",

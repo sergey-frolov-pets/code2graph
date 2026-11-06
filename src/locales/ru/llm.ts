@@ -137,7 +137,7 @@ export const llmMessages = {
   "llm.wizard.step.prompt": "Промт",
   "llm.wizard.step.result": "Результат",
   "llm.wizard.step.builder-data": "Данные",
-  "llm.wizard.step.builder-canvas": "Холст и оси",
+  "llm.wizard.step.builder-canvas": "Оформление",
   "llm.wizard.step.builder-options": "Опции и цвета",
   "llm.wizard.modeHint": "Выберите, как создать диаграмму: с помощью ИИ или вручную из шаблона.",
   "llm.wizard.mode.ai": "С ИИ",

@@ -14,6 +14,7 @@ import {
 } from "@/constants/wizard-gallery";
 import { wizardThumbnailSvg } from "@/constants/wizard-thumbnails";
 import { useLocale } from "@/composables/useLocale";
+import { supportsDiagramBuilder } from "@/services/diagram-builder";
 
 const props = defineProps<{
   examples: readonly DiagramExample[];
@@ -243,6 +244,7 @@ onBeforeUnmount(() => {
         :label="t('llm.wizard.gallery.actionsLabel')"
         :llm-available="llmAvailable"
         :can-enlarge="floatingCanEnlarge"
+        :can-builder="supportsDiagramBuilder(floatingExample.format)"
         @choose="emit('choose', floatingExample, $event)"
         @enlarge="onEnlarge(floatingExample)"
         @pointerdown.stop

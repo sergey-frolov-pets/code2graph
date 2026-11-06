@@ -32,6 +32,7 @@ import {
   detectBuilderDiagramType,
   emitSourceFromBuilderState,
   parseSourceToBuilderState,
+  supportsDiagramBuilder,
   type BuilderApplyTarget,
   type DiagramBuilderState,
 } from "@/services/diagram-builder";
@@ -41,7 +42,6 @@ const AI_WIZARD_FLOW_STEPS: readonly WizardStepId[] = ["context", "result"];
 const BUILDER_WIZARD_FLOW_STEPS: readonly WizardStepId[] = [
   "builder-data",
   "builder-canvas",
-  "builder-options",
 ];
 
 export interface UseDiagramWizardFlowOptions {
@@ -126,7 +126,11 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     return t(getWizardStepTitleKey(currentStepId.value));
   });
 
-  const showBackButton = computed(() => !galleryVisible.value);
+  const showBackButton = computed(
+    () =>
+      !galleryVisible.value &&
+      (!startInBuilder?.value || stepIndex.value > 0),
+  );
 
   async function checkAiAccess(): Promise<boolean> {
     const { requireLlmAccess } = useLlmGate();
@@ -240,12 +244,50 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     syncBuilderToSource(true);
   }
 
+  function openBuilderForType(input: {
+    format: DiagramFormat;
+    diagramType: DiagramBuilderState["diagramType"];
+    target: BuilderApplyTarget;
+  }): void {
+    if (!supportsDiagramBuilder(input.format)) {
+      return;
+    }
+
+    const wizType = isWizardDiagramType(input.diagramType)
+      ? input.diagramType
+      : "flowchart";
+
+    wizardState.value = {
+      ...DEFAULT_WIZARD_STATE,
+      creationMode: "builder",
+      language: input.format,
+      diagramType: wizType,
+      typeParams: createDefaultTypeParams(),
+      structuralElements: createDefaultStructuralElements(),
+    };
+    builderBaseSource.value = "";
+    builderState.value = createDefaultBuilderState(
+      input.format,
+      input.diagramType,
+    );
+    applyTarget.value = input.target;
+    stepIndex.value = 0;
+    galleryVisible.value = false;
+    aiSetupVisible.value = false;
+    aiSetupReason.value = null;
+    syncBuilderToSource(true);
+  }
+
   function openBuilderForSource(input: {
     source: string;
     format: DiagramFormat;
     diagramType?: DiagramBuilderState["diagramType"];
     target: BuilderApplyTarget;
   }): void {
+    if (!supportsDiagramBuilder(input.format)) {
+      return;
+    }
+
     const detectedType =
       input.diagramType ?? detectBuilderDiagramType(input.source, input.format);
     const wizType = isWizardDiagramType(detectedType)
@@ -277,6 +319,9 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   function openCurrentDiagramInBuilder(): void {
     const src = currentEditorSource?.value ?? "";
     const fmt = currentEditorFormat?.value ?? "plantuml";
+    if (!supportsDiagramBuilder(fmt)) {
+      return;
+    }
     openBuilderForSource({
       source: src,
       format: fmt,
@@ -308,11 +353,15 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     }
   }
 
-  watch(open, (isOpen) => {
-    if (isOpen) {
-      resetWizard();
-    }
-  });
+  watch(
+    [open, () => startInBuilder?.value],
+    ([isOpen]) => {
+      if (isOpen) {
+        resetWizard();
+      }
+    },
+    { immediate: true },
+  );
 
   watch([llmConsent, llmProviderId], () => {
     if (aiSetupVisible.value) {
@@ -341,6 +390,15 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     label: string;
     prompt: string;
   }): void {
+    if (payload.action === "builder") {
+      openBuilderForType({
+        format: payload.example.format,
+        diagramType: payload.example.diagramType,
+        target: "new-tab",
+      });
+      return;
+    }
+
     const sampleSource = getSampleSource(
       { format: payload.example.format, id: payload.example.sampleId },
       locale.value,
@@ -354,16 +412,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
         target: "new-tab",
       });
       onClose();
-      return;
-    }
-
-    if (payload.action === "builder") {
-      openBuilderForSource({
-        source: sampleSource,
-        format: payload.example.format,
-        diagramType: payload.example.diagramType,
-        target: "new-tab",
-      });
       return;
     }
 
