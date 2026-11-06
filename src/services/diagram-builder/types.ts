@@ -93,6 +93,8 @@ export interface BuilderCanvasSettings {
   title: string;
   direction: "TB" | "LR" | "BT" | "RL";
   rotate90: boolean;
+  /** При повороте на 90° первая категория снизу (`invert y`). */
+  invertY: boolean;
   aspectRatio: string;
   customAspectWidth: string;
   customAspectHeight: string;

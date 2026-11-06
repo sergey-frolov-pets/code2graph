@@ -844,6 +844,26 @@ function removeHeatmapBand(idx: number): void {
         </label>
 
         <label
+          v-if="cap.supportsRotate90 && builderState.canvas.rotate90"
+          class="builder-field"
+        >
+          <span class="builder-field__label">{{ t("builder.canvas.invertY") }}</span>
+          <select
+            :value="builderState.canvas.invertY ? 'invert' : 'normal'"
+            class="select builder-input"
+            data-testid="builder-invert-y-select"
+            @change="
+              builderState.canvas.invertY =
+                ($event.target as HTMLSelectElement).value === 'invert';
+              notifyChange();
+            "
+          >
+            <option value="normal">{{ t("builder.invertY.top") }}</option>
+            <option value="invert">{{ t("builder.invertY.bottom") }}</option>
+          </select>
+        </label>
+
+        <label
           v-if="cap.supportsStacked"
           class="builder-field"
         >

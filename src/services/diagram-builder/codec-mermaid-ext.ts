@@ -48,6 +48,7 @@ export function createDefaultBuilderState(
     title: "",
     direction: "TB",
     rotate90: false,
+    invertY: false,
     aspectRatio: "",
     customAspectWidth: "16",
     customAspectHeight: "9",
@@ -619,6 +620,7 @@ export function parseMermaidExtToBuilderState(
       const model = parsed.value;
       state.canvas.title = model.title ?? "";
       state.canvas.rotate90 = model.rotate90;
+      state.canvas.invertY = model.invertY;
       state.canvas.fontSize = model.fontSize ?? DEFAULT_FONT_SIZE;
       const aspect = aspectRatioToString(model.ratio);
       state.canvas.aspectRatio = aspect.preset;
@@ -1310,6 +1312,7 @@ export function emitMermaidExtFromBuilderState(
       lines.push("series");
       if (canvas.title.trim()) lines.push(`title ${canvas.title.trim()}`);
       if (canvas.rotate90) lines.push("rotate 90");
+      if (canvas.invertY) lines.push("invert y");
       if (options.stacked) lines.push("stacked");
       const ratioLine = emitAspectDirective(canvas);
       if (ratioLine) lines.push(ratioLine);

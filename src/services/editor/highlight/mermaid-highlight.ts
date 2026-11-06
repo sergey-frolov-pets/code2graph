@@ -129,6 +129,7 @@ const KEYWORDS = new Set([
   "dots",
   "fontsize",
   "grid",
+  "invert",
   "labels",
   "mono",
   "orientation",
