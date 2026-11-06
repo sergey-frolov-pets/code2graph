@@ -122,6 +122,13 @@
   border-top: 1px solid var(--border);
 }
 
+.builder-hint {
+  margin: 0;
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
 .builder-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));

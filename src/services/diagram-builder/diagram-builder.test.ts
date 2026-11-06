@@ -434,4 +434,123 @@ describe("diagram-builder core", () => {
     const waterfallSchema = getDiagramBuilderSchema("mermaid", "waterfall");
     expect(hasBuilderOptionsCapabilities(waterfallSchema.capabilities)).toBe(true);
   });
+
+  it("gives Sankey real appearance controls and writes them into the diagram", () => {
+    const cap = getDiagramBuilderSchema("mermaid", "sankey").capabilities;
+    expect(cap.supportsTitle).toBe(false);
+    expect(cap.supportsSankeyStyle).toBe(true);
+    expect(cap.supportsDirection).toBe(false);
+
+    const parsed = parseSourceToBuilderState(
+      `sankey-beta
+Ads,Site,90
+Site,"Bounce, no click",40`,
+      "mermaid",
+    );
+    expect(parsed.rows).toEqual([
+      ["Ads", "Site", "90"],
+      ["Site", "Bounce, no click", "40"],
+    ]);
+
+    const plain = emitSourceFromBuilderState(parsed);
+    expect(plain.startsWith("sankey-beta")).toBe(true);
+    expect(plain).toContain('"Bounce, no click"');
+    expect(plain).not.toContain("config:");
+
+    parsed.appearance.sankey.showValues = false;
+    parsed.appearance.sankey.nodeAlignment = "left";
+    parsed.appearance.sankey.prefix = "$";
+    parsed.appearance.sankey.nodeColors = [{ node: "Site", color: "#2e7d32" }];
+    const styled = emitSourceFromBuilderState(parsed);
+    expect(styled).toContain("showValues: false");
+    expect(styled).toContain("nodeAlignment: left");
+    expect(styled).toContain('prefix: "$"');
+    expect(styled).toContain('Site: "#2e7d32"');
+    expect(styled.indexOf("sankey-beta")).toBeGreaterThan(styled.indexOf("config:"));
+
+    const roundTrip = parseSourceToBuilderState(styled, "mermaid");
+    expect(roundTrip.appearance.sankey.showValues).toBe(false);
+    expect(roundTrip.appearance.sankey.nodeAlignment).toBe("left");
+    expect(roundTrip.appearance.sankey.prefix).toBe("$");
+    expect(roundTrip.appearance.sankey.nodeColors).toEqual([{ node: "Site", color: "#2e7d32" }]);
+    expect(roundTrip.rows[1]).toEqual(["Site", "Bounce, no click", "40"]);
+  });
+
+  it("exposes appearance for the other thin diagram types and emits it", () => {
+    expect(getDiagramBuilderSchema("mermaid", "packet").capabilities.supportsPacketStyle).toBe(true);
+    expect(getDiagramBuilderSchema("mermaid", "packet").capabilities.supportsTitle).toBe(true);
+    expect(getDiagramBuilderSchema("mermaid", "pie").capabilities.supportsPieStyle).toBe(true);
+    expect(getDiagramBuilderSchema("mermaid", "xychart").capabilities.supportsXyStyle).toBe(true);
+    expect(getDiagramBuilderSchema("mermaid", "mindmap").capabilities.supportsMindmapStyle).toBe(true);
+    expect(getDiagramBuilderSchema("mermaid", "mindmap").capabilities.supportsTitle).toBe(false);
+    expect(getDiagramBuilderSchema("mermaid", "timeline").capabilities.supportsTimelineStyle).toBe(true);
+    expect(getDiagramBuilderSchema("mermaid", "journey").capabilities.supportsJourneyStyle).toBe(true);
+    expect(getDiagramBuilderSchema("mermaid", "gantt").capabilities.supportsGanttStyle).toBe(true);
+    expect(getDiagramBuilderSchema("mermaid", "block").capabilities.supportsBlockStyle).toBe(true);
+    expect(getDiagramBuilderSchema("mermaid", "block").capabilities.supportsDirection).toBe(false);
+    expect(getDiagramBuilderSchema("mermaid", "sequence").capabilities.supportsSequenceAutonumber).toBe(true);
+    expect(getDiagramBuilderSchema("mermaid", "sequence").capabilities.supportsDirection).toBe(false);
+    expect(getDiagramBuilderSchema("mermaid", "flowchart").capabilities.supportsDirection).toBe(true);
+    expect(getDiagramBuilderSchema("mermaid", "flowchart").capabilities.supportsTitle).toBe(false);
+
+    const packet = createDefaultBuilderState("mermaid", "packet");
+    packet.appearance.packet.showBits = false;
+    packet.appearance.packet.bitsPerRow = "16";
+    expect(emitSourceFromBuilderState(packet)).toContain("showBits: false");
+    expect(emitSourceFromBuilderState(packet)).toContain("bitsPerRow: 16");
+
+    const pie = createDefaultBuilderState("mermaid", "pie");
+    pie.appearance.pie.donutHole = "0.4";
+    pie.appearance.pie.legendPosition = "bottom";
+    const pieSource = emitSourceFromBuilderState(pie);
+    expect(pieSource).toContain("donutHole: 0.4");
+    expect(pieSource).toContain("legendPosition: bottom");
+
+    const xy = createDefaultBuilderState("mermaid", "xychart");
+    xy.appearance.xyChart.orientation = "horizontal";
+    xy.appearance.xyChart.showDataLabel = true;
+    expect(emitSourceFromBuilderState(xy)).toContain("chartOrientation: horizontal");
+    expect(emitSourceFromBuilderState(xy)).toContain("showDataLabel: true");
+
+    const mindmap = createDefaultBuilderState("mermaid", "mindmap");
+    mindmap.appearance.mindmap.colorBy = "depth";
+    mindmap.appearance.mindmap.maxNodeWidth = "180";
+    expect(emitSourceFromBuilderState(mindmap)).toContain("colorBy: depth");
+    expect(emitSourceFromBuilderState(mindmap)).toContain("maxNodeWidth: 180");
+
+    const timeline = createDefaultBuilderState("mermaid", "timeline");
+    timeline.appearance.timeline.disableMulticolor = true;
+    expect(emitSourceFromBuilderState(timeline)).toContain("disableMulticolor: true");
+
+    const journey = createDefaultBuilderState("mermaid", "journey");
+    journey.appearance.journey.taskMargin = "40";
+    expect(emitSourceFromBuilderState(journey)).toContain("taskMargin: 40");
+
+    const gantt = createDefaultBuilderState("mermaid", "gantt");
+    gantt.appearance.gantt.weekday = "monday";
+    gantt.appearance.gantt.topAxis = true;
+    gantt.canvas.ganttAxisFormat = "%d %b";
+    const ganttSource = emitSourceFromBuilderState(gantt);
+    expect(ganttSource).toContain("weekday: monday");
+    expect(ganttSource).toContain("topAxis: true");
+    expect(ganttSource).toContain("axisFormat %d %b");
+
+    const block = createDefaultBuilderState("mermaid", "block");
+    block.canvas.blockColumns = 4;
+    block.appearance.block.padding = "12";
+    const blockSource = emitSourceFromBuilderState(block);
+    expect(blockSource).toContain("columns 4");
+    expect(blockSource).toContain("padding: 12");
+
+    const sequence = parseSourceToBuilderState(
+      "sequenceDiagram\n  autonumber\n  Alice->>Bob: Hi",
+      "mermaid",
+    );
+    expect(sequence.appearance.sequenceAutonumber).toBe(true);
+    expect(emitSourceFromBuilderState(sequence)).toContain("autonumber");
+
+    const flow = parseSourceToBuilderState("flowchart TD\n  A --> B", "mermaid");
+    flow.canvas.direction = "BT";
+    expect(emitSourceFromBuilderState(flow)).toContain("flowchart BT");
+  });
 });

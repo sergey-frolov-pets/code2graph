@@ -12,6 +12,7 @@ import { parseVoronoi } from "@/services/mermaid/ext/engines/voronoi";
 import { parseWaterfall } from "@/services/mermaid/ext/engines/waterfall/parser";
 import { fmt } from "@/services/mermaid/ext/common";
 import { formatCleanNumber } from "@/services/table-paste/parse-clipboard-grid";
+import { createDefaultDiagramAppearance } from "./builder-appearance";
 import { getDiagramBuilderSchema } from "./schemas";
 import type {
   BuilderAxisConfig,
@@ -134,6 +135,7 @@ export function createDefaultBuilderState(
     graphEdges,
     canvas,
     options,
+    appearance: createDefaultDiagramAppearance(),
     preservedComments: [],
   };
 }

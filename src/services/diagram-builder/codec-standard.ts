@@ -16,9 +16,20 @@ import { emitD2FromIr } from "@/services/conversion/emit/emit-d2";
 import { emitGraphmlFromIr } from "@/services/conversion/emit/emit-graphml";
 import { emitStructurizrFromIr } from "@/services/conversion/emit/emit-structurizr";
 import { emitWiremarkFromIr } from "@/services/conversion/emit/emit-wiremark";
-import { formatCleanNumber, parseTableNumber } from "@/services/table-paste/parse-clipboard-grid";
+import {
+  formatMermaidSankeyCsvField,
+  parseMermaidSankeyCsvLine,
+} from "@/services/conversion/emit/mermaid-emit-utils";
+import { formatCleanNumber } from "@/services/table-paste/parse-clipboard-grid";
 import { applyTableFromClipboardText } from "@/services/table-paste";
 import { detectDiagramDirection } from "@/services/conversion/classify-diagram-kind";
+import {
+  applyAppearanceFromConfig,
+  buildMermaidConfigHeader,
+  injectSequenceAutonumber,
+  sourceHasSequenceAutonumber,
+  splitMermaidFrontmatter,
+} from "./builder-appearance";
 import { createDefaultBuilderState } from "./codec-mermaid-ext";
 import { serializeGridToClipboardTsv } from "./table-clipboard";
 import type { DiagramBuilderState } from "./types";
@@ -84,6 +95,12 @@ export function parseStandardDiagramToBuilderState(
   diagramType: DiagramTypeTag,
 ): DiagramBuilderState {
   const state = createDefaultBuilderState(format, diagramType);
+  const frontmatter = splitMermaidFrontmatter(source);
+  applyAppearanceFromConfig(state.appearance, frontmatter.config);
+  source = frontmatter.body;
+  if (sourceHasSequenceAutonumber(source)) {
+    state.appearance.sequenceAutonumber = true;
+  }
   const lines = source.split(/\r?\n/);
 
   for (const raw of lines) {
@@ -211,12 +228,9 @@ export function parseStandardDiagramToBuilderState(
     case "sankey": {
       const rows: string[][] = [];
       for (const raw of lines) {
-        const trimmed = raw.trim();
-        if (!trimmed || trimmed.startsWith("%%") || /^sankey/i.test(trimmed)) continue;
-        const parts = trimmed.split(",").map((s) => unquote(s));
-        if (parts.length >= 3 && parseTableNumber(parts[2]) !== null) {
-          rows.push([parts[0], parts[1], parts[2]]);
-        }
+        const flow = parseMermaidSankeyCsvLine(raw);
+        if (!flow) continue;
+        rows.push([flow.source, flow.target, formatCleanNumber(flow.value)]);
       }
       state.rows =
         rows.length > 0
@@ -504,6 +518,9 @@ export function parseStandardDiagramToBuilderState(
       if (ir) {
         state.canvas.direction = ir.direction ?? "TB";
         state.canvas.title = ir.extras?.title ?? state.canvas.title;
+        if (ir.extras?.blockColumns) {
+          state.canvas.blockColumns = ir.extras.blockColumns;
+        }
         const groupMap = new Map(
           (ir.groups ?? []).map((g) => [g.id, g.label || g.id]),
         );
@@ -539,6 +556,26 @@ export function parseStandardDiagramToBuilderState(
 }
 
 export function emitStandardDiagramFromBuilderState(
+  state: DiagramBuilderState,
+  originalSource = "",
+): string {
+  const source = emitStandardDiagramBody(state, originalSource);
+  if (state.appearance.sequenceAutonumber && state.diagramType === "sequence") {
+    const withNumbers = injectSequenceAutonumber(source, state.format);
+    return prependMermaidConfig(state, withNumbers);
+  }
+  return prependMermaidConfig(state, source);
+}
+
+function prependMermaidConfig(state: DiagramBuilderState, source: string): string {
+  if (state.format !== "mermaid") {
+    return source;
+  }
+  const header = buildMermaidConfigHeader(state.appearance, state.diagramType);
+  return header ? `${header}${source}` : source;
+}
+
+function emitStandardDiagramBody(
   state: DiagramBuilderState,
   originalSource = "",
 ): string {
@@ -661,7 +698,9 @@ export function emitStandardDiagramFromBuilderState(
         const src = (row[0] ?? "").trim() || "Source";
         const tgt = (row[1] ?? "").trim() || "Target";
         const val = Number((row[2] ?? "10").replace(",", "."));
-        lines.push(`${src},${tgt},${formatCleanNumber(Number.isFinite(val) ? val : 10)}`);
+        lines.push(
+          `${formatMermaidSankeyCsvField(src)},${formatMermaidSankeyCsvField(tgt)},${formatCleanNumber(Number.isFinite(val) ? val : 10)}`,
+        );
       }
       return lines.join("\n");
     }
@@ -892,6 +931,13 @@ export function emitStandardDiagramFromBuilderState(
       ir.direction = canvas.direction;
       if (canvas.title.trim()) {
         ir.extras = { ...ir.extras, title: canvas.title.trim() };
+      }
+      if (diagramType === "block") {
+        const columns = Number(canvas.blockColumns);
+        ir.extras = {
+          ...ir.extras,
+          blockColumns: Number.isFinite(columns) && columns > 0 ? columns : 3,
+        };
       }
 
       const groupsSet = new Map<string, string>();

@@ -229,6 +229,15 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     syncBuilderToSource(false);
   }
 
+  watch(currentStepId, (step, previous) => {
+    if (!isBuilderMode.value || galleryVisible.value || step === previous) {
+      return;
+    }
+    if (step.startsWith("builder-")) {
+      syncBuilderToSource(true);
+    }
+  });
+
   function handleBuilderPasteSource(pastedFullSource: string): void {
     builderBaseSource.value = pastedFullSource;
     builderState.value = parseSourceToBuilderState(
