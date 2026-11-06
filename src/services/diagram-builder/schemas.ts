@@ -2,6 +2,7 @@ import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { DiagramTypeTag } from "@/constants/diagram-example-catalog";
 import { classifyDiagramKind } from "@/services/conversion/classify-diagram-kind";
 import { detectType as detectMermaidExtType } from "@/services/mermaid/ext/registry";
+import { builderShowsTitle } from "./builder-appearance";
 import type {
   BuilderSelectOption,
   BuilderTableColumnSchema,
@@ -38,6 +39,17 @@ const BASE_CAPABILITY: DiagramBuilderCapability = {
   supportsBreaks: false,
   supportsThresholds: false,
   supportsCagr: false,
+  supportsTitle: false,
+  supportsSankeyStyle: false,
+  supportsPacketStyle: false,
+  supportsPieStyle: false,
+  supportsXyStyle: false,
+  supportsMindmapStyle: false,
+  supportsTimelineStyle: false,
+  supportsJourneyStyle: false,
+  supportsGanttStyle: false,
+  supportsBlockStyle: false,
+  supportsSequenceAutonumber: false,
 };
 
 const WATERFALL_LABELS_OPTIONS: readonly BuilderSelectOption[] = [
@@ -335,6 +347,27 @@ function columnsForDiagramType(
   }
 }
 
+function applyAppearanceCapabilities(
+  cap: DiagramBuilderCapability,
+  format: DiagramFormat,
+  diagramType: DiagramTypeTag,
+): void {
+  cap.supportsAspectRatio = true;
+  cap.supportsTitle = builderShowsTitle(format, diagramType);
+  const mermaid = format === "mermaid";
+  cap.supportsSankeyStyle = mermaid && diagramType === "sankey";
+  cap.supportsPacketStyle = mermaid && diagramType === "packet";
+  cap.supportsPieStyle = mermaid && diagramType === "pie";
+  cap.supportsXyStyle = mermaid && diagramType === "xychart";
+  cap.supportsMindmapStyle = mermaid && (diagramType === "mindmap" || diagramType === "wbs");
+  cap.supportsTimelineStyle = mermaid && diagramType === "timeline";
+  cap.supportsJourneyStyle = mermaid && diagramType === "journey";
+  cap.supportsGanttStyle = mermaid && diagramType === "gantt";
+  cap.supportsBlockStyle = mermaid && diagramType === "block";
+  cap.supportsSequenceAutonumber =
+    (mermaid || format === "plantuml") && diagramType === "sequence";
+}
+
 export function getDiagramBuilderSchema(
   format: DiagramFormat,
   diagramType: DiagramTypeTag,
@@ -376,6 +409,7 @@ export function getDiagramBuilderSchema(
       cap.supportsYAxis = true;
     }
 
+    applyAppearanceCapabilities(cap, format, diagramType);
     return {
       format,
       diagramType,
@@ -478,6 +512,7 @@ export function getDiagramBuilderSchema(
         break;
     }
 
+    applyAppearanceCapabilities(cap, format, diagramType);
     return {
       format,
       diagramType,
@@ -499,14 +534,17 @@ export function getDiagramBuilderSchema(
       !nonDirectionalTypes.has(diagramType) &&
       !(format === "plantuml" && diagramType === "activity"));
 
+  const graphCap: DiagramBuilderCapability = {
+    ...BASE_CAPABILITY,
+    supportsDirection: supportsDir,
+  };
+  applyAppearanceCapabilities(graphCap, format, diagramType);
+  graphCap.supportsDirection = supportsDir;
   return {
     format,
     diagramType,
     tableMode: "graph-ir",
     columns: [],
-    capabilities: {
-      ...BASE_CAPABILITY,
-      supportsDirection: supportsDir,
-    },
+    capabilities: graphCap,
   };
 }

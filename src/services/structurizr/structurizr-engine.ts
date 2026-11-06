@@ -12,6 +12,7 @@ import {
   preparePlantUmlSource,
   splitSourceLines,
 } from "@/utils/plantuml-source";
+import { applyMarkedAspectFrame } from "@/utils/svg-aspect-frame";
 
 const DIAGRAM_STACK_GAP_PX = 32;
 const DIAGRAM_FALLBACK_WIDTH_PX = 640;
@@ -105,5 +106,5 @@ export async function renderStructurizrToSvg(
     );
   }
 
-  return stackDiagramSvgs(svgs);
+  return applyMarkedAspectFrame(prepared, stackDiagramSvgs(svgs));
 }

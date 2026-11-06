@@ -108,6 +108,19 @@ series Платформа Б : 72, 84, 92, 76, 80 color=#cf222e`);
     expect(radarEngine.parse("radar\naxes A, B\nS : 1, 2").ok).toBe(false);
     expect(radarEngine.parse("radar\naxes A, B, C\nS : 1, 2").ok).toBe(false);
   });
+
+  it("stretches the canvas to the requested ratio", () => {
+    const source = "radar\naxes A, B, C\nseries One : 10, 20, 30";
+    const plain = radarEngine.render(radarEngine.parse(source).value as RadarModel, {});
+    const wide = radarEngine.render(
+      radarEngine.parse(`radar\nratio 16x9\naxes A, B, C\nseries One : 10, 20, 30`).value as RadarModel,
+      {},
+    );
+    const plainSize = extractSvgSize(plain);
+    const wideSize = extractSvgSize(wide);
+    expect(wideSize.width / wideSize.height).toBeGreaterThan(plainSize.width / plainSize.height);
+    expect(wideSize.width / wideSize.height).toBeCloseTo(16 / 9, 1);
+  });
 });
 
 describe("voronoi engine", () => {

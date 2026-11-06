@@ -12,6 +12,7 @@ import { parseVoronoi } from "@/services/mermaid/ext/engines/voronoi";
 import { parseWaterfall } from "@/services/mermaid/ext/engines/waterfall/parser";
 import { fmt } from "@/services/mermaid/ext/common";
 import { formatCleanNumber } from "@/services/table-paste/parse-clipboard-grid";
+import { createDefaultDiagramAppearance } from "./builder-appearance";
 import { getDiagramBuilderSchema } from "./schemas";
 import type {
   BuilderAxisConfig,
@@ -134,6 +135,7 @@ export function createDefaultBuilderState(
     graphEdges,
     canvas,
     options,
+    appearance: createDefaultDiagramAppearance(),
     preservedComments: [],
   };
 }
@@ -487,6 +489,10 @@ export function parseMermaidExtToBuilderState(
       const model = parsed.value;
       state.canvas.title = model.title ?? "";
       state.canvas.fontSize = model.fontSize ?? DEFAULT_FONT_SIZE;
+      const aspect = aspectRatioToString(model.ratio);
+      state.canvas.aspectRatio = aspect.preset;
+      state.canvas.customAspectWidth = aspect.customW;
+      state.canvas.customAspectHeight = aspect.customH;
       state.canvas.radarMin = fmt(model.min);
       state.canvas.radarMax = fmt(model.max);
       state.canvas.radarRings = model.rings;
@@ -558,6 +564,10 @@ export function parseMermaidExtToBuilderState(
       if (!parsed.ok || !parsed.value) return null;
       const model = parsed.value;
       state.canvas.title = model.title ?? "";
+      const aspect = aspectRatioToString(model.ratio);
+      state.canvas.aspectRatio = aspect.preset;
+      state.canvas.customAspectWidth = aspect.customW;
+      state.canvas.customAspectHeight = aspect.customH;
       state.options.monoMode = model.monoInvert
         ? "invert"
         : model.mono
@@ -569,8 +579,8 @@ export function parseMermaidExtToBuilderState(
         const fromNode = nodeMap.get(edge.from);
         const toNode = nodeMap.get(edge.to);
         return [
-          (fromNode?.label || edge.from).replace(/\n/g, " — "),
-          (toNode?.label || edge.to).replace(/\n/g, " — "),
+          orgTableLabel(fromNode?.label || edge.from),
+          orgTableLabel(toNode?.label || edge.to),
           edge.style,
           toNode?.fill ?? toNode?.border ?? "",
         ];
@@ -697,6 +707,16 @@ export function parseMermaidExtToBuilderState(
     default:
       return null;
   }
+}
+
+/** Подпись узла в ячейке таблицы: перевод строки виден как `\n`. */
+function orgTableLabel(label: string): string {
+  return label.replace(/\r?\n/g, "\\n");
+}
+
+/** Подпись в исходнике остаётся одной строкой, `\n` снова переносит текст в блоке. */
+function orgSourceLabel(label: string): string {
+  return label.trim().replace(/\r?\n/g, "\\n");
 }
 
 function emitAspectDirective(canvas: BuilderCanvasSettings): string | null {
@@ -1093,6 +1113,8 @@ export function emitMermaidExtFromBuilderState(
     case "radar": {
       lines.push("radar");
       if (canvas.title.trim()) lines.push(`title ${canvas.title.trim()}`);
+      const ratioLine = emitAspectDirective(canvas);
+      if (ratioLine) lines.push(ratioLine);
       if (canvas.fontSize && canvas.fontSize !== DEFAULT_FONT_SIZE) {
         lines.push(`fontsize ${canvas.fontSize}`);
       }
@@ -1203,6 +1225,8 @@ export function emitMermaidExtFromBuilderState(
     case "orgchart": {
       lines.push("orgchart");
       if (canvas.title.trim()) lines.push(`title ${canvas.title.trim()}`);
+      const ratioLine = emitAspectDirective(canvas);
+      if (ratioLine) lines.push(ratioLine);
       const monoLine = emitMonoDirective(options.monoMode);
       if (monoLine) lines.push(monoLine);
 
@@ -1215,8 +1239,8 @@ export function emitMermaidExtFromBuilderState(
           .replace(/[^\p{L}\p{N}_-]/gu, "") || `Node_${fallback}`;
 
       state.rows.forEach((row, idx) => {
-        const mgrLabel = (row[0] ?? "").trim();
-        const empLabel = (row[1] ?? "").trim();
+        const mgrLabel = orgSourceLabel(row[0] ?? "");
+        const empLabel = orgSourceLabel(row[1] ?? "");
         if (!mgrLabel && !empLabel) return;
         const style = (row[2] ?? "solid").trim();
         const color = (row[3] ?? "").trim();

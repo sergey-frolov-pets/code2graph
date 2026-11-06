@@ -61,6 +61,28 @@ const seriesCount = computed(() => {
   return 0;
 });
 
+const cagrSeriesOptions = computed(() => {
+  const options: { index: number; label: string }[] = [];
+  let barIndex = 0;
+  for (const header of builderState.value.matrixHeaders) {
+    if (/^line:/i.test(header.trim())) {
+      continue;
+    }
+    options.push({
+      index: barIndex,
+      label: header.trim() || `${t("builder.col.series")} ${barIndex + 1}`,
+    });
+    barIndex += 1;
+  }
+  if (options.length === 0) {
+    options.push({
+      index: 0,
+      label: `${t("builder.col.series")} 1`,
+    });
+  }
+  return options;
+});
+
 const hasAdvancedCapabilities = computed(() =>
   Boolean(
     cap.value.supportsFontSize ||
@@ -101,6 +123,92 @@ watch(
 function notifyChange(): void {
   emit("change");
 }
+
+const sankeyNodes = computed(() => {
+  const names: string[] = [];
+  const seen = new Set<string>();
+  for (const row of builderState.value.rows) {
+    for (const index of [0, 1]) {
+      const name = (row[index] ?? "").trim();
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
+      names.push(name);
+    }
+  }
+  return names;
+});
+
+const sankeyLinkMode = computed(() => {
+  const value = builderState.value.appearance.sankey.linkColor;
+  if (value === "source" || value === "target" || value === "gradient") {
+    return value;
+  }
+  return "custom";
+});
+
+function setSankeyLinkMode(mode: string): void {
+  const sankey = builderState.value.appearance.sankey;
+  if (mode === "custom") {
+    sankey.linkColor = sankey.linkColor.startsWith("#") ? sankey.linkColor : "#6699cc";
+  } else {
+    sankey.linkColor = mode;
+  }
+  notifyChange();
+}
+
+function sankeyNodeColor(node: string): string {
+  return (
+    builderState.value.appearance.sankey.nodeColors.find((item) => item.node === node)?.color ??
+    ""
+  );
+}
+
+function setSankeyNodeColor(node: string, color: string): void {
+  const list = builderState.value.appearance.sankey.nodeColors;
+  const index = list.findIndex((item) => item.node === node);
+  if (!color) {
+    if (index >= 0) list.splice(index, 1);
+  } else if (index >= 0) {
+    list[index] = { node, color };
+  } else {
+    list.push({ node, color });
+  }
+  notifyChange();
+}
+
+const hasPrimaryCanvasControls = computed(() => {
+  const flags = cap.value;
+  return Boolean(
+    flags.supportsTitle ||
+      flags.supportsDirection ||
+      flags.supportsRotate90 ||
+      flags.supportsStacked ||
+      flags.supportsAspectRatio ||
+      flags.supportsLabelsMode ||
+      flags.supportsConnectors ||
+      flags.supportsPieShowData ||
+      flags.supportsVoronoiToggles ||
+      flags.supportsRadarVisuals ||
+      flags.supportsMono ||
+      flags.supportsXAxis ||
+      flags.supportsYAxis ||
+      flags.supportsGrid ||
+      flags.supportsRadarScale ||
+      flags.supportsBubbleExtras ||
+      flags.supportsQuadrantExtras ||
+      flags.supportsGanttDateOptions ||
+      flags.supportsSankeyStyle ||
+      flags.supportsPacketStyle ||
+      flags.supportsPieStyle ||
+      flags.supportsXyStyle ||
+      flags.supportsMindmapStyle ||
+      flags.supportsTimelineStyle ||
+      flags.supportsJourneyStyle ||
+      flags.supportsGanttStyle ||
+      flags.supportsBlockStyle ||
+      flags.supportsSequenceAutonumber,
+  );
+});
 
 function setPresetBackground(hex: string): void {
   builderState.value.canvas.background = hex;
@@ -189,7 +297,17 @@ function removeHeatmapBand(idx: number): void {
       </h3>
 
       <div class="builder-form-grid">
-        <label class="builder-field builder-field--wide">
+        <p
+          v-if="!hasPrimaryCanvasControls"
+          class="builder-hint"
+        >
+          {{ t("builder.canvas.noAppearance") }}
+        </p>
+
+        <label
+          v-if="cap.supportsTitle"
+          class="builder-field builder-field--wide"
+        >
           <span class="builder-field__label">{{ t("builder.canvas.title") }}</span>
           <input
             v-model="builderState.canvas.title"
@@ -199,6 +317,492 @@ function removeHeatmapBand(idx: number): void {
             data-testid="builder-title-input"
             @input="notifyChange"
           >
+        </label>
+
+        <template v-if="cap.supportsSankeyStyle">
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.sankey.showValues") }}</span>
+            <select
+              :value="builderState.appearance.sankey.showValues ? 'on' : 'off'"
+              class="select builder-input"
+              data-testid="builder-sankey-show-values"
+              @change="
+                builderState.appearance.sankey.showValues =
+                  ($event.target as HTMLSelectElement).value === 'on';
+                notifyChange();
+              "
+            >
+              <option value="on">{{ t("builder.option.show") }}</option>
+              <option value="off">{{ t("builder.option.hide") }}</option>
+            </select>
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.sankey.prefix") }}</span>
+            <input
+              v-model="builderState.appearance.sankey.prefix"
+              type="text"
+              class="builder-input"
+              @input="notifyChange"
+            >
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.sankey.suffix") }}</span>
+            <input
+              v-model="builderState.appearance.sankey.suffix"
+              type="text"
+              class="builder-input"
+              @input="notifyChange"
+            >
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.sankey.linkColor") }}</span>
+            <select
+              :value="sankeyLinkMode"
+              class="select builder-input"
+              data-testid="builder-sankey-link-color"
+              @change="setSankeyLinkMode(($event.target as HTMLSelectElement).value)"
+            >
+              <option value="gradient">{{ t("builder.sankey.link.gradient") }}</option>
+              <option value="source">{{ t("builder.sankey.link.source") }}</option>
+              <option value="target">{{ t("builder.sankey.link.target") }}</option>
+              <option value="custom">{{ t("builder.sankey.link.custom") }}</option>
+            </select>
+          </label>
+          <label
+            v-if="sankeyLinkMode === 'custom'"
+            class="builder-field"
+          >
+            <span class="builder-field__label">{{ t("builder.sankey.link.custom") }}</span>
+            <input
+              v-model="builderState.appearance.sankey.linkColor"
+              type="color"
+              class="builder-input"
+              @input="notifyChange"
+            >
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.sankey.alignment") }}</span>
+            <select
+              v-model="builderState.appearance.sankey.nodeAlignment"
+              class="select builder-input"
+              data-testid="builder-sankey-alignment"
+              @change="notifyChange"
+            >
+              <option value="justify">{{ t("builder.sankey.align.justify") }}</option>
+              <option value="left">{{ t("builder.sankey.align.left") }}</option>
+              <option value="right">{{ t("builder.sankey.align.right") }}</option>
+              <option value="center">{{ t("builder.sankey.align.center") }}</option>
+            </select>
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.sankey.labelStyle") }}</span>
+            <select
+              v-model="builderState.appearance.sankey.labelStyle"
+              class="select builder-input"
+              @change="notifyChange"
+            >
+              <option value="legacy">{{ t("builder.sankey.label.legacy") }}</option>
+              <option value="outlined">{{ t("builder.sankey.label.outlined") }}</option>
+            </select>
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.sankey.width") }}</span>
+            <input
+              v-model="builderState.appearance.sankey.width"
+              type="number"
+              min="1"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.sankey.height") }}</span>
+            <input
+              v-model="builderState.appearance.sankey.height"
+              type="number"
+              min="1"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.sankey.nodeWidth") }}</span>
+            <input
+              v-model="builderState.appearance.sankey.nodeWidth"
+              type="number"
+              min="1"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.sankey.nodePadding") }}</span>
+            <input
+              v-model="builderState.appearance.sankey.nodePadding"
+              type="number"
+              min="0"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.sankey.useMaxWidth") }}</span>
+            <select
+              :value="builderState.appearance.sankey.useMaxWidth ? 'on' : 'off'"
+              class="select builder-input"
+              @change="
+                builderState.appearance.sankey.useMaxWidth =
+                  ($event.target as HTMLSelectElement).value === 'on';
+                notifyChange();
+              "
+            >
+              <option value="off">{{ t("builder.option.off") }}</option>
+              <option value="on">{{ t("builder.option.on") }}</option>
+            </select>
+          </label>
+          <div
+            v-if="sankeyNodes.length > 0"
+            class="builder-field builder-field--wide"
+          >
+            <span class="builder-field__label">{{ t("builder.sankey.nodeColors") }}</span>
+            <div class="builder-form-grid">
+              <label
+                v-for="node in sankeyNodes"
+                :key="node"
+                class="builder-field"
+              >
+                <span class="builder-field__label">{{ node }}</span>
+                <input
+                  :value="sankeyNodeColor(node)"
+                  type="color"
+                  class="builder-input"
+                  @input="setSankeyNodeColor(node, ($event.target as HTMLInputElement).value)"
+                >
+              </label>
+            </div>
+          </div>
+        </template>
+
+        <template v-if="cap.supportsPacketStyle">
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.packet.showBits") }}</span>
+            <select
+              :value="builderState.appearance.packet.showBits ? 'on' : 'off'"
+              class="select builder-input"
+              @change="
+                builderState.appearance.packet.showBits =
+                  ($event.target as HTMLSelectElement).value === 'on';
+                notifyChange();
+              "
+            >
+              <option value="on">{{ t("builder.option.show") }}</option>
+              <option value="off">{{ t("builder.option.hide") }}</option>
+            </select>
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.packet.bitOrder") }}</span>
+            <select
+              v-model="builderState.appearance.packet.bitOrder"
+              class="select builder-input"
+              @change="notifyChange"
+            >
+              <option value="ascending">{{ t("builder.packet.order.ascending") }}</option>
+              <option value="descending">{{ t("builder.packet.order.descending") }}</option>
+            </select>
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.packet.bitsPerRow") }}</span>
+            <input
+              v-model="builderState.appearance.packet.bitsPerRow"
+              type="number"
+              min="1"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.packet.bitWidth") }}</span>
+            <input
+              v-model="builderState.appearance.packet.bitWidth"
+              type="number"
+              min="1"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.packet.rowHeight") }}</span>
+            <input
+              v-model="builderState.appearance.packet.rowHeight"
+              type="number"
+              min="1"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.packet.paddingX") }}</span>
+            <input
+              v-model="builderState.appearance.packet.paddingX"
+              type="number"
+              min="0"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.packet.paddingY") }}</span>
+            <input
+              v-model="builderState.appearance.packet.paddingY"
+              type="number"
+              min="0"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+        </template>
+
+        <template v-if="cap.supportsPieStyle">
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.pie.textPosition") }}</span>
+            <input
+              v-model="builderState.appearance.pie.textPosition"
+              type="number"
+              min="0"
+              max="1"
+              step="0.05"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.pie.donutHole") }}</span>
+            <input
+              v-model="builderState.appearance.pie.donutHole"
+              type="number"
+              min="0"
+              max="0.9"
+              step="0.05"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.pie.legend") }}</span>
+            <select
+              v-model="builderState.appearance.pie.legendPosition"
+              class="select builder-input"
+              @change="notifyChange"
+            >
+              <option value="">{{ t("builder.option.auto") }}</option>
+              <option value="right">{{ t("builder.pie.legend.right") }}</option>
+              <option value="left">{{ t("builder.pie.legend.left") }}</option>
+              <option value="top">{{ t("builder.pie.legend.top") }}</option>
+              <option value="bottom">{{ t("builder.pie.legend.bottom") }}</option>
+              <option value="center">{{ t("builder.pie.legend.center") }}</option>
+            </select>
+          </label>
+        </template>
+
+        <template v-if="cap.supportsXyStyle">
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.xy.orientation") }}</span>
+            <select
+              v-model="builderState.appearance.xyChart.orientation"
+              class="select builder-input"
+              data-testid="builder-xy-orientation"
+              @change="notifyChange"
+            >
+              <option value="">{{ t("builder.xy.orientation.vertical") }}</option>
+              <option value="vertical">{{ t("builder.xy.orientation.vertical") }}</option>
+              <option value="horizontal">{{ t("builder.xy.orientation.horizontal") }}</option>
+            </select>
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.xy.showDataLabel") }}</span>
+            <select
+              :value="builderState.appearance.xyChart.showDataLabel ? 'on' : 'off'"
+              class="select builder-input"
+              @change="
+                builderState.appearance.xyChart.showDataLabel =
+                  ($event.target as HTMLSelectElement).value === 'on';
+                notifyChange();
+              "
+            >
+              <option value="off">{{ t("builder.option.off") }}</option>
+              <option value="on">{{ t("builder.option.on") }}</option>
+            </select>
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.xy.width") }}</span>
+            <input
+              v-model="builderState.appearance.xyChart.width"
+              type="number"
+              min="1"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.xy.height") }}</span>
+            <input
+              v-model="builderState.appearance.xyChart.height"
+              type="number"
+              min="1"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+        </template>
+
+        <template v-if="cap.supportsMindmapStyle">
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.mindmap.colorBy") }}</span>
+            <select
+              v-model="builderState.appearance.mindmap.colorBy"
+              class="select builder-input"
+              @change="notifyChange"
+            >
+              <option value="">{{ t("builder.mindmap.color.branch") }}</option>
+              <option value="branch">{{ t("builder.mindmap.color.branch") }}</option>
+              <option value="depth">{{ t("builder.mindmap.color.depth") }}</option>
+            </select>
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.mindmap.padding") }}</span>
+            <input
+              v-model="builderState.appearance.mindmap.padding"
+              type="number"
+              min="0"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.mindmap.maxNodeWidth") }}</span>
+            <input
+              v-model="builderState.appearance.mindmap.maxNodeWidth"
+              type="number"
+              min="1"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+        </template>
+
+        <template v-if="cap.supportsTimelineStyle">
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.timeline.colors") }}</span>
+            <select
+              :value="builderState.appearance.timeline.disableMulticolor ? 'off' : 'on'"
+              class="select builder-input"
+              @change="
+                builderState.appearance.timeline.disableMulticolor =
+                  ($event.target as HTMLSelectElement).value === 'off';
+                notifyChange();
+              "
+            >
+              <option value="on">{{ t("builder.timeline.colors.multi") }}</option>
+              <option value="off">{{ t("builder.timeline.colors.single") }}</option>
+            </select>
+          </label>
+        </template>
+
+        <template v-if="cap.supportsJourneyStyle">
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.journey.taskMargin") }}</span>
+            <input
+              v-model="builderState.appearance.journey.taskMargin"
+              type="number"
+              min="0"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.journey.actorWidth") }}</span>
+            <input
+              v-model="builderState.appearance.journey.width"
+              type="number"
+              min="1"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.journey.actorHeight") }}</span>
+            <input
+              v-model="builderState.appearance.journey.height"
+              type="number"
+              min="1"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+        </template>
+
+        <template v-if="cap.supportsBlockStyle">
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.block.columns") }}</span>
+            <input
+              v-model.number="builderState.canvas.blockColumns"
+              type="number"
+              min="1"
+              max="12"
+              class="builder-input"
+              data-testid="builder-block-columns"
+              @input="notifyChange"
+            >
+          </label>
+          <label class="builder-field">
+            <span class="builder-field__label">{{ t("builder.block.padding") }}</span>
+            <input
+              v-model="builderState.appearance.block.padding"
+              type="number"
+              min="0"
+              class="builder-input"
+              :placeholder="t('builder.option.auto')"
+              @input="notifyChange"
+            >
+          </label>
+        </template>
+
+        <label
+          v-if="cap.supportsSequenceAutonumber"
+          class="builder-field"
+        >
+          <span class="builder-field__label">{{ t("builder.sequence.autonumber") }}</span>
+          <select
+            :value="builderState.appearance.sequenceAutonumber ? 'on' : 'off'"
+            class="select builder-input"
+            data-testid="builder-sequence-autonumber"
+            @change="
+              builderState.appearance.sequenceAutonumber =
+                ($event.target as HTMLSelectElement).value === 'on';
+              notifyChange();
+            "
+          >
+            <option value="off">{{ t("builder.option.off") }}</option>
+            <option value="on">{{ t("builder.option.on") }}</option>
+          </select>
         </label>
 
         <label
@@ -787,6 +1391,71 @@ function removeHeatmapBand(idx: number): void {
               <option value="weekends">{{ t("builder.gantt.excludesWeekends") }}</option>
             </select>
           </label>
+
+          <label
+            v-if="builderState.format === 'mermaid'"
+            class="builder-field"
+          >
+            <span class="builder-field__label">{{ t("builder.gantt.axisFormat") }}</span>
+            <input
+              v-model="builderState.canvas.ganttAxisFormat"
+              type="text"
+              class="builder-input"
+              placeholder="%Y-%m-%d"
+              @input="notifyChange"
+            >
+          </label>
+
+          <template v-if="cap.supportsGanttStyle">
+            <label class="builder-field">
+              <span class="builder-field__label">{{ t("builder.gantt.weekday") }}</span>
+              <select
+                v-model="builderState.appearance.gantt.weekday"
+                class="select builder-input"
+                @change="notifyChange"
+              >
+                <option value="">{{ t("builder.option.auto") }}</option>
+                <option value="monday">{{ t("builder.gantt.weekday.monday") }}</option>
+                <option value="sunday">{{ t("builder.gantt.weekday.sunday") }}</option>
+              </select>
+            </label>
+            <label class="builder-field">
+              <span class="builder-field__label">{{ t("builder.gantt.tickInterval") }}</span>
+              <input
+                v-model="builderState.appearance.gantt.tickInterval"
+                type="text"
+                class="builder-input"
+                placeholder="1week"
+                @input="notifyChange"
+              >
+            </label>
+            <label class="builder-field">
+              <span class="builder-field__label">{{ t("builder.gantt.topAxis") }}</span>
+              <select
+                :value="builderState.appearance.gantt.topAxis ? 'on' : 'off'"
+                class="select builder-input"
+                @change="
+                  builderState.appearance.gantt.topAxis =
+                    ($event.target as HTMLSelectElement).value === 'on';
+                  notifyChange();
+                "
+              >
+                <option value="off">{{ t("builder.option.off") }}</option>
+                <option value="on">{{ t("builder.option.on") }}</option>
+              </select>
+            </label>
+            <label class="builder-field">
+              <span class="builder-field__label">{{ t("builder.gantt.displayMode") }}</span>
+              <select
+                v-model="builderState.appearance.gantt.displayMode"
+                class="select builder-input"
+                @change="notifyChange"
+              >
+                <option value="">{{ t("builder.option.auto") }}</option>
+                <option value="compact">{{ t("builder.gantt.displayMode.compact") }}</option>
+              </select>
+            </label>
+          </template>
         </template>
       </div>
     </section>
@@ -1268,6 +1937,22 @@ function removeHeatmapBand(idx: number): void {
               :key="idx"
               class="builder-list-row"
             >
+              <select
+                v-model.number="cagr.seriesIndex"
+                class="select builder-input"
+                data-testid="builder-cagr-series"
+                :aria-label="t('builder.cagr.series')"
+                :title="t('builder.cagr.series')"
+                @change="notifyChange"
+              >
+                <option
+                  v-for="series in cagrSeriesOptions"
+                  :key="series.index"
+                  :value="series.index"
+                >
+                  {{ series.label }}
+                </option>
+              </select>
               <input
                 v-model.number="cagr.from"
                 type="number"

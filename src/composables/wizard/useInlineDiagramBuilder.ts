@@ -1,4 +1,12 @@
-import { computed, nextTick, ref, watch, type Ref } from "vue";
+import {
+  computed,
+  getCurrentScope,
+  nextTick,
+  onScopeDispose,
+  ref,
+  watch,
+  type Ref,
+} from "vue";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { WizardStepId } from "@/constants/llm-wizard";
 import {
@@ -90,18 +98,29 @@ export function useInlineDiagramBuilder(options: UseInlineDiagramBuilderOptions)
       return;
     }
     stepIndex.value = index;
+    publishSource();
   }
 
   function goBack(): void {
     if (stepIndex.value > 0) {
       stepIndex.value -= 1;
+      publishSource();
     }
   }
 
   function goNext(): void {
     if (canGoNext.value) {
       stepIndex.value += 1;
+      publishSource();
     }
+  }
+
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      if (active.value) {
+        publishSource();
+      }
+    });
   }
 
   watch(

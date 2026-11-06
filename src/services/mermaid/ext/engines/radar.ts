@@ -20,6 +20,7 @@ import {
   resolvePalette,
   splitLabelLines,
 } from "../common";
+import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
 export interface RadarSeries {
@@ -41,6 +42,7 @@ export interface RadarModel {
   monoInvert: boolean;
   seriesColors: Record<string, string>;
   series: RadarSeries[];
+  ratio?: ChartAspect;
 }
 
 const FONT_BASE = 11;
@@ -156,6 +158,7 @@ export function parseRadar(source: string): ExtParseResult<RadarModel> {
   let monoInvert = false;
   const seriesColors: Record<string, string> = {};
   const series: RadarSeries[] = [];
+  let ratio: ChartAspect | undefined;
 
   let seenType = false;
   let inData = false;
@@ -176,6 +179,16 @@ export function parseRadar(source: string): ExtParseResult<RadarModel> {
     }
 
     if (!inData) {
+      const aspect = parseAspectDirective(raw);
+      if (aspect) {
+        if ("error" in aspect) {
+          errors.push({ message: aspect.error, line: lineNo, col: 0 });
+        } else {
+          ratio = aspect.aspect;
+        }
+        continue;
+      }
+
       if (/^title\b/i.test(raw) && !raw.includes(":")) {
         title = unquoteExtText(raw.replace(/^title\s*/i, "")) || undefined;
         continue;
@@ -330,7 +343,7 @@ export function parseRadar(source: string): ExtParseResult<RadarModel> {
     }
 
     errors.push({
-      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, axes, scale, max, rings, fill, dots, fontsize, mono, colors, data или строка серии)`,
+      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, axes, scale, max, rings, fill, dots, fontsize, mono, colors, ratio, data или строка серии)`,
       line: lineNo,
       col: 0,
     });
@@ -389,6 +402,7 @@ export function parseRadar(source: string): ExtParseResult<RadarModel> {
       monoInvert,
       seriesColors,
       series,
+      ratio,
     },
   };
 }
@@ -412,10 +426,31 @@ export function renderRadar(model: RadarModel, options: ExtRenderOptions): strin
   const legendHeight = 36 + seriesExtra;
   const bottomMargin = 28 + fontSize + LABEL_OFFSET + legendHeight + axisExtra;
 
-  const width = radius * 2 + sideMargin * 2;
-  const height = topMargin + radius * 2 + bottomMargin;
+  let side = sideMargin;
+  let top = topMargin;
+  let bottom = bottomMargin;
+  let width = radius * 2 + side * 2;
+  let height = top + radius * 2 + bottom;
+  if (model.ratio) {
+    const grown = growPlotToAspect(
+      {
+        plotWidth: radius * 2,
+        plotHeight: radius * 2,
+        totalWidth: width,
+        totalHeight: height,
+      },
+      model.ratio,
+    );
+    const extraWidth = Math.max(0, grown.plotWidth - radius * 2);
+    const extraHeight = Math.max(0, grown.plotHeight - radius * 2);
+    side += extraWidth / 2;
+    top += extraHeight / 2;
+    bottom += extraHeight / 2;
+    width = radius * 2 + side * 2;
+    height = top + radius * 2 + bottom;
+  }
   const cx = width / 2;
-  const cy = topMargin + radius;
+  const cy = top + radius;
 
   const svg = createSvg({
     width,

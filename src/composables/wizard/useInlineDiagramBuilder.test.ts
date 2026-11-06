@@ -33,6 +33,23 @@ describe("useInlineDiagramBuilder", () => {
     expect(source.value).not.toBe(FLOW);
   });
 
+  it("writes sankey appearance into the source when the step changes", async () => {
+    const source = ref("sankey-beta\nAds,Site,90\n");
+    const format = ref<DiagramFormat>("mermaid");
+    const active = ref(true);
+    const builder = useInlineDiagramBuilder({ active, source, format });
+    await nextTick();
+
+    builder.builderState.value.appearance.sankey.nodeAlignment = "center";
+    builder.builderState.value.appearance.sankey.showValues = false;
+    builder.selectStep(1);
+    await nextTick();
+
+    expect(source.value).toContain("nodeAlignment: center");
+    expect(source.value).toContain("showValues: false");
+    expect(source.value).toContain("Ads,Site,90");
+  });
+
   it("reloads builder state when the editor source changes outside the builder", async () => {
     const source = ref(FLOW);
     const format = ref<DiagramFormat>("mermaid");

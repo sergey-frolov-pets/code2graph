@@ -157,8 +157,83 @@ export interface DiagramBuilderState {
   graphEdges: BuilderGraphEdgeRow[];
   canvas: BuilderCanvasSettings;
   options: BuilderOptionsSettings;
+  /** Diagram-specific appearance that is written into source or Mermaid config. */
+  appearance: BuilderDiagramAppearance;
   /** Preserved comments or custom lines where applicable */
   preservedComments: string[];
+}
+
+export type SankeyNodeAlignment = "justify" | "left" | "right" | "center";
+export type SankeyLabelStyle = "legacy" | "outlined";
+export type PacketBitOrder = "ascending" | "descending";
+export type PieLegendPosition = "" | "top" | "bottom" | "left" | "right" | "center";
+export type XyChartOrientation = "" | "vertical" | "horizontal";
+export type MindmapColorBy = "" | "branch" | "depth";
+export type GanttDisplayMode = "" | "compact";
+
+export interface BuilderSankeyNodeColor {
+  node: string;
+  color: string;
+}
+
+export interface BuilderDiagramAppearance {
+  sankey: {
+    showValues: boolean;
+    prefix: string;
+    suffix: string;
+    linkColor: string;
+    nodeAlignment: SankeyNodeAlignment;
+    width: string;
+    height: string;
+    useMaxWidth: boolean;
+    nodeWidth: string;
+    nodePadding: string;
+    labelStyle: SankeyLabelStyle;
+    nodeColors: BuilderSankeyNodeColor[];
+  };
+  packet: {
+    showBits: boolean;
+    bitOrder: PacketBitOrder;
+    bitsPerRow: string;
+    bitWidth: string;
+    rowHeight: string;
+    paddingX: string;
+    paddingY: string;
+  };
+  pie: {
+    textPosition: string;
+    donutHole: string;
+    legendPosition: PieLegendPosition;
+  };
+  xyChart: {
+    orientation: XyChartOrientation;
+    showDataLabel: boolean;
+    width: string;
+    height: string;
+  };
+  mindmap: {
+    colorBy: MindmapColorBy;
+    padding: string;
+    maxNodeWidth: string;
+  };
+  timeline: {
+    disableMulticolor: boolean;
+  };
+  journey: {
+    taskMargin: string;
+    width: string;
+    height: string;
+  };
+  gantt: {
+    weekday: string;
+    tickInterval: string;
+    topAxis: boolean;
+    displayMode: GanttDisplayMode;
+  };
+  block: {
+    padding: string;
+  };
+  sequenceAutonumber: boolean;
 }
 
 export interface DiagramBuilderCapability {
@@ -190,6 +265,17 @@ export interface DiagramBuilderCapability {
   supportsBreaks: boolean;
   supportsThresholds: boolean;
   supportsCagr: boolean;
+  supportsTitle: boolean;
+  supportsSankeyStyle: boolean;
+  supportsPacketStyle: boolean;
+  supportsPieStyle: boolean;
+  supportsXyStyle: boolean;
+  supportsMindmapStyle: boolean;
+  supportsTimelineStyle: boolean;
+  supportsJourneyStyle: boolean;
+  supportsGanttStyle: boolean;
+  supportsBlockStyle: boolean;
+  supportsSequenceAutonumber: boolean;
 }
 
 export interface DiagramBuilderSchema {

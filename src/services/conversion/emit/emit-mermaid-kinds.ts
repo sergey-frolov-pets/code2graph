@@ -89,7 +89,11 @@ export function emitMermaidJourney(ir: DiagramIR): string {
 }
 
 export function emitMermaidGitgraph(ir: DiagramIR): string {
-  const lines = ["gitGraph"];
+  const orientation =
+    ir.direction === "LR" || ir.direction === "RL" || ir.direction === "BT"
+      ? ` ${ir.direction}:`
+      : "";
+  const lines = [`gitGraph${orientation}`];
   const actions = ir.extras?.gitActions;
   if (actions && actions.length > 0) {
     for (const action of actions) {

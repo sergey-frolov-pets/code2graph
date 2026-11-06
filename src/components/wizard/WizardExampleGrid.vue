@@ -14,8 +14,6 @@ import {
 } from "@/constants/wizard-gallery";
 import { wizardThumbnailSvg } from "@/constants/wizard-thumbnails";
 import { useLocale } from "@/composables/useLocale";
-import { supportsDiagramBuilder } from "@/services/diagram-builder";
-
 const props = defineProps<{
   examples: readonly DiagramExample[];
   pinnedId: string | null;
@@ -131,7 +129,7 @@ function onOpenClick(example: DiagramExample): void {
     return;
   }
 
-  emit("open-actions", example);
+  emit("choose", example, "editor");
 }
 
 function onHoverStart(example: DiagramExample, event: PointerEvent): void {
@@ -244,7 +242,6 @@ onBeforeUnmount(() => {
         :label="t('llm.wizard.gallery.actionsLabel')"
         :llm-available="llmAvailable"
         :can-enlarge="floatingCanEnlarge"
-        :can-builder="supportsDiagramBuilder(floatingExample.format)"
         @choose="emit('choose', floatingExample, $event)"
         @enlarge="onEnlarge(floatingExample)"
         @pointerdown.stop
