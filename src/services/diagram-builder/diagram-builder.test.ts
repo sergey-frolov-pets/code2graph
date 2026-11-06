@@ -446,7 +446,7 @@ describe("diagram-builder core", () => {
 
   it("gives Sankey real appearance controls and writes them into the diagram", () => {
     const cap = getDiagramBuilderSchema("mermaid", "sankey").capabilities;
-    expect(cap.supportsTitle).toBe(false);
+    expect(cap.supportsTitle).toBe(true);
     expect(cap.supportsSankeyStyle).toBe(true);
     expect(cap.supportsDirection).toBe(false);
 
@@ -491,7 +491,7 @@ Site,"Bounce, no click",40`,
     expect(getDiagramBuilderSchema("mermaid", "pie").capabilities.supportsPieStyle).toBe(true);
     expect(getDiagramBuilderSchema("mermaid", "xychart").capabilities.supportsXyStyle).toBe(true);
     expect(getDiagramBuilderSchema("mermaid", "mindmap").capabilities.supportsMindmapStyle).toBe(true);
-    expect(getDiagramBuilderSchema("mermaid", "mindmap").capabilities.supportsTitle).toBe(false);
+    expect(getDiagramBuilderSchema("mermaid", "mindmap").capabilities.supportsTitle).toBe(true);
     expect(getDiagramBuilderSchema("mermaid", "timeline").capabilities.supportsTimelineStyle).toBe(true);
     expect(getDiagramBuilderSchema("mermaid", "journey").capabilities.supportsJourneyStyle).toBe(true);
     expect(getDiagramBuilderSchema("mermaid", "gantt").capabilities.supportsGanttStyle).toBe(true);
@@ -500,7 +500,7 @@ Site,"Bounce, no click",40`,
     expect(getDiagramBuilderSchema("mermaid", "sequence").capabilities.supportsSequenceAutonumber).toBe(true);
     expect(getDiagramBuilderSchema("mermaid", "sequence").capabilities.supportsDirection).toBe(false);
     expect(getDiagramBuilderSchema("mermaid", "flowchart").capabilities.supportsDirection).toBe(true);
-    expect(getDiagramBuilderSchema("mermaid", "flowchart").capabilities.supportsTitle).toBe(false);
+    expect(getDiagramBuilderSchema("mermaid", "flowchart").capabilities.supportsTitle).toBe(true);
 
     const packet = createDefaultBuilderState("mermaid", "packet");
     packet.appearance.packet.showBits = false;
@@ -561,6 +561,65 @@ Site,"Bounce, no click",40`,
     const flow = parseSourceToBuilderState("flowchart TD\n  A --> B", "mermaid");
     flow.canvas.direction = "BT";
     expect(emitSourceFromBuilderState(flow)).toContain("flowchart BT");
+  });
+
+  it("shows a diagram title in appearance for every step-by-step diagram", () => {
+    const mermaidTypes = [
+      "flowchart",
+      "sequence",
+      "sankey",
+      "mindmap",
+      "waterfall",
+      "pie",
+      "block",
+    ] as const;
+    for (const diagramType of mermaidTypes) {
+      expect(getDiagramBuilderSchema("mermaid", diagramType).capabilities.supportsTitle).toBe(true);
+    }
+    expect(getDiagramBuilderSchema("plantuml", "sequence").capabilities.supportsTitle).toBe(true);
+    expect(getDiagramBuilderSchema("d2", "flowchart").capabilities.supportsTitle).toBe(true);
+    expect(getDiagramBuilderSchema("wiremark", "wireframe").capabilities.supportsTitle).toBe(true);
+    expect(getDiagramBuilderSchema("structurizr", "c4_container").capabilities.supportsTitle).toBe(true);
+
+    const flow = createDefaultBuilderState("mermaid", "flowchart");
+    flow.canvas.title = "Checkout flow";
+    flow.graphNodes = [
+      { id: "A", label: "Start", kind: "default", group: "", color: "" },
+      { id: "B", label: "End", kind: "default", group: "", color: "" },
+    ];
+    flow.graphEdges = [{ source: "A", target: "B", kind: "arrow", label: "" }];
+    const flowSource = emitSourceFromBuilderState(flow);
+    expect(flowSource.startsWith('---\ntitle: "Checkout flow"\n---\n')).toBe(true);
+    expect(parseSourceToBuilderState(flowSource, "mermaid").canvas.title).toBe("Checkout flow");
+
+    const pie = createDefaultBuilderState("mermaid", "pie");
+    pie.canvas.title = "Shares";
+    const pieSource = emitSourceFromBuilderState(pie);
+    expect(pieSource).toContain("title Shares");
+    expect(pieSource.startsWith("---")).toBe(false);
+
+    const sankey = createDefaultBuilderState("mermaid", "sankey");
+    sankey.canvas.title = "Traffic";
+    sankey.appearance.sankey.showValues = false;
+    const sankeySource = emitSourceFromBuilderState(sankey);
+    expect(sankeySource).toContain('title: Traffic');
+    expect(sankeySource).toContain("showValues: false");
+    expect(sankeySource.indexOf("sankey-beta")).toBeGreaterThan(sankeySource.indexOf("title:"));
+    expect(parseSourceToBuilderState(sankeySource, "mermaid").canvas.title).toBe("Traffic");
+
+    const plant = createDefaultBuilderState("plantuml", "sequence");
+    plant.canvas.title = "Order";
+    plant.graphEdges = [{ source: "Alice", target: "Bob", kind: "arrow", label: "Hi" }];
+    const plantSource = emitSourceFromBuilderState(plant);
+    expect(plantSource).toContain("title Order");
+    expect(parseSourceToBuilderState(plantSource, "plantuml").canvas.title).toBe("Order");
+
+    const d2 = createDefaultBuilderState("d2", "flowchart");
+    d2.canvas.title = "Services";
+    d2.graphEdges = [{ source: "web", target: "api", kind: "arrow", label: "" }];
+    const d2Source = emitSourceFromBuilderState(d2);
+    expect(d2Source.startsWith("# title: Services\n")).toBe(true);
+    expect(parseSourceToBuilderState(d2Source, "d2").canvas.title).toBe("Services");
   });
 
   it("keeps an orgchart line break in the step table", () => {

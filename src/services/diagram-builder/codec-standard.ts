@@ -34,6 +34,7 @@ import {
   buildMermaidConfigHeader,
   injectSequenceAutonumber,
   sourceHasSequenceAutonumber,
+  sourceHasTitleDirective,
   splitMermaidFrontmatter,
 } from "./builder-appearance";
 import { createDefaultBuilderState } from "./codec-mermaid-ext";
@@ -110,7 +111,16 @@ export function parseStandardDiagramToBuilderState(
   }
   const frontmatter = splitMermaidFrontmatter(source);
   applyAppearanceFromConfig(state.appearance, frontmatter.config);
+  if (frontmatter.title) {
+    state.canvas.title = frontmatter.title;
+  }
   source = frontmatter.body;
+  if (!state.canvas.title) {
+    const commentedTitle = readTitleComment(source);
+    if (commentedTitle) {
+      state.canvas.title = commentedTitle;
+    }
+  }
   if (sourceHasSequenceAutonumber(source)) {
     state.appearance.sequenceAutonumber = true;
   }
@@ -530,7 +540,9 @@ export function parseStandardDiagramToBuilderState(
       const { ir } = safeParseSourceToIr(source, format);
       if (ir) {
         state.canvas.direction = ir.direction ?? "TB";
-        state.canvas.title = ir.extras?.title ?? state.canvas.title;
+        if (!state.canvas.title && ir.extras?.title && format !== "d2") {
+          state.canvas.title = ir.extras.title;
+        }
         if (ir.extras?.blockColumns) {
           state.canvas.blockColumns = ir.extras.blockColumns;
         }
@@ -578,7 +590,7 @@ export function emitStandardDiagramFromBuilderState(
       ? injectSequenceAutonumber(source, state.format)
       : source;
   return insertAspectMarker(
-    prependMermaidConfig(state, withNumbers),
+    prependMermaidConfig(state, injectDiagramTitle(withNumbers, state)),
     state.format,
     canvasAspectToken(state.canvas),
   );
@@ -588,8 +600,33 @@ function prependMermaidConfig(state: DiagramBuilderState, source: string): strin
   if (state.format !== "mermaid") {
     return source;
   }
-  const header = buildMermaidConfigHeader(state.appearance, state.diagramType);
+  const title = sourceHasTitleDirective(source) ? "" : state.canvas.title;
+  const header = buildMermaidConfigHeader(state.appearance, state.diagramType, title);
   return header ? `${header}${source}` : source;
+}
+
+function readTitleComment(source: string): string {
+  const match = /^(?:#|\/\/)[ \t]*title:[ \t]*(.+)$/im.exec(source);
+  return match?.[1]?.trim() ?? "";
+}
+
+function injectDiagramTitle(source: string, state: DiagramBuilderState): string {
+  const title = state.canvas.title.trim().replace(/\s+/g, " ");
+  if (state.format === "plantuml") {
+    if (!title || sourceHasTitleDirective(source)) return source;
+    const line = `title ${title}`;
+    if (/^@start\w+/m.test(source)) {
+      return source.replace(/^(@start\w+[^\n]*\r?\n)/m, `$1${line}\n`);
+    }
+    return `${line}\n${source}`;
+  }
+  if (state.format !== "d2" && state.format !== "wiremark") {
+    return source;
+  }
+  const stripped = source.replace(/^(?:#|\/\/)[ \t]*title:[^\n]*(?:\r?\n|$)/gim, "");
+  if (!title) return stripped;
+  const prefix = state.format === "d2" ? "# title:" : "// title:";
+  return `${prefix} ${title}\n${stripped}`;
 }
 
 function emitStandardDiagramBody(
