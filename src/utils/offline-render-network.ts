@@ -5,7 +5,9 @@
  * стандартной библиотеки с абсолютным адресом не запрашиваются.
  */
 
-const PLANTUML_LIBRARY_PATH = "/plantuml-lib/";
+const PLANTUML_STDLIB_DIRECTORY = "plantuml-lib/";
+
+const PLANTUML_LIBRARY_PATH = `/${PLANTUML_STDLIB_DIRECTORY}`;
 
 const REMOTE_STDLIB_BUNDLE =
   /^(?:[a-z][a-z0-9+.-]*:|\/\/|\\\\)/i;
@@ -50,6 +52,25 @@ const STDLIB_GUARD = Symbol("code2graph.plantumlStdlibGuard");
 type GuardedStdlibLoader = PlantUmlStdlibLoader & {
   [STDLIB_GUARD]?: true;
 };
+
+/**
+ * Каталог, из которого офлайн-движок берёт спрайты (`openiconic.js` и библиотеки).
+ * Для http(s) это корень приложения, чтобы глубокий маршрут не искал файл рядом с собой.
+ * Для file:// файл лежит рядом со страницей, как и `plantuml-lib/`.
+ */
+export function plantUmlStdlibBaseHref(
+  pageHref: string = offlineRenderPageHref(),
+  appBasePath: string = import.meta.env.BASE_URL,
+): string {
+  const page = new URL(pageHref);
+  if (page.protocol === "file:") {
+    return new URL(PLANTUML_STDLIB_DIRECTORY, page).href;
+  }
+
+  const basePath = appBasePath.endsWith("/") ? appBasePath : `${appBasePath}/`;
+  const applicationRoot = new URL(basePath, page.origin);
+  return new URL(PLANTUML_STDLIB_DIRECTORY, applicationRoot).href;
+}
 
 export function offlineRenderPageHref(): string {
   if (typeof window !== "undefined" && window.location?.href) {
@@ -213,6 +234,8 @@ export function installPlantUmlStdlibNetworkGuard(): void {
   if (typeof window === "undefined") {
     return;
   }
+
+  window.PLANTUML_STDLIB_BASE = plantUmlStdlibBaseHref();
 
   const current = window.PLANTUML_STDLIB_LOADER as GuardedStdlibLoader | undefined;
   if (current?.[STDLIB_GUARD]) {

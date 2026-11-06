@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   installPlantUmlStdlibNetworkGuard,
   isBundledPlantUmlLibraryUrl,
+  plantUmlStdlibBaseHref,
   plantUmlStdlibBundleStaysOnDevice,
   stripOffDeviceSvgResources,
 } from "@/utils/offline-render-network";
@@ -11,6 +12,7 @@ import {
 describe("offline render stays on the device", () => {
   afterEach(() => {
     delete window.PLANTUML_STDLIB_LOADER;
+    delete window.PLANTUML_STDLIB_BASE;
   });
 
   it("allows only bundled plantuml-lib files on the page origin", () => {
@@ -49,6 +51,24 @@ describe("offline render stays on the device", () => {
         "file:///tmp/app/index.html",
       ),
     ).toBe(false);
+  });
+
+  it("loads C4 icon bundles from the bundled plantuml-lib directory", () => {
+    expect(plantUmlStdlibBaseHref("https://code2graph.ru/editor", "/")).toBe(
+      "https://code2graph.ru/plantuml-lib/",
+    );
+    expect(plantUmlStdlibBaseHref("https://code2graph.ru/editor", "/app/")).toBe(
+      "https://code2graph.ru/app/plantuml-lib/",
+    );
+    expect(plantUmlStdlibBaseHref("file:///tmp/app/index.html", "/")).toBe(
+      "file:///tmp/app/plantuml-lib/",
+    );
+  });
+
+  it("points the offline engine at local C4 sprites before rendering", () => {
+    installPlantUmlStdlibNetworkGuard();
+    expect(window.PLANTUML_STDLIB_BASE?.endsWith("/plantuml-lib/")).toBe(true);
+    expect(plantUmlStdlibBundleStaysOnDevice("openiconic.js")).toBe(true);
   });
 
   it("rejects stdlib bundle names that would load a remote script", () => {

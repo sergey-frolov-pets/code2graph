@@ -8,6 +8,11 @@ release/
 public/vendor/
 vendor/C4-PlantUML/
 vendor/Archimate-PlantUML/
+vendor/js-plantuml/
+public/plantuml-lib/office/
+public/plantuml-lib/tupadr3/
+public/plantuml-lib/openiconic.js
+public/plantuml-lib/.c4-sprite-stamp
 data/
 server/node_modules/
 server/dist/
