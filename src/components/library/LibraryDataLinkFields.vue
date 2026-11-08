@@ -38,14 +38,6 @@ const showCsvHint = computed(() =>
   /\.csv$/i.test(filePathLabel.value) || /\.csv$/i.test(fileName.value),
 );
 
-const publicAddress = computed(() => {
-  const normalized = normalizeDataLinkSlug(slug.value);
-  if (!isDataLinkSlug(normalized)) {
-    return "";
-  }
-  return diagramDataLinkUrl(window.location.origin, normalized);
-});
-
 async function loadLink(diagramId: string): Promise<void> {
   errorMessage.value = "";
   statusMessage.value = "";
@@ -145,21 +137,40 @@ async function onCopyLink(): Promise<void> {
     errorMessage.value = t("library.dataLink.copyError");
   }
 }
+
+async function onOpenLink(): Promise<void> {
+  const saved = await onSave();
+  if (!saved) {
+    return;
+  }
+  window.location.assign(diagramDataLinkUrl(window.location.origin, slug.value));
+}
 </script>
 
 <template>
   <section v-if="isLocal" class="library-data-link" data-testid="library-data-link">
     <h3 class="library-data-link__title">{{ t("library.dataLink.sectionTitle") }}</h3>
     <p class="library-data-link__note">{{ t("library.dataLink.templateHint") }}</p>
-    <label class="settings-field">
+    <div class="settings-field">
       <span class="settings-field__label">{{ t("library.dataLink.path") }}</span>
-      <input
-        v-model="filePathLabel"
-        class="select"
-        type="text"
-        :placeholder="t('library.dataLink.pathPlaceholder')"
-      />
-    </label>
+      <div class="library-data-link__file-row">
+        <input
+          v-model="filePathLabel"
+          class="select"
+          type="text"
+          :placeholder="t('library.dataLink.pathPlaceholder')"
+        />
+        <button
+          class="btn"
+          type="button"
+          :disabled="isSaving"
+          data-testid="library-data-link-pick-file"
+          @click="onPickFile"
+        >
+          {{ t("library.dataLink.pickFile") }}
+        </button>
+      </div>
+    </div>
     <label class="settings-field">
       <span class="settings-field__label">{{ t("library.dataLink.range") }}</span>
       <input
@@ -186,9 +197,6 @@ async function onCopyLink(): Promise<void> {
         @blur="slug = slug.trim().toLowerCase()"
       />
     </label>
-    <p v-if="publicAddress" class="library-data-link__note">
-      {{ t("library.dataLink.addressLabel") }}: {{ publicAddress }}
-    </p>
     <p class="library-data-link__note">{{ t("library.dataLink.addressHint") }}</p>
     <p v-if="fileName" class="library-data-link__note">{{ fileName }}</p>
     <p v-if="errorMessage" class="library-data-link__error" role="alert">
@@ -196,13 +204,15 @@ async function onCopyLink(): Promise<void> {
     </p>
     <p v-else-if="statusMessage" class="library-data-link__note">{{ statusMessage }}</p>
     <div class="library-detail__actions">
-      <IconButton
-        :label="t('library.dataLink.pickFile')"
+      <button
+        class="btn"
+        type="button"
         :disabled="isSaving"
-        @click="onPickFile"
+        data-testid="library-data-link-open"
+        @click="onOpenLink"
       >
-        <ActionIcon name="folder-open" />
-      </IconButton>
+        {{ t("library.dataLink.openLink") }}
+      </button>
       <IconButton
         :label="isSaving ? t('app.loading') : t('library.saveChanges')"
         primary

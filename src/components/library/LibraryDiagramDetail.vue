@@ -198,6 +198,22 @@ function contentLocaleLabel(locale: string): string {
         </div>
       </div>
 
+      <div class="library-detail__primary">
+        <section class="library-detail__overview">
+          <h3 class="library-detail__heading">{{ diagram.title }}</h3>
+          <p
+            class="library-detail__description"
+            :class="{ 'library-detail__description--empty': !diagram.description }"
+          >
+            {{ diagram.description || t("library.emptyDescription") }}
+          </p>
+          <button class="btn" type="button" @click="emit('preview')">
+            {{ t("library.preview") }}
+          </button>
+        </section>
+        <LibraryDataLinkFields :diagram-id="diagram.id" />
+      </div>
+
       <div class="library-step__content library-step__content--padded">
         <button
           class="library-detail__open-card"
@@ -227,12 +243,6 @@ function contentLocaleLabel(locale: string): string {
             />
             <span>{{ diagram.avgRating.toFixed(1) }}</span>
           </p>
-          <p
-            class="library-detail__description"
-            :class="{ 'library-detail__description--empty': !diagram.description }"
-          >
-            {{ diagram.description || t("library.emptyDescription") }}
-          </p>
           <div v-if="diagram.tags.length" class="library-detail__tags">
             <span v-for="tag in diagram.tags" :key="tag" class="library-tag">
               {{ tag }}
@@ -255,7 +265,7 @@ function contentLocaleLabel(locale: string): string {
         />
       </div>
     </template>
-    <LibraryDataLinkFields :diagram-id="diagram.id" />
+    <LibraryDataLinkFields v-if="isEditing" :diagram-id="diagram.id" />
   </div>
 </template>
 
