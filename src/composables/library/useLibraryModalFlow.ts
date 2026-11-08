@@ -328,12 +328,14 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
       return;
     }
 
-    await deleteDiagram(
+    await onDeleteDiagramById(
       library.selectedDiagram.value.id,
       library.selectedDiagram.value.title,
-      confirm,
-      () => loadTransferData(),
     );
+  }
+
+  async function onDeleteDiagramById(diagramId: string, title: string): Promise<void> {
+    await deleteDiagram(diagramId, title, confirm, () => loadTransferData());
   }
 
   function onShareDiagram(): void {
@@ -635,6 +637,10 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
     onShareSection,
     onManageSectionAccess,
     onDeleteDiagram,
+    onDeleteDiagramById,
+    renderMode,
+    layout,
+    diagramDarkMode,
     onShareDiagram,
     onToggleFavorite,
     onRatingUpdated,

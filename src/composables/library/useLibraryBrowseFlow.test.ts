@@ -78,6 +78,17 @@ describe("useLibraryBrowseFlow breadcrumbs", () => {
     ]);
   });
 
+  it("keeps mode tabs available on the diagram list and detail", () => {
+    const list = createBrowseFlow({ browseStep: "diagrams" });
+    const detail = createBrowseFlow({
+      browseStep: "detail",
+      diagramTitle: "api.puml",
+    });
+
+    expect(list.showModeTabs.value).toBe(true);
+    expect(detail.showModeTabs.value).toBe(true);
+  });
+
   it("navigates back to diagrams when section breadcrumb is activated on detail", () => {
     const flow = createBrowseFlow({
       browseStep: "detail",

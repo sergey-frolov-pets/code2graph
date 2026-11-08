@@ -21,6 +21,8 @@ import type {
 } from "@/constants/diagram-library";
 import type { FlatSectionOption } from "@/shared/library/section-tree";
 import { RATINGS_SECTION_ID } from "@/constants/diagram-library";
+import type { LayoutEngine } from "@/constants";
+import type { RenderMode } from "@/constants/render-settings";
 
 defineProps<{
   isOnlineSetupPending: boolean;
@@ -54,6 +56,9 @@ defineProps<{
   editContentLocale: string;
   isEditing: boolean;
   isSaving: boolean;
+  renderMode: RenderMode;
+  layout: LayoutEngine;
+  diagramDarkMode: boolean;
   uploadTitle: string;
   uploadDescription: string;
   uploadTags: string;
@@ -102,6 +107,7 @@ const emit = defineEmits<{
   "toggle-favorite": [];
   "rating-updated": [diagram: DiagramDto];
   "open-versions": [];
+  "delete-diagram": [payload: { id: string; title: string }];
   "file-change": [event: Event];
   "submit-upload": [];
   export: [payload: { sectionIds: Set<string>; diagramIds: Set<string> }];
@@ -198,6 +204,7 @@ const emit = defineEmits<{
         @update:sort-by-filter="emit('update:sort-by-filter', $event)"
         @diagram-pick="emit('diagram-pick', $event)"
         @filters-change="emit('filters-change')"
+        @delete-diagram="emit('delete-diagram', $event)"
       />
 
       <LibraryDiagramDetail
@@ -214,6 +221,9 @@ const emit = defineEmits<{
         :is-editing="isEditing"
         :is-saving="isSaving"
         :library-api-url="libraryApiUrl"
+        :render-mode="renderMode"
+        :layout="layout"
+        :diagram-dark-mode="diagramDarkMode"
         @update:edit-title="emit('update:edit-title', $event)"
         @update:edit-description="emit('update:edit-description', $event)"
         @update:edit-tags="emit('update:edit-tags', $event)"
