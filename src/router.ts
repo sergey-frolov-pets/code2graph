@@ -1,4 +1,5 @@
 import { isDiagramFormat, type DiagramFormat } from "@/constants/diagram-format-ids";
+import { CLIPBOARD_DIAGRAM_PATH } from "@/services/clipboard-diagram/constants";
 import { PUBLIC_DATA_LINK_ORIGIN } from "@/services/local-data-link/constants";
 
 export type AppRouteName =
@@ -9,7 +10,8 @@ export type AppRouteName =
   | "app"
   | "language"
   | "mcp"
-  | "diagram";
+  | "diagram"
+  | "clipboard";
 
 export interface ParsedAppRoute {
   name: AppRouteName;
@@ -17,7 +19,7 @@ export interface ParsedAppRoute {
   diagramSlug: string | null;
 }
 
-const ROUTE_HASH: Record<Exclude<AppRouteName, "language" | "diagram">, string> = {
+const ROUTE_HASH: Record<Exclude<AppRouteName, "language" | "diagram" | "clipboard">, string> = {
   landing: "#/",
   login: "#/login",
   register: "#/register",
@@ -47,12 +49,21 @@ export function parseDiagramPathname(pathname: string): ParsedAppRoute | null {
   return routeResult("diagram", null, match[1].toLowerCase());
 }
 
+export function parseClipboardDiagramPathname(pathname: string): ParsedAppRoute | null {
+  const normalized = pathname.replace(/\/+$/, "") || "/";
+  if (normalized.toLowerCase() !== CLIPBOARD_DIAGRAM_PATH) {
+    return null;
+  }
+  return routeResult("clipboard");
+}
+
 function parsePagesQueryPath(search: string): ParsedAppRoute | null {
   if (!search.startsWith("?/")) {
     return null;
   }
   const path = search.slice(1).split("&")[0] ?? "";
-  return parseDiagramPathname(path.startsWith("/") ? path : `/${path}`);
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return parseDiagramPathname(normalized) ?? parseClipboardDiagramPathname(normalized);
 }
 
 export function parseAppRoute(locationLike: {
@@ -62,25 +73,36 @@ export function parseAppRoute(locationLike: {
 }): ParsedAppRoute {
   return (
     parseDiagramPathname(locationLike.pathname) ??
+    parseClipboardDiagramPathname(locationLike.pathname) ??
     parsePagesQueryPath(locationLike.search ?? "") ??
     parseRouteFromHash(locationLike.hash)
   );
 }
 
-/** Path that should stay in the address bar. Rewrites only the GitHub Pages `?/local/...` hop. */
+function prettyPathForRoute(route: ParsedAppRoute): string | null {
+  if (route.name === "clipboard") {
+    return CLIPBOARD_DIAGRAM_PATH;
+  }
+  if (route.name === "diagram" && route.diagramSlug) {
+    return `/local/${route.diagramSlug}`;
+  }
+  return null;
+}
+
+/** Path that should stay in the address bar. Rewrites the GitHub Pages `?/` hop. */
 export function localDataLinkCanonicalPath(locationLike: {
   hash: string;
   pathname: string;
   search?: string;
 }): string | null {
-  const route = parseDiagramPathname(locationLike.pathname) ?? parsePagesQueryPath(locationLike.search ?? "");
-  if (!route?.diagramSlug) {
-    return null;
-  }
-  const canonical = `/local/${route.diagramSlug}`;
   const pathname = locationLike.pathname.replace(/\/+$/, "") || "/";
   const search = locationLike.search ?? "";
-  if (pathname === canonical && search === "") {
+  const route =
+    parseDiagramPathname(pathname) ??
+    parseClipboardDiagramPathname(pathname) ??
+    parsePagesQueryPath(search);
+  const canonical = route ? prettyPathForRoute(route) : null;
+  if (!canonical || (pathname === canonical && search === "")) {
     return null;
   }
   return canonical;
@@ -113,7 +135,7 @@ export function parseRouteFromHash(hash: string): ParsedAppRoute {
 }
 
 export function routeHash(
-  route: Exclude<AppRouteName, "language" | "diagram">,
+  route: Exclude<AppRouteName, "language" | "diagram" | "clipboard">,
 ): string {
   return ROUTE_HASH[route];
 }
@@ -131,7 +153,7 @@ export function diagramDataLinkUrl(origin: string, slug: string): string {
 }
 
 export function navigateTo(
-  route: Exclude<AppRouteName, "diagram">,
+  route: Exclude<AppRouteName, "diagram" | "clipboard">,
   languageId?: DiagramFormat,
 ): void {
   const target =

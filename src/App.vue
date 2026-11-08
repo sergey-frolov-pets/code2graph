@@ -5,6 +5,7 @@ import AppModalHost from "@/components/AppModalHost.vue";
 import TooltipProvider from "@/components/ui/TooltipProvider.vue";
 import DiagramEditor from "@/components/DiagramEditor.vue";
 import DiagramPreview from "@/components/DiagramPreview.vue";
+import ClipboardDiagramPrompt from "@/components/ClipboardDiagramPrompt.vue";
 import DiagramDataSourceDialog from "@/components/DiagramDataSourceDialog.vue";
 import TablePasteErrorModal from "@/components/TablePasteErrorModal.vue";
 import AppHeader from "@/components/layout/AppHeader.vue";
@@ -227,6 +228,11 @@ onUnmounted(() => {
 
     <AppDialogHost />
     <AppModalHost />
+    <ClipboardDiagramPrompt
+      :open="shell.clipboardDiagram.promptOpen.value"
+      @close="shell.clipboardDiagram.closePrompt()"
+      @read-clipboard="shell.clipboardDiagram.readFromGesture()"
+    />
     <DiagramDataSourceDialog
       :open="shell.dataLink.chooserOpen.value"
       :file-path-label="shell.dataLink.filePathLabel.value"

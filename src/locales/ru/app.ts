@@ -47,4 +47,8 @@ export const appMessages = {
   "app.copyPngFailed": "Не удалось скопировать PNG в буфер обмена",
   "app.copyPngUnsupported": "Этот браузер не умеет копировать PNG в буфер обмена",
   "app.engineLoadError": "Ошибка загрузки движка",
+  "app.clipboardDiagramTitle": "Диаграмма из буфера",
+  "app.clipboardDiagramHint": "Браузер просит подтвердить чтение буфера. Нажмите кнопку, чтобы вставить диаграмму в новый редактор.",
+  "app.clipboardDiagramRead": "Проверить буфер",
+  "app.clipboardNotDiagram": "В буфере не диаграмма в формате diagrams-as-code.",
 } as const satisfies LocaleMessages;

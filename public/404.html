@@ -5,7 +5,11 @@
     <title>Code2Graph</title>
     <script>
       (function () {
-        var path = location.pathname.replace(/\/+$/, "");
+        var path = location.pathname.replace(/\/+$/, "") || "/";
+        if (path.toLowerCase() === "/diagram") {
+          location.replace("/?/diagram");
+          return;
+        }
         var match = path.match(/\/local\/([a-z0-9]+(?:-[a-z0-9]+)*)$/i);
         if (!match) {
           location.replace("/#/");

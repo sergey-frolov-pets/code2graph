@@ -355,6 +355,7 @@ export function buildSingleHtmlDocument({
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
+    <base href="/" />
     <script>
       (function (l) {
         if (l.search.length > 1 && l.search.charAt(1) === "/") {

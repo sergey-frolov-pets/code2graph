@@ -83,4 +83,29 @@ describe("app routes", () => {
       }),
     ).toBeNull();
   });
+
+  it("reads /diagram and ignores the old hash form", () => {
+    expect(parseAppRoute({ hash: "", pathname: "/diagram" })).toEqual({
+      name: "clipboard",
+      languageId: null,
+      diagramSlug: null,
+    });
+    expect(parseAppRoute({ hash: "", pathname: "/diagram/" })).toEqual({
+      name: "clipboard",
+      languageId: null,
+      diagramSlug: null,
+    });
+    expect(parseAppRoute({ hash: "", pathname: "/diagram/w" })).toEqual({
+      name: "landing",
+      languageId: null,
+      diagramSlug: null,
+    });
+    expect(
+      localDataLinkCanonicalPath({
+        hash: "",
+        pathname: "/",
+        search: "?/diagram",
+      }),
+    ).toBe("/diagram");
+  });
 });
