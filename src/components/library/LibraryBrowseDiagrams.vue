@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useVirtualizer } from "@tanstack/vue-virtual";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
@@ -16,6 +16,7 @@ const props = defineProps<{
   diagrams: DiagramListItemDto[];
   allTags: string[];
   isLoading: boolean;
+  isLocalLibrary: boolean;
 }>();
 
 const searchQuery = defineModel<string>("searchQuery", { required: true });
@@ -53,6 +54,23 @@ const activeFilterCount = computed(() => {
   if (sortByFilter.value !== "updated") count += 1;
   return count;
 });
+
+const sortOptions = computed(() =>
+  props.isLocalLibrary
+    ? DIAGRAM_SORT_OPTIONS.filter((option) => option === "updated")
+    : DIAGRAM_SORT_OPTIONS,
+);
+
+watch(
+  () => props.isLocalLibrary,
+  (local) => {
+    if (local && sortByFilter.value !== "updated") {
+      sortByFilter.value = "updated";
+      emit("filters-change");
+    }
+  },
+  { immediate: true },
+);
 
 const filtersLabel = computed(() =>
   activeFilterCount.value > 0
@@ -122,7 +140,7 @@ function onDelete(diagram: DiagramListItemDto): void {
             {{ tag }}
           </option>
         </select>
-        <label class="library-filter-field">
+        <label v-if="!isLocalLibrary" class="library-filter-field">
           <span>{{ t("library.filterMinRating") }}</span>
           <select
             v-model.number="minRatingFilter"
@@ -133,7 +151,7 @@ function onDelete(diagram: DiagramListItemDto): void {
             <option v-for="star in 5" :key="star" :value="star">{{ star }}+</option>
           </select>
         </label>
-        <label class="library-filter-field">
+        <label v-if="!isLocalLibrary" class="library-filter-field">
           <span>{{ t("library.filterMinVotes") }}</span>
           <input
             v-model.number="minVotesFilter"
@@ -147,7 +165,7 @@ function onDelete(diagram: DiagramListItemDto): void {
         <label class="library-filter-field">
           <span>{{ t("library.sortBy") }}</span>
           <select v-model="sortByFilter" class="select" @change="onFiltersChange()">
-            <option v-for="option in DIAGRAM_SORT_OPTIONS" :key="option" :value="option">
+            <option v-for="option in sortOptions" :key="option" :value="option">
               {{ t(`library.sortBy.${option}`) }}
             </option>
           </select>

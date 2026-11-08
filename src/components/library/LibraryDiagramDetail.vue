@@ -31,6 +31,7 @@ const props = defineProps<{
   renderMode: RenderMode;
   layout: LayoutEngine;
   diagramDarkMode: boolean;
+  isLocalLibrary: boolean;
 }>();
 
 const editTitle = defineModel<string>("editTitle", { required: true });
@@ -99,7 +100,7 @@ function contentLocaleLabel(locale: string): string {
 </script>
 
 <template>
-  <div class="library-step">
+  <div class="library-step library-step--detail">
     <template v-if="isEditing">
       <div class="library-step__content library-step__content--form">
         <label class="settings-field">
@@ -144,7 +145,7 @@ function contentLocaleLabel(locale: string): string {
             </option>
           </select>
         </label>
-        <label class="settings-field">
+        <label v-if="!isLocalLibrary" class="settings-field">
           <span class="settings-field__label">{{ t("library.visibility") }}</span>
           <select v-model="editVisibility" class="select">
             <option v-for="option in VISIBILITY_OPTIONS" :key="option" :value="option">
@@ -187,6 +188,7 @@ function contentLocaleLabel(locale: string): string {
             <ActionIcon name="eye" />
           </IconButton>
           <IconButton
+            v-if="!isLocalLibrary"
             :label="
               diagram.isFavorite
                 ? t('library.removeFavorite')
@@ -216,10 +218,10 @@ function contentLocaleLabel(locale: string): string {
         >
           {{ t("library.edit") }}
         </button>
-        <button class="btn" type="button" @click="emit('share')">
+        <button v-if="!isLocalLibrary" class="btn" type="button" @click="emit('share')">
           {{ t("library.shareLink") }}
         </button>
-        <button class="btn" type="button" @click="emit('open-versions')">
+        <button v-if="!isLocalLibrary" class="btn" type="button" @click="emit('open-versions')">
           {{ t("library.versions") }}
         </button>
         <button
@@ -280,16 +282,18 @@ function contentLocaleLabel(locale: string): string {
               <template v-if="diagram.authorName">
                 · {{ t("library.author", { name: diagram.authorName }) }}
               </template>
-              · {{ t(`library.visibility.${diagram.visibility ?? "all"}`) }}
+              <template v-if="!isLocalLibrary">
+                · {{ t(`library.visibility.${diagram.visibility ?? "all"}`) }}
+              </template>
               <template v-if="diagram.contentLocale">
                 · {{ contentLocaleLabel(diagram.contentLocale) }}
               </template>
-              <template v-if="diagram.voteCount">
+              <template v-if="!isLocalLibrary && diagram.voteCount">
                 · {{ t("library.ratingVotesShort", { votes: diagram.voteCount }) }}
               </template>
             </p>
             <p class="library-detail__file">{{ diagram.fileName }}</p>
-            <p v-if="diagram.avgRating" class="library-detail__rating">
+            <p v-if="!isLocalLibrary && diagram.avgRating" class="library-detail__rating">
               <LibraryStarRating
                 :value="Math.round(diagram.avgRating)"
                 readonly
@@ -310,6 +314,7 @@ function contentLocaleLabel(locale: string): string {
             </p>
         </section>
         <LibraryDiagramRatingPanel
+          v-if="!isLocalLibrary"
           :diagram="diagram"
           :api-url="libraryApiUrl"
           @updated="emit('rating-updated', $event)"
