@@ -11,7 +11,8 @@ interface ModalStackEntry {
 const stack = ref<ModalStackEntry[]>([]);
 const MODAL_Z_INDEX_BASE = 1000;
 const MODAL_Z_INDEX_STEP = 10;
-const LIBRARY_Z_INDEX_BASE = 900;
+/** Совпадает с `--z-library` в tokens.css, чтобы слой above-library был выше экрана библиотеки. */
+const LIBRARY_Z_INDEX_BASE = 1100;
 
 let escapeListenerAttached = false;
 let scrollLockCount = 0;

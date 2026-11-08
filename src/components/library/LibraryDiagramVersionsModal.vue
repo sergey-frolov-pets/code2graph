@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
-import ActionIcon from "@/components/icons/ActionIcon.vue";
-import IconButton from "@/components/IconButton.vue";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useLocale } from "@/composables/useLocale";
+import { useLibraryDiagramPreview } from "@/composables/useLibraryDiagramPreview";
 import type { DiagramDto, DiagramVersionDto } from "@/constants/diagram-library";
 import {
   createLibraryDiagramVersion,
@@ -12,6 +11,7 @@ import {
   fetchDiagramVersions,
   restoreLibraryDiagramVersion,
 } from "@/services/library/api";
+import { diagramAllowsWrite } from "@/utils/library-display";
 
 const props = defineProps<{
   open: boolean;
@@ -26,16 +26,30 @@ const emit = defineEmits<{
 
 const { t } = useLocale();
 const { confirm } = useAppDialog();
+const preview = useLibraryDiagramPreview();
+const previewError = preview.error;
+const previewRendering = preview.isRendering;
+const previewMarkup = preview.previewMarkup;
 
 const versions = ref<DiagramVersionDto[]>([]);
+const selectedVersionId = ref("");
+const viewMode = ref<"preview" | "source">("preview");
 const comment = ref("");
 const isLoading = ref(false);
 const isSaving = ref(false);
 const errorMessage = ref("");
 
+const hasApi = computed(() => Boolean(props.apiUrl));
+const canMutate = computed(() =>
+  props.diagram ? diagramAllowsWrite(props.diagram) : false,
+);
 const hasVersions = computed(() => versions.value.length > 0);
 const canSaveVersion = computed(
-  () => Boolean(props.diagram?.source?.trim() && props.apiUrl),
+  () =>
+    Boolean(props.diagram?.source?.trim() && props.apiUrl) && canMutate.value,
+);
+const selectedVersion = computed(
+  () => versions.value.find((item) => item.id === selectedVersionId.value) ?? null,
 );
 
 const modalTitle = computed(() =>
@@ -52,9 +66,16 @@ function formatDate(value: string): string {
   }
 }
 
+function selectVersion(version: DiagramVersionDto): void {
+  selectedVersionId.value = version.id;
+  viewMode.value = "preview";
+}
+
 async function loadVersions(): Promise<void> {
   if (!props.diagram || !props.apiUrl) {
     versions.value = [];
+    selectedVersionId.value = "";
+    preview.resetPreview();
     return;
   }
 
@@ -63,10 +84,17 @@ async function loadVersions(): Promise<void> {
   try {
     const response = await fetchDiagramVersions(props.diagram.id, props.apiUrl);
     versions.value = response.versions;
+    const stillSelected = response.versions.some(
+      (item) => item.id === selectedVersionId.value,
+    );
+    selectedVersionId.value = stillSelected
+      ? selectedVersionId.value
+      : (response.versions[0]?.id ?? "");
   } catch (error) {
     errorMessage.value =
       error instanceof Error ? error.message : t("versions.loadError");
     versions.value = [];
+    selectedVersionId.value = "";
   } finally {
     isLoading.value = false;
   }
@@ -86,6 +114,7 @@ async function saveVersion(): Promise<void> {
       props.apiUrl,
     );
     versions.value = [response.version, ...versions.value];
+    selectedVersionId.value = response.version.id;
     comment.value = "";
   } catch (error) {
     errorMessage.value =
@@ -96,7 +125,7 @@ async function saveVersion(): Promise<void> {
 }
 
 async function requestRestore(version: DiagramVersionDto): Promise<void> {
-  if (!props.diagram || !props.apiUrl) {
+  if (!props.diagram || !props.apiUrl || !canMutate.value) {
     return;
   }
 
@@ -126,7 +155,7 @@ async function requestRestore(version: DiagramVersionDto): Promise<void> {
 }
 
 async function requestDelete(version: DiagramVersionDto): Promise<void> {
-  if (!props.diagram || !props.apiUrl) {
+  if (!props.diagram || !props.apiUrl || !canMutate.value) {
     return;
   }
 
@@ -144,6 +173,9 @@ async function requestDelete(version: DiagramVersionDto): Promise<void> {
   try {
     await deleteLibraryDiagramVersion(props.diagram.id, version.id, props.apiUrl);
     versions.value = versions.value.filter((item) => item.id !== version.id);
+    if (selectedVersionId.value === version.id) {
+      selectedVersionId.value = versions.value[0]?.id ?? "";
+    }
   } catch (error) {
     errorMessage.value =
       error instanceof Error ? error.message : t("versions.deleteError");
@@ -156,82 +188,157 @@ watch(
     if (isOpen) {
       comment.value = "";
       errorMessage.value = "";
+      viewMode.value = "preview";
       void loadVersions();
     }
   },
 );
+
+watch(selectedVersion, (version) => {
+  if (!version || !props.diagram) {
+    preview.resetPreview();
+    return;
+  }
+
+  void preview.renderPreview(version.source, {
+    watermarked: props.diagram.canDownload === false,
+    fileName: props.diagram.fileName,
+    language: props.diagram.language,
+  });
+});
 </script>
 
 <template>
-  <AppModal :open="open" :title="modalTitle" layer="above-library" @close="emit('close')">
+  <AppModal
+    :open="open"
+    :title="modalTitle"
+    layer="above-library"
+    wide
+    @close="emit('close')"
+  >
     <div class="versions-panel">
-      <section class="versions-save">
-        <label class="field">
-          <span class="field-label">{{ t("versions.commentLabel") }}</span>
-          <input
-            v-model="comment"
-            class="input"
-            type="text"
-            :placeholder="t('versions.commentPlaceholder')"
-            :disabled="isSaving"
-            @keydown.enter="saveVersion()"
-          />
-        </label>
-        <button
-          class="btn btn-primary versions-save__btn"
-          type="button"
-          :disabled="!canSaveVersion || isSaving"
-          @click="saveVersion()"
-        >
-          {{ isSaving ? t("app.loading") : t("versions.saveCurrent") }}
-        </button>
-      </section>
+      <p v-if="!hasApi" class="versions-empty">
+        {{ t("library.versionsOnlineOnly") }}
+      </p>
 
-      <p v-if="errorMessage" class="versions-error">{{ errorMessage }}</p>
+      <template v-else>
+        <section v-if="canMutate" class="versions-save">
+          <label class="field">
+            <span class="field-label">{{ t("versions.commentLabel") }}</span>
+            <input
+              v-model="comment"
+              class="select"
+              type="text"
+              :placeholder="t('versions.commentPlaceholder')"
+              :disabled="isSaving"
+              @keydown.enter="saveVersion()"
+            />
+          </label>
+          <button
+            class="btn btn-primary versions-save__btn"
+            type="button"
+            :disabled="!canSaveVersion || isSaving"
+            @click="saveVersion()"
+          >
+            {{ isSaving ? t("app.loading") : t("versions.saveCurrent") }}
+          </button>
+        </section>
 
-      <section class="versions-list-section">
-        <h3 class="versions-list-title">{{ t("versions.history") }}</h3>
+        <p v-if="errorMessage" class="versions-error">{{ errorMessage }}</p>
 
         <p v-if="isLoading" class="versions-empty">{{ t("app.loading") }}</p>
         <p v-else-if="!hasVersions" class="versions-empty">
           {{ t("versions.empty") }}
         </p>
 
-        <ul v-else class="versions-list">
-          <li v-for="version in versions" :key="version.id" class="versions-item">
-            <button
-              class="versions-item__main"
-              type="button"
-              @click="requestRestore(version)"
-            >
-              <span class="versions-item__number">
-                {{ t("versions.versionNumber", { number: version.versionNumber }) }}
-              </span>
-              <span class="versions-item__date">{{ formatDate(version.createdAt) }}</span>
-              <span v-if="version.comment" class="versions-item__comment">
-                {{ version.comment }}
-              </span>
-              <span v-else class="versions-item__comment is-muted">
-                {{ t("versions.noComment") }}
-              </span>
-            </button>
-            <div class="versions-item__actions">
-              <IconButton
-                :label="t('versions.restore')"
-                @click="requestRestore(version)"
-              >
-                <ActionIcon name="history" />
-              </IconButton>
-              <IconButton
-                :label="t('app.delete')"
-                @click="requestDelete(version)"
-              >
-                <ActionIcon name="trash" />
-              </IconButton>
+        <div v-else class="versions-split">
+          <section class="versions-list-section">
+            <h3 class="versions-list-title">{{ t("versions.history") }}</h3>
+            <ul class="versions-list">
+              <li v-for="version in versions" :key="version.id">
+                <button
+                  class="versions-item"
+                  type="button"
+                  :aria-pressed="version.id === selectedVersionId"
+                  @click="selectVersion(version)"
+                >
+                  <span class="versions-item__number">
+                    {{ t("versions.versionNumber", { number: version.versionNumber }) }}
+                  </span>
+                  <span class="versions-item__date">{{ formatDate(version.createdAt) }}</span>
+                  <span v-if="version.authorName" class="versions-item__date">
+                    {{ version.authorName }}
+                  </span>
+                  <span v-if="version.comment" class="versions-item__comment">
+                    {{ version.comment }}
+                  </span>
+                  <span v-else class="versions-item__comment is-muted">
+                    {{ t("versions.noComment") }}
+                  </span>
+                </button>
+              </li>
+            </ul>
+          </section>
+
+          <section v-if="selectedVersion" class="versions-viewer">
+            <div class="versions-viewer__toolbar">
+              <div class="versions-viewer__tabs">
+                <button
+                  class="btn"
+                  :class="{ 'btn-primary': viewMode === 'preview' }"
+                  type="button"
+                  @click="viewMode = 'preview'"
+                >
+                  {{ t("library.preview") }}
+                </button>
+                <button
+                  class="btn"
+                  :class="{ 'btn-primary': viewMode === 'source' }"
+                  type="button"
+                  @click="viewMode = 'source'"
+                >
+                  {{ t("library.versionSource") }}
+                </button>
+              </div>
+              <div v-if="canMutate" class="versions-viewer__actions">
+                <button
+                  class="btn"
+                  type="button"
+                  @click="requestRestore(selectedVersion)"
+                >
+                  {{ t("versions.restore") }}
+                </button>
+                <button
+                  class="btn versions-viewer__delete"
+                  type="button"
+                  @click="requestDelete(selectedVersion)"
+                >
+                  {{ t("app.delete") }}
+                </button>
+              </div>
             </div>
-          </li>
-        </ul>
-      </section>
+
+            <p v-if="viewMode === 'preview' && previewError" class="versions-error">
+              {{ previewError }}
+            </p>
+            <p
+              v-else-if="viewMode === 'preview' && previewRendering"
+              class="versions-empty"
+            >
+              {{ t("library.previewLoading") }}
+            </p>
+            <div
+              v-else-if="viewMode === 'preview' && previewMarkup"
+              class="versions-preview"
+              v-html="previewMarkup"
+            />
+            <p v-else-if="viewMode === 'preview'" class="versions-empty">
+              {{ t("library.previewEmpty") }}
+            </p>
+            <pre v-else class="versions-source">{{ selectedVersion.source }}</pre>
+          </section>
+        </div>
+      </template>
     </div>
 
     <template #footer>
@@ -250,19 +357,21 @@ watch(
 }
 
 .versions-save {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
 }
 
 .versions-save__btn {
-  align-self: flex-start;
+  align-self: end;
 }
 
 .field {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .field-label {
@@ -276,7 +385,16 @@ watch(
   font-size: 0.88rem;
 }
 
-.versions-list-section {
+.versions-split {
+  display: grid;
+  grid-template-columns: minmax(200px, 280px) minmax(0, 1fr);
+  gap: 12px;
+  min-height: 280px;
+}
+
+.versions-list-section,
+.versions-viewer {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -301,31 +419,27 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: min(40vh, 320px);
+  max-height: min(50vh, 420px);
   overflow: auto;
 }
 
 .versions-item {
-  display: flex;
-  align-items: stretch;
-  gap: 4px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-muted);
-}
-
-.versions-item__main {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding: 10px 12px;
-  border: 0;
-  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-muted);
+  color: inherit;
   text-align: left;
   cursor: pointer;
-  color: inherit;
+}
+
+.versions-item[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
 }
 
 .versions-item__number {
@@ -350,10 +464,58 @@ watch(
   font-style: italic;
 }
 
-.versions-item__actions {
+.versions-viewer__toolbar {
   display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  padding-right: 4px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.versions-viewer__tabs,
+.versions-viewer__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.versions-viewer__delete {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+}
+
+.versions-preview,
+.versions-source {
+  margin: 0;
+  min-height: 180px;
+  max-height: min(50vh, 420px);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.versions-preview {
+  padding: 12px;
+}
+
+.versions-preview :deep(svg) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.versions-source {
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (max-width: 720px) {
+  .versions-save,
+  .versions-split {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

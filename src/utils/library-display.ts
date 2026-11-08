@@ -13,6 +13,11 @@ const DIAGRAM_FORMAT_LABELS: Record<DiagramLanguage, string> = {
   other: "other",
 };
 
+/** Локальная библиотека не присылает флаг; явный false — только чтение. */
+export function diagramAllowsWrite(diagram: { canWrite?: boolean }): boolean {
+  return diagram.canWrite !== false;
+}
+
 export function getDiagramFormatLabel(language: DiagramLanguage | string): string {
   if (language in DIAGRAM_FORMAT_LABELS) {
     return DIAGRAM_FORMAT_LABELS[language as DiagramLanguage];
