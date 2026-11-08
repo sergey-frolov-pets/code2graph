@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { parseRouteFromHash, routeHash } from "@/router";
+import {
+  diagramDataLinkUrl,
+  localDataLinkCanonicalPath,
+  parseAppRoute,
+  parseRouteFromHash,
+  routeHash,
+} from "@/router";
 
 describe("app routes", () => {
   it("opens the MCP page from the hash", () => {
@@ -19,21 +25,62 @@ describe("app routes", () => {
     });
   });
 
-  it("opens a local diagram data link from the hash", () => {
-    expect(parseRouteFromHash("#/diagram/waterfall")).toEqual({
-      name: "diagram",
-      languageId: null,
-      diagramSlug: "waterfall",
-    });
-    expect(parseRouteFromHash("#/diagram/Water-Fall")).toEqual({
-      name: "diagram",
-      languageId: null,
-      diagramSlug: "water-fall",
-    });
-    expect(parseRouteFromHash("#/diagram/")).toEqual({
+  it("does not open a data link from a hash", () => {
+    expect(parseRouteFromHash("#/diagram/w")).toEqual({
       name: "landing",
       languageId: null,
       diagramSlug: null,
     });
+    expect(parseRouteFromHash("#/local/w")).toEqual({
+      name: "landing",
+      languageId: null,
+      diagramSlug: null,
+    });
+  });
+
+  it("reads /local/w from the path", () => {
+    expect(parseAppRoute({ hash: "", pathname: "/local/w" })).toEqual({
+      name: "diagram",
+      languageId: null,
+      diagramSlug: "w",
+    });
+    expect(parseAppRoute({ hash: "", pathname: "/local/Water-Fall/" })).toEqual({
+      name: "diagram",
+      languageId: null,
+      diagramSlug: "water-fall",
+    });
+  });
+
+  it("publishes https://www.code2graph.ru/local/w", () => {
+    expect(diagramDataLinkUrl("https://code2graph.ru", "w")).toBe(
+      "https://www.code2graph.ru/local/w",
+    );
+    expect(diagramDataLinkUrl("https://www.code2graph.ru", "w")).toBe(
+      "https://www.code2graph.ru/local/w",
+    );
+    expect(diagramDataLinkUrl("http://localhost:5173", "w")).toBe(
+      "http://localhost:5173/local/w",
+    );
+    expect(
+      localDataLinkCanonicalPath({
+        hash: "",
+        pathname: "/",
+        search: "?/local/w",
+      }),
+    ).toBe("/local/w");
+    expect(
+      localDataLinkCanonicalPath({
+        hash: "#/diagram/w",
+        pathname: "/",
+        search: "",
+      }),
+    ).toBeNull();
+    expect(
+      localDataLinkCanonicalPath({
+        hash: "",
+        pathname: "/local/w",
+        search: "",
+      }),
+    ).toBeNull();
   });
 });

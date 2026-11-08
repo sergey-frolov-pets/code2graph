@@ -1,15 +1,28 @@
 import { ref } from "vue";
 import {
+  localDataLinkCanonicalPath,
   navigateTo,
-  parseRouteFromHash,
+  parseAppRoute,
   type ParsedAppRoute,
 } from "@/router";
 
-const currentRoute = ref<ParsedAppRoute>(parseRouteFromHash(window.location.hash));
+function readLocation(): { hash: string; pathname: string; search: string } {
+  return {
+    hash: window.location.hash,
+    pathname: window.location.pathname,
+    search: window.location.search,
+  };
+}
+
+const currentRoute = ref<ParsedAppRoute>(parseAppRoute(readLocation()));
 let listenersBound = false;
 
-function syncRouteFromHash(): void {
-  currentRoute.value = parseRouteFromHash(window.location.hash);
+function syncRouteFromLocation(): void {
+  const canonical = localDataLinkCanonicalPath(readLocation());
+  if (canonical) {
+    window.history.replaceState(null, "", canonical);
+  }
+  currentRoute.value = parseAppRoute(readLocation());
 }
 
 export function bindAppRouterListeners(): void {
@@ -17,8 +30,9 @@ export function bindAppRouterListeners(): void {
     return;
   }
   listenersBound = true;
-  window.addEventListener("hashchange", syncRouteFromHash);
-  syncRouteFromHash();
+  window.addEventListener("hashchange", syncRouteFromLocation);
+  window.addEventListener("popstate", syncRouteFromLocation);
+  syncRouteFromLocation();
 }
 
 export function useAppRouter() {

@@ -37,7 +37,7 @@ const STATIC_PATHS: Record<string, string> = {
 };
 
 const LANGUAGE_ROUTE = /^\/lang\/([a-z0-9]+)$/;
-const DIAGRAM_ROUTE = /^\/diagram\/([a-z0-9]+(?:-[a-z0-9]+)*)$/;
+const LOCAL_LINK_ROUTE = /^\/local\/([a-z0-9]+(?:-[a-z0-9]+)*)$/;
 
 /**
  * Convert a location hash into a readable GoatCounter path.
@@ -55,9 +55,9 @@ export function pagePath(hash: string): string {
     return `${MASTER_PATH_PREFIX}${languageMatch[1]}`;
   }
 
-  const diagramMatch = route.match(DIAGRAM_ROUTE);
+  const diagramMatch = route.match(LOCAL_LINK_ROUTE);
   if (diagramMatch) {
-    return `/diagram/${diagramMatch[1]}`;
+    return `/local/${diagramMatch[1]}`;
   }
 
   return STATIC_PATHS[route] ?? route;

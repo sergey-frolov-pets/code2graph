@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>Code2Graph</title>
+    <script>
+      (function () {
+        var path = location.pathname.replace(/\/+$/, "");
+        var match = path.match(/\/local\/([a-z0-9]+(?:-[a-z0-9]+)*)$/i);
+        if (!match) {
+          location.replace("/#/");
+          return;
+        }
+        location.replace("/?/local/" + match[1].toLowerCase());
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>

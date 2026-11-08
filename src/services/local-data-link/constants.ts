@@ -1,10 +1,10 @@
 /** How far «until an empty row» may scan past the first row of the range. */
 export const MAX_DATA_LINK_SCAN_ROWS = 5000;
 
-/** Link name in `#/diagram/<slug>`. */
+/** Link name in `https://www.code2graph.ru/local/<slug>`. */
 export const DATA_LINK_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-export const DIAGRAM_DATA_LINK_ROUTE = /^diagram\/([a-z0-9]+(?:-[a-z0-9]+)*)$/;
+export const PUBLIC_DATA_LINK_ORIGIN = "https://www.code2graph.ru";
 
 export const DATA_LINK_CHANGED_EVENT = "code2graph-data-link-changed";
 

@@ -4,7 +4,7 @@ import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import { useLocale } from "@/composables/useLocale";
 import { useLibraryTarget } from "@/config/library-target";
-import { diagramDataLinkHash } from "@/router";
+import { diagramDataLinkUrl } from "@/router";
 import { pickSpreadsheetFile } from "@/services/local-data-link/file-access";
 import { parseSheetRange } from "@/services/local-data-link/sheet-range";
 import {
@@ -37,6 +37,14 @@ const isSaving = ref(false);
 const showCsvHint = computed(() =>
   /\.csv$/i.test(filePathLabel.value) || /\.csv$/i.test(fileName.value),
 );
+
+const publicAddress = computed(() => {
+  const normalized = normalizeDataLinkSlug(slug.value);
+  if (!isDataLinkSlug(normalized)) {
+    return "";
+  }
+  return diagramDataLinkUrl(window.location.origin, normalized);
+});
 
 async function loadLink(diagramId: string): Promise<void> {
   errorMessage.value = "";
@@ -129,7 +137,7 @@ async function onCopyLink(): Promise<void> {
   if (!saved) {
     return;
   }
-  const url = `${window.location.origin}${window.location.pathname}${diagramDataLinkHash(slug.value)}`;
+  const url = diagramDataLinkUrl(window.location.origin, slug.value);
   try {
     await navigator.clipboard.writeText(url);
     statusMessage.value = t("library.dataLink.copied");
@@ -178,6 +186,10 @@ async function onCopyLink(): Promise<void> {
         @blur="slug = slug.trim().toLowerCase()"
       />
     </label>
+    <p v-if="publicAddress" class="library-data-link__note">
+      {{ t("library.dataLink.addressLabel") }}: {{ publicAddress }}
+    </p>
+    <p class="library-data-link__note">{{ t("library.dataLink.addressHint") }}</p>
     <p v-if="fileName" class="library-data-link__note">{{ fileName }}</p>
     <p v-if="errorMessage" class="library-data-link__error" role="alert">
       {{ errorMessage }}
