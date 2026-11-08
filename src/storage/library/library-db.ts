@@ -1,10 +1,11 @@
 export const LIBRARY_DB_NAME = "code2graph-library";
-export const LIBRARY_DB_VERSION = 1;
+export const LIBRARY_DB_VERSION = 2;
 
 export const LIBRARY_STORE_SECTIONS = "sections";
 export const LIBRARY_STORE_DIAGRAMS = "diagrams";
 export const LIBRARY_STORE_DIAGRAM_DETAILS = "diagramDetails";
 export const LIBRARY_STORE_META = "meta";
+export const LIBRARY_STORE_DATA_LINKS = "localDataLinks";
 
 export function upgradeLibraryDatabase(db: IDBDatabase): void {
   if (!db.objectStoreNames.contains(LIBRARY_STORE_SECTIONS)) {
@@ -18,5 +19,11 @@ export function upgradeLibraryDatabase(db: IDBDatabase): void {
   }
   if (!db.objectStoreNames.contains(LIBRARY_STORE_META)) {
     db.createObjectStore(LIBRARY_STORE_META, { keyPath: "key" });
+  }
+  if (!db.objectStoreNames.contains(LIBRARY_STORE_DATA_LINKS)) {
+    const links = db.createObjectStore(LIBRARY_STORE_DATA_LINKS, {
+      keyPath: "diagramId",
+    });
+    links.createIndex("slug", "slug", { unique: true });
   }
 }

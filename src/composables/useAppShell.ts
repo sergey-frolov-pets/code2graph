@@ -28,6 +28,10 @@ import type { DiagramFormat } from "@/constants/diagram-formats";
 import { getDiagramFormatDefinition } from "@/constants/diagram-formats";
 import { PENDING_SHARE_STORAGE_KEY } from "@/constants/library-share";
 import { PENDING_SUBSCRIPTION_STORAGE_KEY } from "@/constants/library-subscription";
+import {
+  createDiagramDataLinkUi,
+  type DiagramDataLinkUi,
+} from "@/composables/useDiagramDataLink";
 
 export interface AppShellContext {
   t: TranslateFn;
@@ -110,6 +114,7 @@ export interface AppShellContext {
   exportPng: () => void;
   copyPng: () => Promise<boolean>;
   boot: () => void;
+  dataLink: DiagramDataLinkUi;
 }
 
 export const APP_SHELL_KEY: InjectionKey<AppShellContext> = Symbol("app-shell");
@@ -512,6 +517,16 @@ export function useAppShell(): AppShellContext {
     }
   }
 
+  const dataLink = createDiagramDataLinkUi({
+    t,
+    linkedLibraryDiagramId,
+    activeMobilePanel,
+    openLibraryModal: () => {
+      modals.openLibraryModal();
+    },
+    onFileLoaded,
+  });
+
   function boot(): void {
     restoreDocumentMetadata();
     restoreSettings();
@@ -520,6 +535,7 @@ export function useAppShell(): AppShellContext {
     void initializeIncomingSources();
     void bootEngine();
     void handleShareLinkOnBoot();
+    void dataLink.openFromHash();
   }
 
   return {
@@ -585,5 +601,6 @@ export function useAppShell(): AppShellContext {
     exportPng,
     copyPng,
     boot,
+    dataLink,
   };
 }

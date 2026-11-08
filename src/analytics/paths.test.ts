@@ -32,5 +32,6 @@ describe("pagePath", () => {
 
   it("keeps unknown routes instead of merging them", () => {
     expect(pagePath("#/unknown")).toBe("/unknown");
+    expect(pagePath("#/diagram/waterfall")).toBe("/diagram/waterfall");
   });
 });

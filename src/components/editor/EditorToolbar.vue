@@ -35,6 +35,7 @@ const props = defineProps<{
   canAiPatch: boolean;
   canAiSyntaxAsk: boolean;
   canPasteTable?: boolean;
+  canRefreshData?: boolean;
   snippetsOpen: boolean;
   isFullscreen: boolean;
   surfaceMode: "code" | "builder";
@@ -49,6 +50,7 @@ const emit = defineEmits<{
   aiPatch: [];
   aiSyntaxAsk: [];
   pasteTable: [];
+  refreshData: [];
   setSurfaceMode: [mode: "code" | "builder"];
   validateSyntax: [];
   undo: [];
@@ -292,6 +294,15 @@ function onSampleChange(event: Event): void {
         @click="emit('pasteTable')"
       >
         <ActionIcon name="table-paste" />
+      </IconButton>
+      <IconButton
+        v-if="canRefreshData"
+        :label="t('library.refreshDiagramData')"
+        :disabled="isRendering"
+        data-testid="editor-refresh-data-button"
+        @click="emit('refreshData')"
+      >
+        <ActionIcon name="refresh" />
       </IconButton>
       <IconButton
         v-if="formatDefinition.editable"

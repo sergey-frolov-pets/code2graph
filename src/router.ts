@@ -1,4 +1,5 @@
 import { isDiagramFormat, type DiagramFormat } from "@/constants/diagram-format-ids";
+import { DIAGRAM_DATA_LINK_ROUTE } from "@/services/local-data-link/constants";
 
 export type AppRouteName =
   | "landing"
@@ -7,14 +8,16 @@ export type AppRouteName =
   | "account"
   | "app"
   | "language"
-  | "mcp";
+  | "mcp"
+  | "diagram";
 
 export interface ParsedAppRoute {
   name: AppRouteName;
   languageId: DiagramFormat | null;
+  diagramSlug: string | null;
 }
 
-const ROUTE_HASH: Record<Exclude<AppRouteName, "language">, string> = {
+const ROUTE_HASH: Record<Exclude<AppRouteName, "language" | "diagram">, string> = {
   landing: "#/",
   login: "#/login",
   register: "#/register",
@@ -25,37 +28,59 @@ const ROUTE_HASH: Record<Exclude<AppRouteName, "language">, string> = {
 
 const LANGUAGE_ROUTE = /^lang\/([a-z0-9]+)$/;
 
+function routeResult(
+  name: AppRouteName,
+  languageId: DiagramFormat | null = null,
+  diagramSlug: string | null = null,
+): ParsedAppRoute {
+  return { name, languageId, diagramSlug };
+}
+
 export function parseRouteFromHash(hash: string): ParsedAppRoute {
   const normalized = hash.replace(/^#/, "").replace(/^\//, "").trim().toLowerCase();
   const languageMatch = normalized.match(LANGUAGE_ROUTE);
 
   if (languageMatch && isDiagramFormat(languageMatch[1])) {
-    return { name: "language", languageId: languageMatch[1] };
+    return routeResult("language", languageMatch[1]);
+  }
+
+  const diagramMatch = normalized.match(DIAGRAM_DATA_LINK_ROUTE);
+  if (diagramMatch?.[1]) {
+    return routeResult("diagram", null, diagramMatch[1]);
   }
 
   switch (normalized) {
     case "app":
     case "editor":
-      return { name: "app", languageId: null };
+      return routeResult("app");
     case "login":
-      return { name: "login", languageId: null };
+      return routeResult("login");
     case "register":
-      return { name: "register", languageId: null };
+      return routeResult("register");
     case "account":
     case "cabinet":
-      return { name: "account", languageId: null };
+      return routeResult("account");
     case "mcp":
-      return { name: "mcp", languageId: null };
+      return routeResult("mcp");
     default:
-      return { name: "landing", languageId: null };
+      return routeResult("landing");
   }
 }
 
-export function routeHash(route: Exclude<AppRouteName, "language">): string {
+export function routeHash(
+  route: Exclude<AppRouteName, "language" | "diagram">,
+): string {
   return ROUTE_HASH[route];
 }
 
-export function navigateTo(route: AppRouteName, languageId?: DiagramFormat): void {
+export function diagramDataLinkHash(slug: string): string {
+  return `#/diagram/${slug}`;
+}
+
+export function navigateTo(
+  route: Exclude<AppRouteName, "diagram">,
+  languageId?: DiagramFormat,
+): void {
   const target =
     route === "language" && languageId
       ? `#/lang/${languageId}`

@@ -26,6 +26,8 @@ const props = defineProps<{
   diagramFontWeight: string;
   diagramFontStyle: string;
   copyPng: () => Promise<boolean>;
+  /** Increments when a data link should expand the preview. */
+  expandSignal?: number;
 }>();
 
 const emit = defineEmits<{
@@ -97,6 +99,15 @@ onUnmounted(() => {
 watch(isFullscreen, (value) => {
   document.body.style.overflow = value ? "hidden" : "";
 });
+
+watch(
+  () => props.expandSignal,
+  (value, previous) => {
+    if (value != null && value > 0 && value !== previous) {
+      isFullscreen.value = true;
+    }
+  },
+);
 </script>
 
 <template>
