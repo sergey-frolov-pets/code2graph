@@ -9,6 +9,7 @@ import { DATA_LINK_EXAMPLE_URL } from "@/services/local-data-link/constants";
 import { pickSpreadsheetFile } from "@/services/local-data-link/file-access";
 import { parseSheetRange } from "@/services/local-data-link/sheet-range";
 import {
+  findLocalDataLinkBySlug,
   getLocalDataLink,
   isDataLinkSlug,
   LocalDataLinkSlugTakenError,
@@ -83,16 +84,46 @@ function splitAddressHint(
   return parts;
 }
 
+const normalizedSlug = computed(() => normalizeDataLinkSlug(slug.value));
+const hintUrl = computed(() =>
+  isDataLinkSlug(normalizedSlug.value)
+    ? diagramDataLinkUrl(window.location.origin, normalizedSlug.value)
+    : DATA_LINK_EXAMPLE_URL,
+);
+const slugLinkReady = ref(false);
+let slugCheck = 0;
+
+watch(
+  () => [props.diagramId, normalizedSlug.value, isLocal.value] as const,
+  async ([diagramId, normalized, local]) => {
+    const ticket = ++slugCheck;
+    if (!local || !isDataLinkSlug(normalized)) {
+      slugLinkReady.value = false;
+      return;
+    }
+    const taken = await findLocalDataLinkBySlug(normalized);
+    if (ticket !== slugCheck) {
+      return;
+    }
+    slugLinkReady.value = !taken || taken.diagramId === diagramId;
+  },
+  { immediate: true },
+);
+
 const addressHintParts = computed(() => {
   const localWord = t("library.dataLink.addressHintLocal");
+  const url = hintUrl.value;
   const text = t("library.dataLink.addressHint", {
     local: localWord,
-    url: DATA_LINK_EXAMPLE_URL,
+    url,
   });
-  return splitAddressHint(text, [
+  const marks: Array<{ mark: Exclude<AddressHintMark, "text">; value: string }> = [
     { mark: "local", value: localWord },
-    { mark: "url", value: DATA_LINK_EXAMPLE_URL },
-  ]);
+  ];
+  if (slugLinkReady.value) {
+    marks.push({ mark: "url", value: url });
+  }
+  return splitAddressHint(text, marks);
 });
 
 async function loadLink(diagramId: string): Promise<void> {

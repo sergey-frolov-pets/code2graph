@@ -156,6 +156,17 @@
   overflow: hidden;
 }
 
+.library-step--detail {
+  overflow: auto;
+}
+
+.library-step--detail > .library-step__content {
+  flex: none;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+}
+
 .library-step__toolbar {
   display: flex;
   align-items: center;

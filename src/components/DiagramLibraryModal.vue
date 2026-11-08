@@ -121,6 +121,7 @@ const flow = reactive(
         :import-bundle="flow.importBundle"
         :is-transfer-processing="flow.isTransferProcessing"
         :show-admin-tab="flow.showAdminTab"
+        :is-local-library="flow.libraryTarget === 'local'"
         @setup-completed="flow.onSetupCompleted()"
         @all-sections-click="flow.onAllSectionsClick()"
         @section-row-click="flow.onSectionRowClick($event)"

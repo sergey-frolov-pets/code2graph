@@ -10,6 +10,7 @@ defineProps<{
   uploadFile: File | null;
   maxSizeKb: number;
   isUploading: boolean;
+  isLocalLibrary: boolean;
 }>();
 
 const uploadTitle = defineModel<string>("uploadTitle", { required: true });
@@ -72,7 +73,7 @@ const { t } = useLocale();
         </option>
       </select>
     </label>
-    <label class="settings-field">
+    <label v-if="!isLocalLibrary" class="settings-field">
       <span class="settings-field__label">{{ t("library.visibility") }}</span>
       <select v-model="uploadVisibility" class="select">
         <option v-for="option in VISIBILITY_OPTIONS" :key="option" :value="option">

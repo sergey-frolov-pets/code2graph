@@ -14,6 +14,7 @@ const props = defineProps<{
   isSectionsEditMode: boolean;
   canCreateSharedSection: boolean;
   canManageSubscriptions: boolean;
+  isLocalLibrary: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -35,6 +36,10 @@ function canAdminSection(sectionId: string): boolean {
   return Boolean(section?.canAdmin);
 }
 
+function canManageSection(sectionId: string): boolean {
+  return props.isLocalLibrary || canAdminSection(sectionId);
+}
+
 function sectionIcon(sectionId: string): string {
   const section = props.flatSections.find((entry) => entry.id === sectionId);
   return section ? getSectionAccessIcon(section) : "📁";
@@ -46,7 +51,7 @@ function sectionIcon(sectionId: string): string {
     <div class="library-step__toolbar library-step__toolbar--actions-only">
       <div class="library-step__toolbar-actions">
         <IconButton
-          v-if="canManageSubscriptions"
+          v-if="canManageSubscriptions && !isLocalLibrary"
           :label="t('library.subscriptionAddTitle')"
           @click="emit('subscriptions-click')"
         >
@@ -60,7 +65,7 @@ function sectionIcon(sectionId: string): string {
           <ActionIcon name="edit" />
         </IconButton>
         <IconButton
-          v-if="isSectionsEditMode && canCreateSharedSection"
+          v-if="isSectionsEditMode && (canCreateSharedSection || isLocalLibrary)"
           :label="t('library.addSection')"
           @click="emit('create-section', null)"
         >
@@ -91,6 +96,7 @@ function sectionIcon(sectionId: string): string {
       </button>
 
       <button
+        v-if="!isLocalLibrary"
         class="library-row"
         :class="{ 'is-active': selectedSectionId === RATINGS_SECTION_ID }"
         type="button"
@@ -119,17 +125,18 @@ function sectionIcon(sectionId: string): string {
           <span v-if="!isSectionsEditMode" class="library-row__chevron">›</span>
         </button>
         <div
-          v-if="!isSectionsEditMode"
+          v-if="!isSectionsEditMode && !isLocalLibrary"
           class="library-section-row__actions library-section-row__actions--inline"
         >
           <IconButton
+            v-if="!isLocalLibrary"
             :label="t('library.shareLink')"
             @click.stop="emit('share-section', section.id, section.title)"
           >
             <ActionIcon name="export" />
           </IconButton>
           <IconButton
-            v-if="canAdminSection(section.id)"
+            v-if="!isLocalLibrary && canAdminSection(section.id)"
             :label="t('library.sectionAccess')"
             @click.stop="emit('manage-access', section.id, section.title)"
           >
@@ -138,27 +145,28 @@ function sectionIcon(sectionId: string): string {
         </div>
         <div v-if="isSectionsEditMode" class="library-section-row__actions">
           <IconButton
+            v-if="!isLocalLibrary"
             :label="t('library.shareLink')"
             @click.stop="emit('share-section', section.id, section.title)"
           >
             <ActionIcon name="export" />
           </IconButton>
           <IconButton
-            v-if="canAdminSection(section.id)"
+            v-if="!isLocalLibrary && canAdminSection(section.id)"
             :label="t('library.sectionAccess')"
             @click.stop="emit('manage-access', section.id, section.title)"
           >
             <ActionIcon name="edit" />
           </IconButton>
           <IconButton
-            v-if="canAdminSection(section.id)"
+            v-if="canManageSection(section.id)"
             :label="t('library.addSubsection')"
             @click.stop="emit('create-section', section.id)"
           >
             <ActionIcon name="plus" />
           </IconButton>
           <IconButton
-            v-if="canAdminSection(section.id)"
+            v-if="canManageSection(section.id)"
             :label="t('app.delete')"
             @click.stop="emit('delete-section', section.id, section.title)"
           >

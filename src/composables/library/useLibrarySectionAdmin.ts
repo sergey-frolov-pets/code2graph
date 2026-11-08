@@ -1,4 +1,5 @@
 import { computed, ref, type ComputedRef, type Ref } from "vue";
+import { getLibraryTargetRef } from "@/config/library-target";
 import type { TranslateFn } from "@/locales/types";
 import { flattenSections } from "@/shared/library/section-tree";
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
@@ -49,6 +50,7 @@ export function useLibrarySectionAdmin(options: {
     confirm,
   } = options;
 
+  const isLocalLibrary = computed(() => getLibraryTargetRef().value === "local");
   const isSectionsEditMode = ref(false);
   const editingSectionId = ref<string | null>(null);
   const isSectionModalOpen = ref(false);
@@ -95,7 +97,7 @@ export function useLibrarySectionAdmin(options: {
   }
 
   async function createSection(parentId: string | null): Promise<void> {
-    if (parentId === null && !isAdmin.value) {
+    if (parentId === null && !isAdmin.value && !isLocalLibrary.value) {
       uploadError.value = t("library.sharedSectionAdminOnly");
       return;
     }

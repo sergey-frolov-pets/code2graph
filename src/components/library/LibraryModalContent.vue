@@ -75,6 +75,7 @@ defineProps<{
   importBundle: LibraryExportBundle | null;
   isTransferProcessing: boolean;
   showAdminTab: boolean;
+  isLocalLibrary: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -158,6 +159,7 @@ const emit = defineEmits<{
         :is-sections-edit-mode="isSectionsEditMode"
         :can-create-shared-section="isAdmin"
         :can-manage-subscriptions="canManageSubscriptions"
+        :is-local-library="isLocalLibrary"
         @all-sections-click="emit('all-sections-click')"
         @section-row-click="emit('section-row-click', $event)"
         @toggle-edit-mode="emit('toggle-edit-mode')"
@@ -197,6 +199,7 @@ const emit = defineEmits<{
         :diagrams="diagrams"
         :all-tags="allTags"
         :is-loading="isLoading"
+        :is-local-library="isLocalLibrary"
         @update:search-query="emit('update:search-query', $event)"
         @update:tag-filter="emit('update:tag-filter', $event)"
         @update:min-rating-filter="emit('update:min-rating-filter', $event)"
@@ -224,6 +227,7 @@ const emit = defineEmits<{
         :render-mode="renderMode"
         :layout="layout"
         :diagram-dark-mode="diagramDarkMode"
+        :is-local-library="isLocalLibrary"
         @update:edit-title="emit('update:edit-title', $event)"
         @update:edit-description="emit('update:edit-description', $event)"
         @update:edit-tags="emit('update:edit-tags', $event)"
@@ -254,6 +258,7 @@ const emit = defineEmits<{
         :upload-file="uploadFile"
         :max-size-kb="maxSizeKb"
         :is-uploading="isUploading"
+        :is-local-library="isLocalLibrary"
         @update:upload-title="emit('update:upload-title', $event)"
         @update:upload-description="emit('update:upload-description', $event)"
         @update:upload-tags="emit('update:upload-tags', $event)"
