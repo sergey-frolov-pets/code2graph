@@ -59,30 +59,6 @@ const targetToggleLabel = computed(() =>
         ← {{ t("library.back") }}
       </button>
       <h2 class="library-header__title">{{ headerTitle }}</h2>
-      <nav
-        v-if="breadcrumbItems.length > 1"
-        class="library-breadcrumbs"
-        :aria-label="t('library.breadcrumbs')"
-      >
-        <template v-for="(item, index) in breadcrumbItems" :key="`${item.label}-${index}`">
-          <button
-            v-if="item.action"
-            type="button"
-            class="library-breadcrumbs__link"
-            @click="item.action?.()"
-          >
-            {{ item.label }}
-          </button>
-          <span v-else class="library-breadcrumbs__current">{{ item.label }}</span>
-          <span
-            v-if="index < breadcrumbItems.length - 1"
-            class="library-breadcrumbs__sep"
-            aria-hidden="true"
-          >
-            ›
-          </span>
-        </template>
-      </nav>
       <div class="library-header__actions">
         <IconButton
           v-if="showModeTabs"
@@ -150,5 +126,30 @@ const targetToggleLabel = computed(() =>
         </IconButton>
       </nav>
     </div>
+
+    <nav
+      v-if="breadcrumbItems.length > 1"
+      class="library-breadcrumbs"
+      :aria-label="t('library.breadcrumbs')"
+    >
+      <template v-for="(item, index) in breadcrumbItems" :key="`${item.label}-${index}`">
+        <button
+          v-if="item.action"
+          type="button"
+          class="library-breadcrumbs__link"
+          @click="item.action?.()"
+        >
+          {{ item.label }}
+        </button>
+        <span v-else class="library-breadcrumbs__current">{{ item.label }}</span>
+        <span
+          v-if="index < breadcrumbItems.length - 1"
+          class="library-breadcrumbs__sep"
+          aria-hidden="true"
+        >
+          ›
+        </span>
+      </template>
+    </nav>
   </header>
 </template>

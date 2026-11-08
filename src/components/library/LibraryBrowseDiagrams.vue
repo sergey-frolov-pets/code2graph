@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useVirtualizer } from "@tanstack/vue-virtual";
-import LibraryStarRating from "@/components/library/LibraryStarRating.vue";
+import ActionIcon from "@/components/icons/ActionIcon.vue";
+import IconButton from "@/components/IconButton.vue";
 import EmptyState from "@/components/ui/EmptyState.vue";
 import LoadingState from "@/components/ui/LoadingState.vue";
 import { useLocale } from "@/composables/useLocale";
 import { LIBRARY_ROW_ESTIMATE_HEIGHT } from "@/constants/library-browse";
 import type { DiagramListItemDto, DiagramSortOption } from "@/constants/diagram-library";
 import { DIAGRAM_SORT_OPTIONS } from "@/constants/diagram-library";
+import { formatDate } from "@/shared/format-date";
+import { diagramAllowsWrite, getDiagramFormatLabel } from "@/utils/library-display";
 
 const props = defineProps<{
   diagrams: DiagramListItemDto[];
@@ -24,10 +27,12 @@ const sortByFilter = defineModel<DiagramSortOption>("sortByFilter", { required: 
 const emit = defineEmits<{
   "diagram-pick": [diagramId: string];
   "filters-change": [];
+  "delete-diagram": [payload: { id: string; title: string }];
 }>();
 
 const { t } = useLocale();
 const listRef = ref<HTMLElement | null>(null);
+const filtersOpen = ref(false);
 
 const rowVirtualizer = useVirtualizer(
   computed(() => ({
@@ -40,6 +45,21 @@ const rowVirtualizer = useVirtualizer(
 
 const virtualRows = computed(() => rowVirtualizer.value.getVirtualItems());
 
+const activeFilterCount = computed(() => {
+  let count = 0;
+  if (tagFilter.value) count += 1;
+  if (minRatingFilter.value > 0) count += 1;
+  if (minVotesFilter.value > 0) count += 1;
+  if (sortByFilter.value !== "updated") count += 1;
+  return count;
+});
+
+const filtersLabel = computed(() =>
+  activeFilterCount.value > 0
+    ? `${t("library.filters")} (${activeFilterCount.value})`
+    : t("library.filters"),
+);
+
 function onFiltersChange(): void {
   emit("filters-change");
 }
@@ -47,53 +67,92 @@ function onFiltersChange(): void {
 function diagramAt(index: number): DiagramListItemDto {
   return props.diagrams[index]!;
 }
+
+function measureRow(node: unknown): void {
+  if (node instanceof Element) {
+    rowVirtualizer.value.measureElement(node);
+  }
+}
+
+function metaLine(diagram: DiagramListItemDto): string {
+  const parts = [
+    getDiagramFormatLabel(diagram.language),
+    formatDate(diagram.updatedAt),
+  ];
+  if (diagram.authorName) {
+    parts.push(diagram.authorName);
+  }
+  if (diagram.avgRating) {
+    parts.push(diagram.avgRating.toFixed(1));
+  }
+  return parts.join(" · ");
+}
+
+function onDelete(diagram: DiagramListItemDto): void {
+  emit("delete-diagram", { id: diagram.id, title: diagram.title });
+}
 </script>
 
 <template>
-  <div class="library-step">
+  <div
+    class="library-step"
+    :style="{ '--library-row-height': `${LIBRARY_ROW_ESTIMATE_HEIGHT}px` }"
+  >
     <div class="library-filters">
-      <input
-        v-model="searchQuery"
-        class="select library-search"
-        type="search"
-        :placeholder="t('library.searchPlaceholder')"
-      />
-      <select v-model="tagFilter" class="select" @change="onFiltersChange()">
-        <option value="">{{ t("library.filterByTag") }}</option>
-        <option v-for="tag in allTags" :key="tag" :value="tag">
-          {{ tag }}
-        </option>
-      </select>
-      <label class="library-filter-field">
-        <span>{{ t("library.filterMinRating") }}</span>
-        <select
-          v-model.number="minRatingFilter"
-          class="select"
-          @change="onFiltersChange()"
-        >
-          <option :value="0">{{ t("library.filterAny") }}</option>
-          <option v-for="star in 5" :key="star" :value="star">{{ star }}+</option>
-        </select>
-      </label>
-      <label class="library-filter-field">
-        <span>{{ t("library.filterMinVotes") }}</span>
+      <div class="library-filters__bar">
         <input
-          v-model.number="minVotesFilter"
-          class="select"
-          type="number"
-          min="0"
-          step="1"
-          @change="onFiltersChange()"
+          v-model="searchQuery"
+          class="select library-search"
+          type="search"
+          :placeholder="t('library.searchPlaceholder')"
         />
-      </label>
-      <label class="library-filter-field">
-        <span>{{ t("library.sortBy") }}</span>
-        <select v-model="sortByFilter" class="select" @change="onFiltersChange()">
-          <option v-for="option in DIAGRAM_SORT_OPTIONS" :key="option" :value="option">
-            {{ t(`library.sortBy.${option}`) }}
+        <button
+          class="btn library-filters__toggle"
+          type="button"
+          :aria-expanded="filtersOpen"
+          @click="filtersOpen = !filtersOpen"
+        >
+          {{ filtersLabel }}
+        </button>
+      </div>
+      <div v-show="filtersOpen" class="library-filters__advanced">
+        <select v-model="tagFilter" class="select" @change="onFiltersChange()">
+          <option value="">{{ t("library.filterByTag") }}</option>
+          <option v-for="tag in allTags" :key="tag" :value="tag">
+            {{ tag }}
           </option>
         </select>
-      </label>
+        <label class="library-filter-field">
+          <span>{{ t("library.filterMinRating") }}</span>
+          <select
+            v-model.number="minRatingFilter"
+            class="select"
+            @change="onFiltersChange()"
+          >
+            <option :value="0">{{ t("library.filterAny") }}</option>
+            <option v-for="star in 5" :key="star" :value="star">{{ star }}+</option>
+          </select>
+        </label>
+        <label class="library-filter-field">
+          <span>{{ t("library.filterMinVotes") }}</span>
+          <input
+            v-model.number="minVotesFilter"
+            class="select"
+            type="number"
+            min="0"
+            step="1"
+            @change="onFiltersChange()"
+          />
+        </label>
+        <label class="library-filter-field">
+          <span>{{ t("library.sortBy") }}</span>
+          <select v-model="sortByFilter" class="select" @change="onFiltersChange()">
+            <option v-for="option in DIAGRAM_SORT_OPTIONS" :key="option" :value="option">
+              {{ t(`library.sortBy.${option}`) }}
+            </option>
+          </select>
+        </label>
+      </div>
     </div>
 
     <div ref="listRef" class="library-step__content library-step__content--virtual">
@@ -111,13 +170,15 @@ function diagramAt(index: number): DiagramListItemDto {
         <div
           v-for="virtualRow in virtualRows"
           :key="String(virtualRow.key)"
-          class="library-virtual-list__row"
+          :ref="measureRow"
+          class="library-virtual-list__row library-browse-row list-virtual-row"
+          :data-index="virtualRow.index"
           :style="{
             transform: `translateY(${virtualRow.start}px)`,
           }"
         >
           <button
-            class="library-row list-virtual-row"
+            class="library-row library-row--compact"
             type="button"
             @click="emit('diagram-pick', diagramAt(virtualRow.index).id)"
           >
@@ -126,26 +187,7 @@ function diagramAt(index: number): DiagramListItemDto {
                 {{ diagramAt(virtualRow.index).title }}
               </span>
               <span class="library-row__meta">
-                {{ t("library.bytes", { size: diagramAt(virtualRow.index).byteSize }) }}
-                <template v-if="(diagramAt(virtualRow.index).voteCount ?? 0) > 0">
-                  ·
-                  {{
-                    t("library.ratingVotesShort", {
-                      votes: diagramAt(virtualRow.index).voteCount ?? 0,
-                    })
-                  }}
-                </template>
-              </span>
-              <span
-                v-if="diagramAt(virtualRow.index).avgRating"
-                class="library-row__rating"
-              >
-                <LibraryStarRating
-                  :value="Math.round(diagramAt(virtualRow.index).avgRating!)"
-                  readonly
-                  size="sm"
-                />
-                <span>{{ diagramAt(virtualRow.index).avgRating!.toFixed(1) }}</span>
+                {{ metaLine(diagramAt(virtualRow.index)) }}
               </span>
               <span
                 v-if="diagramAt(virtualRow.index).description"
@@ -153,21 +195,17 @@ function diagramAt(index: number): DiagramListItemDto {
               >
                 {{ diagramAt(virtualRow.index).description }}
               </span>
-              <span
-                v-if="diagramAt(virtualRow.index).tags.length"
-                class="library-row__tags"
-              >
-                <span
-                  v-for="tag in diagramAt(virtualRow.index).tags"
-                  :key="tag"
-                  class="library-tag"
-                >
-                  {{ tag }}
-                </span>
-              </span>
             </span>
-            <span class="library-row__chevron">›</span>
+            <span class="library-row__chevron" aria-hidden="true">›</span>
           </button>
+          <IconButton
+            v-if="diagramAllowsWrite(diagramAt(virtualRow.index))"
+            class="library-browse-row__delete"
+            :label="t('app.delete')"
+            @click="onDelete(diagramAt(virtualRow.index))"
+          >
+            <ActionIcon name="trash" />
+          </IconButton>
         </div>
       </div>
     </div>
@@ -180,13 +218,7 @@ function diagramAt(index: number): DiagramListItemDto {
   flex-direction: column;
   gap: 4px;
   font-size: 0.8rem;
-}
-
-.library-row__rating {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
+  color: var(--text-muted);
 }
 
 .library-virtual-list {
@@ -199,5 +231,30 @@ function diagramAt(index: number): DiagramListItemDto {
   top: 0;
   left: 0;
   width: 100%;
+}
+
+.library-browse-row {
+  display: flex;
+  align-items: stretch;
+  height: var(--library-row-height);
+  contain-intrinsic-size: 0 var(--library-row-height);
+  border-bottom: 1px solid var(--border);
+}
+
+.library-browse-row .library-row {
+  height: 100%;
+  border-bottom: 0;
+  padding: 8px 12px;
+}
+
+.library-row--compact .library-row__title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.library-browse-row__delete {
+  align-self: center;
+  margin-right: 8px;
 }
 </style>

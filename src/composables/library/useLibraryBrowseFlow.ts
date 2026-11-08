@@ -24,12 +24,7 @@ export function useLibraryBrowseFlow(options: {
     () => activeTab.value === "browse" && browseStep.value !== "sections",
   );
 
-  const showModeTabs = computed(
-    () =>
-      activeTab.value !== "browse" ||
-      browseStep.value === "sections" ||
-      browseStep.value === "subscriptions",
-  );
+  const showModeTabs = computed(() => true);
 
   const sectionTitle = computed(() => {
     if (library.selectedSectionId.value === FAVORITES_SECTION_ID) {

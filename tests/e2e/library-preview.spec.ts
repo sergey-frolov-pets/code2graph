@@ -94,4 +94,33 @@ test("library local preview modal opens with rendered svg", async ({
       timeout: 30_000,
     },
   );
+
+  await modal.locator(".modal-footer").getByRole("button", { name: /Close|Закрыть/ }).click();
+  await expect(modal).toBeHidden();
+
+  const library = page.locator(".library-screen");
+  await library.getByRole("button", { name: /More|Ещё/ }).click();
+  await library.getByRole("button", { name: /Versions|Версии/ }).click();
+
+  const versionsModal = page.locator(".modal-backdrop.is-above-library");
+  await expect(versionsModal).toBeVisible();
+  await expect(versionsModal).toContainText(
+    /Version history is available in the online library|История версий доступна в онлайн-библиотеке/,
+  );
+  await versionsModal
+    .locator(".modal-footer")
+    .getByRole("button", { name: /Close|Закрыть/ })
+    .click();
+
+  const moreButton = library.getByRole("button", { name: /More|Ещё/ });
+  if ((await moreButton.getAttribute("aria-expanded")) !== "true") {
+    await moreButton.click();
+  }
+  await library.locator(".library-detail__delete").click();
+  const confirmDialog = page.locator(".app-dialog");
+  await expect(confirmDialog).toContainText(/E2E Preview Diagram/);
+  await confirmDialog.getByRole("button", { name: /Cancel|Отмена/ }).click();
+  await expect(page.locator(".library-header__title")).toHaveText(
+    "E2E Preview Diagram",
+  );
 });

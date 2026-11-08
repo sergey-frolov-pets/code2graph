@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { computed, ref, watch } from "vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import LibraryDiagramRatingPanel from "@/components/library/LibraryDiagramRatingPanel.vue";
 import LibraryDataLinkFields from "@/components/library/LibraryDataLinkFields.vue";
 import LibraryStarRating from "@/components/library/LibraryStarRating.vue";
 import { useLocale } from "@/composables/useLocale";
+import { useLibraryDiagramPreview } from "@/composables/useLibraryDiagramPreview";
+import type { LayoutEngine } from "@/constants";
+import type { RenderMode } from "@/constants/render-settings";
 import { isLocaleKey } from "@/locales/types";
 import { formatDate } from "@/shared/format-date";
 import { VISIBILITY_OPTIONS } from "@/constants/library-visibility";
@@ -16,14 +20,17 @@ import {
   type DiagramVisibility,
 } from "@/constants/diagram-library";
 import type { FlatSectionOption } from "@/shared/library/section-tree";
-import { getDiagramFormatLabel } from "@/utils/library-display";
+import { diagramAllowsWrite, getDiagramFormatLabel } from "@/utils/library-display";
 
-defineProps<{
+const props = defineProps<{
   diagram: DiagramDto;
   flatSectionOptions: FlatSectionOption[];
   isEditing: boolean;
   isSaving: boolean;
   libraryApiUrl?: string;
+  renderMode: RenderMode;
+  layout: LayoutEngine;
+  diagramDarkMode: boolean;
 }>();
 
 const editTitle = defineModel<string>("editTitle", { required: true });
@@ -51,6 +58,36 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
+const moreOpen = ref(false);
+const preview = useLibraryDiagramPreview();
+const previewError = preview.error;
+const previewRendering = preview.isRendering;
+const previewMarkup = preview.previewMarkup;
+const allowsWrite = computed(() => diagramAllowsWrite(props.diagram));
+
+watch(
+  () =>
+    [
+      props.diagram.id,
+      props.diagram.source,
+      props.diagram.updatedAt,
+      props.renderMode,
+      props.layout,
+      props.diagramDarkMode,
+    ] as const,
+  () => {
+    moreOpen.value = false;
+    void preview.renderPreview(props.diagram.source, {
+      watermarked: props.diagram.canDownload === false,
+      fileName: props.diagram.fileName,
+      language: props.diagram.language,
+      renderMode: props.renderMode,
+      dark: props.diagramDarkMode,
+      layout: props.layout,
+    });
+  },
+  { immediate: true },
+);
 
 function contentLocaleLabel(locale: string): string {
   if (!locale) {
@@ -137,25 +174,17 @@ function contentLocaleLabel(locale: string): string {
 
     <template v-else>
       <div class="library-step__toolbar">
-        <div class="library-detail__badges">
-          <span class="library-badge library-badge--format">
-            {{ getDiagramFormatLabel(diagram.language) }}
-          </span>
-          <span
-            v-if="diagram.contentLocale"
-            class="library-badge library-badge--locale"
-          >
-            {{ diagram.contentLocale.toUpperCase() }}
-          </span>
-        </div>
-        <span class="library-detail__file-name">{{ diagram.fileName }}</span>
         <div class="library-step__toolbar-actions">
-          <IconButton
-            :label="t('library.openInEditor')"
+          <button
+            class="btn btn-primary"
+            type="button"
             :disabled="diagram.canDownload === false"
             @click="emit('open-in-editor')"
           >
-            <ActionIcon name="folder-open" />
+            {{ t("library.openInEditor") }}
+          </button>
+          <IconButton :label="t('library.preview')" @click="emit('preview')">
+            <ActionIcon name="eye" />
           </IconButton>
           <IconButton
             :label="
@@ -168,86 +197,114 @@ function contentLocaleLabel(locale: string): string {
           >
             <ActionIcon name="star" />
           </IconButton>
-          <IconButton :label="t('library.shareLink')" @click="emit('share')">
-            <ActionIcon name="export" />
-          </IconButton>
-          <IconButton :label="t('library.preview')" @click="emit('preview')">
-            <ActionIcon name="eye" />
-          </IconButton>
-          <IconButton
-            v-if="diagram.canWrite"
-            :label="t('library.versions')"
-            @click="emit('open-versions')"
+          <button
+            class="btn"
+            type="button"
+            :aria-expanded="moreOpen"
+            @click="moreOpen = !moreOpen"
           >
-            <ActionIcon name="history" />
-          </IconButton>
-          <IconButton
-            v-if="diagram.canWrite"
-            :label="t('library.edit')"
-            @click="emit('start-edit')"
-          >
-            <ActionIcon name="edit" />
-          </IconButton>
-          <IconButton
-            v-if="diagram.canWrite"
-            :label="t('app.delete')"
-            @click="emit('delete')"
-          >
-            <ActionIcon name="trash" />
-          </IconButton>
+            {{ t("library.moreActions") }}
+          </button>
         </div>
+      </div>
+      <div v-if="moreOpen" class="library-detail__more">
+        <button
+          v-if="allowsWrite"
+          class="btn"
+          type="button"
+          @click="emit('start-edit')"
+        >
+          {{ t("library.edit") }}
+        </button>
+        <button class="btn" type="button" @click="emit('share')">
+          {{ t("library.shareLink") }}
+        </button>
+        <button class="btn" type="button" @click="emit('open-versions')">
+          {{ t("library.versions") }}
+        </button>
+        <button
+          v-if="allowsWrite"
+          class="btn library-detail__delete"
+          type="button"
+          @click="emit('delete')"
+        >
+          {{ t("app.delete") }}
+        </button>
       </div>
 
       <div class="library-step__content library-step__content--padded">
-        <button
-          class="library-detail__open-card"
-          type="button"
-          :aria-label="t('library.openInEditor')"
-          :disabled="diagram.canDownload === false"
-          @click="emit('open-in-editor')"
-        >
-          <p class="library-detail__meta">
-            {{ t("library.updatedAt", { date: formatDate(diagram.updatedAt) }) }}
-            <template v-if="diagram.authorName">
-              · {{ t("library.author", { name: diagram.authorName }) }}
-            </template>
-            · {{ t(`library.visibility.${diagram.visibility ?? "all"}`) }}
-            <template v-if="diagram.contentLocale">
-              · {{ contentLocaleLabel(diagram.contentLocale) }}
-            </template>
-            <template v-if="diagram.voteCount">
-              · {{ t("library.ratingVotesShort", { votes: diagram.voteCount }) }}
-            </template>
-          </p>
-          <p v-if="diagram.avgRating" class="library-detail__rating">
-            <LibraryStarRating
-              :value="Math.round(diagram.avgRating)"
-              readonly
-              size="sm"
+        <div class="library-detail__layout">
+          <section class="library-detail__summary">
+            <h3 class="library-detail__title">{{ diagram.title }}</h3>
+            <div class="library-detail__badges">
+              <span class="library-badge library-badge--format">
+                {{ getDiagramFormatLabel(diagram.language) }}
+              </span>
+              <span
+                v-if="diagram.contentLocale"
+                class="library-badge library-badge--locale"
+              >
+                {{ diagram.contentLocale.toUpperCase() }}
+              </span>
+            </div>
+            <p class="library-detail__meta">
+              {{ t("library.updatedAt", { date: formatDate(diagram.updatedAt) }) }}
+              <template v-if="diagram.authorName">
+                · {{ t("library.author", { name: diagram.authorName }) }}
+              </template>
+              · {{ t(`library.visibility.${diagram.visibility ?? "all"}`) }}
+              <template v-if="diagram.contentLocale">
+                · {{ contentLocaleLabel(diagram.contentLocale) }}
+              </template>
+              <template v-if="diagram.voteCount">
+                · {{ t("library.ratingVotesShort", { votes: diagram.voteCount }) }}
+              </template>
+            </p>
+            <p class="library-detail__file">{{ diagram.fileName }}</p>
+            <p v-if="diagram.avgRating" class="library-detail__rating">
+              <LibraryStarRating
+                :value="Math.round(diagram.avgRating)"
+                readonly
+                size="sm"
+              />
+              <span>{{ diagram.avgRating.toFixed(1) }}</span>
+            </p>
+            <p
+              class="library-detail__description"
+              :class="{ 'library-detail__description--empty': !diagram.description }"
+            >
+              {{ diagram.description || t("library.emptyDescription") }}
+            </p>
+            <div v-if="diagram.tags.length" class="library-detail__tags">
+              <span v-for="tag in diagram.tags" :key="tag" class="library-tag">
+                {{ tag }}
+              </span>
+            </div>
+            <p
+              v-if="diagram.canDownload === false"
+              class="library-detail__restricted"
+            >
+              {{ t("library.downloadRestricted") }}
+            </p>
+          </section>
+
+          <section class="library-detail__preview" :aria-label="t('library.preview')">
+            <p v-if="previewError" class="library-detail__preview-status">
+              {{ previewError }}
+            </p>
+            <p v-else-if="previewRendering" class="library-detail__preview-status">
+              {{ t("library.previewLoading") }}
+            </p>
+            <div
+              v-else-if="previewMarkup"
+              class="library-detail__preview-frame"
+              v-html="previewMarkup"
             />
-            <span>{{ diagram.avgRating.toFixed(1) }}</span>
-          </p>
-          <p
-            class="library-detail__description"
-            :class="{ 'library-detail__description--empty': !diagram.description }"
-          >
-            {{ diagram.description || t("library.emptyDescription") }}
-          </p>
-          <div v-if="diagram.tags.length" class="library-detail__tags">
-            <span v-for="tag in diagram.tags" :key="tag" class="library-tag">
-              {{ tag }}
-            </span>
-          </div>
-          <span
-            v-if="diagram.canDownload !== false"
-            class="library-detail__open-hint"
-          >
-            {{ t("library.openInEditorHint") }}
-          </span>
-          <span v-else class="library-detail__open-hint library-detail__open-hint--muted">
-            {{ t("library.downloadRestricted") }}
-          </span>
-        </button>
+            <p v-else class="library-detail__preview-status">
+              {{ t("library.previewEmpty") }}
+            </p>
+          </section>
+        </div>
         <LibraryDiagramRatingPanel
           :diagram="diagram"
           :api-url="libraryApiUrl"
@@ -278,25 +335,64 @@ function contentLocaleLabel(locale: string): string {
 }
 
 .library-badge--format {
-  background: var(--accent-muted, #e8f0fe);
-  color: var(--accent-color, #1a56db);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--accent);
 }
 
 .library-badge--locale {
-  background: var(--surface-muted, #f3f4f6);
-  color: var(--text-muted, #4b5563);
+  background: var(--surface-muted);
+  color: var(--text-muted);
 }
 
-.library-detail__file-name {
-  flex: 1 1 100%;
-  width: 100%;
-  max-width: 100%;
+.library-detail__more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.library-detail__delete {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+}
+
+.library-detail__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 42%);
+  gap: 12px;
+  align-items: start;
+}
+
+.library-detail__summary,
+.library-detail__preview {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.9rem;
-  font-weight: 600;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.library-detail__title {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+}
+
+.library-detail__file,
+.library-detail__restricted,
+.library-detail__preview-status {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.library-detail__preview-frame {
+  overflow: auto;
+  max-height: 360px;
+}
+
+.library-detail__preview-frame :deep(svg) {
+  display: block;
+  max-width: 100%;
+  height: auto;
 }
 
 .library-detail__rating {
@@ -306,7 +402,9 @@ function contentLocaleLabel(locale: string): string {
   margin: 8px 0 0;
 }
 
-.library-detail__open-hint--muted {
-  color: var(--text-muted, #666);
+@media (max-width: 800px) {
+  .library-detail__layout {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
