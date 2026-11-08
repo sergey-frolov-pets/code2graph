@@ -29,6 +29,7 @@ const view = computed(() => {
     case "mcp":
       return McpPage;
     case "diagram":
+    case "clipboard":
       return App;
     default:
       return LandingPage;

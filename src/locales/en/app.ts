@@ -47,4 +47,8 @@ export const appMessages = {
   "app.copyPngFailed": "Failed to copy PNG to the clipboard",
   "app.copyPngUnsupported": "This browser cannot copy a PNG image to the clipboard",
   "app.engineLoadError": "Engine loading error",
+  "app.clipboardDiagramTitle": "Diagram from the clipboard",
+  "app.clipboardDiagramHint": "The browser asks before reading the clipboard. Press the button to paste the diagram into a new editor.",
+  "app.clipboardDiagramRead": "Check the clipboard",
+  "app.clipboardNotDiagram": "The clipboard does not contain a diagrams-as-code diagram.",
 } as const satisfies LocaleMessages;

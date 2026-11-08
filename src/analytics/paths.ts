@@ -34,6 +34,7 @@ const STATIC_PATHS: Record<string, string> = {
   "/register": "/register",
   "/account": "/account",
   "/cabinet": "/account",
+  "/diagram": "/diagram",
 };
 
 const LANGUAGE_ROUTE = /^\/lang\/([a-z0-9]+)$/;

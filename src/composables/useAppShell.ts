@@ -29,6 +29,10 @@ import { getDiagramFormatDefinition } from "@/constants/diagram-formats";
 import { PENDING_SHARE_STORAGE_KEY } from "@/constants/library-share";
 import { PENDING_SUBSCRIPTION_STORAGE_KEY } from "@/constants/library-subscription";
 import {
+  createClipboardDiagramUi,
+  type ClipboardDiagramUi,
+} from "@/composables/useClipboardDiagram";
+import {
   createDiagramDataLinkUi,
   type DiagramDataLinkUi,
 } from "@/composables/useDiagramDataLink";
@@ -115,6 +119,7 @@ export interface AppShellContext {
   copyPng: () => Promise<boolean>;
   boot: () => void;
   dataLink: DiagramDataLinkUi;
+  clipboardDiagram: ClipboardDiagramUi;
 }
 
 export const APP_SHELL_KEY: InjectionKey<AppShellContext> = Symbol("app-shell");
@@ -527,6 +532,13 @@ export function useAppShell(): AppShellContext {
     onFileLoaded,
   });
 
+  const clipboardDiagram = createClipboardDiagramUi({
+    t,
+    alert,
+    activeMobilePanel,
+    applyToNewTab: applyWizardDiagramToNewTab,
+  });
+
   function boot(): void {
     restoreDocumentMetadata();
     restoreSettings();
@@ -536,6 +548,7 @@ export function useAppShell(): AppShellContext {
     void bootEngine();
     void handleShareLinkOnBoot();
     void dataLink.openFromHash();
+    void clipboardDiagram.openFromLocation();
   }
 
   return {
@@ -602,5 +615,6 @@ export function useAppShell(): AppShellContext {
     copyPng,
     boot,
     dataLink,
+    clipboardDiagram,
   };
 }

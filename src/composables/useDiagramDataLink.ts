@@ -279,6 +279,7 @@ export function createDiagramDataLinkUi(options: {
     const parsed = parseAppRoute({
       hash: window.location.hash,
       pathname: window.location.pathname,
+      search: window.location.search,
     });
     if (parsed.name !== "diagram" || !parsed.diagramSlug) {
       return;
