@@ -55,6 +55,7 @@ const props = defineProps<{
   isRendering: boolean;
   canUndo?: boolean;
   canRedo?: boolean;
+  canRefreshData?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -72,6 +73,7 @@ const emit = defineEmits<{
   aiSyntaxAsk: [];
   "editor-focus": [];
   "editor-blur": [];
+  refreshData: [];
 }>();
 
 const { t } = useLocale();
@@ -389,6 +391,7 @@ onUnmounted(() => {
       :can-ai-patch="canClear"
       :can-ai-syntax-ask="canClear"
       :can-paste-table="canPasteTable"
+      :can-refresh-data="canRefreshData"
       :snippets-open="snippetsOpen"
       :is-fullscreen="isFullscreen"
       :surface-mode="surfaceMode"
@@ -401,6 +404,7 @@ onUnmounted(() => {
       @ai-patch="requestAiPatch"
       @ai-syntax-ask="emit('aiSyntaxAsk')"
       @paste-table="onPasteTableFromClipboard"
+      @refresh-data="emit('refreshData')"
       @validate-syntax="emit('validateSyntax')"
       @undo="emit('undo')"
       @redo="emit('redo')"

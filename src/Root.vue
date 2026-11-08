@@ -28,6 +28,8 @@ const view = computed(() => {
       return LanguagePage;
     case "mcp":
       return McpPage;
+    case "diagram":
+      return App;
     default:
       return LandingPage;
   }

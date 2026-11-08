@@ -5,6 +5,8 @@ import AppModalHost from "@/components/AppModalHost.vue";
 import TooltipProvider from "@/components/ui/TooltipProvider.vue";
 import DiagramEditor from "@/components/DiagramEditor.vue";
 import DiagramPreview from "@/components/DiagramPreview.vue";
+import DiagramDataSourceDialog from "@/components/DiagramDataSourceDialog.vue";
+import TablePasteErrorModal from "@/components/TablePasteErrorModal.vue";
 import AppHeader from "@/components/layout/AppHeader.vue";
 import AppStatusBar from "@/components/layout/AppStatusBar.vue";
 import PreviewFab from "@/components/layout/PreviewFab.vue";
@@ -158,6 +160,7 @@ onUnmounted(() => {
         :is-rendering="isRendering"
         :can-undo="canUndo"
         :can-redo="canRedo"
+        :can-refresh-data="shell.dataLink.canRefresh.value"
         @file-loaded="shell.onEditorFileLoaded"
         @import-error="shell.onImportError"
         @save-puml="shell.savePuml"
@@ -167,6 +170,7 @@ onUnmounted(() => {
         @cleared="shell.onEditorClearedWithLink"
         @undo="shell.applySourceUndo"
         @redo="shell.applySourceRedo"
+        @refresh-data="shell.dataLink.refresh()"
         @convert="modals.openConvertModal"
         @ai-patch="shell.onAiPatchRequestOpen"
         @ai-syntax-ask="shell.onAiSyntaxAskOpen()"
@@ -205,6 +209,7 @@ onUnmounted(() => {
         v-model:diagram-font-style="diagramFontStyle"
         v-model:diagram-dark-mode="diagramDarkMode"
         v-model:render-mode="renderMode"
+        :expand-signal="shell.dataLink.expandSignal.value"
         @render-now="shell.renderDiagram"
         @export-svg="shell.exportSvg"
         @export-png="shell.exportPng"
@@ -222,6 +227,22 @@ onUnmounted(() => {
 
     <AppDialogHost />
     <AppModalHost />
+    <DiagramDataSourceDialog
+      :open="shell.dataLink.chooserOpen.value"
+      :file-path-label="shell.dataLink.filePathLabel.value"
+      :sheet-range="shell.dataLink.sheetRange.value"
+      :clipboard-ready="shell.dataLink.clipboardReady.value"
+      :busy="shell.dataLink.busy.value"
+      :error-message="shell.dataLink.errorMessage.value"
+      @close="shell.dataLink.closeChooser()"
+      @use-clipboard="shell.dataLink.applyFromClipboard()"
+      @use-file="shell.dataLink.applyFromFile()"
+    />
+    <TablePasteErrorModal
+      :open="shell.dataLink.pasteErrorOpen.value"
+      :error="shell.dataLink.pasteError.value"
+      @close="shell.dataLink.closePasteError()"
+    />
     <TooltipProvider />
   </div>
 </template>

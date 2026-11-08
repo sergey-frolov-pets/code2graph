@@ -8,6 +8,7 @@ import LibraryDiagramDetail from "@/components/library/LibraryDiagramDetail.vue"
 import LibraryAdminUsersPanel from "@/components/library/LibraryAdminUsersPanel.vue";
 import LibrarySetupAdminPanel from "@/components/library/LibrarySetupAdminPanel.vue";
 import LibraryUploadForm from "@/components/library/LibraryUploadForm.vue";
+import LibraryDataLinkSetupHint from "@/components/library/LibraryDataLinkSetupHint.vue";
 import type { BrowseStep, LibraryTab } from "@/composables/library/useLibraryBrowseFlow";
 import type {
   DiagramDto,
@@ -134,6 +135,7 @@ const emit = defineEmits<{
   <div class="library-body">
     <p v-if="uploadError" class="library-error">{{ uploadError }}</p>
     <p v-if="errorMessage" class="library-error">{{ errorMessage }}</p>
+    <LibraryDataLinkSetupHint />
 
     <LibrarySetupAdminPanel
       v-if="isOnlineSetupPending"

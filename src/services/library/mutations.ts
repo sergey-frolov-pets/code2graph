@@ -33,6 +33,7 @@ import {
   updateLocalDiagram,
   updateLocalSection,
 } from "@/storage/diagram-store";
+import { deleteLocalDataLink } from "@/storage/local-data-links";
 import type { LibraryCatalog } from "@/composables/library/useLibraryCatalog";
 import type { LibrarySync } from "@/composables/library/useLibrarySync";
 
@@ -230,6 +231,7 @@ export async function removeLibraryDiagram(
   ctx: LibraryMutationContext,
   diagramId: string,
 ): Promise<void> {
+  await deleteLocalDataLink(diagramId).catch(() => undefined);
   const { catalog, sync, searchDiagrams } = ctx;
   if (catalog.shouldUseServer.value && catalog.apiAvailable.value) {
     try {

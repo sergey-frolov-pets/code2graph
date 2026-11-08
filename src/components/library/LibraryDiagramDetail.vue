@@ -2,6 +2,7 @@
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import LibraryDiagramRatingPanel from "@/components/library/LibraryDiagramRatingPanel.vue";
+import LibraryDataLinkFields from "@/components/library/LibraryDataLinkFields.vue";
 import LibraryStarRating from "@/components/library/LibraryStarRating.vue";
 import { useLocale } from "@/composables/useLocale";
 import { isLocaleKey } from "@/locales/types";
@@ -254,6 +255,7 @@ function contentLocaleLabel(locale: string): string {
         />
       </div>
     </template>
+    <LibraryDataLinkFields :diagram-id="diagram.id" />
   </div>
 </template>
 

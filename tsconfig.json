@@ -25,6 +25,7 @@
     "src/**/*.tsx",
     "src/**/*.vue",
     "src/**/*.test.ts",
+    "src/types/**/*.d.ts",
     "packages/shared/src/**/*.ts"
   ]
 }

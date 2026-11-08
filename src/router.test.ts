@@ -6,6 +6,7 @@ describe("app routes", () => {
     expect(parseRouteFromHash("#/mcp")).toEqual({
       name: "mcp",
       languageId: null,
+      diagramSlug: null,
     });
     expect(routeHash("mcp")).toBe("#/mcp");
   });
@@ -14,6 +15,25 @@ describe("app routes", () => {
     expect(parseRouteFromHash("#/")).toEqual({
       name: "landing",
       languageId: null,
+      diagramSlug: null,
+    });
+  });
+
+  it("opens a local diagram data link from the hash", () => {
+    expect(parseRouteFromHash("#/diagram/waterfall")).toEqual({
+      name: "diagram",
+      languageId: null,
+      diagramSlug: "waterfall",
+    });
+    expect(parseRouteFromHash("#/diagram/Water-Fall")).toEqual({
+      name: "diagram",
+      languageId: null,
+      diagramSlug: "water-fall",
+    });
+    expect(parseRouteFromHash("#/diagram/")).toEqual({
+      name: "landing",
+      languageId: null,
+      diagramSlug: null,
     });
   });
 });
