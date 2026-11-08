@@ -1,6 +1,6 @@
 import { onMounted, onUnmounted, ref, watch, type Ref } from "vue";
 import type { DiagramFormat } from "@/constants/diagram-formats";
-import { parseRouteFromHash } from "@/router";
+import { parseAppRoute } from "@/router";
 import {
   applyTableFromClipboardText,
   type TablePasteErrorInfo,
@@ -276,7 +276,10 @@ export function createDiagramDataLinkUi(options: {
   }
 
   async function openFromHash(): Promise<void> {
-    const parsed = parseRouteFromHash(window.location.hash);
+    const parsed = parseAppRoute({
+      hash: window.location.hash,
+      pathname: window.location.pathname,
+    });
     if (parsed.name !== "diagram" || !parsed.diagramSlug) {
       return;
     }

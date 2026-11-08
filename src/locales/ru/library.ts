@@ -307,5 +307,7 @@ export const libraryMessages = {
   "library.dataLink.sheetMissing": "Лист «{sheet}» не найден",
   "library.dataLink.emptyRange": "В диапазоне нет строк",
   "library.dataLink.setupTitle": "Ссылка в этом браузере не настроена",
-  "library.dataLink.setupHint": "#/diagram/{slug} здесь не найдена. Сохраните диаграмму в локальную библиотеку, укажите файл, диапазон, опцию «до пустой строки» и имя ссылки.",
+  "library.dataLink.addressLabel": "Адрес",
+  "library.dataLink.addressHint": "Открывайте адрес без решётки, например https://www.code2graph.ru/local/w.",
+  "library.dataLink.setupHint": "Адрес www.code2graph.ru/local/{slug} в этом браузере не найден. Сохраните диаграмму в локальную библиотеку, укажите файл, диапазон, опцию «до пустой строки» и имя ссылки.",
 } as const satisfies LocaleMessages;

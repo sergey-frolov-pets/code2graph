@@ -355,6 +355,21 @@ export function buildSingleHtmlDocument({
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function (l) {
+        if (l.search.length > 1 && l.search.charAt(1) === "/") {
+          var decoded = l.search
+            .slice(1)
+            .split("&")
+            .map(function (part) {
+              return part.replace(/~and~/g, "&");
+            })
+            .join("?");
+          var base = l.pathname.replace(/\\/$/, "");
+          history.replaceState(null, "", base + decoded + l.hash);
+        }
+      })(location);
+    </script>
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
