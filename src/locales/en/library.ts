@@ -313,7 +313,7 @@ export const libraryMessages = {
   "library.dataLink.emptyRange": "The range has no rows",
   "library.dataLink.setupTitle": "This link is not set up in this browser",
   "library.dataLink.addressLabel": "Address",
-  "library.dataLink.addressHint": "Open the diagram {local} with synchronized data at {url}, where g is the link name.",
+  "library.dataLink.addressHint": "Open the diagram {local} with synchronized data at {example}.",
   "library.dataLink.addressHintLocal": "LOCALLY",
   "library.dataLink.setupHint": "www.code2graph.ru/local/{slug} is not saved in this browser. Save a diagram in the local library, then set the file, the range, the empty-row option, and a link name.",
 } as const satisfies LocaleMessages;

@@ -40,7 +40,7 @@ const showCsvHint = computed(() =>
   /\.csv$/i.test(filePathLabel.value) || /\.csv$/i.test(fileName.value),
 );
 
-type AddressHintMark = "text" | "local" | "url";
+type AddressHintMark = "text" | "local" | "example";
 
 interface AddressHintPart {
   key: string;
@@ -112,18 +112,14 @@ watch(
 
 const addressHintParts = computed(() => {
   const localWord = t("library.dataLink.addressHintLocal");
-  const url = hintUrl.value;
   const text = t("library.dataLink.addressHint", {
     local: localWord,
-    url,
+    example: DATA_LINK_EXAMPLE_URL,
   });
-  const marks: Array<{ mark: Exclude<AddressHintMark, "text">; value: string }> = [
+  return splitAddressHint(text, [
     { mark: "local", value: localWord },
-  ];
-  if (slugLinkReady.value) {
-    marks.push({ mark: "url", value: url });
-  }
-  return splitAddressHint(text, marks);
+    { mark: "example", value: DATA_LINK_EXAMPLE_URL },
+  ]);
 });
 
 async function loadLink(diagramId: string): Promise<void> {
@@ -281,16 +277,25 @@ async function onCopyLink(): Promise<void> {
         v-model="slug"
         class="select"
         type="text"
+        data-testid="library-data-link-slug"
         :placeholder="t('library.dataLink.slugPlaceholder')"
         @blur="slug = slug.trim().toLowerCase()"
       />
     </label>
-    <p class="library-data-link__note">
+    <p class="library-data-link__note" data-testid="library-data-link-address">
       <template v-for="part in addressHintParts" :key="part.key">
         <strong v-if="part.mark === 'local'">{{ part.text }}</strong>
-        <a v-else-if="part.mark === 'url'" :href="part.text">{{ part.text }}</a>
+        <span
+          v-else-if="part.mark === 'example'"
+          data-testid="library-data-link-example"
+        >{{ part.text }}</span>
         <template v-else>{{ part.text }}</template>
       </template>
+      <a
+        v-if="slugLinkReady"
+        data-testid="library-data-link-live"
+        :href="hintUrl"
+      >{{ hintUrl }}</a>
     </p>
     <p v-if="fileName" class="library-data-link__note">{{ fileName }}</p>
     <p v-if="errorMessage" class="library-data-link__error" role="alert">

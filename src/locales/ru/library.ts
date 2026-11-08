@@ -313,7 +313,7 @@ export const libraryMessages = {
   "library.dataLink.emptyRange": "В диапазоне нет строк",
   "library.dataLink.setupTitle": "Ссылка в этом браузере не настроена",
   "library.dataLink.addressLabel": "Адрес",
-  "library.dataLink.addressHint": "Открывайте {local} диаграмму с синхронизированными данными по ссылке {url}, где g это имя ссылки.",
+  "library.dataLink.addressHint": "Открывайте {local} диаграмму с синхронизированными данными по ссылке {example}.",
   "library.dataLink.addressHintLocal": "ЛОКАЛЬНО",
   "library.dataLink.setupHint": "Адрес www.code2graph.ru/local/{slug} в этом браузере не найден. Сохраните диаграмму в локальную библиотеку, укажите файл, диапазон, опцию «до пустой строки» и имя ссылки.",
 } as const satisfies LocaleMessages;
