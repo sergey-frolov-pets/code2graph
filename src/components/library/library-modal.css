@@ -433,6 +433,11 @@
   font-size: 0.88rem;
 }
 
+.library-data-link__note strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
 .library-data-link__error {
   margin: 0;
 }
