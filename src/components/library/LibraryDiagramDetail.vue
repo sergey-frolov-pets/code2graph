@@ -232,10 +232,38 @@ function contentLocaleLabel(locale: string): string {
         </button>
       </div>
 
+      <div class="library-detail__primary">
+        <section class="library-detail__summary">
+          <h3 class="library-detail__title">{{ diagram.title }}</h3>
+          <p
+            class="library-detail__description"
+            :class="{ 'library-detail__description--empty': !diagram.description }"
+          >
+            {{ diagram.description || t("library.emptyDescription") }}
+          </p>
+        </section>
+
+        <section class="library-detail__preview" :aria-label="t('library.preview')">
+          <p v-if="previewError" class="library-detail__preview-status">
+            {{ previewError }}
+          </p>
+          <p v-else-if="previewRendering" class="library-detail__preview-status">
+            {{ t("library.previewLoading") }}
+          </p>
+          <div
+            v-else-if="previewMarkup"
+            class="library-detail__preview-frame"
+            v-html="previewMarkup"
+          />
+          <p v-else class="library-detail__preview-status">
+            {{ t("library.previewEmpty") }}
+          </p>
+        </section>
+        <LibraryDataLinkFields :diagram-id="diagram.id" />
+      </div>
+
       <div class="library-step__content library-step__content--padded">
-        <div class="library-detail__layout">
-          <section class="library-detail__summary">
-            <h3 class="library-detail__title">{{ diagram.title }}</h3>
+        <section class="library-detail__summary">
             <div class="library-detail__badges">
               <span class="library-badge library-badge--format">
                 {{ getDiagramFormatLabel(diagram.language) }}
@@ -269,12 +297,6 @@ function contentLocaleLabel(locale: string): string {
               />
               <span>{{ diagram.avgRating.toFixed(1) }}</span>
             </p>
-            <p
-              class="library-detail__description"
-              :class="{ 'library-detail__description--empty': !diagram.description }"
-            >
-              {{ diagram.description || t("library.emptyDescription") }}
-            </p>
             <div v-if="diagram.tags.length" class="library-detail__tags">
               <span v-for="tag in diagram.tags" :key="tag" class="library-tag">
                 {{ tag }}
@@ -286,25 +308,7 @@ function contentLocaleLabel(locale: string): string {
             >
               {{ t("library.downloadRestricted") }}
             </p>
-          </section>
-
-          <section class="library-detail__preview" :aria-label="t('library.preview')">
-            <p v-if="previewError" class="library-detail__preview-status">
-              {{ previewError }}
-            </p>
-            <p v-else-if="previewRendering" class="library-detail__preview-status">
-              {{ t("library.previewLoading") }}
-            </p>
-            <div
-              v-else-if="previewMarkup"
-              class="library-detail__preview-frame"
-              v-html="previewMarkup"
-            />
-            <p v-else class="library-detail__preview-status">
-              {{ t("library.previewEmpty") }}
-            </p>
-          </section>
-        </div>
+        </section>
         <LibraryDiagramRatingPanel
           :diagram="diagram"
           :api-url="libraryApiUrl"
@@ -312,7 +316,7 @@ function contentLocaleLabel(locale: string): string {
         />
       </div>
     </template>
-    <LibraryDataLinkFields :diagram-id="diagram.id" />
+    <LibraryDataLinkFields v-if="isEditing" :diagram-id="diagram.id" />
   </div>
 </template>
 
@@ -355,13 +359,6 @@ function contentLocaleLabel(locale: string): string {
   border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
 }
 
-.library-detail__layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 42%);
-  gap: 12px;
-  align-items: start;
-}
-
 .library-detail__summary,
 .library-detail__preview {
   min-width: 0;
@@ -385,8 +382,7 @@ function contentLocaleLabel(locale: string): string {
 }
 
 .library-detail__preview-frame {
-  overflow: auto;
-  max-height: 360px;
+  overflow: visible;
 }
 
 .library-detail__preview-frame :deep(svg) {
@@ -402,9 +398,4 @@ function contentLocaleLabel(locale: string): string {
   margin: 8px 0 0;
 }
 
-@media (max-width: 800px) {
-  .library-detail__layout {
-    grid-template-columns: 1fr;
-  }
-}
 </style>

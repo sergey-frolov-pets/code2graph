@@ -6,8 +6,8 @@ export const DATA_LINK_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export const PUBLIC_DATA_LINK_ORIGIN = "https://www.code2graph.ru";
 
-/** Sample slug in the local-data hint: `https://www.code2graph.ru/local/w`. */
-export const DATA_LINK_EXAMPLE_SLUG = "w";
+/** Sample slug in the local-data hint: `https://www.code2graph.ru/local/g`. */
+export const DATA_LINK_EXAMPLE_SLUG = "g";
 
 export const DATA_LINK_EXAMPLE_URL = `${PUBLIC_DATA_LINK_ORIGIN}/local/${DATA_LINK_EXAMPLE_SLUG}`;
 
