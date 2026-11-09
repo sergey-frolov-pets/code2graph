@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import AppDialogHost from "@/components/AppDialogHost.vue";
+import LibraryDataLinkImportDialog from "@/components/library/LibraryDataLinkImportDialog.vue";
 import AppModalHost from "@/components/AppModalHost.vue";
 import TooltipProvider from "@/components/ui/TooltipProvider.vue";
 import DiagramEditor from "@/components/DiagramEditor.vue";
@@ -293,6 +294,7 @@ onUnmounted(() => {
     />
 
     <AppDialogHost />
+    <LibraryDataLinkImportDialog />
     <AppModalHost />
     <ClipboardDiagramPrompt
       :open="shell.clipboardDiagram.promptOpen.value"

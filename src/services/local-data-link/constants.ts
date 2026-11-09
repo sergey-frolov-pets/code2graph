@@ -13,6 +13,17 @@ export const DATA_LINK_EXAMPLE_URL = `${PUBLIC_DATA_LINK_ORIGIN}/local/${DATA_LI
 
 export const DATA_LINK_CHANGED_EVENT = "code2graph-data-link-changed";
 
+/** Default cell rectangle until a link stores its own range. */
+export const DATA_LINK_DEFAULT_RANGE = "A1:B2";
+
+/**
+ * Keyword written into the diagram source so another device can restore
+ * the local link instead of asking the user to create it from scratch.
+ */
+export const DATA_LINK_SOURCE_KEYWORD = "code2graph-data-link";
+
+export const DATA_LINK_SOURCE_UPDATED_EVENT = "code2graph-data-link-source-updated";
+
 export const DATA_LINK_SETUP_HINT_KEY = "code2graph-data-link-setup-hint";
 
 export const DATA_LINK_SETUP_HINT_EVENT = "code2graph-data-link-setup-hint";

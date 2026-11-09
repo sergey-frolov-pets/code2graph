@@ -1,4 +1,7 @@
 import { onUnmounted } from "vue";
+import type { DiagramDto } from "@/constants/diagram-library";
+import { DATA_LINK_SOURCE_UPDATED_EVENT } from "@/services/local-data-link/constants";
+import type { DataLinkMarkerUpdatedDetail } from "@/services/local-data-link/sync-diagram-source";
 import { useLibraryCatalog } from "./library/useLibraryCatalog";
 import { useLibraryMutations } from "./library/useLibraryMutations";
 import { useLibrarySync } from "./library/useLibrarySync";
@@ -8,6 +11,20 @@ let libraryInstance: ReturnType<typeof createDiagramLibrary> | null = null;
 
 function createDiagramLibrary() {
   const catalog = useLibraryCatalog();
+
+  function onDataLinkMarkerUpdated(event: Event): void {
+    const detail = (event as CustomEvent<DataLinkMarkerUpdatedDetail>).detail;
+    const diagram: DiagramDto | undefined = detail?.diagram;
+    if (!diagram || catalog.selectedDiagram.value?.id !== diagram.id) {
+      return;
+    }
+    catalog.selectedDiagram.value = diagram;
+  }
+
+  if (typeof window !== "undefined") {
+    window.addEventListener(DATA_LINK_SOURCE_UPDATED_EVENT, onDataLinkMarkerUpdated);
+  }
+
   const sync = useLibrarySync(catalog);
   const mutations = useLibraryMutations(catalog, sync);
   const transfer = useLibraryTransfer(catalog, sync, mutations);
