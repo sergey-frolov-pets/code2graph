@@ -206,12 +206,26 @@ function cssRules(css: string): CssRule[] {
 }
 
 const NODE_SHAPE_SELECTOR = "rect, polygon, ellipse, circle, path";
+const NODE_SHAPE_TAGS = new Set(["rect", "path", "circle", "polygon", "ellipse"]);
 
-/** Вложенные path (формулы KaTeX, иконки) не задают заливку самого блока. */
+/**
+ * Правило красит саму фигуру блока.
+ * Потомки вроде `.node .katex path` и `.node circle .state-start`
+ * задают чужую заливку: из-за неё ромб получал чёрный фон и светлый текст.
+ */
 function isNodeShapeRule(selector: string): boolean {
   if (!selector.includes(".node")) return false;
-  if (!/\b(?:rect|path|circle|polygon|ellipse)\b/.test(selector)) return false;
-  return !/katex|label-icon|icon-shape|marker|arrowhead/.test(selector);
+  if (/katex|label-icon|icon-shape|marker|arrowhead/.test(selector)) return false;
+  const parts = selector.split(",").map((part) => part.trim()).filter(Boolean);
+  if (parts.length === 0) return false;
+  return parts.every((part) => {
+    const tokens = part.split(/\s+/);
+    const subject = tokens[tokens.length - 1] ?? "";
+    const tag = subject.split(/[.#:\[]/)[0] ?? "";
+    if (!NODE_SHAPE_TAGS.has(tag)) return false;
+    const before = tokens.slice(0, -1).join(" ").replace(/\.node\b/g, "");
+    return !/\.[a-z0-9_-]/i.test(before);
+  });
 }
 
 function cssNodeFill(css: string, look: string | null): string | null {

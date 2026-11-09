@@ -89,6 +89,7 @@ describe("applyDiagramAppearance", () => {
         #flow .label text,#flow span{fill:#333;color:#333;}
         #flow .node rect,#flow .node circle,#flow .node ellipse,#flow .node polygon,#flow .node path{fill:#ECECFF;stroke:#9370DB;}
         #flow .node .katex path{fill:#000;stroke:#000;}
+        #flow [data-look="neo"].node circle .state-start{fill:#000000;}
       </style>
       <g class="node default" data-look="neo">
         <path d="M10 20 h80 v30 h-80 z" fill="#ECECFF"></path>
@@ -96,7 +97,7 @@ describe("applyDiagramAppearance", () => {
           <div xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel"><p>Старт</p></span></div>
         </foreignObject>
       </g>
-      <g class="node default" data-look="classic">
+      <g class="node default" data-look="neo">
         <polygon points="20,80 60,60 100,80 60,100"></polygon>
         <foreignObject x="40" y="74" width="40" height="16">
           <div xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel"><p>Валидно?</p></span></div>
