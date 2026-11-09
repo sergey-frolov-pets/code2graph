@@ -20,6 +20,7 @@ import type {
   SectionDto,
 } from "@/constants/diagram-library";
 import type { FlatSectionOption } from "@/shared/library/section-tree";
+import type { MoveDiagramRequest } from "@/utils/library-move-targets";
 import { RATINGS_SECTION_ID } from "@/constants/diagram-library";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
@@ -32,6 +33,7 @@ defineProps<{
   activeTab: LibraryTab;
   browseStep: BrowseStep;
   flatSectionOptions: FlatSectionOption[];
+  moveSectionOptions: FlatSectionOption[];
   flatSections: SectionDto[];
   selectedSectionId: string | null;
   isSectionsEditMode: boolean;
@@ -109,6 +111,7 @@ const emit = defineEmits<{
   "rating-updated": [diagram: DiagramDto];
   "open-versions": [];
   "delete-diagram": [payload: { id: string; title: string }];
+  "move-diagram": [payload: MoveDiagramRequest];
   "file-change": [event: Event];
   "submit-upload": [];
   export: [payload: { sectionIds: Set<string>; diagramIds: Set<string> }];
@@ -200,6 +203,9 @@ const emit = defineEmits<{
         :all-tags="allTags"
         :is-loading="isLoading"
         :is-local-library="isLocalLibrary"
+        :selected-section-id="selectedSectionId"
+        :move-section-options="moveSectionOptions"
+        :flat-section-options="flatSectionOptions"
         @update:search-query="emit('update:search-query', $event)"
         @update:tag-filter="emit('update:tag-filter', $event)"
         @update:min-rating-filter="emit('update:min-rating-filter', $event)"
@@ -208,6 +214,7 @@ const emit = defineEmits<{
         @diagram-pick="emit('diagram-pick', $event)"
         @filters-change="emit('filters-change')"
         @delete-diagram="emit('delete-diagram', $event)"
+        @move-diagram="emit('move-diagram', $event)"
       />
 
       <LibraryDiagramDetail
@@ -221,6 +228,7 @@ const emit = defineEmits<{
         :edit-content-locale="editContentLocale"
         :diagram="selectedDiagram"
         :flat-section-options="flatSectionOptions"
+        :move-section-options="moveSectionOptions"
         :is-editing="isEditing"
         :is-saving="isSaving"
         :library-api-url="libraryApiUrl"
@@ -242,6 +250,7 @@ const emit = defineEmits<{
         @share="emit('share')"
         @preview="emit('preview')"
         @delete="emit('delete')"
+        @move="emit('move-diagram', $event)"
         @toggle-favorite="emit('toggle-favorite')"
         @rating-updated="emit('rating-updated', $event)"
         @open-versions="emit('open-versions')"
