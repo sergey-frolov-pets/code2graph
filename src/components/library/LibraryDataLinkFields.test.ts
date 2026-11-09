@@ -2,6 +2,12 @@
 
 import { createApp, h, nextTick } from "vue";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+const prompt = vi.hoisted(() => vi.fn(async () => null as string | null));
+
+vi.mock("@/composables/useAppDialog", () => ({
+  useAppDialog: () => ({ prompt }),
+}));
 import { setLibraryTarget } from "@/config/library-target";
 import { useLocale } from "@/composables/useLocale";
 import { DATA_LINK_EXAMPLE_URL } from "@/services/local-data-link/constants";
@@ -50,10 +56,15 @@ async function flushSlugCheck(): Promise<void> {
 describe("local data link address hint", () => {
   let mounted: ReturnType<typeof mountFields> | null = null;
 
-  afterEach(() => {
+  afterEach(async () => {
     mounted?.unmount();
     mounted = null;
     document.body.innerHTML = "";
+    const storage = await import("@/storage/local-data-links");
+    vi.mocked(storage.getLocalDataLink).mockResolvedValue(null);
+    vi.mocked(storage.findLocalDataLinkBySlug).mockResolvedValue(null);
+    prompt.mockReset();
+    prompt.mockResolvedValue(null);
   });
 
   it("shows a plain example URL, then a live link for the typed name", async () => {
@@ -94,5 +105,50 @@ describe("local data link address hint", () => {
     expect(address?.textContent).toContain(liveUrl);
     expect(address?.textContent).not.toContain(DATA_LINK_EXAMPLE_URL);
     expect(address?.textContent?.split(liveUrl)).toHaveLength(2);
+    expect(
+      mounted.host.querySelector('[data-testid="library-data-link-inactive"]'),
+    ).not.toBeNull();
+    expect(mounted.host.textContent).toContain("Неактивна");
+  });
+
+  it("keeps an inactive link inactive when the name is taken and rename is cancelled", async () => {
+    const storage = await import("@/storage/local-data-links");
+    vi.mocked(storage.getLocalDataLink).mockResolvedValue({
+      diagramId: "diagram-1",
+      slug: "waterfall",
+      filePathLabel: "C:\\data\\waterfall.xlsx",
+      sheetRange: "A1:B2",
+      untilEmptyRow: false,
+      fileName: "waterfall.xlsx",
+      fileHandle: null,
+      inactive: true,
+    });
+    vi.mocked(storage.findLocalDataLinkBySlug).mockResolvedValue({
+      diagramId: "other-diagram",
+      slug: "waterfall",
+      filePathLabel: "",
+      sheetRange: "A1:B2",
+      untilEmptyRow: false,
+      fileName: "",
+      fileHandle: null,
+      inactive: false,
+    });
+    prompt.mockClear();
+
+    useLocale().setLocale("ru");
+    setLibraryTarget("local");
+    mounted = mountFields();
+    await flushSlugCheck();
+
+    const checkbox = mounted.host.querySelector<HTMLInputElement>(
+      '[data-testid="library-data-link-inactive"]',
+    );
+    expect(checkbox?.checked).toBe(true);
+    checkbox!.checked = false;
+    checkbox!.dispatchEvent(new Event("change", { bubbles: true }));
+    await flushSlugCheck();
+
+    expect(prompt).toHaveBeenCalled();
+    expect(checkbox?.checked).toBe(true);
   });
 });

@@ -23,6 +23,7 @@ import { loadDiagramDetailFromCache } from "@/storage/diagram-store";
 import {
   findLocalDataLinkBySlug,
   getLocalDataLink,
+  isActiveLocalDataLink,
   saveLocalDataLink,
   type LocalDataLinkRecord,
 } from "@/storage/local-data-links";
@@ -90,7 +91,7 @@ export function createDiagramDataLinkUi(options: {
       return;
     }
     const link = await getLocalDataLink(diagramId);
-    canRefresh.value = Boolean(link);
+    canRefresh.value = isActiveLocalDataLink(link);
     if (link && activeLink?.diagramId === link.diagramId) {
       activeLink = link;
     }
@@ -268,7 +269,7 @@ export function createDiagramDataLinkUi(options: {
     }
     const clipboardPromise = startClipboardRead();
     const link = await getLocalDataLink(diagramId);
-    if (!link) {
+    if (!link || !isActiveLocalDataLink(link)) {
       canRefresh.value = false;
       return;
     }

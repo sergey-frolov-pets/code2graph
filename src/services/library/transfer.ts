@@ -23,6 +23,7 @@ import {
   loadSectionsFromCache,
   saveDiagramDetailToCache,
 } from "@/storage/diagram-store";
+import { adoptLocalDataLinkForDiagram } from "@/services/local-data-link/adopt-local-link";
 import type { LibraryCatalog } from "@/composables/library/useLibraryCatalog";
 import type { LibrarySync } from "@/composables/library/useLibrarySync";
 
@@ -95,6 +96,11 @@ export async function importLibrarySelection(
   await ctx.sync.applyLocalState();
   await ctx.searchDiagrams();
   ctx.catalog.usingCache.value = true;
+
+  const imported = bundle.diagrams.filter((diagram) => diagramIds.has(diagram.id));
+  for (const diagram of imported) {
+    await adoptLocalDataLinkForDiagram(diagram);
+  }
 }
 
 export async function pushLibrarySelectionToServer(

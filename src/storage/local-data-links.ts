@@ -22,6 +22,8 @@ export interface LocalDataLinkRecord {
   untilEmptyRow: boolean;
   fileName: string;
   fileHandle: FileSystemFileHandle | null;
+  /** Inactive links do not open and do not reserve the slug. */
+  inactive?: boolean;
 }
 
 export class LocalDataLinkSlugTakenError extends Error {
@@ -72,17 +74,30 @@ export async function getLocalDataLink(
   );
 }
 
+export function isActiveLocalDataLink(
+  record: Pick<LocalDataLinkRecord, "inactive"> | null | undefined,
+): boolean {
+  return Boolean(record && !record.inactive);
+}
+
+async function readLinksBySlug(slug: string): Promise<LocalDataLinkRecord[]> {
+  const normalized = normalizeDataLinkSlug(slug);
+  if (!normalized) {
+    return [];
+  }
+  return runTransaction("readonly", (store) =>
+    requestResult(
+      store.index(SLUG_INDEX).getAll(normalized) as IDBRequest<LocalDataLinkRecord[]>,
+    ),
+  );
+}
+
+/** Active link for this slug. Inactive rows may share the name. */
 export async function findLocalDataLinkBySlug(
   slug: string,
 ): Promise<LocalDataLinkRecord | null> {
-  const normalized = normalizeDataLinkSlug(slug);
-  return runTransaction("readonly", (store) =>
-    requestResult(
-      store.index(SLUG_INDEX).get(normalized) as IDBRequest<
-        LocalDataLinkRecord | undefined
-      >,
-    ).then((record) => record ?? null),
-  );
+  const matches = await readLinksBySlug(slug);
+  return matches.find((record) => isActiveLocalDataLink(record)) ?? null;
 }
 
 export async function listLocalDataLinks(): Promise<LocalDataLinkRecord[]> {
@@ -103,12 +118,15 @@ export async function saveLocalDataLink(
     throw new Error("invalid_slug");
   }
 
-  const taken = await findLocalDataLinkBySlug(slug);
-  if (taken && taken.diagramId !== record.diagramId) {
-    throw new LocalDataLinkSlugTakenError("slug_taken");
+  const inactive = Boolean(record.inactive);
+  if (!inactive) {
+    const taken = await findLocalDataLinkBySlug(slug);
+    if (taken && taken.diagramId !== record.diagramId) {
+      throw new LocalDataLinkSlugTakenError("slug_taken");
+    }
   }
 
-  const next: LocalDataLinkRecord = { ...record, slug };
+  const next: LocalDataLinkRecord = { ...record, slug, inactive };
   try {
     await putRecord(next);
   } catch {

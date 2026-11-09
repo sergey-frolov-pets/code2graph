@@ -1,13 +1,13 @@
 export function openIndexedDatabase(
   name: string,
   version: number,
-  onUpgrade: (db: IDBDatabase) => void,
+  onUpgrade: (db: IDBDatabase, transaction: IDBTransaction | null) => void,
 ): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(name, version);
 
     request.onupgradeneeded = () => {
-      onUpgrade(request.result);
+      onUpgrade(request.result, request.transaction);
     };
 
     request.onsuccess = () => resolve(request.result);
@@ -19,7 +19,7 @@ export function openIndexedDatabase(
 export function runIndexedTransaction<T>(
   dbName: string,
   dbVersion: number,
-  onUpgrade: (db: IDBDatabase) => void,
+  onUpgrade: (db: IDBDatabase, transaction: IDBTransaction | null) => void,
   storeNames: string | string[],
   mode: IDBTransactionMode,
   callback: (stores: Record<string, IDBObjectStore>) => Promise<T> | T,

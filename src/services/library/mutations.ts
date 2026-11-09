@@ -33,6 +33,7 @@ import {
   updateLocalDiagram,
   updateLocalSection,
 } from "@/storage/diagram-store";
+import { adoptLocalDataLinkForDiagram } from "@/services/local-data-link/adopt-local-link";
 import { deleteLocalDataLink } from "@/storage/local-data-links";
 import type { LibraryCatalog } from "@/composables/library/useLibraryCatalog";
 import type { LibrarySync } from "@/composables/library/useLibrarySync";
@@ -169,7 +170,8 @@ export async function addLibraryDiagram(
     }
   }
 
-  const diagram = await createLocalDiagram(payload);
+  const created = await createLocalDiagram(payload);
+  const diagram = await adoptLocalDataLinkForDiagram(created);
   await sync.applyLocalState();
   await searchDiagrams();
   catalog.usingCache.value = true;

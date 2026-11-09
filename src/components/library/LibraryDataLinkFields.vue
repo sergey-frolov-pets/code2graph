@@ -2,12 +2,17 @@
 import { computed, ref, watch } from "vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
+import { useAppDialog } from "@/composables/useAppDialog";
 import { useLocale } from "@/composables/useLocale";
 import { useLibraryTarget } from "@/config/library-target";
 import { diagramDataLinkUrl } from "@/router";
-import { DATA_LINK_EXAMPLE_URL } from "@/services/local-data-link/constants";
+import {
+  DATA_LINK_DEFAULT_RANGE,
+  DATA_LINK_EXAMPLE_URL,
+} from "@/services/local-data-link/constants";
 import { pickSpreadsheetFile } from "@/services/local-data-link/file-access";
 import { parseSheetRange } from "@/services/local-data-link/sheet-range";
+import { syncDataLinkMarkerToDiagram } from "@/services/local-data-link/sync-diagram-source";
 import {
   findLocalDataLinkBySlug,
   getLocalDataLink,
@@ -23,12 +28,14 @@ const props = defineProps<{
 }>();
 
 const { t } = useLocale();
+const { prompt } = useAppDialog();
 const { libraryTarget } = useLibraryTarget();
 const isLocal = computed(() => libraryTarget.value === "local");
 
 const filePathLabel = ref("");
-const sheetRange = ref("A1:B2");
+const sheetRange = ref(DATA_LINK_DEFAULT_RANGE);
 const untilEmptyRow = ref(false);
+const inactive = ref(false);
 const slug = ref("");
 const fileName = ref("");
 const fileHandle = ref<FileSystemFileHandle | null>(null);
@@ -94,10 +101,11 @@ const slugLinkReady = ref(false);
 let slugCheck = 0;
 
 watch(
-  () => [props.diagramId, normalizedSlug.value, isLocal.value] as const,
-  async ([diagramId, normalized, local]) => {
+  () =>
+    [props.diagramId, normalizedSlug.value, isLocal.value, inactive.value] as const,
+  async ([diagramId, normalized, local, linkInactive]) => {
     const ticket = ++slugCheck;
-    if (!local || !isDataLinkSlug(normalized)) {
+    if (!local || !isDataLinkSlug(normalized) || linkInactive) {
       slugLinkReady.value = false;
       return;
     }
@@ -128,8 +136,9 @@ async function loadLink(diagramId: string): Promise<void> {
   statusMessage.value = "";
   const link = await getLocalDataLink(diagramId);
   filePathLabel.value = link?.filePathLabel ?? "";
-  sheetRange.value = link?.sheetRange ?? "A1:B2";
+  sheetRange.value = link?.sheetRange ?? DATA_LINK_DEFAULT_RANGE;
   untilEmptyRow.value = link?.untilEmptyRow ?? false;
+  inactive.value = Boolean(link?.inactive);
   slug.value = link?.slug ?? "";
   fileName.value = link?.fileName ?? "";
   fileHandle.value = link?.fileHandle ?? null;
@@ -165,7 +174,53 @@ function currentRecord(): LocalDataLinkRecord | null {
     untilEmptyRow: untilEmptyRow.value,
     fileName: fileName.value,
     fileHandle: fileHandle.value,
+    inactive: inactive.value,
   };
+}
+
+async function slugForActivation(): Promise<string | null> {
+  let candidate = normalizeDataLinkSlug(slug.value);
+  let message = t("library.dataLink.renameMessage");
+  while (true) {
+    if (isDataLinkSlug(candidate)) {
+      const taken = await findLocalDataLinkBySlug(candidate);
+      if (!taken || taken.diagramId === props.diagramId) {
+        return candidate;
+      }
+      message = t("library.dataLink.renameMessage");
+    } else {
+      message = t("library.dataLink.slugInvalid");
+    }
+
+    const entered = await prompt({
+      title: t("library.dataLink.renameTitle"),
+      message,
+      value: candidate,
+      confirmLabel: t("library.dataLink.renameConfirm"),
+    });
+    if (entered === null) {
+      return null;
+    }
+    candidate = normalizeDataLinkSlug(entered);
+  }
+}
+
+async function onInactiveToggle(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement;
+  if (input.checked) {
+    inactive.value = true;
+    return;
+  }
+
+  const nextSlug = await slugForActivation();
+  if (!nextSlug) {
+    inactive.value = true;
+    input.checked = true;
+    return;
+  }
+
+  slug.value = nextSlug;
+  inactive.value = false;
 }
 
 async function onSave(): Promise<boolean> {
@@ -178,6 +233,12 @@ async function onSave(): Promise<boolean> {
   try {
     await saveLocalDataLink(record);
     slug.value = record.slug;
+    await syncDataLinkMarkerToDiagram(props.diagramId, {
+      slug: record.slug,
+      filePathLabel: record.filePathLabel,
+      sheetRange: record.sheetRange,
+      untilEmptyRow: record.untilEmptyRow,
+    });
     statusMessage.value = t("library.dataLink.saved");
     return true;
   } catch (error) {
@@ -210,6 +271,10 @@ async function onPickFile(): Promise<void> {
 }
 
 async function onOpenLink(): Promise<void> {
+  if (inactive.value) {
+    errorMessage.value = t("library.dataLink.inactiveBlocksOpen");
+    return;
+  }
   const saved = await onSave();
   if (!saved) {
     return;
@@ -218,6 +283,10 @@ async function onOpenLink(): Promise<void> {
 }
 
 async function onCopyLink(): Promise<void> {
+  if (inactive.value) {
+    errorMessage.value = t("library.dataLink.inactiveBlocksOpen");
+    return;
+  }
   const saved = await onSave();
   if (!saved) {
     return;
@@ -236,6 +305,17 @@ async function onCopyLink(): Promise<void> {
   <section v-if="isLocal" class="library-data-link" data-testid="library-data-link">
     <h3 class="library-data-link__title">{{ t("library.dataLink.sectionTitle") }}</h3>
     <p class="library-data-link__note">{{ t("library.dataLink.templateHint") }}</p>
+    <p class="library-data-link__note">{{ t("library.dataLink.markerHint") }}</p>
+    <label class="library-data-link__check">
+      <input
+        type="checkbox"
+        data-testid="library-data-link-inactive"
+        :checked="inactive"
+        @change="onInactiveToggle"
+      />
+      <span>{{ t("library.dataLink.inactive") }}</span>
+    </label>
+    <p class="library-data-link__note">{{ t("library.dataLink.inactiveHint") }}</p>
     <div class="settings-field">
       <span class="settings-field__label">{{ t("library.dataLink.path") }}</span>
       <div class="library-data-link__file-row">
@@ -306,7 +386,7 @@ async function onCopyLink(): Promise<void> {
     <div class="library-detail__actions">
       <IconButton
         :label="t('library.dataLink.openLink')"
-        :disabled="isSaving"
+        :disabled="isSaving || inactive"
         data-testid="library-data-link-open"
         @click="onOpenLink"
       >
@@ -323,7 +403,7 @@ async function onCopyLink(): Promise<void> {
       </IconButton>
       <IconButton
         :label="t('library.dataLink.copyLink')"
-        :disabled="isSaving"
+        :disabled="isSaving || inactive"
         @click="onCopyLink"
       >
         <ActionIcon name="clipboard-copy" />

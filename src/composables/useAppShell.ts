@@ -1,6 +1,8 @@
 import {
   computed,
   inject,
+  onMounted,
+  onUnmounted,
   provide,
   ref,
   watch,
@@ -36,6 +38,12 @@ import {
   createDiagramDataLinkUi,
   type DiagramDataLinkUi,
 } from "@/composables/useDiagramDataLink";
+import {
+  DATA_LINK_SOURCE_KEYWORD,
+  DATA_LINK_SOURCE_UPDATED_EVENT,
+} from "@/services/local-data-link/constants";
+import { upsertDataLinkMarker } from "@/services/local-data-link/source-marker";
+import type { DataLinkMarkerUpdatedDetail } from "@/services/local-data-link/sync-diagram-source";
 
 export interface AppShellContext {
   t: TranslateFn;
@@ -537,6 +545,38 @@ export function useAppShell(): AppShellContext {
     alert,
     activeMobilePanel,
     applyToNewTab: applyWizardDiagramToNewTab,
+  });
+
+  function onDataLinkMarkerUpdated(event: Event): void {
+    const detail = (event as CustomEvent<DataLinkMarkerUpdatedDetail>).detail;
+    if (!detail || detail.diagram.id !== linkedLibraryDiagramId.value) {
+      return;
+    }
+    const related =
+      source.value === detail.previousSource ||
+      source.value.includes(DATA_LINK_SOURCE_KEYWORD);
+    if (!related) {
+      return;
+    }
+    const next = upsertDataLinkMarker(
+      source.value,
+      diagramFormat.value,
+      detail.marker,
+    );
+    if (next === source.value) {
+      return;
+    }
+    withSuppressedSourceHistory(() => {
+      source.value = next;
+    });
+    scheduleRender();
+  }
+
+  onMounted(() => {
+    window.addEventListener(DATA_LINK_SOURCE_UPDATED_EVENT, onDataLinkMarkerUpdated);
+  });
+  onUnmounted(() => {
+    window.removeEventListener(DATA_LINK_SOURCE_UPDATED_EVENT, onDataLinkMarkerUpdated);
   });
 
   function boot(): void {
