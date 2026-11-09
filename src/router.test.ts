@@ -17,6 +17,22 @@ describe("app routes", () => {
     expect(routeHash("mcp")).toBe("#/mcp");
   });
 
+  it("opens a preview tab from its session hash", () => {
+    expect(parseRouteFromHash("#/preview/session-a")).toEqual({
+      name: "preview",
+      languageId: null,
+      diagramSlug: "session-a",
+    });
+  });
+
+  it("keeps a preview hash without a session on the landing", () => {
+    expect(parseRouteFromHash("#/preview")).toEqual({
+      name: "landing",
+      languageId: null,
+      diagramSlug: null,
+    });
+  });
+
   it("keeps the landing as the fallback", () => {
     expect(parseRouteFromHash("#/")).toEqual({
       name: "landing",

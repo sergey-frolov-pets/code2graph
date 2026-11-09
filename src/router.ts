@@ -11,7 +11,8 @@ export type AppRouteName =
   | "language"
   | "mcp"
   | "diagram"
-  | "clipboard";
+  | "clipboard"
+  | "preview";
 
 export interface ParsedAppRoute {
   name: AppRouteName;
@@ -19,7 +20,10 @@ export interface ParsedAppRoute {
   diagramSlug: string | null;
 }
 
-const ROUTE_HASH: Record<Exclude<AppRouteName, "language" | "diagram" | "clipboard">, string> = {
+const ROUTE_HASH: Record<
+  Exclude<AppRouteName, "language" | "diagram" | "clipboard" | "preview">,
+  string
+> = {
   landing: "#/",
   login: "#/login",
   register: "#/register",
@@ -29,6 +33,7 @@ const ROUTE_HASH: Record<Exclude<AppRouteName, "language" | "diagram" | "clipboa
 };
 
 const LANGUAGE_ROUTE = /^lang\/([a-z0-9]+)$/;
+const PREVIEW_ROUTE = /^preview\/([a-z0-9-]+)$/;
 
 function routeResult(
   name: AppRouteName,
@@ -116,6 +121,11 @@ export function parseRouteFromHash(hash: string): ParsedAppRoute {
     return routeResult("language", languageMatch[1]);
   }
 
+  const previewMatch = normalized.match(PREVIEW_ROUTE);
+  if (previewMatch?.[1]) {
+    return routeResult("preview", null, previewMatch[1]);
+  }
+
   switch (normalized) {
     case "app":
     case "editor":
@@ -135,7 +145,7 @@ export function parseRouteFromHash(hash: string): ParsedAppRoute {
 }
 
 export function routeHash(
-  route: Exclude<AppRouteName, "language" | "diagram" | "clipboard">,
+  route: Exclude<AppRouteName, "language" | "diagram" | "clipboard" | "preview">,
 ): string {
   return ROUTE_HASH[route];
 }
@@ -153,7 +163,7 @@ export function diagramDataLinkUrl(origin: string, slug: string): string {
 }
 
 export function navigateTo(
-  route: Exclude<AppRouteName, "diagram" | "clipboard">,
+  route: Exclude<AppRouteName, "diagram" | "clipboard" | "preview">,
   languageId?: DiagramFormat,
 ): void {
   const target =

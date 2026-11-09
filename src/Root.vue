@@ -7,6 +7,7 @@ import AccountPage from "@/pages/AccountPage.vue";
 import LandingPage from "@/pages/LandingPage.vue";
 import LanguagePage from "@/pages/LanguagePage.vue";
 import McpPage from "@/pages/McpPage.vue";
+import PreviewPage from "@/pages/PreviewPage.vue";
 import LoginPage from "@/pages/LoginPage.vue";
 import RegisterPage from "@/pages/RegisterPage.vue";
 
@@ -28,6 +29,8 @@ const view = computed(() => {
       return LanguagePage;
     case "mcp":
       return McpPage;
+    case "preview":
+      return PreviewPage;
     case "diagram":
     case "clipboard":
       return App;

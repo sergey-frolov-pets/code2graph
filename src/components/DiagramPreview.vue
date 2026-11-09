@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import AppearanceModal from "@/components/AppearanceModal.vue";
 import DiagramToolbar from "@/components/DiagramToolbar.vue";
 import LoadingState from "@/components/ui/LoadingState.vue";
+import PanelDualScreenButton from "@/components/PanelDualScreenButton.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
 import { useLocale } from "@/composables/useLocale";
 import { useImageSize } from "@/composables/useImageSize";
@@ -28,6 +29,11 @@ const props = defineProps<{
   copyPng: () => Promise<boolean>;
   /** Increments when a data link should expand the preview. */
   expandSignal?: number;
+  /** Кнопка «превью в другой вкладке». На узкой раскладке редактора её нет. */
+  showDualScreen?: boolean;
+  dualScreenActive?: boolean;
+  /** Заменяет холст, когда вкладка кода больше не на связи. */
+  blockedMessage?: string;
 }>();
 
 const emit = defineEmits<{
@@ -42,6 +48,7 @@ const emit = defineEmits<{
   "update:diagramFontStyle": [value: string];
   "update:renderMode": [value: RenderMode];
   "update:imageSize": [value: { width: number; height: number } | null];
+  toggleDualScreen: [];
 }>();
 
 const { t } = useLocale();
@@ -103,8 +110,20 @@ watch(isFullscreen, (value) => {
 watch(
   () => props.expandSignal,
   (value, previous) => {
+    if (props.dualScreenActive) {
+      return;
+    }
     if (value != null && value > 0 && value !== previous) {
       isFullscreen.value = true;
+    }
+  },
+);
+
+watch(
+  () => props.dualScreenActive,
+  (active) => {
+    if (active) {
+      isFullscreen.value = false;
     }
   },
 );
@@ -153,6 +172,11 @@ watch(
           class="status-pill status-pill--compact"
         >…</span>
       </div>
+      <PanelDualScreenButton
+        v-if="showDualScreen"
+        :active="Boolean(dualScreenActive)"
+        @toggle="emit('toggleDualScreen')"
+      />
       <PanelFullscreenButton
         :active="isFullscreen"
         @toggle="toggleFullscreen"
@@ -161,7 +185,13 @@ watch(
 
     <div class="panel-body">
       <div
-        v-if="error"
+        v-if="blockedMessage"
+        class="preview-placeholder"
+      >
+        {{ blockedMessage }}
+      </div>
+      <div
+        v-else-if="error"
         class="preview-error"
       >
         {{ error }}

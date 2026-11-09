@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import AppDialogHost from "@/components/AppDialogHost.vue";
 import AppModalHost from "@/components/AppModalHost.vue";
 import TooltipProvider from "@/components/ui/TooltipProvider.vue";
@@ -14,12 +14,15 @@ import PreviewFab from "@/components/layout/PreviewFab.vue";
 import ResponsivePanelTabs from "@/components/layout/ResponsivePanelTabs.vue";
 import EditorTabBar from "@/components/editor/EditorTabBar.vue";
 import PwaInstallBanner from "@/components/layout/PwaInstallBanner.vue";
+import { useAppDialog } from "@/composables/useAppDialog";
+import { useDualScreenHost, type DualScreenState } from "@/composables/useDualScreenSession";
 import { useMediaQuery } from "@/composables/useMediaQuery";
 import { useResizableSplit } from "@/composables/useResizableSplit";
 import { provideAppShell, useAppShell } from "@/composables/useAppShell";
 
 const shell = useAppShell();
 provideAppShell(shell);
+const { alert } = useAppDialog();
 
 const mainRef = ref<HTMLElement | null>(null);
 const editorFocused = ref(false);
@@ -91,6 +94,63 @@ const {
   closeEditorTab,
 } = shell;
 
+function dualScreenState(): DualScreenState {
+  return {
+    source: source.value,
+    diagramFormat: diagramFormat.value,
+    layout: layout.value,
+    renderMode: renderMode.value,
+    diagramDarkMode: diagramDarkMode.value,
+    previewBackground: previewBackground.value,
+    diagramTextColor: diagramTextColor.value,
+    diagramFontFamily: diagramFontFamily.value,
+    diagramFontWeight: diagramFontWeight.value,
+    diagramFontStyle: diagramFontStyle.value,
+  };
+}
+
+const {
+  detached: previewDetached,
+  open: openDualScreen,
+  notifyState: notifyDualScreenState,
+} = useDualScreenHost({
+  enabled: isDesktopLayout,
+  getState: dualScreenState,
+  onPreviewSettings(settings) {
+    renderMode.value = settings.renderMode;
+    diagramDarkMode.value = settings.diagramDarkMode;
+    previewBackground.value = settings.previewBackground;
+    diagramTextColor.value = settings.diagramTextColor;
+    diagramFontFamily.value = settings.diagramFontFamily;
+    diagramFontWeight.value = settings.diagramFontWeight;
+    diagramFontStyle.value = settings.diagramFontStyle;
+  },
+  onBlocked() {
+    void alert({
+      title: t("preview.title"),
+      message: t("preview.dualScreen.blocked"),
+    });
+  },
+});
+
+watch(
+  () => [
+    source.value,
+    diagramFormat.value,
+    layout.value,
+    renderMode.value,
+    diagramDarkMode.value,
+    previewBackground.value,
+    diagramTextColor.value,
+    diagramFontFamily.value,
+    diagramFontWeight.value,
+    diagramFontStyle.value,
+  ],
+  () => {
+    notifyDualScreenState();
+  },
+);
+
 function showMobilePreview(): void {
   if (previewFabBlurTimer) {
     clearTimeout(previewFabBlurTimer);
@@ -143,12 +203,15 @@ onUnmounted(() => {
       class="app-main"
       :class="[
         `mobile-panel--${activeMobilePanel}`,
-        { 'app-main--split-dragging': isDragging },
+        {
+          'app-main--split-dragging': isDragging,
+          'app-main--preview-detached': previewDetached,
+        },
       ]"
     >
       <DiagramEditor
         class="split-pane split-pane--editor"
-        :style="isDesktopLayout ? editorPaneStyle : undefined"
+        :style="isDesktopLayout && !previewDetached ? editorPaneStyle : undefined"
         v-model="source"
         v-model:diagram-format="diagramFormat"
         :error-lines="syntaxErrorLines"
@@ -180,7 +243,7 @@ onUnmounted(() => {
       />
 
       <div
-        v-if="isDesktopLayout"
+        v-if="isDesktopLayout && !previewDetached"
         class="app-split-divider"
         role="separator"
         aria-orientation="vertical"
@@ -196,6 +259,7 @@ onUnmounted(() => {
       />
 
       <DiagramPreview
+        v-if="!previewDetached"
         class="split-pane split-pane--preview"
         :style="isDesktopLayout ? previewPaneStyle : undefined"
         :svg="svg"
@@ -211,6 +275,8 @@ onUnmounted(() => {
         v-model:diagram-dark-mode="diagramDarkMode"
         v-model:render-mode="renderMode"
         :expand-signal="shell.dataLink.expandSignal.value"
+        :show-dual-screen="isDesktopLayout"
+        @toggle-dual-screen="openDualScreen"
         @render-now="shell.renderDiagram"
         @export-svg="shell.exportSvg"
         @export-png="shell.exportPng"
