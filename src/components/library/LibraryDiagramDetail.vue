@@ -321,7 +321,6 @@ function contentLocaleLabel(locale: string): string {
         />
       </div>
     </template>
-    <LibraryDataLinkFields v-if="isEditing" :diagram-id="diagram.id" />
   </div>
 </template>
 

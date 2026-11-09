@@ -112,13 +112,14 @@ watch(
 
 const addressHintParts = computed(() => {
   const localWord = t("library.dataLink.addressHintLocal");
+  const url = slugLinkReady.value ? hintUrl.value : DATA_LINK_EXAMPLE_URL;
   const text = t("library.dataLink.addressHint", {
     local: localWord,
-    example: DATA_LINK_EXAMPLE_URL,
+    example: url,
   });
   return splitAddressHint(text, [
     { mark: "local", value: localWord },
-    { mark: "example", value: DATA_LINK_EXAMPLE_URL },
+    { mark: "example", value: url },
   ]);
 });
 
@@ -285,17 +286,17 @@ async function onCopyLink(): Promise<void> {
     <p class="library-data-link__note" data-testid="library-data-link-address">
       <template v-for="part in addressHintParts" :key="part.key">
         <strong v-if="part.mark === 'local'">{{ part.text }}</strong>
+        <a
+          v-else-if="part.mark === 'example' && slugLinkReady"
+          data-testid="library-data-link-live"
+          :href="part.text"
+        >{{ part.text }}</a>
         <span
           v-else-if="part.mark === 'example'"
           data-testid="library-data-link-example"
         >{{ part.text }}</span>
         <template v-else>{{ part.text }}</template>
       </template>
-      <a
-        v-if="slugLinkReady"
-        data-testid="library-data-link-live"
-        :href="hintUrl"
-      >{{ hintUrl }}</a>
     </p>
     <p v-if="fileName" class="library-data-link__note">{{ fileName }}</p>
     <p v-if="errorMessage" class="library-data-link__error" role="alert">
@@ -303,15 +304,14 @@ async function onCopyLink(): Promise<void> {
     </p>
     <p v-else-if="statusMessage" class="library-data-link__note">{{ statusMessage }}</p>
     <div class="library-detail__actions">
-      <button
-        class="btn"
-        type="button"
+      <IconButton
+        :label="t('library.dataLink.openLink')"
         :disabled="isSaving"
         data-testid="library-data-link-open"
         @click="onOpenLink"
       >
-        {{ t("library.dataLink.openLink") }}
-      </button>
+        <ActionIcon name="open-link" />
+      </IconButton>
       <IconButton
         :label="isSaving ? t('app.loading') : t('library.saveChanges')"
         primary
