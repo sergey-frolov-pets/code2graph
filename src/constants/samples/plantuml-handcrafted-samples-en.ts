@@ -136,11 +136,10 @@ skinparam componentStyle rectangle
 skinparam packageStyle rectangle
 
 package "Client" #E3F2FD {
-  ' [Name] — component; interface — connection point (lollipop)
+  ' [Name] — component. <<interface>> is a contract; the label stays inside the package
   [Vue SPA] as spa
   [Service Worker] as sw
-  interface "HTTP API" as httpApi
-  spa - httpApi
+  component "HTTP API" <<interface>> as httpApi
 }
 
 package "Renderer" #E8F5E9 {

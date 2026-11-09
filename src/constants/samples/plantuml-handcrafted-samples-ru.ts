@@ -204,11 +204,10 @@ skinparam componentStyle rectangle
 skinparam packageStyle rectangle
 
 package "Клиент" #E3F2FD {
-  ' [Имя] — компонент; interface — точка подключения (lollipop)
+  ' [Имя] — компонент. <<interface>> — контракт, подпись остаётся внутри пакета
   [Vue SPA] as spa
   [Service Worker] as sw
-  interface "HTTP API" as httpApi
-  spa - httpApi
+  component "HTTP API" <<interface>> as httpApi
 }
 
 package "Рендерер" #E8F5E9 {

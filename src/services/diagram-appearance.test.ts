@@ -83,6 +83,38 @@ describe("applyDiagramAppearance", () => {
     expect(texts[1]?.getAttribute("fill")).toBe("#ff00aa");
   });
 
+  it("keeps flowchart block labels contrasting with the node fill on a dark canvas", () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 160" id="flow">
+      <style>
+        #flow .label text,#flow span{fill:#333;color:#333;}
+        #flow .node rect,#flow .node circle,#flow .node ellipse,#flow .node polygon,#flow .node path{fill:#ECECFF;stroke:#9370DB;}
+        #flow .node .katex path{fill:#000;stroke:#000;}
+      </style>
+      <g class="node default" data-look="neo">
+        <path d="M10 20 h80 v30 h-80 z" fill="#ECECFF"></path>
+        <foreignObject x="20" y="28" width="60" height="16">
+          <div xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel"><p>Старт</p></span></div>
+        </foreignObject>
+      </g>
+      <g class="node default" data-look="classic">
+        <polygon points="20,80 60,60 100,80 60,100"></polygon>
+        <foreignObject x="40" y="74" width="40" height="16">
+          <div xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel"><p>Валидно?</p></span></div>
+        </foreignObject>
+      </g>
+    </svg>`;
+
+    const painted = applyDiagramAppearance(svg, { background: DARK_CANVAS });
+    const doc = parsed(painted);
+    const labels = [...doc.querySelectorAll("p")].map((node) => node.getAttribute("style") ?? "");
+
+    expect(labels).toHaveLength(2);
+    for (const style of labels) {
+      expect(style).toContain(LIGHT_TEXT);
+      expect(style).not.toContain(DARK_TEXT);
+    }
+  });
+
   it("leaves an explicit label color alone", () => {
     const source = GANTT_SVG.replace(
       '<text x="100" y="40" fill="#000000">Task</text>',

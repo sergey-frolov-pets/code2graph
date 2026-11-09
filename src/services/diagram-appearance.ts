@@ -205,13 +205,21 @@ function cssRules(css: string): CssRule[] {
   return rules;
 }
 
+const NODE_SHAPE_SELECTOR = "rect, polygon, ellipse, circle, path";
+
+/** Вложенные path (формулы KaTeX, иконки) не задают заливку самого блока. */
+function isNodeShapeRule(selector: string): boolean {
+  if (!selector.includes(".node")) return false;
+  if (!/\b(?:rect|path|circle|polygon|ellipse)\b/.test(selector)) return false;
+  return !/katex|label-icon|icon-shape|marker|arrowhead/.test(selector);
+}
+
 function cssNodeFill(css: string, look: string | null): string | null {
   let generic: string | null = null;
   let looked: string | null = null;
   for (const rule of cssRules(css)) {
     const selector = rule.selector.toLowerCase();
-    if (!selector.includes(".node")) continue;
-    if (!/rect|path|circle|polygon|ellipse/.test(selector)) continue;
+    if (!isNodeShapeRule(selector)) continue;
     const fill = opaqueHex(styleDeclaration(rule.body, "fill"));
     if (!fill) continue;
     if (look && selector.includes(`data-look="${look}"`)) {
@@ -230,10 +238,11 @@ function stylesheetText(root: Element): string {
 }
 
 function shapeFillIn(container: Element, canvas: AxisBox | null): string | null {
-  for (const shape of container.querySelectorAll("rect")) {
+  for (const shape of container.querySelectorAll(NODE_SHAPE_SELECTOR)) {
     const fill = solidFill(shape);
+    if (!fill) continue;
     const box = readBox(shape);
-    if (!fill || !box || coversCanvas(box, canvas)) continue;
+    if (box && coversCanvas(box, canvas)) continue;
     return fill;
   }
   return null;
