@@ -221,7 +221,7 @@ function isNodeShapeRule(selector: string): boolean {
   return parts.every((part) => {
     const tokens = part.split(/\s+/);
     const subject = tokens[tokens.length - 1] ?? "";
-    const tag = subject.split(/[.#:\[]/)[0] ?? "";
+    const tag = subject.split(/[[.#:]/)[0] ?? "";
     if (!NODE_SHAPE_TAGS.has(tag)) return false;
     const before = tokens.slice(0, -1).join(" ").replace(/\.node\b/g, "");
     return !/\.[a-z0-9_-]/i.test(before);
