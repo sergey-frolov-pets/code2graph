@@ -4,7 +4,9 @@ import type { DataLinkSourceMarker } from "@/services/local-data-link/source-mar
 export interface DataLinkImportChoice {
   accepted: boolean;
   slug: string;
-  filePathLabel: string;
+  fileExtension: string;
+  sheetRange: string;
+  untilEmptyRow: boolean;
   fileName: string;
   fileHandle: FileSystemFileHandle | null;
 }
@@ -34,8 +36,10 @@ export function declinedDataLinkChoice(
   return {
     accepted: false,
     slug: marker.slug,
-    filePathLabel: marker.filePathLabel,
-    fileName: fileNameFromPathLabel(marker.filePathLabel),
+    fileExtension: marker.fileExtension,
+    sheetRange: marker.sheetRange,
+    untilEmptyRow: marker.untilEmptyRow,
+    fileName: "",
     fileHandle: null,
   };
 }

@@ -12,6 +12,7 @@ import {
 } from "@/services/local-data-link/constants";
 import { pickSpreadsheetFile } from "@/services/local-data-link/file-access";
 import { parseSheetRange } from "@/services/local-data-link/sheet-range";
+import { normalizeDataLinkExtension } from "@/services/local-data-link/source-marker";
 import { syncDataLinkMarkerToDiagram } from "@/services/local-data-link/sync-diagram-source";
 import {
   findLocalDataLinkBySlug,
@@ -235,7 +236,9 @@ async function onSave(): Promise<boolean> {
     slug.value = record.slug;
     await syncDataLinkMarkerToDiagram(props.diagramId, {
       slug: record.slug,
-      filePathLabel: record.filePathLabel,
+      fileExtension: normalizeDataLinkExtension(
+        record.fileName || record.filePathLabel,
+      ),
       sheetRange: record.sheetRange,
       untilEmptyRow: record.untilEmptyRow,
     });

@@ -10,7 +10,10 @@ import {
   cancelPendingDataLinkImports,
   type DataLinkImportChoice,
 } from "@/services/local-data-link/import-offer";
+import { DATA_LINK_DEFAULT_RANGE } from "@/services/local-data-link/constants";
 import { pickSpreadsheetFile } from "@/services/local-data-link/file-access";
+import { parseSheetRange } from "@/services/local-data-link/sheet-range";
+import { normalizeDataLinkExtension } from "@/services/local-data-link/source-marker";
 import {
   findLocalDataLinkBySlug,
   isDataLinkSlug,
@@ -20,7 +23,9 @@ import {
 const { t } = useLocale();
 
 const slug = ref("");
-const filePathLabel = ref("");
+const fileExtension = ref("");
+const sheetRange = ref(DATA_LINK_DEFAULT_RANGE);
+const untilEmptyRow = ref(false);
 const fileName = ref("");
 const fileHandle = ref<FileSystemFileHandle | null>(null);
 const slugTaken = ref(false);
@@ -33,9 +38,11 @@ const normalizedSlug = computed(() => normalizeDataLinkSlug(slug.value));
 const slugInvalid = computed(
   () => normalizedSlug.value.length > 0 && !isDataLinkSlug(normalizedSlug.value),
 );
+const rangeInvalid = computed(() => !parseSheetRange(sheetRange.value));
 const canAccept = computed(
   () =>
     isDataLinkSlug(normalizedSlug.value) &&
+    !rangeInvalid.value &&
     !slugTaken.value &&
     !slugChecking.value,
 );
@@ -53,8 +60,10 @@ watch(
   offer,
   (next) => {
     slug.value = next?.marker.slug ?? "";
-    filePathLabel.value = next?.marker.filePathLabel ?? "";
-    fileName.value = fileNameFromPathLabel(next?.marker.filePathLabel ?? "");
+    fileExtension.value = next?.marker.fileExtension ?? "";
+    sheetRange.value = next?.marker.sheetRange || DATA_LINK_DEFAULT_RANGE;
+    untilEmptyRow.value = next?.marker.untilEmptyRow ?? false;
+    fileName.value = "";
     fileHandle.value = null;
     pickError.value = "";
     slugTaken.value = false;
@@ -86,8 +95,10 @@ function currentChoice(accepted: boolean): DataLinkImportChoice {
   return {
     accepted,
     slug: normalizedSlug.value,
-    filePathLabel: filePathLabel.value.trim(),
-    fileName: fileName.value || fileNameFromPathLabel(filePathLabel.value),
+    fileExtension: normalizeDataLinkExtension(fileExtension.value || fileName.value),
+    sheetRange: sheetRange.value.trim() || DATA_LINK_DEFAULT_RANGE,
+    untilEmptyRow: untilEmptyRow.value,
+    fileName: fileNameFromPathLabel(fileName.value),
     fileHandle: fileHandle.value,
   };
 }
@@ -124,8 +135,9 @@ async function onPickFile(): Promise<void> {
   const file = await picked.handle.getFile();
   fileHandle.value = picked.handle;
   fileName.value = file.name;
-  if (!filePathLabel.value.trim()) {
-    filePathLabel.value = file.name;
+  const extension = normalizeDataLinkExtension(file.name);
+  if (extension) {
+    fileExtension.value = extension;
   }
 }
 
@@ -162,15 +174,16 @@ onUnmounted(() => {
     <p v-if="slugError" class="data-link-import__error" role="alert">
       {{ slugError }}
     </p>
-    <div class="settings-field">
-      <span class="settings-field__label">{{ t("library.dataLink.path") }}</span>
+    <label class="settings-field">
+      <span class="settings-field__label">{{ t("library.dataLink.extension") }}</span>
       <div class="data-link-import__file-row">
         <input
-          v-model="filePathLabel"
+          v-model="fileExtension"
           class="select"
           type="text"
-          data-testid="library-data-link-import-path"
-          :placeholder="t('library.dataLink.pathPlaceholder')"
+          data-testid="library-data-link-import-ext"
+          :placeholder="t('library.dataLink.extensionPlaceholder')"
+          @blur="fileExtension = normalizeDataLinkExtension(fileExtension)"
         />
         <button
           class="btn"
@@ -181,7 +194,24 @@ onUnmounted(() => {
           {{ t("library.dataLink.pickFile") }}
         </button>
       </div>
-    </div>
+    </label>
+    <label class="settings-field">
+      <span class="settings-field__label">{{ t("library.dataLink.range") }}</span>
+      <input
+        v-model="sheetRange"
+        class="select"
+        type="text"
+        data-testid="library-data-link-import-range"
+        :placeholder="t('library.dataLink.rangePlaceholder')"
+      />
+    </label>
+    <p v-if="rangeInvalid" class="data-link-import__error" role="alert">
+      {{ t("library.dataLink.rangeInvalid") }}
+    </p>
+    <label class="data-link-import__check">
+      <input v-model="untilEmptyRow" type="checkbox" />
+      <span>{{ t("library.dataLink.untilEmpty") }}</span>
+    </label>
     <p v-if="fileName" class="data-link-import__note">{{ fileName }}</p>
     <p v-if="pickError" class="data-link-import__error" role="alert">
       {{ pickError }}
@@ -232,5 +262,12 @@ onUnmounted(() => {
   flex: 1 1 auto;
   width: auto;
   min-width: 0;
+}
+
+.data-link-import__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
 }
 </style>

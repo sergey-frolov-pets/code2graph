@@ -8,7 +8,7 @@ import {
 
 const marker: DataLinkSourceMarker = {
   slug: "Waterfall",
-  filePathLabel: "C:\\data\\a b.xlsx",
+  fileExtension: "C:\\data\\a b.xlsx",
   sheetRange: "Sheet1!A3:C10",
   untilEmptyRow: true,
 };
@@ -22,11 +22,25 @@ describe("local data link source marker", () => {
     );
     expect(source.startsWith("@startuml Demo\n' ")).toBe(true);
     expect(source).toContain(DATA_LINK_SOURCE_KEYWORD);
+    expect(source).toContain("ext=xlsx");
+    expect(source).not.toContain("path=");
+    expect(source).not.toContain("C%3A");
     expect(parseDataLinkMarker(source)).toEqual({
       slug: "waterfall",
-      filePathLabel: "C:\\data\\a b.xlsx",
+      fileExtension: "xlsx",
       sheetRange: "Sheet1!A3:C10",
       untilEmptyRow: true,
+    });
+  });
+
+  it("reads an older comment that stored a path and keeps only the extension", () => {
+    const legacy =
+      "' code2graph-data-link slug=waterfall&path=C%3A%5Cdata%5Ca+b.xlsx&range=A1%3AB2&untilEmpty=0\n";
+    expect(parseDataLinkMarker(legacy)).toEqual({
+      slug: "waterfall",
+      fileExtension: "xlsx",
+      sheetRange: "A1:B2",
+      untilEmptyRow: false,
     });
   });
 

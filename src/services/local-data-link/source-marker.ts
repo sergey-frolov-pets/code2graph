@@ -11,11 +11,23 @@ const UNTIL_EMPTY_OFF = "0";
 const MARKER_LINE =
   /^[^\n]*code2graph-data-link[^\n]*\r?\n?/m;
 
+const FILE_EXTENSION_PATTERN = /^[a-z0-9]{1,8}$/;
+
 export interface DataLinkSourceMarker {
   slug: string;
-  filePathLabel: string;
+  fileExtension: string;
   sheetRange: string;
   untilEmptyRow: boolean;
+}
+
+/** Keeps only a file extension. A directory path is never returned. */
+export function normalizeDataLinkExtension(value: string): string {
+  const base = value.trim().split(/[/\\]/).pop() ?? "";
+  const extension = base.includes(".")
+    ? base.slice(base.lastIndexOf(".") + 1)
+    : base.replace(/^\./, "");
+  const normalized = extension.trim().toLowerCase();
+  return FILE_EXTENSION_PATTERN.test(normalized) ? normalized : "";
 }
 
 interface CommentWrap {
@@ -49,7 +61,7 @@ export function formatDataLinkMarkerLine(
 ): string {
   const params = new URLSearchParams();
   params.set("slug", normalizeDataLinkSlug(marker.slug));
-  params.set("path", marker.filePathLabel);
+  params.set("ext", normalizeDataLinkExtension(marker.fileExtension));
   params.set("range", marker.sheetRange.trim() || DATA_LINK_DEFAULT_RANGE);
   params.set("untilEmpty", marker.untilEmptyRow ? UNTIL_EMPTY_ON : UNTIL_EMPTY_OFF);
   const wrap = commentWrap(format);
@@ -68,9 +80,13 @@ export function parseDataLinkMarker(source: string): DataLinkSourceMarker | null
   const params = new URLSearchParams(raw.startsWith("&") ? raw.slice(1) : raw);
   const range = params.get("range")?.trim() || DATA_LINK_DEFAULT_RANGE;
 
+  const fileExtension =
+    normalizeDataLinkExtension(params.get("ext") ?? "") ||
+    normalizeDataLinkExtension(params.get("path") ?? "");
+
   return {
     slug: normalizeDataLinkSlug(params.get("slug") ?? ""),
-    filePathLabel: params.get("path") ?? "",
+    fileExtension,
     sheetRange: range,
     untilEmptyRow: params.get("untilEmpty") === UNTIL_EMPTY_ON,
   };

@@ -6,7 +6,10 @@ import {
   offerDataLinkImport,
   type DataLinkImportChoice,
 } from "@/services/local-data-link/import-offer";
-import { parseDataLinkMarker } from "@/services/local-data-link/source-marker";
+import {
+  normalizeDataLinkExtension,
+  parseDataLinkMarker,
+} from "@/services/local-data-link/source-marker";
 import { syncDataLinkMarkerToDiagram } from "@/services/local-data-link/sync-diagram-source";
 import { loadDiagramDetailFromCache } from "@/storage/diagram-store";
 import {
@@ -19,8 +22,7 @@ import {
 } from "@/storage/local-data-links";
 
 function choiceFileName(choice: DataLinkImportChoice): string {
-  const named = choice.fileName.trim();
-  return named || fileNameFromPathLabel(choice.filePathLabel);
+  return fileNameFromPathLabel(choice.fileName);
 }
 
 export async function adoptLocalDataLinkForDiagram(
@@ -54,20 +56,23 @@ export async function adoptLocalDataLinkForDiagram(
       }
     }
 
+    const fileName = choiceFileName(choice);
     const record: LocalDataLinkRecord = {
       diagramId: diagram.id,
       slug,
-      filePathLabel: choice.filePathLabel.trim(),
-      sheetRange: marker.sheetRange,
-      untilEmptyRow: marker.untilEmptyRow,
-      fileName: choiceFileName(choice),
+      filePathLabel: fileName,
+      sheetRange: choice.sheetRange.trim() || marker.sheetRange,
+      untilEmptyRow: choice.untilEmptyRow,
+      fileName,
       fileHandle: choice.fileHandle,
       inactive: !accepted,
     };
     await saveLocalDataLink(record);
     const updated = await syncDataLinkMarkerToDiagram(diagram.id, {
       slug,
-      filePathLabel: record.filePathLabel,
+      fileExtension: normalizeDataLinkExtension(
+        choice.fileExtension || fileName,
+      ),
       sheetRange: record.sheetRange,
       untilEmptyRow: record.untilEmptyRow,
     });
