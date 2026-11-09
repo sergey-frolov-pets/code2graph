@@ -13,6 +13,7 @@ import {
   Cloud,
   Download,
   Ellipsis,
+  ExternalLink,
   Eye,
   EyeOff,
   FolderOpen,
@@ -72,6 +73,7 @@ export type ActionIconName =
   | "ai"
   | "syntax-help"
   | "transfer"
+  | "open-link"
   | "eye"
   | "eye-off"
   | "star"
@@ -124,6 +126,7 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   ai: Sparkles,
   "syntax-help": CircleHelp,
   transfer: ArrowLeftRight,
+  "open-link": ExternalLink,
   eye: Eye,
   "eye-off": EyeOff,
   star: Star,

@@ -91,6 +91,8 @@ describe("local data link address hint", () => {
     const liveUrl = diagramDataLinkUrl(window.location.origin, "waterfall");
     expect(live?.textContent).toBe(liveUrl);
     expect(live?.getAttribute("href")).toBe(liveUrl);
-    expect(example?.textContent).toBe(DATA_LINK_EXAMPLE_URL);
+    expect(address?.textContent).toContain(liveUrl);
+    expect(address?.textContent).not.toContain(DATA_LINK_EXAMPLE_URL);
+    expect(address?.textContent?.split(liveUrl)).toHaveLength(2);
   });
 });
