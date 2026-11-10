@@ -191,6 +191,7 @@ export const miscMessages = {
   "presentation.overlay.ellipse": "Овал",
   "presentation.overlay.text": "Текст",
   "presentation.overlay.arrow": "Стрелка",
+  "presentation.overlay.mark": "Знак",
   "presentation.backing": "Подложка",
   "presentation.backing.none": "Без подложки",
   "presentation.backing.rectangle": "Прямоугольник",

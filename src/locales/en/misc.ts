@@ -191,6 +191,7 @@ export const miscMessages = {
   "presentation.overlay.ellipse": "Oval",
   "presentation.overlay.text": "Text",
   "presentation.overlay.arrow": "Arrow",
+  "presentation.overlay.mark": "Sign",
   "presentation.backing": "Backing",
   "presentation.backing.none": "No backing",
   "presentation.backing.rectangle": "Rectangle",
