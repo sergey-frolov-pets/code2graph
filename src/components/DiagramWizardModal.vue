@@ -104,15 +104,6 @@ const {
   handleApply,
   handleRegenerate,
   handleAiSetupRetry,
-  planningMessages,
-  isPlanningChatBusy,
-  sendPlanningChatMessage,
-  clearPlanningChat,
-  refineMessages,
-  isRefineChatBusy,
-  sendRefineChatMessage,
-  clearRefineChat,
-  showRefineChat,
 } = useDiagramWizardFlow({
   open: toRef(props, "open"),
   documentKey: toRef(props, "documentKey"),
@@ -219,15 +210,6 @@ const showLivePreview = computed(
           :error-message="errorMessage"
           :result-explanation="resultExplanation"
           :result-source="resultSource"
-          :planning-messages="planningMessages"
-          :is-planning-chat-busy="isPlanningChatBusy"
-          :show-refine-chat="showRefineChat"
-          :refine-messages="refineMessages"
-          :is-refine-chat-busy="isRefineChatBusy"
-          @planning-send="sendPlanningChatMessage"
-          @planning-clear="clearPlanningChat"
-          @refine-send="sendRefineChatMessage"
-          @refine-clear="clearRefineChat"
           @builder-change="handleBuilderChange"
           @builder-paste-source="handleBuilderPasteSource"
           @builder-paste-error="onBuilderPasteError"

@@ -10,6 +10,12 @@ import {
 import SnippetsPanel from "@/components/SnippetsPanel.vue";
 import EditorToolbar from "@/components/editor/EditorToolbar.vue";
 import InlineDiagramBuilder from "@/components/editor/InlineDiagramBuilder.vue";
+import AiChatPanel from "@/components/llm/AiChatPanel.vue";
+import type { LayoutEngine } from "@/constants";
+import {
+  DEFAULT_RENDER_MODE,
+  type RenderMode,
+} from "@/constants/render-settings";
 import EditorCodeGutter from "@/components/editor/EditorCodeGutter.vue";
 import EditorCodeSurface from "@/components/editor/EditorCodeSurface.vue";
 import EditorFoldOnboardingBanner from "@/components/editor/EditorFoldOnboardingBanner.vue";
@@ -66,6 +72,12 @@ const props = defineProps<{
   canUndo?: boolean;
   canRedo?: boolean;
   canRefreshData?: boolean;
+  aiDocumentKey?: string;
+  layout?: LayoutEngine;
+  renderMode?: RenderMode;
+  diagramDarkMode?: boolean;
+  renderError?: string;
+  aiExplainSignal?: number;
 }>();
 
 const emit = defineEmits<{
@@ -79,8 +91,8 @@ const emit = defineEmits<{
   undo: [];
   redo: [];
   convert: [];
-  aiPatch: [payload: { start: number; end: number }];
-  aiSyntaxAsk: [];
+  aiApplySource: [payload: { source: string; label: string }];
+  openSettings: [];
   "editor-focus": [];
   "editor-blur": [];
   refreshData: [];
@@ -115,21 +127,36 @@ const regionsModalRef = ref<InstanceType<typeof EditorFoldRegionsModal> | null>(
 const codeSurfaceRef = ref<InstanceType<typeof EditorCodeSurface> | null>(null);
 const isFullscreen = ref(false);
 const snippetsOpen = ref(false);
-const surfaceMode = ref<"code" | "builder">("code");
+export type EditorSurfaceMode = "code" | "builder" | "ai-chat";
+
+const surfaceMode = ref<EditorSurfaceMode>("code");
 const builderAvailable = computed(
   () =>
     formatDefinition.value.editable &&
     supportsDiagramBuilder(formatDefinition.value.id),
 );
+/** ИИ-чат скрываем для нередактируемых форматов (например, read-only GraphML). */
+const aiChatAvailable = computed(() => formatDefinition.value.editable);
+const aiSelectionText = ref("");
+const internalExplainSignal = ref(0);
 
 watch(builderAvailable, (available) => {
-  if (!available) {
+  if (!available && surfaceMode.value === "builder") {
     surfaceMode.value = "code";
   }
 });
 
-function setSurfaceMode(mode: "code" | "builder"): void {
+watch(aiChatAvailable, (available) => {
+  if (!available && surfaceMode.value === "ai-chat") {
+    surfaceMode.value = "code";
+  }
+});
+
+function setSurfaceMode(mode: EditorSurfaceMode): void {
   if (mode === "builder" && !builderAvailable.value) {
+    return;
+  }
+  if (mode === "ai-chat" && !aiChatAvailable.value) {
     return;
   }
   if (mode === "builder") {
@@ -137,6 +164,29 @@ function setSurfaceMode(mode: "code" | "builder"): void {
   }
   surfaceMode.value = mode;
 }
+
+function openAiChatWithSelection(selection: { start: number; end: number }): void {
+  aiSelectionText.value =
+    selection.end > selection.start
+      ? source.value.slice(selection.start, selection.end)
+      : "";
+  setSurfaceMode("ai-chat");
+}
+
+function openAiChatExplain(): void {
+  aiSelectionText.value = "";
+  internalExplainSignal.value += 1;
+  setSurfaceMode("ai-chat");
+}
+
+watch(
+  () => props.aiExplainSignal,
+  (signal, previous) => {
+    if (signal && previous !== undefined && signal !== previous) {
+      openAiChatExplain();
+    }
+  },
+);
 
 const textareaRef = computed(
   () => codeSurfaceRef.value?.textareaEl ?? null,
@@ -345,7 +395,7 @@ const {
   displayText,
   syncScroll,
   onAiPatch: (payload) =>
-    emit("aiPatch", {
+    openAiChatWithSelection({
       start: toWorkingOffset(payload.start),
       end: toWorkingOffset(payload.end),
     }),
@@ -501,6 +551,7 @@ onUnmounted(() => {
       :is-fullscreen="isFullscreen"
       :surface-mode="surfaceMode"
       :builder-available="builderAvailable"
+      :ai-chat-available="aiChatAvailable"
       :can-toggle-session-file="hasSessionChanges"
       :session-file-shows-baseline="session.fileShowsBaseline.value"
       @set-surface-mode="setSurfaceMode"
@@ -510,7 +561,7 @@ onUnmounted(() => {
       @save-puml="emit('savePuml')"
       @save-to-library="emit('saveToLibrary')"
       @ai-patch="requestAiPatch"
-      @ai-syntax-ask="emit('aiSyntaxAsk')"
+      @ai-syntax-ask="openAiChatExplain"
       @paste-table="onPasteTableFromClipboard"
       @refresh-data="emit('refreshData')"
       @validate-syntax="emit('validateSyntax')"
@@ -543,6 +594,21 @@ onUnmounted(() => {
         v-if="surfaceMode === 'builder'"
         v-model:source="source"
         :format="diagramFormat"
+      />
+
+      <AiChatPanel
+        v-else-if="surfaceMode === 'ai-chat'"
+        :source="source"
+        :diagram-format="diagramFormat"
+        :document-key="aiDocumentKey ?? ''"
+        :layout="layout ?? 'smetana'"
+        :render-mode="renderMode ?? DEFAULT_RENDER_MODE"
+        :diagram-dark-mode="diagramDarkMode ?? false"
+        :render-error="renderError"
+        :selection-text="aiSelectionText"
+        :explain-signal="internalExplainSignal"
+        @apply-source="emit('aiApplySource', $event)"
+        @open-settings="emit('openSettings')"
       />
 
       <div

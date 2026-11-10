@@ -1,5 +1,4 @@
-import { computed, ref, type Ref } from "vue";
-import { useLlmConversation } from "@/composables/useLlmConversation";
+import type { Ref } from "vue";
 import type { LlmGateFailureReason } from "@/composables/useLlmGate";
 import type { LayoutEngine } from "@/constants";
 import type { AppLocale } from "@/constants/i18n";
@@ -8,12 +7,7 @@ import type { RenderMode } from "@/constants/render-settings";
 import type { TranslateFn } from "@/locales/types";
 import { generateValidWizardDiagram } from "@/services/llm/llm-plantuml-generate";
 import { LlmClientError } from "@/services/llm/llm-types";
-import {
-  buildWizardPromptWithChatContext,
-  sendWizardPlanningChat,
-} from "@/services/llm/llm-wizard-chat";
 import { buildWizardPrompt } from "@/services/llm/wizard/wizard-prompts";
-import { toLlmChatMessages } from "@/utils/llm-edit-conversation";
 
 const ACCESS_DENIED_REASONS = new Set<LlmGateFailureReason>([
   "no_consent",
@@ -48,11 +42,14 @@ export interface UseWizardAiChatOptions {
   t: TranslateFn;
 }
 
+/**
+ * Мастер создаёт диаграмму одним запросом по заполненным шагам.
+ * Диалоговое общение с ИИ живёт только в режиме «ИИ-чат» редактора —
+ * планирующих и уточняющих чатов у мастера больше нет.
+ */
 export function useWizardAiChat(options: UseWizardAiChatOptions) {
   const {
-    documentKey,
     wizardState,
-    currentStepId,
     layout,
     renderMode,
     diagramDarkMode,
@@ -69,22 +66,6 @@ export function useWizardAiChat(options: UseWizardAiChatOptions) {
     t,
   } = options;
 
-  const planningConversation = useLlmConversation(documentKey, "wizard-plan");
-  const refineConversation = useLlmConversation(documentKey, "wizard-refine");
-  const isPlanningChatBusy = ref(false);
-  const isRefineChatBusy = ref(false);
-
-  const showRefineChat = computed(
-    () =>
-      currentStepId.value === "result" &&
-      resultSource.value.trim().length > 0,
-  );
-
-  function clearConversations(): void {
-    void planningConversation.clear();
-    void refineConversation.clear();
-  }
-
   async function generateDiagram(): Promise<void> {
     isGenerating.value = true;
     errorMessage.value = "";
@@ -98,14 +79,7 @@ export function useWizardAiChat(options: UseWizardAiChatOptions) {
     }
 
     try {
-      const basePrompt = buildWizardPrompt(wizardState.value, locale.value);
-      const planningMessages = toLlmChatMessages(
-        planningConversation.messages.value,
-      );
-      const userPrompt = buildWizardPromptWithChatContext(
-        basePrompt,
-        planningMessages,
-      );
+      const userPrompt = buildWizardPrompt(wizardState.value, locale.value);
       wizardState.value.promptText = userPrompt;
 
       const result = await generateValidWizardDiagram(
@@ -118,7 +92,7 @@ export function useWizardAiChat(options: UseWizardAiChatOptions) {
         { silent: true },
         "Generate a complete diagram from the wizard Description and Additional requirements.",
         wizardState.value.typeParams,
-        planningMessages,
+        [],
         {
           description: wizardState.value.contextText,
           additionalRequirements: wizardState.value.typeSpecificText,
@@ -148,119 +122,5 @@ export function useWizardAiChat(options: UseWizardAiChatOptions) {
     }
   }
 
-  async function sendPlanningChatMessage(content: string): Promise<void> {
-    if (!(await checkAiAccess())) {
-      return;
-    }
-
-    isPlanningChatBusy.value = true;
-    errorMessage.value = "";
-
-    try {
-      const priorMessages = toLlmChatMessages(planningConversation.messages.value);
-      const result = await sendWizardPlanningChat(
-        content,
-        wizardState.value,
-        priorMessages,
-        { silent: true },
-        locale.value,
-      );
-
-      const assistantContent =
-        result.kind === "clarification"
-          ? result.clarificationQuestion
-          : result.message;
-
-      await planningConversation.appendTurn(content, assistantContent);
-
-      if (!wizardState.value.contextText.trim()) {
-        wizardState.value.contextText = content;
-      }
-    } catch (error) {
-      errorMessage.value =
-        error instanceof LlmClientError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : t("llm.wizard.planningChatError");
-    } finally {
-      isPlanningChatBusy.value = false;
-    }
-  }
-
-  async function sendRefineChatMessage(content: string): Promise<void> {
-    if (!resultSource.value.trim() || !(await checkAiAccess())) {
-      return;
-    }
-
-    isRefineChatBusy.value = true;
-    errorMessage.value = "";
-
-    try {
-      const priorMessages = toLlmChatMessages(refineConversation.messages.value);
-      const refinePrompt = [
-        "Refine the generated diagram below according to the user message.",
-        "=== CURRENT SOURCE ===",
-        resultSource.value,
-        "",
-        "=== USER REQUEST ===",
-        content.trim(),
-      ].join("\n");
-
-      const refineFormatContext = {
-        description: wizardState.value.contextText,
-        additionalRequirements: content.trim(),
-      };
-
-      const result = await generateValidWizardDiagram(
-        refinePrompt,
-        wizardState.value.language,
-        wizardState.value.diagramType,
-        layout.value,
-        diagramDarkMode.value,
-        renderMode.value,
-        { silent: true },
-        "Refine the wizard-generated diagram according to the user request. Expand incomplete branches when the user asks for missing items.",
-        wizardState.value.typeParams,
-        priorMessages,
-        refineFormatContext,
-      );
-
-      const updatedSource = result.plantuml;
-      const explanation = result.explanation;
-      const assistantContent =
-        result.explanation?.trim() || t("llm.wizard.refineApplied");
-
-      await refineConversation.appendTurn(content, assistantContent);
-
-      if (updatedSource !== resultSource.value) {
-        resultSource.value = updatedSource;
-        resultExplanation.value = explanation ?? "";
-        await loadPreview(updatedSource);
-      }
-    } catch (error) {
-      errorMessage.value =
-        error instanceof LlmClientError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : t("llm.wizard.refineChatError");
-    } finally {
-      isRefineChatBusy.value = false;
-    }
-  }
-
-  return {
-    planningMessages: planningConversation.messages,
-    isPlanningChatBusy,
-    sendPlanningChatMessage,
-    clearPlanningChat: planningConversation.clear,
-    refineMessages: refineConversation.messages,
-    isRefineChatBusy,
-    sendRefineChatMessage,
-    clearRefineChat: refineConversation.clear,
-    showRefineChat,
-    clearConversations,
-    generateDiagram,
-  };
+  return { generateDiagram };
 }

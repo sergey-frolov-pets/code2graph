@@ -4,16 +4,6 @@ import {
   AGENT_TYPES_BY_LANGUAGE,
 } from "@shared/agent-diagram";
 import { getWizardDiagramFormatRules } from "@/services/llm/diagram-format-rules";
-import {
-  buildFullDiagramEditPrompt,
-  buildFullDiagramFollowUpPrompt,
-  buildFullDiagramNoChangeRetryPrompt,
-  buildFullDiagramRevertRetryPrompt,
-  buildPatchFollowUpPrompt,
-  buildPatchNoChangeRetryPrompt,
-  buildPatchPrompt,
-  requestsStructuralDiagramEdit,
-} from "@/services/llm/wizard/edit-prompts";
 import { buildManualScaffold } from "@/services/llm/wizard/manual-scaffold";
 import { buildWizardPrompt } from "@/services/llm/wizard/wizard-prompts";
 
@@ -474,15 +464,7 @@ export function resolveWizardStateWithDefaults(
 }
 
 export {
-  buildFullDiagramEditPrompt,
-  buildFullDiagramFollowUpPrompt,
-  buildFullDiagramNoChangeRetryPrompt,
-  buildFullDiagramRevertRetryPrompt,
   buildManualScaffold,
-  buildPatchFollowUpPrompt,
-  buildPatchNoChangeRetryPrompt,
-  buildPatchPrompt,
   buildWizardPrompt,
   getWizardDiagramFormatRules,
-  requestsStructuralDiagramEdit,
 };

@@ -7,8 +7,6 @@ export function useAppModals() {
   const isSettingsModalOpen = ref(false);
   const isLibraryModalOpen = ref(false);
   const isAboutModalOpen = ref(false);
-  const isPatchModalOpen = ref(false);
-  const isSyntaxAskModalOpen = ref(false);
   const isWizardModalOpen = ref(false);
   const isSaveToLibraryModalOpen = ref(false);
   const isConvertModalOpen = ref(false);
@@ -19,8 +17,6 @@ export function useAppModals() {
     isSettingsModalOpen,
     isLibraryModalOpen,
     isAboutModalOpen,
-    isPatchModalOpen,
-    isSyntaxAskModalOpen,
     isWizardModalOpen,
     isSaveToLibraryModalOpen,
     isConvertModalOpen,
@@ -41,9 +37,6 @@ export function useAppModals() {
     },
     closeWizardModal: () => {
       isWizardModalOpen.value = false;
-    },
-    openSyntaxAskModal: () => {
-      isSyntaxAskModalOpen.value = true;
     },
     openSaveToLibraryModal: () => {
       isSaveToLibraryModalOpen.value = true;

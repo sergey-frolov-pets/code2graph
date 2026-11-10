@@ -10,7 +10,6 @@ import type {
 } from "@/constants/llm-wizard";
 import type { DiagramBuilderState } from "@/services/diagram-builder";
 import type { TablePasteErrorInfo } from "@/services/table-paste/types";
-import type { LlmEditConversationMessage } from "@/types/llm-edit-conversation";
 
 const wizardState = defineModel<WizardState>("wizardState", { required: true });
 const builderState = defineModel<DiagramBuilderState>("builderState");
@@ -21,18 +20,9 @@ defineProps<{
   errorMessage: string;
   resultExplanation: string;
   resultSource?: string;
-  planningMessages: LlmEditConversationMessage[];
-  isPlanningChatBusy: boolean;
-  showRefineChat: boolean;
-  refineMessages: LlmEditConversationMessage[];
-  isRefineChatBusy: boolean;
 }>();
 
 const emit = defineEmits<{
-  "planning-send": [content: string];
-  "planning-clear": [];
-  "refine-send": [content: string];
-  "refine-clear": [];
   "builder-change": [];
   "builder-paste-source": [source: string];
   "builder-paste-error": [error: TablePasteErrorInfo];
@@ -43,10 +33,6 @@ const emit = defineEmits<{
   <WizardContextStep
     v-if="currentStepId === 'context'"
     v-model:wizard-state="wizardState"
-    :planning-messages="planningMessages"
-    :is-planning-chat-busy="isPlanningChatBusy"
-    @planning-send="emit('planning-send', $event)"
-    @planning-clear="emit('planning-clear')"
   />
 
   <BuilderDataTableStep
@@ -75,10 +61,5 @@ const emit = defineEmits<{
     :is-generating="isGenerating"
     :error-message="errorMessage"
     :result-explanation="resultExplanation"
-    :show-refine-chat="showRefineChat"
-    :refine-messages="refineMessages"
-    :is-refine-chat-busy="isRefineChatBusy"
-    @refine-send="emit('refine-send', $event)"
-    @refine-clear="emit('refine-clear')"
   />
 </template>

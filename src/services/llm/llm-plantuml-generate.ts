@@ -1,19 +1,12 @@
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
-import { llmChat } from "@/services/llm/llm-client";
 import {
-  buildLlmSyntaxAskSystemPrompt,
   buildLlmSystemPrompt,
-  buildSyntaxAskUserPrompt,
   buildWizardLlmSystemPrompt,
   LLM_MAX_TOKENS_GENERATION,
-  LLM_MAX_TOKENS_PRECISE,
   LLM_TEMPERATURE_GENERATION,
-  LLM_TEMPERATURE_PRECISE,
 } from "@/services/llm/llm-prompts";
-import { parsePlantUmlSyntaxAskOutput } from "@/schemas/plantuml-llm-syntax-ask";
 import type { LlmChatMessage } from "@/services/llm/llm-types";
-import { LlmClientError } from "@/services/llm/llm-types";
 import type { LlmGateHandlers } from "@/composables/useLlmGate";
 import type {
   WizardDiagramType,
@@ -35,19 +28,9 @@ export interface GenerateValidPlantUmlResult {
   explanation?: string;
 }
 
-export interface AskPlantUmlSyntaxResult {
-  answer?: string;
-  clarificationQuestion?: string;
-}
-
 const GENERATION_CHAT_OPTIONS = {
   temperature: LLM_TEMPERATURE_GENERATION,
   maxTokens: LLM_MAX_TOKENS_GENERATION,
-};
-
-const PRECISE_CHAT_OPTIONS = {
-  temperature: LLM_TEMPERATURE_PRECISE,
-  maxTokens: LLM_MAX_TOKENS_PRECISE,
 };
 
 export async function generateValidPlantUml(
@@ -166,50 +149,4 @@ export async function generateValidWizardDiagram(
     "LLM wizard validation failed",
     GENERATION_CHAT_OPTIONS,
   );
-}
-
-export async function askPlantUmlSyntaxQuestion(
-  source: string,
-  question: string,
-  handlers?: LlmGateHandlers,
-  priorMessages?: LlmChatMessage[],
-): Promise<AskPlantUmlSyntaxResult> {
-  const isFollowUp = (priorMessages?.length ?? 0) > 0;
-  const userContent = isFollowUp
-    ? question.trim()
-    : buildSyntaxAskUserPrompt(source, question);
-
-  const messages: LlmChatMessage[] = [
-    {
-      role: "system",
-      content: buildLlmSyntaxAskSystemPrompt(
-        "You are a PlantUML syntax expert. Answer the user's question about how to express something in PlantUML, using their current diagram as context. Match the user's language in your answer.",
-        guideForPlantUmlText(source),
-      ),
-    },
-    ...(priorMessages ?? []),
-    { role: "user", content: userContent },
-  ];
-
-  const chatResult = await llmChat(
-    messages,
-    { jsonMode: true, ...PRECISE_CHAT_OPTIONS },
-    handlers,
-  );
-  const parsed = parsePlantUmlSyntaxAskOutput(chatResult.content);
-
-  if (!parsed.ok) {
-    throw new LlmClientError(
-      "validation_failed",
-      parsed.issues.map((issue) => issue.message).join("\n"),
-    );
-  }
-
-  if (parsed.kind === "clarification") {
-    return {
-      clarificationQuestion: parsed.clarificationQuestion,
-    };
-  }
-
-  return { answer: parsed.data.answer };
 }

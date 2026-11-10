@@ -23,7 +23,6 @@ vi.mock("@/services/llm/validate-llm-format", () => ({
 
 import { llmChat } from "@/services/llm/llm-client";
 import {
-  askPlantUmlSyntaxQuestion,
   generateValidPlantUml,
   generateValidWizardDiagram,
 } from "@/services/llm/llm-plantuml-generate";
@@ -131,20 +130,5 @@ describe("llm-plantuml-generate", () => {
 
     const messages = vi.mocked(llmChat).mock.calls.at(-1)?.[0];
     expect(messages?.[0]?.content).toContain("Declare every participant");
-  });
-
-  it("parses syntax ask answers", async () => {
-    vi.mocked(llmChat).mockResolvedValueOnce({
-      content: '{"answer":"Use `note right of A`"}',
-      providerId: "test",
-      model: "test-model",
-    });
-
-    const result = await askPlantUmlSyntaxQuestion(
-      "@startuml\n@enduml",
-      "How to add a note?",
-    );
-
-    expect(result.answer).toContain("note right");
   });
 });

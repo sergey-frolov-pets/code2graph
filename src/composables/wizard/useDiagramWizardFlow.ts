@@ -152,19 +152,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     t,
   });
 
-  const {
-    planningMessages,
-    isPlanningChatBusy,
-    sendPlanningChatMessage,
-    clearPlanningChat,
-    refineMessages,
-    isRefineChatBusy,
-    sendRefineChatMessage,
-    clearRefineChat,
-    showRefineChat,
-    clearConversations,
-    generateDiagram,
-  } = useWizardAiChat({
+  const { generateDiagram } = useWizardAiChat({
     documentKey,
     wizardState,
     currentStepId,
@@ -186,10 +174,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
 
   const canGoNext = computed(() => {
     if (currentStepId.value === "context") {
-      return (
-        wizardState.value.contextText.trim().length > 0 ||
-        planningMessages.value.length > 0
-      );
+      return wizardState.value.contextText.trim().length > 0;
     }
 
     return stepIndex.value < totalSteps.value - 1;
@@ -299,7 +284,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     resetPreviewState();
     aiSetupVisible.value = false;
     aiSetupReason.value = null;
-    clearConversations();
   }
 
   watch(
@@ -496,14 +480,5 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     handleApply,
     handleRegenerate,
     handleAiSetupRetry,
-    planningMessages,
-    isPlanningChatBusy,
-    sendPlanningChatMessage,
-    clearPlanningChat,
-    refineMessages,
-    isRefineChatBusy,
-    sendRefineChatMessage,
-    clearRefineChat,
-    showRefineChat,
   };
 }

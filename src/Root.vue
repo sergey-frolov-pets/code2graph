@@ -8,6 +8,7 @@ import LandingPage from "@/pages/LandingPage.vue";
 import LanguagePage from "@/pages/LanguagePage.vue";
 import McpPage from "@/pages/McpPage.vue";
 import PreviewPage from "@/pages/PreviewPage.vue";
+import AiChatSharePage from "@/pages/AiChatSharePage.vue";
 import LoginPage from "@/pages/LoginPage.vue";
 import RegisterPage from "@/pages/RegisterPage.vue";
 
@@ -31,6 +32,8 @@ const view = computed(() => {
       return McpPage;
     case "preview":
       return PreviewPage;
+    case "aiChatShare":
+      return AiChatSharePage;
     case "diagram":
     case "clipboard":
     case "libraryLink":

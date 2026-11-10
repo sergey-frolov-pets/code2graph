@@ -38,8 +38,9 @@ const props = withDefaults(
     canRefreshData?: boolean;
     snippetsOpen: boolean;
     isFullscreen: boolean;
-    surfaceMode: "code" | "builder";
+    surfaceMode: "code" | "builder" | "ai-chat";
     builderAvailable: boolean;
+    aiChatAvailable?: boolean;
     canToggleSessionFile?: boolean;
     sessionFileShowsBaseline?: boolean;
   }>(),
@@ -58,7 +59,7 @@ const emit = defineEmits<{
   aiSyntaxAsk: [];
   pasteTable: [];
   refreshData: [];
-  setSurfaceMode: [mode: "code" | "builder"];
+  setSurfaceMode: [mode: "code" | "builder" | "ai-chat"];
   validateSyntax: [];
   undo: [];
   redo: [];
@@ -317,7 +318,7 @@ function onSampleChange(event: Event): void {
   <header class="panel-header">
     <div class="panel-title-group">
       <div
-        v-if="builderAvailable"
+        v-if="builderAvailable || aiChatAvailable"
         class="editor-surface-switch"
         role="radiogroup"
         :aria-label="t('editor.surface.label')"
@@ -334,6 +335,7 @@ function onSampleChange(event: Event): void {
           {{ t("editor.title") }}
         </button>
         <button
+          v-if="builderAvailable"
           type="button"
           class="editor-surface-switch__option"
           role="radio"
@@ -343,6 +345,18 @@ function onSampleChange(event: Event): void {
           @click="emit('setSurfaceMode', 'builder')"
         >
           {{ t("editor.surface.builder") }}
+        </button>
+        <button
+          v-if="aiChatAvailable"
+          type="button"
+          class="editor-surface-switch__option"
+          role="radio"
+          :aria-checked="surfaceMode === 'ai-chat'"
+          :class="{ 'is-active': surfaceMode === 'ai-chat' }"
+          data-testid="editor-surface-ai-chat"
+          @click="emit('setSurfaceMode', 'ai-chat')"
+        >
+          {{ t("editor.surface.aiChat") }}
         </button>
       </div>
       <h2

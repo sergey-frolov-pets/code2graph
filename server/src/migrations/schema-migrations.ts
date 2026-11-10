@@ -249,6 +249,17 @@ export function runMigrations(database: Database.Database): void {
     )
     .run();
 
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS ai_chat_shares (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      diagram_format TEXT NOT NULL DEFAULT '',
+      snapshot TEXT NOT NULL,
+      created_by TEXT NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL
+    );
+  `);
+
   ensureLibraryLinkSchema(database);
 
   const versionRow = database
