@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed } from "vue";
 import TooltipWrap from "@/components/TooltipWrap.vue";
 import ToolbarOverflowMenu from "@/components/ui/ToolbarOverflowMenu.vue";
 import type { ToolbarMenuAction } from "@/components/ui/ToolbarOverflowMenu.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
-import { useHasActiveLlm } from "@/composables/useHasActiveLlm";
 import { useFeatureGate } from "@/composables/useFeatureGate";
 import { useLocale } from "@/composables/useLocale";
 import {
@@ -32,8 +31,6 @@ const props = withDefaults(
     canRedo?: boolean;
     canClear: boolean;
     canConvert: boolean;
-    canAiPatch: boolean;
-    canAiSyntaxAsk: boolean;
     canPasteTable?: boolean;
     canRefreshData?: boolean;
     snippetsOpen: boolean;
@@ -55,8 +52,6 @@ const emit = defineEmits<{
   openVersions: [];
   savePuml: [];
   saveToLibrary: [];
-  aiPatch: [];
-  aiSyntaxAsk: [];
   pasteTable: [];
   refreshData: [];
   setSurfaceMode: [mode: "code" | "builder" | "ai-chat"];
@@ -73,14 +68,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
-const { hasActiveLlm, refreshActiveLlmAvailability } = useHasActiveLlm();
-const allowAi = useFeatureGate("editor.ai");
 const allowCopySource = useFeatureGate("editor.copySource");
 const allowSnippets = useFeatureGate("editor.snippets");
-
-onMounted(() => {
-  void refreshActiveLlmAvailability();
-});
 
 const languageModule = computed(() =>
   getLanguageModule(props.formatDefinition.id),
@@ -103,59 +92,6 @@ const sampleOptions = computed(() =>
   }),
 );
 
-const showAiControls = computed(
-  () =>
-    allowAi.value &&
-    hasActiveLlm.value &&
-    (props.formatDefinition.supportsAiPatch ||
-      props.formatDefinition.supportsAiSyntaxAsk ||
-      props.formatDefinition.supportsSyntaxValidation),
-);
-
-const aiAssistantMenuGroups = computed(() => {
-  const actions: ToolbarMenuAction[] = [];
-  if (props.formatDefinition.supportsAiPatch) {
-    actions.push({
-      id: "patch",
-      label: t("editor.aiPatch"),
-      icon: "ai",
-      disabled: !props.canAiPatch,
-    });
-  }
-  if (props.formatDefinition.supportsAiSyntaxAsk) {
-    actions.push({
-      id: "syntax-ask",
-      label: t("editor.aiSyntaxAsk"),
-      icon: "syntax-help",
-      disabled: !props.canAiSyntaxAsk,
-    });
-  }
-  if (props.formatDefinition.supportsSyntaxValidation) {
-    actions.push({
-      id: "validate",
-      label: t("editor.validate"),
-      icon: "syntax-help",
-      disabled: props.isValidating,
-    });
-  }
-  return [{ id: "ai", label: "", actions }];
-});
-
-function onAiAssistantAction(actionId: string): void {
-  if (actionId === "patch") {
-    emit("aiPatch");
-    return;
-  }
-
-  if (actionId === "syntax-ask") {
-    emit("aiSyntaxAsk");
-    return;
-  }
-
-  if (actionId === "validate") {
-    emit("validateSyntax");
-  }
-}
 
 const fileMenuGroups = computed(() => {
   const actions: ToolbarMenuAction[] = [
@@ -242,6 +178,16 @@ const editMenuGroups = computed(() => {
     );
   }
 
+  // Проверка синтаксиса — не ИИ: живёт в меню «Правка», а не в отдельном ИИ-меню.
+  if (props.formatDefinition.supportsSyntaxValidation) {
+    actions.push({
+      id: "validate",
+      label: t("editor.validate"),
+      icon: "syntax-help" as const,
+      disabled: props.isValidating,
+    });
+  }
+
   actions.push(
     {
       id: "convert",
@@ -278,6 +224,7 @@ function onFileAction(actionId: string): void {
 }
 
 function onEditAction(actionId: string): void {
+  if (actionId === "validate") emit("validateSyntax");
   if (actionId === "paste-table") emit("pasteTable");
   if (actionId === "refresh-data") emit("refreshData");
   if (actionId === "session") emit("toggleSessionFile");
@@ -404,13 +351,6 @@ function onSampleChange(event: Event): void {
         icon="edit"
         :groups="editMenuGroups"
         @action="onEditAction"
-      />
-      <ToolbarOverflowMenu
-        v-if="showAiControls"
-        :label="t('editor.aiAssistant')"
-        icon="ai"
-        :groups="aiAssistantMenuGroups"
-        @action="onAiAssistantAction"
       />
       <TooltipWrap
         v-if="formatDefinition.supportsSamples && sampleOptions.length > 0"

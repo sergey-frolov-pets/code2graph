@@ -1,12 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   buildManualScaffold,
-  buildWizardPrompt,
   createDefaultStructuralElements,
   createDefaultTypeParams,
   DEFAULT_WIZARD_STATE,
   getWizardLanguagesForMode,
-  getWizardDiagramFormatRules,
   getWizardSteps,
   getWizardStructuralElementsForType,
   getWizardTypesForLanguage,
@@ -75,24 +73,6 @@ describe("llm-wizard", () => {
     expect(steps).toContain("direction");
   });
 
-  it("includes structural parameters in AI prompt", () => {
-    const prompt = buildWizardPrompt(
-      createState({
-        creationMode: "ai",
-        diagramType: "sequence",
-        contextText: "Order API",
-        typeParams: {
-          ...createDefaultTypeParams(),
-          participants: 4,
-        },
-      }),
-    );
-
-    expect(prompt).toContain("participants: 4");
-    expect(prompt).toContain("Order API");
-    expect(prompt).toContain("Description:");
-    expect(prompt).toContain("PlantUML sequence");
-  });
 
   it("skips direction step for sequence diagrams", () => {
     const steps = getWizardSteps(
@@ -108,15 +88,11 @@ describe("llm-wizard", () => {
     expect(steps).toContain("params");
   });
 
-  it("adds context and result steps only for AI mode (no prompt step)", () => {
+  it("has no context or prompt steps without an AI mode", () => {
     const manualSteps = getWizardSteps(createState({ creationMode: "manual" }));
-    const aiSteps = getWizardSteps(createState({ creationMode: "ai" }));
 
     expect(manualSteps).not.toContain("context");
     expect(manualSteps).not.toContain("prompt");
-    expect(aiSteps).toEqual(["context", "result"]);
-    expect(aiSteps).not.toContain("prompt");
-    expect(aiSteps).not.toContain("params");
   });
 
   it("defaults to manual creation mode", () => {
@@ -322,8 +298,8 @@ describe("llm-wizard", () => {
     expect(source).toContain('rankdir="LR"');
   });
 
-  it("exposes every site language in manual and AI modes", () => {
-    for (const mode of ["manual", "ai"] as const) {
+  it("exposes every site language in manual and builder modes", () => {
+    for (const mode of ["manual", "builder"] as const) {
       const languages = getWizardLanguagesForMode(mode);
       expect(languages).toEqual([
         "plantuml",
@@ -438,75 +414,10 @@ describe("llm-wizard", () => {
     expect(steps).toContain("direction");
   });
 
-  it("mentions Mermaid in AI wizard prompt", () => {
-    const prompt = buildWizardPrompt(
-      createState({
-        creationMode: "ai",
-        language: "mermaid",
-        diagramType: "sequence",
-        contextText: "Chat app",
-      }),
-    );
 
-    expect(prompt).toContain("Mermaid");
-    expect(prompt).toContain("Chat app");
-  });
 
-  it("includes mindmap format rules in PlantUML AI wizard prompt", () => {
-    const prompt = buildWizardPrompt(
-      createState({
-        creationMode: "ai",
-        language: "plantuml",
-        diagramType: "mindmap",
-        contextText: "Project planning topics",
-      }),
-    );
 
-    expect(prompt).toContain("@startmindmap");
-    expect(prompt).toContain("@endmindmap");
-    expect(prompt).toContain("do NOT use @startuml/@enduml");
-    expect(prompt).toContain("Project planning topics");
-  });
 
-  it("includes type structure guide in mindmap AI wizard prompt", () => {
-    const prompt = buildWizardPrompt(
-      createState({
-        creationMode: "ai",
-        language: "plantuml",
-        diagramType: "mindmap",
-        contextText: "Подмосковье",
-      }),
-      "ru",
-    );
-
-    expect(prompt).toContain("Type structure guide:");
-    expect(prompt).toContain("Подмосковье");
-    expect(prompt).toContain("все города");
-    expect(prompt).toContain("все районы");
-  });
-
-  it("includes exhaustive mindmap rules when description asks for all cities", () => {
-    const prompt = buildWizardPrompt(
-      createState({
-        creationMode: "ai",
-        language: "plantuml",
-        diagramType: "mindmap",
-        contextText:
-          "Интеллект-карта по всем городам Подмосковья по направлениям и районам",
-      }),
-    );
-
-    expect(prompt).toContain("Exhaustive coverage (critical");
-    expect(prompt).toContain("Hierarchy depth (critical)");
-    expect(prompt).toContain("Интеллект-карта по всем городам Подмосковья");
-  });
-
-  it("includes mindmap format rules for mermaid wizard prompt", () => {
-    const rules = getWizardDiagramFormatRules("mermaid", "mindmap");
-
-    expect(rules).toContain("mindmap");
-    expect(rules).not.toContain("@startuml");
-  });
 
   it("lists new mermaid diagram types in wizard", () => {
     const types = getWizardTypesForLanguage("mermaid");

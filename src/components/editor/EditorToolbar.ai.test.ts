@@ -1,23 +1,11 @@
 // @vitest-environment jsdom
 
-import { createApp, h, nextTick, ref } from "vue";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { createApp, h, nextTick } from "vue";
+import { afterEach, describe, expect, it } from "vitest";
 import { plantumlLanguageModule } from "@/languages/modules/plantuml";
+import EditorToolbar from "@/components/editor/EditorToolbar.vue";
 
-const hasActiveLlm = ref(false);
-
-vi.mock("@/composables/useHasActiveLlm", () => ({
-  useHasActiveLlm: () => ({
-    hasActiveLlm,
-    refreshActiveLlmAvailability: vi.fn(),
-  }),
-}));
-
-const { default: EditorToolbar } = await import(
-  "@/components/editor/EditorToolbar.vue"
-);
-
-function mountToolbar() {
+function mountToolbar(options: { builderAvailable: boolean; aiChatAvailable: boolean }) {
   const host = document.createElement("div");
   document.body.appendChild(host);
   const app = createApp({
@@ -30,12 +18,11 @@ function mountToolbar() {
           isRendering: false,
           canClear: true,
           canConvert: true,
-          canAiPatch: true,
-          canAiSyntaxAsk: true,
           snippetsOpen: false,
           isFullscreen: false,
           surfaceMode: "code",
-          builderAvailable: false,
+          builderAvailable: options.builderAvailable,
+          aiChatAvailable: options.aiChatAvailable,
         });
     },
   });
@@ -49,31 +36,41 @@ function mountToolbar() {
   };
 }
 
-function aiButton(host: HTMLElement): HTMLElement | null {
-  return host.querySelector(
-    '[aria-label="ИИ-помощник"], [aria-label="AI assistant"]',
-  );
-}
-
-describe("EditorToolbar AI assistant", () => {
+describe("EditorToolbar surface switch", () => {
   afterEach(() => {
     document.body.innerHTML = "";
-    hasActiveLlm.value = false;
   });
 
-  it("hides the AI assistant when no LLM is active", async () => {
-    hasActiveLlm.value = false;
-    const view = mountToolbar();
+  it("shows Code, Steps and AI chat when all surfaces are available", async () => {
+    const view = mountToolbar({ builderAvailable: true, aiChatAvailable: true });
     await nextTick();
-    expect(aiButton(view.host)).toBeNull();
+    expect(view.host.querySelector('[data-testid="editor-surface-code"]')).not.toBeNull();
+    expect(view.host.querySelector('[data-testid="editor-surface-builder"]')).not.toBeNull();
+    expect(view.host.querySelector('[data-testid="editor-surface-ai-chat"]')).not.toBeNull();
     view.unmount();
   });
 
-  it("shows the AI assistant when an LLM is active", async () => {
-    hasActiveLlm.value = true;
-    const view = mountToolbar();
+  it("hides AI chat when no LLM is connected (aiChatAvailable=false)", async () => {
+    const view = mountToolbar({ builderAvailable: true, aiChatAvailable: false });
     await nextTick();
-    expect(aiButton(view.host)).not.toBeNull();
+    expect(view.host.querySelector('[data-testid="editor-surface-ai-chat"]')).toBeNull();
+    expect(view.host.querySelector('[data-testid="editor-surface-builder"]')).not.toBeNull();
+    view.unmount();
+  });
+
+  it("hides the whole switch when neither Steps nor AI chat are available", async () => {
+    const view = mountToolbar({ builderAvailable: false, aiChatAvailable: false });
+    await nextTick();
+    expect(view.host.querySelector(".editor-surface-switch")).toBeNull();
+    view.unmount();
+  });
+
+  it("has no separate AI assistant menu", async () => {
+    const view = mountToolbar({ builderAvailable: true, aiChatAvailable: true });
+    await nextTick();
+    expect(
+      view.host.querySelector('[aria-label="ИИ-помощник"], [aria-label="AI assistant"]'),
+    ).toBeNull();
     view.unmount();
   });
 });

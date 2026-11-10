@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, toRef, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
-import LoadingState from "@/components/ui/LoadingState.vue";
 import { reportTablePasteError } from "@/composables/useTablePasteError";
 import WizardExampleGallery from "@/components/wizard/WizardExampleGallery.vue";
 import WizardOnboardingBanner from "@/components/wizard/WizardOnboardingBanner.vue";
-import WizardAiSetupPanel from "@/components/wizard/WizardAiSetupPanel.vue";
 import WizardLivePreview from "@/components/wizard/WizardLivePreview.vue";
 import WizardProgressSteps from "@/components/wizard/WizardProgressSteps.vue";
 import WizardStepContent from "@/components/wizard/WizardStepContent.vue";
 import WizardModalFooter from "@/components/wizard/WizardModalFooter.vue";
 import { useDiagramWizardFlow } from "@/composables/wizard/useDiagramWizardFlow";
-import { useActiveLlmLabel } from "@/composables/useActiveLlmLabel";
 import { useWizardOnboarding } from "@/composables/wizard/useWizardOnboarding";
 import { useLocale } from "@/composables/useLocale";
 import {
@@ -48,7 +45,6 @@ const emit = defineEmits<{
 
 const { t, locale } = useLocale();
 const { showWizardBanner, dismissWizardBanner } = useWizardOnboarding();
-const { activeLlmDetail } = useActiveLlmLabel();
 
 function onBuilderPasteError(error: TablePasteErrorInfo): void {
   reportTablePasteError(error);
@@ -76,18 +72,13 @@ onMounted(() => {
 const {
   stepIndex,
   galleryVisible,
-  wizardState,
   builderState,
   applyTarget,
   isBuilderMode,
-  isGenerating,
   errorMessage,
   resultSource,
-  resultExplanation,
   previewSvg,
   isPreviewLoading,
-  aiSetupVisible,
-  aiSetupReason,
   showLivePreviewPanel,
   currentStepId,
   totalSteps,
@@ -102,8 +93,6 @@ const {
   goBack,
   goNext,
   handleApply,
-  handleRegenerate,
-  handleAiSetupRetry,
 } = useDiagramWizardFlow({
   open: toRef(props, "open"),
   documentKey: toRef(props, "documentKey"),
@@ -122,9 +111,7 @@ const {
   onClose: () => emit("close"),
 });
 
-const showLivePreview = computed(
-  () => showLivePreviewPanel.value && !aiSetupVisible.value,
-);
+const showLivePreview = computed(() => showLivePreviewPanel.value);
 </script>
 
 <template>
@@ -181,20 +168,9 @@ const showLivePreview = computed(
       {{ t("llm.wizard.stepCounter", { current: stepIndex + 1, total: totalSteps }) }}
     </p>
 
-    <WizardAiSetupPanel
-      v-if="!galleryVisible && aiSetupVisible"
-      :reason="aiSetupReason"
-      @retry="handleAiSetupRetry"
-      @open-settings="emit('openSettings')"
-    />
-
-    <LoadingState
-      v-if="!galleryVisible && isGenerating && currentStepId !== 'result'"
-      compact
-      class="wizard-generating-banner"
-      :message="t('llm.wizard.generating')"
-      :detail="activeLlmDetail"
-    />
+    <p v-if="!galleryVisible && errorMessage" class="wizard-error">
+      {{ errorMessage }}
+    </p>
 
     <div
       v-if="!galleryVisible"
@@ -203,12 +179,8 @@ const showLivePreview = computed(
     >
       <div class="wizard-body__main">
         <WizardStepContent
-          v-model:wizard-state="wizardState"
           v-model:builder-state="builderState"
           :current-step-id="currentStepId"
-          :is-generating="isGenerating"
-          :error-message="errorMessage"
-          :result-explanation="resultExplanation"
           :result-source="resultSource"
           @builder-change="handleBuilderChange"
           @builder-paste-source="handleBuilderPasteSource"
@@ -231,7 +203,6 @@ const showLivePreview = computed(
         :current-step-id="currentStepId"
         :gallery="galleryVisible"
         :is-builder-mode="isBuilderMode"
-        :is-generating="isGenerating"
         :can-go-next="canGoNext"
         :show-back-button="showBackButton"
         :result-source="resultSource"
@@ -239,7 +210,6 @@ const showLivePreview = computed(
         @close="emit('close')"
         @next="goNext"
         @apply="handleApply"
-        @regenerate="handleRegenerate"
       />
     </template>
   </AppModal>

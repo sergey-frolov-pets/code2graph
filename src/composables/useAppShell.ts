@@ -80,7 +80,6 @@ export interface AppShellContext {
   isValidating: Ref<boolean>;
   syntaxResult: Ref<import("@/utils/plantuml-syntax").SyntaxCheckResult | null>;
   syntaxErrorLines: Ref<number[]>;
-  aiChatExplainSignal: Ref<number>;
   loadedFileName: Ref<string>;
   linkedLibraryDiagramId: Ref<string | null>;
   activeMobilePanel: Ref<"editor" | "preview">;
@@ -109,7 +108,6 @@ export interface AppShellContext {
   onEditorClearedWithLink: () => void;
   onImportError: (message: string) => void;
   runSyntaxValidation: () => Promise<void>;
-  onSyntaxAskFromValidation: () => void;
   applyAiPlantUml: (source: string, label: string) => void;
   applyWizardDiagram: (
     source: string,
@@ -157,7 +155,6 @@ export function useAppShell(): AppShellContext {
   const linkedLibraryDiagramId = ref<string | null>(null);
   const activeMobilePanel = ref<"editor" | "preview">("editor");
   const diagramFormat = ref<DiagramFormat>("plantuml");
-  const aiChatExplainSignal = ref(0);
   const suppressSourceHistory = ref(0);
 
   const { alert } = useAppDialog();
@@ -443,13 +440,6 @@ export function useAppShell(): AppShellContext {
     await validateSyntax();
   }
 
-  function onSyntaxAskFromValidation(): void {
-    modals.closeSyntaxModal();
-    // Вопрос по синтаксису теперь живёт в режиме «ИИ-чат» редактора.
-    aiChatExplainSignal.value += 1;
-    activeMobilePanel.value = "editor";
-  }
-
   function applyAiPlantUmlWithHistory(plantuml: string, label: string): void {
     flushPendingHistory();
     withSuppressedSourceHistory(() => {
@@ -660,7 +650,6 @@ export function useAppShell(): AppShellContext {
     isValidating,
     syntaxResult,
     syntaxErrorLines,
-    aiChatExplainSignal,
     loadedFileName,
     linkedLibraryDiagramId,
     activeMobilePanel,
@@ -680,7 +669,6 @@ export function useAppShell(): AppShellContext {
     onEditorClearedWithLink,
     onImportError,
     runSyntaxValidation,
-    onSyntaxAskFromValidation,
     applyAiPlantUml: applyAiPlantUmlWithHistory,
     applyWizardDiagram: applyWizardDiagramWithHistory,
     applyWizardDiagramToNewTab,

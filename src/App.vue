@@ -256,7 +256,6 @@ onUnmounted(() => {
         :render-mode="renderMode"
         :diagram-dark-mode="diagramDarkMode"
         :render-error="error"
-        :ai-explain-signal="shell.aiChatExplainSignal.value"
         @file-loaded="shell.onEditorFileLoaded"
         @import-error="shell.onImportError"
         @save-puml="shell.savePuml"

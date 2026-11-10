@@ -11,10 +11,8 @@ export function useEditorSelection(options: {
   textareaRef: Ref<HTMLTextAreaElement | null>;
   displayText: ComputedRef<string>;
   syncScroll: () => void;
-  onAiPatch: (payload: { start: number; end: number }) => void;
 }) {
-  const { source, folds, textareaRef, displayText, syncScroll, onAiPatch } =
-    options;
+  const { source, folds, textareaRef, displayText, syncScroll } = options;
 
   const selectionStart = ref(0);
   const selectionEnd = ref(0);
@@ -55,35 +53,6 @@ export function useEditorSelection(options: {
     );
     selectionStart.value = mapped.start;
     selectionEnd.value = mapped.end;
-  }
-
-  function requestAiPatch(): void {
-    let start = selectionStart.value;
-    let end = selectionEnd.value;
-
-    const textarea = textareaRef.value;
-    if (textarea) {
-      const liveDisplayStart = textarea.selectionStart;
-      const liveDisplayEnd = textarea.selectionEnd;
-      if (liveDisplayEnd > liveDisplayStart) {
-        const mapped = mapDisplaySelectionToSource(
-          liveDisplayStart,
-          liveDisplayEnd,
-        );
-        start = mapped.start;
-        end = mapped.end;
-      }
-    }
-
-    if (end <= start) {
-      onAiPatch({ start: 0, end: 0 });
-      return;
-    }
-
-    selectionStart.value = start;
-    selectionEnd.value = end;
-
-    onAiPatch({ start, end });
   }
 
   function insertSnippetAtCursor(content: string): void {
@@ -178,7 +147,6 @@ export function useEditorSelection(options: {
   return {
     hasTextSelection,
     updateSelectionState,
-    requestAiPatch,
     insertSnippetAtCursor,
     getCaretOffsetInSource,
     getSelectionRangeInSource,

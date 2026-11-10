@@ -24,6 +24,8 @@ import { reportTablePasteError } from "@/composables/useTablePasteError";
 import { isFeatureAllowed } from "@/composables/useFeatureGate";
 import { trackClipboardPaste } from "@/analytics";
 import { useLocale } from "@/composables/useLocale";
+import { useHasActiveLlm } from "@/composables/useHasActiveLlm";
+import { useFeatureGate } from "@/composables/useFeatureGate";
 import type { EditorFontSize } from "@/constants/editor-settings";
 import {
   DIAGRAM_FILE_ACCEPT,
@@ -77,7 +79,6 @@ const props = defineProps<{
   renderMode?: RenderMode;
   diagramDarkMode?: boolean;
   renderError?: string;
-  aiExplainSignal?: number;
 }>();
 
 const emit = defineEmits<{
@@ -135,10 +136,20 @@ const builderAvailable = computed(
     formatDefinition.value.editable &&
     supportsDiagramBuilder(formatDefinition.value.id),
 );
-/** ИИ-чат скрываем для нередактируемых форматов (например, read-only GraphML). */
-const aiChatAvailable = computed(() => formatDefinition.value.editable);
-const aiSelectionText = ref("");
-const internalExplainSignal = ref(0);
+const { hasActiveLlm, refreshActiveLlmAvailability } = useHasActiveLlm();
+const allowAiChat = useFeatureGate("editor.ai");
+
+/**
+ * ИИ-чат скрываем, если формат нередактируем (read-only GraphML),
+ * не подключён ни один LLM (активный провайдер без согласия/ключа/прокси)
+ * или ИИ запрещён тарифом/правами (`editor.ai`).
+ */
+const aiChatAvailable = computed(
+  () =>
+    formatDefinition.value.editable &&
+    hasActiveLlm.value &&
+    allowAiChat.value,
+);
 
 watch(builderAvailable, (available) => {
   if (!available && surfaceMode.value === "builder") {
@@ -165,28 +176,6 @@ function setSurfaceMode(mode: EditorSurfaceMode): void {
   surfaceMode.value = mode;
 }
 
-function openAiChatWithSelection(selection: { start: number; end: number }): void {
-  aiSelectionText.value =
-    selection.end > selection.start
-      ? source.value.slice(selection.start, selection.end)
-      : "";
-  setSurfaceMode("ai-chat");
-}
-
-function openAiChatExplain(): void {
-  aiSelectionText.value = "";
-  internalExplainSignal.value += 1;
-  setSurfaceMode("ai-chat");
-}
-
-watch(
-  () => props.aiExplainSignal,
-  (signal, previous) => {
-    if (signal && previous !== undefined && signal !== previous) {
-      openAiChatExplain();
-    }
-  },
-);
 
 const textareaRef = computed(
   () => codeSurfaceRef.value?.textareaEl ?? null,
@@ -384,7 +373,6 @@ const {
 
 const {
   updateSelectionState,
-  requestAiPatch,
   insertSnippetAtCursor,
   getCaretOffsetInSource,
   getSelectionRangeInSource,
@@ -394,11 +382,6 @@ const {
   textareaRef,
   displayText,
   syncScroll,
-  onAiPatch: (payload) =>
-    openAiChatWithSelection({
-      start: toWorkingOffset(payload.start),
-      end: toWorkingOffset(payload.end),
-    }),
 });
 
 async function onPasteTableFromClipboard(): Promise<void> {
@@ -511,6 +494,7 @@ watch(isFullscreen, (value) => {
 
 onMounted(() => {
   window.addEventListener("keydown", onEditorKeydown);
+  void refreshActiveLlmAvailability();
 });
 
 onUnmounted(() => {
@@ -543,8 +527,6 @@ onUnmounted(() => {
       :can-redo="canRedo"
       :can-clear="canClear"
       :can-convert="canClear"
-      :can-ai-patch="canClear"
-      :can-ai-syntax-ask="canClear"
       :can-paste-table="canPasteTable"
       :can-refresh-data="canRefreshData"
       :snippets-open="snippetsOpen"
@@ -560,8 +542,6 @@ onUnmounted(() => {
       @open-versions="emit('openVersions')"
       @save-puml="emit('savePuml')"
       @save-to-library="emit('saveToLibrary')"
-      @ai-patch="requestAiPatch"
-      @ai-syntax-ask="openAiChatExplain"
       @paste-table="onPasteTableFromClipboard"
       @refresh-data="emit('refreshData')"
       @validate-syntax="emit('validateSyntax')"
@@ -605,8 +585,6 @@ onUnmounted(() => {
         :render-mode="renderMode ?? DEFAULT_RENDER_MODE"
         :diagram-dark-mode="diagramDarkMode ?? false"
         :render-error="renderError"
-        :selection-text="aiSelectionText"
-        :explain-signal="internalExplainSignal"
         @apply-source="emit('aiApplySource', $event)"
         @open-settings="emit('openSettings')"
       />

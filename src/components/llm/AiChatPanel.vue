@@ -38,9 +38,6 @@ const props = defineProps<{
   renderMode: RenderMode;
   diagramDarkMode: boolean;
   renderError?: string;
-  selectionText?: string;
-  /** Растёт, когда внешний сценарий (проверка синтаксиса) просит открыть чат с вопросом. */
-  explainSignal?: number;
 }>();
 
 const emit = defineEmits<{
@@ -144,15 +141,6 @@ watch(documentKeyRef, () => {
   selectedIds.value = new Set();
   void load();
 });
-
-watch(
-  () => props.explainSignal,
-  (signal, previous) => {
-    if (signal && previous !== undefined && signal !== previous) {
-      draft.value = t("aiChat.starterExplain");
-    }
-  },
-);
 
 function toggleSelected(id: string, checked: boolean): void {
   const next = new Set(selectedIds.value);
@@ -345,7 +333,6 @@ async function runSend(
       userContent: text,
       format: props.diagramFormat,
       source: props.source,
-      selection: props.selectionText,
       renderError: props.renderError,
       summary: session.summary,
       layout: props.layout,

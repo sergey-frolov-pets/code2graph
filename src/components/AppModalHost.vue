@@ -22,12 +22,10 @@ const {
   syntaxResult,
   loadedFileName,
   linkedLibraryDiagramId,
-  formatDefinition,
   modals,
   llmKeysGuide,
   onConvertApply,
   onFileLoaded,
-  onSyntaxAskFromValidation,
   applyWizardDiagram,
   applyWizardDiagramToNewTab,
   onVersionRestore,
@@ -73,9 +71,7 @@ function onWizardApply(payload: {
     :open="isSyntaxModalOpen"
     :result="syntaxResult"
     :is-validating="isValidating"
-    :show-syntax-ask="formatDefinition.supportsAiSyntaxAsk"
     @close="closeSyntaxModal"
-    @ask-syntax="onSyntaxAskFromValidation"
   />
 
   <DiagramVersionsDialog

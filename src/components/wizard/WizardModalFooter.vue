@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import IconButton from "@/components/IconButton.vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
-import { useActiveLlmLabel } from "@/composables/useActiveLlmLabel";
 import { useLocale } from "@/composables/useLocale";
 import type { WizardStepId } from "@/constants/llm-wizard";
 import type { BuilderApplyTarget } from "@/services/diagram-builder";
@@ -14,7 +13,6 @@ defineProps<{
   currentStepId: WizardStepId | string;
   gallery: boolean;
   isBuilderMode?: boolean;
-  isGenerating: boolean;
   canGoNext: boolean;
   showBackButton: boolean;
   resultSource: string;
@@ -25,11 +23,9 @@ const emit = defineEmits<{
   close: [];
   next: [];
   apply: [];
-  regenerate: [];
 }>();
 
 const { t } = useLocale();
-const { generatingLabel } = useActiveLlmLabel();
 </script>
 
 <template>
@@ -39,7 +35,6 @@ const { generatingLabel } = useActiveLlmLabel();
         v-if="showBackButton"
         :label="t('llm.wizard.back')"
         extra-class="wizard-footer__btn"
-        :disabled="isGenerating"
         @click="emit('back')"
       >
         <ActionIcon name="back" />
@@ -48,7 +43,7 @@ const { generatingLabel } = useActiveLlmLabel();
 
     <div class="wizard-footer__end">
       <label
-        v-if="!gallery && (isBuilderMode || currentStepId === 'result')"
+        v-if="!gallery && isBuilderMode"
         class="wizard-footer__target"
       >
         <span class="sr-only">{{ t("builder.applyTarget.label") }}</span>
@@ -72,17 +67,6 @@ const { generatingLabel } = useActiveLlmLabel();
       </IconButton>
 
       <IconButton
-        v-if="!gallery && currentStepId === 'context'"
-        :label="isGenerating ? generatingLabel : t('llm.wizard.generate')"
-        extra-class="wizard-footer__btn"
-        primary
-        :disabled="!canGoNext || isGenerating"
-        @click="emit('next')"
-      >
-        <ActionIcon name="ai" />
-      </IconButton>
-
-      <IconButton
         v-if="!gallery && isBuilderMode && canGoNext"
         :label="t('llm.wizard.next')"
         extra-class="wizard-footer__btn"
@@ -92,24 +76,15 @@ const { generatingLabel } = useActiveLlmLabel();
       </IconButton>
 
       <IconButton
-        v-if="!gallery && (currentStepId === 'result' || isBuilderMode)"
+        v-if="!gallery && isBuilderMode"
         :label="t('llm.wizard.apply')"
         extra-class="wizard-footer__btn"
         primary
-        :disabled="!resultSource || isGenerating"
+        :disabled="!resultSource"
         data-testid="wizard-apply-button"
         @click="emit('apply')"
       >
         <ActionIcon name="check" />
-      </IconButton>
-
-      <IconButton
-        v-if="!gallery && currentStepId === 'result' && !isGenerating"
-        :label="t('llm.wizard.regenerate')"
-        extra-class="wizard-footer__btn"
-        @click="emit('regenerate')"
-      >
-        <ActionIcon name="refresh" />
       </IconButton>
     </div>
   </div>
@@ -139,7 +114,6 @@ const { generatingLabel } = useActiveLlmLabel();
 
 .wizard-footer__target {
   display: inline-flex;
-  align-items: center;
   margin: 0;
 }
 
