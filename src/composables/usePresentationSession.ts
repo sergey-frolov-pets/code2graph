@@ -73,6 +73,7 @@ export function usePresentationSession(options: {
   const attachTarget = ref<OverlayAttachTarget>("viewpoint");
   const chromeRevealed = ref(false);
   const exportingGif = ref(false);
+  const repeat = ref(false);
   const { alert } = useAppDialog();
   const { t } = useLocale();
   let suppressParse = false;
@@ -82,6 +83,7 @@ export function usePresentationSession(options: {
     getTrack: () => currentTrack.value,
     setFrame: options.setFrame,
     setLocked: options.setLocked,
+    getRepeat: () => repeat.value,
   });
 
   const enabled = computed(
@@ -455,6 +457,7 @@ export function usePresentationSession(options: {
     chromeRevealed,
     selectedOverlayId,
     exportingGif,
+    repeat,
     addPointArmed,
     attachTarget,
     playback,

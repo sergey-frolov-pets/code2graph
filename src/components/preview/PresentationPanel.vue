@@ -65,8 +65,9 @@ const {
   selectedOverlayId,
   exportingGif,
   onExportGif,
+  repeat,
 } = session;
-const { playing, viewpointIndex, togglePlay, step } = session.playback;
+const { playing, viewpointIndex, togglePlay, step, pause, goToViewpoint } = session.playback;
 
 const track = computed(() => session.currentTrack.value);
 const viewpoint = computed(
@@ -82,6 +83,11 @@ const canStep = computed(() => (track.value?.viewpoints.length ?? 0) > 1);
 
 function trackLabel(index: number): string {
   return String(index + 1);
+}
+
+function goToFirst(): void {
+  pause();
+  goToViewpoint(0);
 }
 
 function pathLabel(kind: PresentationPathKind): LocaleKey {
@@ -222,59 +228,95 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
     :aria-label="t('presentation.expand')"
   >
     <div class="presentation-dock__bar">
-      <IconButton
-        v-if="canEdit"
-        :label="mode === 'edit' ? t('presentation.view') : t('presentation.edit')"
-        :pressed="mode === 'edit'"
-        @click="mode = mode === 'edit' ? 'view' : 'edit'"
+      <div class="presentation-dock__title">
+        <IconButton
+          v-if="canEdit"
+          :label="mode === 'edit' ? t('presentation.view') : t('presentation.edit')"
+          :pressed="mode === 'edit'"
+          @click="mode = mode === 'edit' ? 'view' : 'edit'"
+        >
+          <PresentationGlyph :name="mode === 'edit' ? 'view' : 'edit'" />
+        </IconButton>
+        <input
+          v-if="mode === 'edit' && canEdit && track"
+          class="presentation-dock__rename"
+          :value="track.name"
+          type="text"
+          :aria-label="t('presentation.trackRename')"
+          @change="onRenameTrack(($event.target as HTMLInputElement).value)"
+        >
+        <span
+          v-else-if="track"
+          class="presentation-dock__name"
+        >
+          {{ track.name }}
+        </span>
+        <IconButton
+          :label="exportingGif ? t('presentation.exportGifBusy') : t('presentation.exportGif')"
+          :disabled="!track || track.viewpoints.length === 0 || exportingGif"
+          @click="onExportGif()"
+        >
+          <PresentationGlyph
+            :name="exportingGif ? 'loader' : 'gif'"
+            :spin="exportingGif"
+          />
+        </IconButton>
+      </div>
+      <label
+        v-if="track"
+        class="presentation-check"
       >
-        <PresentationGlyph :name="mode === 'edit' ? 'view' : 'edit'" />
-      </IconButton>
-      <IconButton
-        :label="t('presentation.prev')"
-        :disabled="!canStep"
-        @click="step(-1)"
-      >
-        <PresentationGlyph name="prev" />
-      </IconButton>
-      <span
-        v-if="track && track.viewpoints.length"
-        class="presentation-dock__index"
-      >
-        {{ trackLabel(viewpointIndex) }} / {{ track.viewpoints.length }}
-      </span>
-      <IconButton
-        :label="t('presentation.next')"
-        :disabled="!canStep"
-        @click="step(1)"
-      >
-        <PresentationGlyph name="next" />
-      </IconButton>
-      <IconButton
-        :label="playing ? t('presentation.pause') : t('presentation.play')"
-        primary
-        :disabled="!track || track.viewpoints.length === 0"
-        @click="togglePlay()"
-      >
-        <PresentationGlyph :name="playing ? 'pause' : 'play'" />
-      </IconButton>
-      <IconButton
-        :label="exportingGif ? t('presentation.exportGifBusy') : t('presentation.exportGif')"
-        :disabled="!track || track.viewpoints.length === 0 || exportingGif"
-        @click="onExportGif()"
-      >
-        <PresentationGlyph
-          :name="exportingGif ? 'loader' : 'gif'"
-          :spin="exportingGif"
-        />
-      </IconButton>
-      <IconButton
-        :label="t('presentation.overlaysShow')"
-        :pressed="presentation?.showOverlays !== false"
-        @click="onToggleOverlays(presentation?.showOverlays === false)"
-      >
-        <PresentationGlyph :name="presentation?.showOverlays === false ? 'eye-off' : 'eye'" />
-      </IconButton>
+        <input
+          type="checkbox"
+          :checked="repeat"
+          @change="repeat = ($event.target as HTMLInputElement).checked"
+        >
+        {{ t("presentation.repeat") }}
+      </label>
+      <div class="presentation-dock__transport">
+        <IconButton
+          :label="t('presentation.first')"
+          :disabled="!track || track.viewpoints.length === 0"
+          @click="goToFirst()"
+        >
+          <PresentationGlyph name="first" />
+        </IconButton>
+        <IconButton
+          :label="t('presentation.prev')"
+          :disabled="!canStep"
+          @click="step(-1)"
+        >
+          <PresentationGlyph name="prev" />
+        </IconButton>
+        <span
+          v-if="track && track.viewpoints.length"
+          class="presentation-dock__index"
+        >
+          {{ trackLabel(viewpointIndex) }} / {{ track.viewpoints.length }}
+        </span>
+        <IconButton
+          :label="t('presentation.next')"
+          :disabled="!canStep"
+          @click="step(1)"
+        >
+          <PresentationGlyph name="next" />
+        </IconButton>
+        <IconButton
+          :label="playing ? t('presentation.pause') : t('presentation.play')"
+          primary
+          :disabled="!track || track.viewpoints.length === 0"
+          @click="togglePlay()"
+        >
+          <PresentationGlyph :name="playing ? 'pause' : 'play'" />
+        </IconButton>
+        <IconButton
+          :label="t('presentation.overlaysShow')"
+          :pressed="presentation?.showOverlays !== false"
+          @click="onToggleOverlays(presentation?.showOverlays === false)"
+        >
+          <PresentationGlyph :name="presentation?.showOverlays === false ? 'eye-off' : 'eye'" />
+        </IconButton>
+      </div>
     </div>
 
     <div
@@ -312,17 +354,6 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
             <PresentationGlyph name="trash" />
           </IconButton>
         </div>
-        <label
-          v-if="track"
-          class="presentation-field"
-        >
-          <span>{{ t("presentation.trackRename") }}</span>
-          <input
-            :value="track.name"
-            type="text"
-            @change="onRenameTrack(($event.target as HTMLInputElement).value)"
-          >
-        </label>
       </section>
 
       <p
@@ -730,7 +761,7 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
   max-height: 70%;
   padding: 8px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 16px;
   background: color-mix(in srgb, var(--surface) 94%, transparent);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 16%, transparent);
   transform: translateX(-50%);
@@ -742,11 +773,53 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
 }
 
 .presentation-dock__bar,
-.presentation-dock__row {
+.presentation-dock__row,
+.presentation-dock__title,
+.presentation-dock__transport {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+}
+
+.presentation-dock__bar {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.presentation-dock__title {
+  flex-wrap: nowrap;
+}
+
+.presentation-dock__name,
+.presentation-dock__rename {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presentation-dock__rename {
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 650;
+}
+
+.presentation-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
 }
 
 .presentation-dock__body {

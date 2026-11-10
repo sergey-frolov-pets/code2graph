@@ -5,10 +5,16 @@ import type { CameraFrame, PresentationTrack } from "@/services/presentation/typ
 
 export type PresentationPhase = "dwell" | "travel";
 
+/** One pass ends after the dwell on the last viewpoint. Repeat keeps the cycle going. */
+export function shouldStopAfterDwell(repeat: boolean, index: number, count: number): boolean {
+  return !repeat && count > 0 && index >= count - 1;
+}
+
 export function usePresentationPlayback(options: {
   getTrack: () => PresentationTrack | null;
   setFrame: (frame: CameraFrame) => void;
   setLocked: (locked: boolean) => void;
+  getRepeat: () => boolean;
 }) {
   const playing = ref(false);
   const animating = ref(false);
@@ -72,12 +78,21 @@ export function usePresentationPlayback(options: {
       showViewpoint(viewpointIndex.value);
       travelAmount.value = 0;
       const dwell = track.viewpoints[viewpointIndex.value]?.dwellMs ?? 0;
-      if (playing.value && track.viewpoints.length > 1 && now - phaseStarted >= dwell) {
-        phase.value = "travel";
-        reverse = false;
-        travelOrigin.value = viewpointIndex.value;
-        phaseStarted = now;
-        travelAmount.value = 0;
+      if (playing.value && now - phaseStarted >= dwell) {
+        if (shouldStopAfterDwell(options.getRepeat(), viewpointIndex.value, track.viewpoints.length)) {
+          playing.value = false;
+          animating.value = false;
+          stopRaf();
+          syncLock();
+          return;
+        }
+        if (track.viewpoints.length > 1) {
+          phase.value = "travel";
+          reverse = false;
+          travelOrigin.value = viewpointIndex.value;
+          phaseStarted = now;
+          travelAmount.value = 0;
+        }
       }
     } else {
       const origin = travelOrigin.value;

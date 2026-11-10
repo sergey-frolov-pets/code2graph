@@ -5,6 +5,9 @@ import {
   ArrowRight,
   Camera,
   Check,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsDown,
   Circle,
   Eye,
   EyeOff,
@@ -22,7 +25,6 @@ import {
   RotateCcw,
   RotateCw,
   SkipBack,
-  SkipForward,
   Square,
   SquarePen,
   Trash2,
@@ -42,6 +44,7 @@ export type PresentationGlyphName =
   | "view"
   | "prev"
   | "next"
+  | "first"
   | "play"
   | "pause"
   | "gif"
@@ -70,9 +73,10 @@ export type PresentationGlyphName =
 const ICONS: Record<PresentationGlyphName, Component> = {
   presentation: Presentation,
   edit: SquarePen,
-  view: Eye,
-  prev: SkipBack,
-  next: SkipForward,
+  view: ChevronsDown,
+  prev: ChevronLeft,
+  next: ChevronRight,
+  first: SkipBack,
   play: Play,
   pause: Pause,
   gif: Film,

@@ -140,6 +140,8 @@ export const miscMessages = {
   "presentation.togglePanel": "Презентация",
   "presentation.edit": "Редактирование",
   "presentation.play": "Play",
+  "presentation.repeat": "Проигрывать непрерывно",
+  "presentation.first": "Вернуться к первой точке",
   "presentation.pause": "Пауза",
   "presentation.next": "Далее",
   "presentation.prev": "Назад",
