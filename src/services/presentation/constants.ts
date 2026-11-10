@@ -85,3 +85,18 @@ export const PRESENTATION_GIF_CENTISECOND_MS = 10;
 export const PRESENTATION_GIF_PALETTE_SIZE = 256;
 
 export const PRESENTATION_GIF_FALLBACK_BACKGROUND = "#ffffff";
+
+/** Smallest note text, in pixels. */
+export const PRESENTATION_OVERLAY_TEXT_MIN_PX = 12;
+
+/** Largest note text, in pixels. */
+export const PRESENTATION_OVERLAY_TEXT_MAX_PX = 28;
+
+/** Note text size as a fraction of the overlay height. */
+export const PRESENTATION_OVERLAY_TEXT_HEIGHT_RATIO = 0.45;
+
+/** Line box of note text, as a multiple of the font size. */
+export const PRESENTATION_OVERLAY_TEXT_LINE_HEIGHT = 1.2;
+
+/** Rows in the note text field when a text overlay is edited. */
+export const PRESENTATION_NOTE_TEXT_ROWS = 3;

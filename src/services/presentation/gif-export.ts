@@ -4,6 +4,10 @@ import { effectVisualAt, type EffectVisual } from "@/services/presentation/effec
 import { overlayArtwork, paintArtwork } from "@/services/presentation/glyph-art";
 import { overlayCssColor } from "@/services/presentation/overlay-color";
 import {
+  overlayTextFontSize,
+  overlayTextLinePlacements,
+} from "@/services/presentation/overlay-text";
+import {
   blockArrowPath,
   lineArrowPath,
   overlayOutline,
@@ -248,7 +252,7 @@ function paintOverlay(
   }
 
   if (overlay.shape === "text" && overlay.text) {
-    const fontSize = Math.max(12, Math.min(28, Math.abs(box.height) * 0.45));
+    const fontSize = overlayTextFontSize(box.height);
     const fontFamily = overlay.font === "serif"
       ? "serif"
       : overlay.font === "mono"
@@ -258,7 +262,11 @@ function paintOverlay(
     context.font = `${fontSize}px ${fontFamily}`;
     context.textAlign = "center";
     context.textBaseline = "middle";
-    context.fillText(overlay.text, box.x + box.width / 2, box.y + box.height / 2);
+    const centerX = box.x + box.width / 2;
+    const centerY = box.y + box.height / 2;
+    for (const line of overlayTextLinePlacements(overlay.text, fontSize)) {
+      context.fillText(line.text, centerX, centerY + line.centerOffset);
+    }
   }
   context.restore();
 }
