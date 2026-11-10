@@ -268,6 +268,20 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     onClose();
   }
 
+  function openSavedDiagram(payload: {
+    source: string;
+    label: string;
+    format: DiagramFormat;
+  }): void {
+    onApply({
+      source: payload.source,
+      label: payload.label,
+      format: payload.format,
+      target: "new-tab",
+    });
+    onClose();
+  }
+
   function selectStep(index: number): void {
     if (
       !isBuilderMode.value ||
@@ -338,6 +352,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     showBackButton,
     canGoNext,
     openGalleryExample,
+    openSavedDiagram,
     handleBuilderChange,
     handleBuilderPasteSource,
     selectStep,

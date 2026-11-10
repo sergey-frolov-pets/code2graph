@@ -180,4 +180,5 @@ export const editorMessages = {
   "editor.completion.mermaidPacketField": "حقل الحزمة",
   "editor.tabs.label": "علامات تبويب المحرر",
   "editor.tabs.close": "إغلاق علامة التبويب {label}",
+  "editor.surface.aiChat": "دردشة الذكاء الاصطناعي",
 } as const satisfies LocaleMessages;

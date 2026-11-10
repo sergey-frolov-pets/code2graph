@@ -439,4 +439,6 @@ export const miscMessages = {
   "pwa.updateAvailable": "يتوفر إصدار جديد من الموقع",
   "pwa.updateReload": "إعادة التحميل",
   "pwa.updateDismiss": "لاحقًا",
+  "presentation.opacity": "العتمة",
+  "presentation.transparent": "شفاف",
 } as const satisfies LocaleMessages;

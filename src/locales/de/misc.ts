@@ -439,4 +439,6 @@ export const miscMessages = {
   "pwa.updateAvailable": "Eine neue Version der Website ist verfügbar",
   "pwa.updateReload": "Neu laden",
   "pwa.updateDismiss": "Später",
+  "presentation.opacity": "Deckkraft",
+  "presentation.transparent": "Transparent",
 } as const satisfies LocaleMessages;

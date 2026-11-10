@@ -87,6 +87,7 @@ const {
   canGoNext,
   wizardSteps,
   openGalleryExample,
+  openSavedDiagram,
   handleBuilderChange,
   handleBuilderPasteSource,
   selectStep,
@@ -138,7 +139,11 @@ const showLivePreview = computed(() => showLivePreviewPanel.value);
 
     <WizardExampleGallery
       v-if="galleryVisible"
+      :layout="layout"
+      :render-mode="renderMode"
+      :diagram-dark-mode="diagramDarkMode"
       @choose="openGalleryExample"
+      @open-saved="openSavedDiagram"
     />
     <div
       v-if="!galleryVisible && !isBuilderMode"

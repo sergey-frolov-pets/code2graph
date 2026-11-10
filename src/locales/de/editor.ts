@@ -180,4 +180,5 @@ export const editorMessages = {
   "editor.completion.mermaidPacketField": "Paketfeld",
   "editor.tabs.label": "Editor-Registerkarten",
   "editor.tabs.close": "Registerkarte {label} schließen",
+  "editor.surface.aiChat": "KI-Chat",
 } as const satisfies LocaleMessages;

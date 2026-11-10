@@ -439,4 +439,6 @@ export const miscMessages = {
   "pwa.updateAvailable": "साइट का नया संस्करण उपलब्ध है",
   "pwa.updateReload": "पुनः लोड करें",
   "pwa.updateDismiss": "बाद में",
+  "presentation.opacity": "अपारदर्शिता",
+  "presentation.transparent": "पारदर्शी",
 } as const satisfies LocaleMessages;

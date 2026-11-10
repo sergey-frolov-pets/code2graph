@@ -887,6 +887,8 @@
 
 .wizard-gallery-search__input,
 .wizard-gallery__reset,
+.wizard-favorites__button,
+.wizard-favorites__input,
 .wizard-tag,
 .wizard-example-actions__button {
   border: 1px solid var(--border);
@@ -897,12 +899,15 @@
 }
 
 .wizard-gallery-search__input,
-.wizard-gallery__reset {
+.wizard-gallery__reset,
+.wizard-favorites__button,
+.wizard-favorites__input {
   min-height: 40px;
   padding: 8px 12px;
 }
 
-.wizard-gallery__reset {
+.wizard-gallery__reset,
+.wizard-favorites__button {
   cursor: pointer;
 }
 
@@ -1123,6 +1128,160 @@
 .wizard-example-zoom__image {
   display: block;
   width: max-content;
+}
+
+.wizard-example__favorite {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+}
+
+.wizard-favorite-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.wizard-favorite-toggle[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.wizard-favorite-toggle[aria-pressed="true"] .action-icon {
+  fill: currentColor;
+}
+
+.wizard-favorites {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.wizard-favorites__heading,
+.wizard-favorites__title,
+.wizard-favorites__empty,
+.wizard-favorites__notice,
+.wizard-favorites__kind {
+  margin: 0;
+}
+
+.wizard-favorites__heading {
+  font-size: 0.95rem;
+}
+
+.wizard-favorites__empty,
+.wizard-favorites__notice,
+.wizard-favorites__kind,
+.wizard-favorites__link-label {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.wizard-favorites__list,
+.wizard-favorites__local {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wizard-favorites__list {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.wizard-favorites__local {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.wizard-favorites__card {
+  display: flex;
+  flex: 0 0 168px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.wizard-favorites__card.is-drop-target {
+  border-color: var(--accent);
+}
+
+.wizard-favorites__tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wizard-favorites__order,
+.wizard-favorites__handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.wizard-favorites__order:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.wizard-favorites__open:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.wizard-favorites__title {
+  font-size: 0.85rem;
+}
+
+.wizard-favorites__add,
+.wizard-favorites__link {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.wizard-favorites__link {
+  flex: 1 1 240px;
+}
+
+.wizard-favorites__link-label {
+  display: flex;
+  flex: 1 1 180px;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wizard-favorites__input {
+  width: 100%;
+}
+
+.wizard-favorites__local-item[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .wizard-example-zoom__image svg {

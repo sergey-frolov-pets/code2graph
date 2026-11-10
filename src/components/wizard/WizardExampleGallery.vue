@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from "vue";
+import { onBeforeUnmount, ref, toRef, watch } from "vue";
 import WizardExampleGrid from "@/components/wizard/WizardExampleGrid.vue";
 import WizardExampleSearch from "@/components/wizard/WizardExampleSearch.vue";
 import WizardExampleZoom from "@/components/wizard/WizardExampleZoom.vue";
+import WizardFavoriteStrip from "@/components/wizard/WizardFavoriteStrip.vue";
 import WizardTagCloud from "@/components/wizard/WizardTagCloud.vue";
 import { useWizardExampleGallery } from "@/composables/wizard/useWizardExampleGallery";
+import { useWizardFavoriteGallery } from "@/composables/wizard/useWizardFavoriteGallery";
 import { exampleTagKey, type DiagramExample } from "@/constants/diagram-example-catalog";
 import {
   diagramExamplePrompt,
@@ -17,6 +19,15 @@ import {
 } from "@/constants/wizard-gallery";
 import { diagramAnalyticsKind, trackEvent } from "@/analytics";
 import { useLocale } from "@/composables/useLocale";
+import type { LayoutEngine } from "@/constants";
+import type { DiagramFormat } from "@/constants/diagram-formats";
+import type { RenderMode } from "@/constants/render-settings";
+
+const props = defineProps<{
+  layout: LayoutEngine;
+  renderMode: RenderMode;
+  diagramDarkMode: boolean;
+}>();
 
 const emit = defineEmits<{
   choose: [payload: {
@@ -24,6 +35,11 @@ const emit = defineEmits<{
     action: GalleryExampleAction;
     label: string;
     prompt: string;
+  }];
+  "open-saved": [payload: {
+    source: string;
+    label: string;
+    format: DiagramFormat;
   }];
 }>();
 
@@ -37,6 +53,30 @@ const {
   resetFilters,
   selectedTags,
 } = useWizardExampleGallery(t);
+
+const {
+  favoriteCards,
+  localOpen,
+  localOptions,
+  linkDraft,
+  linkError,
+  notice,
+  busy,
+  isExampleFavorite,
+  toggleExample,
+  toggleLocalPicker,
+  toggleLocal,
+  submitLink,
+  removeFavorite,
+  moveEarlier,
+  moveLater,
+  moveBefore,
+  openById,
+} = useWizardFavoriteGallery({
+  layout: toRef(props, "layout"),
+  renderMode: toRef(props, "renderMode"),
+  diagramDarkMode: toRef(props, "diagramDarkMode"),
+});
 
 const pinnedId = ref<string | null>(null);
 const actionsId = ref<string | null>(null);
@@ -91,6 +131,24 @@ function onEnlarge(example: DiagramExample): void {
   pinnedId.value = null;
   actionsId.value = null;
   zoomExample.value = example;
+}
+
+function onOpenFavorite(id: string): void {
+  const opened = openById(id);
+  if (!opened) {
+    return;
+  }
+
+  if (opened.type === "example") {
+    onChoose(opened.example, "editor");
+    return;
+  }
+
+  emit("open-saved", {
+    source: opened.source,
+    label: opened.label,
+    format: opened.format,
+  });
 }
 
 function onChoose(example: DiagramExample, action: GalleryExampleAction): void {
@@ -162,6 +220,23 @@ onBeforeUnmount(() => {
         {{ t("llm.wizard.gallery.reset") }}
       </button>
     </div>
+    <WizardFavoriteStrip
+      v-model:link-draft="linkDraft"
+      :items="favoriteCards"
+      :local-diagrams="localOptions"
+      :local-open="localOpen"
+      :link-error="linkError"
+      :notice="notice"
+      :busy="busy"
+      @open="onOpenFavorite"
+      @remove="removeFavorite"
+      @move-earlier="moveEarlier"
+      @move-later="moveLater"
+      @move-before="moveBefore"
+      @toggle-local="toggleLocalPicker"
+      @toggle-local-diagram="toggleLocal"
+      @submit-link="submitLink"
+    />
     <WizardTagCloud
       :tags="cloudTags"
       :is-selected="isTagSelected"
@@ -178,6 +253,8 @@ onBeforeUnmount(() => {
       :examples="visibleExamples"
       :pinned-id="pinnedId"
       :actions-id="actionsId"
+      :is-favorite="isExampleFavorite"
+      @toggle-favorite="toggleExample"
       @open-actions="onOpenActions"
       @pin-card="onPinCard"
       @choose="onChoose"

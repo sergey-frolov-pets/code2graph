@@ -5,11 +5,13 @@ import { useLocale } from "@/composables/useLocale";
 defineProps<{
   label: string;
   canEnlarge: boolean;
+  favorite: boolean;
 }>();
 
 const emit = defineEmits<{
   choose: [action: GalleryExampleAction];
   enlarge: [];
+  "toggle-favorite": [];
 }>();
 
 const { t } = useLocale();
@@ -28,6 +30,20 @@ const { t } = useLocale();
       @click="emit('choose', 'editor')"
     >
       {{ t("llm.wizard.gallery.action.editor") }}
+    </button>
+    <button
+      type="button"
+      class="wizard-example-actions__button"
+      role="menuitemcheckbox"
+      data-testid="wizard-example-favorite"
+      :aria-checked="favorite"
+      @click="emit('toggle-favorite')"
+    >
+      {{
+        favorite
+          ? t("llm.wizard.gallery.favorite.remove")
+          : t("llm.wizard.gallery.favorite.add")
+      }}
     </button>
     <button
       v-if="canEnlarge"

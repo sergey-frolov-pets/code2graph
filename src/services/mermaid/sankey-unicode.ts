@@ -446,7 +446,7 @@ function expandSankeyViewBox(svg: string): string {
     host.style.left = "-10000px";
     host.style.top = "0";
     host.style.visibility = "hidden";
-    const live = document.importNode(root, true) as SVGSVGElement;
+    const live = document.importNode(root, true) as unknown as SVGSVGElement;
     host.appendChild(live);
     document.body.appendChild(host);
     let box: DOMRect;

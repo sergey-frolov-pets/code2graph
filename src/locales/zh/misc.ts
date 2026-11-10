@@ -439,4 +439,6 @@ export const miscMessages = {
   "pwa.updateAvailable": "有新的网站版本可用",
   "pwa.updateReload": "重新加载",
   "pwa.updateDismiss": "稍后",
+  "presentation.opacity": "不透明度",
+  "presentation.transparent": "透明",
 } as const satisfies LocaleMessages;

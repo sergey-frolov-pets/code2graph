@@ -439,4 +439,6 @@ export const miscMessages = {
   "pwa.updateAvailable": "サイトの新しいバージョンがあります",
   "pwa.updateReload": "再読み込み",
   "pwa.updateDismiss": "あとで",
+  "presentation.opacity": "不透明度",
+  "presentation.transparent": "透明",
 } as const satisfies LocaleMessages;

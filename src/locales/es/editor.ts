@@ -180,4 +180,5 @@ export const editorMessages = {
   "editor.completion.mermaidPacketField": "campo del paquete",
   "editor.tabs.label": "Pestañas del editor",
   "editor.tabs.close": "Cerrar pestaña {label}",
+  "editor.surface.aiChat": "Chat de IA",
 } as const satisfies LocaleMessages;

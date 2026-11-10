@@ -17,11 +17,13 @@ import { computed } from "vue";
 const props = defineProps<{
   example: DiagramExample;
   canEnlarge: boolean;
+  favorite: boolean;
 }>();
 
 const emit = defineEmits<{
   choose: [action: GalleryExampleAction];
   enlarge: [];
+  "toggle-favorite": [];
 }>();
 
 const { t } = useLocale();
@@ -89,8 +91,10 @@ function labelFor(tag: ExampleTagRef): string {
     <WizardExampleActions
       :label="t('llm.wizard.gallery.actionsLabel')"
       :can-enlarge="canEnlarge"
+      :favorite="favorite"
       @choose="emit('choose', $event)"
       @enlarge="emit('enlarge')"
+      @toggle-favorite="emit('toggle-favorite')"
     />
   </article>
 </template>

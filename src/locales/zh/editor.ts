@@ -180,4 +180,5 @@ export const editorMessages = {
   "editor.completion.mermaidPacketField": "报文字段",
   "editor.tabs.label": "编辑器标签页",
   "editor.tabs.close": "关闭标签页 {label}",
+  "editor.surface.aiChat": "AI 聊天",
 } as const satisfies LocaleMessages;

@@ -180,4 +180,5 @@ export const editorMessages = {
   "editor.completion.mermaidPacketField": "パケットフィールド",
   "editor.tabs.label": "エディタのタブ",
   "editor.tabs.close": "タブ {label} を閉じる",
+  "editor.surface.aiChat": "AI チャット",
 } as const satisfies LocaleMessages;
