@@ -62,10 +62,11 @@ export function useLibraryBrowseFlow(options: {
       return [] as Array<{ label: string; action?: () => void }>;
     }
 
+    const viewingAllDiagrams = library.selectedSectionId.value === null;
     const items: Array<{ label: string; action?: () => void }> = [
       {
         label: t("library.allSections"),
-        action: browseStep.value === "sections" ? undefined : resetBrowseFlow,
+        action: rootCrumbAction(viewingAllDiagrams),
       },
     ];
 
@@ -73,16 +74,14 @@ export function useLibraryBrowseFlow(options: {
       return items;
     }
 
-    items.push({
-      label: sectionTitle.value,
-      action:
-        browseStep.value === "detail"
-          ? () => {
-              browseStep.value = "diagrams";
-              resetEditForm();
-            }
-          : undefined,
-    });
+    // «Все диаграммы» — и корень навигации, и виртуальный раздел.
+    // В списке остаётся одна крошка, с карточки она открывает этот список.
+    if (!viewingAllDiagrams) {
+      items.push({
+        label: sectionTitle.value,
+        action: browseStep.value === "detail" ? showDiagramList : undefined,
+      });
+    }
 
     if (browseStep.value === "detail" && library.selectedDiagram.value) {
       items.push({ label: library.selectedDiagram.value.title });
@@ -90,6 +89,24 @@ export function useLibraryBrowseFlow(options: {
 
     return items;
   });
+
+  function rootCrumbAction(viewingAllDiagrams: boolean): (() => void) | undefined {
+    if (browseStep.value === "sections") {
+      return undefined;
+    }
+    if (viewingAllDiagrams && browseStep.value === "detail") {
+      return showDiagramList;
+    }
+    if (viewingAllDiagrams && browseStep.value === "diagrams") {
+      return undefined;
+    }
+    return resetBrowseFlow;
+  }
+
+  function showDiagramList(): void {
+    browseStep.value = "diagrams";
+    resetEditForm();
+  }
 
   function resetBrowseFlow(): void {
     browseStep.value = "sections";

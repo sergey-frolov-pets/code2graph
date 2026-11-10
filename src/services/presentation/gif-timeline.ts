@@ -1,5 +1,7 @@
 import {
+  PRESENTATION_GIF_CENTISECOND_MS,
   PRESENTATION_GIF_FRAME_MS,
+  PRESENTATION_GIF_MAX_DELAY_CS,
   PRESENTATION_GIF_MAX_SIDE,
 } from "@/services/presentation/constants";
 import { effectSegments } from "@/services/presentation/effects";
@@ -106,6 +108,25 @@ export function presentationGifCycleMs(track: PresentationTrack): number {
   }
   const travel = track.transitions.reduce((sum, transition) => sum + transition.durationMs, 0);
   return dwell + travel;
+}
+
+/**
+ * Delays to pass to gifenc for one timeline slice.
+ * The encoder stores centiseconds, so each value is a whole number of milliseconds.
+ */
+export function gifFrameDelaysMs(delayMs: number): number[] {
+  const maxDelayMs = PRESENTATION_GIF_MAX_DELAY_CS * PRESENTATION_GIF_CENTISECOND_MS;
+  let remaining = Math.max(
+    PRESENTATION_GIF_CENTISECOND_MS,
+    Math.round(delayMs / PRESENTATION_GIF_CENTISECOND_MS) * PRESENTATION_GIF_CENTISECOND_MS,
+  );
+  const delays: number[] = [];
+  while (remaining > 0) {
+    const delay = Math.min(maxDelayMs, remaining);
+    delays.push(delay);
+    remaining -= delay;
+  }
+  return delays;
 }
 
 /** Fits the preview viewport into the GIF size limit without changing its aspect. */

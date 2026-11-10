@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import TooltipWrap from "@/components/TooltipWrap.vue";
 import { useLocale } from "@/composables/useLocale";
+import { wholeImagePixels } from "@/services/export/svg-geometry";
 
 const props = defineProps<{
   imageWidth?: number;
@@ -17,16 +18,28 @@ const emit = defineEmits<{
 
 const { t } = useLocale();
 
+const MIN_DISPLAY_SIDE = 1;
+
 const sizeMenuOpen = ref(false);
 const sizeRef = ref<HTMLElement | null>(null);
 const sizeButtonRef = ref<HTMLElement | null>(null);
 const sizeMenuStyle = ref<Record<string, string>>({});
 
+const displayWidth = computed(() => wholeSide(props.imageWidth));
+const displayHeight = computed(() => wholeSide(props.imageHeight));
+
 const imageSizeLabel = computed(() =>
-  props.imageWidth && props.imageHeight
-    ? `${props.imageWidth}×${props.imageHeight}`
+  displayWidth.value && displayHeight.value
+    ? `${displayWidth.value}×${displayHeight.value}`
     : "—",
 );
+
+function wholeSide(value: number | undefined): number | undefined {
+  if (value === undefined || !Number.isFinite(value) || value <= 0) {
+    return undefined;
+  }
+  return wholeImagePixels(value, MIN_DISPLAY_SIDE);
+}
 
 const imageSizeTitle = computed(() =>
   t("toolbar.imageSize", { size: imageSizeLabel.value }),
@@ -117,7 +130,7 @@ function resetSize(): void {
           min="64"
           max="4096"
           step="10"
-          :value="imageWidth"
+          :value="displayWidth"
           @change="onSizeInput('width', $event)"
         >
       </label>
@@ -128,7 +141,7 @@ function resetSize(): void {
           min="64"
           max="4096"
           step="10"
-          :value="imageHeight"
+          :value="displayHeight"
           @change="onSizeInput('height', $event)"
         >
       </label>

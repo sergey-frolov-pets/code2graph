@@ -78,6 +78,9 @@ export const PRESENTATION_GIF_MAX_SIDE = 960;
 /** GIF frame delay is stored in centiseconds and cannot exceed this value. */
 export const PRESENTATION_GIF_MAX_DELAY_CS = 65_535;
 
+/** Milliseconds in one GIF centisecond. gifenc writes round(delay / this) into the file. */
+export const PRESENTATION_GIF_CENTISECOND_MS = 10;
+
 /** Colors kept in each GIF frame palette. */
 export const PRESENTATION_GIF_PALETTE_SIZE = 256;
 

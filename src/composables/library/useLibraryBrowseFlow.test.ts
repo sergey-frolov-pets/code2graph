@@ -43,6 +43,36 @@ describe("useLibraryBrowseFlow breadcrumbs", () => {
     ]);
   });
 
+  it("does not repeat all diagrams when that list is the current section", () => {
+    const flow = createBrowseFlow({
+      browseStep: "diagrams",
+      sectionId: null,
+    });
+
+    expect(flow.breadcrumbItems.value).toEqual([
+      { label: "library.allSections" },
+    ]);
+  });
+
+  it("returns from a diagram in all diagrams to that list, once", () => {
+    const flow = createBrowseFlow({
+      browseStep: "detail",
+      sectionId: null,
+      diagramTitle: "api.puml",
+    });
+
+    expect(flow.breadcrumbItems.value).toEqual([
+      {
+        label: "library.allSections",
+        action: expect.any(Function),
+      },
+      { label: "api.puml" },
+    ]);
+
+    flow.breadcrumbItems.value[0].action?.();
+    expect(flow.browseStep.value).toBe("diagrams");
+  });
+
   it("shows section name on diagrams step", () => {
     const flow = createBrowseFlow({
       browseStep: "diagrams",

@@ -14,10 +14,10 @@ import {
   PRESENTATION_FULL_CIRCLE,
   PRESENTATION_HALF_CIRCLE,
   PRESENTATION_GIF_FALLBACK_BACKGROUND,
-  PRESENTATION_GIF_MAX_DELAY_CS,
   PRESENTATION_GIF_PALETTE_SIZE,
 } from "@/services/presentation/constants";
 import {
+  gifFrameDelaysMs,
   gifOutputSize,
   samplePresentationGifFrames,
   type PresentationGifFrame,
@@ -346,11 +346,8 @@ function writeFrameWithDelay(
   palette: number[][],
   delayMs: number,
 ): void {
-  let remaining = Math.max(1, Math.round(delayMs / 10));
-  while (remaining > 0) {
-    const delay = Math.min(PRESENTATION_GIF_MAX_DELAY_CS, remaining);
+  for (const delay of gifFrameDelaysMs(delayMs)) {
     gif.writeFrame(index, width, height, { palette, delay, repeat: 0 });
-    remaining -= delay;
   }
 }
 
