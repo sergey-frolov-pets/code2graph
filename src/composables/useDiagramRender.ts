@@ -34,6 +34,7 @@ import { isFileProtocol } from "@/pwa/installPromptState";
 
 export interface UseDiagramRenderOptions {
   source: Ref<string>;
+  renderSource?: Ref<string>;
   diagramFormat: Ref<DiagramFormat>;
   layout: Ref<LayoutEngine>;
   diagramDarkMode: Ref<boolean>;
@@ -52,6 +53,7 @@ export interface UseDiagramRenderOptions {
 export function useDiagramRender(options: UseDiagramRenderOptions) {
   const {
     source,
+    renderSource,
     diagramFormat,
     layout,
     diagramDarkMode,
@@ -162,14 +164,15 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     error.value = "";
 
     try {
+      const diagramSource = renderSource?.value ?? source.value;
       const result = await renderDiagram(
         diagramFormat.value,
-        source.value,
+        diagramSource,
         buildFormatContext(),
       );
       svg.value = result;
       setLastDiagramIr(
-        buildDiagramIrForCache(source.value, diagramFormat.value, result),
+        buildDiagramIrForCache(diagramSource, diagramFormat.value, result),
       );
       if (
         usesOnlineRender.value &&
@@ -299,6 +302,12 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     onPersist?.();
     scheduleRender();
   });
+
+  if (renderSource) {
+    watch(renderSource, () => {
+      scheduleRender();
+    });
+  }
 
   // Оформление меняет только вид — перерисовываем без сброса истории.
   watch(

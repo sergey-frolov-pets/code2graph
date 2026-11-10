@@ -109,6 +109,7 @@ export function useEditorSourceHistory(
 
       scheduleFlush();
     },
+    { flush: "sync" },
   );
 
   onUnmounted(() => {

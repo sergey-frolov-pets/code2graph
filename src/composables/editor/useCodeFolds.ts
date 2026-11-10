@@ -40,8 +40,27 @@ export function useCodeFolds(options: {
   diagramFormat: Ref<DiagramFormat>;
   textareaRef: Ref<HTMLTextAreaElement | null>;
   syncScroll: () => void;
+  cursorText?: Ref<string>;
+  cursorFolds?: Ref<CodeFoldRegion[]>;
+  workingLineOffset?: (lineNumber: number) => number;
 }) {
-  const { source, diagramFormat, textareaRef, syncScroll } = options;
+  const {
+    source,
+    diagramFormat,
+    textareaRef,
+    syncScroll,
+    cursorText,
+    cursorFolds,
+    workingLineOffset,
+  } = options;
+
+  function cursorBuffer(): string {
+    return cursorText?.value ?? source.value;
+  }
+
+  function cursorFoldList(): CodeFoldRegion[] {
+    return cursorFolds?.value ?? folds.value;
+  }
 
   const manualFolds = ref<CodeFoldRegion[]>([]);
   const autoFoldCollapsedState = ref(new Map<string, boolean>());
@@ -83,7 +102,12 @@ export function useCodeFolds(options: {
   }
 
   function onGutterMouseDown(sourceLine: number, event: MouseEvent): void {
-    if (regionsModalOpen.value || event.button !== 0 || event.shiftKey) {
+    if (
+      sourceLine < 1 ||
+      regionsModalOpen.value ||
+      event.button !== 0 ||
+      event.shiftKey
+    ) {
       return;
     }
 
@@ -142,13 +166,15 @@ export function useCodeFolds(options: {
     }
 
     const textarea = textareaRef.value;
+    const buffer = cursorBuffer();
+    const bufferFolds = cursorFoldList();
     const sourceCursor = textarea
       ? mapDisplayOffsetToSourceOffset(
           textarea.selectionStart,
-          source.value,
-          folds.value,
+          buffer,
+          bufferFolds,
         )
-      : source.value.length;
+      : buffer.length;
 
     if (fold.auto) {
       rememberAutoFoldState(fold, !fold.collapsed);
@@ -165,8 +191,8 @@ export function useCodeFolds(options: {
 
       const displayCursor = mapSourceOffsetToDisplayOffset(
         sourceCursor,
-        source.value,
-        folds.value,
+        cursorBuffer(),
+        cursorFoldList(),
       );
       textareaRef.value.setSelectionRange(displayCursor, displayCursor);
       syncScroll();
@@ -263,16 +289,18 @@ export function useCodeFolds(options: {
       return;
     }
 
-    const sourceLines = source.value.split(/\r?\n/);
+    const sourceLines = cursorBuffer().split(/\r?\n/);
     const targetLine = Math.min(Math.max(lineNumber, 1), sourceLines.length);
-    const lineStartOffset = sourceLines
-      .slice(0, targetLine - 1)
-      .reduce((offset, line) => offset + line.length + 1, 0);
+    const lineStartOffset = workingLineOffset
+      ? workingLineOffset(lineNumber)
+      : sourceLines
+          .slice(0, targetLine - 1)
+          .reduce((offset, line) => offset + line.length + 1, 0);
 
     const displayOffset = mapSourceOffsetToDisplayOffset(
       lineStartOffset,
-      source.value,
-      folds.value,
+      cursorBuffer(),
+      cursorFoldList(),
     );
 
     const computedStyle = getComputedStyle(textarea);
