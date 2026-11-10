@@ -1,8 +1,11 @@
+import type { D2SampleId } from "@/constants/d2-sample-diagrams";
 import type { AppLocale } from "@/constants/i18n";
+import type { StructurizrSampleId } from "@/constants/structurizr-sample-diagrams";
+import type { WiremarkSampleId } from "@/constants/wiremark-sample-diagrams";
 
 export const D2_EXTRA: Record<
   Exclude<AppLocale, "ru" | "en">,
-  Record<"flow" | "sequence" | "classes" | "sql" | "architecture", string>
+  Record<D2SampleId, string>
 > = {
   es: {
     flow: `direction: right
@@ -21,7 +24,7 @@ classes: {
   }
 }
 
-caption: "Flujo de la solicitud" {
+caption: Flujo de la solicitud {
   shape: text
   near: user
   style: {
@@ -33,11 +36,11 @@ caption: "Flujo de la solicitud" {
   }
 }
 
-user: "Usuario" {
+user: Usuario {
   shape: person
   class: accent
   icon: https://icons.terrastruct.com/essentials/004-picture.svg
-  tooltip: "Abre la edición"
+  tooltip: Abre el editor
   link: https://example.com
   width: 160
   height: 120
@@ -48,7 +51,7 @@ api: API {
   style.multiple: true
 }
 
-db: "Base de datos" {
+db: Base de datos {
   shape: cylinder
   style: {
     fill: "#fef3c7"
@@ -57,52 +60,52 @@ db: "Base de datos" {
   }
 }
 
-docs: "Especificación" {
+docs: Especificación {
   shape: document
 }
 
-queue: "Eventos" {
+queue: Eventos {
   shape: queue
 }
 
-cache: "Caché" {
+cache: Caché {
   shape: stored_data
 }
 
-decision: "¿Listo?" {
+decision: ¿Listo? {
   shape: diamond
 }
 
-user -> api: "Solicitud" {
+user -> api: Solicitud {
   style: {
     animated: true
     stroke: "#2563eb"
     stroke-dash: 4
   }
 }
-api -> decision: "Comprobación"
-decision -> db: "Consulta"
-decision -> docs: "Rechazo"
-api -> queue: "Publicación"
-queue -> cache: "Calentar"`,
+api -> decision: Comprobación
+decision -> db: Consulta
+decision -> docs: Rechazo
+api -> queue: Publicación
+queue -> cache: Calentar`,
     sequence: `direction: down
 
-checkout: "Pago del pedido" {
+checkout: Pago del pedido {
   shape: sequence_diagram
-  buyer: "Comprador"
-  shop: "Tienda"
-  pay: "Pago"
-  stock: "Almacén"
-  buyer -> shop: "Hacer pedido"
-  shop -> pay: "Cobrar"
-  pay -> shop: "Vale"
-  shop -> stock: "Reservar"
-  stock -> shop: "Hay existencias"
-  shop -> buyer: "Recibo"
+  buyer: Comprador
+  shop: Tienda
+  pay: Pago
+  stock: Almacén
+  buyer -> shop: Hacer pedido
+  shop -> pay: Cobrar
+  pay -> shop: Vale
+  shop -> stock: Reservar
+  stock -> shop: Hay existencias
+  shop -> buyer: Recibo
 }`,
     classes: `direction: down
 
-User: "Usuario" {
+User: Usuario {
   shape: class
   +id: int
   +name: string
@@ -112,14 +115,14 @@ User: "Usuario" {
   +logout(): void
 }
 
-Order: "Pedido" {
+Order: Pedido {
   shape: class
   +id: int
   +total: float
   +addItem(name: string): void
 }
 
-User -> Order: "realiza" {
+User -> Order: realiza {
   style.animated: true
 }`,
     sql: `direction: right
@@ -141,59 +144,59 @@ orders: orders {
 users.id -> orders.user_id`,
     architecture: `direction: left
 
-network: "Red" {
+network: Red {
   grid-rows: 2
   grid-columns: 3
   grid-gap: 24
 
-  web: "Sitio" {
+  web: Web {
     shape: rectangle
   }
   api: API {
     shape: hexagon
   }
-  queue: "Cola" {
+  queue: Cola {
     shape: queue
   }
-  page: "Documento" {
+  page: Documento {
     shape: page
   }
-  job: "Tarea" {
+  job: Tarea {
     shape: step
   }
-  hint: "Sugerencia" {
+  hint: Sugerencia {
     shape: callout
   }
 
   web -> api: HTTPS
-  api -> queue: "Evento"
+  api -> queue: Evento
 }
 
-cloud: "Nube" {
+cloud: Nube {
   shape: cloud
   style.fill-pattern: dots
 }
-badge: "Distintivo" {
+badge: Distintivo {
   shape: oval
 }
-dot: "Punto" {
+dot: Punto {
   shape: circle
 }
-bundle: "Paquete" {
+bundle: Paquete {
   shape: package
 }
-input: "Entrada" {
+input: Entrada {
   shape: parallelogram
 }
-tile: "Baldosa" {
+tile: Baldosa {
   shape: square
   style.double-border: true
 }
 
 network.web -> cloud: CDN
-cloud -> bundle: "Estáticos"
-input -> badge: "Validar"
-dot -> job: "Pulso"`,
+cloud -> bundle: Estáticos
+input -> badge: Validar
+dot -> job: Pulso`,
   },
   zh: {
     flow: `direction: right
@@ -212,7 +215,7 @@ classes: {
   }
 }
 
-caption: "请求流程" {
+caption: 请求流程 {
   shape: text
   near: user
   style: {
@@ -224,11 +227,11 @@ caption: "请求流程" {
   }
 }
 
-user: "用户" {
+user: 用户 {
   shape: person
   class: accent
   icon: https://icons.terrastruct.com/essentials/004-picture.svg
-  tooltip: "打开编辑器"
+  tooltip: 打开编辑器
   link: https://example.com
   width: 160
   height: 120
@@ -239,7 +242,7 @@ api: API {
   style.multiple: true
 }
 
-db: "数据库" {
+db: 数据库 {
   shape: cylinder
   style: {
     fill: "#fef3c7"
@@ -248,52 +251,52 @@ db: "数据库" {
   }
 }
 
-docs: "规格" {
+docs: 规格 {
   shape: document
 }
 
-queue: "事件" {
+queue: 事件 {
   shape: queue
 }
 
-cache: "缓存" {
+cache: 缓存 {
   shape: stored_data
 }
 
-decision: "就绪？" {
+decision: 就绪？ {
   shape: diamond
 }
 
-user -> api: "请求" {
+user -> api: 请求 {
   style: {
     animated: true
     stroke: "#2563eb"
     stroke-dash: 4
   }
 }
-api -> decision: "检查"
-decision -> db: "查询"
-decision -> docs: "拒绝"
-api -> queue: "发布"
-queue -> cache: "预热"`,
+api -> decision: 检查
+decision -> db: 查询
+decision -> docs: 拒绝
+api -> queue: 发布
+queue -> cache: 预热`,
     sequence: `direction: down
 
-checkout: "结账" {
+checkout: 结账 {
   shape: sequence_diagram
-  buyer: "买家"
-  shop: "商店"
-  pay: "支付"
-  stock: "仓库"
-  buyer -> shop: "下单"
-  shop -> pay: "扣款"
-  pay -> shop: "好"
-  shop -> stock: "预留"
-  stock -> shop: "有货"
-  shop -> buyer: "收据"
+  buyer: 买家
+  shop: 商店
+  pay: 支付
+  stock: 仓库
+  buyer -> shop: 下单
+  shop -> pay: 扣款
+  pay -> shop: 好
+  shop -> stock: 预留
+  stock -> shop: 有货
+  shop -> buyer: 收据
 }`,
     classes: `direction: down
 
-User: "用户" {
+User: 用户 {
   shape: class
   +id: int
   +name: string
@@ -303,14 +306,14 @@ User: "用户" {
   +logout(): void
 }
 
-Order: "订单" {
+Order: 订单 {
   shape: class
   +id: int
   +total: float
   +addItem(name: string): void
 }
 
-User -> Order: "下单" {
+User -> Order: 下单 {
   style.animated: true
 }`,
     sql: `direction: right
@@ -332,59 +335,59 @@ orders: orders {
 users.id -> orders.user_id`,
     architecture: `direction: left
 
-network: "网络" {
+network: 网络 {
   grid-rows: 2
   grid-columns: 3
   grid-gap: 24
 
-  web: "网页" {
+  web: 网站 {
     shape: rectangle
   }
   api: API {
     shape: hexagon
   }
-  queue: "队列" {
+  queue: 队列 {
     shape: queue
   }
-  page: "文档" {
+  page: 文档 {
     shape: page
   }
-  job: "任务" {
+  job: 任务 {
     shape: step
   }
-  hint: "提示" {
+  hint: 提示 {
     shape: callout
   }
 
   web -> api: HTTPS
-  api -> queue: "事件"
+  api -> queue: 事件
 }
 
-cloud: "云" {
+cloud: 云 {
   shape: cloud
   style.fill-pattern: dots
 }
-badge: "徽章" {
+badge: 徽章 {
   shape: oval
 }
-dot: "点" {
+dot: 点 {
   shape: circle
 }
-bundle: "资源包" {
+bundle: 资源包 {
   shape: package
 }
-input: "输入" {
+input: 输入 {
   shape: parallelogram
 }
-tile: "磁贴" {
+tile: 磁贴 {
   shape: square
   style.double-border: true
 }
 
 network.web -> cloud: CDN
-cloud -> bundle: "静态资源"
-input -> badge: "验证"
-dot -> job: "节拍"`,
+cloud -> bundle: 静态资源
+input -> badge: 验证
+dot -> job: 节拍`,
   },
   ja: {
     flow: `direction: right
@@ -403,7 +406,7 @@ classes: {
   }
 }
 
-caption: "リクエストの流れ" {
+caption: リクエストの流れ {
   shape: text
   near: user
   style: {
@@ -415,11 +418,11 @@ caption: "リクエストの流れ" {
   }
 }
 
-user: "ユーザー" {
+user: ユーザー {
   shape: person
   class: accent
   icon: https://icons.terrastruct.com/essentials/004-picture.svg
-  tooltip: "編集画面を開く"
+  tooltip: エディタを開く
   link: https://example.com
   width: 160
   height: 120
@@ -430,7 +433,7 @@ api: API {
   style.multiple: true
 }
 
-db: "データベース" {
+db: データベース {
   shape: cylinder
   style: {
     fill: "#fef3c7"
@@ -439,52 +442,52 @@ db: "データベース" {
   }
 }
 
-docs: "仕様" {
+docs: 仕様 {
   shape: document
 }
 
-queue: "出来事" {
+queue: イベント {
   shape: queue
 }
 
-cache: "キャッシュ" {
+cache: キャッシュ {
   shape: stored_data
 }
 
-decision: "準備完了？" {
+decision: 準備完了？ {
   shape: diamond
 }
 
-user -> api: "要求" {
+user -> api: 要求 {
   style: {
     animated: true
     stroke: "#2563eb"
     stroke-dash: 4
   }
 }
-api -> decision: "確認"
-decision -> db: "照会"
-decision -> docs: "拒否"
-api -> queue: "公開"
-queue -> cache: "予熱"`,
+api -> decision: 確認
+decision -> db: 照会
+decision -> docs: 拒否
+api -> queue: 公開
+queue -> cache: 予熱`,
     sequence: `direction: down
 
-checkout: "注文手続き" {
+checkout: 注文手続き {
   shape: sequence_diagram
-  buyer: "購入者"
-  shop: "店舗"
-  pay: "支払い"
-  stock: "倉庫"
-  buyer -> shop: "注文する"
-  shop -> pay: "請求する"
-  pay -> shop: "了解"
-  shop -> stock: "確保"
-  stock -> shop: "在庫あり"
-  shop -> buyer: "領収書"
+  buyer: 購入者
+  shop: 店舗
+  pay: 支払い
+  stock: 倉庫
+  buyer -> shop: 注文する
+  shop -> pay: 請求する
+  pay -> shop: 了解
+  shop -> stock: 確保
+  stock -> shop: 在庫あり
+  shop -> buyer: 領収書
 }`,
     classes: `direction: down
 
-User: "ユーザー" {
+User: ユーザー {
   shape: class
   +id: int
   +name: string
@@ -494,14 +497,14 @@ User: "ユーザー" {
   +logout(): void
 }
 
-Order: "注文" {
+Order: 注文 {
   shape: class
   +id: int
   +total: float
   +addItem(name: string): void
 }
 
-User -> Order: "注文する" {
+User -> Order: 注文する {
   style.animated: true
 }`,
     sql: `direction: right
@@ -523,59 +526,59 @@ orders: orders {
 users.id -> orders.user_id`,
     architecture: `direction: left
 
-network: "ネットワーク" {
+network: ネットワーク {
   grid-rows: 2
   grid-columns: 3
   grid-gap: 24
 
-  web: "ウェブ" {
+  web: ウェブ {
     shape: rectangle
   }
   api: API {
     shape: hexagon
   }
-  queue: "待ち行列" {
+  queue: 待ち行列 {
     shape: queue
   }
-  page: "文書" {
+  page: 文書 {
     shape: page
   }
-  job: "作業" {
+  job: 作業 {
     shape: step
   }
-  hint: "手掛かり" {
+  hint: 手掛かり {
     shape: callout
   }
 
   web -> api: HTTPS
-  api -> queue: "出来事"
+  api -> queue: イベント
 }
 
-cloud: "雲" {
+cloud: クラウド {
   shape: cloud
   style.fill-pattern: dots
 }
-badge: "標章" {
+badge: 標章 {
   shape: oval
 }
-dot: "点" {
+dot: 点 {
   shape: circle
 }
-bundle: "一式" {
+bundle: 一式 {
   shape: package
 }
-input: "入力" {
+input: 入力 {
   shape: parallelogram
 }
-tile: "マス" {
+tile: マス {
   shape: square
   style.double-border: true
 }
 
 network.web -> cloud: CDN
-cloud -> bundle: "静的素材"
-input -> badge: "検証"
-dot -> job: "拍"`,
+cloud -> bundle: 静的素材
+input -> badge: 検証
+dot -> job: 拍`,
   },
   hi: {
     flow: `direction: right
@@ -594,7 +597,7 @@ classes: {
   }
 }
 
-caption: "अनुरोध प्रवाह" {
+caption: अनुरोध प्रवाह {
   shape: text
   near: user
   style: {
@@ -606,11 +609,11 @@ caption: "अनुरोध प्रवाह" {
   }
 }
 
-user: "उपयोगकर्ता" {
+user: उपयोगकर्ता {
   shape: person
   class: accent
   icon: https://icons.terrastruct.com/essentials/004-picture.svg
-  tooltip: "संपादन खोलता है"
+  tooltip: संपादक खोलता है
   link: https://example.com
   width: 160
   height: 120
@@ -621,7 +624,7 @@ api: API {
   style.multiple: true
 }
 
-db: "डेटाबेस" {
+db: डेटाबेस {
   shape: cylinder
   style: {
     fill: "#fef3c7"
@@ -630,52 +633,52 @@ db: "डेटाबेस" {
   }
 }
 
-docs: "विनिर्देश" {
+docs: विनिर्देश {
   shape: document
 }
 
-queue: "घटनाएँ" {
+queue: घटनाएँ {
   shape: queue
 }
 
-cache: "कैश" {
+cache: कैश {
   shape: stored_data
 }
 
-decision: "तैयार?" {
+decision: तैयार? {
   shape: diamond
 }
 
-user -> api: "अनुरोध" {
+user -> api: अनुरोध {
   style: {
     animated: true
     stroke: "#2563eb"
     stroke-dash: 4
   }
 }
-api -> decision: "जाँच"
-decision -> db: "पूछताछ"
-decision -> docs: "अस्वीकार"
-api -> queue: "प्रकाशन"
-queue -> cache: "तैयारी"`,
+api -> decision: जाँच
+decision -> db: पूछताछ
+decision -> docs: अस्वीकार
+api -> queue: प्रकाशन
+queue -> cache: तैयारी`,
     sequence: `direction: down
 
-checkout: "ऑर्डर पूरा करना" {
+checkout: ऑर्डर पूरा करना {
   shape: sequence_diagram
-  buyer: "खरीदार"
-  shop: "दुकान"
-  pay: "भुगतान"
-  stock: "गोदाम"
-  buyer -> shop: "ऑर्डर दें"
-  shop -> pay: "राशि काटें"
-  pay -> shop: "ठीक"
-  shop -> stock: "आरक्षित करें"
-  stock -> shop: "उपलब्ध"
-  shop -> buyer: "रसीद"
+  buyer: खरीदार
+  shop: दुकान
+  pay: भुगतान
+  stock: गोदाम
+  buyer -> shop: ऑर्डर दें
+  shop -> pay: राशि काटें
+  pay -> shop: ठीक
+  shop -> stock: आरक्षित करें
+  stock -> shop: उपलब्ध
+  shop -> buyer: रसीद
 }`,
     classes: `direction: down
 
-User: "उपयोगकर्ता" {
+User: उपयोगकर्ता {
   shape: class
   +id: int
   +name: string
@@ -685,14 +688,14 @@ User: "उपयोगकर्ता" {
   +logout(): void
 }
 
-Order: "ऑर्डर" {
+Order: ऑर्डर {
   shape: class
   +id: int
   +total: float
   +addItem(name: string): void
 }
 
-User -> Order: "ऑर्डर करता है" {
+User -> Order: ऑर्डर करता है {
   style.animated: true
 }`,
     sql: `direction: right
@@ -714,59 +717,59 @@ orders: orders {
 users.id -> orders.user_id`,
     architecture: `direction: left
 
-network: "नेटवर्क" {
+network: नेटवर्क {
   grid-rows: 2
   grid-columns: 3
   grid-gap: 24
 
-  web: "वेब" {
+  web: वेब {
     shape: rectangle
   }
   api: API {
     shape: hexagon
   }
-  queue: "कतार" {
+  queue: कतार {
     shape: queue
   }
-  page: "दस्तावेज़" {
+  page: दस्तावेज़ {
     shape: page
   }
-  job: "कार्य" {
+  job: कार्य {
     shape: step
   }
-  hint: "संकेत" {
+  hint: संकेत {
     shape: callout
   }
 
   web -> api: HTTPS
-  api -> queue: "घटना"
+  api -> queue: घटना
 }
 
-cloud: "बादल" {
+cloud: बादल {
   shape: cloud
   style.fill-pattern: dots
 }
-badge: "चिह्न" {
+badge: चिह्न {
   shape: oval
 }
-dot: "बिंदु" {
+dot: बिंदु {
   shape: circle
 }
-bundle: "संकुल" {
+bundle: संकुल {
   shape: package
 }
-input: "प्रविष्टि" {
+input: प्रविष्टि {
   shape: parallelogram
 }
-tile: "पट्टिका" {
+tile: पट्टिका {
   shape: square
   style.double-border: true
 }
 
 network.web -> cloud: CDN
-cloud -> bundle: "स्थिर सामग्री"
-input -> badge: "सत्यापन"
-dot -> job: "स्पंद"`,
+cloud -> bundle: स्थिर सामग्री
+input -> badge: सत्यापन
+dot -> job: स्पंद`,
   },
   pt: {
     flow: `direction: right
@@ -785,7 +788,7 @@ classes: {
   }
 }
 
-caption: "Fluxo da solicitação" {
+caption: Fluxo da solicitação {
   shape: text
   near: user
   style: {
@@ -797,11 +800,11 @@ caption: "Fluxo da solicitação" {
   }
 }
 
-user: "Usuário" {
+user: Usuário {
   shape: person
   class: accent
   icon: https://icons.terrastruct.com/essentials/004-picture.svg
-  tooltip: "Abre a edição"
+  tooltip: Abre o editor
   link: https://example.com
   width: 160
   height: 120
@@ -812,7 +815,7 @@ api: API {
   style.multiple: true
 }
 
-db: "Banco de dados" {
+db: Banco de dados {
   shape: cylinder
   style: {
     fill: "#fef3c7"
@@ -821,52 +824,52 @@ db: "Banco de dados" {
   }
 }
 
-docs: "Especificação" {
+docs: Especificação {
   shape: document
 }
 
-queue: "Eventos" {
+queue: Eventos {
   shape: queue
 }
 
-cache: "Memória" {
+cache: Cache {
   shape: stored_data
 }
 
-decision: "Pronto?" {
+decision: Pronto? {
   shape: diamond
 }
 
-user -> api: "Solicitação" {
+user -> api: Solicitação {
   style: {
     animated: true
     stroke: "#2563eb"
     stroke-dash: 4
   }
 }
-api -> decision: "Verificação"
-decision -> db: "Consulta"
-decision -> docs: "Recusa"
-api -> queue: "Publicação"
-queue -> cache: "Aquecer"`,
+api -> decision: Verificação
+decision -> db: Consulta
+decision -> docs: Recusa
+api -> queue: Publicação
+queue -> cache: Aquecer`,
     sequence: `direction: down
 
-checkout: "Fechamento do pedido" {
+checkout: Fechamento do pedido {
   shape: sequence_diagram
-  buyer: "Comprador"
-  shop: "Loja"
-  pay: "Pagamento"
-  stock: "Armazém"
-  buyer -> shop: "Fazer pedido"
-  shop -> pay: "Cobrar"
-  pay -> shop: "Certo"
-  shop -> stock: "Reservar"
-  stock -> shop: "Em estoque"
-  shop -> buyer: "Recibo"
+  buyer: Comprador
+  shop: Loja
+  pay: Pagamento
+  stock: Armazém
+  buyer -> shop: Fazer pedido
+  shop -> pay: Cobrar
+  pay -> shop: Certo
+  shop -> stock: Reservar
+  stock -> shop: Em estoque
+  shop -> buyer: Recibo
 }`,
     classes: `direction: down
 
-User: "Usuário" {
+User: Usuário {
   shape: class
   +id: int
   +name: string
@@ -876,14 +879,14 @@ User: "Usuário" {
   +logout(): void
 }
 
-Order: "Pedido" {
+Order: Pedido {
   shape: class
   +id: int
   +total: float
   +addItem(name: string): void
 }
 
-User -> Order: "faz" {
+User -> Order: faz {
   style.animated: true
 }`,
     sql: `direction: right
@@ -905,59 +908,59 @@ orders: orders {
 users.id -> orders.user_id`,
     architecture: `direction: left
 
-network: "Rede" {
+network: Rede {
   grid-rows: 2
   grid-columns: 3
   grid-gap: 24
 
-  web: "Site" {
+  web: Web {
     shape: rectangle
   }
   api: API {
     shape: hexagon
   }
-  queue: "Fila" {
+  queue: Fila {
     shape: queue
   }
-  page: "Documento" {
+  page: Documento {
     shape: page
   }
-  job: "Tarefa" {
+  job: Tarefa {
     shape: step
   }
-  hint: "Dica" {
+  hint: Dica {
     shape: callout
   }
 
   web -> api: HTTPS
-  api -> queue: "Evento"
+  api -> queue: Evento
 }
 
-cloud: "Nuvem" {
+cloud: Nuvem {
   shape: cloud
   style.fill-pattern: dots
 }
-badge: "Distintivo" {
+badge: Distintivo {
   shape: oval
 }
-dot: "Ponto" {
+dot: Ponto {
   shape: circle
 }
-bundle: "Pacote" {
+bundle: Pacote {
   shape: package
 }
-input: "Entrada" {
+input: Entrada {
   shape: parallelogram
 }
-tile: "Ladrilho" {
+tile: Ladrilho {
   shape: square
   style.double-border: true
 }
 
 network.web -> cloud: CDN
-cloud -> bundle: "Estáticos"
-input -> badge: "Validar"
-dot -> job: "Pulso"`,
+cloud -> bundle: Estáticos
+input -> badge: Validar
+dot -> job: Pulso`,
   },
   de: {
     flow: `direction: right
@@ -976,7 +979,7 @@ classes: {
   }
 }
 
-caption: "Anfragefluss" {
+caption: Anfragefluss {
   shape: text
   near: user
   style: {
@@ -988,11 +991,11 @@ caption: "Anfragefluss" {
   }
 }
 
-user: "Benutzer" {
+user: Benutzer {
   shape: person
   class: accent
   icon: https://icons.terrastruct.com/essentials/004-picture.svg
-  tooltip: "Öffnet die Bearbeitung"
+  tooltip: Öffnet den Editor
   link: https://example.com
   width: 160
   height: 120
@@ -1003,7 +1006,7 @@ api: API {
   style.multiple: true
 }
 
-db: "Datenbank" {
+db: Datenbank {
   shape: cylinder
   style: {
     fill: "#fef3c7"
@@ -1012,52 +1015,52 @@ db: "Datenbank" {
   }
 }
 
-docs: "Spezifikation" {
+docs: Spezifikation {
   shape: document
 }
 
-queue: "Ereignisse" {
+queue: Ereignisse {
   shape: queue
 }
 
-cache: "Zwischenspeicher" {
+cache: Zwischenspeicher {
   shape: stored_data
 }
 
-decision: "Bereit?" {
+decision: Bereit? {
   shape: diamond
 }
 
-user -> api: "Anfrage" {
+user -> api: Anfrage {
   style: {
     animated: true
     stroke: "#2563eb"
     stroke-dash: 4
   }
 }
-api -> decision: "Prüfung"
-decision -> db: "Abfrage"
-decision -> docs: "Ablehnung"
-api -> queue: "Veröffentlichung"
-queue -> cache: "Aufwärmen"`,
+api -> decision: Prüfung
+decision -> db: Abfrage
+decision -> docs: Ablehnung
+api -> queue: Veröffentlichung
+queue -> cache: Aufwärmen`,
     sequence: `direction: down
 
-checkout: "Bestellabschluss" {
+checkout: Bestellabschluss {
   shape: sequence_diagram
-  buyer: "Käufer"
-  shop: "Laden"
-  pay: "Zahlung"
-  stock: "Lager"
-  buyer -> shop: "Bestellung aufgeben"
-  shop -> pay: "Abbuchen"
-  pay -> shop: "Gut"
-  shop -> stock: "Reservieren"
-  stock -> shop: "Auf Lager"
-  shop -> buyer: "Beleg"
+  buyer: Käufer
+  shop: Laden
+  pay: Zahlung
+  stock: Lager
+  buyer -> shop: Bestellung aufgeben
+  shop -> pay: Abbuchen
+  pay -> shop: Gut
+  shop -> stock: Reservieren
+  stock -> shop: Auf Lager
+  shop -> buyer: Beleg
 }`,
     classes: `direction: down
 
-User: "Benutzer" {
+User: Benutzer {
   shape: class
   +id: int
   +name: string
@@ -1067,14 +1070,14 @@ User: "Benutzer" {
   +logout(): void
 }
 
-Order: "Bestellung" {
+Order: Bestellung {
   shape: class
   +id: int
   +total: float
   +addItem(name: string): void
 }
 
-User -> Order: "erteilt" {
+User -> Order: erteilt {
   style.animated: true
 }`,
     sql: `direction: right
@@ -1096,59 +1099,59 @@ orders: orders {
 users.id -> orders.user_id`,
     architecture: `direction: left
 
-network: "Netz" {
+network: Netz {
   grid-rows: 2
   grid-columns: 3
   grid-gap: 24
 
-  web: "Webseite" {
+  web: Web {
     shape: rectangle
   }
   api: API {
     shape: hexagon
   }
-  queue: "Warteschlange" {
+  queue: Warteschlange {
     shape: queue
   }
-  page: "Dokument" {
+  page: Dokument {
     shape: page
   }
-  job: "Aufgabe" {
+  job: Aufgabe {
     shape: step
   }
-  hint: "Hinweis" {
+  hint: Hinweis {
     shape: callout
   }
 
   web -> api: HTTPS
-  api -> queue: "Ereignis"
+  api -> queue: Ereignis
 }
 
-cloud: "Wolke" {
+cloud: Wolke {
   shape: cloud
   style.fill-pattern: dots
 }
-badge: "Abzeichen" {
+badge: Abzeichen {
   shape: oval
 }
-dot: "Punkt" {
+dot: Punkt {
   shape: circle
 }
-bundle: "Paket" {
+bundle: Paket {
   shape: package
 }
-input: "Eingabe" {
+input: Eingabe {
   shape: parallelogram
 }
-tile: "Kachel" {
+tile: Kachel {
   shape: square
   style.double-border: true
 }
 
 network.web -> cloud: CDN
-cloud -> bundle: "Statische Dateien"
-input -> badge: "Prüfen"
-dot -> job: "Takt"`,
+cloud -> bundle: Statische Dateien
+input -> badge: Prüfen
+dot -> job: Takt`,
   },
   ar: {
     flow: `direction: right
@@ -1167,7 +1170,7 @@ classes: {
   }
 }
 
-caption: "تدفق الطلب" {
+caption: تدفق الطلب {
   shape: text
   near: user
   style: {
@@ -1179,11 +1182,11 @@ caption: "تدفق الطلب" {
   }
 }
 
-user: "المستخدم" {
+user: المستخدم {
   shape: person
   class: accent
   icon: https://icons.terrastruct.com/essentials/004-picture.svg
-  tooltip: "يفتح المحرر"
+  tooltip: يفتح المحرر
   link: https://example.com
   width: 160
   height: 120
@@ -1194,7 +1197,7 @@ api: API {
   style.multiple: true
 }
 
-db: "قاعدة البيانات" {
+db: قاعدة البيانات {
   shape: cylinder
   style: {
     fill: "#fef3c7"
@@ -1203,52 +1206,52 @@ db: "قاعدة البيانات" {
   }
 }
 
-docs: "المواصفة" {
+docs: المواصفة {
   shape: document
 }
 
-queue: "الأحداث" {
+queue: الأحداث {
   shape: queue
 }
 
-cache: "ذاكرة مؤقتة" {
+cache: ذاكرة مؤقتة {
   shape: stored_data
 }
 
-decision: "جاهز؟" {
+decision: جاهز؟ {
   shape: diamond
 }
 
-user -> api: "طلب" {
+user -> api: طلب {
   style: {
     animated: true
     stroke: "#2563eb"
     stroke-dash: 4
   }
 }
-api -> decision: "تحقق"
-decision -> db: "استعلام"
-decision -> docs: "رفض"
-api -> queue: "نشر"
-queue -> cache: "إحماء"`,
+api -> decision: تحقق
+decision -> db: استعلام
+decision -> docs: رفض
+api -> queue: نشر
+queue -> cache: إحماء`,
     sequence: `direction: down
 
-checkout: "إتمام الطلب" {
+checkout: إتمام الطلب {
   shape: sequence_diagram
-  buyer: "المشتري"
-  shop: "المتجر"
-  pay: "الدفع"
-  stock: "المستودع"
-  buyer -> shop: "تقديم الطلب"
-  shop -> pay: "خصم المبلغ"
-  pay -> shop: "حسنًا"
-  shop -> stock: "حجز"
-  stock -> shop: "متوفر"
-  shop -> buyer: "إيصال"
+  buyer: المشتري
+  shop: المتجر
+  pay: الدفع
+  stock: المستودع
+  buyer -> shop: تقديم الطلب
+  shop -> pay: خصم المبلغ
+  pay -> shop: حسنًا
+  shop -> stock: حجز
+  stock -> shop: متوفر
+  shop -> buyer: إيصال
 }`,
     classes: `direction: down
 
-User: "المستخدم" {
+User: المستخدم {
   shape: class
   +id: int
   +name: string
@@ -1258,14 +1261,14 @@ User: "المستخدم" {
   +logout(): void
 }
 
-Order: "الطلب" {
+Order: الطلب {
   shape: class
   +id: int
   +total: float
   +addItem(name: string): void
 }
 
-User -> Order: "يُنشئ" {
+User -> Order: يُنشئ {
   style.animated: true
 }`,
     sql: `direction: right
@@ -1287,59 +1290,59 @@ orders: orders {
 users.id -> orders.user_id`,
     architecture: `direction: left
 
-network: "الشبكة" {
+network: الشبكة {
   grid-rows: 2
   grid-columns: 3
   grid-gap: 24
 
-  web: "الويب" {
+  web: الويب {
     shape: rectangle
   }
   api: API {
     shape: hexagon
   }
-  queue: "طابور" {
+  queue: طابور {
     shape: queue
   }
-  page: "مستند" {
+  page: مستند {
     shape: page
   }
-  job: "مهمة" {
+  job: مهمة {
     shape: step
   }
-  hint: "تلميح" {
+  hint: تلميح {
     shape: callout
   }
 
   web -> api: HTTPS
-  api -> queue: "حدث"
+  api -> queue: حدث
 }
 
-cloud: "سحابة" {
+cloud: سحابة {
   shape: cloud
   style.fill-pattern: dots
 }
-badge: "شارة" {
+badge: شارة {
   shape: oval
 }
-dot: "نقطة" {
+dot: نقطة {
   shape: circle
 }
-bundle: "حزمة" {
+bundle: حزمة {
   shape: package
 }
-input: "إدخال" {
+input: إدخال {
   shape: parallelogram
 }
-tile: "بلاطة" {
+tile: بلاطة {
   shape: square
   style.double-border: true
 }
 
 network.web -> cloud: CDN
-cloud -> bundle: "ملفات ثابتة"
-input -> badge: "تحقق"
-dot -> job: "نبضة"`,
+cloud -> bundle: ملفات ثابتة
+input -> badge: تحقق
+dot -> job: نبضة`,
   },
 };
 
@@ -3458,7 +3461,7 @@ export const GRAPHML_EXTRA: Record<
 
 export const WIREMARK_EXTRA: Record<
   Exclude<AppLocale, "ru" | "en">,
-  Record<"login" | "dashboard" | "form" | "settings" | "flow" | "product", string>
+  Record<WiremarkSampleId, string>
 > = {
   es: {
     login: `// Acceso: pestañas, campos con iconos, una alerta y otra forma de entrar
@@ -3690,7 +3693,7 @@ Wireframe #shell landscape visible=false
     Drawer
       List dense subheader="Estudio"
         ListItem "Resumen" to=#home
-        ListItem "Redactor" to=#editor
+        ListItem "Editor" to=#editor
         ListItem "Ajustes" to=#settings
     Anchor #content
 
@@ -3699,7 +3702,7 @@ Wireframe #home background=#shell anchor=#content
     Stack row
       Typography h5 "Resumen"
       Spacer
-      Button "Abrir edición" contained to=#editor
+      Button "Abrir el editor" contained to=#editor
     Grid cols=3 gap=2
       Card
         CardHeader "Tableros" subheader="Abiertos" icon=Dashboard closeIcon=none
@@ -4026,7 +4029,7 @@ Wireframe #shell landscape visible=false
     Drawer
       List dense subheader="工作室"
         ListItem "概览" to=#home
-        ListItem "编辑者" to=#editor
+        ListItem "编辑器" to=#editor
         ListItem "设置" to=#settings
     Anchor #content
 
@@ -4137,7 +4140,7 @@ Wireframe #product w=1180 h=760
 Wireframe #login mobile
   Stack column gap=2
     Typography h4 center "ログイン"
-    Typography body2 center "図の工房"
+    Typography body2 center "図のスタジオ"
     Tabs
       Tab "ログイン"
       Tab "アカウント作成" to=#signup
@@ -4146,7 +4149,7 @@ Wireframe #login mobile
     TextField "パスワード" startIcon=Lock endIcon=Visibility required
     Stack row gap=1
       Control checkbox
-      Typography body1 "記憶する"
+      Typography body1 "ログインを保持"
       Spacer
       Link "忘れた？" href=#reset
     Button "ログイン" contained fullWidth startIcon=Login to=#dashboard // 主な操作
@@ -4188,7 +4191,7 @@ Wireframe #dashboard landscape
     Stack column * * gap=2
       Stack row gap=1
         Breadcrumbs
-          Link "工房" to=#home
+          Link "スタジオ" to=#home
           Link "報告" to=#reports
           Typography "3月"
         Spacer
@@ -4360,9 +4363,9 @@ Wireframe #shell landscape visible=false
       Avatar "CG"
   Stack row 100% *
     Drawer
-      List dense subheader="工房"
+      List dense subheader="スタジオ"
         ListItem "概要" to=#home
-        ListItem "編集者" to=#editor
+        ListItem "エディタ" to=#editor
         ListItem "設定" to=#settings
     Anchor #content
 
@@ -4371,7 +4374,7 @@ Wireframe #home background=#shell anchor=#content
     Stack row
       Typography h5 "概要"
       Spacer
-      Button "編集画面を開く" contained to=#editor
+      Button "エディタを開く" contained to=#editor
     Grid cols=3 gap=2
       Card
         CardHeader "板" subheader="開いている" icon=Dashboard closeIcon=none
@@ -4427,7 +4430,7 @@ Wireframe #product w=1180 h=760
       Map area * 300px pins=5 path compass labels icon=LocationOn
     CardContent
       Breadcrumbs ">"
-        Link "目録" to=#catalog
+        Link "カタログ" to=#catalog
         Typography "写生帳"
       Stack row gap=1
         Typography h4 "写生帳"
@@ -4466,7 +4469,7 @@ Wireframe #product w=1180 h=760
       Button "カートに入れる" contained large crosshatch startIcon=ShoppingCart
       Button "詳細" outlined to=#detail
       Spacer
-      Link "目録に戻る" to=#catalog`,
+      Link "カタログに戻る" to=#catalog`,
   },
   hi: {
     login: `// प्रवेश: टैब, चिह्न वाले क्षेत्र, एक चेतावनी और अंदर आने का दूसरा तरीका
@@ -4517,7 +4520,7 @@ Wireframe #dashboard landscape
       List dense subheader="अनुभाग"
         ListItem "मुखपृष्ठ" to=#home
         ListItem "प्रतिवेदन" to=#reports
-        ListItem "समायोजन" to=#settings
+        ListItem "सेटिंग्स" to=#settings
       Typography caption "संग्रह सीमा"
       Progress linear 68
       Chip "Pro" outlined small
@@ -4642,13 +4645,13 @@ Wireframe #new-account portrait
         Button "दिन"
         Button "सप्ताह"
         Button "महीना"`,
-    settings: `// समायोजन: सूची, अकॉर्डियन, निचला नेविगेशन और एक संवाद
+    settings: `// सेटिंग्स: सूची, अकॉर्डियन, निचला नेविगेशन और एक संवाद
 Wireframe #settings mobile
   Stack column 100% * gap=2
     AppBar
       Toolbar
         Icon ArrowBack
-        Typography h6 "समायोजन"
+        Typography h6 "सेटिंग्स"
         Spacer
         Icon Search
     Alert error "हटाने से आरेख मिट जाएँगे"
@@ -4699,7 +4702,7 @@ Wireframe #shell landscape visible=false
       List dense subheader="कार्यशाला"
         ListItem "अवलोकन" to=#home
         ListItem "संपादक" to=#editor
-        ListItem "समायोजन" to=#settings
+        ListItem "सेटिंग्स" to=#settings
     Anchor #content
 
 Wireframe #home background=#shell anchor=#content
@@ -4707,7 +4710,7 @@ Wireframe #home background=#shell anchor=#content
     Stack row
       Typography h5 "अवलोकन"
       Spacer
-      Button "संपादन खोलें" contained to=#editor
+      Button "संपादक खोलें" contained to=#editor
     Grid cols=3 gap=2
       Card
         CardHeader "पट्टियाँ" subheader="खुले" icon=Dashboard closeIcon=none
@@ -4763,7 +4766,7 @@ Wireframe #product w=1180 h=760
       Map area * 300px pins=5 path compass labels icon=LocationOn
     CardContent
       Breadcrumbs ">"
-        Link "सूची" to=#catalog
+        Link "कैटलॉग" to=#catalog
         Typography "रेखाचित्र पुस्तिका"
       Stack row gap=1
         Typography h4 "रेखाचित्र पुस्तिका"
@@ -4802,7 +4805,7 @@ Wireframe #product w=1180 h=760
       Button "टोकरी में डालें" contained large crosshatch startIcon=ShoppingCart
       Button "विवरण" outlined to=#detail
       Spacer
-      Link "सूची पर वापस" to=#catalog`,
+      Link "कैटलॉग पर वापस" to=#catalog`,
   },
   pt: {
     login: `// Entrada: abas, campos com ícones, um alerta e outra forma de entrar
@@ -5034,7 +5037,7 @@ Wireframe #shell landscape visible=false
     Drawer
       List dense subheader="Estúdio"
         ListItem "Visão geral" to=#home
-        ListItem "Redator" to=#editor
+        ListItem "Editor" to=#editor
         ListItem "Configurações" to=#settings
     Anchor #content
 
@@ -5043,7 +5046,7 @@ Wireframe #home background=#shell anchor=#content
     Stack row
       Typography h5 "Visão geral"
       Spacer
-      Button "Abrir edição" contained to=#editor
+      Button "Abrir o editor" contained to=#editor
     Grid cols=3 gap=2
       Card
         CardHeader "Quadros" subheader="Abertos" icon=Dashboard closeIcon=none
@@ -5370,7 +5373,7 @@ Wireframe #shell landscape visible=false
     Drawer
       List dense subheader="Atelier"
         ListItem "Übersicht" to=#home
-        ListItem "Redakteur" to=#editor
+        ListItem "Editor" to=#editor
         ListItem "Einstellungen" to=#settings
     Anchor #content
 
@@ -5379,7 +5382,7 @@ Wireframe #home background=#shell anchor=#content
     Stack row
       Typography h5 "Übersicht"
       Spacer
-      Button "Bearbeitung öffnen" contained to=#editor
+      Button "Editor öffnen" contained to=#editor
     Grid cols=3 gap=2
       Card
         CardHeader "Tafeln" subheader="Offen" icon=Dashboard closeIcon=none
@@ -5816,7 +5819,7 @@ Wireframe #product w=1180 h=760
 
 export const STRUCTURIZR_EXTRA: Record<
   Exclude<AppLocale, "ru" | "en">,
-  Record<"context" | "containers" | "components" | "deployment", string>
+  Record<StructurizrSampleId, string>
 > = {
   es: {
     context: `workspace "Tienda en línea" "Compra de productos" {
@@ -5973,7 +5976,7 @@ export const STRUCTURIZR_EXTRA: Record<
 
     model {
         shop = softwareSystem "Tienda" "Tienda en línea." {
-            web = container "Sitio" "Interfaz del cliente." "React"
+            web = container "Web" "Interfaz del cliente." "React"
             db = container "Base de datos" "Guarda los pedidos." "PostgreSQL" {
                 tags "Database"
             }
@@ -6164,7 +6167,7 @@ export const STRUCTURIZR_EXTRA: Record<
 
     model {
         shop = softwareSystem "商店" "网上商店。" {
-            web = container "网页" "顾客界面。" "React"
+            web = container "网站" "顾客界面。" "React"
             db = container "数据库" "存储订单。" "PostgreSQL" {
                 tags "Database"
             }
@@ -6223,17 +6226,17 @@ export const STRUCTURIZR_EXTRA: Record<
             }
         }
         shop = softwareSystem "店舗" "注文を受けて履行します。" {
-            description "中心となる仕組み"
+            description "主要システム"
             technology "Code2Graph"
         }
-        mail = softwareSystem "郵便" "顧客にメッセージを送ります。"
+        mail = softwareSystem "メール" "顧客にメッセージを送ります。"
 
         customer -> shop "注文する" "HTTPS"
         shop -> mail "メッセージを送る" "SMTP"
     }
 
     views {
-        systemLandscape "Landscape" "すべての仕組み" {
+        systemLandscape "Landscape" "すべてのシステム" {
             include *
             autolayout lr
             title "全体像"
@@ -6241,7 +6244,7 @@ export const STRUCTURIZR_EXTRA: Record<
         systemContext shop "Context" "購入" {
             include *
             autolayout lr
-            title "文脈"
+            title "コンテキスト"
         }
         dynamic shop "Order" "会計" {
             customer -> shop "注文する"
@@ -6275,12 +6278,12 @@ export const STRUCTURIZR_EXTRA: Record<
     model {
         customer = person "顧客" "商品を購入します。"
         shop = softwareSystem "店舗" "ネット店舗。" {
-            group "経路" {
+            group "チャネル" {
                 web = container "ウェブアプリケーション" "顧客向け画面。" "React" {
                     url "https://example.com/web"
                 }
             }
-            api = container "API" "注文と目録。" "Java" {
+            api = container "API" "注文とカタログ。" "Java" {
                 properties {
                     "tier" "backend"
                 }
@@ -6321,7 +6324,7 @@ export const STRUCTURIZR_EXTRA: Record<
                     orders = component "注文" "注文を作成します。" "Spring Bean" {
                         url "https://example.com/orders"
                     }
-                    catalog = component "目録" "商品を返します。" "Spring Bean"
+                    catalog = component "カタログ" "商品を返します。" "Spring Bean"
                 }
 
                 orders -> catalog "商品を要求する" "JSON"
@@ -6351,7 +6354,7 @@ export const STRUCTURIZR_EXTRA: Record<
         }
     }
 }`,
-    deployment: `workspace "店舗" "配置" {
+    deployment: `workspace "店舗" "デプロイ" {
 
     model {
         shop = softwareSystem "店舗" "ネット店舗。" {
@@ -6366,10 +6369,10 @@ export const STRUCTURIZR_EXTRA: Record<
                 properties {
                     "region" "eu"
                 }
-                gateway = infrastructureNode "関門" "入口の負荷分散装置。" "Nginx"
+                gateway = infrastructureNode "ゲートウェイ" "入口の負荷分散装置。" "Nginx"
                 containerInstance web
                 shopLive = softwareSystemInstance shop
-                dbNode = deploymentNode "データベース節点" "PostgreSQL 節点。" "VM" {
+                dbNode = deploymentNode "データベースノード" "PostgreSQL ノード。" "VM" {
                     containerInstance db
                 }
             }
@@ -6380,7 +6383,7 @@ export const STRUCTURIZR_EXTRA: Record<
         deployment shop live "Deployment" {
             include *
             autolayout lr
-            title "配置"
+            title "デプロイ"
         }
 
         styles {
@@ -6417,7 +6420,7 @@ export const STRUCTURIZR_EXTRA: Record<
             description "प्राथमिक प्रणाली"
             technology "Code2Graph"
         }
-        mail = softwareSystem "डाक" "ग्राहक को संदेश भेजता है।"
+        mail = softwareSystem "मेल" "ग्राहक को संदेश भेजता है।"
 
         customer -> shop "ऑर्डर देता है" "HTTPS"
         shop -> mail "संदेश भेजता है" "SMTP"
@@ -6466,12 +6469,12 @@ export const STRUCTURIZR_EXTRA: Record<
     model {
         customer = person "ग्राहक" "उत्पाद खरीदता है।"
         shop = softwareSystem "दुकान" "ऑनलाइन दुकान।" {
-            group "मार्ग" {
+            group "चैनल" {
                 web = container "वेब अनुप्रयोग" "ग्राहक अंतरफलक।" "React" {
                     url "https://example.com/web"
                 }
             }
-            api = container "API" "ऑर्डर और सूची।" "Java" {
+            api = container "API" "ऑर्डर और कैटलॉग।" "Java" {
                 properties {
                     "tier" "backend"
                 }
@@ -6482,7 +6485,7 @@ export const STRUCTURIZR_EXTRA: Record<
         }
 
         customer -> web "स्थल खोलता है" "HTTPS"
-        web -> api "आह्वान" "JSON/HTTPS"
+        web -> api "कॉल" "JSON/HTTPS"
         api -> db "पढ़ता और लिखता है" "JDBC"
     }
 
@@ -6512,7 +6515,7 @@ export const STRUCTURIZR_EXTRA: Record<
                     orders = component "ऑर्डर" "ऑर्डर बनाता है।" "Spring Bean" {
                         url "https://example.com/orders"
                     }
-                    catalog = component "सूची" "उत्पाद लौटाता है।" "Spring Bean"
+                    catalog = component "कैटलॉग" "उत्पाद लौटाता है।" "Spring Bean"
                 }
 
                 orders -> catalog "उत्पाद माँगता है" "JSON"
@@ -6553,11 +6556,11 @@ export const STRUCTURIZR_EXTRA: Record<
         }
 
         live = deploymentEnvironment "Production" {
-            cluster = deploymentNode "गुच्छ" "Kubernetes गुच्छ।" "Kubernetes" {
+            cluster = deploymentNode "क्लस्टर" "Kubernetes क्लस्टर।" "Kubernetes" {
                 properties {
                     "region" "eu"
                 }
-                gateway = infrastructureNode "प्रवेशद्वार" "प्रवेश भार संतुलक।" "Nginx"
+                gateway = infrastructureNode "गेटवे" "प्रवेश भार संतुलक।" "Nginx"
                 containerInstance web
                 shopLive = softwareSystemInstance shop
                 dbNode = deploymentNode "डेटाबेस नोड" "PostgreSQL नोड।" "VM" {
@@ -6737,18 +6740,18 @@ export const STRUCTURIZR_EXTRA: Record<
 
     model {
         shop = softwareSystem "Loja" "Loja virtual." {
-            web = container "Site" "Interface do cliente." "React"
+            web = container "Web" "Interface do cliente." "React"
             db = container "Banco de dados" "Armazena os pedidos." "PostgreSQL" {
                 tags "Database"
             }
         }
 
         live = deploymentEnvironment "Production" {
-            cluster = deploymentNode "Agrupamento" "Agrupamento Kubernetes." "Kubernetes" {
+            cluster = deploymentNode "Cluster" "Cluster Kubernetes." "Kubernetes" {
                 properties {
                     "region" "eu"
                 }
-                gateway = infrastructureNode "Porta de entrada" "Balanceador de entrada." "Nginx"
+                gateway = infrastructureNode "Gateway" "Balanceador de entrada." "Nginx"
                 containerInstance web
                 shopLive = softwareSystemInstance shop
                 dbNode = deploymentNode "Nó de banco de dados" "Nó do PostgreSQL." "VM" {
@@ -6799,7 +6802,7 @@ export const STRUCTURIZR_EXTRA: Record<
             description "Hauptsystem"
             technology "Code2Graph"
         }
-        mail = softwareSystem "Post" "Sendet Nachrichten an den Kunden."
+        mail = softwareSystem "E-Mail" "Sendet Nachrichten an den Kunden."
 
         customer -> shop "Gibt eine Bestellung auf" "HTTPS"
         shop -> mail "Sendet eine Nachricht" "SMTP"
@@ -6928,18 +6931,18 @@ export const STRUCTURIZR_EXTRA: Record<
 
     model {
         shop = softwareSystem "Laden" "Onlineshop." {
-            web = container "Webseite" "Kundenoberfläche." "React"
+            web = container "Web" "Kundenoberfläche." "React"
             db = container "Datenbank" "Speichert Bestellungen." "PostgreSQL" {
                 tags "Database"
             }
         }
 
         live = deploymentEnvironment "Production" {
-            cluster = deploymentNode "Verbund" "Kubernetes-Verbund." "Kubernetes" {
+            cluster = deploymentNode "Cluster" "Kubernetes-Cluster." "Kubernetes" {
                 properties {
                     "region" "eu"
                 }
-                gateway = infrastructureNode "Schleuse" "Eingangs-Lastverteiler." "Nginx"
+                gateway = infrastructureNode "Gateway" "Eingangs-Lastverteiler." "Nginx"
                 containerInstance web
                 shopLive = softwareSystemInstance shop
                 dbNode = deploymentNode "Datenbankknoten" "PostgreSQL-Knoten." "VM" {
