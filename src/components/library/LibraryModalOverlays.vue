@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import SectionEditModal from "@/components/SectionEditModal.vue";
+import LibraryMoveDiagramModal from "@/components/library/LibraryMoveDiagramModal.vue";
 import LibraryRegisterModal from "@/components/library/LibraryRegisterModal.vue";
 import LibrarySetupAdminModal from "@/components/library/LibrarySetupAdminModal.vue";
 import LibraryDiagramVersionsModal from "@/components/library/LibraryDiagramVersionsModal.vue";
@@ -7,7 +8,9 @@ import LibraryDiagramPreviewModal from "@/components/library/LibraryDiagramPrevi
 import LibraryShareLinkModal from "@/components/library/LibraryShareLinkModal.vue";
 import LibrarySectionAccessModal from "@/components/library/LibrarySectionAccessModal.vue";
 import type { DiagramDto } from "@/constants/diagram-library";
+import type { FlatSectionOption } from "@/shared/library/section-tree";
 import type { ShareResourceRef } from "@/composables/library/useLibraryShareFlow";
+import type { MoveDiagramRequest } from "@/utils/library-move-targets";
 
 type SectionOption = {
   id: string;
@@ -40,6 +43,10 @@ defineProps<{
   sectionAccessId: string | null;
   sectionAccessTitle: string;
   isRegisterModalOpen: boolean;
+  moveDiagramTarget: MoveDiagramRequest | null;
+  moveDiagramSectionTitle: string;
+  moveSectionOptions: FlatSectionOption[];
+  isMovingDiagram: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -56,6 +63,8 @@ const emit = defineEmits<{
   closeSectionAccess: [];
   closeRegisterModal: [];
   registerCompleted: [];
+  closeMoveDiagram: [];
+  saveMoveDiagram: [sectionId: string | null];
 }>();
 </script>
 
@@ -113,6 +122,17 @@ const emit = defineEmits<{
     :section-id="sectionAccessId"
     :section-title="sectionAccessTitle"
     @close="emit('closeSectionAccess')"
+  />
+
+  <LibraryMoveDiagramModal
+    :open="moveDiagramTarget !== null"
+    :diagram-title="moveDiagramTarget?.title ?? ''"
+    :current-section-id="moveDiagramTarget?.sectionId ?? null"
+    :current-section-title="moveDiagramSectionTitle"
+    :sections="moveSectionOptions"
+    :is-saving="isMovingDiagram"
+    @close="emit('closeMoveDiagram')"
+    @save="emit('saveMoveDiagram', $event)"
   />
 
   <LibraryRegisterModal

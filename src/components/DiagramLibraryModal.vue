@@ -78,6 +78,7 @@ const flow = reactive(
         :active-tab="flow.activeTab"
         :browse-step="flow.browseStep"
         :flat-section-options="flow.flatSectionOptions"
+        :move-section-options="flow.moveSectionOptions"
         :flat-sections="flow.flatSections"
         :selected-section-id="flow.selectedSectionId"
         :is-sections-edit-mode="flow.isSectionsEditMode"
@@ -143,6 +144,7 @@ const flow = reactive(
         @preview="flow.onPreviewDiagram()"
         @delete="flow.onDeleteDiagram()"
         @delete-diagram="flow.onDeleteDiagramById($event.id, $event.title)"
+        @move-diagram="flow.openMoveDiagram($event)"
         @toggle-favorite="flow.onToggleFavorite()"
         @rating-updated="flow.onRatingUpdated($event)"
         @open-versions="flow.isVersionsModalOpen = true"
@@ -200,6 +202,10 @@ const flow = reactive(
     :section-access-id="flow.sectionAccessId"
     :section-access-title="flow.sectionAccessTitle"
     :is-register-modal-open="flow.isRegisterModalOpen"
+    :move-diagram-target="flow.moveDiagramTarget"
+    :move-diagram-section-title="flow.moveDiagramSectionTitle"
+    :move-section-options="flow.moveSectionOptions"
+    :is-moving-diagram="flow.isMovingDiagram"
     @setup-completed="flow.onSetupCompleted()"
     @setup-close="flow.onSetupClose()"
     @close-section-editor="flow.closeSectionEditor()"
@@ -213,6 +219,8 @@ const flow = reactive(
     @close-section-access="flow.closeSectionAccess()"
     @close-register-modal="flow.isRegisterModalOpen = false"
     @register-completed="flow.onRegisterCompleted()"
+    @close-move-diagram="flow.closeMoveDiagram()"
+    @save-move-diagram="flow.confirmMoveDiagram($event)"
   />
 </template>
 

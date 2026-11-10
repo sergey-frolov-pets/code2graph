@@ -21,10 +21,16 @@ import {
 } from "@/constants/diagram-library";
 import type { FlatSectionOption } from "@/shared/library/section-tree";
 import { diagramAllowsWrite, getDiagramFormatLabel } from "@/utils/library-display";
+import {
+  diagramCanMoveToAnotherSection,
+  formatSectionOptionLabel,
+  type MoveDiagramRequest,
+} from "@/utils/library-move-targets";
 
 const props = defineProps<{
   diagram: DiagramDto;
   flatSectionOptions: FlatSectionOption[];
+  moveSectionOptions: FlatSectionOption[];
   isEditing: boolean;
   isSaving: boolean;
   libraryApiUrl?: string;
@@ -50,6 +56,7 @@ const emit = defineEmits<{
   "start-edit": [];
   "open-in-editor": [];
   delete: [];
+  move: [payload: MoveDiagramRequest];
   share: [];
   preview: [];
   "manage-access": [];
@@ -65,6 +72,37 @@ const previewError = preview.error;
 const previewRendering = preview.isRendering;
 const previewMarkup = preview.previewMarkup;
 const allowsWrite = computed(() => diagramAllowsWrite(props.diagram));
+const canMove = computed(() =>
+  diagramCanMoveToAnotherSection(props.diagram, props.moveSectionOptions),
+);
+const sectionChoices = computed(() => {
+  const options = [...props.moveSectionOptions];
+  const currentId = props.diagram.sectionId;
+  if (currentId && !options.some((option) => option.id === currentId)) {
+    const current = props.flatSectionOptions.find((option) => option.id === currentId);
+    if (current) {
+      options.unshift(current);
+    }
+  }
+  return options;
+});
+const currentSectionTitle = computed(() => {
+  if (!props.diagram.sectionId) {
+    return "";
+  }
+  return (
+    props.flatSectionOptions.find((option) => option.id === props.diagram.sectionId)
+      ?.title ?? ""
+  );
+});
+
+function requestMove(): void {
+  emit("move", {
+    id: props.diagram.id,
+    title: props.diagram.title,
+    sectionId: props.diagram.sectionId,
+  });
+}
 
 watch(
   () =>
@@ -132,16 +170,15 @@ function contentLocaleLabel(locale: string): string {
           </select>
         </label>
         <label class="settings-field">
-          <span class="settings-field__label">{{ t("library.sections") }}</span>
+          <span class="settings-field__label">{{ t("library.diagramSection") }}</span>
           <select v-model="editSectionId" class="select">
-            <option value="">{{ t("library.allSections") }}</option>
+            <option value="">{{ t("library.noSection") }}</option>
             <option
-              v-for="section in flatSectionOptions"
+              v-for="section in sectionChoices"
               :key="section.id"
               :value="section.id"
             >
-              {{ "—".repeat(section.depth) }}{{ section.depth > 0 ? " " : ""
-              }}{{ section.title }}
+              {{ formatSectionOptionLabel(section) }}
             </option>
           </select>
         </label>
@@ -184,6 +221,13 @@ function contentLocaleLabel(locale: string): string {
           >
             {{ t("library.openInEditor") }}
           </button>
+          <IconButton
+            v-if="canMove"
+            :label="t('library.moveDiagram')"
+            @click="requestMove()"
+          >
+            <ActionIcon name="folder-open" />
+          </IconButton>
           <IconButton :label="t('library.preview')" @click="emit('preview')">
             <ActionIcon name="eye" />
           </IconButton>
@@ -291,6 +335,10 @@ function contentLocaleLabel(locale: string): string {
               <template v-if="!isLocalLibrary && diagram.voteCount">
                 · {{ t("library.ratingVotesShort", { votes: diagram.voteCount }) }}
               </template>
+            </p>
+            <p class="library-detail__file">
+              {{ t("library.diagramSection") }}:
+              {{ currentSectionTitle || t("library.noSection") }}
             </p>
             <p class="library-detail__file">{{ diagram.fileName }}</p>
             <p v-if="!isLocalLibrary && diagram.avgRating" class="library-detail__rating">

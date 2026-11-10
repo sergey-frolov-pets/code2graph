@@ -35,6 +35,10 @@ import {
   restoreLibraryBrowseSession,
   saveLibraryBrowseSession,
 } from "@/composables/library/library-browse-session";
+import {
+  writableMoveSectionOptions,
+  type MoveDiagramRequest,
+} from "@/utils/library-move-targets";
 
 export interface UseLibraryModalFlowOptions {
   open: Ref<boolean>;
@@ -139,6 +143,63 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
     prompt,
     confirm,
   });
+
+  const moveDiagramTarget = ref<MoveDiagramRequest | null>(null);
+  const isMovingDiagram = ref(false);
+  const moveSectionOptions = computed(() =>
+    writableMoveSectionOptions(
+      flatSectionOptions.value,
+      library.flatSections.value,
+    ),
+  );
+  const moveDiagramSectionTitle = computed(() => {
+    const sectionId = moveDiagramTarget.value?.sectionId;
+    if (!sectionId) {
+      return "";
+    }
+    return (
+      flatSectionOptions.value.find((section) => section.id === sectionId)?.title ??
+      ""
+    );
+  });
+
+  function openMoveDiagram(payload: MoveDiagramRequest): void {
+    moveDiagramTarget.value = payload;
+  }
+
+  function closeMoveDiagram(): void {
+    if (isMovingDiagram.value) {
+      return;
+    }
+    moveDiagramTarget.value = null;
+  }
+
+  async function confirmMoveDiagram(sectionId: string | null): Promise<void> {
+    const target = moveDiagramTarget.value;
+    if (!target || isMovingDiagram.value) {
+      return;
+    }
+    if ((target.sectionId ?? null) === sectionId) {
+      moveDiagramTarget.value = null;
+      return;
+    }
+
+    isMovingDiagram.value = true;
+    uploadError.value = "";
+    try {
+      const diagram = await library.updateDiagram(target.id, { sectionId });
+      if (isEditing.value && library.selectedDiagram.value?.id === diagram.id) {
+        editSectionId.value = diagram.sectionId ?? "";
+      }
+      showTransientNotice(t("library.diagramMoved"));
+      moveDiagramTarget.value = null;
+    } catch (error) {
+      uploadError.value =
+        error instanceof Error ? error.message : t("library.syncError");
+    } finally {
+      isMovingDiagram.value = false;
+    }
+  }
 
   const {
     showBackButton,
@@ -441,6 +502,7 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
 
   watch(open, (isOpen) => {
     if (!isOpen) {
+      moveDiagramTarget.value = null;
       saveLibraryBrowseSession({
         activeTab: activeTab.value,
         browseStep: browseStep.value,
@@ -606,6 +668,13 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
     isSectionsEditMode,
     isSectionModalOpen,
     flatSectionOptions,
+    moveSectionOptions,
+    moveDiagramTarget,
+    moveDiagramSectionTitle,
+    isMovingDiagram,
+    openMoveDiagram,
+    closeMoveDiagram,
+    confirmMoveDiagram,
     sectionOptionsForModal,
     editingSection,
     showBackButton,

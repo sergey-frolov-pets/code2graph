@@ -7,16 +7,28 @@ import EmptyState from "@/components/ui/EmptyState.vue";
 import LoadingState from "@/components/ui/LoadingState.vue";
 import { useLocale } from "@/composables/useLocale";
 import { LIBRARY_ROW_ESTIMATE_HEIGHT } from "@/constants/library-browse";
-import type { DiagramListItemDto, DiagramSortOption } from "@/constants/diagram-library";
-import { DIAGRAM_SORT_OPTIONS } from "@/constants/diagram-library";
+import {
+  DIAGRAM_SORT_OPTIONS,
+  FAVORITES_SECTION_ID,
+  type DiagramListItemDto,
+  type DiagramSortOption,
+} from "@/constants/diagram-library";
 import { formatDate } from "@/shared/format-date";
+import type { FlatSectionOption } from "@/shared/library/section-tree";
 import { diagramAllowsWrite, getDiagramFormatLabel } from "@/utils/library-display";
+import {
+  diagramCanMoveToAnotherSection,
+  type MoveDiagramRequest,
+} from "@/utils/library-move-targets";
 
 const props = defineProps<{
   diagrams: DiagramListItemDto[];
   allTags: string[];
   isLoading: boolean;
   isLocalLibrary: boolean;
+  selectedSectionId: string | null;
+  moveSectionOptions: FlatSectionOption[];
+  flatSectionOptions: FlatSectionOption[];
 }>();
 
 const searchQuery = defineModel<string>("searchQuery", { required: true });
@@ -29,6 +41,7 @@ const emit = defineEmits<{
   "diagram-pick": [diagramId: string];
   "filters-change": [];
   "delete-diagram": [payload: { id: string; title: string }];
+  "move-diagram": [payload: MoveDiagramRequest];
 }>();
 
 const { t } = useLocale();
@@ -92,11 +105,24 @@ function measureRow(node: unknown): void {
   }
 }
 
+function sectionTitle(sectionId: string | null): string {
+  if (!sectionId) {
+    return "";
+  }
+  return props.flatSectionOptions.find((section) => section.id === sectionId)?.title ?? "";
+}
+
 function metaLine(diagram: DiagramListItemDto): string {
   const parts = [
     getDiagramFormatLabel(diagram.language),
     formatDate(diagram.updatedAt),
   ];
+  if (
+    !props.selectedSectionId ||
+    props.selectedSectionId === FAVORITES_SECTION_ID
+  ) {
+    parts.push(sectionTitle(diagram.sectionId) || t("library.noSection"));
+  }
   if (diagram.authorName) {
     parts.push(diagram.authorName);
   }
@@ -106,8 +132,20 @@ function metaLine(diagram: DiagramListItemDto): string {
   return parts.join(" · ");
 }
 
+function canMove(diagram: DiagramListItemDto): boolean {
+  return diagramCanMoveToAnotherSection(diagram, props.moveSectionOptions);
+}
+
 function onDelete(diagram: DiagramListItemDto): void {
   emit("delete-diagram", { id: diagram.id, title: diagram.title });
+}
+
+function onMove(diagram: DiagramListItemDto): void {
+  emit("move-diagram", {
+    id: diagram.id,
+    title: diagram.title,
+    sectionId: diagram.sectionId,
+  });
 }
 </script>
 
@@ -216,14 +254,24 @@ function onDelete(diagram: DiagramListItemDto): void {
             </span>
             <span class="library-row__chevron" aria-hidden="true">›</span>
           </button>
-          <IconButton
+          <div
             v-if="diagramAllowsWrite(diagramAt(virtualRow.index))"
-            class="library-browse-row__delete"
-            :label="t('app.delete')"
-            @click="onDelete(diagramAt(virtualRow.index))"
+            class="library-browse-row__actions"
           >
-            <ActionIcon name="trash" />
-          </IconButton>
+            <IconButton
+              v-if="canMove(diagramAt(virtualRow.index))"
+              :label="t('library.moveDiagram')"
+              @click="onMove(diagramAt(virtualRow.index))"
+            >
+              <ActionIcon name="folder-open" />
+            </IconButton>
+            <IconButton
+              :label="t('app.delete')"
+              @click="onDelete(diagramAt(virtualRow.index))"
+            >
+              <ActionIcon name="trash" />
+            </IconButton>
+          </div>
         </div>
       </div>
     </div>
@@ -271,8 +319,9 @@ function onDelete(diagram: DiagramListItemDto): void {
   text-overflow: ellipsis;
 }
 
-.library-browse-row__delete {
-  align-self: center;
+.library-browse-row__actions {
+  display: flex;
+  align-items: center;
   margin-right: 8px;
 }
 </style>
