@@ -3,7 +3,10 @@ import { detectDiagramDirection } from "@/services/conversion/classify-diagram-k
 import {
   createEmptyDiagramIR,
   type DiagramEntityAttribute,
+  type DiagramGroup,
   type DiagramIR,
+  type DiagramNote,
+  type DiagramSequenceBlock,
   uniqueDiagramId,
 } from "@/services/conversion/diagram-ir";
 import { unquote } from "@/services/conversion/parse/parse-mermaid-structural";
@@ -17,18 +20,31 @@ export function parseStateMermaid(
   ir.metadata = { sourceFormat: format };
   const usedIds = new Set<string>();
   const idByAlias = new Map<string, string>();
+  const groups: DiagramGroup[] = [];
+  const groupStack: string[] = [];
+  const notes: DiagramNote[] = [];
+  let inNoteTarget: string | undefined;
+  let inNoteLines: string[] = [];
+  let inNote = false;
 
-  function ensureState(rawRef: string, explicitLabel?: string): string {
+  function ensureState(
+    rawRef: string,
+    explicitLabel?: string,
+    groupId?: string,
+  ): string {
     const clean = unquote(rawRef);
     if (!clean || clean === "[*]") {
       return "";
     }
     const existing = idByAlias.get(clean);
     if (existing) {
-      if (explicitLabel) {
-        const node = ir.nodes.find((entry) => entry.id === existing);
-        if (node && node.label === node.id) {
+      const node = ir.nodes.find((entry) => entry.id === existing);
+      if (node) {
+        if (explicitLabel && node.label === node.id) {
           node.label = explicitLabel;
+        }
+        if (groupId && !node.groupId) {
+          node.groupId = groupId;
         }
       }
       return existing;
@@ -40,6 +56,7 @@ export function parseStateMermaid(
     ir.nodes.push({
       id,
       label: explicitLabel || clean,
+      groupId,
       matchConfidence: 1,
     });
     return id;
@@ -51,26 +68,90 @@ export function parseStateMermaid(
       !line ||
       line.startsWith("%%") ||
       /^stateDiagram(?:-v2)?\b/i.test(line) ||
-      /^direction\s+/i.test(line) ||
-      /^note\b/i.test(line) ||
-      /^end\s+note\b/i.test(line)
+      /^direction\s+/i.test(line)
     ) {
       continue;
     }
 
+    if (inNote) {
+      if (/^end\s+note\b/i.test(line)) {
+        if (inNoteLines.length > 0) {
+          notes.push({
+            targetId: inNoteTarget,
+            text: inNoteLines.join("\n"),
+          });
+        }
+        inNote = false;
+        inNoteTarget = undefined;
+        inNoteLines = [];
+      } else {
+        inNoteLines.push(line);
+      }
+      continue;
+    }
+
+    const singleNoteMatch = line.match(
+      /^note\s+(?:left|right|top|bottom)\s+of\s+([\p{L}\p{N}_"-]+)\s*:\s*(.+)$/iu,
+    );
+    if (singleNoteMatch) {
+      notes.push({
+        targetId: unquote(singleNoteMatch[1]),
+        text: singleNoteMatch[2].trim(),
+      });
+      continue;
+    }
+
+    const multiNoteStart = line.match(
+      /^note\s+(?:left|right|top|bottom)\s+of\s+([\p{L}\p{N}_"-]+)\s*$/iu,
+    );
+    if (multiNoteStart) {
+      inNote = true;
+      inNoteTarget = unquote(multiNoteStart[1]);
+      inNoteLines = [];
+      continue;
+    }
+
+    if (line === "}") {
+      groupStack.pop();
+      continue;
+    }
+
+    const currentGroup = groupStack[groupStack.length - 1];
+
+    const compositeDecl = line.match(
+      /^state\s+(?:"([^"]+)"\s+as\s+)?([\p{L}\p{N}_-]+)\s*\{$/iu,
+    );
+    if (compositeDecl) {
+      const alias = compositeDecl[2].trim();
+      const label = compositeDecl[1]?.trim() || alias;
+      const grpId = uniqueDiagramId(alias, usedIds);
+      groups.push({
+        id: grpId,
+        label,
+        parentId: currentGroup,
+        kind: "composite",
+      });
+      ensureState(alias, label, currentGroup);
+      groupStack.push(grpId);
+      continue;
+    }
+
     const stateDecl = line.match(
-      /^state\s+"([^"]+)"\s+as\s+([\p{L}\p{N}_-]+)(?:\s*<<\s*([^>]+?)\s*>>)?/iu,
+      /^state\s+(?:"([^"]+)"\s+as\s+)?([\p{L}\p{N}_-]+)(?:\s*<<\s*([^>]+?)\s*>>)?$/iu,
     );
     if (stateDecl) {
-      const label = stateDecl[1].trim();
       const alias = stateDecl[2].trim();
+      const label = stateDecl[1]?.trim() || alias;
       const stereo = stateDecl[3]?.trim().toLowerCase();
-      const id = ensureState(alias, label);
+      const id = ensureState(alias, label, currentGroup);
       idByAlias.set(label, id);
       if (stereo) {
         const node = ir.nodes.find((entry) => entry.id === id);
         if (node) {
-          node.kind = stereo === "choice" ? "decision" : node.kind;
+          node.kind =
+            stereo === "choice" || stereo === "fork" || stereo === "join"
+              ? "decision"
+              : node.kind;
           node.semantic = { ...node.semantic, stereotype: stereo };
         }
       }
@@ -86,7 +167,7 @@ export function parseStateMermaid(
       const label = transMatch[3]?.trim();
 
       if (fromRaw === "[*]" && toRaw !== "[*]") {
-        const toId = ensureState(toRaw);
+        const toId = ensureState(toRaw, undefined, currentGroup);
         const node = ir.nodes.find((entry) => entry.id === toId);
         if (node) {
           node.semantic = { ...node.semantic, isInitial: true };
@@ -95,7 +176,7 @@ export function parseStateMermaid(
       }
 
       if (toRaw === "[*]" && fromRaw !== "[*]") {
-        const fromId = ensureState(fromRaw);
+        const fromId = ensureState(fromRaw, undefined, currentGroup);
         const node = ir.nodes.find((entry) => entry.id === fromId);
         if (node) {
           node.semantic = { ...node.semantic, isFinal: true };
@@ -107,8 +188,8 @@ export function parseStateMermaid(
         continue;
       }
 
-      const sourceId = ensureState(fromRaw);
-      const targetId = ensureState(toRaw);
+      const sourceId = ensureState(fromRaw, undefined, currentGroup);
+      const targetId = ensureState(toRaw, undefined, currentGroup);
       if (sourceId && targetId) {
         ir.edges.push({
           id: `e${ir.edges.length + 1}`,
@@ -123,8 +204,40 @@ export function parseStateMermaid(
 
     const descMatch = line.match(/^([\p{L}\p{N}_-]+)\s*:\s*(.+)$/u);
     if (descMatch && descMatch[1] !== "stateDiagram" && descMatch[1] !== "stateDiagram-v2") {
-      ensureState(descMatch[1], descMatch[2].trim());
+      const stateId = ensureState(descMatch[1], undefined, currentGroup);
+      const node = ir.nodes.find((entry) => entry.id === stateId);
+      if (node) {
+        const prev = (node.semantic?.descriptions as string[] | undefined) ?? [];
+        node.semantic = {
+          ...node.semantic,
+          descriptions: [...prev, descMatch[2].trim()],
+        };
+      }
     }
+  }
+
+  const groupIds = new Set(groups.map((g) => g.id));
+  const populatedGroups = groups.filter((grp) =>
+    ir.nodes.some((n) => n.groupId === grp.id && n.id !== grp.id),
+  );
+  if (populatedGroups.length > 0) {
+    ir.groups = populatedGroups;
+    const populatedIds = new Set(populatedGroups.map((g) => g.id));
+    for (const node of ir.nodes) {
+      if (node.groupId && !populatedIds.has(node.groupId)) {
+        node.groupId = undefined;
+      }
+    }
+  } else {
+    for (const node of ir.nodes) {
+      if (node.groupId && groupIds.has(node.groupId)) {
+        node.groupId = undefined;
+      }
+    }
+  }
+
+  if (notes.length > 0) {
+    ir.extras = { ...ir.extras, notes };
   }
 
   return ir;
@@ -138,6 +251,8 @@ export function parseSequenceMermaid(
   ir.metadata = { sourceFormat: format };
   const usedIds = new Set<string>();
   const idByAlias = new Map<string, string>();
+  const sequenceBlocks: DiagramSequenceBlock[] = [];
+  const notes: DiagramNote[] = [];
 
   function ensureParticipant(
     rawAlias: string,
@@ -179,8 +294,46 @@ export function parseSequenceMermaid(
       continue;
     }
 
+    if (/^title\s*:?\s*(.+)$/i.test(line)) {
+      const m = line.match(/^title\s*:?\s*(.+)$/i);
+      if (m) {
+        ir.extras = { ...ir.extras, title: unquote(m[1]) };
+      }
+      continue;
+    }
+
+    const blockMatch = line.match(
+      /^(alt|else|opt|loop|par)\b(?:\s+(.*))?$/i,
+    );
+    if (blockMatch) {
+      sequenceBlocks.push({
+        type: blockMatch[1].toLowerCase() as DiagramSequenceBlock["type"],
+        label: blockMatch[2]?.trim(),
+        afterEdgeIndex: ir.edges.length - 1,
+      });
+      continue;
+    }
+
+    const noteMatch = line.match(
+      /^note\s+(left\s+of|right\s+of|over)\s+([^:]+)\s*:\s*(.+)$/i,
+    );
+    if (noteMatch) {
+      const targetRaw = noteMatch[2].split(",")[0]?.trim();
+      const text = noteMatch[3].trim();
+      notes.push({
+        targetId: targetRaw ? unquote(targetRaw) : undefined,
+        text,
+      });
+      sequenceBlocks.push({
+        type: "note",
+        label: text,
+        afterEdgeIndex: ir.edges.length - 1,
+      });
+      continue;
+    }
+
     const declMatch = line.match(
-      /^(participant|actor)\s+([\p{L}\p{N}_-]+)(?:\s+as\s+(.+))?$/iu,
+      /^(participant|actor|boundary|control|entity|database|collections|queue)\s+([\p{L}\p{N}_-]+)(?:\s+as\s+(.+))?$/iu,
     );
     if (declMatch) {
       const pType = declMatch[1];
@@ -215,6 +368,14 @@ export function parseSequenceMermaid(
         matchConfidence: 1,
       });
     }
+  }
+
+  if (sequenceBlocks.length > 0 || notes.length > 0) {
+    ir.extras = {
+      ...ir.extras,
+      sequenceBlocks: sequenceBlocks.length > 0 ? sequenceBlocks : undefined,
+      notes: notes.length > 0 ? notes : undefined,
+    };
   }
 
   return ir;

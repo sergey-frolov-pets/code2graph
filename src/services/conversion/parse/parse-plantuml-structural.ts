@@ -9,6 +9,7 @@ import {
   type DiagramGroup,
   type DiagramIR,
   type DiagramNode,
+  type DiagramNote,
   uniqueDiagramId,
 } from "@/services/conversion/diagram-ir";
 
@@ -47,6 +48,11 @@ export function parseComponentPlantUml(
   const aliasToId = new Map<string, string>();
   const groups: DiagramGroup[] = [];
   const groupStack: string[] = [];
+  const notes: DiagramNote[] = [];
+  let inNote = false;
+  let inNoteTarget: string | undefined;
+  let inNoteLines: string[] = [];
+  let inSkinBlock = false;
 
   function ensureNode(
     rawAliasOrLabel: string,
@@ -54,17 +60,20 @@ export function parseComponentPlantUml(
     kind: DiagramNode["kind"] = "default",
     groupId?: string,
     fill?: string,
+    stereo?: string,
   ): string {
-    const key = unquote(rawAliasOrLabel.replace(/^\[|\]$/g, "").replace(/^\(|\)$/g, ""));
+    const key = unquote(
+      rawAliasOrLabel.replace(/^\[|\]$/g, "").replace(/^\(|\)$/g, ""),
+    );
     if (!key) {
       return "";
     }
-    const existing =
-      aliasToId.get(key) ??
-      aliasToId.get(key.toLowerCase()) ??
-      ir.nodes.find((node) => node.label === key)?.id;
-    if (existing) {
-      const node = ir.nodes.find((entry) => entry.id === existing);
+      const existing =
+        aliasToId.get(key) ??
+        aliasToId.get(key.toLowerCase()) ??
+        ir.nodes.find((node) => node.label === key)?.id;
+      if (existing && ir.nodes.some((entry) => entry.id === existing)) {
+        const node = ir.nodes.find((entry) => entry.id === existing);
       if (node) {
         if (explicitLabel && node.label === node.id) {
           node.label = explicitLabel;
@@ -74,6 +83,9 @@ export function parseComponentPlantUml(
         }
         if (fill && !node.visual?.fill) {
           node.visual = { ...node.visual, fill };
+        }
+        if (stereo && !node.semantic?.stereotype) {
+          node.semantic = { ...node.semantic, stereotype: stereo };
         }
       }
       return existing;
@@ -88,6 +100,7 @@ export function parseComponentPlantUml(
       label,
       kind,
       groupId,
+      semantic: stereo ? { stereotype: stereo } : undefined,
       visual: fill ? { fill } : undefined,
       matchConfidence: 1,
     });
@@ -96,17 +109,70 @@ export function parseComponentPlantUml(
 
   for (const rawLine of source.split(/\r?\n/)) {
     const line = rawLine.trim();
+    if (!line) {
+      continue;
+    }
+
+    if (inNote) {
+      if (/^end\s*note\b/i.test(line)) {
+        if (inNoteLines.length > 0) {
+          notes.push({
+            targetId: inNoteTarget,
+            text: inNoteLines.join("\n"),
+          });
+        }
+        inNote = false;
+        inNoteTarget = undefined;
+        inNoteLines = [];
+      } else {
+        inNoteLines.push(line);
+      }
+      continue;
+    }
+
+    if (inSkinBlock) {
+      if (line === "}" || /<\/style>/i.test(line)) {
+        inSkinBlock = false;
+      }
+      continue;
+    }
+
+    if (/^(?:skinparam|<style)\b/i.test(line)) {
+      if (line.endsWith("{") || (/^<style\b/i.test(line) && !/<\/style>/i.test(line))) {
+        inSkinBlock = true;
+      }
+      continue;
+    }
+
+    const inlineNoteMatch = line.match(
+      /^note\s+(?:left|right|top|bottom)(?:\s+of\s+([\p{L}\p{N}_"-]+))?\s*:\s*(.+)$/iu,
+    );
+    if (inlineNoteMatch) {
+      notes.push({
+        targetId: inlineNoteMatch[1] ? unquote(inlineNoteMatch[1]) : undefined,
+        text: inlineNoteMatch[2].replace(/\\n/g, "\n").trim(),
+      });
+      continue;
+    }
+
+    const blockNoteMatch = line.match(
+      /^note\s+(?:left|right|top|bottom)(?:\s+of\s+([\p{L}\p{N}_"-]+))?\s*$/iu,
+    );
+    if (blockNoteMatch) {
+      inNote = true;
+      inNoteTarget = blockNoteMatch[1] ? unquote(blockNoteMatch[1]) : undefined;
+      inNoteLines = [];
+      continue;
+    }
+
     if (
-      !line ||
       /^@start/i.test(line) ||
       /^@end/i.test(line) ||
       /^!pragma\b/i.test(line) ||
       /^!include\b/i.test(line) ||
-      /^skinparam\b/i.test(line) ||
       /^(?:left\s+to\s+right|top\s+to\s+bottom)\s+direction\b/i.test(line) ||
       /^title\s+/i.test(line) ||
-      /^note\b/i.test(line) ||
-      /^end\s+note\b/i.test(line)
+      /^together\s*\{$/i.test(line)
     ) {
       if (/^title\s+/i.test(line)) {
         ir.extras = { ...ir.extras, title: unquote(line.replace(/^title\s+/i, "")) };
@@ -128,7 +194,7 @@ export function parseComponentPlantUml(
       const id = uniqueDiagramId(alias, usedIds);
       const parentId = groupStack[groupStack.length - 1];
       const fill = groupMatch[4] ? `#${groupMatch[4]}` : undefined;
-      groups.push({ id, label, parentId, fill });
+      groups.push({ id, label, parentId, fill, kind: "package" });
       registerAlias(aliasToId, alias, id);
       registerAlias(aliasToId, label, id);
       groupStack.push(id);
@@ -138,41 +204,45 @@ export function parseComponentPlantUml(
     const currentGroup = groupStack[groupStack.length - 1];
 
     const bracketDecl = line.match(
-      /^\[([^\]]+)\](?:\s+as\s+([\p{L}\p{N}_-]+))?(?:\s*<<[^>]+>>)?(?:\s*#([A-Za-z0-9]+))?$/u,
+      /^\[([^\]]+)\](?:\s*<<\s*([^>]+?)\s*>>)?(?:\s+as\s+([\p{L}\p{N}_-]+))?(?:\s*<<\s*([^>]+?)\s*>>)?(?:\s*#([A-Za-z0-9]+))?$/u,
     );
     if (bracketDecl) {
       const label = bracketDecl[1].trim();
       if (!label.includes("lasts")) {
-        const alias = bracketDecl[2]?.trim() || label;
-        const fill = bracketDecl[3] ? `#${bracketDecl[3]}` : undefined;
-        const id = ensureNode(alias, label, "default", currentGroup, fill);
+        const alias = bracketDecl[3]?.trim() || label;
+        const stereo = (bracketDecl[2] || bracketDecl[4])?.trim();
+        const fill = bracketDecl[5] ? `#${bracketDecl[5]}` : undefined;
+        const id = ensureNode(alias, label, "default", currentGroup, fill, stereo);
         registerAlias(aliasToId, label, id);
       }
       continue;
     }
 
     const namedDecl = line.match(
-      /^(component|rectangle|node|database|queue|cloud|storage|artifact|interface|actor|usecase)\s+(?:"([^"]+)"|\[([^\]]+)\]|([\p{L}\p{N}_.-]+))(?:\s+as\s+(?:"([^"]+)"|([\p{L}\p{N}_-]+)))?(?:\s*<<[^>]+>>)?(?:\s*#([A-Za-z0-9]+))?$/iu,
+      /^(component|rectangle|node|database|queue|cloud|storage|artifact|interface|actor|usecase|port|portin|portout)\s+(?:"([^"]+)"|\[([^\]]+)\]|([\p{L}\p{N}_.-]+))(?:\s*<<\s*([^>]+?)\s*>>)?(?:\s+as\s+(?:"([^"]+)"|([\p{L}\p{N}_-]+)))?(?:\s*<<\s*([^>]+?)\s*>>)?(?:\s*#([A-Za-z0-9]+))?$/iu,
     );
     if (namedDecl) {
       const kw = namedDecl[1].toLowerCase();
       const firstText = (namedDecl[2] || namedDecl[3] || namedDecl[4] || "").trim();
-      const secondText = (namedDecl[5] || namedDecl[6] || "").trim();
-      const hasQuotedSecond = Boolean(namedDecl[5]);
+      const secondText = (namedDecl[6] || namedDecl[7] || "").trim();
+      const hasQuotedSecond = Boolean(namedDecl[6]);
       const label = hasQuotedSecond ? secondText : firstText;
       const alias = hasQuotedSecond ? firstText : secondText || firstText;
+      const stereo = (namedDecl[5] || namedDecl[8])?.trim();
       const kind: DiagramNode["kind"] =
         kw === "actor"
           ? "actor"
-          : kw === "database"
+          : kw === "database" || kw === "storage"
             ? "system"
             : kw === "usecase"
               ? "usecase"
               : kw === "artifact"
                 ? "artifact"
-                : "default";
-      const fill = namedDecl[7] ? `#${namedDecl[7]}` : undefined;
-      const id = ensureNode(alias, label, kind, currentGroup, fill);
+                : kw === "queue" || kw === "cloud"
+                  ? "container"
+                  : "default";
+      const fill = namedDecl[9] ? `#${namedDecl[9]}` : undefined;
+      const id = ensureNode(alias, label, kind, currentGroup, fill, stereo);
       registerAlias(aliasToId, firstText, id);
       if (secondText) {
         registerAlias(aliasToId, secondText, id);
@@ -192,7 +262,7 @@ export function parseComponentPlantUml(
     }
 
     const edgeMatch = line.match(
-      /^(?:\[([^\]]+)\]|"([^"]+)"|([\p{L}\p{N}_.-]+))\s*(<\|--|--\|>|<\|\.\.|\.\.\|>|\*--|o--|--\*|--o|\.\.>|<-\.+|-[-\w]*>+|<+[-\w]*-|--|\.\.)\s*(?:\|([^|]+)\|\s*)?(?:\[([^\]]+)\]|"([^"]+)"|([\p{L}\p{N}_.-]+))(?:\s*:\s*(.+))?$/u,
+      /^(?:\[([^\]]+)\]|"([^"]+)"|([\p{L}\p{N}_.-]+))\s*(<\|--|--\|>|<\|\.\.|\.\.\|>|\*--|o--|--\*|--o|\.\.>|<-\.+|-[-\w#[\]]*>+|<+[-\w#[\]]*-|\.[.\w#[\]]*>+|--|\.\.)\s*(?:\|([^|]+)\|\s*)?(?:\[([^\]]+)\]|"([^"]+)"|([\p{L}\p{N}_.-]+))(?:\s*:\s*(.+))?$/u,
     );
     if (edgeMatch) {
       const fromRaw = (edgeMatch[1] || edgeMatch[2] || edgeMatch[3] || "").trim();
@@ -201,24 +271,64 @@ export function parseComponentPlantUml(
       const toRaw = (edgeMatch[6] || edgeMatch[7] || edgeMatch[8] || "").trim();
       const colonLabel = edgeMatch[9]?.trim();
       const label = colonLabel || pipeLabel;
+      const colorMatch = arrow.match(/#([0-9a-fA-F]{3,6})\b/);
+      const edgeColor = colorMatch ? `#${colorMatch[1]}` : undefined;
 
-      const sourceId = ensureNode(fromRaw, fromRaw, "default", currentGroup);
-      const targetId = ensureNode(toRaw, toRaw, "default", currentGroup);
+      const resolveEndpointId = (rawRef: string): string => {
+        const cleanRef = unquote(rawRef.replace(/^\[|\]$/g, ""));
+        const mapped =
+          aliasToId.get(cleanRef) ?? aliasToId.get(cleanRef.toLowerCase());
+        if (mapped && ir.nodes.some((n) => n.id === mapped)) {
+          return mapped;
+        }
+        if (mapped && groups.some((g) => g.id === mapped)) {
+          const grpIndex = groups.findIndex((g) => g.id === mapped);
+          const grp = groups[grpIndex]!;
+          const hasChildren =
+            ir.nodes.some((n) => n.groupId === grp.id) ||
+            groups.some((g) => g.parentId === grp.id);
+          if (!hasChildren) {
+            groups.splice(grpIndex, 1);
+          }
+          return ensureNode(
+            grp.id,
+            grp.label ?? grp.id,
+            "container",
+            grp.parentId,
+            grp.fill,
+          );
+        }
+        return ensureNode(rawRef, rawRef, "default", currentGroup);
+      };
+
+      const sourceId = resolveEndpointId(fromRaw);
+      const targetId = resolveEndpointId(toRaw);
       if (sourceId && targetId) {
+        const isReverse = arrow.startsWith("<") && !arrow.endsWith(">");
         ir.edges.push({
           id: `e${ir.edges.length + 1}`,
-          source: sourceId,
-          target: targetId,
+          source: isReverse ? targetId : sourceId,
+          target: isReverse ? sourceId : targetId,
           label: label ? unquote(label) : undefined,
           kind: arrow.includes(".") ? "dashed" : "arrow",
+          directed: arrow !== "--" && arrow !== "..",
+          color: edgeColor,
           matchConfidence: 1,
         });
       }
     }
   }
 
-  if (groups.length > 0) {
-    ir.groups = groups;
+  const populatedGroups = groups.filter(
+    (grp) =>
+      ir.nodes.some((n) => n.groupId === grp.id && n.id !== grp.id) ||
+      groups.some((child) => child.parentId === grp.id),
+  );
+  if (populatedGroups.length > 0) {
+    ir.groups = populatedGroups;
+  }
+  if (notes.length > 0) {
+    ir.extras = { ...ir.extras, notes };
   }
 
   return ir;
@@ -235,6 +345,8 @@ export function parseClassPlantUml(
   const idByName = new Map<string, string>();
   const classMembers: Record<string, DiagramClassMember[]> = {};
   const groups: DiagramGroup[] = [];
+  const groupStack: string[] = [];
+  const notes: DiagramNote[] = [];
 
   function ensureClass(
     rawName: string,
@@ -272,8 +384,9 @@ export function parseClassPlantUml(
   }
 
   let currentClassId: string | null = null;
-  let currentGroupId: string | undefined;
   let inSkinparamOrNote = false;
+  let inNoteTarget: string | undefined;
+  let inNoteLines: string[] = [];
 
   for (const rawLine of source.split(/\r?\n/)) {
     const line = rawLine.trim();
@@ -292,17 +405,51 @@ export function parseClassPlantUml(
       }
       continue;
     }
+
+    const inlineNoteMatch = line.match(
+      /^note\s+(?:left|right|top|bottom)\s+of\s+([\p{L}\p{N}_"]+)\s*:\s*(.+)$/iu,
+    );
+    if (inlineNoteMatch) {
+      notes.push({
+        targetId: unquote(inlineNoteMatch[1]),
+        text: inlineNoteMatch[2].replace(/\\n/g, "\n").trim(),
+      });
+      continue;
+    }
+
+    const multiNoteStart = line.match(
+      /^note\s+(?:left|right|top|bottom)\s+of\s+([\p{L}\p{N}_"]+)\s*$/iu,
+    );
+    if (multiNoteStart) {
+      inSkinparamOrNote = true;
+      inNoteTarget = unquote(multiNoteStart[1]);
+      inNoteLines = [];
+      continue;
+    }
+
     if (/^note\b/i.test(line) && !line.includes(":")) {
       inSkinparamOrNote = true;
+      inNoteTarget = undefined;
+      inNoteLines = [];
       continue;
     }
     if (/^end\s*note\b/i.test(line)) {
+      if (inNoteLines.length > 0) {
+        notes.push({
+          targetId: inNoteTarget,
+          text: inNoteLines.join("\n"),
+        });
+      }
       inSkinparamOrNote = false;
+      inNoteTarget = undefined;
+      inNoteLines = [];
       continue;
     }
     if (inSkinparamOrNote) {
       if (line === "}") {
         inSkinparamOrNote = false;
+      } else if (inNoteTarget !== undefined) {
+        inNoteLines.push(line);
       }
       continue;
     }
@@ -310,20 +457,29 @@ export function parseClassPlantUml(
     if (line === "}") {
       if (currentClassId) {
         currentClassId = null;
-      } else if (currentGroupId) {
-        currentGroupId = undefined;
+      } else if (groupStack.length > 0) {
+        groupStack.pop();
       }
       continue;
     }
 
+    const currentGroupId = groupStack[groupStack.length - 1];
+
     const pkgMatch = line.match(
-      /^(?:package|namespace)\s+(?:"([^"]+)"|([\p{L}\p{N}_.-]+))(?:\s*<<[^>]+>>)?(?:\s*#[\w]+)?\s*\{$/iu,
+      /^(?:package|namespace)\s+(?:"([^"]+)"|([\p{L}\p{N}_.-]+))(?:\s*<<[^>]+>>)?(?:\s*#([A-Za-z0-9]+))?\s*\{$/iu,
     );
     if (pkgMatch) {
       const pkgLabel = (pkgMatch[1] || pkgMatch[2] || "").trim();
       const pkgId = uniqueDiagramId(pkgLabel, usedIds);
-      groups.push({ id: pkgId, label: pkgLabel });
-      currentGroupId = pkgId;
+      const fill = pkgMatch[3] ? `#${pkgMatch[3]}` : undefined;
+      groups.push({
+        id: pkgId,
+        label: pkgLabel,
+        parentId: currentGroupId,
+        fill,
+        kind: "package",
+      });
+      groupStack.push(pkgId);
       continue;
     }
 
@@ -396,12 +552,16 @@ export function parseClassPlantUml(
     }
 
     if (currentClassId) {
+      const currentNode = ir.nodes.find((entry) => entry.id === currentClassId);
+      const isEnumNode = currentNode?.semantic?.stereotype === "enumeration";
       const memberMatch = line.match(
         /^(?:\{(abstract|static)\}\s*)?([+#~-])?\s*(?:\{(abstract|static)\}\s*)?([\p{L}\p{N}_]+(?:\([^)]*\))?)\s*(?::\s*(.+))?$/u,
       );
       if (memberMatch) {
         const mod = (memberMatch[1] || memberMatch[3] || "").toLowerCase();
-        const visibility = (memberMatch[2] as "+" | "-" | "#" | "~" | undefined) ?? "+";
+        const visibility =
+          (memberMatch[2] as "+" | "-" | "#" | "~" | undefined) ??
+          (isEnumNode ? undefined : "+");
         const rawMember = memberMatch[4].trim();
         const memberType = memberMatch[5]?.trim();
         classMembers[currentClassId] = classMembers[currentClassId] ?? [];
@@ -447,10 +607,17 @@ export function parseClassPlantUml(
         target,
         label: label ? unquote(label) : undefined,
         kind,
+        directed: arrow !== "--" && arrow !== "..",
+        sourceLabel: isReverseInherit ? targetCard : sourceCard,
+        targetLabel: isReverseInherit ? sourceCard : targetCard,
         semantic: {
           arrow,
-          sourceCardinality: sourceCard,
-          targetCardinality: targetCard,
+          relationType:
+            arrow.includes(".") && (arrow.includes("|>") || arrow.includes("<|"))
+              ? "realization"
+              : undefined,
+          sourceCardinality: isReverseInherit ? targetCard : sourceCard,
+          targetCardinality: isReverseInherit ? sourceCard : targetCard,
         },
         matchConfidence: 1,
       });
@@ -461,7 +628,11 @@ export function parseClassPlantUml(
     ir.groups = groups;
   }
 
-  ir.extras = { ...ir.extras, classMembers };
+  ir.extras = {
+    ...ir.extras,
+    classMembers,
+    notes: notes.length > 0 ? notes : undefined,
+  };
   return ir;
 }
 
@@ -507,6 +678,7 @@ export function parseC4PlantUml(
         id: groupId,
         label,
         parentId: boundaryStack[boundaryStack.length - 1],
+        kind: "boundary",
       });
       registerAlias(aliasToId, alias, groupId);
       boundaryStack.push(groupId);

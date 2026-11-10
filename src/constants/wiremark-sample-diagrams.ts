@@ -1,4 +1,5 @@
-import type { AppLocale } from "@/constants/i18n";
+import { SUPPORTED_LOCALES, type AppLocale } from "@/constants/i18n";
+import { WIREMARK_EXTRA } from "@/constants/samples/localized/other-samples";
 import type { SampleCatalog } from "@/languages/sample-catalog";
 
 export const WIREMARK_SAMPLE_IDS = [
@@ -692,10 +693,11 @@ const WIREMARK_SOURCES_BY_LOCALE: Record<
 > = {
   ru: WIREMARK_SAMPLES_RU,
   en: WIREMARK_SAMPLES_EN,
+  ...WIREMARK_EXTRA,
 };
 
 const ALL_WIREMARK_SAMPLE_SOURCES = new Set<string>();
-for (const locale of ["ru", "en"] as AppLocale[]) {
+for (const locale of SUPPORTED_LOCALES) {
   for (const id of WIREMARK_SAMPLE_IDS) {
     ALL_WIREMARK_SAMPLE_SOURCES.add(WIREMARK_SOURCES_BY_LOCALE[locale][id]);
   }

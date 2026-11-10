@@ -10,6 +10,12 @@ import {
 import SnippetsPanel from "@/components/SnippetsPanel.vue";
 import EditorToolbar from "@/components/editor/EditorToolbar.vue";
 import InlineDiagramBuilder from "@/components/editor/InlineDiagramBuilder.vue";
+import AiChatPanel from "@/components/llm/AiChatPanel.vue";
+import type { LayoutEngine } from "@/constants";
+import {
+  DEFAULT_RENDER_MODE,
+  type RenderMode,
+} from "@/constants/render-settings";
 import EditorCodeGutter from "@/components/editor/EditorCodeGutter.vue";
 import EditorCodeSurface from "@/components/editor/EditorCodeSurface.vue";
 import EditorFoldOnboardingBanner from "@/components/editor/EditorFoldOnboardingBanner.vue";
@@ -18,6 +24,8 @@ import { reportTablePasteError } from "@/composables/useTablePasteError";
 import { isFeatureAllowed } from "@/composables/useFeatureGate";
 import { trackClipboardPaste } from "@/analytics";
 import { useLocale } from "@/composables/useLocale";
+import { useHasActiveLlm } from "@/composables/useHasActiveLlm";
+import { useFeatureGate } from "@/composables/useFeatureGate";
 import type { EditorFontSize } from "@/constants/editor-settings";
 import {
   DIAGRAM_FILE_ACCEPT,
@@ -66,6 +74,11 @@ const props = defineProps<{
   canUndo?: boolean;
   canRedo?: boolean;
   canRefreshData?: boolean;
+  aiDocumentKey?: string;
+  layout?: LayoutEngine;
+  renderMode?: RenderMode;
+  diagramDarkMode?: boolean;
+  renderError?: string;
 }>();
 
 const emit = defineEmits<{
@@ -79,8 +92,8 @@ const emit = defineEmits<{
   undo: [];
   redo: [];
   convert: [];
-  aiPatch: [payload: { start: number; end: number }];
-  aiSyntaxAsk: [];
+  aiApplySource: [payload: { source: string; label: string }];
+  openSettings: [];
   "editor-focus": [];
   "editor-blur": [];
   refreshData: [];
@@ -115,21 +128,46 @@ const regionsModalRef = ref<InstanceType<typeof EditorFoldRegionsModal> | null>(
 const codeSurfaceRef = ref<InstanceType<typeof EditorCodeSurface> | null>(null);
 const isFullscreen = ref(false);
 const snippetsOpen = ref(false);
-const surfaceMode = ref<"code" | "builder">("code");
+export type EditorSurfaceMode = "code" | "builder" | "ai-chat";
+
+const surfaceMode = ref<EditorSurfaceMode>("code");
 const builderAvailable = computed(
   () =>
     formatDefinition.value.editable &&
     supportsDiagramBuilder(formatDefinition.value.id),
 );
+const { hasActiveLlm, refreshActiveLlmAvailability } = useHasActiveLlm();
+const allowAiChat = useFeatureGate("editor.ai");
+
+/**
+ * ИИ-чат скрываем, если формат нередактируем (read-only GraphML),
+ * не подключён ни один LLM (активный провайдер без согласия/ключа/прокси)
+ * или ИИ запрещён тарифом/правами (`editor.ai`).
+ */
+const aiChatAvailable = computed(
+  () =>
+    formatDefinition.value.editable &&
+    hasActiveLlm.value &&
+    allowAiChat.value,
+);
 
 watch(builderAvailable, (available) => {
-  if (!available) {
+  if (!available && surfaceMode.value === "builder") {
     surfaceMode.value = "code";
   }
 });
 
-function setSurfaceMode(mode: "code" | "builder"): void {
+watch(aiChatAvailable, (available) => {
+  if (!available && surfaceMode.value === "ai-chat") {
+    surfaceMode.value = "code";
+  }
+});
+
+function setSurfaceMode(mode: EditorSurfaceMode): void {
   if (mode === "builder" && !builderAvailable.value) {
+    return;
+  }
+  if (mode === "ai-chat" && !aiChatAvailable.value) {
     return;
   }
   if (mode === "builder") {
@@ -137,6 +175,7 @@ function setSurfaceMode(mode: "code" | "builder"): void {
   }
   surfaceMode.value = mode;
 }
+
 
 const textareaRef = computed(
   () => codeSurfaceRef.value?.textareaEl ?? null,
@@ -334,7 +373,6 @@ const {
 
 const {
   updateSelectionState,
-  requestAiPatch,
   insertSnippetAtCursor,
   getCaretOffsetInSource,
   getSelectionRangeInSource,
@@ -344,11 +382,6 @@ const {
   textareaRef,
   displayText,
   syncScroll,
-  onAiPatch: (payload) =>
-    emit("aiPatch", {
-      start: toWorkingOffset(payload.start),
-      end: toWorkingOffset(payload.end),
-    }),
 });
 
 async function onPasteTableFromClipboard(): Promise<void> {
@@ -461,6 +494,7 @@ watch(isFullscreen, (value) => {
 
 onMounted(() => {
   window.addEventListener("keydown", onEditorKeydown);
+  void refreshActiveLlmAvailability();
 });
 
 onUnmounted(() => {
@@ -493,14 +527,13 @@ onUnmounted(() => {
       :can-redo="canRedo"
       :can-clear="canClear"
       :can-convert="canClear"
-      :can-ai-patch="canClear"
-      :can-ai-syntax-ask="canClear"
       :can-paste-table="canPasteTable"
       :can-refresh-data="canRefreshData"
       :snippets-open="snippetsOpen"
       :is-fullscreen="isFullscreen"
       :surface-mode="surfaceMode"
       :builder-available="builderAvailable"
+      :ai-chat-available="aiChatAvailable"
       :can-toggle-session-file="hasSessionChanges"
       :session-file-shows-baseline="session.fileShowsBaseline.value"
       @set-surface-mode="setSurfaceMode"
@@ -509,8 +542,6 @@ onUnmounted(() => {
       @open-versions="emit('openVersions')"
       @save-puml="emit('savePuml')"
       @save-to-library="emit('saveToLibrary')"
-      @ai-patch="requestAiPatch"
-      @ai-syntax-ask="emit('aiSyntaxAsk')"
       @paste-table="onPasteTableFromClipboard"
       @refresh-data="emit('refreshData')"
       @validate-syntax="emit('validateSyntax')"
@@ -543,6 +574,19 @@ onUnmounted(() => {
         v-if="surfaceMode === 'builder'"
         v-model:source="source"
         :format="diagramFormat"
+      />
+
+      <AiChatPanel
+        v-else-if="surfaceMode === 'ai-chat'"
+        :source="source"
+        :diagram-format="diagramFormat"
+        :document-key="aiDocumentKey ?? ''"
+        :layout="layout ?? 'smetana'"
+        :render-mode="renderMode ?? DEFAULT_RENDER_MODE"
+        :diagram-dark-mode="diagramDarkMode ?? false"
+        :render-error="renderError"
+        @apply-source="emit('aiApplySource', $event)"
+        @open-settings="emit('openSettings')"
       />
 
       <div

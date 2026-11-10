@@ -225,6 +225,7 @@ export async function convertDiagram(
     sourceFormat: input.sourceFormat,
     targetFormat: input.targetFormat,
     mode: mode === "metadata" ? "metadata" : mode,
+    sourceIr: semantic,
     visualOnly: mode === "visual",
     metadataPresent: Boolean(metadataIr),
     unmatchedVisualNodes,

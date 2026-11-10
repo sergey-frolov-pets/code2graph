@@ -20,18 +20,12 @@ const {
   svg,
   isValidating,
   syntaxResult,
-  syntaxAskInitialQuestion,
   loadedFileName,
   linkedLibraryDiagramId,
-  formatDefinition,
-  patchSelectionStart,
-  patchSelectionEnd,
   modals,
   llmKeysGuide,
   onConvertApply,
   onFileLoaded,
-  onSyntaxAskFromValidation,
-  applyAiPlantUml,
   applyWizardDiagram,
   applyWizardDiagramToNewTab,
   onVersionRestore,
@@ -43,8 +37,6 @@ const {
   isSettingsModalOpen,
   isLibraryModalOpen,
   isAboutModalOpen,
-  isPatchModalOpen,
-  isSyntaxAskModalOpen,
   isWizardModalOpen,
   isSaveToLibraryModalOpen,
   isConvertModalOpen,
@@ -57,10 +49,6 @@ const {
 } = modals;
 
 const { guideModalOpen, guideProviderId, closeLlmKeysGuide } = llmKeysGuide;
-
-function onPatchApply(payload: { plantuml: string; label: string }) {
-  applyAiPlantUml(payload.plantuml, payload.label);
-}
 
 function onWizardApply(payload: {
   source: string;
@@ -83,9 +71,7 @@ function onWizardApply(payload: {
     :open="isSyntaxModalOpen"
     :result="syntaxResult"
     :is-validating="isValidating"
-    :show-syntax-ask="formatDefinition.supportsAiSyntaxAsk"
     @close="closeSyntaxModal"
-    @ask-syntax="onSyntaxAskFromValidation"
   />
 
   <DiagramVersionsDialog
@@ -138,33 +124,6 @@ function onWizardApply(payload: {
     v-if="isAboutModalOpen"
     :open="isAboutModalOpen"
     @close="isAboutModalOpen = false"
-  />
-
-  <component
-    :is="APP_MODAL_COMPONENTS.patch"
-    v-if="isPatchModalOpen"
-    :open="isPatchModalOpen"
-    :source="source"
-    :document-key="loadedFileName"
-    :selection-start="patchSelectionStart"
-    :selection-end="patchSelectionEnd"
-    :layout="layout"
-    :render-mode="renderMode"
-    :diagram-dark-mode="diagramDarkMode"
-    :open-settings="openSettingsModal"
-    @close="isPatchModalOpen = false"
-    @apply="onPatchApply"
-  />
-
-  <component
-    :is="APP_MODAL_COMPONENTS.syntaxAsk"
-    v-if="isSyntaxAskModalOpen"
-    :open="isSyntaxAskModalOpen"
-    :source="source"
-    :document-key="loadedFileName"
-    :initial-question="syntaxAskInitialQuestion"
-    :open-settings="openSettingsModal"
-    @close="isSyntaxAskModalOpen = false"
   />
 
   <component

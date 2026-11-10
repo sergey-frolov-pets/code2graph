@@ -16,6 +16,7 @@ import { getDiagramFormatDefinition } from "@/constants/diagram-formats";
 import { resolveLibraryDiagramFormat } from "@/utils/diagram-format";
 import { sanitizeSvgForPreview } from "@/utils/export";
 import { resolveLocalizedErrorMessage } from "@/utils/localized-app-error";
+import { wizardCopy } from "@/services/llm/wizard/wizard-copy";
 
 export function useLibraryDiagramPreview() {
   const { t } = useLocale();
@@ -185,7 +186,7 @@ export function useLibraryDiagramPreview() {
 
   function watermarkLabel(): string {
     const locale = readInitialLocale();
-    return locale === "ru" ? "Code2Graph · превью" : "Code2Graph · preview";
+    return wizardCopy(locale, "previewWatermark");
   }
 
   return {

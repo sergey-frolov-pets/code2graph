@@ -1,4 +1,4 @@
-import type { AppLocale } from "@/constants/i18n";
+import { SUPPORTED_LOCALES, type AppLocale } from "@/constants/i18n";
 import type { LocaleKey } from "@/locales/types";
 
 /**
@@ -7,10 +7,7 @@ import type { LocaleKey } from "@/locales/types";
  * inside those diagrams, each with a snippet that can be pasted.
  */
 
-export interface LocalizedExample {
-  readonly ru: string;
-  readonly en: string;
-}
+export type LocalizedExample = Record<AppLocale, string>;
 
 export interface LanguagePrimerType {
   readonly id: string;
@@ -43,11 +40,17 @@ export function lines(...rows: readonly string[]): string {
 }
 
 export function same(text: string): LocalizedExample {
-  return { ru: text, en: text };
+  return Object.fromEntries(
+    SUPPORTED_LOCALES.map((locale) => [locale, text]),
+  ) as LocalizedExample;
 }
 
-export function both(ru: string, en: string): LocalizedExample {
-  return { ru, en };
+export function both(
+  ru: string,
+  en: string,
+  rest: Record<Exclude<AppLocale, "ru" | "en">, string>,
+): LocalizedExample {
+  return { ru, en, ...rest };
 }
 
 export function primerExample(

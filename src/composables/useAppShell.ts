@@ -80,7 +80,6 @@ export interface AppShellContext {
   isValidating: Ref<boolean>;
   syntaxResult: Ref<import("@/utils/plantuml-syntax").SyntaxCheckResult | null>;
   syntaxErrorLines: Ref<number[]>;
-  syntaxAskInitialQuestion: Ref<string>;
   loadedFileName: Ref<string>;
   linkedLibraryDiagramId: Ref<string | null>;
   activeMobilePanel: Ref<"editor" | "preview">;
@@ -89,8 +88,6 @@ export interface AppShellContext {
   canUndo: ComputedRef<boolean>;
   canRedo: ComputedRef<boolean>;
   formatDefinition: ComputedRef<ReturnType<typeof getDiagramFormatDefinition>>;
-  patchSelectionStart: Ref<number>;
-  patchSelectionEnd: Ref<number>;
   modals: ReturnType<typeof useAppModals>;
   llmKeysGuide: ReturnType<typeof useLlmKeysGuide>;
   applySourceUndo: () => void;
@@ -111,9 +108,6 @@ export interface AppShellContext {
   onEditorClearedWithLink: () => void;
   onImportError: (message: string) => void;
   runSyntaxValidation: () => Promise<void>;
-  onAiPatchRequestOpen: (payload: { start: number; end: number }) => void;
-  onAiSyntaxAskOpen: (initialQuestion?: string) => void;
-  onSyntaxAskFromValidation: () => void;
   applyAiPlantUml: (source: string, label: string) => void;
   applyWizardDiagram: (
     source: string,
@@ -161,7 +155,6 @@ export function useAppShell(): AppShellContext {
   const linkedLibraryDiagramId = ref<string | null>(null);
   const activeMobilePanel = ref<"editor" | "preview">("editor");
   const diagramFormat = ref<DiagramFormat>("plantuml");
-  const syntaxAskInitialQuestion = ref("");
   const suppressSourceHistory = ref(0);
 
   const { alert } = useAppDialog();
@@ -324,9 +317,6 @@ export function useAppShell(): AppShellContext {
   });
 
   const {
-    patchSelectionStart,
-    patchSelectionEnd,
-    onAiPatchRequest,
     applyAiPlantUml,
     applyWizardDiagram,
     onWizardDiagramApplied,
@@ -448,21 +438,6 @@ export function useAppShell(): AppShellContext {
   async function runSyntaxValidation(): Promise<void> {
     modals.isSyntaxModalOpen.value = true;
     await validateSyntax();
-  }
-
-  function onAiPatchRequestOpen(payload: { start: number; end: number }): void {
-    onAiPatchRequest(payload);
-    modals.isPatchModalOpen.value = true;
-  }
-
-  function onAiSyntaxAskOpen(initialQuestion = ""): void {
-    syntaxAskInitialQuestion.value = initialQuestion;
-    modals.openSyntaxAskModal();
-  }
-
-  function onSyntaxAskFromValidation(): void {
-    modals.closeSyntaxModal();
-    onAiSyntaxAskOpen();
   }
 
   function applyAiPlantUmlWithHistory(plantuml: string, label: string): void {
@@ -675,7 +650,6 @@ export function useAppShell(): AppShellContext {
     isValidating,
     syntaxResult,
     syntaxErrorLines,
-    syntaxAskInitialQuestion,
     loadedFileName,
     linkedLibraryDiagramId,
     activeMobilePanel,
@@ -684,8 +658,6 @@ export function useAppShell(): AppShellContext {
     canUndo,
     canRedo,
     formatDefinition,
-    patchSelectionStart,
-    patchSelectionEnd,
     modals,
     llmKeysGuide,
     applySourceUndo,
@@ -697,9 +669,6 @@ export function useAppShell(): AppShellContext {
     onEditorClearedWithLink,
     onImportError,
     runSyntaxValidation,
-    onAiPatchRequestOpen,
-    onAiSyntaxAskOpen,
-    onSyntaxAskFromValidation,
     applyAiPlantUml: applyAiPlantUmlWithHistory,
     applyWizardDiagram: applyWizardDiagramWithHistory,
     applyWizardDiagramToNewTab,

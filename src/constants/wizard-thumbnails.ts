@@ -134,6 +134,9 @@ export function wizardThumbnailSvg(
     sourcePath.endsWith(suffix),
   );
   if (!match) {
+    if (locale !== "en") {
+      return wizardThumbnailSvg(format, sampleId, "en");
+    }
     return null;
   }
 

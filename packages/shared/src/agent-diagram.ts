@@ -56,6 +56,183 @@ export type AgentDiagramDirection = (typeof AGENT_DIAGRAM_DIRECTIONS)[number];
 
 export type AgentDiagramLocale = "ru" | "en";
 
+export const SCAFFOLD_LOCALES = [
+  "en",
+  "ru",
+  "es",
+  "zh",
+  "ja",
+  "hi",
+  "pt",
+  "de",
+  "ar",
+] as const;
+
+export type ScaffoldLocale = (typeof SCAFFOLD_LOCALES)[number];
+
+const SCAFFOLD_WORDS = {
+  user: {
+    en: "User",
+    ru: "Пользователь",
+    es: "Usuario",
+    zh: "用户",
+    ja: "ユーザー",
+    hi: "उपयोगकर्ता",
+    pt: "Usuário",
+    de: "Benutzer",
+    ar: "مستخدم",
+  },
+  database: {
+    en: "Database",
+    ru: "База",
+    es: "Base de datos",
+    zh: "数据库",
+    ja: "データベース",
+    hi: "डेटाबेस",
+    pt: "Banco de dados",
+    de: "Datenbank",
+    ar: "قاعدة البيانات",
+  },
+  shop: {
+    en: "Shop",
+    ru: "Магазин",
+    es: "Tienda",
+    zh: "商店",
+    ja: "店舗",
+    hi: "दुकान",
+    pt: "Loja",
+    de: "Shop",
+    ar: "متجر",
+  },
+  order: {
+    en: "Order",
+    ru: "Заказ",
+    es: "Pedido",
+    zh: "订单",
+    ja: "注文",
+    hi: "ऑर्डर",
+    pt: "Pedido",
+    de: "Bestellung",
+    ar: "طلب",
+  },
+  places: {
+    en: "places",
+    ru: "оформляет",
+    es: "realiza",
+    zh: "下单",
+    ja: "注文する",
+    hi: "देता है",
+    pt: "faz",
+    de: "gibt auf",
+    ar: "يقدّم",
+  },
+  web: {
+    en: "Web",
+    ru: "Веб",
+    es: "Web",
+    zh: "Web",
+    ja: "Web",
+    hi: "Web",
+    pt: "Web",
+    de: "Web",
+    ar: "Web",
+  },
+  customer: {
+    en: "Customer",
+    ru: "Покупатель",
+    es: "Cliente",
+    zh: "顾客",
+    ja: "顧客",
+    hi: "ग्राहक",
+    pt: "Cliente",
+    de: "Kunde",
+    ar: "عميل",
+  },
+  mail: {
+    en: "Mail",
+    ru: "Почта",
+    es: "Correo",
+    zh: "邮件",
+    ja: "メール",
+    hi: "मेल",
+    pt: "E-mail",
+    de: "Mail",
+    ar: "بريد",
+  },
+  screen: {
+    en: "Screen",
+    ru: "Экран",
+    es: "Pantalla",
+    zh: "屏幕",
+    ja: "画面",
+    hi: "स्क्रीन",
+    pt: "Tela",
+    de: "Bildschirm",
+    ar: "شاشة",
+  },
+  continue: {
+    en: "Continue",
+    ru: "Дальше",
+    es: "Continuar",
+    zh: "继续",
+    ja: "続ける",
+    hi: "आगे",
+    pt: "Continuar",
+    de: "Weiter",
+    ar: "متابعة",
+  },
+} as const satisfies Record<string, Record<ScaffoldLocale, string>>;
+
+function scaffoldWord(
+  locale: ScaffoldLocale,
+  key: keyof typeof SCAFFOLD_WORDS,
+): string {
+  return SCAFFOLD_WORDS[key][locale];
+}
+
+function scaffoldIndexed(
+  locale: ScaffoldLocale,
+  kind: "step" | "component" | "field",
+  index: number,
+): string {
+  const labels = {
+    step: {
+      en: "Step",
+      ru: "Шаг",
+      es: "Paso",
+      zh: "步骤",
+      ja: "手順",
+      hi: "चरण",
+      pt: "Passo",
+      de: "Schritt",
+      ar: "خطوة",
+    },
+    component: {
+      en: "Component",
+      ru: "Компонент",
+      es: "Componente",
+      zh: "组件",
+      ja: "コンポーネント",
+      hi: "घटक",
+      pt: "Componente",
+      de: "Komponente",
+      ar: "مكوّن",
+    },
+    field: {
+      en: "Field",
+      ru: "Поле",
+      es: "Campo",
+      zh: "字段",
+      ja: "フィールド",
+      hi: "फ़ील्ड",
+      pt: "Campo",
+      de: "Feld",
+      ar: "حقل",
+    },
+  } as const satisfies Record<string, Record<ScaffoldLocale, string>>;
+  return `${labels[kind][locale]} ${index}`;
+}
+
 const DEFAULT_SCAFFOLD_COUNT = 3;
 const MIN_SCAFFOLD_COUNT = 1;
 const MAX_SCAFFOLD_COUNT = 8;
@@ -341,14 +518,14 @@ function d2Direction(direction: AgentDiagramDirection): "right" | "down" {
 
 function scaffoldD2(
   diagramType: AgentDiagramType,
-  locale: AgentDiagramLocale,
+  locale: ScaffoldLocale,
   direction: AgentDiagramDirection,
   count: number,
 ): string {
   const flow = d2Direction(direction);
-  const user = locale === "ru" ? "Пользователь" : "User";
-  const api = locale === "ru" ? "API" : "API";
-  const database = locale === "ru" ? "База" : "Database";
+  const user = scaffoldWord(locale, "user");
+  const api = "API";
+  const database = scaffoldWord(locale, "database");
 
   if (diagramType === "sequence") {
     return [
@@ -357,8 +534,8 @@ function scaffoldD2(
       "checkout: {",
       "  shape: sequence_diagram",
       `  buyer: "${user}"`,
-      `  shop: "${locale === "ru" ? "Магазин" : "Shop"}"`,
-      `  buyer -> shop: "${locale === "ru" ? "Заказ" : "Order"}"`,
+      `  shop: "${scaffoldWord(locale, "shop")}"`,
+      `  buyer -> shop: "${scaffoldWord(locale, "order")}"`,
       "}",
     ].join("\n");
   }
@@ -373,12 +550,12 @@ function scaffoldD2(
       "  +name: string",
       "}",
       "",
-      `Order: "${locale === "ru" ? "Заказ" : "Order"}" {`,
+      `Order: "${scaffoldWord(locale, "order")}" {`,
       "  shape: class",
       "  +id: int",
       "}",
       "",
-      `User -> Order: "${locale === "ru" ? "оформляет" : "places"}"`,
+      `User -> Order: "${scaffoldWord(locale, "places")}"`,
     ].join("\n");
   }
 
@@ -407,7 +584,7 @@ function scaffoldD2(
       `direction: ${flow}`,
       "",
       "network: {",
-      `  web: "${locale === "ru" ? "Веб" : "Web"}"`,
+      `  web: "${scaffoldWord(locale, "web")}"`,
       `  api: "${api}" {`,
       "    shape: hexagon",
       "  }",
@@ -423,7 +600,7 @@ function scaffoldD2(
 
   const lines = [`direction: ${flow}`, ""];
   for (let index = 1; index <= count; index += 1) {
-    const label = locale === "ru" ? `Шаг ${index}` : `Step ${index}`;
+    const label = scaffoldIndexed(locale, "step", index);
     lines.push(`step${index}: "${label}"`);
   }
   lines.push("");
@@ -435,14 +612,14 @@ function scaffoldD2(
 
 function scaffoldStructurizr(
   diagramType: AgentDiagramType,
-  locale: AgentDiagramLocale,
+  locale: ScaffoldLocale,
   direction: AgentDiagramDirection,
   count: number,
 ): string {
   const layout = autolayout(direction);
-  const customer = locale === "ru" ? "Покупатель" : "Customer";
-  const shop = locale === "ru" ? "Магазин" : "Shop";
-  const mail = locale === "ru" ? "Почта" : "Mail";
+  const customer = scaffoldWord(locale, "customer");
+  const shop = scaffoldWord(locale, "shop");
+  const mail = scaffoldWord(locale, "mail");
 
   if (diagramType === "c4_container") {
     return [
@@ -479,7 +656,7 @@ function scaffoldStructurizr(
       `            api = container "API" "Order service." "Java" {`,
     ];
     for (let index = 1; index <= components; index += 1) {
-      const name = locale === "ru" ? `Компонент ${index}` : `Component ${index}`;
+      const name = scaffoldIndexed(locale, "component", index);
       lines.push(
         `                part${index} = component "${name}" "Handles part ${index}." "Spring Bean"`,
       );
@@ -560,19 +737,16 @@ function scaffoldStructurizr(
   return lines.join("\n");
 }
 
-function scaffoldWiremark(
-  locale: AgentDiagramLocale,
-  count: number,
-): string {
-  const title = locale === "ru" ? "Экран" : "Screen";
-  const action = locale === "ru" ? "Дальше" : "Continue";
+function scaffoldWiremark(locale: ScaffoldLocale, count: number): string {
+  const title = scaffoldWord(locale, "screen");
+  const action = scaffoldWord(locale, "continue");
   const lines = [
     "Wireframe #screen mobile",
     "  Stack column gap=2",
     `    Typography h4 "${title}"`,
   ];
   for (let index = 1; index <= count; index += 1) {
-    const label = locale === "ru" ? `Поле ${index}` : `Field ${index}`;
+    const label = scaffoldIndexed(locale, "field", index);
     lines.push(`    TextField "${label}"`);
   }
   lines.push(`    Button "${action}" contained`);
@@ -656,7 +830,7 @@ function scaffoldPlantUml(
 export function scaffoldDiagram(input: {
   format: AgentDiagramLanguage;
   diagramType?: AgentDiagramType;
-  locale?: AgentDiagramLocale;
+  locale?: ScaffoldLocale;
   direction?: AgentDiagramDirection;
   count?: number;
 }): DiagramScaffold {

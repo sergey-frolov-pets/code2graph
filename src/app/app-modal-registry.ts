@@ -8,8 +8,6 @@ export const APP_MODAL_IDS = [
   "saveToLibrary",
   "settings",
   "about",
-  "patch",
-  "syntaxAsk",
   "wizard",
   "convert",
 ] as const;
@@ -24,8 +22,6 @@ export const APP_MODAL_OPEN_REF: Record<AppModalId, `is${string}Open`> = {
   saveToLibrary: "isSaveToLibraryModalOpen",
   settings: "isSettingsModalOpen",
   about: "isAboutModalOpen",
-  patch: "isPatchModalOpen",
-  syntaxAsk: "isSyntaxAskModalOpen",
   wizard: "isWizardModalOpen",
   convert: "isConvertModalOpen",
 };
@@ -47,10 +43,6 @@ export const APP_MODAL_COMPONENTS: Record<AppModalId, Component> = {
     () => import("@/components/SettingsModal.vue"),
   ),
   about: defineAsyncComponent(() => import("@/components/AboutModal.vue")),
-  patch: defineAsyncComponent(() => import("@/components/LlmPatchModal.vue")),
-  syntaxAsk: defineAsyncComponent(
-    () => import("@/components/LlmSyntaxAskModal.vue"),
-  ),
   wizard: defineAsyncComponent(
     () => import("@/components/DiagramWizardModal.vue"),
   ),

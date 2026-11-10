@@ -8,12 +8,6 @@ import WizardStepContent from "@/components/wizard/WizardStepContent.vue";
 import { useInlineDiagramBuilder } from "@/composables/wizard/useInlineDiagramBuilder";
 import { useLocale } from "@/composables/useLocale";
 import type { DiagramFormat } from "@/constants/diagram-formats";
-import {
-  createDefaultStructuralElements,
-  createDefaultTypeParams,
-  DEFAULT_WIZARD_STATE,
-  type WizardState,
-} from "@/constants/llm-wizard";
 import type { TablePasteErrorInfo } from "@/services/table-paste/types";
 
 const source = defineModel<string>("source", { required: true });
@@ -24,12 +18,6 @@ const props = defineProps<{
 
 const { t } = useLocale();
 const active = ref(true);
-const wizardState = ref<WizardState>({
-  ...DEFAULT_WIZARD_STATE,
-  creationMode: "builder",
-  typeParams: createDefaultTypeParams(),
-  structuralElements: createDefaultStructuralElements(),
-});
 
 const {
   stepIndex,
@@ -76,18 +64,9 @@ function onBuilderPasteError(error: TablePasteErrorInfo): void {
 
     <div class="inline-builder__scroll">
       <WizardStepContent
-        v-model:wizard-state="wizardState"
         v-model:builder-state="builderState"
         :current-step-id="currentStepId"
-        :is-generating="false"
-        error-message=""
-        result-explanation=""
         :result-source="source"
-        :planning-messages="[]"
-        :is-planning-chat-busy="false"
-        :show-refine-chat="false"
-        :refine-messages="[]"
-        :is-refine-chat-busy="false"
         @builder-change="handleBuilderChange"
         @builder-paste-source="handleBuilderPasteSource"
         @builder-paste-error="onBuilderPasteError"
