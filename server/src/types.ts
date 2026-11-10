@@ -33,7 +33,19 @@ export const SUBSCRIPTION_DISTRIBUTION_MODES = [
 export type SubscriptionDistributionMode =
   (typeof SUBSCRIPTION_DISTRIBUTION_MODES)[number];
 
-export const CONTENT_LOCALES = ["", "ru", "en", "de", "fr", "es", "zh"] as const;
+export const CONTENT_LOCALES = [
+  "",
+  "ru",
+  "en",
+  "de",
+  "fr",
+  "es",
+  "pt",
+  "zh",
+  "ja",
+  "hi",
+  "ar",
+] as const;
 export type ContentLocale = (typeof CONTENT_LOCALES)[number];
 
 export const DEFAULT_SHARE_MAX_DOWNLOADS = 5;

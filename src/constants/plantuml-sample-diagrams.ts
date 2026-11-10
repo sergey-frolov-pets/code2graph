@@ -1,4 +1,4 @@
-import type { AppLocale } from "@/constants/i18n";
+import { SUPPORTED_LOCALES, type AppLocale } from "@/constants/i18n";
 import { getPlantUmlRichSample } from "@/constants/plantuml-rich-samples";
 import { buildWizardDiagramSample } from "@/constants/wizard-sample-sources";
 import type { SampleCatalog } from "@/languages/sample-catalog";
@@ -64,10 +64,15 @@ import {
   SAMPLE_DIAGRAMS_RU,
 } from "@/constants/samples/plantuml-handcrafted-samples-ru";
 import { SAMPLE_DIAGRAMS_EN } from "@/constants/samples/plantuml-handcrafted-samples-en";
+import {
+  PLANTUML_DEFAULT_SOURCE_EXTRA,
+  PLANTUML_HANDCRAFTED_EXTRA,
+} from "@/constants/samples/localized/plantuml-handcrafted";
 
 const SOURCES_BY_LOCALE: Record<AppLocale, Record<HandcraftedPlantUmlSampleId, string>> = {
   ru: SAMPLE_DIAGRAMS_RU,
   en: SAMPLE_DIAGRAMS_EN,
+  ...PLANTUML_HANDCRAFTED_EXTRA,
 };
 
 function isHandcraftedPlantUmlSampleId(
@@ -94,6 +99,7 @@ function buildPlantUmlSampleSource(id: PlantUmlSampleId, locale: AppLocale): str
 const DEFAULT_SOURCE_BY_LOCALE: Record<AppLocale, string> = {
   ru: DEFAULT_SOURCE_RU,
   en: DEFAULT_SOURCE_EN,
+  ...PLANTUML_DEFAULT_SOURCE_EXTRA,
 };
 
 export function getPlantUmlDefaultSource(locale: AppLocale): string {
@@ -121,15 +127,23 @@ export function findPlantUmlSampleId(
 }
 
 export function isPlantUmlDefaultSource(source: string): boolean {
-  return source === DEFAULT_SOURCE_RU || source === DEFAULT_SOURCE_EN;
+  return (
+    source === DEFAULT_SOURCE_RU ||
+    source === DEFAULT_SOURCE_EN ||
+    Object.values(PLANTUML_DEFAULT_SOURCE_EXTRA).includes(source)
+  );
 }
 
 const ALL_PLANTUML_SAMPLE_SOURCES = new Set<string>();
 
 export function getAllPlantUmlSampleSources(): string[] {
-  const sources = new Set<string>([DEFAULT_SOURCE_RU, DEFAULT_SOURCE_EN]);
+  const sources = new Set<string>([
+    DEFAULT_SOURCE_RU,
+    DEFAULT_SOURCE_EN,
+    ...Object.values(PLANTUML_DEFAULT_SOURCE_EXTRA),
+  ]);
 
-  for (const locale of ["ru", "en"] as AppLocale[]) {
+  for (const locale of SUPPORTED_LOCALES) {
     for (const id of PLANTUML_SAMPLE_IDS) {
       sources.add(buildPlantUmlSampleSource(id, locale));
     }

@@ -1,4 +1,5 @@
 import type { AppLocale } from "@/constants/i18n";
+import { wizardCopy } from "@/services/llm/wizard/wizard-copy";
 import type { WizardDiagramDirection, WizardState } from "@/constants/llm-wizard";
 import {
   formatMermaidRequirementText,
@@ -46,7 +47,7 @@ export function buildMermaidSequence(state: WizardState, locale: AppLocale): str
   if (count >= 2) {
     const from = participantLabel(1, locale).replace(/\s+/g, "_");
     const to = participantLabel(2, locale).replace(/\s+/g, "_");
-    const message = locale === "ru" ? "сообщение" : "message";
+    const message = wizardCopy(locale, "message");
     lines.push(`  ${from}->>${to}: ${message}`);
   }
 
@@ -60,7 +61,7 @@ export function buildMermaidClass(state: WizardState, locale: AppLocale): string
   const lines = ["classDiagram", `  direction ${direction}`];
 
   if (hasStructural(state, "package")) {
-    const packageName = locale === "ru" ? "Домен" : "Domain";
+    const packageName = wizardCopy(locale, "domain");
     lines.push(`  namespace ${packageName} {`);
   }
 
@@ -78,12 +79,12 @@ export function buildMermaidClass(state: WizardState, locale: AppLocale): string
   }
 
   if (hasStructural(state, "interface")) {
-    const iface = locale === "ru" ? "Интерфейс" : "Interface";
+    const iface = wizardCopy(locale, "interface");
     lines.push(`  class ${iface} {`, "    <<interface>>", "    +method()", "  }");
   }
 
   if (hasStructural(state, "note")) {
-    const noteText = locale === "ru" ? "Примечание" : "Note";
+    const noteText = wizardCopy(locale, "note");
     lines.push(`  note for ${classLabel(1, locale)} "${noteText}"`);
   }
 
@@ -99,8 +100,8 @@ export function buildMermaidFlowchart(
       ? state.typeParams.nodes
       : state.typeParams.components || state.typeParams.nodes;
   const flow = mermaidFlowDirection(state.direction);
-  const startLabel = locale === "ru" ? "Старт" : "Start";
-  const endLabel = locale === "ru" ? "Готово" : "Done";
+  const startLabel = wizardCopy(locale, "start");
+  const endLabel = wizardCopy(locale, "done");
   const lines = [`flowchart ${flow}`, `  A([${startLabel}])`];
 
   for (let index = 1; index <= nodeCount; index += 1) {
@@ -128,8 +129,8 @@ export function buildMermaidFlowchart(
 export function buildMermaidActivity(state: WizardState, locale: AppLocale): string {
   const stepCount = state.typeParams.steps;
   const flow = mermaidFlowDirection(state.direction);
-  const startLabel = locale === "ru" ? "Старт" : "Start";
-  const endLabel = locale === "ru" ? "Готово" : "Done";
+  const startLabel = wizardCopy(locale, "start");
+  const endLabel = wizardCopy(locale, "done");
   const lines = [`flowchart ${flow}`, `  start([${startLabel}])`];
 
   for (let index = 1; index <= stepCount; index += 1) {
@@ -160,7 +161,7 @@ export function buildMermaidComponent(state: WizardState, locale: AppLocale): st
   const indent = hasStructural(state, "package") ? "    " : "  ";
 
   if (hasStructural(state, "package")) {
-    const packageName = locale === "ru" ? "Домен" : "Domain";
+    const packageName = wizardCopy(locale, "domain");
     lines.push(`  subgraph ${packageName.replace(/\s+/g, "_")}["${packageName}"]`);
   }
 
@@ -178,13 +179,13 @@ export function buildMermaidComponent(state: WizardState, locale: AppLocale): st
   }
 
   if (hasStructural(state, "interface")) {
-    const iface = locale === "ru" ? "Интерфейс" : "Interface";
+    const iface = wizardCopy(locale, "interface");
     lines.push(`  IF(["${iface}"])`);
     lines.push("  IF -.-> C1");
   }
 
   if (hasStructural(state, "note")) {
-    const noteText = locale === "ru" ? "Примечание" : "Note";
+    const noteText = wizardCopy(locale, "note");
     lines.push(`  C1@{ shape: braces, label: "${noteText}" }`);
   }
 
@@ -193,8 +194,8 @@ export function buildMermaidComponent(state: WizardState, locale: AppLocale): st
 
 export function buildMermaidGantt(state: WizardState, locale: AppLocale): string {
   const taskCount = state.typeParams.tasks;
-  const title = locale === "ru" ? "План проекта" : "Project plan";
-  const section = locale === "ru" ? "Этапы" : "Stages";
+  const title = wizardCopy(locale, "projectPlan");
+  const section = wizardCopy(locale, "stages");
   const lines = [
     "gantt",
     `title ${title}`,
@@ -222,7 +223,7 @@ export function buildMermaidGantt(state: WizardState, locale: AppLocale): string
 export function buildMermaidMindmap(state: WizardState, locale: AppLocale): string {
   const branchCount = state.typeParams.nodes;
   const subCount = state.typeParams.steps;
-  const root = locale === "ru" ? "Корневая тема" : "Root topic";
+  const root = wizardCopy(locale, "rootTopic");
   const lines = ["mindmap", `  root((${root}))`];
 
   for (let branchIndex = 1; branchIndex <= branchCount; branchIndex += 1) {
@@ -233,7 +234,7 @@ export function buildMermaidMindmap(state: WizardState, locale: AppLocale): stri
   }
 
   if (hasStructural(state, "note")) {
-    const noteText = locale === "ru" ? "Примечание" : "Note";
+    const noteText = wizardCopy(locale, "note");
     lines.push(`    ${noteText}`);
   }
 
@@ -252,12 +253,12 @@ export function buildMermaidEr(state: WizardState, locale: AppLocale): string {
   if (count >= 2) {
     const from = entityLabel(1, locale).replace(/\s+/g, "_");
     const to = entityLabel(2, locale).replace(/\s+/g, "_");
-    const rel = locale === "ru" ? "связан с" : "relates to";
+    const rel = wizardCopy(locale, "relatesTo");
     lines.push(`  ${from} ||--o{ ${to} : "${rel}"`);
   }
 
   if (hasStructural(state, "note")) {
-    const noteText = locale === "ru" ? "Примечание" : "Note";
+    const noteText = wizardCopy(locale, "note");
     lines.push(`  %% ${noteText}`);
   }
 
@@ -312,7 +313,7 @@ export function buildMermaidState(state: WizardState, locale: AppLocale): string
   );
 
   if (hasStructural(state, "note")) {
-    const noteText = locale === "ru" ? "Примечание" : "Note";
+    const noteText = wizardCopy(locale, "note");
     lines.push(`  note right of ${stateLabel(1, locale).replace(/\s+/g, "_")}: ${noteText}`);
   }
 
@@ -321,7 +322,7 @@ export function buildMermaidState(state: WizardState, locale: AppLocale): string
 
 export function buildMermaidPie(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.nodes;
-  const title = locale === "ru" ? "Распределение" : "Distribution";
+  const title = wizardCopy(locale, "distribution");
   const lines = ["pie showData", `    title ${title}`];
 
   for (let index = 1; index <= count; index += 1) {
@@ -335,9 +336,9 @@ export function buildMermaidPie(state: WizardState, locale: AppLocale): string {
 
 export function buildMermaidJourney(state: WizardState, locale: AppLocale): string {
   const stepCount = state.typeParams.steps;
-  const title = locale === "ru" ? "Путь пользователя" : "User journey";
-  const section = locale === "ru" ? "Этап" : "Stage";
-  const actor = locale === "ru" ? "Пользователь" : "User";
+  const title = wizardCopy(locale, "userJourney");
+  const section = wizardCopy(locale, "stage");
+  const actor = wizardCopy(locale, "user");
   const lines = ["journey", `    title ${title}`];
 
   if (hasStructural(state, "section")) {
@@ -354,7 +355,7 @@ export function buildMermaidJourney(state: WizardState, locale: AppLocale): stri
 
 export function buildMermaidGitgraph(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.steps;
-  const branch = locale === "ru" ? "разработка" : "develop";
+  const branch = wizardCopy(locale, "develop");
   const branchRef = formatMermaidGitRef(branch);
   const lines = ["gitGraph"];
 
@@ -374,11 +375,11 @@ export function buildMermaidGitgraph(state: WizardState, locale: AppLocale): str
 
 export function buildMermaidTimeline(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.steps;
-  const title = locale === "ru" ? "Хронология" : "Timeline";
+  const title = wizardCopy(locale, "timeline");
   const lines = ["timeline", `    title ${title}`];
 
   if (hasStructural(state, "section")) {
-    lines.push(`    section ${locale === "ru" ? "События" : "Events"}`);
+    lines.push(`    section ${wizardCopy(locale, "events")}`);
   }
 
   for (let index = 1; index <= count; index += 1) {
@@ -406,8 +407,8 @@ export function buildMermaidSankey(state: WizardState, locale: AppLocale): strin
 
 export function buildMermaidXychart(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.steps;
-  const title = locale === "ru" ? "Данные" : "Data";
-  const yLabel = locale === "ru" ? "Значение" : "Value";
+  const title = wizardCopy(locale, "data");
+  const yLabel = wizardCopy(locale, "value");
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const axisLabels = months.slice(0, count);
   const values = Array.from({ length: count }, (_, index) => (index + 1) * 10);
@@ -437,8 +438,8 @@ export function buildMermaidBlock(state: WizardState, locale: AppLocale): string
 export function buildMermaidC4Context(state: WizardState, locale: AppLocale): string {
   const actorCount = state.typeParams.actors;
   const externalCount = state.typeParams.externalSystems;
-  const title = locale === "ru" ? "Контекст системы" : "System Context";
-  const systemName = locale === "ru" ? "Система" : "System";
+  const title = wizardCopy(locale, "systemContext");
+  const systemName = wizardCopy(locale, "system");
   const lines = [
     "C4Context",
     `    title ${title}`,
@@ -459,7 +460,7 @@ export function buildMermaidC4Context(state: WizardState, locale: AppLocale): st
 
   if (actorCount >= 1) {
     lines.push(
-      `    Rel(${actorLabel(1, locale).replace(/\s+/g, "_")}, ${systemName}, "${locale === "ru" ? "использует" : "uses"}")`,
+      `    Rel(${actorLabel(1, locale).replace(/\s+/g, "_")}, ${systemName}, "${wizardCopy(locale, "uses")}")`,
     );
   }
 
@@ -472,7 +473,7 @@ export function buildMermaidRequirement(state: WizardState, locale: AppLocale): 
 
   for (let index = 1; index <= count; index += 1) {
     const reqId = `req${index}`;
-    const text = locale === "ru" ? `Требование ${index}` : `Requirement ${index}`;
+    const text = `${wizardCopy(locale, "requirement")} ${index}`;
     lines.push(
       `    requirement ${reqId} {`,
       `      id: ${index}`,
@@ -489,8 +490,8 @@ export function buildMermaidRequirement(state: WizardState, locale: AppLocale): 
 
 export function buildMermaidQuadrant(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.nodes;
-  const title = locale === "ru" ? "Приоритеты" : "Priorities";
-  const quadrantLabel = locale === "ru" ? "Высокий приоритет" : "High priority";
+  const title = wizardCopy(locale, "priorities");
+  const quadrantLabel = wizardCopy(locale, "highPriority");
   const lines = [
     "quadrantChart",
     `    title ${formatMermaidRequirementText(title)}`,
@@ -533,7 +534,7 @@ export function buildMermaidArchitecture(state: WizardState, locale: AppLocale):
 
 export function buildMermaidPacket(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.steps;
-  const title = locale === "ru" ? "Структура пакета" : "Packet structure";
+  const title = wizardCopy(locale, "packetStructure");
   const lines = ["packet-beta", `    title ${title}`];
   const bitsPerField = Math.floor(32 / count);
 

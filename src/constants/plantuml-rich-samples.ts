@@ -1,5 +1,6 @@
 import type { AppLocale } from "@/constants/i18n";
 import type { PlantUmlSampleId } from "@/constants/plantuml-sample-diagrams";
+import { PLANTUML_RICH_EXTRA } from "@/constants/samples/localized/plantuml-rich";
 
 const PLANTUML_RICH_SAMPLE_IDS = [
   "c4_context",
@@ -481,6 +482,7 @@ const PLANTUML_RICH_SAMPLES: Record<
 > = {
   ru: PLANTUML_RICH_SAMPLES_RU,
   en: PLANTUML_RICH_SAMPLES_EN,
+  ...PLANTUML_RICH_EXTRA,
 };
 
 export function getPlantUmlRichSample(

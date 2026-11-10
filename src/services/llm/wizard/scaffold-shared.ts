@@ -1,4 +1,5 @@
 import type { AppLocale } from "@/constants/i18n";
+import { wizardCopy } from "@/services/llm/wizard/wizard-copy";
 import type {
   WizardDiagramDirection,
   WizardDiagramTheme,
@@ -64,27 +65,27 @@ export function buildPlantUmlHeader(
 }
 
 export function participantLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Участник ${index}` : `Participant ${index}`;
+  return `${wizardCopy(locale, "participant")} ${index}`;
 }
 
 export function classLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Класс${index}` : `Class${index}`;
+  return `${wizardCopy(locale, "class")}${index}`;
 }
 
 export function componentLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Компонент ${index}` : `Component ${index}`;
+  return `${wizardCopy(locale, "component")} ${index}`;
 }
 
 export function laneLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Дорожка ${index}` : `Lane ${index}`;
+  return `${wizardCopy(locale, "lane")} ${index}`;
 }
 
 export function stepLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Шаг ${index}` : `Step ${index}`;
+  return `${wizardCopy(locale, "step")} ${index}`;
 }
 
 export function stateLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Состояние ${index}` : `State ${index}`;
+  return `${wizardCopy(locale, "state")} ${index}`;
 }
 
 export function plantUmlStateAlias(index: number): string {
@@ -101,63 +102,63 @@ export function plantUmlStateRef(index: number, _locale?: AppLocale): string {
 }
 
 export function actorLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Актор ${index}` : `Actor ${index}`;
+  return `${wizardCopy(locale, "actor")} ${index}`;
 }
 
 export function externalSystemLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Внешняя система ${index}` : `External system ${index}`;
+  return `${wizardCopy(locale, "externalSystem")} ${index}`;
 }
 
 export function containerLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Контейнер ${index}` : `Container ${index}`;
+  return `${wizardCopy(locale, "container")} ${index}`;
 }
 
 export function nodeLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Узел ${index}` : `Node ${index}`;
+  return `${wizardCopy(locale, "node")} ${index}`;
 }
 
 export function taskLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Задача ${index}` : `Task ${index}`;
+  return `${wizardCopy(locale, "task")} ${index}`;
 }
 
 export function entityLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Сущность ${index}` : `Entity ${index}`;
+  return `${wizardCopy(locale, "entity")} ${index}`;
 }
 
 export function branchLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Ветка ${index}` : `Branch ${index}`;
+  return `${wizardCopy(locale, "branch")} ${index}`;
 }
 
 export function subBranchLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Подветка ${index}` : `Sub-branch ${index}`;
+  return `${wizardCopy(locale, "subBranch")} ${index}`;
 }
 
 export function sliceLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Сегмент ${index}` : `Slice ${index}`;
+  return `${wizardCopy(locale, "slice")} ${index}`;
 }
 
 export function eventLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Событие ${index}` : `Event ${index}`;
+  return `${wizardCopy(locale, "event")} ${index}`;
 }
 
 export function commitLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Коммит ${index}` : `Commit ${index}`;
+  return `${wizardCopy(locale, "commit")} ${index}`;
 }
 
 export function useCaseLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Сценарий ${index}` : `Use case ${index}`;
+  return `${wizardCopy(locale, "useCase")} ${index}`;
 }
 
 export function serverLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Сервер ${index}` : `Server ${index}`;
+  return `${wizardCopy(locale, "server")} ${index}`;
 }
 
 export function signalLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Сигнал ${index}` : `Signal ${index}`;
+  return `${wizardCopy(locale, "signal")} ${index}`;
 }
 
 export function fieldLabel(index: number, locale: AppLocale): string {
-  return locale === "ru" ? `Поле ${index}` : `Field ${index}`;
+  return `${wizardCopy(locale, "field")} ${index}`;
 }
 
 export function hasStructural(
@@ -174,9 +175,9 @@ export function appendPlantUmlSequenceStructure(
 ): void {
   const from = participantLabel(1, locale).replace(/\s+/g, "_");
   const to = participantLabel(2, locale).replace(/\s+/g, "_");
-  const ok = locale === "ru" ? "успех" : "success";
-  const fail = locale === "ru" ? "ошибка" : "failure";
-  const noteText = locale === "ru" ? "Примечание" : "Note";
+  const ok = wizardCopy(locale, "success");
+  const fail = wizardCopy(locale, "failure");
+  const noteText = wizardCopy(locale, "note");
 
   if (hasStructural(state, "note")) {
     lines.push("", `note right of ${from}: ${noteText}`);
@@ -194,17 +195,17 @@ export function appendPlantUmlSequenceStructure(
   }
 
   if (hasStructural(state, "loop")) {
-    const retry = locale === "ru" ? "повтор" : "retry";
+    const retry = wizardCopy(locale, "retry");
     lines.push("", `loop ${retry}`, `  ${from} -> ${to}: ${retry}`, "end");
   }
 
   if (hasStructural(state, "opt")) {
-    const optional = locale === "ru" ? "опционально" : "optional";
+    const optional = wizardCopy(locale, "optional");
     lines.push("", `opt ${optional}`, `  ${from} -> ${to}: ${optional}`, "end");
   }
 
   if (hasStructural(state, "par")) {
-    const parallel = locale === "ru" ? "параллельно" : "parallel";
+    const parallel = wizardCopy(locale, "parallel");
     lines.push(
       "",
       "par " + parallel,
@@ -222,11 +223,11 @@ export function appendMermaidSequenceStructure(
 ): void {
   const from = participantLabel(1, locale).replace(/\s+/g, "_");
   const to = participantLabel(2, locale).replace(/\s+/g, "_");
-  const ok = locale === "ru" ? "успех" : "success";
-  const fail = locale === "ru" ? "ошибка" : "failure";
+  const ok = wizardCopy(locale, "success");
+  const fail = wizardCopy(locale, "failure");
 
   if (hasStructural(state, "note")) {
-    const noteText = locale === "ru" ? "Примечание" : "Note";
+    const noteText = wizardCopy(locale, "note");
     lines.push(`  Note right of ${from}: ${noteText}`);
   }
 
@@ -241,12 +242,12 @@ export function appendMermaidSequenceStructure(
   }
 
   if (hasStructural(state, "loop")) {
-    const retry = locale === "ru" ? "повтор" : "retry";
+    const retry = wizardCopy(locale, "retry");
     lines.push(`  loop ${retry}`, `    ${from}->>${to}: ${retry}`, "  end");
   }
 
   if (hasStructural(state, "opt")) {
-    const optional = locale === "ru" ? "опционально" : "optional";
+    const optional = wizardCopy(locale, "optional");
     lines.push(`  opt ${optional}`, `    ${from}->>${to}: ${optional}`, "  end");
   }
 
@@ -265,20 +266,20 @@ export function appendPlantUmlClassStructure(
   state: WizardState,
   locale: AppLocale,
 ): void {
-  const noteText = locale === "ru" ? "Примечание" : "Note";
+  const noteText = wizardCopy(locale, "note");
 
   if (hasStructural(state, "interface")) {
-    const iface = locale === "ru" ? "Интерфейс" : "Interface";
+    const iface = wizardCopy(locale, "interface");
     lines.push("", `interface ${iface} {`, "  +method()", "}");
   }
 
   if (hasStructural(state, "enum")) {
-    const enumName = locale === "ru" ? "Статус" : "Status";
+    const enumName = wizardCopy(locale, "status");
     lines.push("", `enum ${enumName} {`, "  ACTIVE", "  INACTIVE", "}");
   }
 
   if (hasStructural(state, "abstract")) {
-    const abstractName = locale === "ru" ? "БазовыйКласс" : "BaseClass";
+    const abstractName = wizardCopy(locale, "baseClass");
     lines.push("", `abstract class ${abstractName} {`, "  +id: String", "}");
   }
 
@@ -292,10 +293,10 @@ export function appendPlantUmlComponentStructure(
   state: WizardState,
   locale: AppLocale,
 ): void {
-  const noteText = locale === "ru" ? "Примечание" : "Note";
+  const noteText = wizardCopy(locale, "note");
 
   if (hasStructural(state, "interface")) {
-    const iface = locale === "ru" ? "Интерфейс" : "Interface";
+    const iface = wizardCopy(locale, "interface");
     lines.push("", `() ${iface}`, "");
   }
 
@@ -309,11 +310,11 @@ export function appendPlantUmlActivityStructure(
   state: WizardState,
   locale: AppLocale,
 ): void {
-  const noteText = locale === "ru" ? "Примечание" : "Note";
-  const yes = locale === "ru" ? "да" : "yes";
-  const no = locale === "ru" ? "нет" : "no";
-  const caseA = locale === "ru" ? "вариант A" : "case A";
-  const caseB = locale === "ru" ? "вариант B" : "case B";
+  const noteText = wizardCopy(locale, "note");
+  const yes = wizardCopy(locale, "yes");
+  const no = wizardCopy(locale, "no");
+  const caseA = wizardCopy(locale, "caseA");
+  const caseB = wizardCopy(locale, "caseB");
 
   if (hasStructural(state, "if")) {
     lines.push("", `if (${yes}?) then (${yes})`, `  :${stepLabel(1, locale)};`, "else (" + no + ")", `  :${stepLabel(2, locale)};`, "endif");
@@ -340,7 +341,7 @@ export function appendPlantUmlActivityStructure(
   }
 
   if (hasStructural(state, "artifact")) {
-    const artifact = locale === "ru" ? "Артефакт" : "Artifact";
+    const artifact = wizardCopy(locale, "artifact");
     lines.push("", `:${artifact};`, "<<artifact>>");
   }
 }
@@ -350,8 +351,8 @@ export function appendMermaidFlowStructure(
   state: WizardState,
   locale: AppLocale,
 ): void {
-  const yes = locale === "ru" ? "Да" : "Yes";
-  const no = locale === "ru" ? "Нет" : "No";
+  const yes = wizardCopy(locale, "yesCap");
+  const no = wizardCopy(locale, "noCap");
 
   if (hasStructural(state, "if")) {
     lines.push("  B{Decision?}", `  B -->|${yes}| N1`, `  B -->|${no}| Z`);
@@ -362,7 +363,7 @@ export function appendMermaidFlowStructure(
   }
 
   if (hasStructural(state, "note")) {
-    const noteText = locale === "ru" ? "Примечание" : "Note";
+    const noteText = wizardCopy(locale, "note");
     lines.push(`  N1@{ shape: braces, label: "${noteText}" }`);
   }
 }
@@ -391,7 +392,7 @@ export function appendPlantUmlStateStructure(
   }
 
   if (hasStructural(state, "note")) {
-    const noteText = locale === "ru" ? "Примечание" : "Note";
+    const noteText = wizardCopy(locale, "note");
     lines.push("", `note right of ${plantUmlStateRef(1, locale)}: ${noteText}`);
   }
 }
@@ -402,12 +403,12 @@ export function appendPlantUmlGanttStructure(
   locale: AppLocale,
 ): void {
   if (hasStructural(state, "section")) {
-    const section = locale === "ru" ? "Этап 2" : "Phase 2";
+    const section = wizardCopy(locale, "phase2");
     lines.push("", "[" + section + "] lasts 2 days");
   }
 
   if (hasStructural(state, "milestone")) {
-    const milestone = locale === "ru" ? "Веха" : "Milestone";
+    const milestone = wizardCopy(locale, "milestone");
     lines.push("", `[${milestone}] happens at [${taskLabel(1, locale)}]'s end`);
   }
 }
@@ -418,12 +419,12 @@ export function appendMermaidGanttStructure(
   locale: AppLocale,
 ): void {
   if (hasStructural(state, "section")) {
-    const section = locale === "ru" ? "Этап 2" : "Phase 2";
+    const section = wizardCopy(locale, "phase2");
     lines.push("", `section ${section}`, `${taskLabel(2, locale)} :t2, after t1, 2d`);
   }
 
   if (hasStructural(state, "milestone")) {
-    const milestone = locale === "ru" ? "Веха" : "Milestone";
+    const milestone = wizardCopy(locale, "milestone");
     lines.push("", `${milestone} :milestone, after t1, 0d`);
   }
 }
@@ -437,7 +438,7 @@ export function appendGraphmlClusterStructure(
     return;
   }
 
-  const clusterLabel = locale === "ru" ? "Группа" : "Cluster";
+  const clusterLabel = wizardCopy(locale, "cluster");
   lines.splice(
     lines.length - 2,
     0,
