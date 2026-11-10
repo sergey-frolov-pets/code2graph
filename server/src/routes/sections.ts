@@ -11,6 +11,8 @@ import {
   isAdmin,
 } from "../authz.js";
 import { getDb } from "../db.js";
+import { sectionQuotaError, shareQuotaError } from "../billing/limits.js";
+import { userHasCloudAccess } from "../billing/service.js";
 import {
   enrichSectionsForUser,
   filterReadableSectionRows,
@@ -98,6 +100,13 @@ sectionsRouter.post("/", async (context) => {
   const now = new Date().toISOString();
   const id = crypto.randomUUID();
   const ownerId = kind === "personal" ? user.id : null;
+
+  if (kind === "personal" && ownerId) {
+    const quotaError = sectionQuotaError(database, ownerId);
+    if (quotaError) {
+      return context.json({ error: quotaError }, 402);
+    }
+  }
 
   database
     .prepare(
@@ -291,6 +300,10 @@ sectionsRouter.post("/:id/access", async (context) => {
     return context.json({ error: "Недостаточно прав" }, 403);
   }
 
+  if (!userHasCloudAccess(database, user.id) && !isAdmin(user)) {
+    return context.json({ error: "Доступ к разделу для других людей входит в пакет Cloud" }, 402);
+  }
+
   let targetUserId = body.userId?.trim();
   if (!targetUserId && body.username?.trim()) {
     const target = database
@@ -414,6 +427,11 @@ sectionsRouter.post("/:id/share", async (context) => {
     body.permission && isSharePermission(body.permission)
       ? body.permission
       : "view";
+
+  const shareError = shareQuotaError(database, user.id, { expiresAt, permission });
+  if (shareError) {
+    return context.json({ error: shareError }, 402);
+  }
 
   const link = createShareLink(database, "section", id, user.id, {
     expiresAt,

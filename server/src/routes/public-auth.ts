@@ -5,11 +5,13 @@ import { getDb } from "../db.js";
 import {
   buildLoginAttemptKey,
   checkLoginAttempt,
+  clearLoginAttempts,
   getClientIp,
   recordLoginFailure,
 } from "../login-rate-limit.js";
 import { ensurePersonalSection } from "../personal-sections.js";
-import { createUser, needsSetup } from "../users.js";
+import { applyNewAccountCampaigns } from "../billing/service.js";
+import { createUser, needsSetup, authenticateUser } from "../users.js";
 
 export const publicAuthRouter = new Hono();
 
@@ -118,6 +120,7 @@ publicAuthRouter.post("/register", async (context) => {
   try {
     const user = await createUser(database, username, password, "user", false);
     ensurePersonalSection(database, user);
+    applyNewAccountCampaigns(database, user.id);
     const token = createAuthToken(user.id);
 
     return context.json({ token, user }, 201);
@@ -131,4 +134,34 @@ publicAuthRouter.post("/register", async (context) => {
       error instanceof Error ? error.message : "Не удалось зарегистрироваться";
     return context.json({ error: message }, 400);
   }
+});
+
+publicAuthRouter.post("/operator-login", async (context) => {
+  const body = await context.req
+    .json<{ username?: string; password?: string }>()
+    .catch(() => ({ username: undefined, password: undefined }));
+  const username = body.username?.trim() ?? "";
+  const password = body.password ?? "";
+  const attemptKey = buildLoginAttemptKey(
+    getClientIp(context.req.raw.headers),
+    `operator:${username}`,
+  );
+  const attemptState = checkLoginAttempt(attemptKey);
+  if (attemptState.blocked) {
+    return tooManyAttempts(context, attemptState.retryAfterSeconds);
+  }
+
+  const user = username && password
+    ? await authenticateUser(getDb(), username, password)
+    : null;
+  if (!user || user.role !== "admin") {
+    const afterFailure = recordLoginFailure(attemptKey);
+    if (afterFailure.blocked) {
+      return tooManyAttempts(context, afterFailure.retryAfterSeconds);
+    }
+    return context.json({ error: "Неверный логин или пароль" }, 401);
+  }
+
+  clearLoginAttempts(attemptKey);
+  return context.json({ token: createAuthToken(user.id) });
 });

@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { applyBillingSchema } from "../billing/schema.js";
 import { SHARED_SECTION_TITLE } from "../config.js";
 
 function columnExists(
@@ -303,6 +304,8 @@ export function ensureLibraryLinkSchema(database: Database.Database): void {
       PRIMARY KEY (subscription_id, feature_id)
     );
   `);
+
+  applyBillingSchema(database);
 }
 
 export function seedInitialData(database: Database.Database): void {

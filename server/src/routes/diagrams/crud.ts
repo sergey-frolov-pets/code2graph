@@ -18,6 +18,7 @@ import {
   resolvePumlFileName,
 } from "../../shared/puml-files.js";
 import { snapshotDiagramSourceVersion } from "../../diagram-versions.js";
+import { diagramQuotaError } from "../../billing/limits.js";
 import { allFeaturesAllowed } from "../../../../packages/shared/src/features.js";
 import { applyDiagramPermissions } from "../../services/diagrams-access.js";
 import { featuresForDiagramUser } from "../../services/subscription-feature-access.js";
@@ -206,6 +207,10 @@ export function registerDiagramCrudRoutes(router: DiagramsRouter): void {
     }
 
     const database = getDb();
+    const quotaError = diagramQuotaError(database, user.id);
+    if (quotaError) {
+      return context.json({ error: quotaError }, 402);
+    }
     if (sectionId) {
       const section = getSectionRow(database, sectionId);
       if (!section) {
