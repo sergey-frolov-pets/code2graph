@@ -223,10 +223,6 @@ export function useAppShell(): AppShellContext {
 
   const sessionChanges = useSessionChanges();
   const sessionPreviewSource = computed(() => {
-    if (sessionChanges.displayMode.value !== "tracking") {
-      return source.value;
-    }
-
     const projection = buildSessionProjection({
       baseline: sessionChanges.baseline.value ?? source.value,
       current: source.value,

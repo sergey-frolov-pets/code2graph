@@ -41,12 +41,10 @@ const props = withDefaults(
     isFullscreen: boolean;
     surfaceMode: "code" | "builder";
     builderAvailable: boolean;
-    sessionMode?: "plain" | "tracking";
     canToggleSessionFile?: boolean;
     sessionFileShowsBaseline?: boolean;
   }>(),
   {
-    sessionMode: "plain",
     canToggleSessionFile: false,
     sessionFileShowsBaseline: false,
   },
@@ -71,7 +69,6 @@ const emit = defineEmits<{
   loadSample: [selection: SampleSelection];
   changeFormat: [format: DiagramFormat];
   toggleFullscreen: [];
-  setSessionMode: [mode: "plain" | "tracking"];
   toggleSessionFile: [];
 }>();
 
@@ -234,35 +231,6 @@ function onSampleChange(event: Event): void {
           </option>
         </select>
       </label>
-      <div
-        v-if="formatDefinition.editable"
-        class="editor-surface-switch"
-        role="radiogroup"
-        :aria-label="t('editor.sessionMode.label')"
-      >
-        <button
-          type="button"
-          class="editor-surface-switch__option"
-          role="radio"
-          :aria-checked="sessionMode === 'plain'"
-          :class="{ 'is-active': sessionMode === 'plain' }"
-          data-testid="editor-session-mode-plain"
-          @click="emit('setSessionMode', 'plain')"
-        >
-          {{ t("editor.sessionMode.plain") }}
-        </button>
-        <button
-          type="button"
-          class="editor-surface-switch__option"
-          role="radio"
-          :aria-checked="sessionMode === 'tracking'"
-          :class="{ 'is-active': sessionMode === 'tracking' }"
-          data-testid="editor-session-mode-tracking"
-          @click="emit('setSessionMode', 'tracking')"
-        >
-          {{ t("editor.sessionMode.tracking") }}
-        </button>
-      </div>
       <span
         v-if="!formatDefinition.editable"
         class="panel-title__badge panel-title__badge--muted"
@@ -346,7 +314,7 @@ function onSampleChange(event: Event): void {
         <ActionIcon name="refresh" />
       </IconButton>
       <IconButton
-        v-if="formatDefinition.editable && sessionMode === 'tracking'"
+        v-if="formatDefinition.editable"
         :label="
           sessionFileShowsBaseline
             ? t('editor.sessionToggleFileCurrent')
@@ -357,7 +325,7 @@ function onSampleChange(event: Event): void {
         data-testid="editor-session-file-toggle"
         @click="emit('toggleSessionFile')"
       >
-        <ActionIcon :name="sessionFileShowsBaseline ? 'eye-off' : 'eye'" />
+        <ActionIcon name="session-compare" />
       </IconButton>
       <IconButton
         v-if="formatDefinition.editable"
