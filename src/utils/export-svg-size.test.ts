@@ -19,6 +19,20 @@ describe("parseSvgSize", () => {
 
     expect(size).toEqual({ width: 1200, height: 268 });
   });
+
+  it("rounds fractional width and height to whole pixels", () => {
+    expect(
+      parseSvgSize(
+        '<svg viewBox="0 0 812.4 433.6" xmlns="http://www.w3.org/2000/svg"></svg>',
+      ),
+    ).toEqual({ width: 812, height: 434 });
+
+    expect(
+      parseSvgSize(
+        '<svg width="800.6" height="600.2" xmlns="http://www.w3.org/2000/svg"></svg>',
+      ),
+    ).toEqual({ width: 801, height: 600 });
+  });
 });
 
 describe("normalizeSvgRootSize", () => {

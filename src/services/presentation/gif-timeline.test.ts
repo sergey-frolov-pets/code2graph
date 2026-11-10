@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  gifFrameDelaysMs,
   gifOutputSize,
   presentationGifCycleMs,
   presentationGifFileName,
   samplePresentationGifFrames,
 } from "@/services/presentation/gif-timeline";
+import {
+  PRESENTATION_GIF_CENTISECOND_MS,
+  PRESENTATION_GIF_MAX_DELAY_CS,
+} from "@/services/presentation/constants";
 import type { PresentationTrack } from "@/services/presentation/types";
 
 const DWELL_A_MS = 2000;
@@ -104,5 +109,18 @@ describe("presentation GIF timeline", () => {
   it("builds a safe gif file name from the track title", () => {
     expect(presentationGifFileName("Walk / tour")).toBe("Walk tour.gif");
     expect(presentationGifFileName("   ")).toBe("presentation.gif");
+  });
+
+  it("passes milliseconds to gifenc so the file is not ten times faster", () => {
+    expect(gifFrameDelaysMs(DWELL_A_MS)).toEqual([DWELL_A_MS]);
+    const storedCentiseconds = gifFrameDelaysMs(DWELL_A_MS)
+      .reduce((sum, delay) => sum + Math.round(delay / PRESENTATION_GIF_CENTISECOND_MS), 0);
+    expect(storedCentiseconds).toBe(DWELL_A_MS / PRESENTATION_GIF_CENTISECOND_MS);
+  });
+
+  it("splits a delay that does not fit in one GIF delay field", () => {
+    const maxDelayMs = PRESENTATION_GIF_MAX_DELAY_CS * PRESENTATION_GIF_CENTISECOND_MS;
+    const tailMs = PRESENTATION_GIF_CENTISECOND_MS * 20;
+    expect(gifFrameDelaysMs(maxDelayMs + tailMs)).toEqual([maxDelayMs, tailMs]);
   });
 });

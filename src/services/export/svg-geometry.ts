@@ -67,6 +67,19 @@ export function normalizeSvgRootSize(root: Element): void {
   }
 }
 
+const FALLBACK_IMAGE_WIDTH = 800;
+const FALLBACK_IMAGE_HEIGHT = 600;
+
+const MIN_PIXEL_SIDE = 1;
+
+/** Width or height in pixels. A fractional viewBox is not a pixel size. */
+export function wholeImagePixels(value: number, fallback: number): number {
+  if (!Number.isFinite(value) || value <= 0) {
+    return fallback;
+  }
+  return Math.max(MIN_PIXEL_SIDE, Math.round(value));
+}
+
 export function parseSvgSize(svg: string): { width: number; height: number } {
   const parser = new DOMParser();
   const doc = parser.parseFromString(svg, "image/svg+xml");
@@ -74,15 +87,18 @@ export function parseSvgSize(svg: string): { width: number; height: number } {
 
   const viewBoxSize = parseViewBoxSize(root.getAttribute("viewBox"));
   if (viewBoxSize) {
-    return viewBoxSize;
+    return {
+      width: wholeImagePixels(viewBoxSize.width, FALLBACK_IMAGE_WIDTH),
+      height: wholeImagePixels(viewBoxSize.height, FALLBACK_IMAGE_HEIGHT),
+    };
   }
 
-  const width = Number.parseFloat(root.getAttribute("width") ?? "800");
-  const height = Number.parseFloat(root.getAttribute("height") ?? "600");
+  const width = Number.parseFloat(root.getAttribute("width") ?? "");
+  const height = Number.parseFloat(root.getAttribute("height") ?? "");
 
   return {
-    width: Number.isFinite(width) && width > 0 ? width : 800,
-    height: Number.isFinite(height) && height > 0 ? height : 600,
+    width: wholeImagePixels(width, FALLBACK_IMAGE_WIDTH),
+    height: wholeImagePixels(height, FALLBACK_IMAGE_HEIGHT),
   };
 }
 

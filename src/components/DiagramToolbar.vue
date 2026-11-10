@@ -52,8 +52,15 @@ const presentation = inject(presentationSessionKey, null);
 const playbackTrack = computed(() => presentation?.currentTrack.value ?? null);
 const playbackPlaying = computed(() => presentation?.playback.playing.value ?? false);
 const canStepPlayback = computed(() => (playbackTrack.value?.viewpoints.length ?? 0) > 1);
+const hasActiveAnimation = computed(
+  () => (playbackTrack.value?.viewpoints.length ?? 0) > 0,
+);
 const showPlaybackTransport = computed(
-  () => allowPresentation.value && props.presentationEnabled && !props.presentationOpen && presentation !== null,
+  () =>
+    allowPresentation.value
+    && props.presentationEnabled
+    && !props.presentationOpen
+    && hasActiveAnimation.value,
 );
 
 function onToolbarPlay(): void {

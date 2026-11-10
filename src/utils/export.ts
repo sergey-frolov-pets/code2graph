@@ -14,6 +14,7 @@ export {
   MIN_IMAGE_SIDE,
   normalizeSvgRootSize,
   parseSvgSize,
+  wholeImagePixels,
   type ImageSize,
 } from "@/services/export/svg-geometry";
 
