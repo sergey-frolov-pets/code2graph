@@ -202,7 +202,7 @@ function isDirectedEdge(edge: Element, defaultDirected: boolean): boolean {
   return defaultDirected;
 }
 
-function absolutizeNestedGeometry(nodes: GraphmlNode[]): void {
+function absolutizeNestedGeometry(nodes: GraphmlNode[], edges: GraphmlEdge[]): void {
   const nodesById = new Map(nodes.map((node) => [node.id, node]));
   for (const node of nodes) {
     const geometry = node.geometry;
@@ -214,6 +214,32 @@ function absolutizeNestedGeometry(nodes: GraphmlNode[]): void {
     geometry.x += parent.geometry.x;
     geometry.y += parent.geometry.y;
   }
+
+  for (const edge of edges) {
+    const origin = bendOrigin(edge, nodesById);
+    if (!origin || !edge.bends?.length) {
+      continue;
+    }
+
+    for (const bend of edge.bends) {
+      bend.x += origin.x;
+      bend.y += origin.y;
+    }
+  }
+}
+
+function bendOrigin(
+  edge: GraphmlEdge,
+  nodesById: Map<string, GraphmlNode>,
+): GraphmlGeometry | undefined {
+  const source = nodesById.get(edge.source);
+  const target = nodesById.get(edge.target);
+  const sharedParent = source?.parentId;
+  if (!sharedParent || sharedParent !== target?.parentId) {
+    return undefined;
+  }
+
+  return nodesById.get(sharedParent)?.geometry;
 }
 
 function findChildGraph(node: Element): Element | undefined {
@@ -333,7 +359,7 @@ export function parseGraphml(source: string): ParsedGraphml {
   const nodes: GraphmlNode[] = [];
   const edges: GraphmlEdge[] = [];
   collectGraph(graphElement, keyMap, nodes, edges);
-  absolutizeNestedGeometry(nodes);
+  absolutizeNestedGeometry(nodes, edges);
 
   if (nodes.length === 0) {
     throw new LocalizedAppError("graphml.noNodes");
