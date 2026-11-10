@@ -7,6 +7,7 @@ import {
   labelBox,
   layoutAbsolute,
   layoutGraph,
+  nodeLabelMetrics,
   placeEdgeLabels,
   shapeOutline,
   themeColors,
@@ -27,8 +28,6 @@ import {
   GROUP_LABEL_FONT_SIZE,
   GROUP_LABEL_INSET_X,
   GROUP_LABEL_OUTSET,
-  NODE_LABEL_FONT_SIZE,
-  NODE_LABEL_LINE_HEIGHT,
   NODE_RX,
   PREDEFINED_PROCESS_BAR_MAX,
   PREDEFINED_PROCESS_BAR_RATIO,
@@ -93,6 +92,7 @@ function renderNodeShape(
 
 function renderNodeLabel(
   label: string,
+  shape: GraphmlNodeShape,
   x: number,
   y: number,
   width: number,
@@ -100,18 +100,19 @@ function renderNodeLabel(
   textFill: string,
 ): string {
   const lines = label.split(/\r?\n/);
+  const metrics = nodeLabelMetrics(label, shape, width, height);
   const centerX = formatCoord(x + width / 2);
   const centerY = formatCoord(y + height / 2);
-  const paint = `fill="${textFill}" font-family="${FONT_FAMILY}" font-size="${NODE_LABEL_FONT_SIZE}" text-anchor="middle" dominant-baseline="middle"`;
+  const paint = `fill="${textFill}" font-family="${FONT_FAMILY}" font-size="${formatCoord(metrics.fontSize)}" text-anchor="middle" dominant-baseline="middle"`;
   if (lines.length <= 1) {
     return `<text x="${centerX}" y="${centerY}" ${paint}>${escapeXml(label)}</text>`;
   }
 
-  const startOffset = -((lines.length - 1) * NODE_LABEL_LINE_HEIGHT) / 2;
+  const startOffset = -((lines.length - 1) * metrics.lineHeight) / 2;
   const tspans = lines
     .map((line, index) => {
-      const dy = index === 0 ? startOffset : NODE_LABEL_LINE_HEIGHT;
-      return `<tspan x="${centerX}" dy="${dy}">${escapeXml(line)}</tspan>`;
+      const dy = index === 0 ? startOffset : metrics.lineHeight;
+      return `<tspan x="${centerX}" dy="${formatCoord(dy)}">${escapeXml(line)}</tspan>`;
     })
     .join("");
   return `<text y="${centerY}" ${paint}>${tspans}</text>`;
@@ -191,7 +192,7 @@ function renderGraphmlSvg(
       v: edge.source,
       w: edge.target,
       name: `e${index}`,
-    }) as { points?: PolyPoint[]; labelPoint?: PolyPoint } | undefined;
+    }) as { points?: PolyPoint[]; labelPoint?: PolyPoint; labelPinned?: boolean } | undefined;
     if (!layoutEdge?.points?.length) {
       return [];
     }
@@ -209,6 +210,7 @@ function renderGraphmlSvg(
       labelPoint: labelPoint
         ? { x: labelPoint.x + offsetX, y: labelPoint.y + offsetY }
         : undefined,
+      labelPinned: layoutEdge.labelPinned ?? false,
     }];
   });
 
@@ -329,7 +331,15 @@ function renderGraphmlSvg(
 
       return `<g class="graphml-node">
   ${shape}
-  ${renderNodeLabel(rendered.node.label, rendered.x, rendered.y, rendered.width, rendered.height, textFill)}
+  ${renderNodeLabel(
+    rendered.node.label,
+    rendered.node.shape,
+    rendered.x,
+    rendered.y,
+    rendered.width,
+    rendered.height,
+    textFill,
+  )}
 </g>`;
     })
     .join("\n");

@@ -5,6 +5,7 @@ import {
   DOTTED_STYLE,
   HIDDEN_FLAG,
   type GraphmlEdgeLabelAnchor,
+  type GraphmlEdgeLabelBox,
   type GraphmlGeometry,
   type GraphmlNodeShape,
   type PolyPoint,
@@ -53,6 +54,7 @@ export interface YedEdgeGraphics {
   sourceOffset: PolyPoint;
   targetOffset: PolyPoint;
   labelAnchor?: GraphmlEdgeLabelAnchor;
+  labelBox?: GraphmlEdgeLabelBox;
 }
 
 function localName(tagName: string): string {
@@ -201,6 +203,42 @@ function readBends(path: Element | undefined): PolyPoint[] {
   return bends;
 }
 
+function readLabelBox(label: Element): GraphmlEdgeLabelBox | undefined {
+  const x = readNumber(label.getAttribute("x"));
+  const y = readNumber(label.getAttribute("y"));
+  const width = readNumber(label.getAttribute("width"));
+  const height = readNumber(label.getAttribute("height"));
+  if (
+    x === undefined
+    || y === undefined
+    || width === undefined
+    || height === undefined
+    || width <= 0
+    || height <= 0
+  ) {
+    return undefined;
+  }
+
+  return { x, y, width, height };
+}
+
+function visibleEdgeLabel(root: Element): { text?: string; box?: GraphmlEdgeLabelBox } {
+  for (const label of descendantsNamed(root, "EdgeLabel")) {
+    if (label.getAttribute("visible") === HIDDEN_FLAG) {
+      continue;
+    }
+
+    const text = directText(label);
+    if (!text) {
+      continue;
+    }
+
+    return { text, box: readLabelBox(label) };
+  }
+
+  return {};
+}
+
 function readLabelAnchor(edgeData: Element): GraphmlEdgeLabelAnchor | undefined {
   const parameter = firstDescendant(edgeData, "SmartEdgeLabelModelParameter");
   if (!parameter) {
@@ -232,9 +270,10 @@ export function readYedEdgeGraphics(edge: Element): YedEdgeGraphics | undefined 
     const line = firstDescendant(graphic, "LineStyle");
     const arrows = firstDescendant(graphic, "Arrows");
     const targetArrow = arrows?.getAttribute("target");
+    const edgeLabel = visibleEdgeLabel(graphic);
 
     return {
-      label: visibleLabel(graphic, "EdgeLabel"),
+      label: edgeLabel.text,
       color: line?.getAttribute("color") ?? undefined,
       dashed: isDashedStroke(line?.getAttribute("type") ?? null),
       directed: targetArrow === null || targetArrow === undefined
@@ -250,6 +289,7 @@ export function readYedEdgeGraphics(edge: Element): YedEdgeGraphics | undefined 
         y: readNumber(path?.getAttribute("ty") ?? null) ?? 0,
       },
       labelAnchor: readLabelAnchor(graphic),
+      labelBox: edgeLabel.box,
     };
   }
 

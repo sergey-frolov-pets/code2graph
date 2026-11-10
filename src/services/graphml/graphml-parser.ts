@@ -263,6 +263,7 @@ function collectGraph(
         sourceOffset: yed?.sourceOffset,
         targetOffset: yed?.targetOffset,
         labelAnchor: yed?.labelAnchor,
+        labelBox: yed?.labelBox,
       });
     }
   }

@@ -14,6 +14,11 @@ export const PREDEFINED_PROCESS_BAR_RATIO = 0.12;
 export const PREDEFINED_PROCESS_BAR_MAX = 12;
 export const NODE_LABEL_FONT_SIZE = 13;
 export const NODE_LABEL_LINE_HEIGHT = 16;
+export const NODE_LABEL_MIN_FONT_SIZE = 9;
+export const NODE_LABEL_EM_WIDTH = 0.5;
+export const NODE_SHAPE_LABEL_INSET_X = 6;
+export const NODE_SHAPE_LABEL_INSET_Y = 4;
+export const NODE_LABEL_FIT_STEPS = 6;
 export const CLIP_T_EPSILON = 0.0001;
 export const SEGMENT_PARALLEL_EPSILON = 1e-9;
 export const ELLIPSE_BOUNDARY_EPSILON = 0.0001;
@@ -114,6 +119,13 @@ export interface GraphmlEdgeLabelAnchor {
   distance: number;
 }
 
+export interface GraphmlEdgeLabelBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface GraphmlNode {
   id: string;
   label: string;
@@ -138,6 +150,7 @@ export interface GraphmlEdge {
   sourceOffset?: PolyPoint;
   targetOffset?: PolyPoint;
   labelAnchor?: GraphmlEdgeLabelAnchor;
+  labelBox?: GraphmlEdgeLabelBox;
 }
 
 export interface ParsedGraphml {
@@ -179,6 +192,7 @@ export interface PlacedEdgeLabel {
   cy: number;
   width: number;
   height: number;
+  pinned: boolean;
 }
 
 export interface EdgeLayout {
@@ -188,4 +202,5 @@ export interface EdgeLayout {
   dashed: boolean;
   points: PolyPoint[];
   labelPoint?: PolyPoint;
+  labelPinned: boolean;
 }
