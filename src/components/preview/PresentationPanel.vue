@@ -3,8 +3,11 @@ import { computed, inject } from "vue";
 import { presentationSessionKey } from "@/components/preview/presentation-session";
 import { durationMsToSeconds } from "@/services/presentation/model";
 import {
+  PRESENTATION_ARROW_DIRECTIONS,
+  PRESENTATION_ARROW_FORMS,
   PRESENTATION_ARROW_HEADS,
   PRESENTATION_ARROW_KINDS,
+  PRESENTATION_BUBBLE_SHAPES,
   PRESENTATION_FONTS,
   PRESENTATION_LINE_STYLES,
   PRESENTATION_PATH_KINDS,
@@ -12,8 +15,11 @@ import {
 } from "@/services/presentation/types";
 import type { LocaleKey, TranslateFn } from "@/locales/types";
 import type {
+  PresentationArrowDirection,
+  PresentationArrowForm,
   PresentationArrowHead,
   PresentationArrowKind,
+  PresentationBubbleShape,
   PresentationFont,
   PresentationLineStyle,
   PresentationPathKind,
@@ -87,6 +93,23 @@ function pathLabel(kind: PresentationPathKind): LocaleKey {
   }
 }
 
+const showsCornerRadius = computed(() => {
+  const overlay = selectedOverlay.value;
+  if (!overlay) {
+    return false;
+  }
+  if (overlay.shape === "rect") {
+    return true;
+  }
+  if (overlay.shape !== "text") {
+    return false;
+  }
+  if (overlay.backing === "rectangle") {
+    return true;
+  }
+  return overlay.backing === "bubble" && overlay.bubbleShape === "rectangle";
+});
+
 function backingLabel(backing: PresentationTextBacking): LocaleKey {
   switch (backing) {
     case "none":
@@ -95,6 +118,41 @@ function backingLabel(backing: PresentationTextBacking): LocaleKey {
       return "presentation.backing.rectangle";
     case "bubble":
       return "presentation.backing.bubble";
+  }
+}
+
+function bubbleLabel(shape: PresentationBubbleShape): LocaleKey {
+  switch (shape) {
+    case "rectangle":
+      return "presentation.bubble.rectangle";
+    case "oval":
+      return "presentation.bubble.oval";
+    case "cloud":
+      return "presentation.bubble.cloud";
+  }
+}
+
+function arrowFormLabel(form: PresentationArrowForm): LocaleKey {
+  switch (form) {
+    case "line":
+      return "presentation.arrowForm.line";
+    case "shape":
+      return "presentation.arrowForm.shape";
+    case "pointer":
+      return "presentation.arrowForm.pointer";
+  }
+}
+
+function directionLabel(direction: PresentationArrowDirection): LocaleKey {
+  switch (direction) {
+    case "right":
+      return "presentation.direction.right";
+    case "left":
+      return "presentation.direction.left";
+    case "down":
+      return "presentation.direction.down";
+    case "up":
+      return "presentation.direction.up";
   }
 }
 
@@ -528,6 +586,38 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
                 </option>
               </select>
             </label>
+            <label
+              v-if="selectedOverlay.shape === 'text' && selectedOverlay.backing === 'bubble'"
+              class="presentation-field"
+            >
+              <span>{{ t("presentation.bubbleShape") }}</span>
+              <select
+                :value="selectedOverlay.bubbleShape"
+                @change="onChangeOverlay(selectedOverlay.id, { bubbleShape: ($event.target as HTMLSelectElement).value as typeof PRESENTATION_BUBBLE_SHAPES[number] })"
+              >
+                <option
+                  v-for="shape in PRESENTATION_BUBBLE_SHAPES"
+                  :key="shape"
+                  :value="shape"
+                >
+                  {{ t(bubbleLabel(shape)) }}
+                </option>
+              </select>
+            </label>
+            <label
+              v-if="showsCornerRadius"
+              class="presentation-field"
+            >
+              <span>{{ t("presentation.cornerRadius") }}</span>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                :value="selectedOverlay.cornerRadius"
+                @input="onChangeOverlay(selectedOverlay.id, { cornerRadius: Number(($event.target as HTMLInputElement).value) })"
+              >
+            </label>
             <label class="presentation-field">
               <span>{{ t("presentation.line") }}</span>
               <select
@@ -547,6 +637,42 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
               v-if="selectedOverlay.shape === 'arrow'"
               class="presentation-field"
             >
+              <span>{{ t("presentation.arrowForm") }}</span>
+              <select
+                :value="selectedOverlay.arrowForm"
+                @change="onChangeOverlay(selectedOverlay.id, { arrowForm: ($event.target as HTMLSelectElement).value as typeof PRESENTATION_ARROW_FORMS[number] })"
+              >
+                <option
+                  v-for="form in PRESENTATION_ARROW_FORMS"
+                  :key="form"
+                  :value="form"
+                >
+                  {{ t(arrowFormLabel(form)) }}
+                </option>
+              </select>
+            </label>
+            <label
+              v-if="selectedOverlay.shape === 'arrow' && selectedOverlay.arrowForm !== 'line'"
+              class="presentation-field"
+            >
+              <span>{{ t("presentation.arrowDirection") }}</span>
+              <select
+                :value="selectedOverlay.arrowDirection"
+                @change="onChangeOverlay(selectedOverlay.id, { arrowDirection: ($event.target as HTMLSelectElement).value as typeof PRESENTATION_ARROW_DIRECTIONS[number] })"
+              >
+                <option
+                  v-for="direction in PRESENTATION_ARROW_DIRECTIONS"
+                  :key="direction"
+                  :value="direction"
+                >
+                  {{ t(directionLabel(direction)) }}
+                </option>
+              </select>
+            </label>
+            <label
+              v-if="selectedOverlay.shape === 'arrow' && selectedOverlay.arrowForm === 'line'"
+              class="presentation-field"
+            >
               <span>{{ t("presentation.arrowKind") }}</span>
               <select
                 :value="selectedOverlay.arrowKind"
@@ -562,7 +688,7 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
               </select>
             </label>
             <label
-              v-if="selectedOverlay.shape === 'arrow'"
+              v-if="selectedOverlay.shape === 'arrow' && selectedOverlay.arrowForm === 'line'"
               class="presentation-field"
             >
               <span>{{ t("presentation.arrowHead") }}</span>

@@ -3,7 +3,19 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import {
   PRESENTATION_HANDLE_RADIUS,
   PRESENTATION_HANDLE_RADIUS_COARSE,
+  PRESENTATION_RESIZE_HANDLE,
+  PRESENTATION_RESIZE_HANDLE_COARSE,
 } from "@/services/presentation/constants";
+import {
+  calloutTailLength,
+  isLineArrow,
+  lineArrowPath,
+  overlayOutline,
+  overlayResizeHandles,
+  positiveBox,
+  resizeOverlay,
+} from "@/services/presentation/overlay-geometry";
+import type { ResizeHandle } from "@/services/presentation/overlay-geometry";
 import type {
   NormPoint,
   PresentationOverlay,
@@ -40,7 +52,15 @@ type Drag =
   | { kind: "point"; index: number }
   | { kind: "control"; index: number }
   | { kind: "overlay"; id: string; origin: NormPoint; pointer: NormPoint }
-  | { kind: "resize"; id: string; origin: NormPoint; width: number; height: number };
+  | {
+    kind: "resize";
+    id: string;
+    handle: ResizeHandle;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
 
 let drag: Drag | null = null;
 
@@ -186,20 +206,6 @@ function screenBox(overlay: PresentationOverlay): {
   };
 }
 
-function arrowPath(overlay: PresentationOverlay): string {
-  const start = toScreen({ x: overlay.x, y: overlay.y });
-  const end = toScreen({ x: overlay.x + overlay.width, y: overlay.y + overlay.height });
-  if (overlay.arrowKind === "elbow") {
-    return `M ${start.x} ${start.y} L ${end.x} ${start.y} L ${end.x} ${end.y}`;
-  }
-  if (overlay.arrowKind === "curve") {
-    const controlX = (start.x + end.x) / 2 - (end.y - start.y) * 0.35;
-    const controlY = (start.y + end.y) / 2 + (end.x - start.x) * 0.35;
-    return `M ${start.x} ${start.y} Q ${controlX} ${controlY} ${end.x} ${end.y}`;
-  }
-  return `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
-}
-
 function markerEnd(overlay: PresentationOverlay): string | undefined {
   return overlay.arrowHead === "end" || overlay.arrowHead === "both"
     ? "url(#presentation-arrow-end)"
@@ -210,14 +216,6 @@ function markerStart(overlay: PresentationOverlay): string | undefined {
   return overlay.arrowHead === "start" || overlay.arrowHead === "both"
     ? "url(#presentation-arrow-start)"
     : undefined;
-}
-
-function bubbleTail(overlay: PresentationOverlay): string {
-  const box = screenBox(overlay);
-  const left = box.width < 0 ? box.x + box.width : box.x;
-  const bottom = box.height < 0 ? box.y : box.y + box.height;
-  const width = Math.abs(box.width);
-  return `${left + width * 0.2},${bottom} ${left + width * 0.38},${bottom} ${left + width * 0.16},${bottom + Math.min(18, width * 0.2)}`;
 }
 
 function onStagePointerDown(event: PointerEvent): void {
@@ -251,15 +249,50 @@ function selectionBox(overlay: PresentationOverlay): {
   width: number;
   height: number;
 } {
-  const box = screenBox(overlay);
-  const left = Math.min(box.x, box.x + box.width) - SELECTION_PAD;
-  const top = Math.min(box.y, box.y + box.height) - SELECTION_PAD;
+  const box = positiveBox(screenBox(overlay));
+  const tail = overlay.shape === "text" && overlay.backing === "bubble" ? calloutTailLength(box) : 0;
   return {
-    x: left,
-    y: top,
-    width: Math.abs(box.width) + SELECTION_PAD * 2,
-    height: Math.abs(box.height) + SELECTION_PAD * 2,
+    x: box.x - SELECTION_PAD,
+    y: box.y - SELECTION_PAD,
+    width: box.width + SELECTION_PAD * 2,
+    height: box.height + tail + SELECTION_PAD * 2,
   };
+}
+
+function outline(overlay: PresentationOverlay): string | null {
+  return overlayOutline(overlay, screenBox(overlay));
+}
+
+function arrowLine(overlay: PresentationOverlay): string {
+  return lineArrowPath(screenBox(overlay), overlay.arrowKind);
+}
+
+const resizeHandleSize = computed(() =>
+  coarsePointer.value ? PRESENTATION_RESIZE_HANDLE_COARSE : PRESENTATION_RESIZE_HANDLE,
+);
+
+function resizeHandles(overlay: PresentationOverlay): Array<{
+  id: ResizeHandle;
+  x: number;
+  y: number;
+  cursor: string;
+}> {
+  return overlayResizeHandles(overlay).map((handle) => {
+    const screen = toScreen(handle);
+    return { id: handle.id, x: screen.x, y: screen.y, cursor: handle.cursor };
+  });
+}
+
+function beginResize(event: PointerEvent, overlay: PresentationOverlay, handle: ResizeHandle): void {
+  beginDrag(event, {
+    kind: "resize",
+    id: overlay.id,
+    handle,
+    x: overlay.x,
+    y: overlay.y,
+    width: overlay.width,
+    height: overlay.height,
+  });
 }
 
 function onOverlayPointerDown(event: PointerEvent, overlay: PresentationOverlay): void {
@@ -309,16 +342,7 @@ function onPointerMove(event: PointerEvent): void {
     });
     return;
   }
-  const overlay = props.track?.overlays.find((item) => item.id === current.id);
-  if (!overlay) {
-    return;
-  }
-  emit("changeOverlay", current.id, {
-    x: overlay.x,
-    y: overlay.y,
-    width: current.width + (point.x - current.origin.x),
-    height: current.height + (point.y - current.origin.y),
-  });
+  emit("changeOverlay", current.id, resizeOverlay(current, current.handle, point));
 }
 
 function onPointerUp(): void {
@@ -423,54 +447,27 @@ function overlayTextSize(overlay: PresentationOverlay): number {
         :height="selectionBox(overlay).height"
         rx="8"
       />
-      <template v-if="overlay.shape === 'rect' || (overlay.shape === 'text' && overlay.backing === 'rectangle')">
-        <rect
-          class="presentation-shape"
-          :x="Math.min(screenBox(overlay).x, screenBox(overlay).x + screenBox(overlay).width)"
-          :y="Math.min(screenBox(overlay).y, screenBox(overlay).y + screenBox(overlay).height)"
-          :width="Math.abs(screenBox(overlay).width)"
-          :height="Math.abs(screenBox(overlay).height)"
-          rx="6"
-        />
-      </template>
-      <ellipse
-        v-else-if="overlay.shape === 'ellipse'"
+      <path
+        v-if="outline(overlay)"
         class="presentation-shape"
-        :cx="screenBox(overlay).x + screenBox(overlay).width / 2"
-        :cy="screenBox(overlay).y + screenBox(overlay).height / 2"
-        :rx="Math.abs(screenBox(overlay).width) / 2"
-        :ry="Math.abs(screenBox(overlay).height) / 2"
+        :d="outline(overlay) ?? undefined"
       />
       <rect
-        v-else-if="overlay.shape === 'text' && overlay.backing === 'none'"
+        v-else-if="overlay.shape === 'text'"
         class="presentation-hit"
-        :x="Math.min(screenBox(overlay).x, screenBox(overlay).x + screenBox(overlay).width)"
-        :y="Math.min(screenBox(overlay).y, screenBox(overlay).y + screenBox(overlay).height)"
-        :width="Math.abs(screenBox(overlay).width)"
-        :height="Math.abs(screenBox(overlay).height)"
+        :x="positiveBox(screenBox(overlay)).x"
+        :y="positiveBox(screenBox(overlay)).y"
+        :width="positiveBox(screenBox(overlay)).width"
+        :height="positiveBox(screenBox(overlay)).height"
       />
-      <template v-else-if="overlay.shape === 'text' && overlay.backing === 'bubble'">
-        <rect
-          class="presentation-shape"
-          :x="Math.min(screenBox(overlay).x, screenBox(overlay).x + screenBox(overlay).width)"
-          :y="Math.min(screenBox(overlay).y, screenBox(overlay).y + screenBox(overlay).height)"
-          :width="Math.abs(screenBox(overlay).width)"
-          :height="Math.abs(screenBox(overlay).height)"
-          rx="16"
-        />
-        <polygon
-          class="presentation-shape"
-          :points="bubbleTail(overlay)"
-        />
-      </template>
-      <template v-else-if="overlay.shape === 'arrow'">
+      <template v-else-if="isLineArrow(overlay)">
         <path
           class="presentation-arrow-hit"
-          :d="arrowPath(overlay)"
+          :d="arrowLine(overlay)"
         />
         <path
           class="presentation-arrow"
-          :d="arrowPath(overlay)"
+          :d="arrowLine(overlay)"
           :marker-end="markerEnd(overlay)"
           :marker-start="markerStart(overlay)"
         />
@@ -486,21 +483,17 @@ function overlayTextSize(overlay: PresentationOverlay): number {
       >
         {{ overlay.text }}
       </text>
-      <circle
-        v-if="editing && overlay.id === selectedOverlayId"
-        class="presentation-handle"
-        :cx="screenBox(overlay).x + screenBox(overlay).width"
-        :cy="screenBox(overlay).y + screenBox(overlay).height"
-        :r="handleRadius"
-        @pointerdown="
-          beginDrag($event, {
-            kind: 'resize',
-            id: overlay.id,
-            origin: fromEvent($event),
-            width: overlay.width,
-            height: overlay.height,
-          })
-        "
+      <rect
+        v-for="handle in editing && overlay.id === selectedOverlayId ? resizeHandles(overlay) : []"
+        :key="`${overlay.id}-${handle.id}`"
+        class="presentation-handle presentation-resize"
+        :x="handle.x - resizeHandleSize / 2"
+        :y="handle.y - resizeHandleSize / 2"
+        :width="resizeHandleSize"
+        :height="resizeHandleSize"
+        rx="1"
+        :style="{ cursor: handle.cursor }"
+        @pointerdown="beginResize($event, overlay, handle.id)"
       />
     </g>
   </svg>
@@ -546,8 +539,16 @@ function overlayTextSize(overlay: PresentationOverlay): number {
   fill: var(--overlay-fill, color-mix(in srgb, var(--surface) 88%, transparent));
   stroke: var(--overlay-stroke, var(--accent));
   stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
   pointer-events: auto;
   cursor: pointer;
+}
+
+.presentation-stage.is-editing .presentation-shape,
+.presentation-stage.is-editing .presentation-arrow-hit,
+.presentation-stage.is-editing .presentation-hit {
+  cursor: move;
 }
 
 .presentation-hit {
@@ -617,6 +618,13 @@ function overlayTextSize(overlay: PresentationOverlay): number {
 
 .presentation-handle--control {
   fill: var(--accent);
+}
+
+.presentation-resize {
+  fill: var(--surface);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  rx: 1;
 }
 
 </style>

@@ -67,6 +67,10 @@ describe("presentation codec", () => {
       textColor: "",
       font: "sans",
       line: "solid",
+      bubbleShape: "rectangle",
+      cornerRadius: 0,
+      arrowForm: "line",
+      arrowDirection: "right",
     });
   });
 

@@ -20,9 +20,21 @@ export const PRESENTATION_TEXT_BACKINGS = ["none", "rectangle", "bubble"] as con
 
 export type PresentationTextBacking = (typeof PRESENTATION_TEXT_BACKINGS)[number];
 
+export const PRESENTATION_BUBBLE_SHAPES = ["rectangle", "oval", "cloud"] as const;
+
+export type PresentationBubbleShape = (typeof PRESENTATION_BUBBLE_SHAPES)[number];
+
 export const PRESENTATION_ARROW_KINDS = ["straight", "elbow", "curve"] as const;
 
 export type PresentationArrowKind = (typeof PRESENTATION_ARROW_KINDS)[number];
+
+export const PRESENTATION_ARROW_FORMS = ["line", "shape", "pointer"] as const;
+
+export type PresentationArrowForm = (typeof PRESENTATION_ARROW_FORMS)[number];
+
+export const PRESENTATION_ARROW_DIRECTIONS = ["right", "left", "down", "up"] as const;
+
+export type PresentationArrowDirection = (typeof PRESENTATION_ARROW_DIRECTIONS)[number];
 
 export const PRESENTATION_ARROW_HEADS = ["none", "end", "start", "both"] as const;
 
@@ -76,7 +88,13 @@ export interface PresentationOverlay {
   height: number;
   text: string;
   backing: PresentationTextBacking;
+  /** Body of a speech bubble. Ignored unless the backing is a bubble. */
+  bubbleShape: PresentationBubbleShape;
+  /** 0 is sharp, 1 is a pill. Used by rectangles and rectangular bubbles. */
+  cornerRadius: number;
   arrowKind: PresentationArrowKind;
+  arrowForm: PresentationArrowForm;
+  arrowDirection: PresentationArrowDirection;
   arrowHead: PresentationArrowHead;
   /** Empty string keeps the theme color. */
   stroke: string;

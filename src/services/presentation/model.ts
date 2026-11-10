@@ -5,6 +5,7 @@ import {
   PRESENTATION_MAX_DURATION_MS,
   PRESENTATION_MAX_SCALE,
   PRESENTATION_MIN_DURATION_MS,
+  PRESENTATION_MIN_OVERLAY_SIZE,
   PRESENTATION_OVERLAY_HEIGHT,
   PRESENTATION_OVERLAY_WIDTH,
   PRESENTATION_SCHEMA_VERSION,
@@ -23,8 +24,11 @@ import type {
   Viewpoint,
 } from "@/services/presentation/types";
 import {
+  PRESENTATION_ARROW_DIRECTIONS,
+  PRESENTATION_ARROW_FORMS,
   PRESENTATION_ARROW_HEADS,
   PRESENTATION_ARROW_KINDS,
+  PRESENTATION_BUBBLE_SHAPES,
   PRESENTATION_FONTS,
   PRESENTATION_LINE_STYLES,
   PRESENTATION_OVERLAY_KINDS,
@@ -137,6 +141,13 @@ function readTransition(value: unknown): PresentationTransition | null {
 
 const OVERLAY_COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
+function readCornerRadius(value: unknown): number {
+  if (!isFiniteNumber(value)) {
+    return 0;
+  }
+  return Math.min(1, Math.max(0, value));
+}
+
 function readOverlayColor(value: unknown): string {
   return typeof value === "string" && OVERLAY_COLOR_PATTERN.test(value) ? value : "";
 }
@@ -169,7 +180,11 @@ function readOverlay(value: unknown): PresentationOverlay | null {
     height: value.height,
     text: typeof value.text === "string" ? value.text : "",
     backing: oneOf(value.backing, PRESENTATION_TEXT_BACKINGS, "none"),
+    bubbleShape: oneOf(value.bubbleShape, PRESENTATION_BUBBLE_SHAPES, "rectangle"),
+    cornerRadius: readCornerRadius(value.cornerRadius),
     arrowKind: oneOf(value.arrowKind, PRESENTATION_ARROW_KINDS, "straight"),
+    arrowForm: oneOf(value.arrowForm, PRESENTATION_ARROW_FORMS, "line"),
+    arrowDirection: oneOf(value.arrowDirection, PRESENTATION_ARROW_DIRECTIONS, "right"),
     arrowHead: oneOf(value.arrowHead, PRESENTATION_ARROW_HEADS, "end"),
     stroke: readOverlayColor(value.stroke),
     fill: readOverlayColor(value.fill),
@@ -597,7 +612,11 @@ function defaultOverlay(
     height: shape === "arrow" ? 0 : PRESENTATION_OVERLAY_HEIGHT,
     text: "",
     backing: shape === "text" ? "rectangle" : "none",
+    bubbleShape: "rectangle",
+    cornerRadius: 0,
     arrowKind: "straight",
+    arrowForm: "line",
+    arrowDirection: "right",
     arrowHead: "end",
     stroke: "",
     fill: "",
@@ -627,9 +646,21 @@ export function updateOverlay(
 ): PresentationDocument {
   return mapTrack(document, trackId, (track) => ({
     ...track,
-    overlays: track.overlays.map((overlay) =>
-      overlay.id === overlayId ? { ...overlay, ...patch } : overlay,
-    ),
+    overlays: track.overlays.map((overlay) => {
+      if (overlay.id !== overlayId) {
+        return overlay;
+      }
+      const next = { ...overlay, ...patch };
+      next.cornerRadius = readCornerRadius(next.cornerRadius);
+      if (
+        next.shape === "arrow"
+        && next.arrowForm !== "line"
+        && Math.abs(next.height) < PRESENTATION_MIN_OVERLAY_SIZE
+      ) {
+        next.height = PRESENTATION_OVERLAY_HEIGHT;
+      }
+      return next;
+    }),
   }));
 }
 
