@@ -342,15 +342,26 @@ export function emitMermaidPacket(ir: DiagramIR): string {
 }
 
 function renderMermaidNodeLine(node: DiagramIR["nodes"][number], indent = "  "): string {
-  const shape =
-    node.kind === "decision"
-      ? `{"${escapeMermaidQuoted(node.label)}"}`
-      : node.kind === "start" || node.kind === "end" || node.kind === "usecase"
-        ? `(["${escapeMermaidQuoted(node.label)}"])`
-        : node.kind === "system" && /db|database|sql|база|бд/i.test(node.label)
-          ? `[("${escapeMermaidQuoted(node.label)}")]`
-          : formatMermaidNodeLabel(node.label);
-  return `${indent}${toMermaidFlowchartId(node.id)}${shape}`;
+  const label = escapeMermaidQuoted(node.label);
+  const shape = node.visual?.shape;
+  const body =
+    shape === "diamond" || (shape === undefined && node.kind === "decision")
+      ? `{"${label}"}`
+      : shape === "ellipse" || (
+          shape === undefined
+          && (node.kind === "start" || node.kind === "end" || node.kind === "usecase")
+        )
+        ? `(["${label}"])`
+        : shape === "parallelogram"
+          ? `[/"${label}"/]`
+          : shape === "trapezoid"
+            ? `[\\"${label}"\\]`
+            : shape === "hexagon"
+              ? `{{"${label}"}}`
+              : shape === undefined && node.kind === "system" && /db|database|sql|база|бд/i.test(node.label)
+                ? `[("${label}")]`
+                : formatMermaidNodeLabel(node.label);
+  return `${indent}${toMermaidFlowchartId(node.id)}${body}`;
 }
 
 export function emitMermaidFlowchart(ir: DiagramIR): string {

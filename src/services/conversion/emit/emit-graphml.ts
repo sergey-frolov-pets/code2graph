@@ -1,4 +1,5 @@
-import type { DiagramDirection, DiagramIR } from "@/services/conversion/diagram-ir";
+import type { DiagramDirection, DiagramIR, DiagramNodeShape } from "@/services/conversion/diagram-ir";
+import { DASHED_STYLE } from "@/services/graphml/graphml-types";
 
 function escapeXml(value: string): string {
   return value
@@ -6,6 +7,26 @@ function escapeXml(value: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function graphmlShapeName(shape: DiagramNodeShape | undefined): string | undefined {
+  switch (shape) {
+    case "rect":
+    case "round":
+      return "rectangle";
+    case "ellipse":
+      return "ellipse";
+    case "diamond":
+      return "diamond";
+    case "parallelogram":
+      return "parallelogram";
+    case "trapezoid":
+      return "trapezoid";
+    case "hexagon":
+      return "hexagon";
+    default:
+      return undefined;
+  }
 }
 
 function rankdirAttribute(direction: DiagramDirection | undefined): string {
@@ -26,6 +47,9 @@ export function emitGraphmlFromIr(ir: DiagramIR): string {
     '  <key id="d3" for="node" attr.name="y" attr.type="double"/>',
     '  <key id="d4" for="node" attr.name="fill" attr.type="string"/>',
     '  <key id="d5" for="node" attr.name="shape" attr.type="string"/>',
+    '  <key id="d6" for="node" attr.name="width" attr.type="double"/>',
+    '  <key id="d7" for="node" attr.name="height" attr.type="double"/>',
+    '  <key id="d8" for="edge" attr.name="style" attr.type="string"/>',
     `  <graph edgedefault="directed"${rankdirAttribute(ir.direction)}>`,
   ];
 
@@ -41,8 +65,15 @@ export function emitGraphmlFromIr(ir: DiagramIR): string {
     if (node.visual?.fill) {
       lines.push(`      <data key="d4">${escapeXml(node.visual.fill)}</data>`);
     }
-    if (node.visual?.shape) {
-      lines.push(`      <data key="d5">${escapeXml(node.visual.shape)}</data>`);
+    const shape = graphmlShapeName(node.visual?.shape);
+    if (shape) {
+      lines.push(`      <data key="d5">${escapeXml(shape)}</data>`);
+    }
+    if (node.visual?.width !== undefined) {
+      lines.push(`      <data key="d6">${node.visual.width}</data>`);
+    }
+    if (node.visual?.height !== undefined) {
+      lines.push(`      <data key="d7">${node.visual.height}</data>`);
     }
     lines.push("    </node>");
   }
@@ -53,6 +84,9 @@ export function emitGraphmlFromIr(ir: DiagramIR): string {
     );
     if (edge.label) {
       lines.push(`      <data key="d1">${escapeXml(edge.label)}</data>`);
+    }
+    if (edge.kind === "dashed") {
+      lines.push(`      <data key="d8">${DASHED_STYLE}</data>`);
     }
     lines.push("    </edge>");
   }

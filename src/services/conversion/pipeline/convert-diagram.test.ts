@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it } from "vitest";
+import { emitGraphmlFromIr } from "@/services/conversion/emit/emit-graphml";
 import { convertDiagram } from "@/services/conversion/pipeline/convert-diagram";
 import { safeParseSourceToIr } from "@/services/conversion/parse/parse-source-to-ir";
 import {
@@ -8,6 +9,8 @@ import {
   MERMAID_SUBGRAPH,
   PLANTUML_GRAPH,
 } from "@/services/conversion/__fixtures__/graph-samples";
+import { parseGraphml } from "@/services/graphml/graphml-engine";
+import tccYedGraphml from "@/services/graphml/fixtures/tcc-yed.graphml?raw";
 
 describe("convertDiagram", () => {
   it("converts plantuml graph to mermaid", async () => {
@@ -121,6 +124,47 @@ of RCA</data>
     expect(result.targetSource).not.toMatch(
       /\[(?:[^\]]*\n)+[^\]]*\] as /,
     );
+  });
+
+  it("keeps yEd flowchart shapes and collapses stacked nodes", async () => {
+    const plantuml = await convertDiagram({
+      source: tccYedGraphml,
+      sourceFormat: "graphml",
+      targetFormat: "plantuml",
+      mode: "source",
+      locale: "en",
+    });
+    const mermaid = await convertDiagram({
+      source: tccYedGraphml,
+      sourceFormat: "graphml",
+      targetFormat: "mermaid",
+      mode: "source",
+      locale: "en",
+    });
+    expect(plantuml.ok).toBe(true);
+    expect(mermaid.ok).toBe(true);
+    expect(plantuml.ir).toBeDefined();
+
+    const plantumlSource = plantuml.targetSource ?? "";
+    const mermaidSource = mermaid.targetSource ?? "";
+    expect(plantumlSource.match(/TCC Approval/g)).toHaveLength(1);
+    expect(plantumlSource.match(/TCC & Business line Approval/g)).toHaveLength(1);
+    expect(mermaidSource.match(/TCC Approval/g)).toHaveLength(1);
+    expect(mermaidSource.match(/TCC & Business line Approval/g)).toHaveLength(1);
+    expect(plantumlSource).toContain('usecase "GO"');
+    expect(plantumlSource).toContain('usecase "Not Go"');
+    expect(plantumlSource).toContain("#ff0000");
+    expect(plantumlSource).toContain("<<decision>>");
+    expect(mermaidSource).toContain('{"Support required outside of RCA"}');
+    expect(mermaidSource).toContain('(["GO"])');
+    expect(mermaidSource).toContain('(["Not Go"])');
+
+    const parsed = parseGraphml(emitGraphmlFromIr(plantuml.ir!));
+    const normalized = parsed.nodes.map((node) => node.label.replace(/\s+/g, " ").trim());
+    expect(parsed.nodes.filter((node) => node.shape === "diamond")).toHaveLength(1);
+    expect(parsed.nodes.every((node) => node.geometry)).toBe(true);
+    expect(normalized.filter((label) => label === "TCC Approval")).toHaveLength(1);
+    expect(normalized.filter((label) => label === "TCC & Business line Approval")).toHaveLength(1);
   });
 
   it("converts mermaid activity diagram to plantuml", async () => {

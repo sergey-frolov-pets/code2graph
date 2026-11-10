@@ -6,6 +6,7 @@ import {
   FILL_ATTR_NAME,
   HEX_BYTE_MAX,
   HEX_CHANNEL_BASE,
+  HEIGHT_ATTR_NAME,
   HEX_COLOR_PATTERN,
   LABEL_ATTR_NAMES,
   LIGHT_TEXT,
@@ -17,6 +18,8 @@ import {
   NODE_SHAPES,
   NODE_WIDTH,
   NON_LABEL_ATTRS,
+  RECT_SHAPE_ALIAS,
+  ROUND_SHAPE_ALIAS,
   RANK_DIRECTIONS,
   SHAPE_ATTR_NAME,
   SRGB_GAMMA,
@@ -27,10 +30,14 @@ import {
   STROKE_ATTR_NAME,
   STYLE_ATTR_NAME,
   TEXT_LUMINANCE_THRESHOLD,
+  WIDTH_ATTR_NAME,
+  X_ATTR_NAME,
+  Y_ATTR_NAME,
   UNDIRECTED_EDGE_DEFAULT,
   UNDIRECTED_EDGE_FLAG,
   type DataEntry,
   type GraphmlEdge,
+  type GraphmlGeometry,
   type GraphmlNode,
   type GraphmlNodeShape,
   type GraphmlRankDirection,
@@ -57,11 +64,34 @@ export function measureNodeWidth(label: string): number {
 }
 
 function parseShape(value: string | undefined): GraphmlNodeShape {
+  if (value === RECT_SHAPE_ALIAS || value === ROUND_SHAPE_ALIAS) {
+    return "rectangle";
+  }
   if (value && (NODE_SHAPES as readonly string[]).includes(value)) {
     return value as GraphmlNodeShape;
   }
 
   return "rectangle";
+}
+
+function readNamedNumber(entries: DataEntry[], name: string): number | undefined {
+  const raw = readNamedData(entries, [name]);
+  if (!raw) {
+    return undefined;
+  }
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : undefined;
+}
+
+function geometryFromEntries(entries: DataEntry[]): GraphmlGeometry | undefined {
+  const x = readNamedNumber(entries, X_ATTR_NAME);
+  const y = readNamedNumber(entries, Y_ATTR_NAME);
+  const width = readNamedNumber(entries, WIDTH_ATTR_NAME);
+  const height = readNamedNumber(entries, HEIGHT_ATTR_NAME);
+  if (x === undefined || y === undefined || width === undefined || height === undefined) {
+    return undefined;
+  }
+  return { x, y, width, height };
 }
 
 export function parseRankDirection(value: string | null | undefined): GraphmlRankDirection {
@@ -199,7 +229,7 @@ function collectGraph(
         fill2: readHexColor(yed?.fill2),
         stroke: readHexColor(yed?.stroke ?? readNamedData(entries, [STROKE_ATTR_NAME])),
         dashed: yed?.dashed ?? false,
-        geometry: yed?.geometry,
+        geometry: yed?.geometry ?? geometryFromEntries(entries),
         parentId,
         isGroup: Boolean(nestedGraph),
       });
