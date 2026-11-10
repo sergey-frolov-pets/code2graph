@@ -402,8 +402,8 @@ function buildMermaidSyntaxRules(diagramType: WizardDiagramType): string[] {
       ];
     case "sankey":
       return [
-        "Format: Mermaid sankey-beta with ASCII source,target,value CSV lines.",
-        "Quote labels only when they contain commas or quotes. Double an inner quote.",
+        "Format: Mermaid sankey-beta. Each row is source,target,value CSV. Node names may use any language, including non-Latin scripts. Do not transliterate them.",
+        "Quote a label when it contains a comma or a quote. Double an inner quote.",
         "When the user asks for appearance options, put them in a YAML frontmatter config.sankey block before sankey-beta: showValues, prefix, suffix, linkColor (source, target, gradient, or a CSS color), nodeAlignment (justify, left, right, center), width, height, useMaxWidth, nodeWidth, nodePadding, labelStyle (legacy or outlined), nodeColors. Do not put those keys on CSV rows.",
       ];
     case "xychart":
