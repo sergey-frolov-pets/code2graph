@@ -10,7 +10,7 @@ export type SectionKind = (typeof SECTION_KINDS)[number];
 export const DIAGRAM_VISIBILITIES = ["all", "personal", "subscription"] as const;
 export type DiagramVisibility = (typeof DIAGRAM_VISIBILITIES)[number];
 
-export const SHARE_RESOURCE_TYPES = ["section", "diagram"] as const;
+export const SHARE_RESOURCE_TYPES = ["section", "diagram", "ai-chat"] as const;
 export type ShareResourceType = (typeof SHARE_RESOURCE_TYPES)[number];
 
 export const SHARE_PERMISSIONS = ["view", "download"] as const;

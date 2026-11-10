@@ -1,4 +1,4 @@
-import { ref, type Ref } from "vue";
+import type { Ref } from "vue";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import { useEditorFoldOnboarding } from "@/composables/wizard/useWizardOnboarding";
 
@@ -29,14 +29,7 @@ export function useAiSourceApply(options: UseAiSourceApplyOptions) {
     pushHistoryEntry,
   } = options;
 
-  const patchSelectionStart = ref(0);
-  const patchSelectionEnd = ref(0);
   const { maybeShowAfterWizardApply } = useEditorFoldOnboarding();
-
-  function onAiPatchRequest(payload: { start: number; end: number }): void {
-    patchSelectionStart.value = payload.start;
-    patchSelectionEnd.value = payload.end;
-  }
 
   function applyAiPlantUml(
     plantuml: string,
@@ -78,9 +71,6 @@ export function useAiSourceApply(options: UseAiSourceApplyOptions) {
   }
 
   return {
-    patchSelectionStart,
-    patchSelectionEnd,
-    onAiPatchRequest,
     applyAiPlantUml,
     applyWizardDiagram,
     onWizardDiagramApplied: maybeShowAfterWizardApply,

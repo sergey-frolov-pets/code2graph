@@ -18,7 +18,6 @@ const props = defineProps<{
   examples: readonly DiagramExample[];
   pinnedId: string | null;
   actionsId: string | null;
-  llmAvailable: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -232,7 +231,6 @@ onBeforeUnmount(() => {
       <WizardExampleCard
         v-if="floatingMode === 'card'"
         :example="floatingExample"
-        :llm-available="llmAvailable"
         :can-enlarge="floatingCanEnlarge"
         @choose="emit('choose', floatingExample, $event)"
         @enlarge="onEnlarge(floatingExample)"
@@ -240,7 +238,6 @@ onBeforeUnmount(() => {
       <WizardExampleActions
         v-else
         :label="t('llm.wizard.gallery.actionsLabel')"
-        :llm-available="llmAvailable"
         :can-enlarge="floatingCanEnlarge"
         @choose="emit('choose', floatingExample, $event)"
         @enlarge="onEnlarge(floatingExample)"

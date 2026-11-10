@@ -6,10 +6,7 @@ import {
   listLlmDiagramGuideKeys,
   LLM_DIAGRAM_GUIDE_HEADING,
 } from "@/services/llm/guides/llm-diagram-guides";
-import {
-  buildLlmSystemPrompt,
-  buildWizardLlmSystemPrompt,
-} from "@/services/llm/llm-prompts";
+import { buildLlmSystemPrompt } from "@/services/llm/llm-prompts";
 
 describe("llm diagram type guides", () => {
   it("has a guide for every wizard type and every diagram language", () => {
@@ -64,34 +61,15 @@ describe("llm diagram type guides", () => {
     expect(guideForPlantUmlText("draw flow")).toBe("");
   });
 
-  it("inserts the type guide into wizard and freeform system prompts", () => {
-    const sequencePrompt = buildWizardLlmSystemPrompt(
-      "Generate",
-      "Format rules",
-      "plantuml",
-      "sequence",
-    );
-    const piePrompt = buildWizardLlmSystemPrompt(
-      "Generate",
-      "Format rules",
-      "mermaid",
-      "pie",
-    );
-    const aliasedGraphPrompt = buildWizardLlmSystemPrompt(
-      "Generate",
-      "Format rules",
-      "mermaid",
-      "graph",
-    );
+  it("inserts the type guide into the system prompt", () => {
     const freeformPrompt = buildLlmSystemPrompt(
       "Generate",
       guideForPlantUmlText("Create a sequence diagram for checkout"),
     );
 
-    expect(sequencePrompt).toContain(LLM_DIAGRAM_GUIDE_HEADING);
-    expect(sequencePrompt).toContain("Declare every participant");
-    expect(piePrompt).toContain("pie showData");
-    expect(aliasedGraphPrompt).toContain("flowchart TD");
+    expect(freeformPrompt).toContain(LLM_DIAGRAM_GUIDE_HEADING);
     expect(freeformPrompt).toContain("Declare every participant");
+    expect(getLlmDiagramGuide("mermaid", "pie")).toContain("pie showData");
+    expect(getLlmDiagramGuide("mermaid", "graph")).toContain("flowchart TD");
   });
 });

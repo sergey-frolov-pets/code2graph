@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { onBeforeUnmount, ref, watch } from "vue";
 import WizardExampleGrid from "@/components/wizard/WizardExampleGrid.vue";
 import WizardExampleSearch from "@/components/wizard/WizardExampleSearch.vue";
 import WizardExampleZoom from "@/components/wizard/WizardExampleZoom.vue";
 import WizardTagCloud from "@/components/wizard/WizardTagCloud.vue";
-import { useHasActiveLlm } from "@/composables/useHasActiveLlm";
 import { useWizardExampleGallery } from "@/composables/wizard/useWizardExampleGallery";
 import { exampleTagKey, type DiagramExample } from "@/constants/diagram-example-catalog";
 import {
@@ -29,7 +28,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
-const { hasActiveLlm, refreshActiveLlmAvailability } = useHasActiveLlm();
 const {
   query,
   cloudTags,
@@ -137,10 +135,6 @@ function onWindowPointerDown(event: PointerEvent): void {
   actionsId.value = null;
 }
 
-onMounted(() => {
-  void refreshActiveLlmAvailability();
-});
-
 window.addEventListener("keydown", onKeydown);
 window.addEventListener("pointerdown", onWindowPointerDown);
 
@@ -184,7 +178,6 @@ onBeforeUnmount(() => {
       :examples="visibleExamples"
       :pinned-id="pinnedId"
       :actions-id="actionsId"
-      :llm-available="hasActiveLlm"
       @open-actions="onOpenActions"
       @pin-card="onPinCard"
       @choose="onChoose"

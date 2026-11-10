@@ -17,6 +17,7 @@ export type AppRouteName =
   | "diagram"
   | "clipboard"
   | "preview"
+  | "aiChatShare"
   | "libraryLink";
 
 export interface ParsedAppRoute {
@@ -41,7 +42,10 @@ export const LIBRARY_LINK_RESERVED_SEGMENTS = new Set([
 const LIBRARY_USERNAME_MAX_LENGTH = 80;
 
 const ROUTE_HASH: Record<
-  Exclude<AppRouteName, "language" | "diagram" | "clipboard" | "preview" | "libraryLink">,
+  Exclude<
+    AppRouteName,
+    "language" | "diagram" | "clipboard" | "preview" | "libraryLink" | "aiChatShare"
+  >,
   string
 > = {
   landing: "#/",
@@ -232,6 +236,8 @@ export function parseRouteFromHash(hash: string): ParsedAppRoute {
       return routeResult("account");
     case "mcp":
       return routeResult("mcp");
+    case "share-chat":
+      return routeResult("aiChatShare");
     default:
       return routeResult("landing");
   }
@@ -270,7 +276,10 @@ function publishedOrigin(origin: string): string {
 }
 
 export function routeHash(
-  route: Exclude<AppRouteName, "language" | "diagram" | "clipboard" | "preview" | "libraryLink">,
+  route: Exclude<
+    AppRouteName,
+    "language" | "diagram" | "clipboard" | "preview" | "libraryLink" | "aiChatShare"
+  >,
 ): string {
   return ROUTE_HASH[route];
 }
@@ -301,7 +310,10 @@ export function diagramDataLinkUrl(origin: string, slug: string): string {
 }
 
 export function navigateTo(
-  route: Exclude<AppRouteName, "diagram" | "clipboard" | "preview" | "libraryLink">,
+  route: Exclude<
+    AppRouteName,
+    "diagram" | "clipboard" | "preview" | "libraryLink" | "aiChatShare"
+  >,
   languageId?: DiagramFormat,
 ): void {
   const target =

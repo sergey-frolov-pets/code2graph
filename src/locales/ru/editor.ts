@@ -4,6 +4,7 @@ export const editorMessages = {
   "editor.title": "Код",
   "editor.surface.label": "Режим редактирования",
   "editor.surface.builder": "По шагам",
+  "editor.surface.aiChat": "ИИ-чат",
   "editor.surface.builderTitle": "Пошаговое редактирование",
   "editor.surface.builderLead": "Текущая диаграмма",
   "editor.titleTooltip.plantuml": "Исходный код PlantUML",
