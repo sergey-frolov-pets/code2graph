@@ -53,6 +53,19 @@ function mapSemanticToD2Shape(
     return "queue";
   }
 
+  switch (node.visual?.shape) {
+    case "diamond":
+      return "diamond";
+    case "ellipse":
+      return "oval";
+    case "parallelogram":
+      return "parallelogram";
+    case "hexagon":
+      return "hexagon";
+    default:
+      break;
+  }
+
   switch (node.kind) {
     case "actor":
       return "person";

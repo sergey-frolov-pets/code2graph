@@ -1,3 +1,7 @@
+import type { DiagramNodeShape } from "@/services/conversion/diagram-ir";
+
+const DECISION_STEREOTYPE = " <<decision>>";
+
 export function flattenPlantUmlLabel(value: string): string {
   return value
     .replace(/\r\n/g, "\n")
@@ -25,16 +29,38 @@ export function needsQuotedPlantUmlComponentLabel(rawLabel: string): boolean {
   return /[[\]"]/.test(label);
 }
 
+function plantUmlNodeKeyword(shape: DiagramNodeShape | undefined): {
+  keyword: string;
+  stereotype: string;
+} {
+  switch (shape) {
+    case "ellipse":
+      return { keyword: "usecase", stereotype: "" };
+    case "hexagon":
+      return { keyword: "hexagon", stereotype: "" };
+    case "parallelogram":
+    case "trapezoid":
+      return { keyword: "card", stereotype: "" };
+    case "diamond":
+      return { keyword: "rectangle", stereotype: DECISION_STEREOTYPE };
+    default:
+      return { keyword: "rectangle", stereotype: "" };
+  }
+}
+
 export function emitPlantUmlComponentNode(
   id: string,
   rawLabel: string,
   fill?: string,
+  shape?: DiagramNodeShape,
 ): string {
   const label = flattenPlantUmlLabel(rawLabel) || "node";
   const color = fill?.trim() ? ` ${fill.trim().startsWith("#") ? fill.trim() : `#${fill.trim()}`}` : "";
+  const { keyword, stereotype } = plantUmlNodeKeyword(shape);
+  const shaped = shape !== undefined && shape !== "rect" && shape !== "round";
 
-  if (needsQuotedPlantUmlComponentLabel(rawLabel)) {
-    return `rectangle "${escapePlantUmlQuoted(label)}" as ${id}${color}`;
+  if (shaped || needsQuotedPlantUmlComponentLabel(rawLabel)) {
+    return `${keyword} "${escapePlantUmlQuoted(label)}" as ${id}${stereotype}${color}`;
   }
 
   return `[${label}] as ${id}${color}`;

@@ -42,7 +42,10 @@ export type DiagramNodeShape =
   | "rect"
   | "round"
   | "diamond"
-  | "ellipse";
+  | "ellipse"
+  | "parallelogram"
+  | "trapezoid"
+  | "hexagon";
 
 export type DiagramNodeSemanticKind =
   | "default"

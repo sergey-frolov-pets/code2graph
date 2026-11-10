@@ -26,6 +26,12 @@ export const STYLE_ATTR_NAME = "style";
 export const FILL_ATTR_NAME = "fill";
 export const STROKE_ATTR_NAME = "stroke";
 export const COLOR_ATTR_NAME = "color";
+export const X_ATTR_NAME = "x";
+export const Y_ATTR_NAME = "y";
+export const WIDTH_ATTR_NAME = "width";
+export const HEIGHT_ATTR_NAME = "height";
+export const RECT_SHAPE_ALIAS = "rect";
+export const ROUND_SHAPE_ALIAS = "round";
 export const DASHED_STYLE = "dashed";
 export const DOTTED_STYLE = "dotted";
 export const ARROW_NONE = "none";
@@ -39,6 +45,10 @@ export const NON_LABEL_ATTRS = new Set([
   FILL_ATTR_NAME,
   STROKE_ATTR_NAME,
   COLOR_ATTR_NAME,
+  X_ATTR_NAME,
+  Y_ATTR_NAME,
+  WIDTH_ATTR_NAME,
+  HEIGHT_ATTR_NAME,
 ]);
 export const HEX_COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 export const RANK_DIRECTIONS = ["TB", "LR", "BT", "RL"] as const;

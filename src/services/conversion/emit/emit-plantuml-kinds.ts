@@ -231,7 +231,7 @@ export function emitPlantUmlGraph(ir: DiagramIR): string {
       `package "${escapePlantUmlQuoted(group.label ?? group.id)}"${groupColor ? ` ${groupColor}` : ""} {`,
     );
     for (const node of groupNodes) {
-      lines.push(`  ${emitPlantUmlComponentNode(node.id, node.label, node.visual?.fill)}`);
+      lines.push(`  ${emitPlantUmlComponentNode(node.id, node.label, node.visual?.fill, node.visual?.shape)}`);
       groupedNodeIds.add(node.id);
     }
     lines.push("}", "");
@@ -241,7 +241,7 @@ export function emitPlantUmlGraph(ir: DiagramIR): string {
     if (groupedNodeIds.has(node.id) || groupIds.has(node.id)) {
       continue;
     }
-    lines.push(emitPlantUmlComponentNode(node.id, node.label, node.visual?.fill));
+    lines.push(emitPlantUmlComponentNode(node.id, node.label, node.visual?.fill, node.visual?.shape));
   }
 
   for (const edge of ir.edges) {

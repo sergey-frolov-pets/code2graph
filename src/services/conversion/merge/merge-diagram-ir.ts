@@ -101,6 +101,10 @@ export function mergeDiagramIrWithVisualHints(
     }
 
     usedHints.add(hint);
+    if (node.visual?.width !== undefined && node.visual.height !== undefined) {
+      return node;
+    }
+
     return {
       ...node,
       visual: {

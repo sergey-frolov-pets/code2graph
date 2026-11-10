@@ -33,4 +33,37 @@ describe("mergeDiagramIrWithVisualHints", () => {
     expect(result.ir.edges).toHaveLength(1);
     expect(result.ir.edges[0]?.label).toBe("sends");
   });
+
+  it("keeps authored geometry when a visual hint matches the same label", () => {
+    const semantic = createEmptyDiagramIR("graph");
+    semantic.nodes = [
+      {
+        id: "go",
+        label: "GO",
+        matchConfidence: 1,
+        visual: { x: 212, y: 424.5, width: 56, height: 40, fill: "#00ff00", shape: "ellipse" },
+      },
+    ];
+
+    const result = mergeDiagramIrWithVisualHints(semantic, {
+      source: "plantuml-geometry",
+      nodes: [
+        {
+          label: "GO",
+          bbox: { x: 0, y: 0, width: 10, height: 10 },
+          fill: "#ffffff",
+          shape: "rect",
+        },
+      ],
+      edges: [],
+    });
+
+    expect(result.unmatchedVisualNodes).toBe(0);
+    expect(result.ir.nodes[0]?.visual).toMatchObject({
+      x: 212,
+      width: 56,
+      fill: "#00ff00",
+      shape: "ellipse",
+    });
+  });
 });

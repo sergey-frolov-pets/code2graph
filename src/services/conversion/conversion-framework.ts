@@ -3,7 +3,6 @@ import {
   getDiagramFormatDefinition,
   type DiagramFormat,
 } from "@/constants/diagram-formats";
-import { CONVERSION_IR_VERSION } from "@/constants/conversion-settings";
 import {
   classifyDiagramKind,
   detectDiagramDirection,
@@ -11,11 +10,8 @@ import {
 import {
   createEmptyDiagramIR,
   type DiagramDirection,
-  type DiagramEdge,
   type DiagramIR,
   type DiagramKind,
-  type DiagramNode,
-  uniqueDiagramId,
 } from "@/services/conversion/diagram-ir";
 import {
   NATIVE_KINDS_BY_FORMAT,
@@ -69,6 +65,7 @@ import {
   parseSequencePlantUml,
   parseStatePlantUml,
 } from "@/services/conversion/parse/parse-plantuml";
+import { parseGraphmlToIr } from "@/services/conversion/parse/parse-graphml";
 import { parseStructurizrToIr } from "@/services/conversion/parse/parse-structurizr";
 import { stripSourceComments } from "@/services/conversion/parse/parse-utils";
 import { parseWiremarkToIr } from "@/services/conversion/parse/parse-wiremark";
@@ -76,8 +73,6 @@ import {
   getConversionRouteRule,
   type ConversionRouteRule,
 } from "@/services/conversion/rules/conversion-matrix";
-import { parseGraphml } from "@/services/graphml/graphml-engine";
-
 export interface DiagramConversionAdapter {
   readonly id: DiagramFormat;
   readonly nativeKinds: readonly DiagramKind[];
@@ -88,34 +83,7 @@ export interface DiagramConversionAdapter {
 }
 
 function parseGraphmlSource(source: string, format: DiagramFormat): DiagramIR {
-  const parsed = parseGraphml(source);
-  const usedIds = new Set<string>();
-  const nodes: DiagramNode[] = parsed.nodes.map((node) => ({
-    id: uniqueDiagramId(node.id, usedIds),
-    label: node.label,
-    matchConfidence: 1,
-  }));
-
-  const idByOriginal = new Map(
-    parsed.nodes.map((node, index) => [node.id, nodes[index].id]),
-  );
-
-  const edges: DiagramEdge[] = parsed.edges.map((edge, index) => ({
-    id: `e${index + 1}`,
-    source: idByOriginal.get(edge.source) ?? edge.source,
-    target: idByOriginal.get(edge.target) ?? edge.target,
-    label: edge.label,
-    matchConfidence: 1,
-  }));
-
-  return {
-    version: CONVERSION_IR_VERSION,
-    kind: "graph",
-    direction: parsed.direction ?? detectDiagramDirection(source, format),
-    nodes,
-    edges,
-    metadata: { sourceFormat: format },
-  };
+  return parseGraphmlToIr(source, format);
 }
 
 function parsePlantUmlSource(
