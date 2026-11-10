@@ -6,6 +6,9 @@ const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const packageJsonPath = path.join(appRoot, "package.json");
 const packageLockPath = path.join(appRoot, "package-lock.json");
 
+const MINOR_RELEASE_FROM = "1.1.69";
+const MINOR_RELEASE_TO = "1.2.0";
+
 function bumpPatchVersion(version) {
   const parts = version.split(".");
   if (parts.length !== 3) {
@@ -21,6 +24,14 @@ function bumpPatchVersion(version) {
   }
 
   return `${major}.${minor}.${patch + 1}`;
+}
+
+function nextReleaseVersion(version) {
+  if (version === MINOR_RELEASE_FROM) {
+    return MINOR_RELEASE_TO;
+  }
+
+  return bumpPatchVersion(version);
 }
 
 function updatePackageJson(version) {
@@ -41,7 +52,7 @@ function updatePackageLock(version) {
 }
 
 const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
-const nextVersion = bumpPatchVersion(packageJson.version);
+const nextVersion = nextReleaseVersion(packageJson.version);
 const previousVersion = updatePackageJson(nextVersion);
 updatePackageLock(nextVersion);
 
