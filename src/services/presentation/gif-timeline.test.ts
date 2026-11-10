@@ -17,8 +17,8 @@ function loopTrack(): PresentationTrack {
     id: "track",
     name: "Walk / tour",
     viewpoints: [
-      { id: "a", anchor: { x: 0, y: 0 }, scale: 1, dwellMs: DWELL_A_MS },
-      { id: "b", anchor: { x: 1, y: 1 }, scale: 2, dwellMs: DWELL_B_MS },
+      { id: "a", anchor: { x: 0, y: 0 }, scale: 1, dwellMs: DWELL_A_MS, effects: [] },
+      { id: "b", anchor: { x: 1, y: 1 }, scale: 2, dwellMs: DWELL_B_MS, effects: [] },
     ],
     transitions: [
       {
@@ -75,6 +75,25 @@ describe("presentation GIF timeline", () => {
     const frames = samplePresentationGifFrames(track);
     expect(frames).toHaveLength(1);
     expect(frames[0].delayMs).toBe(DWELL_A_MS);
+  });
+
+  it("samples the effect window and keeps the rest of the dwell as one hold", () => {
+    const track = loopTrack();
+    track.viewpoints[0].effects = [{
+      id: "fade",
+      kind: "fade",
+      target: "diagram",
+      overlayId: "",
+      startMs: 0,
+      durationMs: 400,
+    }];
+    const frames = samplePresentationGifFrames(track);
+    const dwellFrames = frames.filter((frame) => frame.ownerId === "a");
+    const dwellDelay = dwellFrames.reduce((sum, frame) => sum + frame.delayMs, 0);
+    expect(dwellDelay).toBe(DWELL_A_MS);
+    expect(dwellFrames.length).toBeGreaterThan(1);
+    expect(dwellFrames.at(-1)?.delayMs).toBe(DWELL_A_MS - 400);
+    expect(frames.reduce((sum, frame) => sum + frame.delayMs, 0)).toBe(presentationGifCycleMs(track));
   });
 
   it("shrinks the longer viewport side to the GIF limit", () => {

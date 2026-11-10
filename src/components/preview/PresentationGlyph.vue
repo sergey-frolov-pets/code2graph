@@ -2,9 +2,12 @@
 import { computed } from "vue";
 import type { Component } from "vue";
 import {
+  ArrowDown,
   ArrowRight,
+  ArrowUp,
   Camera,
   Circle,
+  Copy,
   Eye,
   EyeOff,
   Film,
@@ -48,7 +51,10 @@ export type PresentationGlyphName =
   | "ellipse"
   | "text"
   | "arrow"
-  | "palette";
+  | "palette"
+  | "copy"
+  | "up"
+  | "down";
 
 const ICONS: Record<PresentationGlyphName, Component> = {
   presentation: Presentation,
@@ -72,6 +78,9 @@ const ICONS: Record<PresentationGlyphName, Component> = {
   text: Type,
   arrow: ArrowRight,
   palette: Palette,
+  copy: Copy,
+  up: ArrowUp,
+  down: ArrowDown,
 };
 
 const props = defineProps<{
