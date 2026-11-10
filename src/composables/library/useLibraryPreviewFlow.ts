@@ -30,6 +30,7 @@ export function useLibraryPreviewFlow(options: {
     fileName: string;
     format?: DiagramFormat;
     diagramId?: string;
+    features?: import("@shared/features").FeatureMap;
   }) => void;
   onCloseLibrary: () => void;
   t: TranslateFn;
@@ -182,6 +183,7 @@ export function useLibraryPreviewFlow(options: {
             result.diagram.language,
           ),
           diagramId: result.diagram.id,
+          features: result.diagram.features ?? result.subscription.features,
         });
         closePreviewModal();
         onCloseLibrary();
@@ -211,6 +213,7 @@ export function useLibraryPreviewFlow(options: {
             result.diagram.language,
           ),
           diagramId: result.diagram.id,
+          features: result.diagram.features,
         });
         closePreviewModal();
         onCloseLibrary();
@@ -236,6 +239,7 @@ export function useLibraryPreviewFlow(options: {
         library.selectedDiagram.value.language,
       ),
       diagramId: library.selectedDiagram.value.id,
+      features: library.selectedDiagram.value.features,
     });
     closePreviewModal();
     onCloseLibrary();

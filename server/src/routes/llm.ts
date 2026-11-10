@@ -1,4 +1,7 @@
 import { Hono } from "hono";
+import { getRequestUser, type AuthVariables } from "../auth/context.js";
+import { getDb } from "../db.js";
+import { userAllowsLlmProxy } from "../services/subscription-feature-access.js";
 import {
   GEMINI_API_KEY,
   GROQ_API_KEY,
@@ -211,9 +214,20 @@ async function dispatchLlmChat(
   };
 }
 
-export const llmRouter = new Hono();
+export const llmRouter = new Hono<{ Variables: AuthVariables }>();
 
 llmRouter.post("/chat", async (context) => {
+  const user = getRequestUser(context);
+  if (user && !userAllowsLlmProxy(getDb(), user)) {
+    return context.json(
+      {
+        error: "forbidden",
+        message: "LLM proxy is not included in your subscription",
+      },
+      403,
+    );
+  }
+
   const clientIp = getClientIp(context.req.raw);
 
   if (isRateLimited(clientIp)) {

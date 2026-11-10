@@ -18,7 +18,10 @@ import {
   resolvePumlFileName,
 } from "../../shared/puml-files.js";
 import { snapshotDiagramSourceVersion } from "../../diagram-versions.js";
+import { allFeaturesAllowed } from "../../../../packages/shared/src/features.js";
 import { applyDiagramPermissions } from "../../services/diagrams-access.js";
+import { featuresForDiagramUser } from "../../services/subscription-feature-access.js";
+import { shouldHideDiagramSource } from "../../services/subscription-features.js";
 import {
   deleteDiagramById,
   findDiagramById,
@@ -62,8 +65,21 @@ export function registerDiagramCrudRoutes(router: DiagramsRouter): void {
 
     const diagram = enrichDiagramForUser(database, user, row);
     applyDiagramPermissions(database, user, row, diagram);
+    const features =
+      row.owner_id === user.id || row.author_id === user.id
+        ? allFeaturesAllowed()
+        : featuresForDiagramUser(database, user, row.id);
 
-    return context.json(diagram);
+    if (!diagram.canDownload || shouldHideDiagramSource(features)) {
+      diagram.source = "";
+      diagram.canDownload = false;
+      features["library.download"] = false;
+      features["editor.copySource"] = false;
+      features["editor.open"] = false;
+      features["editor.export"] = false;
+    }
+
+    return context.json({ ...diagram, features });
   });
 
   router.post("/", async (context) => {

@@ -1,3 +1,4 @@
+import { getDeploymentPublicOrigin } from "@/config/library-api";
 import { isDiagramFormat, type DiagramFormat } from "@/constants/diagram-format-ids";
 import { CLIPBOARD_DIAGRAM_PATH } from "@/services/clipboard-diagram/constants";
 import {
@@ -236,6 +237,38 @@ export function parseRouteFromHash(hash: string): ParsedAppRoute {
   }
 }
 
+const CANONICAL_PUBLIC_HOSTS = new Set(["code2graph.ru", "www.code2graph.ru"]);
+
+function publishedOrigin(origin: string): string {
+  const configured = getDeploymentPublicOrigin().trim();
+  let page: URL;
+  try {
+    page = new URL(origin);
+  } catch {
+    return origin;
+  }
+
+  if (configured) {
+    try {
+      const target = new URL(configured);
+      if (
+        page.hostname === target.hostname ||
+        CANONICAL_PUBLIC_HOSTS.has(page.hostname)
+      ) {
+        return target.origin;
+      }
+    } catch {
+      // Ignore a malformed publicOrigin and keep the page origin.
+    }
+  }
+
+  if (CANONICAL_PUBLIC_HOSTS.has(page.hostname)) {
+    return new URL(PUBLIC_DATA_LINK_ORIGIN).origin;
+  }
+
+  return origin;
+}
+
 export function routeHash(
   route: Exclude<AppRouteName, "language" | "diagram" | "clipboard" | "preview" | "libraryLink">,
 ): string {
@@ -248,11 +281,7 @@ export function libraryLinkUrl(
   slug: string,
   publicSlug = readPublicLibrarySlug(),
 ): string {
-  const url = new URL(origin);
-  if (url.hostname === "code2graph.ru" || url.hostname === "www.code2graph.ru") {
-    url.protocol = "https:";
-    url.hostname = new URL(PUBLIC_DATA_LINK_ORIGIN).hostname;
-  }
+  const url = new URL(publishedOrigin(origin));
   const user = encodeURIComponent(username);
   const librarySlug = publicSlug.trim().toLowerCase();
   url.pathname = librarySlug
@@ -264,11 +293,7 @@ export function libraryLinkUrl(
 }
 
 export function diagramDataLinkUrl(origin: string, slug: string): string {
-  const url = new URL(origin);
-  if (url.hostname === "code2graph.ru" || url.hostname === "www.code2graph.ru") {
-    url.protocol = "https:";
-    url.hostname = new URL(PUBLIC_DATA_LINK_ORIGIN).hostname;
-  }
+  const url = new URL(publishedOrigin(origin));
   url.pathname = `/local/${slug}`;
   url.search = "";
   url.hash = "";

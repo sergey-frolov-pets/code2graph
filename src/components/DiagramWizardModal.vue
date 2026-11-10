@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, toRef, watch } from "vue";
+import { computed, onMounted, toRef, watch } from "vue";
 import AppModal from "@/components/AppModal.vue";
-import TablePasteErrorModal from "@/components/TablePasteErrorModal.vue";
 import LoadingState from "@/components/ui/LoadingState.vue";
+import { reportTablePasteError } from "@/composables/useTablePasteError";
 import WizardExampleGallery from "@/components/wizard/WizardExampleGallery.vue";
 import WizardOnboardingBanner from "@/components/wizard/WizardOnboardingBanner.vue";
 import WizardAiSetupPanel from "@/components/wizard/WizardAiSetupPanel.vue";
@@ -35,6 +35,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
+  openSettings: [];
   apply: [
     payload: {
       source: string;
@@ -49,12 +50,8 @@ const { t, locale } = useLocale();
 const { showWizardBanner, dismissWizardBanner } = useWizardOnboarding();
 const { activeLlmDetail } = useActiveLlmLabel();
 
-const pasteErrorInfo = ref<TablePasteErrorInfo | null>(null);
-const pasteErrorModalOpen = ref(false);
-
 function onBuilderPasteError(error: TablePasteErrorInfo): void {
-  pasteErrorInfo.value = error;
-  pasteErrorModalOpen.value = true;
+  reportTablePasteError(error);
 }
 
 function trackWizardOpen(): void {
@@ -197,6 +194,7 @@ const showLivePreview = computed(
       v-if="!galleryVisible && aiSetupVisible"
       :reason="aiSetupReason"
       @retry="handleAiSetupRetry"
+      @open-settings="emit('openSettings')"
     />
 
     <LoadingState
@@ -244,11 +242,6 @@ const showLivePreview = computed(
       />
     </div>
 
-    <TablePasteErrorModal
-      :open="pasteErrorModalOpen"
-      :error="pasteErrorInfo"
-      @close="pasteErrorModalOpen = false"
-    />
 
     <template #footer>
       <WizardModalFooter

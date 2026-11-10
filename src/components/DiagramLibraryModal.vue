@@ -19,7 +19,12 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: [];
   "open-diagram": [
-    payload: { content: string; fileName: string; diagramId?: string },
+    payload: {
+      content: string;
+      fileName: string;
+      diagramId?: string;
+      features?: import("@shared/features").FeatureMap;
+    },
   ];
 }>();
 
@@ -133,6 +138,7 @@ const flow = reactive(
         @manage-access="flow.onManageSectionAccess"
         @ratings-click="flow.onRatingsClick()"
         @subscriptions-click="flow.openSubscriptions()"
+        @transfer-click="flow.switchTab('transfer')"
         @open-subscription-target="flow.onOpenSubscriptionTarget($event)"
         @diagram-pick="flow.handleDiagramPick($event)"
         @filters-change="flow.searchDiagrams()"
@@ -179,7 +185,6 @@ const flow = reactive(
   </Teleport>
 
   <LibraryModalOverlays
-    :is-setup-modal-open="flow.isSetupModalOpen"
     :library-api-url="flow.libraryApiUrl"
     :is-section-modal-open="flow.isSectionModalOpen"
     :editing-section="flow.editingSection"
@@ -206,8 +211,6 @@ const flow = reactive(
     :move-diagram-section-title="flow.moveDiagramSectionTitle"
     :move-section-options="flow.moveSectionOptions"
     :is-moving-diagram="flow.isMovingDiagram"
-    @setup-completed="flow.onSetupCompleted()"
-    @setup-close="flow.onSetupClose()"
     @close-section-editor="flow.closeSectionEditor()"
     @save-section-edit="flow.saveSectionEdit($event)"
     @close-share-modal="flow.closeShareModal()"

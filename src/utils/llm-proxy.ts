@@ -1,25 +1,8 @@
-import {
-  getLibraryApiBaseUrl,
-  normalizeLibraryApiUrl,
-} from "@/composables/useLibraryApiUrl";
+import { getLibraryApiBaseUrl } from "@/config/library-api";
 
+/** LLM proxy uses the same resolved API as the library. Static mode returns "". */
 export function resolveLlmProxyBaseUrl(): string {
-  const libraryApiUrl = getLibraryApiBaseUrl();
-  if (libraryApiUrl) {
-    return libraryApiUrl;
-  }
-
-  const envUrl = import.meta.env.VITE_API_BASE_URL;
-  if (envUrl) {
-    return normalizeLibraryApiUrl(envUrl);
-  }
-
-  // Same-origin /api works only in dev (Vite proxies to the local API server).
-  if (import.meta.env.DEV && window.location.protocol !== "file:") {
-    return normalizeLibraryApiUrl(new URL("./api", window.location.href).href);
-  }
-
-  return "";
+  return getLibraryApiBaseUrl();
 }
 
 export function resolveLlmChatUrl(): string {

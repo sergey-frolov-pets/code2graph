@@ -14,7 +14,8 @@ import EditorCodeGutter from "@/components/editor/EditorCodeGutter.vue";
 import EditorCodeSurface from "@/components/editor/EditorCodeSurface.vue";
 import EditorFoldOnboardingBanner from "@/components/editor/EditorFoldOnboardingBanner.vue";
 import EditorFoldRegionsModal from "@/components/editor/EditorFoldRegionsModal.vue";
-import TablePasteErrorModal from "@/components/TablePasteErrorModal.vue";
+import { reportTablePasteError } from "@/composables/useTablePasteError";
+import { isFeatureAllowed } from "@/composables/useFeatureGate";
 import { trackClipboardPaste } from "@/analytics";
 import { useLocale } from "@/composables/useLocale";
 import type { EditorFontSize } from "@/constants/editor-settings";
@@ -28,7 +29,6 @@ import {
   applyTableFromClipboardText,
   createClipboardReadError,
   supportsTablePaste,
-  type TablePasteErrorInfo,
 } from "@/services/table-paste";
 import { supportsDiagramBuilder } from "@/services/diagram-builder";
 import { useEditorFoldOnboarding } from "@/composables/wizard/useWizardOnboarding";
@@ -106,9 +106,6 @@ const effectiveAutocomplete = computed(
 const canPasteTable = computed(() =>
   supportsTablePaste(source.value, diagramFormat.value),
 );
-const tablePasteError = ref<TablePasteErrorInfo | null>(null);
-const tablePasteErrorModalOpen = ref(false);
-
 const gutterComponentRef = ref<InstanceType<typeof EditorCodeGutter> | null>(
   null,
 );
@@ -356,11 +353,9 @@ const {
 
 async function onPasteTableFromClipboard(): Promise<void> {
   if (!navigator.clipboard || typeof navigator.clipboard.readText !== "function") {
-    tablePasteError.value = createClipboardReadError(
-      source.value,
-      diagramFormat.value,
+    reportTablePasteError(
+      createClipboardReadError(source.value, diagramFormat.value),
     );
-    tablePasteErrorModalOpen.value = true;
     return;
   }
 
@@ -368,11 +363,9 @@ async function onPasteTableFromClipboard(): Promise<void> {
   try {
     clipboardText = await navigator.clipboard.readText();
   } catch {
-    tablePasteError.value = createClipboardReadError(
-      source.value,
-      diagramFormat.value,
+    reportTablePasteError(
+      createClipboardReadError(source.value, diagramFormat.value),
     );
-    tablePasteErrorModalOpen.value = true;
     return;
   }
 
@@ -396,8 +389,7 @@ async function onPasteTableFromClipboard(): Promise<void> {
   });
 
   if (!result.ok) {
-    tablePasteError.value = result.error;
-    tablePasteErrorModalOpen.value = true;
+    reportTablePasteError(result.error);
     return;
   }
 
@@ -420,6 +412,14 @@ function onTextareaScroll(): void {
   if (autocomplete.isOpen.value) {
     autocomplete.refresh();
   }
+}
+
+function onToggleSnippets(): void {
+  if (!isFeatureAllowed("editor.snippets")) {
+    snippetsOpen.value = false;
+    return;
+  }
+  snippetsOpen.value = !snippetsOpen.value;
 }
 
 function onEditorKeydown(event: KeyboardEvent): void {
@@ -518,7 +518,7 @@ onUnmounted(() => {
       @redo="emit('redo')"
       @convert="emit('convert')"
       @clear="requestClear"
-      @toggle-snippets="snippetsOpen = !snippetsOpen"
+      @toggle-snippets="onToggleSnippets"
       @load-sample="loadSample"
       @change-format="changeFormat"
       @toggle-fullscreen="isFullscreen = !isFullscreen"
@@ -581,7 +581,7 @@ onUnmounted(() => {
           @scroll="onTextareaScroll"
           @select="updateSelectionState"
           @mouseup="updateSelectionState"
-          @toggle-snippets="snippetsOpen = !snippetsOpen"
+          @toggle-snippets="onToggleSnippets"
         />
       </div>
 
@@ -615,10 +615,5 @@ onUnmounted(() => {
       @navigate="onRegionNavigate"
     />
 
-    <TablePasteErrorModal
-      :open="tablePasteErrorModalOpen"
-      :error="tablePasteError"
-      @close="tablePasteErrorModalOpen = false"
-    />
   </section>
 </template>

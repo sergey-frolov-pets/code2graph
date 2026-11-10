@@ -11,7 +11,6 @@ import {
   deleteAdminUser,
   fetchAdminUsers,
   setUserBlocked,
-  setUserSubscription,
   updateAdminUser,
 } from "@/services/library/api";
 
@@ -31,7 +30,6 @@ const isSaving = ref(false);
 const createUsername = ref("");
 const createPassword = ref("");
 const createRole = ref<UserRole>("user");
-const createSubscription = ref(false);
 
 const isEditOpen = ref(false);
 const editingUser = ref<LibraryUserDto | null>(null);
@@ -39,7 +37,6 @@ const editUsername = ref("");
 const editPassword = ref("");
 const editRole = ref<UserRole>("user");
 const editBlocked = ref(false);
-const editSubscription = ref(false);
 
 const roleOptions = computed(() =>
   USER_ROLES.map((role) => ({
@@ -76,7 +73,6 @@ async function onCreateUser(): Promise<void> {
       username,
       password: createPassword.value,
       role: createRole.value,
-      subscriptionActive: createSubscription.value,
     });
     users.value = [...users.value, response.user].sort((a, b) =>
       a.username.localeCompare(b.username),
@@ -84,7 +80,6 @@ async function onCreateUser(): Promise<void> {
     createUsername.value = "";
     createPassword.value = "";
     createRole.value = "user";
-    createSubscription.value = false;
   } catch (error) {
     errorMessage.value =
       error instanceof Error ? error.message : t("library.adminCreateError");
@@ -99,7 +94,6 @@ function openEdit(user: LibraryUserDto): void {
   editPassword.value = "";
   editRole.value = user.role;
   editBlocked.value = user.blocked;
-  editSubscription.value = user.subscriptionActive;
   isEditOpen.value = true;
 }
 
@@ -121,7 +115,6 @@ async function onSaveEdit(): Promise<void> {
       password: editPassword.value || undefined,
       role: editRole.value,
       blocked: editBlocked.value,
-      subscriptionActive: editSubscription.value,
     });
     const index = users.value.findIndex((entry) => entry.id === response.user.id);
     if (index >= 0) {
@@ -169,19 +162,6 @@ async function toggleBlocked(user: LibraryUserDto): Promise<void> {
   }
 }
 
-async function toggleSubscription(user: LibraryUserDto): Promise<void> {
-  try {
-    const response = await setUserSubscription(user.id, !user.subscriptionActive);
-    const index = users.value.findIndex((entry) => entry.id === user.id);
-    if (index >= 0) {
-      users.value[index] = response.user;
-    }
-  } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : t("library.adminUsersError");
-  }
-}
-
 onMounted(() => {
   void loadUsers();
 });
@@ -216,10 +196,6 @@ onMounted(() => {
             {{ option.label }}
           </option>
         </select>
-        <label class="library-admin-form__checkbox">
-          <input v-model="createSubscription" type="checkbox" :disabled="isSaving" />
-          {{ t("library.adminSubscription") }}
-        </label>
         <button class="btn btn--primary" type="button" :disabled="isSaving" @click="onCreateUser()">
           {{ t("library.adminCreateSubmit") }}
         </button>
@@ -235,7 +211,6 @@ onMounted(() => {
           <th>{{ t("library.adminUsername") }}</th>
           <th>{{ t("library.adminRole") }}</th>
           <th>{{ t("library.adminBlocked") }}</th>
-          <th>{{ t("library.adminSubscription") }}</th>
           <th>{{ t("library.adminActions") }}</th>
         </tr>
       </thead>
@@ -252,15 +227,6 @@ onMounted(() => {
             >
               {{
                 user.blocked ? t("library.adminUnblock") : t("library.adminBlock")
-              }}
-            </button>
-          </td>
-          <td>
-            <button class="btn" type="button" @click="toggleSubscription(user)">
-              {{
-                user.subscriptionActive
-                  ? t("library.adminRevokeSubscription")
-                  : t("library.adminGrantSubscription")
               }}
             </button>
           </td>
@@ -311,10 +277,6 @@ onMounted(() => {
       <label class="library-admin-form__checkbox">
         <input v-model="editBlocked" type="checkbox" />
         {{ t("library.adminBlocked") }}
-      </label>
-      <label class="library-admin-form__checkbox">
-        <input v-model="editSubscription" type="checkbox" />
-        {{ t("library.adminSubscription") }}
       </label>
       <div class="modal-actions">
         <button class="btn btn--primary" type="button" :disabled="isSaving" @click="onSaveEdit()">

@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { reactive } from "vue";
-import SettingsLlmTab from "@/components/settings/SettingsLlmTab.vue";
-import { useSettingsLlmForm } from "@/composables/settings/useSettingsLlmForm";
 import { useLocale } from "@/composables/useLocale";
 import type { LlmGateFailureReason } from "@/composables/useLlmGate";
 
@@ -11,10 +8,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   retry: [];
+  openSettings: [];
 }>();
 
 const { t } = useLocale();
-const llm = reactive(useSettingsLlmForm(t));
 
 const reasonTitleKey = {
   no_consent: "llm.gate.noConsentTitle",
@@ -54,11 +51,10 @@ function messageForReason(): string {
     <h3 class="wizard-ai-setup__title">{{ titleForReason() }}</h3>
     <p class="wizard-ai-setup__hint">{{ messageForReason() }}</p>
 
-    <div class="wizard-ai-setup__form">
-      <SettingsLlmTab :llm="llm" />
-    </div>
-
     <div class="wizard-ai-setup__actions">
+      <button class="btn" type="button" @click="emit('openSettings')">
+        {{ t("llm.wizard.openSettings") }}
+      </button>
       <button class="btn btn-primary" type="button" @click="emit('retry')">
         {{ t("llm.wizard.aiSetupRetry") }}
       </button>

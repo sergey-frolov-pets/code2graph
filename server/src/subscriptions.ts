@@ -13,6 +13,7 @@ import {
   type SubscriptionRow,
 } from "./services/subscription-permissions.js";
 import { generateShareToken } from "./share-links.js";
+import { featuresForSubscription } from "./services/subscription-features.js";
 import type {
   GrantedSubscriptionDto,
   SubscriptionDiagramDto,
@@ -147,6 +148,7 @@ export function mapSubscriptionDto(
     urlPath: buildSubscriptionUrlPath(shareToken),
     sections: mapSubscriptionSections(database, row.id),
     diagrams: mapSubscriptionDiagrams(database, row.id),
+    features: featuresForSubscription(database, row.id, row.permission),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

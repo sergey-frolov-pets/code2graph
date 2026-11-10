@@ -9,6 +9,7 @@ import LoadingState from "@/components/ui/LoadingState.vue";
 import PanelDualScreenButton from "@/components/PanelDualScreenButton.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
 import { useLocale } from "@/composables/useLocale";
+import { isFeatureAllowed } from "@/composables/useFeatureGate";
 import { useImageSize } from "@/composables/useImageSize";
 import { usePresentationSession } from "@/composables/usePresentationSession";
 import { usePreviewPanZoom } from "@/composables/usePreviewPanZoom";
@@ -131,6 +132,13 @@ const presentation = usePresentationSession({
 });
 provide(presentationSessionKey, presentation);
 
+function onTogglePresentation(): void {
+  if (!isFeatureAllowed("editor.presentation")) {
+    return;
+  }
+  presentation.togglePanel();
+}
+
 function toggleFullscreen(): void {
   isFullscreen.value = !isFullscreen.value;
 }
@@ -199,8 +207,6 @@ watch(
           :is-rendering="isRendering"
           :can-export="canExport"
           :preview-background="previewBackground"
-          :diagram-dark-mode="diagramDarkMode"
-          :render-mode="renderMode"
           :zoom-percent="zoomPercent"
           :image-width="activeSize.width"
           :image-height="activeSize.height"
@@ -208,7 +214,7 @@ watch(
           :copy-png="copyPng"
           :presentation-enabled="presentation.enabled.value"
           :presentation-open="presentation.panelOpen.value"
-          @toggle-presentation="presentation.togglePanel()"
+          @toggle-presentation="onTogglePresentation"
           @render-now="emit('renderNow')"
           @export-svg="emit('exportSvg')"
           @export-png="emit('exportPng')"
@@ -219,9 +225,6 @@ watch(
           @set-image-height="setHeight"
           @reset-image-size="resetSize"
           @open-appearance="appearanceOpen = true"
-          @update:preview-background="emit('update:previewBackground', $event)"
-          @update:diagram-dark-mode="emit('update:diagramDarkMode', $event)"
-          @update:render-mode="emit('update:renderMode', $event)"
         />
         <span
           v-if="isRendering"
@@ -325,12 +328,16 @@ watch(
       :font-family="diagramFontFamily"
       :font-weight="diagramFontWeight"
       :font-style="diagramFontStyle"
+      :diagram-dark-mode="diagramDarkMode"
+      :render-mode="renderMode"
       @close="appearanceOpen = false"
       @update:background="emit('update:previewBackground', $event)"
       @update:text-color="emit('update:textColor', $event)"
       @update:font-family="emit('update:diagramFontFamily', $event)"
       @update:font-weight="emit('update:diagramFontWeight', $event)"
       @update:font-style="emit('update:diagramFontStyle', $event)"
+      @update:diagram-dark-mode="emit('update:diagramDarkMode', $event)"
+      @update:render-mode="emit('update:renderMode', $event)"
     />
   </section>
 </template>

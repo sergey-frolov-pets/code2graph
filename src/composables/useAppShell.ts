@@ -31,6 +31,7 @@ import { useLocale } from "@/composables/useLocale";
 import { usePersistedSettings } from "@/composables/usePersistedSettings";
 import { useSyntaxValidation } from "@/composables/useSyntaxValidation";
 import { getLibraryApiBaseUrl } from "@/config/library-api";
+import { setDocumentFeatureSnapshot } from "@/composables/useFeatureGate";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import { getDiagramFormatDefinition } from "@/constants/diagram-formats";
 import { PENDING_SHARE_STORAGE_KEY } from "@/constants/library-share";
@@ -405,7 +406,9 @@ export function useAppShell(): AppShellContext {
     fileName: string;
     format?: DiagramFormat;
     diagramId?: string;
+    features?: import("@shared/features").FeatureMap;
   }): void {
+    setDocumentFeatureSnapshot(payload.features ?? null);
     flushPendingHistory();
     withSuppressedSourceHistory(() => {
       applyLoadedSource(payload.content, payload.fileName, payload.format);

@@ -50,6 +50,7 @@ export interface UseLibraryModalFlowOptions {
     fileName: string;
     format?: DiagramFormat;
     diagramId?: string;
+    features?: import("@shared/features").FeatureMap;
   }) => void;
   onClose: () => void;
   t: TranslateFn;
@@ -80,7 +81,6 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
   const isSectionAccessOpen = ref(false);
   const sectionAccessId = ref<string | null>(null);
   const sectionAccessTitle = ref("");
-  const isSetupModalOpen = ref(false);
   const isRegisterModalOpen = ref(false);
   const isVersionsModalOpen = ref(false);
 
@@ -274,7 +274,7 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
     uploadError,
     showTransientNotice,
     onNeedsSetup: () => {
-      isSetupModalOpen.value = true;
+      // First admin is created by the inline panel in the library body.
     },
     t,
   });
@@ -463,7 +463,6 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
     try {
       const status = await checkLibraryAuthStatus(libraryApiUrl.value);
       if (status.needsSetup) {
-        isSetupModalOpen.value = true;
         if (target.libraryTarget.value === "online") {
           return;
         }
@@ -486,18 +485,9 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
   }
 
   async function onSetupCompleted(): Promise<void> {
-    isSetupModalOpen.value = false;
     target.setLibraryTarget("online");
     await refreshCurrentUser();
     await library.refresh();
-  }
-
-  function onSetupClose(): void {
-    isSetupModalOpen.value = false;
-    if (needsSetup.value && target.libraryTarget.value === "online") {
-      target.setLibraryTarget("local");
-      void library.refresh();
-    }
   }
 
   watch(open, (isOpen) => {
@@ -649,7 +639,6 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
     isSectionAccessOpen,
     sectionAccessId,
     sectionAccessTitle,
-    isSetupModalOpen,
     isRegisterModalOpen,
     isVersionsModalOpen,
     showAdminTab,
@@ -716,7 +705,6 @@ export function useLibraryModalFlow(options: UseLibraryModalFlowOptions) {
     onVersionsRestored,
     closeSectionAccess,
     onSetupCompleted,
-    onSetupClose,
     toggleSectionsEditMode,
     closeSectionEditor,
     createSection,

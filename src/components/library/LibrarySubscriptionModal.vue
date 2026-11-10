@@ -12,6 +12,14 @@ import {
 import type { FlatSectionOption } from "@/shared/library/section-tree";
 import { useLocale } from "@/composables/useLocale";
 import {
+  EDITABLE_FEATURE_IDS,
+  defaultFeaturesForPermission,
+  mergeFeatureDefaults,
+  type EditableFeatureId,
+  type FeatureMap,
+} from "@shared/features";
+import type { LocaleKey } from "@/locales/types";
+import {
   createSubscription,
   updateSubscription,
 } from "@/services/library/api/subscriptions";
@@ -38,6 +46,18 @@ const { t } = useLocale();
 const titleInput = ref("");
 const descriptionInput = ref("");
 const permissionInput = ref<SectionAccessPermission>("view");
+const featureInputs = ref<FeatureMap>(defaultFeaturesForPermission("view"));
+
+const FEATURE_LABEL_KEYS = {
+  "editor.open": "library.feature.editor.open",
+  "editor.copySource": "library.feature.editor.copySource",
+  "editor.export": "library.feature.editor.export",
+  "editor.ai": "library.feature.editor.ai",
+  "editor.wizard": "library.feature.editor.wizard",
+  "editor.presentation": "library.feature.editor.presentation",
+  "editor.snippets": "library.feature.editor.snippets",
+  "llm.proxy": "library.feature.llm.proxy",
+} as const satisfies Record<EditableFeatureId, LocaleKey>;
 const distributionModeInput = ref<SubscriptionDistributionMode>("users");
 const sectionStates = ref<Record<string, SectionSelectionState>>({});
 const selectedDiagramIds = ref<string[]>([]);
@@ -83,6 +103,10 @@ function resetForm(): void {
   titleInput.value = props.subscription?.title ?? "";
   descriptionInput.value = props.subscription?.description ?? "";
   permissionInput.value = props.subscription?.permission ?? "view";
+  featureInputs.value = mergeFeatureDefaults(
+    permissionInput.value,
+    props.subscription?.features,
+  );
   distributionModeInput.value = props.subscription?.distributionMode ?? "users";
 
   const next: Record<string, SectionSelectionState> = {};
@@ -99,6 +123,10 @@ function resetForm(): void {
   selectedDiagramIds.value =
     props.subscription?.diagrams.map((entry) => entry.diagramId) ?? [];
   errorMessage.value = "";
+}
+
+function onPermissionChange(): void {
+  featureInputs.value = defaultFeaturesForPermission(permissionInput.value);
 }
 
 function toggleSection(sectionId: string): void {
@@ -175,6 +203,7 @@ async function onSave(): Promise<void> {
       description: descriptionInput.value,
       permission: permissionInput.value,
       distributionMode: distributionModeInput.value,
+      features: featureInputs.value,
       sections,
       diagrams,
     };
@@ -235,7 +264,7 @@ watch(
 
     <label class="settings-field">
       <span class="settings-field__label">{{ t("library.accessPermission") }}</span>
-      <select v-model="permissionInput" class="select">
+      <select v-model="permissionInput" class="select" @change="onPermissionChange">
         <option
           v-for="permission in SECTION_ACCESS_PERMISSIONS"
           :key="permission"
@@ -249,6 +278,18 @@ watch(
       </span>
       <span class="settings-field__hint">{{ t("library.subscriptionPermissionMergeHint") }}</span>
     </label>
+
+    <div class="settings-field">
+      <span class="settings-field__label">{{ t("library.featuresTitle") }}</span>
+      <label
+        v-for="featureId in EDITABLE_FEATURE_IDS"
+        :key="featureId"
+        class="settings-field settings-field--checkbox"
+      >
+        <input v-model="featureInputs[featureId]" type="checkbox" />
+        <span>{{ t(FEATURE_LABEL_KEYS[featureId]) }}</span>
+      </label>
+    </div>
 
     <label class="settings-field">
       <span class="settings-field__label">{{ t("library.subscriptionDistributionMode") }}</span>

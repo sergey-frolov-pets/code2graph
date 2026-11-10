@@ -3,6 +3,7 @@ import {
   APP_MODAL_COMPONENTS,
   LLM_KEYS_GUIDE_MODAL,
 } from "@/app/app-modal-registry";
+import DiagramVersionsDialog from "@/components/editor/DiagramVersionsDialog.vue";
 import { useAppShellContext } from "@/composables/useAppShell";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 
@@ -11,7 +12,6 @@ const {
   diagramFormat,
   layout,
   renderMode,
-  uiDarkMode,
   diagramDarkMode,
   editorFontSize,
   editorFontFamilyId,
@@ -88,9 +88,9 @@ function onWizardApply(payload: {
     @ask-syntax="onSyntaxAskFromValidation"
   />
 
-  <component
-    :is="APP_MODAL_COMPONENTS.versions"
+  <DiagramVersionsDialog
     v-if="isVersionsModalOpen"
+    source="local"
     :open="isVersionsModalOpen"
     :document-key="loadedFileName"
     :current-source="source"
@@ -125,8 +125,6 @@ function onWizardApply(payload: {
     v-if="isSettingsModalOpen"
     :open="isSettingsModalOpen"
     v-model:layout="layout"
-    v-model:render-mode="renderMode"
-    v-model:dark-mode="uiDarkMode"
     v-model:editor-font-size="editorFontSize"
     v-model:editor-font-family-id="editorFontFamilyId"
     v-model:editor-syntax-highlight="editorSyntaxHighlight"
@@ -179,6 +177,7 @@ function onWizardApply(payload: {
     :diagram-dark-mode="diagramDarkMode"
     @close="closeWizardModal"
     @apply="onWizardApply"
+    @open-settings="openSettingsModal"
   />
 
   <component

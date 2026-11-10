@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { isStaticDeployment } from "@/config/library-api";
+import { getLibraryApiUrlRef } from "@/config/library-api";
 import { useLocale } from "@/composables/useLocale";
 
 const { t } = useLocale();
+const libraryApiUrl = getLibraryApiUrlRef();
 
-const connected = computed(
-  () => !isStaticDeployment(import.meta.env.VITE_API_BASE_URL),
-);
+const connected = computed(() => Boolean(libraryApiUrl.value));
 
 const label = computed(() =>
   connected.value ? t("site.mcp.connected") : t("site.mcp.disconnected"),
