@@ -13,6 +13,11 @@ import {
 } from "@/constants/editor-settings";
 import { getFormatHandler } from "@/formats";
 import type { DiagramFormat } from "@/constants/diagram-formats";
+import {
+  buildViewFolds,
+  type SessionLineRole,
+  type SessionProjection,
+} from "@/services/editor/session-changes";
 
 export const EDITOR_LINE_HEIGHT = 1.45;
 export const FOLD_TOGGLE_WIDTH = "12px";
@@ -27,6 +32,8 @@ export interface GutterRow {
   lineNumber: number | null;
   visibleLine: VisibleLine;
   fold: CodeFoldRegion | null;
+  sessionRole: Exclude<SessionLineRole, "context"> | null;
+  hunkId: string | null;
 }
 
 export interface VisibleEditorLine {
@@ -35,11 +42,13 @@ export interface VisibleEditorLine {
   sourceLine: number;
   text: string;
   html?: string;
+  sessionRole: Exclude<SessionLineRole, "context"> | null;
 }
 
 export function useEditorDisplayModel(options: {
   source: Ref<string>;
   folds: Ref<CodeFoldRegion[]>;
+  sessionProjection: Ref<SessionProjection | null>;
   syntaxHighlightEnabled: Ref<boolean>;
   diagramFormat: Ref<DiagramFormat>;
   editorFontSize: Ref<string>;
@@ -48,19 +57,36 @@ export function useEditorDisplayModel(options: {
   const {
     source,
     folds,
+    sessionProjection,
     syntaxHighlightEnabled,
     diagramFormat,
     editorFontSize,
     editorFontFamily,
   } = options;
 
-  const sourceLines = computed(() => source.value.split(/\r?\n/));
+  const sourceLines = computed(() => {
+    const projection = sessionProjection.value;
+    if (projection) {
+      return projection.lines.map((line) => line.text);
+    }
+
+    return source.value.split(/\r?\n/);
+  });
+
+  const displayFolds = computed(() => {
+    const projection = sessionProjection.value;
+    if (!projection) {
+      return folds.value;
+    }
+
+    return buildViewFolds(folds.value, projection.lines);
+  });
 
   const highlightRevision = ref(0);
   let highlightTimer: ReturnType<typeof setTimeout> | undefined;
 
   watch(
-    [source, folds, syntaxHighlightEnabled, diagramFormat],
+    [source, folds, sessionProjection, syntaxHighlightEnabled, diagramFormat],
     () => {
       if (highlightTimer) {
         clearTimeout(highlightTimer);
@@ -86,11 +112,11 @@ export function useEditorDisplayModel(options: {
   );
 
   const displayText = computed(() =>
-    buildDisplayText(sourceLines.value, folds.value),
+    buildDisplayText(sourceLines.value, displayFolds.value),
   );
 
   const visibleLines = computed(() =>
-    buildVisibleLines(lineCount.value, folds.value),
+    buildVisibleLines(lineCount.value, displayFolds.value),
   );
 
   const foldsByStartLine = computed(() => {
@@ -104,17 +130,39 @@ export function useEditorDisplayModel(options: {
   });
 
   const gutterRows = computed<GutterRow[]>(() =>
-    visibleLines.value.map((visibleLine, index) => ({
-      key: `${visibleLine.kind}-${visibleLine.sourceLine}-${index}`,
-      sourceLine: visibleLine.sourceLine,
-      lineNumber:
-        visibleLine.kind === "source" ? visibleLine.sourceLine : null,
-      visibleLine,
-      fold:
-        visibleLine.kind === "source"
-          ? (foldsByStartLine.value.get(visibleLine.sourceLine) ?? null)
-          : null,
-    })),
+    visibleLines.value.map((visibleLine, index) => {
+      const projectedLine =
+        sessionProjection.value && visibleLine.kind === "source"
+          ? sessionProjection.value.lines[visibleLine.sourceLine - 1]
+          : undefined;
+      const sessionRole =
+        projectedLine && projectedLine.role !== "context"
+          ? projectedLine.role
+          : null;
+      const workingLine = projectedLine?.foldLine ?? null;
+
+      return {
+        key: `${visibleLine.kind}-${visibleLine.sourceLine}-${index}`,
+        sourceLine: sessionProjection.value
+          ? (workingLine ?? 0)
+          : visibleLine.sourceLine,
+        lineNumber: projectedLine
+          ? projectedLine.gutterLine
+          : visibleLine.kind === "source"
+            ? visibleLine.sourceLine
+            : null,
+        visibleLine,
+        fold: projectedLine
+          ? workingLine
+            ? (foldsByStartLine.value.get(workingLine) ?? null)
+            : null
+          : visibleLine.kind === "source"
+            ? (foldsByStartLine.value.get(visibleLine.sourceLine) ?? null)
+            : null,
+        sessionRole,
+        hunkId: projectedLine?.hunkId ?? null,
+      };
+    }),
   );
 
   const renderLineHighlight = (line: string): string =>
@@ -133,11 +181,20 @@ export function useEditorDisplayModel(options: {
           ? buildFoldPlaceholder(item.hiddenLineCount ?? 0)
           : rawLine || " ";
 
+      const projectedLine =
+        sessionProjection.value && item.kind === "source"
+          ? sessionProjection.value.lines[item.sourceLine - 1]
+          : undefined;
+
       return {
         key: `${item.kind}-${item.sourceLine}-${index}`,
         kind: item.kind,
-        sourceLine: item.sourceLine,
+        sourceLine: projectedLine?.workingLines[0] ?? item.sourceLine,
         text,
+        sessionRole:
+          projectedLine && projectedLine.role !== "context"
+            ? projectedLine.role
+            : null,
         html:
           item.kind === "placeholder" || !syntaxHighlightEnabled.value
             ? undefined
@@ -146,7 +203,15 @@ export function useEditorDisplayModel(options: {
     });
   });
 
-  const gutterDigitCount = computed(() => String(lineCount.value).length);
+  const surfaceText = computed(() => sourceLines.value.join("\n"));
+
+  const gutterDigitCount = computed(() => {
+    const numbered = gutterRows.value.reduce(
+      (largest, row) => Math.max(largest, row.lineNumber ?? 0),
+      lineCount.value,
+    );
+    return String(Math.max(numbered, 1)).length;
+  });
 
   const editorStyle = computed(() => ({
     "--editor-font-size": editorFontSize.value,
@@ -163,6 +228,8 @@ export function useEditorDisplayModel(options: {
 
   return {
     displayText,
+    surfaceText,
+    surfaceFolds: displayFolds,
     visibleLines,
     gutterRows,
     visibleEditorLines,

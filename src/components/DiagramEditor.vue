@@ -37,6 +37,16 @@ import { useCodeFolds } from "@/composables/editor/useCodeFolds";
 import { useEditorDisplayModel } from "@/composables/editor/useEditorDisplayModel";
 import { useEditorFileImport } from "@/composables/editor/useEditorFileImport";
 import { useEditorSelection } from "@/composables/editor/useEditorSelection";
+import { useSessionChanges } from "@/composables/editor/useSessionChanges";
+import type { CodeFoldRegion } from "@/utils/code-folds";
+import {
+  applySessionViewEdit,
+  buildSessionProjection,
+  mapViewOffsetToWorkingOffset,
+  offsetOfWorkingLine,
+  sessionViewText,
+  splitSourceLines,
+} from "@/services/editor/session-changes";
 import "./editor/editor-code.css";
 
 const source = defineModel<string>({ required: true });
@@ -135,6 +145,91 @@ const textareaRef = computed(
   () => codeSurfaceRef.value?.textareaEl ?? null,
 );
 
+const session = useSessionChanges();
+const cursorText = ref("");
+const cursorFolds = ref<CodeFoldRegion[]>([]);
+
+const sessionProjection = computed(() => {
+  if (session.displayMode.value !== "tracking") {
+    return null;
+  }
+
+  return buildSessionProjection({
+    baseline: session.baseline.value ?? source.value,
+    current: source.value,
+    fileShowsBaseline: session.fileShowsBaseline.value,
+    flippedHunkIds: session.flippedHunkIds.value,
+  });
+});
+
+const hasSessionChanges = computed(
+  () => (sessionProjection.value?.hunks.length ?? 0) > 0,
+);
+
+function commitSurfaceText(next: string): void {
+  const projection = sessionProjection.value;
+  if (!projection) {
+    source.value = next;
+    return;
+  }
+
+  const applied = applySessionViewEdit(
+    projection.lines,
+    projection.hidden,
+    next,
+    splitSourceLines(source.value),
+  );
+  source.value = applied.text;
+  if (applied.editedCount > 0) {
+    session.showEditedLinesAsCurrent(
+      applied.text,
+      applied.editedStart,
+      applied.editedCount,
+    );
+  }
+}
+
+const sessionBuffer = computed({
+  get(): string {
+    const projection = sessionProjection.value;
+    return projection ? sessionViewText(projection.lines) : source.value;
+  },
+  set(next: string) {
+    commitSurfaceText(next);
+  },
+});
+
+function workingLineOffset(lineNumber: number): number {
+  const projection = sessionProjection.value;
+  if (!projection) {
+    const lines = splitSourceLines(source.value);
+    const targetLine = Math.min(Math.max(lineNumber, 1), Math.max(lines.length, 1));
+    return lines
+      .slice(0, targetLine - 1)
+      .reduce((offset, line) => offset + line.length + 1, 0);
+  }
+
+  return offsetOfWorkingLine(
+    projection.lines,
+    projection.hidden,
+    lineNumber,
+  );
+}
+
+function toWorkingOffset(offset: number): number {
+  const projection = sessionProjection.value;
+  if (!projection) {
+    return offset;
+  }
+
+  return mapViewOffsetToWorkingOffset(
+    offset,
+    projection.lines,
+    projection.hidden,
+    source.value,
+  );
+}
+
 function onEditorFocusOut(event: FocusEvent): void {
   const section = event.currentTarget as HTMLElement;
   const related = event.relatedTarget as Node | null;
@@ -176,7 +271,15 @@ const {
   removeFold,
   addRegion,
   scrollToSourceLine,
-} = useCodeFolds({ source, diagramFormat, textareaRef, syncScroll });
+} = useCodeFolds({
+  source,
+  diagramFormat,
+  textareaRef,
+  syncScroll,
+  cursorText,
+  cursorFolds,
+  workingLineOffset,
+});
 
 const regionsButtonEl = computed(
   () => gutterComponentRef.value?.regionsButtonEl ?? null,
@@ -209,6 +312,8 @@ function onRegionNavigate(line: number): void {
 
 const {
   displayText,
+  surfaceText,
+  surfaceFolds,
   gutterRows,
   visibleEditorLines,
   editorStyle,
@@ -216,11 +321,20 @@ const {
 } = useEditorDisplayModel({
   source,
   folds,
+  sessionProjection,
   syntaxHighlightEnabled: effectiveSyntaxHighlight,
   diagramFormat,
   editorFontSize: toRef(props, "editorFontSize"),
   editorFontFamily: toRef(props, "editorFontFamily"),
 });
+
+watch(surfaceText, (value) => {
+  cursorText.value = value;
+}, { immediate: true });
+
+watch(surfaceFolds, (value) => {
+  cursorFolds.value = value;
+}, { immediate: true });
 
 const {
   fileInputRef,
@@ -250,12 +364,16 @@ const {
   getCaretOffsetInSource,
   getSelectionRangeInSource,
 } = useEditorSelection({
-  source,
-  folds,
+  source: sessionBuffer,
+  folds: surfaceFolds,
   textareaRef,
   displayText,
   syncScroll,
-  onAiPatch: (payload) => emit("aiPatch", payload),
+  onAiPatch: (payload) =>
+    emit("aiPatch", {
+      start: toWorkingOffset(payload.start),
+      end: toWorkingOffset(payload.end),
+    }),
 });
 
 async function onPasteTableFromClipboard(): Promise<void> {
@@ -282,12 +400,21 @@ async function onPasteTableFromClipboard(): Promise<void> {
 
   const selectionRange = getSelectionRangeInSource();
   const hasSelection = selectionRange.end > selectionRange.start;
+  const caretOffset = getCaretOffsetInSource();
   const result = applyTableFromClipboardText({
     clipboardText,
     source: source.value,
     format: diagramFormat.value,
-    selectionRange: hasSelection ? selectionRange : undefined,
-    cursorOffset: hasSelection ? undefined : getCaretOffsetInSource(),
+    selectionRange: hasSelection
+      ? {
+          start: toWorkingOffset(selectionRange.start),
+          end: toWorkingOffset(selectionRange.end),
+        }
+      : undefined,
+    cursorOffset:
+      hasSelection || caretOffset === undefined
+        ? undefined
+        : toWorkingOffset(caretOffset),
   });
 
   if (!result.ok) {
@@ -302,9 +429,9 @@ async function onPasteTableFromClipboard(): Promise<void> {
 }
 
 const autocomplete = useEditorAutocomplete({
-  source,
+  source: sessionBuffer,
   diagramFormat,
-  folds,
+  folds: surfaceFolds,
   textareaRef,
   editorFontSize: toRef(props, "editorFontSize"),
   enabled: effectiveAutocomplete,
@@ -396,7 +523,12 @@ onUnmounted(() => {
       :is-fullscreen="isFullscreen"
       :surface-mode="surfaceMode"
       :builder-available="builderAvailable"
+      :session-mode="session.displayMode.value"
+      :can-toggle-session-file="hasSessionChanges"
+      :session-file-shows-baseline="session.fileShowsBaseline.value"
       @set-surface-mode="setSurfaceMode"
+      @set-session-mode="session.setDisplayMode"
+      @toggle-session-file="session.toggleFileVersion"
       @open-file="openFilePicker"
       @open-versions="emit('openVersions')"
       @save-puml="emit('savePuml')"
@@ -453,12 +585,13 @@ onUnmounted(() => {
           @fold-remove="removeFold"
           @gutter-line-tap="onGutterLineTap"
           @open-regions-modal="toggleRegionsModal"
+          @toggle-session-hunk="session.toggleHunk"
         />
 
         <EditorCodeSurface
           ref="codeSurfaceRef"
-          :source="source"
-          :folds="folds"
+          :source="sessionBuffer"
+          :folds="surfaceFolds"
           :display-text="displayText"
           :visible-editor-lines="visibleEditorLines"
           :use-line-virtualization="useLineVirtualization"
@@ -468,7 +601,7 @@ onUnmounted(() => {
           :placeholder="editorPlaceholder"
           :error-lines="errorLines ?? []"
           :autocomplete="autocomplete"
-          @update:source="source = $event"
+          @update:source="sessionBuffer = $event"
           @scroll="onTextareaScroll"
           @select="updateSelectionState"
           @mouseup="updateSelectionState"

@@ -23,24 +23,34 @@ import { DIAGRAM_LANGUAGE_MODULES, getLanguageModule } from "@/languages/registr
 import { isLocaleKey } from "@/locales/types";
 import { SNIPPETS_KEYBOARD_SHORTCUT } from "@/constants/snippets-settings";
 
-const props = defineProps<{
-  formatDefinition: DiagramFormatDefinition;
-  canSave: boolean;
-  isValidating: boolean;
-  isRendering: boolean;
-  canUndo?: boolean;
-  canRedo?: boolean;
-  canClear: boolean;
-  canConvert: boolean;
-  canAiPatch: boolean;
-  canAiSyntaxAsk: boolean;
-  canPasteTable?: boolean;
-  canRefreshData?: boolean;
-  snippetsOpen: boolean;
-  isFullscreen: boolean;
-  surfaceMode: "code" | "builder";
-  builderAvailable: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    formatDefinition: DiagramFormatDefinition;
+    canSave: boolean;
+    isValidating: boolean;
+    isRendering: boolean;
+    canUndo?: boolean;
+    canRedo?: boolean;
+    canClear: boolean;
+    canConvert: boolean;
+    canAiPatch: boolean;
+    canAiSyntaxAsk: boolean;
+    canPasteTable?: boolean;
+    canRefreshData?: boolean;
+    snippetsOpen: boolean;
+    isFullscreen: boolean;
+    surfaceMode: "code" | "builder";
+    builderAvailable: boolean;
+    sessionMode?: "plain" | "tracking";
+    canToggleSessionFile?: boolean;
+    sessionFileShowsBaseline?: boolean;
+  }>(),
+  {
+    sessionMode: "plain",
+    canToggleSessionFile: false,
+    sessionFileShowsBaseline: false,
+  },
+);
 
 const emit = defineEmits<{
   openFile: [];
@@ -61,6 +71,8 @@ const emit = defineEmits<{
   loadSample: [selection: SampleSelection];
   changeFormat: [format: DiagramFormat];
   toggleFullscreen: [];
+  setSessionMode: [mode: "plain" | "tracking"];
+  toggleSessionFile: [];
 }>();
 
 const { t } = useLocale();
@@ -222,6 +234,35 @@ function onSampleChange(event: Event): void {
           </option>
         </select>
       </label>
+      <div
+        v-if="formatDefinition.editable"
+        class="editor-surface-switch"
+        role="radiogroup"
+        :aria-label="t('editor.sessionMode.label')"
+      >
+        <button
+          type="button"
+          class="editor-surface-switch__option"
+          role="radio"
+          :aria-checked="sessionMode === 'plain'"
+          :class="{ 'is-active': sessionMode === 'plain' }"
+          data-testid="editor-session-mode-plain"
+          @click="emit('setSessionMode', 'plain')"
+        >
+          {{ t("editor.sessionMode.plain") }}
+        </button>
+        <button
+          type="button"
+          class="editor-surface-switch__option"
+          role="radio"
+          :aria-checked="sessionMode === 'tracking'"
+          :class="{ 'is-active': sessionMode === 'tracking' }"
+          data-testid="editor-session-mode-tracking"
+          @click="emit('setSessionMode', 'tracking')"
+        >
+          {{ t("editor.sessionMode.tracking") }}
+        </button>
+      </div>
       <span
         v-if="!formatDefinition.editable"
         class="panel-title__badge panel-title__badge--muted"
@@ -303,6 +344,20 @@ function onSampleChange(event: Event): void {
         @click="emit('refreshData')"
       >
         <ActionIcon name="refresh" />
+      </IconButton>
+      <IconButton
+        v-if="formatDefinition.editable && sessionMode === 'tracking'"
+        :label="
+          sessionFileShowsBaseline
+            ? t('editor.sessionToggleFileCurrent')
+            : t('editor.sessionToggleFile')
+        "
+        :pressed="sessionFileShowsBaseline"
+        :disabled="!canToggleSessionFile"
+        data-testid="editor-session-file-toggle"
+        @click="emit('toggleSessionFile')"
+      >
+        <ActionIcon :name="sessionFileShowsBaseline ? 'eye-off' : 'eye'" />
       </IconButton>
       <IconButton
         v-if="formatDefinition.editable"

@@ -302,6 +302,7 @@ function onTextareaScroll(): void {
         :class="{
           'is-error':
             line.kind === 'source' && errorLineSet.has(line.sourceLine),
+          'is-session-deleted': line.sessionRole === 'deleted',
           'is-fold-placeholder': line.kind === 'placeholder',
           'editor-virtual-line': useLineVirtualization,
         }"

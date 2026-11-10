@@ -30,6 +30,7 @@ const emit = defineEmits<{
   foldRemove: [foldId: string, event: MouseEvent];
   gutterLineTap: [sourceLine: number];
   openRegionsModal: [];
+  toggleSessionHunk: [hunkId: string];
 }>();
 
 const { t } = useLocale();
@@ -76,6 +77,9 @@ function onGutterLineClick(
         :class="{
           'is-fold-selection': isLineInFoldSelection(row.sourceLine),
           'is-placeholder': row.visibleLine.kind === 'placeholder',
+          'is-session-added': row.sessionRole === 'added',
+          'is-session-modified': row.sessionRole === 'modified',
+          'is-session-deleted': row.sessionRole === 'deleted',
           'editor-virtual-line': useLineVirtualization,
         }"
         @mousedown="onGutterLinePointerDown(row.sourceLine, $event)"
@@ -100,7 +104,19 @@ function onGutterLineClick(
           {{ row.fold.collapsed ? "\u25B6" : "\u25BC" }}
         </button>
         <span v-else class="code-editor__fold-spacer" aria-hidden="true" />
-        <span class="code-editor__gutter-number">
+        <button
+          v-if="row.hunkId && row.lineNumber !== null"
+          type="button"
+          class="code-editor__gutter-number code-editor__gutter-number--button"
+          :title="t('editor.sessionToggleHunk')"
+          :aria-label="t('editor.sessionToggleHunk')"
+          @mousedown.stop
+          @mouseup.stop
+          @click.stop="emit('toggleSessionHunk', row.hunkId)"
+        >
+          {{ row.lineNumber }}
+        </button>
+        <span v-else class="code-editor__gutter-number">
           <template v-if="row.lineNumber !== null">
             {{ row.lineNumber }}
           </template>

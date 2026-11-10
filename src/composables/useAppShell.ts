@@ -20,6 +20,11 @@ import { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import { useDiagramRender } from "@/composables/useDiagramRender";
 import { useEditorHistory } from "@/composables/useEditorHistory";
 import { useEditorDocuments } from "@/composables/editor/useEditorDocuments";
+import { useSessionChanges } from "@/composables/editor/useSessionChanges";
+import {
+  buildSessionProjection,
+  sessionPreviewText,
+} from "@/services/editor/session-changes";
 import { useEditorSourceHistory } from "@/composables/useEditorSourceHistory";
 import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
 import { useLocale } from "@/composables/useLocale";
@@ -216,6 +221,21 @@ export function useAppShell(): AppShellContext {
     getDiagramFormatDefinition(diagramFormat.value),
   );
 
+  const sessionChanges = useSessionChanges();
+  const sessionPreviewSource = computed(() => {
+    if (sessionChanges.displayMode.value !== "tracking") {
+      return source.value;
+    }
+
+    const projection = buildSessionProjection({
+      baseline: sessionChanges.baseline.value ?? source.value,
+      current: source.value,
+      fileShowsBaseline: sessionChanges.fileShowsBaseline.value,
+      flippedHunkIds: sessionChanges.flippedHunkIds.value,
+    });
+    return sessionPreviewText(projection.lines);
+  });
+
   const {
     svg,
     error,
@@ -225,6 +245,7 @@ export function useAppShell(): AppShellContext {
     bootEngine,
   } = useDiagramRender({
     source,
+    renderSource: sessionPreviewSource,
     diagramFormat,
     layout,
     diagramDarkMode,
@@ -283,6 +304,8 @@ export function useAppShell(): AppShellContext {
     (documentId) => {
       if (documentId) {
         setActiveDocument(documentId);
+        sessionChanges.setActiveDocument(documentId);
+        sessionChanges.ensureBaseline(source.value, documentId);
       }
     },
     { immediate: true },
@@ -386,6 +409,7 @@ export function useAppShell(): AppShellContext {
     withSuppressedSourceHistory(() => {
       applyLoadedSource(payload.content, payload.fileName, payload.format);
     });
+    sessionChanges.resetBaseline(payload.content);
     linkedLibraryDiagramId.value = payload.diagramId ?? null;
   }
 
@@ -405,6 +429,7 @@ export function useAppShell(): AppShellContext {
   function onEditorClearedWithLink(): void {
     linkedLibraryDiagramId.value = null;
     onEditorCleared();
+    sessionChanges.resetBaseline(source.value);
   }
 
   function onImportError(message: string): void {
@@ -470,6 +495,7 @@ export function useAppShell(): AppShellContext {
       editorDocumentsApi.closeTab(documentId);
     });
     forgetDocument(documentId);
+    sessionChanges.forgetDocument(documentId);
   }
 
   function applyWizardDiagramToNewTab(
@@ -479,11 +505,12 @@ export function useAppShell(): AppShellContext {
   ): void {
     flushPendingHistory();
     withSuppressedSourceHistory(() => {
-      editorDocumentsApi.openNewTab({
+      const documentId = editorDocumentsApi.openNewTab({
         source: wizardSource,
         label,
         format,
       });
+      sessionChanges.resetBaseline(wizardSource, documentId);
       error.value = "";
       syntaxErrorLines.value = [];
       scheduleRender();

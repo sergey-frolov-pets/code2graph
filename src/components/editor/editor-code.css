@@ -146,6 +146,34 @@
   line-height: var(--editor-line-height);
 }
 
+.code-editor__gutter-number--button {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.code-editor__gutter-line.is-session-added .code-editor__gutter-number {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 18%, transparent);
+  border-radius: 4px;
+}
+
+.code-editor__gutter-line.is-session-modified .code-editor__gutter-number {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-radius: 4px;
+}
+
+.code-editor__gutter-line.is-session-deleted .code-editor__gutter-number {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+  border-radius: 4px;
+}
+
 .code-editor__input-wrap {
   position: relative;
   flex: 1;
@@ -167,6 +195,11 @@
 
 .code-editor__line.is-error {
   background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+
+.code-editor__line.is-session-deleted {
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
 }
 
 .code-editor__line.is-fold-placeholder {
