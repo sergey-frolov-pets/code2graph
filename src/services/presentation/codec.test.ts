@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { sanitizePresentationDocument } from "@/services/presentation/model";
 import { presentationFormats, readPresentation, stripPresentationBlock, writePresentation } from "@/services/presentation/codec";
 import { captureViewpoint, createPresentation } from "@/services/presentation/model";
 import type { PresentationDocument } from "@/services/presentation/types";
@@ -33,6 +34,44 @@ describe("presentation codec", () => {
     const source = "flowchart TD\n  A --> B";
     const written = writePresentation(source, "mermaid", sampleDocument());
     expect(writePresentation(written, "mermaid", null).trim()).toBe(source);
+  });
+
+  it("keeps older overlays and fills in style defaults", () => {
+    const document = sanitizePresentationDocument({
+      version: 1,
+      activeTrackId: "track",
+      tracks: [
+        {
+          id: "track",
+          name: "Tour",
+          viewpoints: [{ id: "view", anchor: { x: 0, y: 0 }, scale: 1, dwellMs: 1000 }],
+          transitions: [],
+          overlays: [
+            {
+              id: "note",
+              owner: { kind: "viewpoint", id: "view" },
+              shape: "text",
+              x: 0.1,
+              y: 0.2,
+              width: 0.3,
+              height: 0.1,
+              stroke: "not-a-color",
+            },
+          ],
+        },
+      ],
+    });
+    expect(document?.tracks[0]?.overlays[0]).toMatchObject({
+      stroke: "",
+      fill: "",
+      textColor: "",
+      font: "sans",
+      line: "solid",
+      bubbleShape: "rectangle",
+      cornerRadius: 0,
+      arrowForm: "line",
+      arrowDirection: "right",
+    });
   });
 
   it("returns null for a broken payload and still strips the line", () => {

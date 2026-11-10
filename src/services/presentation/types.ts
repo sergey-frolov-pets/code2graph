@@ -20,13 +20,33 @@ export const PRESENTATION_TEXT_BACKINGS = ["none", "rectangle", "bubble"] as con
 
 export type PresentationTextBacking = (typeof PRESENTATION_TEXT_BACKINGS)[number];
 
+export const PRESENTATION_BUBBLE_SHAPES = ["rectangle", "oval", "cloud"] as const;
+
+export type PresentationBubbleShape = (typeof PRESENTATION_BUBBLE_SHAPES)[number];
+
 export const PRESENTATION_ARROW_KINDS = ["straight", "elbow", "curve"] as const;
 
 export type PresentationArrowKind = (typeof PRESENTATION_ARROW_KINDS)[number];
 
+export const PRESENTATION_ARROW_FORMS = ["line", "shape", "pointer"] as const;
+
+export type PresentationArrowForm = (typeof PRESENTATION_ARROW_FORMS)[number];
+
+export const PRESENTATION_ARROW_DIRECTIONS = ["right", "left", "down", "up"] as const;
+
+export type PresentationArrowDirection = (typeof PRESENTATION_ARROW_DIRECTIONS)[number];
+
 export const PRESENTATION_ARROW_HEADS = ["none", "end", "start", "both"] as const;
 
 export type PresentationArrowHead = (typeof PRESENTATION_ARROW_HEADS)[number];
+
+export const PRESENTATION_LINE_STYLES = ["solid", "dashed"] as const;
+
+export type PresentationLineStyle = (typeof PRESENTATION_LINE_STYLES)[number];
+
+export const PRESENTATION_FONTS = ["sans", "serif", "mono"] as const;
+
+export type PresentationFont = (typeof PRESENTATION_FONTS)[number];
 
 /** Point on the rendered image, as a fraction of its width and height. */
 export interface NormPoint {
@@ -68,8 +88,20 @@ export interface PresentationOverlay {
   height: number;
   text: string;
   backing: PresentationTextBacking;
+  /** Body of a speech bubble. Ignored unless the backing is a bubble. */
+  bubbleShape: PresentationBubbleShape;
+  /** 0 is sharp, 1 is a pill. Used by rectangles and rectangular bubbles. */
+  cornerRadius: number;
   arrowKind: PresentationArrowKind;
+  arrowForm: PresentationArrowForm;
+  arrowDirection: PresentationArrowDirection;
   arrowHead: PresentationArrowHead;
+  /** Empty string keeps the theme color. */
+  stroke: string;
+  fill: string;
+  textColor: string;
+  font: PresentationFont;
+  line: PresentationLineStyle;
 }
 
 export interface PresentationTrack {

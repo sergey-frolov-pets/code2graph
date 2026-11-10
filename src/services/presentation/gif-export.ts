@@ -1,6 +1,10 @@
 import { GIFEncoder, applyPalette, quantize } from "gifenc";
 import { frameToPan } from "@/services/presentation/camera";
 import {
+  lineArrowPath,
+  overlayOutline,
+} from "@/services/presentation/overlay-geometry";
+import {
   PRESENTATION_GIF_FALLBACK_BACKGROUND,
   PRESENTATION_GIF_MAX_DELAY_CS,
   PRESENTATION_GIF_PALETTE_SIZE,
@@ -97,28 +101,6 @@ function screenBox(
   };
 }
 
-function fillRoundRect(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  radius: number,
-): void {
-  const left = Math.min(x, x + width);
-  const top = Math.min(y, y + height);
-  const boxWidth = Math.abs(width);
-  const boxHeight = Math.abs(height);
-  context.beginPath();
-  if (typeof context.roundRect === "function") {
-    context.roundRect(left, top, boxWidth, boxHeight, radius);
-  } else {
-    context.rect(left, top, boxWidth, boxHeight);
-  }
-  context.fill();
-  context.stroke();
-}
-
 function drawArrowHead(
   context: CanvasRenderingContext2D,
   tip: ScreenPoint,
@@ -155,19 +137,11 @@ function drawArrow(
     imageWidth,
     imageHeight,
   );
-  context.beginPath();
-  context.moveTo(start.x, start.y);
-  if (overlay.arrowKind === "elbow") {
-    context.lineTo(end.x, start.y);
-    context.lineTo(end.x, end.y);
-  } else if (overlay.arrowKind === "curve") {
-    const controlX = (start.x + end.x) / 2 - (end.y - start.y) * 0.35;
-    const controlY = (start.y + end.y) / 2 + (end.x - start.x) * 0.35;
-    context.quadraticCurveTo(controlX, controlY, end.x, end.y);
-  } else {
-    context.lineTo(end.x, end.y);
-  }
-  context.stroke();
+  const path = new Path2D(lineArrowPath(
+    { x: start.x, y: start.y, width: end.x - start.x, height: end.y - start.y },
+    overlay.arrowKind,
+  ));
+  context.stroke(path);
 
   const showEnd = overlay.arrowHead === "end" || overlay.arrowHead === "both";
   const showStart = overlay.arrowHead === "start" || overlay.arrowHead === "both";
@@ -192,53 +166,36 @@ function drawOverlay(
   theme: PresentationGifTheme,
 ): void {
   context.save();
-  context.strokeStyle = theme.accent;
-  context.fillStyle = theme.surface;
+  context.strokeStyle = overlay.stroke || theme.accent;
+  context.fillStyle = overlay.fill || theme.surface;
   context.lineWidth = 2;
+  context.setLineDash(overlay.line === "dashed" ? [8, 5] : []);
 
-  if (overlay.shape === "arrow") {
-    context.strokeStyle = theme.accent;
-    context.fillStyle = theme.accent;
+  const box = screenBox(overlay, panX, panY, scale, imageWidth, imageHeight);
+  if (overlay.shape === "arrow" && overlay.arrowForm === "line") {
+    context.strokeStyle = overlay.stroke || theme.accent;
+    context.fillStyle = overlay.stroke || theme.accent;
     drawArrow(context, overlay, panX, panY, scale, imageWidth, imageHeight);
     context.restore();
     return;
   }
 
-  const box = screenBox(overlay, panX, panY, scale, imageWidth, imageHeight);
-  if (overlay.shape === "ellipse") {
-    context.beginPath();
-    context.ellipse(
-      box.x + box.width / 2,
-      box.y + box.height / 2,
-      Math.max(1, Math.abs(box.width) / 2),
-      Math.max(1, Math.abs(box.height) / 2),
-      0,
-      0,
-      Math.PI * 2,
-    );
-    context.fill();
-    context.stroke();
-  } else if (overlay.shape === "rect" || overlay.backing === "rectangle" || overlay.backing === "bubble") {
-    const radius = overlay.backing === "bubble" ? 16 : 6;
-    fillRoundRect(context, box.x, box.y, box.width, box.height, radius);
-    if (overlay.backing === "bubble") {
-      const left = Math.min(box.x, box.x + box.width);
-      const bottom = Math.max(box.y, box.y + box.height);
-      const width = Math.abs(box.width);
-      context.beginPath();
-      context.moveTo(left + width * 0.2, bottom);
-      context.lineTo(left + width * 0.38, bottom);
-      context.lineTo(left + width * 0.16, bottom + Math.min(18, width * 0.2));
-      context.closePath();
-      context.fill();
-      context.stroke();
-    }
+  const outline = overlayOutline(overlay, box);
+  if (outline) {
+    const path = new Path2D(outline);
+    context.fill(path);
+    context.stroke(path);
   }
 
   if (overlay.shape === "text" && overlay.text) {
     const fontSize = Math.max(12, Math.min(28, Math.abs(box.height) * 0.45));
-    context.fillStyle = theme.text;
-    context.font = `${fontSize}px ${TEXT_FONT_FAMILY}`;
+    const fontFamily = overlay.font === "serif"
+      ? "serif"
+      : overlay.font === "mono"
+        ? "monospace"
+        : TEXT_FONT_FAMILY;
+    context.fillStyle = overlay.textColor || theme.text;
+    context.font = `${fontSize}px ${fontFamily}`;
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText(overlay.text, box.x + box.width / 2, box.y + box.height / 2);

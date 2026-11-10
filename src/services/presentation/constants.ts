@@ -27,6 +27,13 @@ export const PRESENTATION_OVERLAY_WIDTH = 0.22;
 
 export const PRESENTATION_OVERLAY_HEIGHT = 0.14;
 
+/** Smallest width or height a resized overlay may keep, as a fraction of the image. */
+export const PRESENTATION_MIN_OVERLAY_SIZE = 0.012;
+
+export const PRESENTATION_RESIZE_HANDLE = 10;
+
+export const PRESENTATION_RESIZE_HANDLE_COARSE = 18;
+
 /** Perpendicular offset used to seed curve handles, in normalized image space. */
 export const PRESENTATION_CURVE_OFFSET = 0.08;
 

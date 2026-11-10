@@ -34,6 +34,7 @@ import type {
   CameraFrame,
   NormPoint,
   PresentationDocument,
+  PresentationOverlay,
   PresentationOverlayKind,
   PresentationPathKind,
   PresentationTrack,
@@ -370,16 +371,7 @@ export function usePresentationSession(options: {
 
   function onChangeOverlay(
     overlayId: string,
-    patch: Partial<{
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-      text: string;
-      backing: PresentationDocument["tracks"][number]["overlays"][number]["backing"];
-      arrowKind: PresentationDocument["tracks"][number]["overlays"][number]["arrowKind"];
-      arrowHead: PresentationDocument["tracks"][number]["overlays"][number]["arrowHead"];
-    }>,
+    patch: Partial<Omit<PresentationOverlay, "id" | "owner" | "shape">>,
   ): void {
     const track = currentTrack.value;
     if (!track || !document.value) {
