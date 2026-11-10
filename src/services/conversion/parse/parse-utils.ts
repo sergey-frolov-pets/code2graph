@@ -4,7 +4,6 @@ export function stripSourceComments(source: string): string {
     .replace(/\s*```\s*$/i, "")
     .replace(/^\s*'.*$/gm, "")
     .replace(/^\s*\/\/.*$/gm, "")
-    .replace(/^\s*#(?!\w+\b).*$/gm, "")
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .replace(/<!--[\s\S]*?-->/g, "");
 }

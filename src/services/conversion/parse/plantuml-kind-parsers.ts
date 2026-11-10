@@ -4,10 +4,10 @@ import {
   createEmptyDiagramIR,
   type DiagramEntityAttribute,
   type DiagramIR,
-  type DiagramNode,
   uniqueDiagramId,
 } from "@/services/conversion/diagram-ir";
 import { addEdge, unquote } from "@/services/conversion/parse/kind-parser-utils";
+import { parseComponentPlantUml } from "@/services/conversion/parse/parse-plantuml-structural";
 
 export function parseErPlantUml(source: string, format: DiagramFormat): DiagramIR {
   const ir = createEmptyDiagramIR("er");
@@ -221,47 +221,11 @@ export function parseUsecasePlantUml(source: string, format: DiagramFormat): Dia
 }
 
 export function parseDeploymentPlantUml(source: string, format: DiagramFormat): DiagramIR {
-  const ir = createEmptyDiagramIR("deployment");
-  ir.direction = detectDiagramDirection(source, format);
-  ir.metadata = { sourceFormat: format };
-  const usedIds = new Set<string>();
-  const idByRef = new Map<string, string>();
-
-  function registerNode(
-    label: string,
-    alias: string,
-    kind: DiagramNode["kind"],
-  ): string {
-    const existing = idByRef.get(alias) ?? idByRef.get(label);
-    if (existing) {
-      return existing;
-    }
-    const id = uniqueDiagramId(alias || label, usedIds);
-    idByRef.set(alias, id);
-    idByRef.set(label, id);
-    idByRef.set(id, id);
-    ir.nodes.push({
-      id,
-      label,
-      kind,
-      matchConfidence: 1,
-    });
-    return id;
-  }
-
-  for (const match of source.matchAll(
-    /\b(node|frame|cloud|database|storage|artifact|component)\s+(?:"([^"]+)"|([\p{L}\p{N}_.-]+))(?:\s+as\s+([\p{L}\p{N}_-]+))?/giu,
-  )) {
-    const kw = match[1].toLowerCase();
-    const label = (match[2] || match[3] || "").trim();
-    const alias = match[4]?.trim() || label;
-    const kind: DiagramNode["kind"] =
-      kw === "database" || kw === "storage"
-        ? "system"
-        : kw === "artifact"
-          ? "artifact"
-          : "container";
-    registerNode(label, alias, kind);
+  const ir = parseComponentPlantUml(source, format);
+  ir.kind = "deployment";
+  const usedIds = new Set(ir.nodes.map((n) => n.id));
+  for (const grp of ir.groups ?? []) {
+    usedIds.add(grp.id);
   }
 
   for (const match of source.matchAll(
@@ -269,23 +233,13 @@ export function parseDeploymentPlantUml(source: string, format: DiagramFormat): 
   )) {
     const alias = match[1].trim();
     const label = match[2].trim() || alias;
-    registerNode(label, alias, "container");
-  }
-
-  for (const rawLine of source.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    const edgeMatch = line.match(
-      /^([\p{L}\p{N}_.-]+)\s*:\s*\{[^}]*\}\s*$|^(?:"([^"]+)"|([\p{L}\p{N}_.-]+))\s*(-->|\.\.>|--|-[-\w]*>+|\.[.\w]*>+)\s*(?:"([^"]+)"|([\p{L}\p{N}_.-]+))(?:\s*:\s*(.+))?$/u,
-    );
-    if (edgeMatch && edgeMatch[4]) {
-      const fromKey = (edgeMatch[2] || edgeMatch[3] || "").trim();
-      const toKey = (edgeMatch[5] || edgeMatch[6] || "").trim();
-      const label = edgeMatch[7]?.trim();
-      const from = idByRef.get(fromKey) ?? registerNode(fromKey, fromKey, "container");
-      const to = idByRef.get(toKey) ?? registerNode(toKey, toKey, "container");
-      if (from && to) {
-        addEdge(ir, from, to, label ? unquote(label) : undefined);
-      }
+    if (!ir.nodes.some((n) => n.id === alias || n.label === label)) {
+      ir.nodes.push({
+        id: uniqueDiagramId(alias || label, usedIds),
+        label,
+        kind: "container",
+        matchConfidence: 1,
+      });
     }
   }
 

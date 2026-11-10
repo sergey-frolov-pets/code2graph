@@ -1,5 +1,8 @@
 import type { DiagramFormat } from "@/constants/diagram-formats";
-import { CONVERSION_IR_VERSION } from "@/constants/conversion-settings";
+import {
+  CONVERSION_IR_VERSION,
+  LEGACY_CONVERSION_IR_VERSION,
+} from "@/constants/conversion-settings";
 
 export const DIAGRAM_KINDS = [
   "graph",
@@ -43,9 +46,15 @@ export type DiagramNodeShape =
   | "round"
   | "diamond"
   | "ellipse"
+  | "circle"
+  | "stadium"
+  | "cylinder"
   | "parallelogram"
   | "trapezoid"
-  | "hexagon";
+  | "hexagon"
+  | "predefinedProcess"
+  | "document"
+  | "note";
 
 export type DiagramNodeSemanticKind =
   | "default"
@@ -89,9 +98,21 @@ export interface DiagramEdge {
   target: string;
   label?: string;
   kind?: "arrow" | "dashed" | "inherit" | "message" | "relation" | "flow" | "satisfies";
+  directed?: boolean;
+  color?: string;
+  sourceLabel?: string;
+  targetLabel?: string;
   semantic?: Record<string, unknown>;
   matchConfidence: number;
 }
+
+export type DiagramGroupKind =
+  | "package"
+  | "swimlane"
+  | "boundary"
+  | "namespace"
+  | "subgraph"
+  | "composite";
 
 export interface DiagramGroup {
   id: string;
@@ -99,6 +120,8 @@ export interface DiagramGroup {
   parentId?: string;
   /** PlantUML `#RRGGBB` на пакете, рамке или дорожке. */
   fill?: string;
+  stroke?: string;
+  kind?: DiagramGroupKind;
 }
 
 export interface DiagramSlice {
@@ -273,8 +296,12 @@ export interface DiagramIRMetadata {
   conversionMode?: ConversionModeKind;
 }
 
+export type DiagramIRVersion =
+  | typeof CONVERSION_IR_VERSION
+  | typeof LEGACY_CONVERSION_IR_VERSION;
+
 export interface DiagramIR {
-  version: typeof CONVERSION_IR_VERSION;
+  version: DiagramIRVersion;
   kind: DiagramKind;
   direction?: DiagramDirection;
   nodes: DiagramNode[];
