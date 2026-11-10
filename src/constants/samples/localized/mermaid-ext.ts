@@ -1,5 +1,5 @@
-import type { MermaidExtSampleId } from "@/constants/mermaid-sample-diagrams";
 import type { AppLocale } from "@/constants/i18n";
+import type { MermaidExtSampleId } from "@/constants/mermaid-sample-diagrams";
 
 export const MERMAID_EXT_EXTRA: Record<
   Exclude<AppLocale, "ru" | "en">,
@@ -10,7 +10,7 @@ export const MERMAID_EXT_EXTRA: Record<
 %% Cascada básica: inicio, crecimiento, caída y total.
 %% Filas de datos: <signo><número> : <etiqueta>
 %%   =120 : Q1   valor absoluto (inicio o total)
-%%   = : Suma S1  "=" solo — repite el total acumulado
+%%   = : Suma H1  "=" solo — repite el total acumulado
 %%   +180 : Q2   incremento
 %%   -60 : Q3    decremento
 %% Más funciones: ejemplos «corte de eje», «varias series», «etiquetas».
@@ -22,7 +22,7 @@ grid 100
 =120 : Q1 inicio
 +180 : Q2 crecimiento
 -60 : Q3 bajas
-= : Suma S1
+= : Suma H1
 +240 : Q4
 = : Suma del año`,
     waterfallBreak: `waterfall
@@ -39,10 +39,10 @@ break 300 --> 800 "corte de eje"
     waterfallMulti: `waterfall
 %% Varias series: cada grupo tiene su color de base,
 %% los aumentos son un 20% más claros y las caídas un 25% más oscuras.
-title Previsto frente a real
+title Plan frente a real
 y "mill. USD" 0 --> 400
 grid 100
-series Previsto color=#1f6feb
+series Plan color=#1f6feb
 =120 : Q1
 +80 : Q2
 -20 : Q3
@@ -112,7 +112,7 @@ colors total=#1f6feb increase=#2da44e decrease=#cf222e
 %% La directiva va en su PROPIA línea (no es una bandera en una fila de datos):
 %%   line <valor> ["etiqueta"] [color=#hex] [width=<px>] [style=solid|dash|dot|dashdot]
 %%
-%%   line 350 "previsión"                 discontinua por defecto, color del tema
+%%   line 350 "plan"                 discontinua por defecto, color del tema
 %%   line 400 "meta" color=#cf222e   color propio
 %%   line 250 "umbral" style=dot width=1
 %%
@@ -122,13 +122,13 @@ colors total=#1f6feb increase=#2da44e decrease=#cf222e
 title Ingresos frente al plan
 y "mill. USD" 0 --> 500
 grid 100
-line 350 "previsión"
+line 350 "plan"
 line 400 "meta" color=#cf222e width=2
 line 250 "umbral" style=dot width=1
 =120 : Q1
 +180 : Q2
 -60 : Q3
-= : Suma S1
+= : Suma H1
 +240 : Q4
 = : Suma del año`,
     waterfallMono: `waterfall
@@ -142,7 +142,7 @@ grid 50
 =120 : Q1
 +80 : Q2
 -40 : Q3
-= : Suma S1
+= : Suma H1
 +110 : Q4
 = : Suma del año`,
     bubble: `bubble
@@ -165,14 +165,14 @@ Producto E : x=4.6, y=16.5, size=240, group=Software`,
     heatmap: `heatmap
 title Carga por día
 x Lun, Mar, Mié, Jue, Vie
-y Mañana, Mediodía, Tarde
+y Mañana, Día, Tarde
 scale
 0-40 : #e8f5e9
 40-70 : #fff3e0
 70+ : #ffebee
 data
 Mañana : 20, 35, 50, 30, 25
-Mediodía : 60, 75, 85, 70, 55
+Día : 60, 75, 85, 70, 55
 Tarde : 40, 45, 65, 50, 35`,
     orgchart: `orgchart
 %% El relleno es color=#hex (o fill=). El borde es border=#hex y style=solid|dash|dot|dashdot.
@@ -402,7 +402,7 @@ title Ingresos respecto al plan
 categories Q1, Q2, Q3, Q4
 y "mill. USD" 0 --> 250
 grid 50
-line 160 "previsión"
+line 160 "plan"
 line 200 "meta" color=#cf222e width=2
 line 120 "umbral" style=dot width=1
 series Real : 120, 145, 165, 190
@@ -569,7 +569,7 @@ title BCG 矩阵：完整标签
 x "市场份额" 0 --> 10
 y "市场增长，%" 0 --> 30
 size "收入"
-quadrants 明星, 问题, 金牛, 瘦狗
+quadrants 明星, 问号, 现金牛, 瘦狗
 mid x=5 y=12
 fontsize 12
 data
@@ -845,7 +845,7 @@ line : 70, 100, 120, 150 style=dot`,
 %%   = : 上期合計  数値なしの "=" — これまでの累計を繰り返す
 %%   +180 : Q2   増加
 %%   -60 : Q3    減少
-%% その他の機能は例「軸の分割」「複数系列」「ラベル」を参照。
+%% その他の機能は例「軸の破断」「複数系列」「ラベル」を参照。
 %% 注意：棒の間の破線はコネクタです（既定でオン）。
 %%       オフにするには：connectors off
 title 2026 年の売上
@@ -858,12 +858,12 @@ grid 100
 +240 : Q4
 = : 年間合計`,
     waterfallBreak: `waterfall
-%% 軸の分割：区間 300..800 を切り取り、小さな段差を大きく見せます。
-%% 分割をまたぐ棒は切れ目で分かれ、線上にジグザグが付きます。
-title 軸分割付きの売上
+%% 軸の破断：区間 300..800 を切り取り、小さな段差を大きく見せます。
+%% 破断をまたぐ棒は切れ目で分かれ、線上にジグザグが付きます。
+title 軸破断付きの売上
 y "百万米ドル" 0 --> 1000
 grid 100
-break 300 --> 800 "軸の分割"
+break 300 --> 800 "軸の破断"
 =120 : Q1
 +180 : Q2
 +700 : Q3
@@ -1056,7 +1056,7 @@ colors s1=#0969da s2=#8250df s3=#2da44e
 開発 / バックエンドと API : 360
 開発 / ウェブとモバイル : 260
 開発 / QA と自動テスト : 140
-データと AI / DWH ウェアハウス : 240
+データと AI / データウェアハウス : 240
 データと AI / ML モデル : 160 color=#0f766e`,
     radar: `radar
 %% レーダー図 / スパイダーチャート：N >= 3 本の軸で複数系列を比べます。
@@ -1212,14 +1212,14 @@ cagr 5, 6 label="目標"
 cagr 8, 9 format="+0.0%"
 cagr 6, 7 format="0%" prefix="+"`,
     seriesBreak: `series
-%% 軸の分割：区間 200..700 を切り取り、小さな棒を大きく見せます。
-%% 分割をまたぐ棒は切れ目で分かれ、線上にジグザグが付きます。
+%% 軸の破断：区間 200..700 を切り取り、小さな棒を大きく見せます。
+%% 破断をまたぐ棒は切れ目で分かれ、線上にジグザグが付きます。
 %% 構文は waterfall と同じ：break <後> --> <前> ["ラベル"]
-title 軸を分割した売上
+title 軸破断のある売上
 categories Q1, Q2, Q3, Q4
 y "百万米ドル" 0 --> 1000
 grid 100
-break 200 --> 700 "軸の分割"
+break 200 --> 700 "軸の破断"
 series オンライン : 120, 180, 860, 240
 series 店舗 : 80, 140, 790, 190`,
     seriesThresholds: `series
@@ -1269,7 +1269,7 @@ y "मिलियन डॉलर" 0 --> 500
 grid 100
 =120 : Q1 प्रारंभ
 +180 : Q2 वृद्धि
--60 : Q3 च्युति
+-60 : Q3 छोड़ना
 = : H1 कुल
 +240 : Q4
 = : वर्ष का कुल`,
@@ -1401,7 +1401,7 @@ title BCG मैट्रिक्स: पूर्ण लेबल
 x "बाज़ार हिस्सेदारी" 0 --> 10
 y "बाज़ार वृद्धि, %" 0 --> 30
 size "राजस्व"
-quadrants तारे, प्रश्न, नकदी गाय, कुत्ते
+quadrants तारे, प्रश्नचिह्न, दुधारू गाय, कुत्ते
 mid x=5 y=12
 fontsize 12
 data
@@ -1674,7 +1674,7 @@ line : 70, 100, 120, 150 style=dot`,
 %% Cascata básica: início, crescimento, queda e soma.
 %% Linhas de dados: <sinal><número> : <rótulo>
 %%   =120 : Q1   valor absoluto (início ou soma)
-%%   = : Soma S1  "=" sozinho — repete o total acumulado
+%%   = : Soma H1  "=" sozinho — repete o total acumulado
 %%   +180 : Q2   aumento
 %%   -60 : Q3    redução
 %% Mais recursos: exemplos «quebra de eixo», «várias séries», «rótulos».
@@ -1686,7 +1686,7 @@ grid 100
 =120 : Q1 início
 +180 : Q2 crescimento
 -60 : Q3 evasão
-= : Soma S1
+= : Soma H1
 +240 : Q4
 = : Soma do ano`,
     waterfallBreak: `waterfall
@@ -1792,7 +1792,7 @@ line 250 "limiar" style=dot width=1
 =120 : Q1
 +180 : Q2
 -60 : Q3
-= : Soma S1
+= : Soma H1
 +240 : Q4
 = : Soma do ano`,
     waterfallMono: `waterfall
@@ -1806,7 +1806,7 @@ grid 50
 =120 : Q1
 +80 : Q2
 -40 : Q3
-= : Soma S1
+= : Soma H1
 +110 : Q4
 = : Soma do ano`,
     bubble: `bubble
@@ -2101,7 +2101,7 @@ y "Mio. USD" 0 --> 500
 grid 100
 =120 : Q1 Start
 +180 : Q2 Wachstum
--60 : Q3 Abgang
+-60 : Q3 Abwanderung
 = : H1-Summe
 +240 : Q4
 = : Jahressumme`,
@@ -2569,7 +2569,7 @@ series الفعلي color=#8250df
 %%      connectors off   إيقاف
 %%    الخط المتقطع يجري من الحافة العاملة للعمود إلى العمود التالي:
 %%    النمو من الأعلى، والانخفاض من الأسفل. المستويات المختلفة
-%%    تتصل بعتبة.
+%%    تتصل بخطوة.
 %%
 %% 3) نص مشترك حين لا يملك الموضع نصه:  label="+60 مليون"
 %%    بلا تسمية إطلاقًا:                                        no-label
@@ -2775,11 +2775,11 @@ y "مليون دولار" 0 --> 200
 grid 50
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
-series المتجر : 120, 145, 165, 190
+series الإلكتروني : 120, 145, 165, 190
 series التجزئة : 85, 95, 110, 130
 series الشركاء : 45, 60, 75, 95 color=#f97316`,
     clusteredRotated: `series
-%% مخطط سلاسل مُدار 90 درجة (rotate 90).
+%% مخطط سلاسل مُدوّر 90 درجة (rotate 90).
 %% التوجيه rotate 90 (أو orientation horizontal) يبادل المحورين:
 %% الفئات تنزل من الأعلى إلى الأسفل على اليسار، والأشرطة تنمو من اليسار إلى اليمين.
 %% ضع الفئة الأولى في الأسفل بـ: invert y (للرجوع: invert y off).
@@ -2791,7 +2791,7 @@ y "مليون دولار" 0 --> 200
 grid 50
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
-series المتجر : 120, 145, 165, 190
+series الإلكتروني : 120, 145, 165, 190
 series التجزئة : 85, 95, 110, 130
 series الشركاء : 45, 60, 75, 95 color=#f97316`,
     clusteredStacked: `series
@@ -2817,7 +2817,7 @@ mono
 categories Q1, Q2, Q3, Q4
 y "مليون دولار" 0 --> 200
 grid 50
-series المتجر : 120, 145, 165, 190
+series الإلكتروني : 120, 145, 165, 190
 series التجزئة : 85, 95, 110, 130
 series الشركاء : 45, 60, 75, 95`,
     clusteredMonoInvert: `series
@@ -2828,7 +2828,7 @@ mono invert
 categories Q1, Q2, Q3, Q4
 y "مليون دولار" 0 --> 200
 grid 50
-series المتجر : 120, 145, 165, 190
+series الإلكتروني : 120, 145, 165, 190
 series التجزئة : 85, 95, 110, 130
 series الشركاء : 45, 60, 75, 95`,
     seriesLines: `series
@@ -2867,7 +2867,7 @@ ratio 16x6
 categories 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025
 y "مليون دولار" 0 --> 220
 grid 20
-series المتجر : 34, 39, 68, 74, 90, 108, 118, 140, 130
+series الإلكتروني : 34, 39, 68, 74, 90, 108, 118, 140, 130
 cagr 1, 2 format="0%"
 cagr 2, 3 format="0.00" prefix="×"
 cagr 3, 5 format="0.0%" prefix="CAGR: "
@@ -2878,13 +2878,13 @@ cagr 6, 7 format="0%" prefix="+"`,
     seriesBreak: `series
 %% قطع المحور: المدى 200..700 مقطوع حتى تبدو الأعمدة الصغيرة أكبر.
 %% العمود الذي يمر بالقطع يُرسم أجزاءً، مع خط متعرج على الحد.
-%% الصياغة نفسها كما في waterfall: break <بعد> --> <قبل> ["تسمية"]
+%% نفس الصياغة كما في waterfall: break <بعد> --> <قبل> ["تسمية"]
 title إيراد مع قطع في المحور
 categories Q1, Q2, Q3, Q4
 y "مليون دولار" 0 --> 1000
 grid 100
 break 200 --> 700 "قطع المحور"
-series المتجر : 120, 180, 860, 240
+series الإلكتروني : 120, 180, 860, 240
 series التجزئة : 80, 140, 790, 190`,
     seriesThresholds: `series
 %% خطوط أفقية — خطة وهدف وعتبة.
