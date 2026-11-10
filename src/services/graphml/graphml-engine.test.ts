@@ -9,7 +9,7 @@ import { parseGraphml, renderGraphmlToSvg } from "@/services/graphml/graphml-eng
 import errorProcessGraphml from "@/services/graphml/fixtures/fix-error-img-v02.graphml?raw";
 import tccYedGraphml from "@/services/graphml/fixtures/tcc-yed.graphml?raw";
 import { layoutGraph } from "@/services/graphml/graphml-layout";
-import type { ParsedGraphml } from "@/services/graphml/graphml-types";
+import { NODE_LABEL_FONT_SIZE, type ParsedGraphml } from "@/services/graphml/graphml-types";
 
 const SAMPLE_GRAPHML = `<?xml version="1.0" encoding="UTF-8"?>
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
@@ -300,6 +300,7 @@ describe("graphml samples", () => {
     expect(decisionYes).toMatchObject({
       label: "Yes",
       labelAnchor: { segment: 1, ratio: 0.5, distance: 30 },
+      labelBox: { x: -29.81201171875, y: 15.0244140625, width: 24.677734375, height: 18.701171875 },
     });
     expect(decisionYes?.bends).toEqual([
       { x: 67.5, y: 103.75 },
@@ -331,6 +332,17 @@ describe("graphml samples", () => {
     expect(businessLabels).toHaveLength(2);
     expect(businessLabels[0]?.[1]).toBe(businessLabels[1]?.[1]);
     expect(businessLabels[0]?.[2]).toBe(businessLabels[1]?.[2]);
+
+    const yesLabels = [...svg.matchAll(/<text x="([\d.]+)" y="([\d.]+)"[^>]*>Yes<\/text>/g)]
+      .map((match) => ({ x: Number(match[1]), y: Number(match[2]) }));
+    expect(yesLabels).toContainEqual({ x: 91.5, y: 163.1 });
+
+    const startLabel = svg.match(/font-size="([\d.]+)"[^>]*>New project\/Old project</);
+    const decisionLabel = svg.match(/font-size="([\d.]+)"[^>]*>\s*<tspan[^>]*>Support/);
+    expect(Number(startLabel?.[1])).toBeLessThan(NODE_LABEL_FONT_SIZE);
+    expect(Number(decisionLabel?.[1])).toBeLessThan(NODE_LABEL_FONT_SIZE);
+    const approvalLabel = svg.match(/font-size="([\d.]+)"[^>]*>TCC Approval</);
+    expect(Number(approvalLabel?.[1])).toBe(NODE_LABEL_FONT_SIZE);
   });
 
   it("renders a light node fill with dark text in dark mode", async () => {

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from "vue";
+import { computed, nextTick, onUnmounted, ref } from "vue";
 import DiagramSizeControls from "@/components/DiagramSizeControls.vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import FileBadgeIcon from "@/components/icons/FileBadgeIcon.vue";
+import PresentationGlyph from "@/components/preview/PresentationGlyph.vue";
 import IconButton from "@/components/IconButton.vue";
 import TooltipWrap from "@/components/TooltipWrap.vue";
 import { useLocale } from "@/composables/useLocale";
@@ -15,6 +16,7 @@ import {
   isOnlineRenderMode,
   type RenderMode,
 } from "@/constants/render-settings";
+import { PREVIEW_MIN_ZOOM } from "@/constants/preview-pan-zoom";
 import { contrastTextColor } from "@/services/mermaid/ext/common";
 
 const props = defineProps<{
@@ -28,6 +30,8 @@ const props = defineProps<{
   imageHeight?: number;
   imageSizeCustom?: boolean;
   copyPng: () => Promise<boolean>;
+  presentationEnabled: boolean;
+  presentationOpen: boolean;
 }>();
 
 const COPY_PNG_ACK_MS = 1600;
@@ -38,16 +42,78 @@ const emit = defineEmits<{
   renderNow: [];
   zoomIn: [];
   zoomOut: [];
+  setZoomPercent: [percent: number];
   setImageWidth: [value: number];
   setImageHeight: [value: number];
   resetImageSize: [];
   openAppearance: [];
+  togglePresentation: [];
   "update:previewBackground": [value: string];
   "update:diagramDarkMode": [value: boolean];
   "update:renderMode": [value: RenderMode];
 }>();
 
 const { t } = useLocale();
+
+const MIN_ZOOM_PERCENT = Math.round(PREVIEW_MIN_ZOOM * 100);
+
+const editingZoom = ref(false);
+const zoomDraft = ref("");
+const zoomInputRef = ref<HTMLInputElement | null>(null);
+let zoomEditCancelled = false;
+let zoomCommitInFlight = false;
+
+function parseZoomPercent(raw: string): number | null {
+  const normalized = raw.trim().replace(",", ".");
+  if (!normalized) {
+    return null;
+  }
+  const value = Number(normalized);
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+  return Math.max(MIN_ZOOM_PERCENT, Math.round(value));
+}
+
+function startZoomEdit(): void {
+  if (props.zoomPercent === undefined) {
+    return;
+  }
+  zoomEditCancelled = false;
+  zoomDraft.value = String(props.zoomPercent);
+  editingZoom.value = true;
+  void nextTick(() => {
+    const input = zoomInputRef.value;
+    input?.focus();
+    input?.select();
+  });
+}
+
+function cancelZoomEdit(): void {
+  zoomEditCancelled = true;
+  editingZoom.value = false;
+  zoomInputRef.value?.blur();
+}
+
+function commitZoomEdit(): void {
+  if (zoomEditCancelled) {
+    zoomEditCancelled = false;
+    return;
+  }
+  if (!editingZoom.value || zoomCommitInFlight) {
+    return;
+  }
+  zoomCommitInFlight = true;
+  editingZoom.value = false;
+  try {
+    const percent = parseZoomPercent(zoomDraft.value);
+    if (percent !== null && percent !== props.zoomPercent) {
+      emit("setZoomPercent", percent);
+    }
+  } finally {
+    zoomCommitInFlight = false;
+  }
+}
 
 const isOnlineMode = computed(() => isOnlineRenderMode(props.renderMode));
 const isTransparentBg = computed(() => isTransparentPreviewBg(props.previewBackground));
@@ -148,15 +214,43 @@ async function acknowledgeCopiedPng(): Promise<void> {
       <ActionIcon name="zoom-out" />
     </IconButton>
 
-    <span
-      v-if="zoomPercent !== undefined"
-      class="preview-toolbar__zoom-level"
-      aria-live="polite"
-      aria-atomic="true"
-      :aria-label="t('toolbar.zoomLevel', { percent: zoomPercent })"
+    <TooltipWrap
+      v-if="zoomPercent !== undefined && !editingZoom"
+      :label="t('toolbar.zoomLevelEdit')"
     >
-      {{ zoomPercent }}%
-    </span>
+      <button
+        type="button"
+        class="preview-toolbar__zoom-level"
+        aria-live="polite"
+        aria-atomic="true"
+        :aria-label="t('toolbar.zoomLevel', { percent: zoomPercent })"
+        @click="startZoomEdit"
+      >
+        {{ zoomPercent }}%
+      </button>
+    </TooltipWrap>
+    <label
+      v-else-if="editingZoom"
+      class="preview-toolbar__zoom-editor"
+    >
+      <input
+        ref="zoomInputRef"
+        v-model="zoomDraft"
+        class="preview-toolbar__zoom-input"
+        type="text"
+        inputmode="decimal"
+        autocomplete="off"
+        spellcheck="false"
+        :aria-label="t('toolbar.zoomLevelEdit')"
+        @keydown.enter.prevent="commitZoomEdit"
+        @keydown.escape.prevent="cancelZoomEdit"
+        @blur="commitZoomEdit"
+      >
+      <span
+        class="preview-toolbar__zoom-unit"
+        aria-hidden="true"
+      >%</span>
+    </label>
 
     <IconButton
       :label="t('toolbar.zoomIn')"
@@ -205,6 +299,16 @@ async function acknowledgeCopiedPng(): Promise<void> {
     </IconButton>
 
     <IconButton
+      extra-class="preview-toolbar__presentation"
+      :label="t('presentation.togglePanel')"
+      :pressed="presentationOpen"
+      :disabled="!presentationEnabled"
+      @click="emit('togglePresentation')"
+    >
+      <PresentationGlyph name="presentation" />
+    </IconButton>
+
+    <IconButton
       :label="t('toolbar.exportSvg')"
       primary
       format
@@ -238,6 +342,10 @@ async function acknowledgeCopiedPng(): Promise<void> {
 </template>
 
 <style scoped>
+.preview-toolbar :deep(.preview-toolbar__presentation) {
+  margin-inline: 8px;
+}
+
 .preview-toolbar {
   display: flex;
   flex: 1 1 auto;
@@ -256,10 +364,58 @@ async function acknowledgeCopiedPng(): Promise<void> {
 
 .preview-toolbar__zoom-level {
   min-width: 3.2rem;
+  height: 32px;
+  padding: 0 4px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
   text-align: center;
   font-size: 0.78rem;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   color: var(--text-muted);
-  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.preview-toolbar__zoom-level:hover,
+.preview-toolbar__zoom-level:focus-visible {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.preview-toolbar__zoom-editor {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 32px;
+  padding: 0 6px 0 2px;
+  border: 1px solid var(--accent, #8250df);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.preview-toolbar__zoom-input {
+  width: 3.2rem;
+  height: 100%;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.preview-toolbar__zoom-input:focus {
+  outline: none;
+}
+
+.preview-toolbar__zoom-unit {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 </style>

@@ -64,6 +64,7 @@ export function usePresentationSession(options: {
   getGifContext: () => PresentationGifContext | null;
 }) {
   const open = ref(false);
+  const panelOpen = ref(false);
   const mode = ref<PresentationMode>("view");
   const document = ref<PresentationDocument | null>(null);
   const selectedOverlayId = ref<string | null>(null);
@@ -158,6 +159,13 @@ export function usePresentationSession(options: {
 
   function toggleOpen(): void {
     open.value = !open.value;
+  }
+
+  function togglePanel(): void {
+    panelOpen.value = !panelOpen.value;
+    if (!panelOpen.value) {
+      playback.pause();
+    }
   }
 
   function onCreateTrack(name: string): void {
@@ -438,6 +446,7 @@ export function usePresentationSession(options: {
     enabled,
     canEdit: options.canEdit,
     open,
+    panelOpen,
     mode,
     document,
     currentTrack,
@@ -450,6 +459,7 @@ export function usePresentationSession(options: {
     playback,
     revealChrome,
     toggleOpen,
+    togglePanel,
     onCreateTrack,
     onRenameTrack,
     onDeleteTrack,

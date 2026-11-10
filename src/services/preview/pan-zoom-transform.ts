@@ -183,6 +183,21 @@ export function zoomOut(
   zoomAt(state, deps, center.x, center.y, 1 / PREVIEW_ZOOM_STEP);
 }
 
+/** Absolute scale, zoomed around the viewport center. Values below the minimum are clamped. */
+export function setScale(
+  state: PanZoomMutableState,
+  deps: PreviewPanZoomDeps,
+  scale: number,
+): void {
+  if (!Number.isFinite(scale) || state.scale <= 0) {
+    return;
+  }
+
+  const clamped = Math.max(PREVIEW_MIN_ZOOM, scale);
+  const center = getViewportCenter(deps);
+  zoomAt(state, deps, center.x, center.y, clamped / state.scale);
+}
+
 export function applyCameraFrame(
   state: PanZoomMutableState,
   deps: PreviewPanZoomDeps,

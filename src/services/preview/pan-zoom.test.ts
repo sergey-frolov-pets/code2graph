@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { PREVIEW_DOUBLE_TAP_MS } from "@/constants/preview-pan-zoom";
+import { PREVIEW_DOUBLE_TAP_MS, PREVIEW_MIN_ZOOM } from "@/constants/preview-pan-zoom";
 import { PreviewPanZoomController } from "@/services/preview/pan-zoom";
 
 function createViewport(width: number, height: number): HTMLElement {
@@ -83,6 +83,18 @@ describe("PreviewPanZoomController", () => {
     controller.zoomIn();
 
     expect(controller.getZoomPercent()).toBeGreaterThan(initialPercent);
+  });
+
+  it("sets an absolute zoom percent around the viewport", async () => {
+    const { controller } = await createController();
+
+    controller.setZoomPercent(200);
+
+    expect(controller.getZoomPercent()).toBe(200);
+
+    controller.setZoomPercent(1);
+
+    expect(controller.getZoomPercent()).toBe(Math.round(PREVIEW_MIN_ZOOM * 100));
   });
 
   it("fits diagram to viewport on double tap", async () => {

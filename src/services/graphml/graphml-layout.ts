@@ -28,9 +28,18 @@ import {
   MIN_NODE_EXTENT,
   MIN_SEGMENT_LENGTH,
   NODE_HEIGHT,
+  NODE_LABEL_EM_WIDTH,
+  NODE_LABEL_FIT_STEPS,
+  NODE_LABEL_FONT_SIZE,
+  NODE_LABEL_LINE_HEIGHT,
+  NODE_LABEL_MIN_FONT_SIZE,
+  NODE_SHAPE_LABEL_INSET_X,
+  NODE_SHAPE_LABEL_INSET_Y,
   NOTE_FOLD_MAX,
   NOTE_FOLD_RATIO,
   OBSTACLE_PAD,
+  PREDEFINED_PROCESS_BAR_MAX,
+  PREDEFINED_PROCESS_BAR_RATIO,
   PARALLELOGRAM_INSET_RATIO,
   SEGMENT_PARALLEL_EPSILON,
   TRAPEZOID_INSET_RATIO,
@@ -38,6 +47,7 @@ import {
   type EdgeLayout,
   type GraphmlEdge,
   type GraphmlEdgeLabelAnchor,
+  type GraphmlEdgeLabelBox,
   type GraphmlGeometry,
   type GraphmlNode,
   type GraphmlNodeShape,
@@ -186,6 +196,137 @@ export function shapeOutline(
   ];
 }
 
+function horizontalSpan(outline: PolyPoint[], y: number): number {
+  const crossings: number[] = [];
+  for (let index = 0; index < outline.length; index += 1) {
+    const start = outline[index];
+    const end = outline[(index + 1) % outline.length];
+    if (!start || !end) {
+      continue;
+    }
+
+    if (start.y === end.y) {
+      if (y === start.y) {
+        crossings.push(start.x, end.x);
+      }
+      continue;
+    }
+
+    const minY = Math.min(start.y, end.y);
+    const maxY = Math.max(start.y, end.y);
+    if (y < minY || y > maxY) {
+      continue;
+    }
+
+    const t = (y - start.y) / (end.y - start.y);
+    crossings.push(start.x + (end.x - start.x) * t);
+  }
+
+  if (crossings.length < 2) {
+    return 0;
+  }
+
+  return Math.max(...crossings) - Math.min(...crossings);
+}
+
+function contentSpan(
+  shape: GraphmlNodeShape,
+  width: number,
+  height: number,
+  offsetFromCenter: number,
+): number {
+  const radiusY = height / 2;
+  if (Math.abs(offsetFromCenter) > radiusY) {
+    return 0;
+  }
+
+  if (shape === "ellipse") {
+    const norm = offsetFromCenter / Math.max(radiusY, MIN_NODE_EXTENT);
+    if (Math.abs(norm) >= 1) {
+      return 0;
+    }
+    return width * Math.sqrt(1 - norm * norm);
+  }
+
+  if (shape === "rectangle" || shape === "predefinedProcess") {
+    const bar = shape === "predefinedProcess"
+      ? Math.min(PREDEFINED_PROCESS_BAR_MAX, width * PREDEFINED_PROCESS_BAR_RATIO)
+      : 0;
+    return width - bar * 2;
+  }
+
+  return horizontalSpan(shapeOutline(shape, 0, 0, width, height), radiusY + offsetFromCenter);
+}
+
+function labelFits(
+  fontSize: number,
+  lines: string[],
+  shape: GraphmlNodeShape,
+  width: number,
+  height: number,
+): boolean {
+  const scale = fontSize / NODE_LABEL_FONT_SIZE;
+  const lineHeight = NODE_LABEL_LINE_HEIGHT * scale;
+  const charWidth = fontSize * NODE_LABEL_EM_WIDTH;
+  const lineCount = lines.length;
+
+  for (let index = 0; index < lineCount; index += 1) {
+    const lineCenter = (-(lineCount - 1) * lineHeight) / 2 + index * lineHeight;
+    const glyphPad = lineHeight / 2 + NODE_SHAPE_LABEL_INSET_Y;
+    const span = Math.min(
+      contentSpan(shape, width, height, lineCenter - glyphPad),
+      contentSpan(shape, width, height, lineCenter + glyphPad),
+    );
+    const available = span - NODE_SHAPE_LABEL_INSET_X * 2;
+    const line = lines[index] ?? "";
+    if (available <= 0 || line.length * charWidth > available) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+export function nodeLabelMetrics(
+  label: string,
+  shape: GraphmlNodeShape,
+  width: number,
+  height: number,
+): { fontSize: number; lineHeight: number } {
+  const lines = label.split(/\r?\n/);
+  const full = {
+    fontSize: NODE_LABEL_FONT_SIZE,
+    lineHeight: NODE_LABEL_LINE_HEIGHT,
+  };
+  if (labelFits(full.fontSize, lines, shape, width, height)) {
+    return full;
+  }
+
+  const minimumScale = NODE_LABEL_MIN_FONT_SIZE / NODE_LABEL_FONT_SIZE;
+  if (!labelFits(NODE_LABEL_MIN_FONT_SIZE, lines, shape, width, height)) {
+    return {
+      fontSize: NODE_LABEL_MIN_FONT_SIZE,
+      lineHeight: NODE_LABEL_LINE_HEIGHT * minimumScale,
+    };
+  }
+
+  let fitted = NODE_LABEL_MIN_FONT_SIZE;
+  let larger = NODE_LABEL_FONT_SIZE;
+  for (let step = 0; step < NODE_LABEL_FIT_STEPS; step += 1) {
+    const mid = (fitted + larger) / 2;
+    if (labelFits(mid, lines, shape, width, height)) {
+      fitted = mid;
+    } else {
+      larger = mid;
+    }
+  }
+
+  return {
+    fontSize: fitted,
+    lineHeight: NODE_LABEL_LINE_HEIGHT * (fitted / NODE_LABEL_FONT_SIZE),
+  };
+}
+
 function nodeCenter(node: GraphmlNode): PolyPoint {
   const geometry = node.geometry;
   if (!geometry) {
@@ -322,6 +463,13 @@ function clipPort(node: GraphmlNode, port: PolyPoint, toward: PolyPoint): PolyPo
   return clipPolygon(port, toward, outline);
 }
 
+function labelPointFromBox(origin: PolyPoint, box: GraphmlEdgeLabelBox): PolyPoint {
+  return {
+    x: origin.x + box.x + box.width / 2,
+    y: origin.y + box.y + box.height / 2,
+  };
+}
+
 function labelPointOnRoute(points: PolyPoint[], anchor: GraphmlEdgeLabelAnchor): PolyPoint {
   const segmentCount = points.length - 1;
   const fallback = points[0] ?? { x: 0, y: 0 };
@@ -351,7 +499,7 @@ function routeAbsoluteEdge(
   source: GraphmlNode,
   target: GraphmlNode,
   edge: GraphmlEdge,
-): { points: PolyPoint[]; labelPoint?: PolyPoint } {
+): { points: PolyPoint[]; labelPoint?: PolyPoint; labelPinned: boolean } {
   const sourceCenter = nodeCenter(source);
   const targetCenter = nodeCenter(target);
   const start = {
@@ -367,11 +515,14 @@ function routeAbsoluteEdge(
   const next = raw[1] ?? end;
   const previous = raw[raw.length - 2] ?? start;
   const points = [clipPort(source, start, next), ...bends, clipPort(target, end, previous)];
-  const labelPoint = edge.label && edge.labelAnchor
-    ? labelPointOnRoute(points, edge.labelAnchor)
-    : undefined;
+  const sourcePoint = points[0] ?? start;
+  const labelPoint = edge.label && edge.labelBox
+    ? labelPointFromBox(sourcePoint, edge.labelBox)
+    : edge.label && edge.labelAnchor
+      ? labelPointOnRoute(points, edge.labelAnchor)
+      : undefined;
 
-  return { points, labelPoint };
+  return { points, labelPoint, labelPinned: Boolean(edge.label && edge.labelBox) };
 }
 
 export function layoutAbsolute(graph: ParsedGraphml): dagre.graphlib.Graph {
@@ -551,22 +702,38 @@ function pushLabelsApart(first: PlacedEdgeLabel, second: PlacedEdgeLabel): boole
     return false;
   }
 
+  if (first.pinned && second.pinned) {
+    return false;
+  }
+
   if (amount.x < amount.y) {
     const direction = first.cx <= second.cx ? -1 : 1;
-    const push = amount.x / 2 + 0.5;
-    first.cx += direction * push;
-    second.cx -= direction * push;
+    const push = amount.x + 1;
+    if (!first.pinned) {
+      first.cx += direction * push * (second.pinned ? 1 : 0.5);
+    }
+    if (!second.pinned) {
+      second.cx -= direction * push * (first.pinned ? 1 : 0.5);
+    }
     return true;
   }
 
   const direction = first.cy <= second.cy ? -1 : 1;
-  const push = amount.y / 2 + 0.5;
-  first.cy += direction * push;
-  second.cy -= direction * push;
+  const push = amount.y + 1;
+  if (!first.pinned) {
+    first.cy += direction * push * (second.pinned ? 1 : 0.5);
+  }
+  if (!second.pinned) {
+    second.cy -= direction * push * (first.pinned ? 1 : 0.5);
+  }
   return true;
 }
 
 function pushLabelOutOfObstacle(label: PlacedEdgeLabel, obstacle: AxisBox): boolean {
+  if (label.pinned) {
+    return false;
+  }
+
   const box = labelBox(label);
   const padded = expandedBox(obstacle, OBSTACLE_PAD);
   if (!boxesOverlap(box, padded)) {
@@ -610,6 +777,7 @@ export function placeEdgeLabels(edges: EdgeLayout[], obstacles: AxisBox[]): Arra
       cy: anchor.y,
       width: size.width,
       height: size.height,
+      pinned: edge.labelPinned,
     };
   });
 

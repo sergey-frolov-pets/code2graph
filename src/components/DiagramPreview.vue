@@ -90,6 +90,7 @@ const {
   snapshot,
   zoomIn,
   zoomOut,
+  setZoomPercent,
   setCameraFrame,
   readCameraFrame,
   setInteractionLocked,
@@ -205,11 +206,15 @@ watch(
           :image-height="activeSize.height"
           :image-size-custom="isCustom"
           :copy-png="copyPng"
+          :presentation-enabled="presentation.enabled.value"
+          :presentation-open="presentation.panelOpen.value"
+          @toggle-presentation="presentation.togglePanel()"
           @render-now="emit('renderNow')"
           @export-svg="emit('exportSvg')"
           @export-png="emit('exportPng')"
           @zoom-in="zoomIn"
           @zoom-out="zoomOut"
+          @set-zoom-percent="setZoomPercent"
           @set-image-width="setWidth"
           @set-image-height="setHeight"
           @reset-image-size="resetSize"
@@ -280,7 +285,7 @@ watch(
             v-if="presentation.enabled.value"
             :snapshot="snapshot"
             :track="presentation.currentTrack.value"
-            :editing="presentation.mode.value === 'edit' && props.canEditPresentation === true"
+            :editing="presentation.panelOpen.value && presentation.mode.value === 'edit' && props.canEditPresentation === true"
             :show-overlays="presentation.document.value?.showOverlays !== false"
             :viewpoint-index="presentation.playback.viewpointIndex.value"
             :phase="presentation.playback.phase.value"
