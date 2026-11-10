@@ -137,6 +137,7 @@ export const miscMessages = {
   "presentation.expand": "Презентация",
   "presentation.collapse": "Свернуть презентацию",
   "presentation.view": "Просмотр",
+  "presentation.togglePanel": "Презентация",
   "presentation.edit": "Редактирование",
   "presentation.play": "Play",
   "presentation.pause": "Пауза",

@@ -3,6 +3,7 @@ import { computed, onUnmounted, ref } from "vue";
 import DiagramSizeControls from "@/components/DiagramSizeControls.vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import FileBadgeIcon from "@/components/icons/FileBadgeIcon.vue";
+import PresentationGlyph from "@/components/preview/PresentationGlyph.vue";
 import IconButton from "@/components/IconButton.vue";
 import TooltipWrap from "@/components/TooltipWrap.vue";
 import { useLocale } from "@/composables/useLocale";
@@ -28,6 +29,8 @@ const props = defineProps<{
   imageHeight?: number;
   imageSizeCustom?: boolean;
   copyPng: () => Promise<boolean>;
+  presentationEnabled: boolean;
+  presentationOpen: boolean;
 }>();
 
 const COPY_PNG_ACK_MS = 1600;
@@ -42,6 +45,7 @@ const emit = defineEmits<{
   setImageHeight: [value: number];
   resetImageSize: [];
   openAppearance: [];
+  togglePresentation: [];
   "update:previewBackground": [value: string];
   "update:diagramDarkMode": [value: boolean];
   "update:renderMode": [value: RenderMode];
@@ -205,6 +209,16 @@ async function acknowledgeCopiedPng(): Promise<void> {
     </IconButton>
 
     <IconButton
+      extra-class="preview-toolbar__presentation"
+      :label="t('presentation.togglePanel')"
+      :pressed="presentationOpen"
+      :disabled="!presentationEnabled"
+      @click="emit('togglePresentation')"
+    >
+      <PresentationGlyph name="presentation" />
+    </IconButton>
+
+    <IconButton
       :label="t('toolbar.exportSvg')"
       primary
       format
@@ -238,6 +252,10 @@ async function acknowledgeCopiedPng(): Promise<void> {
 </template>
 
 <style scoped>
+.preview-toolbar :deep(.preview-toolbar__presentation) {
+  margin-inline: 8px;
+}
+
 .preview-toolbar {
   display: flex;
   flex: 1 1 auto;
