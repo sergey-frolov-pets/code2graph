@@ -22,7 +22,9 @@ Rules:
 - Each following line is CSV: `source,target,value`.
 - The value is a positive number (decimals are allowed). Do not add a header row.
 - A blank line between groups is allowed and draws nothing.
-- Node labels are ASCII only. Quote a label when it contains a comma or a quote, and double an inner quote: `"Paid, net",Bank,10` and `"Drop, ""no pay""",Lost,1`.
+- Node labels may use any language, including Cyrillic, CJK, Arabic, and other non-Latin scripts. Keep the user's wording. Do not transliterate.
+- Quote a label when it contains a comma or a quote, and double an inner quote: `"Paid, net",Bank,10` and `"Drop, ""no pay""",Lost,1`.
+- The third column is a plain number. Put units in `prefix` or `suffix`; those strings may also use any language.
 - Do not use `flowchart` arrows. The flow is the CSV rows.
 - Include every flow the user named. Values must be consistent with the story (a node's outgoing total should not wildly exceed its incoming total unless the user said so).
 - `%%` comments are ignored. Do not emit a comment catalog unless the user asked for comments.
