@@ -3,9 +3,9 @@ import { computed, inject, nextTick, onUnmounted, ref } from "vue";
 import { presentationSessionKey } from "@/components/preview/presentation-session";
 import DiagramSizeControls from "@/components/DiagramSizeControls.vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
+import FileBadgeIcon from "@/components/icons/FileBadgeIcon.vue";
 import PresentationGlyph from "@/components/preview/PresentationGlyph.vue";
 import IconButton from "@/components/IconButton.vue";
-import ToolbarOverflowMenu from "@/components/ui/ToolbarOverflowMenu.vue";
 import TooltipWrap from "@/components/TooltipWrap.vue";
 import { useFeatureGate } from "@/composables/useFeatureGate";
 import { useLocale } from "@/composables/useLocale";
@@ -147,35 +147,7 @@ const previewTextColor = computed(() => {
   return contrastTextColor(props.previewBackground) ?? "#1f2328";
 });
 
-const exportMenuGroups = computed(() => [
-  {
-    id: "export",
-    label: "",
-    actions: [
-      {
-        id: "svg",
-        label: t("toolbar.exportSvg"),
-        disabled: !props.canExport || !allowExport.value,
-      },
-      {
-        id: "png",
-        label: t("toolbar.exportPng"),
-        disabled: !props.canExport || !allowExport.value,
-      },
-      {
-        id: "copy-png",
-        label: copiedPng.value ? t("toolbar.copyPngDone") : t("toolbar.copyPng"),
-        disabled: !props.canExport || !allowExport.value,
-      },
-    ],
-  },
-]);
-
-function onExportAction(actionId: string): void {
-  if (actionId === "svg") emit("exportSvg");
-  if (actionId === "png") emit("exportPng");
-  if (actionId === "copy-png") onCopyPng();
-}
+const exportDisabled = computed(() => !props.canExport || !allowExport.value);
 
 const copiedPng = ref(false);
 let copyAckTimer = 0;
@@ -348,12 +320,43 @@ async function acknowledgeCopiedPng(): Promise<void> {
       </IconButton>
     </div>
 
-    <ToolbarOverflowMenu
-      :label="t('toolbar.export')"
-      icon="export"
-      :groups="exportMenuGroups"
-      @action="onExportAction"
-    />
+    <div
+      class="preview-toolbar__export"
+      role="group"
+      :aria-label="t('toolbar.export')"
+    >
+      <IconButton
+        :label="t('toolbar.exportSvg')"
+        primary
+        format
+        :disabled="exportDisabled"
+        data-testid="preview-export-svg"
+        @click="emit('exportSvg')"
+      >
+        <FileBadgeIcon format="SVG" />
+      </IconButton>
+      <IconButton
+        :label="t('toolbar.exportPng')"
+        primary
+        format
+        :disabled="exportDisabled"
+        data-testid="preview-export-png"
+        @click="emit('exportPng')"
+      >
+        <FileBadgeIcon format="PNG" />
+      </IconButton>
+      <IconButton
+        :label="copiedPng ? t('toolbar.copyPngDone') : t('toolbar.copyPng')"
+        primary
+        format
+        :disabled="exportDisabled"
+        :pressed="copiedPng"
+        data-testid="preview-copy-png"
+        @click="onCopyPng"
+      >
+        <ActionIcon :name="copiedPng ? 'check' : 'clipboard-copy'" />
+      </IconButton>
+    </div>
   </div>
 </template>
 
@@ -362,7 +365,8 @@ async function acknowledgeCopiedPng(): Promise<void> {
   margin-inline: 8px;
 }
 
-.preview-toolbar__transport {
+.preview-toolbar__transport,
+.preview-toolbar__export {
   display: inline-flex;
   align-items: center;
   gap: 4px;

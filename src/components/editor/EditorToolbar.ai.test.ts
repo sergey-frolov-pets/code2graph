@@ -73,4 +73,27 @@ describe("EditorToolbar surface switch", () => {
     ).toBeNull();
     view.unmount();
   });
+
+  it("puts file and edit actions on the toolbar as buttons", async () => {
+    const view = mountToolbar({ builderAvailable: true, aiChatAvailable: false });
+    await nextTick();
+    const toolbar = view.host.querySelector(".panel-header__toolbar");
+    expect(toolbar?.querySelector('[role="menu"]')).toBeNull();
+    for (const testId of [
+      "editor-open-file",
+      "editor-versions",
+      "editor-save-file",
+      "editor-save-library",
+      "editor-undo",
+      "editor-redo",
+      "editor-validate",
+      "editor-convert",
+      "editor-clear",
+      "editor-snippets",
+    ]) {
+      const button = toolbar?.querySelector(`[data-testid="${testId}"]`);
+      expect(button?.tagName).toBe("BUTTON");
+    }
+    view.unmount();
+  });
 });
