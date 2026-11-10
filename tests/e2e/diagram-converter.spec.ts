@@ -10,9 +10,10 @@ test("converts plantuml graph to mermaid and supports undo", async ({ page }) =>
   const source = await editor.inputValue();
   expect(source).toContain("@startuml");
 
-  await expect(page.getByRole("button", { name: /convert/i })).toBeEnabled();
-
-  await page.getByRole("button", { name: /convert/i }).click();
+  await page.getByRole("button", { name: "Edit" }).click();
+  const convertItem = page.getByRole("menuitem", { name: /convert/i });
+  await expect(convertItem).toBeEnabled();
+  await convertItem.click();
   await expect(page.getByTestId("convert-diagram-modal")).toBeVisible();
 
   await page.locator(".convert-form select").first().selectOption("mermaid");
@@ -20,10 +21,12 @@ test("converts plantuml graph to mermaid and supports undo", async ({ page }) =>
   await page.getByTestId("convert-apply").click();
 
   await expect(editor).toHaveValue(/flowchart/i, { timeout: 15_000 });
-  await expect(page.getByRole("button", { name: /undo/i })).toBeEnabled();
   await expect(editor).not.toHaveValue(/@startuml/);
 
-  await page.getByRole("button", { name: /undo/i }).click();
+  await page.getByRole("button", { name: "Edit" }).click();
+  const undoItem = page.getByRole("menuitem", { name: /undo/i });
+  await expect(undoItem).toBeEnabled();
+  await undoItem.click();
   await expect(editor).toHaveValue(/@startuml/, { timeout: 5_000 });
   await expect(editor).not.toHaveValue(/flowchart/i);
 });

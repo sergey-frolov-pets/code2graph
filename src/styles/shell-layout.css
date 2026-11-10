@@ -111,6 +111,16 @@
   overflow: hidden;
 }
 
+.editor-panel:has(.toolbar-overflow__menu) {
+  overflow: visible;
+  position: relative;
+  z-index: 3;
+}
+
+.editor-panel .panel-header__toolbar:has(.toolbar-overflow__menu) {
+  overflow: visible;
+}
+
 .panel--corner-controls {
   position: relative;
 }
