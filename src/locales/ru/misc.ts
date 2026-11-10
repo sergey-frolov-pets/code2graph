@@ -233,6 +233,8 @@ export const miscMessages = {
   "presentation.style": "Стиль",
   "presentation.stroke": "Линия",
   "presentation.fill": "Заливка",
+  "presentation.opacity": "Прозрачность",
+  "presentation.transparent": "Прозрачный",
   "presentation.textColor": "Цвет текста",
   "presentation.font": "Шрифт",
   "presentation.font.sans": "Без засечек",

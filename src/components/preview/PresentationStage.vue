@@ -11,8 +11,8 @@ import {
   overlayArtwork,
   rotationTransform,
 } from "@/services/presentation/glyph-art";
+import { overlayCssColor } from "@/services/presentation/overlay-color";
 import {
-  calloutTailLength,
   isLineArrow,
   lineArrowPath,
   overlayOutline,
@@ -51,7 +51,10 @@ const emit = defineEmits<{
   movePoint: [index: number, point: NormPoint];
   moveControl: [index: number, point: NormPoint];
   selectOverlay: [id: string | null];
-  changeOverlay: [id: string, patch: Pick<PresentationOverlay, "x" | "y" | "width" | "height">];
+  changeOverlay: [
+    id: string,
+    patch: Partial<Pick<PresentationOverlay, "x" | "y" | "width" | "height" | "tailX" | "tailY">>,
+  ];
 }>();
 
 const stageRef = ref<SVGSVGElement | null>(null);
@@ -62,6 +65,7 @@ type Drag =
   | { kind: "point"; index: number }
   | { kind: "control"; index: number }
   | { kind: "overlay"; id: string; origin: NormPoint; pointer: NormPoint }
+  | { kind: "tail"; id: string }
   | {
     kind: "resize";
     id: string;
@@ -246,9 +250,12 @@ const SELECTION_PAD = 8;
 
 function overlayVars(overlay: PresentationOverlay): Record<string, string> {
   return {
-    "--overlay-stroke": overlay.stroke || "var(--accent)",
-    "--overlay-fill": overlay.fill || "color-mix(in srgb, var(--surface) 88%, transparent)",
-    "--overlay-text": overlay.textColor || "var(--text)",
+    "--overlay-stroke": overlayCssColor(overlay.stroke, "var(--accent)"),
+    "--overlay-fill": overlayCssColor(
+      overlay.fill,
+      "color-mix(in srgb, var(--surface) 88%, transparent)",
+    ),
+    "--overlay-text": overlayCssColor(overlay.textColor, "var(--text)"),
     "--overlay-font": OVERLAY_FONT_FAMILY[overlay.font],
   };
 }
@@ -260,12 +267,22 @@ function selectionBox(overlay: PresentationOverlay): {
   height: number;
 } {
   const box = positiveBox(screenBox(overlay));
-  const tail = overlay.shape === "text" && overlay.backing === "bubble" ? calloutTailLength(box) : 0;
+  let minX = box.x;
+  let minY = box.y;
+  let maxX = box.x + box.width;
+  let maxY = box.y + box.height;
+  if (isBubble(overlay)) {
+    const tip = tailScreen(overlay);
+    minX = Math.min(minX, tip.x);
+    minY = Math.min(minY, tip.y);
+    maxX = Math.max(maxX, tip.x);
+    maxY = Math.max(maxY, tip.y);
+  }
   return {
-    x: box.x - SELECTION_PAD,
-    y: box.y - SELECTION_PAD,
-    width: box.width + SELECTION_PAD * 2,
-    height: box.height + tail + SELECTION_PAD * 2,
+    x: minX - SELECTION_PAD,
+    y: minY - SELECTION_PAD,
+    width: maxX - minX + SELECTION_PAD * 2,
+    height: maxY - minY + SELECTION_PAD * 2,
   };
 }
 
@@ -368,6 +385,17 @@ function onPointerMove(event: PointerEvent): void {
     });
     return;
   }
+  if (current.kind === "tail") {
+    const overlay = props.track?.overlays.find((item) => item.id === current.id);
+    if (!overlay || overlay.width === 0 || overlay.height === 0) {
+      return;
+    }
+    emit("changeOverlay", current.id, {
+      tailX: (point.x - overlay.x) / overlay.width,
+      tailY: (point.y - overlay.y) / overlay.height,
+    });
+    return;
+  }
   emit("changeOverlay", current.id, resizeOverlay(current, current.handle, point));
 }
 
@@ -391,6 +419,18 @@ function overlayEffect(overlay: PresentationOverlay): { opacity: number; transfo
   return {
     opacity: visual.opacity,
     transform: overlayEffectTransform(screenBox(overlay), visual.scale),
+  };
+}
+
+function isBubble(overlay: PresentationOverlay): boolean {
+  return overlay.shape === "text" && overlay.backing === "bubble";
+}
+
+function tailScreen(overlay: PresentationOverlay): NormPoint {
+  const box = screenBox(overlay);
+  return {
+    x: box.x + overlay.tailX * box.width,
+    y: box.y + overlay.tailY * box.height,
   };
 }
 
@@ -490,7 +530,7 @@ function overlayTextSize(overlay: PresentationOverlay): number {
       @pointerdown="onOverlayPointerDown($event, overlay)"
     >
       <rect
-        v-if="arranging && overlay.id === selectedOverlayId"
+        v-if="editing && overlay.id === selectedOverlayId"
         class="presentation-selection"
         :x="selectionBox(overlay).x"
         :y="selectionBox(overlay).y"
@@ -572,7 +612,7 @@ function overlayTextSize(overlay: PresentationOverlay): number {
         {{ overlay.text }}
       </text>
       <rect
-        v-for="handle in arranging && overlay.id === selectedOverlayId ? resizeHandles(overlay) : []"
+        v-for="handle in editing && overlay.id === selectedOverlayId ? resizeHandles(overlay) : []"
         :key="`${overlay.id}-${handle.id}`"
         class="presentation-handle presentation-resize"
         :x="handle.x - resizeHandleSize / 2"
@@ -582,6 +622,14 @@ function overlayTextSize(overlay: PresentationOverlay): number {
         rx="1"
         :style="{ cursor: handle.cursor }"
         @pointerdown="beginResize($event, overlay, handle.id)"
+      />
+      <circle
+        v-if="editing && overlay.id === selectedOverlayId && isBubble(overlay)"
+        class="presentation-handle presentation-tail"
+        :cx="tailScreen(overlay).x"
+        :cy="tailScreen(overlay).y"
+        :r="handleRadius"
+        @pointerdown="beginDrag($event, { kind: 'tail', id: overlay.id })"
       />
     </g>
   </svg>
@@ -668,8 +716,8 @@ function overlayTextSize(overlay: PresentationOverlay): number {
   stroke: none;
 }
 
-.presentation-stage.is-arranging .presentation-overlay:hover .presentation-hit,
-.presentation-overlay.is-selected .presentation-hit {
+.presentation-stage.is-editing .presentation-overlay:hover .presentation-hit,
+.presentation-stage.is-editing .presentation-overlay.is-selected .presentation-hit {
   stroke: var(--overlay-stroke, var(--accent));
   stroke-width: 2;
 }
@@ -691,17 +739,17 @@ function overlayTextSize(overlay: PresentationOverlay): number {
   stroke-dasharray: 8 5;
 }
 
-.presentation-stage.is-arranging .presentation-overlay:hover .presentation-shape,
-.presentation-stage.is-arranging .presentation-overlay:hover .presentation-arrow {
+.presentation-stage.is-editing .presentation-overlay:hover .presentation-shape,
+.presentation-stage.is-editing .presentation-overlay:hover .presentation-arrow {
   stroke-width: 3.5;
 }
 
-.presentation-overlay.is-selected .presentation-shape,
-.presentation-overlay.is-selected .presentation-arrow {
+.presentation-stage.is-editing .presentation-overlay.is-selected .presentation-shape,
+.presentation-stage.is-editing .presentation-overlay.is-selected .presentation-arrow {
   stroke-width: 4;
 }
 
-.presentation-overlay.is-selected .presentation-label {
+.presentation-stage.is-editing .presentation-overlay.is-selected .presentation-label {
   font-weight: 700;
 }
 

@@ -123,6 +123,9 @@ export interface PresentationOverlay {
   bubbleShape: PresentationBubbleShape;
   /** 0 is sharp, 1 is a pill. Used by rectangles and rectangular bubbles. */
   cornerRadius: number;
+  /** Bubble tip, as a fraction of the body. May sit outside 0..1. */
+  tailX: number;
+  tailY: number;
   arrowKind: PresentationArrowKind;
   arrowForm: PresentationArrowForm;
   arrowDirection: PresentationArrowDirection;

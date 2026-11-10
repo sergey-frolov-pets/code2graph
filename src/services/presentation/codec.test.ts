@@ -69,6 +69,8 @@ describe("presentation codec", () => {
       line: "solid",
       bubbleShape: "rectangle",
       cornerRadius: 0,
+      tailX: 0.08,
+      tailY: 1.34,
       arrowForm: "line",
       arrowDirection: "right",
       rotation: 0,

@@ -42,6 +42,15 @@ export const PRESENTATION_OVERLAY_WIDTH = 0.22;
 
 export const PRESENTATION_OVERLAY_HEIGHT = 0.14;
 
+/** Default horizontal place of a bubble tip, as a fraction of the body width. */
+export const PRESENTATION_DEFAULT_TAIL_X = 0.08;
+
+/** How far a bubble tip may sit outside the body, in body widths or heights. */
+export const PRESENTATION_TAIL_LIMIT = 4;
+
+/** Tail length as a fraction of the shorter side of a bubble body. */
+export const PRESENTATION_CALLOUT_TAIL_RATIO = 0.34;
+
 /** Smallest width or height a resized overlay may keep, as a fraction of the image. */
 export const PRESENTATION_MIN_OVERLAY_SIZE = 0.012;
 
