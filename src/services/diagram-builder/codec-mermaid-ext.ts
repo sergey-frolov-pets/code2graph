@@ -68,6 +68,13 @@ export function createDefaultBuilderState(
     ganttDateFormat: "YYYY-MM-DD",
     ganttAxisFormat: "",
     ganttExcludes: "",
+    ganttLanguage: "",
+    ganttProjectStarts: "",
+    ganttScale: "",
+    ganttZoom: "",
+    ganttClosedWeekends: false,
+    ganttTodayMarker: "",
+    ganttInclusiveEndDates: false,
     blockColumns: 3,
   };
 

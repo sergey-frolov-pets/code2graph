@@ -53,24 +53,27 @@ function unquote(raw: string): string {
 function parseHierarchyLinesToFlatRows(lines: readonly string[], isMermaidMindmap: boolean): string[][] {
   const rows: string[][] = [];
   const stack: string[] = [];
+  const colorStack: string[] = [];
 
   for (const rawLine of lines) {
     const trimmed = rawLine.trim();
     if (!trimmed || trimmed.startsWith("%%") || trimmed.startsWith("'") || /^@(?:start|end)/i.test(trimmed)) {
       continue;
     }
-    if (/^(?:mindmap|wbs|title)\b/i.test(trimmed)) {
+    if (/^(?:mindmap|wbs|title|left\s+to\s+right|top\s+to\s+bottom|header|footer|caption|legend|endlegend)\b/i.test(trimmed)) {
       continue;
     }
 
     let depth = 1;
     let label = trimmed;
+    let nodeColor = "";
 
     if (!isMermaidMindmap && /^[*+-]+/.test(trimmed)) {
-      const m = /^([*+-]+)(?:\[#[0-9a-fA-F]+\])?_?\s*:?\s*(.*)$/.exec(trimmed);
+      const m = /^([*+-]+)(?:\[(#[0-9a-fA-Fa-zA-Z]+)\])?_?\s*:?\s*(.*)$/.exec(trimmed);
       if (!m) continue;
       depth = m[1].length;
-      label = m[2].replace(/;\s*$/, "").trim();
+      nodeColor = m[2] ?? "";
+      label = m[3].replace(/;\s*$/, "").trim();
     } else if (isMermaidMindmap) {
       const leadingSpaces = /^(\s*)/.exec(rawLine)?.[1].length ?? 0;
       depth = Math.max(1, Math.floor(leadingSpaces / 2));
@@ -83,18 +86,65 @@ function parseHierarchyLinesToFlatRows(lines: readonly string[], isMermaidMindma
     }
 
     stack[depth - 1] = label;
+    colorStack[depth - 1] = nodeColor;
     stack.length = depth;
+    colorStack.length = depth;
 
-    if (depth >= 2) {
-      rows.push([stack[0] ?? "Root", stack[1] ?? "", stack[2] ?? ""]);
+    if (depth === 2) {
+      rows.push([
+        stack[0] ?? "Root",
+        stack[1] ?? "",
+        "",
+        colorStack[1] || colorStack[0] || "",
+      ]);
+    } else if (depth >= 3) {
+      const prev = rows[rows.length - 1];
+      if (
+        prev &&
+        prev[0] === (stack[0] ?? "Root") &&
+        prev[1] === (stack[1] ?? "") &&
+        prev[2] === ""
+      ) {
+        prev[2] = stack[2] ?? "";
+        if (colorStack[depth - 1]) {
+          prev[3] = colorStack[depth - 1];
+        }
+      } else {
+        rows.push([
+          stack[0] ?? "Root",
+          stack[1] ?? "",
+          stack[2] ?? "",
+          colorStack[depth - 1] || colorStack[1] || colorStack[0] || "",
+        ]);
+      }
     }
   }
 
   if (rows.length === 0 && stack.length > 0) {
-    rows.push([stack[0] ?? "Root", "Branch 1", "Item 1"]);
+    rows.push([stack[0] ?? "Root", "Branch 1", "Item 1", colorStack[0] ?? ""]);
   }
 
   return rows;
+}
+
+function isAspectOrTitleComment(trimmed: string): boolean {
+  return (
+    /^(?:%%|\/\/|#|')[ \t]*ratio\b/i.test(trimmed) ||
+    /^<!--[ \t]*ratio\b/i.test(trimmed) ||
+    /^(?:#|\/\/)[ \t]*title:/i.test(trimmed)
+  );
+}
+
+function collectStandardPreservedComments(lines: readonly string[]): string[] {
+  const comments: string[] = [];
+  for (const raw of lines) {
+    const trimmed = raw.trim();
+    if (!trimmed || isAspectOrTitleComment(trimmed)) continue;
+    if (trimmed.startsWith("%%") || trimmed.startsWith("'")) {
+      comments.push(trimmed);
+    }
+  }
+  return comments;
 }
 
 export function parseStandardDiagramToBuilderState(
@@ -111,6 +161,12 @@ export function parseStandardDiagramToBuilderState(
     state.canvas.customAspectHeight = fields.customH;
   }
   const frontmatter = splitMermaidFrontmatter(source);
+  state.preservedBlocks = {
+    frontmatterRoot: frontmatter.root,
+    headerLines: [],
+    bodyExtraLines: [],
+    footerLines: [],
+  };
   applyAppearanceFromConfig(state.appearance, frontmatter.config);
   if (frontmatter.title) {
     state.canvas.title = frontmatter.title;
@@ -126,6 +182,7 @@ export function parseStandardDiagramToBuilderState(
     state.appearance.sequenceAutonumber = true;
   }
   const lines = source.split(/\r?\n/);
+  state.preservedComments = collectStandardPreservedComments(lines);
 
   for (const raw of lines) {
     const trimmed = raw.trim();
@@ -269,31 +326,163 @@ export function parseStandardDiagramToBuilderState(
     case "gantt": {
       const rows: string[][] = [];
       let currentSection = "";
+      const bodyExtraLines: string[] = [];
       if (format === "plantuml") {
-        const tasks = new Map<string, { start: string; duration: string }>();
+        interface PumlGanttTaskInfo {
+          start: string;
+          duration: string;
+          section: string;
+          status: string;
+          taskId: string;
+          color: string;
+        }
+        const tasks = new Map<string, PumlGanttTaskInfo>();
+        let sawSaturdayClosed = false;
+        let sawSundayClosed = false;
+
+        const ensureTask = (name: string): PumlGanttTaskInfo => {
+          const existing = tasks.get(name);
+          if (existing) return existing;
+          const created: PumlGanttTaskInfo = {
+            start: "",
+            duration: "3d",
+            section: currentSection,
+            status: "",
+            taskId: "",
+            color: "",
+          };
+          tasks.set(name, created);
+          return created;
+        };
+
         for (const raw of lines) {
           const trimmed = raw.trim();
+          if (
+            !trimmed ||
+            trimmed.startsWith("'") ||
+            /^@(?:start|end)gantt\b/i.test(trimmed) ||
+            /^title\b/i.test(trimmed)
+          ) {
+            continue;
+          }
           const projStart = /^project\s+starts\s+(\S+)/i.exec(trimmed);
           if (projStart) {
             state.canvas.ganttDateFormat = "YYYY-MM-DD";
+            state.canvas.ganttProjectStarts = projStart[1];
             continue;
           }
-          const lastsMatch = /^\[([^\]]+)\]\s+lasts\s+(\d+)\s*days?/i.exec(trimmed);
-          if (lastsMatch) {
-            const cur = tasks.get(lastsMatch[1]) ?? { start: "2026-01-01", duration: "3d" };
-            cur.duration = `${lastsMatch[2]}d`;
-            tasks.set(lastsMatch[1], cur);
+          const langMatch = /^language\s+(\S+)/i.exec(trimmed);
+          if (langMatch) {
+            state.canvas.ganttLanguage = langMatch[1].toLowerCase();
             continue;
           }
-          const startsMatch = /^\[([^\]]+)\]\s+starts\s+(\d{4}-\d{2}-\d{2})/i.exec(trimmed);
-          if (startsMatch) {
-            const cur = tasks.get(startsMatch[1]) ?? { start: startsMatch[2], duration: "3d" };
-            cur.start = startsMatch[2];
-            tasks.set(startsMatch[1], cur);
+          const scaleMatch = /^(?:printscale|ganttscale|projectscale)\s+(daily|weekly|monthly|quarterly|yearly)\b(.*)$/i.exec(
+            trimmed,
+          );
+          if (scaleMatch) {
+            state.canvas.ganttScale = scaleMatch[1].toLowerCase() as NonNullable<
+              typeof state.canvas.ganttScale
+            >;
+            const zoomTail = /\bzoom\s+([\d.]+)/i.exec(scaleMatch[2] ?? "");
+            if (zoomTail) {
+              state.canvas.ganttZoom = zoomTail[1];
+            }
+            continue;
           }
+          const zoomMatch = /^zoom\s+([\d.]+)$/i.exec(trimmed);
+          if (zoomMatch) {
+            state.canvas.ganttZoom = zoomMatch[1];
+            continue;
+          }
+          if (/^saturday\s+are\s+closed$/i.test(trimmed)) {
+            sawSaturdayClosed = true;
+            if (sawSundayClosed) state.canvas.ganttClosedWeekends = true;
+            continue;
+          }
+          if (/^sunday\s+are\s+closed$/i.test(trimmed)) {
+            sawSundayClosed = true;
+            if (sawSaturdayClosed) state.canvas.ganttClosedWeekends = true;
+            continue;
+          }
+          const sepMatch = /^--\s*(.+?)\s*--$/.exec(trimmed);
+          if (sepMatch) {
+            currentSection = sepMatch[1].trim();
+            continue;
+          }
+          const taskMatch = /^(?:then\s+)?\[([^\]]+)\](?:\s+as\s+\[([^\]]+)\])?\s+(.+)$/i.exec(trimmed);
+          if (
+            taskMatch &&
+            /\b(?:lasts|requires|starts|ends|happens|is)\b/i.test(taskMatch[3])
+          ) {
+            const name = taskMatch[1].trim();
+            const alias = taskMatch[2]?.trim() ?? "";
+            const clauses = taskMatch[3].trim();
+            const info = ensureTask(name);
+            if (alias) info.taskId = alias;
+            if (currentSection && !info.section) info.section = currentSection;
+
+            const colorClause = /\bis\s+colored\s+in\s+([^\s]+)\b/i.exec(clauses);
+            if (colorClause) {
+              info.color = colorClause[1];
+            }
+            const pctClause = /\bis\s+(\d+)%\s+completed?\b/i.exec(clauses);
+            if (pctClause) {
+              const pct = Number(pctClause[1]);
+              info.status = pct >= 100 ? "done" : pct > 0 ? "active" : info.status;
+            }
+            const happensClause = /\bhappens\s+(?:at\s+)?(.+?)(?:\s+and\s+is\b|$)/i.exec(clauses);
+            if (happensClause) {
+              info.status = "milestone";
+              info.duration = "0d";
+              const target = happensClause[1].trim();
+              const depEnd = /^\[([^\]]+)\]'s\s+(?:end|start)$/i.exec(target);
+              info.start = depEnd ? `after ${depEnd[1]}` : target;
+            }
+            const lastsClause = /\b(?:lasts|requires)\s+(\d+)\s*(days?|weeks?|months?)/i.exec(clauses);
+            if (lastsClause) {
+              const unit = lastsClause[2].toLowerCase().startsWith("w")
+                ? "w"
+                : lastsClause[2].toLowerCase().startsWith("m")
+                  ? "m"
+                  : "d";
+              info.duration = `${lastsClause[1]}${unit}`;
+            }
+            const startsAtClause = /\bstarts\s+(?:at\s+)?\[([^\]]+)\]'s\s+(?:end|start)/i.exec(clauses);
+            if (startsAtClause) {
+              info.start = `after ${startsAtClause[1]}`;
+            } else {
+              const startsDateClause = /\bstarts\s+(\d{4}-\d{2}-\d{2}|D\+\d+)/i.exec(clauses);
+              if (startsDateClause) {
+                info.start = startsDateClause[1];
+              }
+            }
+            const endsDateClause = /\bends\s+(\d{4}-\d{2}-\d{2})/i.exec(clauses);
+            if (endsDateClause && !lastsClause) {
+              info.duration = endsDateClause[1];
+            }
+            continue;
+          }
+          bodyExtraLines.push(trimmed);
         }
+        if (sawSaturdayClosed !== sawSundayClosed) {
+          bodyExtraLines.unshift(
+            sawSaturdayClosed ? "saturday are closed" : "sunday are closed",
+          );
+        }
+        const defaultStart = state.canvas.ganttProjectStarts || "2026-01-01";
+        let idx = 0;
         for (const [task, info] of tasks.entries()) {
-          rows.push([task, info.start, info.duration, ""]);
+          const fallbackStart = idx === 0 ? defaultStart : "";
+          rows.push([
+            task,
+            info.start || fallbackStart,
+            info.duration || "3d",
+            info.section,
+            info.status,
+            info.taskId,
+            info.color,
+          ]);
+          idx += 1;
         }
       } else {
         for (const raw of lines) {
@@ -314,12 +503,39 @@ export function parseStandardDiagramToBuilderState(
             state.canvas.ganttExcludes = exMatch[1].trim();
             continue;
           }
+          const tmMatch = /^todayMarker\s+(.+)$/i.exec(trimmed);
+          if (tmMatch) {
+            state.canvas.ganttTodayMarker = tmMatch[1].trim();
+            continue;
+          }
+          if (/^inclusiveEndDates\b/i.test(trimmed)) {
+            state.canvas.ganttInclusiveEndDates = true;
+            continue;
+          }
+          const tickMatch = /^tickInterval\s+(.+)$/i.exec(trimmed);
+          if (tickMatch) {
+            state.appearance.gantt.tickInterval = tickMatch[1].trim();
+            continue;
+          }
+          const wdMatch = /^weekday\s+(.+)$/i.exec(trimmed);
+          if (wdMatch) {
+            state.appearance.gantt.weekday = wdMatch[1].trim();
+            continue;
+          }
+          if (/^topAxis\b/i.test(trimmed)) {
+            state.appearance.gantt.topAxis = true;
+            continue;
+          }
           const secMatch = /^section\s+(.+)$/i.exec(trimmed);
           if (secMatch) {
             currentSection = secMatch[1].trim();
             continue;
           }
           if (/^title\b/i.test(trimmed)) continue;
+          if (/^(?:click|includes|weekend|accTitle|accDescr)\b/i.test(trimmed)) {
+            bodyExtraLines.push(trimmed);
+            continue;
+          }
           const colonIdx = trimmed.indexOf(":");
           if (colonIdx > 0) {
             const taskName = trimmed.slice(0, colonIdx).trim();
@@ -328,25 +544,61 @@ export function parseStandardDiagramToBuilderState(
               .split(",")
               .map((s) => s.trim())
               .filter(Boolean);
-            let start = "2026-01-01";
-            let duration = "3d";
+            let status = "";
+            let isMilestone = false;
+            let taskId = "";
+            let start = "";
+            let duration = "";
+            const remaining: string[] = [];
             for (const part of tailParts) {
-              if (/^\d{4}-\d{2}-\d{2}/.test(part) || /^after\s+/i.test(part)) {
+              const lower = part.toLowerCase();
+              if (lower === "done" || lower === "active" || lower === "crit") {
+                if (!status || lower === "crit") status = lower;
+              } else if (lower === "milestone") {
+                isMilestone = true;
+              } else {
+                remaining.push(part);
+              }
+            }
+            if (isMilestone) {
+              status = "milestone";
+            }
+            for (const part of remaining) {
+              if (/^after\s+/i.test(part) || (/^\d{4}-\d{2}-\d{2}/.test(part) && !start)) {
                 start = part;
-              } else if (/^\d+\s*[dwmyh]/i.test(part)) {
+              } else if (/^\d+\s*[dwmyhs]/i.test(part) || /^until\s+/i.test(part) || (/^\d{4}-\d{2}-\d{2}/.test(part) && start)) {
+                duration = part;
+              } else if (!taskId && /^[A-Za-z_][\w-]*$/.test(part)) {
+                taskId = part;
+              } else if (!start) {
+                start = part;
+              } else if (!duration) {
                 duration = part;
               }
             }
-            rows.push([taskName, start, duration, currentSection]);
+            rows.push([
+              taskName,
+              start || "2026-01-01",
+              duration || (isMilestone ? "0d" : "3d"),
+              currentSection,
+              status,
+              taskId,
+              "",
+            ]);
+          } else {
+            bodyExtraLines.push(trimmed);
           }
         }
+      }
+      if (state.preservedBlocks) {
+        state.preservedBlocks.bodyExtraLines = bodyExtraLines;
       }
       state.rows =
         rows.length > 0
           ? rows
           : [
-              ["Analysis", "2026-01-02", "5d", "Planning"],
-              ["Prototype", "2026-01-08", "4d", "Planning"],
+              ["Analysis", "2026-01-02", "5d", "Planning", "", "a1", ""],
+              ["Prototype", "after a1", "4d", "Planning", "", "a2", ""],
             ];
       return state;
     }
@@ -437,6 +689,30 @@ export function parseStandardDiagramToBuilderState(
       if (format === "plantuml" && diagramType === "mindmap") {
         state.canvas.direction = detectDiagramDirection(source, format) ?? "TB";
       }
+      if (format === "plantuml") {
+        state.plantUmlSkin = extractPlantUmlStyleDirectives(source);
+        const bodyExtra: string[] = [];
+        let inLegend = false;
+        for (const raw of lines) {
+          const trimmed = raw.trim();
+          if (/^legend\b/i.test(trimmed)) {
+            inLegend = true;
+            bodyExtra.push(trimmed);
+            continue;
+          }
+          if (inLegend) {
+            bodyExtra.push(trimmed);
+            if (/^endlegend\b/i.test(trimmed)) inLegend = false;
+            continue;
+          }
+          if (/^(?:header|footer|caption)\b/i.test(trimmed)) {
+            bodyExtra.push(trimmed);
+          }
+        }
+        if (state.preservedBlocks) {
+          state.preservedBlocks.bodyExtraLines = bodyExtra;
+        }
+      }
       const rows = parseHierarchyLinesToFlatRows(
         lines,
         format === "mermaid" && diagramType === "mindmap",
@@ -445,8 +721,8 @@ export function parseStandardDiagramToBuilderState(
         rows.length > 0
           ? rows
           : [
-              ["Project", "Design", "UI"],
-              ["Project", "Backend", "API"],
+              ["Project", "Design", "UI", ""],
+              ["Project", "Backend", "API", ""],
             ];
       return state;
     }
@@ -550,13 +826,20 @@ export function parseStandardDiagramToBuilderState(
         const groupMap = new Map(
           (ir.groups ?? []).map((g) => [g.id, g.label || g.id]),
         );
-        state.graphNodes = ir.nodes.map((node) => ({
-          id: node.id,
-          label: node.label || node.id,
-          kind: node.kind ?? "default",
-          group: node.groupId ? (groupMap.get(node.groupId) ?? node.groupId) : "",
-          color: node.visual?.fill ?? "",
-        }));
+        state.graphNodes = ir.nodes.map((node) => {
+          const pType = node.semantic?.participantType
+            ? String(node.semantic.participantType)
+            : "";
+          const resolvedKind =
+            pType && pType !== "participant" ? pType : (node.kind ?? "default");
+          return {
+            id: node.id,
+            label: node.label || node.id,
+            kind: resolvedKind,
+            group: node.groupId ? (groupMap.get(node.groupId) ?? node.groupId) : "",
+            color: node.visual?.fill ?? "",
+          };
+        });
         if (format === "plantuml") {
           const groupColors: Record<string, string> = {};
           for (const group of ir.groups ?? []) {
@@ -566,6 +849,9 @@ export function parseStandardDiagramToBuilderState(
           }
           state.groupColors = groupColors;
           state.plantUmlSkin = extractPlantUmlStyleDirectives(source);
+        }
+        if (state.preservedBlocks) {
+          state.preservedBlocks.bodyExtraLines = extractGraphExtraLines(source, format);
         }
         state.graphEdges = ir.edges.map((edge) => ({
           source: edge.source,
@@ -591,11 +877,98 @@ export function parseStandardDiagramToBuilderState(
   }
 }
 
+function extractGraphExtraLines(source: string, format: DiagramFormat): string[] {
+  const extras: string[] = [];
+  if (format === "mermaid") {
+    for (const raw of source.split(/\r?\n/)) {
+      const trimmed = raw.trim();
+      if (/^(?:classDef|style|linkStyle|click)\b/i.test(trimmed)) {
+        extras.push(`  ${trimmed}`);
+      }
+    }
+  } else if (format === "plantuml") {
+    let inNote = false;
+    let inLegend = false;
+    for (const raw of source.split(/\r?\n/)) {
+      const trimmed = raw.trim();
+      if (inNote) {
+        extras.push(trimmed);
+        if (/^end\s*note\b/i.test(trimmed)) inNote = false;
+        continue;
+      }
+      if (inLegend) {
+        extras.push(trimmed);
+        if (/^endlegend\b/i.test(trimmed)) inLegend = false;
+        continue;
+      }
+      if (/^note\b/i.test(trimmed)) {
+        extras.push(trimmed);
+        if (!/:/.test(trimmed)) inNote = true;
+        continue;
+      }
+      if (/^legend\b/i.test(trimmed)) {
+        extras.push(trimmed);
+        if (!/:/.test(trimmed)) inLegend = true;
+        continue;
+      }
+      if (/^(?:header|footer|caption|hide\b|show\b|scale\b|pragma\b|!pragma\b)/i.test(trimmed)) {
+        extras.push(trimmed);
+      }
+    }
+  }
+  return extras;
+}
+
+function injectPreservedLinesAndComments(
+  source: string,
+  state: DiagramBuilderState,
+): string {
+  let result = source;
+  const comments = state.preservedComments.filter((c) => c.trim());
+  const extras = (state.preservedBlocks?.bodyExtraLines ?? []).filter((e) => e.trim());
+
+  if (state.format === "plantuml") {
+    if (comments.length > 0 && /^@start\w+/m.test(result)) {
+      const missingComments = comments.filter((c) => !result.includes(c));
+      if (missingComments.length > 0) {
+        result = result.replace(
+          /^(@start\w+[^\n]*\r?\n)/m,
+          `$1${missingComments.join("\n")}\n`,
+        );
+      }
+    }
+    if (extras.length > 0 && /^@end\w+/m.test(result)) {
+      const missingExtras = extras.filter((e) => !result.includes(e));
+      if (missingExtras.length > 0) {
+        result = result.replace(
+          /^(@end\w+)/m,
+          `${missingExtras.join("\n")}\n$1`,
+        );
+      }
+    }
+  } else if (state.format === "mermaid") {
+    if (comments.length > 0) {
+      const missingComments = comments.filter((c) => !result.includes(c));
+      if (missingComments.length > 0) {
+        result = `${missingComments.join("\n")}\n${result}`;
+      }
+    }
+    if (extras.length > 0) {
+      const missingExtras = extras.filter((e) => !result.includes(e.trim()));
+      if (missingExtras.length > 0) {
+        result = `${result}\n${missingExtras.join("\n")}`;
+      }
+    }
+  }
+  return result;
+}
+
 export function emitStandardDiagramFromBuilderState(
   state: DiagramBuilderState,
   originalSource = "",
 ): string {
-  const source = emitStandardDiagramBody(state, originalSource);
+  const rawBody = emitStandardDiagramBody(state, originalSource);
+  const source = injectPreservedLinesAndComments(rawBody, state);
   const withNumbers =
     state.appearance.sequenceAutonumber && state.diagramType === "sequence"
       ? injectSequenceAutonumber(source, state.format)
@@ -612,7 +985,12 @@ function prependMermaidConfig(state: DiagramBuilderState, source: string): strin
     return source;
   }
   const title = sourceHasTitleDirective(source) ? "" : state.canvas.title;
-  const header = buildMermaidConfigHeader(state.appearance, state.diagramType, title);
+  const header = buildMermaidConfigHeader(
+    state.appearance,
+    state.diagramType,
+    title,
+    state.preservedBlocks?.frontmatterRoot,
+  );
   return header ? `${header}${source}` : source;
 }
 
@@ -773,17 +1151,79 @@ function emitStandardDiagramBody(
     case "gantt": {
       if (format === "plantuml") {
         const lines = ["@startgantt"];
+        if (canvas.ganttLanguage?.trim()) {
+          lines.push(`language ${canvas.ganttLanguage.trim()}`);
+        }
+        if (canvas.ganttScale?.trim()) {
+          const zoomPart = canvas.ganttZoom?.trim()
+            ? ` zoom ${canvas.ganttZoom.trim()}`
+            : "";
+          lines.push(`printscale ${canvas.ganttScale.trim()}${zoomPart}`);
+        } else if (canvas.ganttZoom?.trim()) {
+          lines.push(`zoom ${canvas.ganttZoom.trim()}`);
+        }
         if (canvas.title.trim()) lines.push(`title ${canvas.title.trim()}`);
-        lines.push("project starts 2026-01-01");
+        const projStarts = canvas.ganttProjectStarts?.trim() || "2026-01-01";
+        lines.push(`project starts ${projStarts}`);
+        if (canvas.ganttClosedWeekends) {
+          lines.push("saturday are closed", "sunday are closed");
+        }
+        let currentSec = "";
         state.rows.forEach((row, idx) => {
           const task = (row[0] ?? "").trim().replace(/[[\]]/g, "") || `Task ${idx + 1}`;
           const start = (row[1] ?? "").trim();
-          const durMatch = /^(\d+)/.exec((row[2] ?? "").trim());
-          const days = durMatch ? Math.max(1, Number(durMatch[1])) : 3;
-          lines.push(`[${task}] lasts ${days} days`);
-          if (/^\d{4}-\d{2}-\d{2}$/.test(start)) {
-            lines.push(`[${task}] starts ${start}`);
+          const rawDur = (row[2] ?? "").trim();
+          const sec = (row[3] ?? "").trim();
+          const status = (row[4] ?? "").trim().toLowerCase();
+          const alias = (row[5] ?? "").trim().replace(/[[\]]/g, "");
+          const color = (row[6] ?? "").trim();
+
+          if (sec && sec !== currentSec) {
+            currentSec = sec;
+            lines.push(`-- ${currentSec} --`);
           }
+
+          const aliasPart = alias && alias !== task ? ` as [${alias}]` : "";
+          const colorPart = color ? ` and is colored in ${color}` : "";
+
+          if (status === "milestone") {
+            const afterMatch = /^after\s+(.+)$/i.exec(start);
+            const target = afterMatch
+              ? `[${afterMatch[1].trim().replace(/[[\]]/g, "")}]'s end`
+              : start || projStarts;
+            lines.push(`[${task}]${aliasPart} happens at ${target}${colorPart}`);
+            return;
+          }
+
+          const durMatch = /^(\d+)\s*([dwm])?/i.exec(rawDur);
+          const count = durMatch ? Math.max(1, Number(durMatch[1])) : 3;
+          const unitCode = (durMatch?.[2] ?? "d").toLowerCase();
+          const unitWord =
+            unitCode === "w" ? "weeks" : unitCode === "m" ? "months" : "days";
+
+          let startClause = "";
+          const afterMatch = /^after\s+(.+)$/i.exec(start);
+          if (afterMatch) {
+            const depName = afterMatch[1].trim().replace(/[[\]]/g, "");
+            startClause = ` and starts at [${depName}]'s end`;
+          } else if (
+            start &&
+            start !== projStarts &&
+            (/^\d{4}-\d{2}-\d{2}$/.test(start) || /^D\+\d+$/i.test(start))
+          ) {
+            startClause = ` and starts ${start}`;
+          }
+
+          const pctClause =
+            status === "done"
+              ? " and is 100% completed"
+              : status === "active"
+                ? " and is 50% completed"
+                : "";
+
+          lines.push(
+            `[${task}]${aliasPart} lasts ${count} ${unitWord}${startClause}${colorPart}${pctClause}`,
+          );
         });
         lines.push("@endgantt");
         return lines.join("\n");
@@ -797,17 +1237,36 @@ function emitStandardDiagramBody(
       if (canvas.ganttExcludes.trim()) {
         lines.push(`    excludes ${canvas.ganttExcludes.trim()}`);
       }
+      if (canvas.ganttTodayMarker?.trim()) {
+        lines.push(`    todayMarker ${canvas.ganttTodayMarker.trim()}`);
+      }
+      if (canvas.ganttInclusiveEndDates) {
+        lines.push("    inclusiveEndDates");
+      }
       let currentSec = "";
       state.rows.forEach((row, idx) => {
         const task = (row[0] ?? "").trim().replace(/:/g, " -") || `Task ${idx + 1}`;
         const start = (row[1] ?? "").trim() || "2026-01-01";
         const dur = (row[2] ?? "").trim() || "3d";
         const sec = (row[3] ?? "").trim();
+        const status = (row[4] ?? "").trim().toLowerCase();
+        const customId = (row[5] ?? "").trim().replace(/[^A-Za-z0-9_-]/g, "");
+        const taskId = customId || `t${idx + 1}`;
         if (sec && sec !== currentSec) {
           currentSec = sec;
           lines.push(`    section ${currentSec}`);
         }
-        lines.push(`    ${task} :t${idx + 1}, ${start}, ${dur}`);
+        const tags: string[] = [];
+        if (
+          status === "done" ||
+          status === "active" ||
+          status === "crit" ||
+          status === "milestone"
+        ) {
+          tags.push(status);
+        }
+        tags.push(taskId, start, status === "milestone" && !row[2]?.trim() ? "0d" : dur);
+        lines.push(`    ${task} :${tags.join(", ")}`);
       });
       return lines.join("\n");
     }
@@ -816,9 +1275,15 @@ function emitStandardDiagramBody(
       if (format === "plantuml") {
         const lines = ["@startchronology"];
         if (canvas.title.trim()) lines.push(`title ${canvas.title.trim()}`);
+        let currentSec = "";
         state.rows.forEach((row, idx) => {
           const period = (row[0] ?? "").trim() || `${2026 + idx}`;
           const event = (row[1] ?? "").trim() || `Event ${idx + 1}`;
+          const sec = (row[2] ?? "").trim();
+          if (sec && sec !== currentSec) {
+            currentSec = sec;
+            lines.push(`' section: ${currentSec}`);
+          }
           lines.push(`[${period}] is {${event}}`);
         });
         lines.push("@endchronology");
@@ -877,13 +1342,15 @@ function emitStandardDiagramBody(
 
     case "wbs":
     case "mindmap": {
-      const roots = new Map<string, Map<string, string[]>>();
+      const roots = new Map<string, Map<string, Array<{ text: string; color: string }>>>();
+      const branchColors = new Map<string, string>();
       let lastL1 = "Root";
       let lastL2 = "";
       for (const row of state.rows) {
         const l1 = (row[0] ?? "").trim() || lastL1 || "Root";
         const l2 = (row[1] ?? "").trim();
         const l3 = (row[2] ?? "").trim();
+        const rawColor = (row[3] ?? "").trim();
         lastL1 = l1;
         if (!roots.has(l1)) {
           roots.set(l1, new Map());
@@ -896,7 +1363,9 @@ function emitStandardDiagramBody(
             branchMap.set(effL2, []);
           }
           if (l3) {
-            branchMap.get(effL2)!.push(l3);
+            branchMap.get(effL2)!.push({ text: l3, color: rawColor });
+          } else if (rawColor) {
+            branchColors.set(`${l1}::${effL2}`, rawColor);
           }
         }
       }
@@ -908,6 +1377,9 @@ function emitStandardDiagramBody(
         const startTag = diagramType === "wbs" ? "@startwbs" : "@startmindmap";
         const endTag = diagramType === "wbs" ? "@endwbs" : "@endmindmap";
         const lines = [startTag];
+        if (state.plantUmlSkin?.length) {
+          lines.push(...state.plantUmlSkin);
+        }
         if (diagramType === "mindmap") {
           lines.push(
             canvas.direction === "LR" || canvas.direction === "RL"
@@ -916,12 +1388,20 @@ function emitStandardDiagramBody(
           );
         }
         if (canvas.title.trim()) lines.push(`title ${canvas.title.trim()}`);
+        const fmtPumlColor = (c: string | undefined): string => {
+          if (!c) return "";
+          const clean = c.trim();
+          if (!clean) return "";
+          return `[${clean.startsWith("#") ? clean : `#${clean}`}]`;
+        };
         for (const [rLabel, branches] of roots.entries()) {
           lines.push(`* ${rLabel}`);
           for (const [bLabel, leaves] of branches.entries()) {
-            lines.push(`** ${bLabel}`);
+            const bCol = fmtPumlColor(branchColors.get(`${rLabel}::${bLabel}`));
+            lines.push(`**${bCol} ${bLabel}`);
             for (const leaf of leaves) {
-              lines.push(`*** ${leaf}`);
+              const lCol = fmtPumlColor(leaf.color);
+              lines.push(`***${lCol} ${leaf.text}`);
             }
           }
         }
@@ -936,7 +1416,7 @@ function emitStandardDiagramBody(
         for (const [bLabel, leaves] of firstRoot[1].entries()) {
           lines.push(`    ${bLabel}`);
           for (const leaf of leaves) {
-            lines.push(`      ${leaf}`);
+            lines.push(`      ${leaf.text}`);
           }
         }
       }
@@ -1020,12 +1500,26 @@ function emitStandardDiagramBody(
           groupId = gId;
         }
         const label = n.label.trim() || n.id.trim() || id;
+        const pumlSeqTypes = new Set([
+          "actor",
+          "participant",
+          "boundary",
+          "control",
+          "entity",
+          "database",
+          "queue",
+          "collections",
+        ]);
+        const rawKind = n.kind || "default";
         const diagramNode: DiagramNode = {
           id,
           label,
-          kind: (n.kind || "default") as DiagramNodeSemanticKind,
+          kind: (rawKind === "boundary" || rawKind === "control" || rawKind === "entity" || rawKind === "queue"
+            ? "container"
+            : rawKind) as DiagramNodeSemanticKind,
           groupId,
           visual: n.color.trim() ? { fill: n.color.trim() } : undefined,
+          semantic: pumlSeqTypes.has(rawKind) ? { participantType: rawKind } : undefined,
           matchConfidence: 1,
         };
         nodeById.set(id, diagramNode);
