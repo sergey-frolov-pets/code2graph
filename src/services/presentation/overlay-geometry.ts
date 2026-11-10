@@ -1,7 +1,10 @@
 import {
+  PRESENTATION_CALLOUT_TAIL_RATIO,
+  PRESENTATION_DEFAULT_TAIL_X,
   PRESENTATION_FULL_CIRCLE,
   PRESENTATION_MIN_OVERLAY_SIZE,
   PRESENTATION_ROTATION_STEP,
+  PRESENTATION_TAIL_LIMIT,
 } from "@/services/presentation/constants";
 import type {
   PresentationArrowKind,
@@ -42,8 +45,42 @@ export interface ResizeHandlePoint {
   cursor: ResizeCursor;
 }
 
-/** Tail length as a fraction of the shorter side of the bubble body. */
-const CALLOUT_TAIL_RATIO = 0.34;
+/** Width of the tail where it meets the body, as a fraction of the shorter side. */
+const CALLOUT_TAIL_BASE_RATIO = 0.16;
+
+const OVAL_TAIL_GAP = 0.42;
+
+export interface CalloutTip {
+  /** Fraction of the body width, from the left. May sit outside the body. */
+  x: number;
+  /** Fraction of the body height, from the top. May sit outside the body. */
+  y: number;
+}
+
+export function clampCalloutTip(value: number, fallback: number): number {
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
+  return Math.min(PRESENTATION_TAIL_LIMIT, Math.max(-PRESENTATION_TAIL_LIMIT, value));
+}
+
+export function defaultCalloutTip(box: OverlayBox): CalloutTip {
+  const placed = positiveBox(box);
+  const height = placed.height || 1;
+  const shortest = Math.min(placed.width, height);
+  return {
+    x: PRESENTATION_DEFAULT_TAIL_X,
+    y: 1 + (shortest / height) * PRESENTATION_CALLOUT_TAIL_RATIO,
+  };
+}
+
+function tipPoint(box: OverlayBox, tip: CalloutTip): { x: number; y: number } {
+  const placed = positiveBox(box);
+  return {
+    x: placed.x + tip.x * placed.width,
+    y: placed.y + tip.y * placed.height,
+  };
+}
 
 /** How far a curved arrow bows away from the straight line, relative to its length. */
 const LINE_ARROW_BOW = 0.35;
@@ -127,7 +164,60 @@ function clampUnit(value: number): number {
 
 export function calloutTailLength(box: OverlayBox): number {
   const placed = positiveBox(box);
-  return Math.min(placed.width, placed.height) * CALLOUT_TAIL_RATIO;
+  return Math.min(placed.width, placed.height) * PRESENTATION_CALLOUT_TAIL_RATIO;
+}
+
+type RectSide = "top" | "right" | "bottom" | "left";
+
+function tailSide(
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+  tipX: number,
+  tipY: number,
+): RectSide {
+  const outside: Record<RectSide, number> = {
+    left: left - tipX,
+    right: tipX - (left + width),
+    top: top - tipY,
+    bottom: tipY - (top + height),
+  };
+  return (Object.entries(outside) as Array<[RectSide, number]>).reduce((best, entry) =>
+    entry[1] > best[1] ? entry : best,
+  )[0];
+}
+
+function edgeWithTip(
+  path: PathBuilder,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  tip: { x: number; y: number } | null,
+  base: number,
+): void {
+  if (!tip) {
+    path.line(x2, y2);
+    return;
+  }
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const length = Math.hypot(dx, dy);
+  if (length <= 0) {
+    path.line(tip.x, tip.y);
+    path.line(x2, y2);
+    return;
+  }
+  const ux = dx / length;
+  const uy = dy / length;
+  const projected = (tip.x - x1) * ux + (tip.y - y1) * uy;
+  const half = Math.min(base / TWO, length / TWO);
+  const center = Math.min(length - half, Math.max(half, projected));
+  path.line(x1 + ux * (center - half), y1 + uy * (center - half));
+  path.line(tip.x, tip.y);
+  path.line(x1 + ux * (center + half), y1 + uy * (center + half));
+  path.line(x2, y2);
 }
 
 function roundedRectOutline(
@@ -136,51 +226,42 @@ function roundedRectOutline(
   width: number,
   height: number,
   radiusRatio: number,
-  tail: boolean,
+  tip: { x: number; y: number } | null,
 ): string {
   const right = left + width;
   const bottom = top + height;
   const shortest = Math.min(width, height);
   let radius = (shortest / TWO) * clampUnit(radiusRatio);
-  const tailBase = shortest * 0.16;
-  if (tail && width - radius * TWO < tailBase) {
-    radius = Math.max(0, (width - tailBase) / TWO);
+  const side = tip ? tailSide(left, top, width, height, tip.x, tip.y) : null;
+  const tailBase = shortest * CALLOUT_TAIL_BASE_RATIO;
+  const horizontal = side === "top" || side === "bottom";
+  const span = horizontal ? width : height;
+  if (side && span - radius * TWO < tailBase) {
+    radius = Math.max(0, (span - tailBase) / TWO);
   }
   const path = new PathBuilder();
   path.move(left + radius, top);
-  path.line(right - radius, top);
+  edgeWithTip(path, left + radius, top, right - radius, top, side === "top" ? tip : null, tailBase);
   if (radius > 0) {
     path.arc(radius, radius, 0, right, top + radius);
   }
-  path.line(right, bottom - radius);
+  edgeWithTip(path, right, top + radius, right, bottom - radius, side === "right" ? tip : null, tailBase);
   if (radius > 0) {
     path.arc(radius, radius, 0, right - radius, bottom);
   }
-  if (tail) {
-    const flatLeft = left + radius;
-    const flatRight = right - radius;
-    let baseLeft = left + width * 0.18;
-    let baseRight = left + width * 0.42;
-    const room = Math.max(flatRight - flatLeft, 0);
-    const base = Math.min(tailBase, room);
-    const mid = flatLeft + room / TWO;
-    baseLeft = Math.min(Math.max(baseLeft, flatLeft), mid);
-    baseRight = Math.max(Math.min(baseRight, flatRight), mid);
-    if (baseRight - baseLeft < base) {
-      baseLeft = mid - base / TWO;
-      baseRight = mid + base / TWO;
-    }
-    const tipX = left + width * 0.08;
-    const tipY = bottom + shortest * CALLOUT_TAIL_RATIO;
-    path.line(baseRight, bottom);
-    path.line(tipX, tipY);
-    path.line(baseLeft, bottom);
-  }
-  path.line(left + radius, bottom);
+  edgeWithTip(
+    path,
+    right - radius,
+    bottom,
+    left + radius,
+    bottom,
+    side === "bottom" ? tip : null,
+    tailBase,
+  );
   if (radius > 0) {
     path.arc(radius, radius, 0, left, bottom - radius);
   }
-  path.line(left, top + radius);
+  edgeWithTip(path, left, bottom - radius, left, top + radius, side === "left" ? tip : null, tailBase);
   if (radius > 0) {
     path.arc(radius, radius, 0, left + radius, top);
   }
@@ -201,66 +282,99 @@ function ellipsePoint(
   };
 }
 
-function ovalCallout(left: number, top: number, width: number, height: number): string {
+function angleDelta(from: number, to: number): number {
+  return Math.atan2(Math.sin(to - from), Math.cos(to - from));
+}
+
+function ovalCallout(
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+  tipX: number,
+  tipY: number,
+): string {
   const radiusX = width / TWO;
   const radiusY = height / TWO;
   const centerX = left + radiusX;
   const centerY = top + radiusY;
-  const rightBase = Math.PI / TWO - 0.34;
-  const leftBase = Math.PI / TWO + MIDPOINT;
-  const start = ellipsePoint(centerX, centerY, radiusX, radiusY, rightBase);
-  const end = ellipsePoint(centerX, centerY, radiusX, radiusY, leftBase);
+  const angle = Math.atan2(tipY - centerY, tipX - centerX);
+  const start = ellipsePoint(centerX, centerY, radiusX, radiusY, angle + OVAL_TAIL_GAP);
+  const end = ellipsePoint(centerX, centerY, radiusX, radiusY, angle - OVAL_TAIL_GAP);
   const path = new PathBuilder();
   path.move(start.x, start.y);
   path.arc(radiusX, radiusY, 1, end.x, end.y);
-  path.line(left + width * 0.1, top + height + Math.min(width, height) * CALLOUT_TAIL_RATIO);
+  path.line(tipX, tipY);
   path.close();
   return path.toString();
 }
 
-function cloudCallout(left: number, top: number, width: number, height: number): string {
+function cloudCallout(
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+  tipX: number,
+  tipY: number,
+): string {
   const centerX = left + width / TWO;
   const centerY = top + height * 0.46;
   const radiusX = width * 0.34;
   const radiusY = height * 0.28;
   const bulge = Math.min(width, height) * 0.13;
-  const start = Math.PI / TWO - 0.4;
-  const end = start + Math.PI * TWO - 0.95;
+  const tipAngle = Math.atan2(tipY - centerY, tipX - centerX);
+  const sweep = Math.PI * TWO;
   const angles = Array.from({ length: CLOUD_SCALLOPS + 1 }, (_, index) =>
-    start + ((end - start) * index) / CLOUD_SCALLOPS,
+    -Math.PI + (sweep * index) / CLOUD_SCALLOPS,
   );
+  let closest = 0;
+  let best = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < angles.length - 1; index += 1) {
+    const mid = (angles[index] + angles[index + 1]) / TWO;
+    const delta = Math.abs(angleDelta(tipAngle, mid));
+    if (delta < best) {
+      best = delta;
+      closest = index;
+    }
+  }
   const path = new PathBuilder();
   const first = ellipsePoint(centerX, centerY, radiusX, radiusY, angles[0]);
   path.move(first.x, first.y);
   for (let index = 0; index < angles.length - 1; index += 1) {
+    const next = ellipsePoint(centerX, centerY, radiusX, radiusY, angles[index + 1]);
+    if (index === closest) {
+      path.line(tipX, tipY);
+      path.line(next.x, next.y);
+      continue;
+    }
     const mid = (angles[index] + angles[index + 1]) / TWO;
     const control = ellipsePoint(centerX, centerY, radiusX + bulge, radiusY + bulge, mid);
-    const next = ellipsePoint(centerX, centerY, radiusX, radiusY, angles[index + 1]);
     path.quad(control.x, control.y, next.x, next.y);
   }
-  path.line(left + width * 0.12, top + height + Math.min(width, height) * CALLOUT_TAIL_RATIO);
   path.close();
   return path.toString();
 }
 
 export function roundedRectPath(box: OverlayBox, radiusRatio: number): string {
   const placed = positiveBox(box);
-  return roundedRectOutline(placed.x, placed.y, placed.width, placed.height, radiusRatio, false);
+  return roundedRectOutline(placed.x, placed.y, placed.width, placed.height, radiusRatio, null);
 }
 
 export function calloutPath(
   box: OverlayBox,
   shape: PresentationBubbleShape,
   radiusRatio: number,
+  tip: CalloutTip = defaultCalloutTip(box),
 ): string {
   const placed = positiveBox(box);
+  const point = tipPoint(box, tip);
   if (shape === "oval") {
-    return ovalCallout(placed.x, placed.y, placed.width, placed.height);
+    return ovalCallout(placed.x, placed.y, placed.width, placed.height, point.x, point.y);
   }
   if (shape === "cloud") {
-    return cloudCallout(placed.x, placed.y, placed.width, placed.height);
+    return cloudCallout(placed.x, placed.y, placed.width, placed.height, point.x, point.y);
   }
-  return roundedRectOutline(placed.x, placed.y, placed.width, placed.height, radiusRatio, true);
+  return roundedRectOutline(placed.x, placed.y, placed.width, placed.height, radiusRatio, point);
 }
 
 function placeInBox(nx: number, ny: number, box: OverlayBox): { x: number; y: number } {
@@ -362,7 +476,10 @@ export function overlayOutline(overlay: PresentationOverlay, box: OverlayBox): s
     if (overlay.backing === "rectangle") {
       return roundedRectPath(box, overlay.cornerRadius);
     }
-    return calloutPath(box, overlay.bubbleShape, overlay.cornerRadius);
+    return calloutPath(box, overlay.bubbleShape, overlay.cornerRadius, {
+      x: overlay.tailX,
+      y: overlay.tailY,
+    });
   }
   return null;
 }

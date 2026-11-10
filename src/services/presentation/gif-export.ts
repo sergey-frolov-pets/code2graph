@@ -2,6 +2,7 @@ import { GIFEncoder, applyPalette, quantize } from "gifenc";
 import { frameToPan } from "@/services/presentation/camera";
 import { effectVisualAt, type EffectVisual } from "@/services/presentation/effects";
 import { overlayArtwork, paintArtwork } from "@/services/presentation/glyph-art";
+import { overlayCssColor } from "@/services/presentation/overlay-color";
 import {
   blockArrowPath,
   lineArrowPath,
@@ -222,15 +223,15 @@ function paintOverlay(
   theme: PresentationGifTheme,
 ): void {
   context.save();
-  context.strokeStyle = overlay.stroke || theme.accent;
-  context.fillStyle = overlay.fill || theme.surface;
+  context.strokeStyle = overlayCssColor(overlay.stroke, theme.accent);
+  context.fillStyle = overlayCssColor(overlay.fill, theme.surface);
   context.lineWidth = 2;
   context.setLineDash(overlay.line === "dashed" ? [8, 5] : []);
 
   const box = screenBox(overlay, panX, panY, scale, imageWidth, imageHeight);
   if (overlay.shape === "arrow" && overlay.arrowForm === "line") {
-    context.strokeStyle = overlay.stroke || theme.accent;
-    context.fillStyle = overlay.stroke || theme.accent;
+    context.strokeStyle = overlayCssColor(overlay.stroke, theme.accent);
+    context.fillStyle = overlayCssColor(overlay.stroke, theme.accent);
     drawArrow(context, overlay, panX, panY, scale, imageWidth, imageHeight);
     context.restore();
     return;
@@ -269,7 +270,7 @@ function paintOverlay(
       : overlay.font === "mono"
         ? "monospace"
         : TEXT_FONT_FAMILY;
-    context.fillStyle = overlay.textColor || theme.text;
+    context.fillStyle = overlayCssColor(overlay.textColor, theme.text);
     context.font = `${fontSize}px ${fontFamily}`;
     context.textAlign = "center";
     context.textBaseline = "middle";

@@ -1,4 +1,5 @@
-import type { AppLocale } from "@/constants/i18n";
+import { SUPPORTED_LOCALES, type AppLocale } from "@/constants/i18n";
+import { GRAPHML_COPY_EXTRA } from "@/constants/samples/graphml-copy-extra";
 import type { SampleCatalog } from "@/languages/sample-catalog";
 
 export const GRAPHML_SAMPLE_IDS = [
@@ -108,7 +109,7 @@ function graphEdge(
   return lines.join("\n");
 }
 
-interface GraphmlSampleCopy {
+export interface GraphmlSampleCopy {
   flowDescription: string;
   user: string;
   database: string;
@@ -364,10 +365,17 @@ const GRAPHML_SOURCES_BY_LOCALE: Record<
 > = {
   ru: GRAPHML_SAMPLES_RU,
   en: GRAPHML_SAMPLES_EN,
+  es: buildLocalizedSamples(GRAPHML_COPY_EXTRA.es),
+  zh: buildLocalizedSamples(GRAPHML_COPY_EXTRA.zh),
+  ja: buildLocalizedSamples(GRAPHML_COPY_EXTRA.ja),
+  hi: buildLocalizedSamples(GRAPHML_COPY_EXTRA.hi),
+  pt: buildLocalizedSamples(GRAPHML_COPY_EXTRA.pt),
+  de: buildLocalizedSamples(GRAPHML_COPY_EXTRA.de),
+  ar: buildLocalizedSamples(GRAPHML_COPY_EXTRA.ar),
 };
 
 const ALL_GRAPHML_SAMPLE_SOURCES = new Set<string>();
-for (const locale of ["ru", "en"] as AppLocale[]) {
+for (const locale of SUPPORTED_LOCALES) {
   for (const id of GRAPHML_SAMPLE_IDS) {
     ALL_GRAPHML_SAMPLE_SOURCES.add(GRAPHML_SOURCES_BY_LOCALE[locale][id]);
   }

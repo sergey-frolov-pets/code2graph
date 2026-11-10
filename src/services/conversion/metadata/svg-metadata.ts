@@ -1,5 +1,6 @@
 import {
   CONVERSION_IR_VERSION,
+  LEGACY_CONVERSION_IR_VERSION,
   LEGACY_SVG_METADATA_ID,
   SVG_METADATA_ENCODING_GZIP,
   SVG_METADATA_ENCODING_PLAIN,
@@ -142,8 +143,11 @@ export async function readSvgMetadata(svg: string): Promise<DiagramIR | null> {
 
   try {
     const json = await decodeMetadataPayload(parsed.payload, parsed.encoding);
-    const diagram = JSON.parse(json) as DiagramIR;
-    if (diagram.version !== CONVERSION_IR_VERSION) {
+    const diagram = JSON.parse(json) as DiagramIR & { version: number };
+    if (
+      diagram.version !== CONVERSION_IR_VERSION &&
+      diagram.version !== LEGACY_CONVERSION_IR_VERSION
+    ) {
       return null;
     }
     return diagram;

@@ -1,4 +1,5 @@
-import type { AppLocale } from "@/constants/i18n";
+import { SUPPORTED_LOCALES, type AppLocale } from "@/constants/i18n";
+import { D2_EXTRA } from "@/constants/samples/localized/other-samples";
 import type { SampleCatalog } from "@/languages/sample-catalog";
 
 export const D2_SAMPLE_IDS = [
@@ -398,10 +399,11 @@ dot -> job: Tick`,
 const D2_SOURCES_BY_LOCALE: Record<AppLocale, Record<D2SampleId, string>> = {
   ru: D2_SAMPLES_RU,
   en: D2_SAMPLES_EN,
+  ...D2_EXTRA,
 };
 
 const ALL_D2_SAMPLE_SOURCES = new Set<string>();
-for (const locale of ["ru", "en"] as AppLocale[]) {
+for (const locale of SUPPORTED_LOCALES) {
   for (const id of D2_SAMPLE_IDS) {
     ALL_D2_SAMPLE_SOURCES.add(D2_SOURCES_BY_LOCALE[locale][id]);
   }

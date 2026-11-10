@@ -13,7 +13,7 @@ export const LLM_API_KEYS_GUIDE_FILE = "llm-api-keys.html";
 export const LLM_API_KEYS_GUIDE_FILE_EN = "llm-api-keys.en.html";
 
 export function getLlmApiKeysGuideFile(locale: AppLocale = DEFAULT_LOCALE): string {
-  return locale === "en" ? LLM_API_KEYS_GUIDE_FILE_EN : LLM_API_KEYS_GUIDE_FILE;
+  return locale === "ru" ? LLM_API_KEYS_GUIDE_FILE : LLM_API_KEYS_GUIDE_FILE_EN;
 }
 
 export function getLlmApiKeysGuideHref(locale: AppLocale = DEFAULT_LOCALE): string {

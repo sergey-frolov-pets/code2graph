@@ -107,12 +107,9 @@ export function usePresentationSession(options: {
 
   const hasFrame = computed(() => readFrameHref(options.source.value ?? "") !== null);
 
-  const dimChrome = computed(
-    () =>
-      enabled.value
-      && mode.value === "view"
-      && (open.value || playback.playing.value || playback.animating.value),
-  );
+  const headerDimHeld = ref(false);
+
+  const dimChrome = computed(() => enabled.value && playback.playing.value);
 
   function commit(next: PresentationDocument | null): void {
     const format = options.format.value;
@@ -177,11 +174,25 @@ export function usePresentationSession(options: {
     open.value = !open.value;
   }
 
+  watch(
+    () => playback.playing.value,
+    (value) => {
+      if (!value) {
+        headerDimHeld.value = false;
+      }
+    },
+  );
+
+  function holdHeaderDim(): void {
+    headerDimHeld.value = true;
+  }
+
+  function releaseHeaderDim(): void {
+    headerDimHeld.value = false;
+  }
+
   function togglePanel(): void {
     panelOpen.value = !panelOpen.value;
-    if (!panelOpen.value) {
-      playback.pause();
-    }
   }
 
   function onCreateTrack(name: string): void {
@@ -547,7 +558,10 @@ export function usePresentationSession(options: {
     document,
     currentTrack,
     dimChrome,
+    headerDimHeld,
     chromeRevealed,
+    holdHeaderDim,
+    releaseHeaderDim,
     selectedOverlayId,
     exportingGif,
     repeat,

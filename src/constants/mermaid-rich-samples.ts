@@ -1,5 +1,6 @@
 import type { AppLocale } from "@/constants/i18n";
 import type { MermaidSampleId } from "@/constants/mermaid-sample-diagrams";
+import { MERMAID_RICH_EXTRA } from "@/constants/samples/localized/mermaid-rich";
 
 const MERMAID_RICH_SAMPLE_IDS = [
   "component",
@@ -146,7 +147,7 @@ pie showData
 %%   "Pay, card",Paid,48
 %%   "Drop, ""no pay""",Lost,1
 %% Строка из одних %% без текста ломает разбор: после %% нужен текст.
-%% Имена узлов только латиницей: парсер sankey-beta принимает ASCII.
+%% Имена узлов — на любом языке, включая кириллицу и иероглифы.
 %% Опции не пишутся в CSV. Их задают YAML-шапкой НАД sankey-beta
 %% (или в mermaid.initialize). Блок ниже — комментарий: копируют без %%.
 %% ---
@@ -456,7 +457,7 @@ pie showData
 %%   "Pay, card",Paid,48
 %%   "Drop, ""no pay""",Lost,1
 %% A line that is only %% with no text breaks the parser: put text after %%.
-%% Node names are ASCII only: the sankey-beta parser rejects other characters.
+%% Node names may use any language, including non-Latin letters.
 %% Options are not CSV columns. Set them in a YAML header ABOVE sankey-beta
 %% (or in mermaid.initialize). The block below is a comment: copy it without %%.
 %% ---
@@ -648,6 +649,7 @@ const MERMAID_RICH_SAMPLES: Record<
 > = {
   ru: MERMAID_RICH_SAMPLES_RU,
   en: MERMAID_RICH_SAMPLES_EN,
+  ...MERMAID_RICH_EXTRA,
 };
 
 export function getMermaidRichSample(
@@ -658,5 +660,5 @@ export function getMermaidRichSample(
     return null;
   }
 
-  return MERMAID_RICH_SAMPLES[locale][id as MermaidRichSampleId];
+  return MERMAID_RICH_SAMPLES[locale]?.[id as MermaidRichSampleId] ?? null;
 }

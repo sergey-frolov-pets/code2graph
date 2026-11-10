@@ -11,7 +11,8 @@ import {
   PRESENTATION_OVERLAY_WIDTH,
   PRESENTATION_SCHEMA_VERSION,
 } from "@/services/presentation/constants";
-import { snapRotation } from "@/services/presentation/overlay-geometry";
+import { clampCalloutTip, defaultCalloutTip, snapRotation } from "@/services/presentation/overlay-geometry";
+import { readOverlayPaint } from "@/services/presentation/overlay-color";
 import { PREVIEW_MIN_ZOOM } from "@/constants/preview-pan-zoom";
 import type {
   CameraFrame,
@@ -183,7 +184,6 @@ function readTransition(value: unknown): PresentationTransition | null {
   };
 }
 
-const OVERLAY_COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
 const DIRECTION_ROTATION: Record<PresentationArrowDirection, number> = {
   right: 0,
@@ -206,8 +206,12 @@ function readCornerRadius(value: unknown): number {
   return Math.min(1, Math.max(0, value));
 }
 
-function readOverlayColor(value: unknown): string {
-  return typeof value === "string" && OVERLAY_COLOR_PATTERN.test(value) ? value : "";
+function readTail(x: unknown, y: unknown, width: number, height: number): { x: number; y: number } {
+  const fallback = defaultCalloutTip({ x: 0, y: 0, width, height });
+  return {
+    x: clampCalloutTip(isFiniteNumber(x) ? x : Number.NaN, fallback.x),
+    y: clampCalloutTip(isFiniteNumber(y) ? y : Number.NaN, fallback.y),
+  };
 }
 
 function readOverlay(value: unknown): PresentationOverlay | null {
@@ -240,6 +244,8 @@ function readOverlay(value: unknown): PresentationOverlay | null {
     backing: oneOf(value.backing, PRESENTATION_TEXT_BACKINGS, "none"),
     bubbleShape: oneOf(value.bubbleShape, PRESENTATION_BUBBLE_SHAPES, "rectangle"),
     cornerRadius: readCornerRadius(value.cornerRadius),
+    tailX: readTail(value.tailX, value.tailY, value.width, value.height).x,
+    tailY: readTail(value.tailX, value.tailY, value.width, value.height).y,
     arrowKind: oneOf(value.arrowKind, PRESENTATION_ARROW_KINDS, "straight"),
     arrowForm: oneOf(value.arrowForm, PRESENTATION_ARROW_FORMS, "line"),
     arrowDirection: oneOf(value.arrowDirection, PRESENTATION_ARROW_DIRECTIONS, "right"),
@@ -249,9 +255,9 @@ function readOverlay(value: unknown): PresentationOverlay | null {
     ),
     mark: oneOf(value.mark, PRESENTATION_MARKS, "warning"),
     arrowHead: oneOf(value.arrowHead, PRESENTATION_ARROW_HEADS, "end"),
-    stroke: readOverlayColor(value.stroke),
-    fill: readOverlayColor(value.fill),
-    textColor: readOverlayColor(value.textColor),
+    stroke: readOverlayPaint(value.stroke),
+    fill: readOverlayPaint(value.fill),
+    textColor: readOverlayPaint(value.textColor),
     font: oneOf(value.font, PRESENTATION_FONTS, "sans"),
     line: oneOf(value.line, PRESENTATION_LINE_STYLES, "solid"),
   };
@@ -973,6 +979,12 @@ function defaultOverlay(
   owner: OverlayOwner,
   mark: PresentationMark,
 ): PresentationOverlay {
+  const tail = defaultCalloutTip({
+    x: 0,
+    y: 0,
+    width: PRESENTATION_OVERLAY_WIDTH,
+    height: shape === "arrow" ? 0 : PRESENTATION_OVERLAY_HEIGHT,
+  });
   return {
     id: createPresentationId("overlay"),
     owner,
@@ -985,6 +997,8 @@ function defaultOverlay(
     backing: shape === "text" ? "rectangle" : "none",
     bubbleShape: "rectangle",
     cornerRadius: 0,
+    tailX: tail.x,
+    tailY: tail.y,
     arrowKind: "straight",
     arrowForm: "line",
     arrowDirection: "right",
@@ -1027,6 +1041,12 @@ export function updateOverlay(
       const next = { ...overlay, ...patch };
       next.cornerRadius = readCornerRadius(next.cornerRadius);
       next.rotation = snapRotation(next.rotation);
+      const tail = readTail(next.tailX, next.tailY, next.width, next.height);
+      next.tailX = tail.x;
+      next.tailY = tail.y;
+      next.stroke = readOverlayPaint(next.stroke);
+      next.fill = readOverlayPaint(next.fill);
+      next.textColor = readOverlayPaint(next.textColor);
       if (
         next.shape === "arrow"
         && next.arrowForm !== "line"

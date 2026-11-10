@@ -3,7 +3,11 @@ import {
   createConversionReport,
   type ConversionReport,
 } from "@/services/conversion/conversion-report";
-import type { ConversionModeKind, DiagramKind } from "@/services/conversion/diagram-ir";
+import type {
+  ConversionModeKind,
+  DiagramIR,
+  DiagramKind,
+} from "@/services/conversion/diagram-ir";
 import { getKindAwareRouteRule } from "@/services/conversion/kind-projection/kind-aware-route";
 
 export interface AnalyzeConversionLossesInput {
@@ -12,6 +16,7 @@ export interface AnalyzeConversionLossesInput {
   sourceFormat: DiagramFormat;
   targetFormat: DiagramFormat;
   mode: ConversionModeKind;
+  sourceIr?: DiagramIR;
   visualOnly?: boolean;
   metadataPresent?: boolean;
   unmatchedVisualNodes?: number;
@@ -20,6 +25,47 @@ export interface AnalyzeConversionLossesInput {
   truncatedEdges?: number;
   parseError?: string | null;
   validationErrors?: string[];
+}
+
+function pruneUnapplicableLosses(
+  lossIds: string[],
+  sourceIr: DiagramIR | undefined,
+  targetFormat: DiagramFormat,
+): string[] {
+  if (!sourceIr) {
+    return lossIds;
+  }
+
+  const hasGroups = (sourceIr.groups?.length ?? 0) > 0;
+  const hasClassMembers = Object.values(
+    sourceIr.extras?.classMembers ?? {},
+  ).some((list) => list.length > 0);
+  const hasEntityAttributes = Object.values(
+    sourceIr.extras?.entityAttributes ?? {},
+  ).some((list) => list.length > 0);
+  const hasSequenceBlocks = (sourceIr.extras?.sequenceBlocks?.length ?? 0) > 0;
+
+  return lossIds.filter((id) => {
+    if ((id === "loss.subgraphs" || id === "loss.swimlanes") && !hasGroups) {
+      return false;
+    }
+    if (
+      id === "loss.classMembers" &&
+      (!hasClassMembers || targetFormat === "graphml")
+    ) {
+      return false;
+    }
+    if (
+      id === "loss.attributes" &&
+      (!hasEntityAttributes || targetFormat === "graphml")
+    ) {
+      return false;
+    }
+    if (id === "loss.blocks" && !hasSequenceBlocks) {
+      return false;
+    }
+    return true;
+  });
 }
 
 export function analyzeConversionLosses(
@@ -33,7 +79,11 @@ export function analyzeConversionLosses(
     targetKind,
   );
 
-  const lossIds = [...rule.lossIds];
+  const lossIds = pruneUnapplicableLosses(
+    [...rule.lossIds],
+    input.sourceIr,
+    input.targetFormat,
+  );
 
   if (input.visualOnly) {
     lossIds.push("loss.visualOnly");

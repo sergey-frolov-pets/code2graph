@@ -12,6 +12,7 @@ import {
   paintDiagramTypography,
   resolveDiagramFontStack,
 } from "@/services/diagram-typography";
+import { prepareMermaidSankeyUnicode } from "@/services/mermaid/sankey-unicode";
 import { prepareMermaidSource } from "@/utils/mermaid-source";
 import { isMermaidExtDeclaration } from "@/utils/mermaid-syntax";
 import { applyMarkedAspectFrame } from "@/utils/svg-aspect-frame";
@@ -89,6 +90,7 @@ async function renderMermaidOfflineToSvg(
   if (!prepared) {
     throw new LocalizedAppError("mermaid.emptySource");
   }
+  const sankeyLabels = prepareMermaidSankeyUnicode(prepared);
 
   // Расширение Mermaid (свои типы диаграмм). В проде __MERMAID_EXT__ = false →
   // этот блок вместе с import() вырезается на этапе сборки.
@@ -113,8 +115,8 @@ async function renderMermaidOfflineToSvg(
   const container = createMermaidRenderContainer();
 
   try {
-    const result = await mermaid.render(renderId, prepared, container);
-    return applyAppearanceToSvg(result.svg, options);
+    const result = await mermaid.render(renderId, sankeyLabels.source, container);
+    return sankeyLabels.restore(applyAppearanceToSvg(result.svg, options));
   } catch (error) {
     const message =
       error instanceof Error && error.message
