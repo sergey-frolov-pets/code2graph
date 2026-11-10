@@ -459,6 +459,43 @@ export function offsetOfWorkingLine(
   return Math.max(0, offset - 1);
 }
 
+export function anchorHiddenInsert(
+  beforeViewIndex: number,
+  visibleViewIndexes: readonly number[],
+): { edge: "after" | "before"; visibleIndex: number } | null {
+  if (visibleViewIndexes.length === 0) {
+    return null;
+  }
+
+  let afterIndex = -1;
+  let beforeIndex = -1;
+
+  for (let index = 0; index < visibleViewIndexes.length; index += 1) {
+    const viewIndex = visibleViewIndexes[index] ?? 0;
+    if (viewIndex < beforeViewIndex) {
+      afterIndex = index;
+      continue;
+    }
+
+    if (beforeIndex < 0) {
+      beforeIndex = index;
+    }
+  }
+
+  if (afterIndex >= 0) {
+    return { edge: "after", visibleIndex: afterIndex };
+  }
+
+  if (beforeIndex >= 0) {
+    return { edge: "before", visibleIndex: beforeIndex };
+  }
+
+  return {
+    edge: "after",
+    visibleIndex: visibleViewIndexes.length - 1,
+  };
+}
+
 export function buildViewFolds(
   folds: readonly CodeFoldRegion[],
   lines: readonly SessionViewLine[],

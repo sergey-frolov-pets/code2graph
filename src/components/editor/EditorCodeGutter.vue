@@ -87,6 +87,16 @@ function onGutterLineClick(
         @click="onGutterLineClick(row.sourceLine, regionsModalOpen, $event)"
       >
         <button
+          v-if="row.markerBeforeHunkId"
+          type="button"
+          class="code-editor__session-marker code-editor__session-marker--before"
+          :title="t('editor.sessionShowHidden')"
+          :aria-label="t('editor.sessionShowHidden')"
+          @mousedown.stop
+          @mouseup.stop
+          @click.stop="emit('toggleSessionHunk', row.markerBeforeHunkId)"
+        />
+        <button
           v-if="row.fold"
           type="button"
           class="code-editor__fold-toggle"
@@ -122,6 +132,16 @@ function onGutterLineClick(
           </template>
           <template v-else>⋯</template>
         </span>
+        <button
+          v-if="row.markerAfterHunkId"
+          type="button"
+          class="code-editor__session-marker code-editor__session-marker--after"
+          :title="t('editor.sessionShowHidden')"
+          :aria-label="t('editor.sessionShowHidden')"
+          @mousedown.stop
+          @mouseup.stop
+          @click.stop="emit('toggleSessionHunk', row.markerAfterHunkId)"
+        />
       </div>
     </div>
 

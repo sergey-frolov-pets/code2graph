@@ -17,6 +17,7 @@ import {
   Eye,
   EyeOff,
   FolderOpen,
+  GitCompare,
   Globe,
   History,
   House,
@@ -85,7 +86,8 @@ export type ActionIconName =
   | "more"
   | "code"
   | "table-paste"
-  | "builder";
+  | "builder"
+  | "session-compare";
 
 const props = withDefaults(
   defineProps<{
@@ -139,6 +141,7 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   code: Braces,
   "table-paste": Table,
   builder: SlidersHorizontal,
+  "session-compare": GitCompare,
 };
 
 const iconComponent = computed(() => ICON_MAP[props.name]);

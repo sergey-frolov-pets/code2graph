@@ -14,6 +14,7 @@ import {
 import { getFormatHandler } from "@/formats";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import {
+  anchorHiddenInsert,
   buildViewFolds,
   type SessionLineRole,
   type SessionProjection,
@@ -34,6 +35,8 @@ export interface GutterRow {
   fold: CodeFoldRegion | null;
   sessionRole: Exclude<SessionLineRole, "context"> | null;
   hunkId: string | null;
+  markerBeforeHunkId: string | null;
+  markerAfterHunkId: string | null;
 }
 
 export interface VisibleEditorLine {
@@ -161,9 +164,50 @@ export function useEditorDisplayModel(options: {
             : null,
         sessionRole,
         hunkId: projectedLine?.hunkId ?? null,
+        markerBeforeHunkId: null,
+        markerAfterHunkId: null,
       };
     }),
   );
+
+  const gutterRowsWithMarkers = computed<GutterRow[]>(() => {
+    const rows = gutterRows.value.map((row) => ({ ...row }));
+    const projection = sessionProjection.value;
+    if (!projection || projection.hidden.length === 0) {
+      return rows;
+    }
+
+    const visibleRowIndexes: number[] = [];
+    const visibleViewIndexes: number[] = [];
+    visibleLines.value.forEach((line, rowIndex) => {
+      if (line.kind !== "source") {
+        return;
+      }
+      visibleRowIndexes.push(rowIndex);
+      visibleViewIndexes.push(line.sourceLine - 1);
+    });
+
+    for (const span of projection.hidden) {
+      const anchor = anchorHiddenInsert(span.beforeViewIndex, visibleViewIndexes);
+      const rowIndex = anchor
+        ? visibleRowIndexes[anchor.visibleIndex]
+        : rows.length - 1;
+      const row = anchor ? rows[rowIndex ?? -1] : rows[rows.length - 1];
+      if (!row || !anchor) {
+        if (row) {
+          row.markerAfterHunkId = span.hunkId;
+        }
+        continue;
+      }
+      if (anchor.edge === "before") {
+        row.markerBeforeHunkId = span.hunkId;
+      } else {
+        row.markerAfterHunkId = span.hunkId;
+      }
+    }
+
+    return rows;
+  });
 
   const renderLineHighlight = (line: string): string =>
     getFormatHandler(diagramFormat.value).highlightLine(line);
@@ -231,7 +275,7 @@ export function useEditorDisplayModel(options: {
     surfaceText,
     surfaceFolds: displayFolds,
     visibleLines,
-    gutterRows,
+    gutterRows: gutterRowsWithMarkers,
     visibleEditorLines,
     editorStyle,
     useLineVirtualization,

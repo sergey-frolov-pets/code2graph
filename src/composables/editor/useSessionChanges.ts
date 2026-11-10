@@ -4,13 +4,10 @@ import {
   splitSourceLines,
 } from "@/services/editor/session-changes";
 
-export type SessionDisplayMode = "plain" | "tracking";
-
 interface DocumentSession {
   baseline: string | null;
   fileShowsBaseline: boolean;
   flippedHunkIds: string[];
-  displayMode: SessionDisplayMode;
 }
 
 const activeDocumentId = ref("");
@@ -21,7 +18,6 @@ function emptySession(): DocumentSession {
     baseline: null,
     fileShowsBaseline: false,
     flippedHunkIds: [],
-    displayMode: "plain",
   };
 }
 
@@ -41,7 +37,6 @@ export function useSessionChanges() {
     () => sessions.value[activeDocumentId.value] ?? emptySession(),
   );
   const baseline = computed(() => activeSession.value.baseline);
-  const displayMode = computed(() => activeSession.value.displayMode);
   const fileShowsBaseline = computed(
     () => activeSession.value.fileShowsBaseline,
   );
@@ -73,7 +68,6 @@ export function useSessionChanges() {
       baseline: text,
       fileShowsBaseline: false,
       flippedHunkIds: [],
-      displayMode: current?.displayMode ?? "plain",
     });
   }
 
@@ -82,24 +76,10 @@ export function useSessionChanges() {
       return;
     }
 
-    const current = readSession(documentId);
     writeSession(documentId, {
       baseline: text,
       fileShowsBaseline: false,
       flippedHunkIds: [],
-      displayMode: current.displayMode,
-    });
-  }
-
-  function setDisplayMode(mode: SessionDisplayMode): void {
-    const documentId = activeDocumentId.value;
-    if (!documentId) {
-      return;
-    }
-
-    writeSession(documentId, {
-      ...readSession(documentId),
-      displayMode: mode,
     });
   }
 
@@ -181,14 +161,12 @@ export function useSessionChanges() {
 
   return {
     baseline,
-    displayMode,
     fileShowsBaseline,
     flippedHunkIds,
     setActiveDocument,
     forgetDocument,
     ensureBaseline,
     resetBaseline,
-    setDisplayMode,
     toggleFileVersion,
     toggleHunk,
     showEditedLinesAsCurrent,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CodeFoldRegion } from "@/utils/code-folds";
 import {
+  anchorHiddenInsert,
   applySessionViewEdit,
   buildSessionProjection,
   buildViewFolds,
@@ -231,6 +232,22 @@ describe("mapViewOffsetToWorkingOffset", () => {
         working,
       ),
     ).toBe(working.indexOf("c"));
+  });
+});
+
+describe("anchorHiddenInsert", () => {
+  it("places a marker after the line that precedes the hidden new lines", () => {
+    expect(anchorHiddenInsert(2, [0, 1, 2])).toEqual({
+      edge: "after",
+      visibleIndex: 1,
+    });
+  });
+
+  it("places a marker before the first line when the new lines are at the top", () => {
+    expect(anchorHiddenInsert(0, [0, 1])).toEqual({
+      edge: "before",
+      visibleIndex: 0,
+    });
   });
 });
 

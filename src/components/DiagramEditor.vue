@@ -149,30 +149,21 @@ const session = useSessionChanges();
 const cursorText = ref("");
 const cursorFolds = ref<CodeFoldRegion[]>([]);
 
-const sessionProjection = computed(() => {
-  if (session.displayMode.value !== "tracking") {
-    return null;
-  }
-
-  return buildSessionProjection({
+const sessionProjection = computed(() =>
+  buildSessionProjection({
     baseline: session.baseline.value ?? source.value,
     current: source.value,
     fileShowsBaseline: session.fileShowsBaseline.value,
     flippedHunkIds: session.flippedHunkIds.value,
-  });
-});
+  }),
+);
 
 const hasSessionChanges = computed(
-  () => (sessionProjection.value?.hunks.length ?? 0) > 0,
+  () => sessionProjection.value.hunks.length > 0,
 );
 
 function commitSurfaceText(next: string): void {
   const projection = sessionProjection.value;
-  if (!projection) {
-    source.value = next;
-    return;
-  }
-
   const applied = applySessionViewEdit(
     projection.lines,
     projection.hidden,
@@ -191,8 +182,7 @@ function commitSurfaceText(next: string): void {
 
 const sessionBuffer = computed({
   get(): string {
-    const projection = sessionProjection.value;
-    return projection ? sessionViewText(projection.lines) : source.value;
+    return sessionViewText(sessionProjection.value.lines);
   },
   set(next: string) {
     commitSurfaceText(next);
@@ -201,14 +191,6 @@ const sessionBuffer = computed({
 
 function workingLineOffset(lineNumber: number): number {
   const projection = sessionProjection.value;
-  if (!projection) {
-    const lines = splitSourceLines(source.value);
-    const targetLine = Math.min(Math.max(lineNumber, 1), Math.max(lines.length, 1));
-    return lines
-      .slice(0, targetLine - 1)
-      .reduce((offset, line) => offset + line.length + 1, 0);
-  }
-
   return offsetOfWorkingLine(
     projection.lines,
     projection.hidden,
@@ -218,10 +200,6 @@ function workingLineOffset(lineNumber: number): number {
 
 function toWorkingOffset(offset: number): number {
   const projection = sessionProjection.value;
-  if (!projection) {
-    return offset;
-  }
-
   return mapViewOffsetToWorkingOffset(
     offset,
     projection.lines,
@@ -523,11 +501,9 @@ onUnmounted(() => {
       :is-fullscreen="isFullscreen"
       :surface-mode="surfaceMode"
       :builder-available="builderAvailable"
-      :session-mode="session.displayMode.value"
       :can-toggle-session-file="hasSessionChanges"
       :session-file-shows-baseline="session.fileShowsBaseline.value"
       @set-surface-mode="setSurfaceMode"
-      @set-session-mode="session.setDisplayMode"
       @toggle-session-file="session.toggleFileVersion"
       @open-file="openFilePicker"
       @open-versions="emit('openVersions')"
