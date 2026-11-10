@@ -28,6 +28,14 @@ export const PRESENTATION_ARROW_HEADS = ["none", "end", "start", "both"] as cons
 
 export type PresentationArrowHead = (typeof PRESENTATION_ARROW_HEADS)[number];
 
+export const PRESENTATION_LINE_STYLES = ["solid", "dashed"] as const;
+
+export type PresentationLineStyle = (typeof PRESENTATION_LINE_STYLES)[number];
+
+export const PRESENTATION_FONTS = ["sans", "serif", "mono"] as const;
+
+export type PresentationFont = (typeof PRESENTATION_FONTS)[number];
+
 /** Point on the rendered image, as a fraction of its width and height. */
 export interface NormPoint {
   x: number;
@@ -70,6 +78,12 @@ export interface PresentationOverlay {
   backing: PresentationTextBacking;
   arrowKind: PresentationArrowKind;
   arrowHead: PresentationArrowHead;
+  /** Empty string keeps the theme color. */
+  stroke: string;
+  fill: string;
+  textColor: string;
+  font: PresentationFont;
+  line: PresentationLineStyle;
 }
 
 export interface PresentationTrack {

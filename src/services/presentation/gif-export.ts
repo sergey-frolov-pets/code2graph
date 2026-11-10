@@ -192,13 +192,14 @@ function drawOverlay(
   theme: PresentationGifTheme,
 ): void {
   context.save();
-  context.strokeStyle = theme.accent;
-  context.fillStyle = theme.surface;
+  context.strokeStyle = overlay.stroke || theme.accent;
+  context.fillStyle = overlay.fill || theme.surface;
   context.lineWidth = 2;
+  context.setLineDash(overlay.line === "dashed" ? [8, 5] : []);
 
   if (overlay.shape === "arrow") {
-    context.strokeStyle = theme.accent;
-    context.fillStyle = theme.accent;
+    context.strokeStyle = overlay.stroke || theme.accent;
+    context.fillStyle = overlay.stroke || theme.accent;
     drawArrow(context, overlay, panX, panY, scale, imageWidth, imageHeight);
     context.restore();
     return;
@@ -237,8 +238,13 @@ function drawOverlay(
 
   if (overlay.shape === "text" && overlay.text) {
     const fontSize = Math.max(12, Math.min(28, Math.abs(box.height) * 0.45));
-    context.fillStyle = theme.text;
-    context.font = `${fontSize}px ${TEXT_FONT_FAMILY}`;
+    const fontFamily = overlay.font === "serif"
+      ? "serif"
+      : overlay.font === "mono"
+        ? "monospace"
+        : TEXT_FONT_FAMILY;
+    context.fillStyle = overlay.textColor || theme.text;
+    context.font = `${fontSize}px ${fontFamily}`;
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText(overlay.text, box.x + box.width / 2, box.y + box.height / 2);

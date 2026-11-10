@@ -52,10 +52,16 @@ onMounted(() => {
   media = window.matchMedia("(pointer: coarse)");
   onCoarseChange();
   media.addEventListener("change", onCoarseChange);
+  window.addEventListener("pointermove", onPointerMove);
+  window.addEventListener("pointerup", onPointerUp);
+  window.addEventListener("pointercancel", onPointerUp);
 });
 
 onUnmounted(() => {
   media?.removeEventListener("change", onCoarseChange);
+  window.removeEventListener("pointermove", onPointerMove);
+  window.removeEventListener("pointerup", onPointerUp);
+  window.removeEventListener("pointercancel", onPointerUp);
 });
 
 const handleRadius = computed(() =>
@@ -222,11 +228,61 @@ function onStagePointerDown(event: PointerEvent): void {
   emit("insertPoint", fromEvent(event));
 }
 
+const OVERLAY_FONT_FAMILY = {
+  sans: "sans-serif",
+  serif: "serif",
+  mono: "ui-monospace, monospace",
+} as const;
+
+const SELECTION_PAD = 8;
+
+function overlayVars(overlay: PresentationOverlay): Record<string, string> {
+  return {
+    "--overlay-stroke": overlay.stroke || "var(--accent)",
+    "--overlay-fill": overlay.fill || "color-mix(in srgb, var(--surface) 88%, transparent)",
+    "--overlay-text": overlay.textColor || "var(--text)",
+    "--overlay-font": OVERLAY_FONT_FAMILY[overlay.font],
+  };
+}
+
+function selectionBox(overlay: PresentationOverlay): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
+  const box = screenBox(overlay);
+  const left = Math.min(box.x, box.x + box.width) - SELECTION_PAD;
+  const top = Math.min(box.y, box.y + box.height) - SELECTION_PAD;
+  return {
+    x: left,
+    y: top,
+    width: Math.abs(box.width) + SELECTION_PAD * 2,
+    height: Math.abs(box.height) + SELECTION_PAD * 2,
+  };
+}
+
+function onOverlayPointerDown(event: PointerEvent, overlay: PresentationOverlay): void {
+  if (!props.editing) {
+    return;
+  }
+  const target = event.target;
+  if (target instanceof Element && target.classList.contains("presentation-handle")) {
+    return;
+  }
+  emit("selectOverlay", overlay.id);
+  beginDrag(event, {
+    kind: "overlay",
+    id: overlay.id,
+    origin: { x: overlay.x, y: overlay.y },
+    pointer: fromEvent(event),
+  });
+}
+
 function beginDrag(event: PointerEvent, next: Drag): void {
   event.stopPropagation();
   event.preventDefault();
   drag = next;
-  (event.currentTarget as Element).setPointerCapture(event.pointerId);
 }
 
 function onPointerMove(event: PointerEvent): void {
@@ -281,9 +337,6 @@ function overlayTextSize(overlay: PresentationOverlay): number {
     class="presentation-stage"
     :class="{ 'is-drawing': editing && addPointArmed, 'is-editing': editing }"
     @pointerdown="onStagePointerDown"
-    @pointermove="onPointerMove"
-    @pointerup="onPointerUp"
-    @pointercancel="onPointerUp"
   >
     <defs>
       <marker
@@ -296,7 +349,7 @@ function overlayTextSize(overlay: PresentationOverlay): number {
       >
         <path
           d="M0,0 L7,3 L0,6 Z"
-          class="presentation-arrow-head"
+          fill="context-stroke"
         />
       </marker>
       <marker
@@ -309,7 +362,7 @@ function overlayTextSize(overlay: PresentationOverlay): number {
       >
         <path
           d="M7,0 L0,3 L7,6 Z"
-          class="presentation-arrow-head"
+          fill="context-stroke"
         />
       </marker>
     </defs>
@@ -354,8 +407,22 @@ function overlayTextSize(overlay: PresentationOverlay): number {
       v-for="overlay in visibleOverlays"
       :key="overlay.id"
       class="presentation-overlay"
-      :class="{ 'is-selected': overlay.id === selectedOverlayId }"
+      :class="{
+        'is-selected': overlay.id === selectedOverlayId,
+        'is-dashed': overlay.line === 'dashed',
+      }"
+      :style="overlayVars(overlay)"
+      @pointerdown="onOverlayPointerDown($event, overlay)"
     >
+      <rect
+        v-if="editing && overlay.id === selectedOverlayId"
+        class="presentation-selection"
+        :x="selectionBox(overlay).x"
+        :y="selectionBox(overlay).y"
+        :width="selectionBox(overlay).width"
+        :height="selectionBox(overlay).height"
+        rx="8"
+      />
       <template v-if="overlay.shape === 'rect' || (overlay.shape === 'text' && overlay.backing === 'rectangle')">
         <rect
           class="presentation-shape"
@@ -364,16 +431,6 @@ function overlayTextSize(overlay: PresentationOverlay): number {
           :width="Math.abs(screenBox(overlay).width)"
           :height="Math.abs(screenBox(overlay).height)"
           rx="6"
-          @pointerdown="
-            editing &&
-              (emit('selectOverlay', overlay.id),
-               beginDrag($event, {
-                 kind: 'overlay',
-                 id: overlay.id,
-                 origin: { x: overlay.x, y: overlay.y },
-                 pointer: fromEvent($event),
-               }))
-          "
         />
       </template>
       <ellipse
@@ -383,16 +440,6 @@ function overlayTextSize(overlay: PresentationOverlay): number {
         :cy="screenBox(overlay).y + screenBox(overlay).height / 2"
         :rx="Math.abs(screenBox(overlay).width) / 2"
         :ry="Math.abs(screenBox(overlay).height) / 2"
-        @pointerdown="
-          editing &&
-            (emit('selectOverlay', overlay.id),
-             beginDrag($event, {
-               kind: 'overlay',
-               id: overlay.id,
-               origin: { x: overlay.x, y: overlay.y },
-               pointer: fromEvent($event),
-             }))
-        "
       />
       <rect
         v-else-if="overlay.shape === 'text' && overlay.backing === 'none'"
@@ -401,16 +448,6 @@ function overlayTextSize(overlay: PresentationOverlay): number {
         :y="Math.min(screenBox(overlay).y, screenBox(overlay).y + screenBox(overlay).height)"
         :width="Math.abs(screenBox(overlay).width)"
         :height="Math.abs(screenBox(overlay).height)"
-        @pointerdown="
-          editing &&
-            (emit('selectOverlay', overlay.id),
-             beginDrag($event, {
-               kind: 'overlay',
-               id: overlay.id,
-               origin: { x: overlay.x, y: overlay.y },
-               pointer: fromEvent($event),
-             }))
-        "
       />
       <template v-else-if="overlay.shape === 'text' && overlay.backing === 'bubble'">
         <rect
@@ -420,39 +457,24 @@ function overlayTextSize(overlay: PresentationOverlay): number {
           :width="Math.abs(screenBox(overlay).width)"
           :height="Math.abs(screenBox(overlay).height)"
           rx="16"
-          @pointerdown="
-            editing &&
-              (emit('selectOverlay', overlay.id),
-               beginDrag($event, {
-                 kind: 'overlay',
-                 id: overlay.id,
-                 origin: { x: overlay.x, y: overlay.y },
-                 pointer: fromEvent($event),
-               }))
-          "
         />
         <polygon
           class="presentation-shape"
           :points="bubbleTail(overlay)"
         />
       </template>
-      <path
-        v-else-if="overlay.shape === 'arrow'"
-        class="presentation-arrow"
-        :d="arrowPath(overlay)"
-        :marker-end="markerEnd(overlay)"
-        :marker-start="markerStart(overlay)"
-        @pointerdown="
-          editing &&
-            (emit('selectOverlay', overlay.id),
-             beginDrag($event, {
-               kind: 'overlay',
-               id: overlay.id,
-               origin: { x: overlay.x, y: overlay.y },
-               pointer: fromEvent($event),
-             }))
-        "
-      />
+      <template v-else-if="overlay.shape === 'arrow'">
+        <path
+          class="presentation-arrow-hit"
+          :d="arrowPath(overlay)"
+        />
+        <path
+          class="presentation-arrow"
+          :d="arrowPath(overlay)"
+          :marker-end="markerEnd(overlay)"
+          :marker-start="markerStart(overlay)"
+        />
+      </template>
       <text
         v-if="overlay.shape === 'text' && overlay.text"
         class="presentation-label"
@@ -509,7 +531,7 @@ function overlayTextSize(overlay: PresentationOverlay): number {
 .presentation-arrow,
 .presentation-guide {
   fill: none;
-  stroke: var(--accent);
+  stroke: var(--overlay-stroke, var(--accent));
   stroke-width: 2;
   pointer-events: none;
 }
@@ -521,10 +543,11 @@ function overlayTextSize(overlay: PresentationOverlay): number {
 
 .presentation-shape,
 .presentation-hit {
-  fill: color-mix(in srgb, var(--surface) 88%, transparent);
-  stroke: var(--accent);
+  fill: var(--overlay-fill, color-mix(in srgb, var(--surface) 88%, transparent));
+  stroke: var(--overlay-stroke, var(--accent));
   stroke-width: 2;
   pointer-events: auto;
+  cursor: pointer;
 }
 
 .presentation-hit {
@@ -532,22 +555,54 @@ function overlayTextSize(overlay: PresentationOverlay): number {
   stroke: transparent;
 }
 
-.presentation-stage.is-editing .presentation-hit:hover,
+.presentation-stage.is-editing .presentation-overlay:hover .presentation-hit,
 .presentation-overlay.is-selected .presentation-hit {
-  stroke: var(--accent);
+  stroke: var(--overlay-stroke, var(--accent));
+  stroke-width: 2;
+}
+
+.presentation-arrow-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 18;
+  pointer-events: stroke;
+  cursor: pointer;
 }
 
 .presentation-arrow {
-  pointer-events: stroke;
   stroke-width: 2.5;
 }
 
-.presentation-arrow-head {
-  fill: var(--accent);
+.presentation-overlay.is-dashed .presentation-shape,
+.presentation-overlay.is-dashed .presentation-arrow {
+  stroke-dasharray: 8 5;
+}
+
+.presentation-stage.is-editing .presentation-overlay:hover .presentation-shape,
+.presentation-stage.is-editing .presentation-overlay:hover .presentation-arrow {
+  stroke-width: 3.5;
+}
+
+.presentation-overlay.is-selected .presentation-shape,
+.presentation-overlay.is-selected .presentation-arrow {
+  stroke-width: 4;
+}
+
+.presentation-overlay.is-selected .presentation-label {
+  font-weight: 700;
+}
+
+.presentation-selection {
+  fill: color-mix(in srgb, var(--danger) 12%, transparent);
+  stroke: var(--danger);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+  pointer-events: none;
 }
 
 .presentation-label {
-  fill: var(--text);
+  fill: var(--overlay-text, var(--text));
+  font-family: var(--overlay-font, sans-serif);
   pointer-events: none;
 }
 
@@ -564,8 +619,4 @@ function overlayTextSize(overlay: PresentationOverlay): number {
   fill: var(--accent);
 }
 
-.presentation-overlay.is-selected .presentation-shape,
-.presentation-overlay.is-selected .presentation-arrow {
-  stroke-width: 3;
-}
 </style>

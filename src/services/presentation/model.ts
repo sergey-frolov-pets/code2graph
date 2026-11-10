@@ -25,6 +25,8 @@ import type {
 import {
   PRESENTATION_ARROW_HEADS,
   PRESENTATION_ARROW_KINDS,
+  PRESENTATION_FONTS,
+  PRESENTATION_LINE_STYLES,
   PRESENTATION_OVERLAY_KINDS,
   PRESENTATION_PATH_KINDS,
   PRESENTATION_TEXT_BACKINGS,
@@ -133,6 +135,12 @@ function readTransition(value: unknown): PresentationTransition | null {
   };
 }
 
+const OVERLAY_COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+function readOverlayColor(value: unknown): string {
+  return typeof value === "string" && OVERLAY_COLOR_PATTERN.test(value) ? value : "";
+}
+
 function readOverlay(value: unknown): PresentationOverlay | null {
   if (!isRecord(value) || typeof value.id !== "string" || !value.id) {
     return null;
@@ -163,6 +171,11 @@ function readOverlay(value: unknown): PresentationOverlay | null {
     backing: oneOf(value.backing, PRESENTATION_TEXT_BACKINGS, "none"),
     arrowKind: oneOf(value.arrowKind, PRESENTATION_ARROW_KINDS, "straight"),
     arrowHead: oneOf(value.arrowHead, PRESENTATION_ARROW_HEADS, "end"),
+    stroke: readOverlayColor(value.stroke),
+    fill: readOverlayColor(value.fill),
+    textColor: readOverlayColor(value.textColor),
+    font: oneOf(value.font, PRESENTATION_FONTS, "sans"),
+    line: oneOf(value.line, PRESENTATION_LINE_STYLES, "solid"),
   };
 }
 
@@ -586,6 +599,11 @@ function defaultOverlay(
     backing: shape === "text" ? "rectangle" : "none",
     arrowKind: "straight",
     arrowHead: "end",
+    stroke: "",
+    fill: "",
+    textColor: "",
+    font: "sans",
+    line: "solid",
   };
 }
 

@@ -5,6 +5,8 @@ import { durationMsToSeconds } from "@/services/presentation/model";
 import {
   PRESENTATION_ARROW_HEADS,
   PRESENTATION_ARROW_KINDS,
+  PRESENTATION_FONTS,
+  PRESENTATION_LINE_STYLES,
   PRESENTATION_PATH_KINDS,
   PRESENTATION_TEXT_BACKINGS,
 } from "@/services/presentation/types";
@@ -12,6 +14,8 @@ import type { LocaleKey, TranslateFn } from "@/locales/types";
 import type {
   PresentationArrowHead,
   PresentationArrowKind,
+  PresentationFont,
+  PresentationLineStyle,
   PresentationPathKind,
   PresentationTextBacking,
 } from "@/services/presentation/types";
@@ -28,10 +32,8 @@ if (!session) {
 const {
   enabled,
   canEdit,
-  open,
   mode,
   document: presentation,
-  toggleOpen,
   onSelectTrack,
   onCreateTrack,
   onDeleteTrack,
@@ -107,6 +109,30 @@ function arrowKindLabel(kind: PresentationArrowKind): LocaleKey {
   }
 }
 
+const COLOR_PICKER_FALLBACK = "#0f6cbd";
+const FILL_PICKER_FALLBACK = "#ffffff";
+const TEXT_COLOR_PICKER_FALLBACK = "#1a1f24";
+
+function fontLabel(font: PresentationFont): LocaleKey {
+  switch (font) {
+    case "sans":
+      return "presentation.font.sans";
+    case "serif":
+      return "presentation.font.serif";
+    case "mono":
+      return "presentation.font.mono";
+  }
+}
+
+function lineLabel(line: PresentationLineStyle): LocaleKey {
+  switch (line) {
+    case "solid":
+      return "presentation.line.solid";
+    case "dashed":
+      return "presentation.line.dashed";
+  }
+}
+
 function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
   switch (head) {
     case "none":
@@ -125,39 +151,51 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
   <div
     v-if="enabled"
     class="presentation-dock"
+    :class="{ 'is-editing': mode === 'edit' && canEdit }"
+    role="toolbar"
+    :aria-label="t('presentation.expand')"
   >
     <div class="presentation-dock__bar">
       <button
-        type="button"
-        class="btn presentation-dock__toggle"
-        :aria-expanded="open"
-        @click="toggleOpen()"
-      >
-        {{ open ? t("presentation.collapse") : t("presentation.expand") }}
-      </button>
-      <button
+        v-if="canEdit"
         type="button"
         class="btn"
-        :disabled="!track || track.viewpoints.length === 0"
-        @click="togglePlay()"
+        :class="{ 'btn-primary': mode === 'edit' }"
+        @click="mode = mode === 'edit' ? 'view' : 'edit'"
       >
-        {{ playing ? t("presentation.pause") : t("presentation.play") }}
+        {{ mode === "edit" ? t("presentation.view") : t("presentation.edit") }}
       </button>
       <button
         type="button"
         class="btn"
         :disabled="!canStep"
+        :aria-label="t('presentation.prev')"
         @click="step(-1)"
       >
         {{ t("presentation.prev") }}
       </button>
+      <span
+        v-if="track && track.viewpoints.length"
+        class="presentation-dock__index"
+      >
+        {{ trackLabel(viewpointIndex) }} / {{ track.viewpoints.length }}
+      </span>
       <button
         type="button"
         class="btn"
         :disabled="!canStep"
+        :aria-label="t('presentation.next')"
         @click="step(1)"
       >
         {{ t("presentation.next") }}
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        :disabled="!track || track.viewpoints.length === 0"
+        @click="togglePlay()"
+      >
+        {{ playing ? t("presentation.pause") : t("presentation.play") }}
       </button>
       <button
         type="button"
@@ -167,85 +205,7 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
       >
         {{ exportingGif ? t("presentation.exportGifBusy") : t("presentation.exportGif") }}
       </button>
-      <span
-        v-if="track && track.viewpoints.length"
-        class="presentation-dock__index"
-      >
-        {{ trackLabel(viewpointIndex) }} / {{ track.viewpoints.length }}
-      </span>
-    </div>
-
-    <div
-      v-if="open"
-      class="presentation-dock__body"
-    >
-      <div class="presentation-dock__row">
-        <label class="presentation-field">
-          <span>{{ t("presentation.tracks") }}</span>
-          <select
-            :value="presentation?.activeTrackId ?? ''"
-            @change="onSelectTrack(($event.target as HTMLSelectElement).value)"
-          >
-            <option
-              v-for="item in presentation?.tracks ?? []"
-              :key="item.id"
-              :value="item.id"
-            >
-              {{ item.name }}
-            </option>
-          </select>
-        </label>
-        <button
-          v-if="canEdit"
-          type="button"
-          class="btn"
-          @click="onCreateTrack(t('presentation.trackDefault', { n: (presentation?.tracks.length ?? 0) + 1 }))"
-        >
-          {{ t("presentation.trackNew") }}
-        </button>
-        <button
-          v-if="canEdit && track"
-          type="button"
-          class="btn"
-          @click="onDeleteTrack()"
-        >
-          {{ t("presentation.trackDelete") }}
-        </button>
-      </div>
-
-      <div
-        v-if="canEdit"
-        class="presentation-dock__row"
-      >
-        <button
-          type="button"
-          class="btn"
-          :class="{ 'btn-primary': mode === 'view' }"
-          @click="mode = 'view'"
-        >
-          {{ t("presentation.view") }}
-        </button>
-        <button
-          type="button"
-          class="btn"
-          :class="{ 'btn-primary': mode === 'edit' }"
-          @click="mode = 'edit'"
-        >
-          {{ t("presentation.edit") }}
-        </button>
-        <label class="presentation-check">
-          <input
-            type="checkbox"
-            :checked="presentation?.showOverlays !== false"
-            @change="onToggleOverlays(($event.target as HTMLInputElement).checked)"
-          >
-          {{ t("presentation.overlaysShow") }}
-        </label>
-      </div>
-      <label
-        v-else
-        class="presentation-check"
-      >
+      <label class="presentation-check">
         <input
           type="checkbox"
           :checked="presentation?.showOverlays !== false"
@@ -253,6 +213,57 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
         >
         {{ t("presentation.overlaysShow") }}
       </label>
+    </div>
+
+    <div
+      v-if="mode === 'edit' && canEdit"
+      class="presentation-dock__body"
+    >
+      <section class="presentation-section">
+        <div class="presentation-dock__row">
+          <label class="presentation-field presentation-field--grow">
+            <span>{{ t("presentation.tracks") }}</span>
+            <select
+              :value="presentation?.activeTrackId ?? ''"
+              @change="onSelectTrack(($event.target as HTMLSelectElement).value)"
+            >
+              <option
+                v-for="item in presentation?.tracks ?? []"
+                :key="item.id"
+                :value="item.id"
+              >
+                {{ item.name }}
+              </option>
+            </select>
+          </label>
+          <button
+            type="button"
+            class="btn"
+            @click="onCreateTrack(t('presentation.trackDefault', { n: (presentation?.tracks.length ?? 0) + 1 }))"
+          >
+            {{ t("presentation.trackNew") }}
+          </button>
+          <button
+            type="button"
+            class="btn"
+            :disabled="!track"
+            @click="onDeleteTrack()"
+          >
+            {{ t("presentation.trackDelete") }}
+          </button>
+        </div>
+        <label
+          v-if="track"
+          class="presentation-field"
+        >
+          <span>{{ t("presentation.trackRename") }}</span>
+          <input
+            :value="track.name"
+            type="text"
+            @change="onRenameTrack(($event.target as HTMLInputElement).value)"
+          >
+        </label>
+      </section>
 
       <p
         v-if="!track || track.viewpoints.length === 0"
@@ -261,189 +272,248 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
         {{ t("presentation.empty") }}
       </p>
 
-      <template v-if="mode === 'edit' && canEdit && track">
-        <label class="presentation-field">
-          <span>{{ t("presentation.trackRename") }}</span>
-          <input
-            :value="track.name"
-            type="text"
-            @change="onRenameTrack(($event.target as HTMLInputElement).value)"
-          >
-        </label>
-
-        <div class="presentation-dock__row">
-          <button
-            type="button"
-            class="btn btn-primary"
-            @click="onCapture()"
-          >
-            {{ t("presentation.capture") }}
-          </button>
-          <button
-            type="button"
-            class="btn"
-            :disabled="!viewpoint"
-            @click="onUpdateFrame()"
-          >
-            {{ t("presentation.updateFrame") }}
-          </button>
-          <button
-            type="button"
-            class="btn"
-            :disabled="!viewpoint"
-            @click="onRemoveViewpoint()"
-          >
-            {{ t("presentation.removeViewpoint") }}
-          </button>
-        </div>
-
-        <ol
-          v-if="track.viewpoints.length"
-          class="presentation-points"
-        >
-          <li
-            v-for="(item, index) in track.viewpoints"
-            :key="item.id"
-          >
+      <template v-if="track">
+        <section class="presentation-section">
+          <div class="presentation-dock__row">
+            <button
+              type="button"
+              class="btn btn-primary"
+              @click="onCapture()"
+            >
+              {{ t("presentation.capture") }}
+            </button>
             <button
               type="button"
               class="btn"
-              :class="{ 'btn-primary': index === viewpointIndex }"
-              @click="selectViewpoint(index)"
+              :disabled="!viewpoint"
+              @click="onUpdateFrame()"
             >
-              {{ trackLabel(index) }}
+              {{ t("presentation.updateFrame") }}
             </button>
-          </li>
-        </ol>
-
-        <div
-          v-if="viewpoint"
-          class="presentation-dock__row"
-        >
-          <label class="presentation-field">
-            <span>{{ t("presentation.dwell") }}</span>
-            <input
-              type="number"
-              min="0.1"
-              max="120"
-              step="0.1"
-              :value="durationMsToSeconds(viewpoint.dwellMs)"
-              @change="onDwellSeconds(Number(($event.target as HTMLInputElement).value))"
+            <button
+              type="button"
+              class="btn"
+              :disabled="!viewpoint"
+              @click="onRemoveViewpoint()"
             >
-          </label>
-          <label
-            v-if="transition"
-            class="presentation-field"
+              {{ t("presentation.removeViewpoint") }}
+            </button>
+          </div>
+          <ol
+            v-if="track.viewpoints.length"
+            class="presentation-points"
           >
-            <span>{{ t("presentation.duration") }}</span>
-            <input
-              type="number"
-              min="0.1"
-              max="120"
-              step="0.1"
-              :value="durationMsToSeconds(transition.durationMs)"
-              @change="onTransitionSeconds(Number(($event.target as HTMLInputElement).value))"
+            <li
+              v-for="(item, index) in track.viewpoints"
+              :key="item.id"
             >
-          </label>
-          <label
-            v-if="transition"
-            class="presentation-field"
-          >
-            <span>{{ t("presentation.path") }}</span>
-            <select
-              :value="transition.path"
-              @change="onPathKind(($event.target as HTMLSelectElement).value as typeof PRESENTATION_PATH_KINDS[number])"
-            >
-              <option
-                v-for="kind in PRESENTATION_PATH_KINDS"
-                :key="kind"
-                :value="kind"
+              <button
+                type="button"
+                class="btn"
+                :class="{ 'btn-primary': index === viewpointIndex }"
+                @click="selectViewpoint(index)"
               >
-                {{ t(pathLabel(kind)) }}
-              </option>
-            </select>
-          </label>
-          <button
-            v-if="transition && transition.path === 'polyline'"
-            type="button"
-            class="btn"
-            :class="{ 'btn-primary': addPointArmed }"
-            @click="addPointArmed = !addPointArmed"
+                {{ trackLabel(index) }}
+              </button>
+            </li>
+          </ol>
+          <div
+            v-if="viewpoint"
+            class="presentation-dock__row"
           >
-            {{ t("presentation.addPoint") }}
-          </button>
-          <button
-            v-if="transition && transition.path === 'polyline' && transition.points.length"
-            type="button"
-            class="btn"
-            @click="onRemovePoint(transition.points.length - 1)"
-          >
-            {{ t("presentation.removePoint") }}
-          </button>
-        </div>
-
-        <div
-          v-if="viewpoint"
-          class="presentation-dock__row"
-        >
-          <label class="presentation-field">
-            <span>{{ t("presentation.overlayAttach") }}</span>
-            <select v-model="attachTarget">
-              <option value="viewpoint">
-                {{ t("presentation.attachViewpoint") }}
-              </option>
-              <option
-                value="transition"
-                :disabled="!transition"
-              >
-                {{ t("presentation.attachTransition") }}
-              </option>
-            </select>
-          </label>
-          <button
-            type="button"
-            class="btn"
-            @click="onAddOverlay('rect')"
-          >
-            {{ t("presentation.overlay.rect") }}
-          </button>
-          <button
-            type="button"
-            class="btn"
-            @click="onAddOverlay('ellipse')"
-          >
-            {{ t("presentation.overlay.ellipse") }}
-          </button>
-          <button
-            type="button"
-            class="btn"
-            @click="onAddOverlay('text')"
-          >
-            {{ t("presentation.overlay.text") }}
-          </button>
-          <button
-            type="button"
-            class="btn"
-            @click="onAddOverlay('arrow')"
-          >
-            {{ t("presentation.overlay.arrow") }}
-          </button>
-        </div>
-
-        <div
-          v-if="selectedOverlay"
-          class="presentation-dock__row"
-        >
-          <template v-if="selectedOverlay.shape === 'text'">
-            <label class="presentation-field presentation-field--grow">
-              <span>{{ t("presentation.text") }}</span>
+            <label class="presentation-field">
+              <span>{{ t("presentation.dwell") }}</span>
               <input
-                :value="selectedOverlay.text"
-                type="text"
-                @change="onChangeOverlay(selectedOverlay.id, { text: ($event.target as HTMLInputElement).value })"
+                type="number"
+                min="0.1"
+                max="120"
+                step="0.1"
+                :value="durationMsToSeconds(viewpoint.dwellMs)"
+                @change="onDwellSeconds(Number(($event.target as HTMLInputElement).value))"
               >
             </label>
+            <label
+              v-if="transition"
+              class="presentation-field"
+            >
+              <span>{{ t("presentation.duration") }}</span>
+              <input
+                type="number"
+                min="0.1"
+                max="120"
+                step="0.1"
+                :value="durationMsToSeconds(transition.durationMs)"
+                @change="onTransitionSeconds(Number(($event.target as HTMLInputElement).value))"
+              >
+            </label>
+            <label
+              v-if="transition"
+              class="presentation-field"
+            >
+              <span>{{ t("presentation.path") }}</span>
+              <select
+                :value="transition.path"
+                @change="onPathKind(($event.target as HTMLSelectElement).value as typeof PRESENTATION_PATH_KINDS[number])"
+              >
+                <option
+                  v-for="kind in PRESENTATION_PATH_KINDS"
+                  :key="kind"
+                  :value="kind"
+                >
+                  {{ t(pathLabel(kind)) }}
+                </option>
+              </select>
+            </label>
+            <button
+              v-if="transition && transition.path === 'polyline'"
+              type="button"
+              class="btn"
+              :class="{ 'btn-primary': addPointArmed }"
+              @click="addPointArmed = !addPointArmed"
+            >
+              {{ t("presentation.addPoint") }}
+            </button>
+            <button
+              v-if="transition && transition.path === 'polyline' && transition.points.length"
+              type="button"
+              class="btn"
+              @click="onRemovePoint(transition.points.length - 1)"
+            >
+              {{ t("presentation.removePoint") }}
+            </button>
+          </div>
+        </section>
+
+        <section
+          v-if="viewpoint"
+          class="presentation-section"
+        >
+          <div class="presentation-dock__row">
             <label class="presentation-field">
+              <span>{{ t("presentation.overlayAttach") }}</span>
+              <select v-model="attachTarget">
+                <option value="viewpoint">
+                  {{ t("presentation.attachViewpoint") }}
+                </option>
+                <option
+                  value="transition"
+                  :disabled="!transition"
+                >
+                  {{ t("presentation.attachTransition") }}
+                </option>
+              </select>
+            </label>
+            <button
+              type="button"
+              class="btn"
+              @click="onAddOverlay('rect')"
+            >
+              {{ t("presentation.overlay.rect") }}
+            </button>
+            <button
+              type="button"
+              class="btn"
+              @click="onAddOverlay('ellipse')"
+            >
+              {{ t("presentation.overlay.ellipse") }}
+            </button>
+            <button
+              type="button"
+              class="btn"
+              @click="onAddOverlay('text')"
+            >
+              {{ t("presentation.overlay.text") }}
+            </button>
+            <button
+              type="button"
+              class="btn"
+              @click="onAddOverlay('arrow')"
+            >
+              {{ t("presentation.overlay.arrow") }}
+            </button>
+          </div>
+        </section>
+
+        <section
+          v-if="selectedOverlay"
+          class="presentation-section"
+        >
+          <h3 class="presentation-section__title">
+            {{ t("presentation.style") }}
+          </h3>
+          <label
+            v-if="selectedOverlay.shape === 'text'"
+            class="presentation-field"
+          >
+            <span>{{ t("presentation.text") }}</span>
+            <input
+              :value="selectedOverlay.text"
+              type="text"
+              @change="onChangeOverlay(selectedOverlay.id, { text: ($event.target as HTMLInputElement).value })"
+            >
+          </label>
+          <div class="presentation-dock__row">
+            <label class="presentation-field">
+              <span>{{ t("presentation.stroke") }}</span>
+              <input
+                type="color"
+                :value="selectedOverlay.stroke || COLOR_PICKER_FALLBACK"
+                @change="onChangeOverlay(selectedOverlay.id, { stroke: ($event.target as HTMLInputElement).value })"
+              >
+            </label>
+            <label
+              v-if="selectedOverlay.shape !== 'arrow'"
+              class="presentation-field"
+            >
+              <span>{{ t("presentation.fill") }}</span>
+              <input
+                type="color"
+                :value="selectedOverlay.fill || FILL_PICKER_FALLBACK"
+                @change="onChangeOverlay(selectedOverlay.id, { fill: ($event.target as HTMLInputElement).value })"
+              >
+            </label>
+            <label
+              v-if="selectedOverlay.shape === 'text'"
+              class="presentation-field"
+            >
+              <span>{{ t("presentation.textColor") }}</span>
+              <input
+                type="color"
+                :value="selectedOverlay.textColor || TEXT_COLOR_PICKER_FALLBACK"
+                @change="onChangeOverlay(selectedOverlay.id, { textColor: ($event.target as HTMLInputElement).value })"
+              >
+            </label>
+            <button
+              type="button"
+              class="btn"
+              @click="onChangeOverlay(selectedOverlay.id, { stroke: '', fill: '', textColor: '' })"
+            >
+              {{ t("presentation.styleReset") }}
+            </button>
+          </div>
+          <div class="presentation-dock__row">
+            <label
+              v-if="selectedOverlay.shape === 'text'"
+              class="presentation-field"
+            >
+              <span>{{ t("presentation.font") }}</span>
+              <select
+                :value="selectedOverlay.font"
+                @change="onChangeOverlay(selectedOverlay.id, { font: ($event.target as HTMLSelectElement).value as typeof PRESENTATION_FONTS[number] })"
+              >
+                <option
+                  v-for="font in PRESENTATION_FONTS"
+                  :key="font"
+                  :value="font"
+                >
+                  {{ t(fontLabel(font)) }}
+                </option>
+              </select>
+            </label>
+            <label
+              v-if="selectedOverlay.shape === 'text'"
+              class="presentation-field"
+            >
               <span>{{ t("presentation.backing") }}</span>
               <select
                 :value="selectedOverlay.backing"
@@ -458,9 +528,25 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
                 </option>
               </select>
             </label>
-          </template>
-          <template v-if="selectedOverlay.shape === 'arrow'">
             <label class="presentation-field">
+              <span>{{ t("presentation.line") }}</span>
+              <select
+                :value="selectedOverlay.line"
+                @change="onChangeOverlay(selectedOverlay.id, { line: ($event.target as HTMLSelectElement).value as typeof PRESENTATION_LINE_STYLES[number] })"
+              >
+                <option
+                  v-for="line in PRESENTATION_LINE_STYLES"
+                  :key="line"
+                  :value="line"
+                >
+                  {{ t(lineLabel(line)) }}
+                </option>
+              </select>
+            </label>
+            <label
+              v-if="selectedOverlay.shape === 'arrow'"
+              class="presentation-field"
+            >
               <span>{{ t("presentation.arrowKind") }}</span>
               <select
                 :value="selectedOverlay.arrowKind"
@@ -475,7 +561,10 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
                 </option>
               </select>
             </label>
-            <label class="presentation-field">
+            <label
+              v-if="selectedOverlay.shape === 'arrow'"
+              class="presentation-field"
+            >
               <span>{{ t("presentation.arrowHead") }}</span>
               <select
                 :value="selectedOverlay.arrowHead"
@@ -490,15 +579,15 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
                 </option>
               </select>
             </label>
-          </template>
-          <button
-            type="button"
-            class="btn"
-            @click="onRemoveOverlay(selectedOverlay.id)"
-          >
-            {{ t("presentation.deleteOverlay") }}
-          </button>
-        </div>
+            <button
+              type="button"
+              class="btn"
+              @click="onRemoveOverlay(selectedOverlay.id)"
+            >
+              {{ t("presentation.deleteOverlay") }}
+            </button>
+          </div>
+        </section>
       </template>
     </div>
   </div>
@@ -507,19 +596,26 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
 <style scoped>
 .presentation-dock {
   position: absolute;
-  left: 8px;
-  right: 8px;
+  left: 50%;
   bottom: 8px;
   z-index: 4;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 46%;
+  width: max-content;
+  max-width: calc(100% - 16px);
+  max-height: 70%;
   padding: 8px;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 16%, transparent);
+  transform: translateX(-50%);
+}
+
+.presentation-dock.is-editing {
+  width: min(420px, calc(100% - 16px));
+  border-radius: 16px;
 }
 
 .presentation-dock__bar,
@@ -527,32 +623,46 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .presentation-dock__body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   overflow: auto;
+  padding: 4px 4px 2px;
 }
 
-.presentation-dock__toggle {
-  margin-right: auto;
+.presentation-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.presentation-section__title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--text-muted);
 }
 
 .presentation-dock__index {
+  min-width: 3.2rem;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
 .presentation-field {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 120px;
+  min-width: 0;
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .presentation-field--grow {
@@ -561,7 +671,7 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
 
 .presentation-field input,
 .presentation-field select {
-  min-height: 36px;
+  min-height: 32px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
@@ -569,10 +679,18 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
   padding: 4px 8px;
 }
 
+.presentation-field input[type="color"] {
+  width: 44px;
+  min-height: 32px;
+  padding: 2px;
+}
+
 .presentation-check {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
 }
 
 .presentation-points {
