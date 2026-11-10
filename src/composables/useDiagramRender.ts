@@ -31,6 +31,7 @@ import {
 } from "@/services/plantuml/plantuml-online";
 import { didLastPlantUmlRenderUseOnlineServer } from "@/services/plantuml/plantuml-engine";
 import { isFileProtocol } from "@/pwa/installPromptState";
+import { stripPresentationBlock } from "@/services/presentation/codec";
 
 export interface UseDiagramRenderOptions {
   source: Ref<string>;
@@ -164,7 +165,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     error.value = "";
 
     try {
-      const diagramSource = renderSource?.value ?? source.value;
+      const diagramSource = stripPresentationBlock(renderSource?.value ?? source.value);
       const result = await renderDiagram(
         diagramFormat.value,
         diagramSource,
@@ -298,13 +299,24 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     }
   }
 
-  watch([source, layout, diagramDarkMode, renderMode, diagramFormat], () => {
+  watch(source, (next, previous) => {
+    onPersist?.();
+    if (stripPresentationBlock(next) === stripPresentationBlock(previous ?? "")) {
+      return;
+    }
+    scheduleRender();
+  });
+
+  watch([layout, diagramDarkMode, renderMode, diagramFormat], () => {
     onPersist?.();
     scheduleRender();
   });
 
   if (renderSource) {
-    watch(renderSource, () => {
+    watch(renderSource, (next, previous) => {
+      if (stripPresentationBlock(next) === stripPresentationBlock(previous ?? "")) {
+        return;
+      }
       scheduleRender();
     });
   }

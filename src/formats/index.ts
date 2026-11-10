@@ -10,6 +10,7 @@ import { applyDiagramAppearance } from "@/services/diagram-appearance";
 import { applyDiagramTypography } from "@/services/diagram-typography";
 import { fitPlantUmlSvgText } from "@/services/plantuml/plantuml-text-fit";
 import { normalizeSvgPaintColors } from "@/services/export/svg-paint";
+import { stripPresentationBlock } from "@/services/presentation/codec";
 import { stripOffDeviceSvgResources } from "@/utils/offline-render-network";
 import type { FormatContext, FormatHandler } from "./types";
 import type { SyntaxCheckResult } from "@/utils/plantuml-syntax";
@@ -28,7 +29,7 @@ export async function validateDiagramSyntax(
     return { valid: true, issues: [] };
   }
 
-  return handler.validateSyntax(source, context);
+  return handler.validateSyntax(stripPresentationBlock(source), context);
 }
 
 export function extractDiagramCompletionPrefix(
@@ -52,7 +53,7 @@ export async function renderDiagram(
   context: FormatContext,
 ): Promise<string> {
   const svg = normalizeSvgPaintColors(
-    await getFormatHandler(format).render(source, context),
+    await getFormatHandler(format).render(stripPresentationBlock(source), context),
   );
   const painted = applyDiagramTypography(svg, {
     fontFamily: context.diagramFontFamily,

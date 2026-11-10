@@ -277,6 +277,10 @@ onUnmounted(() => {
         v-model:render-mode="renderMode"
         :expand-signal="shell.dataLink.expandSignal.value"
         :show-dual-screen="isDesktopLayout"
+        :source="source"
+        :diagram-format="diagramFormat"
+        can-edit-presentation
+        @update:source="source = $event"
         @toggle-dual-screen="openDualScreen"
         @render-now="shell.renderDiagram"
         @export-svg="shell.exportSvg"

@@ -10,6 +10,7 @@ import {
   PreviewPanZoomController,
   type PanZoomSnapshot,
 } from "@/services/preview/pan-zoom";
+import type { CameraFrame } from "@/services/presentation/types";
 
 const DEFAULT_SNAPSHOT: PanZoomSnapshot = {
   panX: 0,
@@ -27,6 +28,7 @@ export function usePreviewPanZoom(
   svgMarkup: Ref<string>,
 ) {
   const snapshot = ref<PanZoomSnapshot>({ ...DEFAULT_SNAPSHOT });
+  const interactionLocked = ref(false);
   let controller: PreviewPanZoomController | null = null;
 
   function ensureController(): PreviewPanZoomController {
@@ -35,6 +37,7 @@ export function usePreviewPanZoom(
         getViewport: () => viewportRef.value,
         getContent: () => contentRef.value,
         getSvgMarkup: () => svgMarkup.value,
+        isInteractionLocked: () => interactionLocked.value,
         onChange: (next) => {
           snapshot.value = next;
         },
@@ -65,6 +68,7 @@ export function usePreviewPanZoom(
   });
 
   return {
+    snapshot,
     contentStyle,
     isDragging: computed(() => snapshot.value.isDragging),
     isPinching: computed(() => snapshot.value.isPinching),
@@ -72,6 +76,11 @@ export function usePreviewPanZoom(
     zoomIn: () => ensureController().zoomIn(),
     zoomOut: () => ensureController().zoomOut(),
     fitToView: () => ensureController().fitToView(),
+    setCameraFrame: (frame: CameraFrame) => ensureController().setView(frame),
+    readCameraFrame: () => ensureController().readView(),
+    setInteractionLocked: (locked: boolean) => {
+      interactionLocked.value = locked;
+    },
     onPointerDown: (event: PointerEvent) => ensureController().onPointerDown(event),
     onPointerMove: (event: PointerEvent) => ensureController().onPointerMove(event),
     onPointerUp: (event: PointerEvent) => ensureController().onPointerUp(event),
