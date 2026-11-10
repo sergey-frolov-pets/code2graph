@@ -87,6 +87,7 @@ const {
   repeat,
 } = session;
 const { playing, viewpointIndex, togglePlay, step, pause, goToViewpoint } = session.playback;
+const holdHeaderDim = session.holdHeaderDim;
 
 const track = computed(() => session.currentTrack.value);
 const viewpoint = computed(
@@ -169,6 +170,7 @@ function onPlay(): void {
   togglePlay();
   if (starting && playing.value) {
     dimHeld.value = true;
+    holdHeaderDim();
   }
 }
 
@@ -1065,8 +1067,7 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
   transition: none;
 }
 
-.presentation-dock.is-dim:not(.is-dim-held):hover,
-.presentation-dock.is-dim:not(.is-dim-held):focus-within {
+.presentation-dock.is-dim:not(.is-dim-held):hover {
   opacity: 1;
 }
 

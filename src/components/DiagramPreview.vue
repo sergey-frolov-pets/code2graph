@@ -250,6 +250,7 @@ watch(
     :class="{
       'is-fullscreen': isFullscreen,
       'is-presentation-view': presentation.dimChrome.value,
+      'is-header-held': presentation.headerDimHeld.value,
       'is-chrome-revealed': presentation.chromeRevealed.value,
     }"
     :aria-label="t('app.previewRegion')"
@@ -258,7 +259,11 @@ watch(
     @dragleave="onFrameDragLeave"
     @drop="onFrameDrop"
   >
-    <header class="panel-header">
+    <header
+      class="panel-header"
+      @pointerenter="presentation.releaseHeaderDim()"
+      @pointerdown="presentation.releaseHeaderDim()"
+    >
       <h2
         class="panel-title"
         :title="t('preview.titleTooltip')"
@@ -510,18 +515,13 @@ watch(
   position: relative;
 }
 
-.preview-panel.is-presentation-view > .panel-header,
-.preview-panel.is-presentation-view :deep(.presentation-dock) {
+.preview-panel.is-presentation-view > .panel-header {
   opacity: 0.12;
-  transition: opacity 180ms ease;
+  transition: none;
 }
 
-.preview-panel.is-presentation-view > .panel-header:hover,
-.preview-panel.is-presentation-view > .panel-header:focus-within,
-.preview-panel.is-presentation-view.is-chrome-revealed > .panel-header,
-.preview-panel.is-presentation-view :deep(.presentation-dock:hover),
-.preview-panel.is-presentation-view :deep(.presentation-dock:focus-within),
-.preview-panel.is-presentation-view.is-chrome-revealed :deep(.presentation-dock) {
+.preview-panel.is-presentation-view:not(.is-header-held) > .panel-header:hover,
+.preview-panel.is-presentation-view.is-chrome-revealed > .panel-header {
   opacity: 1;
 }
 </style>

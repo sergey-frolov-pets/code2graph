@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, onUnmounted, ref } from "vue";
+import { computed, inject, nextTick, onUnmounted, ref } from "vue";
+import { presentationSessionKey } from "@/components/preview/presentation-session";
 import DiagramSizeControls from "@/components/DiagramSizeControls.vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import PresentationGlyph from "@/components/preview/PresentationGlyph.vue";
@@ -47,6 +48,21 @@ const emit = defineEmits<{
 const { t } = useLocale();
 const allowExport = useFeatureGate("editor.export");
 const allowPresentation = useFeatureGate("editor.presentation");
+const presentation = inject(presentationSessionKey, null);
+const playbackTrack = computed(() => presentation?.currentTrack.value ?? null);
+const playbackPlaying = computed(() => presentation?.playback.playing.value ?? false);
+const canStepPlayback = computed(() => (playbackTrack.value?.viewpoints.length ?? 0) > 1);
+const showPlaybackTransport = computed(
+  () => allowPresentation.value && props.presentationEnabled && !props.presentationOpen && presentation !== null,
+);
+
+function onToolbarPlay(): void {
+  presentation?.playback.togglePlay();
+}
+
+function onToolbarStep(direction: 1 | -1): void {
+  presentation?.playback.step(direction);
+}
 
 const MIN_ZOOM_PERCENT = Math.round(PREVIEW_MIN_ZOOM * 100);
 
@@ -285,6 +301,34 @@ async function acknowledgeCopiedPng(): Promise<void> {
       <PresentationGlyph name="presentation" />
     </IconButton>
 
+    <div
+      v-if="showPlaybackTransport"
+      class="preview-toolbar__transport"
+    >
+      <IconButton
+        :label="t('presentation.prev')"
+        :disabled="!canStepPlayback"
+        @click="onToolbarStep(-1)"
+      >
+        <PresentationGlyph name="prev" />
+      </IconButton>
+      <IconButton
+        :label="playbackPlaying ? t('presentation.pause') : t('presentation.play')"
+        primary
+        :disabled="!playbackTrack || playbackTrack.viewpoints.length === 0"
+        @click="onToolbarPlay()"
+      >
+        <PresentationGlyph :name="playbackPlaying ? 'pause' : 'play'" />
+      </IconButton>
+      <IconButton
+        :label="t('presentation.next')"
+        :disabled="!canStepPlayback"
+        @click="onToolbarStep(1)"
+      >
+        <PresentationGlyph name="next" />
+      </IconButton>
+    </div>
+
     <ToolbarOverflowMenu
       :label="t('toolbar.export')"
       icon="export"
@@ -297,6 +341,12 @@ async function acknowledgeCopiedPng(): Promise<void> {
 <style scoped>
 .preview-toolbar :deep(.preview-toolbar__presentation) {
   margin-inline: 8px;
+}
+
+.preview-toolbar__transport {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .preview-toolbar {
