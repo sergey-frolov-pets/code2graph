@@ -1,10 +1,16 @@
-import { MERGE_CONFIDENCE_THRESHOLD, MERGE_LABEL_FUZZY_MAX_DISTANCE } from "@/constants/conversion-settings";
+import {
+  MERGE_CONFIDENCE_THRESHOLD,
+  MERGE_LABEL_FUZZY_MAX_DISTANCE,
+} from "@/constants/conversion-settings";
 import type { DiagramIR, DiagramNode } from "@/services/conversion/diagram-ir";
 import {
   levenshteinDistance,
   normalizeLabel,
 } from "@/services/conversion/parse/parse-utils";
-import type { VisualHints, VisualNodeHint } from "@/services/conversion/visual/visual-hints";
+import type {
+  VisualHints,
+  VisualNodeHint,
+} from "@/services/conversion/visual/visual-hints";
 
 function findVisualMatch(
   node: DiagramNode,
@@ -25,19 +31,19 @@ function findVisualMatch(
     }
   }
 
-  for (const hint of hints) {
-    if (used.has(hint)) {
-      continue;
-    }
-    if (
-      levenshteinDistance(normalizeLabel(hint.label), normalized) <=
-      MERGE_LABEL_FUZZY_MAX_DISTANCE
-    ) {
-      return hint;
-    }
+  // Only allow fuzzy match when normalized label is long enough and unambiguous
+  if (normalized.length < 4) {
+    return null;
   }
 
-  return null;
+  const fuzzyCandidates = hints.filter(
+    (hint) =>
+      !used.has(hint) &&
+      levenshteinDistance(normalizeLabel(hint.label), normalized) <=
+        MERGE_LABEL_FUZZY_MAX_DISTANCE,
+  );
+
+  return fuzzyCandidates.length === 1 ? fuzzyCandidates[0]! : null;
 }
 
 function findNodeIdByLabel(
@@ -105,16 +111,19 @@ export function mergeDiagramIrWithVisualHints(
       return node;
     }
 
+    const hasValidBbox = hint.bbox.width > 0 && hint.bbox.height > 0;
+
     return {
       ...node,
       visual: {
-        x: hint.bbox.x,
-        y: hint.bbox.y,
-        width: hint.bbox.width,
-        height: hint.bbox.height,
-        fill: hint.fill,
-        stroke: hint.stroke,
-        shape: hint.shape,
+        ...node.visual,
+        x: hasValidBbox ? hint.bbox.x : node.visual?.x,
+        y: hasValidBbox ? hint.bbox.y : node.visual?.y,
+        width: hasValidBbox ? hint.bbox.width : node.visual?.width,
+        height: hasValidBbox ? hint.bbox.height : node.visual?.height,
+        fill: node.visual?.fill ?? hint.fill,
+        stroke: node.visual?.stroke ?? hint.stroke,
+        shape: node.visual?.shape ?? hint.shape,
       },
       matchConfidence: Math.max(node.matchConfidence, MERGE_CONFIDENCE_THRESHOLD),
     };
