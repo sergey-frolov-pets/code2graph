@@ -1,5 +1,6 @@
 import { onMounted, onUnmounted, ref, watch, type Ref } from "vue";
 import type { DiagramFormat } from "@/constants/diagram-formats";
+import { isDiagramLanguage } from "@/constants/diagram-library";
 import { parseAppRoute } from "@/router";
 import {
   applyTableFromClipboardText,
@@ -46,6 +47,14 @@ export interface DiagramDataLinkUi {
   closePasteError: () => void;
   refresh: () => Promise<void>;
   openFromHash: () => Promise<void>;
+  openServerOfflineChooser: (diagram: {
+    id: string;
+    source: string;
+    fileName: string;
+    language: string;
+    sheetRange: string;
+    untilEmptyRow: boolean;
+  }) => Promise<void>;
 }
 
 function startClipboardRead(): Promise<string | null> {
@@ -81,8 +90,30 @@ export function createDiagramDataLinkUi(options: {
   const pasteErrorOpen = ref(false);
   const pasteError = ref<TablePasteErrorInfo | null>(null);
   let activeLink: LocalDataLinkRecord | null = null;
+  let memoryDiagram: {
+    id: string;
+    source: string;
+    fileName: string;
+    language: string;
+  } | null = null;
   let acceptedClipboard = "";
   let requestSerial = 0;
+
+  async function currentDiagram(): Promise<{
+    id: string;
+    source: string;
+    fileName: string;
+    language: string;
+  } | null> {
+    if (memoryDiagram && activeLink?.diagramId === memoryDiagram.id) {
+      return memoryDiagram;
+    }
+    const link = activeLink;
+    if (!link) {
+      return null;
+    }
+    return loadDiagramDetailFromCache(link.diagramId);
+  }
 
   async function refreshAvailability(): Promise<void> {
     const diagramId = options.linkedLibraryDiagramId.value;
@@ -176,7 +207,7 @@ export function createDiagramDataLinkUi(options: {
     if (!link) {
       return;
     }
-    const diagram = await loadDiagramDetailFromCache(link.diagramId);
+    const diagram = await currentDiagram();
     if (!diagram) {
       publishDataLinkSetupHint(link.slug);
       options.openLibraryModal();
@@ -187,7 +218,7 @@ export function createDiagramDataLinkUi(options: {
     const format = resolveLibraryDiagramFormat(
       diagram.source,
       diagram.fileName,
-      diagram.language,
+      isDiagramLanguage(diagram.language) ? diagram.language : undefined,
     );
     const result = applyTableFromClipboardText({
       clipboardText: text,
@@ -246,7 +277,9 @@ export function createDiagramDataLinkUi(options: {
         handle = picked.handle;
         file = await handle.getFile();
         const next = { ...link, fileHandle: handle, fileName: file.name };
-        await saveLocalDataLink(next);
+        if (!memoryDiagram) {
+          await saveLocalDataLink(next);
+        }
         activeLink = next;
       }
       const tsv = await readSpreadsheetFileToTsv(
@@ -315,6 +348,61 @@ export function createDiagramDataLinkUi(options: {
     await openChooser(link, clipboardPromise);
   }
 
+  async function openServerOfflineChooser(diagram: {
+    id: string;
+    source: string;
+    fileName: string;
+    language: string;
+    sheetRange: string;
+    untilEmptyRow: boolean;
+  }): Promise<void> {
+    const clipboardPromise = startClipboardRead();
+    memoryDiagram = {
+      id: diagram.id,
+      source: diagram.source,
+      fileName: diagram.fileName,
+      language: diagram.language,
+    };
+    const link: LocalDataLinkRecord = {
+      diagramId: diagram.id,
+      slug: "",
+      filePathLabel: "",
+      sheetRange: diagram.sheetRange,
+      untilEmptyRow: diagram.untilEmptyRow,
+      fileName: "",
+      fileHandle: null,
+      inactive: false,
+    };
+    activeLink = link;
+    filePathLabel.value = "";
+    sheetRange.value = diagram.sheetRange;
+    clipboardReady.value = false;
+    acceptedClipboard = "";
+    errorMessage.value = "";
+    chooserOpen.value = true;
+    canRefresh.value = false;
+
+    const clipboardText = await clipboardPromise;
+    if (!clipboardText?.trim() || activeLink !== link) {
+      return;
+    }
+    const format = resolveLibraryDiagramFormat(
+      diagram.source,
+      diagram.fileName,
+      isDiagramLanguage(diagram.language) ? diagram.language : undefined,
+    );
+    const result = applyTableFromClipboardText({
+      clipboardText,
+      source: diagram.source,
+      format,
+    });
+    if (!result.ok || activeLink !== link) {
+      return;
+    }
+    acceptedClipboard = clipboardText;
+    clipboardReady.value = true;
+  }
+
   function onHashChange(): void {
     void openFromHash();
   }
@@ -345,5 +433,6 @@ export function createDiagramDataLinkUi(options: {
     closePasteError,
     refresh,
     openFromHash,
+    openServerOfflineChooser,
   };
 }

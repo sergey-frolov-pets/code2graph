@@ -410,3 +410,23 @@
     touch-action: auto;
   }
 }
+
+.library-link-view {
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: auto;
+  padding: 24px;
+  background: #fff;
+}
+
+.library-link-view svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.library-link-view__error {
+  margin: 0;
+  color: #b91c1c;
+}

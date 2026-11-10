@@ -248,6 +248,8 @@ export function runMigrations(database: Database.Database): void {
     )
     .run();
 
+  ensureLibraryLinkSchema(database);
+
   const versionRow = database
     .prepare("SELECT version FROM schema_version LIMIT 1")
     .get() as { version: number } | undefined;
@@ -255,6 +257,45 @@ export function runMigrations(database: Database.Database): void {
   if (!versionRow) {
     database.prepare("INSERT INTO schema_version (version) VALUES (1)").run();
   }
+}
+
+export function ensureLibraryLinkSchema(database: Database.Database): void {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS library_links (
+      id TEXT PRIMARY KEY,
+      diagram_id TEXT NOT NULL REFERENCES diagrams(id) ON DELETE CASCADE,
+      created_by TEXT NOT NULL REFERENCES users(id),
+      slug TEXT NOT NULL,
+      delivery TEXT NOT NULL,
+      data_access TEXT NOT NULL,
+      view_render TEXT,
+      snapshot_svg TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      UNIQUE(created_by, slug)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_library_links_diagram
+      ON library_links(diagram_id);
+
+    CREATE TABLE IF NOT EXISTS library_link_hits (
+      id TEXT PRIMARY KEY,
+      link_id TEXT NOT NULL REFERENCES library_links(id) ON DELETE CASCADE,
+      day TEXT NOT NULL,
+      visitor_hash TEXT NOT NULL,
+      country TEXT NOT NULL DEFAULT '',
+      browser TEXT NOT NULL DEFAULT '',
+      system_name TEXT NOT NULL DEFAULT '',
+      language TEXT NOT NULL DEFAULT '',
+      screen_size TEXT NOT NULL DEFAULT '',
+      referrer_host TEXT NOT NULL DEFAULT '',
+      campaign TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_library_link_hits_link_day
+      ON library_link_hits(link_id, day);
+  `);
 }
 
 export function seedInitialData(database: Database.Database): void {

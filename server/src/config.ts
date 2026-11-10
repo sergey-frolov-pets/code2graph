@@ -12,6 +12,28 @@ export const MAX_PUML_FILE_BYTES = Number(
   process.env.MAX_PUML_FILE_BYTES ?? 512_000,
 );
 
+/** Stored view-only SVG for a named library link. */
+export const MAX_LIBRARY_LINK_SNAPSHOT_BYTES = Number(
+  process.env.MAX_LIBRARY_LINK_SNAPSHOT_BYTES ?? 1_500_000,
+);
+
+/** Optional first path segment: code2graph.ru/{slug}/{user}/{link}. */
+export const LIBRARY_PUBLIC_SLUG = (
+  process.env.LIBRARY_PUBLIC_SLUG ?? ""
+)
+  .trim()
+  .toLowerCase();
+
+/** How long anonymized library-link hits are kept. */
+export const LIBRARY_LINK_STATS_RETENTION_DAYS = Number(
+  process.env.LIBRARY_LINK_STATS_RETENTION_DAYS ?? 180,
+);
+
+export const LIBRARY_LINK_STATS_PERIOD_DAYS = [7, 30, 90] as const;
+
+export type LibraryLinkStatsPeriod =
+  (typeof LIBRARY_LINK_STATS_PERIOD_DAYS)[number];
+
 export const DB_PATH =
   process.env.DB_PATH ?? path.resolve(serverRoot, "../../data/library.db");
 

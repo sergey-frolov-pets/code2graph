@@ -574,3 +574,27 @@
     justify-content: flex-start;
   }
 }
+
+.library-server-link__choices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.library-server-link__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.library-server-link__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}

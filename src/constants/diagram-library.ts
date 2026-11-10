@@ -1,5 +1,15 @@
 export const MAX_PUML_FILE_BYTES = 512_000;
 
+/** Stored view-only SVG for a named server-library link. */
+export const MAX_LIBRARY_LINK_SNAPSHOT_BYTES = 1_500_000;
+
+/** Languages the API can redraw on each view without a stored snapshot. */
+export const LIBRARY_LINK_LIVE_LANGUAGES = ["graphml"] as const;
+
+export const LIBRARY_LINK_STATS_PERIODS = [7, 30, 90] as const;
+
+export type LibraryLinkStatsPeriod = (typeof LIBRARY_LINK_STATS_PERIODS)[number];
+
 export const DIAGRAM_LANGUAGES = [
   "plantuml",
   "mermaid",

@@ -6,6 +6,7 @@ import { registerDiagramShareRoutes } from "./share.js";
 import { registerDiagramFavoriteRoutes } from "./favorites.js";
 import { registerDiagramRatingRoutes } from "./ratings.js";
 import { registerDiagramVersionRoutes } from "./versions.js";
+import { registerDiagramLibraryLinkRoutes } from "./library-links.js";
 
 export const diagramsRouter = new Hono<{ Variables: AuthVariables }>();
 
@@ -15,3 +16,4 @@ registerDiagramShareRoutes(diagramsRouter);
 registerDiagramFavoriteRoutes(diagramsRouter);
 registerDiagramRatingRoutes(diagramsRouter);
 registerDiagramVersionRoutes(diagramsRouter);
+registerDiagramLibraryLinkRoutes(diagramsRouter);
