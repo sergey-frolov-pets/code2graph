@@ -151,6 +151,8 @@ export const miscMessages = {
   "presentation.prev": "戻る",
   "presentation.tracks": "トラック",
   "presentation.trackNew": "新しいトラック",
+  "presentation.trackDuplicate": "トラックを複製",
+  "presentation.trackCopy": "{name} のコピー",
   "presentation.trackDelete": "トラックを削除",
   "presentation.trackRename": "名前",
   "presentation.trackDefault": "トラック {n}",

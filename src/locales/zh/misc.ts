@@ -151,6 +151,8 @@ export const miscMessages = {
   "presentation.prev": "返回",
   "presentation.tracks": "轨道",
   "presentation.trackNew": "新建轨道",
+  "presentation.trackDuplicate": "复制轨道",
+  "presentation.trackCopy": "{name} 副本",
   "presentation.trackDelete": "删除轨道",
   "presentation.trackRename": "名称",
   "presentation.trackDefault": "轨道 {n}",

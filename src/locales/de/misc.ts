@@ -151,6 +151,8 @@ export const miscMessages = {
   "presentation.prev": "Zurück",
   "presentation.tracks": "Spur",
   "presentation.trackNew": "Neue Spur",
+  "presentation.trackDuplicate": "Spur duplizieren",
+  "presentation.trackCopy": "{name} Kopie",
   "presentation.trackDelete": "Spur löschen",
   "presentation.trackRename": "Name",
   "presentation.trackDefault": "Spur {n}",
