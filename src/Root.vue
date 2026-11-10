@@ -33,6 +33,7 @@ const view = computed(() => {
       return PreviewPage;
     case "diagram":
     case "clipboard":
+    case "libraryLink":
       return App;
     default:
       return LandingPage;

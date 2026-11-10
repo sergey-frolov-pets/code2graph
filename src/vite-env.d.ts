@@ -23,6 +23,12 @@ interface ImportMetaEnv {
    * Пустая строка — аналитика выключена (форки, локальная сборка).
    */
   readonly VITE_GOATCOUNTER_URL?: string;
+
+  /**
+   * Необязательный первый сегмент адреса серверной ссылки
+   * `/{slug}/{user}/{link}`. Пусто — адрес `/{user}/{link}`.
+   */
+  readonly VITE_LIBRARY_PUBLIC_SLUG?: string;
 }
 
 interface ImportMeta {

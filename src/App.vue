@@ -188,7 +188,10 @@ onUnmounted(() => {
       @open-settings="modals.openSettingsModal"
     />
 
-    <ResponsivePanelTabs v-model="activeMobilePanel" />
+    <ResponsivePanelTabs
+      v-if="shell.libraryLink.mode.value === 'idle'"
+      v-model="activeMobilePanel"
+    />
 
     <EditorTabBar
       v-if="editorDocuments.length > 0"
@@ -199,6 +202,28 @@ onUnmounted(() => {
     />
 
     <main
+      v-if="shell.libraryLink.mode.value !== 'idle'"
+      id="app-main"
+      class="app-main library-link-view"
+    >
+      <p
+        v-if="shell.libraryLink.mode.value === 'error'"
+        class="library-link-view__error"
+        role="alert"
+      >
+        {{ shell.libraryLink.errorMessage.value }}
+      </p>
+      <!-- SVG is sanitized on the server before it is stored or returned. -->
+      <!-- eslint-disable vue/no-v-html -->
+      <div
+        v-else
+        v-html="shell.libraryLink.viewSvg.value"
+      />
+      <!-- eslint-enable vue/no-v-html -->
+    </main>
+
+    <main
+      v-else
       ref="mainRef"
       id="app-main"
       class="app-main"

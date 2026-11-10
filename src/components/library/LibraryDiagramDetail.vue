@@ -4,6 +4,7 @@ import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import LibraryDiagramRatingPanel from "@/components/library/LibraryDiagramRatingPanel.vue";
 import LibraryDataLinkFields from "@/components/library/LibraryDataLinkFields.vue";
+import LibraryServerLinks from "@/components/library/LibraryServerLinks.vue";
 import LibraryStarRating from "@/components/library/LibraryStarRating.vue";
 import { useLocale } from "@/composables/useLocale";
 import { useLibraryDiagramPreview } from "@/composables/useLibraryDiagramPreview";
@@ -306,6 +307,14 @@ function contentLocaleLabel(locale: string): string {
           </p>
         </section>
         <LibraryDataLinkFields :diagram-id="diagram.id" />
+        <LibraryServerLinks
+          :diagram="diagram"
+          :api-url="libraryApiUrl"
+          :is-local-library="isLocalLibrary"
+          :layout="layout"
+          :diagram-dark-mode="diagramDarkMode"
+          :can-write="allowsWrite"
+        />
       </div>
 
       <div class="library-step__content library-step__content--padded">

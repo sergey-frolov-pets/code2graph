@@ -24,6 +24,9 @@ npm run dev
 | `PORT` | Порт HTTP | `3001` |
 | `DB_PATH` | Путь к SQLite | `data/library.db` |
 | `MAX_PUML_FILE_BYTES` | Лимит размера `.puml` | `512000` |
+| `MAX_LIBRARY_LINK_SNAPSHOT_BYTES` | Лимит сохранённого SVG для ссылки «только просмотр» | `1500000` |
+| `LIBRARY_PUBLIC_SLUG` | Необязательный первый сегмент адреса `/{slug}/{user}/{link}` | пусто, адрес `/{user}/{link}` |
+| `LIBRARY_LINK_STATS_RETENTION_DAYS` | Сколько дней хранить обезличенные открытия ссылок | `180` |
 | `GEMINI_API_KEY` | Ключ Google AI для `google-gemini-free` | — |
 | `GROQ_API_KEY` | Ключ Groq для `groq-free` | — |
 | `OPENROUTER_API_KEY` | Ключ OpenRouter для `openrouter-free` | — |

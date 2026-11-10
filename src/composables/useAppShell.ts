@@ -44,6 +44,10 @@ import {
   type DiagramDataLinkUi,
 } from "@/composables/useDiagramDataLink";
 import {
+  createLibraryServerLinkOpen,
+  type LibraryServerLinkOpenUi,
+} from "@/composables/library/useLibraryServerLinkOpen";
+import {
   DATA_LINK_SOURCE_KEYWORD,
   DATA_LINK_SOURCE_UPDATED_EVENT,
 } from "@/services/local-data-link/constants";
@@ -133,6 +137,7 @@ export interface AppShellContext {
   boot: () => void;
   dataLink: DiagramDataLinkUi;
   clipboardDiagram: ClipboardDiagramUi;
+  libraryLink: LibraryServerLinkOpenUi;
 }
 
 export const APP_SHELL_KEY: InjectionKey<AppShellContext> = Symbol("app-shell");
@@ -563,6 +568,12 @@ export function useAppShell(): AppShellContext {
     onFileLoaded,
   });
 
+  const libraryLink = createLibraryServerLinkOpen({
+    t,
+    onFileLoaded,
+    openOfflineChooser: (diagram) => dataLink.openServerOfflineChooser(diagram),
+  });
+
   const clipboardDiagram = createClipboardDiagramUi({
     t,
     alert,
@@ -595,11 +606,17 @@ export function useAppShell(): AppShellContext {
     scheduleRender();
   }
 
+  function onLibraryLinkNavigation(): void {
+    void libraryLink.openFromLocation();
+  }
+
   onMounted(() => {
     window.addEventListener(DATA_LINK_SOURCE_UPDATED_EVENT, onDataLinkMarkerUpdated);
+    window.addEventListener("popstate", onLibraryLinkNavigation);
   });
   onUnmounted(() => {
     window.removeEventListener(DATA_LINK_SOURCE_UPDATED_EVENT, onDataLinkMarkerUpdated);
+    window.removeEventListener("popstate", onLibraryLinkNavigation);
   });
 
   function boot(): void {
@@ -611,6 +628,7 @@ export function useAppShell(): AppShellContext {
     void bootEngine();
     void handleShareLinkOnBoot();
     void dataLink.openFromHash();
+    void libraryLink.openFromLocation();
     void clipboardDiagram.openFromLocation();
   }
 
@@ -679,5 +697,6 @@ export function useAppShell(): AppShellContext {
     boot,
     dataLink,
     clipboardDiagram,
+    libraryLink,
   };
 }

@@ -1,6 +1,9 @@
 import { isDiagramFormat, type DiagramFormat } from "@/constants/diagram-format-ids";
 import { CLIPBOARD_DIAGRAM_PATH } from "@/services/clipboard-diagram/constants";
-import { PUBLIC_DATA_LINK_ORIGIN } from "@/services/local-data-link/constants";
+import {
+  DATA_LINK_SLUG_PATTERN,
+  PUBLIC_DATA_LINK_ORIGIN,
+} from "@/services/local-data-link/constants";
 
 export type AppRouteName =
   | "landing"
@@ -12,16 +15,32 @@ export type AppRouteName =
   | "mcp"
   | "diagram"
   | "clipboard"
-  | "preview";
+  | "preview"
+  | "libraryLink";
 
 export interface ParsedAppRoute {
   name: AppRouteName;
   languageId: DiagramFormat | null;
   diagramSlug: string | null;
+  libraryUsername: string | null;
+  libraryLinkSlug: string | null;
 }
 
+/** First path segments that are never a library username. */
+export const LIBRARY_LINK_RESERVED_SEGMENTS = new Set([
+  "local",
+  "diagram",
+  "api",
+  "assets",
+  "icons",
+  "fonts",
+  "vendor",
+]);
+
+const LIBRARY_USERNAME_MAX_LENGTH = 80;
+
 const ROUTE_HASH: Record<
-  Exclude<AppRouteName, "language" | "diagram" | "clipboard" | "preview">,
+  Exclude<AppRouteName, "language" | "diagram" | "clipboard" | "preview" | "libraryLink">,
   string
 > = {
   landing: "#/",
@@ -39,8 +58,69 @@ function routeResult(
   name: AppRouteName,
   languageId: DiagramFormat | null = null,
   diagramSlug: string | null = null,
+  libraryUsername: string | null = null,
+  libraryLinkSlug: string | null = null,
 ): ParsedAppRoute {
-  return { name, languageId, diagramSlug };
+  return { name, languageId, diagramSlug, libraryUsername, libraryLinkSlug };
+}
+
+export function readPublicLibrarySlug(
+  raw: string | undefined = import.meta.env?.VITE_LIBRARY_PUBLIC_SLUG,
+): string {
+  return raw?.trim().toLowerCase() ?? "";
+}
+
+function decodePathSegment(value: string): string | null {
+  try {
+    const decoded = decodeURIComponent(value).trim();
+    return decoded.length > 0 ? decoded : null;
+  } catch {
+    return null;
+  }
+}
+
+export function parseLibraryLinkPathname(
+  pathname: string,
+  publicSlug = readPublicLibrarySlug(),
+): ParsedAppRoute | null {
+  const parts = (pathname.replace(/\/+$/, "") || "/")
+    .split("/")
+    .filter((part) => part.length > 0);
+  const librarySlug = publicSlug.trim().toLowerCase();
+  let usernamePart: string | undefined;
+  let linkPart: string | undefined;
+
+  if (librarySlug) {
+    if (parts.length !== 3 || parts[0]?.toLowerCase() !== librarySlug) {
+      return null;
+    }
+    usernamePart = parts[1];
+    linkPart = parts[2];
+  } else {
+    if (parts.length !== 2) {
+      return null;
+    }
+    if (LIBRARY_LINK_RESERVED_SEGMENTS.has(parts[0]?.toLowerCase() ?? "")) {
+      return null;
+    }
+    usernamePart = parts[0];
+    linkPart = parts[1];
+  }
+
+  const username = usernamePart ? decodePathSegment(usernamePart) : null;
+  const link = linkPart ? decodePathSegment(linkPart) : null;
+  if (!username || !link || username.length > LIBRARY_USERNAME_MAX_LENGTH) {
+    return null;
+  }
+  if (username === "." || username === "..") {
+    return null;
+  }
+  const linkSlug = link.toLowerCase();
+  if (!DATA_LINK_SLUG_PATTERN.test(linkSlug)) {
+    return null;
+  }
+
+  return routeResult("libraryLink", null, null, username, linkSlug);
 }
 
 const LOCAL_DATA_LINK_PATH = /\/local\/([a-z0-9]+(?:-[a-z0-9]+)*)$/i;
@@ -68,7 +148,11 @@ function parsePagesQueryPath(search: string): ParsedAppRoute | null {
   }
   const path = search.slice(1).split("&")[0] ?? "";
   const normalized = path.startsWith("/") ? path : `/${path}`;
-  return parseDiagramPathname(normalized) ?? parseClipboardDiagramPathname(normalized);
+  return (
+    parseDiagramPathname(normalized) ??
+    parseClipboardDiagramPathname(normalized) ??
+    parseLibraryLinkPathname(normalized)
+  );
 }
 
 export function parseAppRoute(locationLike: {
@@ -79,6 +163,7 @@ export function parseAppRoute(locationLike: {
   return (
     parseDiagramPathname(locationLike.pathname) ??
     parseClipboardDiagramPathname(locationLike.pathname) ??
+    parseLibraryLinkPathname(locationLike.pathname) ??
     parsePagesQueryPath(locationLike.search ?? "") ??
     parseRouteFromHash(locationLike.hash)
   );
@@ -90,6 +175,13 @@ function prettyPathForRoute(route: ParsedAppRoute): string | null {
   }
   if (route.name === "diagram" && route.diagramSlug) {
     return `/local/${route.diagramSlug}`;
+  }
+  if (route.name === "libraryLink" && route.libraryUsername && route.libraryLinkSlug) {
+    const username = encodeURIComponent(route.libraryUsername);
+    const librarySlug = readPublicLibrarySlug();
+    return librarySlug
+      ? `/${librarySlug}/${username}/${route.libraryLinkSlug}`
+      : `/${username}/${route.libraryLinkSlug}`;
   }
   return null;
 }
@@ -145,9 +237,30 @@ export function parseRouteFromHash(hash: string): ParsedAppRoute {
 }
 
 export function routeHash(
-  route: Exclude<AppRouteName, "language" | "diagram" | "clipboard" | "preview">,
+  route: Exclude<AppRouteName, "language" | "diagram" | "clipboard" | "preview" | "libraryLink">,
 ): string {
   return ROUTE_HASH[route];
+}
+
+export function libraryLinkUrl(
+  origin: string,
+  username: string,
+  slug: string,
+  publicSlug = readPublicLibrarySlug(),
+): string {
+  const url = new URL(origin);
+  if (url.hostname === "code2graph.ru" || url.hostname === "www.code2graph.ru") {
+    url.protocol = "https:";
+    url.hostname = new URL(PUBLIC_DATA_LINK_ORIGIN).hostname;
+  }
+  const user = encodeURIComponent(username);
+  const librarySlug = publicSlug.trim().toLowerCase();
+  url.pathname = librarySlug
+    ? `/${librarySlug}/${user}/${slug}`
+    : `/${user}/${slug}`;
+  url.search = "";
+  url.hash = "";
+  return url.toString();
 }
 
 export function diagramDataLinkUrl(origin: string, slug: string): string {
@@ -163,7 +276,7 @@ export function diagramDataLinkUrl(origin: string, slug: string): string {
 }
 
 export function navigateTo(
-  route: Exclude<AppRouteName, "diagram" | "clipboard" | "preview">,
+  route: Exclude<AppRouteName, "diagram" | "clipboard" | "preview" | "libraryLink">,
   languageId?: DiagramFormat,
 ): void {
   const target =

@@ -51,3 +51,23 @@ export_frontend_api_env() {
 
   echo "==> Frontend API: VITE_API_BASE_URL=${VITE_API_BASE_URL:-<static>}"
 }
+
+export_frontend_library_slug() {
+  local install_dir="$1"
+  local value=""
+
+  if [[ -n "${VITE_LIBRARY_PUBLIC_SLUG+x}" ]]; then
+    echo "==> Library slug: VITE_LIBRARY_PUBLIC_SLUG=${VITE_LIBRARY_PUBLIC_SLUG:-<none>}"
+    return 0
+  fi
+
+  if value="$(read_env_assignment "$install_dir/server/.env" "LIBRARY_PUBLIC_SLUG")"; then
+    export VITE_LIBRARY_PUBLIC_SLUG="$value"
+  elif value="$(read_env_assignment "$install_dir/.env" "LIBRARY_PUBLIC_SLUG")"; then
+    export VITE_LIBRARY_PUBLIC_SLUG="$value"
+  else
+    export VITE_LIBRARY_PUBLIC_SLUG=""
+  fi
+
+  echo "==> Library slug: VITE_LIBRARY_PUBLIC_SLUG=${VITE_LIBRARY_PUBLIC_SLUG:-<none>}"
+}

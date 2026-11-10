@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   diagramDataLinkUrl,
+  libraryLinkUrl,
   localDataLinkCanonicalPath,
   parseAppRoute,
+  parseLibraryLinkPathname,
   parseRouteFromHash,
   routeHash,
 } from "@/router";
@@ -13,6 +15,8 @@ describe("app routes", () => {
       name: "mcp",
       languageId: null,
       diagramSlug: null,
+      libraryUsername: null,
+      libraryLinkSlug: null,
     });
     expect(routeHash("mcp")).toBe("#/mcp");
   });
@@ -22,6 +26,8 @@ describe("app routes", () => {
       name: "preview",
       languageId: null,
       diagramSlug: "session-a",
+      libraryUsername: null,
+      libraryLinkSlug: null,
     });
   });
 
@@ -30,6 +36,8 @@ describe("app routes", () => {
       name: "landing",
       languageId: null,
       diagramSlug: null,
+      libraryUsername: null,
+      libraryLinkSlug: null,
     });
   });
 
@@ -38,6 +46,8 @@ describe("app routes", () => {
       name: "landing",
       languageId: null,
       diagramSlug: null,
+      libraryUsername: null,
+      libraryLinkSlug: null,
     });
   });
 
@@ -46,11 +56,15 @@ describe("app routes", () => {
       name: "landing",
       languageId: null,
       diagramSlug: null,
+      libraryUsername: null,
+      libraryLinkSlug: null,
     });
     expect(parseRouteFromHash("#/local/w")).toEqual({
       name: "landing",
       languageId: null,
       diagramSlug: null,
+      libraryUsername: null,
+      libraryLinkSlug: null,
     });
   });
 
@@ -59,11 +73,15 @@ describe("app routes", () => {
       name: "diagram",
       languageId: null,
       diagramSlug: "w",
+      libraryUsername: null,
+      libraryLinkSlug: null,
     });
     expect(parseAppRoute({ hash: "", pathname: "/local/Water-Fall/" })).toEqual({
       name: "diagram",
       languageId: null,
       diagramSlug: "water-fall",
+      libraryUsername: null,
+      libraryLinkSlug: null,
     });
   });
 
@@ -105,16 +123,22 @@ describe("app routes", () => {
       name: "clipboard",
       languageId: null,
       diagramSlug: null,
+      libraryUsername: null,
+      libraryLinkSlug: null,
     });
     expect(parseAppRoute({ hash: "", pathname: "/diagram/" })).toEqual({
       name: "clipboard",
       languageId: null,
       diagramSlug: null,
+      libraryUsername: null,
+      libraryLinkSlug: null,
     });
     expect(parseAppRoute({ hash: "", pathname: "/diagram/w" })).toEqual({
       name: "landing",
       languageId: null,
       diagramSlug: null,
+      libraryUsername: null,
+      libraryLinkSlug: null,
     });
     expect(
       localDataLinkCanonicalPath({
@@ -123,5 +147,38 @@ describe("app routes", () => {
         search: "?/diagram",
       }),
     ).toBe("/diagram");
+  });
+
+  it("reads /user/link and an optional library segment", () => {
+    expect(parseAppRoute({ hash: "", pathname: "/owner/water-fall" })).toEqual({
+      name: "libraryLink",
+      languageId: null,
+      diagramSlug: null,
+      libraryUsername: "owner",
+      libraryLinkSlug: "water-fall",
+    });
+    expect(parseAppRoute({ hash: "", pathname: "/local/w" }).name).toBe("diagram");
+    expect(parseAppRoute({ hash: "", pathname: "/api/health" }).name).toBe("landing");
+    expect(parseLibraryLinkPathname("/maps/owner/plan", "maps")).toEqual({
+      name: "libraryLink",
+      languageId: null,
+      diagramSlug: null,
+      libraryUsername: "owner",
+      libraryLinkSlug: "plan",
+    });
+    expect(parseLibraryLinkPathname("/owner/plan", "maps")).toBeNull();
+    expect(libraryLinkUrl("https://code2graph.ru", "Иван", "plan", "")).toBe(
+      "https://www.code2graph.ru/%D0%98%D0%B2%D0%B0%D0%BD/plan",
+    );
+    expect(libraryLinkUrl("https://code2graph.ru", "owner", "plan", "maps")).toBe(
+      "https://www.code2graph.ru/maps/owner/plan",
+    );
+    expect(
+      localDataLinkCanonicalPath({
+        hash: "",
+        pathname: "/",
+        search: "?/owner/plan",
+      }),
+    ).toBe("/owner/plan");
   });
 });
