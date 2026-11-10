@@ -18,11 +18,13 @@ const props = defineProps<{
   example: DiagramExample;
   llmAvailable: boolean;
   canEnlarge: boolean;
+  favorite: boolean;
 }>();
 
 const emit = defineEmits<{
   choose: [action: GalleryExampleAction];
   enlarge: [];
+  "toggle-favorite": [];
 }>();
 
 const { t } = useLocale();
@@ -91,8 +93,10 @@ function labelFor(tag: ExampleTagRef): string {
       :label="t('llm.wizard.gallery.actionsLabel')"
       :llm-available="llmAvailable"
       :can-enlarge="canEnlarge"
+      :favorite="favorite"
       @choose="emit('choose', $event)"
       @enlarge="emit('enlarge')"
+      @toggle-favorite="emit('toggle-favorite')"
     />
   </article>
 </template>

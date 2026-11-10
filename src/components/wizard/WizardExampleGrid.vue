@@ -4,6 +4,7 @@ import WizardExampleActions from "@/components/wizard/WizardExampleActions.vue";
 import WizardExampleCard from "@/components/wizard/WizardExampleCard.vue";
 import WizardExamplePopover from "@/components/wizard/WizardExamplePopover.vue";
 import WizardExampleThumb from "@/components/wizard/WizardExampleThumb.vue";
+import WizardFavoriteToggle from "@/components/wizard/WizardFavoriteToggle.vue";
 import { diagramExampleTitle } from "@/constants/diagram-example-text";
 import type { DiagramExample } from "@/constants/diagram-example-catalog";
 import type { GalleryExampleAction } from "@/constants/wizard-gallery";
@@ -19,6 +20,7 @@ const props = defineProps<{
   pinnedId: string | null;
   actionsId: string | null;
   llmAvailable: boolean;
+  isFavorite: (exampleId: string) => boolean;
 }>();
 
 const emit = defineEmits<{
@@ -26,6 +28,7 @@ const emit = defineEmits<{
   "pin-card": [example: DiagramExample];
   choose: [example: DiagramExample, action: GalleryExampleAction];
   enlarge: [example: DiagramExample];
+  "toggle-favorite": [example: DiagramExample];
 }>();
 
 const { t, locale } = useLocale();
@@ -201,6 +204,12 @@ onBeforeUnmount(() => {
       @pointerenter="onHoverStart(example, $event)"
       @pointerleave="onHoverEnd"
     >
+      <WizardFavoriteToggle
+        class="wizard-example__favorite"
+        :active="isFavorite(example.id)"
+        data-testid="wizard-example-favorite-thumb"
+        @toggle="emit('toggle-favorite', example)"
+      />
       <button
         type="button"
         class="wizard-example__open"
@@ -234,16 +243,20 @@ onBeforeUnmount(() => {
         :example="floatingExample"
         :llm-available="llmAvailable"
         :can-enlarge="floatingCanEnlarge"
+        :favorite="isFavorite(floatingExample.id)"
         @choose="emit('choose', floatingExample, $event)"
         @enlarge="onEnlarge(floatingExample)"
+        @toggle-favorite="emit('toggle-favorite', floatingExample)"
       />
       <WizardExampleActions
         v-else
         :label="t('llm.wizard.gallery.actionsLabel')"
         :llm-available="llmAvailable"
         :can-enlarge="floatingCanEnlarge"
+        :favorite="isFavorite(floatingExample.id)"
         @choose="emit('choose', floatingExample, $event)"
         @enlarge="onEnlarge(floatingExample)"
+        @toggle-favorite="emit('toggle-favorite', floatingExample)"
         @pointerdown.stop
       />
     </WizardExamplePopover>
