@@ -77,20 +77,37 @@ function collectUsedKeys(filePath) {
   return [...keys];
 }
 
-const ruKeys = loadLocaleKeys("ru");
+const localesRoot = path.join(root, "src/locales");
+const localeNames = readdirSync(localesRoot).filter((entry) => {
+  const fullPath = path.join(localesRoot, entry);
+  return statSync(fullPath).isDirectory();
+});
+
 const enKeys = loadLocaleKeys("en");
+let mismatched = false;
 
-const onlyRu = [...ruKeys].filter((key) => !enKeys.has(key)).sort();
-const onlyEn = [...enKeys].filter((key) => !ruKeys.has(key)).sort();
+for (const locale of localeNames) {
+  if (locale === "en") {
+    continue;
+  }
 
-if (onlyRu.length > 0 || onlyEn.length > 0) {
-  console.error("i18n key mismatch between ru and en:");
-  if (onlyRu.length > 0) {
-    console.error(`  only in ru (${onlyRu.length}):`, onlyRu.join(", "));
+  const localeKeys = loadLocaleKeys(locale);
+  const missing = [...enKeys].filter((key) => !localeKeys.has(key)).sort();
+  const extra = [...localeKeys].filter((key) => !enKeys.has(key)).sort();
+
+  if (missing.length > 0 || extra.length > 0) {
+    mismatched = true;
+    console.error(`i18n key mismatch between en and ${locale}:`);
+    if (missing.length > 0) {
+      console.error(`  missing in ${locale} (${missing.length}):`, missing.join(", "));
+    }
+    if (extra.length > 0) {
+      console.error(`  only in ${locale} (${extra.length}):`, extra.join(", "));
+    }
   }
-  if (onlyEn.length > 0) {
-    console.error(`  only in en (${onlyEn.length}):`, onlyEn.join(", "));
-  }
+}
+
+if (mismatched) {
   process.exit(1);
 }
 
@@ -120,5 +137,5 @@ if (missing.length > 0) {
 }
 
 console.log(
-  `i18n keys OK: ${localeKeys.size} keys in ru/en parity, ${seen.size} static references validated`,
+  `i18n keys OK: ${localeKeys.size} keys across ${localeNames.join(", ")}, ${seen.size} static references validated`,
 );

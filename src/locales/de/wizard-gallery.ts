@@ -1,0 +1,152 @@
+export const wizardGalleryMessages = {
+  "llm.wizard.gallery.heading": "Beispiel auswählen",
+  "llm.wizard.gallery.searchLabel": "Beispieltext durchsuchen",
+  "llm.wizard.gallery.searchPlaceholder": "Text",
+  "llm.wizard.gallery.reset": "Zurücksetzen",
+  "llm.wizard.gallery.empty": "Kein Beispiel erfüllt diese Bedingungen",
+  "llm.wizard.gallery.cloudLabel": "Beispiel-Tags",
+  "llm.wizard.gallery.expandTags": "Tags ({count})",
+  "llm.wizard.gallery.collapseTags": "Tags einklappen",
+  "llm.wizard.gallery.gridLabel": "Beispielminiaturen",
+  "llm.wizard.gallery.details": "Details",
+  "llm.wizard.gallery.actionsLabel": "Was mit diesem Beispiel geschehen soll",
+  "llm.wizard.gallery.cardLabel": "Beispielkarte",
+  "llm.wizard.gallery.domainsLabel": "Wo es eingesetzt wird",
+  "llm.wizard.gallery.tagsLabel": "Tags",
+  "llm.wizard.gallery.composedTitle": "{type} · {language}",
+  "llm.wizard.gallery.prompt":
+    "Zeichnen Sie “{title}”. Sprache: {language}. Diagrammtyp: {type}. Einsatz: {domains}. {description} Diese Beispieleinstellungen beibehalten: {settings}.",
+  "llm.wizard.gallery.promptPlain":
+    "Zeichnen Sie “{title}”. Sprache: {language}. Diagrammtyp: {type}. Einsatz: {domains}. {description}",
+  "llm.wizard.gallery.axis.language": "Sprache",
+  "llm.wizard.gallery.axis.diagramType": "Diagrammtyp",
+  "llm.wizard.gallery.axis.chartFamily": "Form",
+  "llm.wizard.gallery.axis.domain": "Bereich",
+  "llm.wizard.gallery.axis.setting": "Einstellung",
+  "llm.wizard.gallery.tag.chartFamily.structure": "Struktur",
+  "llm.wizard.gallery.tag.chartFamily.behavior": "Verhalten",
+  "llm.wizard.gallery.tag.chartFamily.chart": "Diagramm",
+  "llm.wizard.gallery.tag.chartFamily.ui": "Oberfläche",
+  "llm.wizard.gallery.tag.domain.architecture": "Architektur",
+  "llm.wizard.gallery.tag.domain.businessProcess": "Geschäftsprozess",
+  "llm.wizard.gallery.tag.domain.project": "Projekt und Zeitplan",
+  "llm.wizard.gallery.tag.domain.data": "Daten",
+  "llm.wizard.gallery.tag.domain.software": "Softwareentwurf",
+  "llm.wizard.gallery.tag.domain.ux": "UX und Nutzerreisen",
+  "llm.wizard.gallery.tag.domain.organization": "Organisation",
+  "llm.wizard.gallery.tag.domain.analytics": "Analytik",
+  "llm.wizard.gallery.tag.domain.product": "Produkt",
+  "llm.wizard.gallery.tag.setting.break": "Achsenunterbrechung",
+  "llm.wizard.gallery.tag.setting.color": "Farbe",
+  "llm.wizard.gallery.tag.setting.mono": "Monochrom",
+  "llm.wizard.gallery.tag.setting.labels": "Beschriftungen",
+  "llm.wizard.gallery.tag.setting.thresholds": "Schwellen",
+  "llm.wizard.gallery.tag.setting.direction-tb": "Von oben nach unten",
+  "llm.wizard.gallery.tag.setting.direction-lr": "Von links nach rechts",
+  "llm.wizard.gallery.tag.setting.swimlane": "Swimlanes",
+  "llm.wizard.gallery.tag.setting.noLines": "Keine Verbindungslinien",
+  "llm.wizard.gallery.tag.setting.rotate90": "Um 90° gedreht",
+  "llm.wizard.gallery.tag.setting.stacked": "Gestapelt",
+  "llm.wizard.gallery.tag.setting.monoInvert": "Invertiertes Mono",
+  "llm.wizard.gallery.tag.setting.line": "Linie",
+  "llm.wizard.gallery.tag.setting.cagr": "CAGR",
+  "llm.wizard.gallery.tag.diagramType.waterfall": "Wasserfall",
+  "llm.wizard.gallery.tag.diagramType.bubble": "Blasendiagramm",
+  "llm.wizard.gallery.tag.diagramType.heatmap": "Heatmap",
+  "llm.wizard.gallery.tag.diagramType.orgchart": "Organigramm",
+  "llm.wizard.gallery.tag.diagramType.ev": "Fertigstellungswert",
+  "llm.wizard.gallery.tag.diagramType.boxplot": "Boxplot",
+  "llm.wizard.gallery.tag.diagramType.treemap": "Treemap",
+  "llm.wizard.gallery.tag.diagramType.radar": "Netzdiagramm",
+  "llm.wizard.gallery.tag.diagramType.voronoi": "Voronoi-Diagramm",
+  "llm.wizard.gallery.tag.diagramType.clustered": "Reihendiagramm",
+  "llm.wizard.gallery.tag.diagramType.decision": "Entscheidung",
+  "llm.wizard.gallery.desc.bubble": "Punkte auf zwei Achsen, deren Größe ein dritter Wert bestimmt.",
+  "llm.wizard.gallery.desc.heatmap": "Eine nach dem Wert gefärbte Matrix.",
+  "llm.wizard.gallery.desc.orgchart": "Personen und Teams in einem Berichtsbaum.",
+  "llm.wizard.gallery.desc.ev": "Planwert, Fertigstellungswert und Istkosten.",
+  "llm.wizard.gallery.desc.boxplot": "Verteilung nach Quartilen, Median, Antennen und Ausreißern.",
+  "llm.wizard.gallery.desc.treemap": "Verschachtelte Rechtecke, deren Größe den Zahlengewichten entspricht.",
+  "llm.wizard.gallery.desc.radar": "Vergleicht mehrere Reihen über radiale Achsen von einem gemeinsamen Mittelpunkt.",
+  "llm.wizard.gallery.desc.voronoi": "Teilt eine Ebene in Zellen der nächsten Nachbarn.",
+  "llm.wizard.gallery.desc.clustered": "Gruppierte Balken mehrerer Reihen im Vergleich über Kategorien.",
+  "llm.wizard.gallery.desc.decision": "Ein Ablauf, der an einer Entscheidung verzweigt.",
+  "llm.wizard.gallery.example.mermaid.waterfall.title": "Wasserfall",
+  "llm.wizard.gallery.example.mermaid.waterfall.description":
+    "Laufende Summe als Stufen von einer Spalte zur nächsten.",
+  "llm.wizard.gallery.example.mermaid.waterfallMono.title": "Monochromer Wasserfall",
+  "llm.wizard.gallery.example.mermaid.waterfallMono.description":
+    "Dieselben Wasserfallstufen in einer einzigen Farbe.",
+  "llm.wizard.gallery.example.mermaid.waterfallBreak.title": "Wasserfall mit Achsenunterbrechung",
+  "llm.wizard.gallery.example.mermaid.waterfallBreak.description":
+    "Die Wertachse hat eine Unterbrechung, damit kleine und große Stufen lesbar bleiben.",
+  "llm.wizard.gallery.example.mermaid.waterfallMulti.title": "Wasserfall mit mehreren Reihen",
+  "llm.wizard.gallery.example.mermaid.waterfallMulti.description":
+    "Mehrere farbige Reihen in einem Wasserfall.",
+  "llm.wizard.gallery.example.mermaid.waterfallLabels.title": "Wasserfall mit Beschriftungen",
+  "llm.wizard.gallery.example.mermaid.waterfallLabels.description":
+    "Wertbeschriftungen sitzen auf den Wasserfallspalten.",
+  "llm.wizard.gallery.example.mermaid.waterfallNoLines.title": "Wasserfall ohne Verbindungen",
+  "llm.wizard.gallery.example.mermaid.waterfallNoLines.description":
+    "Wasserfallspalten ohne Linien zwischen den Stufen.",
+  "llm.wizard.gallery.example.mermaid.waterfallThresholds.title": "Wasserfall mit Schwellen",
+  "llm.wizard.gallery.example.mermaid.waterfallThresholds.description":
+    "Schwellenlinien quer über den Wasserfall.",
+  "llm.wizard.gallery.example.mermaid.clustered.title": "Reihendiagramm",
+  "llm.wizard.gallery.example.mermaid.clustered.description":
+    "Senkrechte gruppierte Balken, die mehrere Reihen über Kategorien vergleichen.",
+  "llm.wizard.gallery.example.mermaid.clusteredRotated.title":
+    "Reihendiagramm (um 90° gedreht)",
+  "llm.wizard.gallery.example.mermaid.clusteredRotated.description":
+    "Waagerechte gruppierte Balken, um 90 Grad gedreht (rotate 90).",
+  "llm.wizard.gallery.example.mermaid.clusteredStacked.title": "Gestapeltes Balkendiagramm",
+  "llm.wizard.gallery.example.mermaid.clusteredStacked.description":
+    "Reihen in einer Spalte gestapelt: Positive wachsen von null nach oben, Negative nach unten.",
+  "llm.wizard.gallery.example.mermaid.clusteredMono.title": "Monochrome Reihenbalken",
+  "llm.wizard.gallery.example.mermaid.clusteredMono.description":
+    "Dieselben Balken in Grautönen für den Druck und farblose Dokumente.",
+  "llm.wizard.gallery.example.mermaid.clusteredMonoInvert.title": "Invertierte Mono-Reihenbalken",
+  "llm.wizard.gallery.example.mermaid.clusteredMonoInvert.description":
+    "Hellgraue Balken auf dunkler Fläche für dunkle Designs.",
+  "llm.wizard.gallery.example.mermaid.seriesLines.title": "Reihendiagramm — Linien",
+  "llm.wizard.gallery.example.mermaid.seriesLines.description":
+    "Linien über den Balken: durchgezogen, gestrichelt, gepunktet und strichpunktiert, eigene Farbe und Breite, und eine ausgelassene Kategorie über eine leere Stelle, \"-\" oder null.",
+  "llm.wizard.gallery.example.mermaid.seriesCagr.title": "Reihendiagramm — CAGR",
+  "llm.wizard.gallery.example.mermaid.seriesCagr.description":
+    "Ein CAGR-Pfeil vom ersten Balken der Reihe bis zum letzten.",
+  "llm.wizard.gallery.example.mermaid.seriesCagrRanges.title": "Reihendiagramm — CAGR-Bereiche",
+  "llm.wizard.gallery.example.mermaid.seriesCagrRanges.description":
+    "Verschiedene CAGR-Optionen auf den Bereichen 1–2, 2–3, 3–5, 5–6, 6–7 und 8–9: Format, Präfix und Beschriftung.",
+  "llm.wizard.gallery.example.mermaid.seriesBreak.title": "Reihendiagramm — Achsenunterbrechung",
+  "llm.wizard.gallery.example.mermaid.seriesBreak.description":
+    "Ein Abschnitt der Wertachse wird ausgeschnitten, und Balken, die ihn kreuzen, werden mit einem Zickzack gezeichnet.",
+  "llm.wizard.gallery.example.mermaid.seriesThresholds.title": "Reihendiagramm — waagerechte Linien",
+  "llm.wizard.gallery.example.mermaid.seriesThresholds.description":
+    "Plan-, Ziel- und Schwellenlinien quer über die Balken.",
+  "llm.wizard.gallery.example.mermaid.seriesUnnamed.title": "Reihendiagramm — ohne Namen",
+  "llm.wizard.gallery.example.mermaid.seriesUnnamed.description":
+    "Balken und Linien ohne Namen: keine Legendeneinträge und keine Linienbeschriftungen.",
+  "llm.wizard.gallery.example.wiremark.login.title": "Anmeldebildschirm",
+  "llm.wizard.gallery.example.wiremark.login.description":
+    "Ein Anmelde-Wireframe mit Feldern, Registerkarten und einer primären Aktion.",
+  "llm.wizard.gallery.example.wiremark.dashboard.title": "Dashboard-Bildschirm",
+  "llm.wizard.gallery.example.wiremark.dashboard.description":
+    "Ein Wireframe eines Dashboards mit Übersichtskacheln.",
+  "llm.wizard.gallery.example.wiremark.form.title": "Formularbildschirm",
+  "llm.wizard.gallery.example.wiremark.form.description":
+    "Ein Wireframe eines Formulars mit beschrifteten Feldern.",
+  "llm.wizard.gallery.example.wiremark.settings.title": "Einstellungsbildschirm",
+  "llm.wizard.gallery.example.wiremark.settings.description":
+    "Ein Wireframe eines Einstellungsbildschirms.",
+  "llm.wizard.gallery.example.wiremark.flow.title": "Ablaufbildschirm",
+  "llm.wizard.gallery.example.wiremark.flow.description":
+    "Ein Wireframe, das einen kurzen Ablauf durchgeht.",
+  "llm.wizard.gallery.example.wiremark.product.title": "Produktbildschirm",
+  "llm.wizard.gallery.example.wiremark.product.description":
+    "Ein Wireframe einer Produktkarte.",
+  "llm.wizard.gallery.action.editor": "Im Editor öffnen",
+  "llm.wizard.gallery.action.builder": "Schritt für Schritt erstellen",
+  "llm.wizard.gallery.action.enlarge": "Vergrößern",
+  "llm.wizard.gallery.action.llm": "Mit LLM erstellen",
+  "llm.wizard.gallery.zoomLabel": "Diagramm in natürlicher Größe",
+} as const;

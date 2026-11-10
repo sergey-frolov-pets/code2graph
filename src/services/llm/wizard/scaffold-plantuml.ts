@@ -1,4 +1,5 @@
 import type { AppLocale } from "@/constants/i18n";
+import { wizardCopy } from "@/services/llm/wizard/wizard-copy";
 import type { WizardState } from "@/constants/llm-wizard";
 import {
   actorLabel,
@@ -37,7 +38,7 @@ export function buildPlantUmlSequence(
   locale: AppLocale,
 ): string {
   const count = state.typeParams.participants;
-  const title = locale === "ru" ? "Диаграмма последовательности" : "Sequence diagram";
+  const title = wizardCopy(locale, "sequenceDiagram");
   const lines = buildPlantUmlHeader(state, title, false, false);
 
   for (let index = 1; index <= count; index += 1) {
@@ -47,7 +48,7 @@ export function buildPlantUmlSequence(
   if (count >= 2) {
     const from = participantLabel(1, locale).replace(/\s+/g, "_");
     const to = participantLabel(2, locale).replace(/\s+/g, "_");
-    const message = locale === "ru" ? "сообщение" : "message";
+    const message = wizardCopy(locale, "message");
     lines.push("", `${from} -> ${to}: ${message}`);
   }
 
@@ -58,11 +59,11 @@ export function buildPlantUmlSequence(
 
 export function buildPlantUmlClass(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.classes;
-  const title = locale === "ru" ? "Диаграмма классов" : "Class diagram";
+  const title = wizardCopy(locale, "classDiagram");
   const lines = buildPlantUmlHeader(state, title, true);
 
   if (hasStructural(state, "package")) {
-    const packageName = locale === "ru" ? "Домен" : "Domain";
+    const packageName = wizardCopy(locale, "domain");
     lines.push(`package ${packageName} {`);
   }
 
@@ -86,11 +87,11 @@ export function buildPlantUmlClass(state: WizardState, locale: AppLocale): strin
 
 export function buildPlantUmlComponent(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.components;
-  const title = locale === "ru" ? "Диаграмма компонентов" : "Component diagram";
+  const title = wizardCopy(locale, "componentDiagram");
   const lines = buildPlantUmlHeader(state, title, true);
 
   if (hasStructural(state, "package")) {
-    const packageName = locale === "ru" ? "Домен" : "Domain";
+    const packageName = wizardCopy(locale, "domain");
     lines.push(`package "${packageName}" {`);
   }
 
@@ -117,7 +118,7 @@ export function buildPlantUmlComponent(state: WizardState, locale: AppLocale): s
 export function buildPlantUmlActivity(state: WizardState, locale: AppLocale): string {
   const laneCount = state.typeParams.lanes;
   const stepCount = state.typeParams.steps;
-  const title = locale === "ru" ? "Диаграмма активности" : "Activity diagram";
+  const title = wizardCopy(locale, "activityDiagram");
   const lines = buildPlantUmlHeader(state, title, false, false);
 
   for (let laneIndex = 1; laneIndex <= laneCount; laneIndex += 1) {
@@ -139,7 +140,7 @@ export function buildPlantUmlActivity(state: WizardState, locale: AppLocale): st
 
 export function buildPlantUmlState(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.states;
-  const title = locale === "ru" ? "Диаграмма состояний" : "State diagram";
+  const title = wizardCopy(locale, "stateDiagram");
   const lines = buildPlantUmlHeader(state, title, true);
 
   for (let index = 1; index <= count; index += 1) {
@@ -163,8 +164,8 @@ export function buildPlantUmlState(state: WizardState, locale: AppLocale): strin
 export function buildPlantUmlC4Context(state: WizardState, locale: AppLocale): string {
   const actorCount = state.typeParams.actors;
   const externalCount = state.typeParams.externalSystems;
-  const title = locale === "ru" ? "C4 Context" : "C4 Context";
-  const systemName = locale === "ru" ? "Система" : "System";
+  const title = wizardCopy(locale, "c4Context");
+  const systemName = wizardCopy(locale, "system");
   const lines = buildPlantUmlHeader(state, title, true);
 
   lines.push(
@@ -190,17 +191,17 @@ export function buildPlantUmlC4Context(state: WizardState, locale: AppLocale): s
   if (actorCount >= 1) {
     lines.push(
       "",
-      `Rel(${actorLabel(1, locale).replace(/\s+/g, "_")}, ${systemName}, "${locale === "ru" ? "использует" : "uses"}")`,
+      `Rel(${actorLabel(1, locale).replace(/\s+/g, "_")}, ${systemName}, "${wizardCopy(locale, "uses")}")`,
     );
   }
 
   if (hasStructural(state, "boundary")) {
-    const boundary = locale === "ru" ? "Граница" : "Boundary";
+    const boundary = wizardCopy(locale, "boundary");
     lines.push("", `System_Boundary(${boundary}, "${boundary}") {`, `  System(${systemName}, "${systemName}", "")`, "}");
   }
 
   if (hasStructural(state, "note")) {
-    const noteText = locale === "ru" ? "Примечание" : "Note";
+    const noteText = wizardCopy(locale, "note");
     lines.push("", `note right of ${systemName}: ${noteText}`);
   }
 
@@ -210,8 +211,8 @@ export function buildPlantUmlC4Context(state: WizardState, locale: AppLocale): s
 
 export function buildPlantUmlC4Container(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.containers;
-  const title = locale === "ru" ? "C4 Container" : "C4 Container";
-  const systemName = locale === "ru" ? "Система" : "System";
+  const title = wizardCopy(locale, "c4Container");
+  const systemName = wizardCopy(locale, "system");
   const lines = buildPlantUmlHeader(state, title, true);
 
   lines.push(
@@ -234,17 +235,17 @@ export function buildPlantUmlC4Container(state: WizardState, locale: AppLocale):
     const to = containerLabel(2, locale).replace(/\s+/g, "_");
     lines.push(
       "",
-      `Rel(${from}, ${to}, "${locale === "ru" ? "вызывает" : "calls"}")`,
+      `Rel(${from}, ${to}, "${wizardCopy(locale, "calls")}")`,
     );
   }
 
   if (hasStructural(state, "queue")) {
-    const queue = locale === "ru" ? "Очередь" : "Queue";
+    const queue = wizardCopy(locale, "queue");
     lines.push("", `ContainerQueue(${queue}, "${queue}", "")`);
   }
 
   if (hasStructural(state, "note")) {
-    const noteText = locale === "ru" ? "Примечание" : "Note";
+    const noteText = wizardCopy(locale, "note");
     lines.push("", `note right of ${containerLabel(1, locale).replace(/\s+/g, "_")}: ${noteText}`);
   }
 
@@ -254,7 +255,7 @@ export function buildPlantUmlC4Container(state: WizardState, locale: AppLocale):
 
 export function buildPlantUmlGantt(state: WizardState, locale: AppLocale): string {
   const taskCount = state.typeParams.tasks;
-  const title = locale === "ru" ? "Диаграмма Ганта" : "Gantt chart";
+  const title = wizardCopy(locale, "ganttChart");
   const lines = [
     "@startgantt",
     `title ${title}`,
@@ -282,8 +283,8 @@ export function buildPlantUmlGantt(state: WizardState, locale: AppLocale): strin
 export function buildPlantUmlMindmap(state: WizardState, locale: AppLocale): string {
   const branchCount = state.typeParams.nodes;
   const subCount = state.typeParams.steps;
-  const root = locale === "ru" ? "Корневая тема" : "Root topic";
-  const title = locale === "ru" ? "Mind map" : "Mind map";
+  const root = wizardCopy(locale, "rootTopic");
+  const title = wizardCopy(locale, "mindMap");
   const lines = ["@startmindmap"];
 
   const directionLine = buildPlantUmlDirectionLine(state.direction);
@@ -301,7 +302,7 @@ export function buildPlantUmlMindmap(state: WizardState, locale: AppLocale): str
   }
 
   if (hasStructural(state, "note")) {
-    const noteText = locale === "ru" ? "Примечание" : "Note";
+    const noteText = wizardCopy(locale, "note");
     lines.push(`** ${noteText}`);
   }
 
@@ -311,7 +312,7 @@ export function buildPlantUmlMindmap(state: WizardState, locale: AppLocale): str
 
 export function buildPlantUmlEr(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.entities;
-  const title = locale === "ru" ? "ER-диаграмма" : "ER diagram";
+  const title = wizardCopy(locale, "erDiagram");
   const lines = buildPlantUmlHeader(state, title, true);
 
   for (let index = 1; index <= count; index += 1) {
@@ -326,7 +327,7 @@ export function buildPlantUmlEr(state: WizardState, locale: AppLocale): string {
   }
 
   if (hasStructural(state, "note")) {
-    const noteText = locale === "ru" ? "Примечание" : "Note";
+    const noteText = wizardCopy(locale, "note");
     lines.push("", `note top of ${entityLabel(1, locale).replace(/\s+/g, "_")}: ${noteText}`);
   }
 
@@ -337,8 +338,8 @@ export function buildPlantUmlEr(state: WizardState, locale: AppLocale): string {
 export function buildPlantUmlUsecase(state: WizardState, locale: AppLocale): string {
   const actorCount = state.typeParams.actors;
   const useCaseCount = state.typeParams.components;
-  const title = locale === "ru" ? "Диаграмма вариантов использования" : "Use case diagram";
-  const systemName = locale === "ru" ? "Система" : "System";
+  const title = wizardCopy(locale, "useCaseDiagram");
+  const systemName = wizardCopy(locale, "system");
   const lines = buildPlantUmlHeader(state, title, true);
 
   for (let index = 1; index <= actorCount; index += 1) {
@@ -360,7 +361,7 @@ export function buildPlantUmlUsecase(state: WizardState, locale: AppLocale): str
   }
 
   if (hasStructural(state, "note")) {
-    const noteText = locale === "ru" ? "Примечание" : "Note";
+    const noteText = wizardCopy(locale, "note");
     lines.push("", `note right of UC1: ${noteText}`);
   }
 
@@ -370,14 +371,14 @@ export function buildPlantUmlUsecase(state: WizardState, locale: AppLocale): str
 
 export function buildPlantUmlDeployment(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.nodes;
-  const title = locale === "ru" ? "Диаграмма развертывания" : "Deployment diagram";
+  const title = wizardCopy(locale, "deploymentDiagram");
   const lines = buildPlantUmlHeader(state, title, true);
 
   for (let index = 1; index <= count; index += 1) {
     const label = serverLabel(index, locale);
     lines.push(`node "${label}" {`);
     if (hasStructural(state, "artifact")) {
-      const artifact = locale === "ru" ? "Приложение" : "Application";
+      const artifact = wizardCopy(locale, "application");
       lines.push(`  artifact "${artifact}.war"`);
     }
     lines.push("}");
@@ -388,7 +389,7 @@ export function buildPlantUmlDeployment(state: WizardState, locale: AppLocale): 
   }
 
   if (hasStructural(state, "note")) {
-    const noteText = locale === "ru" ? "Примечание" : "Note";
+    const noteText = wizardCopy(locale, "note");
     lines.push("", `note right of "${serverLabel(1, locale)}": ${noteText}`);
   }
 
@@ -398,7 +399,7 @@ export function buildPlantUmlDeployment(state: WizardState, locale: AppLocale): 
 
 export function buildPlantUmlObject(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.classes;
-  const title = locale === "ru" ? "Диаграмма объектов" : "Object diagram";
+  const title = wizardCopy(locale, "objectDiagram");
   const lines = buildPlantUmlHeader(state, title, true);
 
   for (let index = 1; index <= count; index += 1) {
@@ -411,7 +412,7 @@ export function buildPlantUmlObject(state: WizardState, locale: AppLocale): stri
   }
 
   if (hasStructural(state, "note")) {
-    const noteText = locale === "ru" ? "Примечание" : "Note";
+    const noteText = wizardCopy(locale, "note");
     lines.push("", `note right of ${classLabel(1, locale)}: ${noteText}`);
   }
 
@@ -422,7 +423,7 @@ export function buildPlantUmlObject(state: WizardState, locale: AppLocale): stri
 export function buildPlantUmlTiming(state: WizardState, locale: AppLocale): string {
   const signalCount = state.typeParams.participants;
   const stepCount = state.typeParams.steps;
-  const title = locale === "ru" ? "Диаграмма синхронизации" : "Timing diagram";
+  const title = wizardCopy(locale, "timingDiagram");
   const lines = buildPlantUmlHeader(state, title, false, false);
 
   for (let index = 1; index <= signalCount; index += 1) {
@@ -431,7 +432,7 @@ export function buildPlantUmlTiming(state: WizardState, locale: AppLocale): stri
   }
 
   lines.push("");
-  const noteText = locale === "ru" ? "Примечание" : "Note";
+  const noteText = wizardCopy(locale, "note");
   const includeNote = hasStructural(state, "note");
 
   for (let stepIndex = 0; stepIndex <= stepCount; stepIndex += 1) {
@@ -453,8 +454,8 @@ export function buildPlantUmlTiming(state: WizardState, locale: AppLocale): stri
 export function buildPlantUmlWbs(state: WizardState, locale: AppLocale): string {
   const branchCount = state.typeParams.nodes;
   const subCount = state.typeParams.steps;
-  const root = locale === "ru" ? "Проект" : "Project";
-  const title = locale === "ru" ? "Иерархия работ" : "Work breakdown";
+  const root = wizardCopy(locale, "project");
+  const title = wizardCopy(locale, "workBreakdown");
   const lines = ["@startwbs", `title ${title}`, "", `* ${root}`];
 
   for (let branchIndex = 1; branchIndex <= branchCount; branchIndex += 1) {
@@ -465,7 +466,7 @@ export function buildPlantUmlWbs(state: WizardState, locale: AppLocale): string 
   }
 
   if (hasStructural(state, "note")) {
-    const noteText = locale === "ru" ? "Примечание" : "Note";
+    const noteText = wizardCopy(locale, "note");
     lines.push(`** ${noteText}`);
   }
 
@@ -476,7 +477,7 @@ export function buildPlantUmlWbs(state: WizardState, locale: AppLocale): string 
 export function buildPlantUmlNwdiag(state: WizardState, locale: AppLocale): string {
   const nodeCount = state.typeParams.nodes;
   const edgeCount = Math.min(state.typeParams.edges, nodeCount > 1 ? nodeCount - 1 : 0);
-  const title = locale === "ru" ? "Сетевая топология" : "Network topology";
+  const title = wizardCopy(locale, "networkTopology");
   const lines = [
     "@startnwdiag",
     `title ${title}`,
@@ -501,9 +502,9 @@ export function buildPlantUmlNwdiag(state: WizardState, locale: AppLocale): stri
 
 export function buildPlantUmlArchimate(state: WizardState, locale: AppLocale): string {
   const count = state.typeParams.nodes;
-  const title = locale === "ru" ? "ArchiMate" : "ArchiMate";
-  const customer = locale === "ru" ? "Клиент" : "Customer";
-  const application = locale === "ru" ? "Приложение" : "Application";
+  const title = wizardCopy(locale, "archimate");
+  const customer = wizardCopy(locale, "customer");
+  const application = wizardCopy(locale, "application");
   const lines = buildPlantUmlHeader(state, title, true);
 
   lines.push(
@@ -521,7 +522,7 @@ export function buildPlantUmlArchimate(state: WizardState, locale: AppLocale): s
   lines.push("", 'Rel_Triggering(customer, app1, "Uses")');
 
   if (hasStructural(state, "note")) {
-    const noteText = locale === "ru" ? "Примечание" : "Note";
+    const noteText = wizardCopy(locale, "note");
     lines.push("", `note right of app1: ${noteText}`);
   }
 

@@ -1,5 +1,6 @@
 import type { AppLocale } from "@/constants/i18n";
 import type { MermaidSampleId } from "@/constants/mermaid-sample-diagrams";
+import { MERMAID_RICH_EXTRA } from "@/constants/samples/localized/mermaid-rich";
 
 const MERMAID_RICH_SAMPLE_IDS = [
   "component",
@@ -648,6 +649,7 @@ const MERMAID_RICH_SAMPLES: Record<
 > = {
   ru: MERMAID_RICH_SAMPLES_RU,
   en: MERMAID_RICH_SAMPLES_EN,
+  ...MERMAID_RICH_EXTRA,
 };
 
 export function getMermaidRichSample(
@@ -658,5 +660,5 @@ export function getMermaidRichSample(
     return null;
   }
 
-  return MERMAID_RICH_SAMPLES[locale][id as MermaidRichSampleId];
+  return MERMAID_RICH_SAMPLES[locale]?.[id as MermaidRichSampleId] ?? null;
 }

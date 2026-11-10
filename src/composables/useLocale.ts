@@ -1,5 +1,11 @@
 import { ref, watch } from "vue";
-import { DEFAULT_LOCALE, isAppLocale, STORAGE_KEY_LOCALE, type AppLocale } from "@/constants/i18n";
+import {
+  DEFAULT_LOCALE,
+  isAppLocale,
+  localeDirection,
+  STORAGE_KEY_LOCALE,
+  type AppLocale,
+} from "@/constants/i18n";
 import type { LocaleKey } from "@/locales/types";
 import { formatMessage, messagesByLocale } from "@/locales/messages";
 import { readStorageItem, writeStorageItem } from "@/core/safe-storage";
@@ -36,6 +42,7 @@ function persistLocale(value: AppLocale): void {
 
 function applyDocumentLocale(value: AppLocale): void {
   document.documentElement.lang = value;
+  document.documentElement.dir = localeDirection(value);
 
   const description = translateForLocale(value, "app.subtitle");
   document

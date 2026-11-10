@@ -1,4 +1,4 @@
-import type { AppLocale } from "@/constants/i18n";
+import { SUPPORTED_LOCALES, type AppLocale } from "@/constants/i18n";
 import { getMermaidRichSample } from "@/constants/mermaid-rich-samples";
 import { buildWizardDiagramSample } from "@/constants/wizard-sample-sources";
 import type { SampleCatalog } from "@/languages/sample-catalog";
@@ -7,8 +7,15 @@ import type { SampleCatalog } from "@/languages/sample-catalog";
  * Первая строка примера расширения: штатный Mermaid этот синтаксис не рисует.
  */
 export const MERMAID_EXT_SAMPLE_NOTICE: Record<AppLocale, string> = {
-  ru: "%% Это расширение Mermaid и не поддерживается стандартным Mermaid.",
   en: "%% This is a Mermaid extension and is not supported by standard Mermaid.",
+  ru: "%% Это расширение Mermaid и не поддерживается стандартным Mermaid.",
+  es: "%% Esta es una extensión de Mermaid y el Mermaid estándar no la admite.",
+  zh: "%% 这是 Mermaid 扩展，标准 Mermaid 不支持该语法。",
+  ja: "%% これは Mermaid 拡張であり、標準の Mermaid ではサポートされません。",
+  hi: "%% यह Mermaid एक्सटेंशन है और मानक Mermaid इसे समर्थन नहीं करता।",
+  pt: "%% Esta é uma extensão do Mermaid e o Mermaid padrão não a suporta.",
+  de: "%% Dies ist eine Mermaid-Erweiterung und wird von Standard-Mermaid nicht unterstützt.",
+  ar: "%% هذا امتداد Mermaid ولا يدعمه Mermaid القياسي.",
 };
 
 export const MERMAID_SAMPLE_IDS = [
@@ -172,10 +179,12 @@ import {
   MERMAID_SAMPLES_EN,
   MERMAID_SAMPLES_RU,
 } from "@/constants/samples/mermaid-handcrafted-samples";
+import { MERMAID_HANDCRAFTED_EXTRA } from "@/constants/samples/localized/mermaid-handcrafted";
 import {
   MERMAID_EXT_SAMPLES_EN,
   MERMAID_EXT_SAMPLES_RU,
 } from "@/constants/samples/mermaid-ext-samples";
+import { MERMAID_EXT_EXTRA } from "@/constants/samples/localized/mermaid-ext";
 
 const MERMAID_SOURCES_BY_LOCALE: Record<
   AppLocale,
@@ -183,6 +192,7 @@ const MERMAID_SOURCES_BY_LOCALE: Record<
 > = {
   ru: MERMAID_SAMPLES_RU,
   en: MERMAID_SAMPLES_EN,
+  ...MERMAID_HANDCRAFTED_EXTRA,
 };
 
 const MERMAID_EXT_SOURCES_BY_LOCALE: Record<
@@ -191,6 +201,7 @@ const MERMAID_EXT_SOURCES_BY_LOCALE: Record<
 > = {
   ru: MERMAID_EXT_SAMPLES_RU,
   en: MERMAID_EXT_SAMPLES_EN,
+  ...MERMAID_EXT_EXTRA,
 };
 
 function isHandcraftedMermaidSampleId(
@@ -228,7 +239,7 @@ function buildMermaidSampleSource(id: MermaidSampleId, locale: AppLocale): strin
 }
 
 const ALL_MERMAID_SAMPLE_SOURCES = new Set<string>();
-for (const locale of ["ru", "en"] as AppLocale[]) {
+for (const locale of SUPPORTED_LOCALES) {
   for (const id of MERMAID_SAMPLE_IDS) {
     ALL_MERMAID_SAMPLE_SOURCES.add(buildMermaidSampleSource(id, locale));
   }

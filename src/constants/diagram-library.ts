@@ -303,7 +303,19 @@ export const SECTION_ACCESS_PERMISSIONS = [
 export type SectionAccessPermission =
   (typeof SECTION_ACCESS_PERMISSIONS)[number];
 
-export const CONTENT_LOCALES = ["", "ru", "en", "de", "fr", "es", "zh"] as const;
+export const CONTENT_LOCALES = [
+  "",
+  "ru",
+  "en",
+  "de",
+  "fr",
+  "es",
+  "pt",
+  "zh",
+  "ja",
+  "hi",
+  "ar",
+] as const;
 export type ContentLocale = (typeof CONTENT_LOCALES)[number];
 
 export const RATING_COMMENT_STATUSES = [

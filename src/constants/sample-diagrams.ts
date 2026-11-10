@@ -1,4 +1,4 @@
-import type { AppLocale } from "@/constants/i18n";
+import { SUPPORTED_LOCALES, type AppLocale } from "@/constants/i18n";
 import {
   DIAGRAM_FORMATS,
   isDiagramFormat,
@@ -129,7 +129,7 @@ export function findAnySampleSelection(
 export function findAnySampleSelectionAnyLocale(
   source: string,
 ): SampleSelection | null {
-  for (const locale of ["ru", "en"] as AppLocale[]) {
+  for (const locale of SUPPORTED_LOCALES) {
     const selection = findAnySampleSelection(source, locale);
     if (selection) {
       return selection;

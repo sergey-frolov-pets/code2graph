@@ -1,0 +1,152 @@
+export const wizardGalleryMessages = {
+  "llm.wizard.gallery.heading": "Escolha um exemplo",
+  "llm.wizard.gallery.searchLabel": "Pesquisar no texto do exemplo",
+  "llm.wizard.gallery.searchPlaceholder": "Texto",
+  "llm.wizard.gallery.reset": "Redefinir",
+  "llm.wizard.gallery.empty": "Nenhum exemplo corresponde a estas condições",
+  "llm.wizard.gallery.cloudLabel": "Tags do exemplo",
+  "llm.wizard.gallery.expandTags": "Tags ({count})",
+  "llm.wizard.gallery.collapseTags": "Recolher tags",
+  "llm.wizard.gallery.gridLabel": "Miniaturas dos exemplos",
+  "llm.wizard.gallery.details": "Detalhes",
+  "llm.wizard.gallery.actionsLabel": "O que fazer com este exemplo",
+  "llm.wizard.gallery.cardLabel": "Cartão do exemplo",
+  "llm.wizard.gallery.domainsLabel": "Onde é usado",
+  "llm.wizard.gallery.tagsLabel": "Tags",
+  "llm.wizard.gallery.composedTitle": "{type} · {language}",
+  "llm.wizard.gallery.prompt":
+    "Desenhe “{title}”. Linguagem: {language}. Tipo de diagrama: {type}. Use para: {domains}. {description} Mantenha estas configurações do exemplo: {settings}.",
+  "llm.wizard.gallery.promptPlain":
+    "Desenhe “{title}”. Linguagem: {language}. Tipo de diagrama: {type}. Use para: {domains}. {description}",
+  "llm.wizard.gallery.axis.language": "Linguagem",
+  "llm.wizard.gallery.axis.diagramType": "Tipo de diagrama",
+  "llm.wizard.gallery.axis.chartFamily": "Forma",
+  "llm.wizard.gallery.axis.domain": "Domínio",
+  "llm.wizard.gallery.axis.setting": "Configuração",
+  "llm.wizard.gallery.tag.chartFamily.structure": "Estrutura",
+  "llm.wizard.gallery.tag.chartFamily.behavior": "Comportamento",
+  "llm.wizard.gallery.tag.chartFamily.chart": "Gráfico",
+  "llm.wizard.gallery.tag.chartFamily.ui": "Interface",
+  "llm.wizard.gallery.tag.domain.architecture": "Arquitetura",
+  "llm.wizard.gallery.tag.domain.businessProcess": "Processo de negócio",
+  "llm.wizard.gallery.tag.domain.project": "Projeto e cronograma",
+  "llm.wizard.gallery.tag.domain.data": "Dados",
+  "llm.wizard.gallery.tag.domain.software": "Projeto de software",
+  "llm.wizard.gallery.tag.domain.ux": "UX e jornadas",
+  "llm.wizard.gallery.tag.domain.organization": "Organização",
+  "llm.wizard.gallery.tag.domain.analytics": "Análise",
+  "llm.wizard.gallery.tag.domain.product": "Produto",
+  "llm.wizard.gallery.tag.setting.break": "Quebra de eixo",
+  "llm.wizard.gallery.tag.setting.color": "Cor",
+  "llm.wizard.gallery.tag.setting.mono": "Monocromático",
+  "llm.wizard.gallery.tag.setting.labels": "Rótulos",
+  "llm.wizard.gallery.tag.setting.thresholds": "Limiares",
+  "llm.wizard.gallery.tag.setting.direction-tb": "De cima para baixo",
+  "llm.wizard.gallery.tag.setting.direction-lr": "Da esquerda para a direita",
+  "llm.wizard.gallery.tag.setting.swimlane": "Raias",
+  "llm.wizard.gallery.tag.setting.noLines": "Sem linhas conectoras",
+  "llm.wizard.gallery.tag.setting.rotate90": "Girado 90°",
+  "llm.wizard.gallery.tag.setting.stacked": "Empilhado",
+  "llm.wizard.gallery.tag.setting.monoInvert": "Mono invertido",
+  "llm.wizard.gallery.tag.setting.line": "Linha",
+  "llm.wizard.gallery.tag.setting.cagr": "CAGR",
+  "llm.wizard.gallery.tag.diagramType.waterfall": "Cascata",
+  "llm.wizard.gallery.tag.diagramType.bubble": "Gráfico de bolhas",
+  "llm.wizard.gallery.tag.diagramType.heatmap": "Mapa de calor",
+  "llm.wizard.gallery.tag.diagramType.orgchart": "Organograma",
+  "llm.wizard.gallery.tag.diagramType.ev": "Valor agregado",
+  "llm.wizard.gallery.tag.diagramType.boxplot": "Gráfico de caixa",
+  "llm.wizard.gallery.tag.diagramType.treemap": "Mapa de árvore",
+  "llm.wizard.gallery.tag.diagramType.radar": "Gráfico de radar",
+  "llm.wizard.gallery.tag.diagramType.voronoi": "Diagrama de Voronoi",
+  "llm.wizard.gallery.tag.diagramType.clustered": "Gráfico de séries",
+  "llm.wizard.gallery.tag.diagramType.decision": "Decisão",
+  "llm.wizard.gallery.desc.bubble": "Pontos dimensionados por um terceiro valor em dois eixos.",
+  "llm.wizard.gallery.desc.heatmap": "Uma matriz colorida pelo valor.",
+  "llm.wizard.gallery.desc.orgchart": "Pessoas e equipes em uma árvore de subordinação.",
+  "llm.wizard.gallery.desc.ev": "Valor planejado, valor agregado e custo real.",
+  "llm.wizard.gallery.desc.boxplot": "Distribuição por quartis, mediana, bigodes e discrepantes.",
+  "llm.wizard.gallery.desc.treemap": "Retângulos aninhados com tamanho proporcional aos pesos numéricos.",
+  "llm.wizard.gallery.desc.radar": "Compara várias séries em eixos radiais a partir de um centro comum.",
+  "llm.wizard.gallery.desc.voronoi": "Divide um plano em células de cobertura do vizinho mais próximo.",
+  "llm.wizard.gallery.desc.clustered": "Barras agrupadas de várias séries comparadas entre categorias.",
+  "llm.wizard.gallery.desc.decision": "Um fluxo que se ramifica em uma decisão.",
+  "llm.wizard.gallery.example.mermaid.waterfall.title": "Cascata",
+  "llm.wizard.gallery.example.mermaid.waterfall.description":
+    "Total acumulado desenhado como degraus de uma coluna para a seguinte.",
+  "llm.wizard.gallery.example.mermaid.waterfallMono.title": "Cascata monocromática",
+  "llm.wizard.gallery.example.mermaid.waterfallMono.description":
+    "Os mesmos degraus da cascata em uma única cor.",
+  "llm.wizard.gallery.example.mermaid.waterfallBreak.title": "Cascata com quebra de eixo",
+  "llm.wizard.gallery.example.mermaid.waterfallBreak.description":
+    "O eixo de valores tem uma quebra para degraus pequenos e grandes continuarem legíveis.",
+  "llm.wizard.gallery.example.mermaid.waterfallMulti.title": "Cascata de várias séries",
+  "llm.wizard.gallery.example.mermaid.waterfallMulti.description":
+    "Várias séries coloridas em uma única cascata.",
+  "llm.wizard.gallery.example.mermaid.waterfallLabels.title": "Cascata com rótulos",
+  "llm.wizard.gallery.example.mermaid.waterfallLabels.description":
+    "Os rótulos de valor ficam sobre as colunas da cascata.",
+  "llm.wizard.gallery.example.mermaid.waterfallNoLines.title": "Cascata sem conectores",
+  "llm.wizard.gallery.example.mermaid.waterfallNoLines.description":
+    "Colunas da cascata sem linhas entre os degraus.",
+  "llm.wizard.gallery.example.mermaid.waterfallThresholds.title": "Cascata com limiares",
+  "llm.wizard.gallery.example.mermaid.waterfallThresholds.description":
+    "Linhas de limiar desenhadas sobre a cascata.",
+  "llm.wizard.gallery.example.mermaid.clustered.title": "Gráfico de séries",
+  "llm.wizard.gallery.example.mermaid.clustered.description":
+    "Barras verticais agrupadas comparando várias séries entre categorias.",
+  "llm.wizard.gallery.example.mermaid.clusteredRotated.title":
+    "Gráfico de séries (girado 90°)",
+  "llm.wizard.gallery.example.mermaid.clusteredRotated.description":
+    "Barras horizontais agrupadas giradas em 90 graus (rotate 90).",
+  "llm.wizard.gallery.example.mermaid.clusteredStacked.title": "Gráfico de barras empilhadas",
+  "llm.wizard.gallery.example.mermaid.clusteredStacked.description":
+    "Séries empilhadas em uma coluna: os positivos crescem para cima a partir do zero, os negativos crescem para baixo.",
+  "llm.wizard.gallery.example.mermaid.clusteredMono.title": "Barras de série monocromáticas",
+  "llm.wizard.gallery.example.mermaid.clusteredMono.description":
+    "As mesmas barras em tons de cinza para impressão e documentos sem cor.",
+  "llm.wizard.gallery.example.mermaid.clusteredMonoInvert.title": "Barras de série em mono invertido",
+  "llm.wizard.gallery.example.mermaid.clusteredMonoInvert.description":
+    "Barras cinza-claras em uma tela escura para temas escuros.",
+  "llm.wizard.gallery.example.mermaid.seriesLines.title": "Gráfico de séries — linhas",
+  "llm.wizard.gallery.example.mermaid.seriesLines.description":
+    "Linhas sobre as barras: solid, dash, dot e dash-dot, cor e largura personalizadas, e uma categoria pulada por uma posição vazia, \"-\" ou null.",
+  "llm.wizard.gallery.example.mermaid.seriesCagr.title": "Gráfico de séries — CAGR",
+  "llm.wizard.gallery.example.mermaid.seriesCagr.description":
+    "Uma seta de CAGR da primeira barra da série até a última.",
+  "llm.wizard.gallery.example.mermaid.seriesCagrRanges.title": "Gráfico de séries — faixas de CAGR",
+  "llm.wizard.gallery.example.mermaid.seriesCagrRanges.description":
+    "Opções diferentes de CAGR nas faixas 1–2, 2–3, 3–5, 5–6, 6–7 e 8–9: format, prefix e label.",
+  "llm.wizard.gallery.example.mermaid.seriesBreak.title": "Gráfico de séries — quebra de eixo",
+  "llm.wizard.gallery.example.mermaid.seriesBreak.description":
+    "Um trecho do eixo de valores é recortado, e as barras que o cruzam são desenhadas com um zigue-zague.",
+  "llm.wizard.gallery.example.mermaid.seriesThresholds.title": "Gráfico de séries — linhas horizontais",
+  "llm.wizard.gallery.example.mermaid.seriesThresholds.description":
+    "Linhas de plano, meta e limiar desenhadas sobre as barras.",
+  "llm.wizard.gallery.example.mermaid.seriesUnnamed.title": "Gráfico de séries — sem nomes",
+  "llm.wizard.gallery.example.mermaid.seriesUnnamed.description":
+    "Barras e linhas sem nomes: sem entradas na legenda e sem legendas nas linhas.",
+  "llm.wizard.gallery.example.wiremark.login.title": "Tela de entrada",
+  "llm.wizard.gallery.example.wiremark.login.description":
+    "Um wireframe de entrada com campos, abas e uma ação principal.",
+  "llm.wizard.gallery.example.wiremark.dashboard.title": "Tela de painel",
+  "llm.wizard.gallery.example.wiremark.dashboard.description":
+    "Um wireframe de painel com blocos de resumo.",
+  "llm.wizard.gallery.example.wiremark.form.title": "Tela de formulário",
+  "llm.wizard.gallery.example.wiremark.form.description":
+    "Um wireframe de formulário com campos rotulados.",
+  "llm.wizard.gallery.example.wiremark.settings.title": "Tela de configurações",
+  "llm.wizard.gallery.example.wiremark.settings.description":
+    "Um wireframe de uma tela de configurações.",
+  "llm.wizard.gallery.example.wiremark.flow.title": "Tela de fluxo",
+  "llm.wizard.gallery.example.wiremark.flow.description":
+    "Um wireframe que percorre um cenário curto.",
+  "llm.wizard.gallery.example.wiremark.product.title": "Tela de produto",
+  "llm.wizard.gallery.example.wiremark.product.description":
+    "Um wireframe de uma ficha de produto.",
+  "llm.wizard.gallery.action.editor": "Abrir no editor",
+  "llm.wizard.gallery.action.builder": "Criar passo a passo",
+  "llm.wizard.gallery.action.enlarge": "Ampliar",
+  "llm.wizard.gallery.action.llm": "Criar com LLM",
+  "llm.wizard.gallery.zoomLabel": "Diagrama no tamanho natural",
+} as const;
