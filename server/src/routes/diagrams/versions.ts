@@ -14,6 +14,7 @@ import {
   listDiagramVersions,
   restoreDiagramVersion,
 } from "../../services/diagram-versions-service.js";
+import { versionListLimit } from "../../billing/limits.js";
 import type { DiagramsRouter } from "./types.js";
 
 export function registerDiagramVersionRoutes(router: DiagramsRouter): void {
@@ -36,13 +37,15 @@ export function registerDiagramVersionRoutes(router: DiagramsRouter): void {
     }
 
     const rows = listDiagramVersions(database, diagramId);
+    const versionCap = versionListLimit(database, contextRow.row.owner_id);
+    const visibleRows = versionCap === null ? rows : rows.slice(0, versionCap);
     const usernameMap = getUsernameMap(
       database,
-      rows.map((row) => row.author_id),
+      visibleRows.map((row) => row.author_id),
     );
 
     return context.json({
-      versions: rows.map((row) =>
+      versions: visibleRows.map((row) =>
         mapDiagramVersionDto(row, usernameMap.get(row.author_id)),
       ),
     });
@@ -90,6 +93,22 @@ export function registerDiagramVersionRoutes(router: DiagramsRouter): void {
       source,
       body.comment ?? "",
     );
+
+    const versionCap = versionListLimit(database, contextRow.row.owner_id);
+    if (versionCap !== null) {
+      database
+        .prepare(
+          `DELETE FROM diagram_versions
+           WHERE diagram_id = ?
+             AND id NOT IN (
+               SELECT id FROM diagram_versions
+               WHERE diagram_id = ?
+               ORDER BY version_number DESC
+               LIMIT ?
+             )`,
+        )
+        .run(diagramId, diagramId, versionCap);
+    }
 
     return context.json(
       {

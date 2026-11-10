@@ -3,6 +3,7 @@ import type { AuthVariables } from "../auth/context.js";
 import { requireAuthenticatedUser } from "../auth.js";
 import { isAdmin } from "../authz.js";
 import { getDb } from "../db.js";
+import { userHasCloudAccess } from "../billing/service.js";
 import {
   canManageSubscription,
   hasSubscriptionTargets,
@@ -98,6 +99,10 @@ subscriptionsRouter.post("/", async (context) => {
   const user = requireAuthenticatedUser(context);
   if (user instanceof Response) {
     return user;
+  }
+
+  if (!userHasCloudAccess(getDb(), user.id) && !isAdmin(user)) {
+    return context.json({ error: "Наборы библиотеки входят в пакет Cloud" }, 402);
   }
 
   const body = await context.req.json<{

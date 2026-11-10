@@ -109,6 +109,11 @@ export const REGISTRATION_ENABLED =
 
 export const AGENT_API_TOKEN = process.env.AGENT_API_TOKEN?.trim() || undefined;
 
+export const LAVA_API_KEY = process.env.LAVA_API_KEY?.trim() || undefined;
+export const LAVA_WEBHOOK_KEY = process.env.LAVA_WEBHOOK_KEY?.trim() || undefined;
+export const BILLING_PUBLIC_BASE_URL =
+  process.env.BILLING_PUBLIC_BASE_URL?.trim() || "https://www.code2graph.ru";
+
 /**
  * The agent API stays closed unless a token is configured. Opening it to the
  * public internet requires an explicit opt-in flag.

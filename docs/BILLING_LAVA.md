@@ -1,6 +1,6 @@
 # Платные пакеты Code2Graph через lava.top
 
-Концепция монетизации hosted-версии [code2graph.ru](https://code2graph.ru). Это проект документа: API, кабинет и продукты в lava в этом шаге не реализуются.
+Концепция монетизации hosted-версии [code2graph.ru](https://code2graph.ru). Серверная часть живёт в `server/src/billing/`, HTTP — в `server/src/routes/billing.ts`, `billing-admin.ts` и `billing-webhook.ts`. Кабинет оператора — отдельное приложение `apps/billing-admin`.
 
 Таблицы `subscriptions` и `user_subscriptions` в `server/src/migrations/schema-migrations.ts` выдают доступ к разделам библиотеки. Домен оплаты называется billing и эти таблицы не переиспользует.
 

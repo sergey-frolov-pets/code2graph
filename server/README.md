@@ -104,3 +104,15 @@ Body:
 **Настройки → AI / LLM:** провайдер `Google Gemini (без ключа)` + consent.
 
 Ключи BYOK пользователя **не** отправляются на этот сервер — только free_builtin через proxy.
+
+## Оплата
+
+Пакеты Cloud, AI, токены, Team и Enterprise описаны в `docs/BILLING_LAVA.md`.
+
+- `GET /api/billing/me` — свой пакет, лимиты и остаток токенов.
+- `POST /api/billing/checkout` — счёт lava. Email уходит в lava и не сохраняется.
+- `POST /api/billing/lava/webhook` — события lava, заголовок `X-Api-Key`.
+- `/api/billing-admin/*` — кабинет оператора, только роль `admin`.
+
+Приложение кабинета: `apps/billing-admin` (`npm ci && npm run dev` в этой папке, порт 5174). Сборка кладётся в nginx location `/billing/`.
+
