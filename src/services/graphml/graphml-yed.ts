@@ -4,12 +4,33 @@ import {
   DIRECTED_EDGE_FLAG,
   DOTTED_STYLE,
   HIDDEN_FLAG,
+  TABLE_LANE_ALT_PROPERTY,
+  TABLE_LANE_ALTERNATING,
+  TABLE_LANE_MAIN,
+  TABLE_LANE_MAIN_PROPERTY,
   type GraphmlEdgeLabelAnchor,
   type GraphmlEdgeLabelBox,
   type GraphmlGeometry,
+  type GraphmlLane,
   type GraphmlNodeShape,
   type PolyPoint,
 } from "@/services/graphml/graphml-types";
+
+const BPMN_EVENT = "com.yworks.bpmn.Event";
+const BPMN_GATEWAY = "com.yworks.bpmn.Gateway";
+const BPMN_ARTIFACT = "com.yworks.bpmn.Artifact";
+const SBGN_UNIT_OF_INFORMATION = "com.yworks.sbgn.UnitOfInformation";
+const SHADOW_SUFFIX = ".withShadow";
+const REALIZER_TAGS = [
+  "GenericNode",
+  "GenericGroupNode",
+  "GroupNode",
+  "ShapeNode",
+  "TableNode",
+  "UMLNoteNode",
+  "ImageNode",
+  "SVGNode",
+] as const;
 
 const FLOWCHART_SHAPES: Record<string, GraphmlNodeShape> = {
   "com.yworks.flowchart.start1": "ellipse",
@@ -43,6 +64,8 @@ export interface YedNodeGraphics {
   stroke?: string;
   dashed: boolean;
   geometry?: GraphmlGeometry;
+  lanes?: GraphmlLane[];
+  headerHeight?: number;
 }
 
 export interface YedEdgeGraphics {
@@ -76,6 +99,12 @@ function descendantsNamed(root: Element, name: string): Element[] {
 
 function firstDescendant(root: Element, name: string): Element | undefined {
   return descendantsNamed(root, name)[0];
+}
+
+function childByName(element: Element, name: string): Element | undefined {
+  return Array.from(element.children).find(
+    (child) => localName(child.tagName) === name,
+  );
 }
 
 function readNumber(value: string | null): number | undefined {
@@ -142,22 +171,161 @@ function isDashedStroke(type: string | null): boolean {
   return type === DASHED_STYLE || type === DOTTED_STYLE;
 }
 
-function readShape(graphic: Element, tagName: string): GraphmlNodeShape {
-  if (tagName === "GenericNode") {
-    const configuration = graphic.getAttribute("configuration") ?? "";
-    return FLOWCHART_SHAPES[configuration] ?? "rectangle";
+function genericConfigurationShape(configuration: string): GraphmlNodeShape {
+  const flowchart = FLOWCHART_SHAPES[configuration];
+  if (flowchart) {
+    return flowchart;
   }
 
-  const shape = firstDescendant(graphic, "Shape");
-  const type = shape?.getAttribute("type") ?? "";
-  return SHAPE_NODE_SHAPES[type] ?? "rectangle";
+  const plain = configuration.endsWith(SHADOW_SUFFIX)
+    ? configuration.slice(0, -SHADOW_SUFFIX.length)
+    : configuration;
+  if (plain === BPMN_EVENT) {
+    return "ellipse";
+  }
+  if (plain === BPMN_GATEWAY) {
+    return "diamond";
+  }
+  if (plain === BPMN_ARTIFACT) {
+    return "note";
+  }
+  if (plain === SBGN_UNIT_OF_INFORMATION) {
+    return "rectangle";
+  }
+
+  return "rectangle";
+}
+
+function realizerShape(graphic: Element): GraphmlNodeShape {
+  const tag = localName(graphic.tagName);
+  if (tag === "GenericNode" || tag === "GenericGroupNode") {
+    return genericConfigurationShape(graphic.getAttribute("configuration") ?? "");
+  }
+  if (tag === "UMLNoteNode") {
+    return "note";
+  }
+  if (tag === "ShapeNode" || tag === "GroupNode") {
+    const shape = firstDescendant(graphic, "Shape");
+    const type = shape?.getAttribute("type") ?? "";
+    return SHAPE_NODE_SHAPES[type] ?? "rectangle";
+  }
+
+  return "rectangle";
+}
+
+function activeRealizer(proxy: Element): Element | undefined {
+  const realizers = childByName(proxy, "Realizers");
+  const options = realizers ? Array.from(realizers.children) : [];
+  const first = options[0];
+  if (!realizers || !first) {
+    return undefined;
+  }
+
+  const active = readNumber(realizers.getAttribute("active")) ?? 0;
+  const index = Math.min(options.length - 1, Math.max(0, Math.trunc(active)));
+  return options[index] ?? first;
+}
+
+function findRealizer(data: Element): Element | undefined {
+  const proxy = childByName(data, "ProxyAutoBoundsNode")
+    ?? childByName(data, "ProxyShapeNode");
+  if (proxy) {
+    return activeRealizer(proxy);
+  }
+
+  for (const tag of REALIZER_TAGS) {
+    const found = childByName(data, tag);
+    if (found) {
+      return found;
+    }
+  }
+
+  return undefined;
+}
+
+function styleValue(graphic: Element, name: string): string | undefined {
+  for (const property of descendantsNamed(graphic, "Property")) {
+    if (property.getAttribute("name") === name) {
+      return property.getAttribute("value") ?? undefined;
+    }
+  }
+
+  return undefined;
+}
+
+function insetStart(element: Element | undefined, axis: "top" | "left"): number {
+  return readNumber(element?.getAttribute(axis) ?? null)
+    ?? readNumber(element?.getAttribute(`${axis}F`) ?? null)
+    ?? 0;
+}
+
+function rowLabel(graphic: Element, rowId: string): string | undefined {
+  if (!rowId) {
+    return undefined;
+  }
+
+  for (const label of descendantsNamed(graphic, "NodeLabel")) {
+    const parameter = descendantsNamed(label, "RowNodeLabelModelParameter")
+      .find((item) => item.getAttribute("id") === rowId);
+    if (!parameter) {
+      continue;
+    }
+
+    const text = directText(label);
+    if (text) {
+      return text;
+    }
+  }
+
+  return undefined;
+}
+
+function readTableLanes(
+  graphic: Element,
+  width: number,
+): { lanes: GraphmlLane[]; headerHeight: number } | undefined {
+  if (localName(graphic.tagName) !== "TableNode") {
+    return undefined;
+  }
+
+  const table = childByName(graphic, "Table");
+  if (!table) {
+    return undefined;
+  }
+
+  const headerHeight = insetStart(childByName(table, "Insets"), "top");
+  const labelBand = insetStart(childByName(table, "DefaultRowInsets"), "left");
+  const main = styleValue(graphic, TABLE_LANE_MAIN_PROPERTY) ?? TABLE_LANE_MAIN;
+  const alternating = styleValue(graphic, TABLE_LANE_ALT_PROPERTY) ?? TABLE_LANE_ALTERNATING;
+  const rows = descendantsNamed(table, "Row").filter(
+    (row) => localName(row.parentElement?.tagName ?? "") === "Rows",
+  );
+  let y = headerHeight;
+  const lanes: GraphmlLane[] = [];
+  for (const row of rows) {
+    const height = readNumber(row.getAttribute("height"));
+    if (height === undefined || height <= 0) {
+      continue;
+    }
+
+    lanes.push({
+      label: rowLabel(graphic, row.getAttribute("id") ?? ""),
+      x: 0,
+      y,
+      width,
+      height,
+      fill: lanes.length % 2 === 0 ? main : alternating,
+      labelBand,
+    });
+    y += height;
+  }
+
+  return { lanes, headerHeight };
 }
 
 export function readYedNodeGraphics(node: Element): YedNodeGraphics | undefined {
   for (const data of dataElements(node)) {
-    const generic = firstDescendant(data, "GenericNode");
-    const shapeNode = firstDescendant(data, "ShapeNode");
-    const graphic = generic ?? shapeNode;
+    const graphic = findRealizer(data);
     if (!graphic) {
       continue;
     }
@@ -165,15 +333,19 @@ export function readYedNodeGraphics(node: Element): YedNodeGraphics | undefined 
     const fill = firstDescendant(graphic, "Fill");
     const border = firstDescendant(graphic, "BorderStyle");
     const transparent = fill?.getAttribute("transparent") === DIRECTED_EDGE_FLAG;
+    const geometry = readGeometry(graphic);
+    const table = geometry ? readTableLanes(graphic, geometry.width) : undefined;
 
     return {
       label: visibleLabel(graphic, "NodeLabel"),
-      shape: readShape(graphic, generic ? "GenericNode" : "ShapeNode"),
+      shape: realizerShape(graphic),
       fill: transparent ? undefined : fill?.getAttribute("color") ?? undefined,
       fill2: transparent ? undefined : fill?.getAttribute("color2") ?? undefined,
       stroke: border?.getAttribute("color") ?? undefined,
       dashed: isDashedStroke(border?.getAttribute("type") ?? null),
-      geometry: readGeometry(graphic),
+      geometry,
+      lanes: table?.lanes,
+      headerHeight: table?.headerHeight,
     };
   }
 

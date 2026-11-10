@@ -7,7 +7,10 @@ import {
   HEX_BYTE_MAX,
   HEX_CHANNEL_BASE,
   HEIGHT_ATTR_NAME,
+  HEX_ALPHA_PATTERN,
   HEX_COLOR_PATTERN,
+  HEX_RGB_LENGTH,
+  TABLE_LANE_MAIN,
   LABEL_ATTR_NAMES,
   LIGHT_TEXT,
   LUMA_BLUE,
@@ -107,11 +110,17 @@ export function parseRankDirection(value: string | null | undefined): GraphmlRan
 }
 
 function readHexColor(value: string | undefined): string | undefined {
-  if (!value || !HEX_COLOR_PATTERN.test(value)) {
+  if (!value) {
     return undefined;
   }
 
-  const hex = value.toLowerCase();
+  const alpha = HEX_ALPHA_PATTERN.exec(value.trim());
+  const rgb = alpha ? `#${alpha[1].slice(0, HEX_RGB_LENGTH)}` : value.trim();
+  if (!HEX_COLOR_PATTERN.test(rgb)) {
+    return undefined;
+  }
+
+  const hex = rgb.toLowerCase();
   if (hex.length === 4) {
     return `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
   }
@@ -193,6 +202,20 @@ function isDirectedEdge(edge: Element, defaultDirected: boolean): boolean {
   return defaultDirected;
 }
 
+function absolutizeNestedGeometry(nodes: GraphmlNode[]): void {
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+  for (const node of nodes) {
+    const geometry = node.geometry;
+    const parent = node.parentId ? nodesById.get(node.parentId) : undefined;
+    if (!geometry || !parent?.geometry) {
+      continue;
+    }
+
+    geometry.x += parent.geometry.x;
+    geometry.y += parent.geometry.y;
+  }
+}
+
 function findChildGraph(node: Element): Element | undefined {
   return Array.from(node.children).find(
     (child) => localName(child.tagName) === "graph",
@@ -232,6 +255,11 @@ function collectGraph(
         geometry: yed?.geometry ?? geometryFromEntries(entries),
         parentId,
         isGroup: Boolean(nestedGraph),
+        lanes: yed?.lanes?.map((lane) => ({
+          ...lane,
+          fill: readHexColor(lane.fill) ?? TABLE_LANE_MAIN,
+        })),
+        headerHeight: yed?.headerHeight,
       });
 
       if (nestedGraph) {
@@ -305,6 +333,7 @@ export function parseGraphml(source: string): ParsedGraphml {
   const nodes: GraphmlNode[] = [];
   const edges: GraphmlEdge[] = [];
   collectGraph(graphElement, keyMap, nodes, edges);
+  absolutizeNestedGeometry(nodes);
 
   if (nodes.length === 0) {
     throw new LocalizedAppError("graphml.noNodes");

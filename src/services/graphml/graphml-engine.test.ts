@@ -6,8 +6,10 @@ import {
   getGraphmlSampleSource,
 } from "@/constants/graphml-sample-diagrams";
 import { parseGraphml, renderGraphmlToSvg } from "@/services/graphml/graphml-engine";
-import { NODE_LABEL_FONT_SIZE } from "@/services/graphml/graphml-types";
+import errorProcessGraphml from "@/services/graphml/fixtures/fix-error-img-v02.graphml?raw";
 import tccYedGraphml from "@/services/graphml/fixtures/tcc-yed.graphml?raw";
+import { layoutGraph } from "@/services/graphml/graphml-layout";
+import { NODE_LABEL_FONT_SIZE, type ParsedGraphml } from "@/services/graphml/graphml-types";
 
 const SAMPLE_GRAPHML = `<?xml version="1.0" encoding="UTF-8"?>
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
@@ -351,5 +353,66 @@ describe("graphml samples", () => {
 
     expect(svg).toContain('fill="#dbeafe"');
     expect(svg).toContain('fill="#0f172a"');
+  });
+
+  it("opens a yEd table with notes and a folded subprocess", async () => {
+    const graph = parseGraphml(errorProcessGraphml);
+    const table = graph.nodes.find((node) => node.id === "n0");
+    const start = graph.nodes.find((node) => node.id === "n0::n0");
+    const task = graph.nodes.find((node) => node.id === "n0::n1");
+    const gateway = graph.nodes.find((node) => node.id === "n0::n37");
+    const artifact = graph.nodes.find((node) => node.id === "n0::n33");
+    const subprocess = graph.nodes.find((node) => node.id === "n0::n32");
+    const note = graph.nodes.find((node) => node.id === "n0::n51");
+
+    expect(table?.lanes?.map((lane) => lane.label)).toEqual([
+      "CV4HSE User",
+      "CV4HSE Support engineer",
+    ]);
+    expect(start).toMatchObject({ shape: "ellipse" });
+    expect(start?.geometry?.y).toBeCloseTo((table?.geometry?.y ?? 0) + 13.915391156462476, 4);
+    expect(start?.geometry?.x).toBeCloseTo((table?.geometry?.x ?? 0) + 176.74690780936635, 4);
+    expect(task).toMatchObject({ shape: "rectangle", fill: "#ffffff", fill2: "#00ff00" });
+    expect(gateway?.shape).toBe("diamond");
+    expect(artifact?.shape).toBe("note");
+    expect(note?.shape).toBe("note");
+    expect(subprocess?.label).toContain("Retrain and update");
+    expect(subprocess?.label).toContain("models process");
+
+    const svg = await renderGraphmlToSvg(errorProcessGraphml);
+    expect(svg).toContain("CV4HSE User");
+    expect(svg).toContain("CV4HSE Support engineer");
+    expect(svg).toContain("Retrain and update");
+    expect(svg).toContain("models process");
+    expect(svg).toContain("TODO: Надо расписать");
+    expect(svg).toContain("rotate(-90");
+  });
+
+  it("skips an edge that ends on a group instead of ranking it", () => {
+    const graph: ParsedGraphml = {
+      direction: "TB",
+      nodes: [
+        {
+          id: "group",
+          label: "Group",
+          shape: "rectangle",
+          dashed: false,
+          isGroup: true,
+        },
+        {
+          id: "child",
+          label: "Child",
+          shape: "rectangle",
+          dashed: false,
+          isGroup: false,
+          parentId: "group",
+        },
+      ],
+      edges: [
+        { source: "child", target: "group", directed: true, dashed: false },
+      ],
+    };
+
+    expect(() => layoutGraph(graph)).not.toThrow();
   });
 });
