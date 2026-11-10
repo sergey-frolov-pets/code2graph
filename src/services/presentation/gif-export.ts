@@ -1,10 +1,16 @@
 import { GIFEncoder, applyPalette, quantize } from "gifenc";
 import { frameToPan } from "@/services/presentation/camera";
+import { overlayArtwork, paintArtwork } from "@/services/presentation/glyph-art";
 import {
+  blockArrowPath,
   lineArrowPath,
   overlayOutline,
+  overlayRotates,
+  positiveBox,
 } from "@/services/presentation/overlay-geometry";
 import {
+  PRESENTATION_FULL_CIRCLE,
+  PRESENTATION_HALF_CIRCLE,
   PRESENTATION_GIF_FALLBACK_BACKGROUND,
   PRESENTATION_GIF_MAX_DELAY_CS,
   PRESENTATION_GIF_PALETTE_SIZE,
@@ -180,11 +186,30 @@ function drawOverlay(
     return;
   }
 
-  const outline = overlayOutline(overlay, box);
-  if (outline) {
-    const path = new Path2D(outline);
+  const artwork = overlayArtwork(overlay);
+  if (artwork) {
+    paintArtwork(context, box, artwork, overlayRotates(overlay) ? overlay.rotation : 0);
+  } else if (overlay.shape === "arrow" && overlay.arrowForm === "shape") {
+    const placed = positiveBox(box);
+    const centerX = placed.x + placed.width / 2;
+    const centerY = placed.y + placed.height / 2;
+    context.save();
+    if (overlay.rotation % PRESENTATION_FULL_CIRCLE !== 0) {
+      context.translate(centerX, centerY);
+      context.rotate((overlay.rotation * Math.PI) / PRESENTATION_HALF_CIRCLE);
+      context.translate(-centerX, -centerY);
+    }
+    const path = new Path2D(blockArrowPath(box));
     context.fill(path);
     context.stroke(path);
+    context.restore();
+  } else {
+    const outline = overlayOutline(overlay, box);
+    if (outline) {
+      const path = new Path2D(outline);
+      context.fill(path);
+      context.stroke(path);
+    }
   }
 
   if (overlay.shape === "text" && overlay.text) {

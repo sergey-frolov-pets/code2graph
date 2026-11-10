@@ -71,7 +71,38 @@ describe("presentation codec", () => {
       cornerRadius: 0,
       arrowForm: "line",
       arrowDirection: "right",
+      rotation: 0,
+      mark: "warning",
     });
+  });
+
+  it("keeps an older downward shape arrow as a quarter turn", () => {
+    const document = sanitizePresentationDocument({
+      version: 1,
+      activeTrackId: "track",
+      tracks: [
+        {
+          id: "track",
+          name: "Tour",
+          viewpoints: [{ id: "view", anchor: { x: 0, y: 0 }, scale: 1, dwellMs: 1000 }],
+          transitions: [],
+          overlays: [
+            {
+              id: "arrow",
+              owner: { kind: "viewpoint", id: "view" },
+              shape: "arrow",
+              arrowForm: "shape",
+              arrowDirection: "down",
+              x: 0.1,
+              y: 0.2,
+              width: 0.3,
+              height: 0.1,
+            },
+          ],
+        },
+      ],
+    });
+    expect(document?.tracks[0]?.overlays[0]?.rotation).toBe(90);
   });
 
   it("returns null for a broken payload and still strips the line", () => {

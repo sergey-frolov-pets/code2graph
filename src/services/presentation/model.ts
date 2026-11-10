@@ -10,12 +10,15 @@ import {
   PRESENTATION_OVERLAY_WIDTH,
   PRESENTATION_SCHEMA_VERSION,
 } from "@/services/presentation/constants";
+import { snapRotation } from "@/services/presentation/overlay-geometry";
 import { PREVIEW_MIN_ZOOM } from "@/constants/preview-pan-zoom";
 import type {
   CameraFrame,
   NormPoint,
   OverlayOwner,
+  PresentationArrowDirection,
   PresentationDocument,
+  PresentationMark,
   PresentationOverlay,
   PresentationOverlayKind,
   PresentationPathKind,
@@ -29,6 +32,7 @@ import {
   PRESENTATION_ARROW_HEADS,
   PRESENTATION_ARROW_KINDS,
   PRESENTATION_BUBBLE_SHAPES,
+  PRESENTATION_MARKS,
   PRESENTATION_FONTS,
   PRESENTATION_LINE_STYLES,
   PRESENTATION_OVERLAY_KINDS,
@@ -141,6 +145,20 @@ function readTransition(value: unknown): PresentationTransition | null {
 
 const OVERLAY_COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
+const DIRECTION_ROTATION: Record<PresentationArrowDirection, number> = {
+  right: 0,
+  down: 90,
+  left: 180,
+  up: 270,
+};
+
+function readRotation(value: unknown, direction: PresentationArrowDirection): number {
+  if (isFiniteNumber(value)) {
+    return snapRotation(value);
+  }
+  return DIRECTION_ROTATION[direction];
+}
+
 function readCornerRadius(value: unknown): number {
   if (!isFiniteNumber(value)) {
     return 0;
@@ -185,6 +203,11 @@ function readOverlay(value: unknown): PresentationOverlay | null {
     arrowKind: oneOf(value.arrowKind, PRESENTATION_ARROW_KINDS, "straight"),
     arrowForm: oneOf(value.arrowForm, PRESENTATION_ARROW_FORMS, "line"),
     arrowDirection: oneOf(value.arrowDirection, PRESENTATION_ARROW_DIRECTIONS, "right"),
+    rotation: readRotation(
+      value.rotation,
+      oneOf(value.arrowDirection, PRESENTATION_ARROW_DIRECTIONS, "right"),
+    ),
+    mark: oneOf(value.mark, PRESENTATION_MARKS, "warning"),
     arrowHead: oneOf(value.arrowHead, PRESENTATION_ARROW_HEADS, "end"),
     stroke: readOverlayColor(value.stroke),
     fill: readOverlayColor(value.fill),
@@ -601,6 +624,7 @@ function distanceToSegment(point: NormPoint, start: NormPoint, end: NormPoint): 
 function defaultOverlay(
   shape: PresentationOverlayKind,
   owner: OverlayOwner,
+  mark: PresentationMark,
 ): PresentationOverlay {
   return {
     id: createPresentationId("overlay"),
@@ -617,6 +641,8 @@ function defaultOverlay(
     arrowKind: "straight",
     arrowForm: "line",
     arrowDirection: "right",
+    rotation: 0,
+    mark,
     arrowHead: "end",
     stroke: "",
     fill: "",
@@ -631,10 +657,11 @@ export function addOverlay(
   trackId: string,
   owner: OverlayOwner,
   shape: PresentationOverlayKind,
+  mark: PresentationMark = "warning",
 ): PresentationDocument {
   return mapTrack(document, trackId, (track) => ({
     ...track,
-    overlays: [...track.overlays, defaultOverlay(shape, owner)],
+    overlays: [...track.overlays, defaultOverlay(shape, owner, mark)],
   }));
 }
 
@@ -652,6 +679,7 @@ export function updateOverlay(
       }
       const next = { ...overlay, ...patch };
       next.cornerRadius = readCornerRadius(next.cornerRadius);
+      next.rotation = snapRotation(next.rotation);
       if (
         next.shape === "arrow"
         && next.arrowForm !== "line"

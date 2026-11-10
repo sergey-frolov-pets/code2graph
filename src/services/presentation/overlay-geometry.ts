@@ -1,6 +1,9 @@
-import { PRESENTATION_MIN_OVERLAY_SIZE } from "@/services/presentation/constants";
+import {
+  PRESENTATION_FULL_CIRCLE,
+  PRESENTATION_MIN_OVERLAY_SIZE,
+  PRESENTATION_ROTATION_STEP,
+} from "@/services/presentation/constants";
 import type {
-  PresentationArrowDirection,
   PresentationArrowKind,
   PresentationBubbleShape,
   PresentationOverlay,
@@ -260,31 +263,15 @@ export function calloutPath(
   return roundedRectOutline(placed.x, placed.y, placed.width, placed.height, radiusRatio, true);
 }
 
-function placeInBox(
-  nx: number,
-  ny: number,
-  box: OverlayBox,
-  direction: PresentationArrowDirection,
-): { x: number; y: number } {
+function placeInBox(nx: number, ny: number, box: OverlayBox): { x: number; y: number } {
   const placed = positiveBox(box);
-  let across = nx;
-  let down = ny;
-  if (direction === "left") {
-    across = 1 - nx;
-  } else if (direction === "down") {
-    across = 1 - ny;
-    down = nx;
-  } else if (direction === "up") {
-    across = ny;
-    down = 1 - nx;
-  }
   return {
-    x: placed.x + across * placed.width,
-    y: placed.y + down * placed.height,
+    x: placed.x + nx * placed.width,
+    y: placed.y + ny * placed.height,
   };
 }
 
-export function blockArrowPath(box: OverlayBox, direction: PresentationArrowDirection): string {
+export function blockArrowPath(box: OverlayBox): string {
   const head = 1 - BLOCK_ARROW_HEAD;
   const points = [
     [0, BLOCK_ARROW_SHAFT_TOP],
@@ -297,53 +284,13 @@ export function blockArrowPath(box: OverlayBox, direction: PresentationArrowDire
   ];
   const path = new PathBuilder();
   points.forEach(([nx, ny], index) => {
-    const point = placeInBox(nx, ny, box, direction);
+    const point = placeInBox(nx, ny, box);
     if (index === 0) {
       path.move(point.x, point.y);
       return;
     }
     path.line(point.x, point.y);
   });
-  path.close();
-  return path.toString();
-}
-
-/** Index finger points to the right of the unit box before the direction is applied. */
-const POINTER_HAND = [
-  { op: "M" as const, x: 0.1, y: 0.38 },
-  { op: "C" as const, x1: 0.1, y1: 0.28, x2: 0.18, y2: 0.24, x: 0.28, y: 0.28 },
-  { op: "L" as const, x: 0.4, y: 0.28 },
-  { op: "L" as const, x: 0.4, y: 0.16 },
-  { op: "C" as const, x1: 0.4, y1: 0.1, x2: 0.48, y2: 0.08, x: 0.54, y: 0.12 },
-  { op: "L" as const, x: 0.9, y: 0.12 },
-  { op: "C" as const, x1: 0.98, y1: 0.12, x2: 1, y2: 0.18, x: 0.98, y: 0.26 },
-  { op: "L" as const, x: 0.86, y: 0.34 },
-  { op: "L" as const, x: 0.52, y: 0.36 },
-  { op: "L" as const, x: 0.6, y: 0.5 },
-  { op: "C" as const, x1: 0.66, y1: 0.58, x2: 0.58, y2: 0.66, x: 0.48, y: 0.62 },
-  { op: "L" as const, x: 0.34, y: 0.54 },
-  { op: "L" as const, x: 0.28, y: 0.68 },
-  { op: "C" as const, x1: 0.24, y1: 0.78, x2: 0.12, y2: 0.74, x: 0.12, y: 0.62 },
-  { op: "L" as const, x: 0.12, y: 0.48 },
-  { op: "C" as const, x1: 0.08, y1: 0.46, x2: 0.08, y2: 0.42, x: 0.1, y: 0.38 },
-];
-
-export function pointerHandPath(box: OverlayBox, direction: PresentationArrowDirection): string {
-  const path = new PathBuilder();
-  for (const command of POINTER_HAND) {
-    if (command.op === "M") {
-      const point = placeInBox(command.x, command.y, box, direction);
-      path.move(point.x, point.y);
-    } else if (command.op === "L") {
-      const point = placeInBox(command.x, command.y, box, direction);
-      path.line(point.x, point.y);
-    } else {
-      const first = placeInBox(command.x1, command.y1, box, direction);
-      const second = placeInBox(command.x2, command.y2, box, direction);
-      const point = placeInBox(command.x, command.y, box, direction);
-      path.cubic(first.x, first.y, second.x, second.y, point.x, point.y);
-    }
-  }
   path.close();
   return path.toString();
 }
@@ -368,14 +315,27 @@ export function isLineArrow(overlay: PresentationOverlay): boolean {
   return overlay.shape === "arrow" && overlay.arrowForm === "line";
 }
 
+export function overlayRotates(overlay: PresentationOverlay): boolean {
+  return overlay.shape === "arrow" && overlay.arrowForm !== "line";
+}
+
+const ROTATION_TURNS = PRESENTATION_FULL_CIRCLE / PRESENTATION_ROTATION_STEP;
+
+export function snapRotation(value: number): number {
+  const turns = Math.round(value / PRESENTATION_ROTATION_STEP);
+  const wrapped = ((turns % ROTATION_TURNS) + ROTATION_TURNS) % ROTATION_TURNS;
+  return wrapped * PRESENTATION_ROTATION_STEP;
+}
+
+export function stepRotation(value: number, direction: -1 | 1): number {
+  return snapRotation(snapRotation(value) + direction * PRESENTATION_ROTATION_STEP);
+}
+
 /** One filled outline, or null when the overlay is only a stroke or plain text. */
 export function overlayOutline(overlay: PresentationOverlay, box: OverlayBox): string | null {
   if (overlay.shape === "arrow") {
     if (overlay.arrowForm === "shape") {
-      return blockArrowPath(box, overlay.arrowDirection);
-    }
-    if (overlay.arrowForm === "pointer") {
-      return pointerHandPath(box, overlay.arrowDirection);
+      return blockArrowPath(box);
     }
     return null;
   }

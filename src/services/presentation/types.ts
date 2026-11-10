@@ -12,6 +12,7 @@ export const PRESENTATION_OVERLAY_KINDS = [
   "ellipse",
   "text",
   "arrow",
+  "mark",
 ] as const;
 
 export type PresentationOverlayKind = (typeof PRESENTATION_OVERLAY_KINDS)[number];
@@ -31,6 +32,17 @@ export type PresentationArrowKind = (typeof PRESENTATION_ARROW_KINDS)[number];
 export const PRESENTATION_ARROW_FORMS = ["line", "shape", "pointer"] as const;
 
 export type PresentationArrowForm = (typeof PRESENTATION_ARROW_FORMS)[number];
+
+export const PRESENTATION_MARKS = [
+  "warning",
+  "stop",
+  "flag-red",
+  "flag-green",
+  "check",
+  "cross",
+] as const;
+
+export type PresentationMark = (typeof PRESENTATION_MARKS)[number];
 
 export const PRESENTATION_ARROW_DIRECTIONS = ["right", "left", "down", "up"] as const;
 
@@ -95,6 +107,9 @@ export interface PresentationOverlay {
   arrowKind: PresentationArrowKind;
   arrowForm: PresentationArrowForm;
   arrowDirection: PresentationArrowDirection;
+  /** Clockwise degrees, snapped to 45. Used by a shape arrow and the pointing hand. */
+  rotation: number;
+  mark: PresentationMark;
   arrowHead: PresentationArrowHead;
   /** Empty string keeps the theme color. */
   stroke: string;

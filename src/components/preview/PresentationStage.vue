@@ -7,11 +7,17 @@ import {
   PRESENTATION_RESIZE_HANDLE_COARSE,
 } from "@/services/presentation/constants";
 import {
+  artworkFitTransform,
+  overlayArtwork,
+  rotationTransform,
+} from "@/services/presentation/glyph-art";
+import {
   calloutTailLength,
   isLineArrow,
   lineArrowPath,
   overlayOutline,
   overlayResizeHandles,
+  overlayRotates,
   positiveBox,
   resizeOverlay,
 } from "@/services/presentation/overlay-geometry";
@@ -263,6 +269,22 @@ function outline(overlay: PresentationOverlay): string | null {
   return overlayOutline(overlay, screenBox(overlay));
 }
 
+function artworkOf(overlay: PresentationOverlay) {
+  return overlayArtwork(overlay);
+}
+
+function artworkFit(overlay: PresentationOverlay): string {
+  const artwork = overlayArtwork(overlay);
+  return artwork ? artworkFitTransform(screenBox(overlay), artwork) : "";
+}
+
+function rotationOf(overlay: PresentationOverlay): string | undefined {
+  if (!overlayRotates(overlay)) {
+    return undefined;
+  }
+  return rotationTransform(screenBox(overlay), overlay.rotation);
+}
+
 function arrowLine(overlay: PresentationOverlay): string {
   return lineArrowPath(screenBox(overlay), overlay.arrowKind);
 }
@@ -447,8 +469,37 @@ function overlayTextSize(overlay: PresentationOverlay): number {
         :height="selectionBox(overlay).height"
         rx="8"
       />
+      <g
+        v-if="artworkOf(overlay)"
+        class="presentation-artwork"
+        :transform="rotationOf(overlay)"
+      >
+        <g :transform="artworkFit(overlay)">
+          <g :transform="artworkOf(overlay)?.transform">
+            <path
+              v-for="(part, index) in artworkOf(overlay)?.parts"
+              :key="`${overlay.id}-art-${index}`"
+              :d="part.d"
+              :fill="part.fill"
+              :stroke="part.stroke"
+              :stroke-width="part.strokeWidth || undefined"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </g>
+        </g>
+      </g>
+      <g
+        v-else-if="outline(overlay) && overlayRotates(overlay)"
+        :transform="rotationOf(overlay)"
+      >
+        <path
+          class="presentation-shape"
+          :d="outline(overlay) ?? undefined"
+        />
+      </g>
       <path
-        v-if="outline(overlay)"
+        v-else-if="outline(overlay)"
         class="presentation-shape"
         :d="outline(overlay) ?? undefined"
       />
@@ -516,7 +567,8 @@ function overlayTextSize(overlay: PresentationOverlay): number {
 
 .presentation-stage:not(.is-editing) .presentation-shape,
 .presentation-stage:not(.is-editing) .presentation-arrow,
-.presentation-stage:not(.is-editing) .presentation-hit {
+.presentation-stage:not(.is-editing) .presentation-hit,
+.presentation-stage:not(.is-editing) .presentation-artwork {
   pointer-events: none;
 }
 
@@ -547,7 +599,8 @@ function overlayTextSize(overlay: PresentationOverlay): number {
 
 .presentation-stage.is-editing .presentation-shape,
 .presentation-stage.is-editing .presentation-arrow-hit,
-.presentation-stage.is-editing .presentation-hit {
+.presentation-stage.is-editing .presentation-hit,
+.presentation-stage.is-editing .presentation-artwork {
   cursor: move;
 }
 

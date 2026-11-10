@@ -34,6 +34,7 @@ import type {
   CameraFrame,
   NormPoint,
   PresentationDocument,
+  PresentationMark,
   PresentationOverlay,
   PresentationOverlayKind,
   PresentationPathKind,
@@ -357,7 +358,7 @@ export function usePresentationSession(options: {
     commit(setTransitionControls(document.value, track.id, transition.id, controls));
   }
 
-  function onAddOverlay(shape: PresentationOverlayKind): void {
+  function onAddOverlay(shape: PresentationOverlayKind, mark?: PresentationMark): void {
     const track = currentTrack.value;
     if (!track || !document.value) {
       return;
@@ -372,7 +373,7 @@ export function usePresentationSession(options: {
     if (!owner) {
       return;
     }
-    commit(addOverlay(document.value, track.id, owner, shape));
+    commit(addOverlay(document.value, track.id, owner, shape, mark));
     const created = currentTrack.value?.overlays.at(-1);
     selectedOverlayId.value = created?.id ?? null;
   }

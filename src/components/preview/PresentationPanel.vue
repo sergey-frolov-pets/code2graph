@@ -4,9 +4,10 @@ import IconButton from "@/components/IconButton.vue";
 import PresentationGlyph from "@/components/preview/PresentationGlyph.vue";
 import { presentationSessionKey } from "@/components/preview/presentation-session";
 import { durationMsToSeconds } from "@/services/presentation/model";
+import { stepRotation } from "@/services/presentation/overlay-geometry";
 import {
-  PRESENTATION_ARROW_DIRECTIONS,
   PRESENTATION_ARROW_FORMS,
+  PRESENTATION_MARKS,
   PRESENTATION_ARROW_HEADS,
   PRESENTATION_ARROW_KINDS,
   PRESENTATION_BUBBLE_SHAPES,
@@ -17,8 +18,8 @@ import {
 } from "@/services/presentation/types";
 import type { LocaleKey, TranslateFn } from "@/locales/types";
 import type {
-  PresentationArrowDirection,
   PresentationArrowForm,
+  PresentationMark,
   PresentationArrowHead,
   PresentationArrowKind,
   PresentationBubbleShape,
@@ -146,16 +147,20 @@ function arrowFormLabel(form: PresentationArrowForm): LocaleKey {
   }
 }
 
-function directionLabel(direction: PresentationArrowDirection): LocaleKey {
-  switch (direction) {
-    case "right":
-      return "presentation.direction.right";
-    case "left":
-      return "presentation.direction.left";
-    case "down":
-      return "presentation.direction.down";
-    case "up":
-      return "presentation.direction.up";
+function markLabel(mark: PresentationMark): LocaleKey {
+  switch (mark) {
+    case "warning":
+      return "presentation.mark.warning";
+    case "stop":
+      return "presentation.mark.stop";
+    case "flag-red":
+      return "presentation.mark.flagRed";
+    case "flag-green":
+      return "presentation.mark.flagGreen";
+    case "check":
+      return "presentation.mark.check";
+    case "cross":
+      return "presentation.mark.cross";
   }
 }
 
@@ -478,6 +483,14 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
             >
               <PresentationGlyph name="arrow" />
             </IconButton>
+            <IconButton
+              v-for="mark in PRESENTATION_MARKS"
+              :key="mark"
+              :label="t(markLabel(mark))"
+              @click="onAddOverlay('mark', mark)"
+            >
+              <PresentationGlyph :name="mark" />
+            </IconButton>
           </div>
         </section>
 
@@ -639,24 +652,21 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
                 </option>
               </select>
             </label>
-            <label
-              v-if="selectedOverlay.shape === 'arrow' && selectedOverlay.arrowForm !== 'line'"
-              class="presentation-field"
-            >
-              <span>{{ t("presentation.arrowDirection") }}</span>
-              <select
-                :value="selectedOverlay.arrowDirection"
-                @change="onChangeOverlay(selectedOverlay.id, { arrowDirection: ($event.target as HTMLSelectElement).value as typeof PRESENTATION_ARROW_DIRECTIONS[number] })"
+            <template v-if="selectedOverlay.shape === 'arrow' && selectedOverlay.arrowForm !== 'line'">
+              <IconButton
+                :label="t('presentation.rotateLeft')"
+                @click="onChangeOverlay(selectedOverlay.id, { rotation: stepRotation(selectedOverlay.rotation, -1) })"
               >
-                <option
-                  v-for="direction in PRESENTATION_ARROW_DIRECTIONS"
-                  :key="direction"
-                  :value="direction"
-                >
-                  {{ t(directionLabel(direction)) }}
-                </option>
-              </select>
-            </label>
+                <PresentationGlyph name="rotate-left" />
+              </IconButton>
+              <span class="presentation-dock__index">{{ selectedOverlay.rotation }}°</span>
+              <IconButton
+                :label="t('presentation.rotateRight')"
+                @click="onChangeOverlay(selectedOverlay.id, { rotation: stepRotation(selectedOverlay.rotation, 1) })"
+              >
+                <PresentationGlyph name="rotate-right" />
+              </IconButton>
+            </template>
             <label
               v-if="selectedOverlay.shape === 'arrow' && selectedOverlay.arrowForm === 'line'"
               class="presentation-field"
