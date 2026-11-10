@@ -111,13 +111,13 @@
   overflow: hidden;
 }
 
-.editor-panel:has(.toolbar-overflow__menu) {
-  overflow: visible;
-  position: relative;
-  z-index: 3;
+.editor-panel .panel-header {
+  align-items: flex-start;
 }
 
-.editor-panel .panel-header__toolbar:has(.toolbar-overflow__menu) {
+.editor-panel .panel-header__toolbar {
+  flex-wrap: wrap;
+  align-content: flex-start;
   overflow: visible;
 }
 
