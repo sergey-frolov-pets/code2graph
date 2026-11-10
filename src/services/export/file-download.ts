@@ -4,18 +4,10 @@ import {
   parseSvgSize,
   type ImageSize,
 } from "@/services/export/svg-geometry";
+import { loadSvgDocumentImage } from "@/services/export/svg-raster-source";
 import { LocalizedAppError } from "@/utils/localized-app-error";
 
 const PNG_MIME_TYPE = "image/png";
-
-function loadImage(url: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new LocalizedAppError("engine.svgLoadFailed"));
-    image.src = url;
-  });
-}
 
 export function downloadTextFile(
   content: string,
@@ -49,40 +41,31 @@ export async function svgToPngBlob(
   const { width, height } = size
     ? { width: clampImageSide(size.width), height: clampImageSide(size.height) }
     : natural;
-  const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
-  const objectUrl = URL.createObjectURL(svgBlob);
+  const image = await loadSvgDocumentImage(svg);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.ceil(width);
+  canvas.height = Math.ceil(height);
 
-  try {
-    const image = await loadImage(objectUrl);
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.ceil(width);
-    canvas.height = Math.ceil(height);
-
-    const context = canvas.getContext("2d");
-    if (!context) {
-      throw new LocalizedAppError("engine.canvasUnavailable");
-    }
-
-    if (!isTransparentBackground(backgroundColor)) {
-      context.fillStyle = backgroundColor;
-      context.fillRect(0, 0, canvas.width, canvas.height);
-    }
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-    const pngBlob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob((blob) => {
-        if (blob) {
-          resolve(blob);
-          return;
-        }
-        reject(new LocalizedAppError("engine.pngCreateFailed"));
-      }, PNG_MIME_TYPE);
-    });
-
-    return pngBlob;
-  } finally {
-    URL.revokeObjectURL(objectUrl);
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new LocalizedAppError("engine.canvasUnavailable");
   }
+
+  if (!isTransparentBackground(backgroundColor)) {
+    context.fillStyle = backgroundColor;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+        return;
+      }
+      reject(new LocalizedAppError("engine.pngCreateFailed"));
+    }, PNG_MIME_TYPE);
+  });
 }
 
 type ClipboardWrite = (items: ClipboardItem[]) => Promise<void>;
