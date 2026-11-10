@@ -45,7 +45,7 @@ const diagramFontStyle = ref(DEFAULT_DIAGRAM_FONT_STYLE);
 const applyingRemote = ref(false);
 const booted = ref(false);
 
-const { svg, error, isRendering, renderDiagram, bootEngine } = useDiagramRender({
+const { svg, error, isRendering, renderDiagram, renderOnlineOnce, bootEngine } = useDiagramRender({
   source,
   diagramFormat,
   layout,
@@ -86,7 +86,7 @@ async function applyRemoteState(state: DualScreenState): Promise<void> {
   source.value = state.source;
   diagramFormat.value = state.diagramFormat;
   layout.value = state.layout;
-  renderMode.value = state.renderMode;
+  renderMode.value = DEFAULT_RENDER_MODE;
   diagramDarkMode.value = state.diagramDarkMode;
   previewBackground.value = state.previewBackground;
   diagramTextColor.value = state.diagramTextColor;
@@ -148,11 +148,11 @@ const blockedMessage = computed(() =>
       v-model:diagram-font-weight="diagramFontWeight"
       v-model:diagram-font-style="diagramFontStyle"
       v-model:diagram-dark-mode="diagramDarkMode"
-      v-model:render-mode="renderMode"
       show-dual-screen
       :dual-screen-active="!editorGone"
       @toggle-dual-screen="stop"
       @render-now="renderDiagram"
+      @render-online="renderOnlineOnce"
       @export-svg="exportSvg"
       @export-png="exportPng"
     />

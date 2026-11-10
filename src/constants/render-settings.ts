@@ -37,3 +37,10 @@ export function isRenderMode(value: string): value is RenderMode {
 export function isOnlineRenderMode(mode: RenderMode): boolean {
   return mode === RENDER_MODES.online;
 }
+
+/** Хост, которому уходит исходник при разовой онлайн-генерации. */
+export function onlineRenderSiteLabel(probe: "plantuml" | "mermaid"): string {
+  const serverUrl =
+    probe === "plantuml" ? PLANTUML_ONLINE_SERVER_URL : MERMAID_ONLINE_SERVER_URL;
+  return new URL(serverUrl).hostname.replace(/^www\./, "");
+}

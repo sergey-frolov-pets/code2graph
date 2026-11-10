@@ -77,6 +77,7 @@ export interface AppShellContext {
   svg: Ref<string>;
   error: Ref<string>;
   isRendering: Ref<boolean>;
+  renderedOnlineSite: Ref<string>;
   isValidating: Ref<boolean>;
   syntaxResult: Ref<import("@/utils/plantuml-syntax").SyntaxCheckResult | null>;
   syntaxErrorLines: Ref<number[]>;
@@ -127,6 +128,7 @@ export interface AppShellContext {
   savePuml: () => Promise<void>;
   onVersionRestore: (source: string) => void;
   renderDiagram: () => Promise<void>;
+  renderOnlineOnce: () => Promise<void>;
   exportSvg: () => Promise<void>;
   exportPng: () => void;
   copyPng: () => Promise<boolean>;
@@ -236,7 +238,9 @@ export function useAppShell(): AppShellContext {
     svg,
     error,
     isRendering,
+    renderedOnlineSite,
     renderDiagram,
+    renderOnlineOnce,
     scheduleRender,
     bootEngine,
   } = useDiagramRender({
@@ -647,6 +651,7 @@ export function useAppShell(): AppShellContext {
     svg,
     error,
     isRendering,
+    renderedOnlineSite,
     isValidating,
     syntaxResult,
     syntaxErrorLines,
@@ -680,6 +685,7 @@ export function useAppShell(): AppShellContext {
     savePuml,
     onVersionRestore: onVersionRestoreWithHistory,
     renderDiagram,
+    renderOnlineOnce,
     exportSvg,
     exportPng,
     copyPng,
