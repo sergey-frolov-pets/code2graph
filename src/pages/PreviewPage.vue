@@ -140,6 +140,8 @@ const blockedMessage = computed(() =>
       :can-export="canExport"
       :copy-png="copyPng"
       :blocked-message="blockedMessage"
+      :source="source"
+      :diagram-format="diagramFormat"
       v-model:preview-background="previewBackground"
       v-model:text-color="diagramTextColor"
       v-model:diagram-font-family="diagramFontFamily"

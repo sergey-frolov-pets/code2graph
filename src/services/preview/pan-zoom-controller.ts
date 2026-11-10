@@ -1,7 +1,10 @@
+import type { CameraFrame } from "@/services/presentation/types";
 import {
+  applyCameraFrame,
   applyClamp,
   fitToView,
   measureImageSize,
+  readCameraFrame,
   syncFromMarkup,
   zoomIn,
   zoomOut,
@@ -68,6 +71,14 @@ export class PreviewPanZoomController {
 
   zoomOut(): void {
     zoomOut(this.state, this.deps);
+  }
+
+  setView(frame: CameraFrame): void {
+    applyCameraFrame(this.state, this.deps, frame);
+  }
+
+  readView(): CameraFrame {
+    return readCameraFrame(this.state, this.deps);
   }
 
   onWheel(event: WheelEvent): void {

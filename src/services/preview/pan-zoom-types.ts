@@ -13,6 +13,8 @@ export interface PreviewPanZoomDeps {
   getContent: () => HTMLElement | null;
   getSvgMarkup: () => string;
   onChange: (snapshot: PanZoomSnapshot) => void;
+  /** While a presentation is playing, pointer pan and wheel zoom stay idle. */
+  isInteractionLocked?: () => boolean;
 }
 
 export interface PanZoomMutableState {

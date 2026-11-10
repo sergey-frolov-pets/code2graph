@@ -14,6 +14,8 @@ import {
   type PanZoomMutableState,
   type PreviewPanZoomDeps,
 } from "@/services/preview/pan-zoom-types";
+import { frameToPan, panToFrame } from "@/services/presentation/camera";
+import type { CameraFrame } from "@/services/presentation/types";
 import { parseSvgSize } from "@/utils/export";
 
 const SCALE_EPSILON = PAN_ZOOM_SCALE_EPSILON;
@@ -179,4 +181,39 @@ export function zoomOut(
 ): void {
   const center = getViewportCenter(deps);
   zoomAt(state, deps, center.x, center.y, 1 / PREVIEW_ZOOM_STEP);
+}
+
+export function applyCameraFrame(
+  state: PanZoomMutableState,
+  deps: PreviewPanZoomDeps,
+  frame: CameraFrame,
+): void {
+  const viewport = deps.getViewport();
+  if (!viewport || state.imageWidth <= 0 || state.imageHeight <= 0) {
+    return;
+  }
+
+  const { width, height } = readViewportSize(viewport);
+  const placed = frameToPan(frame, state.imageWidth, state.imageHeight, width, height);
+  state.panX = placed.panX;
+  state.panY = placed.panY;
+  state.scale = placed.scale;
+  applyClamp(state, deps);
+}
+
+export function readCameraFrame(
+  state: PanZoomMutableState,
+  deps: PreviewPanZoomDeps,
+): CameraFrame {
+  const viewport = deps.getViewport();
+  const size = viewport ? readViewportSize(viewport) : { width: 0, height: 0 };
+  return panToFrame({
+    panX: state.panX,
+    panY: state.panY,
+    scale: state.scale,
+    imageWidth: state.imageWidth,
+    imageHeight: state.imageHeight,
+    viewportWidth: size.width,
+    viewportHeight: size.height,
+  });
 }

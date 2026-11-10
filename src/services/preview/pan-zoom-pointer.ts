@@ -42,7 +42,15 @@ export class PanZoomPointerController {
     notifyPanZoomChange(this.state, this.deps);
   }
 
+  private interactionLocked(): boolean {
+    return this.deps.isInteractionLocked?.() ?? false;
+  }
+
   onWheel(event: WheelEvent): void {
+    if (this.interactionLocked()) {
+      return;
+    }
+
     event.preventDefault();
     event.stopPropagation();
 
@@ -110,6 +118,10 @@ export class PanZoomPointerController {
   }
 
   onPointerDown(event: PointerEvent): void {
+    if (this.interactionLocked()) {
+      return;
+    }
+
     if (event.pointerType === "mouse" && event.button !== 0) {
       return;
     }
@@ -136,6 +148,13 @@ export class PanZoomPointerController {
   }
 
   onPointerMove(event: PointerEvent): void {
+    if (this.interactionLocked()) {
+      this.activePointers.clear();
+      this.state.isDragging = false;
+      this.state.isPinching = false;
+      return;
+    }
+
     const viewport = this.deps.getViewport();
     if (!viewport || !this.activePointers.has(event.pointerId)) {
       return;

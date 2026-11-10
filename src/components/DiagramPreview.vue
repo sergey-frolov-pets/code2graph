@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, provide, ref, toRef, watch } from "vue";
 import AppearanceModal from "@/components/AppearanceModal.vue";
 import DiagramToolbar from "@/components/DiagramToolbar.vue";
+import PresentationPanel from "@/components/preview/PresentationPanel.vue";
+import PresentationStage from "@/components/preview/PresentationStage.vue";
+import { presentationSessionKey } from "@/components/preview/presentation-session";
 import LoadingState from "@/components/ui/LoadingState.vue";
 import PanelDualScreenButton from "@/components/PanelDualScreenButton.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
 import { useLocale } from "@/composables/useLocale";
 import { useImageSize } from "@/composables/useImageSize";
+import { usePresentationSession } from "@/composables/usePresentationSession";
 import { usePreviewPanZoom } from "@/composables/usePreviewPanZoom";
 import { isTransparentPreviewBg } from "@/constants/editor-settings";
+import type { DiagramFormat } from "@/constants/diagram-format-ids";
 import { sanitizeSvgForPreview } from "@/utils/export";
 import type { RenderMode } from "@/constants/render-settings";
 
@@ -34,6 +39,11 @@ const props = defineProps<{
   dualScreenActive?: boolean;
   /** Заменяет холст, когда вкладка кода больше не на связи. */
   blockedMessage?: string;
+  /** Исходник диаграммы. Без него панель презентации скрыта. */
+  source?: string;
+  diagramFormat?: DiagramFormat;
+  /** Правка трека доступна только редактору, который может записать исходник. */
+  canEditPresentation?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -49,6 +59,7 @@ const emit = defineEmits<{
   "update:renderMode": [value: RenderMode];
   "update:imageSize": [value: { width: number; height: number } | null];
   toggleDualScreen: [];
+  "update:source": [value: string];
 }>();
 
 const { t } = useLocale();
@@ -76,13 +87,28 @@ const {
   isDragging,
   isPinching,
   zoomPercent,
+  snapshot,
   zoomIn,
   zoomOut,
+  setCameraFrame,
+  readCameraFrame,
+  setInteractionLocked,
   onPointerDown,
   onPointerMove,
   onPointerUp,
   onPointerCancel,
 } = usePreviewPanZoom(viewportRef, contentRef, previewMarkup);
+
+const presentation = usePresentationSession({
+  source: toRef(props, "source"),
+  format: toRef(props, "diagramFormat"),
+  canEdit: computed(() => props.canEditPresentation === true),
+  readFrame: () => readCameraFrame(),
+  setFrame: setCameraFrame,
+  setLocked: setInteractionLocked,
+  onSource: (value) => emit("update:source", value),
+});
+provide(presentationSessionKey, presentation);
 
 function toggleFullscreen(): void {
   isFullscreen.value = !isFullscreen.value;
@@ -132,8 +158,13 @@ watch(
 <template>
   <section
     class="panel preview-panel"
-    :class="{ 'is-fullscreen': isFullscreen }"
+    :class="{
+      'is-fullscreen': isFullscreen,
+      'is-presentation-view': presentation.dimChrome.value,
+      'is-chrome-revealed': presentation.chromeRevealed.value,
+    }"
     :aria-label="t('app.previewRegion')"
+    @pointerdown="presentation.revealChrome"
   >
     <header class="panel-header">
       <h2
@@ -225,7 +256,25 @@ watch(
             :style="contentStyle"
             v-html="previewMarkup"
           />
+          <PresentationStage
+            v-if="presentation.enabled.value"
+            :snapshot="snapshot"
+            :track="presentation.currentTrack.value"
+            :editing="presentation.mode.value === 'edit' && props.canEditPresentation === true"
+            :show-overlays="presentation.document.value?.showOverlays !== false"
+            :viewpoint-index="presentation.playback.viewpointIndex.value"
+            :phase="presentation.playback.phase.value"
+            :travel-origin="presentation.playback.travelOrigin.value"
+            :selected-overlay-id="presentation.selectedOverlayId.value"
+            :add-point-armed="presentation.addPointArmed.value"
+            @insert-point="presentation.onInsertPoint"
+            @move-point="presentation.onMovePoint"
+            @move-control="presentation.onMoveControl"
+            @select-overlay="presentation.selectedOverlayId.value = $event"
+            @change-overlay="presentation.onChangeOverlay"
+          />
         </div>
+        <PresentationPanel :t="t" />
         <div
           v-if="isRendering"
           class="preview-loading-overlay"
@@ -290,5 +339,20 @@ watch(
 
 .preview-content {
   will-change: transform;
+}
+
+.preview-panel.is-presentation-view > .panel-header,
+.preview-panel.is-presentation-view :deep(.presentation-dock) {
+  opacity: 0.12;
+  transition: opacity 180ms ease;
+}
+
+.preview-panel.is-presentation-view > .panel-header:hover,
+.preview-panel.is-presentation-view > .panel-header:focus-within,
+.preview-panel.is-presentation-view.is-chrome-revealed > .panel-header,
+.preview-panel.is-presentation-view :deep(.presentation-dock:hover),
+.preview-panel.is-presentation-view :deep(.presentation-dock:focus-within),
+.preview-panel.is-presentation-view.is-chrome-revealed :deep(.presentation-dock) {
+  opacity: 1;
 }
 </style>
