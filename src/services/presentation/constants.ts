@@ -4,7 +4,7 @@ export const PRESENTATION_MARKER = "@c2g-presentation";
 /** Marker of a dropped picture used as the diagram frame. */
 export const FRAME_MARKER = "@c2g-frame";
 
-/** Largest PNG or SVG accepted as a diagram frame. */
+/** Largest picture accepted as a diagram frame. */
 export const FRAME_MAX_BYTES = 4_000_000;
 
 /** Default length of a new picture or overlay effect. */
