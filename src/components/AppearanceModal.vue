@@ -11,10 +11,6 @@ import {
 } from "@/constants/editor-settings";
 import { contrastTextColor, isDarkColor } from "@/services/mermaid/ext/common";
 import {
-  RENDER_MODES,
-  type RenderMode,
-} from "@/constants/render-settings";
-import {
   isPreviewPresetActive,
   normalizePreviewHex,
   nudgePickerValue,
@@ -30,7 +26,6 @@ const props = defineProps<{
   fontWeight: string;
   fontStyle: string;
   diagramDarkMode: boolean;
-  renderMode: RenderMode;
 }>();
 
 const emit = defineEmits<{
@@ -41,7 +36,6 @@ const emit = defineEmits<{
   "update:fontWeight": [value: string];
   "update:fontStyle": [value: string];
   "update:diagramDarkMode": [value: boolean];
-  "update:renderMode": [value: RenderMode];
 }>();
 
 const { t } = useLocale();
@@ -204,17 +198,6 @@ const defaultBg = computed(() =>
             @change="emit('update:diagramDarkMode', ($event.target as HTMLInputElement).checked)"
           />
           <span>{{ t("appearance.diagramThemeDark") }}</span>
-        </label>
-        <label class="appearance__field">
-          <span>{{ t("appearance.renderMode") }}</span>
-          <select
-            class="select"
-            :value="renderMode"
-            @change="emit('update:renderMode', ($event.target as HTMLSelectElement).value as RenderMode)"
-          >
-            <option :value="RENDER_MODES.offline">{{ t("settings.renderModeOffline") }}</option>
-            <option :value="RENDER_MODES.online">{{ t("settings.renderModeOnline") }}</option>
-          </select>
         </label>
       </section>
       <section class="appearance__section">

@@ -11,7 +11,6 @@ import {
 } from "@/constants";
 import {
   DEFAULT_RENDER_MODE,
-  isRenderMode,
   STORAGE_KEY_RENDER_MODE,
   type RenderMode,
 } from "@/constants/render-settings";
@@ -50,17 +49,16 @@ import { useUiTheme } from "@/composables/useUiTheme";
 import {
   readStorageBoolean,
   readStorageItem,
+  removeStorageItem,
   writeStorageItem,
 } from "@/core/safe-storage";
 import { migrateDeprecatedActivityColorSyntax } from "@/utils/plantuml-source";
 import { toOpaqueColor } from "@/utils/export";
 
 function readInitialRenderMode(): RenderMode {
-  const saved = readStorageItem(STORAGE_KEY_RENDER_MODE);
-  if (saved && isRenderMode(saved)) {
-    return saved;
-  }
-
+  // Режим «всегда онлайн» больше не настройка: старый ключ не должен
+  // снова отправлять исходник при каждой перерисовке.
+  removeStorageItem(STORAGE_KEY_RENDER_MODE);
   return DEFAULT_RENDER_MODE;
 }
 
@@ -161,7 +159,7 @@ export function usePersistedSettings() {
     writeStorageItem(STORAGE_KEY_UI_DARK, String(uiDarkMode.value));
     writeStorageItem(STORAGE_KEY_DIAGRAM_DARK, String(diagramDarkMode.value));
     writeStorageItem(STORAGE_KEY_LAYOUT, layout.value);
-    writeStorageItem(STORAGE_KEY_RENDER_MODE, renderMode.value);
+    removeStorageItem(STORAGE_KEY_RENDER_MODE);
     writeStorageItem(STORAGE_KEY_EDITOR_FONT_SIZE, editorFontSize.value);
     writeStorageItem(STORAGE_KEY_EDITOR_FONT_FAMILY, editorFontFamilyId.value);
     writeStorageItem(
@@ -194,7 +192,7 @@ export function usePersistedSettings() {
   function restoreSettings(): void {
     const savedSource = readStorageItem(STORAGE_KEY_SOURCE);
     const savedLayout = readStorageItem(STORAGE_KEY_LAYOUT);
-    const savedRenderMode = readStorageItem(STORAGE_KEY_RENDER_MODE);
+    removeStorageItem(STORAGE_KEY_RENDER_MODE);
 
     if (savedSource) {
       const migrated = migrateDeprecatedActivityColorSyntax(savedSource);
@@ -208,10 +206,7 @@ export function usePersistedSettings() {
       layout.value = savedLayout as LayoutEngine;
     }
 
-    if (savedRenderMode && isRenderMode(savedRenderMode)) {
-      renderMode.value = savedRenderMode;
-    }
-
+    renderMode.value = DEFAULT_RENDER_MODE;
     applyLocaleToStoredSource();
   }
 
@@ -255,12 +250,17 @@ export function usePersistedSettings() {
       editorAutocomplete,
       previewBackground,
       uiDarkMode,
-      renderMode,
     ],
     () => {
       persistSettings();
     },
   );
+
+  watch(renderMode, (mode) => {
+    if (mode !== DEFAULT_RENDER_MODE) {
+      renderMode.value = DEFAULT_RENDER_MODE;
+    }
+  });
 
   watch(
     locale,

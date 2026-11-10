@@ -27,6 +27,8 @@ const props = defineProps<{
   copyPng: () => Promise<boolean>;
   presentationEnabled: boolean;
   presentationOpen: boolean;
+  /** Подпись кнопки разовой онлайн-генерации. Пусто — формат рисуется только локально. */
+  onlineRenderLabel?: string;
 }>();
 
 const COPY_PNG_ACK_MS = 1600;
@@ -43,6 +45,7 @@ const emit = defineEmits<{
   resetImageSize: [];
   openAppearance: [];
   togglePresentation: [];
+  renderOnline: [];
 }>();
 
 const { t } = useLocale();
@@ -289,6 +292,15 @@ async function acknowledgeCopiedPng(): Promise<void> {
       @click="emit('renderNow')"
     >
       <ActionIcon name="refresh" />
+    </IconButton>
+
+    <IconButton
+      v-if="onlineRenderLabel"
+      :label="onlineRenderLabel"
+      :disabled="isRendering"
+      @click="emit('renderOnline')"
+    >
+      <ActionIcon name="globe" />
     </IconButton>
 
     <IconButton

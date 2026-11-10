@@ -13,16 +13,22 @@ const props = defineProps<{
   loadedFileName: string;
   layout: LayoutEngine;
   renderMode: RenderMode;
+  /** Сайт разовой онлайн-генерации, если текущая картинка пришла оттуда. */
+  onlineRenderSite?: string;
 }>();
 
 const { t } = useLocale();
 const statusBarRef = ref<HTMLElement | null>(null);
 let statusBarObserver: ResizeObserver | null = null;
 
-const isOnlineMode = computed(() => isOnlineRenderMode(props.renderMode));
+const isOnlineSnapshot = computed(() => Boolean(props.onlineRenderSite));
 
 const renderModeLabel = computed(() =>
-  isOnlineMode.value ? t("app.online") : t("app.offline"),
+  isOnlineSnapshot.value
+    ? t("toolbar.renderOnlineStatus", { site: props.onlineRenderSite ?? "" })
+    : isOnlineRenderMode(props.renderMode)
+      ? t("app.online")
+      : t("app.offline"),
 );
 
 onMounted(() => {
@@ -58,9 +64,9 @@ onUnmounted(() => {
     >
       <span>{{ layout }}</span>
       <ActionIcon
-        :name="isOnlineMode ? 'globe' : 'unlink'"
+        :name="isOnlineSnapshot ? 'globe' : 'unlink'"
         class="status-bar__mode-icon"
-        :class="isOnlineMode ? 'is-online' : 'is-offline'"
+        :class="isOnlineSnapshot ? 'is-online' : 'is-offline'"
       />
     </span>
     <span class="status-bar__copyright">

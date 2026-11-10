@@ -88,6 +88,8 @@ const {
   canExport,
   canUndo,
   canRedo,
+  renderedOnlineSite,
+  renderOnlineOnce,
   modals,
   editorDocuments,
   activeDocumentId,
@@ -118,7 +120,6 @@ const {
   enabled: isDesktopLayout,
   getState: dualScreenState,
   onPreviewSettings(settings) {
-    renderMode.value = settings.renderMode;
     diagramDarkMode.value = settings.diagramDarkMode;
     previewBackground.value = settings.previewBackground;
     diagramTextColor.value = settings.diagramTextColor;
@@ -304,7 +305,6 @@ onUnmounted(() => {
         v-model:diagram-font-weight="diagramFontWeight"
         v-model:diagram-font-style="diagramFontStyle"
         v-model:diagram-dark-mode="diagramDarkMode"
-        v-model:render-mode="renderMode"
         :expand-signal="shell.dataLink.expandSignal.value"
         :show-dual-screen="isDesktopLayout"
         :source="source"
@@ -315,6 +315,7 @@ onUnmounted(() => {
         @import-frame="shell.openFrameDiagram"
         @toggle-dual-screen="openDualScreen"
         @render-now="shell.renderDiagram"
+        @render-online="renderOnlineOnce"
         @export-svg="shell.exportSvg"
         @export-png="shell.exportPng"
       />
@@ -327,6 +328,7 @@ onUnmounted(() => {
       :loaded-file-name="loadedFileName"
       :layout="layout"
       :render-mode="renderMode"
+      :online-render-site="renderedOnlineSite"
     />
 
     <AppDialogHost />

@@ -18,7 +18,7 @@ import { effectStyle, effectVisualAt } from "@/services/presentation/effects";
 import { readFrameFile, readFrameHref } from "@/services/presentation/frame";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
 import { sanitizeSvgForPreview } from "@/utils/export";
-import type { RenderMode } from "@/constants/render-settings";
+import { onlineRenderSiteFor } from "@/utils/online-render-site";
 
 const props = defineProps<{
   svg: string;
@@ -27,7 +27,6 @@ const props = defineProps<{
   canExport: boolean;
   previewBackground: string;
   diagramDarkMode: boolean;
-  renderMode: RenderMode;
   /** Цвет текста диаграммы (`textcolor`); пусто — автоподбор под фон. */
   textColor: string;
   /** Семейство шрифта диаграммы (`fontfamily`). */
@@ -61,14 +60,18 @@ const emit = defineEmits<{
   "update:diagramFontFamily": [value: string];
   "update:diagramFontWeight": [value: string];
   "update:diagramFontStyle": [value: string];
-  "update:renderMode": [value: RenderMode];
   "update:imageSize": [value: { width: number; height: number } | null];
+  renderOnline: [];
   toggleDualScreen: [];
   "update:source": [value: string];
   importFrame: [payload: { label: string; source: string }];
 }>();
 
 const { t } = useLocale();
+const onlineRenderLabel = computed(() => {
+  const site = onlineRenderSiteFor(props.diagramFormat, props.source ?? "");
+  return site ? t("toolbar.renderOnline", { site }) : "";
+});
 const transparentPreview = computed(() => isTransparentPreviewBg(props.previewBackground));
 const isFullscreen = ref(false);
 const appearanceOpen = ref(false);
@@ -282,8 +285,10 @@ watch(
           :copy-png="copyPng"
           :presentation-enabled="presentation.enabled.value"
           :presentation-open="presentation.panelOpen.value"
+          :online-render-label="onlineRenderLabel"
           @toggle-presentation="onTogglePresentation"
           @render-now="emit('renderNow')"
+          @render-online="emit('renderOnline')"
           @export-svg="emit('exportSvg')"
           @export-png="emit('exportPng')"
           @zoom-in="zoomIn"
@@ -426,7 +431,6 @@ watch(
       :font-weight="diagramFontWeight"
       :font-style="diagramFontStyle"
       :diagram-dark-mode="diagramDarkMode"
-      :render-mode="renderMode"
       @close="appearanceOpen = false"
       @update:background="emit('update:previewBackground', $event)"
       @update:text-color="emit('update:textColor', $event)"
@@ -434,7 +438,6 @@ watch(
       @update:font-weight="emit('update:diagramFontWeight', $event)"
       @update:font-style="emit('update:diagramFontStyle', $event)"
       @update:diagram-dark-mode="emit('update:diagramDarkMode', $event)"
-      @update:render-mode="emit('update:renderMode', $event)"
     />
   </section>
 </template>
