@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject } from "vue";
+import { computed, inject, ref, watch } from "vue";
 import IconButton from "@/components/IconButton.vue";
 import PresentationGlyph from "@/components/preview/PresentationGlyph.vue";
 import { presentationSessionKey } from "@/components/preview/presentation-session";
@@ -80,6 +80,7 @@ const selectedOverlay = computed(
   () => track.value?.overlays.find((item) => item.id === selectedOverlayId.value) ?? null,
 );
 const canStep = computed(() => (track.value?.viewpoints.length ?? 0) > 1);
+const dimHeld = ref(false);
 
 function trackLabel(index: number): string {
   return String(index + 1);
@@ -89,6 +90,29 @@ function goToFirst(): void {
   pause();
   goToViewpoint(0);
 }
+
+function onPlay(): void {
+  const starting = !playing.value;
+  togglePlay();
+  if (starting && playing.value) {
+    dimHeld.value = true;
+  }
+}
+
+function releaseDimHold(event: FocusEvent): void {
+  const dock = event.currentTarget;
+  const next = event.relatedTarget;
+  if (dock instanceof HTMLElement && next instanceof Node && dock.contains(next)) {
+    return;
+  }
+  dimHeld.value = false;
+}
+
+watch(playing, (value) => {
+  if (!value) {
+    dimHeld.value = false;
+  }
+});
 
 function pathLabel(kind: PresentationPathKind): LocaleKey {
   switch (kind) {
@@ -223,9 +247,15 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
   <div
     v-if="enabled && panelOpen"
     class="presentation-dock"
-    :class="{ 'is-editing': mode === 'edit' && canEdit }"
+    :class="{
+      'is-editing': mode === 'edit' && canEdit,
+      'is-dim': playing,
+      'is-dim-held': dimHeld,
+    }"
     role="toolbar"
     :aria-label="t('presentation.expand')"
+    @pointerleave="dimHeld = false"
+    @focusout="releaseDimHold"
   >
     <div class="presentation-dock__bar">
       <div class="presentation-dock__title">
@@ -305,7 +335,7 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
           :label="playing ? t('presentation.pause') : t('presentation.play')"
           primary
           :disabled="!track || track.viewpoints.length === 0"
-          @click="togglePlay()"
+          @click="onPlay()"
         >
           <PresentationGlyph :name="playing ? 'pause' : 'play'" />
         </IconButton>
@@ -770,6 +800,16 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
 .presentation-dock.is-editing {
   width: min(420px, calc(100% - 16px));
   border-radius: 16px;
+}
+
+.presentation-dock.is-dim {
+  opacity: 0.12;
+  transition: none;
+}
+
+.presentation-dock.is-dim:not(.is-dim-held):hover,
+.presentation-dock.is-dim:not(.is-dim-held):focus-within {
+  opacity: 1;
 }
 
 .presentation-dock__bar,
