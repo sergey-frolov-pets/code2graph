@@ -6,6 +6,7 @@ import {
   getGraphmlSampleSource,
 } from "@/constants/graphml-sample-diagrams";
 import { parseGraphml, renderGraphmlToSvg } from "@/services/graphml/graphml-engine";
+import tccYedGraphml from "@/services/graphml/fixtures/tcc-yed.graphml?raw";
 
 const SAMPLE_GRAPHML = `<?xml version="1.0" encoding="UTF-8"?>
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns">
@@ -232,6 +233,101 @@ describe("graphml samples", () => {
     expect(network.direction).toBe("TB");
     expect(user).toMatchObject({ fill: "#dbeafe", stroke: "#2563eb" });
     expect(request).toMatchObject({ color: "#2563eb" });
+  });
+
+  it("maps yEd shape nodes onto the same figures", () => {
+    const graph = parseGraphml(`<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:y="http://www.yworks.com/xml/graphml">
+  <key for="node" id="d6" yfiles.type="nodegraphics"/>
+  <graph edgedefault="directed">
+    <node id="box">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="40" width="80" x="10" y="20"/>
+          <y:Fill color="#FFFFFF" transparent="false"/>
+          <y:BorderStyle color="#000000" type="dashed" width="1.0"/>
+          <y:NodeLabel>Box</y:NodeLabel>
+          <y:Shape type="trapezoid"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+  </graph>
+</graphml>`);
+
+    expect(graph.nodes[0]).toMatchObject({
+      label: "Box",
+      shape: "trapezoid",
+      fill: "#ffffff",
+      dashed: true,
+      geometry: { x: 10, y: 20, width: 80, height: 40 },
+    });
+  });
+
+  it("keeps a yEd flowchart on its authored geometry", async () => {
+    const graph = parseGraphml(tccYedGraphml);
+    const decision = graph.nodes.find((node) => node.id === "n0");
+    const start = graph.nodes.find((node) => node.id === "n2");
+    const checklist = graph.nodes.find((node) => node.id === "n3");
+    const go = graph.nodes.find((node) => node.id === "n4");
+    const approval = graph.nodes.find((node) => node.id === "n5");
+    const notGo = graph.nodes.find((node) => node.id === "n6");
+    const approvalCopy = graph.nodes.find((node) => node.id === "n8");
+    const business = graph.nodes.find((node) => node.id === "n7");
+    const businessCopy = graph.nodes.find((node) => node.id === "n9");
+    const portal = graph.nodes.find((node) => node.id === "n10");
+    const unconventional = graph.nodes.find((node) => node.id === "n1");
+    const decisionYes = graph.edges.find((edge) => edge.source === "n0" && edge.target === "n3");
+
+    expect(decision).toMatchObject({
+      shape: "diamond",
+      fill: "#e8eef7",
+      fill2: "#b7c9e3",
+    });
+    expect(decision?.label).toBe("Support \nrequired outside \nof RCA");
+    expect(start).toMatchObject({ shape: "ellipse" });
+    expect(checklist).toMatchObject({ shape: "parallelogram" });
+    expect(unconventional).toMatchObject({ shape: "parallelogram" });
+    expect(go).toMatchObject({ shape: "ellipse", fill: "#00ff00", fill2: "#ccffcc" });
+    expect(notGo).toMatchObject({ shape: "ellipse", fill2: "#ff0000" });
+    expect(portal).toMatchObject({ shape: "trapezoid2" });
+    expect(approval?.shape).toBe("rectangle");
+    expect(approvalCopy?.shape).toBe("predefinedProcess");
+    expect(approval?.geometry).toEqual(approvalCopy?.geometry);
+    expect(business?.geometry).toEqual(businessCopy?.geometry);
+    expect(decisionYes).toMatchObject({
+      label: "Yes",
+      labelAnchor: { segment: 1, ratio: 0.5, distance: 30 },
+    });
+    expect(decisionYes?.bends).toEqual([
+      { x: 67.5, y: 103.75 },
+      { x: 67.5, y: 152.5 },
+    ]);
+
+    const svg = await renderGraphmlToSvg(tccYedGraphml);
+    expect(svg).toContain("<ellipse");
+    expect(svg).toContain("<polygon");
+    expect(svg).toContain("<line ");
+    expect(svg).toContain('stop-color="#00ff00"');
+    expect(svg).toContain('stop-color="#ff0000"');
+    expect(svg).toContain(">Yes<");
+    expect(svg).toContain(">No<");
+
+    const firstEdge = svg.match(/<g class="graphml-edge">\s*<path d="([^"]+)"/);
+    const coordinates = [...(firstEdge?.[1] ?? "").matchAll(/-?\d+(?:\.\d+)?/g)].map((match) => Number(match[0]));
+    const startY = coordinates[1] ?? 0;
+    const endY = coordinates[coordinates.length - 1] ?? 0;
+    expect(endY - startY).toBeCloseTo(41, 0);
+    expect(coordinates[0]).toBeCloseTo(coordinates[coordinates.length - 2] ?? 0, 0);
+
+    const singleApproval = svg.match(/<text x="([\d.]+)" y="([\d.]+)"[^>]*>TCC Approval<\/text>/);
+    const wrappedApproval = svg.match(/<text y="([\d.]+)"[^>]*>\s*<tspan x="([\d.]+)"[^>]*>TCC <\/tspan>/);
+    expect(singleApproval?.[1]).toBe(wrappedApproval?.[2]);
+    expect(singleApproval?.[2]).toBe(wrappedApproval?.[1]);
+
+    const businessLabels = [...svg.matchAll(/<text y="([\d.]+)"[^>]*>\s*<tspan x="([\d.]+)"[^>]*>TCC &amp; Business line<\/tspan>/g)];
+    expect(businessLabels).toHaveLength(2);
+    expect(businessLabels[0]?.[1]).toBe(businessLabels[1]?.[1]);
+    expect(businessLabels[0]?.[2]).toBe(businessLabels[1]?.[2]);
   });
 
   it("renders a light node fill with dark text in dark mode", async () => {

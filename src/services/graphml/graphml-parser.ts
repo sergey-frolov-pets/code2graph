@@ -36,6 +36,7 @@ import {
   type GraphmlRankDirection,
   type ParsedGraphml,
 } from "@/services/graphml/graphml-types";
+import { readYedEdgeGraphics, readYedNodeGraphics } from "@/services/graphml/graphml-yed";
 import { LocalizedAppError } from "@/utils/localized-app-error";
 
 export function escapeXml(value: string): string {
@@ -187,13 +188,18 @@ function collectGraph(
       }
 
       const entries = readDataEntries(child, keyMap);
+      const yed = readYedNodeGraphics(child);
       const nestedGraph = findChildGraph(child);
+      const namedLabel = readNamedData(entries, LABEL_ATTR_NAMES);
       nodes.push({
         id,
-        label: readLabel(entries) ?? id,
-        shape: parseShape(readNamedData(entries, [SHAPE_ATTR_NAME])),
-        fill: readHexColor(readNamedData(entries, [FILL_ATTR_NAME])),
-        stroke: readHexColor(readNamedData(entries, [STROKE_ATTR_NAME])),
+        label: namedLabel ?? yed?.label ?? readLabel(entries) ?? id,
+        shape: yed?.shape ?? parseShape(readNamedData(entries, [SHAPE_ATTR_NAME])),
+        fill: readHexColor(yed?.fill ?? readNamedData(entries, [FILL_ATTR_NAME])),
+        fill2: readHexColor(yed?.fill2),
+        stroke: readHexColor(yed?.stroke ?? readNamedData(entries, [STROKE_ATTR_NAME])),
+        dashed: yed?.dashed ?? false,
+        geometry: yed?.geometry,
         parentId,
         isGroup: Boolean(nestedGraph),
       });
@@ -212,13 +218,21 @@ function collectGraph(
       }
 
       const entries = readDataEntries(child, keyMap);
+      const yed = readYedEdgeGraphics(child);
+      const namedLabel = readNamedData(entries, LABEL_ATTR_NAMES);
       edges.push({
         source,
         target,
-        label: readLabel(entries),
-        color: readHexColor(readNamedData(entries, [COLOR_ATTR_NAME])),
-        directed: isDirectedEdge(child, defaultDirected),
-        dashed: readNamedData(entries, [STYLE_ATTR_NAME]) === DASHED_STYLE,
+        label: namedLabel ?? yed?.label ?? readLabel(entries),
+        color: readHexColor(yed?.color ?? readNamedData(entries, [COLOR_ATTR_NAME])),
+        directed: yed?.directed ?? isDirectedEdge(child, defaultDirected),
+        dashed: yed
+          ? yed.dashed
+          : readNamedData(entries, [STYLE_ATTR_NAME]) === DASHED_STYLE,
+        bends: yed?.bends,
+        sourceOffset: yed?.sourceOffset,
+        targetOffset: yed?.targetOffset,
+        labelAnchor: yed?.labelAnchor,
       });
     }
   }
