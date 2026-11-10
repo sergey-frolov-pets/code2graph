@@ -29,6 +29,7 @@ import type {
   Viewpoint,
 } from "@/services/presentation/types";
 import { isTransparentBackground } from "@/services/export/svg-background";
+import { loadSvgDocumentImage } from "@/services/export/svg-raster-source";
 import { LocalizedAppError } from "@/utils/localized-app-error";
 
 const GIF_MIME_TYPE = "image/gif";
@@ -66,23 +67,6 @@ function loadFrameImage(href: string): Promise<HTMLImageElement | null> {
     image.onload = () => resolve(image);
     image.onerror = () => resolve(null);
     image.src = href;
-  });
-}
-
-function loadSvgImage(svg: string): Promise<HTMLImageElement> {
-  const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(image);
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new LocalizedAppError("engine.svgLoadFailed"));
-    };
-    image.src = url;
   });
 }
 
@@ -389,7 +373,7 @@ export async function renderPresentationGif(source: PresentationGifSource): Prom
   }
 
   const { width, height } = gifOutputSize(source.viewportWidth, source.viewportHeight);
-  const image = await loadSvgImage(source.svg);
+  const image = await loadSvgDocumentImage(source.svg);
   const frameImage = source.frameHref ? await loadFrameImage(source.frameHref) : null;
   const canvas = document.createElement("canvas");
   canvas.width = width;
