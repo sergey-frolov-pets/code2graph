@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, inject } from "vue";
+import IconButton from "@/components/IconButton.vue";
+import PresentationGlyph from "@/components/preview/PresentationGlyph.vue";
 import { presentationSessionKey } from "@/components/preview/presentation-session";
 import { durationMsToSeconds } from "@/services/presentation/model";
 import {
@@ -38,6 +40,7 @@ if (!session) {
 const {
   enabled,
   canEdit,
+  panelOpen,
   mode,
   document: presentation,
   onSelectTrack,
@@ -207,70 +210,66 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
 
 <template>
   <div
-    v-if="enabled"
+    v-if="enabled && panelOpen"
     class="presentation-dock"
     :class="{ 'is-editing': mode === 'edit' && canEdit }"
     role="toolbar"
     :aria-label="t('presentation.expand')"
   >
     <div class="presentation-dock__bar">
-      <button
+      <IconButton
         v-if="canEdit"
-        type="button"
-        class="btn"
-        :class="{ 'btn-primary': mode === 'edit' }"
+        :label="mode === 'edit' ? t('presentation.view') : t('presentation.edit')"
+        :pressed="mode === 'edit'"
         @click="mode = mode === 'edit' ? 'view' : 'edit'"
       >
-        {{ mode === "edit" ? t("presentation.view") : t("presentation.edit") }}
-      </button>
-      <button
-        type="button"
-        class="btn"
+        <PresentationGlyph :name="mode === 'edit' ? 'view' : 'edit'" />
+      </IconButton>
+      <IconButton
+        :label="t('presentation.prev')"
         :disabled="!canStep"
-        :aria-label="t('presentation.prev')"
         @click="step(-1)"
       >
-        {{ t("presentation.prev") }}
-      </button>
+        <PresentationGlyph name="prev" />
+      </IconButton>
       <span
         v-if="track && track.viewpoints.length"
         class="presentation-dock__index"
       >
         {{ trackLabel(viewpointIndex) }} / {{ track.viewpoints.length }}
       </span>
-      <button
-        type="button"
-        class="btn"
+      <IconButton
+        :label="t('presentation.next')"
         :disabled="!canStep"
-        :aria-label="t('presentation.next')"
         @click="step(1)"
       >
-        {{ t("presentation.next") }}
-      </button>
-      <button
-        type="button"
-        class="btn btn-primary"
+        <PresentationGlyph name="next" />
+      </IconButton>
+      <IconButton
+        :label="playing ? t('presentation.pause') : t('presentation.play')"
+        primary
         :disabled="!track || track.viewpoints.length === 0"
         @click="togglePlay()"
       >
-        {{ playing ? t("presentation.pause") : t("presentation.play") }}
-      </button>
-      <button
-        type="button"
-        class="btn"
+        <PresentationGlyph :name="playing ? 'pause' : 'play'" />
+      </IconButton>
+      <IconButton
+        :label="exportingGif ? t('presentation.exportGifBusy') : t('presentation.exportGif')"
         :disabled="!track || track.viewpoints.length === 0 || exportingGif"
         @click="onExportGif()"
       >
-        {{ exportingGif ? t("presentation.exportGifBusy") : t("presentation.exportGif") }}
-      </button>
-      <label class="presentation-check">
-        <input
-          type="checkbox"
-          :checked="presentation?.showOverlays !== false"
-          @change="onToggleOverlays(($event.target as HTMLInputElement).checked)"
-        >
-        {{ t("presentation.overlaysShow") }}
-      </label>
+        <PresentationGlyph
+          :name="exportingGif ? 'loader' : 'gif'"
+          :spin="exportingGif"
+        />
+      </IconButton>
+      <IconButton
+        :label="t('presentation.overlaysShow')"
+        :pressed="presentation?.showOverlays !== false"
+        @click="onToggleOverlays(presentation?.showOverlays === false)"
+      >
+        <PresentationGlyph :name="presentation?.showOverlays === false ? 'eye-off' : 'eye'" />
+      </IconButton>
     </div>
 
     <div
@@ -294,21 +293,19 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
               </option>
             </select>
           </label>
-          <button
-            type="button"
-            class="btn"
+          <IconButton
+            :label="t('presentation.trackNew')"
             @click="onCreateTrack(t('presentation.trackDefault', { n: (presentation?.tracks.length ?? 0) + 1 }))"
           >
-            {{ t("presentation.trackNew") }}
-          </button>
-          <button
-            type="button"
-            class="btn"
+            <PresentationGlyph name="plus" />
+          </IconButton>
+          <IconButton
+            :label="t('presentation.trackDelete')"
             :disabled="!track"
             @click="onDeleteTrack()"
           >
-            {{ t("presentation.trackDelete") }}
-          </button>
+            <PresentationGlyph name="trash" />
+          </IconButton>
         </div>
         <label
           v-if="track"
@@ -333,29 +330,27 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
       <template v-if="track">
         <section class="presentation-section">
           <div class="presentation-dock__row">
-            <button
-              type="button"
-              class="btn btn-primary"
+            <IconButton
+              :label="t('presentation.capture')"
+              primary
               @click="onCapture()"
             >
-              {{ t("presentation.capture") }}
-            </button>
-            <button
-              type="button"
-              class="btn"
+              <PresentationGlyph name="camera" />
+            </IconButton>
+            <IconButton
+              :label="t('presentation.updateFrame')"
               :disabled="!viewpoint"
               @click="onUpdateFrame()"
             >
-              {{ t("presentation.updateFrame") }}
-            </button>
-            <button
-              type="button"
-              class="btn"
+              <PresentationGlyph name="refresh" />
+            </IconButton>
+            <IconButton
+              :label="t('presentation.removeViewpoint')"
               :disabled="!viewpoint"
               @click="onRemoveViewpoint()"
             >
-              {{ t("presentation.removeViewpoint") }}
-            </button>
+              <PresentationGlyph name="trash" />
+            </IconButton>
           </div>
           <ol
             v-if="track.viewpoints.length"
@@ -422,23 +417,21 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
                 </option>
               </select>
             </label>
-            <button
+            <IconButton
               v-if="transition && transition.path === 'polyline'"
-              type="button"
-              class="btn"
-              :class="{ 'btn-primary': addPointArmed }"
+              :label="t('presentation.addPoint')"
+              :pressed="addPointArmed"
               @click="addPointArmed = !addPointArmed"
             >
-              {{ t("presentation.addPoint") }}
-            </button>
-            <button
+              <PresentationGlyph name="plus" />
+            </IconButton>
+            <IconButton
               v-if="transition && transition.path === 'polyline' && transition.points.length"
-              type="button"
-              class="btn"
+              :label="t('presentation.removePoint')"
               @click="onRemovePoint(transition.points.length - 1)"
             >
-              {{ t("presentation.removePoint") }}
-            </button>
+              <PresentationGlyph name="minus" />
+            </IconButton>
           </div>
         </section>
 
@@ -461,34 +454,30 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
                 </option>
               </select>
             </label>
-            <button
-              type="button"
-              class="btn"
+            <IconButton
+              :label="t('presentation.overlay.rect')"
               @click="onAddOverlay('rect')"
             >
-              {{ t("presentation.overlay.rect") }}
-            </button>
-            <button
-              type="button"
-              class="btn"
+              <PresentationGlyph name="rect" />
+            </IconButton>
+            <IconButton
+              :label="t('presentation.overlay.ellipse')"
               @click="onAddOverlay('ellipse')"
             >
-              {{ t("presentation.overlay.ellipse") }}
-            </button>
-            <button
-              type="button"
-              class="btn"
+              <PresentationGlyph name="ellipse" />
+            </IconButton>
+            <IconButton
+              :label="t('presentation.overlay.text')"
               @click="onAddOverlay('text')"
             >
-              {{ t("presentation.overlay.text") }}
-            </button>
-            <button
-              type="button"
-              class="btn"
+              <PresentationGlyph name="text" />
+            </IconButton>
+            <IconButton
+              :label="t('presentation.overlay.arrow')"
               @click="onAddOverlay('arrow')"
             >
-              {{ t("presentation.overlay.arrow") }}
-            </button>
+              <PresentationGlyph name="arrow" />
+            </IconButton>
           </div>
         </section>
 
@@ -541,13 +530,12 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
                 @change="onChangeOverlay(selectedOverlay.id, { textColor: ($event.target as HTMLInputElement).value })"
               >
             </label>
-            <button
-              type="button"
-              class="btn"
+            <IconButton
+              :label="t('presentation.styleReset')"
               @click="onChangeOverlay(selectedOverlay.id, { stroke: '', fill: '', textColor: '' })"
             >
-              {{ t("presentation.styleReset") }}
-            </button>
+              <PresentationGlyph name="palette" />
+            </IconButton>
           </div>
           <div class="presentation-dock__row">
             <label
@@ -705,13 +693,12 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
                 </option>
               </select>
             </label>
-            <button
-              type="button"
-              class="btn"
+            <IconButton
+              :label="t('presentation.deleteOverlay')"
               @click="onRemoveOverlay(selectedOverlay.id)"
             >
-              {{ t("presentation.deleteOverlay") }}
-            </button>
+              <PresentationGlyph name="trash" />
+            </IconButton>
           </div>
         </section>
       </template>
@@ -811,14 +798,6 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
   padding: 2px;
 }
 
-.presentation-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-}
-
 .presentation-points {
   display: flex;
   flex-wrap: wrap;
@@ -836,5 +815,13 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
 .presentation-dock .btn {
   min-height: 36px;
   padding: 6px 10px;
+}
+
+.presentation-dock :deep(.btn-icon) {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
 }
 </style>
