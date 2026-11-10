@@ -75,6 +75,7 @@ export function usePreviewPanZoom(
     zoomPercent,
     zoomIn: () => ensureController().zoomIn(),
     zoomOut: () => ensureController().zoomOut(),
+    setZoomPercent: (percent: number) => ensureController().setZoomPercent(percent),
     fitToView: () => ensureController().fitToView(),
     setCameraFrame: (frame: CameraFrame) => ensureController().setView(frame),
     readCameraFrame: () => ensureController().readView(),

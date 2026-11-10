@@ -6,6 +6,7 @@ import {
   measureImageSize,
   readCameraFrame,
   syncFromMarkup,
+  setScale,
   zoomIn,
   zoomOut,
 } from "@/services/preview/pan-zoom-transform";
@@ -71,6 +72,10 @@ export class PreviewPanZoomController {
 
   zoomOut(): void {
     zoomOut(this.state, this.deps);
+  }
+
+  setZoomPercent(percent: number): void {
+    setScale(this.state, this.deps, percent / 100);
   }
 
   setView(frame: CameraFrame): void {
