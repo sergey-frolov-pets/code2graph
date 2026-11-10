@@ -30,6 +30,8 @@ import type { TranslateFn } from "@/locales/types";
 import {
   createDefaultBuilderState,
   emitSourceFromBuilderState,
+  getDiagramBuilderSchema,
+  hasBuilderOptionsCapabilities,
   parseSourceToBuilderState,
   supportsDiagramBuilder,
   type BuilderApplyTarget,
@@ -101,11 +103,19 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     () => wizardState.value.creationMode === "builder",
   );
 
-  const wizardSteps = computed((): WizardStepId[] =>
-    isBuilderMode.value
-      ? [...BUILDER_WIZARD_FLOW_STEPS]
-      : [...AI_WIZARD_FLOW_STEPS],
-  );
+  const wizardSteps = computed((): WizardStepId[] => {
+    if (!isBuilderMode.value) {
+      return [...AI_WIZARD_FLOW_STEPS];
+    }
+    const schema = getDiagramBuilderSchema(
+      builderState.value.format,
+      builderState.value.diagramType,
+    );
+    if (hasBuilderOptionsCapabilities(schema.capabilities)) {
+      return [...BUILDER_WIZARD_FLOW_STEPS, "builder-options"];
+    }
+    return [...BUILDER_WIZARD_FLOW_STEPS];
+  });
   const currentStepId = computed(
     (): WizardStepId => wizardSteps.value[stepIndex.value] ?? "context",
   );
