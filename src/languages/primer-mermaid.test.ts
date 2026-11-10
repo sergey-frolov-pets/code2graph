@@ -5,6 +5,7 @@ import { SUPPORTED_LOCALES } from "@/constants/i18n";
 import { LANGUAGE_PRIMERS, primerExample } from "@/languages/primer";
 import { validateExtensionSource } from "@/services/mermaid/ext";
 import { loadMermaid } from "@/services/mermaid/mermaid-loader";
+import { prepareMermaidSankeyUnicode } from "@/services/mermaid/sankey-unicode";
 import { isMermaidExtDeclaration } from "@/utils/mermaid-syntax";
 
 describe("mermaid language page examples", () => {
@@ -29,7 +30,8 @@ describe("mermaid language page examples", () => {
         }
 
         try {
-          await mermaid.parse(source);
+          const parseSource = prepareMermaidSankeyUnicode(source).source;
+          await mermaid.parse(parseSource);
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           failures.push(`${label}: ${message.split("\n")[0]}`);

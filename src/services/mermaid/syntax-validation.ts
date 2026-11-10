@@ -1,6 +1,7 @@
 import type { RenderMode } from "@/constants/render-settings";
 import { loadMermaid } from "@/services/mermaid/mermaid-loader";
 import { waitForMermaidReady } from "@/services/mermaid/mermaid-engine";
+import { prepareMermaidSankeyUnicode } from "@/services/mermaid/sankey-unicode";
 import {
   checkMermaidSyntax,
   parseMermaidErrorLine,
@@ -48,7 +49,11 @@ export async function validateMermaidSyntax(
     await waitForMermaidReady(darkMode);
     await ensureMermaidParserInitialized(darkMode);
     const mermaid = await loadMermaid();
-    await mermaid.parse(prepared);
+    // Лексер sankey принимает в имени узла только ASCII. Отрисовка
+    // подменяет такие подписи перед разбором — проверка делает то же,
+    // иначе кириллический пример помечается ошибкой, хотя схема рисуется.
+    const parseSource = prepareMermaidSankeyUnicode(prepared).source;
+    await mermaid.parse(parseSource);
     return { valid: true, issues: [] };
   } catch (error) {
     const message = parseMermaidErrorMessage(error);
