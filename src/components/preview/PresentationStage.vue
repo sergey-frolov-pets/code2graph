@@ -34,6 +34,7 @@ import { effectVisualAt, overlayEffectTransform } from "@/services/presentation/
 const props = defineProps<{
   snapshot: PanZoomSnapshot;
   track: PresentationTrack | null;
+  arranging: boolean;
   editing: boolean;
   showOverlays: boolean;
   viewpointIndex: number;
@@ -321,7 +322,7 @@ function beginResize(event: PointerEvent, overlay: PresentationOverlay, handle: 
 }
 
 function onOverlayPointerDown(event: PointerEvent, overlay: PresentationOverlay): void {
-  if (!props.editing) {
+  if (!props.arranging) {
     return;
   }
   const target = event.target;
@@ -403,7 +404,11 @@ function overlayTextSize(overlay: PresentationOverlay): number {
   <svg
     ref="stageRef"
     class="presentation-stage"
-    :class="{ 'is-drawing': editing && addPointArmed, 'is-editing': editing }"
+    :class="{
+      'is-drawing': editing && addPointArmed,
+      'is-arranging': arranging,
+      'is-editing': editing,
+    }"
     @pointerdown="onStagePointerDown"
   >
     <defs>
@@ -485,7 +490,7 @@ function overlayTextSize(overlay: PresentationOverlay): number {
       @pointerdown="onOverlayPointerDown($event, overlay)"
     >
       <rect
-        v-if="editing && overlay.id === selectedOverlayId"
+        v-if="arranging && overlay.id === selectedOverlayId"
         class="presentation-selection"
         :x="selectionBox(overlay).x"
         :y="selectionBox(overlay).y"
@@ -547,6 +552,14 @@ function overlayTextSize(overlay: PresentationOverlay): number {
           :marker-start="markerStart(overlay)"
         />
       </template>
+      <rect
+        v-if="arranging && !isLineArrow(overlay)"
+        class="presentation-drag"
+        :x="positiveBox(screenBox(overlay)).x"
+        :y="positiveBox(screenBox(overlay)).y"
+        :width="positiveBox(screenBox(overlay)).width"
+        :height="positiveBox(screenBox(overlay)).height"
+      />
       <text
         v-if="overlay.shape === 'text' && overlay.text"
         class="presentation-label"
@@ -559,7 +572,7 @@ function overlayTextSize(overlay: PresentationOverlay): number {
         {{ overlay.text }}
       </text>
       <rect
-        v-for="handle in editing && overlay.id === selectedOverlayId ? resizeHandles(overlay) : []"
+        v-for="handle in arranging && overlay.id === selectedOverlayId ? resizeHandles(overlay) : []"
         :key="`${overlay.id}-${handle.id}`"
         class="presentation-handle presentation-resize"
         :x="handle.x - resizeHandleSize / 2"
@@ -589,11 +602,16 @@ function overlayTextSize(overlay: PresentationOverlay): number {
   cursor: crosshair;
 }
 
-.presentation-stage:not(.is-editing) .presentation-shape,
-.presentation-stage:not(.is-editing) .presentation-arrow,
-.presentation-stage:not(.is-editing) .presentation-hit,
-.presentation-stage:not(.is-editing) .presentation-artwork {
+.presentation-stage:not(.is-arranging) .presentation-shape,
+.presentation-stage:not(.is-arranging) .presentation-arrow,
+.presentation-stage:not(.is-arranging) .presentation-hit,
+.presentation-stage:not(.is-arranging) .presentation-artwork,
+.presentation-stage:not(.is-arranging) .presentation-drag {
   pointer-events: none;
+}
+
+.presentation-stage.is-arranging .presentation-overlay {
+  touch-action: none;
 }
 
 .presentation-path,
@@ -621,11 +639,23 @@ function overlayTextSize(overlay: PresentationOverlay): number {
   cursor: pointer;
 }
 
-.presentation-stage.is-editing .presentation-shape,
-.presentation-stage.is-editing .presentation-arrow-hit,
-.presentation-stage.is-editing .presentation-hit,
-.presentation-stage.is-editing .presentation-artwork {
+.presentation-stage.is-arranging .presentation-shape,
+.presentation-stage.is-arranging .presentation-hit,
+.presentation-stage.is-arranging .presentation-artwork,
+.presentation-stage.is-arranging .presentation-artwork path,
+.presentation-stage.is-arranging .presentation-drag,
+.presentation-stage.is-arranging .presentation-selection,
+.presentation-stage.is-arranging .presentation-arrow-hit {
   cursor: move;
+}
+
+.presentation-stage.is-arranging .presentation-shape,
+.presentation-stage.is-arranging .presentation-hit,
+.presentation-stage.is-arranging .presentation-artwork,
+.presentation-stage.is-arranging .presentation-artwork path,
+.presentation-stage.is-arranging .presentation-drag,
+.presentation-stage.is-arranging .presentation-selection {
+  pointer-events: auto;
 }
 
 .presentation-hit {
@@ -633,7 +663,12 @@ function overlayTextSize(overlay: PresentationOverlay): number {
   stroke: transparent;
 }
 
-.presentation-stage.is-editing .presentation-overlay:hover .presentation-hit,
+.presentation-drag {
+  fill: transparent;
+  stroke: none;
+}
+
+.presentation-stage.is-arranging .presentation-overlay:hover .presentation-hit,
 .presentation-overlay.is-selected .presentation-hit {
   stroke: var(--overlay-stroke, var(--accent));
   stroke-width: 2;
@@ -656,8 +691,8 @@ function overlayTextSize(overlay: PresentationOverlay): number {
   stroke-dasharray: 8 5;
 }
 
-.presentation-stage.is-editing .presentation-overlay:hover .presentation-shape,
-.presentation-stage.is-editing .presentation-overlay:hover .presentation-arrow {
+.presentation-stage.is-arranging .presentation-overlay:hover .presentation-shape,
+.presentation-stage.is-arranging .presentation-overlay:hover .presentation-arrow {
   stroke-width: 3.5;
 }
 
