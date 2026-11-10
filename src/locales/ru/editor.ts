@@ -85,6 +85,8 @@ export const editorMessages = {
   "editor.aiPatch": "Изменить с AI",
   "editor.aiSyntaxAsk": "Спросить по синтаксису",
   "editor.aiAssistant": "ИИ-помощник",
+  "editor.fileMenu": "Файл",
+  "editor.editMenu": "Правка",
   "editor.sessionToggleFile": "Сравнить со снимком: показать старую версию файла",
   "editor.sessionToggleFileCurrent": "Вернуть текущую версию файла",
   "editor.sessionToggleHunk": "Переключить старую и новую версию блока",

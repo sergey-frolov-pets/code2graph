@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { applyBillingSchema } from "../billing/schema.js";
 import { SHARED_SECTION_TITLE } from "../config.js";
 
 function columnExists(
@@ -295,7 +296,16 @@ export function ensureLibraryLinkSchema(database: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_library_link_hits_link_day
       ON library_link_hits(link_id, day);
+
+    CREATE TABLE IF NOT EXISTS subscription_features (
+      subscription_id TEXT NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
+      feature_id TEXT NOT NULL,
+      allowed INTEGER NOT NULL,
+      PRIMARY KEY (subscription_id, feature_id)
+    );
   `);
+
+  applyBillingSchema(database);
 }
 
 export function seedInitialData(database: Database.Database): void {

@@ -5,17 +5,24 @@ import { useLocale } from "@/composables/useLocale";
 import { usePresentationPlayback } from "@/composables/usePresentationPlayback";
 import { PRESENTATION_CHROME_REVEAL_MS } from "@/services/presentation/constants";
 import { readPresentation, writePresentation } from "@/services/presentation/codec";
+import { readFrameHref } from "@/services/presentation/frame";
 import { renderPresentationGif, type PresentationGifTheme } from "@/services/presentation/gif-export";
 import { presentationGifFileName } from "@/services/presentation/gif-timeline";
 import {
   activeTrack,
+  addEffect,
   addOverlay,
   addTrack,
   captureViewpoint,
   createPresentation,
   deleteTrack,
+  duplicateEffect,
+  duplicateViewpoint,
   durationSecondsToMs,
   insertPolylinePoint,
+  moveEffect,
+  moveViewpoint,
+  removeEffect,
   removeOverlay,
   removeViewpoint,
   renameTrack,
@@ -24,6 +31,7 @@ import {
   setTransitionControls,
   setTransitionPath,
   setTransitionPoints,
+  updateEffect,
   updateOverlay,
   updateTransitionDuration,
   updateViewpointDwell,
@@ -32,8 +40,11 @@ import {
 import { downloadBlob } from "@/services/export/file-download";
 import type {
   CameraFrame,
+  FrameEffectKind,
+  FrameEffectTargetKind,
   NormPoint,
   PresentationDocument,
+  PresentationMark,
   PresentationOverlay,
   PresentationOverlayKind,
   PresentationPathKind,
@@ -43,6 +54,7 @@ import { resolveLocalizedErrorMessage } from "@/utils/localized-app-error";
 
 export interface PresentationGifContext {
   svg: string;
+  frameHref: string | null;
   imageWidth: number;
   imageHeight: number;
   viewportWidth: number;
@@ -72,6 +84,7 @@ export function usePresentationSession(options: {
   const attachTarget = ref<OverlayAttachTarget>("viewpoint");
   const chromeRevealed = ref(false);
   const exportingGif = ref(false);
+  const repeat = ref(false);
   const { alert } = useAppDialog();
   const { t } = useLocale();
   let suppressParse = false;
@@ -81,6 +94,7 @@ export function usePresentationSession(options: {
     getTrack: () => currentTrack.value,
     setFrame: options.setFrame,
     setLocked: options.setLocked,
+    getRepeat: () => repeat.value,
   });
 
   const enabled = computed(
@@ -90,6 +104,8 @@ export function usePresentationSession(options: {
   const currentTrack = computed<PresentationTrack | null>(() =>
     document.value ? activeTrack(document.value) : null,
   );
+
+  const hasFrame = computed(() => readFrameHref(options.source.value ?? "") !== null);
 
   const dimChrome = computed(
     () =>
@@ -286,6 +302,85 @@ export function usePresentationSession(options: {
     commit(setTransitionPath(document.value, track.id, transition.id, kind));
   }
 
+  function onDuplicateViewpoint(): void {
+    const track = currentTrack.value;
+    const viewpoint = track?.viewpoints[playback.viewpointIndex.value];
+    if (!track || !viewpoint || !document.value) {
+      return;
+    }
+    const nextIndex = playback.viewpointIndex.value + 1;
+    commit(duplicateViewpoint(document.value, track.id, viewpoint.id));
+    playback.goToViewpoint(nextIndex);
+  }
+
+  function onMoveViewpoint(direction: -1 | 1): void {
+    const track = currentTrack.value;
+    const viewpoint = track?.viewpoints[playback.viewpointIndex.value];
+    if (!track || !viewpoint || !document.value) {
+      return;
+    }
+    const nextIndex = playback.viewpointIndex.value + direction;
+    if (nextIndex < 0 || nextIndex >= track.viewpoints.length) {
+      return;
+    }
+    commit(moveViewpoint(document.value, track.id, viewpoint.id, direction));
+    playback.goToViewpoint(nextIndex);
+  }
+
+  function onAddEffect(target: FrameEffectTargetKind, overlayId = ""): void {
+    const track = currentTrack.value;
+    const viewpoint = track?.viewpoints[playback.viewpointIndex.value];
+    if (!track || !viewpoint || !document.value) {
+      return;
+    }
+    commit(addEffect(document.value, track.id, viewpoint.id, target, overlayId));
+  }
+
+  function onUpdateEffect(
+    effectId: string,
+    patch: Partial<{
+      kind: FrameEffectKind;
+      target: FrameEffectTargetKind;
+      overlayId: string;
+      startMs: number;
+      durationMs: number;
+    }>,
+  ): void {
+    const track = currentTrack.value;
+    const viewpoint = track?.viewpoints[playback.viewpointIndex.value];
+    if (!track || !viewpoint || !document.value) {
+      return;
+    }
+    commit(updateEffect(document.value, track.id, viewpoint.id, effectId, patch));
+  }
+
+  function onDuplicateEffect(effectId: string): void {
+    const track = currentTrack.value;
+    const viewpoint = track?.viewpoints[playback.viewpointIndex.value];
+    if (!track || !viewpoint || !document.value) {
+      return;
+    }
+    commit(duplicateEffect(document.value, track.id, viewpoint.id, effectId));
+  }
+
+  function onMoveEffect(effectId: string, direction: -1 | 1): void {
+    const track = currentTrack.value;
+    const viewpoint = track?.viewpoints[playback.viewpointIndex.value];
+    if (!track || !viewpoint || !document.value) {
+      return;
+    }
+    commit(moveEffect(document.value, track.id, viewpoint.id, effectId, direction));
+  }
+
+  function onRemoveEffect(effectId: string): void {
+    const track = currentTrack.value;
+    const viewpoint = track?.viewpoints[playback.viewpointIndex.value];
+    if (!track || !viewpoint || !document.value) {
+      return;
+    }
+    commit(removeEffect(document.value, track.id, viewpoint.id, effectId));
+  }
+
   function onRemoveViewpoint(): void {
     const track = currentTrack.value;
     const viewpoint = track?.viewpoints[playback.viewpointIndex.value];
@@ -357,7 +452,7 @@ export function usePresentationSession(options: {
     commit(setTransitionControls(document.value, track.id, transition.id, controls));
   }
 
-  function onAddOverlay(shape: PresentationOverlayKind): void {
+  function onAddOverlay(shape: PresentationOverlayKind, mark?: PresentationMark): void {
     const track = currentTrack.value;
     if (!track || !document.value) {
       return;
@@ -372,7 +467,7 @@ export function usePresentationSession(options: {
     if (!owner) {
       return;
     }
-    commit(addOverlay(document.value, track.id, owner, shape));
+    commit(addOverlay(document.value, track.id, owner, shape, mark));
     const created = currentTrack.value?.overlays.at(-1);
     selectedOverlayId.value = created?.id ?? null;
   }
@@ -409,6 +504,7 @@ export function usePresentationSession(options: {
     try {
       const blob = await renderPresentationGif({
         svg: gifContext.svg,
+        frameHref: gifContext.frameHref,
         track,
         showOverlays: document.value?.showOverlays !== false,
         imageWidth: gifContext.imageWidth,
@@ -454,9 +550,11 @@ export function usePresentationSession(options: {
     chromeRevealed,
     selectedOverlayId,
     exportingGif,
+    repeat,
     addPointArmed,
     attachTarget,
     playback,
+    hasFrame,
     revealChrome,
     toggleOpen,
     togglePanel,
@@ -470,6 +568,13 @@ export function usePresentationSession(options: {
     onDwellSeconds,
     onTransitionSeconds,
     onPathKind,
+    onDuplicateViewpoint,
+    onMoveViewpoint,
+    onAddEffect,
+    onUpdateEffect,
+    onDuplicateEffect,
+    onMoveEffect,
+    onRemoveEffect,
     onRemoveViewpoint,
     onInsertPoint,
     onMovePoint,

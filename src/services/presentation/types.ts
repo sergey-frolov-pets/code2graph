@@ -12,6 +12,7 @@ export const PRESENTATION_OVERLAY_KINDS = [
   "ellipse",
   "text",
   "arrow",
+  "mark",
 ] as const;
 
 export type PresentationOverlayKind = (typeof PRESENTATION_OVERLAY_KINDS)[number];
@@ -31,6 +32,17 @@ export type PresentationArrowKind = (typeof PRESENTATION_ARROW_KINDS)[number];
 export const PRESENTATION_ARROW_FORMS = ["line", "shape", "pointer"] as const;
 
 export type PresentationArrowForm = (typeof PRESENTATION_ARROW_FORMS)[number];
+
+export const PRESENTATION_MARKS = [
+  "warning",
+  "stop",
+  "flag-red",
+  "flag-green",
+  "check",
+  "cross",
+] as const;
+
+export type PresentationMark = (typeof PRESENTATION_MARKS)[number];
 
 export const PRESENTATION_ARROW_DIRECTIONS = ["right", "left", "down", "up"] as const;
 
@@ -54,11 +66,30 @@ export interface NormPoint {
   y: number;
 }
 
+export const FRAME_EFFECT_KINDS = ["fade", "pulse", "zoom"] as const;
+
+export type FrameEffectKind = (typeof FRAME_EFFECT_KINDS)[number];
+
+export const FRAME_EFFECT_TARGETS = ["frame", "diagram", "overlay"] as const;
+
+export type FrameEffectTargetKind = (typeof FRAME_EFFECT_TARGETS)[number];
+
+export interface FrameEffect {
+  id: string;
+  kind: FrameEffectKind;
+  target: FrameEffectTargetKind;
+  /** Set when the target is an overlay. Empty otherwise. */
+  overlayId: string;
+  startMs: number;
+  durationMs: number;
+}
+
 export interface Viewpoint {
   id: string;
   anchor: NormPoint;
   scale: number;
   dwellMs: number;
+  effects: FrameEffect[];
 }
 
 export interface PresentationTransition {
@@ -95,6 +126,9 @@ export interface PresentationOverlay {
   arrowKind: PresentationArrowKind;
   arrowForm: PresentationArrowForm;
   arrowDirection: PresentationArrowDirection;
+  /** Clockwise degrees, snapped to 45. Used by a shape arrow and the pointing hand. */
+  rotation: number;
+  mark: PresentationMark;
   arrowHead: PresentationArrowHead;
   /** Empty string keeps the theme color. */
   stroke: string;

@@ -32,15 +32,11 @@ npm run dev
 | `OPENROUTER_API_KEY` | Ключ OpenRouter для `openrouter-free` | — |
 | `LLM_RATE_LIMIT_PER_MINUTE` | Лимит запросов LLM на IP | `20` |
 | `AUTH_TOKEN_SECRET` | Секрет для Bearer-токенов API | dev-значение (задайте в продакшене) |
-| `VITE_API_BASE_URL` | Адрес API для **сборки фронтенда** (не читается Node) | на VPS, если ключ отсутствует: `same-origin` |
+| `PUBLIC_ORIGIN` | Публичный origin сайта для CORS | пусто |
+| `DEPLOYMENT_API_BASE_URL` | `apiBaseUrl` в `GET /deployment.json` | `/api` |
+| `STATIC_DIR` | Каталог статического фронтенда | пусто (только API) |
 
-`VITE_API_BASE_URL` связывает статическую и серверную версии без правок кода:
-
-- пусто — GitHub Pages и любая статика: библиотека только в браузере, без SQLite;
-- `same-origin` — фронтенд вызывает `/api` на том же хосте;
-- `https://хост` — фронтенд вызывает указанный сервер.
-
-На VPS значение забирает `scripts/deploy/frontend-env.sh` из `server/.env` перед `npm run build`.
+Статический сайт подключает этот сервер файлом `deployment.json` (`apiBaseUrl`) или адресом в настройках. Пустой адрес оставляет библиотеку в браузере. Docker из корня репозитория поднимает API и статику вместе. Схема: `docs/DEPLOY.md`.
 
 Первый администратор создаётся через приложение при открытии библиотеки (`POST /api/auth/setup`), если в SQLite ещё нет пользователей. Публичный статус: `GET /api/auth/status`.
 
@@ -104,3 +100,15 @@ Body:
 **Настройки → AI / LLM:** провайдер `Google Gemini (без ключа)` + consent.
 
 Ключи BYOK пользователя **не** отправляются на этот сервер — только free_builtin через proxy.
+
+## Оплата
+
+Пакеты Cloud, AI, токены, Team и Enterprise описаны в `docs/BILLING_LAVA.md`.
+
+- `GET /api/billing/me` — свой пакет, лимиты и остаток токенов.
+- `POST /api/billing/checkout` — счёт lava. Email уходит в lava и не сохраняется.
+- `POST /api/billing/lava/webhook` — события lava, заголовок `X-Api-Key`.
+- `/api/billing-admin/*` — кабинет оператора, только роль `admin`.
+
+Приложение кабинета: `apps/billing-admin` (`npm ci && npm run dev` в этой папке, порт 5174). Сборка кладётся в nginx location `/billing/`.
+

@@ -131,6 +131,10 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
+.toolbar-overflow:has(.toolbar-overflow__menu) {
+  z-index: 4;
+}
+
 .toolbar-overflow__menu {
   position: absolute;
   top: calc(100% + 6px);

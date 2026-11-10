@@ -1,6 +1,21 @@
 /** Marker that opens a presentation block inside a diagram comment. */
 export const PRESENTATION_MARKER = "@c2g-presentation";
 
+/** Marker of a dropped picture used as the diagram frame. */
+export const FRAME_MARKER = "@c2g-frame";
+
+/** Largest picture accepted as a diagram frame. */
+export const FRAME_MAX_BYTES = 4_000_000;
+
+/** Default length of a new picture or overlay effect. */
+export const FRAME_EFFECT_DEFAULT_MS = 1000;
+
+/** Extra scale at the peak of a pulse. */
+export const FRAME_EFFECT_PULSE_AMOUNT = 0.06;
+
+/** Extra scale at the end of a zoom. */
+export const FRAME_EFFECT_ZOOM_AMOUNT = 0.12;
+
 export const PRESENTATION_SCHEMA_VERSION = 1;
 
 /** How long the camera stays on a new viewpoint. */
@@ -33,6 +48,14 @@ export const PRESENTATION_MIN_OVERLAY_SIZE = 0.012;
 export const PRESENTATION_RESIZE_HANDLE = 10;
 
 export const PRESENTATION_RESIZE_HANDLE_COARSE = 18;
+
+/** Shape arrows and the pointing hand turn by this many degrees. */
+export const PRESENTATION_ROTATION_STEP = 45;
+
+export const PRESENTATION_FULL_CIRCLE = 360;
+
+/** Degrees in a half turn. Dividing by this converts degrees to radians with π. */
+export const PRESENTATION_HALF_CIRCLE = 180;
 
 /** Perpendicular offset used to seed curve handles, in normalized image space. */
 export const PRESENTATION_CURVE_OFFSET = 0.08;

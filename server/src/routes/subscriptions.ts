@@ -3,6 +3,7 @@ import type { AuthVariables } from "../auth/context.js";
 import { requireAuthenticatedUser } from "../auth.js";
 import { isAdmin } from "../authz.js";
 import { getDb } from "../db.js";
+import { userHasCloudAccess } from "../billing/service.js";
 import {
   canManageSubscription,
   hasSubscriptionTargets,
@@ -22,6 +23,10 @@ import {
   replaceSubscriptionSections,
 } from "../subscriptions.js";
 import {
+  parseFeaturePayload,
+  replaceSubscriptionFeatures,
+} from "../services/subscription-features.js";
+import {
   isSectionAccessPermission,
   isSubscriptionDistributionMode,
 } from "../types.js";
@@ -35,6 +40,7 @@ const ERRORS = {
   FORBIDDEN: "Недостаточно прав",
   INVALID_SECTIONS: "Некорректный список разделов",
   INVALID_DIAGRAMS: "Некорректный список диаграмм",
+  INVALID_FEATURES: "Некорректный список возможностей",
   NO_USER_DISTRIBUTION: "Подписка не поддерживает выдачу пользователям",
   USERS_REQUIRED: "Укажите хотя бы одного пользователя",
 } as const;
@@ -100,6 +106,10 @@ subscriptionsRouter.post("/", async (context) => {
     return user;
   }
 
+  if (!userHasCloudAccess(getDb(), user.id) && !isAdmin(user)) {
+    return context.json({ error: "Наборы библиотеки входят в пакет Cloud" }, 402);
+  }
+
   const body = await context.req.json<{
     title?: string;
     description?: string;
@@ -107,6 +117,7 @@ subscriptionsRouter.post("/", async (context) => {
     distributionMode?: string;
     sections?: unknown;
     diagrams?: unknown;
+    features?: unknown;
   }>();
 
   const title = body.title?.trim() ?? "";
@@ -129,6 +140,10 @@ subscriptionsRouter.post("/", async (context) => {
     body.distributionMode && isSubscriptionDistributionMode(body.distributionMode)
       ? body.distributionMode
       : "users";
+  const features = parseFeaturePayload(body.features);
+  if (features === null) {
+    return context.json({ error: ERRORS.INVALID_FEATURES }, 400);
+  }
 
   const now = new Date().toISOString();
   const id = crypto.randomUUID();
@@ -153,6 +168,9 @@ subscriptionsRouter.post("/", async (context) => {
 
   replaceSubscriptionSections(database, id, sections);
   replaceSubscriptionDiagrams(database, id, diagrams);
+  if (features) {
+    replaceSubscriptionFeatures(database, id, features);
+  }
 
   if (allowsLinkDistribution(distributionMode)) {
     ensureSubscriptionShareToken(database, id);
@@ -205,6 +223,7 @@ subscriptionsRouter.put("/:id", async (context) => {
     distributionMode?: string;
     sections?: unknown;
     diagrams?: unknown;
+    features?: unknown;
   }>();
 
   const database = getDb();
@@ -253,6 +272,11 @@ subscriptionsRouter.put("/:id", async (context) => {
     return context.json({ error: ERRORS.TARGETS_REQUIRED }, 400);
   }
 
+  const features = parseFeaturePayload(body.features);
+  if (features === null) {
+    return context.json({ error: ERRORS.INVALID_FEATURES }, 400);
+  }
+
   const now = new Date().toISOString();
   database
     .prepare(
@@ -264,6 +288,9 @@ subscriptionsRouter.put("/:id", async (context) => {
 
   replaceSubscriptionSections(database, id, sections);
   replaceSubscriptionDiagrams(database, id, diagrams);
+  if (features) {
+    replaceSubscriptionFeatures(database, id, features);
+  }
 
   if (allowsLinkDistribution(distributionMode)) {
     ensureSubscriptionShareToken(database, id);

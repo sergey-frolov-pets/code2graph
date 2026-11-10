@@ -155,10 +155,33 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  if (url.origin === self.location.origin && url.pathname.endsWith("/deployment.json")) {
+    event.respondWith(networkFirstDeploymentConfig(request));
+    return;
+  }
+
   if (request.mode === "navigate" && isAppShellNavigation(url)) {
     event.respondWith(handleNavigation(request));
   }
 });
+
+async function networkFirstDeploymentConfig(request) {
+  const cache = await caches.open("code2graph-deployment-v1");
+
+  try {
+    const response = await fetch(request, { cache: "no-store" });
+    if (response.ok) {
+      await cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    const cached = await cache.match(request);
+    if (cached) {
+      return cached;
+    }
+    return new Response("", { status: 504 });
+  }
+}
 
 async function networkFirstLibraryApi(request) {
   const cache = await caches.open(LIBRARY_API_CACHE);

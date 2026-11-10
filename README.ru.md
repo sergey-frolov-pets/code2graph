@@ -53,7 +53,12 @@ npm run check:i18n
 
 ### Свой сервер
 
-В репозитории нет Dockerfile. Серверная версия (вход, облачная библиотека, прокси LLM) ставится скриптами из `scripts/deploy/`:
+Серверная версия (вход, облачная библиотека, прокси LLM) ставится Docker Compose или скриптами из `scripts/deploy/`:
+
+```bash
+cp server/.env.example server/.env
+docker compose up -d --build
+```
 
 ```bash
 sudo bash scripts/deploy/vdsina-install.sh

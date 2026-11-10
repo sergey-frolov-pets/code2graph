@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
-import ActionIcon from "@/components/icons/ActionIcon.vue";
-import FileBadgeIcon from "@/components/icons/FileBadgeIcon.vue";
-import IconButton from "@/components/IconButton.vue";
 import TooltipWrap from "@/components/TooltipWrap.vue";
 import ToolbarOverflowMenu from "@/components/ui/ToolbarOverflowMenu.vue";
+import type { ToolbarMenuAction } from "@/components/ui/ToolbarOverflowMenu.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
 import { useHasActiveLlm } from "@/composables/useHasActiveLlm";
+import { useFeatureGate } from "@/composables/useFeatureGate";
 import { useLocale } from "@/composables/useLocale";
 import {
   listSampleIds,
@@ -74,6 +73,9 @@ const emit = defineEmits<{
 
 const { t } = useLocale();
 const { hasActiveLlm, refreshActiveLlmAvailability } = useHasActiveLlm();
+const allowAi = useFeatureGate("editor.ai");
+const allowCopySource = useFeatureGate("editor.copySource");
+const allowSnippets = useFeatureGate("editor.snippets");
 
 onMounted(() => {
   void refreshActiveLlmAvailability();
@@ -102,38 +104,41 @@ const sampleOptions = computed(() =>
 
 const showAiControls = computed(
   () =>
+    allowAi.value &&
     hasActiveLlm.value &&
     (props.formatDefinition.supportsAiPatch ||
-      props.formatDefinition.supportsAiSyntaxAsk),
+      props.formatDefinition.supportsAiSyntaxAsk ||
+      props.formatDefinition.supportsSyntaxValidation),
 );
 
-const showAiAssistantMenu = computed(
-  () =>
-    showAiControls.value &&
-    props.formatDefinition.supportsAiPatch &&
-    props.formatDefinition.supportsAiSyntaxAsk,
-);
-
-const aiAssistantMenuGroups = computed(() => [
-  {
-    id: "ai",
-    label: "",
-    actions: [
-      {
-        id: "patch",
-        label: t("editor.aiPatch"),
-        icon: "ai" as const,
-        disabled: !props.canAiPatch,
-      },
-      {
-        id: "syntax-ask",
-        label: t("editor.aiSyntaxAsk"),
-        icon: "syntax-help" as const,
-        disabled: !props.canAiSyntaxAsk,
-      },
-    ],
-  },
-]);
+const aiAssistantMenuGroups = computed(() => {
+  const actions: ToolbarMenuAction[] = [];
+  if (props.formatDefinition.supportsAiPatch) {
+    actions.push({
+      id: "patch",
+      label: t("editor.aiPatch"),
+      icon: "ai",
+      disabled: !props.canAiPatch,
+    });
+  }
+  if (props.formatDefinition.supportsAiSyntaxAsk) {
+    actions.push({
+      id: "syntax-ask",
+      label: t("editor.aiSyntaxAsk"),
+      icon: "syntax-help",
+      disabled: !props.canAiSyntaxAsk,
+    });
+  }
+  if (props.formatDefinition.supportsSyntaxValidation) {
+    actions.push({
+      id: "validate",
+      label: t("editor.validate"),
+      icon: "syntax-help",
+      disabled: props.isValidating,
+    });
+  }
+  return [{ id: "ai", label: "", actions }];
+});
 
 function onAiAssistantAction(actionId: string): void {
   if (actionId === "patch") {
@@ -143,14 +148,148 @@ function onAiAssistantAction(actionId: string): void {
 
   if (actionId === "syntax-ask") {
     emit("aiSyntaxAsk");
+    return;
   }
+
+  if (actionId === "validate") {
+    emit("validateSyntax");
+  }
+}
+
+const fileMenuGroups = computed(() => {
+  const actions: ToolbarMenuAction[] = [
+    {
+      id: "open",
+      label: openFileLabel.value,
+      icon: "folder-open" as const,
+    },
+  ];
+
+  if (props.formatDefinition.editable) {
+    actions.push({
+      id: "versions",
+      label: t("editor.versions"),
+      icon: "history" as const,
+    });
+  }
+
+  if (props.formatDefinition.supportsSaveSource) {
+    actions.push({
+      id: "save",
+      label: saveLabel.value,
+      icon: "save" as const,
+      disabled: !props.canSave || !allowCopySource.value,
+    });
+  }
+
+  if (props.formatDefinition.editable) {
+    actions.push({
+      id: "save-library",
+      label: t("editor.saveToLibrary"),
+      icon: "library" as const,
+      disabled: !props.canSave || !allowCopySource.value,
+    });
+  }
+
+  return [{ id: "file", label: "", actions }];
+});
+
+const editMenuGroups = computed(() => {
+  const actions: ToolbarMenuAction[] = [];
+
+  if (props.formatDefinition.editable && props.canPasteTable) {
+    actions.push({
+      id: "paste-table",
+      label: t("editor.pasteTable"),
+      icon: "table-paste" as const,
+      disabled: props.isRendering,
+    });
+  }
+
+  if (props.canRefreshData) {
+    actions.push({
+      id: "refresh-data",
+      label: t("library.refreshDiagramData"),
+      icon: "refresh" as const,
+      disabled: props.isRendering,
+    });
+  }
+
+  if (props.formatDefinition.editable) {
+    actions.push(
+      {
+        id: "session",
+        label: props.sessionFileShowsBaseline
+          ? t("editor.sessionToggleFileCurrent")
+          : t("editor.sessionToggleFile"),
+        icon: "session-compare" as const,
+        disabled: !props.canToggleSessionFile,
+        pressed: props.sessionFileShowsBaseline,
+      },
+      {
+        id: "undo",
+        label: t("editor.undo"),
+        icon: "undo" as const,
+        disabled: !props.canUndo,
+      },
+      {
+        id: "redo",
+        label: t("editor.redo"),
+        icon: "redo" as const,
+        disabled: !props.canRedo,
+      },
+    );
+  }
+
+  actions.push(
+    {
+      id: "convert",
+      label: t("editor.convertTooltip"),
+      icon: "transfer" as const,
+      disabled: !props.canConvert,
+    },
+    {
+      id: "clear",
+      label: t("editor.clear"),
+      icon: "trash" as const,
+      disabled: !props.canClear,
+    },
+  );
+
+  if (props.formatDefinition.supportsSnippets) {
+    actions.push({
+      id: "snippets",
+      label: `${t("editor.snippets")} (${SNIPPETS_KEYBOARD_SHORTCUT})`,
+      icon: "snippets" as const,
+      disabled: !allowSnippets.value,
+      pressed: props.snippetsOpen,
+    });
+  }
+
+  return [{ id: "edit", label: "", actions }];
+});
+
+function onFileAction(actionId: string): void {
+  if (actionId === "open") emit("openFile");
+  if (actionId === "versions") emit("openVersions");
+  if (actionId === "save") emit("savePuml");
+  if (actionId === "save-library") emit("saveToLibrary");
+}
+
+function onEditAction(actionId: string): void {
+  if (actionId === "paste-table") emit("pasteTable");
+  if (actionId === "refresh-data") emit("refreshData");
+  if (actionId === "session") emit("toggleSessionFile");
+  if (actionId === "undo") emit("undo");
+  if (actionId === "redo") emit("redo");
+  if (actionId === "convert") emit("convert");
+  if (actionId === "clear") emit("clear");
+  if (actionId === "snippets") emit("toggleSnippets");
 }
 
 const titleTooltip = computed(() => t(languageModule.value.titleTooltipKey));
 
 const saveLabel = computed(() => t(languageModule.value.saveFileKey));
-
-const saveBadgeFormat = computed(() => languageModule.value.fileBadge);
 
 const openFileLabel = computed(() => t(languageModule.value.openFileKey));
 
@@ -240,131 +379,25 @@ function onSampleChange(event: Event): void {
     </div>
 
     <div class="panel-header__toolbar">
-      <IconButton :label="openFileLabel" @click="emit('openFile')">
-        <ActionIcon name="folder-open" />
-      </IconButton>
-      <IconButton
-        v-if="formatDefinition.editable"
-        :label="t('editor.versions')"
-        @click="emit('openVersions')"
-      >
-        <ActionIcon name="history" />
-      </IconButton>
-      <IconButton
-        v-if="formatDefinition.supportsSaveSource"
-        :label="saveLabel"
-        primary
-        format
-        :disabled="!canSave"
-        @click="emit('savePuml')"
-      >
-        <FileBadgeIcon :format="saveBadgeFormat" />
-      </IconButton>
-      <IconButton
-        v-if="formatDefinition.editable"
-        :label="t('editor.saveToLibrary')"
-        primary
-        format
-        :disabled="!canSave"
-        @click="emit('saveToLibrary')"
-      >
-        <ActionIcon name="library" />
-      </IconButton>
       <ToolbarOverflowMenu
-        v-if="showAiAssistantMenu"
+        :label="t('editor.fileMenu')"
+        icon="folder-open"
+        :groups="fileMenuGroups"
+        @action="onFileAction"
+      />
+      <ToolbarOverflowMenu
+        :label="t('editor.editMenu')"
+        icon="edit"
+        :groups="editMenuGroups"
+        @action="onEditAction"
+      />
+      <ToolbarOverflowMenu
+        v-if="showAiControls"
         :label="t('editor.aiAssistant')"
         icon="ai"
         :groups="aiAssistantMenuGroups"
         @action="onAiAssistantAction"
       />
-      <IconButton
-        v-else-if="showAiControls && formatDefinition.supportsAiPatch"
-        :label="t('editor.aiPatch')"
-        :disabled="!canAiPatch"
-        prevent-mousedown-default
-        @click="emit('aiPatch')"
-      >
-        <ActionIcon name="ai" />
-      </IconButton>
-      <IconButton
-        v-else-if="showAiControls && formatDefinition.supportsAiSyntaxAsk"
-        :label="t('editor.aiSyntaxAsk')"
-        :disabled="!canAiSyntaxAsk"
-        prevent-mousedown-default
-        @click="emit('aiSyntaxAsk')"
-      >
-        <ActionIcon name="syntax-help" />
-      </IconButton>
-      <IconButton
-        v-if="formatDefinition.editable && canPasteTable"
-        :label="t('editor.pasteTable')"
-        :disabled="isRendering"
-        data-testid="editor-paste-table-button"
-        @click="emit('pasteTable')"
-      >
-        <ActionIcon name="table-paste" />
-      </IconButton>
-      <IconButton
-        v-if="canRefreshData"
-        :label="t('library.refreshDiagramData')"
-        :disabled="isRendering"
-        data-testid="editor-refresh-data-button"
-        @click="emit('refreshData')"
-      >
-        <ActionIcon name="refresh" />
-      </IconButton>
-      <IconButton
-        v-if="formatDefinition.editable"
-        :label="
-          sessionFileShowsBaseline
-            ? t('editor.sessionToggleFileCurrent')
-            : t('editor.sessionToggleFile')
-        "
-        :pressed="sessionFileShowsBaseline"
-        :disabled="!canToggleSessionFile"
-        data-testid="editor-session-file-toggle"
-        @click="emit('toggleSessionFile')"
-      >
-        <ActionIcon name="session-compare" />
-      </IconButton>
-      <IconButton
-        v-if="formatDefinition.editable"
-        :label="t('editor.undo')"
-        :disabled="!canUndo"
-        @click="emit('undo')"
-      >
-        <ActionIcon name="undo" />
-      </IconButton>
-      <IconButton
-        v-if="formatDefinition.editable"
-        :label="t('editor.redo')"
-        :disabled="!canRedo"
-        @click="emit('redo')"
-      >
-        <ActionIcon name="redo" />
-      </IconButton>
-      <IconButton
-        :label="t('editor.convertTooltip')"
-        :disabled="!canConvert"
-        @click="emit('convert')"
-      >
-        <ActionIcon name="transfer" />
-      </IconButton>
-      <IconButton
-        :label="t('editor.clear')"
-        :disabled="!canClear"
-        @click="emit('clear')"
-      >
-        <ActionIcon name="trash" />
-      </IconButton>
-      <IconButton
-        v-if="formatDefinition.supportsSnippets"
-        :label="`${t('editor.snippets')} (${SNIPPETS_KEYBOARD_SHORTCUT})`"
-        :pressed="snippetsOpen"
-        @click="emit('toggleSnippets')"
-      >
-        <ActionIcon name="snippets" />
-      </IconButton>
       <TooltipWrap
         v-if="formatDefinition.supportsSamples && sampleOptions.length > 0"
         :label="t('editor.samplesTooltip')"

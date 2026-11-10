@@ -91,6 +91,7 @@ const emit = defineEmits<{
   "manage-access": [sectionId: string, title: string];
   "ratings-click": [];
   "subscriptions-click": [];
+  "transfer-click": [];
   "open-subscription-target": [
     payload: {
       type: "section" | "diagram";
@@ -172,6 +173,7 @@ const emit = defineEmits<{
         @manage-access="(id, title) => emit('manage-access', id, title)"
         @ratings-click="emit('ratings-click')"
         @subscriptions-click="emit('subscriptions-click')"
+        @transfer-click="emit('transfer-click')"
       />
 
       <LibrarySubscriptionsPanel

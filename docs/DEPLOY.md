@@ -1,54 +1,51 @@
 # Деплой Code2Graph
 
-Один и тот же фронтенд собирается в двух режимах. Переключение — только переменная `VITE_API_BASE_URL`, код не меняется.
+Один и тот же фронтенд работает в двух режимах. Код не переключается: режим берётся из конфигурации.
 
-| Режим | `VITE_API_BASE_URL` | Что получает пользователь |
-|-------|---------------------|--------------------------|
-| Статический сайт (GitHub Pages) | пусто (`.env.production`) | Редактор, PWA, библиотека в браузере. Без сервера и БД |
-| Сервер (VPS, nginx + SQLite) | `same-origin` или `https://хост` | Тот же сайт плюс облачная библиотека, вход и API |
+| Режим | Как включается | Что получает пользователь |
+|-------|----------------|---------------------------|
+| Статический сайт | нет `deployment.json` с адресом API, пустой `VITE_API_BASE_URL`, нет ручного URL в настройках | Редактор, PWA, библиотека в браузере. Запросов к `/api` нет |
+| Сервер | `deployment.json` с `apiBaseUrl`, либо адрес в настройках, либо запасной `VITE_API_BASE_URL` | Тот же сайт плюс вход, облачная библиотека, подписки и прокси LLM |
 
-`same-origin` означает запросы на `/api` того же хоста. Абсолютный URL указывает на отдельный Library API.
+Порядок адреса API: сохранённый пользователем URL, затем `deployment.json` рядом с сайтом, затем переменная сборки. На статическом сайте сохранённый адрес того же хоста игнорируется. Файл `file://` не читает `deployment.json`.
 
-Локально сервер уже включён в `.env.development`. Своё значение кладите в `.env.local` или `.env.production.local` (они в `.gitignore`).
+Пример файла:
 
-## Канонический таргет: GitHub Pages
-
-Основной публичный сайт — [code2graph.ru](https://code2graph.ru), деплоится из ветки `main` через workflow `.github/workflows/deploy-pages.yml`.
-
-| Параметр | Значение |
-|----------|----------|
-| Команда сборки | `npm run build` |
-| `VITE_API_BASE_URL` | пусто |
-| Артефакт | `dist/` (single-file `index.html` + PWA) |
-| База данных | нет |
-| PWA | Да (manifest, service worker, icons) |
-| Домен | `public/CNAME` → custom domain |
-
-CI перед деплоем выполняет:
-
-- `npm run version:bump` — patch-версия в `package.json` (коммитится в `main` после успешного деплоя с `[skip ci]`)
-- `npm run typecheck` — проверка TypeScript фронтенда
-- `npm run test` — unit-тесты (Vitest)
-- `npm run check:i18n` — паритет ключей RU/EN
-- `npm --prefix server run typecheck` — проверка TypeScript API-сервера
-
-## Серверная сборка
-
-На VPS `scripts/deploy/vdsina-install.sh` и `vdsina-update.sh` перед `npm run build` читают `VITE_API_BASE_URL` из окружения, затем из `server/.env`, затем из корневого `.env`. Если ключа нет, подставляется `same-origin`, чтобы сайт с nginx по-прежнему ходил в `/api`.
-
-Пример для `/opt/code2graph/server/.env`:
-
-```bash
-VITE_API_BASE_URL=same-origin
+```json
+{
+  "apiBaseUrl": "/api",
+  "publicOrigin": "https://diagrams.example.com"
+}
 ```
 
-Пустое значение в этом файле собирает на VPS статику без API. SQLite по-прежнему задаётся через `DB_PATH` и нужен только процессу Node.
+Пустой `apiBaseUrl` оставляет статику. `publicOrigin` задаёт публичные ссылки и не требует правки исходников.
 
-Локальная серверная сборка:
+## Статика (GitHub Pages)
 
 ```bash
-VITE_API_BASE_URL=same-origin npm run build
+npm ci
+npm run build
 ```
+
+`VITE_API_BASE_URL` в `.env.production` пустой. В `public/deployment.json` адрес API тоже пустой. Артефакт — `dist/`.
+
+## Docker
+
+```bash
+cp server/.env.example server/.env
+# Задайте AUTH_TOKEN_SECRET (не короче 32 символов)
+docker compose up -d --build
+```
+
+Контейнер отдаёт статику и API на порту 3001. `GET /deployment.json` возвращает `apiBaseUrl: /api`. Первый администратор создаётся в библиотеке приложения.
+
+## VPS
+
+`scripts/deploy/vdsina-install.sh` и `vdsina-update.sh` собирают фронтенд как статику и после копирования в корень сайта пишут `deployment.json` с `/api` (или `DEPLOYMENT_API_BASE_URL` из `server/.env`). Отдельная серверная пересборка фронта не нужна.
+
+Переменные сервера: [server/.env.example](../server/.env.example) и [deploy/server.env.example](../deploy/server.env.example). `VITE_API_BASE_URL` сервер не читает.
+
+Подробности VPS (DNS, nginx, сертификат): [DEPLOY_VDSINA.md](DEPLOY_VDSINA.md).
 
 ## Локальная разработка
 
@@ -58,6 +55,4 @@ npm run dev          # фронтенд :5173, API через .env.development
 npm run dev:api      # library API :3001
 ```
 
-## Релизы
-
-GitHub Release прикрепляет `code2graph.html` (см. `npm run package:release`).
+`.env.development` задаёт `VITE_API_BASE_URL=same-origin`. Статический превью без сервера: `.env.local` с пустым `VITE_API_BASE_URL`.

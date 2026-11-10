@@ -7,11 +7,17 @@ import {
   PRESENTATION_RESIZE_HANDLE_COARSE,
 } from "@/services/presentation/constants";
 import {
+  artworkFitTransform,
+  overlayArtwork,
+  rotationTransform,
+} from "@/services/presentation/glyph-art";
+import {
   calloutTailLength,
   isLineArrow,
   lineArrowPath,
   overlayOutline,
   overlayResizeHandles,
+  overlayRotates,
   positiveBox,
   resizeOverlay,
 } from "@/services/presentation/overlay-geometry";
@@ -23,6 +29,7 @@ import type {
 } from "@/services/presentation/types";
 import type { PanZoomSnapshot } from "@/services/preview/pan-zoom";
 import type { PresentationPhase } from "@/composables/usePresentationPlayback";
+import { effectVisualAt, overlayEffectTransform } from "@/services/presentation/effects";
 
 const props = defineProps<{
   snapshot: PanZoomSnapshot;
@@ -34,6 +41,8 @@ const props = defineProps<{
   travelOrigin: number;
   selectedOverlayId: string | null;
   addPointArmed: boolean;
+  effectsLive: boolean;
+  effectElapsedMs: number;
 }>();
 
 const emit = defineEmits<{
@@ -263,6 +272,22 @@ function outline(overlay: PresentationOverlay): string | null {
   return overlayOutline(overlay, screenBox(overlay));
 }
 
+function artworkOf(overlay: PresentationOverlay) {
+  return overlayArtwork(overlay);
+}
+
+function artworkFit(overlay: PresentationOverlay): string {
+  const artwork = overlayArtwork(overlay);
+  return artwork ? artworkFitTransform(screenBox(overlay), artwork) : "";
+}
+
+function rotationOf(overlay: PresentationOverlay): string | undefined {
+  if (!overlayRotates(overlay)) {
+    return undefined;
+  }
+  return rotationTransform(screenBox(overlay), overlay.rotation);
+}
+
 function arrowLine(overlay: PresentationOverlay): string {
   return lineArrowPath(screenBox(overlay), overlay.arrowKind);
 }
@@ -347,6 +372,25 @@ function onPointerMove(event: PointerEvent): void {
 
 function onPointerUp(): void {
   drag = null;
+}
+
+function overlayEffect(overlay: PresentationOverlay): { opacity: number; transform?: string } {
+  if (!props.effectsLive || !props.track) {
+    return { opacity: 1 };
+  }
+  const viewpoint = props.phase === "travel"
+    ? props.track.viewpoints[props.travelOrigin]
+    : props.track.viewpoints[props.viewpointIndex];
+  const visual = effectVisualAt(
+    viewpoint?.effects ?? [],
+    props.effectElapsedMs,
+    "overlay",
+    overlay.id,
+  );
+  return {
+    opacity: visual.opacity,
+    transform: overlayEffectTransform(screenBox(overlay), visual.scale),
+  };
 }
 
 function overlayTextSize(overlay: PresentationOverlay): number {
@@ -436,6 +480,8 @@ function overlayTextSize(overlay: PresentationOverlay): number {
         'is-dashed': overlay.line === 'dashed',
       }"
       :style="overlayVars(overlay)"
+      :opacity="overlayEffect(overlay).opacity"
+      :transform="overlayEffect(overlay).transform"
       @pointerdown="onOverlayPointerDown($event, overlay)"
     >
       <rect
@@ -447,8 +493,37 @@ function overlayTextSize(overlay: PresentationOverlay): number {
         :height="selectionBox(overlay).height"
         rx="8"
       />
+      <g
+        v-if="artworkOf(overlay)"
+        class="presentation-artwork"
+        :transform="rotationOf(overlay)"
+      >
+        <g :transform="artworkFit(overlay)">
+          <g :transform="artworkOf(overlay)?.transform">
+            <path
+              v-for="(part, index) in artworkOf(overlay)?.parts"
+              :key="`${overlay.id}-art-${index}`"
+              :d="part.d"
+              :fill="part.fill"
+              :stroke="part.stroke"
+              :stroke-width="part.strokeWidth || undefined"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </g>
+        </g>
+      </g>
+      <g
+        v-else-if="outline(overlay) && overlayRotates(overlay)"
+        :transform="rotationOf(overlay)"
+      >
+        <path
+          class="presentation-shape"
+          :d="outline(overlay) ?? undefined"
+        />
+      </g>
       <path
-        v-if="outline(overlay)"
+        v-else-if="outline(overlay)"
         class="presentation-shape"
         :d="outline(overlay) ?? undefined"
       />
@@ -516,7 +591,8 @@ function overlayTextSize(overlay: PresentationOverlay): number {
 
 .presentation-stage:not(.is-editing) .presentation-shape,
 .presentation-stage:not(.is-editing) .presentation-arrow,
-.presentation-stage:not(.is-editing) .presentation-hit {
+.presentation-stage:not(.is-editing) .presentation-hit,
+.presentation-stage:not(.is-editing) .presentation-artwork {
   pointer-events: none;
 }
 
@@ -547,7 +623,8 @@ function overlayTextSize(overlay: PresentationOverlay): number {
 
 .presentation-stage.is-editing .presentation-shape,
 .presentation-stage.is-editing .presentation-arrow-hit,
-.presentation-stage.is-editing .presentation-hit {
+.presentation-stage.is-editing .presentation-hit,
+.presentation-stage.is-editing .presentation-artwork {
   cursor: move;
 }
 

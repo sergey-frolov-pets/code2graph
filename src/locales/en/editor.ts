@@ -85,6 +85,8 @@ export const editorMessages = {
   "editor.aiPatch": "Edit with AI",
   "editor.aiSyntaxAsk": "Ask about syntax",
   "editor.aiAssistant": "AI assistant",
+  "editor.fileMenu": "File",
+  "editor.editMenu": "Edit",
   "editor.sessionToggleFile": "Compare with the snapshot: show the previous version",
   "editor.sessionToggleFileCurrent": "Return to the current version",
   "editor.sessionToggleHunk": "Toggle the old and new version of this block",

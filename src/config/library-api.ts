@@ -1,95 +1,35 @@
 import { ref } from "vue";
 import { STORAGE_KEY_LIBRARY_API_URL } from "@/constants/diagram-library";
-import { DEPLOYMENT_API_SAME_ORIGIN_ALIASES } from "@/constants/deployment";
+import {
+  DEPLOYMENT_CONFIG_FILE,
+  isImplicitSameOriginApiUrl,
+  normalizeLibraryApiUrl,
+  parseDeploymentFile,
+  resolveDeployment,
+  type ApiConfigSource,
+  type DeploymentResolutionInput,
+} from "@/config/deployment";
 import { readStorageItem, writeStorageItem } from "@/core/safe-storage";
+
+export {
+  isImplicitSameOriginApiUrl,
+  isSameOriginApiSetting,
+  isStaticDeployment,
+  normalizeLibraryApiUrl,
+} from "@/config/deployment";
 
 export interface LibraryApiResolutionInput {
   storedUrl: string | null;
+  deploymentApiUrl?: string | null;
   envUrl: string | undefined;
   pageOrigin: string;
   pageProtocol: string;
 }
 
-export function normalizeLibraryApiUrl(input: string): string {
-  const trimmed = input.trim();
-  if (!trimmed) {
-    return "";
-  }
-
-  let url = trimmed.replace(/\/+$/, "");
-  if (!url.endsWith("/api")) {
-    url = `${url}/api`;
-  }
-
-  return url;
-}
-
-export function isSameOriginApiSetting(value: string): boolean {
-  const normalized = value.trim().toLowerCase();
-  return (DEPLOYMENT_API_SAME_ORIGIN_ALIASES as readonly string[]).includes(
-    normalized,
-  );
-}
-
-function readEnvApiBaseUrl(envUrl: string | undefined): string {
-  return envUrl?.trim() ?? "";
-}
-
-export function isStaticDeployment(envUrl: string | undefined): boolean {
-  return readEnvApiBaseUrl(envUrl) === "";
-}
-
-/**
- * На статической сборке адрес того же хоста не считается настроенным сервером.
- * Раньше он подставлялся автоматически и сохранялся в браузере.
- */
-export function isImplicitSameOriginApiUrl(
-  candidate: string,
-  envUrl: string | undefined,
-  pageOrigin: string,
-  pageProtocol: string,
-): boolean {
-  if (!isStaticDeployment(envUrl)) {
-    return false;
-  }
-
-  if (!pageProtocol.startsWith("http") || !pageOrigin.trim() || !candidate.trim()) {
-    return false;
-  }
-
-  return normalizeLibraryApiUrl(candidate) === normalizeLibraryApiUrl(pageOrigin);
-}
-
 export function resolveConfiguredLibraryApiUrl(
   input: LibraryApiResolutionInput,
 ): string {
-  const envUrl = readEnvApiBaseUrl(input.envUrl);
-  const sameOriginUrl = input.pageProtocol.startsWith("http")
-    ? normalizeLibraryApiUrl(input.pageOrigin)
-    : "";
-
-  if (input.storedUrl !== null && input.storedUrl.trim() !== "") {
-    if (
-      !isImplicitSameOriginApiUrl(
-        input.storedUrl,
-        envUrl,
-        input.pageOrigin,
-        input.pageProtocol,
-      )
-    ) {
-      return normalizeLibraryApiUrl(input.storedUrl);
-    }
-  }
-
-  if (!envUrl) {
-    return "";
-  }
-
-  if (isSameOriginApiSetting(envUrl)) {
-    return sameOriginUrl;
-  }
-
-  return normalizeLibraryApiUrl(envUrl);
+  return resolveDeployment(toDeploymentInput(input)).apiBaseUrl;
 }
 
 export function resolveActiveProfileApiUrl(
@@ -115,6 +55,18 @@ export function resolveActiveProfileApiUrl(
   return normalizeLibraryApiUrl(profileApiUrl);
 }
 
+function toDeploymentInput(
+  input: LibraryApiResolutionInput,
+): DeploymentResolutionInput {
+  return {
+    storedUrl: input.storedUrl,
+    deploymentApiUrl: input.deploymentApiUrl ?? null,
+    envUrl: input.envUrl,
+    pageOrigin: input.pageOrigin,
+    pageProtocol: input.pageProtocol,
+  };
+}
+
 function readPageLocation(): { pageOrigin: string; pageProtocol: string } {
   if (typeof window === "undefined") {
     return { pageOrigin: "", pageProtocol: "" };
@@ -135,17 +87,25 @@ function readStoredLibraryApiUrl(): string | null {
   return saved;
 }
 
-function readInitialLibraryApiUrl(): string {
+const deploymentApiUrl = ref<string | null>(null);
+const deploymentPublicOrigin = ref("");
+const libraryApiUrl = ref("");
+const apiConfigSource = ref<ApiConfigSource>("none");
+
+function applyResolvedApiUrl(): void {
   const page = readPageLocation();
-  return resolveConfiguredLibraryApiUrl({
+  const resolved = resolveDeployment({
     storedUrl: readStoredLibraryApiUrl(),
+    deploymentApiUrl: deploymentApiUrl.value,
     envUrl: import.meta.env.VITE_API_BASE_URL,
     pageOrigin: page.pageOrigin,
     pageProtocol: page.pageProtocol,
   });
+  libraryApiUrl.value = resolved.apiBaseUrl;
+  apiConfigSource.value = resolved.source;
 }
 
-const libraryApiUrl = ref(readInitialLibraryApiUrl());
+applyResolvedApiUrl();
 
 export function getLibraryApiBaseUrl(): string {
   return libraryApiUrl.value;
@@ -155,21 +115,42 @@ export function isLibraryServerConfigured(): boolean {
   return Boolean(libraryApiUrl.value);
 }
 
+export function getApiConfigSource(): ApiConfigSource {
+  return apiConfigSource.value;
+}
+
+export function getApiConfigSourceRef() {
+  return apiConfigSource;
+}
+
+export function getDeploymentPublicOrigin(): string {
+  return deploymentPublicOrigin.value;
+}
+
 export function setLibraryApiBaseUrl(value: string): void {
-  const normalized = normalizeLibraryApiUrl(value);
+  const trimmed = value.trim();
+  if (!trimmed) {
+    writeStorageItem(STORAGE_KEY_LIBRARY_API_URL, "");
+    applyResolvedApiUrl();
+    return;
+  }
+
+  const normalized = normalizeLibraryApiUrl(trimmed);
   libraryApiUrl.value = normalized;
+  apiConfigSource.value = "manual";
   writeStorageItem(STORAGE_KEY_LIBRARY_API_URL, normalized);
 }
 
 export function readRawLibraryApiUrl(): string {
   const saved = readStoredLibraryApiUrl();
   if (saved !== null) {
+    const page = readPageLocation();
     if (
       isImplicitSameOriginApiUrl(
         saved,
         import.meta.env.VITE_API_BASE_URL,
-        readPageLocation().pageOrigin,
-        readPageLocation().pageProtocol,
+        page.pageOrigin,
+        page.pageProtocol,
       )
     ) {
       return libraryApiUrl.value;
@@ -184,4 +165,29 @@ export function readRawLibraryApiUrl(): string {
 /** Для composable: реактивная ссылка на URL API библиотеки. */
 export function getLibraryApiUrlRef() {
   return libraryApiUrl;
+}
+
+export async function loadDeploymentConfig(): Promise<void> {
+  if (typeof window === "undefined" || window.location.protocol === "file:") {
+    return;
+  }
+
+  try {
+    const url = new URL(DEPLOYMENT_CONFIG_FILE, document.baseURI || window.location.href);
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+
+    const parsed = parseDeploymentFile(await response.json());
+    if (!parsed) {
+      return;
+    }
+
+    deploymentApiUrl.value = parsed.apiBaseUrl;
+    deploymentPublicOrigin.value = parsed.publicOrigin;
+    applyResolvedApiUrl();
+  } catch {
+    // Статический хостинг без файла или file:// остаётся локальным режимом.
+  }
 }

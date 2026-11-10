@@ -118,6 +118,7 @@ export const llmMessages = {
   "llm.wizard.livePreviewTitle": "Живое превью",
   "llm.wizard.livePreviewPlaceholder": "Превью появится после выбора параметров диаграммы",
   "llm.wizard.aiSetupTitle": "Нужна настройка ИИ",
+  "llm.wizard.openSettings": "Открыть настройки ИИ",
   "llm.wizard.aiSetupHint": "Включите согласие и настройте провайдера, не закрывая мастер.",
   "llm.wizard.aiSetupRetry": "Повторить генерацию",
   "llm.wizard.onboardingTitle": "Добро пожаловать в мастер диаграмм",

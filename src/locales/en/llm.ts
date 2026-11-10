@@ -118,6 +118,7 @@ export const llmMessages = {
   "llm.wizard.livePreviewTitle": "Live preview",
   "llm.wizard.livePreviewPlaceholder": "Preview will appear after you choose diagram options",
   "llm.wizard.aiSetupTitle": "AI setup required",
+  "llm.wizard.openSettings": "Open AI settings",
   "llm.wizard.aiSetupHint": "Enable consent and configure the AI provider without leaving the wizard.",
   "llm.wizard.aiSetupRetry": "Retry generation",
   "llm.wizard.onboardingTitle": "Welcome to the diagram wizard",

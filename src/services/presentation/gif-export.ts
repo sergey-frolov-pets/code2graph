@@ -1,10 +1,17 @@
 import { GIFEncoder, applyPalette, quantize } from "gifenc";
 import { frameToPan } from "@/services/presentation/camera";
+import { effectVisualAt, type EffectVisual } from "@/services/presentation/effects";
+import { overlayArtwork, paintArtwork } from "@/services/presentation/glyph-art";
 import {
+  blockArrowPath,
   lineArrowPath,
   overlayOutline,
+  overlayRotates,
+  positiveBox,
 } from "@/services/presentation/overlay-geometry";
 import {
+  PRESENTATION_FULL_CIRCLE,
+  PRESENTATION_HALF_CIRCLE,
   PRESENTATION_GIF_FALLBACK_BACKGROUND,
   PRESENTATION_GIF_MAX_DELAY_CS,
   PRESENTATION_GIF_PALETTE_SIZE,
@@ -14,7 +21,12 @@ import {
   samplePresentationGifFrames,
   type PresentationGifFrame,
 } from "@/services/presentation/gif-timeline";
-import type { NormPoint, PresentationOverlay, PresentationTrack } from "@/services/presentation/types";
+import type {
+  NormPoint,
+  PresentationOverlay,
+  PresentationTrack,
+  Viewpoint,
+} from "@/services/presentation/types";
 import { isTransparentBackground } from "@/services/export/svg-background";
 import { LocalizedAppError } from "@/utils/localized-app-error";
 
@@ -31,6 +43,8 @@ export interface PresentationGifTheme {
 
 export interface PresentationGifSource {
   svg: string;
+  /** Dropped picture shown under the diagram. Empty when the diagram has no frame. */
+  frameHref?: string | null;
   track: PresentationTrack;
   showOverlays: boolean;
   imageWidth: number;
@@ -43,6 +57,15 @@ export interface PresentationGifSource {
 interface ScreenPoint {
   x: number;
   y: number;
+}
+
+function loadFrameImage(href: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = href;
+  });
 }
 
 function loadSvgImage(svg: string): Promise<HTMLImageElement> {
@@ -155,7 +178,40 @@ function drawArrow(
   }
 }
 
+function drawWithVisual(
+  context: CanvasRenderingContext2D,
+  visual: EffectVisual,
+  centerX: number,
+  centerY: number,
+  draw: () => void,
+): void {
+  context.save();
+  context.globalAlpha *= visual.opacity;
+  context.translate(centerX, centerY);
+  context.scale(visual.scale, visual.scale);
+  context.translate(-centerX, -centerY);
+  draw();
+  context.restore();
+}
+
 function drawOverlay(
+  context: CanvasRenderingContext2D,
+  overlay: PresentationOverlay,
+  panX: number,
+  panY: number,
+  scale: number,
+  imageWidth: number,
+  imageHeight: number,
+  theme: PresentationGifTheme,
+  visual: EffectVisual,
+): void {
+  const box = screenBox(overlay, panX, panY, scale, imageWidth, imageHeight);
+  drawWithVisual(context, visual, box.x + box.width / 2, box.y + box.height / 2, () => {
+    paintOverlay(context, overlay, panX, panY, scale, imageWidth, imageHeight, theme);
+  });
+}
+
+function paintOverlay(
   context: CanvasRenderingContext2D,
   overlay: PresentationOverlay,
   panX: number,
@@ -180,11 +236,30 @@ function drawOverlay(
     return;
   }
 
-  const outline = overlayOutline(overlay, box);
-  if (outline) {
-    const path = new Path2D(outline);
+  const artwork = overlayArtwork(overlay);
+  if (artwork) {
+    paintArtwork(context, box, artwork, overlayRotates(overlay) ? overlay.rotation : 0);
+  } else if (overlay.shape === "arrow" && overlay.arrowForm === "shape") {
+    const placed = positiveBox(box);
+    const centerX = placed.x + placed.width / 2;
+    const centerY = placed.y + placed.height / 2;
+    context.save();
+    if (overlay.rotation % PRESENTATION_FULL_CIRCLE !== 0) {
+      context.translate(centerX, centerY);
+      context.rotate((overlay.rotation * Math.PI) / PRESENTATION_HALF_CIRCLE);
+      context.translate(-centerX, -centerY);
+    }
+    const path = new Path2D(blockArrowPath(box));
     context.fill(path);
     context.stroke(path);
+    context.restore();
+  } else {
+    const outline = overlayOutline(overlay, box);
+    if (outline) {
+      const path = new Path2D(outline);
+      context.fill(path);
+      context.stroke(path);
+    }
   }
 
   if (overlay.shape === "text" && overlay.text) {
@@ -203,9 +278,21 @@ function drawOverlay(
   context.restore();
 }
 
+function hostViewpoint(
+  track: PresentationTrack,
+  frame: PresentationGifFrame,
+): Viewpoint | undefined {
+  if (frame.ownerKind === "viewpoint") {
+    return track.viewpoints.find((viewpoint) => viewpoint.id === frame.ownerId);
+  }
+  const transition = track.transitions.find((item) => item.id === frame.ownerId);
+  return track.viewpoints.find((viewpoint) => viewpoint.id === transition?.fromId);
+}
+
 function paintFrame(
   context: CanvasRenderingContext2D,
   image: HTMLImageElement,
+  frameImage: HTMLImageElement | null,
   source: PresentationGifSource,
   frame: PresentationGifFrame,
   width: number,
@@ -224,13 +311,25 @@ function paintFrame(
     width,
     height,
   );
-  context.drawImage(
-    image,
-    placed.panX,
-    placed.panY,
-    source.imageWidth * placed.scale,
-    source.imageHeight * placed.scale,
-  );
+  const placedWidth = source.imageWidth * placed.scale;
+  const placedHeight = source.imageHeight * placed.scale;
+  const host = hostViewpoint(source.track, frame);
+  const effects = frame.ownerKind === "viewpoint" ? host?.effects ?? [] : [];
+  const scene = (visual: EffectVisual, bitmap: HTMLImageElement) => {
+    drawWithVisual(
+      context,
+      visual,
+      placed.panX + placedWidth / 2,
+      placed.panY + placedHeight / 2,
+      () => {
+        context.drawImage(bitmap, placed.panX, placed.panY, placedWidth, placedHeight);
+      },
+    );
+  };
+  if (frameImage) {
+    scene(effectVisualAt(effects, frame.effectElapsedMs, "frame"), frameImage);
+  }
+  scene(effectVisualAt(effects, frame.effectElapsedMs, "diagram"), image);
 
   if (!source.showOverlays) {
     return;
@@ -249,6 +348,7 @@ function paintFrame(
       source.imageWidth,
       source.imageHeight,
       source.theme,
+      effectVisualAt(host?.effects ?? [], frame.effectElapsedMs, "overlay", overlay.id),
     );
   }
 }
@@ -289,6 +389,7 @@ export async function renderPresentationGif(source: PresentationGifSource): Prom
 
   const { width, height } = gifOutputSize(source.viewportWidth, source.viewportHeight);
   const image = await loadSvgImage(source.svg);
+  const frameImage = source.frameHref ? await loadFrameImage(source.frameHref) : null;
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
@@ -299,7 +400,7 @@ export async function renderPresentationGif(source: PresentationGifSource): Prom
 
   const gif = GIFEncoder();
   for (const frame of frames) {
-    paintFrame(context, image, source, frame, width, height);
+    paintFrame(context, image, frameImage, source, frame, width, height);
     const pixels = new Uint8Array(context.getImageData(0, 0, width, height).data);
     const palette = quantize(pixels, PRESENTATION_GIF_PALETTE_SIZE);
     const indexed = applyPalette(pixels, palette);

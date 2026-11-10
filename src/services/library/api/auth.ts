@@ -1,4 +1,5 @@
 import type { LibraryUserDto } from "@/constants/diagram-library";
+import type { FeatureMap } from "@shared/features";
 import { getLibraryApiBaseUrl } from "@/config/library-api";
 import {
   buildRequestHeaders,
@@ -69,7 +70,7 @@ export async function loginLibrary(
   username: string,
   password: string,
   baseUrl?: string,
-): Promise<{ token: string; user: LibraryUserDto }> {
+): Promise<{ token: string; user: LibraryUserDto; features?: FeatureMap }> {
   return requestJson(
     "/auth/login",
     {
@@ -83,6 +84,6 @@ export async function loginLibrary(
 
 export async function fetchLibraryMe(
   baseUrl?: string,
-): Promise<{ user: LibraryUserDto }> {
+): Promise<{ user: LibraryUserDto; features?: FeatureMap }> {
   return requestJson("/auth/me", undefined, baseUrl);
 }

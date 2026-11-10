@@ -1,34 +1,38 @@
 <script setup lang="ts">
-import { computed, inject } from "vue";
+import { computed, inject, ref, watch } from "vue";
 import IconButton from "@/components/IconButton.vue";
 import PresentationGlyph from "@/components/preview/PresentationGlyph.vue";
 import { presentationSessionKey } from "@/components/preview/presentation-session";
-import { durationMsToSeconds } from "@/services/presentation/model";
+import { durationMsToSeconds, durationSecondsToMs } from "@/services/presentation/model";
+import { stepRotation } from "@/services/presentation/overlay-geometry";
 import {
-  PRESENTATION_ARROW_DIRECTIONS,
   PRESENTATION_ARROW_FORMS,
+  PRESENTATION_MARKS,
   PRESENTATION_ARROW_HEADS,
   PRESENTATION_ARROW_KINDS,
   PRESENTATION_BUBBLE_SHAPES,
   PRESENTATION_FONTS,
   PRESENTATION_LINE_STYLES,
+  FRAME_EFFECT_KINDS,
   PRESENTATION_PATH_KINDS,
   PRESENTATION_TEXT_BACKINGS,
 } from "@/services/presentation/types";
 import type { LocaleKey, TranslateFn } from "@/locales/types";
 import type {
-  PresentationArrowDirection,
   PresentationArrowForm,
+  PresentationMark,
   PresentationArrowHead,
   PresentationArrowKind,
   PresentationBubbleShape,
+  FrameEffectKind,
+  FrameEffectTargetKind,
   PresentationFont,
   PresentationLineStyle,
   PresentationPathKind,
   PresentationTextBacking,
 } from "@/services/presentation/types";
 
-defineProps<{
+const props = defineProps<{
   t: TranslateFn;
 }>();
 
@@ -50,6 +54,13 @@ const {
   onRenameTrack,
   onCapture,
   onUpdateFrame,
+  onDuplicateViewpoint,
+  onMoveViewpoint,
+  onAddEffect,
+  onUpdateEffect,
+  onDuplicateEffect,
+  onMoveEffect,
+  onRemoveEffect,
   onRemoveViewpoint,
   onDwellSeconds,
   onTransitionSeconds,
@@ -64,8 +75,9 @@ const {
   selectedOverlayId,
   exportingGif,
   onExportGif,
+  repeat,
 } = session;
-const { playing, viewpointIndex, togglePlay, step } = session.playback;
+const { playing, viewpointIndex, togglePlay, step, pause, goToViewpoint } = session.playback;
 
 const track = computed(() => session.currentTrack.value);
 const viewpoint = computed(
@@ -78,10 +90,93 @@ const selectedOverlay = computed(
   () => track.value?.overlays.find((item) => item.id === selectedOverlayId.value) ?? null,
 );
 const canStep = computed(() => (track.value?.viewpoints.length ?? 0) > 1);
+const dimHeld = ref(false);
+const selectedEffectId = ref<string | null>(null);
+const selectedEffect = computed(
+  () => viewpoint.value?.effects.find((effect) => effect.id === selectedEffectId.value) ?? null,
+);
+const effectTargets = computed(() => {
+  const targets: Array<{ id: string; label: string }> = [
+    { id: "diagram", label: props.t("presentation.effectTarget.diagram") },
+  ];
+  if (session.hasFrame.value) {
+    targets.unshift({ id: "frame", label: props.t("presentation.effectTarget.frame") });
+  }
+  return targets;
+});
+
+watch(viewpoint, (next) => {
+  if (!next?.effects.some((effect) => effect.id === selectedEffectId.value)) {
+    selectedEffectId.value = next?.effects[0]?.id ?? null;
+  }
+});
+
+function effectTargetValue(effect: { target: FrameEffectTargetKind; overlayId: string }): string {
+  return effect.target === "overlay" ? `overlay:${effect.overlayId}` : effect.target;
+}
+
+function onEffectTargetChange(value: string): void {
+  const effect = selectedEffect.value;
+  if (!effect) {
+    return;
+  }
+  if (value.startsWith("overlay:")) {
+    onUpdateEffect(effect.id, { target: "overlay", overlayId: value.slice("overlay:".length) });
+    return;
+  }
+  onUpdateEffect(effect.id, { target: value as FrameEffectTargetKind, overlayId: "" });
+}
+
+function effectStartMs(seconds: number): number {
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return 0;
+  }
+  return durationSecondsToMs(seconds);
+}
+
+function addEffect(): void {
+  if (!session) {
+    return;
+  }
+  if (selectedOverlay.value) {
+    onAddEffect("overlay", selectedOverlay.value.id);
+  } else {
+    onAddEffect(session.hasFrame.value ? "frame" : "diagram");
+  }
+  selectedEffectId.value = viewpoint.value?.effects.at(-1)?.id ?? selectedEffectId.value;
+}
 
 function trackLabel(index: number): string {
   return String(index + 1);
 }
+
+function goToFirst(): void {
+  pause();
+  goToViewpoint(0);
+}
+
+function onPlay(): void {
+  const starting = !playing.value;
+  togglePlay();
+  if (starting && playing.value) {
+    dimHeld.value = true;
+  }
+}
+
+function releaseDimHold(event: FocusEvent): void {
+  const dock = event.currentTarget;
+  const next = event.relatedTarget;
+  if (dock instanceof HTMLElement && next instanceof Node && dock.contains(next)) {
+    return;
+  }
+  dimHeld.value = false;
+}
+
+watch(playing, (value) => {
+  if (!value) {
+    dimHeld.value = false;
+  }
+});
 
 function pathLabel(kind: PresentationPathKind): LocaleKey {
   switch (kind) {
@@ -146,16 +241,20 @@ function arrowFormLabel(form: PresentationArrowForm): LocaleKey {
   }
 }
 
-function directionLabel(direction: PresentationArrowDirection): LocaleKey {
-  switch (direction) {
-    case "right":
-      return "presentation.direction.right";
-    case "left":
-      return "presentation.direction.left";
-    case "down":
-      return "presentation.direction.down";
-    case "up":
-      return "presentation.direction.up";
+function markLabel(mark: PresentationMark): LocaleKey {
+  switch (mark) {
+    case "warning":
+      return "presentation.mark.warning";
+    case "stop":
+      return "presentation.mark.stop";
+    case "flag-red":
+      return "presentation.mark.flagRed";
+    case "flag-green":
+      return "presentation.mark.flagGreen";
+    case "check":
+      return "presentation.mark.check";
+    case "cross":
+      return "presentation.mark.cross";
   }
 }
 
@@ -212,64 +311,106 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
   <div
     v-if="enabled && panelOpen"
     class="presentation-dock"
-    :class="{ 'is-editing': mode === 'edit' && canEdit }"
+    :class="{
+      'is-editing': mode === 'edit' && canEdit,
+      'is-dim': playing,
+      'is-dim-held': dimHeld,
+    }"
     role="toolbar"
     :aria-label="t('presentation.expand')"
+    @pointerleave="dimHeld = false"
+    @focusout="releaseDimHold"
   >
     <div class="presentation-dock__bar">
-      <IconButton
-        v-if="canEdit"
-        :label="mode === 'edit' ? t('presentation.view') : t('presentation.edit')"
-        :pressed="mode === 'edit'"
-        @click="mode = mode === 'edit' ? 'view' : 'edit'"
+      <div class="presentation-dock__title">
+        <IconButton
+          v-if="canEdit"
+          :label="mode === 'edit' ? t('presentation.view') : t('presentation.edit')"
+          :pressed="mode === 'edit'"
+          @click="mode = mode === 'edit' ? 'view' : 'edit'"
+        >
+          <PresentationGlyph :name="mode === 'edit' ? 'view' : 'edit'" />
+        </IconButton>
+        <input
+          v-if="mode === 'edit' && canEdit && track"
+          class="presentation-dock__rename"
+          :value="track.name"
+          type="text"
+          :aria-label="t('presentation.trackRename')"
+          @change="onRenameTrack(($event.target as HTMLInputElement).value)"
+        >
+        <span
+          v-else-if="track"
+          class="presentation-dock__name"
+        >
+          {{ track.name }}
+        </span>
+        <IconButton
+          :label="exportingGif ? t('presentation.exportGifBusy') : t('presentation.exportGif')"
+          :disabled="!track || track.viewpoints.length === 0 || exportingGif"
+          @click="onExportGif()"
+        >
+          <PresentationGlyph
+            :name="exportingGif ? 'loader' : 'gif'"
+            :spin="exportingGif"
+          />
+        </IconButton>
+      </div>
+      <label
+        v-if="track"
+        class="presentation-check"
       >
-        <PresentationGlyph :name="mode === 'edit' ? 'view' : 'edit'" />
-      </IconButton>
-      <IconButton
-        :label="t('presentation.prev')"
-        :disabled="!canStep"
-        @click="step(-1)"
-      >
-        <PresentationGlyph name="prev" />
-      </IconButton>
-      <span
-        v-if="track && track.viewpoints.length"
-        class="presentation-dock__index"
-      >
-        {{ trackLabel(viewpointIndex) }} / {{ track.viewpoints.length }}
-      </span>
-      <IconButton
-        :label="t('presentation.next')"
-        :disabled="!canStep"
-        @click="step(1)"
-      >
-        <PresentationGlyph name="next" />
-      </IconButton>
-      <IconButton
-        :label="playing ? t('presentation.pause') : t('presentation.play')"
-        primary
-        :disabled="!track || track.viewpoints.length === 0"
-        @click="togglePlay()"
-      >
-        <PresentationGlyph :name="playing ? 'pause' : 'play'" />
-      </IconButton>
-      <IconButton
-        :label="exportingGif ? t('presentation.exportGifBusy') : t('presentation.exportGif')"
-        :disabled="!track || track.viewpoints.length === 0 || exportingGif"
-        @click="onExportGif()"
-      >
-        <PresentationGlyph
-          :name="exportingGif ? 'loader' : 'gif'"
-          :spin="exportingGif"
-        />
-      </IconButton>
-      <IconButton
-        :label="t('presentation.overlaysShow')"
-        :pressed="presentation?.showOverlays !== false"
-        @click="onToggleOverlays(presentation?.showOverlays === false)"
-      >
-        <PresentationGlyph :name="presentation?.showOverlays === false ? 'eye-off' : 'eye'" />
-      </IconButton>
+        <input
+          type="checkbox"
+          :checked="repeat"
+          @change="repeat = ($event.target as HTMLInputElement).checked"
+        >
+        {{ t("presentation.repeat") }}
+      </label>
+      <div class="presentation-dock__transport">
+        <IconButton
+          :label="t('presentation.first')"
+          :disabled="!track || track.viewpoints.length === 0"
+          @click="goToFirst()"
+        >
+          <PresentationGlyph name="first" />
+        </IconButton>
+        <IconButton
+          :label="t('presentation.prev')"
+          :disabled="!canStep"
+          @click="step(-1)"
+        >
+          <PresentationGlyph name="prev" />
+        </IconButton>
+        <span
+          v-if="track && track.viewpoints.length"
+          class="presentation-dock__index"
+        >
+          {{ trackLabel(viewpointIndex) }} / {{ track.viewpoints.length }}
+        </span>
+        <IconButton
+          :label="t('presentation.next')"
+          :disabled="!canStep"
+          @click="step(1)"
+        >
+          <PresentationGlyph name="next" />
+        </IconButton>
+        <IconButton
+          :label="playing ? t('presentation.pause') : t('presentation.play')"
+          primary
+          :disabled="!track || track.viewpoints.length === 0"
+          @click="onPlay()"
+        >
+          <PresentationGlyph :name="playing ? 'pause' : 'play'" />
+        </IconButton>
+        <IconButton
+          :label="t('presentation.overlaysShow')"
+          :pressed="presentation?.showOverlays !== false"
+          @click="onToggleOverlays(presentation?.showOverlays === false)"
+        >
+          <PresentationGlyph :name="presentation?.showOverlays === false ? 'eye-off' : 'eye'" />
+        </IconButton>
+      </div>
     </div>
 
     <div
@@ -307,17 +448,6 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
             <PresentationGlyph name="trash" />
           </IconButton>
         </div>
-        <label
-          v-if="track"
-          class="presentation-field"
-        >
-          <span>{{ t("presentation.trackRename") }}</span>
-          <input
-            :value="track.name"
-            type="text"
-            @change="onRenameTrack(($event.target as HTMLInputElement).value)"
-          >
-        </label>
       </section>
 
       <p
@@ -343,6 +473,27 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
               @click="onUpdateFrame()"
             >
               <PresentationGlyph name="refresh" />
+            </IconButton>
+            <IconButton
+              :label="t('presentation.duplicateViewpoint')"
+              :disabled="!viewpoint"
+              @click="onDuplicateViewpoint()"
+            >
+              <PresentationGlyph name="copy" />
+            </IconButton>
+            <IconButton
+              :label="t('presentation.moveViewpointUp')"
+              :disabled="!viewpoint || viewpointIndex === 0"
+              @click="onMoveViewpoint(-1)"
+            >
+              <PresentationGlyph name="up" />
+            </IconButton>
+            <IconButton
+              :label="t('presentation.moveViewpointDown')"
+              :disabled="!viewpoint || !track || viewpointIndex >= track.viewpoints.length - 1"
+              @click="onMoveViewpoint(1)"
+            >
+              <PresentationGlyph name="down" />
             </IconButton>
             <IconButton
               :label="t('presentation.removeViewpoint')"
@@ -433,6 +584,117 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
               <PresentationGlyph name="minus" />
             </IconButton>
           </div>
+          <div
+            v-if="viewpoint"
+            class="presentation-dock__row"
+          >
+            <IconButton
+              :label="t('presentation.effectAdd')"
+              @click="addEffect()"
+            >
+              <PresentationGlyph name="plus" />
+            </IconButton>
+            <button
+              v-for="effect in viewpoint.effects"
+              :key="effect.id"
+              type="button"
+              class="btn"
+              :class="{ 'btn-primary': effect.id === selectedEffectId }"
+              @click="selectedEffectId = effect.id"
+            >
+              {{ t(`presentation.effect.${effect.kind}`) }}
+            </button>
+          </div>
+          <div
+            v-if="selectedEffect"
+            class="presentation-dock__row"
+          >
+            <label class="presentation-field">
+              <span>{{ t("presentation.effectTarget") }}</span>
+              <select
+                :value="effectTargetValue(selectedEffect)"
+                @change="onEffectTargetChange(($event.target as HTMLSelectElement).value)"
+              >
+                <option
+                  v-for="target in effectTargets"
+                  :key="target.id"
+                  :value="target.id"
+                >
+                  {{ target.label }}
+                </option>
+                <option
+                  v-for="overlay in track?.overlays ?? []"
+                  :key="overlay.id"
+                  :value="`overlay:${overlay.id}`"
+                >
+                  {{ t(`presentation.overlay.${overlay.shape}`) }}
+                </option>
+              </select>
+            </label>
+            <label class="presentation-field">
+              <span>{{ t("presentation.effectKind") }}</span>
+              <select
+                :value="selectedEffect.kind"
+                @change="onUpdateEffect(selectedEffect.id, { kind: ($event.target as HTMLSelectElement).value as FrameEffectKind })"
+              >
+                <option
+                  v-for="kind in FRAME_EFFECT_KINDS"
+                  :key="kind"
+                  :value="kind"
+                >
+                  {{ t(`presentation.effect.${kind}`) }}
+                </option>
+              </select>
+            </label>
+            <label class="presentation-field">
+              <span>{{ t("presentation.effectStart") }}</span>
+              <input
+                type="number"
+                min="0"
+                max="120"
+                step="0.1"
+                :value="durationMsToSeconds(selectedEffect.startMs)"
+                @change="onUpdateEffect(selectedEffect.id, { startMs: effectStartMs(Number(($event.target as HTMLInputElement).value)) })"
+              >
+            </label>
+            <label class="presentation-field">
+              <span>{{ t("presentation.effectDuration") }}</span>
+              <input
+                type="number"
+                min="0.1"
+                max="120"
+                step="0.1"
+                :value="durationMsToSeconds(selectedEffect.durationMs)"
+                @change="onUpdateEffect(selectedEffect.id, { durationMs: durationSecondsToMs(Number(($event.target as HTMLInputElement).value)) })"
+              >
+            </label>
+            <IconButton
+              :label="t('presentation.effectDuplicate')"
+              @click="onDuplicateEffect(selectedEffect.id)"
+            >
+              <PresentationGlyph name="copy" />
+            </IconButton>
+            <IconButton
+              :label="t('presentation.effectUp')"
+              :disabled="viewpoint?.effects[0]?.id === selectedEffect.id"
+              @click="onMoveEffect(selectedEffect.id, -1)"
+            >
+              <PresentationGlyph name="up" />
+            </IconButton>
+            <IconButton
+              :label="t('presentation.effectDown')"
+              :disabled="viewpoint?.effects.at(-1)?.id === selectedEffect.id"
+              @click="onMoveEffect(selectedEffect.id, 1)"
+            >
+              <PresentationGlyph name="down" />
+            </IconButton>
+            <IconButton
+              :label="t('presentation.effectRemove')"
+              @click="onRemoveEffect(selectedEffect.id)"
+            >
+              <PresentationGlyph name="trash" />
+            </IconButton>
+          </div>
         </section>
 
         <section
@@ -477,6 +739,14 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
               @click="onAddOverlay('arrow')"
             >
               <PresentationGlyph name="arrow" />
+            </IconButton>
+            <IconButton
+              v-for="mark in PRESENTATION_MARKS"
+              :key="mark"
+              :label="t(markLabel(mark))"
+              @click="onAddOverlay('mark', mark)"
+            >
+              <PresentationGlyph :name="mark" />
             </IconButton>
           </div>
         </section>
@@ -639,24 +909,21 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
                 </option>
               </select>
             </label>
-            <label
-              v-if="selectedOverlay.shape === 'arrow' && selectedOverlay.arrowForm !== 'line'"
-              class="presentation-field"
-            >
-              <span>{{ t("presentation.arrowDirection") }}</span>
-              <select
-                :value="selectedOverlay.arrowDirection"
-                @change="onChangeOverlay(selectedOverlay.id, { arrowDirection: ($event.target as HTMLSelectElement).value as typeof PRESENTATION_ARROW_DIRECTIONS[number] })"
+            <template v-if="selectedOverlay.shape === 'arrow' && selectedOverlay.arrowForm !== 'line'">
+              <IconButton
+                :label="t('presentation.rotateLeft')"
+                @click="onChangeOverlay(selectedOverlay.id, { rotation: stepRotation(selectedOverlay.rotation, -1) })"
               >
-                <option
-                  v-for="direction in PRESENTATION_ARROW_DIRECTIONS"
-                  :key="direction"
-                  :value="direction"
-                >
-                  {{ t(directionLabel(direction)) }}
-                </option>
-              </select>
-            </label>
+                <PresentationGlyph name="rotate-left" />
+              </IconButton>
+              <span class="presentation-dock__index">{{ selectedOverlay.rotation }}°</span>
+              <IconButton
+                :label="t('presentation.rotateRight')"
+                @click="onChangeOverlay(selectedOverlay.id, { rotation: stepRotation(selectedOverlay.rotation, 1) })"
+              >
+                <PresentationGlyph name="rotate-right" />
+              </IconButton>
+            </template>
             <label
               v-if="selectedOverlay.shape === 'arrow' && selectedOverlay.arrowForm === 'line'"
               class="presentation-field"
@@ -720,7 +987,7 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
   max-height: 70%;
   padding: 8px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 16px;
   background: color-mix(in srgb, var(--surface) 94%, transparent);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 16%, transparent);
   transform: translateX(-50%);
@@ -731,12 +998,64 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
   border-radius: 16px;
 }
 
+.presentation-dock.is-dim {
+  opacity: 0.12;
+  transition: none;
+}
+
+.presentation-dock.is-dim:not(.is-dim-held):hover,
+.presentation-dock.is-dim:not(.is-dim-held):focus-within {
+  opacity: 1;
+}
+
 .presentation-dock__bar,
-.presentation-dock__row {
+.presentation-dock__row,
+.presentation-dock__title,
+.presentation-dock__transport {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+}
+
+.presentation-dock__bar {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.presentation-dock__title {
+  flex-wrap: nowrap;
+}
+
+.presentation-dock__name,
+.presentation-dock__rename {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presentation-dock__rename {
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 650;
+}
+
+.presentation-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
 }
 
 .presentation-dock__body {

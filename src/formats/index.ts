@@ -11,9 +11,14 @@ import { applyDiagramTypography } from "@/services/diagram-typography";
 import { fitPlantUmlSvgText } from "@/services/plantuml/plantuml-text-fit";
 import { normalizeSvgPaintColors } from "@/services/export/svg-paint";
 import { stripPresentationBlock } from "@/services/presentation/codec";
+import { stripFrameBlock } from "@/services/presentation/frame";
 import { stripOffDeviceSvgResources } from "@/utils/offline-render-network";
 import type { FormatContext, FormatHandler } from "./types";
 import type { SyntaxCheckResult } from "@/utils/plantuml-syntax";
+
+function stripEngineSource(source: string): string {
+  return stripFrameBlock(stripPresentationBlock(source));
+}
 
 export function getFormatHandler(format: DiagramFormat): FormatHandler {
   return getLanguageModule(format).handler;
@@ -29,7 +34,7 @@ export async function validateDiagramSyntax(
     return { valid: true, issues: [] };
   }
 
-  return handler.validateSyntax(stripPresentationBlock(source), context);
+  return handler.validateSyntax(stripEngineSource(source), context);
 }
 
 export function extractDiagramCompletionPrefix(
@@ -53,7 +58,7 @@ export async function renderDiagram(
   context: FormatContext,
 ): Promise<string> {
   const svg = normalizeSvgPaintColors(
-    await getFormatHandler(format).render(stripPresentationBlock(source), context),
+    await getFormatHandler(format).render(stripEngineSource(source), context),
   );
   const painted = applyDiagramTypography(svg, {
     fontFamily: context.diagramFontFamily,

@@ -1,0 +1,9 @@
+node_modules
+server/node_modules
+dist
+server/dist
+.git
+release
+data
+*.md
+!server/README.md

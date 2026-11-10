@@ -31,6 +31,7 @@ import { useLocale } from "@/composables/useLocale";
 import { usePersistedSettings } from "@/composables/usePersistedSettings";
 import { useSyntaxValidation } from "@/composables/useSyntaxValidation";
 import { getLibraryApiBaseUrl } from "@/config/library-api";
+import { setDocumentFeatureSnapshot } from "@/composables/useFeatureGate";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import { getDiagramFormatDefinition } from "@/constants/diagram-formats";
 import { PENDING_SHARE_STORAGE_KEY } from "@/constants/library-share";
@@ -124,6 +125,7 @@ export interface AppShellContext {
     label: string,
     format?: DiagramFormat,
   ) => void;
+  openFrameDiagram: (payload: { label: string; source: string }) => void;
   editorDocuments: ReturnType<typeof useEditorDocuments>["documents"];
   activeDocumentId: ReturnType<typeof useEditorDocuments>["activeDocumentId"];
   switchEditorTab: (documentId: string) => void;
@@ -405,7 +407,9 @@ export function useAppShell(): AppShellContext {
     fileName: string;
     format?: DiagramFormat;
     diagramId?: string;
+    features?: import("@shared/features").FeatureMap;
   }): void {
+    setDocumentFeatureSnapshot(payload.features ?? null);
     flushPendingHistory();
     withSuppressedSourceHistory(() => {
       applyLoadedSource(payload.content, payload.fileName, payload.format);
@@ -516,6 +520,21 @@ export function useAppShell(): AppShellContext {
       syntaxErrorLines.value = [];
       scheduleRender();
       onWizardDiagramApplied();
+    });
+  }
+
+  function openFrameDiagram(payload: { label: string; source: string }): void {
+    flushPendingHistory();
+    withSuppressedSourceHistory(() => {
+      const documentId = editorDocumentsApi.openNewTab({
+        source: payload.source,
+        label: payload.label,
+        format: "mermaid",
+      });
+      sessionChanges.resetBaseline(payload.source, documentId);
+      error.value = "";
+      syntaxErrorLines.value = [];
+      scheduleRender();
     });
   }
 
@@ -684,6 +703,7 @@ export function useAppShell(): AppShellContext {
     applyAiPlantUml: applyAiPlantUmlWithHistory,
     applyWizardDiagram: applyWizardDiagramWithHistory,
     applyWizardDiagramToNewTab,
+    openFrameDiagram,
     editorDocuments: editorDocumentsApi.documents,
     activeDocumentId: editorDocumentsApi.activeDocumentId,
     switchEditorTab,

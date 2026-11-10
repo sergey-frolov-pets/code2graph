@@ -15,6 +15,10 @@ import {
 import type { SectionRow } from "../types.js";
 import { PERMISSION_RANK } from "../subscriptions.js";
 import type { SectionAccessPermission } from "../types.js";
+import {
+  featuresForSubscription,
+  shouldHideDiagramSource,
+} from "../services/subscription-features.js";
 
 export const subscriptionAccessRouter = new Hono();
 
@@ -113,16 +117,20 @@ subscriptionAccessRouter.get("/:token/diagrams/:id", (context) => {
     return context.json({ error: "Диаграмма не найдена" }, 404);
   }
 
-  const permission = mapSubscriptionDto(database, row).permission;
+  const subscription = mapSubscriptionDto(database, row);
+  const features = featuresForSubscription(database, row.id, subscription.permission);
   const diagram = mapDiagram(diagramRow);
-  const hideSource = !canDownloadFromPermission(permission);
+  const hideSource =
+    !canDownloadFromPermission(subscription.permission) ||
+    shouldHideDiagramSource(features);
 
   return context.json({
-    subscription: mapSubscriptionDto(database, row),
-    diagram: hideSource ? { ...diagram, source: "" } : diagram,
+    subscription,
+    diagram: hideSource ? { ...diagram, source: "", features } : { ...diagram, features },
     watermarkedPreview: hideSource,
-    canDownload: canDownloadFromPermission(permission),
-    readOnly: permission !== "contribute",
+    canDownload: !hideSource,
+    readOnly: subscription.permission !== "contribute",
+    features,
   });
 });
 

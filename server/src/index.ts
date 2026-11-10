@@ -4,6 +4,9 @@ import { cors } from "hono/cors";
 import { libraryAuthMiddleware } from "./auth.js";
 import { CORS_ORIGINS, SERVER_PORT } from "./config.js";
 import { getDb } from "./db.js";
+import { billingRouter } from "./routes/billing.js";
+import { billingAdminRouter } from "./routes/billing-admin.js";
+import { lavaWebhookRouter } from "./routes/billing-webhook.js";
 import { adminRouter } from "./routes/admin.js";
 import { agentRouter } from "./routes/agent.js";
 import { authRouter } from "./routes/auth.js";
@@ -16,6 +19,7 @@ import { libraryLinksPublicRouter } from "./routes/library-links-public.js";
 import { shareRouter } from "./routes/share.js";
 import { subscriptionAccessRouter } from "./routes/subscription-access.js";
 import { subscriptionsRouter } from "./routes/subscriptions.js";
+import { registerStaticHost } from "./static-host.js";
 
 const app = new Hono();
 
@@ -35,6 +39,7 @@ app.route("/api/library-links", libraryLinksPublicRouter);
 app.route("/api/share", shareRouter);
 app.route("/api/subscriptions/access", subscriptionAccessRouter);
 app.route("/api/auth", publicAuthRouter);
+app.route("/api/billing/lava", lavaWebhookRouter);
 app.route("/api/agent", agentRouter);
 
 const protectedApi = new Hono();
@@ -51,8 +56,11 @@ protectedApi.route("/diagrams", diagramsRouter);
 protectedApi.route("/ratings", ratingsRouter);
 protectedApi.route("/subscriptions", subscriptionsRouter);
 protectedApi.route("/llm", llmRouter);
+protectedApi.route("/billing", billingRouter);
+protectedApi.route("/billing-admin", billingAdminRouter);
 
 app.route("/api", protectedApi);
+registerStaticHost(app);
 
 getDb();
 

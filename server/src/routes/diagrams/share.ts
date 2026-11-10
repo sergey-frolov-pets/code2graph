@@ -11,6 +11,7 @@ import { mapShareLinkDto } from "../../share-link-policy.js";
 import { DIAGRAM_FULL_SELECT } from "../../services/diagrams-list-query.js";
 import { toDiagramAccessRow } from "../../services/diagrams-access.js";
 import { isSharePermission } from "../../types.js";
+import { shareQuotaError } from "../../billing/limits.js";
 import type { DiagramsRouter } from "./types.js";
 
 /**
@@ -99,6 +100,14 @@ export function registerDiagramShareRoutes(router: DiagramsRouter): void {
       body.permission && isSharePermission(body.permission)
         ? body.permission
         : "view";
+
+    const shareError = shareQuotaError(database, user.id, {
+      expiresAt,
+      permission,
+    });
+    if (shareError) {
+      return context.json({ error: shareError }, 402);
+    }
 
     const link = createShareLink(database, "diagram", id, user.id, {
       expiresAt,

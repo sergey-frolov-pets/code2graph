@@ -22,6 +22,7 @@ const emit = defineEmits<{
   "section-row-click": [sectionId: string];
   "ratings-click": [];
   "subscriptions-click": [];
+  "transfer-click": [];
   "toggle-edit-mode": [];
   "create-section": [parentId: string | null];
   "delete-section": [sectionId: string, title: string];
@@ -52,10 +53,16 @@ function sectionIcon(sectionId: string): string {
       <div class="library-step__toolbar-actions">
         <IconButton
           v-if="canManageSubscriptions && !isLocalLibrary"
-          :label="t('library.subscriptionAddTitle')"
+          :label="t('library.accessTitle')"
           @click="emit('subscriptions-click')"
         >
-          <ActionIcon name="plus" />
+          <ActionIcon name="shield" />
+        </IconButton>
+        <IconButton
+          :label="t('library.importExport')"
+          @click="emit('transfer-click')"
+        >
+          <ActionIcon name="transfer" />
         </IconButton>
         <IconButton
           :label="t('library.edit')"

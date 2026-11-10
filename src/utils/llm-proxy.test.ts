@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const getLibraryApiBaseUrl = vi.fn(() => "");
 
-vi.mock("@/composables/useLibraryApiUrl", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/composables/useLibraryApiUrl")>();
+vi.mock("@/config/library-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/config/library-api")>();
   return {
     ...actual,
     getLibraryApiBaseUrl: () => getLibraryApiBaseUrl(),
@@ -50,12 +50,12 @@ describe("resolveLlmProxyBaseUrl", () => {
     expect(resolveLlmChatUrl()).toBe("");
   });
 
-  it("uses same-origin /api in dev when no library URL is set", () => {
+  it("stays empty in dev when the resolved library URL is empty", () => {
     vi.stubEnv("DEV", true);
     vi.stubEnv("VITE_API_BASE_URL", "");
 
-    expect(resolveLlmProxyBaseUrl()).toBe("https://puml.example.com/app/api");
-    expect(isLlmProxyConfigured()).toBe(true);
-    expect(resolveLlmChatUrl()).toBe("https://puml.example.com/app/api/llm/chat");
+    expect(resolveLlmProxyBaseUrl()).toBe("");
+    expect(isLlmProxyConfigured()).toBe(false);
+    expect(resolveLlmChatUrl()).toBe("");
   });
 });

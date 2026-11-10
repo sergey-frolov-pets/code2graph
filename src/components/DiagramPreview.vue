@@ -9,10 +9,13 @@ import LoadingState from "@/components/ui/LoadingState.vue";
 import PanelDualScreenButton from "@/components/PanelDualScreenButton.vue";
 import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
 import { useLocale } from "@/composables/useLocale";
+import { isFeatureAllowed } from "@/composables/useFeatureGate";
 import { useImageSize } from "@/composables/useImageSize";
 import { usePresentationSession } from "@/composables/usePresentationSession";
 import { usePreviewPanZoom } from "@/composables/usePreviewPanZoom";
-import { isTransparentPreviewBg } from "@/constants/editor-settings";
+import { isTransparentPreviewBg, TRANSPARENT_PREVIEW_BG } from "@/constants/editor-settings";
+import { effectStyle, effectVisualAt } from "@/services/presentation/effects";
+import { readFrameFile, readFrameHref } from "@/services/presentation/frame";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
 import { sanitizeSvgForPreview } from "@/utils/export";
 import type { RenderMode } from "@/constants/render-settings";
@@ -44,6 +47,8 @@ const props = defineProps<{
   diagramFormat?: DiagramFormat;
   /** Правка трека доступна только редактору, который может записать исходник. */
   canEditPresentation?: boolean;
+  /** Drop SVG/PNG создаёт новую диаграмму. Во втором окне превью выключен. */
+  acceptFrameDrop?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -60,6 +65,7 @@ const emit = defineEmits<{
   "update:imageSize": [value: { width: number; height: number } | null];
   toggleDualScreen: [];
   "update:source": [value: string];
+  importFrame: [payload: { label: string; source: string }];
 }>();
 
 const { t } = useLocale();
@@ -69,9 +75,12 @@ const appearanceOpen = ref(false);
 const viewportRef = ref<HTMLElement | null>(null);
 const contentRef = ref<HTMLElement | null>(null);
 
+const frameHref = computed(() => readFrameHref(props.source ?? ""));
+const frameError = ref("");
+const frameDragOver = ref(false);
 const { activeSize, isCustom, sizedMarkup, setWidth, setHeight, resetSize } = useImageSize(
   computed(() => props.svg),
-  computed(() => props.previewBackground),
+  computed(() => (frameHref.value ? TRANSPARENT_PREVIEW_BG : props.previewBackground)),
 );
 
 const previewMarkup = computed(() => {
@@ -116,6 +125,7 @@ const presentation = usePresentationSession({
     const style = getComputedStyle(viewport);
     return {
       svg: previewMarkup.value,
+      frameHref: frameHref.value,
       imageWidth: snapshot.value.imageWidth,
       imageHeight: snapshot.value.imageHeight,
       viewportWidth: viewport.clientWidth,
@@ -130,6 +140,13 @@ const presentation = usePresentationSession({
   },
 });
 provide(presentationSessionKey, presentation);
+
+function onTogglePresentation(): void {
+  if (!isFeatureAllowed("editor.presentation")) {
+    return;
+  }
+  presentation.togglePanel();
+}
 
 function toggleFullscreen(): void {
   isFullscreen.value = !isFullscreen.value;
@@ -166,6 +183,57 @@ watch(
   },
 );
 
+const effectsLive = computed(
+  () => presentation.playback.playing.value || presentation.playback.animating.value,
+);
+
+function sceneStyle(target: "frame" | "diagram"): Record<string, string> {
+  if (!effectsLive.value || presentation.playback.phase.value !== "dwell") {
+    return effectStyle({ opacity: 1, scale: 1 });
+  }
+  const viewpoint = presentation.currentTrack.value?.viewpoints[
+    presentation.playback.viewpointIndex.value
+  ];
+  return effectStyle(
+    effectVisualAt(
+      viewpoint?.effects ?? [],
+      presentation.playback.phaseElapsedMs.value,
+      target,
+    ),
+  );
+}
+
+function onFrameDragOver(event: DragEvent): void {
+  if (!props.acceptFrameDrop || props.blockedMessage) {
+    return;
+  }
+  event.preventDefault();
+  frameDragOver.value = true;
+}
+
+function onFrameDragLeave(): void {
+  frameDragOver.value = false;
+}
+
+async function onFrameDrop(event: DragEvent): Promise<void> {
+  if (!props.acceptFrameDrop || props.blockedMessage) {
+    return;
+  }
+  event.preventDefault();
+  frameDragOver.value = false;
+  const file = event.dataTransfer?.files?.[0];
+  if (!file) {
+    return;
+  }
+  const result = await readFrameFile(file);
+  if (!result.ok) {
+    frameError.value = t(result.errorKey);
+    return;
+  }
+  frameError.value = "";
+  emit("importFrame", { label: result.label, source: result.source });
+}
+
 watch(
   () => props.dualScreenActive,
   (active) => {
@@ -186,6 +254,9 @@ watch(
     }"
     :aria-label="t('app.previewRegion')"
     @pointerdown="presentation.revealChrome"
+    @dragover="onFrameDragOver"
+    @dragleave="onFrameDragLeave"
+    @drop="onFrameDrop"
   >
     <header class="panel-header">
       <h2
@@ -199,8 +270,6 @@ watch(
           :is-rendering="isRendering"
           :can-export="canExport"
           :preview-background="previewBackground"
-          :diagram-dark-mode="diagramDarkMode"
-          :render-mode="renderMode"
           :zoom-percent="zoomPercent"
           :image-width="activeSize.width"
           :image-height="activeSize.height"
@@ -208,7 +277,7 @@ watch(
           :copy-png="copyPng"
           :presentation-enabled="presentation.enabled.value"
           :presentation-open="presentation.panelOpen.value"
-          @toggle-presentation="presentation.togglePanel()"
+          @toggle-presentation="onTogglePresentation"
           @render-now="emit('renderNow')"
           @export-svg="emit('exportSvg')"
           @export-png="emit('exportPng')"
@@ -219,9 +288,6 @@ watch(
           @set-image-height="setHeight"
           @reset-image-size="resetSize"
           @open-appearance="appearanceOpen = true"
-          @update:preview-background="emit('update:previewBackground', $event)"
-          @update:diagram-dark-mode="emit('update:diagramDarkMode', $event)"
-          @update:render-mode="emit('update:renderMode', $event)"
         />
         <span
           v-if="isRendering"
@@ -279,11 +345,27 @@ watch(
             class="preview-content"
             :data-preview-ready="Boolean(previewMarkup)"
             :style="contentStyle"
-            v-html="previewMarkup"
-          />
+          >
+            <div class="preview-scene">
+              <img
+                v-if="frameHref"
+                class="preview-scene__frame"
+                :src="frameHref"
+                alt=""
+                :style="sceneStyle('frame')"
+              >
+              <div
+                class="preview-scene__diagram"
+                :style="sceneStyle('diagram')"
+                v-html="previewMarkup"
+              />
+            </div>
+          </div>
           <PresentationStage
             v-if="presentation.enabled.value"
             :snapshot="snapshot"
+            :effects-live="effectsLive"
+            :effect-elapsed-ms="presentation.playback.phaseElapsedMs.value"
             :track="presentation.currentTrack.value"
             :editing="presentation.panelOpen.value && presentation.mode.value === 'edit' && props.canEditPresentation === true"
             :show-overlays="presentation.document.value?.showOverlays !== false"
@@ -299,6 +381,12 @@ watch(
             @change-overlay="presentation.onChangeOverlay"
           />
         </div>
+        <p
+          v-if="frameError"
+          class="preview-frame-error"
+        >
+          {{ frameError }}
+        </p>
         <PresentationPanel :t="t" />
         <div
           v-if="isRendering"
@@ -314,8 +402,14 @@ watch(
         v-else
         class="preview-placeholder"
       >
-        {{ t("preview.placeholder") }}
+        {{ frameError || t("preview.placeholder") }}
       </div>
+      <p
+        v-if="frameDragOver"
+        class="preview-drop"
+      >
+        {{ t("preview.frame.drop") }}
+      </p>
     </div>
 
     <AppearanceModal
@@ -325,12 +419,16 @@ watch(
       :font-family="diagramFontFamily"
       :font-weight="diagramFontWeight"
       :font-style="diagramFontStyle"
+      :diagram-dark-mode="diagramDarkMode"
+      :render-mode="renderMode"
       @close="appearanceOpen = false"
       @update:background="emit('update:previewBackground', $event)"
       @update:text-color="emit('update:textColor', $event)"
       @update:font-family="emit('update:diagramFontFamily', $event)"
       @update:font-weight="emit('update:diagramFontWeight', $event)"
       @update:font-style="emit('update:diagramFontStyle', $event)"
+      @update:diagram-dark-mode="emit('update:diagramDarkMode', $event)"
+      @update:render-mode="emit('update:renderMode', $event)"
     />
   </section>
 </template>
@@ -364,6 +462,51 @@ watch(
 
 .preview-content {
   will-change: transform;
+}
+
+.preview-scene {
+  position: relative;
+  display: inline-block;
+}
+
+.preview-scene__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+.preview-scene__diagram {
+  position: relative;
+}
+
+.preview-frame-error {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  margin: 0;
+  color: var(--danger);
+  text-align: center;
+}
+
+.preview-drop {
+  position: absolute;
+  inset: 12px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  border: 2px dashed var(--accent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  color: var(--text);
+  pointer-events: none;
+}
+
+.panel-body {
+  position: relative;
 }
 
 .preview-panel.is-presentation-view > .panel-header,

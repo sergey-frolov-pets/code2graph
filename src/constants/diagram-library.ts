@@ -1,3 +1,5 @@
+import type { FeatureMap } from "@shared/features";
+
 export const MAX_PUML_FILE_BYTES = 512_000;
 
 /** Stored view-only SVG for a named server-library link. */
@@ -133,6 +135,7 @@ export interface DiagramVersionDto {
 
 export interface DiagramDto extends DiagramListItemDto {
   source: string;
+  features?: FeatureMap;
 }
 
 export interface DiagramRatingDto {
@@ -223,6 +226,7 @@ export interface SubscriptionDto {
   urlPath: string | null;
   sections: SubscriptionSectionDto[];
   diagrams: SubscriptionDiagramDto[];
+  features?: FeatureMap;
   createdAt: string;
   updatedAt: string;
 }
@@ -249,6 +253,7 @@ export interface CreateSubscriptionPayload {
   distributionMode?: SubscriptionDistributionMode;
   sections?: SubscriptionSectionDto[];
   diagrams?: SubscriptionDiagramDto[];
+  features?: FeatureMap;
 }
 
 export interface UpdateSubscriptionPayload {
@@ -258,6 +263,7 @@ export interface UpdateSubscriptionPayload {
   distributionMode?: SubscriptionDistributionMode;
   sections?: SubscriptionSectionDto[];
   diagrams?: SubscriptionDiagramDto[];
+  features?: FeatureMap;
 }
 
 export interface RatingsLeaderboardDto {

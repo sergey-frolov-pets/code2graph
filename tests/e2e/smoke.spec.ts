@@ -15,9 +15,7 @@ test("loads editor and shows preview panel", async ({ page }) => {
 test("returns from the editor header to the landing page", async ({ page }) => {
   await page.goto("/#/app");
 
-  const homeButton = page.locator(".app-header__nav").getByRole("button", {
-    name: /На главную|Back to home/i,
-  });
+  const homeButton = page.getByRole("button", { name: "Code2Graph" });
   await expect(homeButton).toBeVisible({ timeout: 30_000 });
   await homeButton.click();
 

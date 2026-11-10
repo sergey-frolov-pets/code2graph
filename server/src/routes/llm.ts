@@ -1,4 +1,11 @@
 import { Hono } from "hono";
+import { randomUUID } from "node:crypto";
+import { getRequestUser, type AuthVariables } from "../auth/context.js";
+import { BILLING_LLM_TOKEN_COST } from "../billing/constants.js";
+import { llmAccessFor } from "../billing/limits.js";
+import { debitTokens, readBalances } from "../billing/service.js";
+import { getDb } from "../db.js";
+import { userAllowsLlmProxy } from "../services/subscription-feature-access.js";
 import {
   GEMINI_API_KEY,
   GROQ_API_KEY,
@@ -33,25 +40,16 @@ const rateLimitByIp = new Map<string, RateLimitEntry>();
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 
-function getClientIp(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) {
-    return forwarded.split(",")[0]?.trim() ?? "unknown";
-  }
-
-  return request.headers.get("x-real-ip") ?? "unknown";
-}
-
-function isRateLimited(ip: string): boolean {
+function isRateLimited(key: string, limit: number): boolean {
   const now = Date.now();
-  const entry = rateLimitByIp.get(ip);
+  const entry = rateLimitByIp.get(key);
 
   if (!entry || now - entry.windowStartMs >= RATE_LIMIT_WINDOW_MS) {
-    rateLimitByIp.set(ip, { count: 1, windowStartMs: now });
+    rateLimitByIp.set(key, { count: 1, windowStartMs: now });
     return false;
   }
 
-  if (entry.count >= LLM_RATE_LIMIT_PER_MINUTE) {
+  if (entry.count >= limit) {
     return true;
   }
 
@@ -81,6 +79,7 @@ async function callGemini(
   model: string,
   messages: LlmChatMessage[],
   jsonMode: boolean,
+  maxOutputTokens: number,
 ): Promise<string> {
   const systemMessage = messages.find((message) => message.role === "system");
   const contents = messages
@@ -101,7 +100,7 @@ async function callGemini(
         : undefined,
       contents,
       generationConfig: {
-        maxOutputTokens: LLM_MAX_OUTPUT_TOKENS,
+        maxOutputTokens,
         ...(jsonMode ? { responseMimeType: "application/json" } : {}),
       },
     }),
@@ -130,6 +129,7 @@ async function callOpenAiCompatible(
   model: string,
   messages: LlmChatMessage[],
   jsonMode: boolean,
+  maxOutputTokens: number,
   extraHeaders?: Record<string, string>,
 ): Promise<string> {
   const response = await fetch(endpoint, {
@@ -142,7 +142,7 @@ async function callOpenAiCompatible(
     body: JSON.stringify({
       model,
       messages,
-      max_tokens: LLM_MAX_OUTPUT_TOKENS,
+      max_tokens: maxOutputTokens,
       response_format: jsonMode ? { type: "json_object" } : undefined,
     }),
   });
@@ -169,6 +169,7 @@ async function dispatchLlmChat(
   messages: LlmChatMessage[],
   jsonMode: boolean,
   apiKey: string,
+  maxOutputTokens: number,
 ): Promise<LlmChatResponseBody> {
   const config = FREE_BUILTIN_LLM_PROVIDERS[providerId];
 
@@ -176,7 +177,7 @@ async function dispatchLlmChat(
 
   switch (providerId) {
     case "google-gemini-free":
-      content = await callGemini(apiKey, config.model, messages, jsonMode);
+      content = await callGemini(apiKey, config.model, messages, jsonMode, maxOutputTokens);
       break;
     case "groq-free":
       content = await callOpenAiCompatible(
@@ -185,6 +186,7 @@ async function dispatchLlmChat(
         config.model,
         messages,
         jsonMode,
+        maxOutputTokens,
       );
       break;
     case "openrouter-free":
@@ -194,6 +196,7 @@ async function dispatchLlmChat(
         config.model,
         messages,
         jsonMode,
+        maxOutputTokens,
         {
           "HTTP-Referer": "https://github.com/sergey-frolov-pets/code2graph",
           "X-Title": "Code2Graph",
@@ -211,12 +214,27 @@ async function dispatchLlmChat(
   };
 }
 
-export const llmRouter = new Hono();
+export const llmRouter = new Hono<{ Variables: AuthVariables }>();
 
 llmRouter.post("/chat", async (context) => {
-  const clientIp = getClientIp(context.req.raw);
+  const user = getRequestUser(context);
+  if (!user) {
+    return context.json({ error: "unauthorized" }, 401);
+  }
 
-  if (isRateLimited(clientIp)) {
+  const database = getDb();
+  if (!userAllowsLlmProxy(database, user)) {
+    return context.json(
+      {
+        error: "forbidden",
+        message: "LLM proxy is not included in your subscription",
+      },
+      403,
+    );
+  }
+
+  const access = llmAccessFor(database, user.id);
+  if (isRateLimited(user.id, access.ratePerMinute)) {
     return context.json(
       { error: "rate_limit", message: "Too many LLM requests. Try again later." },
       429,
@@ -265,13 +283,23 @@ llmRouter.post("/chat", async (context) => {
     );
   }
 
+  const balances = readBalances(database, user.id);
+  if (balances.included + balances.purchased < BILLING_LLM_TOKEN_COST) {
+    return context.json(
+      { error: "insufficient_tokens", message: "Недостаточно токенов для серверного AI" },
+      402,
+    );
+  }
+
   try {
     const result = await dispatchLlmChat(
       body.providerId,
       body.messages,
       body.jsonMode ?? false,
       apiKey,
+      access.maxOutputTokens,
     );
+    debitTokens(database, user.id, BILLING_LLM_TOKEN_COST, randomUUID());
     return context.json(result);
   } catch (error) {
     const message =
