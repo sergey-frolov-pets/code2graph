@@ -4,6 +4,15 @@ import IconButton from "@/components/IconButton.vue";
 import PresentationGlyph from "@/components/preview/PresentationGlyph.vue";
 import { presentationSessionKey } from "@/components/preview/presentation-session";
 import { durationMsToSeconds, durationSecondsToMs } from "@/services/presentation/model";
+import {
+  OVERLAY_OPACITY_MAX,
+  OVERLAY_OPACITY_MIN,
+  OVERLAY_OPACITY_STEP,
+  PRESENTATION_TRANSPARENT_COLOR,
+  overlayColorOpaqueHex,
+  overlayColorOpacity,
+  overlayColorWithOpacity,
+} from "@/services/presentation/overlay-color";
 import { stepRotation } from "@/services/presentation/overlay-geometry";
 import {
   PRESENTATION_ARROW_FORMS,
@@ -272,6 +281,22 @@ function arrowKindLabel(kind: PresentationArrowKind): LocaleKey {
 const COLOR_PICKER_FALLBACK = "#0f6cbd";
 const FILL_PICKER_FALLBACK = "#ffffff";
 const TEXT_COLOR_PICKER_FALLBACK = "#1a1f24";
+
+function paintHex(value: string, fallback: string): string {
+  return overlayColorOpaqueHex(value, fallback);
+}
+
+function paintOpacity(value: string): number {
+  return overlayColorOpacity(value);
+}
+
+function paintFromHex(value: string, fallback: string, hex: string): string {
+  return overlayColorWithOpacity(hex, overlayColorOpacity(value || fallback));
+}
+
+function paintFromOpacity(value: string, fallback: string, opacity: number): string {
+  return overlayColorWithOpacity(overlayColorOpaqueHex(value, fallback), opacity);
+}
 
 function fontLabel(font: PresentationFont): LocaleKey {
   switch (font) {
@@ -774,21 +799,58 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
               <span>{{ t("presentation.stroke") }}</span>
               <input
                 type="color"
-                :value="selectedOverlay.stroke || COLOR_PICKER_FALLBACK"
-                @change="onChangeOverlay(selectedOverlay.id, { stroke: ($event.target as HTMLInputElement).value })"
+                :value="paintHex(selectedOverlay.stroke, COLOR_PICKER_FALLBACK)"
+                @input="onChangeOverlay(selectedOverlay.id, { stroke: paintFromHex(selectedOverlay.stroke, COLOR_PICKER_FALLBACK, ($event.target as HTMLInputElement).value) })"
               >
             </label>
-            <label
-              v-if="selectedOverlay.shape !== 'arrow'"
-              class="presentation-field"
-            >
-              <span>{{ t("presentation.fill") }}</span>
+            <label class="presentation-field">
+              <span>{{ t("presentation.opacity") }}</span>
               <input
-                type="color"
-                :value="selectedOverlay.fill || FILL_PICKER_FALLBACK"
-                @change="onChangeOverlay(selectedOverlay.id, { fill: ($event.target as HTMLInputElement).value })"
+                type="range"
+                :min="OVERLAY_OPACITY_MIN"
+                :max="OVERLAY_OPACITY_MAX"
+                :step="OVERLAY_OPACITY_STEP"
+                :value="paintOpacity(selectedOverlay.stroke)"
+                @input="onChangeOverlay(selectedOverlay.id, { stroke: paintFromOpacity(selectedOverlay.stroke, COLOR_PICKER_FALLBACK, Number(($event.target as HTMLInputElement).value)) })"
               >
             </label>
+            <button
+              type="button"
+              class="presentation-swatch"
+              :class="{ 'is-pressed': selectedOverlay.stroke === PRESENTATION_TRANSPARENT_COLOR }"
+              @click="onChangeOverlay(selectedOverlay.id, { stroke: PRESENTATION_TRANSPARENT_COLOR })"
+            >
+              {{ t("presentation.transparent") }}
+            </button>
+            <template v-if="selectedOverlay.shape !== 'arrow' || selectedOverlay.arrowForm !== 'line'">
+              <label class="presentation-field">
+                <span>{{ t("presentation.fill") }}</span>
+                <input
+                  type="color"
+                  :value="paintHex(selectedOverlay.fill, FILL_PICKER_FALLBACK)"
+                  @input="onChangeOverlay(selectedOverlay.id, { fill: paintFromHex(selectedOverlay.fill, FILL_PICKER_FALLBACK, ($event.target as HTMLInputElement).value) })"
+                >
+              </label>
+              <label class="presentation-field">
+                <span>{{ t("presentation.opacity") }}</span>
+                <input
+                  type="range"
+                  :min="OVERLAY_OPACITY_MIN"
+                  :max="OVERLAY_OPACITY_MAX"
+                  :step="OVERLAY_OPACITY_STEP"
+                  :value="paintOpacity(selectedOverlay.fill)"
+                  @input="onChangeOverlay(selectedOverlay.id, { fill: paintFromOpacity(selectedOverlay.fill, FILL_PICKER_FALLBACK, Number(($event.target as HTMLInputElement).value)) })"
+                >
+              </label>
+              <button
+                type="button"
+                class="presentation-swatch"
+                :class="{ 'is-pressed': selectedOverlay.fill === PRESENTATION_TRANSPARENT_COLOR }"
+                @click="onChangeOverlay(selectedOverlay.id, { fill: PRESENTATION_TRANSPARENT_COLOR })"
+              >
+                {{ t("presentation.transparent") }}
+              </button>
+            </template>
             <label
               v-if="selectedOverlay.shape === 'text'"
               class="presentation-field"
@@ -1099,6 +1161,29 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
 
 .presentation-field--grow {
   flex: 1;
+}
+
+.presentation-swatch {
+  align-self: end;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background:
+    linear-gradient(45deg, var(--border) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--border) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--border) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--border) 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+  color: var(--text);
+  font-size: 0.75rem;
+}
+
+.presentation-swatch.is-pressed {
+  border-style: solid;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .presentation-field input,

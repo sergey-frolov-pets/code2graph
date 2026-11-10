@@ -233,6 +233,8 @@ export const miscMessages = {
   "presentation.style": "Style",
   "presentation.stroke": "Line",
   "presentation.fill": "Fill",
+  "presentation.opacity": "Opacity",
+  "presentation.transparent": "Transparent",
   "presentation.textColor": "Text color",
   "presentation.font": "Font",
   "presentation.font.sans": "Sans",

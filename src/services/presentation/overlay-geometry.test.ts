@@ -54,6 +54,8 @@ function overlay(patch: Partial<PresentationOverlay>): PresentationOverlay {
     backing: "none",
     bubbleShape: "rectangle",
     cornerRadius: 0,
+    tailX: 0.08,
+    tailY: 1.34,
     arrowKind: "straight",
     arrowForm: "line",
     arrowDirection: "right",
@@ -79,6 +81,12 @@ describe("callout outlines", () => {
       expect(Math.max(...endpointYs(path))).toBeGreaterThan(BODY.y + BODY.height);
     },
   );
+
+  it("moves the bubble tip to the chosen side", () => {
+    const path = calloutPath(BODY, "rectangle", 0, { x: 1.4, y: 0.5 });
+    expect(subpathCount(path)).toBe(1);
+    expect(path).toContain("L 150 50");
+  });
 
   it("keeps a sharp rectangle free of corner arcs and rounds a pill", () => {
     expect(roundedRectPath(BODY, 0)).not.toContain(" A ");
