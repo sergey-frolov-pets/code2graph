@@ -723,4 +723,163 @@ stop
     expect(activityEmitted).toContain("<<#Pink>>");
     expect(activityEmitted).toContain("BackgroundColor #E8F5E9");
   });
+
+  it("deep-merges Mermaid frontmatter config without losing unknown keys or sections", () => {
+    const source = [
+      "---",
+      "title: Traffic",
+      "config:",
+      "  theme: forest",
+      "  look: handDrawn",
+      "  sankey:",
+      "    showValues: false",
+      "    customFlag: 42",
+      "---",
+      "sankey-beta",
+      "Ads,Site,90",
+    ].join("\n");
+
+    const state = parseSourceToBuilderState(source, "mermaid");
+    expect(state.canvas.title).toBe("Traffic");
+    expect(state.appearance.sankey.showValues).toBe(false);
+
+    state.appearance.sankey.nodeAlignment = "center";
+    const emitted = emitSourceFromBuilderState(state, source);
+    expect(emitted).toContain("theme: forest");
+    expect(emitted).toContain("look: handDrawn");
+    expect(emitted).toContain("customFlag: 42");
+    expect(emitted).toContain("showValues: false");
+    expect(emitted).toContain("nodeAlignment: center");
+  });
+
+  it("round-trips PlantUML and Mermaid Gantt with language, scale, statuses, milestones, and dependencies", () => {
+    const pumlGantt = [
+      "@startgantt",
+      "' Комментарий календаря",
+      "language ru",
+      "printscale weekly zoom 1.5",
+      "title План релиза",
+      "project starts 2026-01-06",
+      "saturday are closed",
+      "sunday are closed",
+      "-- Фаза 1 --",
+      "[Анализ требований] as [A1] lasts 5 days and is colored in LightGreen and is 100% completed",
+      "[Прототип UI] lasts 4 days and starts at [A1]'s end",
+      "[Релиз] happens at 2026-02-20 and is colored in Coral",
+      "today is colored in Coral",
+      "@endgantt",
+    ].join("\n");
+
+    const pumlState = parseSourceToBuilderState(pumlGantt, "plantuml");
+    expect(pumlState.canvas.ganttLanguage).toBe("ru");
+    expect(pumlState.canvas.ganttScale).toBe("weekly");
+    expect(pumlState.canvas.ganttZoom).toBe("1.5");
+    expect(pumlState.canvas.ganttProjectStarts).toBe("2026-01-06");
+    expect(pumlState.canvas.ganttClosedWeekends).toBe(true);
+    expect(pumlState.rows).toHaveLength(3);
+    expect(pumlState.rows[0]).toEqual([
+      "Анализ требований",
+      "2026-01-06",
+      "5d",
+      "Фаза 1",
+      "done",
+      "A1",
+      "LightGreen",
+    ]);
+    expect(pumlState.rows[1]?.[1]).toBe("after A1");
+    expect(pumlState.rows[2]?.[4]).toBe("milestone");
+
+    const pumlEmitted = emitSourceFromBuilderState(pumlState, pumlGantt);
+    expect(pumlEmitted).toContain("language ru");
+    expect(pumlEmitted).toContain("printscale weekly zoom 1.5");
+    expect(pumlEmitted).toContain("project starts 2026-01-06");
+    expect(pumlEmitted).not.toContain("project starts 2026-01-01");
+    expect(pumlEmitted).toContain("saturday are closed");
+    expect(pumlEmitted).toContain("sunday are closed");
+    expect(pumlEmitted).toContain("-- Фаза 1 --");
+    expect(pumlEmitted).toContain("[Анализ требований] as [A1] lasts 5 days");
+    expect(pumlEmitted).toContain("is colored in LightGreen");
+    expect(pumlEmitted).toContain("is 100% completed");
+    expect(pumlEmitted).toContain("starts at [A1]'s end");
+    expect(pumlEmitted).toContain("[Релиз] happens at 2026-02-20 and is colored in Coral");
+    expect(pumlEmitted).toContain("today is colored in Coral");
+    expect(pumlEmitted).toContain("' Комментарий календаря");
+
+    const mmdGantt = [
+      "gantt",
+      "    %% Комментарий Ганта",
+      "    title План релиза Code2Graph",
+      "    dateFormat YYYY-MM-DD",
+      "    axisFormat %d.%m",
+      "    excludes weekends",
+      "    todayMarker off",
+      "    inclusiveEndDates",
+      "    section Подготовка",
+      "    Анализ требований :done, a1, 2024-01-02, 5d",
+      "    Прототип UI :active, a2, after a1, 4d",
+      "    Публикация :milestone, m1, after a2, 0d",
+    ].join("\n");
+
+    const mmdState = parseSourceToBuilderState(mmdGantt, "mermaid");
+    expect(mmdState.canvas.ganttAxisFormat).toBe("%d.%m");
+    expect(mmdState.canvas.ganttExcludes).toBe("weekends");
+    expect(mmdState.canvas.ganttTodayMarker).toBe("off");
+    expect(mmdState.canvas.ganttInclusiveEndDates).toBe(true);
+    expect(mmdState.rows[0]).toEqual([
+      "Анализ требований",
+      "2024-01-02",
+      "5d",
+      "Подготовка",
+      "done",
+      "a1",
+      "",
+    ]);
+    expect(mmdState.rows[1]?.[1]).toBe("after a1");
+    expect(mmdState.rows[1]?.[4]).toBe("active");
+    expect(mmdState.rows[2]?.[4]).toBe("milestone");
+    expect(mmdState.rows[2]?.[5]).toBe("m1");
+
+    const mmdEmitted = emitSourceFromBuilderState(mmdState, mmdGantt);
+    expect(mmdEmitted).toContain("%% Комментарий Ганта");
+    expect(mmdEmitted).toContain("axisFormat %d.%m");
+    expect(mmdEmitted).toContain("todayMarker off");
+    expect(mmdEmitted).toContain("inclusiveEndDates");
+    expect(mmdEmitted).toContain("Анализ требований :done, a1, 2024-01-02, 5d");
+    expect(mmdEmitted).toContain("Прототип UI :active, a2, after a1, 4d");
+    expect(mmdEmitted).toContain("Публикация :milestone, m1, after a2, 0d");
+  });
+
+  it("preserves Mindmap colors, legend/header/footer, and Flowchart/Sequence extras on round-trip", () => {
+    const pumlMindmap = [
+      "@startmindmap",
+      "top to bottom direction",
+      "title Mindmap",
+      "header Верхний колонтитул",
+      "footer Нижний колонтитул",
+      "* Проект",
+      "**[#FFBBCC] Дизайн",
+      "***[#BBFFCC] UI",
+      "@endmindmap",
+    ].join("\n");
+
+    const mmState = parseSourceToBuilderState(pumlMindmap, "plantuml");
+    expect(mmState.rows[0]).toEqual(["Проект", "Дизайн", "UI", "#BBFFCC"]);
+    const mmEmitted = emitSourceFromBuilderState(mmState, pumlMindmap);
+    expect(mmEmitted).toContain("***[#BBFFCC] UI");
+    expect(mmEmitted).toContain("header Верхний колонтитул");
+    expect(mmEmitted).toContain("footer Нижний колонтитул");
+
+    const mmdFlow = [
+      "flowchart LR",
+      "  %% Flow comment",
+      "  A[Start] --> B[End]",
+      "  classDef hot fill:#f96,stroke:#333",
+      "  style A fill:#bbf",
+    ].join("\n");
+    const flowState = parseSourceToBuilderState(mmdFlow, "mermaid");
+    const flowEmitted = emitSourceFromBuilderState(flowState, mmdFlow);
+    expect(flowEmitted).toContain("%% Flow comment");
+    expect(flowEmitted).toContain("classDef hot fill:#f96,stroke:#333");
+    expect(flowEmitted).toContain("style A fill:#bbf");
+  });
 });

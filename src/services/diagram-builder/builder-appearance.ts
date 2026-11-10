@@ -88,18 +88,20 @@ export function builderShowsTitle(
 }
 
 export function splitMermaidFrontmatter(source: string): {
+  root: YamlMap;
   config: YamlMap;
   title: string;
   body: string;
 } {
   const match = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*\r?\n?/.exec(source);
   if (!match) {
-    return { config: {}, title: "", body: source };
+    return { root: {}, config: {}, title: "", body: source };
   }
 
   const parsed = parseSimpleYaml(match[1]);
   const config = parsed.config;
   return {
+    root: parsed,
     config: isYamlMap(config) ? config : {},
     title: yamlTitle(parsed.title),
     body: source.slice(match[0].length),
@@ -189,22 +191,91 @@ export function applyAppearanceFromConfig(
   }
 }
 
+const MANAGED_SECTION_KEYS: Record<string, readonly string[]> = {
+  sankey: [
+    "showValues",
+    "prefix",
+    "suffix",
+    "linkColor",
+    "nodeAlignment",
+    "width",
+    "height",
+    "useMaxWidth",
+    "nodeWidth",
+    "nodePadding",
+    "labelStyle",
+    "nodeColors",
+  ],
+  packet: [
+    "showBits",
+    "bitOrder",
+    "bitsPerRow",
+    "bitWidth",
+    "rowHeight",
+    "paddingX",
+    "paddingY",
+  ],
+  pie: ["textPosition", "donutHole", "legendPosition"],
+  xyChart: ["chartOrientation", "showDataLabel", "width", "height"],
+  mindmap: ["colorBy", "padding", "maxNodeWidth"],
+  timeline: ["disableMulticolor"],
+  journey: ["taskMargin", "width", "height"],
+  gantt: ["weekday", "tickInterval", "topAxis", "displayMode"],
+  block: ["padding"],
+};
+
+function cloneYamlMap(map: YamlMap): YamlMap {
+  const out: YamlMap = {};
+  for (const [k, v] of Object.entries(map)) {
+    out[k] = isYamlMap(v) ? cloneYamlMap(v) : v;
+  }
+  return out;
+}
+
 export function buildMermaidConfigHeader(
   appearance: BuilderDiagramAppearance,
   diagramType: DiagramTypeTag,
   title = "",
+  preservedFrontmatterRoot?: Record<string, unknown>,
 ): string {
   const section = configSection(appearance, diagramType);
-  const titleLine = title.trim() ? `title: ${formatYamlScalar(title.trim())}\n` : "";
-  const body = section ? emitYamlMap(section.values, 4) : "";
-  if (!titleLine && !body) {
-    return "";
-  }
-  if (!body || !section) {
-    return `---\n${titleLine}---\n`;
+  const root: YamlMap = isYamlMap(preservedFrontmatterRoot as YamlNode | undefined)
+    ? cloneYamlMap(preservedFrontmatterRoot as YamlMap)
+    : {};
+
+  if (title.trim()) {
+    root.title = title.trim();
+  } else {
+    delete root.title;
   }
 
-  return `---\n${titleLine}config:\n  ${section.key}:\n${body}\n---\n`;
+  const existingConfig = isYamlMap(root.config) ? cloneYamlMap(root.config) : {};
+  if (section) {
+    const existingSection = isYamlMap(existingConfig[section.key])
+      ? cloneYamlMap(existingConfig[section.key] as YamlMap)
+      : {};
+    for (const managedKey of MANAGED_SECTION_KEYS[section.key] ?? []) {
+      delete existingSection[managedKey];
+    }
+    const mergedSection: YamlMap = { ...existingSection, ...section.values };
+    if (Object.keys(mergedSection).length > 0) {
+      existingConfig[section.key] = mergedSection;
+    } else {
+      delete existingConfig[section.key];
+    }
+  }
+
+  if (Object.keys(existingConfig).length > 0) {
+    root.config = existingConfig;
+  } else {
+    delete root.config;
+  }
+
+  const emitted = emitYamlMap(root, 0);
+  if (!emitted) {
+    return "";
+  }
+  return `---\n${emitted}\n---\n`;
 }
 
 export function sourceHasSequenceAutonumber(source: string): boolean {

@@ -12,12 +12,14 @@ import type { WizardStepId } from "@/constants/llm-wizard";
 import {
   detectBuilderDiagramType,
   emitSourceFromBuilderState,
+  getDiagramBuilderSchema,
+  hasBuilderOptionsCapabilities,
   parseSourceToBuilderState,
   supportsDiagramBuilder,
   type DiagramBuilderState,
 } from "@/services/diagram-builder";
 
-const INLINE_BUILDER_STEPS: readonly WizardStepId[] = [
+const INLINE_BUILDER_BASE_STEPS: readonly WizardStepId[] = [
   "builder-data",
   "builder-canvas",
 ];
@@ -36,10 +38,20 @@ export function useInlineDiagramBuilder(options: UseInlineDiagramBuilderOptions)
     parseSourceToBuilderState("", "plantuml"),
   );
   const builderBaseSource = ref("");
+  const isDirty = ref(false);
   let lastWrittenSource: string | null = null;
   let syncingFromBuilder = false;
 
-  const steps = computed(() => [...INLINE_BUILDER_STEPS]);
+  const steps = computed((): WizardStepId[] => {
+    const schema = getDiagramBuilderSchema(
+      builderState.value.format,
+      builderState.value.diagramType,
+    );
+    if (hasBuilderOptionsCapabilities(schema.capabilities)) {
+      return [...INLINE_BUILDER_BASE_STEPS, "builder-options"];
+    }
+    return [...INLINE_BUILDER_BASE_STEPS];
+  });
   const currentStepId = computed(
     (): WizardStepId => steps.value[stepIndex.value] ?? "builder-data",
   );
@@ -59,10 +71,14 @@ export function useInlineDiagramBuilder(options: UseInlineDiagramBuilderOptions)
       format.value,
       detected,
     );
+    isDirty.value = false;
     lastWrittenSource = current;
   }
 
-  function publishSource(): void {
+  function publishSource(force = false): void {
+    if (!force && !isDirty.value) {
+      return;
+    }
     const emitted = emitSourceFromBuilderState(
       builderState.value,
       builderBaseSource.value,
@@ -80,7 +96,8 @@ export function useInlineDiagramBuilder(options: UseInlineDiagramBuilderOptions)
   }
 
   function handleBuilderChange(): void {
-    publishSource();
+    isDirty.value = true;
+    publishSource(true);
   }
 
   function handleBuilderPasteSource(pastedFullSource: string): void {
@@ -90,7 +107,8 @@ export function useInlineDiagramBuilder(options: UseInlineDiagramBuilderOptions)
       format.value,
       builderState.value.diagramType,
     );
-    publishSource();
+    isDirty.value = true;
+    publishSource(true);
   }
 
   function selectStep(index: number): void {
@@ -117,8 +135,8 @@ export function useInlineDiagramBuilder(options: UseInlineDiagramBuilderOptions)
 
   if (getCurrentScope()) {
     onScopeDispose(() => {
-      if (active.value) {
-        publishSource();
+      if (active.value && isDirty.value) {
+        publishSource(true);
       }
     });
   }

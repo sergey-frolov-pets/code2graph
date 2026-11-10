@@ -154,6 +154,15 @@ export const MERMAID_SAMPLES_RU: Record<HandcraftedMermaidSampleId, string> = {
         number price
     }`,
   gantt: `gantt
+%% Календарь и шкала оси времени в Mermaid Gantt:
+%% axisFormat — формат подписей дат на шкале (d3-time-format):
+%%   %d.%m — день.месяц (числовой, без английских названий); %d.%m.%Y — полная дата
+%%   %d / %e — номер дня месяца (01..31 / 1..31); %j — день года (001..366)
+%%   %a / %A — день недели кратко / полностью (Mon / Monday)
+%%   %W / %U — номер недели в году (с понедельника / с воскресенья), напр. axisFormat W%W
+%%   %m — номер месяца (01..12); %b / %B — месяц кратко / полностью; %Y — год
+%% tickInterval 1day | 1week | 1month | 3month — шаг делений шкалы (дни, недели, месяцы, кварталы)
+%% weekday monday — начало недели с понедельника (для еженедельной сетки tickInterval 1week)
 title План релиза Code2Graph
 dateFormat YYYY-MM-DD
 axisFormat %d.%m
@@ -327,6 +336,15 @@ export const MERMAID_SAMPLES_EN: Record<HandcraftedMermaidSampleId, string> = {
         number price
     }`,
   gantt: `gantt
+%% Calendar & time axis scale options in Mermaid Gantt:
+%% axisFormat — date label format on the axis (d3-time-format):
+%%   %m/%d or %d.%m — numeric month/day; %Y-%m-%d — ISO date
+%%   %d / %e — day of month (01..31 / 1..31); %j — day of year (001..366)
+%%   %a / %A — weekday short / full (Mon / Monday)
+%%   %W / %U — week number of year (Monday / Sunday start), e.g. axisFormat W%W
+%%   %m — month number (01..12); %b / %B — month short / full; %Y — 4-digit year
+%% tickInterval 1day | 1week | 1month | 3month — axis tick step (days, weeks, months, quarters)
+%% weekday monday — start week on Monday (used with tickInterval 1week)
 title Code2Graph release plan
 dateFormat YYYY-MM-DD
 axisFormat %m/%d

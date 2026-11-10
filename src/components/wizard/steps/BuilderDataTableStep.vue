@@ -41,6 +41,34 @@ const schema = computed(() =>
 const isGraphNodesOpen = ref(false);
 const copyFeedback = ref(false);
 
+const graphGroupNames = computed(() => {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const node of builderState.value.graphNodes) {
+    const g = node.group.trim();
+    if (!g || seen.has(g)) continue;
+    seen.add(g);
+    out.push(g);
+  }
+  return out;
+});
+
+function groupColorFor(groupLabel: string): string {
+  return builderState.value.groupColors?.[groupLabel] ?? "";
+}
+
+function setGroupColorFor(groupLabel: string, color: string): void {
+  if (!builderState.value.groupColors) {
+    builderState.value.groupColors = {};
+  }
+  if (!color) {
+    delete builderState.value.groupColors[groupLabel];
+  } else {
+    builderState.value.groupColors[groupLabel] = color;
+  }
+  notifyChange();
+}
+
 function notifyChange(): void {
   emit("change");
 }
@@ -568,6 +596,29 @@ async function handlePasteFromClipboard(): Promise<void> {
               :key="colIdx"
             >
               <div class="builder-matrix-col-header">
+                <select
+                  v-if="builderState.diagramType === 'xychart' || builderState.diagramType === 'series'"
+                  :value="/^line\b/i.test((builderState.matrixHeaders[colIdx] ?? '').trim()) ? 'line' : 'bar'"
+                  class="select builder-cell-input builder-cell-input--short"
+                  :title="t('builder.xy.seriesKind')"
+                  @change="
+                    (() => {
+                      const isLine = ($event.target as HTMLSelectElement).value === 'line';
+                      const raw = (builderState.matrixHeaders[colIdx] ?? '').trim();
+                      const stripped = raw.replace(/^(?:line|bar)\s*:?\s*/i, '').trim() || `${colIdx + 1}`;
+                      builderState.matrixHeaders[colIdx] =
+                        builderState.diagramType === 'series'
+                          ? isLine
+                            ? `line: ${stripped}`
+                            : stripped
+                          : `${isLine ? 'Line' : 'Bar'} ${stripped}`;
+                      notifyChange();
+                    })()
+                  "
+                >
+                  <option value="bar">{{ t("builder.xy.seriesKind.bar") }}</option>
+                  <option value="line">{{ t("builder.xy.seriesKind.line") }}</option>
+                </select>
                 <input
                   v-model="builderState.matrixHeaders[colIdx]"
                   type="text"
@@ -902,6 +953,44 @@ async function handlePasteFromClipboard(): Promise<void> {
               </tr>
             </tbody>
           </table>
+
+          <div
+            v-if="graphGroupNames.length > 0 && builderState.format === 'plantuml'"
+            class="builder-subsection"
+          >
+            <p class="builder-subsection__label">
+              {{ t("builder.graph.groupColors") }}
+            </p>
+            <div class="builder-series-colors">
+              <div
+                v-for="grp in graphGroupNames"
+                :key="grp"
+                class="builder-color-cell"
+              >
+                <span class="builder-series-badge">{{ grp }}</span>
+                <input
+                  type="color"
+                  class="builder-color-picker"
+                  :value="
+                    groupColorFor(grp) && /^#[0-9a-fA-F]{6}$/.test(groupColorFor(grp))
+                      ? groupColorFor(grp)
+                      : '#e3f2fd'
+                  "
+                  :title="groupColorFor(grp) || t('builder.option.auto')"
+                  @input="setGroupColorFor(grp, ($event.target as HTMLInputElement).value)"
+                >
+                <button
+                  v-if="groupColorFor(grp)"
+                  type="button"
+                  class="builder-icon-mini"
+                  :title="t('builder.option.reset')"
+                  @click="setGroupColorFor(grp, '')"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </template>
