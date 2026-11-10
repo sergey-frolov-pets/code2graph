@@ -1,17 +1,7 @@
 import { computed, ref, watch, type Ref } from "vue";
-import { useLlmApiKeys } from "@/composables/useLlmApiKeys";
-import {
-  useLlmGate,
-  type LlmGateFailureReason,
-} from "@/composables/useLlmGate";
-import { useLlmSettings } from "@/composables/useLlmSettings";
-import { useWizardAiChat } from "@/composables/wizard/useWizardAiChat";
 import { useWizardStepPreview } from "@/composables/wizard/useWizardStepPreview";
 import type { LayoutEngine } from "@/constants";
-import {
-  exampleDirection,
-  type DiagramExample,
-} from "@/constants/diagram-example-catalog";
+import type { DiagramExample } from "@/constants/diagram-example-catalog";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { AppLocale } from "@/constants/i18n";
 import {
@@ -30,14 +20,14 @@ import type { TranslateFn } from "@/locales/types";
 import {
   createDefaultBuilderState,
   emitSourceFromBuilderState,
+  getDiagramBuilderSchema,
+  hasBuilderOptionsCapabilities,
   parseSourceToBuilderState,
   supportsDiagramBuilder,
   type BuilderApplyTarget,
   type DiagramBuilderState,
 } from "@/services/diagram-builder";
-import { buildWizardPrompt } from "@/services/llm/wizard/wizard-prompts";
 
-const AI_WIZARD_FLOW_STEPS: readonly WizardStepId[] = ["context", "result"];
 const BUILDER_WIZARD_FLOW_STEPS: readonly WizardStepId[] = [
   "builder-data",
   "builder-canvas",
@@ -60,10 +50,14 @@ export interface UseDiagramWizardFlowOptions {
   onClose: () => void;
 }
 
+/**
+ * Мастер новой диаграммы без ИИ: галерея примеров («В редактор»)
+ * и пошаговый конструктор. Диалоговая работа с ИИ — только режим
+ * «ИИ-чат» редактора.
+ */
 export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   const {
     open,
-    documentKey,
     layout,
     renderMode,
     diagramDarkMode,
@@ -77,7 +71,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   const galleryVisible = ref(true);
   const wizardState = ref<WizardState>({
     ...DEFAULT_WIZARD_STATE,
-    creationMode: "ai",
+    creationMode: "builder",
     typeParams: createDefaultTypeParams(),
     structuralElements: createDefaultStructuralElements(),
   });
@@ -87,54 +81,33 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   const builderBaseSource = ref("");
   const applyTarget = ref<BuilderApplyTarget>("new-tab");
 
-  const isGenerating = ref(false);
   const errorMessage = ref("");
   const resultSource = ref("");
-  const resultExplanation = ref("");
-  const aiSetupVisible = ref(false);
-  const aiSetupReason = ref<LlmGateFailureReason | null>(null);
-
-  const { llmConsent, llmProviderId } = useLlmSettings();
-  const { hasLlmApiKey } = useLlmApiKeys();
 
   const isBuilderMode = computed(
     () => wizardState.value.creationMode === "builder",
   );
 
-  const wizardSteps = computed((): WizardStepId[] =>
-    isBuilderMode.value
-      ? [...BUILDER_WIZARD_FLOW_STEPS]
-      : [...AI_WIZARD_FLOW_STEPS],
-  );
+  const wizardSteps = computed((): WizardStepId[] => {
+    const schema = getDiagramBuilderSchema(
+      builderState.value.format,
+      builderState.value.diagramType,
+    );
+    if (hasBuilderOptionsCapabilities(schema.capabilities)) {
+      return [...BUILDER_WIZARD_FLOW_STEPS, "builder-options"];
+    }
+    return [...BUILDER_WIZARD_FLOW_STEPS];
+  });
   const currentStepId = computed(
-    (): WizardStepId => wizardSteps.value[stepIndex.value] ?? "context",
+    (): WizardStepId => wizardSteps.value[stepIndex.value] ?? "builder-data",
   );
   const totalSteps = computed(() => wizardSteps.value.length);
 
-  const stepTitle = computed(() => {
-    if (currentStepId.value === "context") {
-      return t("llm.wizard.step.description");
-    }
-
-    return t(getWizardStepTitleKey(currentStepId.value));
-  });
+  const stepTitle = computed(() =>
+    t(getWizardStepTitleKey(currentStepId.value)),
+  );
 
   const showBackButton = computed(() => !galleryVisible.value);
-
-  async function checkAiAccess(): Promise<boolean> {
-    const { requireLlmAccess } = useLlmGate();
-    const gate = await requireLlmAccess({ silent: true });
-
-    if (!gate.ok) {
-      aiSetupReason.value = gate.reason;
-      aiSetupVisible.value = true;
-      return false;
-    }
-
-    aiSetupVisible.value = false;
-    aiSetupReason.value = null;
-    return true;
-  }
 
   const {
     previewSvg,
@@ -152,48 +125,9 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     t,
   });
 
-  const {
-    planningMessages,
-    isPlanningChatBusy,
-    sendPlanningChatMessage,
-    clearPlanningChat,
-    refineMessages,
-    isRefineChatBusy,
-    sendRefineChatMessage,
-    clearRefineChat,
-    showRefineChat,
-    clearConversations,
-    generateDiagram,
-  } = useWizardAiChat({
-    documentKey,
-    wizardState,
-    currentStepId,
-    layout,
-    renderMode,
-    diagramDarkMode,
-    locale,
-    isGenerating,
-    errorMessage,
-    resultSource,
-    resultExplanation,
-    previewSvg,
-    aiSetupVisible,
-    aiSetupReason,
-    checkAiAccess,
-    loadPreview,
-    t,
-  });
-
-  const canGoNext = computed(() => {
-    if (currentStepId.value === "context") {
-      return (
-        wizardState.value.contextText.trim().length > 0 ||
-        planningMessages.value.length > 0
-      );
-    }
-
-    return stepIndex.value < totalSteps.value - 1;
-  });
+  const canGoNext = computed(
+    () => stepIndex.value < totalSteps.value - 1,
+  );
 
   let builderPreviewTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -277,8 +211,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     applyTarget.value = input.target;
     stepIndex.value = 0;
     galleryVisible.value = false;
-    aiSetupVisible.value = false;
-    aiSetupReason.value = null;
     syncBuilderToSource(true);
   }
 
@@ -288,18 +220,13 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     applyTarget.value = "new-tab";
     wizardState.value = {
       ...DEFAULT_WIZARD_STATE,
-      creationMode: "ai",
+      creationMode: "builder",
       typeParams: createDefaultTypeParams(),
       structuralElements: createDefaultStructuralElements(),
     };
-    isGenerating.value = false;
     errorMessage.value = "";
     resultSource.value = "";
-    resultExplanation.value = "";
     resetPreviewState();
-    aiSetupVisible.value = false;
-    aiSetupReason.value = null;
-    clearConversations();
   }
 
   watch(
@@ -311,27 +238,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     },
     { immediate: true },
   );
-
-  watch([llmConsent, llmProviderId], () => {
-    if (aiSetupVisible.value) {
-      void checkAiAccess();
-    }
-  });
-
-  watch(
-    () => hasLlmApiKey(llmProviderId.value),
-    () => {
-      if (aiSetupVisible.value) {
-        void checkAiAccess();
-      }
-    },
-  );
-
-  watch([galleryVisible, currentStepId], ([inGallery, step]) => {
-    if (!inGallery && step === "context") {
-      void checkAiAccess();
-    }
-  });
 
   function openGalleryExample(payload: {
     example: DiagramExample;
@@ -353,32 +259,13 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
       locale.value,
     );
 
-    if (payload.action === "editor") {
-      onApply({
-        source: sampleSource,
-        label: payload.label,
-        format: payload.example.format,
-        target: "new-tab",
-      });
-      onClose();
-      return;
-    }
-
-    applyTarget.value = "new-tab";
-    wizardState.value = {
-      ...DEFAULT_WIZARD_STATE,
-      creationMode: "ai",
-      language: payload.example.format,
-      diagramType: payload.example.wizardType,
-      direction: exampleDirection(payload.example),
-      typeParams: createDefaultTypeParams(),
-      structuralElements: createDefaultStructuralElements(),
-      contextText: payload.prompt,
-      typeSpecificText: "",
-      promptText: "",
-    };
-    stepIndex.value = 0;
-    galleryVisible.value = false;
+    onApply({
+      source: sampleSource,
+      label: payload.label,
+      format: payload.example.format,
+      target: "new-tab",
+    });
+    onClose();
   }
 
   function openSavedDiagram(payload: {
@@ -407,7 +294,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   }
 
   function goBack(): void {
-    if (isGenerating.value || galleryVisible.value) {
+    if (galleryVisible.value) {
       return;
     }
 
@@ -420,28 +307,14 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   }
 
   function goNext(): void {
-    if (currentStepId.value === "context") {
-      wizardState.value.promptText = buildWizardPrompt(
-        wizardState.value,
-        locale.value,
-      );
-      stepIndex.value += 1;
-      void generateDiagram();
-      return;
-    }
-
     if (canGoNext.value && stepIndex.value < totalSteps.value - 1) {
       stepIndex.value += 1;
     }
   }
 
   function buildApplyLabel(state: WizardState): string {
-    const modeLabel =
-      state.creationMode === "builder"
-        ? t("llm.wizard.gallery.action.builder")
-        : t("llm.wizard.mode.ai");
     return t("llm.wizard.historyLabel", {
-      mode: modeLabel,
+      mode: t("llm.wizard.gallery.action.builder"),
       type: t(`llm.wizard.type.${state.diagramType}`),
     });
   }
@@ -460,25 +333,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     onClose();
   }
 
-  function handleRegenerate(): void {
-    void generateDiagram();
-  }
-
-  async function handleAiSetupRetry(): Promise<void> {
-    const hasAccess = await checkAiAccess();
-    if (!hasAccess) {
-      return;
-    }
-
-    if (
-      currentStepId.value === "result" &&
-      !resultSource.value &&
-      !isGenerating.value
-    ) {
-      void generateDiagram();
-    }
-  }
-
   return {
     stepIndex,
     galleryVisible,
@@ -486,14 +340,10 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     builderState,
     applyTarget,
     isBuilderMode,
-    isGenerating,
     errorMessage,
     resultSource,
-    resultExplanation,
     previewSvg,
     isPreviewLoading,
-    aiSetupVisible,
-    aiSetupReason,
     showLivePreviewPanel,
     wizardSteps,
     currentStepId,
@@ -509,16 +359,5 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     goBack,
     goNext,
     handleApply,
-    handleRegenerate,
-    handleAiSetupRetry,
-    planningMessages,
-    isPlanningChatBusy,
-    sendPlanningChatMessage,
-    clearPlanningChat,
-    refineMessages,
-    isRefineChatBusy,
-    sendRefineChatMessage,
-    clearRefineChat,
-    showRefineChat,
   };
 }

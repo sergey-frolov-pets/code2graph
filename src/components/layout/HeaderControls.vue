@@ -62,7 +62,7 @@ function onLocaleChange(event: Event): void {
 
 .header-controls__locale-select {
   min-width: 0;
-  max-width: 120px;
+  max-width: 168px;
   height: 36px;
   padding: 0 28px 0 10px;
   font-size: 0.85rem;

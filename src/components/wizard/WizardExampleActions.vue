@@ -4,7 +4,6 @@ import { useLocale } from "@/composables/useLocale";
 
 defineProps<{
   label: string;
-  llmAvailable: boolean;
   canEnlarge: boolean;
   favorite: boolean;
 }>();
@@ -55,16 +54,6 @@ const { t } = useLocale();
       @click="emit('enlarge')"
     >
       {{ t("llm.wizard.gallery.action.enlarge") }}
-    </button>
-    <button
-      v-if="llmAvailable"
-      type="button"
-      class="wizard-example-actions__button"
-      role="menuitem"
-      data-testid="wizard-example-llm"
-      @click="emit('choose', 'llm')"
-    >
-      {{ t("llm.wizard.gallery.action.llm") }}
     </button>
   </div>
 </template>

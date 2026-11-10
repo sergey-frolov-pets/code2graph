@@ -3,19 +3,7 @@ import {
   AGENT_DIAGRAM_LANGUAGES,
   AGENT_TYPES_BY_LANGUAGE,
 } from "@shared/agent-diagram";
-import { getWizardDiagramFormatRules } from "@/services/llm/diagram-format-rules";
-import {
-  buildFullDiagramEditPrompt,
-  buildFullDiagramFollowUpPrompt,
-  buildFullDiagramNoChangeRetryPrompt,
-  buildFullDiagramRevertRetryPrompt,
-  buildPatchFollowUpPrompt,
-  buildPatchNoChangeRetryPrompt,
-  buildPatchPrompt,
-  requestsStructuralDiagramEdit,
-} from "@/services/llm/wizard/edit-prompts";
 import { buildManualScaffold } from "@/services/llm/wizard/manual-scaffold";
-import { buildWizardPrompt } from "@/services/llm/wizard/wizard-prompts";
 
 export const WIZARD_DIAGRAM_TYPES = [
   "sequence",
@@ -61,7 +49,7 @@ export const WIZARD_DIAGRAM_THEMES = ["default", "dark"] as const;
 
 export type WizardDiagramTheme = (typeof WIZARD_DIAGRAM_THEMES)[number];
 
-export const WIZARD_CREATION_MODES = ["ai", "manual", "builder"] as const;
+export const WIZARD_CREATION_MODES = ["manual", "builder"] as const;
 
 export type WizardCreationMode = (typeof WIZARD_CREATION_MODES)[number];
 
@@ -403,10 +391,6 @@ export function wizardTypeSupportsDirection(
 }
 
 export function getWizardSteps(state: WizardState): WizardStepId[] {
-  if (state.creationMode === "ai") {
-    return ["context", "result"];
-  }
-
   const steps: WizardStepId[] = [];
 
   if (wizardTypeSupportsDirection(state.diagramType, state.language)) {
@@ -473,16 +457,4 @@ export function resolveWizardStateWithDefaults(
   return resolved;
 }
 
-export {
-  buildFullDiagramEditPrompt,
-  buildFullDiagramFollowUpPrompt,
-  buildFullDiagramNoChangeRetryPrompt,
-  buildFullDiagramRevertRetryPrompt,
-  buildManualScaffold,
-  buildPatchFollowUpPrompt,
-  buildPatchNoChangeRetryPrompt,
-  buildPatchPrompt,
-  buildWizardPrompt,
-  getWizardDiagramFormatRules,
-  requestsStructuralDiagramEdit,
-};
+export { buildManualScaffold };

@@ -105,7 +105,7 @@ export const siteMessages = {
   "site.primer.mermaid.syntax.timeline":
     "timeline открывает шкалу. title — заголовок, section — период. События пишутся после двоеточия.",
   "site.primer.mermaid.syntax.sankey":
-    "sankey-beta открывает потоки. Каждая строка — источник,цель,вес. Имена узлов — латиницей; запятую в имени берут в кавычки. Опции не пишут в CSV: их задают YAML-шапкой config.sankey до ключевого слова (showValues, prefix, suffix, linkColor, nodeAlignment, width, height, useMaxWidth, nodeWidth, nodePadding, labelStyle, nodeColors).",
+    "sankey-beta открывает потоки. Каждая строка — источник,цель,вес. Имена узлов — на любом языке; запятую в имени берут в кавычки. Опции не пишут в CSV: их задают YAML-шапкой config.sankey до ключевого слова (showValues, prefix, suffix, linkColor, nodeAlignment, width, height, useMaxWidth, nodeWidth, nodePadding, labelStyle, nodeColors).",
   "site.primer.mermaid.syntax.xychart":
     "xychart-beta открывает график. x-axis — категории, y-axis — диапазон, bar и line — серии.",
   "site.primer.mermaid.syntax.block":

@@ -5,6 +5,7 @@ import {
   MERMAID_ONLINE_SVG_PATH,
 } from "@/constants/render-settings";
 import { LocalizedAppError } from "@/utils/localized-app-error";
+import { prepareMermaidSankeyUnicode } from "@/services/mermaid/sankey-unicode";
 import { prepareMermaidSource } from "@/utils/mermaid-source";
 import { encodeMermaidStateForInk } from "@/utils/mermaid-encode";
 import { createFetchTimeoutSignal } from "@/utils/fetch-timeout";
@@ -107,8 +108,9 @@ export async function renderMermaidOnlineToSvg(
   if (!prepared) {
     throw new LocalizedAppError("mermaid.emptySource");
   }
+  const sankeyLabels = prepareMermaidSankeyUnicode(prepared);
 
-  const encoded = await encodeMermaidStateForInk(prepared, options);
+  const encoded = await encodeMermaidStateForInk(sankeyLabels.source, options);
   const url = buildOnlineSvgUrl(encoded, Boolean(options.dark));
 
   if (url.length > MERMAID_ONLINE_MAX_URL_LENGTH) {
@@ -141,5 +143,5 @@ export async function renderMermaidOnlineToSvg(
   }
 
   inkReachable = true;
-  return svg;
+  return sankeyLabels.restore(svg);
 }

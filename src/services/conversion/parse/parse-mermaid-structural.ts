@@ -5,6 +5,8 @@ import {
   type DiagramGroup,
   type DiagramIR,
   type DiagramNode,
+  type DiagramNodeShape,
+  type DiagramNote,
   uniqueDiagramId,
 } from "@/services/conversion/diagram-ir";
 import { detectDiagramDirection } from "@/services/conversion/classify-diagram-kind";
@@ -57,6 +59,14 @@ function registerNode(
     if (options?.groupId && !existing.groupId) {
       existing.groupId = options.groupId;
     }
+    if (options?.visual) {
+      existing.visual = {
+        ...existing.visual,
+        shape: existing.visual?.shape ?? options.visual.shape,
+        fill: existing.visual?.fill ?? options.visual.fill,
+        stroke: existing.visual?.stroke ?? options.visual.stroke,
+      };
+    }
     return;
   }
 
@@ -69,33 +79,56 @@ function registerNode(
   });
 }
 
-function stripShapeModifiersFromEndpoint(raw: string): {
+interface EndpointInfo {
   id: string;
   label?: string;
   kind?: DiagramNode["kind"];
-} {
-  const token = raw.trim();
-  const shapePatterns: Array<{
-    regex: RegExp;
-    kind: DiagramNode["kind"];
-  }> = [
-    { regex: /^([\p{L}\p{N}_-]+)\s*\(\[([^\]]+)\]\)$/u, kind: "start" },
-    { regex: /^([\p{L}\p{N}_-]+)\s*\(\(([^)]+)\)\)$/u, kind: "default" },
-    { regex: /^([\p{L}\p{N}_-]+)\s*\[\(([^)]+)\)\]$/u, kind: "system" },
-    { regex: /^([\p{L}\p{N}_-]+)\s*\[\[([^\]]+)\]\]$/u, kind: "container" },
-    { regex: /^([\p{L}\p{N}_-]+)\s*\{\{([^}]+)\}\}$/u, kind: "decision" },
-    { regex: /^([\p{L}\p{N}_-]+)\s*\{([^}]+)\}$/u, kind: "decision" },
-    { regex: /^([\p{L}\p{N}_-]+)\s*\[([^\]]+)\]$/u, kind: "default" },
-    { regex: /^([\p{L}\p{N}_-]+)\s*\(([^)]+)\)$/u, kind: "default" },
-  ];
+  shape?: DiagramNodeShape;
+  styleClass?: string;
+}
 
-  for (const { regex, kind } of shapePatterns) {
+const ENDPOINT_SHAPES: Array<{
+  regex: RegExp;
+  kind: DiagramNode["kind"];
+  shape: DiagramNodeShape;
+}> = [
+  { regex: /^([\p{L}\p{N}_-]+)\s*\(\(\(([^)]+)\)\)\)$/u, kind: "end", shape: "ellipse" },
+  { regex: /^([\p{L}\p{N}_-]+)\s*\(\[([^\]]+)\]\)$/u, kind: "start", shape: "round" },
+  { regex: /^([\p{L}\p{N}_-]+)\s*\(\(([^)]+)\)\)$/u, kind: "default", shape: "ellipse" },
+  { regex: /^([\p{L}\p{N}_-]+)\s*\[\(([^)]+)\)\]$/u, kind: "system", shape: "cylinder" },
+  { regex: /^([\p{L}\p{N}_-]+)\s*\[\[([^\]]+)\]\]$/u, kind: "container", shape: "predefinedProcess" },
+  { regex: /^([\p{L}\p{N}_-]+)\s*\{\{([^}]+)\}\}$/u, kind: "decision", shape: "hexagon" },
+  { regex: /^([\p{L}\p{N}_-]+)\s*\{([^}]+)\}$/u, kind: "decision", shape: "diamond" },
+  { regex: /^([\p{L}\p{N}_-]+)\s*\[\/([^/\\]+)\/\]$/u, kind: "default", shape: "parallelogram" },
+  { regex: /^([\p{L}\p{N}_-]+)\s*\[\\([^/\\]+)\\\]$/u, kind: "default", shape: "parallelogram" },
+  { regex: /^([\p{L}\p{N}_-]+)\s*\[\/([^/\\]+)\\\]$/u, kind: "default", shape: "trapezoid" },
+  { regex: /^([\p{L}\p{N}_-]+)\s*\[\\([^/\\]+)\/\]$/u, kind: "default", shape: "trapezoid" },
+  { regex: /^([\p{L}\p{N}_-]+)\s*>([^\]]+)\]$/u, kind: "default", shape: "parallelogram" },
+  { regex: /^([\p{L}\p{N}_-]+)\s*\[([^\]]+)\]$/u, kind: "default", shape: "rect" },
+  { regex: /^([\p{L}\p{N}_-]+)\s*\(([^)]+)\)$/u, kind: "default", shape: "round" },
+];
+
+function stripShapeModifiersFromEndpoint(raw: string): EndpointInfo {
+  let token = raw.trim();
+  // Strip optional edge ID prefix such as e1@ before arrow or on token
+  token = token.replace(/^[\p{L}\p{N}_-]+@\s*$/u, "").trim();
+
+  let styleClass: string | undefined;
+  const classSuffixMatch = token.match(/^(.*?):::([\p{L}\p{N}_-]+)$/u);
+  if (classSuffixMatch) {
+    token = classSuffixMatch[1].trim();
+    styleClass = classSuffixMatch[2].trim();
+  }
+
+  for (const { regex, kind, shape } of ENDPOINT_SHAPES) {
     const match = token.match(regex);
     if (match) {
       return {
         id: match[1].trim(),
         label: unquote(match[2]),
         kind,
+        shape,
+        styleClass,
       };
     }
   }
@@ -103,7 +136,24 @@ function stripShapeModifiersFromEndpoint(raw: string): {
   const bareMatch = token.match(/^([\p{L}\p{N}_-]+)/u);
   return {
     id: bareMatch?.[1] ?? token,
+    styleClass,
   };
+}
+
+function parseStyleProps(rawProps: string): { fill?: string; stroke?: string } {
+  let fill: string | undefined;
+  let stroke: string | undefined;
+  for (const token of rawProps.split(",")) {
+    const [k, v] = token.split(":").map((s) => s.trim());
+    if (!k || !v) continue;
+    const keyLower = k.toLowerCase();
+    if (keyLower === "fill") {
+      fill = v;
+    } else if (keyLower === "stroke") {
+      stroke = v;
+    }
+  }
+  return { fill, stroke };
 }
 
 export function parseFlowchartMermaid(
@@ -116,19 +166,29 @@ export function parseFlowchartMermaid(
   const usedIds = new Set<string>();
   const groups: DiagramGroup[] = [];
   const groupStack: string[] = [];
+  const classDefs = new Map<string, { fill?: string; stroke?: string }>();
+  const nodeClassAssignments = new Map<string, string>();
+  const directNodeStyles = new Map<string, { fill?: string; stroke?: string }>();
+  const linkStyles = new Map<number, { stroke?: string }>();
 
-  const nodePatterns: Array<{
+  const inlinePatterns: Array<{
     pattern: RegExp;
     kind: DiagramNode["kind"];
+    shape: DiagramNodeShape;
   }> = [
-    { pattern: /\b([\p{L}\p{N}_-]+)\s*\(\[([^\]]+)\]\)/gu, kind: "default" },
-    { pattern: /\b([\p{L}\p{N}_-]+)\s*\(\(([^)]+)\)\)/gu, kind: "default" },
-    { pattern: /\b([\p{L}\p{N}_-]+)\[\(([^)]+)\)\]/gu, kind: "system" },
-    { pattern: /\b([\p{L}\p{N}_-]+)\s*\[\[([^\]]+)\]\]/gu, kind: "container" },
-    { pattern: /\b([\p{L}\p{N}_-]+)\s*\{\{([^}]+)\}\}/gu, kind: "decision" },
-    { pattern: /\b([\p{L}\p{N}_-]+)\s*\[(?!\[|\()([^\]]+)\]/gu, kind: "default" },
-    { pattern: /\b([\p{L}\p{N}_-]+)\s*\((?!\[|\()([^)]+)\)/gu, kind: "default" },
-    { pattern: /\b([\p{L}\p{N}_-]+)\s*\{(?!\{)([^}]+)\}/gu, kind: "decision" },
+    { pattern: /\b([\p{L}\p{N}_-]+)\s*\(\(\(([^)]+)\)\)\)/gu, kind: "end", shape: "ellipse" },
+    { pattern: /\b([\p{L}\p{N}_-]+)\s*\(\[([^\]]+)\]\)/gu, kind: "start", shape: "round" },
+    { pattern: /\b([\p{L}\p{N}_-]+)\s*\(\(([^)]+)\)\)/gu, kind: "default", shape: "ellipse" },
+    { pattern: /\b([\p{L}\p{N}_-]+)\s*\[\(([^)]+)\)\]/gu, kind: "system", shape: "cylinder" },
+    { pattern: /\b([\p{L}\p{N}_-]+)\s*\[\[([^\]]+)\]\]/gu, kind: "container", shape: "predefinedProcess" },
+    { pattern: /\b([\p{L}\p{N}_-]+)\s*\{\{([^}]+)\}\}/gu, kind: "decision", shape: "hexagon" },
+    { pattern: /\b([\p{L}\p{N}_-]+)\s*\[\/([^/\\]+)\/\]/gu, kind: "default", shape: "parallelogram" },
+    { pattern: /\b([\p{L}\p{N}_-]+)\s*\[\\([^/\\]+)\\\]/gu, kind: "default", shape: "parallelogram" },
+    { pattern: /\b([\p{L}\p{N}_-]+)\s*\[\/([^/\\]+)\\\]/gu, kind: "default", shape: "trapezoid" },
+    { pattern: /\b([\p{L}\p{N}_-]+)\s*\[\\([^/\\]+)\/\]/gu, kind: "default", shape: "trapezoid" },
+    { pattern: /\b([\p{L}\p{N}_-]+)\s*\[(?!\[|\(|\/|\\)([^\]]+)\]/gu, kind: "default", shape: "rect" },
+    { pattern: /\b([\p{L}\p{N}_-]+)\s*\((?!\[|\()([^)]+)\)/gu, kind: "default", shape: "round" },
+    { pattern: /\b([\p{L}\p{N}_-]+)\s*\{(?!\{)([^}]+)\}/gu, kind: "decision", shape: "diamond" },
   ];
 
   for (const rawLine of source.split(/\r?\n/)) {
@@ -141,11 +201,65 @@ export function parseFlowchartMermaid(
       continue;
     }
 
-    if (/^(?:classDef|class|style|linkStyle|click|direction)\b/i.test(line)) {
+    const classDefMatch = line.match(/^classDef\s+([\p{L}\p{N}_-]+)\s+(.+)$/iu);
+    if (classDefMatch) {
+      classDefs.set(classDefMatch[1].trim(), parseStyleProps(classDefMatch[2]));
       continue;
     }
 
-    if (/^[\p{L}\p{N}_-]+@\{/u.test(line)) {
+    const classAssignMatch = line.match(/^class\s+([^\s]+)\s+([\p{L}\p{N}_-]+)\s*;?$/iu);
+    if (classAssignMatch) {
+      const className = classAssignMatch[2].trim();
+      for (const nodeId of classAssignMatch[1].split(",").map((s) => s.trim())) {
+        if (nodeId) {
+          nodeClassAssignments.set(nodeId, className);
+        }
+      }
+      continue;
+    }
+
+    const styleMatch = line.match(/^style\s+([\p{L}\p{N}_-]+)\s+(.+)$/iu);
+    if (styleMatch) {
+      directNodeStyles.set(styleMatch[1].trim(), parseStyleProps(styleMatch[2]));
+      continue;
+    }
+
+    const linkStyleMatch = line.match(/^linkStyle\s+(\d+)\s+(.+)$/i);
+    if (linkStyleMatch) {
+      const idx = Number.parseInt(linkStyleMatch[1], 10);
+      const props = parseStyleProps(linkStyleMatch[2]);
+      if (props.stroke) {
+        linkStyles.set(idx, { stroke: props.stroke });
+      }
+      continue;
+    }
+
+    if (/^(?:click|direction)\b/i.test(line)) {
+      continue;
+    }
+
+    const v13ShapeMatch = line.match(/^([\p{L}\p{N}_-]+)@\{\s*([^}]+)\s*\}/u);
+    if (v13ShapeMatch) {
+      const id = v13ShapeMatch[1].trim();
+      const body = v13ShapeMatch[2];
+      const labelMatch = body.match(/label\s*:\s*(?:"([^"]+)"|'([^']+)'|([^,\s}]+))/i);
+      const shapeMatch = body.match(/shape\s*:\s*([a-zA-Z0-9_-]+)/i);
+      const label = labelMatch?.[1] ?? labelMatch?.[2] ?? labelMatch?.[3] ?? id;
+      const rawShape = (shapeMatch?.[1] ?? "").toLowerCase();
+      const shape: DiagramNodeShape =
+        rawShape.includes("diam")
+          ? "diamond"
+          : rawShape.includes("cyl") || rawShape.includes("db")
+            ? "cylinder"
+            : rawShape.includes("hex")
+              ? "hexagon"
+              : rawShape.includes("circ") || rawShape.includes("stad")
+                ? "ellipse"
+                : "rect";
+      registerNode(ir, id, label, usedIds, {
+        groupId: groupStack[groupStack.length - 1],
+        visual: { shape },
+      });
       continue;
     }
 
@@ -160,6 +274,7 @@ export function parseFlowchartMermaid(
         id: groupId,
         label: rawLabel,
         parentId: groupStack[groupStack.length - 1],
+        kind: "subgraph",
       });
       groupStack.push(groupId);
       continue;
@@ -172,7 +287,7 @@ export function parseFlowchartMermaid(
 
     const currentGroup = groupStack[groupStack.length - 1];
 
-    for (const { pattern, kind } of nodePatterns) {
+    for (const { pattern, kind, shape } of inlinePatterns) {
       for (const match of line.matchAll(pattern)) {
         const id = match[1].trim();
         if (FLOWCHART_RESERVED_WORDS.has(id.toLowerCase())) {
@@ -181,12 +296,13 @@ export function parseFlowchartMermaid(
         registerNode(ir, id, match[2].trim(), usedIds, {
           kind,
           groupId: currentGroup,
+          visual: { shape },
         });
       }
     }
 
     const arrowTokenRegex =
-      /\s*(-->|---|-\.->|-\.-|==>|===|--\s+[^-|\n]+\s+-->|--\s+[^-|\n]+\s+---|-\.\s+[^.|\n]+\s+\.->)\s*(?:\|([^|]+)\|\s*)?/g;
+      /\s*(?:[\p{L}\p{N}_-]+@)?(<-->|<-\.->|-->|---|-\.->|-\.-|==>|===|--o|--x|o--o|x--x|--\s+[^-|\n]+\s+-->|--\s+[^-|\n]+\s+---|-\.\s+[^.|\n]+\s+\.->)\s*(?:\|([^|]+)\|\s*)?/gu;
     if (arrowTokenRegex.test(line)) {
       arrowTokenRegex.lastIndex = 0;
       const segments: string[] = [];
@@ -201,29 +317,14 @@ export function parseFlowchartMermaid(
       segments.push(line.slice(lastIdx));
 
       for (let i = 0; i < arrows.length; i += 1) {
-        const leftPart = segments[i]?.trim();
-        const rightPart = segments[i + 1]?.trim();
-        if (!leftPart || !rightPart) {
+        const leftRawGroup = segments[i]?.trim();
+        const rightRawGroup = segments[i + 1]?.trim();
+        if (!leftRawGroup || !rightRawGroup) {
           continue;
         }
 
-        const leftInfo = stripShapeModifiersFromEndpoint(leftPart);
-        const rightInfo = stripShapeModifiersFromEndpoint(rightPart);
-        if (
-          FLOWCHART_RESERVED_WORDS.has(leftInfo.id.toLowerCase()) ||
-          FLOWCHART_RESERVED_WORDS.has(rightInfo.id.toLowerCase())
-        ) {
-          continue;
-        }
-
-        registerNode(ir, leftInfo.id, leftInfo.label ?? leftInfo.id, usedIds, {
-          kind: leftInfo.kind,
-          groupId: currentGroup,
-        });
-        registerNode(ir, rightInfo.id, rightInfo.label ?? rightInfo.id, usedIds, {
-          kind: rightInfo.kind,
-          groupId: currentGroup,
-        });
+        const leftParts = leftRawGroup.split(/\s*&\s*/).map((s) => s.trim()).filter(Boolean);
+        const rightParts = rightRawGroup.split(/\s*&\s*/).map((s) => s.trim()).filter(Boolean);
 
         let edgeLabel = arrows[i].pipeLabel;
         if (!edgeLabel) {
@@ -235,28 +336,88 @@ export function parseFlowchartMermaid(
           }
         }
 
-        ir.edges.push({
-          id: `e${ir.edges.length + 1}`,
-          source: leftInfo.id,
-          target: rightInfo.id,
-          label: edgeLabel ? unquote(edgeLabel) : undefined,
-          kind: arrows[i].rawArrow.includes(".") ? "dashed" : "arrow",
-          matchConfidence: 1,
-        });
+        const rawArrow = arrows[i].rawArrow;
+        const isUndirected = rawArrow === "---" || rawArrow === "-.-" || rawArrow === "===";
+        const isDashed = rawArrow.includes(".");
+
+        for (const leftPart of leftParts) {
+          const leftInfo = stripShapeModifiersFromEndpoint(leftPart);
+          if (FLOWCHART_RESERVED_WORDS.has(leftInfo.id.toLowerCase())) {
+            continue;
+          }
+          if (leftInfo.styleClass) {
+            nodeClassAssignments.set(leftInfo.id, leftInfo.styleClass);
+          }
+          registerNode(ir, leftInfo.id, leftInfo.label ?? leftInfo.id, usedIds, {
+            kind: leftInfo.kind,
+            groupId: currentGroup,
+            visual: leftInfo.shape ? { shape: leftInfo.shape } : undefined,
+          });
+
+          for (const rightPart of rightParts) {
+            const rightInfo = stripShapeModifiersFromEndpoint(rightPart);
+            if (FLOWCHART_RESERVED_WORDS.has(rightInfo.id.toLowerCase())) {
+              continue;
+            }
+            if (rightInfo.styleClass) {
+              nodeClassAssignments.set(rightInfo.id, rightInfo.styleClass);
+            }
+            registerNode(ir, rightInfo.id, rightInfo.label ?? rightInfo.id, usedIds, {
+              kind: rightInfo.kind,
+              groupId: currentGroup,
+              visual: rightInfo.shape ? { shape: rightInfo.shape } : undefined,
+            });
+
+            ir.edges.push({
+              id: `e${ir.edges.length + 1}`,
+              source: leftInfo.id,
+              target: rightInfo.id,
+              label: edgeLabel ? unquote(edgeLabel) : undefined,
+              kind: isDashed ? "dashed" : "arrow",
+              directed: !isUndirected,
+              matchConfidence: 1,
+            });
+          }
+        }
       }
       continue;
     }
 
-    const bareNodeMatch = line.match(/^([\p{L}\p{N}_-]+)$/u);
+    const bareNodeMatch = line.match(/^([\p{L}\p{N}_-]+)(?:::([\p{L}\p{N}_-]+))?$/u);
     if (
       bareNodeMatch &&
-      currentGroup &&
       !FLOWCHART_RESERVED_WORDS.has(bareNodeMatch[1].toLowerCase())
     ) {
-      const existing = ir.nodes.find((node) => node.id === bareNodeMatch[1]);
-      if (existing) {
+      const nodeId = bareNodeMatch[1];
+      if (bareNodeMatch[2]) {
+        nodeClassAssignments.set(nodeId, bareNodeMatch[2]);
+      }
+      const existing = ir.nodes.find((node) => node.id === nodeId);
+      if (existing && currentGroup) {
         existing.groupId = currentGroup;
       }
+    }
+  }
+
+  for (const node of ir.nodes) {
+    const assignedClass = nodeClassAssignments.get(node.id);
+    const classStyle = assignedClass ? classDefs.get(assignedClass) : undefined;
+    const directStyle = directNodeStyles.get(node.id);
+    const fill = directStyle?.fill ?? classStyle?.fill;
+    const stroke = directStyle?.stroke ?? classStyle?.stroke;
+    if (fill || stroke) {
+      node.visual = {
+        ...node.visual,
+        fill: fill ?? node.visual?.fill,
+        stroke: stroke ?? node.visual?.stroke,
+      };
+    }
+  }
+
+  for (const [edgeIdx, style] of linkStyles.entries()) {
+    const edge = ir.edges[edgeIdx];
+    if (edge && style.stroke) {
+      edge.color = style.stroke;
     }
   }
 
@@ -299,6 +460,7 @@ export function parseClassMermaid(
   const idByName = new Map<string, string>();
   const classMembers: Record<string, DiagramClassMember[]> = {};
   const groups: DiagramGroup[] = [];
+  const notes: DiagramNote[] = [];
 
   function ensureClass(rawName: string, groupId?: string): string {
     const clean = unquote(rawName);
@@ -333,7 +495,24 @@ export function parseClassMermaid(
       continue;
     }
 
-    if (/^direction\s+/i.test(line) || /^note\b/i.test(line)) {
+    if (/^direction\s+/i.test(line)) {
+      continue;
+    }
+
+    const noteForMatch = line.match(
+      /^note\s+for\s+([\p{L}\p{N}_"]+)\s+"([^"]+)"$/iu,
+    );
+    if (noteForMatch) {
+      notes.push({
+        targetId: unquote(noteForMatch[1]),
+        text: noteForMatch[2].replace(/\\n/g, "\n"),
+      });
+      continue;
+    }
+
+    const generalNoteMatch = line.match(/^note\s+"([^"]+)"$/i);
+    if (generalNoteMatch) {
+      notes.push({ text: generalNoteMatch[1].replace(/\\n/g, "\n") });
       continue;
     }
 
@@ -350,7 +529,7 @@ export function parseClassMermaid(
     if (nsMatch) {
       const grpName = nsMatch[1].trim();
       const grpId = uniqueDiagramId(grpName, usedIds);
-      groups.push({ id: grpId, label: grpName });
+      groups.push({ id: grpId, label: grpName, kind: "namespace" });
       currentGroupId = grpId;
       continue;
     }
@@ -448,10 +627,16 @@ export function parseClassMermaid(
         target: targetId,
         label: label ? unquote(label) : undefined,
         kind,
+        directed: arrow !== "--" && arrow !== "..",
+        sourceLabel: isReverseInherit ? targetCard : sourceCard,
+        targetLabel: isReverseInherit ? sourceCard : targetCard,
         semantic: {
           arrow,
-          sourceCardinality: sourceCard,
-          targetCardinality: targetCard,
+          relationType: arrow.includes(".") && (arrow.includes("|>") || arrow.includes("<|"))
+            ? "realization"
+            : undefined,
+          sourceCardinality: isReverseInherit ? targetCard : sourceCard,
+          targetCardinality: isReverseInherit ? sourceCard : targetCard,
         },
         matchConfidence: 1,
       });
@@ -462,6 +647,10 @@ export function parseClassMermaid(
     ir.groups = groups;
   }
 
-  ir.extras = { ...ir.extras, classMembers };
+  ir.extras = {
+    ...ir.extras,
+    classMembers,
+    notes: notes.length > 0 ? notes : undefined,
+  };
   return ir;
 }

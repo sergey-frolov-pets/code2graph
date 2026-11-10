@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
+import BuilderGanttCalendarPanel from "@/components/wizard/steps/panels/BuilderGanttCalendarPanel.vue";
 import { useLocale } from "@/composables/useLocale";
 import { PREVIEW_BG_PRESETS } from "@/constants/editor-settings";
 import {
@@ -1383,100 +1384,12 @@ function removeHeatmapBand(idx: number): void {
         </template>
 
         <!-- Gantt options -->
-        <template v-if="cap.supportsGanttDateOptions">
-          <label class="builder-field">
-            <span class="builder-field__label">{{ t("builder.gantt.dateFormat") }}</span>
-            <select
-              v-model="builderState.canvas.ganttDateFormat"
-              class="select builder-input"
-              @change="notifyChange"
-            >
-              <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-              <option value="DD.MM.YYYY">DD.MM.YYYY</option>
-              <option value="YYYY-MM-DD HH:mm">YYYY-MM-DD HH:mm</option>
-            </select>
-          </label>
-
-          <label
-            v-if="builderState.format === 'mermaid'"
-            class="builder-field"
-          >
-            <span class="builder-field__label">{{ t("builder.gantt.excludes") }}</span>
-            <select
-              v-model="builderState.canvas.ganttExcludes"
-              class="select builder-input"
-              @change="notifyChange"
-            >
-              <option value="">{{ t("builder.option.none") }}</option>
-              <option value="weekends">{{ t("builder.gantt.excludesWeekends") }}</option>
-            </select>
-          </label>
-
-          <label
-            v-if="builderState.format === 'mermaid'"
-            class="builder-field"
-          >
-            <span class="builder-field__label">{{ t("builder.gantt.axisFormat") }}</span>
-            <input
-              v-model="builderState.canvas.ganttAxisFormat"
-              type="text"
-              class="builder-input"
-              placeholder="%Y-%m-%d"
-              @input="notifyChange"
-            >
-          </label>
-
-          <template v-if="cap.supportsGanttStyle">
-            <label class="builder-field">
-              <span class="builder-field__label">{{ t("builder.gantt.weekday") }}</span>
-              <select
-                v-model="builderState.appearance.gantt.weekday"
-                class="select builder-input"
-                @change="notifyChange"
-              >
-                <option value="">{{ t("builder.option.auto") }}</option>
-                <option value="monday">{{ t("builder.gantt.weekday.monday") }}</option>
-                <option value="sunday">{{ t("builder.gantt.weekday.sunday") }}</option>
-              </select>
-            </label>
-            <label class="builder-field">
-              <span class="builder-field__label">{{ t("builder.gantt.tickInterval") }}</span>
-              <input
-                v-model="builderState.appearance.gantt.tickInterval"
-                type="text"
-                class="builder-input"
-                placeholder="1week"
-                @input="notifyChange"
-              >
-            </label>
-            <label class="builder-field">
-              <span class="builder-field__label">{{ t("builder.gantt.topAxis") }}</span>
-              <select
-                :value="builderState.appearance.gantt.topAxis ? 'on' : 'off'"
-                class="select builder-input"
-                @change="
-                  builderState.appearance.gantt.topAxis =
-                    ($event.target as HTMLSelectElement).value === 'on';
-                  notifyChange();
-                "
-              >
-                <option value="off">{{ t("builder.option.off") }}</option>
-                <option value="on">{{ t("builder.option.on") }}</option>
-              </select>
-            </label>
-            <label class="builder-field">
-              <span class="builder-field__label">{{ t("builder.gantt.displayMode") }}</span>
-              <select
-                v-model="builderState.appearance.gantt.displayMode"
-                class="select builder-input"
-                @change="notifyChange"
-              >
-                <option value="">{{ t("builder.option.auto") }}</option>
-                <option value="compact">{{ t("builder.gantt.displayMode.compact") }}</option>
-              </select>
-            </label>
-          </template>
-        </template>
+        <BuilderGanttCalendarPanel
+          v-if="cap.supportsGanttDateOptions"
+          v-model:builder-state="builderState"
+          :cap="cap"
+          @change="notifyChange"
+        />
       </div>
     </section>
 

@@ -122,24 +122,9 @@ function escapeMermaidSankeyCsvField(value: string): string {
   return flattenMermaidLabel(value).replace(/"/g, '""');
 }
 
-/** Mermaid sankey parser (v11.x) accepts ASCII-only unquoted labels. */
-export function sanitizeMermaidSankeyLabel(value: string): string {
-  const label = flattenMermaidLabel(value);
-  if (!/[^\x20-\x7E]/.test(label)) {
-    return label;
-  }
-
-  const transliterated = label.replace(/Узел\s*(\d+)/gi, "Uzel $1");
-  if (!/[^\x20-\x7E]/.test(transliterated)) {
-    return transliterated;
-  }
-
-  return label.replace(/[^\x20-\x7E]/g, "").trim() || "Node";
-}
-
-/** Форматирует поле CSV для Mermaid sankey-beta (RFC 4180). */
+/** Форматирует поле CSV для Mermaid sankey-beta (RFC 4180). Нелатинские буквы сохраняются. */
 export function formatMermaidSankeyCsvField(value: string): string {
-  const label = sanitizeMermaidSankeyLabel(value);
+  const label = flattenMermaidLabel(value);
   if (!needsQuotedMermaidSankeyCsvField(label)) {
     return label;
   }
@@ -147,10 +132,8 @@ export function formatMermaidSankeyCsvField(value: string): string {
   return `"${escapeMermaidSankeyCsvField(label)}"`;
 }
 
-/** Разбирает строку sankey-beta: source,target,value */
-export function parseMermaidSankeyCsvLine(
-  line: string,
-): { source: string; target: string; value: number } | null {
+/** Три поля строки sankey-beta без проверки, что третье — число. */
+export function splitMermaidSankeyCsvFields(line: string): [string, string, string] | null {
   const trimmed = line.trim();
   if (!trimmed || trimmed.startsWith("%%")) {
     return null;
@@ -186,6 +169,18 @@ export function parseMermaidSankeyCsvLine(
 
   fields.push(current);
   if (fields.length !== 3) {
+    return null;
+  }
+
+  return [fields[0], fields[1], fields[2]];
+}
+
+/** Разбирает строку sankey-beta: source,target,value */
+export function parseMermaidSankeyCsvLine(
+  line: string,
+): { source: string; target: string; value: number } | null {
+  const fields = splitMermaidSankeyCsvFields(line);
+  if (!fields) {
     return null;
   }
 

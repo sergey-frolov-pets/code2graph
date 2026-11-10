@@ -89,6 +89,25 @@ export interface BuilderGraphEdgeRow {
   label: string;
 }
 
+export interface PreservedSourceBlocks {
+  /** Исходное дерево YAML frontmatter для Mermaid (deep-merge при эмите). */
+  frontmatterRoot?: Record<string, unknown>;
+  /** Комментарии или директивы в начале документа / сразу после заголовка. */
+  headerLines?: string[];
+  /** Нераспознанные директивы и блоки внутри тела диаграммы (ноты, ресурсы, стили и т.п.). */
+  bodyExtraLines?: string[];
+  /** Постфиксные строки перед закрывающим тегом или в конце документа. */
+  footerLines?: string[];
+}
+
+export type PlantUmlGanttScale =
+  | ""
+  | "daily"
+  | "weekly"
+  | "monthly"
+  | "quarterly"
+  | "yearly";
+
 export interface BuilderCanvasSettings {
   title: string;
   direction: "TB" | "LR" | "BT" | "RL";
@@ -114,6 +133,13 @@ export interface BuilderCanvasSettings {
   ganttDateFormat: string;
   ganttAxisFormat: string;
   ganttExcludes: string;
+  ganttLanguage?: string;
+  ganttProjectStarts?: string;
+  ganttScale?: PlantUmlGanttScale;
+  ganttZoom?: string;
+  ganttClosedWeekends?: boolean;
+  ganttTodayMarker?: string;
+  ganttInclusiveEndDates?: boolean;
   blockColumns: number;
 }
 
@@ -163,6 +189,8 @@ export interface DiagramBuilderState {
   appearance: BuilderDiagramAppearance;
   /** Preserved comments or custom lines where applicable */
   preservedComments: string[];
+  /** Сохранённые блоки, директивы и YAML-конфиг, не управляемые построителем напрямую. */
+  preservedBlocks?: PreservedSourceBlocks;
   /** skinparam и <style> PlantUML, чтобы «По шагам» не стирал цвета. */
   plantUmlSkin?: string[];
   /** Цвет пакета или дорожки по подписи. */

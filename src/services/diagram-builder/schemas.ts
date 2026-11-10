@@ -100,6 +100,52 @@ const JOURNEY_SCORE_OPTIONS: readonly BuilderSelectOption[] = [
   { value: "1", labelKey: "builder.journey.score.1" },
 ];
 
+export const GANTT_TASK_STATUS_OPTIONS: readonly BuilderSelectOption[] = [
+  { value: "", labelKey: "builder.gantt.status.normal" },
+  { value: "done", labelKey: "builder.gantt.status.done" },
+  { value: "active", labelKey: "builder.gantt.status.active" },
+  { value: "crit", labelKey: "builder.gantt.status.crit" },
+  { value: "milestone", labelKey: "builder.gantt.status.milestone" },
+];
+
+export const PLANTUML_GANTT_LANGUAGE_OPTIONS: readonly BuilderSelectOption[] = [
+  { value: "", labelKey: "builder.option.auto" },
+  { value: "ru", labelKey: "builder.gantt.lang.ru" },
+  { value: "en", labelKey: "builder.gantt.lang.en" },
+  { value: "de", labelKey: "builder.gantt.lang.de" },
+  { value: "ja", labelKey: "builder.gantt.lang.ja" },
+  { value: "zh", labelKey: "builder.gantt.lang.zh" },
+  { value: "ko", labelKey: "builder.gantt.lang.ko" },
+];
+
+export const PLANTUML_GANTT_SCALE_OPTIONS: readonly BuilderSelectOption[] = [
+  { value: "", labelKey: "builder.option.auto" },
+  { value: "daily", labelKey: "builder.gantt.scale.daily" },
+  { value: "weekly", labelKey: "builder.gantt.scale.weekly" },
+  { value: "monthly", labelKey: "builder.gantt.scale.monthly" },
+  { value: "quarterly", labelKey: "builder.gantt.scale.quarterly" },
+  { value: "yearly", labelKey: "builder.gantt.scale.yearly" },
+];
+
+export const MERMAID_GANTT_AXIS_PRESET_OPTIONS: readonly BuilderSelectOption[] = [
+  { value: "", labelKey: "builder.option.auto" },
+  { value: "%d.%m", labelKey: "builder.gantt.axisPreset.dayMonthRu" },
+  { value: "%d.%m.%Y", labelKey: "builder.gantt.axisPreset.fullDateRu" },
+  { value: "%m/%d", labelKey: "builder.gantt.axisPreset.monthDayEn" },
+  { value: "%Y-%m-%d", labelKey: "builder.gantt.axisPreset.isoDate" },
+  { value: "%d", labelKey: "builder.gantt.axisPreset.dayOnly" },
+  { value: "W%W", labelKey: "builder.gantt.axisPreset.weekNum" },
+  { value: "%m.%Y", labelKey: "builder.gantt.axisPreset.monthYearNum" },
+];
+
+export const MERMAID_GANTT_TICK_PRESET_OPTIONS: readonly BuilderSelectOption[] = [
+  { value: "", labelKey: "builder.option.auto" },
+  { value: "1day", labelKey: "builder.gantt.tick.1day" },
+  { value: "1week", labelKey: "builder.gantt.tick.1week" },
+  { value: "1month", labelKey: "builder.gantt.tick.1month" },
+  { value: "3month", labelKey: "builder.gantt.tick.3month" },
+];
+
 export const GRAPH_NODE_KIND_OPTIONS: readonly BuilderSelectOption[] = [
   { value: "default", labelKey: "builder.graph.nodeKind.default" },
   { value: "actor", labelKey: "builder.graph.nodeKind.actor" },
@@ -109,6 +155,13 @@ export const GRAPH_NODE_KIND_OPTIONS: readonly BuilderSelectOption[] = [
   { value: "decision", labelKey: "builder.graph.nodeKind.decision" },
   { value: "start", labelKey: "builder.graph.nodeKind.start" },
   { value: "end", labelKey: "builder.graph.nodeKind.end" },
+  { value: "database", labelKey: "builder.graph.nodeKind.database" },
+  { value: "queue", labelKey: "builder.graph.nodeKind.queue" },
+  { value: "boundary", labelKey: "builder.graph.nodeKind.boundary" },
+  { value: "control", labelKey: "builder.graph.nodeKind.control" },
+  { value: "entity", labelKey: "builder.graph.nodeKind.entity" },
+  { value: "interface", labelKey: "builder.graph.nodeKind.interface" },
+  { value: "artifact", labelKey: "builder.graph.nodeKind.artifact" },
 ];
 
 export const GRAPH_EDGE_KIND_OPTIONS: readonly BuilderSelectOption[] = [
@@ -302,9 +355,17 @@ function columnsForDiagramType(
     case "gantt":
       return [
         { id: "task", labelKey: "builder.col.task", type: "text", required: true },
-        { id: "start", labelKey: "builder.col.startDate", type: "date", required: true },
+        { id: "start", labelKey: "builder.col.startDate", type: "text", required: true },
         { id: "duration", labelKey: "builder.col.duration", type: "duration", required: true },
         { id: "section", labelKey: "builder.col.section", type: "text" },
+        {
+          id: "status",
+          labelKey: "builder.col.status",
+          type: "select",
+          options: GANTT_TASK_STATUS_OPTIONS,
+        },
+        { id: "taskId", labelKey: "builder.col.id", type: "text" },
+        { id: "color", labelKey: "builder.col.color", type: "color" },
       ];
     case "timeline":
       return [
@@ -335,6 +396,7 @@ function columnsForDiagramType(
         { id: "level1", labelKey: "builder.col.level1", type: "text", required: true },
         { id: "level2", labelKey: "builder.col.level2", type: "text" },
         { id: "level3", labelKey: "builder.col.level3", type: "text" },
+        { id: "color", labelKey: "builder.col.color", type: "color" },
       ];
     case "nwdiag":
       return [

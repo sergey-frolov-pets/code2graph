@@ -16,7 +16,6 @@ import { computed } from "vue";
 
 const props = defineProps<{
   example: DiagramExample;
-  llmAvailable: boolean;
   canEnlarge: boolean;
   favorite: boolean;
 }>();
@@ -91,7 +90,6 @@ function labelFor(tag: ExampleTagRef): string {
     </ul>
     <WizardExampleActions
       :label="t('llm.wizard.gallery.actionsLabel')"
-      :llm-available="llmAvailable"
       :can-enlarge="canEnlarge"
       :favorite="favorite"
       @choose="emit('choose', $event)"

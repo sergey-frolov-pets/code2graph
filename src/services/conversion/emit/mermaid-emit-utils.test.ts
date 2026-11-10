@@ -64,8 +64,14 @@ describe("formatMermaidSankeyCsvField", () => {
     expect(formatMermaidSankeyCsvField("Node 1")).toBe("Node 1");
   });
 
-  it("transliterates Cyrillic sankey labels to ASCII", () => {
-    expect(formatMermaidSankeyCsvField("Узел 1")).toBe("Uzel 1");
+  it("keeps non-Latin sankey labels", () => {
+    expect(formatMermaidSankeyCsvField("Узел 1")).toBe("Узел 1");
+    expect(formatMermaidSankeyCsvField("太阳能")).toBe("太阳能");
+    expect(formatMermaidSankeyCsvField("Café")).toBe("Café");
+  });
+
+  it("quotes non-Latin labels that contain a comma", () => {
+    expect(formatMermaidSankeyCsvField("Отказ, без клика")).toBe('"Отказ, без клика"');
   });
 
   it("quotes labels with commas", () => {
@@ -93,12 +99,11 @@ describe("parseMermaidSankeyCsvLine", () => {
 });
 
 describe("sankey wizard sample", () => {
-  it("uses ASCII sankey labels in Russian sample", () => {
+  it("keeps Cyrillic sankey labels in the Russian sample", () => {
     const source = buildWizardDiagramSample("sankey", "mermaid", "ru");
 
-    expect(source).toContain("Uzel 1,Uzel 2,10");
-    expect(source).not.toContain('"Узел 1"');
-    expect(source).not.toContain("Узел 1");
+    expect(source).toContain("Узел 1,Узел 2,10");
+    expect(source).not.toContain("Uzel");
   });
 });
 

@@ -10,7 +10,7 @@ export type SectionKind = (typeof SECTION_KINDS)[number];
 export const DIAGRAM_VISIBILITIES = ["all", "personal", "subscription"] as const;
 export type DiagramVisibility = (typeof DIAGRAM_VISIBILITIES)[number];
 
-export const SHARE_RESOURCE_TYPES = ["section", "diagram"] as const;
+export const SHARE_RESOURCE_TYPES = ["section", "diagram", "ai-chat"] as const;
 export type ShareResourceType = (typeof SHARE_RESOURCE_TYPES)[number];
 
 export const SHARE_PERMISSIONS = ["view", "download"] as const;
@@ -33,7 +33,19 @@ export const SUBSCRIPTION_DISTRIBUTION_MODES = [
 export type SubscriptionDistributionMode =
   (typeof SUBSCRIPTION_DISTRIBUTION_MODES)[number];
 
-export const CONTENT_LOCALES = ["", "ru", "en", "de", "fr", "es", "zh"] as const;
+export const CONTENT_LOCALES = [
+  "",
+  "ru",
+  "en",
+  "de",
+  "fr",
+  "es",
+  "pt",
+  "zh",
+  "ja",
+  "hi",
+  "ar",
+] as const;
 export type ContentLocale = (typeof CONTENT_LOCALES)[number];
 
 export const DEFAULT_SHARE_MAX_DOWNLOADS = 5;

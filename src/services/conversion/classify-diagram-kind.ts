@@ -8,7 +8,6 @@ function stripCommentsAndFences(source: string): string {
     .replace(/^\s*'.*$/gm, "")
     .replace(/^\s*\/\/.*$/gm, "")
     .replace(/^\s*%%.*$/gm, "")
-    .replace(/^\s*#(?!\w+\b).*$/gm, "")
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .replace(/<!--[\s\S]*?-->/g, "")
     .trim();
@@ -75,9 +74,14 @@ function classifyPlantUmlKind(text: string, lower: string): DiagramKind | null {
   if (
     /c4_deployment\.puml/i.test(text) ||
     /\bDeployment_Node\s*\(/i.test(text) ||
-    /\b(?:node|frame|cloud|database|storage)\s+"[^"]+"\s*\{/i.test(text) ||
-    /<<artifact>>/i.test(text) ||
-    /\bartifact\s+"/i.test(text)
+    (
+      !/^\s*package\s+/im.test(text) &&
+      (
+        /\b(?:node|frame|cloud|database|storage)\s+"[^"]+"\s*(?:as\s+\w+\s*)?\{/i.test(text) ||
+        /<<artifact>>/i.test(text) ||
+        /\bartifact\s+"/i.test(text)
+      )
+    )
   ) {
     return "deployment";
   }
@@ -100,7 +104,8 @@ function classifyPlantUmlKind(text: string, lower: string): DiagramKind | null {
     /^\s*(?:actor|participant|boundary|control|entity|database|queue|collections)\b/im.test(text) &&
     /(?:->|-->|->>|-->>|<-|<--)/.test(text) &&
     !/\[[^\]]+\]\s*--+>/.test(text) &&
-    !/\busecase\b/i.test(text)
+    !/\busecase\b/i.test(text) &&
+    !/^\s*(?:package|frame|folder|component)\b/im.test(text)
   ) {
     return "sequence";
   }
@@ -109,7 +114,9 @@ function classifyPlantUmlKind(text: string, lower: string): DiagramKind | null {
     /^\s*[\p{L}\p{N}_"]+\s*(?:->|-->|->>|-->>)\s*[\p{L}\p{N}_"]+\s*:/mu.test(text) &&
     !/^\s*state\b/im.test(text) &&
     !/\[\*\]/.test(text) &&
-    !/\bclass\s+/i.test(text)
+    !/\bclass\s+/i.test(text) &&
+    !/^\s*(?:package|frame|folder|component)\b/im.test(text) &&
+    !/^\s*\[[^\]]+\]/m.test(text)
   ) {
     return "sequence";
   }
@@ -125,17 +132,23 @@ function classifyPlantUmlKind(text: string, lower: string): DiagramKind | null {
   if (
     /^\s*classdiagram\b/im.test(text) ||
     (/\b(?:abstract\s+)?class\s+[\p{L}\p{N}_"]+/iu.test(text) && !/^\s*object\s+/im.test(text)) ||
-    /\binterface\s+[\p{L}\p{N}_"]+\s*\{/iu.test(text) ||
-    /\benum\s+[\p{L}\p{N}_"]+/iu.test(text) ||
+    /^\s*interface\s+[\p{L}\p{N}_"]+\s*\{/imu.test(text) ||
+    /^\s*enum\s+[\p{L}\p{N}_"]+/imu.test(text) ||
     /<\|--|--\|>|<\|\.\.|\.\.\|>|\*--|o--/.test(text)
   ) {
     return "class";
   }
 
   if (
+    /:\s*[^;\n]+;/.test(text) &&
+    !/^\s*package\s+/im.test(text) &&
+    !/^\s*\[[^\]]+\]\s+as\s+/im.test(text)
+  ) {
+    return "activity";
+  }
+  if (
     /^\s*start\s*$/im.test(text) ||
     /^\s*stop\s*$/im.test(text) ||
-    /:\s*[^;\n]+;/.test(text) ||
     /^\s*\|[^|\n]+\|\s*$/m.test(text)
   ) {
     return "activity";

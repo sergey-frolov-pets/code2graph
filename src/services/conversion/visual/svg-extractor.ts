@@ -38,7 +38,9 @@ export function extractMermaidVisualHints(svg: string): VisualHints {
 
     const rect = group.querySelector("rect, polygon, circle, ellipse");
     const bbox = readElementBBox(rect);
-    const semanticId = id?.match(/flowchart-([^-]+)-/i)?.[1];
+    const semanticId =
+      id?.match(/^(?:flowchart|stateDiagram|classId|entity)-(.+)-\d+$/i)?.[1] ??
+      id?.match(/flowchart-([^-]+)-/i)?.[1];
 
     nodes.push({
       domId: id,
@@ -54,7 +56,11 @@ export function extractMermaidVisualHints(svg: string): VisualHints {
         : { x: 0, y: 0, width: 0, height: 0 },
       fill: rect?.getAttribute("fill") ?? undefined,
       stroke: rect?.getAttribute("stroke") ?? undefined,
-      shape: group.querySelector("polygon") ? "diamond" : "rect",
+      shape: group.querySelector("polygon")
+        ? "diamond"
+        : group.querySelector("circle, ellipse")
+          ? "ellipse"
+          : "rect",
     });
   }
 
@@ -78,15 +84,18 @@ export function extractPlantUmlVisualHints(svg: string): VisualHints {
     y: parseNumeric(element.getAttribute("y")) ?? 0,
   }));
 
-  const rects = [...doc.querySelectorAll("rect")].map((element) => ({
-    x: parseNumeric(element.getAttribute("x")) ?? 0,
-    y: parseNumeric(element.getAttribute("y")) ?? 0,
-    width: parseNumeric(element.getAttribute("width")) ?? 0,
-    height: parseNumeric(element.getAttribute("height")) ?? 0,
-    fill: element.getAttribute("fill") ?? undefined,
-    stroke: element.getAttribute("stroke") ?? undefined,
-  }));
+  const rects = [...doc.querySelectorAll("rect")]
+    .map((element) => ({
+      x: parseNumeric(element.getAttribute("x")) ?? 0,
+      y: parseNumeric(element.getAttribute("y")) ?? 0,
+      width: parseNumeric(element.getAttribute("width")) ?? 0,
+      height: parseNumeric(element.getAttribute("height")) ?? 0,
+      fill: element.getAttribute("fill") ?? undefined,
+      stroke: element.getAttribute("stroke") ?? undefined,
+    }))
+    .filter((r) => r.width > 4 && r.height > 4);
 
+  const usedRects = new Set<(typeof rects)[number]>();
   const nodes: VisualHints["nodes"] = [];
 
   for (const text of textElements) {
@@ -94,32 +103,48 @@ export function extractPlantUmlVisualHints(svg: string): VisualHints {
       continue;
     }
 
-    let nearest = rects[0];
-    let nearestDistance = Number.POSITIVE_INFINITY;
-    for (const rect of rects) {
-      const centerX = rect.x + rect.width / 2;
-      const centerY = rect.y + rect.height / 2;
-      const distance = Math.hypot(centerX - text.x, centerY - text.y);
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearest = rect;
+    // Prefer smallest containing rect not yet claimed
+    const containing = rects
+      .filter(
+        (rect) =>
+          !usedRects.has(rect) &&
+          text.x >= rect.x - 4 &&
+          text.x <= rect.x + rect.width + 4 &&
+          text.y >= rect.y - 4 &&
+          text.y <= rect.y + rect.height + 4,
+      )
+      .sort((a, b) => a.width * a.height - b.width * b.height);
+
+    let chosen = containing[0];
+    if (!chosen) {
+      let nearestDistance = Number.POSITIVE_INFINITY;
+      for (const rect of rects) {
+        if (usedRects.has(rect)) continue;
+        const centerX = rect.x + rect.width / 2;
+        const centerY = rect.y + rect.height / 2;
+        const distance = Math.hypot(centerX - text.x, centerY - text.y);
+        if (distance < nearestDistance && distance <= 100) {
+          nearestDistance = distance;
+          chosen = rect;
+        }
       }
     }
 
-    if (!nearest || nearestDistance > 120) {
+    if (!chosen) {
       continue;
     }
 
+    usedRects.add(chosen);
     nodes.push({
       label: text.label,
       bbox: {
-        x: nearest.x,
-        y: nearest.y,
-        width: nearest.width,
-        height: nearest.height,
+        x: chosen.x,
+        y: chosen.y,
+        width: chosen.width,
+        height: chosen.height,
       },
-      fill: nearest.fill ?? undefined,
-      stroke: nearest.stroke ?? undefined,
+      fill: chosen.fill ?? undefined,
+      stroke: chosen.stroke ?? undefined,
       shape: "rect",
     });
   }

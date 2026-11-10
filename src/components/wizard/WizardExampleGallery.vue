@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, toRef, watch } from "vue";
+import { onBeforeUnmount, ref, toRef, watch } from "vue";
 import WizardExampleGrid from "@/components/wizard/WizardExampleGrid.vue";
 import WizardExampleSearch from "@/components/wizard/WizardExampleSearch.vue";
 import WizardExampleZoom from "@/components/wizard/WizardExampleZoom.vue";
 import WizardFavoriteStrip from "@/components/wizard/WizardFavoriteStrip.vue";
 import WizardTagCloud from "@/components/wizard/WizardTagCloud.vue";
-import { useHasActiveLlm } from "@/composables/useHasActiveLlm";
 import { useWizardExampleGallery } from "@/composables/wizard/useWizardExampleGallery";
 import { useWizardFavoriteGallery } from "@/composables/wizard/useWizardFavoriteGallery";
 import { exampleTagKey, type DiagramExample } from "@/constants/diagram-example-catalog";
@@ -45,7 +44,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useLocale();
-const { hasActiveLlm, refreshActiveLlmAvailability } = useHasActiveLlm();
 const {
   query,
   cloudTags,
@@ -195,10 +193,6 @@ function onWindowPointerDown(event: PointerEvent): void {
   actionsId.value = null;
 }
 
-onMounted(() => {
-  void refreshActiveLlmAvailability();
-});
-
 window.addEventListener("keydown", onKeydown);
 window.addEventListener("pointerdown", onWindowPointerDown);
 
@@ -259,7 +253,6 @@ onBeforeUnmount(() => {
       :examples="visibleExamples"
       :pinned-id="pinnedId"
       :actions-id="actionsId"
-      :llm-available="hasActiveLlm"
       :is-favorite="isExampleFavorite"
       @toggle-favorite="toggleExample"
       @open-actions="onOpenActions"

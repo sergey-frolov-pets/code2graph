@@ -325,7 +325,13 @@ SHOW_LEGEND()
 ' saturday are closed / sunday are closed — weekends are non-working days
 ' YYYY-MM-DD is closed — close one day; YYYY-MM-DD to YYYY-MM-DD are closed — close a range
 ' YYYY-MM-DD is open — reopen a closed day
-' printscale|ganttscale|projectscale daily|weekly|monthly|quarterly|yearly — time axis scale
+' printscale|ganttscale|projectscale daily|weekly|monthly|quarterly|yearly — time axis scale:
+'   daily     — day numbers (1, 2, 3...) and weekday letters (in the chosen language)
+'   weekly    — by weeks (week numbers and month)
+'   monthly   — by months (month names in the chosen language)
+'   quarterly — by quarters (Q1, Q2, Q3, Q4 and year)
+'   yearly    — by years
+' printscale weekly zoom 2 — combine scale with zoom factor (0.5..4)
 ' zoom 1.5 — display zoom; today is colored in Coral — highlight today
 ' [Name] lasts N days|weeks|months — calendar duration
 ' [Name] requires N days — workload: closed days do not shorten a week

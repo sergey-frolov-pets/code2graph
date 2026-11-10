@@ -393,7 +393,13 @@ SHOW_LEGEND()
 ' saturday are closed / sunday are closed — выходные не входят в рабочие дни
 ' YYYY-MM-DD is closed — закрыть один день; YYYY-MM-DD to YYYY-MM-DD are closed — закрыть диапазон
 ' YYYY-MM-DD is open — снова открыть закрытый день
-' printscale|ganttscale|projectscale daily|weekly|monthly|quarterly|yearly — масштаб оси
+' printscale|ganttscale|projectscale daily|weekly|monthly|quarterly|yearly — масштаб оси:
+'   daily     — номера дней месяца (1, 2, 3...) и буквы дней недели (Пн, Вт... при language ru)
+'   weekly    — по неделям (номера недель и месяц)
+'   monthly   — по месяцам (названия месяцев на языке из language)
+'   quarterly — по кварталам (Q1, Q2, Q3, Q4 и год)
+'   yearly    — по годам
+' printscale weekly zoom 2 — масштаб со сжатием/растяжением (zoom 0.5..4)
 ' zoom 1.5 — крупность шкалы; today is colored in Coral — выделить сегодняшний день
 ' [Имя] lasts N days|weeks|months — длительность по календарю
 ' [Имя] requires N days — трудозатраты: закрытые дни не укорачивают неделю
@@ -418,7 +424,8 @@ SHOW_LEGEND()
 ' Label on first column and left aligned — подписи в первой колонке (также last column, right aligned)
 ' [[https://example.com]] рядом с именем — ссылка на задаче
 
-' Старт проекта и закрытые выходные
+' Старт проекта, русский язык календаря и закрытые выходные
+language ru
 project starts 2026-01-06
 saturday are closed
 sunday are closed

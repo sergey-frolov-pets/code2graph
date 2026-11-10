@@ -54,6 +54,11 @@ export const NON_LABEL_ATTRS = new Set([
   Y_ATTR_NAME,
   WIDTH_ATTR_NAME,
   HEIGHT_ATTR_NAME,
+  "kind",
+  "stereotype",
+  "sourceLabel",
+  "targetLabel",
+  "c2g_ir",
 ]);
 export const HEX_COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 export const HEX_ALPHA_PATTERN = /^#([0-9a-fA-F]{8})$/;

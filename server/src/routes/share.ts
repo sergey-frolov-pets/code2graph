@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { Hono } from "hono";
 import { resolveOptionalUser } from "../auth.js";
 import { getDb } from "../db.js";
@@ -14,7 +15,11 @@ import {
   mapShareLinkDto,
   recordShareDownload,
 } from "../share-link-policy.js";
-import { getShareLinkByToken } from "../share-links.js";
+import {
+  createShareLink,
+  deleteShareLink,
+  getShareLinkByToken,
+} from "../share-links.js";
 import type { SectionRow } from "../types.js";
 
 export const shareRouter = new Hono();
@@ -22,6 +27,77 @@ export const shareRouter = new Hono();
 function buildShareLinkResponse(link: NonNullable<ReturnType<typeof getShareLinkByToken>>) {
   return mapShareLinkDto(link);
 }
+
+const AI_CHAT_SNAPSHOT_MAX_BYTES = 512_000;
+
+shareRouter.post("/ai-chat", async (context) => {
+  const user = await resolveOptionalUser(context.req.header("Authorization"));
+  if (!user) {
+    return context.json({ error: "Authentication required" }, 401);
+  }
+
+  const body = await context.req
+    .json<{ title?: string; diagramFormat?: string; snapshot?: unknown }>()
+    .catch(() => null);
+  if (!body || typeof body.snapshot !== "object" || body.snapshot === null) {
+    return context.json({ error: "snapshot is required" }, 400);
+  }
+
+  const snapshotJson = JSON.stringify(body.snapshot);
+  if (Buffer.byteLength(snapshotJson, "utf8") > AI_CHAT_SNAPSHOT_MAX_BYTES) {
+    return context.json({ error: "snapshot is too large" }, 413);
+  }
+
+  const database = getDb();
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+  database
+    .prepare(
+      `INSERT INTO ai_chat_shares (id, title, diagram_format, snapshot, created_by, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    )
+    .run(
+      id,
+      (body.title ?? "").slice(0, 200),
+      (body.diagramFormat ?? "").slice(0, 40),
+      snapshotJson,
+      user.id,
+      now,
+    );
+
+  const link = createShareLink(database, "ai-chat", id, user.id, {
+    expiresAt: null,
+    permission: "view",
+    maxDownloads: null,
+  });
+
+  return context.json({ link: mapShareLinkDto(link) }, 201);
+});
+
+shareRouter.delete("/:token", async (context) => {
+  const user = await resolveOptionalUser(context.req.header("Authorization"));
+  if (!user) {
+    return context.json({ error: "Authentication required" }, 401);
+  }
+
+  const token = context.req.param("token");
+  const database = getDb();
+  const link = getShareLinkByToken(database, token);
+  if (!link) {
+    return context.json({ error: "Share link not found or expired" }, 404);
+  }
+  if (link.created_by !== user.id) {
+    return context.json({ error: "Forbidden" }, 403);
+  }
+
+  if (link.resource_type === "ai-chat") {
+    database
+      .prepare("DELETE FROM ai_chat_shares WHERE id = ?")
+      .run(link.resource_id);
+  }
+  deleteShareLink(database, token);
+  return context.json({ ok: true });
+});
 
 shareRouter.get("/:token", async (context) => {
   const token = context.req.param("token");
@@ -36,6 +112,33 @@ shareRouter.get("/:token", async (context) => {
   const optionalUser = await resolveOptionalUser(
     context.req.header("Authorization"),
   );
+
+  if (link.resource_type === "ai-chat") {
+    const row = database
+      .prepare(
+        `SELECT id, title, diagram_format, snapshot, created_at
+         FROM ai_chat_shares WHERE id = ?`,
+      )
+      .get(link.resource_id) as { snapshot: string } | undefined;
+
+    if (!row) {
+      return context.json({ error: "AI chat snapshot not found" }, 404);
+    }
+
+    let snapshot: unknown;
+    try {
+      snapshot = JSON.parse(row.snapshot) as unknown;
+    } catch {
+      return context.json({ error: "AI chat snapshot is corrupted" }, 500);
+    }
+
+    return context.json({
+      resourceType: "ai-chat",
+      link: linkDto,
+      chat: snapshot,
+      readOnly: true,
+    });
+  }
 
   if (link.resource_type === "diagram") {
     const row = database

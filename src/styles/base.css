@@ -4,6 +4,15 @@ body,
   min-height: 100%;
 }
 
+[dir="rtl"] .code-editor,
+[dir="rtl"] .preview-scene,
+[dir="rtl"] .preview-content,
+[dir="rtl"] pre,
+[dir="rtl"] code {
+  direction: ltr;
+  text-align: left;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);

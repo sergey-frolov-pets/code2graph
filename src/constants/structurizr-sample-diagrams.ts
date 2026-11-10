@@ -1,4 +1,5 @@
-import type { AppLocale } from "@/constants/i18n";
+import { SUPPORTED_LOCALES, type AppLocale } from "@/constants/i18n";
+import { STRUCTURIZR_EXTRA } from "@/constants/samples/localized/other-samples";
 import type { SampleCatalog } from "@/languages/sample-catalog";
 
 export const STRUCTURIZR_SAMPLE_IDS = [
@@ -400,10 +401,11 @@ const STRUCTURIZR_SOURCES_BY_LOCALE: Record<
 > = {
   ru: STRUCTURIZR_SAMPLES_RU,
   en: STRUCTURIZR_SAMPLES_EN,
+  ...STRUCTURIZR_EXTRA,
 };
 
 const ALL_STRUCTURIZR_SAMPLE_SOURCES = new Set<string>();
-for (const locale of ["ru", "en"] as AppLocale[]) {
+for (const locale of SUPPORTED_LOCALES) {
   for (const id of STRUCTURIZR_SAMPLE_IDS) {
     ALL_STRUCTURIZR_SAMPLE_SOURCES.add(STRUCTURIZR_SOURCES_BY_LOCALE[locale][id]);
   }
