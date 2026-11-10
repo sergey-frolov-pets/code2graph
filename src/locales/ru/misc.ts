@@ -151,6 +151,8 @@ export const miscMessages = {
   "presentation.prev": "Назад",
   "presentation.tracks": "Трек",
   "presentation.trackNew": "Новый трек",
+  "presentation.trackDuplicate": "Дублировать трек",
+  "presentation.trackCopy": "{name} — копия",
   "presentation.trackDelete": "Удалить трек",
   "presentation.trackRename": "Название",
   "presentation.trackDefault": "Трек {n}",

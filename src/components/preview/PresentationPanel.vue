@@ -59,6 +59,7 @@ const {
   onSelectTrack,
   onCreateTrack,
   onDeleteTrack,
+  onDuplicateTrack,
   onToggleOverlays,
   onRenameTrack,
   onCapture,
@@ -466,6 +467,13 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
             @click="onCreateTrack(t('presentation.trackDefault', { n: (presentation?.tracks.length ?? 0) + 1 }))"
           >
             <PresentationGlyph name="plus" />
+          </IconButton>
+          <IconButton
+            :label="t('presentation.trackDuplicate')"
+            :disabled="!track"
+            @click="onDuplicateTrack(t('presentation.trackCopy', { name: track?.name ?? '' }))"
+          >
+            <PresentationGlyph name="copy" />
           </IconButton>
           <IconButton
             :label="t('presentation.trackDelete')"

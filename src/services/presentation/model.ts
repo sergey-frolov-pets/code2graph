@@ -433,6 +433,104 @@ export function addTrack(document: PresentationDocument, name: string): Presenta
   };
 }
 
+function copyPoint(point: NormPoint): NormPoint {
+  return { x: point.x, y: point.y };
+}
+
+export function duplicateTrack(
+  document: PresentationDocument,
+  trackId: string,
+  name: string,
+): PresentationDocument {
+  const index = document.tracks.findIndex((track) => track.id === trackId);
+  const source = document.tracks[index];
+  if (!source) {
+    return document;
+  }
+
+  const viewpointIds = new Map(
+    source.viewpoints.map((viewpoint) => [viewpoint.id, createPresentationId("view")]),
+  );
+  const transitionIds = new Map(
+    source.transitions.map((transition) => [transition.id, createPresentationId("transition")]),
+  );
+
+  const transitions = source.transitions.flatMap((transition) => {
+    const id = transitionIds.get(transition.id);
+    const fromId = viewpointIds.get(transition.fromId);
+    const toId = viewpointIds.get(transition.toId);
+    if (!id || !fromId || !toId) {
+      transitionIds.delete(transition.id);
+      return [];
+    }
+    return [{
+      ...transition,
+      id,
+      fromId,
+      toId,
+      points: transition.points.map(copyPoint),
+      controls: transition.controls.map(copyPoint),
+    }];
+  });
+
+  const overlayIds = new Map<string, string>();
+  const overlays = source.overlays.flatMap((overlay) => {
+    const ownerId = overlay.owner.kind === "viewpoint"
+      ? viewpointIds.get(overlay.owner.id)
+      : transitionIds.get(overlay.owner.id);
+    if (!ownerId) {
+      return [];
+    }
+    const id = createPresentationId("overlay");
+    overlayIds.set(overlay.id, id);
+    return [{
+      ...overlay,
+      id,
+      owner: { kind: overlay.owner.kind, id: ownerId },
+    }];
+  });
+
+  const viewpoints = source.viewpoints.map((viewpoint) => ({
+    ...viewpoint,
+    id: viewpointIds.get(viewpoint.id) ?? viewpoint.id,
+    anchor: copyPoint(viewpoint.anchor),
+    effects: viewpoint.effects.flatMap((effect) => {
+      if (effect.target !== "overlay") {
+        return [{
+          ...effect,
+          id: createPresentationId("effect"),
+          overlayId: "",
+        }];
+      }
+      const overlayId = overlayIds.get(effect.overlayId);
+      if (!overlayId) {
+        return [];
+      }
+      return [{
+        ...effect,
+        id: createPresentationId("effect"),
+        overlayId,
+      }];
+    }),
+  }));
+
+  const trimmed = name.trim();
+  const copy: PresentationTrack = {
+    id: createPresentationId("track"),
+    name: trimmed || source.name,
+    viewpoints,
+    transitions,
+    overlays,
+  };
+  const tracks = [...document.tracks];
+  tracks.splice(index + 1, 0, copy);
+  return {
+    ...document,
+    activeTrackId: copy.id,
+    tracks,
+  };
+}
+
 export function renameTrack(
   document: PresentationDocument,
   trackId: string,

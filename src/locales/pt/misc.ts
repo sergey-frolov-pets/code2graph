@@ -151,6 +151,8 @@ export const miscMessages = {
   "presentation.prev": "Voltar",
   "presentation.tracks": "Trilha",
   "presentation.trackNew": "Nova trilha",
+  "presentation.trackDuplicate": "Duplicar trilha",
+  "presentation.trackCopy": "{name} cópia",
   "presentation.trackDelete": "Excluir trilha",
   "presentation.trackRename": "Nome",
   "presentation.trackDefault": "Trilha {n}",

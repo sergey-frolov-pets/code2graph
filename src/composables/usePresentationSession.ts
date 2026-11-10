@@ -17,6 +17,7 @@ import {
   createPresentation,
   deleteTrack,
   duplicateEffect,
+  duplicateTrack,
   duplicateViewpoint,
   durationSecondsToMs,
   insertPolylinePoint,
@@ -225,6 +226,18 @@ export function usePresentationSession(options: {
       return;
     }
     commit(deleteTrack(current, track.id));
+    playback.goToViewpoint(0);
+  }
+
+  function onDuplicateTrack(name: string): void {
+    const current = document.value;
+    const track = currentTrack.value;
+    if (!current || !track || !options.canEdit.value) {
+      return;
+    }
+    commit(duplicateTrack(current, track.id, name));
+    selectedOverlayId.value = null;
+    playback.pause();
     playback.goToViewpoint(0);
   }
 
@@ -575,6 +588,7 @@ export function usePresentationSession(options: {
     onCreateTrack,
     onRenameTrack,
     onDeleteTrack,
+    onDuplicateTrack,
     onSelectTrack,
     onToggleOverlays,
     onCapture,

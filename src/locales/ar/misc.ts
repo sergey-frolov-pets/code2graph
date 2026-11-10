@@ -151,6 +151,8 @@ export const miscMessages = {
   "presentation.prev": "رجوع",
   "presentation.tracks": "المسار",
   "presentation.trackNew": "مسار جديد",
+  "presentation.trackDuplicate": "تكرار المسار",
+  "presentation.trackCopy": "نسخة {name}",
   "presentation.trackDelete": "حذف المسار",
   "presentation.trackRename": "الاسم",
   "presentation.trackDefault": "المسار {n}",

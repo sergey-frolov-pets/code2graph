@@ -151,6 +151,8 @@ export const miscMessages = {
   "presentation.prev": "पीछे",
   "presentation.tracks": "ट्रैक",
   "presentation.trackNew": "नया ट्रैक",
+  "presentation.trackDuplicate": "ट्रैक की प्रति बनाएँ",
+  "presentation.trackCopy": "{name} प्रति",
   "presentation.trackDelete": "ट्रैक हटाएँ",
   "presentation.trackRename": "नाम",
   "presentation.trackDefault": "ट्रैक {n}",
