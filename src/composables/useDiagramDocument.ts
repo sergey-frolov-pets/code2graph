@@ -11,6 +11,7 @@ import {
   STORAGE_KEY_FILE_NAME,
 } from "@/constants";
 import { useAppDialog } from "@/composables/useAppDialog";
+import { isFeatureAllowed } from "@/composables/useFeatureGate";
 import { useLocale } from "@/composables/useLocale";
 import { readStorageItem, writeStorageItem } from "@/core/safe-storage";
 import { extractLeadingMermaidDiagram } from "@/utils/mermaid-source";
@@ -166,7 +167,7 @@ export function useDiagramDocument(options: UseDiagramDocumentOptions) {
   }
 
   async function saveDiagram(): Promise<void> {
-    if (!canSave.value) {
+    if (!canSave.value || !isFeatureAllowed("editor.copySource")) {
       return;
     }
 

@@ -1,7 +1,8 @@
 import type { InjectionKey, UnwrapNestedRefs } from "vue";
-import { inject, ref, watch } from "vue";
+import { computed, inject, ref, watch } from "vue";
 import type { TranslateFn } from "@/locales/types";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
+import { getApiConfigSourceRef } from "@/config/library-api";
 import { useLibraryCredentials } from "@/composables/useLibraryCredentials";
 import { useLibraryAuth } from "@/composables/useLibraryAuth";
 import { checkApiHealth } from "@/services/library/api";
@@ -39,6 +40,19 @@ export function useSettingsLibraryForm(
   llmProxy: Pick<LlmProxyAvailability, "refreshLlmProxyAvailability">,
 ) {
   const { libraryApiUrl, setLibraryApiUrl } = useLibraryApiUrl();
+  const apiConfigSource = getApiConfigSourceRef();
+  const libraryApiSourceText = computed(() => {
+    switch (apiConfigSource.value) {
+      case "manual":
+        return t("settings.libraryApiSource.manual");
+      case "deployment-file":
+        return t("settings.libraryApiSource.deployment-file");
+      case "build":
+        return t("settings.libraryApiSource.build");
+      default:
+        return t("settings.libraryApiSource.none");
+    }
+  });
   const {
     libraryApiUsername,
     libraryApiPassword,
@@ -67,6 +81,11 @@ export function useSettingsLibraryForm(
   watch(libraryApiUsername, (value) => {
     libraryUsernameInput.value = value;
   });
+
+  function onLibraryServerReset(): void {
+    libraryServerInput.value = "";
+    setLibraryApiUrl("");
+  }
 
   function onLibraryServerBlur(): void {
     setLibraryApiUrl(libraryServerInput.value);
@@ -193,6 +212,7 @@ export function useSettingsLibraryForm(
     libraryProfiles,
     activeLibraryProfileId,
     libraryServerInput,
+    libraryApiSourceText,
     libraryUsernameInput,
     libraryPasswordInput,
     showLibraryPassword,
@@ -202,6 +222,7 @@ export function useSettingsLibraryForm(
     libraryProfileNameInput,
     hasCredentials,
     onLibraryServerBlur,
+    onLibraryServerReset,
     onLibraryUsernameBlur,
     onLibraryPasswordSave,
     onLibraryProfileSelect,

@@ -131,6 +131,7 @@ echo "==> Static files -> ${WEB_ROOT}"
 printf '%s\n' "${AFTER_VERSION} (${AFTER_COMMIT})" > dist/version.txt
 install -d -m 0755 "$WEB_ROOT"
 rsync -a --delete dist/ "$WEB_ROOT/"
+write_deployment_json "$INSTALL_DIR" "$WEB_ROOT"
 
 if ! grep -q "codeGraph.sourceHint" "$WEB_ROOT/index.html"; then
   echo "ОШИБКА: в ${WEB_ROOT}/index.html нет code-to-graph — проверьте сборку и commit ${AFTER_COMMIT}"

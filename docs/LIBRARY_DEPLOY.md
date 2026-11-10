@@ -1,6 +1,6 @@
 # Развёртывание Library API (библиотека диаграмм)
 
-Отдельный Node.js-сервер для общей библиотеки диаграмм и free LLM proxy. Фронтенд Code2Graph (GitHub Pages) подключается к нему через настройки приложения.
+Отдельный Node.js-сервер для общей библиотеки диаграмм и free LLM proxy. Общая схема статики и сервера: [DEPLOY.md](DEPLOY.md). Самый короткий путь — Docker из корня репозитория (`docker compose up -d --build`). Фронтенд GitHub Pages подключается к серверу через `deployment.json` или адрес в настройках.
 
 ## Рекомендуемые тарифы VPS
 
@@ -88,9 +88,9 @@ AUTH_TOKEN_SECRET=your_random_secret_here
 GEMINI_API_KEY=your-gemini-key
 LLM_RATE_LIMIT_PER_MINUTE=20
 
-# Вшивается во фронтенд при сборке на VPS (не используется процессом Node).
-# same-origin — сайт и /api на одном домене. Пусто — статика без сервера.
-VITE_API_BASE_URL=same-origin
+# Браузер читает это из deployment.json. Node использует значение для GET /deployment.json.
+DEPLOYMENT_API_BASE_URL=/api
+PUBLIC_ORIGIN=https://www.code2graph.ru
 ```
 
 Создайте каталог для SQLite:

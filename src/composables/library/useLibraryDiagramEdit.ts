@@ -20,6 +20,7 @@ export function useLibraryDiagramEdit(options: {
     fileName: string;
     format?: DiagramFormat;
     diagramId?: string;
+    features?: import("@shared/features").FeatureMap;
   }) => void;
   onClose: () => void;
 }) {
@@ -85,6 +86,7 @@ export function useLibraryDiagramEdit(options: {
   function openInEditor(): void {
     if (!library.selectedDiagram.value) return;
     if (library.selectedDiagram.value.canDownload === false) return;
+    if (library.selectedDiagram.value.features?.["editor.open"] === false) return;
     const diagram = library.selectedDiagram.value;
     const format = resolveLibraryDiagramFormat(
       diagram.source,
@@ -97,6 +99,7 @@ export function useLibraryDiagramEdit(options: {
       fileName: diagram.fileName,
       format,
       diagramId: diagram.id,
+      features: diagram.features,
     });
     onClose();
   }

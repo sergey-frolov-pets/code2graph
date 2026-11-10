@@ -4,6 +4,7 @@ import { useAppDialog } from "@/composables/useAppDialog";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import { useDiagramIrCache } from "@/composables/useDiagramIrCache";
 import { useLocale } from "@/composables/useLocale";
+import { isFeatureAllowed } from "@/composables/useFeatureGate";
 import { embedSvgMetadata } from "@/services/conversion/metadata/svg-metadata";
 import {
   applyPreviewBackground,
@@ -70,6 +71,10 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
   }
 
   async function exportSvg(): Promise<void> {
+    if (!isFeatureAllowed("editor.export")) {
+      return;
+    }
+
     const base = themedExportSvg();
     if (!base) {
       return;
@@ -82,7 +87,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
   }
 
   async function exportPng(): Promise<void> {
-    if (!svg.value) {
+    if (!isFeatureAllowed("editor.export") || !svg.value) {
       return;
     }
 
@@ -105,7 +110,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
   }
 
   async function copyPng(): Promise<boolean> {
-    if (!svg.value) {
+    if (!isFeatureAllowed("editor.export") || !svg.value) {
       return false;
     }
 

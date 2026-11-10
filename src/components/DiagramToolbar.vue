@@ -2,20 +2,16 @@
 import { computed, nextTick, onUnmounted, ref } from "vue";
 import DiagramSizeControls from "@/components/DiagramSizeControls.vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
-import FileBadgeIcon from "@/components/icons/FileBadgeIcon.vue";
 import PresentationGlyph from "@/components/preview/PresentationGlyph.vue";
 import IconButton from "@/components/IconButton.vue";
+import ToolbarOverflowMenu from "@/components/ui/ToolbarOverflowMenu.vue";
 import TooltipWrap from "@/components/TooltipWrap.vue";
+import { useFeatureGate } from "@/composables/useFeatureGate";
 import { useLocale } from "@/composables/useLocale";
 import {
   DEFAULT_PREVIEW_BG,
   isTransparentPreviewBg,
 } from "@/constants/editor-settings";
-import {
-  RENDER_MODES,
-  isOnlineRenderMode,
-  type RenderMode,
-} from "@/constants/render-settings";
 import { PREVIEW_MIN_ZOOM } from "@/constants/preview-pan-zoom";
 import { contrastTextColor } from "@/services/mermaid/ext/common";
 
@@ -23,8 +19,6 @@ const props = defineProps<{
   isRendering: boolean;
   canExport: boolean;
   previewBackground: string;
-  diagramDarkMode: boolean;
-  renderMode: RenderMode;
   zoomPercent?: number;
   imageWidth?: number;
   imageHeight?: number;
@@ -48,12 +42,11 @@ const emit = defineEmits<{
   resetImageSize: [];
   openAppearance: [];
   togglePresentation: [];
-  "update:previewBackground": [value: string];
-  "update:diagramDarkMode": [value: boolean];
-  "update:renderMode": [value: RenderMode];
 }>();
 
 const { t } = useLocale();
+const allowExport = useFeatureGate("editor.export");
+const allowPresentation = useFeatureGate("editor.presentation");
 
 const MIN_ZOOM_PERCENT = Math.round(PREVIEW_MIN_ZOOM * 100);
 
@@ -115,41 +108,47 @@ function commitZoomEdit(): void {
   }
 }
 
-const isOnlineMode = computed(() => isOnlineRenderMode(props.renderMode));
 const isTransparentBg = computed(() => isTransparentPreviewBg(props.previewBackground));
 
-const defaultPreviewBg = computed(() =>
-  props.diagramDarkMode ? DEFAULT_PREVIEW_BG.dark : DEFAULT_PREVIEW_BG.light,
-);
+const defaultPreviewBg = computed(() => DEFAULT_PREVIEW_BG.light);
 
 const customPreviewBg = computed(() =>
   isTransparentBg.value ? defaultPreviewBg.value : props.previewBackground,
 );
 
 const previewTextColor = computed(() => {
-  if (isTransparentBg.value) return props.diagramDarkMode ? "#e6edf3" : "#1f2328";
-  return contrastTextColor(props.previewBackground) ?? (props.diagramDarkMode ? "#e6edf3" : "#1f2328");
+  if (isTransparentBg.value) return "#1f2328";
+  return contrastTextColor(props.previewBackground) ?? "#1f2328";
 });
 
-const themeToggleLabel = computed(() =>
-  props.diagramDarkMode ? t("toolbar.themeToLight") : t("toolbar.themeToDark"),
-);
+const exportMenuGroups = computed(() => [
+  {
+    id: "export",
+    label: "",
+    actions: [
+      {
+        id: "svg",
+        label: t("toolbar.exportSvg"),
+        disabled: !props.canExport || !allowExport.value,
+      },
+      {
+        id: "png",
+        label: t("toolbar.exportPng"),
+        disabled: !props.canExport || !allowExport.value,
+      },
+      {
+        id: "copy-png",
+        label: copiedPng.value ? t("toolbar.copyPngDone") : t("toolbar.copyPng"),
+        disabled: !props.canExport || !allowExport.value,
+      },
+    ],
+  },
+]);
 
-const renderModeToggleLabel = computed(() =>
-  isOnlineMode.value
-    ? t("toolbar.renderModeToOffline")
-    : t("toolbar.renderModeToOnline"),
-);
-
-function toggleDiagramTheme(): void {
-  emit("update:diagramDarkMode", !props.diagramDarkMode);
-}
-
-function toggleRenderMode(): void {
-  emit(
-    "update:renderMode",
-    isOnlineMode.value ? RENDER_MODES.offline : RENDER_MODES.online,
-  );
+function onExportAction(actionId: string): void {
+  if (actionId === "svg") emit("exportSvg");
+  if (actionId === "png") emit("exportPng");
+  if (actionId === "copy-png") onCopyPng();
 }
 
 const copiedPng = ref(false);
@@ -269,28 +268,6 @@ async function acknowledgeCopiedPng(): Promise<void> {
     />
 
     <IconButton
-      :label="themeToggleLabel"
-      :pressed="diagramDarkMode"
-      @click="toggleDiagramTheme"
-    >
-      <ActionIcon
-        :name="diagramDarkMode ? 'sun' : 'moon'"
-        size="large"
-      />
-    </IconButton>
-
-    <IconButton
-      :label="renderModeToggleLabel"
-      :pressed="isOnlineMode"
-      @click="toggleRenderMode"
-    >
-      <ActionIcon
-        :name="isOnlineMode ? 'globe' : 'unlink'"
-        size="large"
-      />
-    </IconButton>
-
-    <IconButton
       :label="t('toolbar.refresh')"
       :disabled="isRendering"
       @click="emit('renderNow')"
@@ -302,42 +279,18 @@ async function acknowledgeCopiedPng(): Promise<void> {
       extra-class="preview-toolbar__presentation"
       :label="t('presentation.togglePanel')"
       :pressed="presentationOpen"
-      :disabled="!presentationEnabled"
+      :disabled="!presentationEnabled || !allowPresentation"
       @click="emit('togglePresentation')"
     >
       <PresentationGlyph name="presentation" />
     </IconButton>
 
-    <IconButton
-      :label="t('toolbar.exportSvg')"
-      primary
-      format
-      :disabled="!canExport"
-      @click="emit('exportSvg')"
-    >
-      <FileBadgeIcon format="SVG" />
-    </IconButton>
-
-    <IconButton
-      :label="t('toolbar.exportPng')"
-      primary
-      format
-      :disabled="!canExport"
-      @click="emit('exportPng')"
-    >
-      <FileBadgeIcon format="PNG" />
-    </IconButton>
-
-    <IconButton
-      :label="copiedPng ? t('toolbar.copyPngDone') : t('toolbar.copyPng')"
-      primary
-      format
-      :disabled="!canExport"
-      :pressed="copiedPng"
-      @click="onCopyPng"
-    >
-      <ActionIcon :name="copiedPng ? 'check' : 'clipboard-copy'" />
-    </IconButton>
+    <ToolbarOverflowMenu
+      :label="t('toolbar.export')"
+      icon="export"
+      :groups="exportMenuGroups"
+      @action="onExportAction"
+    />
   </div>
 </template>
 

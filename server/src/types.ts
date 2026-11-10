@@ -1,3 +1,4 @@
+import type { FeatureMap } from "../../packages/shared/src/features.js";
 import type { DiagramLanguage } from "./config.js";
 
 export const USER_ROLES = ["admin", "user"] as const;
@@ -229,6 +230,7 @@ export interface SubscriptionDto {
   urlPath: string | null;
   sections: SubscriptionSectionDto[];
   diagrams: SubscriptionDiagramDto[];
+  features: FeatureMap;
   createdAt: string;
   updatedAt: string;
 }

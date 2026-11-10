@@ -68,6 +68,12 @@ const { t } = useLocale();
         @keydown.enter="library.onLibraryServerBlur"
       />
       <span class="settings-field__hint">{{ t("settings.libraryServerHint") }}</span>
+      <span class="settings-field__hint">
+        {{ t("settings.libraryApiSource", { source: library.libraryApiSourceText }) }}
+      </span>
+      <button class="btn" type="button" @click="library.onLibraryServerReset()">
+        {{ t("settings.libraryServerReset") }}
+      </button>
     </label>
 
     <label class="settings-field">

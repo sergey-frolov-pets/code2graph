@@ -1,5 +1,6 @@
 import { computed, ref } from "vue";
 import type { LibraryUserDto } from "@/constants/diagram-library";
+import { setAccountFeatures } from "@/composables/useFeatureGate";
 import {
   clearLibraryApiCredentials,
   getLibraryAuthToken,
@@ -42,16 +43,19 @@ export function useLibraryAuth() {
     refreshPromise = (async () => {
       if (!getLibraryAuthToken()) {
         currentUser.value = null;
+        setAccountFeatures(null);
         return null;
       }
 
       try {
         const response = await fetchLibraryMe();
         currentUser.value = response.user;
+        setAccountFeatures(response.features ?? null);
         needsSetup.value = false;
         return response.user;
       } catch {
         currentUser.value = null;
+        setAccountFeatures(null);
         return null;
       }
     })();
@@ -70,6 +74,7 @@ export function useLibraryAuth() {
     const response = await loginLibrary(username, password);
     setLibraryAuthToken(response.token);
     currentUser.value = response.user;
+    setAccountFeatures(response.features ?? null);
     needsSetup.value = false;
     return response.user;
   }
@@ -88,6 +93,7 @@ export function useLibraryAuth() {
 
   function logoutLibraryAuth(): void {
     currentUser.value = null;
+    setAccountFeatures(null);
     clearLibraryApiCredentials();
   }
 

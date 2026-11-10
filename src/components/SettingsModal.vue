@@ -9,7 +9,6 @@ import { useSettingsLibraryForm, SETTINGS_LIBRARY_FORM_KEY } from "@/composables
 import { useSettingsLlmForm, SETTINGS_LLM_FORM_KEY } from "@/composables/settings/useSettingsLlmForm";
 import { useLocale } from "@/composables/useLocale";
 import type { LayoutEngine } from "@/constants";
-import type { RenderMode } from "@/constants/render-settings";
 import type {
   EditorFontFamilyId,
   EditorFontSize,
@@ -18,8 +17,6 @@ import type {
 const props = defineProps<{
   open: boolean;
   layout: LayoutEngine;
-  renderMode: RenderMode;
-  darkMode: boolean;
   editorFontSize: EditorFontSize;
   editorFontFamilyId: EditorFontFamilyId;
   editorSyntaxHighlight: boolean;
@@ -29,8 +26,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: [];
   "update:layout": [value: LayoutEngine];
-  "update:renderMode": [value: RenderMode];
-  "update:darkMode": [value: boolean];
   "update:editorFontSize": [value: EditorFontSize];
   "update:editorFontFamilyId": [value: EditorFontFamilyId];
   "update:editorSyntaxHighlight": [value: boolean];
@@ -78,15 +73,11 @@ const { activeTab, tabs, showLlmKeyBanner } = useSettingsTabs({
     <SettingsGeneralTab
       v-show="activeTab === 'general'"
       :layout="layout"
-      :render-mode="renderMode"
-      :dark-mode="darkMode"
       :editor-font-size="editorFontSize"
       :editor-font-family-id="editorFontFamilyId"
       :editor-syntax-highlight="editorSyntaxHighlight"
       :editor-autocomplete="editorAutocomplete"
       @update:layout="emit('update:layout', $event)"
-      @update:render-mode="emit('update:renderMode', $event)"
-      @update:dark-mode="emit('update:darkMode', $event)"
       @update:editor-font-size="emit('update:editorFontSize', $event)"
       @update:editor-font-family-id="emit('update:editorFontFamilyId', $event)"
       @update:editor-syntax-highlight="emit('update:editorSyntaxHighlight', $event)"

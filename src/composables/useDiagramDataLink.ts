@@ -6,6 +6,7 @@ import {
   applyTableFromClipboardText,
   type TablePasteErrorInfo,
 } from "@/services/table-paste";
+import { reportTablePasteError, useTablePasteErrorHost } from "@/composables/useTablePasteError";
 import { DATA_LINK_CHANGED_EVENT } from "@/services/local-data-link/constants";
 import {
   pickSpreadsheetFile,
@@ -87,8 +88,7 @@ export function createDiagramDataLinkUi(options: {
   const errorMessage = ref("");
   const canRefresh = ref(false);
   const expandSignal = ref(0);
-  const pasteErrorOpen = ref(false);
-  const pasteError = ref<TablePasteErrorInfo | null>(null);
+  const { pasteErrorOpen, pasteError, closeTablePasteError } = useTablePasteErrorHost();
   let activeLink: LocalDataLinkRecord | null = null;
   let memoryDiagram: {
     id: string;
@@ -145,8 +145,7 @@ export function createDiagramDataLinkUi(options: {
   }
 
   function closePasteError(): void {
-    pasteErrorOpen.value = false;
-    pasteError.value = null;
+    closeTablePasteError();
   }
 
   function readErrorMessage(error: unknown): string {
@@ -226,8 +225,7 @@ export function createDiagramDataLinkUi(options: {
       format,
     });
     if (!result.ok) {
-      pasteError.value = result.error;
-      pasteErrorOpen.value = true;
+      reportTablePasteError(result.error);
       return;
     }
 

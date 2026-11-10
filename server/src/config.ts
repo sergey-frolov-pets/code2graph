@@ -116,6 +116,16 @@ export const AGENT_API_TOKEN = process.env.AGENT_API_TOKEN?.trim() || undefined;
 export const AGENT_API_ALLOW_PUBLIC =
   process.env.AGENT_API_ALLOW_PUBLIC?.trim() === "true";
 
+/** Public site origin for forks. Included in CORS when set. */
+export const PUBLIC_ORIGIN = process.env.PUBLIC_ORIGIN?.trim() || "";
+
+/** API path advertised in GET /deployment.json when this process serves the site. */
+export const DEPLOYMENT_API_BASE_URL =
+  process.env.DEPLOYMENT_API_BASE_URL?.trim() || "/api";
+
+/** Directory with the static frontend. Empty — API only. */
+export const STATIC_DIR = process.env.STATIC_DIR?.trim() || "";
+
 /** Allowed browser origins for CORS. `*` is never used. */
 const DEFAULT_CORS_ORIGINS = [
   "https://code2graph.ru",
@@ -126,13 +136,18 @@ const DEFAULT_CORS_ORIGINS = [
 
 export const CORS_ORIGINS = (() => {
   const raw = process.env.CORS_ORIGINS?.trim();
-  if (!raw) {
-    return DEFAULT_CORS_ORIGINS;
+  const configured = raw
+    ? raw
+        .split(",")
+        .map((origin) => origin.trim())
+        .filter(Boolean)
+    : [...DEFAULT_CORS_ORIGINS];
+
+  if (PUBLIC_ORIGIN && !configured.includes(PUBLIC_ORIGIN)) {
+    configured.push(PUBLIC_ORIGIN);
   }
-  return raw
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+
+  return configured;
 })();
 
 export const DIAGRAM_LANGUAGES = [

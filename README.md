@@ -53,7 +53,12 @@ A single HTML file for a release is `npm run build:release`. The artifact is `re
 
 ### Self-hosted
 
-This repository has no Dockerfile. The server edition (accounts, cloud library, LLM proxy) is installed with the scripts in `scripts/deploy/`:
+The server edition (accounts, cloud library, LLM proxy) installs with Docker Compose or the scripts in `scripts/deploy/`:
+
+```bash
+cp server/.env.example server/.env
+docker compose up -d --build
+```
 
 ```bash
 sudo bash scripts/deploy/vdsina-install.sh

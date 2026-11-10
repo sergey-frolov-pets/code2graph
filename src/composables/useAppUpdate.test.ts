@@ -145,5 +145,7 @@ describe("service worker update prompt", () => {
     expect(source).toContain("LOCAL_DATA_LINK_PATH");
     expect(source).toContain("if (!response.ok)");
     expect(source).toContain("readCachedShell");
+    expect(source).toContain("networkFirstDeploymentConfig");
+    expect(source).toContain("/deployment.json");
   });
 });

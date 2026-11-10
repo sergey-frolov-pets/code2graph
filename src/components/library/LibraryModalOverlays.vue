@@ -2,8 +2,7 @@
 import SectionEditModal from "@/components/SectionEditModal.vue";
 import LibraryMoveDiagramModal from "@/components/library/LibraryMoveDiagramModal.vue";
 import LibraryRegisterModal from "@/components/library/LibraryRegisterModal.vue";
-import LibrarySetupAdminModal from "@/components/library/LibrarySetupAdminModal.vue";
-import LibraryDiagramVersionsModal from "@/components/library/LibraryDiagramVersionsModal.vue";
+import DiagramVersionsDialog from "@/components/editor/DiagramVersionsDialog.vue";
 import LibraryDiagramPreviewModal from "@/components/library/LibraryDiagramPreviewModal.vue";
 import LibraryShareLinkModal from "@/components/library/LibraryShareLinkModal.vue";
 import LibrarySectionAccessModal from "@/components/library/LibrarySectionAccessModal.vue";
@@ -20,7 +19,6 @@ type SectionOption = {
 };
 
 defineProps<{
-  isSetupModalOpen: boolean;
   libraryApiUrl: string;
   isSectionModalOpen: boolean;
   editingSection: SectionOption | null;
@@ -50,8 +48,6 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  setupCompleted: [];
-  setupClose: [];
   closeSectionEditor: [];
   saveSectionEdit: [payload: { title: string; parentId: string | null }];
   closeShareModal: [];
@@ -69,13 +65,6 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <LibrarySetupAdminModal
-    :open="isSetupModalOpen"
-    :api-url="libraryApiUrl"
-    @completed="emit('setupCompleted')"
-    @close="emit('setupClose')"
-  />
-
   <SectionEditModal
     :open="isSectionModalOpen"
     :section="editingSection"
@@ -109,7 +98,8 @@ const emit = defineEmits<{
     @download="emit('previewDownload')"
   />
 
-  <LibraryDiagramVersionsModal
+  <DiagramVersionsDialog
+    source="server"
     :open="isVersionsModalOpen"
     :diagram="selectedDiagram"
     :api-url="libraryApiUrl"

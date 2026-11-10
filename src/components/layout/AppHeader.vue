@@ -6,10 +6,12 @@ import ActionIcon from "@/components/icons/ActionIcon.vue";
 import { APP_META } from "@/constants";
 import { useAppRouter } from "@/composables/useAppRouter";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
+import { useFeatureGate } from "@/composables/useFeatureGate";
 import { useLocale } from "@/composables/useLocale";
 
 const { navigateTo } = useAppRouter();
 const { isLocalMode } = useLibraryApiUrl();
+const allowWizard = useFeatureGate("editor.wizard");
 
 const emit = defineEmits<{
   openWizard: [];
@@ -39,18 +41,12 @@ const { t } = useLocale();
       <p class="app-header__subtitle">{{ t("app.subtitle") }}</p>
     </div>
     <nav class="app-header__nav" :aria-label="t('app.mainNav')">
-      <IconButton
-        :label="t('site.backHome')"
-        extra-class="app-header__icon-btn"
-        @click="navigateTo('landing')"
-      >
-        <ActionIcon name="home" />
-      </IconButton>
       <HeaderControls />
       <IconButton
         :label="t('app.aiNewDiagram')"
         success
         extra-class="app-header__icon-btn app-header__icon-btn--new-diagram"
+        :disabled="!allowWizard"
         @click="emit('openWizard')"
       >
         <ActionIcon name="plus" />

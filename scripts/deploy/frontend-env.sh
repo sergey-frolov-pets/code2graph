@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# Подставляет VITE_API_BASE_URL перед сборкой фронтенда на VPS.
-# Уже заданная переменная окружения не перезаписывается.
-# Иначе берётся значение из server/.env или .env.
-# Если ключа нет — same-origin (nginx проксирует /api). Явный пустой ключ оставляет статику.
+# Статическая сборка фронтенда. Сервер подключается файлом deployment.json,
+# а не отдельной пересборкой. Явный VITE_API_BASE_URL в окружении всё ещё
+# вшивается в бандл — это запасной путь для старых деплоев.
 # Файл подключается через source, поэтому режим оболочки здесь не меняется.
 
 DEPLOYMENT_API_SAME_ORIGIN="same-origin"
@@ -34,22 +33,47 @@ read_env_assignment() {
 
 export_frontend_api_env() {
   local install_dir="$1"
-  local value=""
 
   if [[ -n "${VITE_API_BASE_URL+x}" ]]; then
-    echo "==> Frontend API: VITE_API_BASE_URL=${VITE_API_BASE_URL:-<static>}"
+    echo "==> Frontend API bake: VITE_API_BASE_URL=${VITE_API_BASE_URL:-<static>}"
     return 0
   fi
 
-  if value="$(read_env_assignment "$install_dir/server/.env" "VITE_API_BASE_URL")"; then
-    export VITE_API_BASE_URL="$value"
-  elif value="$(read_env_assignment "$install_dir/.env" "VITE_API_BASE_URL")"; then
-    export VITE_API_BASE_URL="$value"
-  else
-    export VITE_API_BASE_URL="$DEPLOYMENT_API_SAME_ORIGIN"
+  export VITE_API_BASE_URL=""
+  echo "==> Frontend API bake: static (server via deployment.json)"
+  # install_dir is unused for the bake; deployment.json is written after rsync.
+  : "$install_dir"
+}
+
+write_deployment_json() {
+  local install_dir="$1"
+  local web_root="$2"
+  local api_base="${DEPLOYMENT_API_BASE_URL:-}"
+  local public_origin="${PUBLIC_ORIGIN:-}"
+  local value=""
+
+  if [[ -z "$api_base" ]]; then
+    if value="$(read_env_assignment "$install_dir/server/.env" "DEPLOYMENT_API_BASE_URL")"; then
+      api_base="$value"
+    else
+      api_base="/api"
+    fi
   fi
 
-  echo "==> Frontend API: VITE_API_BASE_URL=${VITE_API_BASE_URL:-<static>}"
+  if [[ -z "$public_origin" ]]; then
+    if value="$(read_env_assignment "$install_dir/server/.env" "PUBLIC_ORIGIN")"; then
+      public_origin="$value"
+    fi
+  fi
+
+  mkdir -p "$web_root"
+  cat >"$web_root/deployment.json" <<EOF
+{
+  "apiBaseUrl": "${api_base}",
+  "publicOrigin": "${public_origin}"
+}
+EOF
+  echo "==> deployment.json -> ${web_root}/deployment.json (apiBaseUrl=${api_base})"
 }
 
 export_frontend_library_slug() {

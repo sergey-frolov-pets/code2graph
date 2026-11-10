@@ -151,6 +151,7 @@ systemctl enable --now code2graph-library
 
 install -d -m 0755 "$WEB_ROOT"
 rsync -a --delete dist/ "$WEB_ROOT/"
+write_deployment_json "$INSTALL_DIR" "$WEB_ROOT"
 
 bash "$INSTALL_DIR/scripts/deploy/vdsina-fix-nginx.sh"
 

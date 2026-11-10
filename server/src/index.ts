@@ -16,6 +16,7 @@ import { libraryLinksPublicRouter } from "./routes/library-links-public.js";
 import { shareRouter } from "./routes/share.js";
 import { subscriptionAccessRouter } from "./routes/subscription-access.js";
 import { subscriptionsRouter } from "./routes/subscriptions.js";
+import { registerStaticHost } from "./static-host.js";
 
 const app = new Hono();
 
@@ -53,6 +54,7 @@ protectedApi.route("/subscriptions", subscriptionsRouter);
 protectedApi.route("/llm", llmRouter);
 
 app.route("/api", protectedApi);
+registerStaticHost(app);
 
 getDb();
 

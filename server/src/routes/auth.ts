@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { getRequestUser, type AuthVariables } from "../auth/context.js";
 import { requireAuthenticatedUser } from "../auth.js";
+import { accountFeatureMap } from "../services/subscription-feature-access.js";
 import { createAuthToken } from "../auth/token.js";
 import { getDb } from "../db.js";
 import {
@@ -71,6 +72,7 @@ authRouter.post("/login", async (context) => {
   return context.json({
     token,
     user,
+    features: accountFeatureMap(database, user),
   });
 });
 
@@ -83,5 +85,8 @@ authRouter.get("/me", (context) => {
   const database = getDb();
   ensurePersonalSection(database, user);
 
-  return context.json({ user });
+  return context.json({
+    user,
+    features: accountFeatureMap(database, user),
+  });
 });

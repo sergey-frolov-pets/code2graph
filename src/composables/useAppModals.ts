@@ -1,4 +1,5 @@
 import { ref } from "vue";
+import { isFeatureAllowed } from "@/composables/useFeatureGate";
 
 export function useAppModals() {
   const isSyntaxModalOpen = ref(false);
@@ -33,6 +34,9 @@ export function useAppModals() {
       isLibraryModalOpen.value = true;
     },
     openWizardModal: () => {
+      if (!isFeatureAllowed("editor.wizard")) {
+        return;
+      }
       isWizardModalOpen.value = true;
     },
     closeWizardModal: () => {

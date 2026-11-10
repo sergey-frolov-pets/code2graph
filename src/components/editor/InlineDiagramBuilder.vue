@@ -2,8 +2,8 @@
 import { ref, toRef } from "vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
-import TablePasteErrorModal from "@/components/TablePasteErrorModal.vue";
 import WizardProgressSteps from "@/components/wizard/WizardProgressSteps.vue";
+import { reportTablePasteError } from "@/composables/useTablePasteError";
 import WizardStepContent from "@/components/wizard/WizardStepContent.vue";
 import { useInlineDiagramBuilder } from "@/composables/wizard/useInlineDiagramBuilder";
 import { useLocale } from "@/composables/useLocale";
@@ -30,8 +30,6 @@ const wizardState = ref<WizardState>({
   typeParams: createDefaultTypeParams(),
   structuralElements: createDefaultStructuralElements(),
 });
-const pasteErrorInfo = ref<TablePasteErrorInfo | null>(null);
-const pasteErrorModalOpen = ref(false);
 
 const {
   stepIndex,
@@ -51,8 +49,7 @@ const {
 });
 
 function onBuilderPasteError(error: TablePasteErrorInfo): void {
-  pasteErrorInfo.value = error;
-  pasteErrorModalOpen.value = true;
+  reportTablePasteError(error);
 }
 </script>
 
@@ -114,11 +111,6 @@ function onBuilderPasteError(error: TablePasteErrorInfo): void {
       </IconButton>
     </div>
 
-    <TablePasteErrorModal
-      :open="pasteErrorModalOpen"
-      :error="pasteErrorInfo"
-      @close="pasteErrorModalOpen = false"
-    />
   </div>
 </template>
 

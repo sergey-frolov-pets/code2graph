@@ -4,6 +4,7 @@ import { createApp, h, nextTick, ref } from "vue";
 import { afterEach, describe, expect, it } from "vitest";
 import AppearanceModal from "@/components/AppearanceModal.vue";
 import { PREVIEW_BG_PRESETS, TRANSPARENT_PREVIEW_BG } from "@/constants/editor-settings";
+import { RENDER_MODES } from "@/constants/render-settings";
 
 const lightPreset = PREVIEW_BG_PRESETS.find((preset) => preset.id === "light")!.value;
 const darkPreset = PREVIEW_BG_PRESETS.find((preset) => preset.id === "dark")!.value;
@@ -23,6 +24,8 @@ function mountAppearance(initialBackground: string) {
           fontFamily: "sans",
           fontWeight: "400",
           fontStyle: "normal",
+          diagramDarkMode: false,
+          renderMode: RENDER_MODES.offline,
           "onUpdate:background": (value: string) => {
             background.value = value;
           },
