@@ -378,6 +378,13 @@ describe("graphml samples", () => {
     expect(note?.shape).toBe("note");
     expect(subprocess?.label).toContain("Retrain and update");
     expect(subprocess?.label).toContain("models process");
+    const tagsEdge = graph.edges.find(
+      (edge) => edge.source === "n0::n37" && edge.target === "n0::n3",
+    );
+    const tableX = table?.geometry?.x ?? 0;
+    const tableY = table?.geometry?.y ?? 0;
+    expect(tagsEdge?.bends?.[0]?.y).toBeCloseTo(tableY - 32.084608843537524, 4);
+    expect(tagsEdge?.bends?.[0]?.x).toBeCloseTo(tableX + 1635.570462231135, 4);
 
     const svg = await renderGraphmlToSvg(errorProcessGraphml);
     expect(svg).toContain("CV4HSE User");
