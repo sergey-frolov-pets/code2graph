@@ -285,6 +285,7 @@ watch(
             v-if="presentation.enabled.value"
             :snapshot="snapshot"
             :track="presentation.currentTrack.value"
+            :arranging="presentation.panelOpen.value && props.canEditPresentation === true"
             :editing="presentation.panelOpen.value && presentation.mode.value === 'edit' && props.canEditPresentation === true"
             :show-overlays="presentation.document.value?.showOverlays !== false"
             :viewpoint-index="presentation.playback.viewpointIndex.value"
