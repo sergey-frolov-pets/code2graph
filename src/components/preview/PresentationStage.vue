@@ -13,6 +13,11 @@ import {
 } from "@/services/presentation/glyph-art";
 import { overlayCssColor } from "@/services/presentation/overlay-color";
 import {
+  overlayTextFontSize,
+  overlayTextLinePlacements,
+} from "@/services/presentation/overlay-text";
+import type { OverlayTextLine } from "@/services/presentation/overlay-text";
+import {
   isLineArrow,
   lineArrowPath,
   overlayOutline,
@@ -435,8 +440,11 @@ function tailScreen(overlay: PresentationOverlay): NormPoint {
 }
 
 function overlayTextSize(overlay: PresentationOverlay): number {
-  const box = screenBox(overlay);
-  return Math.max(12, Math.min(28, Math.abs(box.height) * 0.45));
+  return overlayTextFontSize(screenBox(overlay).height);
+}
+
+function overlayLabelLines(overlay: PresentationOverlay): OverlayTextLine[] {
+  return overlayTextLinePlacements(overlay.text, overlayTextSize(overlay));
 }
 </script>
 
@@ -603,13 +611,18 @@ function overlayTextSize(overlay: PresentationOverlay): number {
       <text
         v-if="overlay.shape === 'text' && overlay.text"
         class="presentation-label"
-        :x="screenBox(overlay).x + screenBox(overlay).width / 2"
-        :y="screenBox(overlay).y + screenBox(overlay).height / 2"
         text-anchor="middle"
         dominant-baseline="middle"
         :font-size="overlayTextSize(overlay)"
       >
-        {{ overlay.text }}
+        <tspan
+          v-for="(line, index) in overlayLabelLines(overlay)"
+          :key="`${overlay.id}-line-${index}`"
+          :x="screenBox(overlay).x + screenBox(overlay).width / 2"
+          :y="screenBox(overlay).y + screenBox(overlay).height / 2 + line.centerOffset"
+        >
+          {{ line.text }}
+        </tspan>
       </text>
       <rect
         v-for="handle in editing && overlay.id === selectedOverlayId ? resizeHandles(overlay) : []"

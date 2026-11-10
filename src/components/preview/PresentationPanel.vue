@@ -3,6 +3,7 @@ import { computed, inject, ref, watch } from "vue";
 import IconButton from "@/components/IconButton.vue";
 import PresentationGlyph from "@/components/preview/PresentationGlyph.vue";
 import { presentationSessionKey } from "@/components/preview/presentation-session";
+import { PRESENTATION_NOTE_TEXT_ROWS } from "@/services/presentation/constants";
 import { durationMsToSeconds, durationSecondsToMs } from "@/services/presentation/model";
 import {
   OVERLAY_OPACITY_MAX,
@@ -798,11 +799,11 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
             class="presentation-field"
           >
             <span>{{ t("presentation.text") }}</span>
-            <input
+            <textarea
               :value="selectedOverlay.text"
-              type="text"
-              @change="onChangeOverlay(selectedOverlay.id, { text: ($event.target as HTMLInputElement).value })"
-            >
+              :rows="PRESENTATION_NOTE_TEXT_ROWS"
+              @input="onChangeOverlay(selectedOverlay.id, { text: ($event.target as HTMLTextAreaElement).value })"
+            />
           </label>
           <div class="presentation-dock__row">
             <label class="presentation-field">
@@ -1196,13 +1197,21 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
 }
 
 .presentation-field input,
-.presentation-field select {
+.presentation-field select,
+.presentation-field textarea {
   min-height: 32px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
   color: var(--text);
   padding: 4px 8px;
+}
+
+.presentation-field textarea {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.35;
 }
 
 .presentation-field input[type="color"] {
