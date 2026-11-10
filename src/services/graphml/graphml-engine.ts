@@ -7,6 +7,7 @@ import {
   labelBox,
   layoutAbsolute,
   layoutGraph,
+  noteFoldSize,
   placeEdgeLabels,
   shapeOutline,
   themeColors,
@@ -27,6 +28,7 @@ import {
   GROUP_LABEL_FONT_SIZE,
   GROUP_LABEL_INSET_X,
   GROUP_LABEL_OUTSET,
+  LANE_LABEL_FONT_SIZE,
   NODE_LABEL_FONT_SIZE,
   NODE_LABEL_LINE_HEIGHT,
   NODE_RX,
@@ -73,6 +75,16 @@ function renderNodeShape(
 
   if (shape === "rectangle") {
     return `<rect x="${formatCoord(x)}" y="${formatCoord(y)}" width="${formatCoord(width)}" height="${formatCoord(height)}" rx="${NODE_RX}" ${paint}/>`;
+  }
+
+  if (shape === "note") {
+    const fold = noteFoldSize(width, height);
+    const outline = shapeOutline(shape, x, y, width, height);
+    const foldX = formatCoord(x + width - fold);
+    const foldY = formatCoord(y + fold);
+    return `${renderPolygon(outline, paint)}
+  <line x1="${foldX}" y1="${formatCoord(y)}" x2="${foldX}" y2="${foldY}" stroke="${stroke}" stroke-width="${STROKE_WIDTH}"/>
+  <line x1="${foldX}" y1="${foldY}" x2="${formatCoord(x + width)}" y2="${foldY}" stroke="${stroke}" stroke-width="${STROKE_WIDTH}"/>`;
   }
 
   const outline = shapeOutline(shape, x, y, width, height);
@@ -129,12 +141,38 @@ interface RenderedNode {
   height: number;
 }
 
+function containerIds(nodes: GraphmlNode[]): Set<string> {
+  const ids = new Set<string>();
+  for (const node of nodes) {
+    if (node.parentId) {
+      ids.add(node.parentId);
+    }
+    if ((node.lanes?.length ?? 0) > 0) {
+      ids.add(node.id);
+    }
+  }
+
+  return ids;
+}
+
+function renderLaneLabel(
+  label: string,
+  x: number,
+  y: number,
+  textFill: string,
+): string {
+  const anchorX = formatCoord(x);
+  const anchorY = formatCoord(y);
+  return `<text x="${anchorX}" y="${anchorY}" fill="${textFill}" font-family="${FONT_FAMILY}" font-size="${LANE_LABEL_FONT_SIZE}" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 ${anchorX} ${anchorY})">${escapeXml(label)}</text>`;
+}
+
 function renderGraphmlSvg(
   graph: ParsedGraphml,
   dagreGraph: dagre.graphlib.Graph,
   dark: boolean,
 ): string {
   const colors = themeColors(dark);
+  const containers = containerIds(graph.nodes);
   const renderedNodes: RenderedNode[] = [];
 
   let minX = Number.POSITIVE_INFINITY;
@@ -148,7 +186,7 @@ function renderGraphmlSvg(
       continue;
     }
 
-    const labelOutset = node.isGroup ? GROUP_LABEL_OUTSET : 0;
+    const labelOutset = containers.has(node.id) && !node.lanes?.length ? GROUP_LABEL_OUTSET : 0;
     minX = Math.min(minX, layoutNode.x - layoutNode.width / 2);
     minY = Math.min(minY, layoutNode.y - layoutNode.height / 2 - labelOutset);
     maxX = Math.max(maxX, layoutNode.x + layoutNode.width / 2);
@@ -171,10 +209,12 @@ function renderGraphmlSvg(
 
   const obstacles: AxisBox[] = [];
   for (const rendered of renderedNodes) {
-    if (rendered.node.isGroup) {
-      obstacles.push(
-        groupLabelBox(rendered.x, rendered.y, rendered.node.label),
-      );
+    if (containers.has(rendered.node.id)) {
+      if (!rendered.node.lanes?.length) {
+        obstacles.push(
+          groupLabelBox(rendered.x, rendered.y, rendered.node.label),
+        );
+      }
       continue;
     }
 
@@ -216,7 +256,9 @@ function renderGraphmlSvg(
   const contentBoxes: AxisBox[] = [
     ...renderedNodes.map((rendered) => ({
       left: rendered.x,
-      top: rendered.node.isGroup ? rendered.y - GROUP_LABEL_OUTSET : rendered.y,
+      top: containers.has(rendered.node.id) && !rendered.node.lanes?.length
+        ? rendered.y - GROUP_LABEL_OUTSET
+        : rendered.y,
       right: rendered.x + rendered.width,
       bottom: rendered.y + rendered.height,
     })),
@@ -278,14 +320,33 @@ function renderGraphmlSvg(
   }
 
   const groupElements = renderedNodes
-    .filter((rendered) => rendered.node.isGroup)
+    .filter((rendered) => containers.has(rendered.node.id))
     .map((rendered) => {
       const label = escapeXml(rendered.node.label);
       const fill = rendered.node.fill ?? colors.groupFill;
       const stroke = rendered.node.stroke ?? colors.groupStroke;
+      const lanes = (rendered.node.lanes ?? []).map((lane) => {
+        const laneX = rendered.x + lane.x;
+        const laneY = rendered.y + lane.y;
+        const laneLabel = lane.label
+          ? renderLaneLabel(
+            lane.label,
+            laneX + lane.labelBand / 2,
+            laneY + lane.height / 2,
+            textColorForFill(lane.fill, colors.textFill),
+          )
+          : "";
+        return `<rect x="${formatCoord(laneX)}" y="${formatCoord(laneY)}" width="${formatCoord(lane.width)}" height="${formatCoord(lane.height)}" fill="${lane.fill}"/>
+  ${laneLabel}`;
+      }).join("\n");
+      const titleFill = textColorForFill(fill, colors.textFill);
+      const title = rendered.node.lanes?.length
+        ? `<text x="${formatCoord(rendered.x + rendered.width / 2)}" y="${formatCoord(rendered.y + (rendered.node.headerHeight ?? 0) / 2)}" fill="${titleFill}" font-family="${FONT_FAMILY}" font-size="${GROUP_LABEL_FONT_SIZE}" text-anchor="middle" dominant-baseline="middle">${label}</text>`
+        : `<text x="${formatCoord(rendered.x + GROUP_LABEL_INSET_X)}" y="${formatCoord(rendered.y - GROUP_LABEL_BASELINE_GAP)}" fill="${titleFill}" font-family="${FONT_FAMILY}" font-size="${GROUP_LABEL_FONT_SIZE}" text-anchor="start">${label}</text>`;
       return `<g class="graphml-group">
   <rect x="${formatCoord(rendered.x)}" y="${formatCoord(rendered.y)}" width="${formatCoord(rendered.width)}" height="${formatCoord(rendered.height)}" rx="${NODE_RX}" fill="${fill}" stroke="${stroke}" stroke-width="${STROKE_WIDTH}"/>
-  <text x="${formatCoord(rendered.x + GROUP_LABEL_INSET_X)}" y="${formatCoord(rendered.y - GROUP_LABEL_BASELINE_GAP)}" fill="${colors.textFill}" font-family="${FONT_FAMILY}" font-size="${GROUP_LABEL_FONT_SIZE}" text-anchor="start">${label}</text>
+  ${lanes}
+  ${title}
 </g>`;
     })
     .join("\n");
@@ -293,7 +354,7 @@ function renderGraphmlSvg(
   const gradientByNode = new Map<GraphmlNode, string>();
   const gradientElements = renderedNodes
     .flatMap((rendered, index) => {
-      if (!rendered.node.fill || !rendered.node.fill2 || rendered.node.isGroup) {
+      if (!rendered.node.fill || !rendered.node.fill2 || containers.has(rendered.node.id)) {
         return [];
       }
 
@@ -307,7 +368,7 @@ function renderGraphmlSvg(
     .join("\n");
 
   const nodeElements = renderedNodes
-    .filter((rendered) => !rendered.node.isGroup)
+    .filter((rendered) => !containers.has(rendered.node.id))
     .map((rendered) => {
       const fill = rendered.node.fill ?? colors.nodeFill;
       const stroke = rendered.node.stroke ?? colors.nodeStroke;

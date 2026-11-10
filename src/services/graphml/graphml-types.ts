@@ -51,6 +51,15 @@ export const NON_LABEL_ATTRS = new Set([
   HEIGHT_ATTR_NAME,
 ]);
 export const HEX_COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+export const HEX_ALPHA_PATTERN = /^#([0-9a-fA-F]{8})$/;
+export const HEX_RGB_LENGTH = 6;
+export const NOTE_FOLD_RATIO = 0.22;
+export const NOTE_FOLD_MAX = 16;
+export const TABLE_LANE_MAIN = "#c4d7ed";
+export const TABLE_LANE_ALTERNATING = "#abc8e2";
+export const TABLE_LANE_MAIN_PROPERTY = "yed.table.lane.color.main";
+export const TABLE_LANE_ALT_PROPERTY = "yed.table.lane.color.alternating";
+export const LANE_LABEL_FONT_SIZE = 12;
 export const RANK_DIRECTIONS = ["TB", "LR", "BT", "RL"] as const;
 export const LAYOUT_NODE_SEP = 56;
 export const LAYOUT_RANK_SEP = 84;
@@ -96,6 +105,7 @@ export const NODE_SHAPES = [
   "trapezoid",
   "trapezoid2",
   "predefinedProcess",
+  "note",
 ] as const;
 
 export type GraphmlNodeShape = (typeof NODE_SHAPES)[number];
@@ -114,6 +124,16 @@ export interface GraphmlEdgeLabelAnchor {
   distance: number;
 }
 
+export interface GraphmlLane {
+  label?: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fill: string;
+  labelBand: number;
+}
+
 export interface GraphmlNode {
   id: string;
   label: string;
@@ -125,6 +145,8 @@ export interface GraphmlNode {
   geometry?: GraphmlGeometry;
   parentId?: string;
   isGroup: boolean;
+  lanes?: GraphmlLane[];
+  headerHeight?: number;
 }
 
 export interface GraphmlEdge {

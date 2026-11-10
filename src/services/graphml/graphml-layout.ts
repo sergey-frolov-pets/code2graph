@@ -28,6 +28,8 @@ import {
   MIN_NODE_EXTENT,
   MIN_SEGMENT_LENGTH,
   NODE_HEIGHT,
+  NOTE_FOLD_MAX,
+  NOTE_FOLD_RATIO,
   OBSTACLE_PAD,
   PARALLELOGRAM_INSET_RATIO,
   SEGMENT_PARALLEL_EPSILON,
@@ -75,7 +77,18 @@ export function layoutGraph(
     }
   }
 
+  const nodeIds = new Set(graph.nodes.map((node) => node.id));
+  const groupIds = new Set(
+    graph.nodes.filter((node) => node.isGroup).map((node) => node.id),
+  );
   for (const [index, edge] of graph.edges.entries()) {
+    if (!nodeIds.has(edge.source) || !nodeIds.has(edge.target)) {
+      continue;
+    }
+    if (groupIds.has(edge.source) || groupIds.has(edge.target)) {
+      continue;
+    }
+
     dagreGraph.setEdge(edge.source, edge.target, {}, `e${index}`);
   }
 
@@ -85,6 +98,10 @@ export function layoutGraph(
 
 export function hasAbsoluteGeometry(graph: ParsedGraphml): boolean {
   return graph.nodes.length > 0 && graph.nodes.every((node) => node.geometry);
+}
+
+export function noteFoldSize(width: number, height: number): number {
+  return Math.min(NOTE_FOLD_MAX, Math.min(width, height) * NOTE_FOLD_RATIO);
 }
 
 export function shapeOutline(
@@ -135,6 +152,17 @@ export function shapeOutline(
     return [
       { x: x + inset, y },
       { x: right - inset, y },
+      { x: right, y: bottom },
+      { x, y: bottom },
+    ];
+  }
+
+  if (shape === "note") {
+    const fold = noteFoldSize(width, height);
+    return [
+      { x, y },
+      { x: right - fold, y },
+      { x: right, y: y + fold },
       { x: right, y: bottom },
       { x, y: bottom },
     ];
