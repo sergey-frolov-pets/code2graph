@@ -90,6 +90,7 @@ const {
   snapshot,
   zoomIn,
   zoomOut,
+  setZoomPercent,
   setCameraFrame,
   readCameraFrame,
   setInteractionLocked,
@@ -213,6 +214,7 @@ watch(
           @export-png="emit('exportPng')"
           @zoom-in="zoomIn"
           @zoom-out="zoomOut"
+          @set-zoom-percent="setZoomPercent"
           @set-image-width="setWidth"
           @set-image-height="setHeight"
           @reset-image-size="resetSize"

@@ -253,6 +253,7 @@ export const miscMessages = {
   "toolbar.zoomIn": "Увеличить",
   "toolbar.zoomOut": "Уменьшить",
   "toolbar.zoomLevel": "Масштаб {percent}%",
+  "toolbar.zoomLevelEdit": "Задать масштаб",
   "toolbar.exportSvg": "Экспорт SVG",
   "toolbar.imageSize": "Размер изображения: {size}",
   "toolbar.imageWidth": "Ширина, px",

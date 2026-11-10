@@ -253,6 +253,7 @@ export const miscMessages = {
   "toolbar.zoomIn": "Zoom in",
   "toolbar.zoomOut": "Zoom out",
   "toolbar.zoomLevel": "Zoom level {percent}%",
+  "toolbar.zoomLevelEdit": "Set zoom level",
   "toolbar.exportSvg": "Export SVG",
   "toolbar.imageSize": "Image size: {size}",
   "toolbar.imageWidth": "Width, px",
