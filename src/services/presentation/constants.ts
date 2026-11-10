@@ -34,6 +34,14 @@ export const PRESENTATION_RESIZE_HANDLE = 10;
 
 export const PRESENTATION_RESIZE_HANDLE_COARSE = 18;
 
+/** Shape arrows and the pointing hand turn by this many degrees. */
+export const PRESENTATION_ROTATION_STEP = 45;
+
+export const PRESENTATION_FULL_CIRCLE = 360;
+
+/** Degrees in a half turn. Dividing by this converts degrees to radians with π. */
+export const PRESENTATION_HALF_CIRCLE = 180;
+
 /** Perpendicular offset used to seed curve handles, in normalized image space. */
 export const PRESENTATION_CURVE_OFFSET = 0.08;
 

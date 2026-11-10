@@ -3,8 +3,9 @@ import {
   blockArrowPath,
   calloutPath,
   overlayResizeHandles,
-  pointerHandPath,
   resizeOverlay,
+  snapRotation,
+  stepRotation,
   roundedRectPath,
 } from "@/services/presentation/overlay-geometry";
 import type { PresentationOverlay } from "@/services/presentation/types";
@@ -56,6 +57,8 @@ function overlay(patch: Partial<PresentationOverlay>): PresentationOverlay {
     arrowKind: "straight",
     arrowForm: "line",
     arrowDirection: "right",
+    rotation: 0,
+    mark: "warning",
     arrowHead: "end",
     stroke: "",
     fill: "",
@@ -84,17 +87,16 @@ describe("callout outlines", () => {
 });
 
 describe("arrow outlines", () => {
-  it("puts a block-arrow tip on the side it points to", () => {
-    expect(blockArrowPath(BODY, "right")).toContain("L 110 50");
-    expect(blockArrowPath(BODY, "left")).toContain("L 10 50");
-    expect(blockArrowPath(BODY, "down")).toContain("L 60 80");
-    expect(blockArrowPath(BODY, "up")).toContain("L 60 20");
+  it("points a block arrow to the right before rotation", () => {
+    expect(blockArrowPath(BODY)).toContain("L 110 50");
   });
 
-  it("draws the pointing hand as one closed shape", () => {
-    const path = pointerHandPath(BODY, "right");
-    expect(subpathCount(path)).toBe(1);
-    expect(path.endsWith("Z")).toBe(true);
+  it("steps rotation by 45 degrees and wraps the circle", () => {
+    expect(stepRotation(0, 1)).toBe(45);
+    expect(stepRotation(315, 1)).toBe(0);
+    expect(stepRotation(0, -1)).toBe(315);
+    expect(snapRotation(44)).toBe(45);
+    expect(snapRotation(-10)).toBe(0);
   });
 });
 

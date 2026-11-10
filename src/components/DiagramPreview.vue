@@ -366,18 +366,14 @@ watch(
   will-change: transform;
 }
 
-.preview-panel.is-presentation-view > .panel-header,
-.preview-panel.is-presentation-view :deep(.presentation-dock) {
+.preview-panel.is-presentation-view > .panel-header {
   opacity: 0.12;
   transition: opacity 180ms ease;
 }
 
 .preview-panel.is-presentation-view > .panel-header:hover,
 .preview-panel.is-presentation-view > .panel-header:focus-within,
-.preview-panel.is-presentation-view.is-chrome-revealed > .panel-header,
-.preview-panel.is-presentation-view :deep(.presentation-dock:hover),
-.preview-panel.is-presentation-view :deep(.presentation-dock:focus-within),
-.preview-panel.is-presentation-view.is-chrome-revealed :deep(.presentation-dock) {
+.preview-panel.is-presentation-view.is-chrome-revealed > .panel-header {
   opacity: 1;
 }
 </style>
