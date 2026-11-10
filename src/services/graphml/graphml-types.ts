@@ -8,6 +8,17 @@ export const GROUP_MIN_HEIGHT = 120;
 export const GROUP_LABEL_OUTSET = 18;
 export const GRAPH_MARGIN = 24;
 export const HEXAGON_INSET_RATIO = 0.22;
+export const PARALLELOGRAM_INSET_RATIO = 0.1;
+export const TRAPEZOID_INSET_RATIO = 0.15;
+export const PREDEFINED_PROCESS_BAR_RATIO = 0.12;
+export const PREDEFINED_PROCESS_BAR_MAX = 12;
+export const NODE_LABEL_FONT_SIZE = 13;
+export const NODE_LABEL_LINE_HEIGHT = 16;
+export const CLIP_T_EPSILON = 0.0001;
+export const SEGMENT_PARALLEL_EPSILON = 1e-9;
+export const ELLIPSE_BOUNDARY_EPSILON = 0.0001;
+export const MIN_NODE_EXTENT = 1;
+export const MIN_SEGMENT_LENGTH = 1;
 export const DASHED_STROKE_PATTERN = "6 4";
 export const LABEL_ATTR_NAMES = ["label", "nodeLabel", "edgeLabel"] as const;
 export const SHAPE_ATTR_NAME = "shape";
@@ -16,6 +27,9 @@ export const FILL_ATTR_NAME = "fill";
 export const STROKE_ATTR_NAME = "stroke";
 export const COLOR_ATTR_NAME = "color";
 export const DASHED_STYLE = "dashed";
+export const DOTTED_STYLE = "dotted";
+export const ARROW_NONE = "none";
+export const HIDDEN_FLAG = "false";
 export const UNDIRECTED_EDGE_DEFAULT = "undirected";
 export const DIRECTED_EDGE_FLAG = "true";
 export const UNDIRECTED_EDGE_FLAG = "false";
@@ -63,17 +77,42 @@ export const LUMA_BLUE = 0.0722;
 export const HEX_CHANNEL_BASE = 16;
 export const HEX_BYTE_MAX = 255;
 
-export const NODE_SHAPES = ["rectangle", "ellipse", "diamond", "hexagon"] as const;
+export const NODE_SHAPES = [
+  "rectangle",
+  "ellipse",
+  "diamond",
+  "hexagon",
+  "parallelogram",
+  "trapezoid",
+  "trapezoid2",
+  "predefinedProcess",
+] as const;
 
 export type GraphmlNodeShape = (typeof NODE_SHAPES)[number];
 export type GraphmlRankDirection = (typeof RANK_DIRECTIONS)[number];
+
+export interface GraphmlGeometry {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface GraphmlEdgeLabelAnchor {
+  segment: number;
+  ratio: number;
+  distance: number;
+}
 
 export interface GraphmlNode {
   id: string;
   label: string;
   shape: GraphmlNodeShape;
   fill?: string;
+  fill2?: string;
   stroke?: string;
+  dashed: boolean;
+  geometry?: GraphmlGeometry;
   parentId?: string;
   isGroup: boolean;
 }
@@ -85,6 +124,10 @@ export interface GraphmlEdge {
   color?: string;
   directed: boolean;
   dashed: boolean;
+  bends?: PolyPoint[];
+  sourceOffset?: PolyPoint;
+  targetOffset?: PolyPoint;
+  labelAnchor?: GraphmlEdgeLabelAnchor;
 }
 
 export interface ParsedGraphml {
@@ -134,4 +177,5 @@ export interface EdgeLayout {
   directed: boolean;
   dashed: boolean;
   points: PolyPoint[];
+  labelPoint?: PolyPoint;
 }

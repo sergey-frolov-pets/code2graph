@@ -3,9 +3,12 @@ import {
   buildEdgePath,
   formatCoord,
   groupLabelBox,
+  hasAbsoluteGeometry,
   labelBox,
+  layoutAbsolute,
   layoutGraph,
   placeEdgeLabels,
+  shapeOutline,
   themeColors,
 } from "@/services/graphml/graphml-layout";
 import {
@@ -24,8 +27,11 @@ import {
   GROUP_LABEL_FONT_SIZE,
   GROUP_LABEL_INSET_X,
   GROUP_LABEL_OUTSET,
-  HEXAGON_INSET_RATIO,
+  NODE_LABEL_FONT_SIZE,
+  NODE_LABEL_LINE_HEIGHT,
   NODE_RX,
+  PREDEFINED_PROCESS_BAR_MAX,
+  PREDEFINED_PROCESS_BAR_RATIO,
   STROKE_WIDTH,
   type AxisBox,
   type EdgeLayout,
@@ -42,6 +48,13 @@ function markerId(color: string): string {
   return `graphml-arrow-${color.slice(1)}`;
 }
 
+function renderPolygon(points: PolyPoint[], paint: string): string {
+  const value = points
+    .map((point) => `${formatCoord(point.x)},${formatCoord(point.y)}`)
+    .join(" ");
+  return `<polygon points="${value}" ${paint}/>`;
+}
+
 function renderNodeShape(
   shape: GraphmlNodeShape,
   x: number,
@@ -50,34 +63,62 @@ function renderNodeShape(
   height: number,
   fill: string,
   stroke: string,
+  dashed: boolean,
 ): string {
-  const paint = `fill="${fill}" stroke="${stroke}" stroke-width="${STROKE_WIDTH}"`;
+  const dash = dashed ? ` stroke-dasharray="${DASHED_STROKE_PATTERN}"` : "";
+  const paint = `fill="${fill}" stroke="${stroke}" stroke-width="${STROKE_WIDTH}"${dash}`;
   if (shape === "ellipse") {
-    return `<ellipse cx="${x + width / 2}" cy="${y + height / 2}" rx="${width / 2}" ry="${height / 2}" ${paint}/>`;
+    return `<ellipse cx="${formatCoord(x + width / 2)}" cy="${formatCoord(y + height / 2)}" rx="${formatCoord(width / 2)}" ry="${formatCoord(height / 2)}" ${paint}/>`;
   }
 
-  if (shape === "diamond") {
-    const centerX = x + width / 2;
-    const centerY = y + height / 2;
-    const points = `${centerX},${y} ${x + width},${centerY} ${centerX},${y + height} ${x},${centerY}`;
-    return `<polygon points="${points}" ${paint}/>`;
+  if (shape === "rectangle") {
+    return `<rect x="${formatCoord(x)}" y="${formatCoord(y)}" width="${formatCoord(width)}" height="${formatCoord(height)}" rx="${NODE_RX}" ${paint}/>`;
   }
 
-  if (shape === "hexagon") {
-    const inset = width * HEXAGON_INSET_RATIO;
-    const midY = y + height / 2;
-    const points = [
-      `${x + inset},${y}`,
-      `${x + width - inset},${y}`,
-      `${x + width},${midY}`,
-      `${x + width - inset},${y + height}`,
-      `${x + inset},${y + height}`,
-      `${x},${midY}`,
-    ].join(" ");
-    return `<polygon points="${points}" ${paint}/>`;
+  const outline = shapeOutline(shape, x, y, width, height);
+  const polygon = renderPolygon(outline, paint);
+  if (shape !== "predefinedProcess") {
+    return polygon;
   }
 
-  return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="${NODE_RX}" ${paint}/>`;
+  const inset = Math.min(PREDEFINED_PROCESS_BAR_MAX, width * PREDEFINED_PROCESS_BAR_RATIO);
+  const top = formatCoord(y);
+  const bottom = formatCoord(y + height);
+  const left = formatCoord(x + inset);
+  const right = formatCoord(x + width - inset);
+  return `${polygon}
+  <line x1="${left}" y1="${top}" x2="${left}" y2="${bottom}" stroke="${stroke}" stroke-width="${STROKE_WIDTH}"/>
+  <line x1="${right}" y1="${top}" x2="${right}" y2="${bottom}" stroke="${stroke}" stroke-width="${STROKE_WIDTH}"/>`;
+}
+
+function renderNodeLabel(
+  label: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  textFill: string,
+): string {
+  const lines = label.split(/\r?\n/);
+  const centerX = formatCoord(x + width / 2);
+  const centerY = formatCoord(y + height / 2);
+  const paint = `fill="${textFill}" font-family="${FONT_FAMILY}" font-size="${NODE_LABEL_FONT_SIZE}" text-anchor="middle" dominant-baseline="middle"`;
+  if (lines.length <= 1) {
+    return `<text x="${centerX}" y="${centerY}" ${paint}>${escapeXml(label)}</text>`;
+  }
+
+  const startOffset = -((lines.length - 1) * NODE_LABEL_LINE_HEIGHT) / 2;
+  const tspans = lines
+    .map((line, index) => {
+      const dy = index === 0 ? startOffset : NODE_LABEL_LINE_HEIGHT;
+      return `<tspan x="${centerX}" dy="${dy}">${escapeXml(line)}</tspan>`;
+    })
+    .join("");
+  return `<text y="${centerY}" ${paint}>${tspans}</text>`;
+}
+
+function gradientId(index: number): string {
+  return `graphml-fill-${index}`;
 }
 
 interface RenderedNode {
@@ -150,11 +191,12 @@ function renderGraphmlSvg(
       v: edge.source,
       w: edge.target,
       name: `e${index}`,
-    });
+    }) as { points?: PolyPoint[]; labelPoint?: PolyPoint } | undefined;
     if (!layoutEdge?.points?.length) {
       return [];
     }
 
+    const labelPoint = layoutEdge.labelPoint;
     return [{
       label: edge.label,
       color: edge.color,
@@ -164,6 +206,9 @@ function renderGraphmlSvg(
         x: point.x + offsetX,
         y: point.y + offsetY,
       })),
+      labelPoint: labelPoint
+        ? { x: labelPoint.x + offsetX, y: labelPoint.y + offsetY }
+        : undefined,
     }];
   });
 
@@ -209,6 +254,10 @@ function renderGraphmlSvg(
         point.x += shiftX;
         point.y += shiftY;
       }
+      if (edge.labelPoint) {
+        edge.labelPoint.x += shiftX;
+        edge.labelPoint.y += shiftY;
+      }
     }
     for (const label of placedLabels) {
       if (!label) {
@@ -241,6 +290,22 @@ function renderGraphmlSvg(
     })
     .join("\n");
 
+  const gradientByNode = new Map<GraphmlNode, string>();
+  const gradientElements = renderedNodes
+    .flatMap((rendered, index) => {
+      if (!rendered.node.fill || !rendered.node.fill2 || rendered.node.isGroup) {
+        return [];
+      }
+
+      const id = gradientId(index);
+      gradientByNode.set(rendered.node, id);
+      return [`<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${rendered.node.fill}"/>
+      <stop offset="100%" stop-color="${rendered.node.fill2}"/>
+    </linearGradient>`];
+    })
+    .join("\n");
+
   const nodeElements = renderedNodes
     .filter((rendered) => !rendered.node.isGroup)
     .map((rendered) => {
@@ -249,19 +314,22 @@ function renderGraphmlSvg(
       const textFill = rendered.node.fill
         ? textColorForFill(fill, colors.textFill)
         : colors.textFill;
+      const gradient = gradientByNode.get(rendered.node);
+      const paint = gradient ? `url(#${gradient})` : fill;
       const shape = renderNodeShape(
         rendered.node.shape,
         rendered.x,
         rendered.y,
         rendered.width,
         rendered.height,
-        fill,
+        paint,
         stroke,
+        rendered.node.dashed,
       );
 
       return `<g class="graphml-node">
   ${shape}
-  <text x="${formatCoord(rendered.x + rendered.width / 2)}" y="${formatCoord(rendered.y + rendered.height / 2)}" fill="${textFill}" font-family="${FONT_FAMILY}" font-size="13" text-anchor="middle" dominant-baseline="middle">${escapeXml(rendered.node.label)}</text>
+  ${renderNodeLabel(rendered.node.label, rendered.x, rendered.y, rendered.width, rendered.height, textFill)}
 </g>`;
     })
     .join("\n");
@@ -297,6 +365,7 @@ function renderGraphmlSvg(
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${formatCoord(width)}" height="${formatCoord(height)}" viewBox="0 0 ${formatCoord(width)} ${formatCoord(height)}" role="img">
   <defs>
+    ${gradientElements}
     ${markerElements}
   </defs>
   ${groupElements}
@@ -310,8 +379,9 @@ export async function renderGraphmlToSvg(
   options: { dark?: boolean; direction?: GraphmlRankDirection } = {},
 ): Promise<string> {
   const graph = parseGraphml(source);
-  const rankdir = parseRankDirection(options.direction ?? graph.direction);
-  const dagreGraph = layoutGraph(graph, rankdir);
+  const dagreGraph = hasAbsoluteGeometry(graph)
+    ? layoutAbsolute(graph)
+    : layoutGraph(graph, parseRankDirection(options.direction ?? graph.direction));
   return applyMarkedAspectFrame(
     source,
     renderGraphmlSvg(graph, dagreGraph, Boolean(options.dark)),
