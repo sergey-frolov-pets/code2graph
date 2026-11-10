@@ -1,6 +1,21 @@
 /** Marker that opens a presentation block inside a diagram comment. */
 export const PRESENTATION_MARKER = "@c2g-presentation";
 
+/** Marker of a dropped picture used as the diagram frame. */
+export const FRAME_MARKER = "@c2g-frame";
+
+/** Largest picture accepted as a diagram frame. */
+export const FRAME_MAX_BYTES = 4_000_000;
+
+/** Default length of a new picture or overlay effect. */
+export const FRAME_EFFECT_DEFAULT_MS = 1000;
+
+/** Extra scale at the peak of a pulse. */
+export const FRAME_EFFECT_PULSE_AMOUNT = 0.06;
+
+/** Extra scale at the end of a zoom. */
+export const FRAME_EFFECT_ZOOM_AMOUNT = 0.12;
+
 export const PRESENTATION_SCHEMA_VERSION = 1;
 
 /** How long the camera stays on a new viewpoint. */

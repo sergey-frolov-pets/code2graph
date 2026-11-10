@@ -66,11 +66,30 @@ export interface NormPoint {
   y: number;
 }
 
+export const FRAME_EFFECT_KINDS = ["fade", "pulse", "zoom"] as const;
+
+export type FrameEffectKind = (typeof FRAME_EFFECT_KINDS)[number];
+
+export const FRAME_EFFECT_TARGETS = ["frame", "diagram", "overlay"] as const;
+
+export type FrameEffectTargetKind = (typeof FRAME_EFFECT_TARGETS)[number];
+
+export interface FrameEffect {
+  id: string;
+  kind: FrameEffectKind;
+  target: FrameEffectTargetKind;
+  /** Set when the target is an overlay. Empty otherwise. */
+  overlayId: string;
+  startMs: number;
+  durationMs: number;
+}
+
 export interface Viewpoint {
   id: string;
   anchor: NormPoint;
   scale: number;
   dwellMs: number;
+  effects: FrameEffect[];
 }
 
 export interface PresentationTransition {

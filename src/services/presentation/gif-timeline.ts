@@ -2,8 +2,9 @@ import {
   PRESENTATION_GIF_FRAME_MS,
   PRESENTATION_GIF_MAX_SIDE,
 } from "@/services/presentation/constants";
+import { effectSegments } from "@/services/presentation/effects";
 import { easeInOut, lerpScale, sampleTransitionPoint } from "@/services/presentation/path";
-import type { PresentationTrack } from "@/services/presentation/types";
+import type { FrameEffect, PresentationTrack, Viewpoint } from "@/services/presentation/types";
 
 export interface PresentationGifFrame {
   anchorX: number;
@@ -12,11 +13,49 @@ export interface PresentationGifFrame {
   delayMs: number;
   ownerKind: "viewpoint" | "transition";
   ownerId: string;
+  /** Time from the start of the dwell or transition, used by effects. */
+  effectElapsedMs: number;
 }
 
 export interface GifPixelSize {
   width: number;
   height: number;
+}
+
+function dwellEffects(viewpoint: Viewpoint, track: PresentationTrack): FrameEffect[] {
+  return viewpoint.effects.filter((effect) => {
+    if (effect.target !== "overlay") {
+      return true;
+    }
+    const overlay = track.overlays.find((item) => item.id === effect.overlayId);
+    return overlay?.owner.kind === "viewpoint" && overlay.owner.id === viewpoint.id;
+  });
+}
+
+function holdFrames(
+  viewpoint: Viewpoint,
+  effects: readonly FrameEffect[],
+): PresentationGifFrame[] {
+  return effectSegments(effects, viewpoint.dwellMs).flatMap((segment) => {
+    const length = segment.endMs - segment.startMs;
+    const camera = {
+      anchorX: viewpoint.anchor.x,
+      anchorY: viewpoint.anchor.y,
+      scale: viewpoint.scale,
+      ownerKind: "viewpoint" as const,
+      ownerId: viewpoint.id,
+    };
+    if (!segment.animated) {
+      return [{ ...camera, delayMs: length, effectElapsedMs: segment.startMs }];
+    }
+    const steps = Math.max(1, Math.round(length / PRESENTATION_GIF_FRAME_MS));
+    const sliceMs = length / steps;
+    return Array.from({ length: steps }, (_, step) => ({
+      ...camera,
+      delayMs: sliceMs,
+      effectElapsedMs: segment.startMs + sliceMs * step,
+    }));
+  });
 }
 
 /** One loop: each viewpoint hold, then the transition to the next viewpoint. */
@@ -32,14 +71,7 @@ export function samplePresentationGifFrames(
 
   for (let index = 0; index < count; index += 1) {
     const viewpoint = track.viewpoints[index];
-    frames.push({
-      anchorX: viewpoint.anchor.x,
-      anchorY: viewpoint.anchor.y,
-      scale: viewpoint.scale,
-      delayMs: viewpoint.dwellMs,
-      ownerKind: "viewpoint",
-      ownerId: viewpoint.id,
-    });
+    frames.push(...holdFrames(viewpoint, dwellEffects(viewpoint, track)));
 
     const transition = track.transitions[index];
     const next = track.viewpoints[(index + 1) % count];
@@ -59,6 +91,7 @@ export function samplePresentationGifFrames(
         delayMs: sliceMs,
         ownerKind: "transition",
         ownerId: transition.id,
+        effectElapsedMs: sliceMs * step,
       });
     }
   }

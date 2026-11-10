@@ -305,7 +305,9 @@ onUnmounted(() => {
         :source="source"
         :diagram-format="diagramFormat"
         can-edit-presentation
+        accept-frame-drop
         @update:source="source = $event"
+        @import-frame="shell.openFrameDiagram"
         @toggle-dual-screen="openDualScreen"
         @render-now="shell.renderDiagram"
         @export-svg="shell.exportSvg"

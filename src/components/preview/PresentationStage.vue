@@ -29,6 +29,7 @@ import type {
 } from "@/services/presentation/types";
 import type { PanZoomSnapshot } from "@/services/preview/pan-zoom";
 import type { PresentationPhase } from "@/composables/usePresentationPlayback";
+import { effectVisualAt, overlayEffectTransform } from "@/services/presentation/effects";
 
 const props = defineProps<{
   snapshot: PanZoomSnapshot;
@@ -40,6 +41,8 @@ const props = defineProps<{
   travelOrigin: number;
   selectedOverlayId: string | null;
   addPointArmed: boolean;
+  effectsLive: boolean;
+  effectElapsedMs: number;
 }>();
 
 const emit = defineEmits<{
@@ -371,6 +374,25 @@ function onPointerUp(): void {
   drag = null;
 }
 
+function overlayEffect(overlay: PresentationOverlay): { opacity: number; transform?: string } {
+  if (!props.effectsLive || !props.track) {
+    return { opacity: 1 };
+  }
+  const viewpoint = props.phase === "travel"
+    ? props.track.viewpoints[props.travelOrigin]
+    : props.track.viewpoints[props.viewpointIndex];
+  const visual = effectVisualAt(
+    viewpoint?.effects ?? [],
+    props.effectElapsedMs,
+    "overlay",
+    overlay.id,
+  );
+  return {
+    opacity: visual.opacity,
+    transform: overlayEffectTransform(screenBox(overlay), visual.scale),
+  };
+}
+
 function overlayTextSize(overlay: PresentationOverlay): number {
   const box = screenBox(overlay);
   return Math.max(12, Math.min(28, Math.abs(box.height) * 0.45));
@@ -458,6 +480,8 @@ function overlayTextSize(overlay: PresentationOverlay): number {
         'is-dashed': overlay.line === 'dashed',
       }"
       :style="overlayVars(overlay)"
+      :opacity="overlayEffect(overlay).opacity"
+      :transform="overlayEffect(overlay).transform"
       @pointerdown="onOverlayPointerDown($event, overlay)"
     >
       <rect

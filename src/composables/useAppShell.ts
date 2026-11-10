@@ -124,6 +124,7 @@ export interface AppShellContext {
     label: string,
     format?: DiagramFormat,
   ) => void;
+  openFrameDiagram: (payload: { label: string; source: string }) => void;
   editorDocuments: ReturnType<typeof useEditorDocuments>["documents"];
   activeDocumentId: ReturnType<typeof useEditorDocuments>["activeDocumentId"];
   switchEditorTab: (documentId: string) => void;
@@ -519,6 +520,21 @@ export function useAppShell(): AppShellContext {
     });
   }
 
+  function openFrameDiagram(payload: { label: string; source: string }): void {
+    flushPendingHistory();
+    withSuppressedSourceHistory(() => {
+      const documentId = editorDocumentsApi.openNewTab({
+        source: payload.source,
+        label: payload.label,
+        format: "mermaid",
+      });
+      sessionChanges.resetBaseline(payload.source, documentId);
+      error.value = "";
+      syntaxErrorLines.value = [];
+      scheduleRender();
+    });
+  }
+
   function onVersionRestoreWithHistory(content: string): void {
     flushPendingHistory();
     withSuppressedSourceHistory(() => {
@@ -684,6 +700,7 @@ export function useAppShell(): AppShellContext {
     applyAiPlantUml: applyAiPlantUmlWithHistory,
     applyWizardDiagram: applyWizardDiagramWithHistory,
     applyWizardDiagramToNewTab,
+    openFrameDiagram,
     editorDocuments: editorDocumentsApi.documents,
     activeDocumentId: editorDocumentsApi.activeDocumentId,
     switchEditorTab,

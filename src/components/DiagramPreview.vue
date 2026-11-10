@@ -12,7 +12,9 @@ import { useLocale } from "@/composables/useLocale";
 import { useImageSize } from "@/composables/useImageSize";
 import { usePresentationSession } from "@/composables/usePresentationSession";
 import { usePreviewPanZoom } from "@/composables/usePreviewPanZoom";
-import { isTransparentPreviewBg } from "@/constants/editor-settings";
+import { isTransparentPreviewBg, TRANSPARENT_PREVIEW_BG } from "@/constants/editor-settings";
+import { effectStyle, effectVisualAt } from "@/services/presentation/effects";
+import { readFrameFile, readFrameHref } from "@/services/presentation/frame";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
 import { sanitizeSvgForPreview } from "@/utils/export";
 import type { RenderMode } from "@/constants/render-settings";
@@ -44,6 +46,8 @@ const props = defineProps<{
   diagramFormat?: DiagramFormat;
   /** Правка трека доступна только редактору, который может записать исходник. */
   canEditPresentation?: boolean;
+  /** Drop SVG/PNG создаёт новую диаграмму. Во втором окне превью выключен. */
+  acceptFrameDrop?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -60,6 +64,7 @@ const emit = defineEmits<{
   "update:imageSize": [value: { width: number; height: number } | null];
   toggleDualScreen: [];
   "update:source": [value: string];
+  importFrame: [payload: { label: string; source: string }];
 }>();
 
 const { t } = useLocale();
@@ -69,9 +74,12 @@ const appearanceOpen = ref(false);
 const viewportRef = ref<HTMLElement | null>(null);
 const contentRef = ref<HTMLElement | null>(null);
 
+const frameHref = computed(() => readFrameHref(props.source ?? ""));
+const frameError = ref("");
+const frameDragOver = ref(false);
 const { activeSize, isCustom, sizedMarkup, setWidth, setHeight, resetSize } = useImageSize(
   computed(() => props.svg),
-  computed(() => props.previewBackground),
+  computed(() => (frameHref.value ? TRANSPARENT_PREVIEW_BG : props.previewBackground)),
 );
 
 const previewMarkup = computed(() => {
@@ -116,6 +124,7 @@ const presentation = usePresentationSession({
     const style = getComputedStyle(viewport);
     return {
       svg: previewMarkup.value,
+      frameHref: frameHref.value,
       imageWidth: snapshot.value.imageWidth,
       imageHeight: snapshot.value.imageHeight,
       viewportWidth: viewport.clientWidth,
@@ -166,6 +175,57 @@ watch(
   },
 );
 
+const effectsLive = computed(
+  () => presentation.playback.playing.value || presentation.playback.animating.value,
+);
+
+function sceneStyle(target: "frame" | "diagram"): Record<string, string> {
+  if (!effectsLive.value || presentation.playback.phase.value !== "dwell") {
+    return effectStyle({ opacity: 1, scale: 1 });
+  }
+  const viewpoint = presentation.currentTrack.value?.viewpoints[
+    presentation.playback.viewpointIndex.value
+  ];
+  return effectStyle(
+    effectVisualAt(
+      viewpoint?.effects ?? [],
+      presentation.playback.phaseElapsedMs.value,
+      target,
+    ),
+  );
+}
+
+function onFrameDragOver(event: DragEvent): void {
+  if (!props.acceptFrameDrop || props.blockedMessage) {
+    return;
+  }
+  event.preventDefault();
+  frameDragOver.value = true;
+}
+
+function onFrameDragLeave(): void {
+  frameDragOver.value = false;
+}
+
+async function onFrameDrop(event: DragEvent): Promise<void> {
+  if (!props.acceptFrameDrop || props.blockedMessage) {
+    return;
+  }
+  event.preventDefault();
+  frameDragOver.value = false;
+  const file = event.dataTransfer?.files?.[0];
+  if (!file) {
+    return;
+  }
+  const result = await readFrameFile(file);
+  if (!result.ok) {
+    frameError.value = t(result.errorKey);
+    return;
+  }
+  frameError.value = "";
+  emit("importFrame", { label: result.label, source: result.source });
+}
+
 watch(
   () => props.dualScreenActive,
   (active) => {
@@ -186,6 +246,9 @@ watch(
     }"
     :aria-label="t('app.previewRegion')"
     @pointerdown="presentation.revealChrome"
+    @dragover="onFrameDragOver"
+    @dragleave="onFrameDragLeave"
+    @drop="onFrameDrop"
   >
     <header class="panel-header">
       <h2
@@ -279,11 +342,27 @@ watch(
             class="preview-content"
             :data-preview-ready="Boolean(previewMarkup)"
             :style="contentStyle"
-            v-html="previewMarkup"
-          />
+          >
+            <div class="preview-scene">
+              <img
+                v-if="frameHref"
+                class="preview-scene__frame"
+                :src="frameHref"
+                alt=""
+                :style="sceneStyle('frame')"
+              >
+              <div
+                class="preview-scene__diagram"
+                :style="sceneStyle('diagram')"
+                v-html="previewMarkup"
+              />
+            </div>
+          </div>
           <PresentationStage
             v-if="presentation.enabled.value"
             :snapshot="snapshot"
+            :effects-live="effectsLive"
+            :effect-elapsed-ms="presentation.playback.phaseElapsedMs.value"
             :track="presentation.currentTrack.value"
             :editing="presentation.panelOpen.value && presentation.mode.value === 'edit' && props.canEditPresentation === true"
             :show-overlays="presentation.document.value?.showOverlays !== false"
@@ -299,6 +378,12 @@ watch(
             @change-overlay="presentation.onChangeOverlay"
           />
         </div>
+        <p
+          v-if="frameError"
+          class="preview-frame-error"
+        >
+          {{ frameError }}
+        </p>
         <PresentationPanel :t="t" />
         <div
           v-if="isRendering"
@@ -314,8 +399,14 @@ watch(
         v-else
         class="preview-placeholder"
       >
-        {{ t("preview.placeholder") }}
+        {{ frameError || t("preview.placeholder") }}
       </div>
+      <p
+        v-if="frameDragOver"
+        class="preview-drop"
+      >
+        {{ t("preview.frame.drop") }}
+      </p>
     </div>
 
     <AppearanceModal
@@ -366,14 +457,63 @@ watch(
   will-change: transform;
 }
 
-.preview-panel.is-presentation-view > .panel-header {
+.preview-scene {
+  position: relative;
+  display: inline-block;
+}
+
+.preview-scene__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+.preview-scene__diagram {
+  position: relative;
+}
+
+.preview-frame-error {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  margin: 0;
+  color: var(--danger);
+  text-align: center;
+}
+
+.preview-drop {
+  position: absolute;
+  inset: 12px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  border: 2px dashed var(--accent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  color: var(--text);
+  pointer-events: none;
+}
+
+.panel-body {
+  position: relative;
+}
+
+.preview-panel.is-presentation-view > .panel-header,
+.preview-panel.is-presentation-view :deep(.presentation-dock) {
   opacity: 0.12;
   transition: opacity 180ms ease;
 }
 
 .preview-panel.is-presentation-view > .panel-header:hover,
 .preview-panel.is-presentation-view > .panel-header:focus-within,
-.preview-panel.is-presentation-view.is-chrome-revealed > .panel-header {
+.preview-panel.is-presentation-view.is-chrome-revealed > .panel-header,
+.preview-panel.is-presentation-view :deep(.presentation-dock:hover),
+.preview-panel.is-presentation-view :deep(.presentation-dock:focus-within),
+.preview-panel.is-presentation-view.is-chrome-revealed :deep(.presentation-dock) {
   opacity: 1;
 }
 </style>

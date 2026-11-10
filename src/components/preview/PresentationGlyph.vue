@@ -2,13 +2,16 @@
 import { computed } from "vue";
 import type { Component } from "vue";
 import {
+  ArrowDown,
   ArrowRight,
+  ArrowUp,
   Camera,
   Check,
   ChevronLeft,
   ChevronRight,
   ChevronsDown,
   Circle,
+  Copy,
   Eye,
   EyeOff,
   Film,
@@ -68,7 +71,10 @@ export type PresentationGlyphName =
   | "check"
   | "cross"
   | "rotate-left"
-  | "rotate-right";
+  | "rotate-right"
+  | "copy"
+  | "up"
+  | "down";
 
 const ICONS: Record<PresentationGlyphName, Component> = {
   presentation: Presentation,
@@ -101,6 +107,9 @@ const ICONS: Record<PresentationGlyphName, Component> = {
   cross: X,
   "rotate-left": RotateCcw,
   "rotate-right": RotateCw,
+  copy: Copy,
+  up: ArrowUp,
+  down: ArrowDown,
 };
 
 const props = defineProps<{

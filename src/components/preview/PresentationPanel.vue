@@ -3,7 +3,7 @@ import { computed, inject, ref, watch } from "vue";
 import IconButton from "@/components/IconButton.vue";
 import PresentationGlyph from "@/components/preview/PresentationGlyph.vue";
 import { presentationSessionKey } from "@/components/preview/presentation-session";
-import { durationMsToSeconds } from "@/services/presentation/model";
+import { durationMsToSeconds, durationSecondsToMs } from "@/services/presentation/model";
 import { stepRotation } from "@/services/presentation/overlay-geometry";
 import {
   PRESENTATION_ARROW_FORMS,
@@ -13,6 +13,7 @@ import {
   PRESENTATION_BUBBLE_SHAPES,
   PRESENTATION_FONTS,
   PRESENTATION_LINE_STYLES,
+  FRAME_EFFECT_KINDS,
   PRESENTATION_PATH_KINDS,
   PRESENTATION_TEXT_BACKINGS,
 } from "@/services/presentation/types";
@@ -23,13 +24,15 @@ import type {
   PresentationArrowHead,
   PresentationArrowKind,
   PresentationBubbleShape,
+  FrameEffectKind,
+  FrameEffectTargetKind,
   PresentationFont,
   PresentationLineStyle,
   PresentationPathKind,
   PresentationTextBacking,
 } from "@/services/presentation/types";
 
-defineProps<{
+const props = defineProps<{
   t: TranslateFn;
 }>();
 
@@ -51,6 +54,13 @@ const {
   onRenameTrack,
   onCapture,
   onUpdateFrame,
+  onDuplicateViewpoint,
+  onMoveViewpoint,
+  onAddEffect,
+  onUpdateEffect,
+  onDuplicateEffect,
+  onMoveEffect,
+  onRemoveEffect,
   onRemoveViewpoint,
   onDwellSeconds,
   onTransitionSeconds,
@@ -81,6 +91,60 @@ const selectedOverlay = computed(
 );
 const canStep = computed(() => (track.value?.viewpoints.length ?? 0) > 1);
 const dimHeld = ref(false);
+const selectedEffectId = ref<string | null>(null);
+const selectedEffect = computed(
+  () => viewpoint.value?.effects.find((effect) => effect.id === selectedEffectId.value) ?? null,
+);
+const effectTargets = computed(() => {
+  const targets: Array<{ id: string; label: string }> = [
+    { id: "diagram", label: props.t("presentation.effectTarget.diagram") },
+  ];
+  if (session.hasFrame.value) {
+    targets.unshift({ id: "frame", label: props.t("presentation.effectTarget.frame") });
+  }
+  return targets;
+});
+
+watch(viewpoint, (next) => {
+  if (!next?.effects.some((effect) => effect.id === selectedEffectId.value)) {
+    selectedEffectId.value = next?.effects[0]?.id ?? null;
+  }
+});
+
+function effectTargetValue(effect: { target: FrameEffectTargetKind; overlayId: string }): string {
+  return effect.target === "overlay" ? `overlay:${effect.overlayId}` : effect.target;
+}
+
+function onEffectTargetChange(value: string): void {
+  const effect = selectedEffect.value;
+  if (!effect) {
+    return;
+  }
+  if (value.startsWith("overlay:")) {
+    onUpdateEffect(effect.id, { target: "overlay", overlayId: value.slice("overlay:".length) });
+    return;
+  }
+  onUpdateEffect(effect.id, { target: value as FrameEffectTargetKind, overlayId: "" });
+}
+
+function effectStartMs(seconds: number): number {
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return 0;
+  }
+  return durationSecondsToMs(seconds);
+}
+
+function addEffect(): void {
+  if (!session) {
+    return;
+  }
+  if (selectedOverlay.value) {
+    onAddEffect("overlay", selectedOverlay.value.id);
+  } else {
+    onAddEffect(session.hasFrame.value ? "frame" : "diagram");
+  }
+  selectedEffectId.value = viewpoint.value?.effects.at(-1)?.id ?? selectedEffectId.value;
+}
 
 function trackLabel(index: number): string {
   return String(index + 1);
@@ -411,6 +475,27 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
               <PresentationGlyph name="refresh" />
             </IconButton>
             <IconButton
+              :label="t('presentation.duplicateViewpoint')"
+              :disabled="!viewpoint"
+              @click="onDuplicateViewpoint()"
+            >
+              <PresentationGlyph name="copy" />
+            </IconButton>
+            <IconButton
+              :label="t('presentation.moveViewpointUp')"
+              :disabled="!viewpoint || viewpointIndex === 0"
+              @click="onMoveViewpoint(-1)"
+            >
+              <PresentationGlyph name="up" />
+            </IconButton>
+            <IconButton
+              :label="t('presentation.moveViewpointDown')"
+              :disabled="!viewpoint || !track || viewpointIndex >= track.viewpoints.length - 1"
+              @click="onMoveViewpoint(1)"
+            >
+              <PresentationGlyph name="down" />
+            </IconButton>
+            <IconButton
               :label="t('presentation.removeViewpoint')"
               :disabled="!viewpoint"
               @click="onRemoveViewpoint()"
@@ -497,6 +582,117 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
               @click="onRemovePoint(transition.points.length - 1)"
             >
               <PresentationGlyph name="minus" />
+            </IconButton>
+          </div>
+          <div
+            v-if="viewpoint"
+            class="presentation-dock__row"
+          >
+            <IconButton
+              :label="t('presentation.effectAdd')"
+              @click="addEffect()"
+            >
+              <PresentationGlyph name="plus" />
+            </IconButton>
+            <button
+              v-for="effect in viewpoint.effects"
+              :key="effect.id"
+              type="button"
+              class="btn"
+              :class="{ 'btn-primary': effect.id === selectedEffectId }"
+              @click="selectedEffectId = effect.id"
+            >
+              {{ t(`presentation.effect.${effect.kind}`) }}
+            </button>
+          </div>
+          <div
+            v-if="selectedEffect"
+            class="presentation-dock__row"
+          >
+            <label class="presentation-field">
+              <span>{{ t("presentation.effectTarget") }}</span>
+              <select
+                :value="effectTargetValue(selectedEffect)"
+                @change="onEffectTargetChange(($event.target as HTMLSelectElement).value)"
+              >
+                <option
+                  v-for="target in effectTargets"
+                  :key="target.id"
+                  :value="target.id"
+                >
+                  {{ target.label }}
+                </option>
+                <option
+                  v-for="overlay in track?.overlays ?? []"
+                  :key="overlay.id"
+                  :value="`overlay:${overlay.id}`"
+                >
+                  {{ t(`presentation.overlay.${overlay.shape}`) }}
+                </option>
+              </select>
+            </label>
+            <label class="presentation-field">
+              <span>{{ t("presentation.effectKind") }}</span>
+              <select
+                :value="selectedEffect.kind"
+                @change="onUpdateEffect(selectedEffect.id, { kind: ($event.target as HTMLSelectElement).value as FrameEffectKind })"
+              >
+                <option
+                  v-for="kind in FRAME_EFFECT_KINDS"
+                  :key="kind"
+                  :value="kind"
+                >
+                  {{ t(`presentation.effect.${kind}`) }}
+                </option>
+              </select>
+            </label>
+            <label class="presentation-field">
+              <span>{{ t("presentation.effectStart") }}</span>
+              <input
+                type="number"
+                min="0"
+                max="120"
+                step="0.1"
+                :value="durationMsToSeconds(selectedEffect.startMs)"
+                @change="onUpdateEffect(selectedEffect.id, { startMs: effectStartMs(Number(($event.target as HTMLInputElement).value)) })"
+              >
+            </label>
+            <label class="presentation-field">
+              <span>{{ t("presentation.effectDuration") }}</span>
+              <input
+                type="number"
+                min="0.1"
+                max="120"
+                step="0.1"
+                :value="durationMsToSeconds(selectedEffect.durationMs)"
+                @change="onUpdateEffect(selectedEffect.id, { durationMs: durationSecondsToMs(Number(($event.target as HTMLInputElement).value)) })"
+              >
+            </label>
+            <IconButton
+              :label="t('presentation.effectDuplicate')"
+              @click="onDuplicateEffect(selectedEffect.id)"
+            >
+              <PresentationGlyph name="copy" />
+            </IconButton>
+            <IconButton
+              :label="t('presentation.effectUp')"
+              :disabled="viewpoint?.effects[0]?.id === selectedEffect.id"
+              @click="onMoveEffect(selectedEffect.id, -1)"
+            >
+              <PresentationGlyph name="up" />
+            </IconButton>
+            <IconButton
+              :label="t('presentation.effectDown')"
+              :disabled="viewpoint?.effects.at(-1)?.id === selectedEffect.id"
+              @click="onMoveEffect(selectedEffect.id, 1)"
+            >
+              <PresentationGlyph name="down" />
+            </IconButton>
+            <IconButton
+              :label="t('presentation.effectRemove')"
+              @click="onRemoveEffect(selectedEffect.id)"
+            >
+              <PresentationGlyph name="trash" />
             </IconButton>
           </div>
         </section>

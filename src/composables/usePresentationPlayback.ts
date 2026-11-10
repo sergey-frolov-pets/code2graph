@@ -22,6 +22,7 @@ export function usePresentationPlayback(options: {
   const phase = ref<PresentationPhase>("dwell");
   const travelAmount = ref(0);
   const travelOrigin = ref(0);
+  const phaseElapsedMs = ref(0);
 
   let frameId = 0;
   let phaseStarted = 0;
@@ -60,6 +61,7 @@ export function usePresentationPlayback(options: {
   }
 
   function tick(now: number): void {
+    phaseElapsedMs.value = Math.max(0, now - phaseStarted);
     const track = trackOrNull();
     if (!track || track.viewpoints.length === 0) {
       playing.value = false;
@@ -204,6 +206,7 @@ export function usePresentationPlayback(options: {
     phase.value = "dwell";
     reverse = false;
     travelAmount.value = 0;
+    phaseElapsedMs.value = 0;
     phaseStarted = performance.now();
     showViewpoint(index);
     if (playing.value) {
@@ -223,6 +226,7 @@ export function usePresentationPlayback(options: {
     phase,
     travelAmount,
     travelOrigin,
+    phaseElapsedMs,
     togglePlay,
     pause,
     step,
