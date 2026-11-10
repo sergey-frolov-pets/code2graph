@@ -183,6 +183,8 @@ export const miscMessages = {
   "presentation.text": "Текст заметки",
   "presentation.empty": "Снимите кадр, чтобы добавить точку просмотра.",
   "presentation.deleteOverlay": "Удалить наложение",
+  "presentation.exportGif": "Сохранить GIF",
+  "presentation.exportGifBusy": "Сохранение GIF…",
   "preview.rendering": "Рендеринг диаграммы…",
   "fullscreen.expand": "На весь экран",
   "fullscreen.collapse": "Свернуть",

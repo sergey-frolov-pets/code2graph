@@ -67,6 +67,7 @@
     "@tanstack/vue-virtual": "^3.13.35",
     "@wiremark/core": "^0.1.0",
     "dagre": "^0.8.5",
+    "gifenc": "^1.0.3",
     "mermaid": "^12.3.0",
     "pako": "^3.0.1",
     "read-excel-file": "^9.3.14",

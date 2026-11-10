@@ -107,6 +107,26 @@ const presentation = usePresentationSession({
   setFrame: setCameraFrame,
   setLocked: setInteractionLocked,
   onSource: (value) => emit("update:source", value),
+  getGifContext: () => {
+    const viewport = viewportRef.value;
+    if (!viewport || !previewMarkup.value) {
+      return null;
+    }
+    const style = getComputedStyle(viewport);
+    return {
+      svg: previewMarkup.value,
+      imageWidth: snapshot.value.imageWidth,
+      imageHeight: snapshot.value.imageHeight,
+      viewportWidth: viewport.clientWidth,
+      viewportHeight: viewport.clientHeight,
+      theme: {
+        background: props.previewBackground,
+        accent: style.getPropertyValue("--accent").trim() || "#0f6cbd",
+        surface: style.getPropertyValue("--surface").trim() || "#ffffff",
+        text: style.getPropertyValue("--text").trim() || "#1a1f24",
+      },
+    };
+  },
 });
 provide(presentationSessionKey, presentation);
 

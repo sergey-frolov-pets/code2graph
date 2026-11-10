@@ -183,6 +183,8 @@ export const miscMessages = {
   "presentation.text": "Note text",
   "presentation.empty": "Capture a frame to add a viewpoint.",
   "presentation.deleteOverlay": "Delete overlay",
+  "presentation.exportGif": "Save GIF",
+  "presentation.exportGifBusy": "Saving GIF…",
   "preview.rendering": "Rendering diagram…",
   "fullscreen.expand": "Full screen",
   "fullscreen.collapse": "Exit full screen",

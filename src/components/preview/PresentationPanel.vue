@@ -51,6 +51,8 @@ const {
   addPointArmed,
   attachTarget,
   selectedOverlayId,
+  exportingGif,
+  onExportGif,
 } = session;
 const { playing, viewpointIndex, togglePlay, step } = session.playback;
 
@@ -156,6 +158,14 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
         @click="step(1)"
       >
         {{ t("presentation.next") }}
+      </button>
+      <button
+        type="button"
+        class="btn"
+        :disabled="!track || track.viewpoints.length === 0 || exportingGif"
+        @click="onExportGif()"
+      >
+        {{ exportingGif ? t("presentation.exportGifBusy") : t("presentation.exportGif") }}
       </button>
       <span
         v-if="track && track.viewpoints.length"

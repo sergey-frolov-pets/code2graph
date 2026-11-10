@@ -1,8 +1,12 @@
 import { computed, onUnmounted, ref, watch, type Ref } from "vue";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
+import { useAppDialog } from "@/composables/useAppDialog";
+import { useLocale } from "@/composables/useLocale";
 import { usePresentationPlayback } from "@/composables/usePresentationPlayback";
 import { PRESENTATION_CHROME_REVEAL_MS } from "@/services/presentation/constants";
 import { readPresentation, writePresentation } from "@/services/presentation/codec";
+import { renderPresentationGif, type PresentationGifTheme } from "@/services/presentation/gif-export";
+import { presentationGifFileName } from "@/services/presentation/gif-timeline";
 import {
   activeTrack,
   addOverlay,
@@ -25,6 +29,7 @@ import {
   updateViewpointDwell,
   updateViewpointFrame,
 } from "@/services/presentation/model";
+import { downloadBlob } from "@/services/export/file-download";
 import type {
   CameraFrame,
   NormPoint,
@@ -33,6 +38,16 @@ import type {
   PresentationPathKind,
   PresentationTrack,
 } from "@/services/presentation/types";
+import { resolveLocalizedErrorMessage } from "@/utils/localized-app-error";
+
+export interface PresentationGifContext {
+  svg: string;
+  imageWidth: number;
+  imageHeight: number;
+  viewportWidth: number;
+  viewportHeight: number;
+  theme: PresentationGifTheme;
+}
 
 export type PresentationMode = "view" | "edit";
 export type OverlayAttachTarget = "viewpoint" | "transition";
@@ -45,6 +60,7 @@ export function usePresentationSession(options: {
   setFrame: (frame: CameraFrame) => void;
   setLocked: (locked: boolean) => void;
   onSource: (source: string) => void;
+  getGifContext: () => PresentationGifContext | null;
 }) {
   const open = ref(false);
   const mode = ref<PresentationMode>("view");
@@ -53,6 +69,9 @@ export function usePresentationSession(options: {
   const addPointArmed = ref(false);
   const attachTarget = ref<OverlayAttachTarget>("viewpoint");
   const chromeRevealed = ref(false);
+  const exportingGif = ref(false);
+  const { alert } = useAppDialog();
+  const { t } = useLocale();
   let suppressParse = false;
   let revealTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -380,6 +399,37 @@ export function usePresentationSession(options: {
     }
   }
 
+  async function onExportGif(): Promise<void> {
+    const track = currentTrack.value;
+    const gifContext = options.getGifContext();
+    if (!track || track.viewpoints.length === 0 || !gifContext || exportingGif.value) {
+      return;
+    }
+    exportingGif.value = true;
+    try {
+      const blob = await renderPresentationGif({
+        svg: gifContext.svg,
+        track,
+        showOverlays: document.value?.showOverlays !== false,
+        imageWidth: gifContext.imageWidth,
+        imageHeight: gifContext.imageHeight,
+        viewportWidth: gifContext.viewportWidth,
+        viewportHeight: gifContext.viewportHeight,
+        theme: gifContext.theme,
+      });
+      downloadBlob(blob, presentationGifFileName(track.name));
+    } catch (error) {
+      const message = resolveLocalizedErrorMessage(error, t, "app.exportGifFailed");
+      void alert({
+        title: t("app.exportError"),
+        message,
+        variant: "error",
+      });
+    } finally {
+      exportingGif.value = false;
+    }
+  }
+
   function selectViewpoint(index: number): void {
     playback.pause();
     playback.goToViewpoint(index);
@@ -402,6 +452,7 @@ export function usePresentationSession(options: {
     dimChrome,
     chromeRevealed,
     selectedOverlayId,
+    exportingGif,
     addPointArmed,
     attachTarget,
     playback,
@@ -425,6 +476,7 @@ export function usePresentationSession(options: {
     onAddOverlay,
     onChangeOverlay,
     onRemoveOverlay,
+    onExportGif,
     selectViewpoint,
   };
 }

@@ -29,3 +29,17 @@ export const PRESENTATION_OVERLAY_HEIGHT = 0.14;
 
 /** Perpendicular offset used to seed curve handles, in normalized image space. */
 export const PRESENTATION_CURVE_OFFSET = 0.08;
+
+/** Time between samples while a transition is written into a GIF. */
+export const PRESENTATION_GIF_FRAME_MS = 100;
+
+/** Longest side of an exported GIF, in pixels. */
+export const PRESENTATION_GIF_MAX_SIDE = 960;
+
+/** GIF frame delay is stored in centiseconds and cannot exceed this value. */
+export const PRESENTATION_GIF_MAX_DELAY_CS = 65_535;
+
+/** Colors kept in each GIF frame palette. */
+export const PRESENTATION_GIF_PALETTE_SIZE = 256;
+
+export const PRESENTATION_GIF_FALLBACK_BACKGROUND = "#ffffff";
