@@ -6,6 +6,7 @@ import {
   captureViewpoint,
   createPresentation,
   duplicateTrack,
+  placeTransitionControl,
   setTransitionPath,
   setTransitionPoints,
 } from "@/services/presentation/model";
@@ -125,5 +126,35 @@ describe("duplicateTrack", () => {
     const copy = duplicateTrack(document, document.activeTrackId, "   ");
     expect(copy.tracks.map((track) => track.name)).toEqual(["Tour", "Tour"]);
     expect(copy.activeTrackId).toBe(copy.tracks[1]?.id);
+  });
+});
+
+describe("placeTransitionControl", () => {
+  it("bends a straight transition into a quadratic control", () => {
+    const document = tourWithNeighbors();
+    const track = sourceTrack(document, document.tracks[0].id);
+    const transition = track.transitions[0];
+    const bend = { x: 0.4, y: 0.9 };
+    const next = placeTransitionControl(document, track.id, transition.id, 0, bend);
+    const updated = sourceTrack(next, track.id).transitions[0];
+
+    expect(updated?.path).toBe("quadratic");
+    expect(updated?.controls).toEqual([bend]);
+    expect(sourceTrack(document, track.id).transitions[0]?.path).toBe("line");
+  });
+
+  it("moves an existing curve control and keeps the path kind", () => {
+    const document = tourWithNeighbors();
+    const track = sourceTrack(document, document.tracks[0].id);
+    const transition = track.transitions[0];
+    const curved = setTransitionPath(document, track.id, transition.id, "quadratic");
+    const before = sourceTrack(curved, track.id).transitions[0];
+    const nextPoint = { x: 0.15, y: 0.85 };
+    const moved = placeTransitionControl(curved, track.id, transition.id, 0, nextPoint);
+    const updated = sourceTrack(moved, track.id).transitions[0];
+
+    expect(updated?.path).toBe("quadratic");
+    expect(updated?.controls).toEqual([nextPoint]);
+    expect(before?.controls).not.toEqual([nextPoint]);
   });
 });
