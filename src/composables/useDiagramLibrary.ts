@@ -72,6 +72,7 @@ function createDiagramLibrary() {
     exportLibrarySelection: transfer.exportLibrarySelection,
     parseImportBundle: transfer.parseImportBundle,
     importLibrarySelection: transfer.importLibrarySelection,
+    copyBackupDiagramsIntoLibrary: transfer.copyBackupDiagramsIntoLibrary,
     pushSelectionToServer: transfer.pushSelectionToServer,
     pullSelectionFromServer: transfer.pullSelectionFromServer,
     loadServerTransferData: transfer.loadServerTransferData,
