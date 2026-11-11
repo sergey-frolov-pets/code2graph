@@ -13,6 +13,7 @@ export {
   MAX_IMAGE_SIDE,
   MIN_IMAGE_SIDE,
   normalizeSvgRootSize,
+  parseSvgCssSize,
   parseSvgSize,
   wholeImagePixels,
   type ImageSize,

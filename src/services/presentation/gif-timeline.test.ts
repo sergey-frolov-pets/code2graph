@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   gifFrameDelaysMs,
   gifOutputSize,
+  gifScenePlacement,
   presentationGifCycleMs,
   presentationGifFileName,
   samplePresentationGifFrames,
@@ -104,6 +105,44 @@ describe("presentation GIF timeline", () => {
   it("shrinks the longer viewport side to the GIF limit", () => {
     expect(gifOutputSize(1920, 1080)).toEqual({ width: 960, height: 540 });
     expect(gifOutputSize(400, 300)).toEqual({ width: 400, height: 300 });
+  });
+
+  it("draws the svg css box while keeping the camera anchor centered", () => {
+    const contentWidth = 84;
+    const contentHeight = 44;
+    const cssWidth = 200;
+    const cssHeight = 100;
+    const viewportWidth = 400;
+    const viewportHeight = 300;
+    const placed = gifScenePlacement(
+      { anchorX: 0.5, anchorY: 0.5, scale: 2 },
+      contentWidth,
+      contentHeight,
+      cssWidth,
+      cssHeight,
+      viewportWidth,
+      viewportHeight,
+      viewportWidth,
+    );
+
+    expect(placed).toEqual({ panX: 116, panY: 106, scale: 2, width: 400, height: 200 });
+    expect(placed.panX + 0.5 * contentWidth * placed.scale).toBe(viewportWidth / 2);
+    expect(placed.panY + 0.5 * contentHeight * placed.scale).toBe(viewportHeight / 2);
+  });
+
+  it("fits the on-screen viewport when the gif canvas is smaller", () => {
+    const placed = gifScenePlacement(
+      { anchorX: 0.5, anchorY: 0.5, scale: 2 },
+      84,
+      44,
+      200,
+      100,
+      200,
+      150,
+      400,
+    );
+
+    expect(placed).toEqual({ panX: 58, panY: 53, scale: 1, width: 200, height: 100 });
   });
 
   it("builds a safe gif file name from the track title", () => {
