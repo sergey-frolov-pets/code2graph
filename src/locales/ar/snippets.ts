@@ -7,7 +7,7 @@ export const snippetsMessages = {
   "snippets.editTitle": "تحرير المقتطف",
   "snippets.edit": "تحرير",
   "snippets.insert": "إدراج",
-  "snippets.searchPlaceholder": "البحث في العنوان والرمز واللغة ونوع المخطط…",
+  "snippets.searchPlaceholder": "البحث في محتوى المقتطف بالكامل…",
   "snippets.noResults": "لم يُعثر على مقتطفات",
   "snippets.customBadge": "مخصص",
   "snippets.deleteTitle": "حذف المقتطف؟",

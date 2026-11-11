@@ -1,9 +1,7 @@
 import { computed, ref } from "vue";
 import { resolveDiagramTypeSlug } from "@/analytics/diagram-type";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
-import type { LocaleKey, TranslateFn } from "@/locales/types";
 import { BUILTIN_SNIPPETS } from "@/constants/builtin-snippets";
-import { getLanguageModule } from "@/languages/registry";
 import {
   isSnippetLanguageId,
   SNIPPET_CATEGORY_IDS,
@@ -80,10 +78,12 @@ function getItemCategory(item: SnippetListItem): SnippetCategoryId | "custom" {
   return item.kind === "builtin" ? item.categoryId : item.snippet.categoryId;
 }
 
-function getCategoryLabelKey(
-  categoryId: SnippetCategoryId | "custom",
-): LocaleKey {
-  return `snippets.category.${categoryId}`;
+function getItemContent(item: SnippetListItem): string {
+  return item.kind === "builtin" ? item.content : item.snippet.content;
+}
+
+function normalizeSnippetSearchText(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
 export function resolveSnippetLanguageFromFormat(
@@ -238,61 +238,15 @@ export function useSnippets(options?: {
     syncWithEditorContext(options.initialFormat, options.initialSource ?? "");
   }
 
-  function buildSearchHaystack(
-    item: SnippetListItem,
-    t: TranslateFn,
-  ): string {
-    const language = getItemLanguage(item);
-    const languageLabel = t(getLanguageModule(language).labelKey);
-    const categoryId = getItemCategory(item);
-    const categoryLabel = t(getCategoryLabelKey(categoryId));
-
-    if (item.kind === "builtin") {
-      const title = t(item.titleKey);
-      const description = item.descriptionKey ? t(item.descriptionKey) : "";
-      return [
-        title,
-        description,
-        item.content,
-        language,
-        languageLabel,
-        categoryId,
-        categoryLabel,
-      ]
-        .join("\n")
-        .toLowerCase();
-    }
-
-    return [
-      item.snippet.title,
-      item.snippet.description ?? "",
-      item.snippet.content,
-      language,
-      languageLabel,
-      categoryId,
-      categoryLabel,
-    ]
-      .join("\n")
-      .toLowerCase();
-  }
-
-  function matchesSearch(
-    item: SnippetListItem,
-    query: string,
-    t: TranslateFn,
-  ): boolean {
-    const tokens = query
-      .trim()
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(Boolean);
-
-    if (tokens.length === 0) {
+  function matchesSearch(item: SnippetListItem, query: string): boolean {
+    const normalizedQuery = normalizeSnippetSearchText(query);
+    if (!normalizedQuery) {
       return true;
     }
 
-    const haystack = buildSearchHaystack(item, t);
-    return tokens.every((token) => haystack.includes(token));
+    const content = normalizeSnippetSearchText(getItemContent(item));
+    const tokens = normalizedQuery.split(" ").filter(Boolean);
+    return tokens.every((token) => content.includes(token));
   }
 
   function matchesLanguage(item: SnippetListItem): boolean {
@@ -314,12 +268,12 @@ export function useSnippets(options?: {
     return getItemCategory(item) === activeCategory.value;
   }
 
-  function filterItems(t: TranslateFn): SnippetListItem[] {
+  function filterItems(): SnippetListItem[] {
     return allItems.value.filter(
       (item) =>
         matchesLanguage(item) &&
         matchesCategory(item) &&
-        matchesSearch(item, searchQuery.value, t),
+        matchesSearch(item, searchQuery.value),
     );
   }
 

@@ -10,8 +10,6 @@ import {
 } from "@/composables/useSnippets";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
 import { getDiagramFormatDefinition } from "@/languages/registry";
-import { translateForLocale } from "@/composables/useLocale";
-import type { LocaleKey, TranslateFn } from "@/locales/types";
 import {
   parseSnippetsExportPayload,
   parseSnippetsFromText,
@@ -20,9 +18,6 @@ import {
   STORAGE_KEY_CUSTOM_SNIPPETS,
 } from "@/storage/snippets";
 import { SNIPPET_LANGUAGE_IDS, type CustomSnippet } from "@/types/snippets";
-
-const tRu: TranslateFn = (key: LocaleKey, params) =>
-  translateForLocale("ru", key, params);
 
 describe("builtin snippets coverage", () => {
   it("supports snippets on every diagram format except GraphML", () => {
@@ -153,7 +148,7 @@ describe("useSnippets filtering, cross-cutting search & active diagram defaults"
 
     expect(snippets.activeLanguage.value).toBeNull();
     expect(snippets.activeCategory.value).toBeNull();
-    expect(snippets.filterItems(tRu).length).toBe(BUILTIN_SNIPPETS.length);
+    expect(snippets.filterItems().length).toBe(BUILTIN_SNIPPETS.length);
   });
 
   it("toggles language and category tags off when clicked again", () => {
@@ -172,24 +167,48 @@ describe("useSnippets filtering, cross-cutting search & active diagram defaults"
     expect(snippets.activeLanguage.value).toBeNull();
   });
 
-  it("performs cross-cutting multi-token search across language, type, title, description, and code", () => {
+  it("matches every search token against the full snippet code and ignores title-only hits", () => {
     const snippets = useSnippets();
 
-    snippets.searchQuery.value = "structurizr deploymentNode";
-    const found = snippets.filterItems(tRu);
-    expect(found.length).toBeGreaterThan(0);
-    expect(
-      found.every(
-        (item) =>
-          (item.kind === "builtin" ? item.language : item.snippet.language) ===
-          "structurizr",
-      ),
-    ).toBe(true);
+    snippets.searchQuery.value = "deploymentNode Kubernetes";
+    const found = snippets.filterItems();
+    expect(found).toHaveLength(1);
+    expect(found[0]?.kind === "builtin" && found[0].id).toBe(
+      "structurizr-deployment",
+    );
 
-    snippets.searchQuery.value = "d2 sql_table";
-    const d2Found = snippets.filterItems(tRu);
-    expect(d2Found).toHaveLength(1);
-    expect(d2Found[0]?.kind === "builtin" && d2Found[0].id).toBe("d2-sql-table");
+    snippets.searchQuery.value = "primary_key foreign_key";
+    const tables = snippets.filterItems();
+    expect(tables).toHaveLength(1);
+    expect(tables[0]?.kind === "builtin" && tables[0].id).toBe("d2-sql-table");
+
+    snippets.searchQuery.value = "Формы узлов";
+    expect(snippets.filterItems()).toHaveLength(0);
+
+    snippets.searchQuery.value = "Прямоугольник, цилиндр";
+    expect(snippets.filterItems()).toHaveLength(0);
+
+    snippets.addCustomSnippet({
+      language: "plantuml",
+      title: "Секретное название",
+      description: "только в описании",
+      content: "alpha beta\ngamma delta",
+    });
+
+    snippets.searchQuery.value = "секретное название";
+    expect(snippets.filterItems()).toHaveLength(0);
+
+    snippets.searchQuery.value = "только в описании";
+    expect(snippets.filterItems()).toHaveLength(0);
+
+    snippets.searchQuery.value = "beta   gamma";
+    const customFound = snippets.filterItems();
+    expect(customFound).toHaveLength(1);
+    expect(customFound[0]?.kind).toBe("custom");
+
+    snippets.setActiveLanguage("plantuml");
+    snippets.searchQuery.value = "deploymentNode";
+    expect(snippets.filterItems()).toHaveLength(0);
   });
 
   it("merges and replaces custom snippets from text files without duplicating identical entries", () => {
@@ -300,6 +319,49 @@ describe("SnippetsPanel default pressed tags", () => {
     );
     expect(activeTags).toHaveLength(0);
     expect(document.body.querySelector('[data-testid="snippets-lang-graphml"]')).toBeNull();
+
+    app.unmount();
+    host.remove();
+  });
+
+  it("filters the open panel by snippet code rather than the card title", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const app = createApp({
+      setup() {
+        return () =>
+          h(SnippetsPanel, {
+            open: true,
+            diagramFormat: "mermaid",
+            source: "flowchart TD\n  A --> B",
+          });
+      },
+    });
+    app.mount(host);
+    await nextTick();
+
+    const input = document.body.querySelector<HTMLInputElement>(
+      '[data-testid="snippets-search"]',
+    );
+    expect(input).not.toBeNull();
+
+    input!.value = "Diamond";
+    input!.dispatchEvent(new Event("input"));
+    await nextTick();
+
+    const previews = [
+      ...document.body.querySelectorAll(".snippet-card__preview"),
+    ].map((node) => node.textContent ?? "");
+    expect(previews).toHaveLength(1);
+    expect(previews[0]).toContain("Diamond");
+    expect(previews[0]).not.toContain("Формы узлов");
+
+    input!.value = "Формы узлов";
+    input!.dispatchEvent(new Event("input"));
+    await nextTick();
+
+    expect(document.body.querySelector(".snippet-card")).toBeNull();
+    expect(document.body.querySelector(".snippets-panel__empty")).not.toBeNull();
 
     app.unmount();
     host.remove();

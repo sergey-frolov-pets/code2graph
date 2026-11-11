@@ -7,7 +7,7 @@ export const snippetsMessages = {
   "snippets.editTitle": "Editar fragmento",
   "snippets.edit": "Editar",
   "snippets.insert": "Insertar",
-  "snippets.searchPlaceholder": "Buscar en título, código, lenguaje y tipo…",
+  "snippets.searchPlaceholder": "Buscar en todo el contenido del fragmento…",
   "snippets.noResults": "No se encontraron fragmentos",
   "snippets.customBadge": "Propio",
   "snippets.deleteTitle": "¿Eliminar el fragmento?",

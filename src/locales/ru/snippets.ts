@@ -7,7 +7,7 @@ export const snippetsMessages = {
   "snippets.editTitle": "Редактировать сниппет",
   "snippets.edit": "Изменить",
   "snippets.insert": "Вставить",
-  "snippets.searchPlaceholder": "Сквозной поиск по названию, коду, языку и типу…",
+  "snippets.searchPlaceholder": "Поиск по всему содержимому сниппета…",
   "snippets.noResults": "Сниппеты не найдены",
   "snippets.customBadge": "Свой",
   "snippets.deleteTitle": "Удалить сниппет?",
