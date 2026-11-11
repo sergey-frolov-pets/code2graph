@@ -417,6 +417,8 @@ export const llmMessages = {
   "aiChat.attachmentImageLimit": "अधिकतम {count} चित्र संलग्न कर सकते हैं",
   "aiChat.attachmentsOnlyPrompt": "संलग्न फ़ाइलों को संदर्भ के रूप में उपयोग करें।",
   "aiChat.copyMessage": "कॉपी करें",
+  "aiChat.copyChat": "चैट कॉपी करें",
+  "aiChat.cancel": "रद्द करें",
   "aiChat.defaultSessionTitle": "नया सत्र",
   "aiChat.delete": "हटाएँ",
   "aiChat.deleteAllUnpinned": "पिन किए हुए छोड़कर सभी हटाएँ",

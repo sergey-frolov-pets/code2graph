@@ -417,6 +417,8 @@ export const llmMessages = {
   "aiChat.attachmentImageLimit": "最多可附加 {count} 张图片",
   "aiChat.attachmentsOnlyPrompt": "请把附件作为上下文。",
   "aiChat.copyMessage": "复制",
+  "aiChat.copyChat": "复制聊天",
+  "aiChat.cancel": "取消",
   "aiChat.defaultSessionTitle": "新会话",
   "aiChat.delete": "删除",
   "aiChat.deleteAllUnpinned": "删除除已固定外的全部",

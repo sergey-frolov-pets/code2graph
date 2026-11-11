@@ -3,14 +3,11 @@ import {
   Check,
   ClipboardCopy,
   Copy,
-  Download,
   Eye,
   FileCode,
   FilePlus,
   GitCompare,
   History,
-  Link2,
-  Link2Off,
   Paperclip,
   Pencil,
   Pin,
@@ -18,15 +15,13 @@ import {
   Plus,
   RefreshCw,
   Send,
-  Share2,
   Square,
   Trash2,
   X,
   Zap,
 } from "@lucide/vue";
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { isAgentDiagramType } from "@shared/agent-diagram";
-import AppModal from "@/components/AppModal.vue";
 import IconButton from "@/components/IconButton.vue";
 import type { LayoutEngine } from "@/constants";
 import {
@@ -39,7 +34,6 @@ import {
   AI_CHAT_MAX_ATTACHMENTS,
   AI_CHAT_MAX_IMAGE_ATTACHMENTS,
   AI_CHAT_MESSAGE_MAX_CHARS,
-  AI_CHAT_SUGGESTION_VISIBLE_LINES,
   BYTES_PER_MEGABYTE,
   type AiChatApplyMode,
   type AiChatAttachmentKind,
@@ -56,19 +50,12 @@ import { getLanguageModule } from "@/languages/registry";
 import { isLocaleKey } from "@/locales/types";
 import { resolveDiagramFileName } from "@/utils/diagram-files";
 import { sendAiChatMessage } from "@/services/llm/ai-chat-client";
-import {
-  createAiChatShareLink,
-  isAiChatShareServerAvailable,
-  revokeAiChatShareLink,
-} from "@/services/library/api/ai-chat-share";
 import { buildSimpleDiffPreview } from "@/utils/llm-preview";
 import {
-  buildAiChatShareSnapshot,
   buildAiChatTranscriptMarkdown,
   countAiChatMessages,
   createAiChatMessageId,
   filterAiChatSessions,
-  findSecretLikeFragments,
 } from "@/utils/ai-chat-session";
 import type { LlmChatImagePart } from "@/services/llm/llm-types";
 import type { AiChatAttachment, AiChatMessage, AiChatSession } from "@/types/ai-chat-session";
@@ -135,11 +122,6 @@ const errorMessage = ref("");
 const historyOpen = ref(false);
 const historyQuery = ref("");
 const selectedIds = ref<Set<string>>(new Set());
-const shareOpen = ref(false);
-const shareUrl = ref("");
-const shareToken = ref("");
-const shareError = ref("");
-const isSharing = ref(false);
 const diffOpenFor = ref<Set<string>>(new Set());
 const renameDraft = ref("");
 const renamingId = ref<string | null>(null);
@@ -169,28 +151,24 @@ const canSend = computed(
   () =>
     (draft.value.trim().length > 0 || pendingAttachments.value.length > 0) && !isBusy.value,
 );
-const serverShareAvailable = computed(() => isAiChatShareServerAvailable());
 
-const secretWarnings = computed(() => {
-  if (!activeSession.value) {
-    return [];
-  }
-  const transcript = buildAiChatTranscriptMarkdown(activeSession.value, {
-    user: t("llm.chat.roleUser"),
-    assistant: t("llm.chat.roleAssistant"),
-  });
-  const attachmentText = [
-    ...activeSession.value.messages.flatMap((message) => message.attachments ?? []),
-    ...pendingAttachments.value,
-  ]
-    .map((attachment) => attachment.textExcerpt ?? "")
-    .join("\n");
-  return findSecretLikeFragments(`${transcript}\n${props.source}\n${attachmentText}`);
-});
+/** Полное название, если в шапке или списке оно обрезано многоточием. */
+const expandedTitle = ref<string | null>(null);
+/** Полный текст подсказки: наведение или долгое нажатие, отправка — отдельной кнопкой. */
+const suggestionPreview = ref<string | null>(null);
+const titlePopoverRef = ref<HTMLElement | null>(null);
+const suggestionPreviewRef = ref<HTMLElement | null>(null);
+const suggestionChipsRef = ref<HTMLElement | null>(null);
+const headerTitleRef = ref<HTMLElement | null>(null);
+
+const AI_CHAT_SUGGESTION_LONG_PRESS_MS = 400;
+let suggestionPressTimer: ReturnType<typeof setTimeout> | null = null;
+let suppressSuggestionClick = false;
+let overlayListenerAttached = false;
 
 /**
  * Подсказки «Что дальше»: от модели, а до первого ответа — стартовые по состоянию диаграммы.
- * В списке видно две строки; клик открывает полный текст, отправка — только по «Спросить».
+ * Чипы стоят в футере сразу над полем ввода. Короткий тап отправляет, наведение и долгое нажатие открывают полный текст.
  */
 const nextStepSuggestions = computed<string[]>(() => {
   const session = activeSession.value;
@@ -212,32 +190,9 @@ const nextStepSuggestions = computed<string[]>(() => {
     : [t("aiChat.starterCreate"), t("aiChat.starterSwitch")];
 });
 
-const previewSuggestion = ref<string | null>(null);
-
 const suggestionPreviewStyle = {
-  "--ai-chat-chip-lines": String(AI_CHAT_SUGGESTION_VISIBLE_LINES),
   "--ai-chat-composer-rows": String(AI_CHAT_COMPOSER_ROWS),
 };
-
-function openSuggestion(step: string): void {
-  if (isBusy.value) {
-    return;
-  }
-  previewSuggestion.value = step;
-}
-
-function closeSuggestion(): void {
-  previewSuggestion.value = null;
-}
-
-async function askSuggestion(): Promise<void> {
-  const step = previewSuggestion.value;
-  if (!step || isBusy.value) {
-    return;
-  }
-  previewSuggestion.value = null;
-  await onSend(step);
-}
 
 function scrollThreadToEnd(): void {
   const thread = threadRef.value;
@@ -247,8 +202,162 @@ function scrollThreadToEnd(): void {
   thread.scrollTop = thread.scrollHeight;
 }
 
+function isTextTruncated(element: HTMLElement | null): boolean {
+  if (!element) {
+    return false;
+  }
+  return element.scrollWidth > element.clientWidth + 1;
+}
+
+function closeExpandedTitle(): void {
+  expandedTitle.value = null;
+}
+
+function closeSuggestionPreview(): void {
+  suggestionPreview.value = null;
+}
+
+function showExpandedTitle(text: string): void {
+  suggestionPreview.value = null;
+  expandedTitle.value = text;
+}
+
+function onHeaderTitleClick(): void {
+  const title = activeSession.value?.title ?? "";
+  const text = headerTitleRef.value?.querySelector(".ai-chat-panel__title-text");
+  if (!title || !(text instanceof HTMLElement) || !isTextTruncated(text)) {
+    return;
+  }
+  showExpandedTitle(title);
+}
+
+function onSessionOpen(event: MouseEvent, session: AiChatSession): void {
+  const text = (event.currentTarget as HTMLElement).querySelector(
+    ".ai-chat-panel__session-title",
+  );
+  if (text instanceof HTMLElement && isTextTruncated(text)) {
+    showExpandedTitle(session.title);
+    return;
+  }
+  selectSession(session.id);
+}
+
+function clearSuggestionPressTimer(): void {
+  if (suggestionPressTimer !== null) {
+    clearTimeout(suggestionPressTimer);
+    suggestionPressTimer = null;
+  }
+}
+
+function onSuggestionHover(step: string): void {
+  if (isBusy.value) {
+    return;
+  }
+  expandedTitle.value = null;
+  suggestionPreview.value = step;
+}
+
+function onSuggestionPointerDown(event: PointerEvent, step: string): void {
+  if (event.button !== 0 || event.pointerType === "mouse" || isBusy.value) {
+    return;
+  }
+  clearSuggestionPressTimer();
+  suggestionPressTimer = setTimeout(() => {
+    suggestionPressTimer = null;
+    suppressSuggestionClick = true;
+    expandedTitle.value = null;
+    suggestionPreview.value = step;
+  }, AI_CHAT_SUGGESTION_LONG_PRESS_MS);
+}
+
+function onSuggestionPointerEnd(): void {
+  clearSuggestionPressTimer();
+}
+
+function onSuggestionClick(step: string): void {
+  if (suppressSuggestionClick) {
+    suppressSuggestionClick = false;
+    return;
+  }
+  closeSuggestionPreview();
+  void onSend(step);
+}
+
+function sendSuggestionPreview(): void {
+  const step = suggestionPreview.value;
+  closeSuggestionPreview();
+  if (step) {
+    void onSend(step);
+  }
+}
+
+function onOverlayKeydown(event: KeyboardEvent): void {
+  if (event.key !== "Escape") {
+    return;
+  }
+  if (suggestionPreview.value) {
+    closeSuggestionPreview();
+    return;
+  }
+  closeExpandedTitle();
+}
+
+function onOverlayPointerDown(event: Event): void {
+  const target = event.target;
+  if (!(target instanceof Node)) {
+    return;
+  }
+  if (suggestionPreview.value) {
+    const insidePreview = suggestionPreviewRef.value?.contains(target) ?? false;
+    const insideChips = suggestionChipsRef.value?.contains(target) ?? false;
+    if (!insidePreview && !insideChips) {
+      closeSuggestionPreview();
+    }
+  }
+  if (!expandedTitle.value) {
+    return;
+  }
+  const insideTitle = titlePopoverRef.value?.contains(target) ?? false;
+  const insideHeader = headerTitleRef.value?.contains(target) ?? false;
+  const insideSessionTitle =
+    target instanceof Element && Boolean(target.closest(".ai-chat-panel__session-open"));
+  if (!insideTitle && !insideHeader && !insideSessionTitle) {
+    closeExpandedTitle();
+  }
+}
+
+function syncOverlayListener(): void {
+  const open = suggestionPreview.value !== null || expandedTitle.value !== null;
+  if (open && !overlayListenerAttached) {
+    overlayListenerAttached = true;
+    document.addEventListener("keydown", onOverlayKeydown);
+    requestAnimationFrame(() => {
+      if (overlayListenerAttached) {
+        document.addEventListener("pointerdown", onOverlayPointerDown);
+      }
+    });
+    return;
+  }
+  if (!open && overlayListenerAttached) {
+    overlayListenerAttached = false;
+    document.removeEventListener("keydown", onOverlayKeydown);
+    document.removeEventListener("pointerdown", onOverlayPointerDown);
+  }
+}
+
 onMounted(() => {
   void load();
+});
+
+onBeforeUnmount(() => {
+  clearSuggestionPressTimer();
+  overlayListenerAttached = false;
+  document.removeEventListener("keydown", onOverlayKeydown);
+  document.removeEventListener("pointerdown", onOverlayPointerDown);
+});
+
+watch([suggestionPreview, expandedTitle], () => {
+  syncOverlayListener();
 });
 
 watch(
@@ -670,57 +779,7 @@ function onComposerKeydown(event: KeyboardEvent): void {
   }
 }
 
-async function onShareCreate(): Promise<void> {
-  const session = activeSession.value;
-  if (!session) {
-    return;
-  }
-  isSharing.value = true;
-  shareError.value = "";
-  try {
-    const snapshot = buildAiChatShareSnapshot(session, props.source);
-    const created = await createAiChatShareLink(snapshot);
-    shareToken.value = created.token;
-    shareUrl.value = created.url;
-  } catch {
-    shareError.value = t("aiChat.shareError");
-  } finally {
-    isSharing.value = false;
-  }
-}
-
-async function onShareRevoke(): Promise<void> {
-  if (!shareToken.value) {
-    return;
-  }
-  try {
-    await revokeAiChatShareLink(shareToken.value);
-  } catch {
-    // Ссылка могла уже истечь — для пользователя результат тот же.
-  }
-  shareToken.value = "";
-  shareUrl.value = "";
-}
-
-function onShareExport(): void {
-  const session = activeSession.value;
-  if (!session) {
-    return;
-  }
-  const markdown = buildAiChatTranscriptMarkdown(session, {
-    user: t("llm.chat.roleUser"),
-    assistant: t("llm.chat.roleAssistant"),
-  });
-  const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `${session.title.replace(/[^\p{L}\p{N}-]+/gu, "-") || "ai-chat"}.md`;
-  anchor.click();
-  URL.revokeObjectURL(url);
-}
-
-async function onShareCopyTranscript(): Promise<void> {
+async function onCopyChat(): Promise<void> {
   const session = activeSession.value;
   if (!session) {
     return;
@@ -740,33 +799,16 @@ async function onShareCopyTranscript(): Promise<void> {
     :style="suggestionPreviewStyle"
   >
     <div class="ai-chat-panel__toolbar">
-      <IconButton
-        :label="t('aiChat.history')"
-        :title="t('aiChat.history')"
-        :pressed="historyOpen"
-        extra-class="ai-chat-panel__tool"
-        data-testid="ai-chat-history"
-        @click="historyOpen = !historyOpen"
+      <button
+        ref="headerTitleRef"
+        class="ai-chat-panel__title"
+        type="button"
+        data-testid="ai-chat-title"
+        :aria-label="activeSession?.title || t('aiChat.defaultSessionTitle')"
+        @click="onHeaderTitleClick"
       >
-        <History
-          :size="16"
-          :stroke-width="1.8"
-          aria-hidden="true"
-        />
-      </IconButton>
-      <IconButton
-        :label="t('aiChat.newSession')"
-        :title="t('aiChat.newSession')"
-        extra-class="ai-chat-panel__tool"
-        @click="createSession()"
-      >
-        <Plus
-          :size="16"
-          :stroke-width="1.8"
-          aria-hidden="true"
-        />
-      </IconButton>
-      <span class="ai-chat-panel__title">{{ activeSession?.title }}</span>
+        <span class="ai-chat-panel__title-text">{{ activeSession?.title }}</span>
+      </button>
       <label class="ai-chat-panel__provider">
         <span class="sr-only">{{ t("aiChat.provider") }}</span>
         <select
@@ -793,14 +835,40 @@ async function onShareCopyTranscript(): Promise<void> {
         </select>
       </label>
       <IconButton
-        :label="t('aiChat.share')"
-        :title="t('aiChat.share')"
-        :pressed="shareOpen"
+        :label="t('aiChat.newSession')"
+        :title="t('aiChat.newSession')"
+        extra-class="ai-chat-panel__tool"
+        @click="createSession()"
+      >
+        <Plus
+          :size="16"
+          :stroke-width="1.8"
+          aria-hidden="true"
+        />
+      </IconButton>
+      <IconButton
+        :label="t('aiChat.history')"
+        :title="t('aiChat.history')"
+        :pressed="historyOpen"
+        extra-class="ai-chat-panel__tool"
+        data-testid="ai-chat-history"
+        @click="historyOpen = !historyOpen"
+      >
+        <History
+          :size="16"
+          :stroke-width="1.8"
+          aria-hidden="true"
+        />
+      </IconButton>
+      <IconButton
+        :label="t('aiChat.copyChat')"
+        :title="t('aiChat.copyChat')"
         :disabled="!activeSession"
         extra-class="ai-chat-panel__tool"
-        @click="shareOpen = !shareOpen"
+        data-testid="ai-chat-copy"
+        @click="onCopyChat"
       >
-        <Share2
+        <ClipboardCopy
           :size="16"
           :stroke-width="1.8"
           aria-hidden="true"
@@ -809,144 +877,70 @@ async function onShareCopyTranscript(): Promise<void> {
     </div>
 
     <div
-      v-if="shareOpen && activeSession"
-      class="ai-chat-panel__share"
+      v-if="expandedTitle"
+      ref="titlePopoverRef"
+      class="ai-chat-panel__title-popover"
+      data-testid="ai-chat-title-popover"
+      role="dialog"
+      :aria-label="expandedTitle"
     >
-      <p>{{ serverShareAvailable ? t("aiChat.shareServerHint") : t("aiChat.shareOfflineHint") }}</p>
-      <p
-        v-if="secretWarnings.length > 0"
-        class="ai-chat-panel__warning"
-        role="alert"
-      >
-        {{ t("aiChat.shareWarningSecrets", { fragments: secretWarnings.join(", ") }) }}
-      </p>
-      <div class="ai-chat-panel__share-actions">
-        <IconButton
-          v-if="serverShareAvailable && !shareUrl"
-          :label="t('aiChat.shareCreateLink')"
-          :title="t('aiChat.shareCreateLink')"
-          :disabled="isSharing"
-          primary
-          extra-class="ai-chat-panel__tool"
-          @click="onShareCreate"
-        >
-          <Link2
-            :size="16"
-            :stroke-width="1.8"
-            aria-hidden="true"
-          />
-        </IconButton>
-        <template v-if="shareUrl">
-          <input
-            class="select"
-            type="text"
-            readonly
-            :value="shareUrl"
-          >
-          <IconButton
-            :label="t('aiChat.shareCopyLink')"
-            :title="t('aiChat.shareCopyLink')"
-            extra-class="ai-chat-panel__tool"
-            @click="copyText(shareUrl)"
-          >
-            <Copy
-              :size="16"
-              :stroke-width="1.8"
-              aria-hidden="true"
-            />
-          </IconButton>
-          <IconButton
-            :label="t('aiChat.shareRevoke')"
-            :title="t('aiChat.shareRevoke')"
-            extra-class="ai-chat-panel__tool"
-            @click="onShareRevoke"
-          >
-            <Link2Off
-              :size="16"
-              :stroke-width="1.8"
-              aria-hidden="true"
-            />
-          </IconButton>
-        </template>
-        <IconButton
-          :label="t('aiChat.shareExportFile')"
-          :title="t('aiChat.shareExportFile')"
-          extra-class="ai-chat-panel__tool"
-          @click="onShareExport"
-        >
-          <Download
-            :size="16"
-            :stroke-width="1.8"
-            aria-hidden="true"
-          />
-        </IconButton>
-        <IconButton
-          :label="t('aiChat.shareCopyTranscript')"
-          :title="t('aiChat.shareCopyTranscript')"
-          extra-class="ai-chat-panel__tool"
-          @click="onShareCopyTranscript"
-        >
-          <ClipboardCopy
-            :size="16"
-            :stroke-width="1.8"
-            aria-hidden="true"
-          />
-        </IconButton>
-      </div>
-      <p
-        v-if="shareError"
-        class="ai-chat-panel__warning"
-        role="alert"
-      >
-        {{ shareError }}
+      <p class="ai-chat-panel__popover-text">
+        {{ expandedTitle }}
       </p>
     </div>
 
-    <div
-      v-if="historyOpen"
-      class="ai-chat-panel__history"
-    >
-      <input
-        v-model="historyQuery"
-        class="select"
-        type="search"
-        :placeholder="t('aiChat.searchPlaceholder')"
+    <div class="ai-chat-panel__stage">
+      <div
+        v-if="historyOpen"
+        class="ai-chat-panel__history"
+        data-testid="ai-chat-history-sheet"
       >
-      <p class="ai-chat-panel__count">
-        {{ t("aiChat.sessionsCount", { sessions: sessions.length, messages: totalMessages }) }}
-      </p>
-      <p
-        v-if="filteredSessions.length === 0"
-        class="ai-chat-panel__muted"
-      >
-        {{ t("aiChat.noSessions") }}
-      </p>
-      <ul class="ai-chat-panel__session-list">
-        <li
-          v-for="session in filteredSessions"
-          :key="session.id"
-          class="ai-chat-panel__session"
-          :class="{ 'is-active': session.id === activeSessionId }"
+        <input
+          v-model="historyQuery"
+          class="ai-chat-panel__search"
+          data-testid="ai-chat-history-search"
+          type="search"
+          :placeholder="t('aiChat.searchPlaceholder')"
+          :aria-label="t('aiChat.searchPlaceholder')"
         >
-          <input
-            type="checkbox"
-            :checked="selectedIds.has(session.id)"
-            @change="toggleSelected(session.id, ($event.target as HTMLInputElement).checked)"
+        <p class="ai-chat-panel__count">
+          {{ t("aiChat.sessionsCount", { sessions: sessions.length, messages: totalMessages }) }}
+        </p>
+        <p
+          v-if="filteredSessions.length === 0"
+          class="ai-chat-panel__muted"
+        >
+          {{ t("aiChat.noSessions") }}
+        </p>
+        <ul class="ai-chat-panel__session-list">
+          <li
+            v-for="session in filteredSessions"
+            :key="session.id"
+            class="ai-chat-panel__session"
+            :class="{ 'is-active': session.id === activeSessionId }"
           >
-          <button
-            class="ai-chat-panel__session-open"
-            type="button"
-            @click="selectSession(session.id)"
-          >
-            <span v-if="session.pinned">📌</span>{{ session.title }}
-          </button>
-          <template v-if="renamingId === session.id">
             <input
+              type="checkbox"
+              :checked="selectedIds.has(session.id)"
+              @change="toggleSelected(session.id, ($event.target as HTMLInputElement).checked)"
+            >
+            <button
+              v-if="renamingId !== session.id"
+              class="ai-chat-panel__session-open"
+              type="button"
+              @click="onSessionOpen($event, session)"
+            >
+              <span class="ai-chat-panel__session-title">{{ session.title }}</span>
+            </button>
+            <input
+              v-else
               v-model="renameDraft"
-              class="select"
+              class="ai-chat-panel__rename"
               type="text"
+              :aria-label="t('aiChat.rename')"
             >
             <IconButton
+              v-if="renamingId === session.id"
               :label="t('aiChat.rename')"
               :title="t('aiChat.rename')"
               extra-class="ai-chat-panel__tool"
@@ -958,258 +952,260 @@ async function onShareCopyTranscript(): Promise<void> {
                 aria-hidden="true"
               />
             </IconButton>
-          </template>
-          <IconButton
-            :label="session.pinned ? t('aiChat.unpin') : t('aiChat.pin')"
-            :title="session.pinned ? t('aiChat.unpin') : t('aiChat.pin')"
-            :pressed="session.pinned"
-            extra-class="ai-chat-panel__tool"
-            @click="togglePin(session.id)"
+            <IconButton
+              :label="session.pinned ? t('aiChat.unpin') : t('aiChat.pin')"
+              :title="session.pinned ? t('aiChat.unpin') : t('aiChat.pin')"
+              :pressed="session.pinned"
+              extra-class="ai-chat-panel__tool"
+              @click="togglePin(session.id)"
+            >
+              <PinOff
+                v-if="session.pinned"
+                :size="16"
+                :stroke-width="1.8"
+                aria-hidden="true"
+              />
+              <Pin
+                v-else
+                :size="16"
+                :stroke-width="1.8"
+                aria-hidden="true"
+              />
+            </IconButton>
+            <IconButton
+              :label="t('aiChat.rename')"
+              :title="t('aiChat.rename')"
+              extra-class="ai-chat-panel__tool"
+              @click="startRename(session)"
+            >
+              <Pencil
+                :size="16"
+                :stroke-width="1.8"
+                aria-hidden="true"
+              />
+            </IconButton>
+            <IconButton
+              :label="t('aiChat.duplicate')"
+              :title="t('aiChat.duplicate')"
+              extra-class="ai-chat-panel__tool"
+              @click="duplicateSession(session.id)"
+            >
+              <Copy
+                :size="16"
+                :stroke-width="1.8"
+                aria-hidden="true"
+              />
+            </IconButton>
+            <IconButton
+              :label="t('aiChat.delete')"
+              :title="t('aiChat.delete')"
+              extra-class="ai-chat-panel__tool"
+              @click="onDeleteSession(session)"
+            >
+              <Trash2
+                :size="16"
+                :stroke-width="1.8"
+                aria-hidden="true"
+              />
+            </IconButton>
+          </li>
+        </ul>
+        <div class="ai-chat-panel__share-actions">
+          <button
+            class="btn"
+            type="button"
+            :disabled="selectedIds.size === 0"
+            @click="onDeleteSelected"
           >
-            <PinOff
-              v-if="session.pinned"
-              :size="16"
-              :stroke-width="1.8"
-              aria-hidden="true"
-            />
-            <Pin
-              v-else
-              :size="16"
-              :stroke-width="1.8"
-              aria-hidden="true"
-            />
-          </IconButton>
-          <IconButton
-            :label="t('aiChat.rename')"
-            :title="t('aiChat.rename')"
-            extra-class="ai-chat-panel__tool"
-            @click="startRename(session)"
+            {{ t("aiChat.deleteSelected", { count: selectedIds.size }) }}
+          </button>
+          <button
+            class="btn"
+            type="button"
+            @click="onDeleteAllUnpinned"
           >
-            <Pencil
-              :size="16"
-              :stroke-width="1.8"
-              aria-hidden="true"
-            />
-          </IconButton>
-          <IconButton
-            :label="t('aiChat.duplicate')"
-            :title="t('aiChat.duplicate')"
-            extra-class="ai-chat-panel__tool"
-            @click="duplicateSession(session.id)"
-          >
-            <Copy
-              :size="16"
-              :stroke-width="1.8"
-              aria-hidden="true"
-            />
-          </IconButton>
-          <IconButton
-            :label="t('aiChat.delete')"
-            :title="t('aiChat.delete')"
-            extra-class="ai-chat-panel__tool"
-            @click="onDeleteSession(session)"
-          >
-            <Trash2
-              :size="16"
-              :stroke-width="1.8"
-              aria-hidden="true"
-            />
-          </IconButton>
-        </li>
-      </ul>
-      <div class="ai-chat-panel__share-actions">
-        <button
-          class="btn"
-          type="button"
-          :disabled="selectedIds.size === 0"
-          @click="onDeleteSelected"
-        >
-          {{ t("aiChat.deleteSelected", { count: selectedIds.size }) }}
-        </button>
-        <button
-          class="btn"
-          type="button"
-          @click="onDeleteAllUnpinned"
-        >
-          {{ t("aiChat.deleteAllUnpinned") }}
-        </button>
+            {{ t("aiChat.deleteAllUnpinned") }}
+          </button>
+        </div>
       </div>
-    </div>
 
-    <div
-      ref="threadRef"
-      class="ai-chat-panel__messages"
-      data-testid="ai-chat-messages"
-      role="log"
-    >
-      <p
-        v-if="!activeSession || activeSession.messages.length === 0"
-        class="ai-chat-panel__empty"
+      <div
+        ref="threadRef"
+        class="ai-chat-panel__messages"
+        data-testid="ai-chat-messages"
+        role="log"
       >
-        {{ t("aiChat.empty") }}
-      </p>
-      <article
-        v-for="message in activeSession?.messages ?? []"
-        :key="message.id"
-        class="ai-chat-panel__message"
-        :class="`ai-chat-panel__message--${message.role}`"
-      >
-        <span class="ai-chat-panel__role">{{
-          message.role === "user" ? t("llm.chat.roleUser") : t("llm.chat.roleAssistant")
-        }}</span>
-        <p class="ai-chat-panel__content">
-          {{ message.content }}
+        <p
+          v-if="!activeSession || activeSession.messages.length === 0"
+          class="ai-chat-panel__empty"
+        >
+          {{ t("aiChat.empty") }}
         </p>
-        <ul
-          v-if="message.attachments?.length"
-          class="ai-chat-panel__message-files"
+        <article
+          v-for="message in activeSession?.messages ?? []"
+          :key="message.id"
+          class="ai-chat-panel__message"
+          :class="`ai-chat-panel__message--${message.role}`"
         >
-          <li
-            v-for="(file, index) in message.attachments"
-            :key="`${message.id}-${index}`"
-          >
-            {{ attachmentKindLabel(file) }}: {{ file.name }}
-          </li>
-        </ul>
-
-        <ul
-          v-if="message.clarificationQuestions?.length"
-          class="ai-chat-panel__questions"
-        >
-          <li
-            v-for="(question, index) in message.clarificationQuestions"
-            :key="index"
-          >
-            {{ question }}
-          </li>
-        </ul>
-
-        <div
-          v-if="message.proposal"
-          class="ai-chat-panel__proposal"
-        >
-          <strong>{{ t("aiChat.proposalTitle") }}</strong>
-          <p
-            v-if="proposalTargetLabel(message)"
-            class="ai-chat-panel__target"
-          >
-            {{ proposalTargetLabel(message) }}
+          <span class="ai-chat-panel__role">{{
+            message.role === "user" ? t("llm.chat.roleUser") : t("llm.chat.roleAssistant")
+          }}</span>
+          <p class="ai-chat-panel__content">
+            {{ message.content }}
           </p>
-          <p>{{ message.proposal.explanation }}</p>
-          <p
-            v-if="isStale(message)"
-            class="ai-chat-panel__warning"
+          <ul
+            v-if="message.attachments?.length"
+            class="ai-chat-panel__message-files"
           >
-            {{ t("aiChat.proposalStale") }}
-          </p>
-          <p
-            v-else-if="message.proposal.status === 'applied'"
-            class="ai-chat-panel__muted"
-          >
-            {{ t("aiChat.proposalApplied") }}
-          </p>
-          <p
-            v-else-if="message.proposal.status === 'rejected'"
-            class="ai-chat-panel__muted"
-          >
-            {{ t("aiChat.proposalRejected") }}
-          </p>
-          <div class="ai-chat-panel__share-actions">
-            <IconButton
-              v-if="message.proposal.status === 'pending'"
-              :label="t('aiChat.proposalApply')"
-              :title="t('aiChat.proposalApply')"
-              :disabled="isStale(message)"
-              primary
-              extra-class="ai-chat-panel__tool"
-              @click="applyProposal(message)"
+            <li
+              v-for="(file, index) in message.attachments"
+              :key="`${message.id}-${index}`"
             >
-              <Check
+              {{ attachmentKindLabel(file) }}: {{ file.name }}
+            </li>
+          </ul>
+
+          <ul
+            v-if="message.clarificationQuestions?.length"
+            class="ai-chat-panel__questions"
+          >
+            <li
+              v-for="(question, index) in message.clarificationQuestions"
+              :key="index"
+            >
+              {{ question }}
+            </li>
+          </ul>
+
+          <div
+            v-if="message.proposal"
+            class="ai-chat-panel__proposal"
+          >
+            <div class="ai-chat-panel__proposal-line">
+              <p class="ai-chat-panel__proposal-text">
+                <span class="ai-chat-panel__role">{{ t("aiChat.proposalTitle") }}</span>
+                <span
+                  v-if="proposalTargetLabel(message)"
+                  class="ai-chat-panel__target"
+                >{{ proposalTargetLabel(message) }}</span>
+                {{ message.proposal.explanation }}
+              </p>
+              <div class="ai-chat-panel__share-actions">
+                <IconButton
+                  v-if="message.proposal.status === 'pending'"
+                  :label="t('aiChat.proposalApply')"
+                  :title="t('aiChat.proposalApply')"
+                  :disabled="isStale(message)"
+                  primary
+                  extra-class="ai-chat-panel__tool"
+                  @click="applyProposal(message)"
+                >
+                  <Check
+                    :size="16"
+                    :stroke-width="1.8"
+                    aria-hidden="true"
+                  />
+                </IconButton>
+                <IconButton
+                  v-if="message.proposal.status === 'pending'"
+                  :label="t('aiChat.proposalReject')"
+                  :title="t('aiChat.proposalReject')"
+                  extra-class="ai-chat-panel__tool"
+                  @click="rejectProposal(message)"
+                >
+                  <X
+                    :size="16"
+                    :stroke-width="1.8"
+                    aria-hidden="true"
+                  />
+                </IconButton>
+                <IconButton
+                  :label="diffOpenFor.has(message.id) ? t('aiChat.proposalHideDiff') : t('aiChat.proposalDiff')"
+                  :title="diffOpenFor.has(message.id) ? t('aiChat.proposalHideDiff') : t('aiChat.proposalDiff')"
+                  :pressed="diffOpenFor.has(message.id)"
+                  extra-class="ai-chat-panel__tool"
+                  @click="toggleDiff(message.id)"
+                >
+                  <GitCompare
+                    :size="16"
+                    :stroke-width="1.8"
+                    aria-hidden="true"
+                  />
+                </IconButton>
+              </div>
+            </div>
+            <p
+              v-if="isStale(message)"
+              class="ai-chat-panel__warning"
+            >
+              {{ t("aiChat.proposalStale") }}
+            </p>
+            <p
+              v-else-if="message.proposal.status === 'applied'"
+              class="ai-chat-panel__muted"
+            >
+              {{ t("aiChat.proposalApplied") }}
+            </p>
+            <p
+              v-else-if="message.proposal.status === 'rejected'"
+              class="ai-chat-panel__muted"
+            >
+              {{ t("aiChat.proposalRejected") }}
+            </p>
+            <pre
+              v-if="diffOpenFor.has(message.id)"
+              class="ai-chat-panel__diff"
+            >{{ buildSimpleDiffPreview(message.proposal.baseSource, message.proposal.proposedSource) }}</pre>
+          </div>
+
+          <div class="ai-chat-panel__message-actions">
+            <IconButton
+              :label="t('aiChat.copyMessage')"
+              :title="t('aiChat.copyMessage')"
+              extra-class="ai-chat-panel__tool"
+              @click="copyText(message.content)"
+            >
+              <Copy
                 :size="16"
                 :stroke-width="1.8"
                 aria-hidden="true"
               />
             </IconButton>
             <IconButton
-              v-if="message.proposal.status === 'pending'"
-              :label="t('aiChat.proposalReject')"
-              :title="t('aiChat.proposalReject')"
+              v-if="message.role === 'user'"
+              :label="t('aiChat.editResend')"
+              :title="t('aiChat.editResend')"
               extra-class="ai-chat-panel__tool"
-              @click="rejectProposal(message)"
+              @click="editAndResend(message)"
             >
-              <X
+              <Pencil
                 :size="16"
                 :stroke-width="1.8"
                 aria-hidden="true"
               />
             </IconButton>
             <IconButton
-              :label="diffOpenFor.has(message.id) ? t('aiChat.proposalHideDiff') : t('aiChat.proposalDiff')"
-              :title="diffOpenFor.has(message.id) ? t('aiChat.proposalHideDiff') : t('aiChat.proposalDiff')"
-              :pressed="diffOpenFor.has(message.id)"
+              v-if="message.role === 'assistant'"
+              :label="t('aiChat.regenerate')"
+              :title="t('aiChat.regenerate')"
               extra-class="ai-chat-panel__tool"
-              @click="toggleDiff(message.id)"
+              @click="regenerate"
             >
-              <GitCompare
+              <RefreshCw
                 :size="16"
                 :stroke-width="1.8"
                 aria-hidden="true"
               />
             </IconButton>
           </div>
-          <pre
-            v-if="diffOpenFor.has(message.id)"
-            class="ai-chat-panel__diff"
-          >{{ buildSimpleDiffPreview(message.proposal.baseSource, message.proposal.proposedSource) }}</pre>
-        </div>
-
-        <div class="ai-chat-panel__message-actions">
-          <IconButton
-            :label="t('aiChat.copyMessage')"
-            :title="t('aiChat.copyMessage')"
-            extra-class="ai-chat-panel__tool"
-            @click="copyText(message.content)"
-          >
-            <Copy
-              :size="16"
-              :stroke-width="1.8"
-              aria-hidden="true"
-            />
-          </IconButton>
-          <IconButton
-            v-if="message.role === 'user'"
-            :label="t('aiChat.editResend')"
-            :title="t('aiChat.editResend')"
-            extra-class="ai-chat-panel__tool"
-            @click="editAndResend(message)"
-          >
-            <Pencil
-              :size="16"
-              :stroke-width="1.8"
-              aria-hidden="true"
-            />
-          </IconButton>
-          <IconButton
-            v-if="message.role === 'assistant'"
-            :label="t('aiChat.regenerate')"
-            :title="t('aiChat.regenerate')"
-            extra-class="ai-chat-panel__tool"
-            @click="regenerate"
-          >
-            <RefreshCw
-              :size="16"
-              :stroke-width="1.8"
-              aria-hidden="true"
-            />
-          </IconButton>
-        </div>
-      </article>
-      <p
-        v-if="isBusy"
-        class="ai-chat-panel__thinking"
-      >
-        {{ t("llm.chat.thinking") }}
-      </p>
+        </article>
+        <p
+          v-if="isBusy"
+          class="ai-chat-panel__thinking"
+        >
+          {{ t("llm.chat.thinking") }}
+        </p>
+      </div>
     </div>
 
     <div class="ai-chat-panel__dock">
@@ -1220,6 +1216,64 @@ async function onShareCopyTranscript(): Promise<void> {
       >
         {{ errorMessage }}
       </p>
+
+      <div
+        v-if="suggestionPreview"
+        ref="suggestionPreviewRef"
+        class="ai-chat-panel__suggestion-preview"
+        data-testid="ai-chat-suggestion-preview"
+        role="dialog"
+        :aria-label="suggestionPreview"
+      >
+        <p class="ai-chat-panel__popover-text">
+          {{ suggestionPreview }}
+        </p>
+        <div class="ai-chat-panel__suggestion-actions">
+          <button
+            class="btn btn-primary"
+            type="button"
+            data-testid="ai-chat-suggestion-send"
+            @click="sendSuggestionPreview"
+          >
+            {{ t("aiChat.send") }}
+          </button>
+          <button
+            class="btn"
+            type="button"
+            data-testid="ai-chat-suggestion-cancel"
+            @click="closeSuggestionPreview"
+          >
+            {{ t("aiChat.cancel") }}
+          </button>
+        </div>
+      </div>
+
+      <div
+        v-if="nextStepSuggestions.length > 0"
+        ref="suggestionChipsRef"
+        class="ai-chat-panel__next"
+        data-testid="ai-chat-next"
+        :aria-label="t('aiChat.nextSteps')"
+      >
+        <span class="ai-chat-panel__role">{{ t("aiChat.nextSteps") }}</span>
+        <div class="ai-chat-panel__chips">
+          <button
+            v-for="(step, index) in nextStepSuggestions"
+            :key="index"
+            class="ai-chat-panel__chip"
+            type="button"
+            data-testid="ai-chat-suggestion"
+            :disabled="isBusy"
+            @click="onSuggestionClick(step)"
+            @mouseenter="onSuggestionHover(step)"
+            @pointerdown="onSuggestionPointerDown($event, step)"
+            @pointerup="onSuggestionPointerEnd"
+            @pointercancel="onSuggestionPointerEnd"
+          >
+            {{ step }}
+          </button>
+        </div>
+      </div>
 
       <form
         class="ai-chat-panel__composer"
@@ -1294,42 +1348,6 @@ async function onShareCopyTranscript(): Promise<void> {
             :disabled="isBusy"
             @keydown="onComposerKeydown"
           />
-          <div class="ai-chat-panel__composer-actions">
-            <button
-              v-if="isBusy"
-              class="btn ai-chat-panel__send"
-              type="button"
-              :aria-label="t('aiChat.stop')"
-              :title="t('aiChat.stop')"
-              @click="stopGeneration"
-            >
-              <Square
-                :size="16"
-                :stroke-width="1.8"
-                aria-hidden="true"
-              />
-              <span class="sr-only">{{ t("aiChat.stop") }}</span>
-            </button>
-            <button
-              v-else
-              class="btn btn-primary ai-chat-panel__send"
-              type="submit"
-              data-testid="ai-chat-send"
-              :aria-label="t('aiChat.send')"
-              :title="t('aiChat.send')"
-              :disabled="!canSend"
-            >
-              <Send
-                :size="18"
-                :stroke-width="1.8"
-                aria-hidden="true"
-              />
-              <span class="sr-only">{{ t("aiChat.send") }}</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="ai-chat-panel__meta">
           <div
             class="ai-chat-panel__toggles"
             role="group"
@@ -1396,70 +1414,53 @@ async function onShareCopyTranscript(): Promise<void> {
               />
             </IconButton>
           </div>
+          <div class="ai-chat-panel__composer-actions">
+            <button
+              v-if="isBusy"
+              class="btn ai-chat-panel__send"
+              type="button"
+              :aria-label="t('aiChat.stop')"
+              :title="t('aiChat.stop')"
+              @click="stopGeneration"
+            >
+              <Square
+                :size="16"
+                :stroke-width="1.8"
+                aria-hidden="true"
+              />
+              <span class="sr-only">{{ t("aiChat.stop") }}</span>
+            </button>
+            <button
+              v-else
+              class="btn btn-primary ai-chat-panel__send"
+              type="submit"
+              data-testid="ai-chat-send"
+              :aria-label="t('aiChat.send')"
+              :title="t('aiChat.send')"
+              :disabled="!canSend"
+            >
+              <Send
+                :size="18"
+                :stroke-width="1.8"
+                aria-hidden="true"
+              />
+              <span class="sr-only">{{ t("aiChat.send") }}</span>
+            </button>
+          </div>
         </div>
       </form>
-
-      <div
-        v-if="nextStepSuggestions.length > 0"
-        class="ai-chat-panel__next"
-        data-testid="ai-chat-next"
-      >
-        <span class="ai-chat-panel__next-label">{{ t("aiChat.nextSteps") }}</span>
-        <div class="ai-chat-panel__chips">
-          <button
-            v-for="(step, index) in nextStepSuggestions"
-            :key="index"
-            class="ai-chat-panel__chip"
-            type="button"
-            :title="step"
-            :disabled="isBusy"
-            @click="openSuggestion(step)"
-          >
-            <span class="ai-chat-panel__chip-text">{{ step }}</span>
-          </button>
-        </div>
-      </div>
     </div>
-
-    <AppModal
-      :open="previewSuggestion !== null"
-      :title="t('aiChat.suggestionTitle')"
-      test-id="ai-chat-suggestion"
-      @close="closeSuggestion"
-    >
-      <p class="ai-chat-panel__suggestion-text">
-        {{ previewSuggestion }}
-      </p>
-      <template #footer>
-        <button
-          class="btn"
-          type="button"
-          @click="closeSuggestion"
-        >
-          {{ t("app.cancel") }}
-        </button>
-        <button
-          class="btn btn-primary"
-          type="button"
-          data-testid="ai-chat-suggestion-ask"
-          :disabled="isBusy || !previewSuggestion"
-          @click="askSuggestion"
-        >
-          {{ t("aiChat.askSuggestion") }}
-        </button>
-      </template>
-    </AppModal>
   </div>
 </template>
 
 <style scoped>
 .ai-chat-panel {
-  --ai-chat-gap: 8px;
-  --ai-chat-sheet-max-height: 12rem;
+  --ai-chat-gap: 4px;
   /* Зазор под плавающую «Показать превью»: она fixed в правом нижнем углу редактора. */
   --ai-chat-preview-fab-clearance: calc(var(--btn-touch, 44px) + 0.25rem);
   --ai-chat-bubble-radius: 14px;
 
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--ai-chat-gap);
@@ -1481,12 +1482,90 @@ async function onShareCopyTranscript(): Promise<void> {
   flex: 0 0 auto;
   flex-wrap: nowrap;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
+  border: 0;
+  background: transparent;
 }
 
-.ai-chat-panel__toolbar::-webkit-scrollbar {
-  display: none;
+.ai-chat-panel__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.84rem;
+  text-align: start;
+  cursor: pointer;
+}
+
+.ai-chat-panel__title-text,
+.ai-chat-panel__session-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-chat-panel__stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-chat-panel__title-popover,
+.ai-chat-panel__suggestion-preview {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.ai-chat-panel__title-popover {
+  top: 36px;
+  left: 0;
+  right: 0;
+  max-height: min(12rem, 40vh);
+  overflow: auto;
+}
+
+.ai-chat-panel__suggestion-preview {
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  margin-bottom: 4px;
+}
+
+.ai-chat-panel__popover-text {
+  margin: 0;
+  padding: 10px 12px;
+  overflow: auto;
+  max-height: min(9rem, 32vh);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+  font-size: 0.84rem;
+}
+
+.ai-chat-panel__suggestion-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  padding: 0 12px 10px;
+}
+
+.ai-chat-panel__suggestion-actions .btn {
+  min-height: 32px;
+  padding: 4px 12px;
 }
 
 .ai-chat-panel__tool {
@@ -1508,14 +1587,34 @@ async function onShareCopyTranscript(): Promise<void> {
   flex-wrap: wrap;
 }
 
-.ai-chat-panel__title {
-  flex: 1 1 0;
-  min-width: 0;
-  font-weight: 600;
-  font-size: 0.84rem;
+.ai-chat-panel__message-actions {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  inset-inline-end: 0;
+}
+
+@media (hover: hover) {
+  .ai-chat-panel__message-actions {
+    opacity: 0;
+  }
+
+  .ai-chat-panel__message:hover .ai-chat-panel__message-actions,
+  .ai-chat-panel__message:focus-within .ai-chat-panel__message-actions {
+    opacity: 1;
+  }
+}
+
+.ai-chat-panel__role {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
   overflow: hidden;
-  text-overflow: ellipsis;
+  clip: rect(0, 0, 0, 0);
   white-space: nowrap;
+  border: 0;
 }
 
 .ai-chat-panel__provider {
@@ -1566,6 +1665,7 @@ async function onShareCopyTranscript(): Promise<void> {
 }
 
 .ai-chat-panel__message {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1584,15 +1684,9 @@ async function onShareCopyTranscript(): Promise<void> {
 .ai-chat-panel__message--assistant {
   align-self: flex-start;
   margin-inline-end: 1.25rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-end-start-radius: 4px;
-}
-
-.ai-chat-panel__role {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  padding-inline: 0;
 }
 
 .ai-chat-panel__content {
@@ -1604,13 +1698,31 @@ async function onShareCopyTranscript(): Promise<void> {
 }
 
 .ai-chat-panel__proposal {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 10px;
-  background: var(--surface-muted);
   display: flex;
   flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.ai-chat-panel__proposal-line {
+  display: flex;
+  align-items: flex-start;
   gap: 6px;
+  min-width: 0;
+}
+
+.ai-chat-panel__proposal-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
+.ai-chat-panel__proposal-line .ai-chat-panel__share-actions {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
 }
 
 .ai-chat-panel__proposal p {
@@ -1625,19 +1737,35 @@ async function onShareCopyTranscript(): Promise<void> {
   margin: 0;
 }
 
-.ai-chat-panel__history,
-.ai-chat-panel__share {
-  flex: 0 1 auto;
-  min-height: 0;
-  max-height: var(--ai-chat-sheet-max-height);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
+.ai-chat-panel__history {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  overflow: auto;
+  min-height: 0;
+  padding: 4px 0 0;
+  overflow: hidden;
   background: var(--surface);
+}
+
+.ai-chat-panel__search,
+.ai-chat-panel__rename {
+  width: 100%;
+  min-height: 36px;
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.ai-chat-panel__rename {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
 }
 
 .ai-chat-panel__session-list {
@@ -1645,15 +1773,23 @@ async function onShareCopyTranscript(): Promise<void> {
   margin: 0;
   padding: 0;
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
+  min-height: 0;
+  overflow: auto;
 }
 
 .ai-chat-panel__session {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ai-chat-panel__session input[type="checkbox"] {
+  flex: 0 0 auto;
 }
 
 .ai-chat-panel__session.is-active .ai-chat-panel__session-open {
@@ -1661,11 +1797,14 @@ async function onShareCopyTranscript(): Promise<void> {
 }
 
 .ai-chat-panel__session-open {
+  flex: 1 1 auto;
+  min-width: 0;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--text);
   text-align: start;
+  padding: 0;
 }
 
 .ai-chat-panel__mini {
@@ -1679,10 +1818,11 @@ async function onShareCopyTranscript(): Promise<void> {
 }
 
 .ai-chat-panel__dock {
+  position: relative;
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: var(--ai-chat-gap);
+  gap: 4px;
   min-width: 0;
 }
 
@@ -1708,7 +1848,6 @@ async function onShareCopyTranscript(): Promise<void> {
 
 .ai-chat-panel__composer-box:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .ai-chat-panel__input {
@@ -1853,59 +1992,37 @@ async function onShareCopyTranscript(): Promise<void> {
 
 .ai-chat-panel__next {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
+  align-items: center;
   min-width: 0;
-}
-
-.ai-chat-panel__next-label {
-  flex: 0 0 auto;
-  color: var(--text-muted);
-  font-size: 0.75rem;
 }
 
 .ai-chat-panel__chips {
   display: flex;
   flex: 1 1 auto;
-  flex-direction: column;
+  flex-wrap: nowrap;
   gap: 6px;
   min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 2px;
 }
 
 .ai-chat-panel__chip {
-  display: block;
-  width: 100%;
+  flex: 0 0 auto;
+  max-width: 14rem;
   min-height: 28px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 999px;
   background: var(--surface);
   color: var(--text);
-  padding: 6px 10px;
+  padding: 4px 10px;
   cursor: pointer;
   font-size: 0.75rem;
-  line-height: 1.35;
-  text-align: start;
-  touch-action: manipulation;
-}
-
-.ai-chat-panel__chip-text {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: var(--ai-chat-chip-lines);
-  line-clamp: var(--ai-chat-chip-lines);
+  line-height: 1.2;
   overflow: hidden;
-  overflow-wrap: anywhere;
-  white-space: normal;
-}
-
-.ai-chat-panel__suggestion-text {
-  margin: 0;
-  max-height: min(50vh, 16rem);
-  overflow: auto;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  touch-action: manipulation;
 }
 
 .ai-chat-panel__chip:hover:not(:disabled) {

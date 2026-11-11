@@ -418,6 +418,8 @@ export const llmMessages = {
   "aiChat.attachmentImageLimit": "يمكن إرفاق {count} صور كحد أقصى",
   "aiChat.attachmentsOnlyPrompt": "استخدم الملفات المرفقة كسياق.",
   "aiChat.copyMessage": "نسخ",
+  "aiChat.copyChat": "نسخ الدردشة",
+  "aiChat.cancel": "إلغاء",
   "aiChat.defaultSessionTitle": "جلسة جديدة",
   "aiChat.delete": "حذف",
   "aiChat.deleteAllUnpinned": "حذف الكل ما عدا المثبت",

@@ -418,6 +418,8 @@ export const llmMessages = {
   "aiChat.attachmentImageLimit": "Puedes adjuntar hasta {count} imágenes",
   "aiChat.attachmentsOnlyPrompt": "Usa los archivos adjuntos como contexto.",
   "aiChat.copyMessage": "Copiar",
+  "aiChat.copyChat": "Copiar chat",
+  "aiChat.cancel": "Cancelar",
   "aiChat.defaultSessionTitle": "Nueva sesión",
   "aiChat.delete": "Eliminar",
   "aiChat.deleteAllUnpinned": "Eliminar todas excepto las fijadas",
