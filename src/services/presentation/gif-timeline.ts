@@ -24,6 +24,15 @@ export interface GifPixelSize {
   height: number;
 }
 
+export interface GifScenePlacement {
+  panX: number;
+  panY: number;
+  scale: number;
+  /** SVG CSS box in GIF pixels. This is the rectangle drawn for the diagram. */
+  width: number;
+  height: number;
+}
+
 function dwellEffects(viewpoint: Viewpoint, track: PresentationTrack): FrameEffect[] {
   return viewpoint.effects.filter((effect) => {
     if (effect.target !== "overlay") {
@@ -140,6 +149,39 @@ export function gifOutputSize(viewportWidth: number, viewportHeight: number): Gi
   return {
     width: Math.max(1, Math.round(width * ratio)),
     height: Math.max(1, Math.round(height * ratio)),
+  };
+}
+
+/**
+ * Places one camera frame on the GIF canvas.
+ *
+ * `imageWidth` / `imageHeight` are the preview's camera box (often the content
+ * bbox). `layoutWidth` / `layoutHeight` are the SVG element's CSS box, which is
+ * what the preview actually transforms. Drawing the camera box instead shifts
+ * the picture away from the on-screen viewport.
+ *
+ * The scale is fitted by the same factor as the canvas, so a smaller GIF still
+ * shows the viewport that is on screen. Same centering as `frameToPan`, without
+ * clamping that fitted scale back up to the interactive minimum.
+ */
+export function gifScenePlacement(
+  frame: { anchorX: number; anchorY: number; scale: number },
+  imageWidth: number,
+  imageHeight: number,
+  layoutWidth: number,
+  layoutHeight: number,
+  outputWidth: number,
+  outputHeight: number,
+  viewportWidth: number,
+): GifScenePlacement {
+  const ratio = viewportWidth > 0 ? outputWidth / viewportWidth : 1;
+  const scale = frame.scale * ratio;
+  return {
+    scale,
+    panX: outputWidth / 2 - frame.anchorX * imageWidth * scale,
+    panY: outputHeight / 2 - frame.anchorY * imageHeight * scale,
+    width: layoutWidth * scale,
+    height: layoutHeight * scale,
   };
 }
 

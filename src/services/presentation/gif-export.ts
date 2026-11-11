@@ -1,5 +1,4 @@
 import { GIFEncoder, applyPalette, quantize } from "gifenc";
-import { frameToPan } from "@/services/presentation/camera";
 import { effectVisualAt, type EffectVisual } from "@/services/presentation/effects";
 import { overlayArtwork, paintArtwork } from "@/services/presentation/glyph-art";
 import { overlayCssColor } from "@/services/presentation/overlay-color";
@@ -23,6 +22,7 @@ import {
 import {
   gifFrameDelaysMs,
   gifOutputSize,
+  gifScenePlacement,
   samplePresentationGifFrames,
   type PresentationGifFrame,
 } from "@/services/presentation/gif-timeline";
@@ -33,6 +33,7 @@ import type {
   Viewpoint,
 } from "@/services/presentation/types";
 import { isTransparentBackground } from "@/services/export/svg-background";
+import { parseSvgCssSize } from "@/services/export/svg-geometry";
 import { loadSvgDocumentImage } from "@/services/export/svg-raster-source";
 import { LocalizedAppError } from "@/utils/localized-app-error";
 
@@ -288,6 +289,7 @@ function paintFrame(
   frameImage: HTMLImageElement | null,
   source: PresentationGifSource,
   frame: PresentationGifFrame,
+  layout: { width: number; height: number },
   width: number,
   height: number,
 ): void {
@@ -297,25 +299,26 @@ function paintFrame(
   context.fillStyle = background;
   context.fillRect(0, 0, width, height);
 
-  const placed = frameToPan(
+  const placed = gifScenePlacement(
     { anchorX: frame.anchorX, anchorY: frame.anchorY, scale: frame.scale },
     source.imageWidth,
     source.imageHeight,
+    layout.width,
+    layout.height,
     width,
     height,
+    source.viewportWidth,
   );
-  const placedWidth = source.imageWidth * placed.scale;
-  const placedHeight = source.imageHeight * placed.scale;
   const host = hostViewpoint(source.track, frame);
   const effects = frame.ownerKind === "viewpoint" ? host?.effects ?? [] : [];
   const scene = (visual: EffectVisual, bitmap: HTMLImageElement) => {
     drawWithVisual(
       context,
       visual,
-      placed.panX + placedWidth / 2,
-      placed.panY + placedHeight / 2,
+      placed.panX + placed.width / 2,
+      placed.panY + placed.height / 2,
       () => {
-        context.drawImage(bitmap, placed.panX, placed.panY, placedWidth, placedHeight);
+        context.drawImage(bitmap, placed.panX, placed.panY, placed.width, placed.height);
       },
     );
   };
@@ -378,6 +381,10 @@ export async function renderPresentationGif(source: PresentationGifSource): Prom
   }
 
   const { width, height } = gifOutputSize(source.viewportWidth, source.viewportHeight);
+  const layout = parseSvgCssSize(source.svg, {
+    width: source.imageWidth,
+    height: source.imageHeight,
+  });
   const image = await loadSvgDocumentImage(source.svg);
   const frameImage = source.frameHref ? await loadFrameImage(source.frameHref) : null;
   const canvas = document.createElement("canvas");
@@ -390,7 +397,7 @@ export async function renderPresentationGif(source: PresentationGifSource): Prom
 
   const gif = GIFEncoder();
   for (const frame of frames) {
-    paintFrame(context, image, frameImage, source, frame, width, height);
+    paintFrame(context, image, frameImage, source, frame, layout, width, height);
     const pixels = new Uint8Array(context.getImageData(0, 0, width, height).data);
     const palette = quantize(pixels, PRESENTATION_GIF_PALETTE_SIZE);
     const indexed = applyPalette(pixels, palette);

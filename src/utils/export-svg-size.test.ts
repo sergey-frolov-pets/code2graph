@@ -9,6 +9,7 @@ import {
   applyPreviewBackground,
   isTransparentBackground,
   normalizeSvgRootSize,
+  parseSvgCssSize,
   parseSvgSize,
   sanitizeSvgForPreview,
   withTransparentSvgBackground,
@@ -36,6 +37,35 @@ describe("parseSvgSize", () => {
         '<svg width="800.6" height="600.2" xmlns="http://www.w3.org/2000/svg"></svg>',
       ),
     ).toEqual({ width: 801, height: 600 });
+  });
+});
+
+describe("parseSvgCssSize", () => {
+  it("uses the css width and height even when the viewBox differs", () => {
+    expect(
+      parseSvgCssSize(
+        '<svg width="1200" height="900" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg"></svg>',
+        { width: 1, height: 1 },
+      ),
+    ).toEqual({ width: 1200, height: 900 });
+  });
+
+  it("keeps a shifted viewBox from changing the element box", () => {
+    expect(
+      parseSvgCssSize(
+        '<svg width="200" height="100" viewBox="-20 -10 200 100" xmlns="http://www.w3.org/2000/svg"></svg>',
+        { width: 1, height: 1 },
+      ),
+    ).toEqual({ width: 200, height: 100 });
+  });
+
+  it("falls back to the viewBox when width is a percentage", () => {
+    expect(
+      parseSvgCssSize(
+        '<svg width="100%" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg"></svg>',
+        { width: 10, height: 10 },
+      ),
+    ).toEqual({ width: 800, height: 600 });
   });
 });
 

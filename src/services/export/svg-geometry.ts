@@ -44,6 +44,13 @@ function isPercentageOrMissingSvgLength(value: string | null): boolean {
   return !Number.isFinite(numeric) || numeric <= 0;
 }
 
+function parsePositiveLength(value: string | null): number | null {
+  if (isPercentageOrMissingSvgLength(value)) {
+    return null;
+  }
+  return Number.parseFloat((value ?? "").trim());
+}
+
 export function normalizeSvgRootSize(root: Element): void {
   const viewBoxSize = parseViewBoxSize(root.getAttribute("viewBox"));
   if (!viewBoxSize) {
@@ -78,6 +85,35 @@ export function wholeImagePixels(value: number, fallback: number): number {
     return fallback;
   }
   return Math.max(MIN_PIXEL_SIDE, Math.round(value));
+}
+
+/**
+ * CSS box of the root svg, the rectangle the preview actually scales.
+ * Width and height attributes win over the viewBox: a viewBox origin or a
+ * tighter content box must not change how big the element is on screen.
+ */
+export function parseSvgCssSize(
+  svg: string,
+  fallback: { width: number; height: number },
+): { width: number; height: number } {
+  if (!svg.includes("<svg")) {
+    return fallback;
+  }
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svg, "image/svg+xml");
+  const root = doc.documentElement;
+  if (root.tagName.toLowerCase() !== "svg") {
+    return fallback;
+  }
+
+  const width = parsePositiveLength(root.getAttribute("width"));
+  const height = parsePositiveLength(root.getAttribute("height"));
+  const viewBox = parseViewBoxSize(root.getAttribute("viewBox"));
+  return {
+    width: width ?? viewBox?.width ?? fallback.width,
+    height: height ?? viewBox?.height ?? fallback.height,
+  };
 }
 
 export function parseSvgSize(svg: string): { width: number; height: number } {
