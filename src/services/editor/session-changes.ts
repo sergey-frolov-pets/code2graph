@@ -223,11 +223,9 @@ export function applySessionViewEdit(
   const nextLines = splitSourceLines(nextText);
   const changed = findChangedLineSpan(previousTexts, nextLines);
 
-  if (
-    changed.prefix === previousTexts.length &&
-    changed.oldEnd === previousTexts.length &&
-    changed.newEnd === nextLines.length
-  ) {
+  // Empty span: the view text is unchanged. Appended lines (Enter at the
+  // end of the file) have newEnd past the prefix and must be kept.
+  if (changed.oldEnd === changed.prefix && changed.newEnd === changed.prefix) {
     return {
       text: joinSourceLines([...workingLines]),
       editedStart: 1,
