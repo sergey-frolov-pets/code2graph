@@ -45,6 +45,7 @@ export const appMessages = {
   "app.unknownRenderError": "अज्ञात रेंडरिंग त्रुटि",
   "app.exportPngFailed": "PNG निर्यात नहीं हो सका",
   "app.exportGifFailed": "GIF सहेजा नहीं जा सका",
+  "app.exportHtmlFailed": "HTML सहेजा नहीं जा सका",
   "app.copyPngFailed": "PNG क्लिपबोर्ड पर कॉपी नहीं हो सका",
   "app.copyPngUnsupported": "यह ब्राउज़र PNG छवि क्लिपबोर्ड पर कॉपी नहीं कर सकता",
   "app.engineLoadError": "इंजन लोड करने में त्रुटि",

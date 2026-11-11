@@ -45,6 +45,7 @@ export const appMessages = {
   "app.unknownRenderError": "Неизвестная ошибка рендеринга",
   "app.exportPngFailed": "Не удалось экспортировать PNG",
   "app.exportGifFailed": "Не удалось сохранить GIF",
+  "app.exportHtmlFailed": "Не удалось сохранить HTML",
   "app.copyPngFailed": "Не удалось скопировать PNG в буфер обмена",
   "app.copyPngUnsupported": "Этот браузер не умеет копировать PNG в буфер обмена",
   "app.engineLoadError": "Ошибка загрузки движка",

@@ -246,6 +246,8 @@ export const miscMessages = {
   "presentation.styleReset": "थीम रंग",
   "presentation.exportGif": "GIF सहेजें",
   "presentation.exportGifBusy": "GIF सहेजा जा रहा है…",
+  "presentation.exportHtml": "HTML सहेजें",
+  "presentation.exportHtmlBusy": "HTML सहेजा जा रहा है…",
   "preview.rendering": "आरेख बन रहा है…",
   "fullscreen.expand": "पूर्ण स्क्रीन",
   "fullscreen.collapse": "पूर्ण स्क्रीन से बाहर",

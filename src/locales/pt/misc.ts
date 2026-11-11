@@ -246,6 +246,8 @@ export const miscMessages = {
   "presentation.styleReset": "Cores do tema",
   "presentation.exportGif": "Salvar GIF",
   "presentation.exportGifBusy": "Salvando GIF…",
+  "presentation.exportHtml": "Salvar HTML",
+  "presentation.exportHtmlBusy": "Salvando HTML…",
   "preview.rendering": "Renderizando o diagrama…",
   "fullscreen.expand": "Tela cheia",
   "fullscreen.collapse": "Sair da tela cheia",

@@ -45,6 +45,7 @@ export const appMessages = {
   "app.unknownRenderError": "不明な描画エラー",
   "app.exportPngFailed": "PNG のエクスポートに失敗しました",
   "app.exportGifFailed": "GIF の保存に失敗しました",
+  "app.exportHtmlFailed": "HTML の保存に失敗しました",
   "app.copyPngFailed": "PNG をクリップボードにコピーできませんでした",
   "app.copyPngUnsupported": "このブラウザは PNG 画像をクリップボードにコピーできません",
   "app.engineLoadError": "エンジンの読み込みエラー",

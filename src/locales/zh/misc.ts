@@ -246,6 +246,8 @@ export const miscMessages = {
   "presentation.styleReset": "主题颜色",
   "presentation.exportGif": "保存 GIF",
   "presentation.exportGifBusy": "正在保存 GIF…",
+  "presentation.exportHtml": "保存 HTML",
+  "presentation.exportHtmlBusy": "正在保存 HTML…",
   "preview.rendering": "正在渲染图表…",
   "fullscreen.expand": "全屏",
   "fullscreen.collapse": "退出全屏",
