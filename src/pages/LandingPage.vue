@@ -45,6 +45,12 @@ function openMcp(): void {
   navigateTo("mcp");
 }
 
+/** Open the language page: types, keywords, and examples for one format. */
+function openLanguage(languageId: DiagramFormat): void {
+  trackEvent(`cta-language-${languageId}`, `Open ${languageId} page`);
+  navigateTo("language", languageId);
+}
+
 /** Open the editor with exactly the diagram the visitor just clicked. */
 function openSample(format: DiagramFormat, source: string, label: string, eventName: string): void {
   trackEvent(eventName, label);
@@ -59,8 +65,10 @@ interface GalleryTile {
   typeTitle: string;
 }
 
+const languages = DIAGRAM_LANGUAGE_MODULES.filter((module) => module.site);
+
 const gallery = computed<GalleryTile[]>(() =>
-  DIAGRAM_LANGUAGE_MODULES.filter((module) => module.site).map((module) => {
+  languages.map((module) => {
     const firstType = LANGUAGE_PRIMERS[module.id].types[0]!;
     return {
       format: module.id,
@@ -184,31 +192,72 @@ function tryActiveScenario(): void {
           {{ t("site.landing.showcaseHint") }}
         </p>
         <div class="landing-gallery">
-          <button
+          <article
             v-for="tile in gallery"
             :key="tile.format"
             class="landing-tile"
-            type="button"
-            @click="openSample(tile.format, tile.source, `${tile.label} · ${tile.typeTitle}`, `cta-gallery-${tile.format}`)"
           >
-            <LanguageDiagramThumb
-              :format="tile.format"
-              :source="tile.source"
-              :title="`${tile.label} · ${tile.typeTitle}`"
-            />
-            <span class="landing-tile__caption">
-              <strong>{{ tile.label }}</strong> · {{ tile.typeTitle }}
-            </span>
-          </button>
+            <button
+              class="landing-tile__preview"
+              type="button"
+              :aria-label="`${t('site.landing.openInEditor')}: ${tile.label} · ${tile.typeTitle}`"
+              @click="openSample(tile.format, tile.source, `${tile.label} · ${tile.typeTitle}`, `cta-gallery-${tile.format}`)"
+            >
+              <LanguageDiagramThumb
+                :format="tile.format"
+                :source="tile.source"
+                :title="`${tile.label} · ${tile.typeTitle}`"
+              />
+            </button>
+            <p class="landing-tile__caption">
+              <button
+                class="landing-tile__language"
+                type="button"
+                @click="openLanguage(tile.format)"
+              >
+                {{ tile.label }}
+              </button>
+              <span>· {{ tile.typeTitle }}</span>
+            </p>
+          </article>
         </div>
         <p class="landing-formats-line">
           {{ t("site.landing.allFormats") }}:
-          <span
+          <button
             v-for="tile in gallery"
             :key="tile.format"
             class="landing-formats-line__badge"
-          >{{ tile.label }}</span>
+            type="button"
+            @click="openLanguage(tile.format)"
+          >
+            {{ tile.label }}
+          </button>
         </p>
+      </section>
+
+      <section
+        id="formats"
+        class="landing-section"
+        aria-labelledby="languages-title"
+      >
+        <h2
+          id="languages-title"
+          class="landing-section__title"
+        >
+          {{ t("site.languages.title") }}
+        </h2>
+        <div class="landing-languages">
+          <button
+            v-for="module in languages"
+            :key="module.id"
+            class="landing-language-card"
+            type="button"
+            @click="openLanguage(module.id)"
+          >
+            <strong>{{ t(module.labelKey) }}</strong>
+            <span>{{ module.site ? t(module.site.purposeKey) : "" }}</span>
+          </button>
+        </div>
       </section>
 
       <!-- Screen 3: one stage, five audiences -->
@@ -405,19 +454,45 @@ function tryActiveScenario(): void {
   border-radius: var(--radius);
   background: color-mix(in srgb, var(--surface) 88%, transparent);
   color: inherit;
-  cursor: pointer;
 }
 
 .landing-tile:hover {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
+.landing-tile__preview {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: inherit;
+}
+
 .landing-tile__caption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
   color: var(--text-muted);
   font-size: 0.92rem;
 }
 
-.landing-tile__caption strong {
+.landing-tile__language {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.landing-tile__language:hover {
   color: var(--text);
 }
 
@@ -437,7 +512,43 @@ function tryActiveScenario(): void {
   border-radius: 999px;
   background: var(--surface);
   color: var(--text);
+  font: inherit;
   font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.landing-formats-line__badge:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--accent);
+}
+
+.landing-languages {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.landing-language-card {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.landing-language-card span {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.landing-language-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
 .landing-audiences {

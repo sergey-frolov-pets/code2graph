@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import LanguageDiagramThumb from "@/components/site/LanguageDiagramThumb.vue";
 import SiteFooter from "@/components/site/SiteFooter.vue";
 import SiteHeader from "@/components/site/SiteHeader.vue";
@@ -20,6 +20,14 @@ import {
 
 const { locale, t } = useLocale();
 const { route, navigateTo } = useAppRouter();
+
+watch(
+  () => route.value.languageId,
+  () => {
+    window.scrollTo(0, 0);
+  },
+  { immediate: true },
+);
 
 const language = computed(() =>
   DIAGRAM_LANGUAGE_MODULES.find((module) => module.id === route.value.languageId) ?? null,
