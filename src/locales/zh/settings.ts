@@ -8,8 +8,6 @@ export const settingsMessages = {
   "settings.fontFamily": "字体",
   "settings.syntaxHighlight": "语法高亮",
   "settings.autocomplete": "输入建议",
-  "settings.rendering": "渲染",
-  "settings.layoutEngine": "布局引擎",
   "settings.theme": "界面主题",
   "settings.darkTheme": "深色主题",
   "settings.language": "界面语言",

@@ -88,7 +88,6 @@ const {
   canExport,
   canUndo,
   canRedo,
-  renderedOnlineSite,
   renderOnlineOnce,
   modals,
   editorDocuments,
@@ -324,12 +323,7 @@ onUnmounted(() => {
     <PreviewFab :visible="showPreviewFab" @show-preview="showMobilePreview" />
     <PwaInstallBanner />
 
-    <AppStatusBar
-      :loaded-file-name="loadedFileName"
-      :layout="layout"
-      :render-mode="renderMode"
-      :online-render-site="renderedOnlineSite"
-    />
+    <AppStatusBar :loaded-file-name="loadedFileName" />
 
     <AppDialogHost />
     <LibraryDataLinkImportDialog />

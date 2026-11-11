@@ -8,7 +8,6 @@ import { useSettingsTabs } from "@/composables/settings/useSettingsTabs";
 import { useSettingsLibraryForm, SETTINGS_LIBRARY_FORM_KEY } from "@/composables/settings/useSettingsLibraryForm";
 import { useSettingsLlmForm, SETTINGS_LLM_FORM_KEY } from "@/composables/settings/useSettingsLlmForm";
 import { useLocale } from "@/composables/useLocale";
-import type { LayoutEngine } from "@/constants";
 import type {
   EditorFontFamilyId,
   EditorFontSize,
@@ -16,7 +15,6 @@ import type {
 
 const props = defineProps<{
   open: boolean;
-  layout: LayoutEngine;
   editorFontSize: EditorFontSize;
   editorFontFamilyId: EditorFontFamilyId;
   editorSyntaxHighlight: boolean;
@@ -25,7 +23,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
-  "update:layout": [value: LayoutEngine];
   "update:editorFontSize": [value: EditorFontSize];
   "update:editorFontFamilyId": [value: EditorFontFamilyId];
   "update:editorSyntaxHighlight": [value: boolean];
@@ -72,12 +69,10 @@ const { activeTab, tabs, showLlmKeyBanner } = useSettingsTabs({
 
     <SettingsGeneralTab
       v-show="activeTab === 'general'"
-      :layout="layout"
       :editor-font-size="editorFontSize"
       :editor-font-family-id="editorFontFamilyId"
       :editor-syntax-highlight="editorSyntaxHighlight"
       :editor-autocomplete="editorAutocomplete"
-      @update:layout="emit('update:layout', $event)"
       @update:editor-font-size="emit('update:editorFontSize', $event)"
       @update:editor-font-family-id="emit('update:editorFontFamilyId', $event)"
       @update:editor-syntax-highlight="emit('update:editorSyntaxHighlight', $event)"
