@@ -24,8 +24,6 @@ A text-diagram editor with an MCP server for AI agents.
 
 ## Demo
 
-<!-- TODO: replace docs/demo.gif with a short recording of the editor. The file is not in the repository yet. -->
-
 ![Code2Graph editor](docs/demo.gif)
 
 ## Quick start
