@@ -23,7 +23,7 @@ export interface ChatLlmOption {
 export function useChatLlmSelection() {
   const { t } = useLocale();
   const { llmProviderId } = useLlmSettings();
-  const { llmAccounts } = useLlmAccountStore();
+  const { llmAccounts, llmAccountsHydrated } = useLlmAccountStore();
   const { availableFreeProviderIds } = useLlmProxyAvailability();
 
   const options = computed<ChatLlmOption[]>(() => {
@@ -64,8 +64,13 @@ export function useChatLlmSelection() {
   });
 
   watch(
-    selectedId,
-    (id) => {
+    [selectedId, llmAccountsHydrated],
+    () => {
+      if (!llmAccountsHydrated.value) {
+        return;
+      }
+
+      const id = selectedId.value;
       if (id !== getChatLlmSelectionId()) {
         setChatLlmSelectionId(id);
       }

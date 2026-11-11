@@ -1,5 +1,5 @@
 /**
- * BYOK LLM API keys — только localStorage браузера.
+ * BYOK LLM API keys — только localStorage браузера, зашифрованы сидом из .env.
  * Никогда отправляются на сервер Code2Graph (см. proxy-client, server/llm-proxy-request).
  * Несколько ключей одного провайдера хранятся отдельными аккаунтами.
  */

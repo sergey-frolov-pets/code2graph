@@ -10,7 +10,7 @@ export const llmMessages = {
   "llm.keysGuide.securityLead":
     "机密不会发送到第三方应用服务器 — 只保存在您的浏览器本地（localStorage）：",
   "llm.keysGuide.securityApiKeys":
-    "LLM API 密钥（设置 → AI）只保存在您的浏览器中；保存后输入框会被清空。",
+    "LLM API 密钥（设置 → AI）用 .env 中的种子在此浏览器内加密；保存后输入框会被清空。",
   "llm.keysGuide.securityLibraryCredentials":
     "图表库服务器的登录名和密码（设置 → 图表库）只在您的浏览器中；保存后不再显示密码。",
   "llm.keysGuide.securityAuthToken":

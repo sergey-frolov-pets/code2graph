@@ -10,7 +10,7 @@ export const llmMessages = {
   "llm.keysGuide.securityLead":
     "秘密情報は第三者のアプリサーバーへ送られず、ブラウザ内（localStorage）にだけ保存されます:",
   "llm.keysGuide.securityApiKeys":
-    "LLM の API キー（設定 → AI）はこのブラウザにだけ保存され、保存後に入力欄はクリアされます。",
+    "LLM の API キー（設定 → AI）は .env のシードでこのブラウザ内に暗号化され、保存後に入力欄はクリアされます。",
   "llm.keysGuide.securityLibraryCredentials":
     "ライブラリサーバーのログイン名とパスワード（設定 → ライブラリ）もこのブラウザ内だけです。保存後、パスワードは表示されません。",
   "llm.keysGuide.securityAuthToken":

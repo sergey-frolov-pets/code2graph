@@ -10,6 +10,19 @@ const { t } = useLocale();
   <div class="settings-section">
     <h3 class="settings-section__title">{{ t("settings.ai") }}</h3>
 
+    <p
+      v-if="llm.llmKeyStoreError === 'missing_seed'"
+      class="settings-field__hint settings-field__error"
+    >
+      {{ t("settings.llmKeySeedMissing") }}
+    </p>
+    <p
+      v-else-if="llm.llmKeyStoreError === 'decrypt_failed'"
+      class="settings-field__hint settings-field__error"
+    >
+      {{ t("settings.llmKeyDecryptFailed") }}
+    </p>
+
     <label class="settings-field settings-field--checkbox">
       <input
         type="checkbox"

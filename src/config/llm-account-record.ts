@@ -8,6 +8,7 @@ import {
   LLM_API_KEY_MAX_LENGTH,
   LLM_LOCAL_URL_MAX_LENGTH,
   LLM_MODEL_NAME_MAX_LENGTH,
+  LLM_SEALED_SECRET_MAX_LENGTH,
   LOCAL_LLM_PROVIDER_ID,
   isValidLlmModelName,
 } from "@/constants/llm-account";
@@ -50,7 +51,8 @@ export type LlmAccountDraftError =
   | "invalid_label"
   | "invalid_key"
   | "invalid_url"
-  | "invalid_model";
+  | "invalid_model"
+  | "cipher_unavailable";
 
 export type LlmAccountDraftResult =
   | { ok: true; account: Omit<LlmAccount, "id"> }
@@ -155,6 +157,36 @@ export function parseLlmAccount(value: unknown): LlmAccount | null {
   }
 
   return account;
+}
+
+const StoredLlmAccountSchema = LlmAccountSchema.extend({
+  apiKey: z.string().max(LLM_SEALED_SECRET_MAX_LENGTH),
+});
+
+/** Запись с диска: apiKey может быть запечатанным конвертом, ещё не открытым текстом. */
+export function parseStoredLlmAccountRecords(value: unknown): LlmAccount[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    const parsed = StoredLlmAccountSchema.safeParse(item);
+    if (!parsed.success || !isLlmProviderId(parsed.data.providerId)) {
+      return [];
+    }
+
+    return [
+      {
+        id: parsed.data.id,
+        providerId: parsed.data.providerId,
+        label: parsed.data.label,
+        apiKey: parsed.data.apiKey,
+        active: parsed.data.active,
+        baseUrl: parsed.data.baseUrl?.trim() || undefined,
+        model: parsed.data.model?.trim() || undefined,
+      },
+    ];
+  });
 }
 
 export function parseLlmAccountList(value: unknown): LlmAccount[] {

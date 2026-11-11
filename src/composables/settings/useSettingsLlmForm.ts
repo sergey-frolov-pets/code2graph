@@ -22,12 +22,13 @@ import { useLlmSettings } from "@/composables/useLlmSettings";
 import { useLlmProxyAvailability } from "@/composables/useLlmProxyAvailability";
 import { testLlmConnection } from "@/services/llm/llm-client";
 
-const LOCAL_FORM_ERROR_KEY: Record<LlmAccountDraftError, LocaleKey> = {
+const ACCOUNT_SAVE_ERROR_KEY: Record<LlmAccountDraftError, LocaleKey> = {
   invalid_url: "settings.llmLocalInvalidUrl",
   invalid_model: "settings.llmLocalInvalidModel",
   invalid_key: "settings.llmApiKeyInvalid",
   invalid_label: "settings.llmApiKeyInvalid",
   invalid_provider: "settings.llmApiKeyInvalid",
+  cipher_unavailable: "settings.llmKeySeedMissing",
 };
 
 export const SETTINGS_LLM_FORM_KEY: InjectionKey<
@@ -54,7 +55,7 @@ export function useSettingsLlmForm(t: TranslateFn) {
     setLlmProviderId,
     setLlmConsent,
   } = useLlmSettings();
-  const { llmAccounts } = useLlmAccountStore();
+  const { llmAccounts, llmKeyStoreError } = useLlmAccountStore();
   const {
     proxyConfigured,
     proxyReachable,
@@ -174,7 +175,7 @@ export function useSettingsLlmForm(t: TranslateFn) {
       active: accountActiveInput.value,
     });
     if (!result.ok) {
-      apiKeyError.value = t("settings.llmApiKeyInvalid");
+      apiKeyError.value = t(ACCOUNT_SAVE_ERROR_KEY[result.reason]);
       return;
     }
 
@@ -194,7 +195,7 @@ export function useSettingsLlmForm(t: TranslateFn) {
       model: localModelInput.value,
     });
     if (!result.ok) {
-      localError.value = t(LOCAL_FORM_ERROR_KEY[result.reason]);
+      localError.value = t(ACCOUNT_SAVE_ERROR_KEY[result.reason]);
       return;
     }
 
@@ -251,6 +252,7 @@ export function useSettingsLlmForm(t: TranslateFn) {
     isActiveProviderLocal,
     llmProviderOptions,
     providerAccounts,
+    llmKeyStoreError,
     hasActiveApiKey,
     refreshLlmProxyAvailability,
     onProviderChange,

@@ -10,7 +10,7 @@ export const llmMessages = {
   "llm.keysGuide.securityLead":
     "Secrets are not sent to third-party app servers — only stored locally in your browser (localStorage):",
   "llm.keysGuide.securityApiKeys":
-    "LLM API keys (Settings → AI) are stored only in your browser; the input field is cleared after save.",
+    "LLM API keys (Settings → AI) are encrypted in this browser with the seed from .env; the input field is cleared after save.",
   "llm.keysGuide.securityLibraryCredentials":
     "Library server login and password (Settings → Library) — only in your browser; the password is not shown after save.",
   "llm.keysGuide.securityAuthToken":

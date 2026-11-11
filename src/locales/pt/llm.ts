@@ -10,7 +10,7 @@ export const llmMessages = {
   "llm.keysGuide.securityLead":
     "Os segredos não são enviados a servidores de aplicativos de terceiros — ficam armazenados apenas localmente no seu navegador (localStorage):",
   "llm.keysGuide.securityApiKeys":
-    "As chaves de API de LLM (Configurações → IA) ficam somente no seu navegador; o campo é limpo depois de salvar.",
+    "As chaves de API de LLM (Configurações → IA) são cifradas neste navegador com a semente do .env; o campo é limpo depois de salvar.",
   "llm.keysGuide.securityLibraryCredentials":
     "O login e a senha do servidor da biblioteca (Configurações → Biblioteca) ficam somente no seu navegador; a senha não é mostrada depois de salvar.",
   "llm.keysGuide.securityAuthToken":
