@@ -10,7 +10,7 @@ export const llmMessages = {
   "llm.keysGuide.securityLead":
     "Os segredos não são enviados a servidores de aplicativos de terceiros — ficam armazenados apenas localmente no seu navegador (localStorage):",
   "llm.keysGuide.securityApiKeys":
-    "As chaves de API de LLM (Configurações → IA) ficam somente no seu navegador; o campo é limpo depois de salvar.",
+    "As chaves de API de LLM (Configurações → IA) são cifradas neste navegador com a semente do .env; o campo é limpo depois de salvar.",
   "llm.keysGuide.securityLibraryCredentials":
     "O login e a senha do servidor da biblioteca (Configurações → Biblioteca) ficam somente no seu navegador; a senha não é mostrada depois de salvar.",
   "llm.keysGuide.securityAuthToken":
@@ -45,9 +45,15 @@ export const llmMessages = {
   "llm.provider.zhipuDesc": "LLM chinesa da Zhipu AI. Chave de open.bigmodel.cn.",
   "llm.provider.moonshot": "Moonshot (Kimi)",
   "llm.provider.moonshotDesc": "LLM chinesa da Moonshot AI. Chave de platform.moonshot.cn.",
+  "llm.provider.local": "LLM local",
+  "llm.provider.localDesc":
+    "Servidor compatível com OpenAI neste computador (Ollama, LM Studio, llama.cpp, vLLM). Informe a URL base e o nome do modelo. A chave de API é opcional.",
   "llm.activeModelDetail": "{provider} · {model}",
   "llm.activeModelUnknown": "Nenhum provedor selecionado",
   "llm.generatingWith": "Gerando ({provider}, {model})…",
+  "llm.gate.localMissingTitle": "LLM local não configurado",
+  "llm.gate.localMissingMessage":
+    "Adicione um LLM local em Configurações → IA: URL base e nome do modelo.",
   "llm.gate.noConsentTitle": "Consentimento necessário",
   "llm.gate.noConsentMessage": "Ative o consentimento em Configurações → IA / LLM para enviar diagramas a um LLM na nuvem.",
   "llm.gate.noKeyTitle": "Falta a chave de API",
@@ -440,6 +446,8 @@ export const llmMessages = {
   "aiChat.regenerate": "Gerar a resposta de novo",
   "aiChat.rename": "Renomear",
   "aiChat.searchPlaceholder": "Pesquisar sessões…",
+  "aiChat.provider": "Provedor",
+  "aiChat.providerNone": "Nenhum provedor ativo",
   "aiChat.send": "Enviar",
   "aiChat.sessionsCount": "{sessions} sessões · {messages} mensagens",
   "aiChat.share": "Compartilhar",

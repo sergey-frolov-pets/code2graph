@@ -50,6 +50,7 @@ import type { RenderMode } from "@/constants/render-settings";
 import { readStorageItem, writeStorageItem } from "@/core/safe-storage";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useAiChatSessions } from "@/composables/useAiChatSessions";
+import { useChatLlmSelection } from "@/composables/useChatLlmSelection";
 import { useLocale } from "@/composables/useLocale";
 import { getLanguageModule } from "@/languages/registry";
 import { isLocaleKey } from "@/locales/types";
@@ -95,6 +96,11 @@ const emit = defineEmits<{
 
 const { t } = useLocale();
 const { confirm } = useAppDialog();
+const {
+  options: chatProviderOptions,
+  selectedId: chatProviderId,
+  onChange: onChatProviderChange,
+} = useChatLlmSelection();
 
 const documentKeyRef = computed(() => props.documentKey);
 const formatRef = computed(() => props.diagramFormat);
@@ -761,6 +767,31 @@ async function onShareCopyTranscript(): Promise<void> {
         />
       </IconButton>
       <span class="ai-chat-panel__title">{{ activeSession?.title }}</span>
+      <label class="ai-chat-panel__provider">
+        <span class="sr-only">{{ t("aiChat.provider") }}</span>
+        <select
+          class="select ai-chat-panel__provider-select"
+          data-testid="ai-chat-provider"
+          :value="chatProviderId"
+          :disabled="chatProviderOptions.length === 0 || isBusy"
+          :aria-label="t('aiChat.provider')"
+          @change="onChatProviderChange"
+        >
+          <option
+            v-if="chatProviderOptions.length === 0"
+            value=""
+          >
+            {{ t("aiChat.providerNone") }}
+          </option>
+          <option
+            v-for="option in chatProviderOptions"
+            :key="option.id"
+            :value="option.id"
+          >
+            {{ option.label }}
+          </option>
+        </select>
+      </label>
       <IconButton
         :label="t('aiChat.share')"
         :title="t('aiChat.share')"
@@ -1485,6 +1516,21 @@ async function onShareCopyTranscript(): Promise<void> {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.ai-chat-panel__provider {
+  display: flex;
+  flex: 0 1 14rem;
+  min-width: 8rem;
+  max-width: 16rem;
+}
+
+.ai-chat-panel__provider-select {
+  width: 100%;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 8px;
+  font-size: 0.78rem;
 }
 
 .ai-chat-panel__messages {

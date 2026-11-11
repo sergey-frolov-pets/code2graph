@@ -31,6 +31,13 @@ describe("llm-providers", () => {
     }
   });
 
+  it("includes a local OpenAI-compatible provider", () => {
+    const local = getLlmProvider("local");
+    expect(local?.kind).toBe("local");
+    expect(local?.requiresUserKey).toBe(false);
+    expect(local?.defaultModel).toBeTruthy();
+  });
+
   it("uses google-gemini as default byok provider", () => {
     expect(DEFAULT_LLM_PROVIDER_ID).toBe("google-gemini");
     expect(getLlmProvider(DEFAULT_LLM_PROVIDER_ID)?.recommended).toBe(true);

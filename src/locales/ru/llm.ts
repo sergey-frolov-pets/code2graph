@@ -10,7 +10,7 @@ export const llmMessages = {
   "llm.keysGuide.securityLead":
     "Секреты не отправляются на сторонние серверы приложения — только локально в браузере (localStorage):",
   "llm.keysGuide.securityApiKeys":
-    "API-ключи LLM (Настройки → AI) хранятся только в вашем браузере; поле ввода очищается после сохранения.",
+    "API-ключи LLM (Настройки → AI) шифруются в браузере сидом из .env; поле ввода очищается после сохранения.",
   "llm.keysGuide.securityLibraryCredentials":
     "Логин и пароль сервера библиотеки (Настройки → Библиотека) — только в браузере; пароль не показывается после сохранения.",
   "llm.keysGuide.securityAuthToken":
@@ -45,9 +45,15 @@ export const llmMessages = {
   "llm.provider.zhipuDesc": "Китайский LLM от Zhipu AI. Ключ из open.bigmodel.cn.",
   "llm.provider.moonshot": "Moonshot (Kimi)",
   "llm.provider.moonshotDesc": "Китайский LLM от Moonshot AI. Ключ из platform.moonshot.cn.",
+  "llm.provider.local": "Локальный LLM",
+  "llm.provider.localDesc":
+    "OpenAI-совместимый сервер на этом компьютере (Ollama, LM Studio, llama.cpp, vLLM). Укажите базовый URL и имя модели. API-ключ необязателен.",
   "llm.activeModelDetail": "{provider} · {model}",
   "llm.activeModelUnknown": "Провайдер не выбран",
   "llm.generatingWith": "Генерация ({provider}, {model})…",
+  "llm.gate.localMissingTitle": "Локальный LLM не настроен",
+  "llm.gate.localMissingMessage":
+    "Добавьте локальный LLM в Настройки → AI: базовый URL и имя модели.",
   "llm.gate.noConsentTitle": "Нужно согласие",
   "llm.gate.noConsentMessage": "Включите согласие в Настройки → AI / LLM, чтобы отправлять диаграммы в облачный LLM.",
   "llm.gate.noKeyTitle": "API-ключ не задан",
@@ -151,6 +157,8 @@ export const llmMessages = {
   "aiChat.attachmentLimit": "Можно прикрепить не больше {count} файлов",
   "aiChat.attachmentImageLimit": "Можно прикрепить не больше {count} картинок",
   "aiChat.attachmentsOnlyPrompt": "Используй прикреплённые файлы как контекст.",
+  "aiChat.provider": "Провайдер",
+  "aiChat.providerNone": "Нет активного провайдера",
   "aiChat.send": "Отправить",
   "aiChat.stop": "Остановить",
   "aiChat.inputPlaceholder": "Опишите задачу: создать, изменить, объяснить или сменить тип и язык…",

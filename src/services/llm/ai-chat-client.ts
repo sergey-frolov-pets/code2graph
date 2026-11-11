@@ -20,6 +20,7 @@ import {
   buildAiChatContextBlock,
 } from "@/services/llm/ai-chat-prompts";
 import { resolveLlmPage } from "@shared/llm-pages";
+import { readChatLlmAccess } from "@/config/llm-accounts";
 import { llmChat } from "@/services/llm/llm-client";
 import {
   LLM_MAX_TOKENS_GENERATION,
@@ -156,6 +157,7 @@ export async function sendAiChatMessage(
         jsonMode: true,
         temperature: LLM_TEMPERATURE_GENERATION,
         maxTokens: LLM_MAX_TOKENS_GENERATION,
+        access: readChatLlmAccess(),
       },
       input.handlers,
     );
@@ -234,6 +236,7 @@ export async function runAiChatUtilityPrompt(
       jsonMode: true,
       temperature: LLM_TEMPERATURE_PRECISE,
       maxTokens: LLM_MAX_TOKENS_PRECISE,
+      access: readChatLlmAccess(),
     },
     handlers,
   );

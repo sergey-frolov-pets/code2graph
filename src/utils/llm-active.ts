@@ -9,6 +9,7 @@ export function isSelectedLlmActive(input: {
   hasApiKey: boolean;
   proxyConfigured: boolean;
   freeProviderAvailable: boolean;
+  localReady?: boolean;
 }): boolean {
   if (!input.consent || !input.providerKind) {
     return false;
@@ -16,6 +17,10 @@ export function isSelectedLlmActive(input: {
 
   if (input.providerKind === LLM_PROVIDER_KIND.FREE_BUILTIN) {
     return input.proxyConfigured && input.freeProviderAvailable;
+  }
+
+  if (input.providerKind === LLM_PROVIDER_KIND.LOCAL) {
+    return input.localReady === true;
   }
 
   return input.hasApiKey;

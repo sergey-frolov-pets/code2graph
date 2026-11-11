@@ -86,4 +86,24 @@ describe("BYOK LLM providers", () => {
       image_url: { url: "data:image/png;base64,abcd" },
     });
   });
+
+  it("omits Authorization when a local server has no API key", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '{"ok":true}' } }],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await callOpenAiCompatibleChat({
+      endpoint: "http://127.0.0.1:11434/v1/chat/completions",
+      model: "llama3.2",
+      messages: [{ role: "user", content: "ping" }],
+      jsonMode: false,
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(init.headers).not.toHaveProperty("Authorization");
+  });
 });

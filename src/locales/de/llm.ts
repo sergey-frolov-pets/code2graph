@@ -10,7 +10,7 @@ export const llmMessages = {
   "llm.keysGuide.securityLead":
     "Geheimnisse werden nicht an fremde App-Server gesendet — sie liegen nur lokal in Ihrem Browser (localStorage):",
   "llm.keysGuide.securityApiKeys":
-    "LLM-API-Schlüssel (Einstellungen → KI) liegen nur in Ihrem Browser; das Eingabefeld wird nach dem Speichern geleert.",
+    "LLM-API-Schlüssel (Einstellungen → KI) werden in diesem Browser mit dem Seed aus der .env verschlüsselt; das Eingabefeld wird nach dem Speichern geleert.",
   "llm.keysGuide.securityLibraryCredentials":
     "Anmeldung und Passwort des Bibliotheksservers (Einstellungen → Bibliothek) — nur in Ihrem Browser; das Passwort wird nach dem Speichern nicht angezeigt.",
   "llm.keysGuide.securityAuthToken":
@@ -45,9 +45,15 @@ export const llmMessages = {
   "llm.provider.zhipuDesc": "Chinesisches LLM von Zhipu AI. Schlüssel von open.bigmodel.cn.",
   "llm.provider.moonshot": "Moonshot (Kimi)",
   "llm.provider.moonshotDesc": "Chinesisches LLM von Moonshot AI. Schlüssel von platform.moonshot.cn.",
+  "llm.provider.local": "Lokales LLM",
+  "llm.provider.localDesc":
+    "OpenAI-kompatibler Server auf diesem Rechner (Ollama, LM Studio, llama.cpp, vLLM). Basis-URL und Modellname angeben. Ein API-Schlüssel ist optional.",
   "llm.activeModelDetail": "{provider} · {model}",
   "llm.activeModelUnknown": "Kein Anbieter ausgewählt",
   "llm.generatingWith": "Wird erzeugt ({provider}, {model})…",
+  "llm.gate.localMissingTitle": "Lokales LLM ist nicht konfiguriert",
+  "llm.gate.localMissingMessage":
+    "Fügen Sie unter Einstellungen → KI ein lokales LLM hinzu: Basis-URL und Modellname.",
   "llm.gate.noConsentTitle": "Einwilligung erforderlich",
   "llm.gate.noConsentMessage": "Aktivieren Sie die Einwilligung unter Einstellungen → KI / LLM, um Diagramme an ein Cloud-LLM zu senden.",
   "llm.gate.noKeyTitle": "API-Schlüssel fehlt",
@@ -440,6 +446,8 @@ export const llmMessages = {
   "aiChat.regenerate": "Antwort neu erzeugen",
   "aiChat.rename": "Umbenennen",
   "aiChat.searchPlaceholder": "Sitzungen suchen…",
+  "aiChat.provider": "Anbieter",
+  "aiChat.providerNone": "Kein aktiver Anbieter",
   "aiChat.send": "Senden",
   "aiChat.sessionsCount": "{sessions} Sitzungen · {messages} Nachrichten",
   "aiChat.share": "Teilen",

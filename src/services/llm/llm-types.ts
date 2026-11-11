@@ -1,3 +1,5 @@
+import type { LlmAccessTarget } from "@/config/llm-account-record";
+
 export type LlmChatRole = "system" | "user" | "assistant";
 
 /** Картинка для одного запроса. В историю чата байты не сохраняются. */
@@ -16,6 +18,8 @@ export interface LlmChatOptions {
   jsonMode?: boolean;
   temperature?: number;
   maxTokens?: number;
+  /** Выбор из чата. Без него используется провайдер из настроек. */
+  access?: LlmAccessTarget;
 }
 
 export interface LlmChatResult {
