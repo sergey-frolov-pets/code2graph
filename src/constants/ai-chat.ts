@@ -30,6 +30,12 @@ export const AI_CHAT_VALIDATION_RETRIES = 2;
 /** Максимум символов одного сообщения пользователя. */
 export const AI_CHAT_MESSAGE_MAX_CHARS = 8000;
 
+/** Сколько строк подсказки видно в списке «Что дальше» до открытия полного текста. */
+export const AI_CHAT_SUGGESTION_VISIBLE_LINES = 2;
+
+/** Начальная высота поля ввода. Пользователь может растянуть его за угол. */
+export const AI_CHAT_COMPOSER_ROWS = 3;
+
 /** К какой диаграмме относится следующий запрос: к открытой или к новой. */
 export const AI_CHAT_CONTEXT_MODES = ["current", "new"] as const;
 export type AiChatContextMode = (typeof AI_CHAT_CONTEXT_MODES)[number];

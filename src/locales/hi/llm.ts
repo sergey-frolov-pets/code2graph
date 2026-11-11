@@ -425,6 +425,8 @@ export const llmMessages = {
   "aiChat.inputPlaceholder": "काम लिखें: बनाएँ, बदलें या समझाएँ…",
   "aiChat.newSession": "नया सत्र",
   "aiChat.nextSteps": "आगे क्या",
+  "aiChat.suggestionTitle": "सुझाव",
+  "aiChat.askSuggestion": "पूछें",
   "aiChat.noSessions": "अभी कोई सत्र नहीं। नई चैट शुरू करें।",
   "aiChat.pin": "पिन करें",
   "aiChat.proposalApplied": "लागू हो गया",

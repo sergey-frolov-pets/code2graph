@@ -168,6 +168,8 @@ export const llmMessages = {
   "aiChat.proposalRejected": "Отклонено",
   "aiChat.proposalStale": "Диаграмма изменилась после предложения — оно устарело",
   "aiChat.nextSteps": "Что дальше",
+  "aiChat.suggestionTitle": "Подсказка",
+  "aiChat.askSuggestion": "Спросить",
   "aiChat.regenerate": "Повторить ответ",
   "aiChat.editResend": "Изменить и отправить заново",
   "aiChat.copyMessage": "Копировать",
