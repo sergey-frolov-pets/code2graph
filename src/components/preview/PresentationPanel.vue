@@ -92,6 +92,7 @@ const {
 } = session;
 const { playing, viewpointIndex, togglePlay, step, pause, goToViewpoint } = session.playback;
 const holdHeaderDim = session.holdHeaderDim;
+const chromeRevealed = session.chromeRevealed;
 
 const track = computed(() => session.currentTrack.value);
 const viewpoint = computed(
@@ -346,6 +347,7 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
       'is-editing': mode === 'edit' && canEdit,
       'is-dim': playing,
       'is-dim-held': dimHeld,
+      'is-revealed': chromeRevealed,
     }"
     role="toolbar"
     :aria-label="t('presentation.expand')"
@@ -1088,7 +1090,8 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
   transition: none;
 }
 
-.presentation-dock.is-dim:not(.is-dim-held):hover {
+.presentation-dock.is-dim:not(.is-dim-held):hover,
+.presentation-dock.is-dim.is-revealed {
   opacity: 1;
 }
 
