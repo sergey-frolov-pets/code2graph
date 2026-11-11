@@ -44,7 +44,7 @@ export const llmMessages = {
   "llm.provider.zhipu": "Zhipu GLM",
   "llm.provider.zhipuDesc": "LLM chinesa da Zhipu AI. Chave de open.bigmodel.cn.",
   "llm.provider.moonshot": "Moonshot (Kimi)",
-  "llm.provider.moonshotDesc": "LLM chinesa da Moonshot AI. Chave de platform.moonshot.cn.",
+  "llm.provider.moonshotDesc": "Kimi da Moonshot AI. Chave de platform.kimi.ai.",
   "llm.provider.local": "LLM local",
   "llm.provider.localDesc":
     "Servidor compatível com OpenAI neste computador (Ollama, LM Studio, llama.cpp, vLLM). Informe a URL base e o nome do modelo. A chave de API é opcional.",

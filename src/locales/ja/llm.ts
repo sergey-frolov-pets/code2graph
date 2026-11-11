@@ -44,7 +44,7 @@ export const llmMessages = {
   "llm.provider.zhipu": "Zhipu GLM",
   "llm.provider.zhipuDesc": "Zhipu AI の中国の LLM です。open.bigmodel.cn のキーです。",
   "llm.provider.moonshot": "Moonshot（Kimi）",
-  "llm.provider.moonshotDesc": "Moonshot AI の中国の LLM です。platform.moonshot.cn のキーです。",
+  "llm.provider.moonshotDesc": "Moonshot AI の Kimi です。platform.kimi.ai のキーです。",
   "llm.provider.local": "ローカル LLM",
   "llm.provider.localDesc":
     "このコンピュータ上の OpenAI 互換サーバー（Ollama、LM Studio、llama.cpp、vLLM）。ベース URL とモデル名を指定します。API キーは任意です。",
