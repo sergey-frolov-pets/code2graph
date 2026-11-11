@@ -119,6 +119,12 @@ export function usePresentationSession(options: {
 
   const dimChrome = computed(() => enabled.value && playback.playing.value);
 
+  const arranging = computed(
+    () => panelOpen.value && options.canEdit.value && !playback.playing.value,
+  );
+
+  const editing = computed(() => arranging.value && mode.value === "edit");
+
   function commit(next: PresentationDocument | null): void {
     const format = options.format.value;
     const source = options.source.value;
@@ -185,9 +191,11 @@ export function usePresentationSession(options: {
   watch(
     () => playback.playing.value,
     (value) => {
-      if (!value) {
-        headerDimHeld.value = false;
+      if (value) {
+        panelOpen.value = false;
+        return;
       }
+      headerDimHeld.value = false;
     },
   );
 
@@ -611,6 +619,8 @@ export function usePresentationSession(options: {
     canEdit: options.canEdit,
     open,
     panelOpen,
+    arranging,
+    editing,
     mode,
     document,
     currentTrack,
