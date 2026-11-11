@@ -4,6 +4,9 @@ import {
   LOCAL_LLM_PROVIDER_ID,
 } from "@/constants/llm-account";
 
+/** Бесплатная модель OpenRouter с response_format. Слаг Llama 3.3 :free снят. */
+const OPENROUTER_DEFAULT_MODEL = "google/gemma-4-31b-it:free";
+
 export const LLM_PROVIDER_KIND = {
   BYOK: "byok",
   FREE_BUILTIN: "free_builtin",
@@ -54,7 +57,7 @@ const FREE_BUILTIN_LLM_PROVIDERS: readonly LlmProviderDefinition[] = [
     requiresUserKey: false,
     nameKey: "llm.provider.openrouterFree",
     descriptionKey: "llm.provider.openrouterFreeDesc",
-    defaultModel: "meta-llama/llama-3.3-70b-instruct:free",
+    defaultModel: OPENROUTER_DEFAULT_MODEL,
   },
 ];
 
@@ -87,7 +90,7 @@ const BYOK_LLM_PROVIDERS: readonly LlmProviderDefinition[] = [
     requiresUserKey: true,
     nameKey: "llm.provider.openrouter",
     descriptionKey: "llm.provider.openrouterDesc",
-    defaultModel: "meta-llama/llama-3.3-70b-instruct:free",
+    defaultModel: OPENROUTER_DEFAULT_MODEL,
     keyUrl: "https://openrouter.ai/keys",
     docsUrl: "https://openrouter.ai/docs",
     apiEndpoint: "https://openrouter.ai/api/v1/chat/completions",

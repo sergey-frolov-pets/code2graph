@@ -1,3 +1,6 @@
+/** Бесплатная модель OpenRouter с response_format. Слаг Llama 3.3 :free снят. */
+const OPENROUTER_DEFAULT_MODEL = "google/gemma-4-31b-it:free";
+
 export const FREE_BUILTIN_LLM_PROVIDER_IDS = [
   "google-gemini-free",
   "groq-free",
@@ -29,7 +32,7 @@ export const FREE_BUILTIN_LLM_PROVIDERS: Record<
   },
   "openrouter-free": {
     id: "openrouter-free",
-    model: "meta-llama/llama-3.3-70b-instruct:free",
+    model: OPENROUTER_DEFAULT_MODEL,
     envKey: "OPENROUTER_API_KEY",
   },
 };
