@@ -28,6 +28,26 @@ describe("parseAiChatEnvelope", () => {
     }
   });
 
+  it("keeps a language and diagram type on a proposal", () => {
+    const result = parseAiChatEnvelope(
+      JSON.stringify({
+        kind: "proposal",
+        message: "Перевёл в sequence",
+        proposal: {
+          source: "sequenceDiagram\n  Alice->>Bob: hi",
+          explanation: "Sequence",
+          format: "mermaid",
+          diagramType: "sequence",
+        },
+      }),
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.proposal?.format).toBe("mermaid");
+      expect(result.data.proposal?.diagramType).toBe("sequence");
+    }
+  });
+
   it("rejects invalid payloads", () => {
     expect(parseAiChatEnvelope("not json").ok).toBe(false);
     expect(parseAiChatEnvelope(JSON.stringify({ kind: "nope", message: "x" })).ok).toBe(false);

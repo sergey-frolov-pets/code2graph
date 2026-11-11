@@ -1,3 +1,4 @@
+import type { AgentDiagramType } from "@shared/agent-diagram";
 import type { AiChatAttachmentKind } from "@/constants/ai-chat";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
 
@@ -17,9 +18,15 @@ export interface AiChatProposal {
   id: string;
   /** Исходник, на котором построено предложение: если текущий source ушёл от него — предложение stale. */
   baseSource: string;
+  /** Язык редактора в момент предложения. */
+  baseFormat?: DiagramFormat;
   proposedSource: string;
   explanation: string;
   status: AiProposalStatus;
+  /** Язык, в который нужно переключить редактор при применении. */
+  format?: DiagramFormat;
+  /** Тип диаграммы, который просит предложение. */
+  diagramType?: AgentDiagramType;
 }
 
 export interface AiChatMessage {

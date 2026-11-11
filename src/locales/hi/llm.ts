@@ -454,6 +454,7 @@ export const llmMessages = {
   "aiChat.sharedReadOnly": "साझा AI चैट सत्र (केवल पढ़ने के लिए)",
   "aiChat.starterCreate": "विवरण से आरेख बनाएँ…",
   "aiChat.starterEdit": "वर्तमान आरेख बदलें…",
+  "aiChat.starterSwitch": "आरेख का प्रकार या भाषा बदलें…",
   "aiChat.starterExplain": "समझाएँ कि यह आरेख कैसे काम करता है",
   "aiChat.stop": "रोकें",
   "aiChat.unpin": "पिन हटाएँ",

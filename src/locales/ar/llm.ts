@@ -454,6 +454,7 @@ export const llmMessages = {
   "aiChat.sharedReadOnly": "جلسة دردشة ذكاء اصطناعي مشتركة (للقراءة فقط)",
   "aiChat.starterCreate": "أنشئ مخططًا من وصف…",
   "aiChat.starterEdit": "غيّر المخطط الحالي…",
+  "aiChat.starterSwitch": "بدّل نوع المخطط أو لغته…",
   "aiChat.starterExplain": "اشرح كيف يعمل هذا المخطط",
   "aiChat.stop": "إيقاف",
   "aiChat.unpin": "إلغاء التثبيت",

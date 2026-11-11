@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DIAGRAM_FORMATS } from "@/constants/diagram-format-ids";
 import { stripJsonCodeFence } from "@/schemas/plantuml-llm-output";
 
 export const AiChatEnvelopeSchema = z.object({
@@ -10,6 +11,8 @@ export const AiChatEnvelopeSchema = z.object({
     .object({
       source: z.string().min(1).max(200000),
       explanation: z.string().max(2000).optional(),
+      format: z.enum(DIAGRAM_FORMATS).optional(),
+      diagramType: z.string().min(1).max(40).optional(),
     })
     .optional(),
   nextSteps: z.array(z.string().min(1).max(200)).max(4).optional(),

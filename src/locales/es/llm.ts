@@ -454,6 +454,7 @@ export const llmMessages = {
   "aiChat.sharedReadOnly": "Sesión de chat de IA compartida (solo lectura)",
   "aiChat.starterCreate": "Crear un diagrama a partir de una descripción…",
   "aiChat.starterEdit": "Cambiar el diagrama actual…",
+  "aiChat.starterSwitch": "Cambia el tipo o el idioma del diagrama…",
   "aiChat.starterExplain": "Explicar cómo funciona este diagrama",
   "aiChat.stop": "Detener",
   "aiChat.unpin": "Quitar fijación",

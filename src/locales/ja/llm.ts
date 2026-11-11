@@ -454,6 +454,7 @@ export const llmMessages = {
   "aiChat.sharedReadOnly": "共有された AI チャットセッション（読み取り専用）",
   "aiChat.starterCreate": "説明から図を作る…",
   "aiChat.starterEdit": "現在の図を変更する…",
+  "aiChat.starterSwitch": "図の種類か言語を変えて…",
   "aiChat.starterExplain": "この図の仕組みを説明する",
   "aiChat.stop": "停止",
   "aiChat.unpin": "ピン留めを外す",

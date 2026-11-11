@@ -454,6 +454,7 @@ export const llmMessages = {
   "aiChat.sharedReadOnly": "Geteilte KI-Chat-Sitzung (nur lesen)",
   "aiChat.starterCreate": "Diagramm aus einer Beschreibung erstellen…",
   "aiChat.starterEdit": "Das aktuelle Diagramm ändern…",
+  "aiChat.starterSwitch": "Diagrammtyp oder Sprache wechseln…",
   "aiChat.starterExplain": "Erklären, wie dieses Diagramm funktioniert",
   "aiChat.stop": "Stopp",
   "aiChat.unpin": "Loslösen",

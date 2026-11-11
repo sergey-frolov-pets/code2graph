@@ -3,6 +3,7 @@ import {
   generateDiagramScaffold,
   listDiagramFormats,
   planDiagram,
+  resolveRequestedDiagramChange,
 } from "./agent-diagram.js";
 
 describe("agent diagram planner", () => {
@@ -42,6 +43,73 @@ describe("agent diagram planner", () => {
     expect(
       planDiagram({ request: "mermaid sequence of login" }).format,
     ).toBe("mermaid");
+  });
+
+  it("keeps an edit in the current language when the user did not ask to switch", () => {
+    const change = resolveRequestedDiagramChange({
+      request: "добавь участника",
+      currentFormat: "mermaid",
+    });
+    expect(change.active).toBe(false);
+    expect(change.format).toBe("mermaid");
+    expect(change.diagramType).toBeNull();
+  });
+
+  it("switches type inside the current language when that language can express it", () => {
+    const change = resolveRequestedDiagramChange({
+      request: "переведи в диаграмму последовательности",
+      currentFormat: "mermaid",
+    });
+    expect(change.active).toBe(true);
+    expect(change.format).toBe("mermaid");
+    expect(change.diagramType).toBe("sequence");
+  });
+
+  it("switches language when the user names one", () => {
+    const change = resolveRequestedDiagramChange({
+      request: "convert this to d2",
+      currentFormat: "plantuml",
+    });
+    expect(change.active).toBe(true);
+    expect(change.format).toBe("d2");
+    expect(change.diagramType).toBeNull();
+  });
+
+  it("treats a named language and type as a switch even without a verb", () => {
+    const change = resolveRequestedDiagramChange({
+      request: "mermaid sequence of checkout",
+      currentFormat: "plantuml",
+    });
+    expect(change.format).toBe("mermaid");
+    expect(change.diagramType).toBe("sequence");
+  });
+
+  it("does not switch when the user only asks about a language", () => {
+    const change = resolveRequestedDiagramChange({
+      request: "explain mermaid syntax",
+      currentFormat: "plantuml",
+    });
+    expect(change.active).toBe(false);
+    expect(change.format).toBe("plantuml");
+  });
+
+  it("falls back when the named language cannot express the requested type", () => {
+    const change = resolveRequestedDiagramChange({
+      request: "переведи в graphml sequence",
+      currentFormat: "plantuml",
+    });
+    expect(change.format).toBe("graphml");
+    expect(change.diagramType).toBe("graph");
+    expect(change.droppedType).toBe("sequence");
+  });
+
+  it("moves to a language that can express the requested type", () => {
+    const change = resolveRequestedDiagramChange({
+      request: "хочу блок-схему",
+      currentFormat: "plantuml",
+    });
+    expect(change.format).toBe("mermaid");
+    expect(change.diagramType).toBe("flowchart");
   });
 
   it("builds a scaffold for the planned language", () => {

@@ -67,7 +67,12 @@ describe("AiChatPanel layout", () => {
     expect(view.host.querySelector("[data-testid='ai-chat-attach']")).not.toBeNull();
     const context = view.host.querySelector("[data-testid='ai-chat-context-mode']");
     expect(context).not.toBeNull();
-    expect(context!.textContent).toContain("Новая диаграмма");
+    expect(view.host.querySelector("[data-testid='ai-chat-history']")?.getAttribute("aria-label")).toContain(
+      "История",
+    );
+    expect(view.host.querySelector("[data-testid='ai-chat-context-new']")?.getAttribute("aria-label")).toContain(
+      "Новая диаграмма",
+    );
     expect((view.host.querySelector("[data-testid='ai-chat-file-input']") as HTMLInputElement).accept).toContain(
       ".md",
     );
@@ -95,9 +100,8 @@ describe("AiChatPanel layout", () => {
     const view = mountChat();
     await nextTick();
 
-    const context = view.host.querySelector("[data-testid='ai-chat-context-mode']") as HTMLSelectElement;
-    context.value = "new";
-    context.dispatchEvent(new Event("change"));
+    const contextNew = view.host.querySelector("[data-testid='ai-chat-context-new']") as HTMLButtonElement;
+    contextNew.click();
     await nextTick();
 
     expect(view.host.querySelector("[data-testid='ai-chat-next']")!.textContent).toContain(
