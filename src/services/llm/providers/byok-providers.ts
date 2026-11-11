@@ -1,3 +1,4 @@
+import { toGeminiContentParts, toOpenAiChatMessage } from "@/services/llm/llm-message-parts";
 import type { LlmChatMessage } from "@/services/llm/llm-types";
 import { LlmClientError } from "@/services/llm/llm-types";
 
@@ -17,7 +18,7 @@ export async function callOpenAiCompatibleChat(
 ): Promise<string> {
   const body: Record<string, unknown> = {
     model: options.model,
-    messages: options.messages,
+    messages: options.messages.map(toOpenAiChatMessage),
     temperature: options.temperature ?? 0.2,
     response_format: options.jsonMode ? { type: "json_object" } : undefined,
   };
@@ -71,7 +72,7 @@ export async function callGeminiChat(
     .filter((message) => message.role !== "system")
     .map((message) => ({
       role: message.role === "assistant" ? "model" : "user",
-      parts: [{ text: message.content }],
+      parts: toGeminiContentParts(message),
     }));
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;

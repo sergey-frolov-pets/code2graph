@@ -30,6 +30,48 @@ export const AI_CHAT_VALIDATION_RETRIES = 2;
 /** Максимум символов одного сообщения пользователя. */
 export const AI_CHAT_MESSAGE_MAX_CHARS = 8000;
 
+/** К какой диаграмме относится следующий запрос: к открытой или к новой. */
+export const AI_CHAT_CONTEXT_MODES = ["current", "new"] as const;
+export type AiChatContextMode = (typeof AI_CHAT_CONTEXT_MODES)[number];
+export const AI_CHAT_CONTEXT_MODE_DEFAULT: AiChatContextMode = "current";
+export const AI_CHAT_CONTEXT_MODE_STORAGE_KEY = "code2graph-ai-chat-context-mode";
+
+export const AI_CHAT_ATTACHMENT_KINDS = ["diagram", "text", "pdf", "spreadsheet", "image"] as const;
+export type AiChatAttachmentKind = (typeof AI_CHAT_ATTACHMENT_KINDS)[number];
+
+/** Сколько файлов можно прикрепить к одному сообщению. */
+export const AI_CHAT_MAX_ATTACHMENTS = 4;
+
+/** Картинки уходят в модель отдельно и не пишутся в историю. */
+export const AI_CHAT_MAX_IMAGE_ATTACHMENTS = 2;
+
+export const AI_CHAT_ATTACHMENT_FILE_MAX_BYTES = 1_500_000;
+export const BYTES_PER_MEGABYTE = 1_000_000;
+export const AI_CHAT_ATTACHMENT_NAME_MAX_CHARS = 120;
+export const AI_CHAT_ATTACHMENT_EXCERPT_MAX_CHARS = 4_000;
+export const AI_CHAT_ATTACHMENT_EMPTY_TEXT = "(no extractable text)";
+
+export const AI_CHAT_IMAGE_MIME_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"] as const;
+export const AI_CHAT_IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp", ".gif"] as const;
+export const AI_CHAT_TEXT_EXTENSIONS = [
+  ".md",
+  ".markdown",
+  ".csv",
+  ".json",
+  ".log",
+  ".yaml",
+  ".yml",
+  ".txt",
+  ".svg",
+] as const;
+export const AI_CHAT_MARKDOWN_EXTENSIONS = [".md", ".markdown"] as const;
+export const AI_CHAT_SPREADSHEET_EXTENSIONS = [".xlsx"] as const;
+export const AI_CHAT_SPREADSHEET_MIME_TYPE =
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+export const AI_CHAT_XLSX_MAX_SHEETS = 8;
+export const AI_CHAT_XLSX_MAX_ROWS = 200;
+export const AI_CHAT_XLSX_MAX_COLUMNS = 40;
+
 /** Длина фрагмента транскрипта для эвристической проверки на секреты перед шарингом. */
 export const AI_CHAT_SECRET_SCAN_MIN_TOKEN_LENGTH = 24;
 

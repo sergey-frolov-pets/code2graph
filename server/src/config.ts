@@ -54,6 +54,11 @@ export const LLM_MAX_MESSAGE_CHARS = Number(
 export const LLM_MAX_TOTAL_CHARS = Number(
   process.env.LLM_MAX_TOTAL_CHARS ?? 32_000,
 );
+export const LLM_MAX_IMAGES_PER_REQUEST = Number(process.env.LLM_MAX_IMAGES_PER_REQUEST ?? 2);
+export const LLM_MAX_IMAGE_BASE64_CHARS = Number(
+  process.env.LLM_MAX_IMAGE_BASE64_CHARS ?? 2_000_000,
+);
+export const LLM_IMAGE_MIME_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"] as const;
 export const LLM_MAX_OUTPUT_TOKENS = Number(
   process.env.LLM_MAX_OUTPUT_TOKENS ?? 2_048,
 );

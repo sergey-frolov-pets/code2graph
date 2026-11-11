@@ -64,6 +64,16 @@ describe("AiChatPanel layout", () => {
     expect(composer!.contains(send)).toBe(true);
     expect(next!.textContent).toContain("Что дальше");
     expect(next!.textContent).toContain("Измени текущую диаграмму…");
+    expect(view.host.querySelector("[data-testid='ai-chat-attach']")).not.toBeNull();
+    const context = view.host.querySelector("[data-testid='ai-chat-context-mode']");
+    expect(context).not.toBeNull();
+    expect(context!.textContent).toContain("Новая диаграмма");
+    expect((view.host.querySelector("[data-testid='ai-chat-file-input']") as HTMLInputElement).accept).toContain(
+      ".md",
+    );
+    expect((view.host.querySelector("[data-testid='ai-chat-file-input']") as HTMLInputElement).accept).toContain(
+      ".xlsx",
+    );
     expect(send!.textContent).toContain("Отправить");
     expect((send as HTMLButtonElement).disabled).toBe(true);
 
@@ -73,6 +83,47 @@ describe("AiChatPanel layout", () => {
     textarea!.dispatchEvent(new Event("input"));
     await nextTick();
 
+    expect((view.host.querySelector("[data-testid='ai-chat-send']") as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+
+    view.unmount();
+  });
+
+  it("switches starter chips to a new diagram and accepts a markdown file", async () => {
+    useLocale().setLocale("ru");
+    const view = mountChat();
+    await nextTick();
+
+    const context = view.host.querySelector("[data-testid='ai-chat-context-mode']") as HTMLSelectElement;
+    context.value = "new";
+    context.dispatchEvent(new Event("change"));
+    await nextTick();
+
+    expect(view.host.querySelector("[data-testid='ai-chat-next']")!.textContent).toContain(
+      "Создай диаграмму по описанию",
+    );
+
+    const input = view.host.querySelector("[data-testid='ai-chat-file-input']") as HTMLInputElement;
+    const file = new File(["# Actors\nAlice"], "actors.md", { type: "text/markdown" });
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: {
+        0: file,
+        length: 1,
+        item: (index: number) => (index === 0 ? file : null),
+        *[Symbol.iterator]() {
+          yield file;
+        },
+      },
+    });
+    input.dispatchEvent(new Event("change"));
+    await vi.waitFor(() => {
+      expect(view.host.textContent).toContain("actors.md");
+    });
+
+    expect(view.host.textContent).toContain("actors.md");
+    expect(view.host.textContent).toContain("Markdown");
     expect((view.host.querySelector("[data-testid='ai-chat-send']") as HTMLButtonElement).disabled).toBe(
       false,
     );

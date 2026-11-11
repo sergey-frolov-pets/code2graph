@@ -1,12 +1,20 @@
 <script setup lang="ts">
-import { Send } from "@lucide/vue";
+import { Paperclip, Send, X } from "@lucide/vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import type { LayoutEngine } from "@/constants";
 import {
   AI_CHAT_APPLY_MODE_STORAGE_KEY,
+  AI_CHAT_ATTACHMENT_FILE_MAX_BYTES,
+  AI_CHAT_CONTEXT_MODE_DEFAULT,
+  AI_CHAT_CONTEXT_MODE_STORAGE_KEY,
   AI_CHAT_DEFAULT_APPLY_MODE,
+  AI_CHAT_MAX_ATTACHMENTS,
+  AI_CHAT_MAX_IMAGE_ATTACHMENTS,
   AI_CHAT_MESSAGE_MAX_CHARS,
+  BYTES_PER_MEGABYTE,
   type AiChatApplyMode,
+  type AiChatAttachmentKind,
+  type AiChatContextMode,
 } from "@/constants/ai-chat";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
 import type { RenderMode } from "@/constants/render-settings";
@@ -29,7 +37,14 @@ import {
   filterAiChatSessions,
   findSecretLikeFragments,
 } from "@/utils/ai-chat-session";
-import type { AiChatMessage, AiChatSession } from "@/types/ai-chat-session";
+import type { LlmChatImagePart } from "@/services/llm/llm-types";
+import type { AiChatAttachment, AiChatMessage, AiChatSession } from "@/types/ai-chat-session";
+import {
+  AI_CHAT_ATTACHMENT_ACCEPT,
+  classifyAiChatFile,
+  readAiChatAttachment,
+  type AiChatReadAttachment,
+} from "@/utils/ai-chat-attachments";
 
 const props = defineProps<{
   source: string;
@@ -73,6 +88,9 @@ const {
 } = sessionsApi;
 
 const draft = ref("");
+const pendingAttachments = ref<Array<AiChatReadAttachment & { id: string }>>([]);
+const attachmentNotice = ref("");
+const fileInputRef = ref<HTMLInputElement | null>(null);
 const isBusy = ref(false);
 const threadRef = ref<HTMLElement | null>(null);
 const errorMessage = ref("");
@@ -94,6 +112,15 @@ const applyMode = ref<AiChatApplyMode>(
 );
 watch(applyMode, (mode) => writeStorageItem(AI_CHAT_APPLY_MODE_STORAGE_KEY, mode));
 
+const storedContextMode = readStorageItem(AI_CHAT_CONTEXT_MODE_STORAGE_KEY);
+const contextMode = ref<AiChatContextMode>(
+  storedContextMode === "new" ? "new" : AI_CHAT_CONTEXT_MODE_DEFAULT,
+);
+watch(contextMode, (mode) => writeStorageItem(AI_CHAT_CONTEXT_MODE_STORAGE_KEY, mode));
+
+const attachmentAccept = AI_CHAT_ATTACHMENT_ACCEPT;
+const attachmentMaxMb = AI_CHAT_ATTACHMENT_FILE_MAX_BYTES / BYTES_PER_MEGABYTE;
+
 let generationToken = 0;
 
 const filteredSessions = computed(() =>
@@ -101,7 +128,8 @@ const filteredSessions = computed(() =>
 );
 const totalMessages = computed(() => countAiChatMessages(sessions.value));
 const canSend = computed(
-  () => draft.value.trim().length > 0 && !isBusy.value,
+  () =>
+    (draft.value.trim().length > 0 || pendingAttachments.value.length > 0) && !isBusy.value,
 );
 const serverShareAvailable = computed(() => isAiChatShareServerAvailable());
 
@@ -113,7 +141,13 @@ const secretWarnings = computed(() => {
     user: t("llm.chat.roleUser"),
     assistant: t("llm.chat.roleAssistant"),
   });
-  return findSecretLikeFragments(`${transcript}\n${props.source}`);
+  const attachmentText = [
+    ...activeSession.value.messages.flatMap((message) => message.attachments ?? []),
+    ...pendingAttachments.value,
+  ]
+    .map((attachment) => attachment.textExcerpt ?? "")
+    .join("\n");
+  return findSecretLikeFragments(`${transcript}\n${props.source}\n${attachmentText}`);
 });
 
 /**
@@ -128,12 +162,14 @@ const nextStepSuggestions = computed<string[]>(() => {
   if (lastAssistant?.nextSteps && lastAssistant.nextSteps.length > 0) {
     return lastAssistant.nextSteps;
   }
+  const editingCurrentDiagram =
+    contextMode.value === "current" && props.source.trim().length > 0;
   if (!session || session.messages.length === 0) {
-    return props.source.trim()
+    return editingCurrentDiagram
       ? [t("aiChat.starterEdit"), t("aiChat.starterExplain")]
       : [t("aiChat.starterCreate"), t("aiChat.starterExplain")];
   }
-  return props.source.trim()
+  return editingCurrentDiagram
     ? [t("aiChat.starterEdit"), t("aiChat.starterExplain")]
     : [t("aiChat.starterCreate")];
 });
@@ -309,7 +345,10 @@ async function regenerate(): Promise<void> {
     (message) => message.createdAt <= lastUser.createdAt,
   );
   await persist(session);
-  await runSend(lastUser.content, { skipUserAppend: true });
+  await runSend(lastUser.content, {
+    skipUserAppend: true,
+    attachments: lastUser.attachments,
+  });
 }
 
 function stopGeneration(): void {
@@ -317,18 +356,123 @@ function stopGeneration(): void {
   isBusy.value = false;
 }
 
-async function onSend(content?: string): Promise<void> {
-  const text = (content ?? draft.value).trim().slice(0, AI_CHAT_MESSAGE_MAX_CHARS);
-  if (!text || isBusy.value) {
+function attachmentKindLabel(attachment: { name: string; kind: AiChatAttachmentKind }): string {
+  const lowerName = attachment.name.toLowerCase();
+  if (lowerName.endsWith(".md") || lowerName.endsWith(".markdown")) {
+    return t("aiChat.attachmentMarkdown");
+  }
+  switch (attachment.kind) {
+    case "diagram":
+      return t("aiChat.attachmentDiagram");
+    case "text":
+      return t("aiChat.attachmentText");
+    case "pdf":
+      return t("aiChat.attachmentPdf");
+    case "spreadsheet":
+      return t("aiChat.attachmentSpreadsheet");
+    case "image":
+      return t("aiChat.attachmentImage");
+  }
+}
+
+function openAttachmentPicker(): void {
+  fileInputRef.value?.click();
+}
+
+function removeAttachment(id: string): void {
+  pendingAttachments.value = pendingAttachments.value.filter((item) => item.id !== id);
+}
+
+async function onFilesSelected(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement;
+  const files = [...(input.files ?? [])];
+  input.value = "";
+  if (files.length === 0 || isBusy.value) {
     return;
   }
+
+  const room = AI_CHAT_MAX_ATTACHMENTS - pendingAttachments.value.length;
+  let notice = "";
+  if (room <= 0) {
+    attachmentNotice.value = t("aiChat.attachmentLimit", { count: AI_CHAT_MAX_ATTACHMENTS });
+    return;
+  }
+  if (files.length > room) {
+    notice = t("aiChat.attachmentLimit", { count: AI_CHAT_MAX_ATTACHMENTS });
+  }
+
+  let imageCount = pendingAttachments.value.filter((item) => item.kind === "image").length;
+  const next = [...pendingAttachments.value];
+  for (const file of files.slice(0, room)) {
+    const kind = classifyAiChatFile(file.name, file.type);
+    if (kind === "image" && imageCount >= AI_CHAT_MAX_IMAGE_ATTACHMENTS) {
+      if (!notice) {
+        notice = t("aiChat.attachmentImageLimit", { count: AI_CHAT_MAX_IMAGE_ATTACHMENTS });
+      }
+      continue;
+    }
+    const result = await readAiChatAttachment(file);
+    if (!result.ok) {
+      if (!notice) {
+        notice =
+          result.reason === "too-large"
+            ? t("aiChat.attachmentTooLarge", { name: file.name, maxMb: attachmentMaxMb })
+            : result.reason === "unsupported"
+              ? t("aiChat.attachmentUnsupported", { name: file.name })
+              : t("aiChat.attachmentReadError", { name: file.name });
+      }
+      continue;
+    }
+    next.push({ ...result.attachment, id: createAiChatMessageId() });
+    if (result.attachment.kind === "image") {
+      imageCount += 1;
+    }
+  }
+  pendingAttachments.value = next;
+  attachmentNotice.value = notice;
+}
+
+function storedAttachments(items: Array<AiChatReadAttachment & { id: string }>): AiChatAttachment[] {
+  return items.map((item) => ({
+    name: item.name,
+    kind: item.kind,
+    mimeType: item.mimeType,
+    textExcerpt: item.textExcerpt,
+  }));
+}
+
+function liveImages(items: Array<AiChatReadAttachment & { id: string }>): LlmChatImagePart[] {
+  return items
+    .filter(
+      (item): item is AiChatReadAttachment & { id: string; imageBase64: string } =>
+        item.kind === "image" && typeof item.imageBase64 === "string" && item.imageBase64.length > 0,
+    )
+    .slice(0, AI_CHAT_MAX_IMAGE_ATTACHMENTS)
+    .map((item) => ({ mimeType: item.mimeType, dataBase64: item.imageBase64 }));
+}
+
+async function onSend(content?: string): Promise<void> {
+  const typed = (content ?? draft.value).trim().slice(0, AI_CHAT_MESSAGE_MAX_CHARS);
+  const pending = pendingAttachments.value;
+  if ((typed.length === 0 && pending.length === 0) || isBusy.value) {
+    return;
+  }
+  const text = typed || t("aiChat.attachmentsOnlyPrompt");
+  const attachments = storedAttachments(pending);
+  const images = liveImages(pending);
   draft.value = "";
-  await runSend(text);
+  pendingAttachments.value = [];
+  attachmentNotice.value = "";
+  await runSend(text, { attachments, images });
 }
 
 async function runSend(
   text: string,
-  options: { skipUserAppend?: boolean } = {},
+  options: {
+    skipUserAppend?: boolean;
+    attachments?: AiChatAttachment[];
+    images?: LlmChatImagePart[];
+  } = {},
 ): Promise<void> {
   const session = await ensureActiveSession();
   const token = ++generationToken;
@@ -341,6 +485,7 @@ async function runSend(
         id: createAiChatMessageId(),
         role: "user",
         content: text,
+        attachments: options.attachments?.length ? options.attachments : undefined,
         createdAt: new Date().toISOString(),
       });
       applyDerivedTitle(session);
@@ -354,6 +499,9 @@ async function runSend(
       userContent: text,
       format: props.diagramFormat,
       source: props.source,
+      contextMode: contextMode.value,
+      attachments: options.attachments,
+      images: options.images,
       renderError: props.renderError,
       summary: session.summary,
       layout: props.layout,
@@ -632,6 +780,17 @@ async function onShareCopyTranscript(): Promise<void> {
           message.role === "user" ? t("llm.chat.roleUser") : t("llm.chat.roleAssistant")
         }}</span>
         <p class="ai-chat-panel__content">{{ message.content }}</p>
+        <ul
+          v-if="message.attachments?.length"
+          class="ai-chat-panel__message-files"
+        >
+          <li
+            v-for="(file, index) in message.attachments"
+            :key="`${message.id}-${index}`"
+          >
+            {{ attachmentKindLabel(file) }}: {{ file.name }}
+          </li>
+        </ul>
 
         <ul v-if="message.clarificationQuestions?.length" class="ai-chat-panel__questions">
           <li v-for="(question, index) in message.clarificationQuestions" :key="index">
@@ -720,7 +879,64 @@ async function onShareCopyTranscript(): Promise<void> {
         data-testid="ai-chat-composer"
         @submit.prevent="onSend()"
       >
+        <p
+          v-if="attachmentNotice"
+          class="ai-chat-panel__warning"
+        >
+          {{ attachmentNotice }}
+        </p>
+        <ul
+          v-if="pendingAttachments.length > 0"
+          class="ai-chat-panel__attachments"
+          data-testid="ai-chat-attachments"
+        >
+          <li
+            v-for="item in pendingAttachments"
+            :key="item.id"
+            class="ai-chat-panel__attachment"
+          >
+            <span class="ai-chat-panel__attachment-kind">{{ attachmentKindLabel(item) }}</span>
+            <span class="ai-chat-panel__attachment-name">{{ item.name }}</span>
+            <button
+              class="ai-chat-panel__attachment-remove"
+              type="button"
+              :aria-label="t('aiChat.removeAttachment', { name: item.name })"
+              :disabled="isBusy"
+              @click="removeAttachment(item.id)"
+            >
+              <X
+                :size="14"
+                :stroke-width="1.8"
+                aria-hidden="true"
+              />
+            </button>
+          </li>
+        </ul>
         <div class="ai-chat-panel__composer-box">
+          <input
+            ref="fileInputRef"
+            class="ai-chat-panel__file-input"
+            data-testid="ai-chat-file-input"
+            type="file"
+            multiple
+            :accept="attachmentAccept"
+            @change="onFilesSelected"
+          >
+          <button
+            class="ai-chat-panel__attach"
+            type="button"
+            data-testid="ai-chat-attach"
+            :aria-label="t('aiChat.attach')"
+            :title="t('aiChat.attachHint')"
+            :disabled="isBusy || pendingAttachments.length >= AI_CHAT_MAX_ATTACHMENTS"
+            @click="openAttachmentPicker"
+          >
+            <Paperclip
+              :size="18"
+              :stroke-width="1.8"
+              aria-hidden="true"
+            />
+          </button>
           <textarea
             v-model="draft"
             class="ai-chat-panel__input"
@@ -758,9 +974,17 @@ async function onShareCopyTranscript(): Promise<void> {
         </div>
 
         <div class="ai-chat-panel__meta">
-          <p class="ai-chat-panel__context">
-            {{ source.trim() ? t("aiChat.contextDiagram", { format: diagramFormat }) : t("aiChat.contextEmpty") }}
-          </p>
+          <label class="ai-chat-panel__context">
+            <span>{{ t("aiChat.context") }}</span>
+            <select
+              v-model="contextMode"
+              class="select"
+              data-testid="ai-chat-context-mode"
+            >
+              <option value="current">{{ t("aiChat.contextCurrent") }}</option>
+              <option value="new">{{ t("aiChat.contextNew") }}</option>
+            </select>
+          </label>
           <label class="ai-chat-panel__apply-mode">
             <span>{{ t("aiChat.applyMode") }}</span>
             <select
@@ -1027,7 +1251,7 @@ async function onShareCopyTranscript(): Promise<void> {
   align-items: flex-end;
   gap: 8px;
   min-width: 0;
-  padding: 4px 4px 4px 12px;
+  padding: 4px;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--surface);
@@ -1060,6 +1284,91 @@ async function onShareCopyTranscript(): Promise<void> {
   outline: none;
 }
 
+.ai-chat-panel__file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ai-chat-panel__attach {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--btn-touch, 44px);
+  height: var(--btn-touch, 44px);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.ai-chat-panel__attach:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--surface-muted);
+}
+
+.ai-chat-panel__attach:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-chat-panel__attachments,
+.ai-chat-panel__message-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-chat-panel__attachment,
+.ai-chat-panel__message-files li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 32px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: 0.75rem;
+}
+
+.ai-chat-panel__attachment-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 12rem;
+}
+
+.ai-chat-panel__attachment-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
 .ai-chat-panel__composer-actions {
   flex: 0 0 auto;
   padding-bottom: 2px;
@@ -1089,15 +1398,23 @@ async function onShareCopyTranscript(): Promise<void> {
 }
 
 .ai-chat-panel__context {
-  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 12rem;
   min-width: 0;
   margin: 0;
-  overflow: hidden;
-  color: var(--text-muted);
   font-size: 0.75rem;
-  line-height: 1.3;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+.ai-chat-panel__context .select {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  min-height: 32px;
+  max-width: 100%;
+  font-size: 0.75rem;
 }
 
 .ai-chat-panel__apply-mode {
@@ -1218,34 +1535,23 @@ async function onShareCopyTranscript(): Promise<void> {
   }
 
   .ai-chat-panel__meta {
-    flex-wrap: nowrap;
-  }
-
-  .ai-chat-panel__context {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .ai-chat-panel__composer,
   .ai-chat-panel__meta,
-  .ai-chat-panel__context,
-  .ai-chat-panel__apply-mode,
   .ai-chat-panel__next {
     flex: 0 0 auto;
   }
 
+  .ai-chat-panel__context,
   .ai-chat-panel__apply-mode {
     flex: 1 1 auto;
-    width: auto;
+    width: 100%;
   }
 
+  .ai-chat-panel__context .select,
   .ai-chat-panel__apply-mode .select {
     flex: 1 1 auto;
     width: auto;
