@@ -109,4 +109,13 @@ export const settingsMessages = {
   "settings.llmTestRunning": "正在测试…",
   "settings.llmTestSuccess": "连接成功",
   "settings.llmTestFailed": "连接失败",
+  "settings.llmModel": "模型",
+  "settings.llmRefreshPrices": "刷新价格",
+  "settings.llmRefreshPricesRunning": "正在刷新价格…",
+  "settings.llmModelPrice": "每 100 万 token 输入 {prompt} / 输出 {completion}",
+  "settings.llmModelPriceFree": "免费",
+  "settings.llmModelPriceUnknown": "未标明价格",
+  "settings.llmModelPriceNeedsKey": "添加 API 密钥后即可刷新此提供商的模型。",
+  "settings.llmModelPriceFailed": "无法刷新价格。",
+  "settings.llmModelPriceUnavailable": "此提供商不公布价格目录。",
 } as const satisfies LocaleMessages;

@@ -17,10 +17,29 @@ import {
   maskLlmApiKey,
   type LlmAccountDraftError,
 } from "@/config/llm-account-record";
+import {
+  formatLlmModelPrice,
+  listLlmModelChoices,
+  resolveSelectedLlmModel,
+  saveLlmModelCatalog,
+  setSelectedLlmModel,
+} from "@/config/llm-model-selection";
+import { getLlmApiKey } from "@/composables/useLlmApiKeys";
 import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
 import { useLlmSettings } from "@/composables/useLlmSettings";
 import { useLlmProxyAvailability } from "@/composables/useLlmProxyAvailability";
 import { testLlmConnection } from "@/services/llm/llm-client";
+import {
+  fetchLlmModelCatalog,
+  LlmModelCatalogError,
+  type LlmModelCatalogFailure,
+} from "@/services/llm/llm-model-catalog";
+
+const PRICE_ERROR_KEY: Record<LlmModelCatalogFailure, LocaleKey> = {
+  needs_key: "settings.llmModelPriceNeedsKey",
+  unavailable: "settings.llmModelPriceUnavailable",
+  failed: "settings.llmModelPriceFailed",
+};
 
 const ACCOUNT_SAVE_ERROR_KEY: Record<LlmAccountDraftError, LocaleKey> = {
   invalid_url: "settings.llmLocalInvalidUrl",
@@ -78,6 +97,9 @@ export function useSettingsLlmForm(t: TranslateFn) {
   const isTestingLlm = ref(false);
   const llmTestOk = ref(false);
   const llmTestMessage = ref("");
+  const isRefreshingPrices = ref(false);
+  const modelPriceError = ref("");
+  let priceRefreshGeneration = 0;
 
   const isActiveProviderByok = computed(
     () => activeProvider.value?.kind === LLM_PROVIDER_KIND.BYOK,
@@ -145,15 +167,68 @@ export function useSettingsLlmForm(t: TranslateFn) {
     ),
   );
 
+  const modelOptions = computed(() =>
+    listLlmModelChoices(llmProviderId.value).map((model) => ({
+      id: model.id,
+      label: `${model.id} — ${formatLlmModelPrice(model, t)}`,
+      price: formatLlmModelPrice(model, t),
+    })),
+  );
+
+  const selectedModelId = computed(() => resolveSelectedLlmModel(llmProviderId.value));
+
+  const selectedModelPrice = computed(
+    () => modelOptions.value.find((model) => model.id === selectedModelId.value)?.price ?? "",
+  );
+
   watch(llmProviderId, () => {
     apiKeyInput.value = "";
     apiKeyError.value = "";
     showApiKey.value = false;
     localError.value = "";
+    priceRefreshGeneration += 1;
+    isRefreshingPrices.value = false;
+    modelPriceError.value = "";
   });
 
   function onProviderChange(event: Event): void {
     setLlmProviderId((event.target as HTMLSelectElement).value);
+  }
+
+  function onModelChange(event: Event): void {
+    setSelectedLlmModel(llmProviderId.value, (event.target as HTMLSelectElement).value);
+  }
+
+  async function refreshModelPrices(): Promise<void> {
+    const provider = activeProvider.value;
+    if (!provider || provider.kind === LLM_PROVIDER_KIND.LOCAL) {
+      return;
+    }
+
+    const generation = ++priceRefreshGeneration;
+    const providerId = provider.id;
+    isRefreshingPrices.value = true;
+    modelPriceError.value = "";
+
+    try {
+      const models = await fetchLlmModelCatalog(provider, getLlmApiKey(providerId));
+      if (generation !== priceRefreshGeneration) {
+        return;
+      }
+
+      saveLlmModelCatalog(providerId, models);
+    } catch (error) {
+      if (generation !== priceRefreshGeneration) {
+        return;
+      }
+
+      const code = error instanceof LlmModelCatalogError ? error.code : "failed";
+      modelPriceError.value = t(PRICE_ERROR_KEY[code]);
+    } finally {
+      if (generation === priceRefreshGeneration) {
+        isRefreshingPrices.value = false;
+      }
+    }
   }
 
   function onConsentChange(event: Event): void {
@@ -248,6 +323,11 @@ export function useSettingsLlmForm(t: TranslateFn) {
     isTestingLlm,
     llmTestOk,
     llmTestMessage,
+    isRefreshingPrices,
+    modelPriceError,
+    modelOptions,
+    selectedModelId,
+    selectedModelPrice,
     isActiveProviderByok,
     isActiveProviderLocal,
     llmProviderOptions,
@@ -256,6 +336,8 @@ export function useSettingsLlmForm(t: TranslateFn) {
     hasActiveApiKey,
     refreshLlmProxyAvailability,
     onProviderChange,
+    onModelChange,
+    refreshModelPrices,
     onConsentChange,
     addProviderKey,
     addLocalProvider,

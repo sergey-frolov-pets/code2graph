@@ -111,4 +111,13 @@ export const settingsMessages = {
   "settings.llmTestRunning": "Prüfung läuft…",
   "settings.llmTestSuccess": "Verbindung erfolgreich",
   "settings.llmTestFailed": "Verbindung fehlgeschlagen",
+  "settings.llmModel": "Modell",
+  "settings.llmRefreshPrices": "Preise aktualisieren",
+  "settings.llmRefreshPricesRunning": "Preise werden aktualisiert…",
+  "settings.llmModelPrice": "{prompt} Eingabe / {completion} Ausgabe pro 1M Tokens",
+  "settings.llmModelPriceFree": "Kostenlos",
+  "settings.llmModelPriceUnknown": "Preis nicht angegeben",
+  "settings.llmModelPriceNeedsKey": "Fügen Sie einen API-Schlüssel hinzu, um die Modelle dieses Anbieters zu aktualisieren.",
+  "settings.llmModelPriceFailed": "Preise konnten nicht aktualisiert werden.",
+  "settings.llmModelPriceUnavailable": "Dieser Anbieter veröffentlicht keinen Preiskatalog.",
 } as const satisfies LocaleMessages;

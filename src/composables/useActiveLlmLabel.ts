@@ -1,4 +1,5 @@
 import { computed } from "vue";
+import { resolveSelectedLlmModel } from "@/config/llm-model-selection";
 import { useLlmSettings } from "@/composables/useLlmSettings";
 import { useLocale } from "@/composables/useLocale";
 
@@ -14,7 +15,7 @@ export function useActiveLlmLabel() {
 
     return t("llm.activeModelDetail", {
       provider: t(provider.nameKey),
-      model: provider.defaultModel,
+      model: resolveSelectedLlmModel(provider.id),
     });
   });
 
@@ -26,7 +27,7 @@ export function useActiveLlmLabel() {
 
     return t("llm.generatingWith", {
       provider: t(provider.nameKey),
-      model: provider.defaultModel,
+      model: resolveSelectedLlmModel(provider.id),
     });
   });
 

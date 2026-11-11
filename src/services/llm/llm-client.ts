@@ -1,3 +1,4 @@
+import { resolveSelectedLlmModel } from "@/config/llm-model-selection";
 import { getLlmProvider } from "@/constants/llm-providers";
 import type { LlmGateSuccess } from "@/composables/useLlmGate";
 import {
@@ -71,7 +72,7 @@ async function dispatchByokChat(
     throw new LlmClientError("provider_invalid", `Unknown provider: ${providerId}`);
   }
 
-  const model = provider.defaultModel;
+  const model = resolveSelectedLlmModel(providerId);
   const jsonMode = options.jsonMode ?? true;
 
   if (providerId === "google-gemini") {
@@ -110,7 +111,12 @@ async function dispatchGateChat(
   options: LlmChatOptions,
 ): Promise<LlmChatResult> {
   const provider = getLlmProvider(gate.providerId);
-  const model = provider?.defaultModel ?? "unknown";
+  const model =
+    gate.mode === "local"
+      ? gate.model
+      : gate.mode === "byok"
+        ? resolveSelectedLlmModel(gate.providerId)
+        : (provider?.defaultModel ?? "unknown");
 
   if (gate.mode === "proxy") {
     const content = await proxyLlmChat(gate.providerId, messages, options);

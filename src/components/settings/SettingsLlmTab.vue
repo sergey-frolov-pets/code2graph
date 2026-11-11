@@ -56,6 +56,35 @@ const { t } = useLocale();
       {{ t("settings.llmProxyUnreachable") }}
     </p>
 
+    <template v-if="llm.isActiveProviderByok">
+      <label class="settings-field">
+        <span class="settings-field__label">{{ t("settings.llmModel") }}</span>
+        <select class="select" :value="llm.selectedModelId" @change="llm.onModelChange">
+          <option v-for="model in llm.modelOptions" :key="model.id" :value="model.id">
+            {{ model.label }}
+          </option>
+        </select>
+        <span class="settings-field__hint">{{ llm.selectedModelPrice }}</span>
+      </label>
+      <div class="settings-key-actions">
+        <button
+          class="btn"
+          type="button"
+          :disabled="llm.isRefreshingPrices"
+          @click="llm.refreshModelPrices"
+        >
+          {{
+            llm.isRefreshingPrices
+              ? t("settings.llmRefreshPricesRunning")
+              : t("settings.llmRefreshPrices")
+          }}
+        </button>
+      </div>
+      <p v-if="llm.modelPriceError" class="settings-field__error">
+        {{ llm.modelPriceError }}
+      </p>
+    </template>
+
     <template v-if="llm.isActiveProviderByok || llm.isActiveProviderLocal">
       <p class="settings-field__hint">{{ t("settings.llmAccountsHint") }}</p>
       <p class="settings-field__label settings-key-status">

@@ -111,4 +111,13 @@ export const settingsMessages = {
   "settings.llmTestRunning": "Testing…",
   "settings.llmTestSuccess": "Connection successful",
   "settings.llmTestFailed": "Connection failed",
+  "settings.llmModel": "Model",
+  "settings.llmRefreshPrices": "Refresh prices",
+  "settings.llmRefreshPricesRunning": "Refreshing prices…",
+  "settings.llmModelPrice": "{prompt} in / {completion} out per 1M tokens",
+  "settings.llmModelPriceFree": "Free",
+  "settings.llmModelPriceUnknown": "Price not listed",
+  "settings.llmModelPriceNeedsKey": "Add an API key to refresh this provider's models.",
+  "settings.llmModelPriceFailed": "Could not refresh prices.",
+  "settings.llmModelPriceUnavailable": "This provider does not publish a price catalog.",
 } as const satisfies LocaleMessages;
