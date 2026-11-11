@@ -418,6 +418,8 @@ export const llmMessages = {
   "aiChat.attachmentImageLimit": "画像は {count} 件までです",
   "aiChat.attachmentsOnlyPrompt": "添付ファイルをコンテキストとして使ってください。",
   "aiChat.copyMessage": "コピー",
+  "aiChat.copyChat": "チャットをコピー",
+  "aiChat.cancel": "キャンセル",
   "aiChat.defaultSessionTitle": "新しいセッション",
   "aiChat.delete": "削除",
   "aiChat.deleteAllUnpinned": "ピン留め以外をすべて削除",

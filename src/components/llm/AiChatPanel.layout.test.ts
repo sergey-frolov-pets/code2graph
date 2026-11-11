@@ -2,7 +2,7 @@
 
 import { createApp, h, nextTick } from "vue";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { AI_CHAT_COMPOSER_ROWS, AI_CHAT_SUGGESTION_VISIBLE_LINES } from "@/constants/ai-chat";
+import { AI_CHAT_COMPOSER_ROWS } from "@/constants/ai-chat";
 import { useLocale } from "@/composables/useLocale";
 import { sendAiChatMessage } from "@/services/llm/ai-chat-client";
 import AiChatPanel from "@/components/llm/AiChatPanel.vue";
@@ -15,7 +15,12 @@ vi.mock("@/storage/ai-chat-sessions", () => ({
 }));
 
 vi.mock("@/services/llm/ai-chat-client", () => ({
-  sendAiChatMessage: vi.fn(),
+  sendAiChatMessage: vi.fn(async () => ({
+    kind: "answer",
+    message: "ok",
+    providerId: "test",
+    model: "test",
+  })),
 }));
 
 const MERMAID_SOURCE = "flowchart LR\n  A --> B";
@@ -51,7 +56,7 @@ describe("AiChatPanel layout", () => {
     document.body.innerHTML = "";
   });
 
-  it("places next-step suggestions under the composer and keeps send inside it", async () => {
+  it("places next-step suggestions above the composer and keeps send inside it", async () => {
     useLocale().setLocale("ru");
     const view = mountChat();
     await nextTick();
@@ -65,14 +70,16 @@ describe("AiChatPanel layout", () => {
     expect(composer).not.toBeNull();
     expect(next).not.toBeNull();
     expect(send).not.toBeNull();
-    expect(messages!.compareDocumentPosition(composer!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(composer!.compareDocumentPosition(next!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(messages!.compareDocumentPosition(next!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(next!.compareDocumentPosition(composer!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(composer!.contains(send)).toBe(true);
-    expect(next!.textContent).toContain("Что дальше");
+    expect(next!.getAttribute("aria-label")).toContain("Что дальше");
+    expect(next!.querySelector(".ai-chat-panel__next-label")).toBeNull();
     expect(next!.textContent).toContain("Измени текущую диаграмму…");
     expect(view.host.querySelector("[data-testid='ai-chat-attach']")).not.toBeNull();
     const context = view.host.querySelector("[data-testid='ai-chat-context-mode']");
     expect(context).not.toBeNull();
+    expect(composer!.contains(context)).toBe(true);
     expect(view.host.querySelector("[data-testid='ai-chat-history']")?.getAttribute("aria-label")).toContain(
       "История",
     );
@@ -142,65 +149,102 @@ describe("AiChatPanel layout", () => {
     view.unmount();
   });
 
-  it("opens a two-line suggestion in a scrollable preview and sends it only after Ask", async () => {
+  it("opens session search over the thread and copies the chat instead of sharing", async () => {
     useLocale().setLocale("ru");
-    vi.mocked(sendAiChatMessage).mockResolvedValue({
-      kind: "answer",
-      message: "Готово",
-      providerId: "test",
-      model: "stub",
-    });
     const view = mountChat();
     await nextTick();
 
-    const panel = view.host.querySelector(".ai-chat-panel") as HTMLElement;
-    expect(panel.style.getPropertyValue("--ai-chat-chip-lines")).toBe(
-      String(AI_CHAT_SUGGESTION_VISIBLE_LINES),
+    expect(view.host.querySelector("[aria-label='Поделиться']")).toBeNull();
+    expect(view.host.querySelector("[data-testid='ai-chat-copy']")?.getAttribute("aria-label")).toBe(
+      "Скопировать чат",
     );
-    expect(panel.style.getPropertyValue("--ai-chat-composer-rows")).toBe(String(AI_CHAT_COMPOSER_ROWS));
 
-    const chip = view.host.querySelector(".ai-chat-panel__chip") as HTMLButtonElement | null;
-    expect(chip).not.toBeNull();
-    const chipText = chip!.querySelector(".ai-chat-panel__chip-text") as HTMLElement;
-    expect(chipText).not.toBeNull();
-    const suggestion = chipText.textContent ?? "";
+    (view.host.querySelector("[data-testid='ai-chat-history']") as HTMLButtonElement).click();
+    await nextTick();
+
+    const messages = view.host.querySelector("[data-testid='ai-chat-messages']");
+    const sheet = view.host.querySelector("[data-testid='ai-chat-history-sheet']");
+    expect(messages).not.toBeNull();
+    expect(sheet).not.toBeNull();
+    expect(sheet!.parentElement).toBe(messages!.parentElement);
+    expect(sheet!.querySelector("[data-testid='ai-chat-history-search']")).not.toBeNull();
+    expect(sheet!.querySelector("ul")).not.toBeNull();
+    expect(sheet!.textContent).not.toContain("Создать ссылку");
+
+    view.unmount();
+  });
+
+  it("sends a suggestion on click and previews it on a long press", async () => {
+    useLocale().setLocale("ru");
+    vi.mocked(sendAiChatMessage).mockClear();
+    const view = mountChat();
+    await nextTick();
+
+    const chip = view.host.querySelector("[data-testid='ai-chat-suggestion']") as HTMLButtonElement;
+    const suggestion = chip.textContent?.trim() ?? "";
     expect(suggestion.length).toBeGreaterThan(0);
-
-    chip!.click();
-    await nextTick();
-
-    const dialog = document.body.querySelector("[data-testid='ai-chat-suggestion']");
-    expect(dialog).not.toBeNull();
-    const preview = dialog!.querySelector(".ai-chat-panel__suggestion-text") as HTMLElement;
-    expect(preview.textContent).toContain(suggestion);
-    expect(dialog!.textContent).toContain("Спросить");
-    expect(sendAiChatMessage).not.toHaveBeenCalled();
-    expect((view.host.querySelector("[data-testid='ai-chat-send']") as HTMLButtonElement).disabled).toBe(
-      true,
-    );
-
-    const cancel = [...dialog!.querySelectorAll("button")].find((button) =>
-      button.textContent?.includes("Отмена"),
-    ) as HTMLButtonElement;
-    cancel.click();
-    await nextTick();
-    expect(document.body.querySelector("[data-testid='ai-chat-suggestion']")).toBeNull();
-    expect(sendAiChatMessage).not.toHaveBeenCalled();
-
-    chip!.click();
-    await nextTick();
-    const ask = document.body.querySelector(
-      "[data-testid='ai-chat-suggestion-ask']",
-    ) as HTMLButtonElement;
-    ask.click();
+    chip.click();
     await vi.waitFor(() => {
       expect(sendAiChatMessage).toHaveBeenCalledTimes(1);
     });
     expect(vi.mocked(sendAiChatMessage).mock.calls[0]?.[0]).toMatchObject({
       userContent: suggestion,
     });
-    expect(document.body.querySelector("[data-testid='ai-chat-suggestion']")).toBeNull();
 
     view.unmount();
+
+    vi.mocked(sendAiChatMessage).mockClear();
+    const preview = mountChat();
+    await nextTick();
+    const held = preview.host.querySelector("[data-testid='ai-chat-suggestion']") as HTMLButtonElement;
+    const heldText = held.textContent?.trim() ?? "";
+    held.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        bubbles: true,
+        button: 0,
+        pointerId: 1,
+        pointerType: "touch",
+      }),
+    );
+    await new Promise((resolve) => {
+      setTimeout(resolve, 450);
+    });
+    await nextTick();
+
+    const dialog = preview.host.querySelector("[data-testid='ai-chat-suggestion-preview']");
+    expect(dialog).not.toBeNull();
+    expect(dialog!.textContent).toContain(heldText);
+    expect(dialog!.textContent).toContain("Отправить");
+    expect(dialog!.textContent).toContain("Отмена");
+    expect(sendAiChatMessage).not.toHaveBeenCalled();
+
+    held.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1, pointerType: "touch" }));
+    held.click();
+    await nextTick();
+    expect(sendAiChatMessage).not.toHaveBeenCalled();
+
+    (dialog!.querySelector("[data-testid='ai-chat-suggestion-cancel']") as HTMLButtonElement).click();
+    await nextTick();
+    expect(preview.host.querySelector("[data-testid='ai-chat-suggestion-preview']")).toBeNull();
+    expect(sendAiChatMessage).not.toHaveBeenCalled();
+
+    held.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        bubbles: true,
+        button: 0,
+        pointerId: 2,
+        pointerType: "touch",
+      }),
+    );
+    await new Promise((resolve) => {
+      setTimeout(resolve, 450);
+    });
+    await nextTick();
+    (preview.host.querySelector("[data-testid='ai-chat-suggestion-send']") as HTMLButtonElement).click();
+    await vi.waitFor(() => {
+      expect(sendAiChatMessage).toHaveBeenCalledTimes(1);
+    });
+
+    preview.unmount();
   });
 });
