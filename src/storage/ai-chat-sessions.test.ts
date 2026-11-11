@@ -5,7 +5,7 @@ import type { AiChatMessage, AiChatSession } from "@/types/ai-chat-session";
 const idb = vi.hoisted(() => ({
   put: vi.fn(),
   delete: vi.fn(),
-  getAll: vi.fn(async () => []),
+  getAll: vi.fn(async (..._args: unknown[]) => [] as unknown[]),
 }));
 
 vi.mock("@/storage/idb/idb-core", () => ({
