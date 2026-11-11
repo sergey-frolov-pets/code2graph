@@ -8,8 +8,6 @@ export const settingsMessages = {
   "settings.fontFamily": "フォント",
   "settings.syntaxHighlight": "構文の強調表示",
   "settings.autocomplete": "入力候補",
-  "settings.rendering": "描画",
-  "settings.layoutEngine": "レイアウトエンジン",
   "settings.theme": "画面のテーマ",
   "settings.darkTheme": "ダークテーマ",
   "settings.language": "表示言語",

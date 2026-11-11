@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { FORMAT_GUIDE_LINKS } from "@/constants/help-guides";
-import { APP_LINKS, LAYOUT_ENGINES, type LayoutEngine } from "@/constants";
+import { APP_LINKS } from "@/constants";
 import { getLlmApiKeysGuideHref } from "@/constants/llm-settings";
 import {
   EDITOR_FONT_FAMILY_OPTIONS,
@@ -12,7 +12,6 @@ import {
 import { useLocale } from "@/composables/useLocale";
 
 defineProps<{
-  layout: LayoutEngine;
   editorFontSize: EditorFontSize;
   editorFontFamilyId: EditorFontFamilyId;
   editorSyntaxHighlight: boolean;
@@ -20,7 +19,6 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "update:layout": [value: LayoutEngine];
   "update:editorFontSize": [value: EditorFontSize];
   "update:editorFontFamilyId": [value: EditorFontFamilyId];
   "update:editorSyntaxHighlight": [value: boolean];
@@ -29,11 +27,6 @@ const emit = defineEmits<{
 }>();
 
 const { locale, t } = useLocale();
-
-const layoutOptions = Object.entries(LAYOUT_ENGINES).map(([label, value]) => ({
-  label,
-  value,
-}));
 
 const fontFamilyOptions = computed(() =>
   EDITOR_FONT_FAMILY_OPTIONS.map((option) => ({
@@ -120,32 +113,6 @@ const llmApiKeysGuideHref = computed(() => getLlmApiKeysGuideHref(locale.value))
         "
       />
       <span>{{ t("settings.autocomplete") }}</span>
-    </label>
-  </div>
-
-  <div class="settings-section">
-    <h3 class="settings-section__title">{{ t("settings.rendering") }}</h3>
-
-    <label class="settings-field">
-      <span class="settings-field__label">{{ t("settings.layoutEngine") }}</span>
-      <select
-        class="select"
-        :value="layout"
-        @change="
-          emit(
-            'update:layout',
-            ($event.target as HTMLSelectElement).value as LayoutEngine,
-          )
-        "
-      >
-        <option
-          v-for="option in layoutOptions"
-          :key="option.value"
-          :value="option.value"
-        >
-          {{ option.label }}
-        </option>
-      </select>
     </label>
   </div>
 
