@@ -276,7 +276,7 @@ export const siteMessages = {
     "Save diagrams in a private library. Automatic PWA cache for safe offline work.",
   "site.deepDive.item4.title": "📤 One-click export",
   "site.deepDive.item4.text":
-    "Download diagrams as vector (SVG, PDF) or raster (PNG). Copy ready code to the clipboard for Markdown / Confluence.",
+    "Download diagrams as vector (SVG) or raster (PNG). Copy ready code to the clipboard for Markdown / Confluence.",
 
   "site.formats.title": "One tool for all key standards",
   "site.formats.colFormat": "Format",
@@ -339,7 +339,7 @@ export const siteMessages = {
     "Yes. Our built-in converter translates syntax and nodes to preserve the logic of the original diagram.",
   "site.faq.q4": "Is it safe to store diagrams in Code2Graph?",
   "site.faq.a4":
-    "Absolutely. Diagrams are saved locally in your browser / PWA app, and with an account they are securely stored in your private cloud.",
+    "Absolutely. Diagrams are saved locally in your browser / PWA app, and with an account they are stored in your private cloud library.",
 
   "site.finalCta.title": "Your Swiss Army knife for Diagrams-as-Code",
   "site.finalCta.text":
@@ -422,4 +422,30 @@ export const siteMessages = {
     "Commercial use is free during a 30-day trial; a paid license is required afterwards.",
   "site.license.read": "Read license",
   "site.license.commercialLink": "Commercial license",
+  "site.landing.showcaseTitle": "See it, click it, edit it",
+  "site.landing.showcaseHint": "Every picture below opens in the editor",
+  "site.landing.tryScenario": "Try this scenario",
+  "site.landing.openInEditor": "Open in editor",
+  "site.landing.allFormats": "6 languages — one editor",
+  "site.landing.privacyTitle": "Private by design",
+  "site.landing.privacyLocal": "Diagrams render in your browser",
+  "site.landing.privacyKey": "Your AI key stays in your browser",
+  "site.landing.privacyCloud": "Cloud library only if you sign in; AI uses your provider's network",
+  "site.landing.platformTitle": "Everywhere you work",
+  "site.landing.platformDevices": "Windows · macOS · Linux · iOS · Android",
+  "site.landing.platformSame": "Browser or installed app — the same editor",
+  "site.landing.platformOffline": "Works offline after the first load",
+  "site.landing.heroAlt": "Typing diagram code and seeing the diagram build live",
+  "site.landing.converterAlt": "Converting PlantUML to Mermaid in one click, the diagram stays the same",
+  "site.landing.mcpAlt": "Asking an AI agent in Cursor and getting a finished diagram",
+  "site.landing.audience.developers": "Developers",
+  "site.landing.audience.analysts": "Analysts",
+  "site.landing.audience.managers": "Managers",
+  "site.landing.audience.students": "Students",
+  "site.landing.audience.vibecoders": "Vibe coders",
+  "site.landing.usp.developers": "Sequence and C4 during review — diagram as code, in Git and in the PR diff",
+  "site.landing.usp.analysts": "A process without syntax: the Wizard asks, the diagram is ready",
+  "site.landing.usp.managers": "Plan and status in one picture: Gantt and charts into a deck in one click",
+  "site.landing.usp.students": "A diagram for your coursework in a minute: templates, hints, no install",
+  "site.landing.usp.vibecoders": "The agent draws, you edit: MCP gives Cursor source and a picture",
 } as const satisfies LocaleMessages;

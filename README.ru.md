@@ -24,8 +24,6 @@
 
 ## Демо
 
-<!-- TODO: replace docs/demo.gif with a short recording of the editor. The file is not in the repository yet. -->
-
 ![Редактор Code2Graph](docs/demo.gif)
 
 ## Быстрый старт

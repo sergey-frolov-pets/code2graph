@@ -52,6 +52,7 @@ import {
   DATA_LINK_SOURCE_KEYWORD,
   DATA_LINK_SOURCE_UPDATED_EVENT,
 } from "@/services/local-data-link/constants";
+import { consumeLandingSample } from "@/services/landing-sample";
 import { upsertDataLinkMarker } from "@/services/local-data-link/source-marker";
 import type { DataLinkMarkerUpdatedDetail } from "@/services/local-data-link/sync-diagram-source";
 
@@ -622,6 +623,14 @@ export function useAppShell(): AppShellContext {
     restoreSettings();
     prepareRestoredSource();
     initEditorDocumentsOnBoot();
+    const landingSample = consumeLandingSample();
+    if (landingSample) {
+      applyWizardDiagramToNewTab(
+        landingSample.source,
+        landingSample.label,
+        landingSample.format,
+      );
+    }
     void initializeIncomingSources();
     void bootEngine();
     void handleShareLinkOnBoot();

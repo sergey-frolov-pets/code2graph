@@ -276,7 +276,7 @@ export const siteMessages = {
     "Сохраняйте диаграммы в приватном хранилище. Автоматическое сохранение кэша в PWA для безопасной оффлайн-работы.",
   "site.deepDive.item4.title": "📤 Экспорт в один клик",
   "site.deepDive.item4.text":
-    "Скачивайте схемы в векторном формате (SVG, PDF) или растре (PNG). Копируйте готовый код в буфер обмена для вставки в Markdown / Confluence.",
+    "Скачивайте схемы в векторном формате (SVG) или растре (PNG). Копируйте готовый код в буфер обмена для вставки в Markdown / Confluence.",
 
   "site.formats.title": "Единый инструмент для всех ключевых стандартов",
   "site.formats.colFormat": "Формат",
@@ -340,7 +340,7 @@ export const siteMessages = {
     "Да! Наш встроенный алгоритм конвертации транслирует синтаксис и узлы так, чтобы полностью сохранить логику исходной схемы.",
   "site.faq.q4": "Безопасно ли хранить схемы в Code2Graph?",
   "site.faq.a4":
-    "Абсолютно. Ваши диаграммы сохраняются локально в вашем браузере / PWA-приложении, а при использовании аккаунта — надёжно шифруются в личном облаке.",
+    "Абсолютно. Ваши диаграммы сохраняются локально в вашем браузере / PWA-приложении, а при использовании аккаунта — хранятся в вашей личной облачной библиотеке.",
 
   "site.finalCta.title": "Ваш универсальный швейцарский нож для Diagrams-as-Code",
   "site.finalCta.text":
@@ -423,4 +423,30 @@ export const siteMessages = {
     "Коммерческое использование бесплатно в течение 30 дней, дальше нужна платная лицензия.",
   "site.license.read": "Текст лицензии",
   "site.license.commercialLink": "Коммерческая лицензия",
+  "site.landing.showcaseTitle": "Смотри, нажимай, редактируй",
+  "site.landing.showcaseHint": "Каждая картинка ниже открывается в редакторе",
+  "site.landing.tryScenario": "Попробовать этот сценарий",
+  "site.landing.openInEditor": "Открыть в редакторе",
+  "site.landing.allFormats": "6 языков — один редактор",
+  "site.landing.privacyTitle": "Приватно по устройству",
+  "site.landing.privacyLocal": "Диаграмма рисуется в вашем браузере",
+  "site.landing.privacyKey": "Ключ AI — только в вашем браузере",
+  "site.landing.privacyCloud": "Облако — только со входом; AI использует сеть выбранного провайдера",
+  "site.landing.platformTitle": "Везде, где вы",
+  "site.landing.platformDevices": "Windows · macOS · Linux · iOS · Android",
+  "site.landing.platformSame": "Браузер или установленное приложение — один редактор",
+  "site.landing.platformOffline": "Без сети — тоже работает, после первой загрузки",
+  "site.landing.heroAlt": "Печатается код диаграммы, и схема строится вживую",
+  "site.landing.converterAlt": "Конвертация PlantUML в Mermaid в один клик, схема не меняется",
+  "site.landing.mcpAlt": "Запрос AI-агенту в Cursor и готовая диаграмма в ответе",
+  "site.landing.audience.developers": "Разработчики",
+  "site.landing.audience.analysts": "Аналитики",
+  "site.landing.audience.managers": "Менеджеры",
+  "site.landing.audience.students": "Студенты",
+  "site.landing.audience.vibecoders": "Вайбкодеры",
+  "site.landing.usp.developers": "Sequence и C4 во время ревью — диаграмма как код, в Git и в диффе PR",
+  "site.landing.usp.analysts": "Процесс без синтаксиса: Мастер задаёт вопросы — схема готова",
+  "site.landing.usp.managers": "План и статус одной картинкой: Gantt и графики — в презентацию за клик",
+  "site.landing.usp.students": "Схема для работы за минуту: шаблоны, подсказки, без установки",
+  "site.landing.usp.vibecoders": "Агент рисует — ты правишь: MCP отдаёт Cursor исходник и картинку",
 } as const satisfies LocaleMessages;
