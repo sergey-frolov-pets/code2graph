@@ -415,6 +415,7 @@ export const llmMessages = {
   "aiChat.attachmentReadError": "无法读取 {name}",
   "aiChat.attachmentLimit": "最多可附加 {count} 个文件",
   "aiChat.attachmentImageLimit": "最多可附加 {count} 张图片",
+  "aiChat.pasteAttachedAsFile": "过长文本已作为文件 {name} 附加。",
   "aiChat.attachmentsOnlyPrompt": "请把附件作为上下文。",
   "aiChat.copyMessage": "复制",
   "aiChat.copyChat": "复制聊天",

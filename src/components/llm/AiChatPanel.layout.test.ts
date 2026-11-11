@@ -2,6 +2,7 @@
 
 import { createApp, h, nextTick } from "vue";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { AI_CHAT_MESSAGE_MAX_CHARS } from "@/constants/ai-chat";
 import { useLocale } from "@/composables/useLocale";
 import { sendAiChatMessage } from "@/services/llm/ai-chat-client";
 import AiChatPanel from "@/components/llm/AiChatPanel.vue";
@@ -282,5 +283,45 @@ describe("AiChatPanel layout", () => {
     });
 
     preview.unmount();
+  });
+
+  it("attaches an oversized paste as a text file and leaves a short paste in the field", async () => {
+    useLocale().setLocale("ru");
+    const view = mountChat();
+    await nextTick();
+
+    const textarea = view.host.querySelector("textarea") as HTMLTextAreaElement;
+    textarea.value = "Краткий запрос";
+    textarea.dispatchEvent(new Event("input"));
+    await nextTick();
+
+    function paste(text: string): Event {
+      const event = new Event("paste", { bubbles: true, cancelable: true });
+      Object.defineProperty(event, "clipboardData", {
+        value: {
+          getData: (type: string) => (type === "text/plain" ? text : ""),
+        },
+      });
+      textarea.dispatchEvent(event);
+      return event;
+    }
+
+    const shortPaste = paste(" и ещё строка");
+    expect(shortPaste.defaultPrevented).toBe(false);
+    expect(view.host.querySelector("[data-testid='ai-chat-attachments']")).toBeNull();
+    expect(textarea.value).toBe("Краткий запрос");
+
+    const longPaste = paste(`${"а".repeat(AI_CHAT_MESSAGE_MAX_CHARS)} хвост`);
+    expect(longPaste.defaultPrevented).toBe(true);
+    await nextTick();
+
+    const attachments = view.host.querySelector("[data-testid='ai-chat-attachments']");
+    expect(attachments).not.toBeNull();
+    expect(attachments!.textContent).toContain("pasted.txt");
+    expect(attachments!.textContent).toContain("Текст");
+    expect(view.host.textContent).toContain("Большой текст прикреплён файлом pasted.txt.");
+    expect(textarea.value).toBe("Краткий запрос");
+
+    view.unmount();
   });
 });

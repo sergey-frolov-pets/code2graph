@@ -30,6 +30,10 @@ export const AI_CHAT_VALIDATION_RETRIES = 2;
 /** Максимум символов одного сообщения пользователя. */
 export const AI_CHAT_MESSAGE_MAX_CHARS = 8000;
 
+/** Вставка длиннее сообщения не попадает в поле: она становится текстовым файлом. */
+export const AI_CHAT_PASTED_TEXT_BASENAME = "pasted";
+export const AI_CHAT_PASTED_TEXT_EXTENSION = ".txt";
+
 /** Сколько строк подсказки видно в списке «Что дальше» до открытия полного текста. */
 export const AI_CHAT_SUGGESTION_VISIBLE_LINES = 2;
 

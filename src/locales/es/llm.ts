@@ -416,6 +416,7 @@ export const llmMessages = {
   "aiChat.attachmentReadError": "No se pudo leer {name}",
   "aiChat.attachmentLimit": "Puedes adjuntar hasta {count} archivos",
   "aiChat.attachmentImageLimit": "Puedes adjuntar hasta {count} imágenes",
+  "aiChat.pasteAttachedAsFile": "El texto largo se adjuntó como {name}.",
   "aiChat.attachmentsOnlyPrompt": "Usa los archivos adjuntos como contexto.",
   "aiChat.copyMessage": "Copiar",
   "aiChat.copyChat": "Copiar chat",
