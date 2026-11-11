@@ -174,7 +174,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.voronoi":
     "voronoi が分割を開きます。data の中の地点は 名前 : x=, y=, group=, color=#hex です。名前の中の \\n は改行です。",
   "site.ext.mermaid.syntax.clustered":
-    "series がチャートを開きます。categories がカテゴリ一覧、series 名前 : v1, v2, … が棒で、名前は省略できます（`series : v1, v2`）。空の枠、\"-\"、null はその棒を飛ばします。line ラベル : v1, v2, … が線で、ラベルは省略できます（`line : v1, v2`）。飛ばした枠は両隣の点をつなぎ、ラベルはプロットの右に出ます。color と style=solid|dash|dot|dashdot が線を決めます。line 160 \"計画\" は水平レベルです（コロンなし）。break 200 --> 700 は軸から区間を切り取ります。cagr は最初の棒から最後の棒までの CAGR、cagr 2, 7 はそれらの棒をつなぎます。format、prefix、label が楕円を制御します。format=\"±0.0%\" は値が正のときだけプラスを付けます。重ならない矢印は同じ段を共有します。連続する cagr の行は 1 つの系列に適用されます。stacked は系列を積み、stacked off は棒を並べ、rotate 90 はチャートを回転します。invert y を rotate 90 と併用すると最初のカテゴリが下になり、invert y off は上から下の順に戻します。ラベル内の \\n は改行です。",
+    "series がチャートを開きます。categories がカテゴリ一覧、series 名前 : v1, v2, … が棒で、名前は省略できます（`series : v1, v2`）。空の枠、\"-\"、null はその棒を飛ばします。line ラベル : v1, v2, … が線で、ラベルは省略できます（`line : v1, v2`）。飛ばした枠は両隣の点をつなぎ、ラベルはプロットの右に出ます。color と style=solid|dash|dot|dashdot が線を決めます。line 160 \"計画\" は水平レベルです（コロンなし）。break 200 --> 700 は軸から区間を切り取ります。cagr は最初の棒から最後の棒までの CAGR、cagr 2, 7 はそれらの棒をつなぎます。format、prefix、label が楕円を制御します。format=\"±0.0%\" は値が正のときだけプラスを付けます。重ならない矢印は同じ段を共有します。連続する cagr の行は 1 つの系列に適用されます。stacked は系列を積み、stacked off は棒を並べ、rotate 90 はチャートを回転します。invert y を rotate 90 と併用すると最初のカテゴリが下になり、invert y off は上から下の順に戻します。ラベル内の \\n は改行です。y2 \"ラベル\" 0 --> 40 は第二の目盛りを描き（右側、rotate 90 では上側）、axis=y2 は系列・折れ線・レベル線をそれに結びます。",
   "site.primer.graphml.kw.graphml":
     "文書のルートです。GraphML の名前空間が必要です。",
   "site.primer.graphml.kw.graph":

@@ -438,6 +438,81 @@ series Ряд : 20, 80`);
     expect(reversed.errors[0]?.message).toContain("должно быть больше");
   });
 
+  it("строит вторую ось y2 для линий, серий и уровней со своей шкалой", () => {
+    const parsed = clusteredEngine.parse(`series
+title Выручка и конверсия
+categories Q1, Q2, Q3, Q4
+y "млн ₽" 0 --> 200
+y2 "конверсия, %" 0 --> 40
+series Выручка : 120, 145, 165, 190
+line Конверсия : 12, 18, 24, 32 axis=y2 color=#8250df
+line 30 "цель" axis=y2`);
+    expect(parsed.ok).toBe(true);
+    const model = parsed.value as ClusteredModel;
+    expect(model.y2).toEqual({ label: "конверсия, %", min: 0, max: 40 });
+    expect(model.lines[0]?.axis).toBe("y2");
+    expect(model.thresholds).toEqual([
+      expect.objectContaining({ value: 30, label: "цель", axis: "y2" }),
+    ]);
+
+    const svg = clusteredEngine.render(model, {});
+    expect(svg).toContain('data-axis-line="y2"');
+    expect(svg).toContain('data-y2-label="1"');
+    expect(svg).toContain('data-y2-tick="40"');
+    expect(svg).toContain('data-axis="y2"');
+    // Точка конверсии 32 из 40 — высоко на второй шкале, а не внизу основной (32 из 200).
+    const points = /<polyline[^>]*points="([^"]+)"[^>]*data-line="0"/.exec(svg)?.[1] ?? "";
+    const lastY = Number(points.trim().split(/\s+/).pop()?.split(",")[1]);
+    const firstBarTop = Number(/<rect[^>]*y="([\d.]+)"[^>]*data-bar="0-0"/.exec(svg)?.[1]);
+    expect(lastY).toBeLessThan(firstBarTop);
+    expect(svg).toMatch(/data-threshold-line="1"[^>]*data-axis="y2"/);
+
+    const rotated = clusteredEngine.render({ ...model, rotate90: true }, {});
+    expect(rotated).toContain('data-axis-line="y2"');
+    expect(rotated).toContain('data-y2-tick="40"');
+    expect(rotated).toContain('data-y2-label="1"');
+  });
+
+  it("включает вторую ось по пометке axis=y2 без директивы и не пускает её ряды в основную шкалу", () => {
+    const parsed = clusteredEngine.parse(`series
+categories A, B
+y "" 0 --> 100
+series Большие : 80, 90
+series Малые : 2, 3 axis=right`);
+    expect(parsed.ok).toBe(true);
+    const model = parsed.value as ClusteredModel;
+    expect(model.y2).toEqual({});
+    expect(model.series[1]?.axis).toBe("y2");
+    const svg = clusteredEngine.render(model, {});
+    expect(svg).toMatch(/data-bar="0-1"[^>]*data-axis="y2"/);
+    // Малые значения на своей шкале дают высокие бары, а не полоски у нуля основной.
+    const smallTop = Number(/<rect[^>]*y="([\d.]+)"[^>]*data-bar="0-1"/.exec(svg)?.[1]);
+    const bigTop = Number(/<rect[^>]*y="([\d.]+)"[^>]*data-bar="0-0"/.exec(svg)?.[1]);
+    expect(smallTop).toBeLessThan(bigTop + 60);
+  });
+
+  it("отвергает неверную ось и бары второй оси в стопке", () => {
+    const badAxis = clusteredEngine.parse(`series
+categories A, B
+series Ряд : 1, 2 axis=y3`);
+    expect(badAxis.ok).toBe(false);
+    expect(badAxis.errors[0]?.message).toContain("axis=y2");
+
+    const badY2 = clusteredEngine.parse(`series
+categories A, B
+y2 "ось" 40 --> 10
+series Ряд : 1, 2`);
+    expect(badY2.ok).toBe(false);
+    expect(badY2.errors[0]?.message).toContain("y2");
+
+    const stacked = clusteredEngine.parse(`series
+stacked
+categories A, B
+series Ряд : 1, 2 axis=y2`);
+    expect(stacked.ok).toBe(false);
+    expect(stacked.errors[0]?.message).toContain("stacked");
+  });
+
   it("рисует серии и линии без названий и не ставит их в легенду", () => {
     const parsed = clusteredEngine.parse(`series
 categories A, B, C

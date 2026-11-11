@@ -343,13 +343,15 @@ series Socios : 45, 60, 75, 95`,
 title Reales y referencias
 categories Q1, Q2, Q3, Q4
 y "mill. USD" 0 --> 220
+y2 "conversión, %" 0 --> 40
 grid 20
 labels above
 series Real : 120, 145, 165, 190
 line Continua : 110, 130, 150, 180 color=#0969da style=solid width=2
 line Discontinua : 100, -, 160, 175 color=#8250df style=dash
 line Puntos : 90, , 155, 170 color=#2da44e style=dot width=1
-line Trazo-punto : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5`,
+line Trazo-punto : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
+line Conversión : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
     seriesCagr: `series
 %% Un cagr sin números dibuja una flecha desde la primera barra hasta la última.
 title Crecimiento de los ingresos
@@ -759,13 +761,15 @@ series 伙伴 : 45, 60, 75, 95`,
 title 实际与参照
 categories Q1, Q2, Q3, Q4
 y "百万美元" 0 --> 220
+y2 "转化率, %" 0 --> 40
 grid 20
 labels above
 series 实际 : 120, 145, 165, 190
 line 实线 : 110, 130, 150, 180 color=#0969da style=solid width=2
 line 虚线 : 100, -, 160, 175 color=#8250df style=dash
 line 点线 : 90, , 155, 170 color=#2da44e style=dot width=1
-line 点划线 : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5`,
+line 点划线 : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
+line 转化率 : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
     seriesCagr: `series
 %% 不带数字的 cagr 从第一根柱画一根箭头到最后一根。
 title 收入增长
@@ -1175,13 +1179,15 @@ series パートナー : 45, 60, 75, 95`,
 title 実績と目安
 categories Q1, Q2, Q3, Q4
 y "百万米ドル" 0 --> 220
+y2 "コンバージョン, %" 0 --> 40
 grid 20
 labels above
 series 実績 : 120, 145, 165, 190
 line 実線 : 110, 130, 150, 180 color=#0969da style=solid width=2
 line 破線 : 100, -, 160, 175 color=#8250df style=dash
 line 点線 : 90, , 155, 170 color=#2da44e style=dot width=1
-line 一点鎖線 : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5`,
+line 一点鎖線 : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
+line コンバージョン : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
     seriesCagr: `series
 %% 番号のない cagr は最初の棒から最後の棒へ矢印を引きます。
 title 売上の成長
@@ -1591,13 +1597,15 @@ series साझेदार : 45, 60, 75, 95`,
 title वास्तविक और संदर्भ
 categories Q1, Q2, Q3, Q4
 y "मिलियन डॉलर" 0 --> 220
+y2 "रूपांतरण, %" 0 --> 40
 grid 20
 labels above
 series वास्तविक : 120, 145, 165, 190
 line सतत : 110, 130, 150, 180 color=#0969da style=solid width=2
 line डैश : 100, -, 160, 175 color=#8250df style=dash
 line बिंदु : 90, , 155, 170 color=#2da44e style=dot width=1
-line डैश-बिंदु : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5`,
+line डैश-बिंदु : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
+line रूपांतरण : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
     seriesCagr: `series
 %% बिना संख्या के cagr पहली पट्टी से अंतिम पट्टी तक तीर खींचता है।
 title आय की वृद्धि
@@ -2007,13 +2015,15 @@ series Parceiros : 45, 60, 75, 95`,
 title Realizados e referências
 categories Q1, Q2, Q3, Q4
 y "mi USD" 0 --> 220
+y2 "conversão, %" 0 --> 40
 grid 20
 labels above
 series Realizado : 120, 145, 165, 190
 line Contínua : 110, 130, 150, 180 color=#0969da style=solid width=2
 line Tracejada : 100, -, 160, 175 color=#8250df style=dash
 line Pontilhada : 90, , 155, 170 color=#2da44e style=dot width=1
-line Traço-ponto : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5`,
+line Traço-ponto : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
+line Conversão : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
     seriesCagr: `series
 %% Um cagr sem números desenha uma seta da primeira barra até a última.
 title Crescimento da receita
@@ -2423,13 +2433,15 @@ series Partner : 45, 60, 75, 95`,
 title Istwerte und Leitlinien
 categories Q1, Q2, Q3, Q4
 y "Mio. USD" 0 --> 220
+y2 "Conversion, %" 0 --> 40
 grid 20
 labels above
 series Ist : 120, 145, 165, 190
 line Durchgezogen : 110, 130, 150, 180 color=#0969da style=solid width=2
 line Gestrichelt : 100, -, 160, 175 color=#8250df style=dash
 line Gepunktet : 90, , 155, 170 color=#2da44e style=dot width=1
-line Strichpunkt : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5`,
+line Strichpunkt : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
+line Conversion : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
     seriesCagr: `series
 %% Ein cagr ohne Nummern zeichnet einen Pfeil vom ersten Balken zum letzten.
 title Umsatzwachstum
@@ -2839,13 +2851,15 @@ series الشركاء : 45, 60, 75, 95`,
 title الفعلي والمرجعيات
 categories Q1, Q2, Q3, Q4
 y "مليون دولار" 0 --> 220
+y2 "التحويل, %" 0 --> 40
 grid 20
 labels above
 series الفعلي : 120, 145, 165, 190
 line متصلة : 110, 130, 150, 180 color=#0969da style=solid width=2
 line متقطعة : 100, -, 160, 175 color=#8250df style=dash
 line نقطية : 90, , 155, 170 color=#2da44e style=dot width=1
-line شرطة-نقطة : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5`,
+line شرطة-نقطة : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
+line التحويل : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
     seriesCagr: `series
 %% cagr بلا أرقام يرسم سهمًا من أول عمود إلى آخر عمود.
 title نمو الإيراد

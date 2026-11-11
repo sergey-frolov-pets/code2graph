@@ -335,16 +335,20 @@ series Партнёры : 45, 60, 75, 95`,
 %% style: solid | dash | dot | dashdot. По умолчанию solid и толщина 1.75.
 %% Пропуск категории: пустой слот, «-» или null. Линия соединяет точки по сторонам пропуска.
 %% Подпись стоит справа от края зоны графика, на высоте последней заданной точки.
+%% ВТОРАЯ ОСЬ: y2 "подпись" min --> max рисует шкалу справа, а axis=y2 у линии,
+%% серии или уровня считает её значения по этой шкале (здесь — конверсия в %).
 title Факт и ориентиры
 categories Q1, Q2, Q3, Q4
 y "млн ₽" 0 --> 220
+y2 "конверсия, %" 0 --> 40
 grid 20
 labels above
 series Факт : 120, 145, 165, 190
 line Сплошная : 110, 130, 150, 180 color=#0969da style=solid width=2
 line Пунктир : 100, -, 160, 175 color=#8250df style=dash
 line Точки : 90, , 155, 170 color=#2da44e style=dot width=1
-line Штрих-точка : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5`,
+line Штрих-точка : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
+line Конверсия : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
   seriesCagr: `series
 %% cagr без номеров — стрелка от первого бара к последнему.
 title Рост выручки
@@ -752,16 +756,20 @@ series Partners : 45, 60, 75, 95`,
 %% style: solid | dash | dot | dashdot. Defaults are solid and width 1.75.
 %% Skip a category with an empty slot, "-", or null. The line joins the points on either side.
 %% The label sits to the right of the plot, at the height of the last given point.
+%% SECOND AXIS: y2 "label" min --> max draws a scale on the right, and axis=y2 on a
+%% line, series, or level reads its values against that scale (here — conversion %).
 title Actuals and guides
 categories Q1, Q2, Q3, Q4
 y "M USD" 0 --> 220
+y2 "conversion, %" 0 --> 40
 grid 20
 labels above
 series Actual : 120, 145, 165, 190
 line Solid : 110, 130, 150, 180 color=#0969da style=solid width=2
 line Dashed : 100, -, 160, 175 color=#8250df style=dash
 line Dotted : 90, , 155, 170 color=#2da44e style=dot width=1
-line Dash-dot : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5`,
+line Dash-dot : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
+line Conversion : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
   seriesCagr: `series
 %% Plain cagr draws an arrow from the first bar to the last.
 title Revenue growth
