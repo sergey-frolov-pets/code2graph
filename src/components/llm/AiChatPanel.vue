@@ -314,20 +314,20 @@ async function runSend(
   isBusy.value = true;
   errorMessage.value = "";
 
-  if (!options.skipUserAppend) {
-    session.messages.push({
-      id: createAiChatMessageId(),
-      role: "user",
-      content: text,
-      createdAt: new Date().toISOString(),
-    });
-    applyDerivedTitle(session);
-    await persist(session);
-  }
-
-  const historyBefore = session.messages.slice(0, -1);
-
   try {
+    if (!options.skipUserAppend) {
+      session.messages.push({
+        id: createAiChatMessageId(),
+        role: "user",
+        content: text,
+        createdAt: new Date().toISOString(),
+      });
+      applyDerivedTitle(session);
+      await persist(session);
+    }
+
+    const historyBefore = session.messages.slice(0, -1);
+
     const result = await sendAiChatMessage({
       history: options.skipUserAppend ? session.messages.slice(0, -1) : historyBefore,
       userContent: text,
