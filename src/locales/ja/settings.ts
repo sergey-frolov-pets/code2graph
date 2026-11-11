@@ -111,4 +111,13 @@ export const settingsMessages = {
   "settings.llmTestRunning": "テスト中…",
   "settings.llmTestSuccess": "接続に成功しました",
   "settings.llmTestFailed": "接続に失敗しました",
+  "settings.llmModel": "モデル",
+  "settings.llmRefreshPrices": "価格を更新",
+  "settings.llmRefreshPricesRunning": "価格を更新しています…",
+  "settings.llmModelPrice": "100万トークンあたり入力 {prompt} / 出力 {completion}",
+  "settings.llmModelPriceFree": "無料",
+  "settings.llmModelPriceUnknown": "価格未掲載",
+  "settings.llmModelPriceNeedsKey": "このプロバイダのモデルを更新するには API キーを追加してください。",
+  "settings.llmModelPriceFailed": "価格を更新できませんでした。",
+  "settings.llmModelPriceUnavailable": "このプロバイダは価格カタログを公開していません。",
 } as const satisfies LocaleMessages;

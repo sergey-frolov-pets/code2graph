@@ -111,4 +111,13 @@ export const settingsMessages = {
   "settings.llmTestRunning": "جارٍ الاختبار…",
   "settings.llmTestSuccess": "نجح الاتصال",
   "settings.llmTestFailed": "فشل الاتصال",
+  "settings.llmModel": "النموذج",
+  "settings.llmRefreshPrices": "تحديث الأسعار",
+  "settings.llmRefreshPricesRunning": "جارٍ تحديث الأسعار…",
+  "settings.llmModelPrice": "{prompt} إدخال / {completion} إخراج لكل مليون رمز",
+  "settings.llmModelPriceFree": "مجاني",
+  "settings.llmModelPriceUnknown": "السعر غير مذكور",
+  "settings.llmModelPriceNeedsKey": "أضف مفتاح API لتحديث نماذج هذا المزوّد.",
+  "settings.llmModelPriceFailed": "تعذر تحديث الأسعار.",
+  "settings.llmModelPriceUnavailable": "هذا المزوّد لا ينشر قائمة أسعار.",
 } as const satisfies LocaleMessages;

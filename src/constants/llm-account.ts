@@ -34,7 +34,29 @@ export const FREE_LLM_SELECTION_PREFIX = "free:";
 export const LEGACY_LLM_ACCOUNT_ID_PREFIX = "legacy-";
 
 export const LLM_CHAT_COMPLETIONS_PATH = "/chat/completions";
+export const LLM_MODELS_PATH = "/models";
 export const LLM_OPENAI_V1_PATH = "/v1";
+
+/** Каталоги вроде OpenRouter отдают цену в USD за один токен. */
+export const LLM_USD_PER_MILLION_TOKENS = 1_000_000;
+
+/** Сколько знаков после запятой оставляем у цены за 1M токенов. */
+export const LLM_PRICE_PER_MILLION_DECIMALS = 6;
+
+export const LLM_MODEL_CATALOG_MAX = 800;
+
+export const LLM_MODELS_FETCH_TIMEOUT_MS = 20_000;
+
+/** Список моделей Gemini. У провайдера нет OpenAI-совместимого /chat/completions. */
+export const GEMINI_MODELS_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models";
+
+export const GEMINI_MODEL_NAME_PREFIX = "models/";
+
+export const GEMINI_GENERATE_CONTENT_METHOD = "generateContent";
+
+/** Общий каталог OpenRouter для BYOK и бесплатного прокси. */
+export const OPENROUTER_CATALOG_ID = "openrouter";
 
 const LLM_MODEL_NAME_PATTERN = /^[\w./:@+-]+$/;
 

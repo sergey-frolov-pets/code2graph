@@ -111,4 +111,13 @@ export const settingsMessages = {
   "settings.llmTestRunning": "Проверка…",
   "settings.llmTestSuccess": "Подключение успешно",
   "settings.llmTestFailed": "Ошибка подключения",
+  "settings.llmModel": "Модель",
+  "settings.llmRefreshPrices": "Обновить цены",
+  "settings.llmRefreshPricesRunning": "Обновление цен…",
+  "settings.llmModelPrice": "{prompt} вход / {completion} выход за 1M токенов",
+  "settings.llmModelPriceFree": "Бесплатно",
+  "settings.llmModelPriceUnknown": "Цена не указана",
+  "settings.llmModelPriceNeedsKey": "Добавьте API-ключ, чтобы обновить модели этого провайдера.",
+  "settings.llmModelPriceFailed": "Не удалось обновить цены.",
+  "settings.llmModelPriceUnavailable": "У этого провайдера нет публичного каталога цен.",
 } as const satisfies LocaleMessages;

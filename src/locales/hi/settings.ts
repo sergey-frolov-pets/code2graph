@@ -111,4 +111,13 @@ export const settingsMessages = {
   "settings.llmTestRunning": "जाँच हो रही है…",
   "settings.llmTestSuccess": "कनेक्शन सफल",
   "settings.llmTestFailed": "कनेक्शन विफल",
+  "settings.llmModel": "मॉडल",
+  "settings.llmRefreshPrices": "कीमतें ताज़ा करें",
+  "settings.llmRefreshPricesRunning": "कीमतें ताज़ा हो रही हैं…",
+  "settings.llmModelPrice": "1M टोकन पर इनपुट {prompt} / आउटपुट {completion}",
+  "settings.llmModelPriceFree": "मुफ़्त",
+  "settings.llmModelPriceUnknown": "कीमत नहीं दी गई",
+  "settings.llmModelPriceNeedsKey": "इस प्रदाता के मॉडल ताज़ा करने के लिए API कुंजी जोड़ें।",
+  "settings.llmModelPriceFailed": "कीमतें ताज़ा नहीं हो सकीं।",
+  "settings.llmModelPriceUnavailable": "यह प्रदाता कीमतों की सूची प्रकाशित नहीं करता।",
 } as const satisfies LocaleMessages;
