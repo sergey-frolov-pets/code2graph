@@ -10,10 +10,9 @@ test("converts plantuml graph to mermaid and supports undo", async ({ page }) =>
   const source = await editor.inputValue();
   expect(source).toContain("@startuml");
 
-  await page.getByRole("button", { name: "Edit" }).click();
-  const convertItem = page.getByRole("menuitem", { name: /convert/i });
-  await expect(convertItem).toBeEnabled();
-  await convertItem.click();
+  const convertButton = page.getByTestId("editor-convert");
+  await expect(convertButton).toBeEnabled();
+  await convertButton.click();
   await expect(page.getByTestId("convert-diagram-modal")).toBeVisible();
 
   await page.locator(".convert-form select").first().selectOption("mermaid");
@@ -23,10 +22,9 @@ test("converts plantuml graph to mermaid and supports undo", async ({ page }) =>
   await expect(editor).toHaveValue(/flowchart/i, { timeout: 15_000 });
   await expect(editor).not.toHaveValue(/@startuml/);
 
-  await page.getByRole("button", { name: "Edit" }).click();
-  const undoItem = page.getByRole("menuitem", { name: /undo/i });
-  await expect(undoItem).toBeEnabled();
-  await undoItem.click();
+  const undoButton = page.getByTestId("editor-undo");
+  await expect(undoButton).toBeEnabled();
+  await undoButton.click();
   await expect(editor).toHaveValue(/@startuml/, { timeout: 5_000 });
   await expect(editor).not.toHaveValue(/flowchart/i);
 });
@@ -40,8 +38,7 @@ test("converts plantuml components to graphml with groups and renders preview SV
   await expect(editor).toBeVisible({ timeout: 30_000 });
 
   await page.locator(".sample-select").selectOption("plantuml:components");
-  await page.getByRole("button", { name: "Edit" }).click();
-  await page.getByRole("menuitem", { name: /convert/i }).click();
+  await page.getByTestId("editor-convert").click();
   await expect(page.getByTestId("convert-diagram-modal")).toBeVisible();
 
   await page.locator(".convert-form select").first().selectOption("graphml");
