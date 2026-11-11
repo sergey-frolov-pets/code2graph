@@ -38,7 +38,8 @@ function onShowPreview(event: Event): void {
   position: fixed;
   right: 16px;
   bottom: calc(56px + env(safe-area-inset-bottom, 0px));
-  z-index: 120;
+  /* Выше развёрнутой панели (900) и ниже строки состояния (910). */
+  z-index: 905;
   display: inline-flex;
   align-items: center;
   gap: 8px;

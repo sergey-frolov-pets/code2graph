@@ -98,6 +98,7 @@ const emit = defineEmits<{
   openSettings: [];
   "editor-focus": [];
   "editor-blur": [];
+  "editor-fullscreen": [active: boolean];
   refreshData: [];
 }>();
 
@@ -494,6 +495,7 @@ watch(
 
 watch(isFullscreen, (value) => {
   document.body.style.overflow = value ? "hidden" : "";
+  emit("editor-fullscreen", value);
 });
 
 onMounted(() => {
@@ -504,6 +506,9 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener("keydown", onEditorKeydown);
   document.body.style.overflow = "";
+  if (isFullscreen.value) {
+    emit("editor-fullscreen", false);
+  }
 });
 </script>
 
