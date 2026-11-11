@@ -1,5 +1,12 @@
 import { isBookmark, type CodeFoldRegion } from "@/utils/code-folds";
 
+/**
+ * Проекция diff сессии. В редакторе не используется, пока
+ * `SESSION_CHANGE_TRACKING_ENABLED` выключен: ввод через эту проекцию
+ * подменяет текст (в том числе Enter вставляет чужой код).
+ * Бэклог: https://github.com/sergey-frolov-pets/code2graph/issues/186
+ */
+
 export type SessionChangeKind = "insert" | "delete" | "modify";
 
 export type SessionLineRole = "context" | "added" | "modified" | "deleted";

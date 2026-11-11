@@ -32,6 +32,7 @@ import { usePersistedSettings } from "@/composables/usePersistedSettings";
 import { useSyntaxValidation } from "@/composables/useSyntaxValidation";
 import { getLibraryApiBaseUrl } from "@/config/library-api";
 import { setDocumentFeatureSnapshot } from "@/composables/useFeatureGate";
+import { SESSION_CHANGE_TRACKING_ENABLED } from "@/constants/editor-settings";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import { getDiagramFormatDefinition } from "@/constants/diagram-formats";
 import { PENDING_SHARE_STORAGE_KEY } from "@/constants/library-share";
@@ -226,6 +227,10 @@ export function useAppShell(): AppShellContext {
 
   const sessionChanges = useSessionChanges();
   const sessionPreviewSource = computed(() => {
+    if (!SESSION_CHANGE_TRACKING_ENABLED) {
+      return source.value;
+    }
+
     const projection = buildSessionProjection({
       baseline: sessionChanges.baseline.value ?? source.value,
       current: source.value,
@@ -246,7 +251,9 @@ export function useAppShell(): AppShellContext {
     bootEngine,
   } = useDiagramRender({
     source,
-    renderSource: sessionPreviewSource,
+    renderSource: SESSION_CHANGE_TRACKING_ENABLED
+      ? sessionPreviewSource
+      : undefined,
     diagramFormat,
     layout,
     diagramDarkMode,
@@ -305,8 +312,10 @@ export function useAppShell(): AppShellContext {
     (documentId) => {
       if (documentId) {
         setActiveDocument(documentId);
-        sessionChanges.setActiveDocument(documentId);
-        sessionChanges.ensureBaseline(source.value, documentId);
+        if (SESSION_CHANGE_TRACKING_ENABLED) {
+          sessionChanges.setActiveDocument(documentId);
+          sessionChanges.ensureBaseline(source.value, documentId);
+        }
       }
     },
     { immediate: true },
@@ -409,7 +418,9 @@ export function useAppShell(): AppShellContext {
     withSuppressedSourceHistory(() => {
       applyLoadedSource(payload.content, payload.fileName, payload.format);
     });
-    sessionChanges.resetBaseline(payload.content);
+    if (SESSION_CHANGE_TRACKING_ENABLED) {
+      sessionChanges.resetBaseline(payload.content);
+    }
     linkedLibraryDiagramId.value = payload.diagramId ?? null;
   }
 
@@ -429,7 +440,9 @@ export function useAppShell(): AppShellContext {
   function onEditorClearedWithLink(): void {
     linkedLibraryDiagramId.value = null;
     onEditorCleared();
-    sessionChanges.resetBaseline(source.value);
+    if (SESSION_CHANGE_TRACKING_ENABLED) {
+      sessionChanges.resetBaseline(source.value);
+    }
   }
 
   function onImportError(message: string): void {
@@ -480,7 +493,9 @@ export function useAppShell(): AppShellContext {
       editorDocumentsApi.closeTab(documentId);
     });
     forgetDocument(documentId);
-    sessionChanges.forgetDocument(documentId);
+    if (SESSION_CHANGE_TRACKING_ENABLED) {
+      sessionChanges.forgetDocument(documentId);
+    }
   }
 
   function applyWizardDiagramToNewTab(
@@ -495,7 +510,9 @@ export function useAppShell(): AppShellContext {
         label,
         format,
       });
-      sessionChanges.resetBaseline(wizardSource, documentId);
+      if (SESSION_CHANGE_TRACKING_ENABLED) {
+        sessionChanges.resetBaseline(wizardSource, documentId);
+      }
       error.value = "";
       syntaxErrorLines.value = [];
       scheduleRender();
@@ -511,7 +528,9 @@ export function useAppShell(): AppShellContext {
         label: payload.label,
         format: "mermaid",
       });
-      sessionChanges.resetBaseline(payload.source, documentId);
+      if (SESSION_CHANGE_TRACKING_ENABLED) {
+        sessionChanges.resetBaseline(payload.source, documentId);
+      }
       error.value = "";
       syntaxErrorLines.value = [];
       scheduleRender();

@@ -26,7 +26,10 @@ import { trackClipboardPaste } from "@/analytics";
 import { useLocale } from "@/composables/useLocale";
 import { useHasActiveLlm } from "@/composables/useHasActiveLlm";
 import { useFeatureGate } from "@/composables/useFeatureGate";
-import type { EditorFontSize } from "@/constants/editor-settings";
+import {
+  SESSION_CHANGE_TRACKING_ENABLED,
+  type EditorFontSize,
+} from "@/constants/editor-settings";
 import {
   DIAGRAM_FILE_ACCEPT,
   getDiagramFormatDefinition,
@@ -185,21 +188,30 @@ const session = useSessionChanges();
 const cursorText = ref("");
 const cursorFolds = ref<CodeFoldRegion[]>([]);
 
-const sessionProjection = computed(() =>
-  buildSessionProjection({
+const sessionProjection = computed(() => {
+  if (!SESSION_CHANGE_TRACKING_ENABLED) {
+    return null;
+  }
+
+  return buildSessionProjection({
     baseline: session.baseline.value ?? source.value,
     current: source.value,
     fileShowsBaseline: session.fileShowsBaseline.value,
     flippedHunkIds: session.flippedHunkIds.value,
-  }),
-);
+  });
+});
 
 const hasSessionChanges = computed(
-  () => sessionProjection.value.hunks.length > 0,
+  () => (sessionProjection.value?.hunks.length ?? 0) > 0,
 );
 
 function commitSurfaceText(next: string): void {
   const projection = sessionProjection.value;
+  if (!projection) {
+    source.value = next;
+    return;
+  }
+
   const applied = applySessionViewEdit(
     projection.lines,
     projection.hidden,
@@ -218,15 +230,33 @@ function commitSurfaceText(next: string): void {
 
 const sessionBuffer = computed({
   get(): string {
-    return sessionViewText(sessionProjection.value.lines);
+    const projection = sessionProjection.value;
+    if (!projection) {
+      return source.value;
+    }
+
+    return sessionViewText(projection.lines);
   },
   set(next: string) {
+    if (!sessionProjection.value) {
+      source.value = next;
+      return;
+    }
+
     commitSurfaceText(next);
   },
 });
 
 function workingLineOffset(lineNumber: number): number {
   const projection = sessionProjection.value;
+  if (!projection) {
+    const sourceLines = source.value.split(/\r?\n/);
+    const targetLine = Math.min(Math.max(lineNumber, 1), sourceLines.length);
+    return sourceLines
+      .slice(0, targetLine - 1)
+      .reduce((offset, line) => offset + line.length + 1, 0);
+  }
+
   return offsetOfWorkingLine(
     projection.lines,
     projection.hidden,
@@ -236,6 +266,10 @@ function workingLineOffset(lineNumber: number): number {
 
 function toWorkingOffset(offset: number): number {
   const projection = sessionProjection.value;
+  if (!projection) {
+    return offset;
+  }
+
   return mapViewOffsetToWorkingOffset(
     offset,
     projection.lines,
@@ -534,6 +568,7 @@ onUnmounted(() => {
       :surface-mode="surfaceMode"
       :builder-available="builderAvailable"
       :ai-chat-available="aiChatAvailable"
+      :session-tracking-enabled="SESSION_CHANGE_TRACKING_ENABLED"
       :can-toggle-session-file="hasSessionChanges"
       :session-file-shows-baseline="session.fileShowsBaseline.value"
       @set-surface-mode="setSurfaceMode"

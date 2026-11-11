@@ -41,10 +41,12 @@ const props = withDefaults(
     aiChatAvailable?: boolean;
     canToggleSessionFile?: boolean;
     sessionFileShowsBaseline?: boolean;
+    sessionTrackingEnabled?: boolean;
   }>(),
   {
     canToggleSessionFile: false,
     sessionFileShowsBaseline: false,
+    sessionTrackingEnabled: false,
   },
 );
 
@@ -265,7 +267,7 @@ function onSampleChange(event: Event): void {
         <ActionIcon name="refresh" />
       </IconButton>
       <IconButton
-        v-if="formatDefinition.editable"
+        v-if="formatDefinition.editable && sessionTrackingEnabled"
         :label="sessionToggleLabel"
         :pressed="sessionFileShowsBaseline"
         :disabled="!canToggleSessionFile"
