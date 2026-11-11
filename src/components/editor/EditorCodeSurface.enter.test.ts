@@ -1,9 +1,15 @@
 // @vitest-environment jsdom
 
-import { createApp, h, nextTick, ref } from "vue";
+import { computed, createApp, h, nextTick, ref } from "vue";
 import { afterEach, describe, expect, it } from "vitest";
 import EditorCodeSurface from "@/components/editor/EditorCodeSurface.vue";
 import { useEditorAutocomplete } from "@/composables/useEditorAutocomplete";
+import {
+  applySessionViewEdit,
+  buildSessionProjection,
+  sessionViewText,
+  splitSourceLines,
+} from "@/services/editor/session-changes";
 import type { CodeFoldRegion } from "@/utils/code-folds";
 
 function columnAt(text: string, offset: number): number {
@@ -15,16 +21,48 @@ function columnOfFirstGlyph(line: string): number {
   return match ? match.index : 0;
 }
 
-function mountEditor(initialSource: string) {
+function mountEditor(initialSource: string, throughSession = false) {
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const source = ref(initialSource);
+  const working = ref(initialSource);
+  const baseline = initialSource;
 
   const app = createApp({
     setup() {
       const folds = ref<CodeFoldRegion[]>([]);
+      const projection = computed(() =>
+        buildSessionProjection({
+          baseline,
+          current: working.value,
+          fileShowsBaseline: false,
+          flippedHunkIds: [],
+        }),
+      );
+      const sessionBuffer = computed({
+        get(): string {
+          if (!throughSession) {
+            return working.value;
+          }
+
+          return sessionViewText(projection.value.lines);
+        },
+        set(next: string) {
+          if (!throughSession) {
+            working.value = next;
+            return;
+          }
+
+          const applied = applySessionViewEdit(
+            projection.value.lines,
+            projection.value.hidden,
+            next,
+            splitSourceLines(working.value),
+          );
+          working.value = applied.text;
+        },
+      });
       const autocomplete = useEditorAutocomplete({
-        source,
+        source: sessionBuffer,
         diagramFormat: ref("plantuml"),
         folds,
         textareaRef: ref(null),
@@ -34,9 +72,9 @@ function mountEditor(initialSource: string) {
 
       return () =>
         h(EditorCodeSurface, {
-          source: source.value,
+          source: sessionBuffer.value,
           folds: folds.value,
-          displayText: source.value,
+          displayText: sessionBuffer.value,
           visibleEditorLines: [],
           useLineVirtualization: false,
           syntaxHighlightEnabled: false,
@@ -45,7 +83,7 @@ function mountEditor(initialSource: string) {
           errorLines: [],
           autocomplete,
           "onUpdate:source": (value: string) => {
-            source.value = value;
+            sessionBuffer.value = value;
           },
         });
     },
@@ -54,7 +92,7 @@ function mountEditor(initialSource: string) {
   app.mount(host);
 
   return {
-    source,
+    source: working,
     host,
     unmount() {
       app.unmount();
@@ -96,6 +134,7 @@ describe("EditorCodeSurface Enter at line end", () => {
       "    participant Alice\n    \n    participant Bob",
     );
     expect(textarea!.selectionStart).toBe(textarea!.selectionEnd);
+    expect(textarea!.selectionStart).toBe("    participant Alice\n    ".length);
     expect(columnAt(textarea!.value, textarea!.selectionStart)).toBe(
       columnOfFirstGlyph(line),
     );
@@ -120,5 +159,28 @@ describe("EditorCodeSurface Enter at line end", () => {
 
     expect(event.defaultPrevented).toBe(false);
     expect(editor.source.value).toBe(initial);
+  });
+
+  it("creates a new line when Enter is pressed at the end of the file", async () => {
+    const baseline = "    participant Alice";
+    const editor = mountEditor(baseline, true);
+    mounted.push(editor);
+    await nextTick();
+
+    const textarea = editor.host.querySelector("textarea");
+    expect(textarea).not.toBeNull();
+    textarea!.focus();
+    textarea!.setSelectionRange(baseline.length, baseline.length);
+    textarea!.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Enter",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    await nextTick();
+
+    expect(editor.source.value).toBe("    participant Alice\n    ");
+    expect(textarea!.selectionStart).toBe("    participant Alice\n    ".length);
   });
 });

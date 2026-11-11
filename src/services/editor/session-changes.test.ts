@@ -211,6 +211,67 @@ describe("applySessionViewEdit", () => {
 
     expect(edited.text).toBe("a\nb2\nc");
   });
+
+  it("appends a line when Enter is pressed at the end of the file", () => {
+    const working = "    participant Alice";
+    const projection = buildSessionProjection({
+      baseline: working,
+      current: working,
+      fileShowsBaseline: false,
+      flippedHunkIds: [],
+    });
+
+    const edited = applySessionViewEdit(
+      projection.lines,
+      projection.hidden,
+      "    participant Alice\n    ",
+      splitSourceLines(working),
+    );
+
+    expect(edited.text).toBe("    participant Alice\n    ");
+    expect(edited.editedStart).toBe(2);
+    expect(edited.editedCount).toBe(1);
+  });
+
+  it("appends a blank line when the file already ends with a newline", () => {
+    const working = "alpha\n";
+    const projection = buildSessionProjection({
+      baseline: working,
+      current: working,
+      fileShowsBaseline: false,
+      flippedHunkIds: [],
+    });
+
+    const edited = applySessionViewEdit(
+      projection.lines,
+      projection.hidden,
+      "alpha\n\n",
+      splitSourceLines(working),
+    );
+
+    expect(edited.text).toBe("alpha\n\n");
+    expect(edited.editedCount).toBe(1);
+  });
+
+  it("appends a line after a deleted ghost line", () => {
+    const working = "a\nc";
+    const projection = buildSessionProjection({
+      baseline: "a\nb\nc",
+      current: working,
+      fileShowsBaseline: false,
+      flippedHunkIds: [],
+    });
+
+    const edited = applySessionViewEdit(
+      projection.lines,
+      projection.hidden,
+      `${sessionViewText(projection.lines)}\nnew`,
+      splitSourceLines(working),
+    );
+
+    expect(edited.text).toBe("a\nc\nnew");
+    expect(edited.editedCount).toBe(1);
+  });
 });
 
 describe("mapViewOffsetToWorkingOffset", () => {
