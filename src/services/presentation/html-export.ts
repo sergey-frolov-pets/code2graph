@@ -4,6 +4,7 @@ import { parseSvgCssSize } from "@/services/export/svg-geometry";
 import {
   FRAME_EFFECT_PULSE_AMOUNT,
   FRAME_EFFECT_ZOOM_AMOUNT,
+  PRESENTATION_CHROME_REVEAL_MS,
   PRESENTATION_DEFAULT_TRANSITION_MS,
   PRESENTATION_GIF_FALLBACK_BACKGROUND,
   PRESENTATION_MAX_SCALE,
@@ -45,6 +46,8 @@ const COORDINATE_PRECISION = 1000;
 const HTML_FALLBACK_VIEWPORT_WIDTH = 960;
 const HTML_FALLBACK_VIEWPORT_HEIGHT = 540;
 const HTML_FRAME_FALLBACK_MS = 16;
+/** Same resting opacity as the in-app presentation dock while a tour plays. */
+const HTML_PLAYER_DIM_OPACITY = 0.12;
 const SHAPE_STROKE_PX = 2;
 const ARROW_STROKE_PX = 2.5;
 const ARROW_HEAD_SCREEN_PX = 12;
@@ -407,6 +410,14 @@ body.c2g-checker {
   box-shadow: 0 8px 28px color-mix(in srgb, var(--c2g-text) 18%, transparent);
   user-select: none;
 }
+#c2g-bar.is-dim {
+  opacity: ${HTML_PLAYER_DIM_OPACITY};
+  transition: none;
+}
+#c2g-bar.is-dim:not(.is-held):hover,
+#c2g-bar.is-dim.is-revealed {
+  opacity: 1;
+}
 .c2g-name {
   max-width: 14rem;
   overflow: hidden;
@@ -466,6 +477,7 @@ const PLAYER_SCRIPT = `
   var frameWrap = document.getElementById("c2g-frame-wrap");
   var frame = document.getElementById("c2g-frame");
   var diagramWrap = document.getElementById("c2g-diagram-wrap");
+  var bar = document.getElementById("c2g-bar");
   var playButton = document.getElementById("c2g-play");
   var prevButton = document.getElementById("c2g-prev");
   var nextButton = document.getElementById("c2g-next");
@@ -509,6 +521,8 @@ const PLAYER_SCRIPT = `
   var effectElapsed = 0;
   var playing = false;
   var moving = false;
+  var barHeld = false;
+  var revealTimer = 0;
   var phaseStarted = 0;
   var frameId = 0;
   var reduceMotion = Boolean(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -738,6 +752,29 @@ const PLAYER_SCRIPT = `
     effectElapsed = 0;
     moving = true;
   }
+  function syncBar() {
+    if (!bar) return;
+    if (!playing) {
+      barHeld = false;
+      bar.classList.remove("is-dim", "is-held", "is-revealed");
+      if (revealTimer) {
+        clearTimeout(revealTimer);
+        revealTimer = 0;
+      }
+      return;
+    }
+    bar.classList.add("is-dim");
+    bar.classList.toggle("is-held", barHeld);
+  }
+  function revealBar() {
+    if (!bar || !playing) return;
+    bar.classList.add("is-revealed");
+    if (revealTimer) clearTimeout(revealTimer);
+    revealTimer = setTimeout(function () {
+      revealTimer = 0;
+      if (bar) bar.classList.remove("is-revealed");
+    }, payload.revealMs);
+  }
   function updateChrome() {
     indexNode.textContent = (index + 1) + " / " + count;
     stage.dataset.phase = phase;
@@ -747,6 +784,7 @@ const PLAYER_SCRIPT = `
     playButton.dataset.state = playing ? "pause" : "play";
     prevButton.disabled = count < 2;
     nextButton.disabled = count < 2;
+    syncBar();
   }
   function render(now) {
     if (playing || moving) integrate(now);
@@ -778,10 +816,13 @@ const PLAYER_SCRIPT = `
     if (playing) {
       playing = false;
       moving = false;
+      barHeld = false;
       kick();
       return;
     }
     playing = true;
+    barHeld = true;
+    if (bar) bar.classList.remove("is-revealed");
     if (phase === "travel") {
       var transition = transitionAt(travelOrigin);
       var duration = transition.durationMs > 0 ? transition.durationMs : payload.defaultTransitionMs;
@@ -833,6 +874,16 @@ const PLAYER_SCRIPT = `
   prevButton.addEventListener("click", function () { step(-1); });
   nextButton.addEventListener("click", function () { step(1); });
   playButton.addEventListener("click", togglePlay);
+  if (bar) {
+    bar.addEventListener("pointerleave", function () {
+      barHeld = false;
+      syncBar();
+    });
+  }
+  window.addEventListener("pointerdown", function (event) {
+    if (!playing || !event.pointerType || event.pointerType === "mouse") return;
+    revealBar();
+  });
   window.addEventListener("keydown", function (event) {
     if (event.altKey || event.metaKey || event.ctrlKey) return;
     var tag = event.target && event.target.tagName;
@@ -939,6 +990,7 @@ export function renderPresentationHtml(source: PresentationHtmlSource): string {
     fallbackWidth: HTML_FALLBACK_VIEWPORT_WIDTH,
     fallbackHeight: HTML_FALLBACK_VIEWPORT_HEIGHT,
     frameMs: HTML_FRAME_FALLBACK_MS,
+    revealMs: PRESENTATION_CHROME_REVEAL_MS,
     labels: {
       play: source.labels.play,
       pause: source.labels.pause,

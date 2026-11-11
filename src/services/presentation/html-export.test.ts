@@ -126,6 +126,16 @@ describe("presentation html export", () => {
     expect(doc.getElementById("c2g-stage")?.dataset.index).toBe("0");
     doc.getElementById("c2g-play")?.click();
     expect(doc.getElementById("c2g-play")?.dataset.state).toBe("pause");
+    const bar = doc.getElementById("c2g-bar");
+    expect(bar?.classList.contains("is-dim")).toBe(true);
+    expect(bar?.classList.contains("is-held")).toBe(true);
+    bar?.dispatchEvent(new Event("pointerleave"));
+    expect(bar?.classList.contains("is-dim")).toBe(true);
+    expect(bar?.classList.contains("is-held")).toBe(false);
+    bar?.dispatchEvent(new PointerEvent("pointerdown", { pointerType: "touch", bubbles: true }));
+    expect(bar?.classList.contains("is-revealed")).toBe(true);
+    doc.getElementById("c2g-play")?.click();
+    expect(bar?.classList.contains("is-dim")).toBe(false);
   });
 
   it("keeps a hostile title and diagram script out of the running page", () => {
