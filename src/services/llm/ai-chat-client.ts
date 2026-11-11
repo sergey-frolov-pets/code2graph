@@ -9,10 +9,12 @@ import type { DiagramFormat } from "@/constants/diagram-format-ids";
 import type { RenderMode } from "@/constants/render-settings";
 import { getFormatHandler } from "@/formats";
 import { parseAiChatEnvelope, type AiChatEnvelope } from "@/schemas/ai-chat-output";
+import { loadLlmPage } from "@/services/llm/guides/llm-page-text";
 import {
   AI_CHAT_SYSTEM_PROMPT,
   buildAiChatContextBlock,
 } from "@/services/llm/ai-chat-prompts";
+import { resolveLlmPage } from "@shared/llm-pages";
 import { llmChat } from "@/services/llm/llm-client";
 import {
   LLM_MAX_TOKENS_GENERATION,
@@ -91,6 +93,12 @@ export async function sendAiChatMessage(
     .map((message) => message.proposal?.explanation ?? "")
     .filter(Boolean);
 
+  const syntaxPage = resolveLlmPage({
+    language: input.format,
+    request: input.userContent,
+    source: input.contextMode === "new" ? "" : input.source,
+  });
+  const guideText = await loadLlmPage(syntaxPage.path);
   const messages: LlmChatMessage[] = [
     {
       role: "system",
@@ -99,6 +107,8 @@ export async function sendAiChatMessage(
         buildAiChatContextBlock({
           format: input.format,
           source: input.source,
+          userRequest: input.userContent,
+          guideText,
           contextMode: input.contextMode,
           selection: input.selection,
           renderError: input.renderError,

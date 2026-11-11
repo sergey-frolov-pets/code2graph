@@ -64,7 +64,22 @@ const sourceUrl = `${APP_LINKS.github}/tree/main/packages/mcp`;
             <code>generate_diagram</code>
             — {{ t("site.mcp.toolGenerate") }}
           </li>
+          <li>
+            <code>list_capabilities</code>
+            — {{ t("site.mcp.toolCapabilities") }}
+          </li>
+          <li>
+            <code>get_syntax</code>
+            — {{ t("site.mcp.toolSyntax") }}
+          </li>
         </ul>
+      </section>
+
+      <section aria-labelledby="mcp-catalog-title">
+        <h2 id="mcp-catalog-title">
+          {{ t("site.mcp.catalogTitle") }}
+        </h2>
+        <p>{{ t("site.mcp.catalogText") }}</p>
       </section>
 
       <section aria-labelledby="mcp-connect-title">

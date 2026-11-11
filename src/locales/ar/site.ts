@@ -402,6 +402,13 @@ export const siteMessages = {
   "site.mcp.apiScaffold": "اللغة والنوع والمصدر",
   "site.mcp.staticNote":
     "GitHub Pages محرر ثابت ولا يقدّم /api/agent. تعمل الواجهة على إصدار الخادم، مثل www.code2graph.ru.",
+  "site.mcp.catalogTitle": "فهرس الإمكانات",
+  "site.mcp.catalogText":
+    "فهرس الإمكانات على /llm/ في هذا المضيف نفسه. يقرأ MCP المحلي الصفحات نفسها من القرص ولا يتصل بخادم آخر من أجل الصياغة. الجواب هو مصدر الرسم للمحرر، بلا صورة وبلا عارض خارجي.",
+  "site.mcp.toolCapabilities":
+    "صفحة فهرس للغات، أو للغة واحدة إذا حُددت. متون البطاقات غير مضمّنة.",
+  "site.mcp.toolSyntax":
+    "صفحة صياغة واحدة بالكلمات المفتاحية أو بمسار من رابط سابق. الصفحات المرتبطة لا تُدمج.",
   "site.noAccount": "ليس لديك حساب؟",
   "site.hasAccount": "لديك حساب بالفعل؟",
   "site.role": "الدور",

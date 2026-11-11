@@ -16,6 +16,18 @@ describe("buildAiChatContextBlock", () => {
     expect(block).not.toContain("SecretCurrent");
   });
 
+  it("puts one syntax page into the prompt and does not expand its links", () => {
+    const block = buildAiChatContextBlock({
+      format: "mermaid",
+      source: "waterfall\n=10 : Start",
+      userRequest: "добавь разрыв шкалы",
+      appliedCount: 0,
+      rejectedTitles: [],
+    });
+    expect(block).toContain("break 200 --> 700");
+    expect(block).not.toContain("selects the Mermaid Ext type");
+  });
+
   it("still includes the open diagram in the current-diagram mode", () => {
     const block = buildAiChatContextBlock({
       format: "mermaid",

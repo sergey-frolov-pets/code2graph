@@ -7,9 +7,9 @@ import {
 } from "@/constants/ai-chat";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
 import {
-  formatLlmDiagramGuideBlock,
-  guideForPlantUmlText,
-} from "@/services/llm/guides/llm-diagram-guides";
+  LLM_PAGE_PROMPT_HEADING,
+  resolveBundledLlmPage,
+} from "@/services/llm/guides/llm-page-text";
 
 export const AI_CHAT_SYSTEM_PROMPT = `Role: You are Code2Graph AI, an expert information architect and diagram engineer embedded in a diagram editor. You work inside a multi-turn chat next to a live diagram preview.
 
@@ -31,6 +31,8 @@ Rules:
 export function buildAiChatContextBlock(input: {
   format: DiagramFormat;
   source: string;
+  userRequest?: string;
+  guideText?: string;
   contextMode?: AiChatContextMode;
   selection?: string;
   renderError?: string;
@@ -39,6 +41,18 @@ export function buildAiChatContextBlock(input: {
   rejectedTitles: string[];
 }): string {
   const mode = input.contextMode ?? "current";
+  const guideBody = (
+    input.guideText ??
+    resolveBundledLlmPage({
+      language: input.format,
+      request: input.userRequest ?? "",
+      source: mode === "new" ? "" : input.source,
+    })
+  ).trim();
+  const guide = guideBody
+    ? `${LLM_PAGE_PROMPT_HEADING}\n\n${guideBody}`
+    : "";
+
   if (mode === "new") {
     return [
       "Session context:",
@@ -51,17 +65,16 @@ export function buildAiChatContextBlock(input: {
       input.summary?.trim()
         ? `- Summary of earlier turns: ${input.summary.trim()}`
         : "- Summary of earlier turns: none.",
-    ].join("\n");
+      guide,
+    ]
+      .filter((part) => part.length > 0)
+      .join("\n");
   }
 
   const truncated = input.source.length > AI_CHAT_CONTEXT_SOURCE_MAX_CHARS;
   const source = truncated
     ? input.source.slice(0, AI_CHAT_CONTEXT_SOURCE_MAX_CHARS)
     : input.source;
-  const guide =
-    input.format === "plantuml" && input.source.trim()
-      ? formatLlmDiagramGuideBlock(guideForPlantUmlText(input.source))
-      : "";
 
   return [
     "Session context:",

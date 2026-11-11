@@ -1,0 +1,1163 @@
+[
+  {
+    "id": "index",
+    "path": "index.md",
+    "parent": null,
+    "language": null,
+    "diagramType": null,
+    "kind": "root",
+    "keywords": [],
+    "sourceHints": []
+  },
+  {
+    "id": "plantuml/index",
+    "path": "plantuml/index.md",
+    "parent": "index",
+    "language": "plantuml",
+    "diagramType": null,
+    "kind": "language",
+    "keywords": [],
+    "sourceHints": []
+  },
+  {
+    "id": "plantuml/shared",
+    "path": "plantuml/shared.md",
+    "parent": "plantuml/index",
+    "language": "plantuml",
+    "diagramType": null,
+    "kind": "shared",
+    "keywords": [
+      "plantuml rules"
+    ],
+    "sourceHints": []
+  },
+  {
+    "id": "mermaid/index",
+    "path": "mermaid/index.md",
+    "parent": "index",
+    "language": "mermaid",
+    "diagramType": null,
+    "kind": "language",
+    "keywords": [],
+    "sourceHints": []
+  },
+  {
+    "id": "mermaid/shared",
+    "path": "mermaid/shared.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": null,
+    "kind": "shared",
+    "keywords": [
+      "mermaid rules",
+      "штатный mermaid"
+    ],
+    "sourceHints": []
+  },
+  {
+    "id": "graphml/index",
+    "path": "graphml/index.md",
+    "parent": "index",
+    "language": "graphml",
+    "diagramType": null,
+    "kind": "language",
+    "keywords": [],
+    "sourceHints": []
+  },
+  {
+    "id": "graphml/shared",
+    "path": "graphml/shared.md",
+    "parent": "graphml/index",
+    "language": "graphml",
+    "diagramType": null,
+    "kind": "shared",
+    "keywords": [
+      "graphml rules"
+    ],
+    "sourceHints": []
+  },
+  {
+    "id": "wiremark/index",
+    "path": "wiremark/index.md",
+    "parent": "index",
+    "language": "wiremark",
+    "diagramType": null,
+    "kind": "language",
+    "keywords": [],
+    "sourceHints": []
+  },
+  {
+    "id": "wiremark/shared",
+    "path": "wiremark/shared.md",
+    "parent": "wiremark/index",
+    "language": "wiremark",
+    "diagramType": null,
+    "kind": "shared",
+    "keywords": [
+      "wiremark rules"
+    ],
+    "sourceHints": []
+  },
+  {
+    "id": "d2/index",
+    "path": "d2/index.md",
+    "parent": "index",
+    "language": "d2",
+    "diagramType": null,
+    "kind": "language",
+    "keywords": [],
+    "sourceHints": []
+  },
+  {
+    "id": "d2/shared",
+    "path": "d2/shared.md",
+    "parent": "d2/index",
+    "language": "d2",
+    "diagramType": null,
+    "kind": "shared",
+    "keywords": [
+      "d2 rules"
+    ],
+    "sourceHints": []
+  },
+  {
+    "id": "structurizr/index",
+    "path": "structurizr/index.md",
+    "parent": "index",
+    "language": "structurizr",
+    "diagramType": null,
+    "kind": "language",
+    "keywords": [],
+    "sourceHints": []
+  },
+  {
+    "id": "structurizr/shared",
+    "path": "structurizr/shared.md",
+    "parent": "structurizr/index",
+    "language": "structurizr",
+    "diagramType": null,
+    "kind": "shared",
+    "keywords": [
+      "structurizr rules"
+    ],
+    "sourceHints": []
+  },
+  {
+    "id": "mermaid/ext/shared",
+    "path": "mermaid/ext/shared.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": null,
+    "kind": "shared",
+    "keywords": [
+      "mono",
+      "mono invert",
+      "общие правила ext"
+    ],
+    "sourceHints": []
+  },
+  {
+    "id": "plantuml/sequence",
+    "path": "plantuml/sequence.md",
+    "parent": "plantuml/index",
+    "language": "plantuml",
+    "diagramType": "sequence",
+    "kind": "card",
+    "keywords": [
+      "sequence",
+      "последовательност",
+      "sequence diagram"
+    ],
+    "sourceHints": [
+      "(?m)^(actor|participant|boundary|control)\\b"
+    ]
+  },
+  {
+    "id": "plantuml/class",
+    "path": "plantuml/class.md",
+    "parent": "plantuml/index",
+    "language": "plantuml",
+    "diagramType": "class",
+    "kind": "card",
+    "keywords": [
+      "class diagram",
+      "диаграмм класс",
+      "классов"
+    ],
+    "sourceHints": [
+      "(?m)^(class|interface|enum|abstract\\s+class)\\b"
+    ]
+  },
+  {
+    "id": "plantuml/component",
+    "path": "plantuml/component.md",
+    "parent": "plantuml/index",
+    "language": "plantuml",
+    "diagramType": "component",
+    "kind": "card",
+    "keywords": [
+      "component",
+      "компонент"
+    ],
+    "sourceHints": [
+      "(?m)^\\[[^\\]]+\\]"
+    ]
+  },
+  {
+    "id": "plantuml/activity",
+    "path": "plantuml/activity.md",
+    "parent": "plantuml/index",
+    "language": "plantuml",
+    "diagramType": "activity",
+    "kind": "card",
+    "keywords": [
+      "activity",
+      "деятельност",
+      "swimlane"
+    ],
+    "sourceHints": [
+      "(?m)^\\|[^|]+\\|",
+      "(?m)^:[^;\\n]+;"
+    ]
+  },
+  {
+    "id": "plantuml/state",
+    "path": "plantuml/state.md",
+    "parent": "plantuml/index",
+    "language": "plantuml",
+    "diagramType": "state",
+    "kind": "card",
+    "keywords": [
+      "state diagram",
+      "диаграмм состоя",
+      "состояни"
+    ],
+    "sourceHints": [
+      "\\[\\*]"
+    ]
+  },
+  {
+    "id": "plantuml/c4_context",
+    "path": "plantuml/c4_context.md",
+    "parent": "plantuml/index",
+    "language": "plantuml",
+    "diagramType": "c4_context",
+    "kind": "card",
+    "keywords": [
+      "c4 context",
+      "системн контекст",
+      "c4"
+    ],
+    "sourceHints": [
+      "C4_Context\\.puml"
+    ]
+  },
+  {
+    "id": "plantuml/c4_container",
+    "path": "plantuml/c4_container.md",
+    "parent": "plantuml/index",
+    "language": "plantuml",
+    "diagramType": "c4_container",
+    "kind": "card",
+    "keywords": [
+      "c4 container",
+      "контейнер"
+    ],
+    "sourceHints": [
+      "C4_Container\\.puml"
+    ]
+  },
+  {
+    "id": "plantuml/gantt",
+    "path": "plantuml/gantt.md",
+    "parent": "plantuml/index",
+    "language": "plantuml",
+    "diagramType": "gantt",
+    "kind": "card",
+    "keywords": [
+      "gantt",
+      "гант",
+      "ганн"
+    ],
+    "sourceHints": [
+      "@startgantt\\b"
+    ]
+  },
+  {
+    "id": "plantuml/mindmap",
+    "path": "plantuml/mindmap.md",
+    "parent": "plantuml/index",
+    "language": "plantuml",
+    "diagramType": "mindmap",
+    "kind": "card",
+    "keywords": [
+      "mindmap",
+      "mind map",
+      "интеллект-карт",
+      "ментальн"
+    ],
+    "sourceHints": [
+      "@startmindmap\\b"
+    ]
+  },
+  {
+    "id": "plantuml/er",
+    "path": "plantuml/er.md",
+    "parent": "plantuml/index",
+    "language": "plantuml",
+    "diagramType": "er",
+    "kind": "card",
+    "keywords": [
+      "er",
+      "entity relationship",
+      "сущност"
+    ],
+    "sourceHints": [
+      "(?m)^entity\\b"
+    ]
+  },
+  {
+    "id": "plantuml/usecase",
+    "path": "plantuml/usecase.md",
+    "parent": "plantuml/index",
+    "language": "plantuml",
+    "diagramType": "usecase",
+    "kind": "card",
+    "keywords": [
+      "use case",
+      "usecase",
+      "вариант использован"
+    ],
+    "sourceHints": [
+      "(?m)^usecase\\b"
+    ]
+  },
+  {
+    "id": "plantuml/deployment",
+    "path": "plantuml/deployment.md",
+    "parent": "plantuml/index",
+    "language": "plantuml",
+    "diagramType": "deployment",
+    "kind": "card",
+    "keywords": [
+      "deployment",
+      "разверт",
+      "развёрт"
+    ],
+    "sourceHints": [
+      "(?m)^node\\b"
+    ]
+  },
+  {
+    "id": "plantuml/object",
+    "path": "plantuml/object.md",
+    "parent": "plantuml/index",
+    "language": "plantuml",
+    "diagramType": "object",
+    "kind": "card",
+    "keywords": [
+      "object diagram",
+      "диаграмм объект"
+    ],
+    "sourceHints": [
+      "(?m)^object\\b"
+    ]
+  },
+  {
+    "id": "plantuml/timing",
+    "path": "plantuml/timing.md",
+    "parent": "plantuml/index",
+    "language": "plantuml",
+    "diagramType": "timing",
+    "kind": "card",
+    "keywords": [
+      "timing",
+      "временн диаграм"
+    ],
+    "sourceHints": [
+      "(?m)^(concise|robust)\\b"
+    ]
+  },
+  {
+    "id": "plantuml/wbs",
+    "path": "plantuml/wbs.md",
+    "parent": "plantuml/index",
+    "language": "plantuml",
+    "diagramType": "wbs",
+    "kind": "card",
+    "keywords": [
+      "wbs",
+      "work breakdown",
+      "иерарх работ"
+    ],
+    "sourceHints": [
+      "@startwbs\\b"
+    ]
+  },
+  {
+    "id": "plantuml/nwdiag",
+    "path": "plantuml/nwdiag.md",
+    "parent": "plantuml/index",
+    "language": "plantuml",
+    "diagramType": "nwdiag",
+    "kind": "card",
+    "keywords": [
+      "nwdiag",
+      "сетев тополог"
+    ],
+    "sourceHints": [
+      "@startnwdiag\\b"
+    ]
+  },
+  {
+    "id": "plantuml/archimate",
+    "path": "plantuml/archimate.md",
+    "parent": "plantuml/index",
+    "language": "plantuml",
+    "diagramType": "archimate",
+    "kind": "card",
+    "keywords": [
+      "archimate"
+    ],
+    "sourceHints": [
+      "<archimate/Archimate>"
+    ]
+  },
+  {
+    "id": "mermaid/sequence",
+    "path": "mermaid/sequence.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "sequence",
+    "kind": "card",
+    "keywords": [
+      "sequence",
+      "последовательност",
+      "sequenceDiagram"
+    ],
+    "sourceHints": [
+      "(?m)^sequenceDiagram\\b"
+    ]
+  },
+  {
+    "id": "mermaid/class",
+    "path": "mermaid/class.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "class",
+    "kind": "card",
+    "keywords": [
+      "class diagram",
+      "диаграмм класс",
+      "классов",
+      "classDiagram"
+    ],
+    "sourceHints": [
+      "(?m)^classDiagram\\b"
+    ]
+  },
+  {
+    "id": "mermaid/component",
+    "path": "mermaid/component.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "component",
+    "kind": "card",
+    "keywords": [
+      "component",
+      "компонент"
+    ],
+    "sourceHints": []
+  },
+  {
+    "id": "mermaid/activity",
+    "path": "mermaid/activity.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "activity",
+    "kind": "card",
+    "keywords": [
+      "activity",
+      "деятельност"
+    ],
+    "sourceHints": []
+  },
+  {
+    "id": "mermaid/state",
+    "path": "mermaid/state.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "state",
+    "kind": "card",
+    "keywords": [
+      "state diagram",
+      "stateDiagram",
+      "состояни"
+    ],
+    "sourceHints": [
+      "(?m)^stateDiagram"
+    ]
+  },
+  {
+    "id": "mermaid/gantt",
+    "path": "mermaid/gantt.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "gantt",
+    "kind": "card",
+    "keywords": [
+      "gantt",
+      "гант",
+      "ганн"
+    ],
+    "sourceHints": [
+      "(?m)^gantt\\b"
+    ]
+  },
+  {
+    "id": "mermaid/mindmap",
+    "path": "mermaid/mindmap.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "mindmap",
+    "kind": "card",
+    "keywords": [
+      "mindmap",
+      "mind map",
+      "интеллект-карт",
+      "ментальн"
+    ],
+    "sourceHints": [
+      "(?m)^mindmap\\b"
+    ]
+  },
+  {
+    "id": "mermaid/er",
+    "path": "mermaid/er.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "er",
+    "kind": "card",
+    "keywords": [
+      "er",
+      "erDiagram",
+      "сущност"
+    ],
+    "sourceHints": [
+      "(?m)^erDiagram\\b"
+    ]
+  },
+  {
+    "id": "mermaid/flowchart",
+    "path": "mermaid/flowchart.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "flowchart",
+    "kind": "card",
+    "keywords": [
+      "flowchart",
+      "flow chart",
+      "блок-схем"
+    ],
+    "sourceHints": [
+      "(?m)^(flowchart|graph)\\b"
+    ]
+  },
+  {
+    "id": "mermaid/pie",
+    "path": "mermaid/pie.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "pie",
+    "kind": "card",
+    "keywords": [
+      "pie",
+      "кругов"
+    ],
+    "sourceHints": [
+      "(?m)^pie\\b"
+    ]
+  },
+  {
+    "id": "mermaid/journey",
+    "path": "mermaid/journey.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "journey",
+    "kind": "card",
+    "keywords": [
+      "journey",
+      "user journey",
+      "пользовательск пут"
+    ],
+    "sourceHints": [
+      "(?m)^journey\\b"
+    ]
+  },
+  {
+    "id": "mermaid/gitgraph",
+    "path": "mermaid/gitgraph.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "gitgraph",
+    "kind": "card",
+    "keywords": [
+      "gitgraph",
+      "git graph",
+      "коммит"
+    ],
+    "sourceHints": [
+      "(?m)^gitGraph\\b"
+    ]
+  },
+  {
+    "id": "mermaid/timeline",
+    "path": "mermaid/timeline.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "timeline",
+    "kind": "card",
+    "keywords": [
+      "timeline",
+      "хронолог",
+      "временн шкал"
+    ],
+    "sourceHints": [
+      "(?m)^timeline\\b"
+    ]
+  },
+  {
+    "id": "mermaid/sankey",
+    "path": "mermaid/sankey.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "sankey",
+    "kind": "card",
+    "keywords": [
+      "sankey",
+      "санке"
+    ],
+    "sourceHints": [
+      "(?m)^sankey"
+    ]
+  },
+  {
+    "id": "mermaid/xychart",
+    "path": "mermaid/xychart.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "xychart",
+    "kind": "card",
+    "keywords": [
+      "xychart",
+      "xy chart"
+    ],
+    "sourceHints": [
+      "(?m)^xychart"
+    ]
+  },
+  {
+    "id": "mermaid/block",
+    "path": "mermaid/block.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "block",
+    "kind": "card",
+    "keywords": [
+      "block-beta",
+      "block diagram"
+    ],
+    "sourceHints": [
+      "(?m)^block"
+    ]
+  },
+  {
+    "id": "mermaid/c4_context",
+    "path": "mermaid/c4_context.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "c4_context",
+    "kind": "card",
+    "keywords": [
+      "c4 context",
+      "C4Context",
+      "системн контекст"
+    ],
+    "sourceHints": [
+      "(?m)^C4Context\\b"
+    ]
+  },
+  {
+    "id": "mermaid/requirement",
+    "path": "mermaid/requirement.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "requirement",
+    "kind": "card",
+    "keywords": [
+      "requirement",
+      "требован"
+    ],
+    "sourceHints": [
+      "(?m)^requirementDiagram\\b"
+    ]
+  },
+  {
+    "id": "mermaid/quadrant",
+    "path": "mermaid/quadrant.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "quadrant",
+    "kind": "card",
+    "keywords": [
+      "quadrant",
+      "квадрант"
+    ],
+    "sourceHints": [
+      "(?m)^quadrantChart\\b"
+    ]
+  },
+  {
+    "id": "mermaid/architecture",
+    "path": "mermaid/architecture.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "architecture",
+    "kind": "card",
+    "keywords": [
+      "architecture-beta",
+      "архитектур"
+    ],
+    "sourceHints": [
+      "(?m)^architecture"
+    ]
+  },
+  {
+    "id": "mermaid/packet",
+    "path": "mermaid/packet.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "packet",
+    "kind": "card",
+    "keywords": [
+      "packet-beta",
+      "packet",
+      "пакет"
+    ],
+    "sourceHints": [
+      "(?m)^packet"
+    ]
+  },
+  {
+    "id": "graphml/graph",
+    "path": "graphml/graph.md",
+    "parent": "graphml/index",
+    "language": "graphml",
+    "diagramType": "graph",
+    "kind": "card",
+    "keywords": [
+      "graphml",
+      "yed",
+      "gephi",
+      "граф"
+    ],
+    "sourceHints": [
+      "<graphml\\b"
+    ]
+  },
+  {
+    "id": "wiremark/wireframe",
+    "path": "wiremark/wireframe.md",
+    "parent": "wiremark/index",
+    "language": "wiremark",
+    "diagramType": "wireframe",
+    "kind": "card",
+    "keywords": [
+      "wiremark",
+      "wireframe",
+      "вайрфрейм",
+      "макет"
+    ],
+    "sourceHints": [
+      "(?m)^Wireframe\\b"
+    ]
+  },
+  {
+    "id": "d2/flowchart",
+    "path": "d2/flowchart.md",
+    "parent": "d2/index",
+    "language": "d2",
+    "diagramType": "flowchart",
+    "kind": "card",
+    "keywords": [
+      "flowchart",
+      "flow chart",
+      "блок-схем"
+    ],
+    "sourceHints": [
+      "->"
+    ]
+  },
+  {
+    "id": "d2/sequence",
+    "path": "d2/sequence.md",
+    "parent": "d2/index",
+    "language": "d2",
+    "diagramType": "sequence",
+    "kind": "card",
+    "keywords": [
+      "sequence",
+      "последовательност"
+    ],
+    "sourceHints": [
+      "shape:\\s*sequence_diagram"
+    ]
+  },
+  {
+    "id": "d2/class",
+    "path": "d2/class.md",
+    "parent": "d2/index",
+    "language": "d2",
+    "diagramType": "class",
+    "kind": "card",
+    "keywords": [
+      "class diagram",
+      "классов",
+      "диаграмм класс"
+    ],
+    "sourceHints": [
+      "shape:\\s*class"
+    ]
+  },
+  {
+    "id": "d2/er",
+    "path": "d2/er.md",
+    "parent": "d2/index",
+    "language": "d2",
+    "diagramType": "er",
+    "kind": "card",
+    "keywords": [
+      "er",
+      "сущност",
+      "sql_table"
+    ],
+    "sourceHints": [
+      "shape:\\s*sql_table"
+    ]
+  },
+  {
+    "id": "d2/architecture",
+    "path": "d2/architecture.md",
+    "parent": "d2/index",
+    "language": "d2",
+    "diagramType": "architecture",
+    "kind": "card",
+    "keywords": [
+      "architecture",
+      "архитектур"
+    ],
+    "sourceHints": []
+  },
+  {
+    "id": "structurizr/c4_context",
+    "path": "structurizr/c4_context.md",
+    "parent": "structurizr/index",
+    "language": "structurizr",
+    "diagramType": "c4_context",
+    "kind": "card",
+    "keywords": [
+      "c4 context",
+      "системн контекст",
+      "c4"
+    ],
+    "sourceHints": [
+      "\\bperson\\s+"
+    ]
+  },
+  {
+    "id": "structurizr/c4_container",
+    "path": "structurizr/c4_container.md",
+    "parent": "structurizr/index",
+    "language": "structurizr",
+    "diagramType": "c4_container",
+    "kind": "card",
+    "keywords": [
+      "c4 container",
+      "контейнер"
+    ],
+    "sourceHints": [
+      "\\bcontainer\\s+"
+    ]
+  },
+  {
+    "id": "structurizr/component",
+    "path": "structurizr/component.md",
+    "parent": "structurizr/index",
+    "language": "structurizr",
+    "diagramType": "component",
+    "kind": "card",
+    "keywords": [
+      "component",
+      "компонент"
+    ],
+    "sourceHints": [
+      "\\bcomponent\\s+"
+    ]
+  },
+  {
+    "id": "structurizr/deployment",
+    "path": "structurizr/deployment.md",
+    "parent": "structurizr/index",
+    "language": "structurizr",
+    "diagramType": "deployment",
+    "kind": "card",
+    "keywords": [
+      "deployment",
+      "разверт",
+      "развёрт"
+    ],
+    "sourceHints": [
+      "deploymentEnvironment"
+    ]
+  },
+  {
+    "id": "mermaid/ext/waterfall",
+    "path": "mermaid/ext/waterfall.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "waterfall",
+    "kind": "card",
+    "keywords": [
+      "waterfall",
+      "водопад",
+      "waterfall-variance"
+    ],
+    "sourceHints": [
+      "(?m)^waterfall\\b",
+      "(?m)^waterfall-variance\\b"
+    ]
+  },
+  {
+    "id": "mermaid/ext/bubble",
+    "path": "mermaid/ext/bubble.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "bubble",
+    "kind": "card",
+    "keywords": [
+      "bubble",
+      "bubblechart",
+      "пузырьков"
+    ],
+    "sourceHints": [
+      "(?m)^bubble\\b",
+      "(?m)^bubblechart\\b"
+    ]
+  },
+  {
+    "id": "mermaid/ext/heatmap",
+    "path": "mermaid/ext/heatmap.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "heatmap",
+    "kind": "card",
+    "keywords": [
+      "heatmap",
+      "heat-map",
+      "тепловая карта",
+      "теплокарт"
+    ],
+    "sourceHints": [
+      "(?m)^heatmap\\b",
+      "(?m)^heat-map\\b"
+    ]
+  },
+  {
+    "id": "mermaid/ext/orgchart",
+    "path": "mermaid/ext/orgchart.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "orgchart",
+    "kind": "card",
+    "keywords": [
+      "orgchart",
+      "оргструктур",
+      "org"
+    ],
+    "sourceHints": [
+      "(?m)^orgchart\\b",
+      "(?m)^org\\b"
+    ]
+  },
+  {
+    "id": "mermaid/ext/ev",
+    "path": "mermaid/ext/ev.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "ev",
+    "kind": "card",
+    "keywords": [
+      "ev",
+      "evchart",
+      "освоенн объём",
+      "освоенный объем",
+      "earned value"
+    ],
+    "sourceHints": [
+      "(?m)^ev\\b",
+      "(?m)^evchart\\b"
+    ]
+  },
+  {
+    "id": "mermaid/ext/boxplot",
+    "path": "mermaid/ext/boxplot.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "boxplot",
+    "kind": "card",
+    "keywords": [
+      "boxplot",
+      "box-plot",
+      "box",
+      "ящик с усами"
+    ],
+    "sourceHints": [
+      "(?m)^boxplot\\b",
+      "(?m)^box-plot\\b",
+      "(?m)^box\\b"
+    ]
+  },
+  {
+    "id": "mermaid/ext/treemap",
+    "path": "mermaid/ext/treemap.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "treemap",
+    "kind": "card",
+    "keywords": [
+      "treemap",
+      "tree-map",
+      "древовидн"
+    ],
+    "sourceHints": [
+      "(?m)^treemap\\b",
+      "(?m)^tree-map\\b"
+    ]
+  },
+  {
+    "id": "mermaid/ext/radar",
+    "path": "mermaid/ext/radar.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "radar",
+    "kind": "card",
+    "keywords": [
+      "radar",
+      "radarchart",
+      "spider",
+      "лепестков",
+      "паутин"
+    ],
+    "sourceHints": [
+      "(?m)^radar\\b",
+      "(?m)^radarchart\\b",
+      "(?m)^spider\\b"
+    ]
+  },
+  {
+    "id": "mermaid/ext/voronoi",
+    "path": "mermaid/ext/voronoi.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "voronoi",
+    "kind": "card",
+    "keywords": [
+      "voronoi",
+      "voronoi-diagram",
+      "вороного"
+    ],
+    "sourceHints": [
+      "(?m)^voronoi\\b",
+      "(?m)^voronoi-diagram\\b"
+    ]
+  },
+  {
+    "id": "mermaid/ext/series",
+    "path": "mermaid/ext/series.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "series",
+    "kind": "card",
+    "keywords": [
+      "series",
+      "серийн",
+      "кластерн",
+      "grouped bar"
+    ],
+    "sourceHints": [
+      "(?m)^series\\b"
+    ]
+  },
+  {
+    "id": "mermaid/ext/waterfall-scale",
+    "path": "mermaid/ext/waterfall-scale.md",
+    "parent": "mermaid/ext/waterfall",
+    "language": "mermaid",
+    "diagramType": "waterfall",
+    "kind": "subpage",
+    "keywords": [
+      "break",
+      "разрыв шкалы",
+      "fontsize",
+      "размер шрифта",
+      "labels above"
+    ],
+    "sourceHints": []
+  },
+  {
+    "id": "mermaid/ext/waterfall-series",
+    "path": "mermaid/ext/waterfall-series.md",
+    "parent": "mermaid/ext/waterfall",
+    "language": "mermaid",
+    "diagramType": "waterfall",
+    "kind": "subpage",
+    "keywords": [
+      "waterfall-multi",
+      "мульти-режим",
+      "connectors",
+      "соединительн",
+      "colors total"
+    ],
+    "sourceHints": []
+  },
+  {
+    "id": "mermaid/ext/series-scale",
+    "path": "mermaid/ext/series-scale.md",
+    "parent": "mermaid/ext/series",
+    "language": "mermaid",
+    "diagramType": "series",
+    "kind": "subpage",
+    "keywords": [
+      "break",
+      "разрыв шкалы",
+      "y2",
+      "вторая ось",
+      "axis=y2"
+    ],
+    "sourceHints": []
+  },
+  {
+    "id": "mermaid/ext/series-analytics",
+    "path": "mermaid/ext/series-analytics.md",
+    "parent": "mermaid/ext/series",
+    "language": "mermaid",
+    "diagramType": "series",
+    "kind": "subpage",
+    "keywords": [
+      "cagr",
+      "линия уровня",
+      "level line"
+    ],
+    "sourceHints": []
+  }
+]
