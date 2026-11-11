@@ -30,6 +30,11 @@ describe("llm-providers", () => {
       expect(getLlmProvider(providerId)?.keyUrl).toMatch(/^https:\/\//);
     }
 
+    expect(getLlmProvider("openrouter")?.defaultModel).toBe("google/gemma-4-31b-it:free");
+    expect(getLlmProvider("openrouter-free")?.defaultModel).toBe(
+      "google/gemma-4-31b-it:free",
+    );
+
     const moonshot = getLlmProvider("moonshot");
     expect(moonshot?.apiEndpoint).toBe("https://api.moonshot.ai/v1/chat/completions");
     expect(moonshot?.defaultModel).toBe("kimi-k3.1-pro");
