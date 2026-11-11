@@ -643,6 +643,9 @@ onUnmounted(() => {
 
     <SnippetsPanel
       :open="snippetsOpen"
+      :diagram-format="diagramFormat"
+      :source="source"
+      :can-insert="!isReadOnly"
       @close="snippetsOpen = false"
       @insert="insertSnippetAtCursor"
     />

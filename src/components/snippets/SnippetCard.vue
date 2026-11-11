@@ -1,15 +1,30 @@
 <script setup lang="ts">
 import { useLocale } from "@/composables/useLocale";
-import type { CustomSnippet, SnippetListItem } from "@/types/snippets";
+import { getLanguageModule } from "@/languages/registry";
+import type { LocaleKey } from "@/locales/types";
+import type {
+  CustomSnippet,
+  SnippetCategoryId,
+  SnippetLanguageId,
+  SnippetListItem,
+} from "@/types/snippets";
 
-const props = defineProps<{
-  item: SnippetListItem;
-}>();
+const props = withDefaults(
+  defineProps<{
+    item: SnippetListItem;
+    canInsert?: boolean;
+  }>(),
+  {
+    canInsert: true,
+  },
+);
 
 const emit = defineEmits<{
   insert: [content: string];
   edit: [snippet: CustomSnippet];
   delete: [snippet: CustomSnippet];
+  selectLanguage: [language: SnippetLanguageId];
+  selectCategory: [category: SnippetCategoryId | "custom"];
 }>();
 
 const { t } = useLocale();
@@ -28,20 +43,57 @@ function getItemDescription(item: SnippetListItem): string {
 function getItemContent(item: SnippetListItem): string {
   return item.kind === "builtin" ? item.content : item.snippet.content;
 }
+
+function getItemLanguage(item: SnippetListItem): SnippetLanguageId {
+  return item.kind === "builtin" ? item.language : item.snippet.language;
+}
+
+function getItemLanguageLabel(item: SnippetListItem): string {
+  const language = getItemLanguage(item);
+  return t(getLanguageModule(language).labelKey);
+}
+
+function getItemCategory(item: SnippetListItem): SnippetCategoryId | "custom" {
+  return item.kind === "builtin" ? item.categoryId : item.snippet.categoryId;
+}
+
+function getItemCategoryLabel(item: SnippetListItem): string {
+  const category = getItemCategory(item);
+  const key: LocaleKey = `snippets.category.${category}`;
+  return t(key);
+}
 </script>
 
 <template>
   <article class="snippet-card">
     <div class="snippet-card__main">
-      <h4 class="snippet-card__title">
-        {{ getItemTitle(props.item) }}
-        <span
-          v-if="props.item.kind === 'custom'"
-          class="snippet-card__badge"
-        >
-          {{ t("snippets.customBadge") }}
-        </span>
-      </h4>
+      <div class="snippet-card__head">
+        <h4 class="snippet-card__title">
+          {{ getItemTitle(props.item) }}
+          <span
+            v-if="props.item.kind === 'custom'"
+            class="snippet-card__badge"
+          >
+            {{ t("snippets.customBadge") }}
+          </span>
+        </h4>
+        <div class="snippet-card__tags">
+          <button
+            class="snippet-card__tag snippet-card__tag--lang"
+            type="button"
+            @click="emit('selectLanguage', getItemLanguage(props.item))"
+          >
+            {{ getItemLanguageLabel(props.item) }}
+          </button>
+          <button
+            class="snippet-card__tag"
+            type="button"
+            @click="emit('selectCategory', getItemCategory(props.item))"
+          >
+            {{ getItemCategoryLabel(props.item) }}
+          </button>
+        </div>
+      </div>
       <p v-if="getItemDescription(props.item)" class="snippet-card__desc">
         {{ getItemDescription(props.item) }}
       </p>
@@ -52,6 +104,7 @@ function getItemContent(item: SnippetListItem): string {
       <button
         class="btn btn-primary btn-sm"
         type="button"
+        :disabled="!props.canInsert"
         @click="emit('insert', getItemContent(props.item))"
       >
         {{ t("snippets.insert") }}
@@ -84,14 +137,51 @@ function getItemContent(item: SnippetListItem): string {
   background: var(--surface-muted);
 }
 
+.snippet-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
 .snippet-card__title {
-  margin: 0 0 4px;
+  margin: 0;
   font-size: 0.88rem;
   font-weight: 600;
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+.snippet-card__tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.snippet-card__tag {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 7px;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  background: var(--surface);
+  color: var(--text-muted);
+  min-height: auto;
+  cursor: pointer;
+}
+
+.snippet-card__tag:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.snippet-card__tag--lang {
+  font-weight: 600;
 }
 
 .snippet-card__badge {

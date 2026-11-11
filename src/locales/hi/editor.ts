@@ -54,7 +54,7 @@ export const editorMessages = {
   "editor.placeholderStructurizr": "workspace {\n  model {\n    user = person \"उपयोगकर्ता\"\n    app = softwareSystem \"ऐप\"\n    user -> app \"उपयोग करता है\"\n  }\n}",
   "editor.placeholderViewOnly": "GraphML केवल-देखें मोड में खुला है।",
   "editor.snippets": "स्निपेट",
-  "editor.snippetsTooltip": "PlantUML अंश डालें",
+  "editor.snippetsTooltip": "आरेख स्निपेट डालें",
   "editor.toolbar.overflow": "और क्रियाएँ",
   "editor.toolbar.group.file": "फ़ाइल",
   "editor.toolbar.group.edit": "संपादन",

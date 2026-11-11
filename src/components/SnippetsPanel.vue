@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, toRef } from "vue";
+import { computed, ref, toRef, watch } from "vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import SnippetEditorModal from "@/components/SnippetEditorModal.vue";
@@ -8,13 +8,33 @@ import { useAppDialog } from "@/composables/useAppDialog";
 import { useDraggableFloatingPanel } from "@/composables/useDraggableFloatingPanel";
 import { useLocale } from "@/composables/useLocale";
 import { useMediaQuery } from "@/composables/useMediaQuery";
-import { useSnippets } from "@/composables/useSnippets";
+import {
+  resolveSnippetLanguageFromFormat,
+  useSnippets,
+} from "@/composables/useSnippets";
+import type { DiagramFormat } from "@/constants/diagram-format-ids";
+import { getLanguageModule } from "@/languages/registry";
+import type { LocaleKey } from "@/locales/types";
 import { SNIPPETS_IMPORT_ACCEPT } from "@/storage/snippets";
-import type { CustomSnippet } from "@/types/snippets";
+import type {
+  CustomSnippet,
+  SnippetCategoryId,
+  SnippetLanguageId,
+} from "@/types/snippets";
 
-const props = defineProps<{
-  open: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    open: boolean;
+    diagramFormat?: DiagramFormat;
+    source?: string;
+    canInsert?: boolean;
+  }>(),
+  {
+    diagramFormat: undefined,
+    source: "",
+    canInsert: true,
+  },
+);
 
 const emit = defineEmits<{
   close: [];
@@ -25,12 +45,33 @@ const { t } = useLocale();
 const { confirm, alert } = useAppDialog();
 const isMobileSheet = useMediaQuery("(max-width: 900px)");
 
-const snippets = useSnippets();
+const snippets = useSnippets({
+  initialFormat: props.diagramFormat,
+  initialSource: props.source,
+});
 
 const panelRef = ref<HTMLElement | null>(null);
 const importInputRef = ref<HTMLInputElement | null>(null);
 const editorOpen = ref(false);
 const editingSnippet = ref<CustomSnippet | null>(null);
+
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen && props.diagramFormat) {
+      snippets.syncWithEditorContext(props.diagramFormat, props.source);
+    }
+  },
+);
+
+watch(
+  () => props.diagramFormat,
+  (format) => {
+    if (format) {
+      snippets.syncWithEditorContext(format, props.source);
+    }
+  },
+);
 
 const {
   isDragging,
@@ -44,12 +85,28 @@ const {
   isMobileSheet,
 });
 
-const categoryTabs = computed(() => [
-  { id: "all" as const, label: t("snippets.category.all") },
-  ...snippets.SNIPPET_CATEGORY_IDS.map((id) => ({
+const defaultSnippetLanguage = computed<SnippetLanguageId>(() => {
+  if (snippets.activeLanguage.value !== null) {
+    return snippets.activeLanguage.value;
+  }
+  return resolveSnippetLanguageFromFormat(props.diagramFormat);
+});
+
+const languageTags = computed(() =>
+  snippets.SNIPPET_LANGUAGE_IDS.map((id) => ({
     id,
-    label: t(`snippets.category.${id}`),
+    label: t(getLanguageModule(id).labelKey),
   })),
+);
+
+const categoryTags = computed(() => [
+  ...snippets.availableCategoryIds.value.map((id) => {
+    const key: LocaleKey = `snippets.category.${id}`;
+    return {
+      id,
+      label: t(key),
+    };
+  }),
   { id: "custom" as const, label: t("snippets.category.custom") },
 ]);
 
@@ -63,6 +120,14 @@ function openAddEditor(): void {
 function openEditEditor(snippet: CustomSnippet): void {
   editingSnippet.value = snippet;
   editorOpen.value = true;
+}
+
+function onSelectLanguageTag(language: SnippetLanguageId): void {
+  snippets.toggleLanguageTag(language);
+}
+
+function onSelectCategoryTag(category: SnippetCategoryId | "custom"): void {
+  snippets.toggleCategoryTag(category);
 }
 
 async function requestDelete(snippet: CustomSnippet): Promise<void> {
@@ -79,6 +144,7 @@ async function requestDelete(snippet: CustomSnippet): Promise<void> {
 }
 
 function onEditorSave(payload: {
+  language: SnippetLanguageId;
   title: string;
   content: string;
   description?: string;
@@ -193,13 +259,25 @@ async function onImportFileSelected(event: Event): Promise<void> {
           {{ t("snippets.panelTitle") }}
         </h3>
         <div class="snippets-panel__header-actions">
-          <IconButton :label="t('snippets.export')" @click="exportSnippets">
+          <IconButton
+            :label="t('snippets.export')"
+            data-testid="snippets-export"
+            @click="exportSnippets"
+          >
             <ActionIcon name="export" />
           </IconButton>
-          <IconButton :label="t('snippets.import')" @click="openImportPicker">
+          <IconButton
+            :label="t('snippets.import')"
+            data-testid="snippets-import"
+            @click="openImportPicker"
+          >
             <ActionIcon name="import" />
           </IconButton>
-          <IconButton :label="t('snippets.add')" @click="openAddEditor">
+          <IconButton
+            :label="t('snippets.add')"
+            data-testid="snippets-add"
+            @click="openAddEditor"
+          >
             <ActionIcon name="plus" />
           </IconButton>
           <button
@@ -222,24 +300,58 @@ async function onImportFileSelected(event: Event): Promise<void> {
           v-model="snippets.searchQuery.value"
           class="input"
           type="search"
+          data-testid="snippets-search"
           :placeholder="t('snippets.searchPlaceholder')"
           autocomplete="off"
         />
       </div>
 
-      <div class="snippets-panel__categories" role="tablist">
-        <button
-          v-for="tab in categoryTabs"
-          :key="tab.id"
-          class="snippets-panel__category"
-          :class="{ 'is-active': snippets.activeCategory.value === tab.id }"
-          type="button"
-          role="tab"
-          :aria-selected="snippets.activeCategory.value === tab.id"
-          @click="snippets.activeCategory.value = tab.id"
+      <div class="snippets-panel__filter-group">
+        <span class="snippets-panel__filter-label">
+          {{ t("snippets.filterLanguage") }}
+        </span>
+        <div
+          class="snippets-panel__tags"
+          role="group"
+          :aria-label="t('snippets.filterLanguage')"
         >
-          {{ tab.label }}
-        </button>
+          <button
+            v-for="tag in languageTags"
+            :key="tag.id"
+            class="snippets-panel__tag"
+            :class="{ 'is-active': snippets.activeLanguage.value === tag.id }"
+            type="button"
+            :data-testid="`snippets-lang-${tag.id}`"
+            :aria-pressed="snippets.activeLanguage.value === tag.id"
+            @click="onSelectLanguageTag(tag.id)"
+          >
+            {{ tag.label }}
+          </button>
+        </div>
+      </div>
+
+      <div class="snippets-panel__filter-group">
+        <span class="snippets-panel__filter-label">
+          {{ t("snippets.filterCategory") }}
+        </span>
+        <div
+          class="snippets-panel__tags"
+          role="group"
+          :aria-label="t('snippets.filterCategory')"
+        >
+          <button
+            v-for="tab in categoryTags"
+            :key="tab.id"
+            class="snippets-panel__tag"
+            :class="{ 'is-active': snippets.activeCategory.value === tab.id }"
+            type="button"
+            :data-testid="`snippets-cat-${tab.id}`"
+            :aria-pressed="snippets.activeCategory.value === tab.id"
+            @click="onSelectCategoryTag(tab.id)"
+          >
+            {{ tab.label }}
+          </button>
+        </div>
       </div>
 
       <div class="snippets-panel__list">
@@ -251,9 +363,12 @@ async function onImportFileSelected(event: Event): Promise<void> {
           v-for="item in filteredItems"
           :key="item.kind === 'builtin' ? item.id : item.snippet.id"
           :item="item"
+          :can-insert="canInsert"
           @insert="emit('insert', $event)"
           @edit="openEditEditor"
           @delete="requestDelete"
+          @select-language="onSelectLanguageTag"
+          @select-category="onSelectCategoryTag"
         />
       </div>
 
@@ -270,6 +385,7 @@ async function onImportFileSelected(event: Event): Promise<void> {
   <SnippetEditorModal
     :open="editorOpen"
     :snippet="editingSnippet"
+    :default-language="defaultSnippetLanguage"
     @close="onEditorClose"
     @save="onEditorSave"
   />
@@ -286,7 +402,7 @@ async function onImportFileSelected(event: Event): Promise<void> {
 .snippets-panel {
   position: fixed;
   z-index: 900;
-  max-height: min(72vh, 640px);
+  max-height: min(76vh, 680px);
   display: flex;
   flex-direction: column;
   background: var(--surface);
@@ -347,29 +463,44 @@ async function onImportFileSelected(event: Event): Promise<void> {
 }
 
 .snippets-panel__search {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-}
-
-.snippets-panel__categories {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--border);
 }
 
-.snippets-panel__category {
+.snippets-panel__filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.snippets-panel__filter-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+.snippets-panel__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.snippets-panel__tag {
   border: 1px solid var(--border);
   border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 0.75rem;
+  padding: 3px 9px;
+  font-size: 0.73rem;
   background: var(--surface);
   color: var(--text-muted);
   min-height: auto;
+  cursor: pointer;
 }
 
-.snippets-panel__category.is-active {
+.snippets-panel__tag.is-active {
   border-color: var(--accent);
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 10%, transparent);

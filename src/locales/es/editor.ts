@@ -54,7 +54,7 @@ export const editorMessages = {
   "editor.placeholderStructurizr": "workspace {\n  model {\n    user = person \"Usuario\"\n    app = softwareSystem \"Aplicación\"\n    user -> app \"Usa\"\n  }\n}",
   "editor.placeholderViewOnly": "GraphML está abierto en modo de solo visualización.",
   "editor.snippets": "Fragmentos",
-  "editor.snippetsTooltip": "Insertar un fragmento de PlantUML",
+  "editor.snippetsTooltip": "Insertar fragmento de diagrama",
   "editor.toolbar.overflow": "Más acciones",
   "editor.toolbar.group.file": "Archivo",
   "editor.toolbar.group.edit": "Editar",

@@ -318,7 +318,6 @@ function onSampleChange(event: Event): void {
         <ActionIcon name="trash" />
       </IconButton>
       <IconButton
-        v-if="formatDefinition.supportsSnippets"
         :label="`${t('editor.snippets')} (${SNIPPETS_KEYBOARD_SHORTCUT})`"
         :pressed="snippetsOpen"
         :disabled="!allowSnippets"
