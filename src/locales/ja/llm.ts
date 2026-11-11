@@ -425,6 +425,8 @@ export const llmMessages = {
   "aiChat.inputPlaceholder": "タスクを書く: 作成、変更、説明…",
   "aiChat.newSession": "新しいセッション",
   "aiChat.nextSteps": "次にすること",
+  "aiChat.suggestionTitle": "提案",
+  "aiChat.askSuggestion": "質問する",
   "aiChat.noSessions": "セッションはまだありません。新しいチャットを始めてください。",
   "aiChat.pin": "ピン留め",
   "aiChat.proposalApplied": "適用済み",

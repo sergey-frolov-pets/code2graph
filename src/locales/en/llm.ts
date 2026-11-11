@@ -168,6 +168,8 @@ export const llmMessages = {
   "aiChat.proposalRejected": "Rejected",
   "aiChat.proposalStale": "The diagram changed after this proposal — it is stale",
   "aiChat.nextSteps": "What next",
+  "aiChat.suggestionTitle": "Suggestion",
+  "aiChat.askSuggestion": "Ask",
   "aiChat.regenerate": "Regenerate answer",
   "aiChat.editResend": "Edit and resend",
   "aiChat.copyMessage": "Copy",

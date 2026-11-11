@@ -425,6 +425,8 @@ export const llmMessages = {
   "aiChat.inputPlaceholder": "صف المهمة: إنشاء أو تغيير أو شرح…",
   "aiChat.newSession": "جلسة جديدة",
   "aiChat.nextSteps": "ماذا بعد",
+  "aiChat.suggestionTitle": "اقتراح",
+  "aiChat.askSuggestion": "اسأل",
   "aiChat.noSessions": "لا جلسات بعد. ابدأ دردشة جديدة.",
   "aiChat.pin": "تثبيت",
   "aiChat.proposalApplied": "طُبّق",

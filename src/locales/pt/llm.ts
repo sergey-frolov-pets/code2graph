@@ -425,6 +425,8 @@ export const llmMessages = {
   "aiChat.inputPlaceholder": "Descreva a tarefa: criar, alterar ou explicar…",
   "aiChat.newSession": "Nova sessão",
   "aiChat.nextSteps": "O que fazer a seguir",
+  "aiChat.suggestionTitle": "Sugestão",
+  "aiChat.askSuggestion": "Perguntar",
   "aiChat.noSessions": "Ainda não há sessões. Comece um chat novo.",
   "aiChat.pin": "Fixar",
   "aiChat.proposalApplied": "Aplicado",

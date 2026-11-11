@@ -26,17 +26,20 @@ import {
 } from "@lucide/vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { isAgentDiagramType } from "@shared/agent-diagram";
+import AppModal from "@/components/AppModal.vue";
 import IconButton from "@/components/IconButton.vue";
 import type { LayoutEngine } from "@/constants";
 import {
   AI_CHAT_APPLY_MODE_STORAGE_KEY,
   AI_CHAT_ATTACHMENT_FILE_MAX_BYTES,
+  AI_CHAT_COMPOSER_ROWS,
   AI_CHAT_CONTEXT_MODE_DEFAULT,
   AI_CHAT_CONTEXT_MODE_STORAGE_KEY,
   AI_CHAT_DEFAULT_APPLY_MODE,
   AI_CHAT_MAX_ATTACHMENTS,
   AI_CHAT_MAX_IMAGE_ATTACHMENTS,
   AI_CHAT_MESSAGE_MAX_CHARS,
+  AI_CHAT_SUGGESTION_VISIBLE_LINES,
   BYTES_PER_MEGABYTE,
   type AiChatApplyMode,
   type AiChatAttachmentKind,
@@ -181,7 +184,7 @@ const secretWarnings = computed(() => {
 
 /**
  * Подсказки «Что дальше»: от модели, а до первого ответа — стартовые по состоянию диаграммы.
- * В вёрстке блок стоит под полем ввода, а не между перепиской и композером.
+ * В списке видно две строки; клик открывает полный текст, отправка — только по «Спросить».
  */
 const nextStepSuggestions = computed<string[]>(() => {
   const session = activeSession.value;
@@ -202,6 +205,33 @@ const nextStepSuggestions = computed<string[]>(() => {
     ? [t("aiChat.starterEdit"), t("aiChat.starterSwitch")]
     : [t("aiChat.starterCreate"), t("aiChat.starterSwitch")];
 });
+
+const previewSuggestion = ref<string | null>(null);
+
+const suggestionPreviewStyle = {
+  "--ai-chat-chip-lines": String(AI_CHAT_SUGGESTION_VISIBLE_LINES),
+  "--ai-chat-composer-rows": String(AI_CHAT_COMPOSER_ROWS),
+};
+
+function openSuggestion(step: string): void {
+  if (isBusy.value) {
+    return;
+  }
+  previewSuggestion.value = step;
+}
+
+function closeSuggestion(): void {
+  previewSuggestion.value = null;
+}
+
+async function askSuggestion(): Promise<void> {
+  const step = previewSuggestion.value;
+  if (!step || isBusy.value) {
+    return;
+  }
+  previewSuggestion.value = null;
+  await onSend(step);
+}
 
 function scrollThreadToEnd(): void {
   const thread = threadRef.value;
@@ -699,7 +729,10 @@ async function onShareCopyTranscript(): Promise<void> {
 </script>
 
 <template>
-  <div class="ai-chat-panel">
+  <div
+    class="ai-chat-panel"
+    :style="suggestionPreviewStyle"
+  >
     <div class="ai-chat-panel__toolbar">
       <IconButton
         :label="t('aiChat.history')"
@@ -1223,7 +1256,7 @@ async function onShareCopyTranscript(): Promise<void> {
           <textarea
             v-model="draft"
             class="ai-chat-panel__input"
-            rows="2"
+            :rows="AI_CHAT_COMPOSER_ROWS"
             enterkeyhint="send"
             :aria-label="t('aiChat.inputPlaceholder')"
             :placeholder="t('aiChat.inputPlaceholder')"
@@ -1349,13 +1382,42 @@ async function onShareCopyTranscript(): Promise<void> {
             type="button"
             :title="step"
             :disabled="isBusy"
-            @click="onSend(step)"
+            @click="openSuggestion(step)"
           >
-            {{ step }}
+            <span class="ai-chat-panel__chip-text">{{ step }}</span>
           </button>
         </div>
       </div>
     </div>
+
+    <AppModal
+      :open="previewSuggestion !== null"
+      :title="t('aiChat.suggestionTitle')"
+      test-id="ai-chat-suggestion"
+      @close="closeSuggestion"
+    >
+      <p class="ai-chat-panel__suggestion-text">
+        {{ previewSuggestion }}
+      </p>
+      <template #footer>
+        <button
+          class="btn"
+          type="button"
+          @click="closeSuggestion"
+        >
+          {{ t("app.cancel") }}
+        </button>
+        <button
+          class="btn btn-primary"
+          type="button"
+          data-testid="ai-chat-suggestion-ask"
+          :disabled="isBusy || !previewSuggestion"
+          @click="askSuggestion"
+        >
+          {{ t("aiChat.askSuggestion") }}
+        </button>
+      </template>
+    </AppModal>
   </div>
 </template>
 
@@ -1604,21 +1666,27 @@ async function onShareCopyTranscript(): Promise<void> {
 }
 
 .ai-chat-panel__input {
+  --ai-chat-input-line-height: 1.4;
+  --ai-chat-input-padding-block: 10px;
+  --ai-chat-input-max-height: min(50vh, 22rem);
+
   flex: 1 1 auto;
   width: auto;
   min-width: 0;
   margin: 0;
-  padding: 10px 0;
+  padding: var(--ai-chat-input-padding-block) 0;
   border: 0;
   border-radius: 0;
   background: transparent;
   color: var(--text);
-  resize: none;
-  min-height: var(--btn-touch, 44px);
-  max-height: 8.5rem;
-  line-height: 1.4;
+  resize: vertical;
+  line-height: var(--ai-chat-input-line-height);
+  min-height: calc(
+    var(--ai-chat-composer-rows) * var(--ai-chat-input-line-height) * 1em +
+      var(--ai-chat-input-padding-block) * 2
+  );
+  max-height: var(--ai-chat-input-max-height);
   overflow-y: auto;
-  field-sizing: content;
 }
 
 .ai-chat-panel__input:focus {
@@ -1739,8 +1807,9 @@ async function onShareCopyTranscript(): Promise<void> {
 
 .ai-chat-panel__next {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -1753,30 +1822,44 @@ async function onShareCopyTranscript(): Promise<void> {
 .ai-chat-panel__chips {
   display: flex;
   flex: 1 1 auto;
-  flex-wrap: nowrap;
+  flex-direction: column;
   gap: 6px;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  padding-bottom: 2px;
 }
 
 .ai-chat-panel__chip {
-  flex: 0 0 auto;
-  max-width: 14rem;
+  display: block;
+  width: 100%;
   min-height: 28px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 12px;
   background: var(--surface);
   color: var(--text);
-  padding: 4px 10px;
+  padding: 6px 10px;
   cursor: pointer;
   font-size: 0.75rem;
-  line-height: 1.2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
+  text-align: start;
   touch-action: manipulation;
+}
+
+.ai-chat-panel__chip-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--ai-chat-chip-lines);
+  line-clamp: var(--ai-chat-chip-lines);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.ai-chat-panel__suggestion-text {
+  margin: 0;
+  max-height: min(50vh, 16rem);
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
 }
 
 .ai-chat-panel__chip:hover:not(:disabled) {
@@ -1808,13 +1891,6 @@ async function onShareCopyTranscript(): Promise<void> {
 @media (max-width: 900px) {
   .ai-chat-panel__dock {
     padding-bottom: var(--ai-chat-preview-fab-clearance);
-  }
-
-  .ai-chat-panel__input {
-    min-height: 2.5rem;
-    max-height: 2.75rem;
-    padding-top: 8px;
-    padding-bottom: 8px;
   }
 
   .ai-chat-panel__composer,
