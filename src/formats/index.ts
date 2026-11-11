@@ -70,9 +70,11 @@ export async function renderDiagram(
       ? fitPlantUmlSvgText(painted)
       : painted;
   const stripped = stripOffDeviceSvgResources(fitted);
-  // Mermaid уже красит подписи в своём движке. Повторный проход задел бы
-  // серии расширений, у которых текст специально лежит на цветной фигуре.
-  if (format === "mermaid") return stripped;
+  // Mermaid, D2 и WireMark уже выбирают палитру в своих движках. Повторный
+  // проход задел бы текст на цветных плашках и заголовках классов/таблиц.
+  if (format === "mermaid" || format === "d2" || format === "wiremark") {
+    return stripped;
+  }
   return applyDiagramAppearance(stripped, {
     background: context.diagramBackground,
     textColor: context.diagramTextColor,
