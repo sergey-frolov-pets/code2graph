@@ -7,6 +7,8 @@ import { DEFAULT_LOCALE, type AppLocale } from "@/constants/i18n";
 
 export const STORAGE_KEY_LLM_PROVIDER = "code2graph-llm-provider";
 export const STORAGE_KEY_LLM_API_KEYS = "code2graph-llm-api-keys";
+export const STORAGE_KEY_LLM_ACCOUNTS = "code2graph-llm-accounts";
+export const STORAGE_KEY_LLM_CHAT_SELECTION = "code2graph-llm-chat-selection";
 export const STORAGE_KEY_LLM_CONSENT = "code2graph-llm-consent";
 
 export const LLM_API_KEYS_GUIDE_FILE = "llm-api-keys.html";

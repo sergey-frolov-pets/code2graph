@@ -45,6 +45,7 @@ export const appMessages = {
   "app.unknownRenderError": "Unbekannter Darstellungsfehler",
   "app.exportPngFailed": "PNG konnte nicht exportiert werden",
   "app.exportGifFailed": "GIF konnte nicht gespeichert werden",
+  "app.exportHtmlFailed": "HTML konnte nicht gespeichert werden",
   "app.copyPngFailed": "PNG konnte nicht in die Zwischenablage kopiert werden",
   "app.copyPngUnsupported": "Dieser Browser kann kein PNG-Bild in die Zwischenablage kopieren",
   "app.engineLoadError": "Fehler beim Laden der Engine",

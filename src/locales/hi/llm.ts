@@ -10,7 +10,7 @@ export const llmMessages = {
   "llm.keysGuide.securityLead":
     "रहस्य तृतीय-पक्ष ऐप सर्वर को नहीं भेजे जाते — केवल आपके ब्राउज़र में स्थानीय रूप से सहेजे जाते हैं (localStorage):",
   "llm.keysGuide.securityApiKeys":
-    "LLM API कुंजियाँ (सेटिंग्स → AI) केवल आपके ब्राउज़र में रहती हैं; सहेजने के बाद इनपुट फ़ील्ड साफ़ हो जाती है।",
+    "LLM API कुंजियाँ (सेटिंग्स → AI) .env के सीड से इस ब्राउज़र में एन्क्रिप्ट होती हैं; सहेजने के बाद इनपुट फ़ील्ड साफ़ हो जाती है।",
   "llm.keysGuide.securityLibraryCredentials":
     "लाइब्रेरी सर्वर लॉगिन और पासवर्ड (सेटिंग्स → लाइब्रेरी) — केवल आपके ब्राउज़र में; सहेजने के बाद पासवर्ड नहीं दिखता।",
   "llm.keysGuide.securityAuthToken":
@@ -45,9 +45,14 @@ export const llmMessages = {
   "llm.provider.zhipuDesc": "Zhipu AI का चीनी LLM। open.bigmodel.cn से कुंजी।",
   "llm.provider.moonshot": "Moonshot (Kimi)",
   "llm.provider.moonshotDesc": "Moonshot AI का चीनी LLM। platform.moonshot.cn से कुंजी।",
+  "llm.provider.local": "स्थानीय LLM",
+  "llm.provider.localDesc":
+    "इस कंप्यूटर पर OpenAI-संगत सर्वर (Ollama, LM Studio, llama.cpp, vLLM)। आधार URL और मॉडल नाम दें। API कुंजी वैकल्पिक है।",
   "llm.activeModelDetail": "{provider} · {model}",
   "llm.activeModelUnknown": "कोई प्रदाता चयनित नहीं",
   "llm.generatingWith": "जनरेट हो रहा है ({provider}, {model})…",
+  "llm.gate.localMissingTitle": "स्थानीय LLM सेट नहीं है",
+  "llm.gate.localMissingMessage": "सेटिंग्स → AI में स्थानीय LLM जोड़ें: आधार URL और मॉडल नाम।",
   "llm.gate.noConsentTitle": "सहमति आवश्यक है",
   "llm.gate.noConsentMessage": "आरेख क्लाउड LLM को भेजने के लिए सेटिंग्स → AI / LLM में सहमति चालू करें।",
   "llm.gate.noKeyTitle": "API कुंजी नहीं है",
@@ -425,6 +430,8 @@ export const llmMessages = {
   "aiChat.inputPlaceholder": "काम लिखें: बनाएँ, बदलें या समझाएँ…",
   "aiChat.newSession": "नया सत्र",
   "aiChat.nextSteps": "आगे क्या",
+  "aiChat.suggestionTitle": "सुझाव",
+  "aiChat.askSuggestion": "पूछें",
   "aiChat.noSessions": "अभी कोई सत्र नहीं। नई चैट शुरू करें।",
   "aiChat.pin": "पिन करें",
   "aiChat.proposalApplied": "लागू हो गया",
@@ -438,6 +445,8 @@ export const llmMessages = {
   "aiChat.regenerate": "उत्तर फिर बनाएँ",
   "aiChat.rename": "नाम बदलें",
   "aiChat.searchPlaceholder": "सत्र खोजें…",
+  "aiChat.provider": "प्रदाता",
+  "aiChat.providerNone": "कोई सक्रिय प्रदाता नहीं",
   "aiChat.send": "भेजें",
   "aiChat.sessionsCount": "{sessions} सत्र · {messages} संदेश",
   "aiChat.share": "साझा करें",

@@ -1,4 +1,4 @@
-import { computed, ref } from "vue";
+import { computed, getCurrentScope, onScopeDispose, ref } from "vue";
 import { resolveDiagramTypeSlug } from "@/analytics/diagram-type";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
 import { BUILTIN_SNIPPETS } from "@/constants/builtin-snippets";
@@ -13,6 +13,7 @@ import {
 } from "@/types/snippets";
 import {
   createCustomSnippetId,
+  CUSTOM_SNIPPETS_CHANGED_EVENT,
   loadCustomSnippets,
   parseSnippetsExportPayload,
   saveCustomSnippets,
@@ -137,6 +138,15 @@ export function useSnippets(options?: {
   initialSource?: string;
 }) {
   const customSnippets = ref<CustomSnippet[]>(loadCustomSnippets());
+  if (typeof window !== "undefined" && getCurrentScope()) {
+    const onCustomSnippetsChanged = (): void => {
+      customSnippets.value = loadCustomSnippets();
+    };
+    window.addEventListener(CUSTOM_SNIPPETS_CHANGED_EVENT, onCustomSnippetsChanged);
+    onScopeDispose(() => {
+      window.removeEventListener(CUSTOM_SNIPPETS_CHANGED_EVENT, onCustomSnippetsChanged);
+    });
+  }
   const activeLanguage = ref<SnippetLanguageFilter>(null);
   const activeCategory = ref<SnippetCategoryFilter>(null);
   const searchQuery = ref("");

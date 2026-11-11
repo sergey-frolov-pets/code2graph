@@ -1,12 +1,18 @@
 import type { WizardDiagramType, WizardLanguage } from "@/constants/llm-wizard";
 
-const GUIDE_FILE_PATTERN = /^\.\/([^/]+)\/([^/]+)\.md$/;
+const LEGACY_FILE_PATTERN = /^\.\/(graphviz|ditaa|other)\/([^/]+)\.md$/;
+const PAGE_CARD_PATTERN = /^\.\/pages\/([^/]+)\/([^/]+)\.md$/;
+const EXT_CARD_PATTERN = /^\.\/pages\/mermaid\/ext\/([^/]+)\.md$/;
+const SKIPPED_PAGE_NAMES = new Set(["index", "shared"]);
 
-const guideModules = import.meta.glob<string>("./**/*.md", {
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+const guideModules = import.meta.glob<string>(
+  ["./{graphviz,ditaa,other}/*.md", "./pages/**/*.md"],
+  {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  },
+);
 
 const guideByKey = new Map<string, string>();
 
@@ -28,13 +34,27 @@ function readGuideModule(source: unknown): string {
 }
 
 for (const [path, source] of Object.entries(guideModules)) {
-  const match = GUIDE_FILE_PATTERN.exec(path);
   const text = readGuideModule(source);
-  if (!match || !text) {
+  if (!text) {
     continue;
   }
 
-  guideByKey.set(`${match[1]}:${match[2]}`, text);
+  const legacy = LEGACY_FILE_PATTERN.exec(path);
+  if (legacy) {
+    guideByKey.set(`${legacy[1]}:${legacy[2]}`, text);
+    continue;
+  }
+
+  const card = PAGE_CARD_PATTERN.exec(path);
+  if (card && !SKIPPED_PAGE_NAMES.has(card[2])) {
+    guideByKey.set(`${card[1]}:${card[2]}`, text);
+    continue;
+  }
+
+  const ext = EXT_CARD_PATTERN.exec(path);
+  if (ext && !SKIPPED_PAGE_NAMES.has(ext[1])) {
+    guideByKey.set(`mermaid:${ext[1]}`, text);
+  }
 }
 
 const GUIDE_ALIASES: Record<string, string> = {

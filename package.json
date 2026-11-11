@@ -1,6 +1,6 @@
 {
   "name": "code2graph-app",
-  "version": "1.2.13",
+  "version": "1.2.15",
   "private": true,
   "type": "module",
   "description": "Code2Graph — PlantUML, Mermaid, GraphML, WireMark, D2, and Structurizr diagram editor. MCP returns source and a rendered image. Source-available under the Prosperity Public License 3.0.0.",
@@ -37,7 +37,7 @@
     "ext:refresh:all": "node scripts/mermaid-ext-refresh.mjs --all --verify",
     "dev:api": "npm --prefix server run dev",
     "dev:all": "npm run dev:api & npm run dev",
-    "prebuild": "node scripts/copy-vendor.mjs && node scripts/copy-c4-lib.mjs && node scripts/copy-c4-sprites.mjs && node scripts/copy-archimate-lib.mjs && node scripts/generate-pwa-icons.mjs",
+    "prebuild": "node scripts/copy-vendor.mjs && node scripts/copy-c4-lib.mjs && node scripts/copy-c4-sprites.mjs && node scripts/copy-archimate-lib.mjs && node scripts/generate-pwa-icons.mjs && node scripts/publish-llm-pages.mjs",
     "build": "vue-tsc --noEmit && vite build && node scripts/build-single-html.mjs",
     "build:deploy": "npm run prebuild && vite build && node scripts/build-single-html.mjs",
     "build:minimal": "vue-tsc --noEmit && vite build && node scripts/build-minimal.mjs",

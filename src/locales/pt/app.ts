@@ -45,6 +45,7 @@ export const appMessages = {
   "app.unknownRenderError": "Erro de renderização desconhecido",
   "app.exportPngFailed": "Falha ao exportar PNG",
   "app.exportGifFailed": "Falha ao salvar o GIF",
+  "app.exportHtmlFailed": "Falha ao salvar o HTML",
   "app.copyPngFailed": "Falha ao copiar o PNG para a área de transferência",
   "app.copyPngUnsupported": "Este navegador não consegue copiar uma imagem PNG para a área de transferência",
   "app.engineLoadError": "Erro ao carregar o motor",

@@ -10,7 +10,7 @@ export const llmMessages = {
   "llm.keysGuide.securityLead":
     "秘密情報は第三者のアプリサーバーへ送られず、ブラウザ内（localStorage）にだけ保存されます:",
   "llm.keysGuide.securityApiKeys":
-    "LLM の API キー（設定 → AI）はこのブラウザにだけ保存され、保存後に入力欄はクリアされます。",
+    "LLM の API キー（設定 → AI）は .env のシードでこのブラウザ内に暗号化され、保存後に入力欄はクリアされます。",
   "llm.keysGuide.securityLibraryCredentials":
     "ライブラリサーバーのログイン名とパスワード（設定 → ライブラリ）もこのブラウザ内だけです。保存後、パスワードは表示されません。",
   "llm.keysGuide.securityAuthToken":
@@ -45,9 +45,15 @@ export const llmMessages = {
   "llm.provider.zhipuDesc": "Zhipu AI の中国の LLM です。open.bigmodel.cn のキーです。",
   "llm.provider.moonshot": "Moonshot（Kimi）",
   "llm.provider.moonshotDesc": "Moonshot AI の中国の LLM です。platform.moonshot.cn のキーです。",
+  "llm.provider.local": "ローカル LLM",
+  "llm.provider.localDesc":
+    "このコンピュータ上の OpenAI 互換サーバー（Ollama、LM Studio、llama.cpp、vLLM）。ベース URL とモデル名を指定します。API キーは任意です。",
   "llm.activeModelDetail": "{provider} · {model}",
   "llm.activeModelUnknown": "プロバイダーが選択されていません",
   "llm.generatingWith": "生成中（{provider}、{model}）…",
+  "llm.gate.localMissingTitle": "ローカル LLM が未設定です",
+  "llm.gate.localMissingMessage":
+    "設定 → AI でローカル LLM を追加してください。ベース URL とモデル名が必要です。",
   "llm.gate.noConsentTitle": "同意が必要です",
   "llm.gate.noConsentMessage": "図をクラウドの LLM に送るには、設定 → AI / LLM で同意を有効にしてください。",
   "llm.gate.noKeyTitle": "API キーがありません",
@@ -425,6 +431,8 @@ export const llmMessages = {
   "aiChat.inputPlaceholder": "タスクを書く: 作成、変更、説明…",
   "aiChat.newSession": "新しいセッション",
   "aiChat.nextSteps": "次にすること",
+  "aiChat.suggestionTitle": "提案",
+  "aiChat.askSuggestion": "質問する",
   "aiChat.noSessions": "セッションはまだありません。新しいチャットを始めてください。",
   "aiChat.pin": "ピン留め",
   "aiChat.proposalApplied": "適用済み",
@@ -438,6 +446,8 @@ export const llmMessages = {
   "aiChat.regenerate": "回答を再生成",
   "aiChat.rename": "名前を変更",
   "aiChat.searchPlaceholder": "セッションを検索…",
+  "aiChat.provider": "プロバイダー",
+  "aiChat.providerNone": "有効なプロバイダーがありません",
   "aiChat.send": "送信",
   "aiChat.sessionsCount": "{sessions} セッション · {messages} メッセージ",
   "aiChat.share": "共有",

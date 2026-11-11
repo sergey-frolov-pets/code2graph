@@ -11,10 +11,9 @@ import {
 } from "@/constants/ai-chat";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
 import {
-  formatLlmDiagramGuideBlock,
-  getLlmDiagramGuide,
-  guideForPlantUmlText,
-} from "@/services/llm/guides/llm-diagram-guides";
+  LLM_PAGE_PROMPT_HEADING,
+  resolveBundledLlmPage,
+} from "@/services/llm/guides/llm-page-text";
 
 export const AI_CHAT_SYSTEM_PROMPT = `Role: You are Code2Graph AI, an expert information architect and diagram engineer embedded in a diagram editor. You work inside a multi-turn chat next to a live diagram preview.
 
@@ -65,24 +64,51 @@ export function formatAiChatSwitchBlock(target: RequestedDiagramChange): string 
         ? ` and proposal.diagramType to "${target.diagramType}".`
         : " and proposal.diagramType to the type id you wrote."
     }`,
-    "- The diagram-type guide, when present, describes proposal.source only. The chat reply itself stays the JSON envelope.",
+    "- The diagram syntax page, when present, describes proposal.source only. The chat reply itself stays the JSON envelope.",
     "- If the user only asked a question, answer without a proposal.",
   );
   return lines.join("\n");
 }
 
-function switchGuideBlock(target: RequestedDiagramChange | undefined): string {
-  if (!target?.active) {
-    return "";
+function formatSyntaxPage(body: string): string {
+  const guideBody = body.trim();
+  return guideBody ? `${LLM_PAGE_PROMPT_HEADING}\n\n${guideBody}` : "";
+}
+
+function syntaxPageBody(input: {
+  format: DiagramFormat;
+  source: string;
+  userRequest?: string;
+  guideText?: string;
+  contextMode?: AiChatContextMode;
+  target?: RequestedDiagramChange;
+}): string {
+  if (input.target?.active) {
+    if (input.guideText !== undefined) {
+      return input.guideText;
+    }
+    return resolveBundledLlmPage({
+      language: input.target.format,
+      request: input.userRequest?.trim() || input.target.diagramType || "",
+      source: "",
+    });
   }
-  return formatLlmDiagramGuideBlock(
-    getLlmDiagramGuide(target.format, target.diagramType ?? ""),
+
+  return (
+    input.guideText ??
+    resolveBundledLlmPage({
+      language: input.format,
+      request: input.userRequest ?? "",
+      source: input.contextMode === "new" ? "" : input.source,
+    })
   );
 }
 
 export function buildAiChatContextBlock(input: {
   format: DiagramFormat;
   source: string;
+  userRequest?: string;
+  guideText?: string;
   contextMode?: AiChatContextMode;
   selection?: string;
   renderError?: string;
@@ -93,7 +119,7 @@ export function buildAiChatContextBlock(input: {
 }): string {
   const mode = input.contextMode ?? "current";
   const switchBlock = input.target ? formatAiChatSwitchBlock(input.target) : "";
-  const targetGuide = switchGuideBlock(input.target);
+  const guide = formatSyntaxPage(syntaxPageBody(input));
   if (mode === "new") {
     return [
       "Session context:",
@@ -107,7 +133,7 @@ export function buildAiChatContextBlock(input: {
         ? `- Summary of earlier turns: ${input.summary.trim()}`
         : "- Summary of earlier turns: none.",
       switchBlock,
-      targetGuide,
+      guide,
     ]
       .filter((part) => part.length > 0)
       .join("\n");
@@ -117,10 +143,6 @@ export function buildAiChatContextBlock(input: {
   const source = truncated
     ? input.source.slice(0, AI_CHAT_CONTEXT_SOURCE_MAX_CHARS)
     : input.source;
-  const guide =
-    !input.target?.active && input.format === "plantuml" && input.source.trim()
-      ? formatLlmDiagramGuideBlock(guideForPlantUmlText(input.source))
-      : "";
 
   return [
     "Session context:",
@@ -143,7 +165,6 @@ export function buildAiChatContextBlock(input: {
       : "- Summary of earlier turns: none.",
     switchBlock,
     guide,
-    targetGuide,
   ]
     .filter((part) => part.length > 0)
     .join("\n");

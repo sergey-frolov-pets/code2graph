@@ -426,6 +426,12 @@ function clampCount(count: number | undefined): number {
   );
 }
 
+export function matchAgentDiagramLanguage(
+  text: string,
+): AgentDiagramLanguage | null {
+  return detectExplicitFormat(text);
+}
+
 function detectExplicitFormat(request: string): AgentDiagramLanguage | null {
   for (const candidate of FORMAT_PATTERNS) {
     if (candidate.pattern.test(request)) {

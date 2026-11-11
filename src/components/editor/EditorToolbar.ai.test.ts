@@ -2,10 +2,15 @@
 
 import { createApp, h, nextTick } from "vue";
 import { afterEach, describe, expect, it } from "vitest";
+import { SESSION_CHANGE_TRACKING_ENABLED } from "@/constants/editor-settings";
 import { plantumlLanguageModule } from "@/languages/modules/plantuml";
 import EditorToolbar from "@/components/editor/EditorToolbar.vue";
 
-function mountToolbar(options: { builderAvailable: boolean; aiChatAvailable: boolean }) {
+function mountToolbar(options: {
+  builderAvailable: boolean;
+  aiChatAvailable: boolean;
+  sessionTrackingEnabled?: boolean;
+}) {
   const host = document.createElement("div");
   document.body.appendChild(host);
   const app = createApp({
@@ -23,6 +28,7 @@ function mountToolbar(options: { builderAvailable: boolean; aiChatAvailable: boo
           surfaceMode: "code",
           builderAvailable: options.builderAvailable,
           aiChatAvailable: options.aiChatAvailable,
+          sessionTrackingEnabled: options.sessionTrackingEnabled ?? false,
         });
     },
   });
@@ -94,6 +100,27 @@ describe("EditorToolbar surface switch", () => {
       const button = toolbar?.querySelector(`[data-testid="${testId}"]`);
       expect(button?.tagName).toBe("BUTTON");
     }
+    view.unmount();
+  });
+
+  it("hides session compare while change tracking is off and keeps undo and redo", async () => {
+    expect(SESSION_CHANGE_TRACKING_ENABLED).toBe(false);
+    const view = mountToolbar({ builderAvailable: false, aiChatAvailable: false });
+    await nextTick();
+    expect(view.host.querySelector('[data-testid="editor-session-file-toggle"]')).toBeNull();
+    expect(view.host.querySelector('[data-testid="editor-undo"]')).not.toBeNull();
+    expect(view.host.querySelector('[data-testid="editor-redo"]')).not.toBeNull();
+    view.unmount();
+  });
+
+  it("shows session compare only when change tracking is enabled", async () => {
+    const view = mountToolbar({
+      builderAvailable: false,
+      aiChatAvailable: false,
+      sessionTrackingEnabled: true,
+    });
+    await nextTick();
+    expect(view.host.querySelector('[data-testid="editor-session-file-toggle"]')).not.toBeNull();
     view.unmount();
   });
 });

@@ -41,7 +41,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function parseSection(value: unknown): SectionDto | null {
+export function parseExportedSection(value: unknown): SectionDto | null {
   if (!isRecord(value)) {
     return null;
   }
@@ -68,7 +68,7 @@ function parseSection(value: unknown): SectionDto | null {
   };
 }
 
-function parseDiagram(value: unknown): DiagramDto | null {
+export function parseExportedDiagram(value: unknown): DiagramDto | null {
   if (!isRecord(value)) {
     return null;
   }
@@ -140,10 +140,10 @@ export function parseLibraryImportFile(content: string): LibraryExportBundle {
   }
 
   const sections = parsed.sections
-    .map(parseSection)
+    .map(parseExportedSection)
     .filter((section): section is SectionDto => section !== null);
   const diagrams = parsed.diagrams
-    .map(parseDiagram)
+    .map(parseExportedDiagram)
     .filter((diagram): diagram is DiagramDto => diagram !== null);
 
   if (sections.length === 0 && diagrams.length === 0) {

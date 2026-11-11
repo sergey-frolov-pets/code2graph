@@ -19,6 +19,47 @@ import type {
 import { LlmClientError } from "@/services/llm/llm-types";
 import { useLlmGate, type LlmGateHandlers } from "@/composables/useLlmGate";
 
+const LOCAL_JSON_MODE_ERROR = /response_format|json_object/i;
+
+async function callLocalChat(
+  endpoint: string,
+  apiKey: string,
+  model: string,
+  messages: LlmChatMessage[],
+  options: LlmChatOptions,
+): Promise<string> {
+  const request = {
+    endpoint,
+    apiKey,
+    model,
+    messages,
+    temperature: options.temperature,
+    maxTokens: options.maxTokens,
+  };
+
+  const jsonMode = options.jsonMode ?? true;
+  try {
+    return await callOpenAiCompatibleChat({
+      ...request,
+      jsonMode,
+    });
+  } catch (error) {
+    if (
+      !jsonMode ||
+      !(error instanceof LlmClientError) ||
+      error.code !== "upstream_error" ||
+      !LOCAL_JSON_MODE_ERROR.test(error.message)
+    ) {
+      throw error;
+    }
+
+    return callOpenAiCompatibleChat({
+      ...request,
+      jsonMode: false,
+    });
+  }
+}
+
 async function dispatchByokChat(
   providerId: string,
   apiKey: string,
@@ -80,6 +121,21 @@ async function dispatchGateChat(
     };
   }
 
+  if (gate.mode === "local") {
+    const content = await callLocalChat(
+      gate.endpoint,
+      gate.apiKey,
+      gate.model,
+      messages,
+      options,
+    );
+    return {
+      content,
+      providerId: gate.providerId,
+      model: gate.model,
+    };
+  }
+
   const content = await dispatchByokChat(
     gate.providerId,
     gate.apiKey,
@@ -100,7 +156,7 @@ export async function llmChat(
   handlers?: LlmGateHandlers,
 ): Promise<LlmChatResult> {
   const { requireLlmAccess } = useLlmGate();
-  const gate = await requireLlmAccess(handlers);
+  const gate = await requireLlmAccess(handlers, options.access);
 
   if (!gate.ok) {
     throw new LlmClientError("access_denied", `LLM access denied: ${gate.reason}`);

@@ -10,7 +10,7 @@ export const llmMessages = {
   "llm.keysGuide.securityLead":
     "机密不会发送到第三方应用服务器 — 只保存在您的浏览器本地（localStorage）：",
   "llm.keysGuide.securityApiKeys":
-    "LLM API 密钥（设置 → AI）只保存在您的浏览器中；保存后输入框会被清空。",
+    "LLM API 密钥（设置 → AI）用 .env 中的种子在此浏览器内加密；保存后输入框会被清空。",
   "llm.keysGuide.securityLibraryCredentials":
     "图表库服务器的登录名和密码（设置 → 图表库）只在您的浏览器中；保存后不再显示密码。",
   "llm.keysGuide.securityAuthToken":
@@ -45,9 +45,14 @@ export const llmMessages = {
   "llm.provider.zhipuDesc": "智谱 AI 的中国大语言模型。密钥来自 open.bigmodel.cn。",
   "llm.provider.moonshot": "月之暗面（Kimi）",
   "llm.provider.moonshotDesc": "月之暗面的中国大语言模型。密钥来自 platform.moonshot.cn。",
+  "llm.provider.local": "本地 LLM",
+  "llm.provider.localDesc":
+    "运行在这台电脑上的 OpenAI 兼容服务（Ollama、LM Studio、llama.cpp、vLLM）。填写基础 URL 和模型名。API 密钥可选。",
   "llm.activeModelDetail": "{provider} · {model}",
   "llm.activeModelUnknown": "未选择提供商",
   "llm.generatingWith": "正在生成（{provider}，{model}）…",
+  "llm.gate.localMissingTitle": "尚未配置本地 LLM",
+  "llm.gate.localMissingMessage": "请在设置 → AI 中添加本地 LLM：基础 URL 和模型名。",
   "llm.gate.noConsentTitle": "需要同意",
   "llm.gate.noConsentMessage": "请在“设置 → AI / LLM”中启用同意，以便把图表发送到云端 LLM。",
   "llm.gate.noKeyTitle": "缺少 API 密钥",
@@ -425,6 +430,8 @@ export const llmMessages = {
   "aiChat.inputPlaceholder": "描述任务：创建、修改或解释…",
   "aiChat.newSession": "新会话",
   "aiChat.nextSteps": "接下来",
+  "aiChat.suggestionTitle": "建议",
+  "aiChat.askSuggestion": "提问",
   "aiChat.noSessions": "还没有会话。开始新的对话。",
   "aiChat.pin": "固定",
   "aiChat.proposalApplied": "已应用",
@@ -438,6 +445,8 @@ export const llmMessages = {
   "aiChat.regenerate": "重新生成回答",
   "aiChat.rename": "重命名",
   "aiChat.searchPlaceholder": "搜索会话…",
+  "aiChat.provider": "提供商",
+  "aiChat.providerNone": "没有可用的提供商",
   "aiChat.send": "发送",
   "aiChat.sessionsCount": "{sessions} 个会话 · {messages} 条消息",
   "aiChat.share": "分享",

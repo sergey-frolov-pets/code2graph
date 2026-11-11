@@ -10,6 +10,19 @@ const { t } = useLocale();
   <div class="settings-section">
     <h3 class="settings-section__title">{{ t("settings.ai") }}</h3>
 
+    <p
+      v-if="llm.llmKeyStoreError === 'missing_seed'"
+      class="settings-field__hint settings-field__error"
+    >
+      {{ t("settings.llmKeySeedMissing") }}
+    </p>
+    <p
+      v-else-if="llm.llmKeyStoreError === 'decrypt_failed'"
+      class="settings-field__hint settings-field__error"
+    >
+      {{ t("settings.llmKeyDecryptFailed") }}
+    </p>
+
     <label class="settings-field settings-field--checkbox">
       <input
         type="checkbox"
@@ -43,12 +56,14 @@ const { t } = useLocale();
       {{ t("settings.llmProxyUnreachable") }}
     </p>
 
-    <template v-if="llm.isActiveProviderByok">
+    <template v-if="llm.isActiveProviderByok || llm.isActiveProviderLocal">
+      <p class="settings-field__hint">{{ t("settings.llmAccountsHint") }}</p>
       <p class="settings-field__label settings-key-status">
         <span class="settings-key-status__badge settings-key-status__badge--local is-set">
           {{ t("settings.llmApiKeyLocalBadge") }}
         </span>
         <span
+          v-if="llm.isActiveProviderByok"
           class="settings-key-status__badge"
           :class="llm.hasActiveApiKey ? 'is-set' : 'is-missing'"
         >
@@ -60,6 +75,48 @@ const { t } = useLocale();
         </span>
       </p>
 
+      <ul v-if="llm.providerAccounts.length > 0" class="settings-llm-accounts">
+        <li
+          v-for="account in llm.providerAccounts"
+          :key="account.id"
+          class="settings-llm-account"
+        >
+          <span class="settings-llm-account__label">{{ account.label }}</span>
+          <span class="settings-llm-account__meta">{{ account.meta }}</span>
+          <label class="settings-llm-account__active">
+            <input
+              type="checkbox"
+              :checked="account.active"
+              @change="llm.onAccountActiveChange(account.id, $event)"
+            />
+            <span>{{ t("settings.llmAccountActive") }}</span>
+          </label>
+          <button class="btn" type="button" @click="llm.removeAccount(account.id)">
+            {{ t("settings.llmAccountRemove") }}
+          </button>
+        </li>
+      </ul>
+      <p v-else class="settings-field__hint">
+        {{
+          llm.isActiveProviderLocal
+            ? t("settings.llmLocalEmpty")
+            : t("settings.llmAccountEmpty")
+        }}
+      </p>
+    </template>
+
+    <template v-if="llm.isActiveProviderByok">
+      <label class="settings-field">
+        <span class="settings-field__label">{{ t("settings.llmAccountLabel") }}</span>
+        <input
+          v-model="llm.accountLabelInput"
+          class="select"
+          type="text"
+          autocomplete="off"
+          :placeholder="t('settings.llmAccountLabelPlaceholder')"
+        />
+      </label>
+
       <label class="settings-field">
         <span class="settings-field__label">{{ t("settings.llmApiKey") }}</span>
         <div class="settings-key-row">
@@ -69,7 +126,7 @@ const { t } = useLocale();
             :type="llm.showApiKey ? 'text' : 'password'"
             autocomplete="off"
             :placeholder="t('settings.llmApiKeyPlaceholder')"
-            @keydown.enter="llm.saveApiKey"
+            @keydown.enter="llm.addProviderKey"
           />
           <button
             class="btn"
@@ -108,20 +165,96 @@ const { t } = useLocale();
         </span>
       </label>
 
+      <label class="settings-field settings-field--checkbox">
+        <input v-model="llm.accountActiveInput" type="checkbox" />
+        <span>{{ t("settings.llmAccountActive") }}</span>
+      </label>
+
       <div class="settings-key-actions">
-        <button class="btn btn-primary" type="button" @click="llm.saveApiKey">
-          {{ t("settings.llmApiKeySave") }}
-        </button>
-        <button
-          class="btn"
-          type="button"
-          :disabled="!llm.hasActiveApiKey"
-          @click="llm.clearApiKey"
-        >
-          {{ t("settings.llmApiKeyClear") }}
+        <button class="btn btn-primary" type="button" @click="llm.addProviderKey">
+          {{ t("settings.llmAccountAdd") }}
         </button>
         <button class="btn" type="button" @click="llm.openKeysGuideForActiveProvider">
           {{ t("settings.llmKeysGuide") }}
+        </button>
+      </div>
+    </template>
+
+    <template v-else-if="llm.isActiveProviderLocal">
+      <p class="settings-field__hint">{{ t("settings.llmLocalHint") }}</p>
+
+      <label class="settings-field">
+        <span class="settings-field__label">{{ t("settings.llmAccountLabel") }}</span>
+        <input
+          v-model="llm.localLabelInput"
+          class="select"
+          type="text"
+          autocomplete="off"
+          :placeholder="t('settings.llmAccountLabelPlaceholder')"
+        />
+      </label>
+
+      <label class="settings-field">
+        <span class="settings-field__label">{{ t("settings.llmLocalBaseUrl") }}</span>
+        <input
+          v-model="llm.localBaseUrlInput"
+          class="select"
+          type="url"
+          autocomplete="off"
+          spellcheck="false"
+          :placeholder="t('settings.llmLocalBaseUrlPlaceholder')"
+        />
+      </label>
+
+      <label class="settings-field">
+        <span class="settings-field__label">{{ t("settings.llmLocalModel") }}</span>
+        <input
+          v-model="llm.localModelInput"
+          class="select"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          :placeholder="t('settings.llmLocalModelPlaceholder')"
+          @keydown.enter="llm.addLocalProvider"
+        />
+      </label>
+
+      <label class="settings-field">
+        <span class="settings-field__label">{{ t("settings.llmLocalApiKey") }}</span>
+        <div class="settings-key-row">
+          <input
+            v-model="llm.localApiKeyInput"
+            class="select settings-key-input"
+            :type="llm.showLocalApiKey ? 'text' : 'password'"
+            autocomplete="off"
+            :placeholder="t('settings.llmLocalApiKeyPlaceholder')"
+          />
+          <button
+            class="btn"
+            type="button"
+            @click="llm.showLocalApiKey = !llm.showLocalApiKey"
+          >
+            {{
+              llm.showLocalApiKey
+                ? t("settings.llmApiKeyHide")
+                : t("settings.llmApiKeyShow")
+            }}
+          </button>
+        </div>
+      </label>
+
+      <label class="settings-field settings-field--checkbox">
+        <input v-model="llm.localActiveInput" type="checkbox" />
+        <span>{{ t("settings.llmAccountActive") }}</span>
+      </label>
+
+      <span v-if="llm.localError" class="settings-field__error">
+        {{ llm.localError }}
+      </span>
+
+      <div class="settings-key-actions">
+        <button class="btn btn-primary" type="button" @click="llm.addLocalProvider">
+          {{ t("settings.llmLocalAdd") }}
         </button>
       </div>
     </template>

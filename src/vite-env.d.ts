@@ -29,6 +29,12 @@ interface ImportMetaEnv {
    * `/{slug}/{user}/{link}`. Пусто — адрес `/{user}/{link}`.
    */
   readonly VITE_LIBRARY_PUBLIC_SLUG?: string;
+
+  /**
+   * Сид шифрования BYOK-ключей в localStorage.
+   * Случайная строка не короче 16 символов. Пусто — ключи не сохраняются.
+   */
+  readonly VITE_LLM_KEY_SEED?: string;
 }
 
 interface ImportMeta {

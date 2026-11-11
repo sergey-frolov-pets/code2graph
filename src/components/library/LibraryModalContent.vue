@@ -24,6 +24,12 @@ import type { MoveDiagramRequest } from "@/utils/library-move-targets";
 import { RATINGS_SECTION_ID } from "@/constants/diagram-library";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
+import type {
+  AppBackupFile,
+  AppBackupRestoreMode,
+  DiagramBackupDiff,
+  SnippetBackupDiff,
+} from "@/utils/app-backup";
 
 defineProps<{
   isOnlineSetupPending: boolean;
@@ -75,6 +81,11 @@ defineProps<{
   serverTransferDiagrams: DiagramDto[];
   canSyncOnline: boolean;
   importBundle: LibraryExportBundle | null;
+  pendingRestore: AppBackupFile | null;
+  syncBackup: AppBackupFile | null;
+  syncDiagramDiffs: DiagramBackupDiff[];
+  syncSnippetDiffs: SnippetBackupDiff[];
+  backupError: string;
   isTransferProcessing: boolean;
   showAdminTab: boolean;
   isLocalLibrary: boolean;
@@ -120,6 +131,12 @@ const emit = defineEmits<{
   "load-import-file": [file: File];
   "push-to-server": [payload: { sectionIds: Set<string>; diagramIds: Set<string> }];
   "pull-from-server": [payload: { sectionIds: Set<string>; diagramIds: Set<string> }];
+  "save-backup": [];
+  "restore-file": [file: File];
+  "restore-cancel": [];
+  "restore-confirm": [mode: AppBackupRestoreMode];
+  "sync-file": [file: File];
+  "sync-apply": [payload: { diagramIds: Set<string>; snippetIds: Set<string> }];
   "ratings-diagram-pick": [diagramId: string];
   "ratings-section-pick": [sectionId: string];
   "update:search-query": [value: string];
@@ -287,12 +304,23 @@ const emit = defineEmits<{
           :server-diagrams="serverTransferDiagrams"
           :can-sync-online="canSyncOnline"
           :import-bundle="importBundle"
+          :pending-restore="pendingRestore"
+          :sync-backup="syncBackup"
+          :sync-diagram-diffs="syncDiagramDiffs"
+          :sync-snippet-diffs="syncSnippetDiffs"
+          :backup-error="backupError"
           :is-processing="isTransferProcessing"
           @export="emit('export', $event)"
           @import="emit('import', $event)"
           @load-import-file="emit('load-import-file', $event)"
           @push-to-server="emit('push-to-server', $event)"
           @pull-from-server="emit('pull-from-server', $event)"
+          @save-backup="emit('save-backup')"
+          @restore-file="emit('restore-file', $event)"
+          @restore-cancel="emit('restore-cancel')"
+          @restore-confirm="emit('restore-confirm', $event)"
+          @sync-file="emit('sync-file', $event)"
+          @sync-apply="emit('sync-apply', $event)"
         />
       </div>
 

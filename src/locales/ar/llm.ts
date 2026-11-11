@@ -10,7 +10,7 @@ export const llmMessages = {
   "llm.keysGuide.securityLead":
     "لا تُرسل الأسرار إلى خوادم تطبيقات طرف ثالث، بل تُخزّن محليًا في متصفحك فقط (localStorage):",
   "llm.keysGuide.securityApiKeys":
-    "تُخزّن مفاتيح API لنماذج اللغة (الإعدادات → الذكاء الاصطناعي) في متصفحك فقط، ويُمسح حقل الإدخال بعد الحفظ.",
+    "تُشفَّر مفاتيح API لنماذج اللغة (الإعدادات → الذكاء الاصطناعي) في هذا المتصفح ببذرة من .env، ويُمسح حقل الإدخال بعد الحفظ.",
   "llm.keysGuide.securityLibraryCredentials":
     "اسم الدخول وكلمة مرور خادم المكتبة (الإعدادات → المكتبة) في متصفحك فقط، ولا تُعرض كلمة المرور بعد الحفظ.",
   "llm.keysGuide.securityAuthToken":
@@ -45,9 +45,15 @@ export const llmMessages = {
   "llm.provider.zhipuDesc": "نموذج لغة صيني من Zhipu AI. مفتاح من open.bigmodel.cn.",
   "llm.provider.moonshot": "Moonshot (Kimi)",
   "llm.provider.moonshotDesc": "نموذج لغة صيني من Moonshot AI. مفتاح من platform.moonshot.cn.",
+  "llm.provider.local": "نموذج محلي",
+  "llm.provider.localDesc":
+    "خادم متوافق مع OpenAI على هذا الجهاز (Ollama أو LM Studio أو llama.cpp أو vLLM). حدّد عنوان الأساس واسم النموذج. مفتاح API اختياري.",
   "llm.activeModelDetail": "{provider} · {model}",
   "llm.activeModelUnknown": "لم يُختر مزود",
   "llm.generatingWith": "جارٍ التوليد ({provider}، {model})…",
+  "llm.gate.localMissingTitle": "النموذج المحلي غير مُعد",
+  "llm.gate.localMissingMessage":
+    "أضف نموذجًا محليًا من الإعدادات → الذكاء الاصطناعي: عنوان الأساس واسم النموذج.",
   "llm.gate.noConsentTitle": "الموافقة مطلوبة",
   "llm.gate.noConsentMessage": "فعّل الموافقة في الإعدادات → الذكاء الاصطناعي / نموذج اللغة لإرسال المخططات إلى نموذج لغة سحابي.",
   "llm.gate.noKeyTitle": "مفتاح API مفقود",
@@ -425,6 +431,8 @@ export const llmMessages = {
   "aiChat.inputPlaceholder": "صف المهمة: إنشاء أو تغيير أو شرح…",
   "aiChat.newSession": "جلسة جديدة",
   "aiChat.nextSteps": "ماذا بعد",
+  "aiChat.suggestionTitle": "اقتراح",
+  "aiChat.askSuggestion": "اسأل",
   "aiChat.noSessions": "لا جلسات بعد. ابدأ دردشة جديدة.",
   "aiChat.pin": "تثبيت",
   "aiChat.proposalApplied": "طُبّق",
@@ -438,6 +446,8 @@ export const llmMessages = {
   "aiChat.regenerate": "إعادة توليد الجواب",
   "aiChat.rename": "إعادة تسمية",
   "aiChat.searchPlaceholder": "البحث في الجلسات…",
+  "aiChat.provider": "المزود",
+  "aiChat.providerNone": "لا يوجد مزود نشط",
   "aiChat.send": "إرسال",
   "aiChat.sessionsCount": "{sessions} جلسات · {messages} رسائل",
   "aiChat.share": "مشاركة",

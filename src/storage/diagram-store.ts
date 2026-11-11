@@ -17,9 +17,11 @@ import {
   getFromObjectStore,
   runIndexedTransaction,
 } from "@/storage/idb/idb-core";
+import { DATA_LINK_CHANGED_EVENT } from "@/services/local-data-link/constants";
 import {
   LIBRARY_DB_NAME,
   LIBRARY_DB_VERSION,
+  LIBRARY_STORE_DATA_LINKS,
   LIBRARY_STORE_DIAGRAM_DETAILS,
   LIBRARY_STORE_DIAGRAMS,
   LIBRARY_STORE_META,
@@ -268,6 +270,198 @@ export async function updateLocalDiagram(
   );
 
   return updated;
+}
+
+function sectionRecord(section: SectionDto, parentId: string | null): SectionDto {
+  return {
+    id: section.id,
+    parentId,
+    title: section.title,
+    sortOrder: section.sortOrder,
+    createdAt: section.createdAt,
+    updatedAt: section.updatedAt,
+  };
+}
+
+function diagramRecord(diagram: DiagramDto, sectionId: string | null): DiagramDto {
+  return {
+    id: diagram.id,
+    sectionId,
+    title: diagram.title,
+    description: diagram.description,
+    tags: [...diagram.tags],
+    language: diagram.language,
+    source: diagram.source,
+    fileName: diagram.fileName,
+    byteSize: diagram.byteSize,
+    createdAt: diagram.createdAt,
+    updatedAt: diagram.updatedAt,
+  };
+}
+
+function orderSectionsParentsFirst(sections: readonly SectionDto[]): SectionDto[] {
+  const ids = new Set(sections.map((section) => section.id));
+  const ordered: SectionDto[] = [];
+  const added = new Set<string>();
+
+  while (ordered.length < sections.length) {
+    let progressed = false;
+    for (const section of sections) {
+      if (added.has(section.id)) {
+        continue;
+      }
+      if (
+        !section.parentId ||
+        !ids.has(section.parentId) ||
+        added.has(section.parentId)
+      ) {
+        ordered.push(section);
+        added.add(section.id);
+        progressed = true;
+      }
+    }
+    if (!progressed) {
+      for (const section of sections) {
+        if (!added.has(section.id)) {
+          ordered.push(section);
+          added.add(section.id);
+        }
+      }
+      break;
+    }
+  }
+
+  return ordered;
+}
+
+function notifyDataLinksChanged(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.dispatchEvent(new CustomEvent(DATA_LINK_CHANGED_EVENT));
+}
+
+export async function replaceLocalLibrary(
+  sections: readonly SectionDto[],
+  diagrams: readonly DiagramDto[],
+): Promise<void> {
+  const plainSections = JSON.parse(JSON.stringify(sections)) as SectionDto[];
+  const plainDiagrams = JSON.parse(JSON.stringify(diagrams)) as DiagramDto[];
+  const existing = await loadDiagramsFromCache();
+  const nextIds = new Set(plainDiagrams.map((diagram) => diagram.id));
+  const removedIds = existing
+    .map((diagram) => diagram.id)
+    .filter((id) => !nextIds.has(id));
+  const sectionIds = new Set(plainSections.map((section) => section.id));
+
+  await runTransaction(
+    [
+      LIBRARY_STORE_SECTIONS,
+      LIBRARY_STORE_DIAGRAMS,
+      LIBRARY_STORE_DIAGRAM_DETAILS,
+      LIBRARY_STORE_DATA_LINKS,
+    ],
+    "readwrite",
+    (stores) => {
+      stores[LIBRARY_STORE_SECTIONS].clear();
+      stores[LIBRARY_STORE_DIAGRAMS].clear();
+      stores[LIBRARY_STORE_DIAGRAM_DETAILS].clear();
+
+      for (const section of plainSections) {
+        const parentId =
+          section.parentId && sectionIds.has(section.parentId)
+            ? section.parentId
+            : null;
+        stores[LIBRARY_STORE_SECTIONS].put(sectionRecord(section, parentId));
+      }
+
+      for (const diagram of plainDiagrams) {
+        const sectionId =
+          diagram.sectionId && sectionIds.has(diagram.sectionId)
+            ? diagram.sectionId
+            : null;
+        const normalized = diagramRecord(diagram, sectionId);
+        stores[LIBRARY_STORE_DIAGRAMS].put(toDiagramListItem(normalized));
+        stores[LIBRARY_STORE_DIAGRAM_DETAILS].put(normalized);
+      }
+
+      for (const id of removedIds) {
+        stores[LIBRARY_STORE_DATA_LINKS].delete(id);
+      }
+    },
+  );
+
+  if (removedIds.length > 0) {
+    notifyDataLinksChanged();
+  }
+}
+
+export async function copyBackupDiagrams(
+  fileSections: readonly SectionDto[],
+  fileDiagrams: readonly DiagramDto[],
+  diagramIds: ReadonlySet<string>,
+): Promise<void> {
+  const selected = (
+    JSON.parse(JSON.stringify(fileDiagrams)) as DiagramDto[]
+  ).filter((diagram) => diagramIds.has(diagram.id));
+  if (selected.length === 0) {
+    return;
+  }
+
+  const plainSections = JSON.parse(JSON.stringify(fileSections)) as SectionDto[];
+  const localSections = await loadSectionsFromCache();
+  const localSectionIds = new Set(localSections.map((section) => section.id));
+  const fileSectionById = new Map(plainSections.map((section) => [section.id, section]));
+  const missingSectionIds = new Set<string>();
+
+  for (const diagram of selected) {
+    let parentId = diagram.sectionId;
+    const seen = new Set<string>();
+    while (parentId && !seen.has(parentId)) {
+      seen.add(parentId);
+      if (localSectionIds.has(parentId)) {
+        break;
+      }
+      const section = fileSectionById.get(parentId);
+      if (!section) {
+        break;
+      }
+      missingSectionIds.add(section.id);
+      parentId = section.parentId;
+    }
+  }
+
+  const sectionsToCreate = orderSectionsParentsFirst(
+    plainSections.filter((section) => missingSectionIds.has(section.id)),
+  );
+
+  await runTransaction(
+    [LIBRARY_STORE_SECTIONS, LIBRARY_STORE_DIAGRAMS, LIBRARY_STORE_DIAGRAM_DETAILS],
+    "readwrite",
+    (stores) => {
+      const created = new Set<string>();
+      for (const section of sectionsToCreate) {
+        const parentId =
+          section.parentId &&
+          (localSectionIds.has(section.parentId) || created.has(section.parentId))
+            ? section.parentId
+            : null;
+        stores[LIBRARY_STORE_SECTIONS].put(sectionRecord(section, parentId));
+        created.add(section.id);
+      }
+
+      const availableSectionIds = new Set([...localSectionIds, ...created]);
+      for (const diagram of selected) {
+        const sectionId =
+          diagram.sectionId && availableSectionIds.has(diagram.sectionId)
+            ? diagram.sectionId
+            : null;
+        const normalized = diagramRecord(diagram, sectionId);
+        stores[LIBRARY_STORE_DIAGRAMS].put(toDiagramListItem(normalized));
+        stores[LIBRARY_STORE_DIAGRAM_DETAILS].put(normalized);
+      }
+    },
+  );
 }
 
 export async function importLocalLibrarySelection(

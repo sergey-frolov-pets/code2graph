@@ -117,6 +117,21 @@ export function saveCustomSnippets(snippets: CustomSnippet[]): void {
   writeStorageJson(STORAGE_KEY_CUSTOM_SNIPPETS, snippets);
 }
 
+export const CUSTOM_SNIPPETS_CHANGED_EVENT = "code2graph-custom-snippets-changed";
+
+export function parseCustomSnippetRecord(value: unknown): CustomSnippet | null {
+  return normalizeRawSnippetRecord(value);
+}
+
+/** Заменяет персональные сниппеты и сообщает открытой панели, что список изменился. */
+export function replaceCustomSnippets(snippets: CustomSnippet[]): void {
+  saveCustomSnippets(snippets);
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.dispatchEvent(new CustomEvent(CUSTOM_SNIPPETS_CHANGED_EVENT));
+}
+
 export function createCustomSnippetId(): string {
   return `custom-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
