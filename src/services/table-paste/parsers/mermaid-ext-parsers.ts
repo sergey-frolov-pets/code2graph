@@ -412,6 +412,27 @@ export function parseVoronoiTable(
 // ---------------------------------------------------------------------------
 // 5. CLUSTERED BAR CHART (Mermaid Ext)
 // ---------------------------------------------------------------------------
+
+const SERIES_CHART_CHROME =
+  /^(?:series|title|rotate|orientation|horizontal|vertical|invert|y|grid|axis|labels|fontsize|mono|colors|ratio|aspect|stacked|bars|layout|line|break|cagr|data|end)\b/i;
+
+/** Строки данных series: categories, series и линейные ряды `line Имя :`. Пороги `line 10` не трогаем. */
+function isSeriesChartDataLine(trimmed: string): boolean {
+  if (trimmed.startsWith("%%")) {
+    return false;
+  }
+  if (/^(?:categories|x)\b/i.test(trimmed)) {
+    return true;
+  }
+  if (/^series\b/i.test(trimmed) && trimmed.includes(":")) {
+    return true;
+  }
+  if (/^line\s+\S+\s*:/.test(trimmed)) {
+    return true;
+  }
+  return !SERIES_CHART_CHROME.test(trimmed) && trimmed.includes(":");
+}
+
 export function parseClusteredTable(
   grid: ParsedClipboardGrid,
   source: string,
@@ -481,14 +502,7 @@ export function parseClusteredTable(
       source,
       "series",
       generated,
-      (trimmed) =>
-        !trimmed.startsWith("%%") &&
-        (/^(?:categories|x)\b/i.test(trimmed) ||
-          (/^series\b/i.test(trimmed) && trimmed.includes(":")) ||
-          (!/^(?:series|title|rotate|orientation|horizontal|vertical|invert|y|grid|axis|labels|fontsize|mono|colors|ratio|aspect|stacked|bars|layout|line|break|cagr|data|end)\b/i.test(
-            trimmed,
-          ) &&
-            trimmed.includes(":"))),
+      isSeriesChartDataLine,
       "series",
     );
   }
@@ -533,14 +547,7 @@ export function parseClusteredTable(
     source,
     "series",
     generated,
-    (trimmed) =>
-      !trimmed.startsWith("%%") &&
-      (/^(?:categories|x)\b/i.test(trimmed) ||
-        (/^series\b/i.test(trimmed) && trimmed.includes(":")) ||
-        (!/^(?:series|title|rotate|orientation|horizontal|vertical|invert|y|grid|axis|labels|fontsize|mono|colors|ratio|aspect|stacked|bars|layout|line|break|cagr|data|end)\b/i.test(
-          trimmed,
-        ) &&
-          trimmed.includes(":"))),
+    isSeriesChartDataLine,
     "series",
   );
 }

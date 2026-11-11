@@ -112,7 +112,7 @@ export const tablePasteMessages = {
   "tablePaste.expected.xychart.columns":
     "1 oder mehr Spalten. Eine Spalte sind Zahlen für bar [Wert 1, ..., Wert n]. Zwei Spalten sind 'X-Kategorie' und 'Balkenwert'. Drei oder mehr sind 'X-Kategorie' plus je zusätzlicher Spalte eine Balkenreihe.",
   "tablePaste.expected.xychart.rules":
-    "Eine Spalte hängt eine Zeile bar [values] an. Zwei oder mehr Spalten ersetzen oder ergänzen die x-axis und je Wertspalte eine Reihe bar [...]. Fehlt noch eine y-axis, wird y-axis \"\" min --> max ergänzt.",
+    "Eine Spalte ersetzt vorhandene Zeilen bar [values]. Zwei oder mehr Spalten ersetzen die x-axis und alle bar-Zeilen, mit einer Reihe bar [...] je Wertspalte. Fehlt noch eine y-axis, wird y-axis \"\" min --> max ergänzt.",
   "tablePaste.expected.xychart.headers": "Monat|Plan|Ist|Prognose",
   "tablePaste.expected.quadrant.columns":
     "3 Spalten: 'Punktbeschriftung', 'X (0..1 oder 0..100%)', 'Y (0..1 oder 0..100%)'.",
@@ -157,7 +157,7 @@ export const tablePasteMessages = {
   "tablePaste.expected.mindmap.columns":
     "2 oder mehr Spalten für die Baumtiefe: 'Wurzel', 'Zweig', 'Unterzweig' und so weiter.",
   "tablePaste.expected.mindmap.rules":
-    "Baut einen Mindmap-Baum und führt gleiche Eltern zusammen. Knoten werden in der leeren Zeile an der Einfügemarke eingesetzt, ersetzen die Auswahl oder ersetzen alle Kartenknoten. Legend, title, header, footer, caption, style und Kommentare bleiben erhalten.",
+    "Baut einen Mindmap-Baum und führt gleiche Eltern zusammen. Eingefügte Knoten ersetzen alle Kartenknoten. Legend, title, header, footer, caption, style und Kommentare bleiben erhalten.",
   "tablePaste.expected.mindmap.headers": "Wurzel|Zweig|Blatt",
   "tablePaste.expected.nwdiag.columns":
     "2 oder 3 Spalten: 'Knoten', 'IP-Adresse', ['Netzwerk (optional)'].",

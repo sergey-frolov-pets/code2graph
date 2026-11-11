@@ -112,7 +112,7 @@ export const tablePasteMessages = {
   "tablePaste.expected.xychart.columns":
     "1 o más columnas. Una columna son números para bar [Val 1, ..., Val n]. Dos columnas son 'Categoría X' y 'Valor de barra'. Tres o más son 'Categoría X' más una serie de barras por cada columna extra.",
   "tablePaste.expected.xychart.rules":
-    "Una columna añade una línea bar [values]. Dos o más columnas sustituyen o añaden x-axis y una serie bar [...] por cada columna de valores. Si el gráfico aún no tiene y-axis, se añade y-axis \"\" min --> max.",
+    "Una columna sustituye las líneas bar [values] existentes. Dos o más columnas sustituyen x-axis y todas las líneas bar, con una serie bar [...] por cada columna de valores. Si el gráfico aún no tiene y-axis, se añade y-axis \"\" min --> max.",
   "tablePaste.expected.xychart.headers": "Mes|Plan|Real|Previsión",
   "tablePaste.expected.quadrant.columns":
     "3 columnas: 'Etiqueta del punto', 'X (0..1 o 0..100%)', 'Y (0..1 o 0..100%)'.",
@@ -157,7 +157,7 @@ export const tablePasteMessages = {
   "tablePaste.expected.mindmap.columns":
     "2 o más columnas que representan la profundidad del árbol: 'Raíz', 'Rama', 'Subrama', etc.",
   "tablePaste.expected.mindmap.rules":
-    "Construye un árbol de mapa mental y fusiona los padres idénticos. Los nodos se insertan en la línea en blanco del cursor, sustituyen la selección o sustituyen todos los nodos del mapa. Se conservan la leyenda, title, header, footer, caption, style y los comentarios.",
+    "Construye un árbol de mapa mental y fusiona los padres idénticos. Los nodos pegados sustituyen todos los nodos del mapa. Se conservan la leyenda, title, header, footer, caption, style y los comentarios.",
   "tablePaste.expected.mindmap.headers": "Raíz|Rama|Hoja",
   "tablePaste.expected.nwdiag.columns":
     "2 o 3 columnas: 'Nodo', 'Dirección IP', ['Red (opcional)'].",

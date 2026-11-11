@@ -112,7 +112,7 @@ export const tablePasteMessages = {
   "tablePaste.expected.xychart.columns":
     "1 列以上です。1 列は棒 [値 1, ..., 値 n] の数値です。2 列は「X カテゴリ」と「棒の値」です。3 列以上は「X カテゴリ」に加え、残りの各列が棒の系列です。",
   "tablePaste.expected.xychart.rules":
-    "1 列は bar [値] の行を追加します。2 列以上は x-axis と、値の列ごとの bar [...] 系列を置き換えるか追加します。チャートに y-axis がまだなければ、y-axis \"\" min --> max を追加します。",
+    "1 列は既存の bar [値] 行を置き換えます。2 列以上は x-axis とすべての bar 行を置き換え、値の列ごとに bar [...] 系列を 1 つ作ります。チャートに y-axis がまだなければ、y-axis \"\" min --> max を追加します。",
   "tablePaste.expected.xychart.headers": "月|計画|実績|予測",
   "tablePaste.expected.quadrant.columns":
     "3 列: 「点のラベル」、「X（0..1 または 0..100%）」、「Y（0..1 または 0..100%）」。",
@@ -157,7 +157,7 @@ export const tablePasteMessages = {
   "tablePaste.expected.mindmap.columns":
     "木の深さを表す 2 列以上: 「ルート」、「分岐」、「下位の分岐」など。",
   "tablePaste.expected.mindmap.rules":
-    "同じ親をまとめてマインドマップの木を作ります。ノードはキャレット位置の空行へ挿入するか、選択範囲を置き換えるか、マップの全ノードを置き換えます。凡例、title、header、footer、caption、style、コメントは残します。",
+    "同じ親をまとめてマインドマップの木を作ります。貼り付けたノードはマップの全ノードを置き換えます。凡例、title、header、footer、caption、style、コメントは残します。",
   "tablePaste.expected.mindmap.headers": "ルート|分岐|葉",
   "tablePaste.expected.nwdiag.columns":
     "2 列または 3 列: 「ノード」、「IP アドレス」、［「ネットワーク（任意）」］。",

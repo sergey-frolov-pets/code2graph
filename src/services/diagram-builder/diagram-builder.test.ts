@@ -9,6 +9,7 @@ import {
   hasBuilderOptionsCapabilities,
   parseRawTextToGrid,
   parseSourceToBuilderState,
+  replaceGraphDataFromPastedRows,
   serializeGridToClipboardTsv,
   supportsDiagramBuilder,
   transposeMatrixData,
@@ -23,6 +24,34 @@ import { parseRadar } from "@/services/mermaid/ext/engines/radar";
 import { parseVoronoi } from "@/services/mermaid/ext/engines/voronoi";
 import { parseOrgchart } from "@/services/mermaid/ext/engines/orgchart";
 import { parseEv } from "@/services/mermaid/ext/engines/ev";
+
+describe("graph clipboard paste", () => {
+  it("replaces edges and drops nodes that are not in the pasted table", () => {
+    const previousNodes = [
+      { id: "A", label: "Клиент", kind: "actor", group: "Внешние", color: "#0969da" },
+      { id: "B", label: "API", kind: "system", group: "", color: "" },
+      { id: "C", label: "Старый узел", kind: "default", group: "", color: "#cccccc" },
+    ];
+    const pasted = replaceGraphDataFromPastedRows(
+      [
+        ["Источник", "Приёмник", "Подпись", "Стиль"],
+        ["Клиент", "Оплата", "POST", "arrow"],
+        ["Оплата", "API", "", "dashed"],
+      ],
+      previousNodes,
+    );
+
+    expect(pasted.edges).toEqual([
+      { source: "Клиент", target: "Оплата", label: "POST", kind: "arrow" },
+      { source: "Оплата", target: "API", label: "", kind: "dashed" },
+    ]);
+    expect(pasted.nodes.map((node) => node.id)).toEqual(["A", "Оплата", "B"]);
+    expect(pasted.nodes[0]).toEqual(previousNodes[0]);
+    expect(pasted.nodes[2]).toEqual(previousNodes[1]);
+    expect(pasted.nodes.some((node) => node.label === "Старый узел")).toBe(false);
+    expect(pasted.nodes.some((node) => node.label === "Источник")).toBe(false);
+  });
+});
 
 describe("diagram-builder core", () => {
   it("serializes and parses clipboard TSV with and without headers", () => {

@@ -8,6 +8,7 @@ import {
   GRAPH_EDGE_KIND_OPTIONS,
   GRAPH_NODE_KIND_OPTIONS,
   parseRawTextToGrid,
+  replaceGraphDataFromPastedRows,
   serializeGridToClipboardTsv,
   transposeMatrixData,
   type DiagramBuilderState,
@@ -288,13 +289,12 @@ function applyRawTextPaste(clipboardText: string): void {
   if (schema.value.tableMode === "graph-ir") {
     const grid = parseRawTextToGrid(clipboardText);
     if (!grid) return;
-    builderState.value.graphEdges = grid.rows.map((r) => ({
-      source: (r[0] ?? "").trim(),
-      target: (r[1] ?? "").trim(),
-      label: (r[2] ?? "").trim(),
-      kind: (r[3] ?? "arrow").trim() || "arrow",
-    }));
-    syncGraphNodesFromEdges();
+    const pasted = replaceGraphDataFromPastedRows(
+      grid.rows,
+      builderState.value.graphNodes,
+    );
+    builderState.value.graphEdges = pasted.edges;
+    builderState.value.graphNodes = pasted.nodes;
     notifyChange();
     return;
   }
