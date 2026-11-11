@@ -33,8 +33,8 @@ export const AI_CHAT_MESSAGE_MAX_CHARS = 8000;
 /** Сколько строк подсказки видно в списке «Что дальше» до открытия полного текста. */
 export const AI_CHAT_SUGGESTION_VISIBLE_LINES = 2;
 
-/** Начальная высота поля ввода. Пользователь может растянуть его за угол. */
-export const AI_CHAT_COMPOSER_ROWS = 3;
+/** Пустое поле — одна строка. Дальше оно растёт от текста, не от плейсхолдера. */
+export const AI_CHAT_COMPOSER_ROWS = 1;
 
 /** К какой диаграмме относится следующий запрос: к открытой или к новой. */
 export const AI_CHAT_CONTEXT_MODES = ["current", "new"] as const;

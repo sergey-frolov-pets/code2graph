@@ -15,6 +15,7 @@ import {
   Plus,
   RefreshCw,
   Send,
+  SlidersHorizontal,
   Square,
   Trash2,
   X,
@@ -27,7 +28,6 @@ import type { LayoutEngine } from "@/constants";
 import {
   AI_CHAT_APPLY_MODE_STORAGE_KEY,
   AI_CHAT_ATTACHMENT_FILE_MAX_BYTES,
-  AI_CHAT_COMPOSER_ROWS,
   AI_CHAT_CONTEXT_MODE_DEFAULT,
   AI_CHAT_CONTEXT_MODE_STORAGE_KEY,
   AI_CHAT_DEFAULT_APPLY_MODE,
@@ -190,9 +190,33 @@ const nextStepSuggestions = computed<string[]>(() => {
     : [t("aiChat.starterCreate"), t("aiChat.starterSwitch")];
 });
 
-const suggestionPreviewStyle = {
-  "--ai-chat-composer-rows": String(AI_CHAT_COMPOSER_ROWS),
-};
+const composerInputRef = ref<HTMLTextAreaElement | null>(null);
+const composerFocused = ref(false);
+const modesOpen = ref(false);
+const AI_CHAT_COMPOSER_MAX_LINES = 4;
+
+function resizeComposer(): void {
+  const field = composerInputRef.value;
+  if (!field) {
+    return;
+  }
+  field.style.height = "auto";
+  const style = getComputedStyle(field);
+  const line = Number.parseFloat(style.lineHeight) || 20;
+  const pad = Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom);
+  const max = line * AI_CHAT_COMPOSER_MAX_LINES + pad;
+  field.style.height = `${Math.min(Math.max(field.scrollHeight, line + pad), max)}px`;
+}
+
+function isTouchPrimary(): boolean {
+  if (typeof window.matchMedia !== "function") {
+    return false;
+  }
+  return (
+    window.matchMedia("(pointer: coarse)").matches &&
+    !window.matchMedia("(any-pointer: fine)").matches
+  );
+}
 
 function scrollThreadToEnd(): void {
   const thread = threadRef.value;
@@ -347,6 +371,7 @@ function syncOverlayListener(): void {
 
 onMounted(() => {
   void load();
+  void nextTick(resizeComposer);
 });
 
 onBeforeUnmount(() => {
@@ -354,6 +379,10 @@ onBeforeUnmount(() => {
   overlayListenerAttached = false;
   document.removeEventListener("keydown", onOverlayKeydown);
   document.removeEventListener("pointerdown", onOverlayPointerDown);
+});
+
+watch(draft, () => {
+  void nextTick(resizeComposer);
 });
 
 watch([suggestionPreview, expandedTitle], () => {
@@ -773,10 +802,24 @@ async function runSend(
 }
 
 function onComposerKeydown(event: KeyboardEvent): void {
-  if (event.key === "Enter" && !event.shiftKey) {
-    event.preventDefault();
-    void onSend();
+  if (event.key !== "Enter" || event.shiftKey || event.isComposing || event.keyCode === 229) {
+    return;
   }
+  if (isTouchPrimary()) {
+    return;
+  }
+  event.preventDefault();
+  void onSend();
+}
+
+function onComposerFocus(): void {
+  composerFocused.value = true;
+  modesOpen.value = false;
+  closeSuggestionPreview();
+}
+
+function onComposerBlur(): void {
+  composerFocused.value = false;
 }
 
 async function onCopyChat(): Promise<void> {
@@ -796,7 +839,6 @@ async function onCopyChat(): Promise<void> {
 <template>
   <div
     class="ai-chat-panel"
-    :style="suggestionPreviewStyle"
   >
     <div class="ai-chat-panel__toolbar">
       <button
@@ -1042,10 +1084,13 @@ async function onCopyChat(): Promise<void> {
           {{ t("aiChat.empty") }}
         </p>
         <article
-          v-for="message in activeSession?.messages ?? []"
+          v-for="(message, messageIndex) in activeSession?.messages ?? []"
           :key="message.id"
           class="ai-chat-panel__message"
-          :class="`ai-chat-panel__message--${message.role}`"
+          :class="[
+            `ai-chat-panel__message--${message.role}`,
+            { 'is-last': messageIndex === (activeSession?.messages.length ?? 1) - 1 },
+          ]"
         >
           <span class="ai-chat-panel__role">{{
             message.role === "user" ? t("llm.chat.roleUser") : t("llm.chat.roleAssistant")
@@ -1249,7 +1294,7 @@ async function onCopyChat(): Promise<void> {
       </div>
 
       <div
-        v-if="nextStepSuggestions.length > 0"
+        v-if="nextStepSuggestions.length > 0 && !composerFocused"
         ref="suggestionChipsRef"
         class="ai-chat-panel__next"
         data-testid="ai-chat-next"
@@ -1313,7 +1358,10 @@ async function onCopyChat(): Promise<void> {
             </button>
           </li>
         </ul>
-        <div class="ai-chat-panel__composer-box">
+        <div
+          class="ai-chat-panel__composer-box"
+          :class="{ 'is-modes-open': modesOpen }"
+        >
           <input
             ref="fileInputRef"
             class="ai-chat-panel__file-input"
@@ -1323,129 +1371,157 @@ async function onCopyChat(): Promise<void> {
             :accept="attachmentAccept"
             @change="onFilesSelected"
           >
-          <button
-            class="ai-chat-panel__attach"
-            type="button"
-            data-testid="ai-chat-attach"
-            :aria-label="t('aiChat.attach')"
-            :title="t('aiChat.attachHint')"
-            :disabled="isBusy || pendingAttachments.length >= AI_CHAT_MAX_ATTACHMENTS"
-            @click="openAttachmentPicker"
-          >
-            <Paperclip
-              :size="18"
-              :stroke-width="1.8"
-              aria-hidden="true"
-            />
-          </button>
-          <textarea
-            v-model="draft"
-            class="ai-chat-panel__input"
-            :rows="AI_CHAT_COMPOSER_ROWS"
-            enterkeyhint="send"
-            :aria-label="t('aiChat.inputPlaceholder')"
-            :placeholder="t('aiChat.inputPlaceholder')"
-            :disabled="isBusy"
-            @keydown="onComposerKeydown"
-          />
           <div
-            class="ai-chat-panel__toggles"
-            role="group"
-            data-testid="ai-chat-context-mode"
-            :aria-label="t('aiChat.context')"
+            class="ai-chat-panel__composer-line"
+            data-testid="ai-chat-composer-line"
           >
-            <IconButton
-              :label="t('aiChat.contextCurrent')"
-              :title="t('aiChat.contextCurrent')"
-              :pressed="contextMode === 'current'"
-              extra-class="ai-chat-panel__tool"
-              @click="contextMode = 'current'"
-            >
-              <FileCode
-                :size="16"
-                :stroke-width="1.8"
-                aria-hidden="true"
-              />
-            </IconButton>
-            <IconButton
-              :label="t('aiChat.contextNew')"
-              :title="t('aiChat.contextNew')"
-              :pressed="contextMode === 'new'"
-              extra-class="ai-chat-panel__tool"
-              data-testid="ai-chat-context-new"
-              @click="contextMode = 'new'"
-            >
-              <FilePlus
-                :size="16"
-                :stroke-width="1.8"
-                aria-hidden="true"
-              />
-            </IconButton>
-          </div>
-          <div
-            class="ai-chat-panel__toggles"
-            role="group"
-            :aria-label="t('aiChat.applyMode')"
-          >
-            <IconButton
-              :label="t('aiChat.applyModeProposal')"
-              :title="t('aiChat.applyModeProposal')"
-              :pressed="applyMode === 'proposal'"
-              extra-class="ai-chat-panel__tool"
-              @click="applyMode = 'proposal'"
-            >
-              <Eye
-                :size="16"
-                :stroke-width="1.8"
-                aria-hidden="true"
-              />
-            </IconButton>
-            <IconButton
-              :label="t('aiChat.applyModeImmediate')"
-              :title="t('aiChat.applyModeImmediate')"
-              :pressed="applyMode === 'immediate'"
-              extra-class="ai-chat-panel__tool"
-              @click="applyMode = 'immediate'"
-            >
-              <Zap
-                :size="16"
-                :stroke-width="1.8"
-                aria-hidden="true"
-              />
-            </IconButton>
-          </div>
-          <div class="ai-chat-panel__composer-actions">
             <button
-              v-if="isBusy"
-              class="btn ai-chat-panel__send"
+              class="ai-chat-panel__attach"
               type="button"
-              :aria-label="t('aiChat.stop')"
-              :title="t('aiChat.stop')"
-              @click="stopGeneration"
+              data-testid="ai-chat-attach"
+              :aria-label="t('aiChat.attach')"
+              :title="t('aiChat.attachHint')"
+              :disabled="isBusy || pendingAttachments.length >= AI_CHAT_MAX_ATTACHMENTS"
+              @click="openAttachmentPicker"
             >
-              <Square
-                :size="16"
-                :stroke-width="1.8"
-                aria-hidden="true"
-              />
-              <span class="sr-only">{{ t("aiChat.stop") }}</span>
-            </button>
-            <button
-              v-else
-              class="btn btn-primary ai-chat-panel__send"
-              type="submit"
-              data-testid="ai-chat-send"
-              :aria-label="t('aiChat.send')"
-              :title="t('aiChat.send')"
-              :disabled="!canSend"
-            >
-              <Send
+              <Paperclip
                 :size="18"
                 :stroke-width="1.8"
                 aria-hidden="true"
               />
-              <span class="sr-only">{{ t("aiChat.send") }}</span>
             </button>
+            <button
+              class="ai-chat-panel__modes-toggle"
+              type="button"
+              data-testid="ai-chat-modes"
+              :aria-label="t('aiChat.composerModes')"
+              :aria-expanded="modesOpen"
+              :disabled="isBusy"
+              @click="modesOpen = !modesOpen"
+            >
+              <SlidersHorizontal
+                :size="18"
+                :stroke-width="1.8"
+                aria-hidden="true"
+              />
+            </button>
+            <textarea
+              ref="composerInputRef"
+              v-model="draft"
+              class="ai-chat-panel__input"
+              rows="1"
+              enterkeyhint="send"
+              :aria-label="t('aiChat.inputPlaceholder')"
+              :placeholder="t('aiChat.inputPlaceholder')"
+              :disabled="isBusy"
+              @focus="onComposerFocus"
+              @blur="onComposerBlur"
+              @keydown="onComposerKeydown"
+            />
+            <div class="ai-chat-panel__composer-actions">
+              <button
+                v-if="isBusy"
+                class="btn ai-chat-panel__send"
+                type="button"
+                :aria-label="t('aiChat.stop')"
+                :title="t('aiChat.stop')"
+                @click="stopGeneration"
+              >
+                <Square
+                  :size="16"
+                  :stroke-width="1.8"
+                  aria-hidden="true"
+                />
+                <span class="sr-only">{{ t("aiChat.stop") }}</span>
+              </button>
+              <button
+                v-else
+                class="btn btn-primary ai-chat-panel__send"
+                type="submit"
+                data-testid="ai-chat-send"
+                :aria-label="t('aiChat.send')"
+                :title="t('aiChat.send')"
+                :disabled="!canSend"
+              >
+                <Send
+                  :size="18"
+                  :stroke-width="1.8"
+                  aria-hidden="true"
+                />
+                <span class="sr-only">{{ t("aiChat.send") }}</span>
+              </button>
+            </div>
+          </div>
+          <div
+            class="ai-chat-panel__modes"
+            @click="modesOpen = false"
+          >
+            <div
+              class="ai-chat-panel__toggles"
+              role="group"
+              data-testid="ai-chat-context-mode"
+              :aria-label="t('aiChat.context')"
+            >
+              <IconButton
+                :label="t('aiChat.contextCurrent')"
+                :title="t('aiChat.contextCurrent')"
+                :pressed="contextMode === 'current'"
+                extra-class="ai-chat-panel__tool"
+                @click="contextMode = 'current'"
+              >
+                <FileCode
+                  :size="16"
+                  :stroke-width="1.8"
+                  aria-hidden="true"
+                />
+              </IconButton>
+              <IconButton
+                :label="t('aiChat.contextNew')"
+                :title="t('aiChat.contextNew')"
+                :pressed="contextMode === 'new'"
+                extra-class="ai-chat-panel__tool"
+                data-testid="ai-chat-context-new"
+                @click="contextMode = 'new'"
+              >
+                <FilePlus
+                  :size="16"
+                  :stroke-width="1.8"
+                  aria-hidden="true"
+                />
+              </IconButton>
+            </div>
+            <div
+              class="ai-chat-panel__toggles"
+              role="group"
+              :aria-label="t('aiChat.applyMode')"
+            >
+              <IconButton
+                :label="t('aiChat.applyModeProposal')"
+                :title="t('aiChat.applyModeProposal')"
+                :pressed="applyMode === 'proposal'"
+                extra-class="ai-chat-panel__tool"
+                @click="applyMode = 'proposal'"
+              >
+                <Eye
+                  :size="16"
+                  :stroke-width="1.8"
+                  aria-hidden="true"
+                />
+              </IconButton>
+              <IconButton
+                :label="t('aiChat.applyModeImmediate')"
+                :title="t('aiChat.applyModeImmediate')"
+                :pressed="applyMode === 'immediate'"
+                extra-class="ai-chat-panel__tool"
+                @click="applyMode = 'immediate'"
+              >
+                <Zap
+                  :size="16"
+                  :stroke-width="1.8"
+                  aria-hidden="true"
+                />
+              </IconButton>
+            </div>
           </div>
         </div>
       </form>
@@ -1582,19 +1658,18 @@ async function onCopyChat(): Promise<void> {
   gap: 2px;
 }
 
-.ai-chat-panel__share-actions,
-.ai-chat-panel__message-actions {
+.ai-chat-panel__share-actions {
   flex-wrap: wrap;
 }
 
 .ai-chat-panel__message-actions {
-  position: absolute;
-  z-index: 1;
-  top: 0;
-  inset-inline-end: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: nowrap;
 }
 
-@media (hover: hover) {
+@media (hover: hover) and (min-width: 901px) {
   .ai-chat-panel__message-actions {
     opacity: 0;
   }
@@ -1835,10 +1910,11 @@ async function onCopyChat(): Promise<void> {
 }
 
 .ai-chat-panel__composer-box {
+  position: relative;
   display: flex;
   flex-wrap: nowrap;
   align-items: flex-end;
-  gap: 8px;
+  gap: 4px;
   min-width: 0;
   padding: 4px;
   border: 1px solid var(--border);
@@ -1846,32 +1922,57 @@ async function onCopyChat(): Promise<void> {
   background: var(--surface);
 }
 
+.ai-chat-panel__composer-line {
+  display: contents;
+}
+
+.ai-chat-panel__modes-toggle {
+  display: none;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.ai-chat-panel__modes {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  order: 1;
+}
+
+.ai-chat-panel__composer-actions {
+  order: 2;
+}
+
 .ai-chat-panel__composer-box:focus-within {
   border-color: var(--accent);
 }
 
 .ai-chat-panel__input {
-  --ai-chat-input-line-height: 1.4;
-  --ai-chat-input-padding-block: 10px;
-  --ai-chat-input-max-height: min(50vh, 22rem);
-
   flex: 1 1 auto;
   width: auto;
   min-width: 0;
   margin: 0;
-  padding: var(--ai-chat-input-padding-block) 0;
+  padding: 8px 0;
   border: 0;
   border-radius: 0;
   background: transparent;
   color: var(--text);
-  resize: vertical;
-  line-height: var(--ai-chat-input-line-height);
-  min-height: calc(
-    var(--ai-chat-composer-rows) * var(--ai-chat-input-line-height) * 1em +
-      var(--ai-chat-input-padding-block) * 2
-  );
-  max-height: var(--ai-chat-input-max-height);
+  resize: none;
+  line-height: 1.4;
+  min-height: 1.4em;
+  max-height: calc(4 * 1.4em + 16px);
   overflow-y: auto;
+  field-sizing: fixed;
 }
 
 .ai-chat-panel__input:focus {
@@ -2056,10 +2157,41 @@ async function onCopyChat(): Promise<void> {
     padding-bottom: var(--ai-chat-preview-fab-clearance);
   }
 
-  .ai-chat-panel__composer,
-  .ai-chat-panel__meta,
-  .ai-chat-panel__next {
-    flex: 0 0 auto;
+  .ai-chat-panel__composer-line {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: flex-end;
+    gap: 2px;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .ai-chat-panel__modes-toggle {
+    display: inline-flex;
+  }
+
+  .ai-chat-panel__modes {
+    display: none;
+    position: absolute;
+    left: 4px;
+    bottom: calc(100% + 4px);
+    order: 0;
+    padding: 2px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+
+  .ai-chat-panel__composer-box.is-modes-open .ai-chat-panel__modes {
+    display: flex;
+  }
+
+  .ai-chat-panel__composer-actions {
+    order: 0;
+  }
+
+  .ai-chat-panel__message:not(.is-last) .ai-chat-panel__message-actions {
+    display: none;
   }
 }
 </style>
