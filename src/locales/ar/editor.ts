@@ -54,7 +54,7 @@ export const editorMessages = {
   "editor.placeholderStructurizr": "workspace {\n  model {\n    user = person \"مستخدم\"\n    app = softwareSystem \"التطبيق\"\n    user -> app \"يستخدم\"\n  }\n}",
   "editor.placeholderViewOnly": "GraphML مفتوح في وضع العرض فقط.",
   "editor.snippets": "مقتطفات",
-  "editor.snippetsTooltip": "إدراج جزء من PlantUML",
+  "editor.snippetsTooltip": "إدراج مقتطف مخطط",
   "editor.toolbar.overflow": "مزيد من الإجراءات",
   "editor.toolbar.group.file": "ملف",
   "editor.toolbar.group.edit": "تحرير",

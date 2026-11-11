@@ -54,7 +54,7 @@ export const editorMessages = {
   "editor.placeholderStructurizr": "workspace {\n  model {\n    user = person \"用户\"\n    app = softwareSystem \"应用\"\n    user -> app \"使用\"\n  }\n}",
   "editor.placeholderViewOnly": "GraphML 以仅查看模式打开。",
   "editor.snippets": "片段",
-  "editor.snippetsTooltip": "插入 PlantUML 片段",
+  "editor.snippetsTooltip": "插入图表片段",
   "editor.toolbar.overflow": "更多操作",
   "editor.toolbar.group.file": "文件",
   "editor.toolbar.group.edit": "编辑",

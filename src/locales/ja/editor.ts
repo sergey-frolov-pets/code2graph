@@ -54,7 +54,7 @@ export const editorMessages = {
   "editor.placeholderStructurizr": "workspace {\n  model {\n    user = person \"ユーザー\"\n    app = softwareSystem \"アプリ\"\n    user -> app \"利用\"\n  }\n}",
   "editor.placeholderViewOnly": "GraphML は閲覧専用で開いています。",
   "editor.snippets": "スニペット",
-  "editor.snippetsTooltip": "PlantUML の断片を挿入",
+  "editor.snippetsTooltip": "図のスニペットを挿入",
   "editor.toolbar.overflow": "その他の操作",
   "editor.toolbar.group.file": "ファイル",
   "editor.toolbar.group.edit": "編集",

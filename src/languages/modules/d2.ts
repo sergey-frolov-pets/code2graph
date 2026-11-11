@@ -21,7 +21,7 @@ export const d2LanguageModule: DiagramLanguageModule = {
     supportsSyntaxValidation: true,
     supportsAiPatch: false,
     supportsAiSyntaxAsk: false,
-    supportsSnippets: false,
+    supportsSnippets: true,
     supportsSamples: true,
     supportsSaveSource: true,
     supportsOnlineRender: false,
