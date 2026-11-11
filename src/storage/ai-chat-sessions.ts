@@ -38,6 +38,11 @@ export async function listAiChatSessions(
   return sortAiChatSessions(filtered);
 }
 
+/** IndexedDB structured clone не принимает Vue Proxy — в стор кладём плоский JSON. */
+function cloneAiChatSessionForStorage(session: AiChatSession): AiChatSession {
+  return JSON.parse(JSON.stringify(session)) as AiChatSession;
+}
+
 export async function putAiChatSession(
   session: AiChatSession,
 ): Promise<AiChatSession> {
@@ -58,7 +63,7 @@ export async function putAiChatSession(
         store.delete(entry.id);
       }
     }
-    store.put(session);
+    store.put(cloneAiChatSessionForStorage(session));
     return session;
   });
 }
