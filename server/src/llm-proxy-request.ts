@@ -1,6 +1,9 @@
 import type { FreeBuiltinLlmProviderId } from "./llm-providers.js";
 import { isFreeBuiltinLlmProviderId } from "./llm-providers.js";
 import {
+  LLM_IMAGE_MIME_TYPES,
+  LLM_MAX_IMAGES_PER_REQUEST,
+  LLM_MAX_IMAGE_BASE64_CHARS,
   LLM_MAX_MESSAGES,
   LLM_MAX_MESSAGE_CHARS,
   LLM_MAX_TOTAL_CHARS,
@@ -8,9 +11,15 @@ import {
 
 export type LlmChatRole = "system" | "user" | "assistant";
 
+export interface LlmChatImagePart {
+  mimeType: string;
+  dataBase64: string;
+}
+
 export interface LlmChatMessage {
   role: LlmChatRole;
   content: string;
+  images?: LlmChatImagePart[];
 }
 
 export interface LlmProxyChatRequestBody {
@@ -66,6 +75,7 @@ export function parseLlmProxyChatBody(raw: unknown): LlmProxyChatRequestBody | n
 
   const parsedMessages: LlmChatMessage[] = [];
   let totalChars = 0;
+  let imageCount = 0;
 
   for (const item of messages) {
     if (!item || typeof item !== "object") {
@@ -93,7 +103,13 @@ export function parseLlmProxyChatBody(raw: unknown): LlmProxyChatRequestBody | n
       return null;
     }
 
-    parsedMessages.push({ role, content });
+    const images = parseMessageImages(role, message.images, imageCount);
+    if (!images) {
+      return null;
+    }
+    imageCount += images.length;
+
+    parsedMessages.push(images.length > 0 ? { role, content, images } : { role, content });
   }
 
   return {
@@ -101,4 +117,49 @@ export function parseLlmProxyChatBody(raw: unknown): LlmProxyChatRequestBody | n
     messages: parsedMessages,
     jsonMode: jsonMode === true,
   };
+}
+
+const BASE64_PATTERN = /^[A-Za-z0-9+/]+={0,2}$/;
+
+function parseMessageImages(
+  role: string,
+  raw: unknown,
+  imageCount: number,
+): LlmChatImagePart[] | null {
+  if (raw === undefined) {
+    return [];
+  }
+  if (!Array.isArray(raw)) {
+    return null;
+  }
+  if (raw.length === 0) {
+    return [];
+  }
+  if (role !== "user") {
+    return null;
+  }
+  if (imageCount + raw.length > LLM_MAX_IMAGES_PER_REQUEST) {
+    return null;
+  }
+
+  const images: LlmChatImagePart[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") {
+      return null;
+    }
+    const record = item as Record<string, unknown>;
+    const mimeType = record.mimeType;
+    const dataBase64 = record.dataBase64;
+    if (typeof mimeType !== "string" || !(LLM_IMAGE_MIME_TYPES as readonly string[]).includes(mimeType)) {
+      return null;
+    }
+    if (typeof dataBase64 !== "string" || !BASE64_PATTERN.test(dataBase64)) {
+      return null;
+    }
+    if (dataBase64.length === 0 || dataBase64.length > LLM_MAX_IMAGE_BASE64_CHARS) {
+      return null;
+    }
+    images.push({ mimeType, dataBase64 });
+  }
+  return images;
 }

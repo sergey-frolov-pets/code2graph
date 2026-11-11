@@ -1,8 +1,15 @@
 export type LlmChatRole = "system" | "user" | "assistant";
 
+/** Картинка для одного запроса. В историю чата байты не сохраняются. */
+export interface LlmChatImagePart {
+  mimeType: string;
+  dataBase64: string;
+}
+
 export interface LlmChatMessage {
   role: LlmChatRole;
   content: string;
+  images?: LlmChatImagePart[];
 }
 
 export interface LlmChatOptions {

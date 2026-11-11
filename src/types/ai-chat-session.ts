@@ -1,4 +1,13 @@
+import type { AiChatAttachmentKind } from "@/constants/ai-chat";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
+
+/** Файл, прикреплённый к сообщению. Байты картинки здесь не хранятся. */
+export interface AiChatAttachment {
+  name: string;
+  kind: AiChatAttachmentKind;
+  mimeType: string;
+  textExcerpt?: string;
+}
 
 export type AiChatIntent = "create" | "edit" | "explain" | "free";
 
@@ -17,6 +26,7 @@ export interface AiChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
+  attachments?: AiChatAttachment[];
   proposal?: AiChatProposal;
   clarificationQuestions?: string[];
   /** Подсказки «Что дальше» от модели: каждая — готовое следующее сообщение пользователя. */

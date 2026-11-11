@@ -47,4 +47,32 @@ describe("llm-proxy-request", () => {
       jsonMode: true,
     });
   });
+
+  it("accepts a user image and rejects an unknown mime type", () => {
+    const png = "iVBORw0KGgo=";
+    const body = parseLlmProxyChatBody({
+      providerId: "google-gemini-free",
+      messages: [
+        {
+          role: "user",
+          content: "look",
+          images: [{ mimeType: "image/png", dataBase64: png }],
+        },
+      ],
+    });
+    expect(body?.messages[0]?.images).toEqual([{ mimeType: "image/png", dataBase64: png }]);
+
+    expect(
+      parseLlmProxyChatBody({
+        providerId: "google-gemini-free",
+        messages: [
+          {
+            role: "user",
+            content: "look",
+            images: [{ mimeType: "image/svg+xml", dataBase64: png }],
+          },
+        ],
+      }),
+    ).toBeNull();
+  });
 });

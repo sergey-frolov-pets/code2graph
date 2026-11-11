@@ -54,4 +54,36 @@ describe("BYOK LLM providers", () => {
       Authorization: "Bearer gsk-user-secret-key",
     });
   });
+
+  it("sends an attached image as an OpenAI content part", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '{"message":"ok"}' } }],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await callOpenAiCompatibleChat({
+      endpoint: "https://api.groq.com/openai/v1/chat/completions",
+      apiKey: "gsk-user-secret-key",
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: "user",
+          content: "describe",
+          images: [{ mimeType: "image/png", dataBase64: "abcd" }],
+        },
+      ],
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(String(init.body)) as {
+      messages: Array<{ content: Array<{ type: string; image_url?: { url: string } }> }>;
+    };
+    expect(body.messages[0]?.content[1]).toEqual({
+      type: "image_url",
+      image_url: { url: "data:image/png;base64,abcd" },
+    });
+  });
 });

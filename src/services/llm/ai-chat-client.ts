@@ -1,6 +1,10 @@
 import type { LlmGateHandlers } from "@/composables/useLlmGate";
 import type { LayoutEngine } from "@/constants";
-import { AI_CHAT_RECENT_MESSAGES, AI_CHAT_VALIDATION_RETRIES } from "@/constants/ai-chat";
+import {
+  AI_CHAT_RECENT_MESSAGES,
+  AI_CHAT_VALIDATION_RETRIES,
+  type AiChatContextMode,
+} from "@/constants/ai-chat";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
 import type { RenderMode } from "@/constants/render-settings";
 import { getFormatHandler } from "@/formats";
@@ -16,9 +20,10 @@ import {
   LLM_TEMPERATURE_PRECISE,
   LLM_MAX_TOKENS_PRECISE,
 } from "@/services/llm/llm-prompts";
-import type { LlmChatMessage } from "@/services/llm/llm-types";
+import type { LlmChatImagePart, LlmChatMessage } from "@/services/llm/llm-types";
 import { LlmClientError } from "@/services/llm/llm-types";
-import type { AiChatMessage } from "@/types/ai-chat-session";
+import type { AiChatAttachment, AiChatMessage } from "@/types/ai-chat-session";
+import { composeAiChatUserContent } from "@/utils/ai-chat-attachments";
 
 export interface AiChatTurnResult extends AiChatEnvelope {
   providerId: string;
@@ -33,18 +38,29 @@ export interface SendAiChatMessageInput {
   selection?: string;
   renderError?: string;
   summary?: string;
+  contextMode?: AiChatContextMode;
+  attachments?: AiChatAttachment[];
+  images?: LlmChatImagePart[];
   layout: LayoutEngine;
   diagramDarkMode: boolean;
   renderMode: RenderMode;
   handlers?: LlmGateHandlers;
 }
 
+function historyContent(message: AiChatMessage): string {
+  const base = message.proposal
+    ? `${message.content}\n[Предложение (${message.proposal.status}): ${message.proposal.explanation}]`
+    : message.content;
+  if (!message.attachments?.length) {
+    return base;
+  }
+  return composeAiChatUserContent(base, message.attachments);
+}
+
 function toHistoryMessages(history: AiChatMessage[]): LlmChatMessage[] {
   return history.slice(-AI_CHAT_RECENT_MESSAGES).map((message) => ({
     role: message.role,
-    content: message.proposal
-      ? `${message.content}\n[Предложение (${message.proposal.status}): ${message.proposal.explanation}]`
-      : message.content,
+    content: historyContent(message),
   }));
 }
 
@@ -83,6 +99,7 @@ export async function sendAiChatMessage(
         buildAiChatContextBlock({
           format: input.format,
           source: input.source,
+          contextMode: input.contextMode,
           selection: input.selection,
           renderError: input.renderError,
           summary: input.summary,
@@ -92,7 +109,11 @@ export async function sendAiChatMessage(
       ].join("\n\n"),
     },
     ...toHistoryMessages(input.history),
-    { role: "user", content: input.userContent },
+    {
+      role: "user",
+      content: composeAiChatUserContent(input.userContent, input.attachments ?? []),
+      images: input.images?.length ? input.images : undefined,
+    },
   ];
 
   for (let attempt = 0; attempt <= AI_CHAT_VALIDATION_RETRIES; attempt += 1) {

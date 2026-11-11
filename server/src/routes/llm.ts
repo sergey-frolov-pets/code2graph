@@ -13,6 +13,7 @@ import {
   LLM_RATE_LIMIT_PER_MINUTE,
   LLM_MAX_OUTPUT_TOKENS,
 } from "../config.js";
+import { toGeminiContentParts, toOpenAiChatMessage } from "../llm-message-parts.js";
 import {
   containsForbiddenClientLlmKeyField,
   parseLlmProxyChatBody,
@@ -86,7 +87,7 @@ async function callGemini(
     .filter((message) => message.role !== "system")
     .map((message) => ({
       role: message.role === "assistant" ? "model" : "user",
-      parts: [{ text: message.content }],
+      parts: toGeminiContentParts(message),
     }));
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
@@ -141,7 +142,7 @@ async function callOpenAiCompatible(
     },
     body: JSON.stringify({
       model,
-      messages,
+      messages: messages.map(toOpenAiChatMessage),
       max_tokens: maxOutputTokens,
       response_format: jsonMode ? { type: "json_object" } : undefined,
     }),
