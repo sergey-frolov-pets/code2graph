@@ -60,7 +60,16 @@ jobs:
           # Аналитика GoatCounter: инстанс проекта. Форки задают свой адрес
           # или пустую строку, чтобы выключить трекер.
           VITE_GOATCOUNTER_URL: "https://stats.code2graph.ru"
-        run: npm run build
+          # Сид шифрования ключей LLM. Значение живёт только в секрете
+          # репозитория и в клиентскую сборку попадает оттуда. В git его нет.
+          VITE_LLM_KEY_SEED: ${{ secrets.VITE_LLM_KEY_SEED }}
+        run: |
+          if [ "${#VITE_LLM_KEY_SEED}" -lt 16 ]; then
+            echo "VITE_LLM_KEY_SEED is missing or shorter than 16 characters. Saved LLM keys stay disabled."
+          else
+            echo "VITE_LLM_KEY_SEED is set, length ${#VITE_LLM_KEY_SEED}."
+          fi
+          npm run build
 
       - name: E2E smoke test
         run: npm run test:e2e
