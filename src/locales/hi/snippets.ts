@@ -7,7 +7,7 @@ export const snippetsMessages = {
   "snippets.editTitle": "स्निपेट संपादित करें",
   "snippets.edit": "संपादित करें",
   "snippets.insert": "डालें",
-  "snippets.searchPlaceholder": "शीर्षक, कोड, भाषा और आरेख प्रकार में खोजें…",
+  "snippets.searchPlaceholder": "स्निपेट की पूरी सामग्री में खोजें…",
   "snippets.noResults": "कोई स्निपेट नहीं मिला",
   "snippets.customBadge": "कस्टम",
   "snippets.deleteTitle": "स्निपेट हटाएँ?",

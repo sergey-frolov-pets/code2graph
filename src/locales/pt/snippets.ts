@@ -7,7 +7,7 @@ export const snippetsMessages = {
   "snippets.editTitle": "Editar trecho",
   "snippets.edit": "Editar",
   "snippets.insert": "Inserir",
-  "snippets.searchPlaceholder": "Pesquisar por título, código, linguagem e tipo…",
+  "snippets.searchPlaceholder": "Pesquisar em todo o conteúdo do trecho…",
   "snippets.noResults": "Nenhum trecho encontrado",
   "snippets.customBadge": "Personalizado",
   "snippets.deleteTitle": "Excluir o trecho?",

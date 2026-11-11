@@ -7,7 +7,7 @@ export const snippetsMessages = {
   "snippets.editTitle": "编辑片段",
   "snippets.edit": "编辑",
   "snippets.insert": "插入",
-  "snippets.searchPlaceholder": "跨标题、代码、语言和图表类型搜索…",
+  "snippets.searchPlaceholder": "搜索片段的全部内容…",
   "snippets.noResults": "未找到片段",
   "snippets.customBadge": "自定义",
   "snippets.deleteTitle": "删除片段？",

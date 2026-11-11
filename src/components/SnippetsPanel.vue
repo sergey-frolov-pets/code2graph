@@ -110,7 +110,7 @@ const categoryTags = computed(() => [
   { id: "custom" as const, label: t("snippets.category.custom") },
 ]);
 
-const filteredItems = computed(() => snippets.filterItems(t));
+const filteredItems = computed(() => snippets.filterItems());
 
 function openAddEditor(): void {
   editingSnippet.value = null;
