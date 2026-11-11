@@ -29,6 +29,7 @@ import {
 } from "./schemas";
 import {
   parseRawTextToGrid,
+  replaceGraphDataFromPastedRows,
   serializeGridToClipboardTsv,
   transposeMatrixData,
 } from "./table-clipboard";
@@ -50,6 +51,7 @@ export {
   MERMAID_GANTT_TICK_PRESET_OPTIONS,
   MONO_MODE_OPTIONS,
   parseRawTextToGrid,
+  replaceGraphDataFromPastedRows,
   PLANTUML_GANTT_LANGUAGE_OPTIONS,
   PLANTUML_GANTT_SCALE_OPTIONS,
   serializeGridToClipboardTsv,

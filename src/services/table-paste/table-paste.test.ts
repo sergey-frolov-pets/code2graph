@@ -220,13 +220,15 @@ describe("Category A & B table parsers", () => {
   it("builds xychart series from one, two, and many columns", () => {
     const oneColumn = applyTableFromClipboardText({
       clipboardText: "Значение\n10\n25\n40",
-      source: 'xychart-beta\n    title T\n    x-axis ["A", "B", "C"]\n    y-axis "Y" 0 --> 50\n    bar [1, 2, 3]\n    line [4, 5, 6]',
+      source: 'xychart-beta\n    title T\n    x-axis ["A", "B", "C"]\n    y-axis "Y" 0 --> 50\n    bar [1, 2, 3]\n    bar [7, 8, 9]\n    line [4, 5, 6]',
       format: "mermaid",
     });
     expect(oneColumn.ok).toBe(true);
     if (oneColumn.ok) {
-      expect(oneColumn.fullSource).toContain("bar [1, 2, 3]");
       expect(oneColumn.fullSource).toContain("bar [10, 25, 40]");
+      expect(oneColumn.fullSource).not.toContain("bar [1, 2, 3]");
+      expect(oneColumn.fullSource).not.toContain("bar [7, 8, 9]");
+      expect(oneColumn.fullSource).toContain('x-axis ["A", "B", "C"]');
       expect(oneColumn.fullSource).toContain('y-axis "Y" 0 --> 50');
       expect(oneColumn.fullSource).toContain("line [4, 5, 6]");
       expect(oneColumn.fullSource).not.toContain('y-axis ""');
@@ -498,6 +500,30 @@ describe("Category A & B table parsers", () => {
       expect(clusteredRes.fullSource).toContain("series Москва : 120, 145");
       expect(clusteredRes.fullSource).toContain("series Регионы : 80, 95");
     }
+  });
+
+  it("replaces series and named line series and keeps a threshold line", () => {
+    const res = applyTableFromClipboardText({
+      clipboardText: "Квартал\tМосква\nQ1\t120\nQ2\t145",
+      source: [
+        "series",
+        "title Выручка",
+        "rotate 90",
+        'line 80 "порог"',
+        "line План : 1, 2",
+        "series Старое : 9, 9",
+        "categories A, B",
+      ].join("\n"),
+      format: "mermaid",
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.fullSource).toContain("rotate 90");
+    expect(res.fullSource).toContain('line 80 "порог"');
+    expect(res.fullSource).toContain("categories Q1, Q2");
+    expect(res.fullSource).toContain("series Москва : 120, 145");
+    expect(res.fullSource).not.toContain("line План");
+    expect(res.fullSource).not.toContain("series Старое");
   });
 });
 

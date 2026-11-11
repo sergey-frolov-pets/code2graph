@@ -620,12 +620,12 @@ function isTablePasteResult(
   return "ok" in value;
 }
 
-function appendXyChartLines(source: string, newLines: readonly string[]): TablePasteResult {
+function replaceXyChartBars(source: string, barLines: readonly string[]): TablePasteResult {
   return replaceDataLinesInSource(
     source,
     "xychart",
-    newLines,
-    () => false,
+    barLines,
+    (trimmed) => isActiveDiagramLine(trimmed, BAR_DIRECTIVE),
     XYCHART_DEFAULT_HEADER,
   );
 }
@@ -760,7 +760,7 @@ export function parseXyChartTable(
   const barLines = barSeries.map((values) => buildBarLine(values));
 
   if (normalized.colCount === 1) {
-    return appendXyChartLines(source, barLines);
+    return replaceXyChartBars(source, barLines);
   }
 
   const xCategories = dataRows.map((row, index) => formatXyCategory(row[0] ?? "", index));

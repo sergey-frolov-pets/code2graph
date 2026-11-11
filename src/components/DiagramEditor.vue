@@ -50,7 +50,6 @@ import type { CodeFoldRegion } from "@/utils/code-folds";
 import {
   applySessionViewEdit,
   buildSessionProjection,
-  mapViewOffsetToWorkingOffset,
   offsetOfWorkingLine,
   sessionViewText,
   splitSourceLines,
@@ -234,16 +233,6 @@ function workingLineOffset(lineNumber: number): number {
   );
 }
 
-function toWorkingOffset(offset: number): number {
-  const projection = sessionProjection.value;
-  return mapViewOffsetToWorkingOffset(
-    offset,
-    projection.lines,
-    projection.hidden,
-    source.value,
-  );
-}
-
 function onEditorFocusOut(event: FocusEvent): void {
   const section = event.currentTarget as HTMLElement;
   const related = event.relatedTarget as Node | null;
@@ -374,8 +363,6 @@ const {
 const {
   updateSelectionState,
   insertSnippetAtCursor,
-  getCaretOffsetInSource,
-  getSelectionRangeInSource,
 } = useEditorSelection({
   source: sessionBuffer,
   folds: surfaceFolds,
@@ -402,23 +389,10 @@ async function onPasteTableFromClipboard(): Promise<void> {
     return;
   }
 
-  const selectionRange = getSelectionRangeInSource();
-  const hasSelection = selectionRange.end > selectionRange.start;
-  const caretOffset = getCaretOffsetInSource();
   const result = applyTableFromClipboardText({
     clipboardText,
     source: source.value,
     format: diagramFormat.value,
-    selectionRange: hasSelection
-      ? {
-          start: toWorkingOffset(selectionRange.start),
-          end: toWorkingOffset(selectionRange.end),
-        }
-      : undefined,
-    cursorOffset:
-      hasSelection || caretOffset === undefined
-        ? undefined
-        : toWorkingOffset(caretOffset),
   });
 
   if (!result.ok) {

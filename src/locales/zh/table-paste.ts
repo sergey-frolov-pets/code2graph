@@ -112,7 +112,7 @@ export const tablePasteMessages = {
   "tablePaste.expected.xychart.columns":
     "1 列或更多。一列数字用于柱 [值 1, ..., 值 n]。两列是 'X 类别' 和 '柱值'。三列或更多是 'X 类别'，再加上每个额外列对应的一个柱系列。",
   "tablePaste.expected.xychart.rules":
-    "一列会追加一行 bar [数值]。两列或更多会替换或添加 x 轴，以及每个数值列对应的一个 bar [...] 系列。如果图表还没有 y 轴，会添加 y-axis \"\" min --> max。",
+    "一列会替换已有的 bar [数值] 行。两列或更多会替换 x 轴和所有 bar 行，每个数值列对应一个 bar [...] 系列。如果图表还没有 y 轴，会添加 y-axis \"\" min --> max。",
   "tablePaste.expected.xychart.headers": "月份|计划|实际|预测",
   "tablePaste.expected.quadrant.columns":
     "3 列：'点标签'、'X（0..1 或 0..100%）'、'Y（0..1 或 0..100%）'。",
@@ -157,7 +157,7 @@ export const tablePasteMessages = {
   "tablePaste.expected.mindmap.columns":
     "2 列或更多，表示树的深度：'根'、'分支'、'子分支' 等。",
   "tablePaste.expected.mindmap.rules":
-    "构建思维导图树，并合并相同的父节点。节点会插入到光标所在空行、替换选区，或替换全部导图节点。图例、标题、页眉、页脚、题注、样式和注释会保留。",
+    "构建思维导图树，并合并相同的父节点。粘贴的节点会替换全部导图节点。图例、标题、页眉、页脚、题注、样式和注释会保留。",
   "tablePaste.expected.mindmap.headers": "根|分支|叶子",
   "tablePaste.expected.nwdiag.columns":
     "2 或 3 列：'节点'、'IP 地址'、['网络（可选）']。",
