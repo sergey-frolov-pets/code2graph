@@ -18,6 +18,7 @@ import {
   parseLibraryImportFile,
 } from "@/utils/library-import-export";
 import {
+  copyBackupDiagrams,
   importLocalLibrarySelection,
   loadAllDiagramDetailsFromCache,
   loadSectionsFromCache,
@@ -101,6 +102,19 @@ export async function importLibrarySelection(
   for (const diagram of imported) {
     await adoptLocalDataLinkForDiagram(diagram);
   }
+}
+
+export async function copyBackupDiagramsIntoLibrary(
+  ctx: LibraryTransferContext,
+  sections: SectionDto[],
+  diagrams: Parameters<typeof copyBackupDiagrams>[1],
+  diagramIds: ReadonlySet<string>,
+): Promise<void> {
+  await copyBackupDiagrams(sections, diagrams, diagramIds);
+  ctx.catalog.selectedDiagram.value = null;
+  await ctx.sync.applyLocalState();
+  await ctx.searchDiagrams();
+  ctx.catalog.usingCache.value = true;
 }
 
 export async function pushLibrarySelectionToServer(

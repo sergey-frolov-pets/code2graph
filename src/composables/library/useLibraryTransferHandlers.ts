@@ -7,6 +7,25 @@ import type {
 } from "@/constants/diagram-library";
 import type { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import { getLibraryApiBaseUrl } from "@/config/library-api";
+import { loadCustomSnippets, replaceCustomSnippets } from "@/storage/snippets";
+import {
+  loadAllDiagramDetailsFromCache,
+  replaceLocalLibrary,
+} from "@/storage/diagram-store";
+import {
+  AppBackupFormatError,
+  applyBackupSettings,
+  buildAppBackup,
+  diffBackupDiagrams,
+  diffBackupSnippets,
+  downloadAppBackup,
+  mergeSelectedSnippets,
+  parseAppBackup,
+  type AppBackupFile,
+  type AppBackupRestoreMode,
+  type DiagramBackupDiff,
+  type SnippetBackupDiff,
+} from "@/utils/app-backup";
 import type { LibraryTab } from "./useLibraryBrowseFlow";
 
 type DiagramLibrary = ReturnType<typeof useDiagramLibrary>;
@@ -25,6 +44,11 @@ export function useLibraryTransferHandlers(options: {
   const serverTransferSections = ref<SectionDto[]>([]);
   const serverTransferDiagrams = ref<DiagramDto[]>([]);
   const importBundle = ref<LibraryExportBundle | null>(null);
+  const pendingRestore = ref<AppBackupFile | null>(null);
+  const syncBackup = ref<AppBackupFile | null>(null);
+  const syncDiagramDiffs = ref<DiagramBackupDiff[]>([]);
+  const syncSnippetDiffs = ref<SnippetBackupDiff[]>([]);
+  const backupError = ref("");
   const isTransferProcessing = ref(false);
 
   const canSyncOnline = computed(() => Boolean(getLibraryApiBaseUrl()));
@@ -142,8 +166,144 @@ export function useLibraryTransferHandlers(options: {
     }
   }
 
+  function backupErrorMessage(error: unknown): string {
+    if (error instanceof AppBackupFormatError) {
+      return t("library.backupErrorInvalid");
+    }
+    return t("library.backupErrorRead");
+  }
+
+  async function refreshSyncDiffs(): Promise<void> {
+    const backup = syncBackup.value;
+    if (!backup) {
+      syncDiagramDiffs.value = [];
+      syncSnippetDiffs.value = [];
+      return;
+    }
+
+    const localDiagrams = await loadAllDiagramDetailsFromCache();
+    syncDiagramDiffs.value = diffBackupDiagrams(
+      localDiagrams,
+      backup.library.diagrams,
+    );
+    syncSnippetDiffs.value = diffBackupSnippets(
+      loadCustomSnippets(),
+      backup.snippets,
+    );
+  }
+
+  async function onSaveBackup(): Promise<void> {
+    isTransferProcessing.value = true;
+    backupError.value = "";
+    try {
+      downloadAppBackup(await buildAppBackup());
+    } catch (error) {
+      backupError.value = backupErrorMessage(error);
+    } finally {
+      isTransferProcessing.value = false;
+    }
+  }
+
+  async function onRestoreFile(file: File): Promise<void> {
+    backupError.value = "";
+    try {
+      pendingRestore.value = parseAppBackup(await file.text());
+      syncBackup.value = null;
+      syncDiagramDiffs.value = [];
+      syncSnippetDiffs.value = [];
+    } catch (error) {
+      pendingRestore.value = null;
+      backupError.value = backupErrorMessage(error);
+    }
+  }
+
+  function onRestoreCancel(): void {
+    pendingRestore.value = null;
+  }
+
+  async function onRestoreConfirm(mode: AppBackupRestoreMode): Promise<void> {
+    const backup = pendingRestore.value;
+    if (!backup) {
+      return;
+    }
+
+    isTransferProcessing.value = true;
+    backupError.value = "";
+    try {
+      if (mode === "save-and-replace") {
+        downloadAppBackup(await buildAppBackup());
+      }
+      await replaceLocalLibrary(backup.library.sections, backup.library.diagrams);
+      replaceCustomSnippets(backup.snippets);
+      applyBackupSettings(backup.settings);
+      window.location.reload();
+    } catch (error) {
+      backupError.value = backupErrorMessage(error);
+      isTransferProcessing.value = false;
+    }
+  }
+
+  async function onSyncFile(file: File): Promise<void> {
+    backupError.value = "";
+    try {
+      syncBackup.value = parseAppBackup(await file.text());
+      pendingRestore.value = null;
+      await refreshSyncDiffs();
+    } catch (error) {
+      syncBackup.value = null;
+      syncDiagramDiffs.value = [];
+      syncSnippetDiffs.value = [];
+      backupError.value = backupErrorMessage(error);
+    }
+  }
+
+  async function onSyncApply(payload: {
+    diagramIds: Set<string>;
+    snippetIds: Set<string>;
+  }): Promise<void> {
+    const backup = syncBackup.value;
+    if (!backup) {
+      return;
+    }
+    if (payload.diagramIds.size === 0 && payload.snippetIds.size === 0) {
+      return;
+    }
+
+    isTransferProcessing.value = true;
+    backupError.value = "";
+    try {
+      if (payload.diagramIds.size > 0) {
+        await library.copyBackupDiagramsIntoLibrary(
+          backup.library.sections,
+          backup.library.diagrams,
+          payload.diagramIds,
+        );
+        await loadTransferData();
+      }
+      if (payload.snippetIds.size > 0) {
+        replaceCustomSnippets(
+          mergeSelectedSnippets(
+            loadCustomSnippets(),
+            backup.snippets,
+            payload.snippetIds,
+          ),
+        );
+      }
+      await refreshSyncDiffs();
+    } catch (error) {
+      backupError.value = backupErrorMessage(error);
+    } finally {
+      isTransferProcessing.value = false;
+    }
+  }
+
   function resetImportBundle(): void {
     importBundle.value = null;
+    pendingRestore.value = null;
+    syncBackup.value = null;
+    syncDiagramDiffs.value = [];
+    syncSnippetDiffs.value = [];
+    backupError.value = "";
   }
 
   return {
@@ -153,6 +313,11 @@ export function useLibraryTransferHandlers(options: {
     serverTransferDiagrams,
     canSyncOnline,
     importBundle,
+    pendingRestore,
+    syncBackup,
+    syncDiagramDiffs,
+    syncSnippetDiffs,
+    backupError,
     isTransferProcessing,
     loadTransferData,
     onExportSelection,
@@ -160,6 +325,12 @@ export function useLibraryTransferHandlers(options: {
     onImportSelection,
     onPushToServer,
     onPullFromServer,
+    onSaveBackup,
+    onRestoreFile,
+    onRestoreCancel,
+    onRestoreConfirm,
+    onSyncFile,
+    onSyncApply,
     resetImportBundle,
   };
 }
