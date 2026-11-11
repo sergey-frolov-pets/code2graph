@@ -86,6 +86,8 @@ const {
   selectedOverlayId,
   exportingGif,
   onExportGif,
+  exportingHtml,
+  onExportHtml,
   repeat,
 } = session;
 const { playing, viewpointIndex, togglePlay, step, pause, goToViewpoint } = session.playback;
@@ -382,6 +384,16 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
           <PresentationGlyph
             :name="exportingGif ? 'loader' : 'gif'"
             :spin="exportingGif"
+          />
+        </IconButton>
+        <IconButton
+          :label="exportingHtml ? t('presentation.exportHtmlBusy') : t('presentation.exportHtml')"
+          :disabled="!track || track.viewpoints.length === 0 || exportingHtml"
+          @click="onExportHtml()"
+        >
+          <PresentationGlyph
+            :name="exportingHtml ? 'loader' : 'html'"
+            :spin="exportingHtml"
           />
         </IconButton>
       </div>

@@ -45,6 +45,7 @@ export const appMessages = {
   "app.unknownRenderError": "未知渲染错误",
   "app.exportPngFailed": "导出 PNG 失败",
   "app.exportGifFailed": "保存 GIF 失败",
+  "app.exportHtmlFailed": "保存 HTML 失败",
   "app.copyPngFailed": "无法将 PNG 复制到剪贴板",
   "app.copyPngUnsupported": "此浏览器无法将 PNG 图像复制到剪贴板",
   "app.engineLoadError": "引擎加载错误",

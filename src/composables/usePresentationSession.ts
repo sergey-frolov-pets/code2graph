@@ -3,11 +3,17 @@ import type { DiagramFormat } from "@/constants/diagram-format-ids";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useLocale } from "@/composables/useLocale";
 import { usePresentationPlayback } from "@/composables/usePresentationPlayback";
+import { localeDirection } from "@/constants/i18n";
 import { PRESENTATION_CHROME_REVEAL_MS } from "@/services/presentation/constants";
 import { readPresentation, writePresentation } from "@/services/presentation/codec";
 import { readFrameHref } from "@/services/presentation/frame";
 import { renderPresentationGif, type PresentationGifTheme } from "@/services/presentation/gif-export";
 import { presentationGifFileName } from "@/services/presentation/gif-timeline";
+import {
+  PRESENTATION_HTML_MIME,
+  presentationHtmlFileName,
+  renderPresentationHtml,
+} from "@/services/presentation/html-export";
 import {
   activeTrack,
   addEffect,
@@ -38,7 +44,7 @@ import {
   updateViewpointDwell,
   updateViewpointFrame,
 } from "@/services/presentation/model";
-import { downloadBlob } from "@/services/export/file-download";
+import { downloadBlob, downloadTextFile } from "@/services/export/file-download";
 import type {
   CameraFrame,
   FrameEffectKind,
@@ -85,9 +91,10 @@ export function usePresentationSession(options: {
   const attachTarget = ref<OverlayAttachTarget>("viewpoint");
   const chromeRevealed = ref(false);
   const exportingGif = ref(false);
+  const exportingHtml = ref(false);
   const repeat = ref(false);
   const { alert } = useAppDialog();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   let suppressParse = false;
   let revealTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -547,6 +554,46 @@ export function usePresentationSession(options: {
     }
   }
 
+  function onExportHtml(): void {
+    const track = currentTrack.value;
+    const gifContext = options.getGifContext();
+    if (!track || track.viewpoints.length === 0 || !gifContext || exportingHtml.value) {
+      return;
+    }
+    exportingHtml.value = true;
+    try {
+      const html = renderPresentationHtml({
+        svg: gifContext.svg,
+        frameHref: gifContext.frameHref,
+        track,
+        showOverlays: document.value?.showOverlays !== false,
+        imageWidth: gifContext.imageWidth,
+        imageHeight: gifContext.imageHeight,
+        theme: gifContext.theme,
+        lang: locale.value,
+        dir: localeDirection(locale.value),
+        labels: {
+          first: t("presentation.first"),
+          prev: t("presentation.prev"),
+          next: t("presentation.next"),
+          play: t("presentation.play"),
+          pause: t("presentation.pause"),
+          repeat: t("presentation.repeat"),
+        },
+      });
+      downloadTextFile(html, presentationHtmlFileName(track.name), PRESENTATION_HTML_MIME);
+    } catch (error) {
+      const message = resolveLocalizedErrorMessage(error, t, "app.exportHtmlFailed");
+      void alert({
+        title: t("app.exportError"),
+        message,
+        variant: "error",
+      });
+    } finally {
+      exportingHtml.value = false;
+    }
+  }
+
   function selectViewpoint(index: number): void {
     playback.pause();
     playback.goToViewpoint(index);
@@ -574,6 +621,7 @@ export function usePresentationSession(options: {
     releaseHeaderDim,
     selectedOverlayId,
     exportingGif,
+    exportingHtml,
     repeat,
     addPointArmed,
     attachTarget,
@@ -609,6 +657,7 @@ export function usePresentationSession(options: {
     onChangeOverlay,
     onRemoveOverlay,
     onExportGif,
+    onExportHtml,
     selectViewpoint,
   };
 }

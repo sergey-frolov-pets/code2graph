@@ -246,6 +246,8 @@ export const miscMessages = {
   "presentation.styleReset": "テーマの色",
   "presentation.exportGif": "GIF を保存",
   "presentation.exportGifBusy": "GIF を保存中…",
+  "presentation.exportHtml": "HTML を保存",
+  "presentation.exportHtmlBusy": "HTML を保存中…",
   "preview.rendering": "図を描画中…",
   "fullscreen.expand": "全画面",
   "fullscreen.collapse": "全画面を終了",

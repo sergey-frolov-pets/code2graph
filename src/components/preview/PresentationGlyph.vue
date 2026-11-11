@@ -14,6 +14,7 @@ import {
   Copy,
   Eye,
   EyeOff,
+  FileCode,
   Film,
   Flag,
   LoaderCircle,
@@ -51,6 +52,7 @@ export type PresentationGlyphName =
   | "play"
   | "pause"
   | "gif"
+  | "html"
   | "loader"
   | "eye"
   | "eye-off"
@@ -86,6 +88,7 @@ const ICONS: Record<PresentationGlyphName, Component> = {
   play: Play,
   pause: Pause,
   gif: Film,
+  html: FileCode,
   loader: LoaderCircle,
   eye: Eye,
   "eye-off": EyeOff,

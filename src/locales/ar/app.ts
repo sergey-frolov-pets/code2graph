@@ -45,6 +45,7 @@ export const appMessages = {
   "app.unknownRenderError": "خطأ غير معروف في العرض",
   "app.exportPngFailed": "تعذر تصدير PNG",
   "app.exportGifFailed": "تعذر حفظ GIF",
+  "app.exportHtmlFailed": "تعذر حفظ HTML",
   "app.copyPngFailed": "تعذر نسخ PNG إلى الحافظة",
   "app.copyPngUnsupported": "يتعذر على هذا المتصفح نسخ صورة PNG إلى الحافظة",
   "app.engineLoadError": "خطأ في تحميل المحرك",

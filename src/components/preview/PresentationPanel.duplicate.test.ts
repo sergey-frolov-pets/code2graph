@@ -80,6 +80,8 @@ function mountPanel(options: { mode: "view" | "edit"; tracks: PresentationTrack[
     selectedOverlayId: ref<string | null>(null),
     exportingGif: ref(false),
     onExportGif: vi.fn(),
+    exportingHtml: ref(false),
+    onExportHtml: vi.fn(),
     repeat: ref(false),
     playback: {
       playing: ref(false),

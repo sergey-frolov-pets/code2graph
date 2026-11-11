@@ -248,6 +248,8 @@ export const miscMessages = {
   "presentation.styleReset": "Цвета темы",
   "presentation.exportGif": "Сохранить GIF",
   "presentation.exportGifBusy": "Сохранение GIF…",
+  "presentation.exportHtml": "Сохранить HTML",
+  "presentation.exportHtmlBusy": "Сохранение HTML…",
   "preview.rendering": "Рендеринг диаграммы…",
   "fullscreen.expand": "На весь экран",
   "fullscreen.collapse": "Свернуть",
