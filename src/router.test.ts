@@ -68,6 +68,47 @@ describe("app routes", () => {
     });
   });
 
+  it("opens the preview tab on top of a local data link", () => {
+    expect(
+      parseAppRoute({
+        hash: "#/preview/session-a",
+        pathname: "/local/w",
+      }),
+    ).toEqual({
+      name: "preview",
+      languageId: null,
+      diagramSlug: "session-a",
+      libraryUsername: null,
+      libraryLinkSlug: null,
+    });
+    expect(
+      parseAppRoute({
+        hash: "#/preview/session-a",
+        pathname: "/diagram",
+      }).name,
+    ).toBe("preview");
+    expect(
+      parseAppRoute({
+        hash: "#/preview/session-a",
+        pathname: "/owner/water-fall",
+      }).name,
+    ).toBe("preview");
+    expect(
+      parseAppRoute({
+        hash: "#/preview/session-a",
+        pathname: "/",
+        search: "?/local/w",
+      }).name,
+    ).toBe("preview");
+    expect(
+      localDataLinkCanonicalPath({
+        hash: "#/preview/session-a",
+        pathname: "/",
+        search: "?/local/w",
+      }),
+    ).toBeNull();
+  });
+
   it("reads /local/w from the path", () => {
     expect(parseAppRoute({ hash: "", pathname: "/local/w" })).toEqual({
       name: "diagram",
