@@ -2,7 +2,6 @@
 
 import { createApp, h, nextTick } from "vue";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { AI_CHAT_COMPOSER_ROWS } from "@/constants/ai-chat";
 import { useLocale } from "@/composables/useLocale";
 import { sendAiChatMessage } from "@/services/llm/ai-chat-client";
 import AiChatPanel from "@/components/llm/AiChatPanel.vue";
@@ -78,8 +77,11 @@ describe("AiChatPanel layout", () => {
     expect(next!.textContent).toContain("Измени текущую диаграмму…");
     expect(view.host.querySelector("[data-testid='ai-chat-attach']")).not.toBeNull();
     const context = view.host.querySelector("[data-testid='ai-chat-context-mode']");
+    const line = view.host.querySelector("[data-testid='ai-chat-composer-line']");
     expect(context).not.toBeNull();
+    expect(line).not.toBeNull();
     expect(composer!.contains(context)).toBe(true);
+    expect(line!.contains(context)).toBe(false);
     expect(view.host.querySelector("[data-testid='ai-chat-history']")?.getAttribute("aria-label")).toContain(
       "История",
     );
@@ -97,7 +99,15 @@ describe("AiChatPanel layout", () => {
 
     const textarea = view.host.querySelector("textarea");
     expect(textarea).not.toBeNull();
-    expect(textarea).toHaveProperty("rows", AI_CHAT_COMPOSER_ROWS);
+    expect(textarea).toHaveProperty("rows", 1);
+    expect(line!.contains(textarea)).toBe(true);
+    expect(textarea!.getAttribute("placeholder")).toBe("Сообщение…");
+    textarea!.focus();
+    await nextTick();
+    expect(view.host.querySelector("[data-testid='ai-chat-next']")).toBeNull();
+    textarea!.blur();
+    await nextTick();
+    expect(view.host.querySelector("[data-testid='ai-chat-next']")).not.toBeNull();
     textarea!.value = "Добавь участника";
     textarea!.dispatchEvent(new Event("input"));
     await nextTick();
@@ -190,6 +200,14 @@ describe("AiChatPanel layout", () => {
     expect(vi.mocked(sendAiChatMessage).mock.calls[0]?.[0]).toMatchObject({
       userContent: suggestion,
     });
+    await vi.waitFor(() => {
+      expect(view.host.querySelector(".ai-chat-panel__message-actions")).not.toBeNull();
+    });
+    const actions = view.host.querySelector(".ai-chat-panel__message-actions") as HTMLElement;
+    const content = actions.parentElement?.querySelector(".ai-chat-panel__content");
+    expect(content).not.toBeNull();
+    expect(content!.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(getComputedStyle(actions).position).not.toBe("absolute");
 
     view.unmount();
 
