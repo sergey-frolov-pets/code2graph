@@ -45,6 +45,29 @@ describe("isSelectedLlmActive", () => {
     ).toBe(true);
   });
 
+  it("treats a local provider as active when an endpoint is saved", () => {
+    expect(
+      isSelectedLlmActive({
+        consent: true,
+        providerKind: LLM_PROVIDER_KIND.LOCAL,
+        hasApiKey: false,
+        proxyConfigured: false,
+        freeProviderAvailable: false,
+        localReady: false,
+      }),
+    ).toBe(false);
+    expect(
+      isSelectedLlmActive({
+        consent: true,
+        providerKind: LLM_PROVIDER_KIND.LOCAL,
+        hasApiKey: false,
+        proxyConfigured: false,
+        freeProviderAvailable: false,
+        localReady: true,
+      }),
+    ).toBe(true);
+  });
+
   it("treats a free provider as active only when the proxy can serve it", () => {
     expect(
       isSelectedLlmActive({

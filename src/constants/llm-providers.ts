@@ -1,8 +1,13 @@
 import type { LocaleKey } from "@/locales/types";
+import {
+  LOCAL_LLM_DEFAULT_MODEL,
+  LOCAL_LLM_PROVIDER_ID,
+} from "@/constants/llm-account";
 
 export const LLM_PROVIDER_KIND = {
   BYOK: "byok",
   FREE_BUILTIN: "free_builtin",
+  LOCAL: "local",
 } as const;
 
 export type LlmProviderKind =
@@ -149,9 +154,21 @@ const BYOK_LLM_PROVIDERS: readonly LlmProviderDefinition[] = [
   },
 ];
 
+const LOCAL_LLM_PROVIDERS: readonly LlmProviderDefinition[] = [
+  {
+    id: LOCAL_LLM_PROVIDER_ID,
+    kind: LLM_PROVIDER_KIND.LOCAL,
+    requiresUserKey: false,
+    nameKey: "llm.provider.local",
+    descriptionKey: "llm.provider.localDesc",
+    defaultModel: LOCAL_LLM_DEFAULT_MODEL,
+  },
+];
+
 export const ALL_LLM_PROVIDERS: readonly LlmProviderDefinition[] = [
   ...FREE_BUILTIN_LLM_PROVIDERS,
   ...BYOK_LLM_PROVIDERS,
+  ...LOCAL_LLM_PROVIDERS,
 ];
 
 const PROVIDER_BY_ID = new Map(
@@ -190,6 +207,11 @@ export function isByokLlmProvider(providerId: string): boolean {
 export function isFreeBuiltinLlmProvider(providerId: string): boolean {
   const provider = getLlmProvider(providerId);
   return provider?.kind === LLM_PROVIDER_KIND.FREE_BUILTIN;
+}
+
+export function isLocalLlmProvider(providerId: string): boolean {
+  const provider = getLlmProvider(providerId);
+  return provider?.kind === LLM_PROVIDER_KIND.LOCAL;
 }
 
 export function getRecommendedLlmProvider(): LlmProviderDefinition {

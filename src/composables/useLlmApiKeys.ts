@@ -1,35 +1,18 @@
 /**
  * BYOK LLM API keys — только localStorage браузера.
  * Никогда отправляются на сервер Code2Graph (см. proxy-client, server/llm-proxy-request).
+ * Несколько ключей одного провайдера хранятся отдельными аккаунтами.
  */
-import { computed, ref } from "vue";
-import { STORAGE_KEY_LLM_API_KEYS } from "@/constants/llm-settings";
+import { computed } from "vue";
 import {
-  isValidLlmApiKeyValue,
-  parseLlmApiKeysMap,
-  serializeLlmApiKeysMap,
-} from "@/utils/llm-key-storage";
-
-function readStoredApiKeys(): Record<string, string> {
-  try {
-    return parseLlmApiKeysMap(localStorage.getItem(STORAGE_KEY_LLM_API_KEYS));
-  } catch {
-    return {};
-  }
-}
-
-const apiKeys = ref<Record<string, string>>(readStoredApiKeys());
-
-function persistApiKeys(): void {
-  try {
-    localStorage.setItem(STORAGE_KEY_LLM_API_KEYS, serializeLlmApiKeysMap(apiKeys.value));
-  } catch {
-    // file:// может блокировать localStorage
-  }
-}
+  clearProviderApiKeys,
+  getPreferredLlmAccount,
+  replaceProviderApiKey,
+  useLlmAccountStore,
+} from "@/config/llm-accounts";
 
 export function getLlmApiKey(providerId: string): string | undefined {
-  const key = apiKeys.value[providerId];
+  const key = getPreferredLlmAccount(providerId)?.apiKey;
   return key ? key : undefined;
 }
 
@@ -38,40 +21,33 @@ export function hasLlmApiKey(providerId: string): boolean {
 }
 
 export function useLlmApiKeys() {
+  const { llmAccounts } = useLlmAccountStore();
+
   function setLlmApiKey(providerId: string, value: string): boolean {
-    const trimmed = value.trim();
-    if (!trimmed) {
-      clearLlmApiKey(providerId);
-      return true;
-    }
-
-    if (!isValidLlmApiKeyValue(trimmed)) {
-      return false;
-    }
-
-    apiKeys.value = {
-      ...apiKeys.value,
-      [providerId]: trimmed,
-    };
-    persistApiKeys();
-    return true;
+    return replaceProviderApiKey(providerId, value);
   }
 
   function clearLlmApiKey(providerId: string): void {
-    if (!apiKeys.value[providerId]) {
-      return;
-    }
-
-    const next = { ...apiKeys.value };
-    delete next[providerId];
-    apiKeys.value = next;
-    persistApiKeys();
+    clearProviderApiKeys(providerId);
   }
 
-  const hasAnyKey = computed(() => Object.keys(apiKeys.value).length > 0);
+  const apiKeys = computed(() => {
+    const map: Record<string, string> = {};
+    for (const account of llmAccounts.value) {
+      if (!account.active || !account.apiKey || map[account.providerId]) {
+        continue;
+      }
+      map[account.providerId] = account.apiKey;
+    }
+    return map;
+  });
+
+  const hasAnyKey = computed(() =>
+    llmAccounts.value.some((account) => account.active && account.apiKey.length > 0),
+  );
 
   return {
-    apiKeys: computed(() => apiKeys.value),
+    apiKeys,
     getLlmApiKey,
     hasLlmApiKey,
     setLlmApiKey,

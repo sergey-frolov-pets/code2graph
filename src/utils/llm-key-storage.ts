@@ -1,9 +1,16 @@
 import { z } from "zod";
+import {
+  LLM_API_KEY_MAX_LENGTH,
+  LLM_API_KEY_MIN_LENGTH,
+} from "@/constants/llm-account";
 import { getByokLlmProviders } from "@/constants/llm-providers";
 
 const BYOK_PROVIDER_IDS = getByokLlmProviders().map((provider) => provider.id);
 
-const LlmApiKeyValueSchema = z.string().min(8).max(512);
+const LlmApiKeyValueSchema = z
+  .string()
+  .min(LLM_API_KEY_MIN_LENGTH)
+  .max(LLM_API_KEY_MAX_LENGTH);
 
 const LlmApiKeysMapSchema = z
   .record(z.string(), LlmApiKeyValueSchema)

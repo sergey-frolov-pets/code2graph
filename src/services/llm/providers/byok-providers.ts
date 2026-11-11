@@ -4,7 +4,7 @@ import { LlmClientError } from "@/services/llm/llm-types";
 
 type OpenAiCompatibleOptions = {
   endpoint: string;
-  apiKey: string;
+  apiKey?: string;
   model: string;
   messages: LlmChatMessage[];
   jsonMode?: boolean;
@@ -27,13 +27,17 @@ export async function callOpenAiCompatibleChat(
     body.max_tokens = options.maxTokens;
   }
 
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...options.extraHeaders,
+  };
+  if (options.apiKey) {
+    headers.Authorization = `Bearer ${options.apiKey}`;
+  }
+
   const response = await fetch(options.endpoint, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${options.apiKey}`,
-      ...options.extraHeaders,
-    },
+    headers,
     body: JSON.stringify(body),
   });
 

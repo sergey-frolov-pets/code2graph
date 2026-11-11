@@ -135,6 +135,49 @@
   margin-bottom: 8px;
 }
 
+.settings-llm-accounts {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-llm-account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.settings-llm-account__label {
+  flex: 1 1 8rem;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.settings-llm-account__active {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.settings-llm-account__meta {
+  flex: 1 1 10rem;
+  min-width: 0;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .settings-test-result {
   margin: 0 0 8px;
   padding: 10px 12px;
