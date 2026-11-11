@@ -9,6 +9,24 @@ import type {
 } from "@/types/ai-chat-session";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
 
+function diagramDocumentStem(documentKey: string): string {
+  const base = documentKey.split(/[/\\]/).pop() ?? documentKey;
+  return base.replace(/\.[^.]+$/, "").trim().toLowerCase();
+}
+
+/**
+ * Сессии чата остаются с диаграммой, когда смена языка меняет только расширение
+ * (`diagram.puml` и `diagram.mmd` — один документ).
+ */
+export function isSameAiChatDocument(left: string, right: string): boolean {
+  if (left === right) {
+    return true;
+  }
+  const leftStem = diagramDocumentStem(left);
+  const rightStem = diagramDocumentStem(right);
+  return leftStem.length > 0 && leftStem === rightStem;
+}
+
 export function createAiChatMessageId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()

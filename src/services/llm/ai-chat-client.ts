@@ -1,3 +1,4 @@
+import { resolveRequestedDiagramChange } from "@shared/agent-diagram";
 import type { LlmGateHandlers } from "@/composables/useLlmGate";
 import type { LayoutEngine } from "@/constants";
 import {
@@ -6,6 +7,10 @@ import {
   type AiChatContextMode,
 } from "@/constants/ai-chat";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
+import {
+  aiChatProposalValidationFormat,
+  resolveAiChatProposalTarget,
+} from "@/services/llm/ai-chat-diagram-target";
 import type { RenderMode } from "@/constants/render-settings";
 import { getFormatHandler } from "@/formats";
 import { parseAiChatEnvelope, type AiChatEnvelope } from "@/schemas/ai-chat-output";
@@ -48,8 +53,13 @@ export interface SendAiChatMessageInput {
 }
 
 function historyContent(message: AiChatMessage): string {
+  const proposalTarget = [message.proposal?.format, message.proposal?.diagramType]
+    .filter((part) => part && part.length > 0)
+    .join("/");
   const base = message.proposal
-    ? `${message.content}\n[Предложение (${message.proposal.status}): ${message.proposal.explanation}]`
+    ? `${message.content}\n[Предложение (${message.proposal.status}${
+        proposalTarget ? `, ${proposalTarget}` : ""
+      }): ${message.proposal.explanation}]`
     : message.content;
   if (!message.attachments?.length) {
     return base;
@@ -90,6 +100,10 @@ export async function sendAiChatMessage(
     .filter((message) => message.proposal?.status === "rejected")
     .map((message) => message.proposal?.explanation ?? "")
     .filter(Boolean);
+  const diagramChange = resolveRequestedDiagramChange({
+    request: input.userContent,
+    currentFormat: input.format,
+  });
 
   const messages: LlmChatMessage[] = [
     {
@@ -105,6 +119,7 @@ export async function sendAiChatMessage(
           summary: input.summary,
           appliedCount,
           rejectedTitles,
+          target: diagramChange,
         }),
       ].join("\n\n"),
     },
@@ -142,7 +157,12 @@ export async function sendAiChatMessage(
 
     const envelope = parsed.data;
     if (envelope.proposal?.source) {
-      const issues = await validateProposal(input.format, envelope.proposal.source, input);
+      const format = aiChatProposalValidationFormat(
+        input.format,
+        envelope.proposal.format,
+        diagramChange,
+      );
+      const issues = await validateProposal(format, envelope.proposal.source, input);
       if (issues.length > 0) {
         if (attempt >= AI_CHAT_VALIDATION_RETRIES) {
           throw new LlmClientError(
@@ -150,13 +170,26 @@ export async function sendAiChatMessage(
             `Proposed diagram is invalid: ${issues.join("; ")}`,
           );
         }
+        const formatHint =
+          format === input.format
+            ? ""
+            : `The user asked for language "${format}". proposal.format must be "${format}" and proposal.source must be valid ${format}.\n`;
         messages.push({ role: "assistant", content: chatResult.content });
         messages.push({
           role: "user",
-          content: `The proposed source has syntax errors. Fix them and return the full JSON envelope again:\n${issues.join("\n")}`,
+          content: `${formatHint}The proposed source has syntax errors. Fix them and return the full JSON envelope again:\n${issues.join("\n")}`,
         });
         continue;
       }
+
+      const target = resolveAiChatProposalTarget(
+        input.format,
+        envelope.proposal.format,
+        envelope.proposal.diagramType,
+        diagramChange,
+      );
+      envelope.proposal.format = target.format;
+      envelope.proposal.diagramType = target.diagramType;
     }
 
     return {

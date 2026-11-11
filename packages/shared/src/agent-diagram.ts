@@ -508,6 +508,77 @@ export function planDiagram(input: {
   };
 }
 
+export interface RequestedDiagramChange {
+  format: AgentDiagramLanguage;
+  diagramType: AgentDiagramType | null;
+  formatRequested: boolean;
+  typeRequested: boolean;
+  /** Type the user named that the chosen language cannot express. */
+  droppedType: AgentDiagramType | null;
+  /** True when the message asks to switch language and/or diagram type. */
+  active: boolean;
+}
+
+const DIAGRAM_SWITCH_INTENT =
+  /перевед|передел|перелож|смен|конверт|преврат|сделай|переключ|хочу|нужн|давай|в формате|на языке|язык\w*|формат\w*|convert|switch|rewrite|turn\s+(?:this|it)\s+into|change\s+(?:the\s+)?(?:diagram|type|language|format)|make\s+(?:this|it)\s+(?:a|an)\b|\bas\s+an?\b/i;
+
+/**
+ * Detects an explicit request to change diagram language or type without
+ * treating a passing mention ("explain mermaid") as a switch.
+ * Keeps the current language when it can express the requested type.
+ */
+export function resolveRequestedDiagramChange(input: {
+  request: string;
+  currentFormat: AgentDiagramLanguage;
+}): RequestedDiagramChange {
+  const request = input.request.trim();
+  const explicitFormat = detectExplicitFormat(request);
+  const requestedType = detectDiagramType(request);
+  const formatRequested = explicitFormat !== null;
+  const typeRequested = requestedType !== null;
+  const intent = DIAGRAM_SWITCH_INTENT.test(request);
+  const active =
+    request.length > 0 &&
+    (formatRequested || typeRequested) &&
+    (intent || (formatRequested && typeRequested));
+
+  if (!active) {
+    return {
+      format: input.currentFormat,
+      diagramType: null,
+      formatRequested: false,
+      typeRequested: false,
+      droppedType: null,
+      active: false,
+    };
+  }
+
+  let format: AgentDiagramLanguage = explicitFormat ?? input.currentFormat;
+  let diagramType = requestedType;
+  let droppedType: AgentDiagramType | null = null;
+
+  if (diagramType && !AGENT_TYPES_BY_LANGUAGE[format].includes(diagramType)) {
+    if (explicitFormat) {
+      droppedType = diagramType;
+      diagramType = defaultType(format);
+    } else {
+      const owner = languagesForType(diagramType)[0];
+      if (owner) {
+        format = owner;
+      }
+    }
+  }
+
+  return {
+    format,
+    diagramType,
+    formatRequested,
+    typeRequested,
+    droppedType,
+    active: true,
+  };
+}
+
 function autolayout(direction: AgentDiagramDirection): "lr" | "tb" {
   return direction === "LR" ? "lr" : "tb";
 }

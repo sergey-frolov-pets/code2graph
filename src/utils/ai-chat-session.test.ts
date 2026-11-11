@@ -6,6 +6,7 @@ import {
   deriveAiChatSessionTitle,
   filterAiChatSessions,
   findSecretLikeFragments,
+  isSameAiChatDocument,
   sortAiChatSessions,
 } from "@/utils/ai-chat-session";
 
@@ -24,6 +25,12 @@ function session(partial: Partial<AiChatSession>): AiChatSession {
 }
 
 describe("ai-chat-session utils", () => {
+  it("treats a language switch as the same diagram document", () => {
+    expect(isSameAiChatDocument("diagram.puml", "diagram.mmd")).toBe(true);
+    expect(isSameAiChatDocument("orders.puml", "notes.puml")).toBe(false);
+    expect(isSameAiChatDocument("", "diagram.puml")).toBe(false);
+  });
+
   it("derives a truncated single-line title from the first message", () => {
     expect(deriveAiChatSessionTitle("  Добавь\n оплату   картой ")).toBe(
       "Добавь оплату картой",

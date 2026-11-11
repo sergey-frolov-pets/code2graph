@@ -34,6 +34,7 @@ import { getLibraryApiBaseUrl } from "@/config/library-api";
 import { setDocumentFeatureSnapshot } from "@/composables/useFeatureGate";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import { getDiagramFormatDefinition } from "@/constants/diagram-formats";
+import { resolveDiagramFileName } from "@/utils/diagram-files";
 import { PENDING_SHARE_STORAGE_KEY } from "@/constants/library-share";
 import { PENDING_SUBSCRIPTION_STORAGE_KEY } from "@/constants/library-subscription";
 import {
@@ -110,7 +111,11 @@ export interface AppShellContext {
   onEditorClearedWithLink: () => void;
   onImportError: (message: string) => void;
   runSyntaxValidation: () => Promise<void>;
-  applyAiPlantUml: (source: string, label: string) => void;
+  applyAiPlantUml: (
+    source: string,
+    label: string,
+    format?: DiagramFormat,
+  ) => void;
   applyWizardDiagram: (
     source: string,
     label: string,
@@ -445,10 +450,21 @@ export function useAppShell(): AppShellContext {
     await validateSyntax();
   }
 
-  function applyAiPlantUmlWithHistory(plantuml: string, label: string): void {
+  function applyAiPlantUmlWithHistory(
+    plantuml: string,
+    label: string,
+    nextFormat?: DiagramFormat,
+  ): void {
     flushPendingHistory();
     withSuppressedSourceHistory(() => {
-      applyAiPlantUml(plantuml, label);
+      applyAiPlantUml(plantuml, label, nextFormat);
+      if (!nextFormat || diagramFormat.value !== nextFormat) {
+        return;
+      }
+      const resolvedName = resolveDiagramFileName(loadedFileName.value, nextFormat);
+      if (resolvedName !== loadedFileName.value) {
+        loadedFileName.value = resolvedName;
+      }
     });
   }
 

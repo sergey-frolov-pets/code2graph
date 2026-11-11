@@ -92,7 +92,7 @@ const emit = defineEmits<{
   undo: [];
   redo: [];
   convert: [];
-  aiApplySource: [payload: { source: string; label: string }];
+  aiApplySource: [payload: { source: string; label: string; format?: DiagramFormat }];
   openSettings: [];
   "editor-focus": [];
   "editor-blur": [];

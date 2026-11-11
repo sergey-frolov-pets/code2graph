@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { resolveRequestedDiagramChange } from "@shared/agent-diagram";
 import { buildAiChatContextBlock } from "@/services/llm/ai-chat-prompts";
 
 const OPEN_SOURCE = "flowchart LR\n  SecretCurrent --> Keep";
@@ -25,5 +26,24 @@ describe("buildAiChatContextBlock", () => {
       rejectedTitles: [],
     });
     expect(block).toContain("SecretCurrent");
+  });
+
+  it("tells the model which language and type to write when the user asks to switch", () => {
+    const target = resolveRequestedDiagramChange({
+      request: "переведи в mermaid sequence",
+      currentFormat: "plantuml",
+    });
+    const block = buildAiChatContextBlock({
+      format: "plantuml",
+      source: "@startuml\nAlice -> Bob\n@enduml",
+      contextMode: "current",
+      appliedCount: 0,
+      rejectedTitles: [],
+      target,
+    });
+    expect(block).toContain("Target language: mermaid");
+    expect(block).toContain("Target diagram type: sequence");
+    expect(block).toContain("sequenceDiagram");
+    expect(block).toContain("Alice -> Bob");
   });
 });

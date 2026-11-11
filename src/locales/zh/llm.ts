@@ -454,6 +454,7 @@ export const llmMessages = {
   "aiChat.sharedReadOnly": "已分享的 AI 聊天会话（只读）",
   "aiChat.starterCreate": "根据描述创建图表…",
   "aiChat.starterEdit": "修改当前图表…",
+  "aiChat.starterSwitch": "切换图表类型或语言…",
   "aiChat.starterExplain": "解释这张图表如何工作",
   "aiChat.stop": "停止",
   "aiChat.unpin": "取消固定",

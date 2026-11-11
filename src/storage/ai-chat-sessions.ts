@@ -10,7 +10,7 @@ import {
   VERSIONS_DB_NAME,
   VERSIONS_DB_VERSION,
 } from "@/storage/versions/versions-db";
-import { sortAiChatSessions } from "@/utils/ai-chat-session";
+import { isSameAiChatDocument, sortAiChatSessions } from "@/utils/ai-chat-session";
 
 function runAiChatTransaction<T>(
   mode: IDBTransactionMode,
@@ -33,7 +33,7 @@ export async function listAiChatSessions(
     getAllFromObjectStore<AiChatSession>(store),
   );
   const filtered = documentKey
-    ? all.filter((session) => session.documentKey === documentKey)
+    ? all.filter((session) => isSameAiChatDocument(session.documentKey, documentKey))
     : all;
   return sortAiChatSessions(filtered);
 }
@@ -51,7 +51,8 @@ export async function putAiChatSession(
     const sameDocument = all
       .filter(
         (entry) =>
-          entry.documentKey === session.documentKey && entry.id !== session.id,
+          isSameAiChatDocument(entry.documentKey, session.documentKey) &&
+          entry.id !== session.id,
       )
       .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
     // Лимит на документ: самые старые незакреплённые удаляются первыми.
