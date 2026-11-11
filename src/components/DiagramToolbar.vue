@@ -74,6 +74,11 @@ function onToolbarStep(direction: 1 | -1): void {
   presentation?.playback.step(direction);
 }
 
+function onToolbarFirst(): void {
+  presentation?.playback.pause();
+  presentation?.playback.goToViewpoint(0);
+}
+
 const MIN_ZOOM_PERCENT = Math.round(PREVIEW_MIN_ZOOM * 100);
 
 const editingZoom = ref(false);
@@ -296,6 +301,13 @@ async function acknowledgeCopiedPng(): Promise<void> {
       v-if="showPlaybackTransport"
       class="preview-toolbar__transport"
     >
+      <IconButton
+        :label="t('presentation.first')"
+        :disabled="!playbackTrack || playbackTrack.viewpoints.length === 0"
+        @click="onToolbarFirst()"
+      >
+        <PresentationGlyph name="first" />
+      </IconButton>
       <IconButton
         :label="t('presentation.prev')"
         :disabled="!canStepPlayback"
