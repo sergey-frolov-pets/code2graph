@@ -6,6 +6,7 @@ dist/
 dist-single/
 release/
 public/vendor/
+public/llm/
 vendor/C4-PlantUML/
 vendor/Archimate-PlantUML/
 vendor/js-plantuml/

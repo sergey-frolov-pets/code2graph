@@ -402,6 +402,13 @@ export const siteMessages = {
   "site.mcp.apiScaffold": "language, type, and source",
   "site.mcp.staticNote":
     "GitHub Pages is a static editor and does not serve /api/agent. The API runs on the server edition, for example www.code2graph.ru.",
+  "site.mcp.catalogTitle": "Capability catalog",
+  "site.mcp.catalogText":
+    "The capability catalog is /llm/ on this same host. The local MCP process reads those same pages from disk and does not call another server for syntax. The answer is diagram source for the editor, without an image and without an external renderer.",
+  "site.mcp.toolCapabilities":
+    "one index page of languages, or of one language when language is set. Card bodies are not included.",
+  "site.mcp.toolSyntax":
+    "one syntax page chosen by keywords or by a path from a previous link. Linked pages are not merged in.",
   "site.noAccount": "No account?",
   "site.hasAccount": "Already have an account?",
   "site.role": "Role",

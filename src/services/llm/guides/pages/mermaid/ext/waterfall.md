@@ -1,0 +1,21 @@
+[Mermaid types](../index.md) · [Shared Ext rules](./shared.md)
+
+Reply with diagram source for the editor only. Do not return an image or an external renderer URL.
+
+# waterfall
+
+How a starting number becomes a total through plus and minus steps.
+
+[Scale, labels, font](./waterfall-scale.md) · [Several scenarios and colors](./waterfall-series.md)
+
+```
+waterfall
+title Выручка 2026
+y "млн" 0 --> 120
+=40 : Q1
++15 : Q2
++20 : Q3
+=75 : Итог
+```
+
+The first data row must be `=N : label`. `+` and `-` are steps. Do not emit a flowchart.

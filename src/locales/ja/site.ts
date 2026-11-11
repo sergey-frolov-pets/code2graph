@@ -402,6 +402,13 @@ export const siteMessages = {
   "site.mcp.apiScaffold": "言語、種類、ソース",
   "site.mcp.staticNote":
     "GitHub Pages は静的なエディタで、/api/agent は提供しません。API はサーバー版で動きます。例: www.code2graph.ru。",
+  "site.mcp.catalogTitle": "機能カタログ",
+  "site.mcp.catalogText":
+    "機能カタログはこのホストの /llm/ にあります。ローカルの MCP は同じページをディスクから読み、構文のために別のサーバーへは行きません。返答はエディタ用のソースだけで、画像も外部レンダラーもありません。",
+  "site.mcp.toolCapabilities":
+    "言語の索引を1ページ。言語を指定するとその言語だけ。カード本文は含みません。",
+  "site.mcp.toolSyntax":
+    "キーワードか、前のページのリンク先から構文を1ページ返します。リンク先の本文は結合しません。",
   "site.noAccount": "アカウントがありませんか？",
   "site.hasAccount": "既にアカウントがありますか？",
   "site.role": "役割",

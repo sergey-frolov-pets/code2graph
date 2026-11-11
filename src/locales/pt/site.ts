@@ -270,6 +270,13 @@ export const siteMessages = {
   "site.mcp.apiPlan": "escolher uma linguagem",
   "site.mcp.apiScaffold": "linguagem, tipo e código",
   "site.mcp.staticNote": "O GitHub Pages é um editor estático e não serve /api/agent. A API roda na edição de servidor, por exemplo www.code2graph.ru.",
+  "site.mcp.catalogTitle": "Catálogo de capacidades",
+  "site.mcp.catalogText":
+    "O catálogo fica em /llm/ neste mesmo host. O processo MCP local lê essas mesmas páginas do disco e não chama outro servidor pela sintaxe. A resposta é o código para o editor, sem imagem e sem um renderizador externo.",
+  "site.mcp.toolCapabilities":
+    "uma página índice dos idiomas, ou de um idioma quando ele é indicado. O corpo dos cartões não entra.",
+  "site.mcp.toolSyntax":
+    "uma página de sintaxe por palavras-chave ou por um caminho de um link anterior. As páginas ligadas não são juntadas.",
   "site.noAccount": "Não tem conta?",
   "site.hasAccount": "Já tem uma conta?",
   "site.role": "Papel",

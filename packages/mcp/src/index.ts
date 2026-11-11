@@ -8,7 +8,9 @@ import {
   planDiagram,
   type AgentDiagramLocale,
 } from "../../../packages/shared/src/agent-diagram.js";
+import { resolveLlmPage } from "../../../packages/shared/src/llm-pages.js";
 import { attachDiagramImage } from "./attach-image.js";
+import { readLlmPageFile } from "./llm-page-file.js";
 
 const formatSchema = z.enum(AGENT_DIAGRAM_LANGUAGES);
 const localeSchema = z.enum(["ru", "en"]);
@@ -25,6 +27,12 @@ function jsonText(value: unknown): { content: Array<{ type: "text"; text: string
   };
 }
 
+function markdownText(text: string): { content: Array<{ type: "text"; text: string }> } {
+  return {
+    content: [{ type: "text", text }],
+  };
+}
+
 server.registerTool(
   "list_diagram_formats",
   {
@@ -33,6 +41,53 @@ server.registerTool(
     inputSchema: {},
   },
   async () => jsonText({ formats: listDiagramFormats() }),
+);
+
+server.registerTool(
+  "list_capabilities",
+  {
+    description:
+      "Return one markdown index of Code2Graph diagram languages, or one language when language is set. Card bodies are not included. Does not render a diagram.",
+    inputSchema: {
+      language: formatSchema
+        .optional()
+        .describe("Limit the index to plantuml, mermaid, graphml, wiremark, d2, or structurizr"),
+    },
+  },
+  async ({ language }) => {
+    const page = resolveLlmPage({ language, request: "" });
+    return markdownText(readLlmPageFile(page.path));
+  },
+);
+
+server.registerTool(
+  "get_syntax",
+  {
+    description:
+      "Return one markdown syntax page for the editor source. Pass path from a previous link (and from, the page that contained the link), or request text plus an optional language. Linked pages are not merged in. Does not render a diagram.",
+    inputSchema: {
+      request: z.string().optional().describe("What the diagram should show"),
+      language: formatSchema.optional(),
+      path: z
+        .string()
+        .optional()
+        .describe("Catalog path or a relative link from a previous page"),
+      from: z
+        .string()
+        .optional()
+        .describe("Catalog path of the page that contained the relative link"),
+    },
+  },
+  async ({ request, language, path, from }) => {
+    if (path?.trim()) {
+      return markdownText(readLlmPageFile(path, from));
+    }
+    const page = resolveLlmPage({
+      language,
+      request: request ?? "",
+    });
+    return markdownText(readLlmPageFile(page.path));
+  },
 );
 
 server.registerTool(

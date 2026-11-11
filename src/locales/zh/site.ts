@@ -402,6 +402,13 @@ export const siteMessages = {
   "site.mcp.apiScaffold": "语言、类型和源码",
   "site.mcp.staticNote":
     "GitHub Pages 是静态编辑器，不提供 /api/agent。API 运行在服务器版上，例如 www.code2graph.ru。",
+  "site.mcp.catalogTitle": "能力目录",
+  "site.mcp.catalogText":
+    "能力目录在本站的 /llm/。本地 MCP 从磁盘读取同样的页面，不会为了语法去访问别的服务器。回答只是编辑器里的源码，没有图片，也没有外部渲染器。",
+  "site.mcp.toolCapabilities":
+    "一页语言索引；如果指定了语言，就只列该语言。不包含各卡片正文。",
+  "site.mcp.toolSyntax":
+    "按关键词或上一个链接里的路径返回一页语法。链接到的页面不会被拼进去。",
   "site.noAccount": "没有账户？",
   "site.hasAccount": "已经有账户？",
   "site.role": "角色",
