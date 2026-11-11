@@ -68,7 +68,7 @@ const libraryLinks = computed(() => resources.value.filter((link) => link.kind =
     v-if="language?.site && primer"
     class="site-page language-page"
   >
-    <SiteHeader />
+    <SiteHeader language-links />
 
     <main
       class="language-main"

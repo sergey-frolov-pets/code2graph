@@ -110,7 +110,6 @@ function onWizardApply(payload: {
     :is="APP_MODAL_COMPONENTS.settings"
     v-if="isSettingsModalOpen"
     :open="isSettingsModalOpen"
-    v-model:layout="layout"
     v-model:editor-font-size="editorFontSize"
     v-model:editor-font-family-id="editorFontFamilyId"
     v-model:editor-syntax-highlight="editorSyntaxHighlight"

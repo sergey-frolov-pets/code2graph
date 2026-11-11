@@ -165,12 +165,20 @@ export function parseAppRoute(locationLike: {
   pathname: string;
   search?: string;
 }): ParsedAppRoute {
+  const fromHash = parseRouteFromHash(locationLike.hash);
+  // Вкладка превью сохраняет путь редактора (`/local/…`, `/diagram`,
+  // библиотечная ссылка) и кладёт сессию в хеш. Иначе вторая вкладка
+  // снова открывает редактор и не видит правки кода.
+  if (fromHash.name === "preview") {
+    return fromHash;
+  }
+
   return (
     parseDiagramPathname(locationLike.pathname) ??
     parseClipboardDiagramPathname(locationLike.pathname) ??
     parseLibraryLinkPathname(locationLike.pathname) ??
     parsePagesQueryPath(locationLike.search ?? "") ??
-    parseRouteFromHash(locationLike.hash)
+    fromHash
   );
 }
 
@@ -197,6 +205,12 @@ export function localDataLinkCanonicalPath(locationLike: {
   pathname: string;
   search?: string;
 }): string | null {
+  // Красивый путь `/local/…` нельзя подставлять вместо `#/preview/<id>`:
+  // `replaceState` без хеша снимает сессию и снова открывает редактор.
+  if (parseRouteFromHash(locationLike.hash).name === "preview") {
+    return null;
+  }
+
   const pathname = locationLike.pathname.replace(/\/+$/, "") || "/";
   const search = locationLike.search ?? "";
   const route =
@@ -284,6 +298,11 @@ export function routeHash(
   return ROUTE_HASH[route];
 }
 
+/** Hash of a public language page, for example `#/lang/mermaid`. */
+export function languagePageHash(languageId: DiagramFormat): string {
+  return `#/lang/${languageId}`;
+}
+
 export function libraryLinkUrl(
   origin: string,
   username: string,
@@ -318,7 +337,7 @@ export function navigateTo(
 ): void {
   const target =
     route === "language" && languageId
-      ? `#/lang/${languageId}`
+      ? languagePageHash(languageId)
       : route === "language"
         ? ROUTE_HASH.landing
         : ROUTE_HASH[route];

@@ -18,6 +18,11 @@ import LandingDiagramBackground from "@/components/site/LandingDiagramBackground
 import LandingGif from "@/components/site/LandingGif.vue";
 import LandingInstallButton from "@/components/site/LandingInstallButton.vue";
 import LanguageDiagramThumb from "@/components/site/LanguageDiagramThumb.vue";
+import {
+  languagePageHash,
+  PUBLIC_LANGUAGE_PAGES,
+  trackLanguagePage,
+} from "@/components/site/language-pages";
 import McpConnectionTag from "@/components/site/McpConnectionTag.vue";
 import SiteHeader from "@/components/site/SiteHeader.vue";
 import { trackEvent } from "@/analytics";
@@ -27,7 +32,6 @@ import { APP_LINKS } from "@/constants";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
 import type { LocaleKey } from "@/locales/types";
 import { LANGUAGE_PRIMERS, primerExample } from "@/languages/primer";
-import { DIAGRAM_LANGUAGE_MODULES } from "@/languages/registry";
 import { writeLandingSample } from "@/services/landing-sample";
 
 const { locale, t } = useLocale();
@@ -45,12 +49,6 @@ function openMcp(): void {
   navigateTo("mcp");
 }
 
-/** Open the language page: types, keywords, and examples for one format. */
-function openLanguage(languageId: DiagramFormat): void {
-  trackEvent(`cta-language-${languageId}`, `Open ${languageId} page`);
-  navigateTo("language", languageId);
-}
-
 /** Open the editor with exactly the diagram the visitor just clicked. */
 function openSample(format: DiagramFormat, source: string, label: string, eventName: string): void {
   trackEvent(eventName, label);
@@ -65,10 +63,8 @@ interface GalleryTile {
   typeTitle: string;
 }
 
-const languages = DIAGRAM_LANGUAGE_MODULES.filter((module) => module.site);
-
 const gallery = computed<GalleryTile[]>(() =>
-  languages.map((module) => {
+  PUBLIC_LANGUAGE_PAGES.map((module) => {
     const firstType = LANGUAGE_PRIMERS[module.id].types[0]!;
     return {
       format: module.id,
@@ -131,7 +127,10 @@ function tryActiveScenario(): void {
 <template>
   <div class="site-page landing-page">
     <LandingDiagramBackground />
-    <SiteHeader landing-nav />
+    <SiteHeader
+      landing-nav
+      language-links
+    />
 
     <main class="landing-main">
       <!-- Screen 1: one living diagram -->
@@ -198,9 +197,8 @@ function tryActiveScenario(): void {
             class="landing-tile"
           >
             <button
-              class="landing-tile__preview"
+              class="landing-tile__open"
               type="button"
-              :aria-label="`${t('site.landing.openInEditor')}: ${tile.label} · ${tile.typeTitle}`"
               @click="openSample(tile.format, tile.source, `${tile.label} · ${tile.typeTitle}`, `cta-gallery-${tile.format}`)"
             >
               <LanguageDiagramThumb
@@ -209,29 +207,25 @@ function tryActiveScenario(): void {
                 :title="`${tile.label} · ${tile.typeTitle}`"
               />
             </button>
-            <p class="landing-tile__caption">
-              <button
+            <span class="landing-tile__caption">
+              <a
                 class="landing-tile__language"
-                type="button"
-                @click="openLanguage(tile.format)"
-              >
-                {{ tile.label }}
-              </button>
-              <span>· {{ tile.typeTitle }}</span>
-            </p>
+                :href="languagePageHash(tile.format)"
+                @click="trackLanguagePage(tile.format)"
+              ><strong>{{ tile.label }}</strong></a>
+              · {{ tile.typeTitle }}
+            </span>
           </article>
         </div>
         <p class="landing-formats-line">
           {{ t("site.landing.allFormats") }}:
-          <button
+          <a
             v-for="tile in gallery"
             :key="tile.format"
             class="landing-formats-line__badge"
-            type="button"
-            @click="openLanguage(tile.format)"
-          >
-            {{ tile.label }}
-          </button>
+            :href="languagePageHash(tile.format)"
+            @click="trackLanguagePage(tile.format)"
+          >{{ tile.label }}</a>
         </p>
       </section>
 
@@ -247,16 +241,16 @@ function tryActiveScenario(): void {
           {{ t("site.languages.title") }}
         </h2>
         <div class="landing-languages">
-          <button
-            v-for="module in languages"
+          <a
+            v-for="module in PUBLIC_LANGUAGE_PAGES"
             :key="module.id"
             class="landing-language-card"
-            type="button"
-            @click="openLanguage(module.id)"
+            :href="languagePageHash(module.id)"
+            @click="trackLanguagePage(module.id)"
           >
             <strong>{{ t(module.labelKey) }}</strong>
-            <span>{{ module.site ? t(module.site.purposeKey) : "" }}</span>
-          </button>
+            <span>{{ t(module.site.purposeKey) }}</span>
+          </a>
         </div>
       </section>
 
@@ -460,39 +454,33 @@ function tryActiveScenario(): void {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
-.landing-tile__preview {
+.landing-tile__open {
   display: block;
   width: 100%;
   padding: 0;
-  border: 0;
-  background: transparent;
+  border: none;
+  background: none;
   color: inherit;
   cursor: pointer;
-  text-align: inherit;
+  text-align: left;
+}
+
+.landing-tile__language {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.landing-tile__language:hover {
+  color: var(--accent);
 }
 
 .landing-tile__caption {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0;
   color: var(--text-muted);
   font-size: 0.92rem;
 }
 
-.landing-tile__language {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--accent);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.landing-tile__language:hover {
+.landing-tile__caption strong {
   color: var(--text);
 }
 
@@ -512,14 +500,12 @@ function tryActiveScenario(): void {
   border-radius: 999px;
   background: var(--surface);
   color: var(--text);
-  font: inherit;
   font-size: 0.85rem;
-  cursor: pointer;
+  text-decoration: none;
 }
 
 .landing-formats-line__badge:hover {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
-  color: var(--accent);
 }
 
 .landing-languages {
@@ -537,8 +523,7 @@ function tryActiveScenario(): void {
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface) 88%, transparent);
   color: inherit;
-  font: inherit;
-  cursor: pointer;
+  text-decoration: none;
 }
 
 .landing-language-card span {

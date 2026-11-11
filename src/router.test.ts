@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { DIAGRAM_FORMATS } from "@/constants/diagram-format-ids";
 import {
   diagramDataLinkUrl,
+  languagePageHash,
   libraryLinkUrl,
   localDataLinkCanonicalPath,
   parseAppRoute,
@@ -10,6 +12,18 @@ import {
 } from "@/router";
 
 describe("app routes", () => {
+  it("opens a language page from its hash", () => {
+    for (const languageId of DIAGRAM_FORMATS) {
+      expect(parseRouteFromHash(languagePageHash(languageId))).toEqual({
+        name: "language",
+        languageId,
+        diagramSlug: null,
+        libraryUsername: null,
+        libraryLinkSlug: null,
+      });
+    }
+  });
+
   it("opens the MCP page from the hash", () => {
     expect(parseRouteFromHash("#/mcp")).toEqual({
       name: "mcp",
@@ -66,6 +80,47 @@ describe("app routes", () => {
       libraryUsername: null,
       libraryLinkSlug: null,
     });
+  });
+
+  it("opens the preview tab on top of a local data link", () => {
+    expect(
+      parseAppRoute({
+        hash: "#/preview/session-a",
+        pathname: "/local/w",
+      }),
+    ).toEqual({
+      name: "preview",
+      languageId: null,
+      diagramSlug: "session-a",
+      libraryUsername: null,
+      libraryLinkSlug: null,
+    });
+    expect(
+      parseAppRoute({
+        hash: "#/preview/session-a",
+        pathname: "/diagram",
+      }).name,
+    ).toBe("preview");
+    expect(
+      parseAppRoute({
+        hash: "#/preview/session-a",
+        pathname: "/owner/water-fall",
+      }).name,
+    ).toBe("preview");
+    expect(
+      parseAppRoute({
+        hash: "#/preview/session-a",
+        pathname: "/",
+        search: "?/local/w",
+      }).name,
+    ).toBe("preview");
+    expect(
+      localDataLinkCanonicalPath({
+        hash: "#/preview/session-a",
+        pathname: "/",
+        search: "?/local/w",
+      }),
+    ).toBeNull();
   });
 
   it("reads /local/w from the path", () => {

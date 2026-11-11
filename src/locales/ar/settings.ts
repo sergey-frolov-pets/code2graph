@@ -8,8 +8,6 @@ export const settingsMessages = {
   "settings.fontFamily": "الخط",
   "settings.syntaxHighlight": "تمييز الصياغة",
   "settings.autocomplete": "اقتراحات الإدخال",
-  "settings.rendering": "العرض",
-  "settings.layoutEngine": "محرك التخطيط",
   "settings.theme": "سمة الواجهة",
   "settings.darkTheme": "سمة داكنة",
   "settings.language": "لغة الواجهة",
