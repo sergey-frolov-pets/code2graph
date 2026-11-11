@@ -12,6 +12,7 @@ const WIREMARK_VIEWBOX_MARGIN_PX = 8;
 const WIREFRAME_LINE = /^([ \t]*Wireframe\b.*)$/gm;
 const WIREFRAME_PADDING = /\b(?:padding|pad)\s*=/;
 const SVG_OPEN_TAG = /^<svg\b[^>]*>/;
+const FIRST_BACKDROP_RECT = /^(\s*<svg\b[^>]*>)\s*<rect\b[^/>]*\/>/;
 const VIEW_BOX_ATTR =
   /\bviewBox="(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)"/;
 
@@ -66,7 +67,14 @@ function bumpSvgLength(tag: string, name: string, delta: number): string {
 }
 
 function expandSvgMargin(svg: string, margin: number): string {
-  return svg.replace(SVG_OPEN_TAG, (tag) => {
+  const markedCanvas = svg.replace(
+    FIRST_BACKDROP_RECT,
+    (match) =>
+      match.includes("data-bg=")
+        ? match
+        : match.replace("<rect ", '<rect data-bg="canvas" '),
+  );
+  return markedCanvas.replace(SVG_OPEN_TAG, (tag) => {
     const viewBox = tag.match(VIEW_BOX_ATTR);
     if (!viewBox) {
       return tag;

@@ -1,9 +1,10 @@
 import { normalizeSvgPaintColors } from "@/services/export/svg-paint";
-import { normalizeSvgRootSize, parseViewBoxSize } from "@/services/export/svg-geometry";
+import { normalizeSvgRootSize } from "@/services/export/svg-geometry";
 import { stripOffDeviceSvgResources } from "@/utils/offline-render-network";
 
 const SVG_XMLNS = "http://www.w3.org/2000/svg";
 const LIGHT_SVG_FILLS = new Set(["#ffffff", "#fff", "white"]);
+const CANVAS_COVER_SLACK_PX = 0.5;
 
 /** Containers whose white rects are paint data, not a page background. */
 const SVG_PAINT_CONTAINER_TAGS = new Set([
@@ -16,8 +17,87 @@ const SVG_PAINT_CONTAINER_TAGS = new Set([
 
 const SVG_LABEL_KNOCKOUT_MAX_SHORTER_EDGE_PX = 32;
 
+interface SvgViewBoxBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 function normalizeColor(value: string): string {
   return value.trim().toLowerCase();
+}
+
+function parseViewBoxBounds(viewBox: string | null): SvgViewBoxBounds | null {
+  if (!viewBox) {
+    return null;
+  }
+
+  const parts = viewBox.trim().split(/[\s,]+/).map(Number);
+  if (parts.length !== 4 || parts.some((value) => !Number.isFinite(value))) {
+    return null;
+  }
+
+  const [x, y, width, height] = parts;
+  if (width <= 0 || height <= 0) {
+    return null;
+  }
+
+  return { x, y, width, height };
+}
+
+function nearestSvgViewport(element: Element): Element | null {
+  let parent = element.parentElement;
+  while (parent) {
+    if (parent.tagName.toLowerCase() === "svg") {
+      return parent;
+    }
+    parent = parent.parentElement;
+  }
+
+  return null;
+}
+
+function isUnstrokedBackdropRect(rect: Element): boolean {
+  const stroke = normalizeColor(rect.getAttribute("stroke") ?? "");
+  if (stroke && stroke !== "none" && stroke !== "transparent") {
+    return false;
+  }
+
+  const strokeWidth = Number.parseFloat(rect.getAttribute("stroke-width") ?? "");
+  if (Number.isFinite(strokeWidth) && strokeWidth > 0 && stroke) {
+    return false;
+  }
+
+  return true;
+}
+
+function rectCoversViewport(rect: Element, viewport: Element): boolean {
+  const widthAttr = rect.getAttribute("width") ?? "";
+  const heightAttr = rect.getAttribute("height") ?? "";
+  if (widthAttr.trim() === "100%" && heightAttr.trim() === "100%") {
+    return true;
+  }
+
+  const bounds = parseViewBoxBounds(viewport.getAttribute("viewBox"));
+  if (!bounds) {
+    return false;
+  }
+
+  const width = Number.parseFloat(widthAttr);
+  const height = Number.parseFloat(heightAttr);
+  const x = Number.parseFloat(rect.getAttribute("x") ?? "0");
+  const y = Number.parseFloat(rect.getAttribute("y") ?? "0");
+  if (![x, y, width, height].every((value) => Number.isFinite(value))) {
+    return false;
+  }
+
+  return (
+    x <= bounds.x + CANVAS_COVER_SLACK_PX &&
+    y <= bounds.y + CANVAS_COVER_SLACK_PX &&
+    x + width >= bounds.x + bounds.width - CANVAS_COVER_SLACK_PX &&
+    y + height >= bounds.y + bounds.height - CANVAS_COVER_SLACK_PX
+  );
 }
 
 function setSvgBackgroundColor(root: Element, color: string): void {
@@ -52,38 +132,62 @@ function isLabelKnockoutRect(rect: Element): boolean {
   return Math.min(width, height) <= SVG_LABEL_KNOCKOUT_MAX_SHORTER_EDGE_PX;
 }
 
+function isViewportBackdropParent(rect: Element): boolean {
+  const parent = rect.parentElement;
+  if (!parent) {
+    return false;
+  }
+
+  const tag = parent.tagName.toLowerCase();
+  if (tag === "svg") {
+    return true;
+  }
+
+  return tag === "g" && !parent.getAttribute("transform");
+}
+
 function isCanvasBackgroundRect(rect: Element): boolean {
   if (rect.getAttribute("data-bg") !== "canvas") {
     return false;
   }
+
+  return isViewportBackdropParent(rect);
+}
+
+function isFirstPaintedChild(rect: Element): boolean {
   const parent = rect.parentElement;
-  if (!parent || parent.tagName.toLowerCase() === "svg") {
-    return true;
-  }
-  if (parent.tagName.toLowerCase() !== "g") {
+  if (!parent) {
     return false;
   }
-  return !parent.getAttribute("transform");
+
+  for (const child of parent.children) {
+    const tag = child.tagName.toLowerCase();
+    if (tag === "title" || tag === "desc" || tag === "defs" || tag === "style") {
+      continue;
+    }
+    return child === rect;
+  }
+
+  return false;
+}
+
+function isCanvasCandidateRect(rect: Element): boolean {
+  if (isInsideSvgPaintContainer(rect) || !isViewportBackdropParent(rect)) {
+    return false;
+  }
+
+  if (!isUnstrokedBackdropRect(rect) || !isFirstPaintedChild(rect)) {
+    return false;
+  }
+
+  const viewport = nearestSvgViewport(rect);
+  return viewport !== null && rectCoversViewport(rect, viewport);
 }
 
 function markCanvasBackground(root: Element): void {
-  const viewBox = parseViewBoxSize(root.getAttribute("viewBox"));
-  if (!viewBox) {
-    return;
-  }
-
   for (const rect of root.querySelectorAll("rect")) {
     if (!isCanvasBackgroundRect(rect)) {
-      const width = Number.parseFloat(rect.getAttribute("width") ?? "");
-      const height = Number.parseFloat(rect.getAttribute("height") ?? "");
-      const x = Number.parseFloat(rect.getAttribute("x") ?? "0");
-      const y = Number.parseFloat(rect.getAttribute("y") ?? "0");
-      const coversCanvas =
-        x <= 0 &&
-        y <= 0 &&
-        width >= viewBox.width - 0.5 &&
-        height >= viewBox.height - 0.5;
-      if (!coversCanvas) {
+      if (!isCanvasCandidateRect(rect)) {
         continue;
       }
       rect.setAttribute("data-bg", "canvas");
@@ -226,14 +330,11 @@ function transparentizeLightBackground(root: Element): void {
       continue;
     }
 
-    const width = rect.getAttribute("width") ?? "";
-    const height = rect.getAttribute("height") ?? "";
-    const coversWidth = width.includes("%") || Number.parseFloat(width) > 0;
-    const coversHeight = height.includes("%") || Number.parseFloat(height) > 0;
-
-    if (coversWidth && coversHeight) {
-      rect.setAttribute("fill", "none");
+    if (!isCanvasCandidateRect(rect)) {
+      continue;
     }
+
+    rect.setAttribute("fill", "none");
   }
 }
 

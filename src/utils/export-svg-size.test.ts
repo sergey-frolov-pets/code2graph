@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import d2ClassesSvg from "@/assets/wizard-thumbnails/ru/d2-classes.svg?raw";
+import d2FlowSvg from "@/assets/wizard-thumbnails/ru/d2-flow.svg?raw";
 import { getWiremarkSampleSource } from "@/constants/wiremark-sample-diagrams";
+import * as d2Engine from "@/services/d2/d2-engine";
 import { renderWiremarkToSvg } from "@/services/wiremark/wiremark-engine";
 import {
   applyPreviewBackground,
@@ -10,6 +13,7 @@ import {
   sanitizeSvgForPreview,
   withTransparentSvgBackground,
 } from "@/utils/export";
+import { renderDiagram } from "@/formats";
 
 describe("parseSvgSize", () => {
   it("prefers viewBox over percentage width", () => {
@@ -60,7 +64,7 @@ describe("sanitizeSvgForPreview", () => {
     expect(result).toMatch(/<svg[^>]*\bwidth="1200"/);
     expect(result).toMatch(/<svg[^>]*\bheight="268"/);
     expect(result).not.toMatch(/<svg[^>]*\bwidth="100%"/);
-    expect(result).toMatch(/<rect[^>]*\bfill="none"/);
+    expect(result).not.toMatch(/<rect[^>]*\bfill="#ffffff"/i);
   });
 
   it("keeps the white rect that makes a D2 connection mask visible", () => {
@@ -72,7 +76,19 @@ describe("sanitizeSvgForPreview", () => {
     expect(result).not.toMatch(/<mask[^>]*>\s*<rect[^>]*\bfill="none"/);
   });
 
-  it("keeps the paper chip so a WireMark field outline does not cross its label", () => {
+  it("keeps D2 class and SQL table body fills while removing the outer canvas backdrop", () => {
+    const result = sanitizeSvgForPreview(
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 755" width="480" height="755"><svg class="d2-svg" width="480" height="755" viewBox="-41 -41 480 755"><rect x="-41" y="-41" width="480" height="755" fill="#FFFFFF"/><g><g class="shape"><rect x="61" y="0" width="276" height="322" stroke="#0A0F25" fill="#FFFFFF"/><rect x="61" y="0" width="276" height="92" fill="#0A0F25"/><text x="199" y="50.5" fill="#FFFFFF">Пользователь</text></g></g></svg></svg>`,
+    );
+    const doc = new DOMParser().parseFromString(result, "image/svg+xml");
+    const rects = [...doc.querySelectorAll("rect")];
+
+    expect(rects).toHaveLength(2);
+    expect(rects[0]?.getAttribute("fill")).toBe("#FFFFFF");
+    expect(rects[1]?.getAttribute("fill")).toBe("#0A0F25");
+  });
+
+  it("keeps WireMark frame paper and label chips while removing the outer canvas backdrop", () => {
     const result = sanitizeSvgForPreview(
       renderWiremarkToSvg(getWiremarkSampleSource("form", "ru"), { dark: false }),
     );
@@ -84,11 +100,74 @@ describe("sanitizeSvgForPreview", () => {
 
     expect(chip?.tagName.toLowerCase()).toBe("rect");
     expect(chip?.getAttribute("fill")?.toLowerCase()).toBe("#ffffff");
+    expect(doc.querySelector("svg > rect")).toBeNull();
 
-    const frameFill = [...doc.querySelectorAll("rect")].find(
-      (node) => Number.parseFloat(node.getAttribute("width") ?? "0") >= 300,
+    const framePaper = doc.querySelector("g[clip-path] > rect");
+    expect(framePaper?.getAttribute("fill")?.toLowerCase()).toBe("#ffffff");
+  });
+
+  it("preserves D2 class header contrast and appendix badge fills when rendering on a light canvas", async () => {
+    const spy = vi.spyOn(d2Engine, "renderD2ToSvg");
+    try {
+      spy.mockResolvedValueOnce(d2ClassesSvg);
+      const classesSvg = await renderDiagram("d2", "User: { shape: class }", {
+        layout: "smetana",
+        diagramDarkMode: false,
+        renderMode: "offline",
+        diagramBackground: "#ffffff",
+      });
+      const classesDoc = new DOMParser().parseFromString(
+        sanitizeSvgForPreview(classesSvg),
+        "image/svg+xml",
+      );
+      const headerTitle = [...classesDoc.querySelectorAll("text")].find(
+        (node) => node.textContent?.trim() === "Пользователь",
+      );
+
+      expect(headerTitle?.getAttribute("fill")?.toLowerCase()).toBe("#ffffff");
+      expect(headerTitle?.getAttribute("style") ?? "").not.toContain("!important");
+
+      spy.mockResolvedValueOnce(d2FlowSvg);
+      const flowSvg = await renderDiagram("d2", "user -> api", {
+        layout: "smetana",
+        diagramDarkMode: false,
+        renderMode: "offline",
+        diagramBackground: "#ffffff",
+      });
+      const flowDoc = new DOMParser().parseFromString(
+        sanitizeSvgForPreview(flowSvg),
+        "image/svg+xml",
+      );
+      const badgeCircle = flowDoc.querySelector("g.appendix-icon path[fill]");
+
+      expect(badgeCircle?.getAttribute("fill")?.toLowerCase()).toBe("white");
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("preserves WireMark dark palette and hatch strokes when rendering with a custom preview background", async () => {
+    const settingsSvg = await renderDiagram(
+      "wiremark",
+      getWiremarkSampleSource("settings", "ru"),
+      {
+        layout: "smetana",
+        diagramDarkMode: true,
+        renderMode: "offline",
+        diagramBackground: "#ffffff",
+      },
     );
-    expect(frameFill?.getAttribute("fill")).toBe("none");
+    const doc = new DOMParser().parseFromString(
+      sanitizeSvgForPreview(settingsSvg),
+      "image/svg+xml",
+    );
+    const title = [...doc.querySelectorAll("text")].find(
+      (node) => node.textContent?.trim() === "Настройки",
+    );
+    const framePaper = doc.querySelector("g[clip-path] > rect");
+
+    expect(title?.getAttribute("fill")?.toLowerCase()).toBe("#d4dde6");
+    expect(framePaper?.getAttribute("fill")?.toLowerCase()).toBe("#1e2127");
   });
 });
 
