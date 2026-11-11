@@ -82,6 +82,12 @@ describe("AiChatPanel layout", () => {
     expect(line).not.toBeNull();
     expect(composer!.contains(context)).toBe(true);
     expect(line!.contains(context)).toBe(false);
+    const provider = view.host.querySelector("[data-testid='ai-chat-provider']");
+    const modes = view.host.querySelector(".ai-chat-panel__modes");
+    expect(provider).not.toBeNull();
+    expect(modes!.contains(provider)).toBe(true);
+    expect(line!.contains(provider)).toBe(false);
+    expect(view.host.querySelector(".ai-chat-panel__toolbar")!.contains(provider)).toBe(false);
     expect(view.host.querySelector("[data-testid='ai-chat-history']")?.getAttribute("aria-label")).toContain(
       "История",
     );
@@ -208,6 +214,18 @@ describe("AiChatPanel layout", () => {
     expect(content).not.toBeNull();
     expect(content!.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(getComputedStyle(actions).position).not.toBe("absolute");
+
+    const userContent = view.host.querySelector(
+      ".ai-chat-panel__message--user .ai-chat-panel__content",
+    ) as HTMLElement;
+    userContent.click();
+    await nextTick();
+    const userMessage = view.host.querySelector(".ai-chat-panel__message--user");
+    expect(userMessage!.classList.contains("is-picked")).toBe(true);
+    (userMessage!.querySelector("[data-testid='ai-chat-edit']") as HTMLButtonElement).click();
+    await nextTick();
+    expect((view.host.querySelector("textarea") as HTMLTextAreaElement).value).toBe(suggestion);
+    expect(view.host.querySelector(".ai-chat-panel__message--user")).toBeNull();
 
     view.unmount();
 

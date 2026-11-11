@@ -193,6 +193,7 @@ const nextStepSuggestions = computed<string[]>(() => {
 const composerInputRef = ref<HTMLTextAreaElement | null>(null);
 const composerFocused = ref(false);
 const modesOpen = ref(false);
+const pickedMessageId = ref<string | null>(null);
 const AI_CHAT_COMPOSER_MAX_LINES = 4;
 
 function resizeComposer(): void {
@@ -562,7 +563,19 @@ function editAndResend(message: AiChatMessage): void {
   }
   draft.value = message.content;
   session.messages = session.messages.slice(0, index);
+  pickedMessageId.value = null;
   void persist(session);
+  void nextTick(() => {
+    composerInputRef.value?.focus();
+    resizeComposer();
+  });
+}
+
+function onUserMessageClick(message: AiChatMessage): void {
+  if (message.role !== "user" || isBusy.value) {
+    return;
+  }
+  pickedMessageId.value = pickedMessageId.value === message.id ? null : message.id;
 }
 
 async function regenerate(): Promise<void> {
@@ -851,31 +864,6 @@ async function onCopyChat(): Promise<void> {
       >
         <span class="ai-chat-panel__title-text">{{ activeSession?.title }}</span>
       </button>
-      <label class="ai-chat-panel__provider">
-        <span class="sr-only">{{ t("aiChat.provider") }}</span>
-        <select
-          class="select ai-chat-panel__provider-select"
-          data-testid="ai-chat-provider"
-          :value="chatProviderId"
-          :disabled="chatProviderOptions.length === 0 || isBusy"
-          :aria-label="t('aiChat.provider')"
-          @change="onChatProviderChange"
-        >
-          <option
-            v-if="chatProviderOptions.length === 0"
-            value=""
-          >
-            {{ t("aiChat.providerNone") }}
-          </option>
-          <option
-            v-for="option in chatProviderOptions"
-            :key="option.id"
-            :value="option.id"
-          >
-            {{ option.label }}
-          </option>
-        </select>
-      </label>
       <IconButton
         :label="t('aiChat.newSession')"
         :title="t('aiChat.newSession')"
@@ -1089,13 +1077,20 @@ async function onCopyChat(): Promise<void> {
           class="ai-chat-panel__message"
           :class="[
             `ai-chat-panel__message--${message.role}`,
-            { 'is-last': messageIndex === (activeSession?.messages.length ?? 1) - 1 },
+            {
+              'is-last': messageIndex === (activeSession?.messages.length ?? 1) - 1,
+              'is-picked': pickedMessageId === message.id,
+            },
           ]"
         >
           <span class="ai-chat-panel__role">{{
             message.role === "user" ? t("llm.chat.roleUser") : t("llm.chat.roleAssistant")
           }}</span>
-          <p class="ai-chat-panel__content">
+          <p
+            class="ai-chat-panel__content"
+            :class="{ 'is-actionable': message.role === 'user' }"
+            @click="onUserMessageClick(message)"
+          >
             {{ message.content }}
           </p>
           <ul
@@ -1221,6 +1216,7 @@ async function onCopyChat(): Promise<void> {
               :label="t('aiChat.editResend')"
               :title="t('aiChat.editResend')"
               extra-class="ai-chat-panel__tool"
+              data-testid="ai-chat-edit"
               @click="editAndResend(message)"
             >
               <Pencil
@@ -1456,6 +1452,34 @@ async function onCopyChat(): Promise<void> {
             class="ai-chat-panel__modes"
             @click="modesOpen = false"
           >
+            <label
+              class="ai-chat-panel__provider"
+              @click.stop
+            >
+              <span class="sr-only">{{ t("aiChat.provider") }}</span>
+              <select
+                class="ai-chat-panel__provider-select"
+                data-testid="ai-chat-provider"
+                :value="chatProviderId"
+                :disabled="chatProviderOptions.length === 0 || isBusy"
+                :aria-label="t('aiChat.provider')"
+                @change="onChatProviderChange"
+              >
+                <option
+                  v-if="chatProviderOptions.length === 0"
+                  value=""
+                >
+                  {{ t("aiChat.providerNone") }}
+                </option>
+                <option
+                  v-for="option in chatProviderOptions"
+                  :key="option.id"
+                  :value="option.id"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+            </label>
             <div
               class="ai-chat-panel__toggles"
               role="group"
@@ -1559,7 +1583,9 @@ async function onCopyChat(): Promise<void> {
   flex-wrap: nowrap;
   min-width: 0;
   border: 0;
-  background: transparent;
+  border-radius: 12px;
+  padding: 2px 4px;
+  background: var(--surface-muted);
 }
 
 .ai-chat-panel__title {
@@ -1694,17 +1720,22 @@ async function onCopyChat(): Promise<void> {
 
 .ai-chat-panel__provider {
   display: flex;
-  flex: 0 1 14rem;
-  min-width: 8rem;
-  max-width: 16rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 11rem;
 }
 
 .ai-chat-panel__provider-select {
   width: 100%;
   height: 32px;
   min-height: 32px;
-  padding: 0 8px;
-  font-size: 0.78rem;
+  margin: 0;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.75rem;
 }
 
 .ai-chat-panel__messages {
@@ -1770,6 +1801,15 @@ async function onCopyChat(): Promise<void> {
   overflow-wrap: anywhere;
   line-height: 1.45;
   font-size: 0.88rem;
+}
+
+.ai-chat-panel__content.is-actionable {
+  cursor: pointer;
+}
+
+.ai-chat-panel__message.is-picked .ai-chat-panel__message-actions {
+  display: flex;
+  opacity: 1;
 }
 
 .ai-chat-panel__proposal {
@@ -1927,7 +1967,7 @@ async function onCopyChat(): Promise<void> {
 }
 
 .ai-chat-panel__modes-toggle {
-  display: none;
+  display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
@@ -1942,11 +1982,29 @@ async function onCopyChat(): Promise<void> {
   cursor: pointer;
 }
 
+.ai-chat-panel__modes-toggle:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--surface-muted);
+}
+
 .ai-chat-panel__modes {
-  display: flex;
+  display: none;
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: calc(100% + 4px);
+  z-index: 3;
   align-items: center;
+  flex-wrap: wrap;
   gap: 2px;
-  order: 1;
+  padding: 2px 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.ai-chat-panel__composer-box.is-modes-open .ai-chat-panel__modes {
+  display: flex;
 }
 
 .ai-chat-panel__composer-actions {
@@ -2095,6 +2153,9 @@ async function onCopyChat(): Promise<void> {
   display: flex;
   align-items: center;
   min-width: 0;
+  padding: 4px 6px;
+  border-radius: 12px;
+  background: var(--surface-muted);
 }
 
 .ai-chat-panel__chips {
@@ -2166,32 +2227,17 @@ async function onCopyChat(): Promise<void> {
     width: 100%;
   }
 
-  .ai-chat-panel__modes-toggle {
-    display: inline-flex;
-  }
-
-  .ai-chat-panel__modes {
-    display: none;
-    position: absolute;
-    left: 4px;
-    bottom: calc(100% + 4px);
-    order: 0;
-    padding: 2px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background: var(--surface);
-  }
-
-  .ai-chat-panel__composer-box.is-modes-open .ai-chat-panel__modes {
-    display: flex;
-  }
-
   .ai-chat-panel__composer-actions {
     order: 0;
   }
 
   .ai-chat-panel__message:not(.is-last) .ai-chat-panel__message-actions {
     display: none;
+  }
+
+  .ai-chat-panel__message.is-picked .ai-chat-panel__message-actions {
+    display: flex;
+    opacity: 1;
   }
 }
 </style>
