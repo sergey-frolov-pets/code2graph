@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { Send } from "@lucide/vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import type { LayoutEngine } from "@/constants";
 import {
   AI_CHAT_APPLY_MODE_STORAGE_KEY,
@@ -73,6 +74,7 @@ const {
 
 const draft = ref("");
 const isBusy = ref(false);
+const threadRef = ref<HTMLElement | null>(null);
 const errorMessage = ref("");
 const historyOpen = ref(false);
 const historyQuery = ref("");
@@ -114,7 +116,10 @@ const secretWarnings = computed(() => {
   return findSecretLikeFragments(`${transcript}\n${props.source}`);
 });
 
-/** Подсказки «Что дальше»: от модели, а до первого ответа — стартовые по состоянию диаграммы. */
+/**
+ * Подсказки «Что дальше»: от модели, а до первого ответа — стартовые по состоянию диаграммы.
+ * В вёрстке блок стоит под полем ввода, а не между перепиской и композером.
+ */
 const nextStepSuggestions = computed<string[]>(() => {
   const session = activeSession.value;
   const lastAssistant = [...(session?.messages ?? [])]
@@ -133,9 +138,25 @@ const nextStepSuggestions = computed<string[]>(() => {
     : [t("aiChat.starterCreate")];
 });
 
+function scrollThreadToEnd(): void {
+  const thread = threadRef.value;
+  if (!thread) {
+    return;
+  }
+  thread.scrollTop = thread.scrollHeight;
+}
+
 onMounted(() => {
   void load();
 });
+
+watch(
+  () => [activeSession.value?.messages.length ?? 0, isBusy.value] as const,
+  async () => {
+    await nextTick();
+    scrollThreadToEnd();
+  },
+);
 
 watch(documentKeyRef, () => {
   selectedIds.value = new Set();
@@ -465,7 +486,13 @@ async function onShareCopyTranscript(): Promise<void> {
 <template>
   <div class="ai-chat-panel">
     <div class="ai-chat-panel__toolbar">
-      <button class="btn" type="button" @click="historyOpen = !historyOpen">
+      <button
+        class="btn"
+        type="button"
+        :class="{ 'is-active': historyOpen }"
+        :aria-pressed="historyOpen"
+        @click="historyOpen = !historyOpen"
+      >
         {{ t("aiChat.history") }}
       </button>
       <button class="btn" type="button" @click="createSession()">
@@ -475,6 +502,8 @@ async function onShareCopyTranscript(): Promise<void> {
       <button
         class="btn"
         type="button"
+        :class="{ 'is-active': shareOpen }"
+        :aria-pressed="shareOpen"
         :disabled="!activeSession"
         @click="shareOpen = !shareOpen"
       >
@@ -581,8 +610,16 @@ async function onShareCopyTranscript(): Promise<void> {
       </div>
     </div>
 
-    <div class="ai-chat-panel__messages">
-      <p v-if="!activeSession || activeSession.messages.length === 0" class="ai-chat-panel__muted">
+    <div
+      ref="threadRef"
+      class="ai-chat-panel__messages"
+      data-testid="ai-chat-messages"
+      role="log"
+    >
+      <p
+        v-if="!activeSession || activeSession.messages.length === 0"
+        class="ai-chat-panel__empty"
+      >
         {{ t("aiChat.empty") }}
       </p>
       <article
@@ -591,9 +628,9 @@ async function onShareCopyTranscript(): Promise<void> {
         class="ai-chat-panel__message"
         :class="`ai-chat-panel__message--${message.role}`"
       >
-        <strong>{{
+        <span class="ai-chat-panel__role">{{
           message.role === "user" ? t("llm.chat.roleUser") : t("llm.chat.roleAssistant")
-        }}</strong>
+        }}</span>
         <p class="ai-chat-panel__content">{{ message.content }}</p>
 
         <ul v-if="message.clarificationQuestions?.length" class="ai-chat-panel__questions">
@@ -661,61 +698,101 @@ async function onShareCopyTranscript(): Promise<void> {
           </button>
         </div>
       </article>
-      <p v-if="isBusy" class="ai-chat-panel__muted">{{ t("llm.chat.thinking") }}</p>
-    </div>
-
-    <div v-if="nextStepSuggestions.length > 0" class="ai-chat-panel__next">
-      <span class="ai-chat-panel__muted">{{ t("aiChat.nextSteps") }}</span>
-      <button
-        v-for="(step, index) in nextStepSuggestions"
-        :key="index"
-        class="ai-chat-panel__chip"
-        type="button"
-        :disabled="isBusy"
-        @click="onSend(step)"
+      <p
+        v-if="isBusy"
+        class="ai-chat-panel__thinking"
       >
-        {{ step }}
-      </button>
+        {{ t("llm.chat.thinking") }}
+      </p>
     </div>
 
-    <p v-if="errorMessage" class="ai-chat-panel__warning" role="alert">{{ errorMessage }}</p>
-
-    <div class="ai-chat-panel__composer">
-      <p class="ai-chat-panel__muted">
-        {{ source.trim() ? t("aiChat.contextDiagram", { format: diagramFormat }) : t("aiChat.contextEmpty") }}
+    <div class="ai-chat-panel__dock">
+      <p
+        v-if="errorMessage"
+        class="ai-chat-panel__warning"
+        role="alert"
+      >
+        {{ errorMessage }}
       </p>
-      <label class="ai-chat-panel__apply-mode">
-        <span>{{ t("aiChat.applyMode") }}</span>
-        <select v-model="applyMode" class="select">
-          <option value="proposal">{{ t("aiChat.applyModeProposal") }}</option>
-          <option value="immediate">{{ t("aiChat.applyModeImmediate") }}</option>
-        </select>
-      </label>
-      <textarea
-        v-model="draft"
-        class="ai-chat-panel__input"
-        rows="3"
-        :placeholder="t('aiChat.inputPlaceholder')"
-        :disabled="isBusy"
-        @keydown="onComposerKeydown"
-      />
-      <div class="ai-chat-panel__share-actions">
-        <button
-          v-if="isBusy"
-          class="btn"
-          type="button"
-          @click="stopGeneration"
-        >
-          {{ t("aiChat.stop") }}
-        </button>
-        <button
-          class="btn btn-primary"
-          type="button"
-          :disabled="!canSend"
-          @click="onSend()"
-        >
-          {{ t("aiChat.send") }}
-        </button>
+
+      <form
+        class="ai-chat-panel__composer"
+        data-testid="ai-chat-composer"
+        @submit.prevent="onSend()"
+      >
+        <div class="ai-chat-panel__composer-box">
+          <textarea
+            v-model="draft"
+            class="ai-chat-panel__input"
+            rows="2"
+            enterkeyhint="send"
+            :aria-label="t('aiChat.inputPlaceholder')"
+            :placeholder="t('aiChat.inputPlaceholder')"
+            :disabled="isBusy"
+            @keydown="onComposerKeydown"
+          />
+          <div class="ai-chat-panel__composer-actions">
+            <button
+              v-if="isBusy"
+              class="btn ai-chat-panel__send"
+              type="button"
+              @click="stopGeneration"
+            >
+              {{ t("aiChat.stop") }}
+            </button>
+            <button
+              v-else
+              class="btn btn-primary ai-chat-panel__send"
+              type="submit"
+              data-testid="ai-chat-send"
+              :disabled="!canSend"
+            >
+              <Send
+                :size="18"
+                :stroke-width="1.8"
+                aria-hidden="true"
+              />
+              <span class="ai-chat-panel__send-label">{{ t("aiChat.send") }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="ai-chat-panel__meta">
+          <p class="ai-chat-panel__context">
+            {{ source.trim() ? t("aiChat.contextDiagram", { format: diagramFormat }) : t("aiChat.contextEmpty") }}
+          </p>
+          <label class="ai-chat-panel__apply-mode">
+            <span>{{ t("aiChat.applyMode") }}</span>
+            <select
+              v-model="applyMode"
+              class="select"
+            >
+              <option value="proposal">{{ t("aiChat.applyModeProposal") }}</option>
+              <option value="immediate">{{ t("aiChat.applyModeImmediate") }}</option>
+            </select>
+          </label>
+        </div>
+      </form>
+
+      <div
+        v-if="nextStepSuggestions.length > 0"
+        class="ai-chat-panel__next"
+        data-testid="ai-chat-next"
+      >
+        <span class="ai-chat-panel__next-label">{{ t("aiChat.nextSteps") }}</span>
+        <div class="ai-chat-panel__chips">
+          <button
+            v-for="(step, index) in nextStepSuggestions"
+            :key="index"
+            class="ai-chat-panel__chip"
+            type="button"
+            :title="step"
+            :disabled="isBusy"
+            @click="onSend(step)"
+          >
+            {{ step }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -723,52 +800,132 @@ async function onShareCopyTranscript(): Promise<void> {
 
 <style scoped>
 .ai-chat-panel {
+  --ai-chat-gap: 8px;
+  --ai-chat-sheet-max-height: 12rem;
+  /* Зазор под плавающую «Показать превью»: она fixed в правом нижнем углу редактора. */
+  --ai-chat-preview-fab-clearance: calc(var(--btn-touch, 44px) + 0.25rem);
+  --ai-chat-bubble-radius: 14px;
+
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--ai-chat-gap);
   flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
 .ai-chat-panel__toolbar,
 .ai-chat-panel__share-actions,
-.ai-chat-panel__message-actions {
+.ai-chat-panel__message-actions,
+.ai-chat-panel__composer-actions {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
 }
 
+.ai-chat-panel__toolbar {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ai-chat-panel__toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+.ai-chat-panel__toolbar .btn {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+}
+
+.ai-chat-panel__toolbar .btn.is-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+
+.ai-chat-panel__share-actions,
+.ai-chat-panel__message-actions {
+  flex-wrap: wrap;
+}
+
 .ai-chat-panel__title {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   font-weight: 600;
+  font-size: 0.84rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .ai-chat-panel__messages {
-  flex: 1;
-  min-height: 120px;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-muted);
+  padding: 2px 2px 0;
+}
+
+.ai-chat-panel__message-actions .ai-chat-panel__mini {
+  min-height: 0;
+  padding-block: 2px;
+}
+
+.ai-chat-panel__empty,
+.ai-chat-panel__thinking {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.ai-chat-panel__empty {
+  margin-top: auto;
+  margin-bottom: auto;
+  padding: 12px 16px;
 }
 
 .ai-chat-panel__message {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  max-width: min(100%, 36rem);
+  padding: 4px 10px;
+  border-radius: var(--ai-chat-bubble-radius);
+}
+
+.ai-chat-panel__message--user {
+  align-self: flex-end;
+  margin-inline-start: 2rem;
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  border-end-end-radius: 4px;
+}
+
+.ai-chat-panel__message--assistant {
+  align-self: flex-start;
+  margin-inline-end: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-end-start-radius: 4px;
+}
+
+.ai-chat-panel__role {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 .ai-chat-panel__content {
   margin: 0;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   line-height: 1.45;
   font-size: 0.88rem;
 }
@@ -777,7 +934,7 @@ async function onShareCopyTranscript(): Promise<void> {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px 10px;
-  background: var(--surface);
+  background: var(--surface-muted);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -797,14 +954,17 @@ async function onShareCopyTranscript(): Promise<void> {
 
 .ai-chat-panel__history,
 .ai-chat-panel__share {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: var(--ai-chat-sheet-max-height);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 320px;
   overflow: auto;
+  background: var(--surface);
 }
 
 .ai-chat-panel__session-list {
@@ -832,63 +992,183 @@ async function onShareCopyTranscript(): Promise<void> {
   border: none;
   cursor: pointer;
   color: var(--text);
-  text-align: left;
+  text-align: start;
 }
 
 .ai-chat-panel__mini {
   background: none;
   border: none;
-  padding: 0;
+  min-height: 32px;
+  padding: 0 2px;
   cursor: pointer;
-  color: var(--text-muted);
+  color: var(--accent);
   font-size: 0.78rem;
-  text-decoration: underline;
 }
 
-.ai-chat-panel__next {
+.ai-chat-panel__dock {
+  flex: 0 0 auto;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-
-.ai-chat-panel__chip {
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--text);
-  padding: 4px 10px;
-  cursor: pointer;
-  font-size: 0.82rem;
-}
-
-.ai-chat-panel__chip:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  flex-direction: column;
+  gap: var(--ai-chat-gap);
+  min-width: 0;
 }
 
 .ai-chat-panel__composer {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
+  margin: 0;
+}
+
+.ai-chat-panel__composer-box {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 4px 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.ai-chat-panel__composer-box:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.ai-chat-panel__input {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  resize: none;
+  min-height: var(--btn-touch, 44px);
+  max-height: 8.5rem;
+  line-height: 1.4;
+  overflow-y: auto;
+  field-sizing: content;
+}
+
+.ai-chat-panel__input:focus {
+  outline: none;
+}
+
+.ai-chat-panel__composer-actions {
+  flex: 0 0 auto;
+  padding-bottom: 2px;
+}
+
+.ai-chat-panel__send {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  min-width: var(--btn-touch, 44px);
+  min-height: var(--btn-touch, 44px);
+  padding: 8px 14px;
+  border-radius: 12px;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+
+.ai-chat-panel__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  min-width: 0;
+}
+
+.ai-chat-panel__context {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ai-chat-panel__apply-mode {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.84rem;
+  gap: 6px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 
-.ai-chat-panel__input {
-  width: 100%;
-  padding: 10px 12px;
+.ai-chat-panel__apply-mode .select {
+  flex: 0 1 17rem;
+  width: 17rem;
+  min-width: 0;
+  min-height: 32px;
+  max-width: 100%;
+  font-size: 0.75rem;
+}
+
+.ai-chat-panel__next {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ai-chat-panel__next-label {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.ai-chat-panel__chips {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 2px;
+}
+
+.ai-chat-panel__chip {
+  flex: 0 0 auto;
+  max-width: 16rem;
+  min-height: 36px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-muted);
+  border-radius: 999px;
+  background: var(--surface);
   color: var(--text);
-  resize: vertical;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+
+.ai-chat-panel__chip:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.ai-chat-panel__chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .ai-chat-panel__muted {
@@ -905,6 +1185,70 @@ async function onShareCopyTranscript(): Promise<void> {
 
 .ai-chat-panel__questions {
   margin: 0;
-  padding-left: 18px;
+  padding-inline-start: 18px;
+}
+
+@media (max-width: 900px) {
+  .ai-chat-panel__dock {
+    padding-bottom: var(--ai-chat-preview-fab-clearance);
+  }
+
+  .ai-chat-panel__send-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .ai-chat-panel__composer-actions .btn-primary.ai-chat-panel__send {
+    width: var(--btn-touch, 44px);
+    padding: 0;
+  }
+
+  .ai-chat-panel__input {
+    min-height: 2.5rem;
+    max-height: 2.75rem;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .ai-chat-panel__meta {
+    flex-wrap: nowrap;
+  }
+
+  .ai-chat-panel__context {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .ai-chat-panel__composer,
+  .ai-chat-panel__meta,
+  .ai-chat-panel__context,
+  .ai-chat-panel__apply-mode,
+  .ai-chat-panel__next {
+    flex: 0 0 auto;
+  }
+
+  .ai-chat-panel__apply-mode {
+    flex: 1 1 auto;
+    width: auto;
+  }
+
+  .ai-chat-panel__apply-mode .select {
+    flex: 1 1 auto;
+    width: auto;
+  }
 }
 </style>
