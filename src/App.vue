@@ -27,6 +27,7 @@ const { alert } = useAppDialog();
 
 const mainRef = ref<HTMLElement | null>(null);
 const editorFocused = ref(false);
+const editorFullscreen = ref(false);
 const isDesktopLayout = useMediaQuery("(min-width: 901px)");
 
 const PREVIEW_FAB_BLUR_DELAY_MS = 250;
@@ -166,7 +167,7 @@ const showPreviewFab = computed(
   () =>
     !isDesktopLayout.value &&
     activeMobilePanel.value === "editor" &&
-    editorFocused.value,
+    (editorFocused.value || editorFullscreen.value),
 );
 
 onMounted(shell.boot);
@@ -271,6 +272,7 @@ onUnmounted(() => {
         @open-settings="modals.openSettingsModal"
         @editor-focus="onEditorFocus"
         @editor-blur="onEditorBlur"
+        @editor-fullscreen="editorFullscreen = $event"
       />
 
       <div

@@ -1953,7 +1953,7 @@ async function onCopyChat(): Promise<void> {
   position: relative;
   display: flex;
   flex-wrap: nowrap;
-  align-items: flex-end;
+  align-items: center;
   gap: 4px;
   min-width: 0;
   padding: 4px;
@@ -1971,8 +1971,8 @@ async function onCopyChat(): Promise<void> {
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: var(--btn-touch, 44px);
+  height: var(--btn-touch, 44px);
   margin: 0;
   padding: 0;
   border: 0;
@@ -2020,15 +2020,16 @@ async function onCopyChat(): Promise<void> {
   width: auto;
   min-width: 0;
   margin: 0;
-  padding: 8px 0;
+  padding: 0;
+  padding-block: calc((var(--btn-touch, 44px) - 1.4em) / 2);
   border: 0;
   border-radius: 0;
   background: transparent;
   color: var(--text);
   resize: none;
   line-height: 1.4;
-  min-height: 1.4em;
-  max-height: calc(4 * 1.4em + 16px);
+  min-height: var(--btn-touch, 44px);
+  max-height: calc(4 * 1.4em + (var(--btn-touch, 44px) - 1.4em));
   overflow-y: auto;
   field-sizing: fixed;
 }
@@ -2124,7 +2125,6 @@ async function onCopyChat(): Promise<void> {
 
 .ai-chat-panel__composer-actions {
   flex: 0 0 auto;
-  padding-bottom: 2px;
 }
 
 .ai-chat-panel__send {
@@ -2221,7 +2221,7 @@ async function onCopyChat(): Promise<void> {
   .ai-chat-panel__composer-line {
     display: flex;
     flex: 1 1 auto;
-    align-items: flex-end;
+    align-items: center;
     gap: 2px;
     min-width: 0;
     width: 100%;
