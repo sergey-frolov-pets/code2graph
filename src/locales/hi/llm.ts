@@ -44,7 +44,7 @@ export const llmMessages = {
   "llm.provider.zhipu": "Zhipu GLM",
   "llm.provider.zhipuDesc": "Zhipu AI का चीनी LLM। open.bigmodel.cn से कुंजी।",
   "llm.provider.moonshot": "Moonshot (Kimi)",
-  "llm.provider.moonshotDesc": "Moonshot AI का चीनी LLM। platform.moonshot.cn से कुंजी।",
+  "llm.provider.moonshotDesc": "Moonshot AI का Kimi। platform.kimi.ai से कुंजी।",
   "llm.provider.local": "स्थानीय LLM",
   "llm.provider.localDesc":
     "इस कंप्यूटर पर OpenAI-संगत सर्वर (Ollama, LM Studio, llama.cpp, vLLM)। आधार URL और मॉडल नाम दें। API कुंजी वैकल्पिक है।",

@@ -29,6 +29,11 @@ describe("llm-providers", () => {
       expect(getLlmProvider(providerId)?.apiEndpoint).toBeTruthy();
       expect(getLlmProvider(providerId)?.keyUrl).toMatch(/^https:\/\//);
     }
+
+    const moonshot = getLlmProvider("moonshot");
+    expect(moonshot?.apiEndpoint).toBe("https://api.moonshot.ai/v1/chat/completions");
+    expect(moonshot?.defaultModel).toBe("kimi-k3.1-pro");
+    expect(moonshot?.keyUrl).toBe("https://platform.kimi.ai/console/api-keys");
   });
 
   it("includes a local OpenAI-compatible provider", () => {

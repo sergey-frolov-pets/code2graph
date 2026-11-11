@@ -44,7 +44,7 @@ export const llmMessages = {
   "llm.provider.zhipu": "智谱 GLM",
   "llm.provider.zhipuDesc": "智谱 AI 的中国大语言模型。密钥来自 open.bigmodel.cn。",
   "llm.provider.moonshot": "月之暗面（Kimi）",
-  "llm.provider.moonshotDesc": "月之暗面的中国大语言模型。密钥来自 platform.moonshot.cn。",
+  "llm.provider.moonshotDesc": "月之暗面的 Kimi。密钥来自 platform.kimi.ai。",
   "llm.provider.local": "本地 LLM",
   "llm.provider.localDesc":
     "运行在这台电脑上的 OpenAI 兼容服务（Ollama、LM Studio、llama.cpp、vLLM）。填写基础 URL 和模型名。API 密钥可选。",

@@ -147,10 +147,10 @@ const BYOK_LLM_PROVIDERS: readonly LlmProviderDefinition[] = [
     requiresUserKey: true,
     nameKey: "llm.provider.moonshot",
     descriptionKey: "llm.provider.moonshotDesc",
-    defaultModel: "moonshot-v1-8k",
-    keyUrl: "https://platform.moonshot.cn/console/api-keys",
-    docsUrl: "https://platform.moonshot.cn/docs",
-    apiEndpoint: "https://api.moonshot.cn/v1/chat/completions",
+    defaultModel: "kimi-k3.1-pro",
+    keyUrl: "https://platform.kimi.ai/console/api-keys",
+    docsUrl: "https://platform.kimi.ai/docs/api/quickstart",
+    apiEndpoint: "https://api.moonshot.ai/v1/chat/completions",
   },
 ];
 
