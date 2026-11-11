@@ -102,6 +102,15 @@ export const EDITOR_TAB_SIZE = 2;
 export const EDITOR_VIRTUAL_LINE_THRESHOLD = 200;
 export const DEFAULT_EDITOR_AUTOCOMPLETE = true;
 
+/**
+ * Сравнение открытого файла со снимком сессии выключено.
+ * Правка шла через проекцию diff: Enter и обычный ввод могли вставить
+ * чужие строки вместо того, что набрал пользователь.
+ * Undo/redo от этого флага не зависит.
+ * Возврат — после починки проекции: https://github.com/sergey-frolov-pets/code2graph/issues/186
+ */
+export const SESSION_CHANGE_TRACKING_ENABLED = false;
+
 export function resolveEditorFontFamily(id: EditorFontFamilyId): string {
   const option = EDITOR_FONT_FAMILY_OPTIONS.find((item) => item.id === id);
   return option?.stack ?? EDITOR_FONT_FAMILY_OPTIONS[0].stack;
