@@ -284,6 +284,11 @@ export function routeHash(
   return ROUTE_HASH[route];
 }
 
+/** Hash of a public language page, for example `#/lang/mermaid`. */
+export function languagePageHash(languageId: DiagramFormat): string {
+  return `#/lang/${languageId}`;
+}
+
 export function libraryLinkUrl(
   origin: string,
   username: string,
@@ -318,7 +323,7 @@ export function navigateTo(
 ): void {
   const target =
     route === "language" && languageId
-      ? `#/lang/${languageId}`
+      ? languagePageHash(languageId)
       : route === "language"
         ? ROUTE_HASH.landing
         : ROUTE_HASH[route];

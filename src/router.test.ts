@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { DIAGRAM_FORMATS } from "@/constants/diagram-format-ids";
 import {
   diagramDataLinkUrl,
+  languagePageHash,
   libraryLinkUrl,
   localDataLinkCanonicalPath,
   parseAppRoute,
@@ -10,6 +12,18 @@ import {
 } from "@/router";
 
 describe("app routes", () => {
+  it("opens a language page from its hash", () => {
+    for (const languageId of DIAGRAM_FORMATS) {
+      expect(parseRouteFromHash(languagePageHash(languageId))).toEqual({
+        name: "language",
+        languageId,
+        diagramSlug: null,
+        libraryUsername: null,
+        libraryLinkSlug: null,
+      });
+    }
+  });
+
   it("opens the MCP page from the hash", () => {
     expect(parseRouteFromHash("#/mcp")).toEqual({
       name: "mcp",

@@ -2,15 +2,23 @@
 import InstallAppButton from "@/components/InstallAppButton.vue";
 import HeaderControls from "@/components/layout/HeaderControls.vue";
 import GithubStarButton from "@/components/site/GithubStarButton.vue";
+import {
+  languagePageHash,
+  PUBLIC_LANGUAGE_PAGES,
+  trackLanguagePage,
+} from "@/components/site/language-pages";
 import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import { useLocale } from "@/composables/useLocale";
 import { useAppRouter } from "@/composables/useAppRouter";
 import { APP_LINKS, APP_META } from "@/constants";
 
-const props = withDefaults(defineProps<{ landingNav?: boolean }>(), { landingNav: false });
+const props = withDefaults(
+  defineProps<{ landingNav?: boolean; languageLinks?: boolean }>(),
+  { landingNav: false, languageLinks: false },
+);
 
 const { t } = useLocale();
-const { navigateTo } = useAppRouter();
+const { route, navigateTo } = useAppRouter();
 const { isLocalMode } = useLibraryApiUrl();
 
 </script>
@@ -32,6 +40,23 @@ const { isLocalMode } = useLibraryApiUrl();
           class="site-header__tagline"
         >{{ t("site.tagline") }}</span>
       </button>
+
+      <nav
+        v-if="props.languageLinks"
+        class="site-header__links"
+        :aria-label="t('site.languages.title')"
+      >
+        <a
+          v-for="module in PUBLIC_LANGUAGE_PAGES"
+          :key="module.id"
+          class="site-header__link"
+          :href="languagePageHash(module.id)"
+          :aria-current="route.languageId === module.id ? 'page' : undefined"
+          @click="trackLanguagePage(module.id)"
+        >
+          {{ t(module.labelKey) }}
+        </a>
+      </nav>
 
       <nav class="site-header__nav">
         <HeaderControls />
@@ -97,5 +122,22 @@ const { isLocalMode } = useLibraryApiUrl();
         </template>
       </nav>
     </div>
+
+    <nav
+      v-if="props.languageLinks"
+      class="site-header__scroll-links"
+      :aria-label="t('site.languages.title')"
+    >
+      <a
+        v-for="module in PUBLIC_LANGUAGE_PAGES"
+        :key="`mobile-${module.id}`"
+        class="site-header__scroll-link"
+        :href="languagePageHash(module.id)"
+        :aria-current="route.languageId === module.id ? 'page' : undefined"
+        @click="trackLanguagePage(module.id)"
+      >
+        {{ t(module.labelKey) }}
+      </a>
+    </nav>
   </header>
 </template>

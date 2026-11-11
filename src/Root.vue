@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import AppUpdateBanner from "@/components/AppUpdateBanner.vue";
 import App from "@/App.vue";
 import { bindAppRouterListeners, useAppRouter } from "@/composables/useAppRouter";
@@ -15,6 +15,14 @@ import RegisterPage from "@/pages/RegisterPage.vue";
 bindAppRouterListeners();
 
 const { route } = useAppRouter();
+
+watch(
+  () =>
+    `${route.value.name}:${route.value.languageId ?? ""}:${route.value.diagramSlug ?? ""}`,
+  () => {
+    window.scrollTo(0, 0);
+  },
+);
 
 const view = computed(() => {
   switch (route.value.name) {

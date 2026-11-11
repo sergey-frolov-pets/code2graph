@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import DeveloperBrand from "@/components/DeveloperBrand.vue";
+import {
+  languagePageHash,
+  PUBLIC_LANGUAGE_PAGES,
+  trackLanguagePage,
+} from "@/components/site/language-pages";
 import { useLocale } from "@/composables/useLocale";
 import { APP_LINKS, APP_META } from "@/constants";
 
@@ -12,7 +17,23 @@ const { t } = useLocale();
       <span class="site-footer__year">© 2026</span>
       <DeveloperBrand size="sm" />
     </div>
-    <nav class="site-footer__links" :aria-label="t('site.footer.links')">
+    <nav
+      class="site-footer__links"
+      :aria-label="t('site.languages.title')"
+    >
+      <a
+        v-for="module in PUBLIC_LANGUAGE_PAGES"
+        :key="module.id"
+        :href="languagePageHash(module.id)"
+        @click="trackLanguagePage(module.id)"
+      >
+        {{ t(module.labelKey) }}
+      </a>
+    </nav>
+    <nav
+      class="site-footer__links"
+      :aria-label="t('site.footer.links')"
+    >
       <a
         :href="APP_LINKS.github"
         target="_blank"
