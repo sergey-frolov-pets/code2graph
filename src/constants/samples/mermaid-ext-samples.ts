@@ -266,6 +266,7 @@ data
 %% Директивы:
 %%   categories К1, К2, ...    категории по оси (синоним: x К1, К2, ...)
 %%   y "подпись" min --> max   шкала значений
+%%   y2 "подпись" min --> max  вторая ось: справа, при rotate 90 сверху. axis=y2 в конце series, line или уровня
 %%   labels above|inside|none  подписи чисел
 %%   colors s1=#hex s2=#hex    цвета серий (или color=#hex в строке series, или mono)
 %% Вторая ось — другая единица измерения (здесь маржа в процентах):
@@ -291,16 +292,24 @@ line Маржа : 18, 22, 19, 24 axis=y2 color=#cf222e style=solid width=2
 %% категории идут сверху вниз слева, а полосы серий растут слева направо.
 %% Первая категория снизу: добавьте invert y (снять — invert y off).
 %% Вернуть классический вертикальный вид: rotate 0 (или убрать строку rotate 90).
+%% Вторая ось y2 — другая единица измерения (здесь маржа в процентах):
+%%   y2 "подпись" min --> max   шкала справа; при rotate 90 она сверху
+%%   axis=y2                    допишите в конец строки series, line или уровня:
+%%                              её числа читаются по шкале y2, а не по y
+%% Без строки y2 первая же пометка axis=y2 включает вторую ось сама.
 title Выручка по каналам (поворот 90°)
 rotate 90
 categories Q1, Q2, Q3, Q4
 y "млн ₽" 0 --> 200
+y2 "маржа, %" 0 --> 40
 grid 50
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Онлайн : 120, 145, 165, 190
 series Розница : 85, 95, 110, 130
-series Партнёры : 45, 60, 75, 95 color=#f97316`,
+series Партнёры : 45, 60, 75, 95 color=#f97316
+line Маржа : 14, 16, 18, 20 axis=y2 color=#cf222e
+`,
   clusteredStacked: `series
 %% Стопка: серии в одном столбце, а не рядом.
 %% stacked / bars stacked / layout stacked
@@ -328,25 +337,41 @@ line Маржа : 22, 24, 21, 26 axis=y2 color=#cf222e style=solid width=2
   clusteredMono: `series
 %% Чёрно-белый режим: серии различаются светлотой, а не цветом.
 %% Явные colors перекрывают серую шкалу, поэтому здесь их нет.
+%% Вторая ось y2 — другая единица измерения (здесь маржа в процентах):
+%%   y2 "подпись" min --> max   шкала справа; при rotate 90 она сверху
+%%   axis=y2                    допишите в конец строки series, line или уровня:
+%%                              её числа читаются по шкале y2, а не по y
+%% Без строки y2 первая же пометка axis=y2 включает вторую ось сама.
 title Выручка, ч/б
 mono
 categories Q1, Q2, Q3, Q4
 y "млн ₽" 0 --> 200
+y2 "маржа, %" 0 --> 40
 grid 50
 series Онлайн : 120, 145, 165, 190
 series Розница : 85, 95, 110, 130
-series Партнёры : 45, 60, 75, 95`,
+series Партнёры : 45, 60, 75, 95
+line Маржа : 14, 16, 18, 20 axis=y2
+`,
   clusteredMonoInvert: `series
 %% Инвертированный ч/б: светлые серые столбцы на тёмном холсте.
 %% Для тёмной темы и тёмных слайдов. mono off возвращает цвет.
+%% Вторая ось y2 — другая единица измерения (здесь маржа в процентах):
+%%   y2 "подпись" min --> max   шкала справа; при rotate 90 она сверху
+%%   axis=y2                    допишите в конец строки series, line или уровня:
+%%                              её числа читаются по шкале y2, а не по y
+%% Без строки y2 первая же пометка axis=y2 включает вторую ось сама.
 title Выручка, ч/б инверсия
 mono invert
 categories Q1, Q2, Q3, Q4
 y "млн ₽" 0 --> 200
+y2 "маржа, %" 0 --> 40
 grid 50
 series Онлайн : 120, 145, 165, 190
 series Розница : 85, 95, 110, 130
-series Партнёры : 45, 60, 75, 95`,
+series Партнёры : 45, 60, 75, 95
+line Маржа : 14, 16, 18, 20 axis=y2
+`,
   seriesLines: `series
 %% Линия поверх столбцов: line Подпись : зн1, зн2, … [color=#hex] [style=…] [width=N]
 %% style: solid | dash | dot | dashdot. По умолчанию solid и толщина 1.75.
@@ -368,12 +393,20 @@ line Штрих-точка : 80, 120, null, 160 color=#f97316 style=dashdot widt
 line Конверсия : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
   seriesCagr: `series
 %% cagr без номеров — стрелка от первого бара к последнему.
+%% Вторая ось y2 — другая единица измерения (здесь маржа в процентах):
+%%   y2 "подпись" min --> max   шкала справа; при rotate 90 она сверху
+%%   axis=y2                    допишите в конец строки series, line или уровня:
+%%                              её числа читаются по шкале y2, а не по y
+%% Без строки y2 первая же пометка axis=y2 включает вторую ось сама.
 title Рост выручки
 categories 2021, 2022, 2023, 2024
 y "млн ₽" 0 --> 220
+y2 "маржа, %" 0 --> 40
 grid 20
 series Выручка : 80, 110, 150, 190
-cagr`,
+cagr
+line Маржа : 14, 16, 18, 20 axis=y2 color=#cf222e
+`,
   seriesCagrRanges: `series
 %% Разные опции cagr на диапазонах баров 1–3, 4–6 и 7–9.
 %% Номера баров с единицы. Несколько cagr подряд относятся к серии перед ними.
@@ -382,10 +415,16 @@ cagr`,
 %% format="0.00"      доля, без знака процента
 %% prefix="CAGR: "    текст перед числом
 %% label="цель"       овал как есть, без расчёта (prefix тогда не пишется)
+%% Вторая ось y2 — другая единица измерения (здесь маржа в процентах):
+%%   y2 "подпись" min --> max   шкала справа; при rotate 90 она сверху
+%%   axis=y2                    допишите в конец строки series, line или уровня:
+%%                              её числа читаются по шкале y2, а не по y
+%% Без строки y2 первая же пометка axis=y2 включает вторую ось сама.
 title CAGR по диапазонам
 ratio 16x6
 categories 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025
 y "млн ₽" 0 --> 220
+y2 "маржа, %" 0 --> 40
 grid 20
 series Онлайн : 34, 39, 68, 74, 90, 108, 118, 140, 130
 cagr 1, 2 format="0%"
@@ -394,18 +433,28 @@ cagr 3, 5 format="0.0%" prefix="CAGR: "
 cagr 5, 6 label="цель"
 
 cagr 8, 9 format="+0.0%"
-cagr 6, 7 format="0%" prefix="+"`,
+cagr 6, 7 format="0%" prefix="+"
+line 36 "Маржа" axis=y2 color=#cf222e
+`,
   seriesBreak: `series
 %% Разрыв шкалы: участок 200..700 ВЫРЕЗАН, чтобы мелкие столбцы стали крупнее.
 %% Бар, проходящий через разрыв, рисуется кусками с «зигзагом» на линии.
 %% Синтаксис — как у waterfall: break <после> --> <до> ["подпись"]
+%% Вторая ось y2 — другая единица измерения (здесь маржа в процентах):
+%%   y2 "подпись" min --> max   шкала справа; при rotate 90 она сверху
+%%   axis=y2                    допишите в конец строки series, line или уровня:
+%%                              её числа читаются по шкале y2, а не по y
+%% Без строки y2 первая же пометка axis=y2 включает вторую ось сама.
 title Выручка с разрывом шкалы
 categories Q1, Q2, Q3, Q4
 y "млн ₽" 0 --> 1000
+y2 "маржа, %" 0 --> 40
 grid 100
 break 200 --> 700 "разрыв шкалы"
 series Онлайн : 120, 180, 860, 240
-series Розница : 80, 140, 790, 190`,
+series Розница : 80, 140, 790, 190
+line 34 "Маржа" axis=y2 color=#cf222e
+`,
   seriesThresholds: `series
 %% ГОРИЗОНТАЛЬНЫЕ ЛИНИИ — уровень плана, цель, порог.
 %% Это НЕ ломаная по категориям: у линии уровня нет двоеточия.
@@ -414,28 +463,44 @@ series Розница : 80, 140, 790, 190`,
 %%   line Подпись : зн1, зн2, …   — по-прежнему ломаная поверх столбцов
 %%
 %% Линия рисуется по всей ширине графика, подпись — справа, с вырезом под текст.
+%% Вторая ось y2 — другая единица измерения (здесь маржа в процентах):
+%%   y2 "подпись" min --> max   шкала справа; при rotate 90 она сверху
+%%   axis=y2                    допишите в конец строки series, line или уровня:
+%%                              её числа читаются по шкале y2, а не по y
+%% Без строки y2 первая же пометка axis=y2 включает вторую ось сама.
 title Выручка против плана
 categories Q1, Q2, Q3, Q4
 y "млн ₽" 0 --> 250
+y2 "маржа, %" 0 --> 40
 grid 50
 line 160 "план"
 line 200 "цель" color=#cf222e width=2
 line 120 "порог" style=dot width=1
 series Факт : 120, 145, 165, 190
-series Ориентир : 110, 130, 150, 180`,
+series Ориентир : 110, 130, 150, 180
+line 8 "Маржа" axis=y2 color=#d33682
+`,
   seriesUnnamed: `series
 %% Имя серии и подпись линии можно не писать.
 %%   series : зн1, зн2, …     столбцы без строки в легенде
 %%   line : зн1, зн2, …       линия без подписи справа
 %% color и style задаются как обычно.
+%% Вторая ось y2 — другая единица измерения (здесь маржа в процентах):
+%%   y2 "подпись" min --> max   шкала справа; при rotate 90 она сверху
+%%   axis=y2                    допишите в конец строки series, line или уровня:
+%%                              её числа читаются по шкале y2, а не по y
+%% Без строки y2 первая же пометка axis=y2 включает вторую ось сама.
 title Кварталы без названий
 categories Q1, Q2, Q3, Q4
 y "млн ₽" 0 --> 220
+y2 "маржа, %" 0 --> 40
 grid 20
 series : 120, 145, 165, 190
 series : 80, 95, 110, 130 color=#8250df
 line : 110, 130, 155, 180 color=#0969da style=dash width=2
-line : 70, 100, 120, 150 style=dot`,
+line : 70, 100, 120, 150 style=dot
+line : 14, 16, 18, 20 axis=y2 color=#cf222e
+`,
 };
 
 export const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
@@ -704,6 +769,7 @@ Southwest : x=24, y=22, group=Regional, color=#f97316`,
 %% Directives:
 %%   categories C1, C2, ...    category labels (alias: x C1, C2, ...)
 %%   y "label" min --> max     value axis scale
+%%   y2 "label" min --> max    second axis: on the right, on top with rotate 90. axis=y2 at the end of series, line, or a level
 %%   labels above|inside|none  value labels
 %%   colors s1=#hex s2=#hex    series palette (or color=#hex on a series row, or mono)
 %% Second axis — a different unit (here, margin in percent):
@@ -729,16 +795,24 @@ line Margin : 18, 22, 19, 24 axis=y2 color=#cf222e style=solid width=2
 %% categories run top-to-bottom on the left, and grouped bars grow left-to-right.
 %% Put the first category at the bottom with: invert y (revert with invert y off).
 %% Switch back to vertical bars with: rotate 0 (or remove rotate 90).
+%% Second axis y2 — a different unit (here, margin in percent):
+%%   y2 "label" min --> max   the scale on the right; with rotate 90 it sits on top
+%%   axis=y2                  add it at the end of a series, line, or level row:
+%%                            those numbers are read on the y2 scale, not on y
+%% With no y2 row, the first axis=y2 turns the second axis on by itself.
 title Revenue by channel (rotated 90°)
 rotate 90
 categories Q1, Q2, Q3, Q4
 y "M USD" 0 --> 200
+y2 "margin, %" 0 --> 40
 grid 50
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Online : 120, 145, 165, 190
 series Retail : 85, 95, 110, 130
-series Partners : 45, 60, 75, 95 color=#f97316`,
+series Partners : 45, 60, 75, 95 color=#f97316
+line Margin : 14, 16, 18, 20 axis=y2 color=#cf222e
+`,
   clusteredStacked: `series
 %% Stacked bars: series share one column instead of sitting side by side.
 %% stacked / bars stacked / layout stacked
@@ -766,25 +840,41 @@ line Margin : 22, 24, 21, 26 axis=y2 color=#cf222e style=solid width=2
   clusteredMono: `series
 %% Black-and-white: series differ by lightness, not hue.
 %% Explicit colors override the grey scale, so this sample leaves them out.
+%% Second axis y2 — a different unit (here, margin in percent):
+%%   y2 "label" min --> max   the scale on the right; with rotate 90 it sits on top
+%%   axis=y2                  add it at the end of a series, line, or level row:
+%%                            those numbers are read on the y2 scale, not on y
+%% With no y2 row, the first axis=y2 turns the second axis on by itself.
 title Revenue, mono
 mono
 categories Q1, Q2, Q3, Q4
 y "M USD" 0 --> 200
+y2 "margin, %" 0 --> 40
 grid 50
 series Online : 120, 145, 165, 190
 series Retail : 85, 95, 110, 130
-series Partners : 45, 60, 75, 95`,
+series Partners : 45, 60, 75, 95
+line Margin : 14, 16, 18, 20 axis=y2
+`,
   clusteredMonoInvert: `series
 %% Inverted black-and-white: light grey bars on a dark canvas.
 %% For dark themes and dark slides. mono off brings colour back.
+%% Second axis y2 — a different unit (here, margin in percent):
+%%   y2 "label" min --> max   the scale on the right; with rotate 90 it sits on top
+%%   axis=y2                  add it at the end of a series, line, or level row:
+%%                            those numbers are read on the y2 scale, not on y
+%% With no y2 row, the first axis=y2 turns the second axis on by itself.
 title Revenue, inverted mono
 mono invert
 categories Q1, Q2, Q3, Q4
 y "M USD" 0 --> 200
+y2 "margin, %" 0 --> 40
 grid 50
 series Online : 120, 145, 165, 190
 series Retail : 85, 95, 110, 130
-series Partners : 45, 60, 75, 95`,
+series Partners : 45, 60, 75, 95
+line Margin : 14, 16, 18, 20 axis=y2
+`,
   seriesLines: `series
 %% A line over the bars: line Label : v1, v2, … [color=#hex] [style=…] [width=N]
 %% style: solid | dash | dot | dashdot. Defaults are solid and width 1.75.
@@ -806,12 +896,20 @@ line Dash-dot : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
 line Conversion : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
   seriesCagr: `series
 %% Plain cagr draws an arrow from the first bar to the last.
+%% Second axis y2 — a different unit (here, margin in percent):
+%%   y2 "label" min --> max   the scale on the right; with rotate 90 it sits on top
+%%   axis=y2                  add it at the end of a series, line, or level row:
+%%                            those numbers are read on the y2 scale, not on y
+%% With no y2 row, the first axis=y2 turns the second axis on by itself.
 title Revenue growth
 categories 2021, 2022, 2023, 2024
 y "M USD" 0 --> 220
+y2 "margin, %" 0 --> 40
 grid 20
 series Revenue : 80, 110, 150, 190
-cagr`,
+cagr
+line Margin : 14, 16, 18, 20 axis=y2 color=#cf222e
+`,
   seriesCagrRanges: `series
 %% Different cagr options on bar ranges 1–3, 4–6 and 7–9.
 %% Bar numbers start at 1. Consecutive cagr lines belong to the series just above them.
@@ -820,10 +918,16 @@ cagr`,
 %% format="0.00"      a ratio, without a percent sign
 %% prefix="CAGR: "    text before the number
 %% label="target"     oval text as-is, no calculation (prefix is then ignored)
+%% Second axis y2 — a different unit (here, margin in percent):
+%%   y2 "label" min --> max   the scale on the right; with rotate 90 it sits on top
+%%   axis=y2                  add it at the end of a series, line, or level row:
+%%                            those numbers are read on the y2 scale, not on y
+%% With no y2 row, the first axis=y2 turns the second axis on by itself.
 title CAGR by range
 ratio 16x6
 categories 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025
 y "M USD" 0 --> 220
+y2 "margin, %" 0 --> 40
 grid 20
 series Online : 34, 39, 68, 74, 90, 108, 118, 140, 130
 cagr 1, 2 format="0%"
@@ -832,18 +936,28 @@ cagr 3, 5 format="0.0%" prefix="CAGR: "
 cagr 5, 6 label="target"
 
 cagr 8, 9 format="+0.0%"
-cagr 6, 7 format="0%" prefix="+"`,
+cagr 6, 7 format="0%" prefix="+"
+line 36 "Margin" axis=y2 color=#cf222e
+`,
   seriesBreak: `series
 %% Axis break: the 200..700 span is CUT so small bars become bigger.
 %% A bar crossing the break is drawn in pieces with a zigzag on the line.
 %% Same syntax as waterfall: break <after> --> <before> ["label"]
+%% Second axis y2 — a different unit (here, margin in percent):
+%%   y2 "label" min --> max   the scale on the right; with rotate 90 it sits on top
+%%   axis=y2                  add it at the end of a series, line, or level row:
+%%                            those numbers are read on the y2 scale, not on y
+%% With no y2 row, the first axis=y2 turns the second axis on by itself.
 title Revenue with an axis break
 categories Q1, Q2, Q3, Q4
 y "M USD" 0 --> 1000
+y2 "margin, %" 0 --> 40
 grid 100
 break 200 --> 700 "axis break"
 series Online : 120, 180, 860, 240
-series Retail : 80, 140, 790, 190`,
+series Retail : 80, 140, 790, 190
+line 34 "Margin" axis=y2 color=#cf222e
+`,
   seriesThresholds: `series
 %% HORIZONTAL LINES — plan, target, threshold.
 %% This is NOT a line across categories: a level line has no colon.
@@ -852,26 +966,42 @@ series Retail : 80, 140, 790, 190`,
 %%   line Label : v1, v2, …   — still a polyline over the bars
 %%
 %% The line spans the plot; the label sits on the right, with a gap behind the text.
+%% Second axis y2 — a different unit (here, margin in percent):
+%%   y2 "label" min --> max   the scale on the right; with rotate 90 it sits on top
+%%   axis=y2                  add it at the end of a series, line, or level row:
+%%                            those numbers are read on the y2 scale, not on y
+%% With no y2 row, the first axis=y2 turns the second axis on by itself.
 title Revenue against plan
 categories Q1, Q2, Q3, Q4
 y "M USD" 0 --> 250
+y2 "margin, %" 0 --> 40
 grid 50
 line 160 "plan"
 line 200 "target" color=#cf222e width=2
 line 120 "threshold" style=dot width=1
 series Actual : 120, 145, 165, 190
-series Guide : 110, 130, 150, 180`,
+series Guide : 110, 130, 150, 180
+line 8 "Margin" axis=y2 color=#d33682
+`,
   seriesUnnamed: `series
 %% The series name and the line label can be left out.
 %%   series : v1, v2, …     bars with no legend row
 %%   line : v1, v2, …       a line with no caption on the right
 %% color and style still apply.
+%% Second axis y2 — a different unit (here, margin in percent):
+%%   y2 "label" min --> max   the scale on the right; with rotate 90 it sits on top
+%%   axis=y2                  add it at the end of a series, line, or level row:
+%%                            those numbers are read on the y2 scale, not on y
+%% With no y2 row, the first axis=y2 turns the second axis on by itself.
 title Quarters with no names
 categories Q1, Q2, Q3, Q4
 y "M USD" 0 --> 220
+y2 "margin, %" 0 --> 40
 grid 20
 series : 120, 145, 165, 190
 series : 80, 95, 110, 130 color=#8250df
 line : 110, 130, 155, 180 color=#0969da style=dash width=2
-line : 70, 100, 120, 150 style=dot`,
+line : 70, 100, 120, 150 style=dot
+line : 14, 16, 18, 20 axis=y2 color=#cf222e
+`,
 };

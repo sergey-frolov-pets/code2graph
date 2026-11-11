@@ -17,6 +17,7 @@ import {
   WIREMARK_SAMPLE_IDS,
   getWiremarkSampleSource,
 } from "@/constants/wiremark-sample-diagrams";
+import { SUPPORTED_LOCALES } from "@/constants/i18n";
 import {
   MERMAID_SAMPLE_IDS,
   MERMAID_SAMPLE_WIZARD_TYPES,
@@ -293,13 +294,17 @@ describe("diagram samples coverage", () => {
     }
   });
 
-  it("shows the second axis in the first and third series examples", () => {
-    for (const locale of ["ru", "en"] as const) {
-      for (const id of ["clustered", "clusteredStacked"] as const) {
+  it("mentions the second y axis in every series example", () => {
+    const seriesIds = MERMAID_SAMPLE_IDS.filter(
+      (id) => id.startsWith("clustered") || id.startsWith("series"),
+    );
+    expect(seriesIds).toHaveLength(11);
+    for (const locale of SUPPORTED_LOCALES) {
+      for (const id of seriesIds) {
         const source = getMermaidSampleSource(id, locale);
         expect(source, `${locale}:${id}`).toMatch(/^y2 "/m);
-        expect(source, `${locale}:${id}`).toMatch(/^line .+ axis=y2 /m);
-        expect(source, `${locale}:${id}`).toContain("axis=y2");
+        expect(source, `${locale}:${id}`).toMatch(/axis=y2/);
+        expect(source, `${locale}:${id}`).toMatch(/%%[^\n]*y2/);
       }
     }
   });
