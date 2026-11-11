@@ -316,6 +316,8 @@ const KEYWORDS = new Set([
   "width",
   "x",
   "y",
+  "y2",
+  "axis",
   "yes",
 ]);
 
