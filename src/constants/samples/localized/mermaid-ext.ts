@@ -273,15 +273,23 @@ Suroeste : x=24, y=22, group=Región, color=#f97316`,
 %%   y "etiqueta" min --> max     escala del eje de valores
 %%   labels above|inside|none  etiquetas de los valores
 %%   colors s1=#hex s2=#hex    paleta de series (o color=#hex en la fila series, o mono)
+%% Segundo eje — otra unidad (aquí, el margen en porcentaje):
+%%   y2 "etiqueta" min --> max   escala a la derecha; con rotate 90 queda arriba
+%%   axis=y2                     añádalo al final de una fila series, line o de nivel:
+%%                               esos números se leen en la escala y2, no en y
+%% Sin una fila y2, el primer axis=y2 enciende el segundo eje por sí solo.
 title Ingresos por canal de ventas
 categories Q1, Q2, Q3, Q4
 y "mill. USD" 0 --> 200
+y2 "margen, %" 0 --> 40
 grid 50
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series En línea : 120, 145, 165, 190
 series Minorista : 85, 95, 110, 130
-series Socios : 45, 60, 75, 95 color=#f97316`,
+series Socios : 45, 60, 75, 95 color=#f97316
+line Margen : 18, 22, 19, 24 axis=y2 color=#cf222e style=solid width=2
+`,
     clusteredRotated: `series
 %% Diagrama de series GIRADO 90 GRADOS (rotate 90).
 %% La directiva rotate 90 (u orientation horizontal) intercambia los ejes:
@@ -303,16 +311,25 @@ series Socios : 45, 60, 75, 95 color=#f97316`,
 %% stacked / bars stacked / layout stacked
 %% Otra vez una al lado de la otra: stacked off o bars grouped
 %% Los valores positivos crecen hacia arriba desde cero, los negativos hacia abajo.
+%% Segundo eje — otra unidad (aquí, el margen en porcentaje):
+%%   y2 "etiqueta" min --> max   escala a la derecha; con rotate 90 queda arriba
+%%   axis=y2                     añádalo al final de una fila series, line o de nivel:
+%%                               esos números se leen en la escala y2, no en y
+%% Sin una fila y2, el primer axis=y2 enciende el segundo eje por sí solo.
+%% En una pila ponga axis=y2 en line, no en series: las barras del segundo eje no se apilan.
 title Composición de los ingresos
 stacked
 categories Q1, Q2, Q3, Q4
 y "mill. USD" 0 --> 400
+y2 "margen, %" 0 --> 40
 grid 50
 labels inside
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Producto : 80, 90, 70, 110
 series Servicios : 50, 60, 55, 70
-series Socios : 30, 25, 40, 35`,
+series Socios : 30, 25, 40, 35
+line Margen : 22, 24, 21, 26 axis=y2 color=#cf222e style=solid width=2
+`,
     clusteredMono: `series
 %% Blanco y negro: las series se distinguen por la claridad, no por el tono.
 %% Unos colors explícitos sustituyen la escala de grises, por eso este ejemplo no los pone.
@@ -691,15 +708,23 @@ data
 %%   y "标签" min --> max     数值轴刻度
 %%   labels above|inside|none  数值标签
 %%   colors s1=#hex s2=#hex    系列调色板（或 series 行上的 color=#hex，或 mono）
+%% 第二坐标轴——另一种单位（这里是利润率百分比）：
+%%   y2 "标签" min --> max   刻度在右侧；rotate 90 时在上方
+%%   axis=y2                 写在 series、line 或水平线行的末尾：
+%%                           这些数字按 y2 刻度读取，而不是 y
+%% 没有 y2 行时，第一个 axis=y2 会自行打开第二轴。
 title 按销售渠道的收入
 categories Q1, Q2, Q3, Q4
 y "百万美元" 0 --> 200
+y2 "利润率, %" 0 --> 40
 grid 50
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series 线上 : 120, 145, 165, 190
 series 零售 : 85, 95, 110, 130
-series 伙伴 : 45, 60, 75, 95 color=#f97316`,
+series 伙伴 : 45, 60, 75, 95 color=#f97316
+line 利润率 : 18, 22, 19, 24 axis=y2 color=#cf222e style=solid width=2
+`,
     clusteredRotated: `series
 %% 旋转 90 度的系列图 (rotate 90)。
 %% 指令 rotate 90（或 orientation horizontal）对调坐标轴：
@@ -721,16 +746,25 @@ series 伙伴 : 45, 60, 75, 95 color=#f97316`,
 %% stacked / bars stacked / layout stacked
 %% 恢复并排：stacked off 或 bars grouped
 %% 正值从零向上长，负值向下长。
+%% 第二坐标轴——另一种单位（这里是利润率百分比）：
+%%   y2 "标签" min --> max   刻度在右侧；rotate 90 时在上方
+%%   axis=y2                 写在 series、line 或水平线行的末尾：
+%%                           这些数字按 y2 刻度读取，而不是 y
+%% 没有 y2 行时，第一个 axis=y2 会自行打开第二轴。
+%% 堆叠时把 axis=y2 写在 line 上，不要写在 series 上：第二轴的柱不能叠进堆叠。
 title 收入构成
 stacked
 categories Q1, Q2, Q3, Q4
 y "百万美元" 0 --> 400
+y2 "利润率, %" 0 --> 40
 grid 50
 labels inside
 colors s1=#0969da s2=#8250df s3=#2da44e
 series 产品 : 80, 90, 70, 110
 series 服务 : 50, 60, 55, 70
-series 伙伴 : 30, 25, 40, 35`,
+series 伙伴 : 30, 25, 40, 35
+line 利润率 : 22, 24, 21, 26 axis=y2 color=#cf222e style=solid width=2
+`,
     clusteredMono: `series
 %% 黑白：系列靠明暗区分，不靠色相。
 %% 显式 colors 会覆盖灰度，因此本示例不写它们。
@@ -1109,15 +1143,23 @@ data
 %%   y "ラベル" min --> max     値軸の目盛り
 %%   labels above|inside|none  値のラベル
 %%   colors s1=#hex s2=#hex    系列のパレット（series 行の color=#hex、または mono）
+%% 第二軸——別の単位（ここでは利益率のパーセント）：
+%%   y2 "ラベル" min --> max   目盛りは右側。rotate 90 では上側
+%%   axis=y2                   series、line、またはレベル行の末尾に書く：
+%%                             その数値は y ではなく y2 の目盛りで読まれる
+%% y2 行がなくても、最初の axis=y2 が第二軸を自分で有効にする。
 title 販路別の売上
 categories Q1, Q2, Q3, Q4
 y "百万米ドル" 0 --> 200
+y2 "利益率, %" 0 --> 40
 grid 50
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series オンライン : 120, 145, 165, 190
 series 店舗 : 85, 95, 110, 130
-series パートナー : 45, 60, 75, 95 color=#f97316`,
+series パートナー : 45, 60, 75, 95 color=#f97316
+line 利益率 : 18, 22, 19, 24 axis=y2 color=#cf222e style=solid width=2
+`,
     clusteredRotated: `series
 %% 90 度回転した系列図 (rotate 90)。
 %% 指令 rotate 90（または orientation horizontal）は軸を入れ替えます：
@@ -1139,16 +1181,25 @@ series パートナー : 45, 60, 75, 95 color=#f97316`,
 %% stacked / bars stacked / layout stacked
 %% 再び横並び：stacked off または bars grouped
 %% 正の値はゼロから上へ、負の値は下へ伸びます。
+%% 第二軸——別の単位（ここでは利益率のパーセント）：
+%%   y2 "ラベル" min --> max   目盛りは右側。rotate 90 では上側
+%%   axis=y2                   series、line、またはレベル行の末尾に書く：
+%%                             その数値は y ではなく y2 の目盛りで読まれる
+%% y2 行がなくても、最初の axis=y2 が第二軸を自分で有効にする。
+%% 積み上げでは axis=y2 を series ではなく line に書きます。第二軸の棒は積み上げられません。
 title 売上の内訳
 stacked
 categories Q1, Q2, Q3, Q4
 y "百万米ドル" 0 --> 400
+y2 "利益率, %" 0 --> 40
 grid 50
 labels inside
 colors s1=#0969da s2=#8250df s3=#2da44e
 series 製品 : 80, 90, 70, 110
 series サービス : 50, 60, 55, 70
-series パートナー : 30, 25, 40, 35`,
+series パートナー : 30, 25, 40, 35
+line 利益率 : 22, 24, 21, 26 axis=y2 color=#cf222e style=solid width=2
+`,
     clusteredMono: `series
 %% 白黒：系列は色相ではなく明るさで区別します。
 %% 明示した colors は灰色の階調を上書きするので、この例では書きません。
@@ -1527,15 +1578,23 @@ data
 %%   y "लेबल" min --> max     मान अक्ष का पैमाना
 %%   labels above|inside|none  मानों के लेबल
 %%   colors s1=#hex s2=#hex    शृंखला पैलेट (या series पंक्ति पर color=#hex, या mono)
+%% दूसरा अक्ष — दूसरी इकाई (यहाँ मार्जिन प्रतिशत में):
+%%   y2 "लेबल" min --> max   पैमाना दाईं ओर; rotate 90 के साथ ऊपर
+%%   axis=y2                 series, line या स्तर की पंक्ति के अंत में लिखें:
+%%                           वे संख्याएँ y नहीं, y2 पैमाने पर पढ़ी जाती हैं
+%% y2 पंक्ति के बिना पहला axis=y2 दूसरा अक्ष अपने आप चालू कर देता है।
 title बिक्री माध्यम के अनुसार आय
 categories Q1, Q2, Q3, Q4
 y "मिलियन डॉलर" 0 --> 200
+y2 "मार्जिन, %" 0 --> 40
 grid 50
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series ऑनलाइन : 120, 145, 165, 190
 series खुदरा : 85, 95, 110, 130
-series साझेदार : 45, 60, 75, 95 color=#f97316`,
+series साझेदार : 45, 60, 75, 95 color=#f97316
+line मार्जिन : 18, 22, 19, 24 axis=y2 color=#cf222e style=solid width=2
+`,
     clusteredRotated: `series
 %% 90 डिग्री घुमाया शृंखला आरेख (rotate 90)।
 %% निर्देश rotate 90 (या orientation horizontal) अक्षों की अदला-बदली करता है:
@@ -1557,16 +1616,25 @@ series साझेदार : 45, 60, 75, 95 color=#f97316`,
 %% stacked / bars stacked / layout stacked
 %% फिर साथ-साथ: stacked off या bars grouped
 %% धनात्मक मान शून्य से ऊपर बढ़ते हैं, ऋणात्मक नीचे।
+%% दूसरा अक्ष — दूसरी इकाई (यहाँ मार्जिन प्रतिशत में):
+%%   y2 "लेबल" min --> max   पैमाना दाईं ओर; rotate 90 के साथ ऊपर
+%%   axis=y2                 series, line या स्तर की पंक्ति के अंत में लिखें:
+%%                           वे संख्याएँ y नहीं, y2 पैमाने पर पढ़ी जाती हैं
+%% y2 पंक्ति के बिना पहला axis=y2 दूसरा अक्ष अपने आप चालू कर देता है।
+%% स्टैक में axis=y2 series पर नहीं, line पर लिखें: दूसरे अक्ष की पट्टियाँ स्टैक नहीं होतीं।
 title आय का मिश्रण
 stacked
 categories Q1, Q2, Q3, Q4
 y "मिलियन डॉलर" 0 --> 400
+y2 "मार्जिन, %" 0 --> 40
 grid 50
 labels inside
 colors s1=#0969da s2=#8250df s3=#2da44e
 series उत्पाद : 80, 90, 70, 110
 series सेवाएँ : 50, 60, 55, 70
-series साझेदार : 30, 25, 40, 35`,
+series साझेदार : 30, 25, 40, 35
+line मार्जिन : 22, 24, 21, 26 axis=y2 color=#cf222e style=solid width=2
+`,
     clusteredMono: `series
 %% श्याम-श्वेत: शृंखलाएँ रंग से नहीं, हल्के-गहरे से अलग होती हैं।
 %% स्पष्ट colors धूसर पैमाना ढक देते हैं, इसलिए यह उदाहरण उन्हें नहीं लिखता।
@@ -1945,15 +2013,23 @@ Sudoeste : x=24, y=22, group=Região, color=#f97316`,
 %%   y "rótulo" min --> max     escala do eixo de valores
 %%   labels above|inside|none  rótulos dos valores
 %%   colors s1=#hex s2=#hex    paleta das séries (ou color=#hex na linha series, ou mono)
+%% Segundo eixo — outra unidade (aqui, a margem em percentagem):
+%%   y2 "rótulo" min --> max   escala à direita; com rotate 90 fica no topo
+%%   axis=y2                   acrescente no fim de uma linha series, line ou de nível:
+%%                             esses números leem-se na escala y2, não na y
+%% Sem uma linha y2, o primeiro axis=y2 liga o segundo eixo por si.
 title Receita por canal de vendas
 categories Q1, Q2, Q3, Q4
 y "mi USD" 0 --> 200
+y2 "margem, %" 0 --> 40
 grid 50
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Loja virtual : 120, 145, 165, 190
 series Varejo : 85, 95, 110, 130
-series Parceiros : 45, 60, 75, 95 color=#f97316`,
+series Parceiros : 45, 60, 75, 95 color=#f97316
+line Margem : 18, 22, 19, 24 axis=y2 color=#cf222e style=solid width=2
+`,
     clusteredRotated: `series
 %% Diagrama de séries GIRADO 90 GRAUS (rotate 90).
 %% A diretiva rotate 90 (ou orientation horizontal) troca os eixos:
@@ -1975,16 +2051,25 @@ series Parceiros : 45, 60, 75, 95 color=#f97316`,
 %% stacked / bars stacked / layout stacked
 %% Lado a lado de novo: stacked off ou bars grouped
 %% Valores positivos crescem para cima a partir do zero, os negativos para baixo.
+%% Segundo eixo — outra unidade (aqui, a margem em percentagem):
+%%   y2 "rótulo" min --> max   escala à direita; com rotate 90 fica no topo
+%%   axis=y2                   acrescente no fim de uma linha series, line ou de nível:
+%%                             esses números leem-se na escala y2, não na y
+%% Sem uma linha y2, o primeiro axis=y2 liga o segundo eixo por si.
+%% Na pilha ponha axis=y2 numa line, não numa series: barras do segundo eixo não empilham.
 title Composição da receita
 stacked
 categories Q1, Q2, Q3, Q4
 y "mi USD" 0 --> 400
+y2 "margem, %" 0 --> 40
 grid 50
 labels inside
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Produto : 80, 90, 70, 110
 series Serviços : 50, 60, 55, 70
-series Parceiros : 30, 25, 40, 35`,
+series Parceiros : 30, 25, 40, 35
+line Margem : 22, 24, 21, 26 axis=y2 color=#cf222e style=solid width=2
+`,
     clusteredMono: `series
 %% Preto e branco: as séries diferem pela claridade, não pelo matiz.
 %% colors explícitos substituem a escala de cinza, por isso este exemplo não os inclui.
@@ -2363,15 +2448,23 @@ Südwesten : x=24, y=22, group=Region, color=#f97316`,
 %%   y "Beschriftung" min --> max     Skala der Werteachse
 %%   labels above|inside|none  Wertbeschriftungen
 %%   colors s1=#hex s2=#hex    Serienpalette (oder color=#hex in der series-Zeile, oder mono)
+%% Zweite Achse — eine andere Einheit (hier die Marge in Prozent):
+%%   y2 "Beschriftung" min --> max   Skala rechts; bei rotate 90 oben
+%%   axis=y2                         ans Ende einer series-, line- oder Ebenen-Zeile:
+%%                                   diese Zahlen gelten für die y2-Skala, nicht für y
+%% Ohne y2-Zeile schaltet das erste axis=y2 die zweite Achse von selbst ein.
 title Umsatz nach Vertriebskanal
 categories Q1, Q2, Q3, Q4
 y "Mio. USD" 0 --> 200
+y2 "Marge, %" 0 --> 40
 grid 50
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Onlinehandel : 120, 145, 165, 190
 series Einzelhandel : 85, 95, 110, 130
-series Partner : 45, 60, 75, 95 color=#f97316`,
+series Partner : 45, 60, 75, 95 color=#f97316
+line Marge : 18, 22, 19, 24 axis=y2 color=#cf222e style=solid width=2
+`,
     clusteredRotated: `series
 %% Seriendiagramm UM 90 GRAD GEDREHT (rotate 90).
 %% Die Direktive rotate 90 (oder orientation horizontal) tauscht die Achsen:
@@ -2393,16 +2486,25 @@ series Partner : 45, 60, 75, 95 color=#f97316`,
 %% stacked / bars stacked / layout stacked
 %% Wieder nebeneinander: stacked off oder bars grouped
 %% Positive Werte wachsen von null nach oben, negative nach unten.
+%% Zweite Achse — eine andere Einheit (hier die Marge in Prozent):
+%%   y2 "Beschriftung" min --> max   Skala rechts; bei rotate 90 oben
+%%   axis=y2                         ans Ende einer series-, line- oder Ebenen-Zeile:
+%%                                   diese Zahlen gelten für die y2-Skala, nicht für y
+%% Ohne y2-Zeile schaltet das erste axis=y2 die zweite Achse von selbst ein.
+%% Im Stapel axis=y2 an eine line setzen, nicht an eine series: Balken der zweiten Achse stapeln sich nicht.
 title Umsatzmix
 stacked
 categories Q1, Q2, Q3, Q4
 y "Mio. USD" 0 --> 400
+y2 "Marge, %" 0 --> 40
 grid 50
 labels inside
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Produkt : 80, 90, 70, 110
 series Dienste : 50, 60, 55, 70
-series Partner : 30, 25, 40, 35`,
+series Partner : 30, 25, 40, 35
+line Marge : 22, 24, 21, 26 axis=y2 color=#cf222e style=solid width=2
+`,
     clusteredMono: `series
 %% Schwarz-Weiß: die Serien unterscheiden sich durch die Helligkeit, nicht durch den Farbton.
 %% Ausdrückliche colors ersetzen die Grauskala, deshalb lässt dieses Beispiel sie weg.
@@ -2781,15 +2883,23 @@ data
 %%   y "تسمية" min --> max     مقياس محور القيم
 %%   labels above|inside|none  تسميات القيم
 %%   colors s1=#hex s2=#hex    لوحة السلاسل (أو color=#hex في صف series، أو mono)
+%% المحور الثاني — وحدة أخرى (هنا الهامش بالنسبة المئوية):
+%%   y2 "تسمية" min --> max   المقياس على اليمين؛ ومع rotate 90 في الأعلى
+%%   axis=y2                  أضفه في نهاية سطر series أو line أو المستوى:
+%%                            تُقرأ هذه الأرقام على مقياس y2 لا على y
+%% بلا سطر y2، أول axis=y2 يشغّل المحور الثاني من تلقاء نفسه.
 title الإيراد حسب قناة البيع
 categories Q1, Q2, Q3, Q4
 y "مليون دولار" 0 --> 200
+y2 "الهامش, %" 0 --> 40
 grid 50
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series الإلكتروني : 120, 145, 165, 190
 series التجزئة : 85, 95, 110, 130
-series الشركاء : 45, 60, 75, 95 color=#f97316`,
+series الشركاء : 45, 60, 75, 95 color=#f97316
+line الهامش : 18, 22, 19, 24 axis=y2 color=#cf222e style=solid width=2
+`,
     clusteredRotated: `series
 %% مخطط سلاسل مُدوّر 90 درجة (rotate 90).
 %% التوجيه rotate 90 (أو orientation horizontal) يبادل المحورين:
@@ -2811,16 +2921,25 @@ series الشركاء : 45, 60, 75, 95 color=#f97316`,
 %% stacked / bars stacked / layout stacked
 %% جنبًا إلى جنب من جديد: stacked off أو bars grouped
 %% القيم الموجبة تنمو من الصفر إلى الأعلى، والسالبة إلى الأسفل.
+%% المحور الثاني — وحدة أخرى (هنا الهامش بالنسبة المئوية):
+%%   y2 "تسمية" min --> max   المقياس على اليمين؛ ومع rotate 90 في الأعلى
+%%   axis=y2                  أضفه في نهاية سطر series أو line أو المستوى:
+%%                            تُقرأ هذه الأرقام على مقياس y2 لا على y
+%% بلا سطر y2، أول axis=y2 يشغّل المحور الثاني من تلقاء نفسه.
+%% في التكديس ضع axis=y2 على line لا على series: أعمدة المحور الثاني لا تُكدّس.
 title مزيج الإيراد
 stacked
 categories Q1, Q2, Q3, Q4
 y "مليون دولار" 0 --> 400
+y2 "الهامش, %" 0 --> 40
 grid 50
 labels inside
 colors s1=#0969da s2=#8250df s3=#2da44e
 series المنتج : 80, 90, 70, 110
 series الخدمات : 50, 60, 55, 70
-series الشركاء : 30, 25, 40, 35`,
+series الشركاء : 30, 25, 40, 35
+line الهامش : 22, 24, 21, 26 axis=y2 color=#cf222e style=solid width=2
+`,
     clusteredMono: `series
 %% أبيض وأسود: السلاسل تختلف بدرجة الإضاءة لا بالصبغة.
 %% colors الصريحة تستبدل تدرج الرمادي، لذا هذا المثال لا يكتبها.

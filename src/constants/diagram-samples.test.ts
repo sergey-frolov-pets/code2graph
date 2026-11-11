@@ -293,6 +293,17 @@ describe("diagram samples coverage", () => {
     }
   });
 
+  it("shows the second axis in the first and third series examples", () => {
+    for (const locale of ["ru", "en"] as const) {
+      for (const id of ["clustered", "clusteredStacked"] as const) {
+        const source = getMermaidSampleSource(id, locale);
+        expect(source, `${locale}:${id}`).toMatch(/^y2 "/m);
+        expect(source, `${locale}:${id}`).toMatch(/^line .+ axis=y2 /m);
+        expect(source, `${locale}:${id}`).toContain("axis=y2");
+      }
+    }
+  });
+
   it("shows every series line and cagr option", () => {
     for (const locale of ["ru", "en"] as const) {
       const lines = getMermaidSampleSource("seriesLines", locale);

@@ -268,15 +268,23 @@ data
 %%   y "подпись" min --> max   шкала значений
 %%   labels above|inside|none  подписи чисел
 %%   colors s1=#hex s2=#hex    цвета серий (или color=#hex в строке series, или mono)
+%% Вторая ось — другая единица измерения (здесь маржа в процентах):
+%%   y2 "подпись" min --> max   шкала справа; при rotate 90 она сверху
+%%   axis=y2                    допишите в конец строки series, line или уровня:
+%%                              её числа читаются по шкале y2, а не по y
+%% Без строки y2 первая же пометка axis=y2 включает вторую ось сама.
 title Выручка по каналам продаж
 categories Q1, Q2, Q3, Q4
 y "млн ₽" 0 --> 200
+y2 "маржа, %" 0 --> 40
 grid 50
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Онлайн : 120, 145, 165, 190
 series Розница : 85, 95, 110, 130
-series Партнёры : 45, 60, 75, 95 color=#f97316`,
+series Партнёры : 45, 60, 75, 95 color=#f97316
+line Маржа : 18, 22, 19, 24 axis=y2 color=#cf222e style=solid width=2
+`,
   clusteredRotated: `series
 %% Серийная диаграмма С ПОВОРОТОМ НА 90 ГРАДУСОВ (rotate 90).
 %% Директива rotate 90 (или orientation horizontal) разворачивает оси:
@@ -298,16 +306,25 @@ series Партнёры : 45, 60, 75, 95 color=#f97316`,
 %% stacked / bars stacked / layout stacked
 %% Вернуть бары рядом: stacked off или bars grouped
 %% Положительные значения растут вверх от нуля, отрицательные — вниз.
+%% Вторая ось — другая единица измерения (здесь маржа в процентах):
+%%   y2 "подпись" min --> max   шкала справа; при rotate 90 она сверху
+%%   axis=y2                    допишите в конец строки series, line или уровня:
+%%                              её числа читаются по шкале y2, а не по y
+%% Без строки y2 первая же пометка axis=y2 включает вторую ось сама.
+%% В стопке axis=y2 пишите у line, не у series: бары второй оси в стопку не складываются.
 title Состав выручки
 stacked
 categories Q1, Q2, Q3, Q4
 y "млн ₽" 0 --> 400
+y2 "маржа, %" 0 --> 40
 grid 50
 labels inside
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Продукт : 80, 90, 70, 110
 series Услуги : 50, 60, 55, 70
-series Партнёры : 30, 25, 40, 35`,
+series Партнёры : 30, 25, 40, 35
+line Маржа : 22, 24, 21, 26 axis=y2 color=#cf222e style=solid width=2
+`,
   clusteredMono: `series
 %% Чёрно-белый режим: серии различаются светлотой, а не цветом.
 %% Явные colors перекрывают серую шкалу, поэтому здесь их нет.
@@ -689,15 +706,23 @@ Southwest : x=24, y=22, group=Regional, color=#f97316`,
 %%   y "label" min --> max     value axis scale
 %%   labels above|inside|none  value labels
 %%   colors s1=#hex s2=#hex    series palette (or color=#hex on a series row, or mono)
+%% Second axis — a different unit (here, margin in percent):
+%%   y2 "label" min --> max   the scale on the right; with rotate 90 it sits on top
+%%   axis=y2                  add it at the end of a series, line, or level row:
+%%                            those numbers are read on the y2 scale, not on y
+%% With no y2 row, the first axis=y2 turns the second axis on by itself.
 title Revenue by sales channel
 categories Q1, Q2, Q3, Q4
 y "M USD" 0 --> 200
+y2 "margin, %" 0 --> 40
 grid 50
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Online : 120, 145, 165, 190
 series Retail : 85, 95, 110, 130
-series Partners : 45, 60, 75, 95 color=#f97316`,
+series Partners : 45, 60, 75, 95 color=#f97316
+line Margin : 18, 22, 19, 24 axis=y2 color=#cf222e style=solid width=2
+`,
   clusteredRotated: `series
 %% Series chart ROTATED BY 90 DEGREES (rotate 90).
 %% The rotate 90 directive (or orientation horizontal) swaps the axes:
@@ -719,16 +744,25 @@ series Partners : 45, 60, 75, 95 color=#f97316`,
 %% stacked / bars stacked / layout stacked
 %% Side by side again: stacked off or bars grouped
 %% Positive values grow up from zero, negative values grow down.
+%% Second axis — a different unit (here, margin in percent):
+%%   y2 "label" min --> max   the scale on the right; with rotate 90 it sits on top
+%%   axis=y2                  add it at the end of a series, line, or level row:
+%%                            those numbers are read on the y2 scale, not on y
+%% With no y2 row, the first axis=y2 turns the second axis on by itself.
+%% On a stack put axis=y2 on a line, not on a series: second-axis bars cannot be stacked.
 title Revenue mix
 stacked
 categories Q1, Q2, Q3, Q4
 y "M USD" 0 --> 400
+y2 "margin, %" 0 --> 40
 grid 50
 labels inside
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Product : 80, 90, 70, 110
 series Services : 50, 60, 55, 70
-series Partners : 30, 25, 40, 35`,
+series Partners : 30, 25, 40, 35
+line Margin : 22, 24, 21, 26 axis=y2 color=#cf222e style=solid width=2
+`,
   clusteredMono: `series
 %% Black-and-white: series differ by lightness, not hue.
 %% Explicit colors override the grey scale, so this sample leaves them out.
