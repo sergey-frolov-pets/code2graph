@@ -23,13 +23,13 @@ import {
   insertPolylinePoint,
   moveEffect,
   moveViewpoint,
+  placeTransitionControl,
   removeEffect,
   removeOverlay,
   removeViewpoint,
   renameTrack,
   selectTrack,
   setShowOverlays,
-  setTransitionControls,
   setTransitionPath,
   setTransitionPoints,
   updateEffect,
@@ -470,10 +470,7 @@ export function usePresentationSession(options: {
     if (!track || !transition || !document.value) {
       return;
     }
-    const controls = transition.controls.map((item, itemIndex) =>
-      itemIndex === index ? point : item,
-    );
-    commit(setTransitionControls(document.value, track.id, transition.id, controls));
+    commit(placeTransitionControl(document.value, track.id, transition.id, index, point));
   }
 
   function onAddOverlay(shape: PresentationOverlayKind, mark?: PresentationMark): void {

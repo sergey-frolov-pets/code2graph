@@ -107,12 +107,16 @@ const handleRadius = computed(() =>
   coarsePointer.value ? PRESENTATION_HANDLE_RADIUS_COARSE : PRESENTATION_HANDLE_RADIUS,
 );
 
+const STRAIGHT_PATH_CONTROL_INDEX = 0;
+
+const pathEditable = computed(() => props.arranging || props.editing);
+
 const transition = computed(() => {
   const track = props.track;
   if (!track || track.viewpoints.length < 2) {
     return null;
   }
-  const index = props.editing ? props.viewpointIndex : props.travelOrigin;
+  const index = pathEditable.value ? props.viewpointIndex : props.travelOrigin;
   return track.transitions[index] ?? null;
 });
 
@@ -152,7 +156,7 @@ function fromEvent(event: PointerEvent): NormPoint {
 const pathD = computed(() => {
   const ends = transitionEnds.value;
   const current = transition.value;
-  if (!ends || !current || !props.editing) {
+  if (!ends || !current || !pathEditable.value) {
     return "";
   }
   const start = toScreen(ends.from);
@@ -174,6 +178,18 @@ const pathD = computed(() => {
     return `M ${start.x} ${start.y} C ${first.x} ${first.y} ${second.x} ${second.y} ${end.x} ${end.y}`;
   }
   return `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
+});
+
+const straightHandle = computed(() => {
+  const ends = transitionEnds.value;
+  const current = transition.value;
+  if (!pathEditable.value || !ends || current?.path !== "line") {
+    return null;
+  }
+  return toScreen({
+    x: (ends.from.x + ends.to.x) / 2,
+    y: (ends.from.y + ends.to.y) / 2,
+  });
 });
 
 const visibleOverlays = computed(() => {
@@ -494,7 +510,7 @@ function overlayLabelLines(overlay: PresentationOverlay): OverlayTextLine[] {
       class="presentation-path"
     />
 
-    <template v-if="editing && transition && transitionEnds">
+    <template v-if="pathEditable && transition && transitionEnds">
       <line
         v-for="(control, index) in transition.controls"
         :key="`guide-${index}`"
@@ -503,6 +519,14 @@ function overlayLabelLines(overlay: PresentationOverlay): OverlayTextLine[] {
         :y1="toScreen(index === 0 ? transitionEnds.from : transitionEnds.to).y"
         :x2="toScreen(control).x"
         :y2="toScreen(control).y"
+      />
+      <circle
+        v-if="straightHandle"
+        class="presentation-handle presentation-handle--control"
+        :cx="straightHandle.x"
+        :cy="straightHandle.y"
+        :r="handleRadius"
+        @pointerdown="beginDrag($event, { kind: 'control', index: STRAIGHT_PATH_CONTROL_INDEX })"
       />
       <circle
         v-for="(point, index) in transition.points"

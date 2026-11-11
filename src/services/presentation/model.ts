@@ -1034,6 +1034,33 @@ export function setTransitionControls(
   }));
 }
 
+/** A straight segment has no control, so the first drag turns it into a quadratic curve. */
+export function placeTransitionControl(
+  document: PresentationDocument,
+  trackId: string,
+  transitionId: string,
+  index: number,
+  point: NormPoint,
+): PresentationDocument {
+  const track = document.tracks.find((item) => item.id === trackId);
+  const transition = track?.transitions.find((item) => item.id === transitionId);
+  if (!track || !transition) {
+    return document;
+  }
+  if (transition.path === "line") {
+    return setTransitionControls(
+      setTransitionPath(document, trackId, transitionId, "quadratic"),
+      trackId,
+      transitionId,
+      [point],
+    );
+  }
+  const controls = transition.controls.map((item, itemIndex) =>
+    itemIndex === index ? point : item,
+  );
+  return setTransitionControls(document, trackId, transitionId, controls);
+}
+
 export function insertPolylinePoint(
   points: NormPoint[],
   from: NormPoint,
