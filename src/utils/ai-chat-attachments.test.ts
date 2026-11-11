@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { AI_CHAT_MESSAGE_MAX_CHARS } from "@/constants/ai-chat";
 import {
+  AI_CHAT_ATTACHMENT_FILE_MAX_BYTES,
+  AI_CHAT_MESSAGE_MAX_CHARS,
+} from "@/constants/ai-chat";
+import {
+  attachmentFromPastedText,
   classifyAiChatFile,
   composeAiChatUserContent,
+  isOversizedChatPaste,
+  nextPastedTextFileName,
   readAiChatAttachment,
 } from "@/utils/ai-chat-attachments";
 import { extractXlsxText } from "@/utils/ai-chat-xlsx-text";
@@ -182,6 +188,27 @@ describe("ai chat attachments", () => {
     ]);
     expect(prompt).toContain("Attached image file");
     expect(prompt).not.toContain(result.attachment.imageBase64);
+  });
+
+  it("turns an oversized paste into a text file and keeps a short paste in the field", () => {
+    const fits = "a".repeat(AI_CHAT_MESSAGE_MAX_CHARS);
+    const oversized = `${fits} extra`;
+    expect(isOversizedChatPaste(fits)).toBe(false);
+    expect(isOversizedChatPaste(`  ${oversized}  `)).toBe(true);
+    expect(nextPastedTextFileName([])).toBe("pasted.txt");
+    expect(nextPastedTextFileName(["pasted.txt", "pasted-2.txt"])).toBe("pasted-3.txt");
+
+    const attached = attachmentFromPastedText(oversized, "pasted.txt");
+    expect(attached.ok).toBe(true);
+    if (!attached.ok) {
+      return;
+    }
+    expect(attached.attachment.kind).toBe("text");
+    expect(attached.attachment.mimeType).toBe("text/plain");
+    expect(attached.attachment.textExcerpt?.startsWith("a".repeat(AI_CHAT_MESSAGE_MAX_CHARS))).toBe(true);
+
+    const tooLarge = attachmentFromPastedText("b".repeat(AI_CHAT_ATTACHMENT_FILE_MAX_BYTES + 1), "pasted.txt");
+    expect(tooLarge).toEqual({ ok: false, reason: "too-large" });
   });
 
   it("caps the composed prompt", () => {

@@ -416,6 +416,7 @@ export const llmMessages = {
   "aiChat.attachmentReadError": "تعذر قراءة {name}",
   "aiChat.attachmentLimit": "يمكن إرفاق {count} ملفات كحد أقصى",
   "aiChat.attachmentImageLimit": "يمكن إرفاق {count} صور كحد أقصى",
+  "aiChat.pasteAttachedAsFile": "أُرفق النص الطويل كملف {name}.",
   "aiChat.attachmentsOnlyPrompt": "استخدم الملفات المرفقة كسياق.",
   "aiChat.copyMessage": "نسخ",
   "aiChat.copyChat": "نسخ الدردشة",

@@ -416,6 +416,7 @@ export const llmMessages = {
   "aiChat.attachmentReadError": "{name} を読み取れませんでした",
   "aiChat.attachmentLimit": "添付は {count} 件までです",
   "aiChat.attachmentImageLimit": "画像は {count} 件までです",
+  "aiChat.pasteAttachedAsFile": "長いテキストはファイル {name} として添付しました。",
   "aiChat.attachmentsOnlyPrompt": "添付ファイルをコンテキストとして使ってください。",
   "aiChat.copyMessage": "コピー",
   "aiChat.copyChat": "チャットをコピー",

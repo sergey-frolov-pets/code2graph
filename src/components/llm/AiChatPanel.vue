@@ -61,7 +61,10 @@ import type { LlmChatImagePart } from "@/services/llm/llm-types";
 import type { AiChatAttachment, AiChatMessage, AiChatSession } from "@/types/ai-chat-session";
 import {
   AI_CHAT_ATTACHMENT_ACCEPT,
+  attachmentFromPastedText,
   classifyAiChatFile,
+  isOversizedChatPaste,
+  nextPastedTextFileName,
   readAiChatAttachment,
   type AiChatReadAttachment,
 } from "@/utils/ai-chat-attachments";
@@ -625,6 +628,36 @@ function attachmentKindLabel(attachment: { name: string; kind: AiChatAttachmentK
 
 function openAttachmentPicker(): void {
   fileInputRef.value?.click();
+}
+
+function onComposerPaste(event: ClipboardEvent): void {
+  if (isBusy.value) {
+    return;
+  }
+
+  const text = event.clipboardData?.getData("text/plain") ?? "";
+  if (!isOversizedChatPaste(text)) {
+    return;
+  }
+
+  event.preventDefault();
+  const name = nextPastedTextFileName(pendingAttachments.value.map((item) => item.name));
+  if (pendingAttachments.value.length >= AI_CHAT_MAX_ATTACHMENTS) {
+    attachmentNotice.value = t("aiChat.attachmentLimit", { count: AI_CHAT_MAX_ATTACHMENTS });
+    return;
+  }
+
+  const result = attachmentFromPastedText(text, name);
+  if (!result.ok) {
+    attachmentNotice.value = t("aiChat.attachmentTooLarge", { name, maxMb: attachmentMaxMb });
+    return;
+  }
+
+  pendingAttachments.value = [
+    ...pendingAttachments.value,
+    { ...result.attachment, id: createAiChatMessageId() },
+  ];
+  attachmentNotice.value = t("aiChat.pasteAttachedAsFile", { name: result.attachment.name });
 }
 
 function removeAttachment(id: string): void {
@@ -1413,6 +1446,7 @@ async function onCopyChat(): Promise<void> {
               @focus="onComposerFocus"
               @blur="onComposerBlur"
               @keydown="onComposerKeydown"
+              @paste="onComposerPaste"
             />
             <div class="ai-chat-panel__composer-actions">
               <button

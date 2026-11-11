@@ -7,6 +7,8 @@ import {
   AI_CHAT_IMAGE_MIME_TYPES,
   AI_CHAT_MARKDOWN_EXTENSIONS,
   AI_CHAT_MESSAGE_MAX_CHARS,
+  AI_CHAT_PASTED_TEXT_BASENAME,
+  AI_CHAT_PASTED_TEXT_EXTENSION,
   AI_CHAT_SPREADSHEET_EXTENSIONS,
   AI_CHAT_SPREADSHEET_MIME_TYPE,
   AI_CHAT_TEXT_EXTENSIONS,
@@ -18,6 +20,8 @@ import { extractPdfText } from "@/utils/ai-chat-pdf-text";
 import { extractXlsxText } from "@/utils/ai-chat-xlsx-text";
 
 const TEXT_FILE_EXTENSION = ".txt";
+const PASTED_TEXT_MIME_TYPE = "text/plain";
+const PASTED_TEXT_NAME_INDEX_START = 2;
 const PDF_EXTENSION = ".pdf";
 const PDF_MIME_TYPE = "application/pdf";
 const SVG_EXTENSION = ".svg";
@@ -122,7 +126,7 @@ function safeAttachmentName(name: string): string {
   return (cleaned.trim() || "file").slice(0, AI_CHAT_ATTACHMENT_NAME_MAX_CHARS);
 }
 
-function excerpt(text: string): string {
+function excerpt(text: string, maxChars = AI_CHAT_ATTACHMENT_EXCERPT_MAX_CHARS): string {
   let normalized = "";
   for (const char of text) {
     if (char.charCodeAt(0) > 0) {
@@ -131,10 +135,50 @@ function excerpt(text: string): string {
   }
   normalized = normalized.trim();
   const body = normalized || AI_CHAT_ATTACHMENT_EMPTY_TEXT;
-  if (body.length <= AI_CHAT_ATTACHMENT_EXCERPT_MAX_CHARS) {
+  if (body.length <= maxChars) {
     return body;
   }
-  return `${body.slice(0, AI_CHAT_ATTACHMENT_EXCERPT_MAX_CHARS)}\n…`;
+  return `${body.slice(0, maxChars)}\n…`;
+}
+
+/** Вставка длиннее обычного сообщения уходит во вложение, а не в поле ввода. */
+export function isOversizedChatPaste(text: string): boolean {
+  return text.trim().length > AI_CHAT_MESSAGE_MAX_CHARS;
+}
+
+export function nextPastedTextFileName(existingNames: readonly string[]): string {
+  const first = `${AI_CHAT_PASTED_TEXT_BASENAME}${AI_CHAT_PASTED_TEXT_EXTENSION}`;
+  if (!existingNames.includes(first)) {
+    return first;
+  }
+
+  let index = PASTED_TEXT_NAME_INDEX_START;
+  let candidate = `${AI_CHAT_PASTED_TEXT_BASENAME}-${index}${AI_CHAT_PASTED_TEXT_EXTENSION}`;
+  while (existingNames.includes(candidate)) {
+    index += 1;
+    candidate = `${AI_CHAT_PASTED_TEXT_BASENAME}-${index}${AI_CHAT_PASTED_TEXT_EXTENSION}`;
+  }
+  return candidate;
+}
+
+export function attachmentFromPastedText(
+  text: string,
+  name: string,
+): { ok: true; attachment: AiChatReadAttachment } | { ok: false; reason: "too-large" } {
+  const trimmed = text.trim();
+  if (new TextEncoder().encode(trimmed).length > AI_CHAT_ATTACHMENT_FILE_MAX_BYTES) {
+    return { ok: false, reason: "too-large" };
+  }
+
+  return {
+    ok: true,
+    attachment: {
+      name: safeAttachmentName(name),
+      kind: "text",
+      mimeType: PASTED_TEXT_MIME_TYPE,
+      textExcerpt: excerpt(trimmed, AI_CHAT_MESSAGE_MAX_CHARS),
+    },
+  };
 }
 
 async function blobToBase64(blob: Blob): Promise<string> {
