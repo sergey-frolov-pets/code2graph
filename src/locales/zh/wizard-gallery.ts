@@ -102,6 +102,9 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.clusteredStacked.title": "堆叠柱状图",
   "llm.wizard.gallery.example.mermaid.clusteredStacked.description":
     "系列叠成一根柱：正值从零向上增长，负值向下增长。",
+  "llm.wizard.gallery.example.mermaid.seriesArea.title": "堆叠面积图",
+  "llm.wizard.gallery.example.mermaid.seriesArea.description":
+    "按类别中心把堆叠画成面积，并在外侧标出各部分之和。",
   "llm.wizard.gallery.example.mermaid.clusteredMono.title": "单色系列柱",
   "llm.wizard.gallery.example.mermaid.clusteredMono.description":
     "同样的柱用灰色深浅表示，适合打印和无彩色文档。",

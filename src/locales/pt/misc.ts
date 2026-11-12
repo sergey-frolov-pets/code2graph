@@ -73,6 +73,7 @@ export const miscMessages = {
   "samples.mermaid.clustered": "Gráfico de séries",
   "samples.mermaid.clusteredRotated": "Gráfico de séries — girado 90°",
   "samples.mermaid.clusteredStacked": "Gráfico de séries — empilhado",
+  "samples.mermaid.seriesArea": "Gráfico de séries — áreas",
   "samples.mermaid.clusteredMono": "Gráfico de séries — mono",
   "samples.mermaid.clusteredMonoInvert": "Gráfico de séries — mono invertido",
   "samples.mermaid.seriesLines": "Gráfico de séries — linhas",

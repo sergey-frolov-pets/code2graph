@@ -1417,3 +1417,102 @@ describe("waterfall: фон и цвет текста", () => {
     expect(svg).toContain('fill="#0b0f14"');
   });
 });
+
+describe("waterfall: оси, сетка и зазор", () => {
+  const chart = `waterfall
+y "млн" -20 --> 80
+labels none
+connectors off
+=10 : Альфа
+-30 : Бета`;
+
+  function barBox(svg: string, id: string): { x: number; width: number } {
+    const tag = new RegExp(`<rect\\b[^>]*data-bar="${id}"[^>]*>`).exec(svg)?.[0] ?? "";
+    const read = (name: string) => Number(new RegExp(`\\b${name}="([\\d.]+)"`).exec(tag)?.[1]);
+    return { x: read("x"), width: read("width") };
+  }
+
+  it("разбирает grid off, axis x|y и gap и отвергает вторую ось", () => {
+    const parsed = waterfallEngine.parse(`${chart}
+grid off
+axis x off
+axis y off
+gap 16%`);
+    expect(parsed.ok).toBe(true);
+    const model = parsed.value as WaterfallModel;
+    expect(model.axis.grid).toBe(false);
+    expect(model.axis.hidden).toBe(true);
+    expect(model.categoryAxisHidden).toBe(true);
+    expect(model.barGap).toEqual({ unit: "percent", value: 16 });
+
+    const restored = waterfallEngine.parse(`${chart}\naxis y off\ngrid`);
+    expect(restored.value?.axis.hidden).toBe(true);
+    expect(restored.value?.axis.grid).toBe(true);
+
+    expect(waterfallEngine.parse(`${chart}\ngap 0`).value?.barGap).toEqual({ unit: "px", value: 0 });
+    expect(waterfallEngine.parse(`${chart}\ngap 100%`).ok).toBe(false);
+    expect(waterfallEngine.parse(`${chart}\ngap -2`).ok).toBe(false);
+    expect(waterfallEngine.parse(`${chart}\naxis y2 off`).errors[0]?.message).toContain("второй оси");
+    expect(waterfallEngine.parse(`${chart}\ngrid y2`).errors[0]?.message).toContain("grid y2");
+    expect(waterfallEngine.parse(`${chart}\ngrid 0`).errors[0]?.message).toMatch(/положительный шаг/i);
+  });
+
+  it("прячет сетку, подписи выбранной оси и штрих нуля", () => {
+    const gridOff = waterfallEngine.render(
+      waterfallEngine.parse(`${chart}\ngrid off`).value as WaterfallModel,
+      {},
+    );
+    expect(gridOff).not.toContain('stroke="#d8dee4"');
+    expect(gridOff).toContain(">20<");
+    expect(gridOff).toContain(">Альфа<");
+
+    const valueOff = waterfallEngine.render(
+      waterfallEngine.parse(`${chart}\naxis y off`).value as WaterfallModel,
+      {},
+    );
+    expect(valueOff).not.toContain('stroke="#d8dee4"');
+    expect(valueOff).not.toContain('stroke-dasharray="4 3"');
+    expect(valueOff).not.toContain(">20<");
+    expect(valueOff).not.toContain(">млн<");
+    expect(valueOff).toContain(">Альфа<");
+
+    const categoryOff = waterfallEngine.render(
+      waterfallEngine.parse(`${chart}\naxis x off`).value as WaterfallModel,
+      {},
+    );
+    expect(categoryOff).not.toContain(">Альфа<");
+    expect(categoryOff).toContain(">20<");
+
+    const gridBack = waterfallEngine.render(
+      waterfallEngine.parse(`${chart}\naxis y off\ngrid`).value as WaterfallModel,
+      {},
+    );
+    expect(gridBack).toContain('stroke="#d8dee4"');
+    expect(gridBack).not.toContain(">20<");
+  });
+
+  it("меняет просвет пикселями и процентом", () => {
+    const multi = (extra: string) =>
+      waterfallEngine.render(
+        waterfallEngine.parse(`waterfall
+labels none
+connectors off
+y "v" 0 --> 80
+${extra}
+series План
+=20 : А
++10 : Б
+series Факт
+=15 : А
++8 : Б`).value as WaterfallModel,
+        {},
+      );
+    const plain = barBox(multi(""), "1-0").x - barBox(multi(""), "0-0").x;
+    const pixels = barBox(multi("gap 28"), "1-0").x - barBox(multi("gap 28"), "0-0").x;
+    expect(pixels).toBeGreaterThan(plain);
+
+    const narrow = barBox(multi("gap 10%"), "0-0").width;
+    const wideGap = barBox(multi("gap 60%"), "0-0").width;
+    expect(wideGap).toBeLessThan(narrow);
+  });
+});

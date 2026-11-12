@@ -73,6 +73,7 @@ export const miscMessages = {
   "samples.mermaid.clustered": "शृंखला चार्ट",
   "samples.mermaid.clusteredRotated": "शृंखला चार्ट — 90° घुमाया",
   "samples.mermaid.clusteredStacked": "शृंखला चार्ट — स्टैक",
+  "samples.mermaid.seriesArea": "शृंखला चार्ट — क्षेत्र",
   "samples.mermaid.clusteredMono": "शृंखला चार्ट — एकवर्णी",
   "samples.mermaid.clusteredMonoInvert": "शृंखला चार्ट — उलटा एकवर्णी",
   "samples.mermaid.seriesLines": "शृंखला चार्ट — रेखाएँ",

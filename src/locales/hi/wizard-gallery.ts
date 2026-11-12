@@ -102,6 +102,9 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.clusteredStacked.title": "स्टैक बार चार्ट",
   "llm.wizard.gallery.example.mermaid.clusteredStacked.description":
     "एक स्तंभ में शृंखलाएँ: धनात्मक शून्य से ऊपर बढ़ते हैं, ऋणात्मक नीचे।",
+  "llm.wizard.gallery.example.mermaid.seriesArea.title": "स्टैक क्षेत्र",
+  "llm.wizard.gallery.example.mermaid.seriesArea.description":
+    "श्रेणी केंद्रों के बीच क्षेत्र के रूप में स्टैक, बाहर भागों का योग।",
   "llm.wizard.gallery.example.mermaid.clusteredMono.title": "एकवर्णी शृंखला बार",
   "llm.wizard.gallery.example.mermaid.clusteredMono.description":
     "छपाई और बिना-रंग दस्तावेज़ों के लिए वही बार धूसर रंगों में।",

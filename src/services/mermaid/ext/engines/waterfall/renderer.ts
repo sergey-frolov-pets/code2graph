@@ -173,12 +173,25 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
   }
   // Раскладка бара — до ширины SVG: подпись разрыва знает, где кончается последний бар.
   // С `ratio` бар занимает колонку целиком (минус зазор), иначе шире 64 px он не растёт.
+  const slotGap = model.barGap?.unit === "percent" ? model.barGap.value / 100 : BAR_GAP;
   const barWidth = clamp(
-    (columnWidth * (1 - BAR_GAP)) / groups,
+    (columnWidth * (1 - slotGap)) / groups,
     MIN_BAR_WIDTH,
     model.ratio ? columnWidth : MAX_BAR_WIDTH,
   );
-  const groupSpan = barWidth * groups + (groups - 1) * 4;
+  const seriesGap = model.barGap
+    ? model.barGap.unit === "px"
+      ? model.barGap.value
+      : (barWidth * model.barGap.value) / 100
+    : 4;
+  let groupSpan = barWidth * groups + Math.max(0, groups - 1) * seriesGap;
+  if (model.barGap?.unit === "px") {
+    const needed = groupSpan + model.barGap.value;
+    if (needed > columnWidth) {
+      columnWidth = needed;
+      plotWidth = columnWidth * columns;
+    }
+  }
   const rightBarEdge = leftPad + (columns - 1) * columnWidth + (columnWidth + groupSpan) / 2;
   const width = leftPad + plotWidth + rightRoomForBreak;
   const height = padTop + plotHeight + padBottom;
@@ -208,14 +221,17 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
   // на той же высоте) — рисуем только первое из них.
   const drawnTickYs = new Set<number>();
   const drawnTickLabels = new Set<string>();
-  if (!axisHidden) {
-    for (const tick of ticks) {
-      if (breaks.some((b) => tick > b.after && tick < b.before)) continue;
-      const y = yOf(tick);
-      const yKey = Math.round(y * 100) / 100;
-      if (drawnTickYs.has(yKey)) continue;
-      drawnTickYs.add(yKey);
+  const showGrid = axis.grid !== false;
+  for (const tick of ticks) {
+    if (breaks.some((b) => tick > b.after && tick < b.before)) continue;
+    const y = yOf(tick);
+    const yKey = Math.round(y * 100) / 100;
+    if (drawnTickYs.has(yKey)) continue;
+    drawnTickYs.add(yKey);
+    if (showGrid) {
       svg.line(plotLeft, y, plotLeft + plotWidth, y, { stroke: palette.grid, "stroke-width": 1 });
+    }
+    if (!axisHidden) {
       svg.text(plotLeft - Math.round((8 * fontSize) / FONT_BASE), y + Math.round((4 * fontSize) / FONT_BASE), fmt(tick), {
         "text-anchor": "end",
         "font-size": labelFontSize,
@@ -223,6 +239,8 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       });
       drawnTickLabels.add(fmt(tick));
     }
+  }
+  if (!axisHidden) {
 
     // Граница разрыва подписывается, только если сетка это число уже не
     // показывает. Минимум вырезанного участка — НИЖЕ линии, максимум — ВЫШЕ.
@@ -298,16 +316,6 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       stroke: palette.axis,
       "stroke-width": 1,
     });
-  } else {
-    // Ось скрыта — оставляем только линию нуля, если ноль в шкале.
-    if (axis.min < 0 && axis.max > 0) {
-      const zeroY = yOf(0);
-      svg.line(plotLeft, zeroY, plotLeft + plotWidth, zeroY, {
-        stroke: palette.axis,
-        "stroke-width": 1,
-        "stroke-dasharray": "4 3",
-      });
-    }
   }
 
   // Линии разрыва: две параллельные черты поперёк области графика.
@@ -414,7 +422,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
         const from = connectorFromLevel(g, col);
         const to = connectorToLevel(g, col + 1);
         const x1 =
-          plotLeft + col * columnWidth + (columnWidth - groupSpan) / 2 + g * (barWidth + 4) + barWidth;
+          plotLeft + col * columnWidth + (columnWidth - groupSpan) / 2 + g * (barWidth + seriesGap) + barWidth;
         const x2 = x1 + columnWidth - barWidth;
         // Зазор между барами почти съедался: линия была длиной ~12 px и терялась
         // на фоне сетки. Делаем её контрастнее и толще — как в Excel/McKinsey.
@@ -549,7 +557,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
             : colors.decrease;
       }
 
-      const x = startX + g * (barWidth + 4);
+      const x = startX + g * (barWidth + seriesGap);
       // Бар, проходящий через разрыв шкалы, рисуется кусками с зигзагом.
       drawBar(x, from, to, color, `${g}-${col}`);
 
@@ -634,18 +642,20 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       }
     }
 
-    const label = truncateLabel(labels[col] ?? "", columnWidth - 6, labelFontSize);
-    drawLabelLines(
-      svg,
-      columnLeft + columnWidth / 2,
-      plotBottom + Math.round((18 * fontSize) / FONT_BASE),
-      label,
-      labelFontSize,
-      {
-        "font-size": labelFontSize,
-        fill: palette.fg,
-      },
-    );
+    if (!model.categoryAxisHidden) {
+      const label = truncateLabel(labels[col] ?? "", columnWidth - 6, labelFontSize);
+      drawLabelLines(
+        svg,
+        columnLeft + columnWidth / 2,
+        plotBottom + Math.round((18 * fontSize) / FONT_BASE),
+        label,
+        labelFontSize,
+        {
+          "font-size": labelFontSize,
+          fill: palette.fg,
+        },
+      );
+    }
   }
 
   // Легенда: при мульти-серии у каждой группы свой цвет — цвета всех групп

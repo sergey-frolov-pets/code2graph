@@ -18,4 +18,14 @@ break 200 --> 700 "разрыв"
 = : Итог
 ```
 
-`break <after> --> <before>` cuts a range out of the axis. `fontsize` is 6–28. `labels` is above, inside, both, or none.
+```
+waterfall
+%% grid off оставляет подписи делений и убирает линии сетки.
+axis y on
+grid off
+y "млн" 0 --> 200
+=40 : Старт
++20 : Рост
+```
+
+`break <after> --> <before>` cuts a range out of the axis. `fontsize` is 6–28. `labels` is above, inside, both, or none. `axis y off` hides the value axis and its grid. `axis x off` hides the column labels. `grid off` hides only the grid lines.

@@ -16,6 +16,7 @@ export const MERMAID_EXT_EXTRA: Record<
 %% Más funciones: ejemplos «corte de eje», «varias series», «etiquetas».
 %% NOTA: las líneas discontinuas entre barras son conectores (activados por defecto).
 %%       Para apagarlos: connectors off
+%% axis y off oculta el eje de valores y su rejilla, axis x off las etiquetas, grid off solo la rejilla, gap el hueco.
 title Ingresos 2026
 y "mill. USD" 0 --> 500
 grid 100
@@ -39,9 +40,11 @@ break 300 --> 800 "corte de eje"
     waterfallMulti: `waterfall
 %% Varias series: cada grupo tiene su color de base,
 %% los aumentos son un 20% más claros y las caídas un 25% más oscuras.
+%% gap 16% es una parte del hueco. gap 8 lo da en píxeles.
 title Plan frente a real
 y "mill. USD" 0 --> 400
 grid 100
+gap 16%
 series Plan color=#1f6feb
 =120 : Q1
 +80 : Q2
@@ -273,10 +276,12 @@ Suroeste : x=24, y=22, group=Región, color=#f97316`,
 %%   y "etiqueta" min --> max     escala del eje de valores
 %%   labels above|inside|none  etiquetas de los valores
 %%   colors s1=#hex s2=#hex    paleta de series (o color=#hex en la fila series, o mono)
+%% axis y off y axis x off ocultan ese eje y su rejilla. gap 4 es el hueco en píxeles.
 title Ingresos por canal de ventas
 categories Q1, Q2, Q3, Q4
 y "mill. USD" 0 --> 200
 grid 50
+gap 4
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series En línea : 120, 145, 165, 190
@@ -301,15 +306,31 @@ series Socios : 45, 60, 75, 95 color=#f97316`,
     clusteredStacked: `series
 %% Barras apiladas: las series comparten una columna en lugar de ir una al lado de la otra.
 %% stacked / bars stacked / layout stacked
+%% Las áreas están en el ejemplo seriesArea. Aquí siguen siendo columnas.
 %% Otra vez una al lado de la otra: stacked off o bars grouped
 %% Los valores positivos crecen hacia arriba desde cero, los negativos hacia abajo.
 title Composición de los ingresos
 stacked
+gap 8%
 categories Q1, Q2, Q3, Q4
 y "mill. USD" 0 --> 400
 grid 50
-labels inside
+labels inside sum
 colors s1=#0969da s2=#8250df s3=#2da44e
+series Producto : 80, 90, 70, 110
+series Servicios : 50, 60, 55, 70
+series Socios : 30, 25, 40, 35`,
+    seriesArea: `series
+%% Áreas: stacked area une la pila por los centros de las categorías.
+%% Un hueco (-, vacío, null) corta la banda y no suma altura.
+%% labels sum escribe la suma fuera de la pila. El cero no se muestra.
+%% Sigue valiendo con rotate 90, line, break y cagr.
+title Composición en áreas
+stacked area
+labels sum
+gap 12%
+categories Q1, Q2, Q3, Q4
+y "mill. USD" 0 --> 400
 series Producto : 80, 90, 70, 110
 series Servicios : 50, 60, 55, 70
 series Socios : 30, 25, 40, 35`,
@@ -344,6 +365,8 @@ title Reales y referencias
 categories Q1, Q2, Q3, Q4
 y "mill. USD" 0 --> 220
 y2 "conversión, %" 0 --> 40
+%% grid y2 5 dibuja la rejilla del segundo eje. grid y2 off y axis y2 off la ocultan.
+grid y2 5
 grid 20
 labels above
 series Real : 120, 145, 165, 190
@@ -434,6 +457,7 @@ line : 70, 100, 120, 150 style=dot`,
 %% 其余功能见示例「轴截断」「多系列」「标签」。
 %% 注意：柱之间的虚线是连接线（默认开启）。
 %%       关闭方式：connectors off
+%% axis y off 隐藏数值轴和网格，axis x off 隐藏列标签，grid off 只隐藏网格，gap 设置间距。
 title 2026 年收入
 y "百万美元" 0 --> 500
 grid 100
@@ -457,9 +481,11 @@ break 300 --> 800 "轴截断"
     waterfallMulti: `waterfall
 %% 多个系列：每组有自己的基色，
 %% 增长浅 20%，下降深 25%。
+%% gap 16% 是空白比例。gap 8 用像素给出同样的间距。
 title 计划与实际
 y "百万美元" 0 --> 400
 grid 100
+gap 16%
 series 计划 color=#1f6feb
 =120 : Q1
 +80 : Q2
@@ -691,10 +717,12 @@ data
 %%   y "标签" min --> max     数值轴刻度
 %%   labels above|inside|none  数值标签
 %%   colors s1=#hex s2=#hex    系列调色板（或 series 行上的 color=#hex，或 mono）
+%% axis y off 和 axis x off 隐藏所选轴及其网格。gap 4 是像素间距。
 title 按销售渠道的收入
 categories Q1, Q2, Q3, Q4
 y "百万美元" 0 --> 200
 grid 50
+gap 4
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series 线上 : 120, 145, 165, 190
@@ -719,15 +747,31 @@ series 伙伴 : 45, 60, 75, 95 color=#f97316`,
     clusteredStacked: `series
 %% 堆积柱：系列共用一根柱，而不是并排。
 %% stacked / bars stacked / layout stacked
+%% 面积见单独示例 seriesArea。这里仍是柱。
 %% 恢复并排：stacked off 或 bars grouped
 %% 正值从零向上长，负值向下长。
 title 收入构成
 stacked
+gap 8%
 categories Q1, Q2, Q3, Q4
 y "百万美元" 0 --> 400
 grid 50
-labels inside
+labels inside sum
 colors s1=#0969da s2=#8250df s3=#2da44e
+series 产品 : 80, 90, 70, 110
+series 服务 : 50, 60, 55, 70
+series 伙伴 : 30, 25, 40, 35`,
+    seriesArea: `series
+%% 面积：stacked area 按类别中心连接堆叠。
+%% 空位（-、空、null）断开该系列并不会增加高度。
+%% labels sum 在外侧写出各部分之和。零不标注。
+%% 可与 rotate 90、line、break 和 cagr 一起使用。
+title 面积构成
+stacked area
+labels sum
+gap 12%
+categories Q1, Q2, Q3, Q4
+y "百万美元" 0 --> 400
 series 产品 : 80, 90, 70, 110
 series 服务 : 50, 60, 55, 70
 series 伙伴 : 30, 25, 40, 35`,
@@ -762,6 +806,8 @@ title 实际与参照
 categories Q1, Q2, Q3, Q4
 y "百万美元" 0 --> 220
 y2 "转化率, %" 0 --> 40
+%% grid y2 5 绘制第二轴网格。grid y2 off 和 axis y2 off 会隐藏它。
+grid y2 5
 grid 20
 labels above
 series 实际 : 120, 145, 165, 190
@@ -852,6 +898,7 @@ line : 70, 100, 120, 150 style=dot`,
 %% その他の機能は例「軸の破断」「複数系列」「ラベル」を参照。
 %% 注意：棒の間の破線はコネクタです（既定でオン）。
 %%       オフにするには：connectors off
+%% axis y off は値軸と目盛り、axis x off は項目名、grid off は目盛り線だけ、gap は間隔です。
 title 2026 年の売上
 y "百万米ドル" 0 --> 500
 grid 100
@@ -875,9 +922,11 @@ break 300 --> 800 "軸の破断"
     waterfallMulti: `waterfall
 %% 複数系列：各グループに基準色があり、
 %% 増加は 20% 明るく、減少は 25% 暗くなります。
+%% gap 16% は空きの割合。gap 8 は同じ間隔をピクセルで指定します。
 title 計画と実績
 y "百万米ドル" 0 --> 400
 grid 100
+gap 16%
 series 計画 color=#1f6feb
 =120 : Q1
 +80 : Q2
@@ -1109,10 +1158,12 @@ data
 %%   y "ラベル" min --> max     値軸の目盛り
 %%   labels above|inside|none  値のラベル
 %%   colors s1=#hex s2=#hex    系列のパレット（series 行の color=#hex、または mono）
+%% axis y off と axis x off は選んだ軸と目盛りを隠します。gap 4 はピクセル間隔。
 title 販路別の売上
 categories Q1, Q2, Q3, Q4
 y "百万米ドル" 0 --> 200
 grid 50
+gap 4
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series オンライン : 120, 145, 165, 190
@@ -1137,15 +1188,31 @@ series パートナー : 45, 60, 75, 95 color=#f97316`,
     clusteredStacked: `series
 %% 積み上げ棒：系列は横並びではなく一つの柱を共有します。
 %% stacked / bars stacked / layout stacked
+%% 面は別例 seriesArea。ここは柱のまま。
 %% 再び横並び：stacked off または bars grouped
 %% 正の値はゼロから上へ、負の値は下へ伸びます。
 title 売上の内訳
 stacked
+gap 8%
 categories Q1, Q2, Q3, Q4
 y "百万米ドル" 0 --> 400
 grid 50
-labels inside
+labels inside sum
 colors s1=#0969da s2=#8250df s3=#2da44e
+series 製品 : 80, 90, 70, 110
+series サービス : 50, 60, 55, 70
+series パートナー : 30, 25, 40, 35`,
+    seriesArea: `series
+%% 面：stacked area はカテゴリの中心をつないで積み上げます。
+%% 抜け（-、空、null）はその系列の帯を切り、高さは足しません。
+%% labels sum は合計を外側に書きます。ゼロは出しません。
+%% rotate 90、line、break、cagr と一緒に使えます。
+title 面で見る構成
+stacked area
+labels sum
+gap 12%
+categories Q1, Q2, Q3, Q4
+y "百万米ドル" 0 --> 400
 series 製品 : 80, 90, 70, 110
 series サービス : 50, 60, 55, 70
 series パートナー : 30, 25, 40, 35`,
@@ -1180,6 +1247,8 @@ title 実績と目安
 categories Q1, Q2, Q3, Q4
 y "百万米ドル" 0 --> 220
 y2 "コンバージョン, %" 0 --> 40
+%% grid y2 5 は第2軸の目盛りです。grid y2 off と axis y2 off で隠します。
+grid y2 5
 grid 20
 labels above
 series 実績 : 120, 145, 165, 190
@@ -1270,6 +1339,7 @@ line : 70, 100, 120, 150 style=dot`,
 %% और सुविधाएँ उदाहरणों में: «अक्ष विराम», «कई शृंखलाएँ», «लेबल»।
 %% ध्यान दें: स्तंभों के बीच की डैश रेखाएँ कनेक्टर हैं (डिफ़ॉल्ट चालू)।
 %%       बंद करने के लिए: connectors off
+%% axis y off मान अक्ष और ग्रिड छिपाता है, axis x off स्तंभ नाम, grid off केवल ग्रिड, gap अंतर।
 title आय 2026
 y "मिलियन डॉलर" 0 --> 500
 grid 100
@@ -1293,9 +1363,11 @@ break 300 --> 800 "अक्ष विराम"
     waterfallMulti: `waterfall
 %% कई शृंखलाएँ: प्रत्येक समूह का अपना आधार रंग होता है,
 %% वृद्धि 20% हल्की होती है, कमी 25% गहरी।
+%% gap 16% खाली जगह का हिस्सा है। gap 8 वही अंतर पिक्सेल में देता है।
 title योजना बनाम वास्तविक
 y "मिलियन डॉलर" 0 --> 400
 grid 100
+gap 16%
 series योजना color=#1f6feb
 =120 : Q1
 +80 : Q2
@@ -1527,10 +1599,12 @@ data
 %%   y "लेबल" min --> max     मान अक्ष का पैमाना
 %%   labels above|inside|none  मानों के लेबल
 %%   colors s1=#hex s2=#hex    शृंखला पैलेट (या series पंक्ति पर color=#hex, या mono)
+%% axis y off और axis x off चुनी धुरी और उसकी ग्रिड छिपाते हैं। gap 4 पिक्सेल अंतर है।
 title बिक्री माध्यम के अनुसार आय
 categories Q1, Q2, Q3, Q4
 y "मिलियन डॉलर" 0 --> 200
 grid 50
+gap 4
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series ऑनलाइन : 120, 145, 165, 190
@@ -1555,15 +1629,31 @@ series साझेदार : 45, 60, 75, 95 color=#f97316`,
     clusteredStacked: `series
 %% स्टैक पट्टियाँ: शृंखलाएँ साथ-साथ नहीं, एक ही स्तंभ साझा करती हैं।
 %% stacked / bars stacked / layout stacked
+%% क्षेत्र अलग उदाहरण seriesArea में है। यहाँ स्तंभ रहते हैं।
 %% फिर साथ-साथ: stacked off या bars grouped
 %% धनात्मक मान शून्य से ऊपर बढ़ते हैं, ऋणात्मक नीचे।
 title आय का मिश्रण
 stacked
+gap 8%
 categories Q1, Q2, Q3, Q4
 y "मिलियन डॉलर" 0 --> 400
 grid 50
-labels inside
+labels inside sum
 colors s1=#0969da s2=#8250df s3=#2da44e
+series उत्पाद : 80, 90, 70, 110
+series सेवाएँ : 50, 60, 55, 70
+series साझेदार : 30, 25, 40, 35`,
+    seriesArea: `series
+%% क्षेत्र: stacked area श्रेणियों के केंद्रों से ढेर जोड़ता है।
+%% खाली स्थान (-, खाली, null) उस श्रृंखला को तोड़ता है और ऊँचाई नहीं जोड़ता।
+%% labels sum योग बाहर लिखता है। शून्य नहीं लिखा जाता।
+%% यह rotate 90, line, break और cagr के साथ रहता है।
+title क्षेत्र के रूप में रचना
+stacked area
+labels sum
+gap 12%
+categories Q1, Q2, Q3, Q4
+y "मिलियन डॉलर" 0 --> 400
 series उत्पाद : 80, 90, 70, 110
 series सेवाएँ : 50, 60, 55, 70
 series साझेदार : 30, 25, 40, 35`,
@@ -1598,6 +1688,8 @@ title वास्तविक और संदर्भ
 categories Q1, Q2, Q3, Q4
 y "मिलियन डॉलर" 0 --> 220
 y2 "रूपांतरण, %" 0 --> 40
+%% grid y2 5 दूसरी धुरी की ग्रिड है। grid y2 off और axis y2 off उसे छिपाते हैं।
+grid y2 5
 grid 20
 labels above
 series वास्तविक : 120, 145, 165, 190
@@ -1688,6 +1780,7 @@ line : 70, 100, 120, 150 style=dot`,
 %% Mais recursos: exemplos «quebra de eixo», «várias séries», «rótulos».
 %% NOTA: as linhas tracejadas entre as barras são conectores (ligados por padrão).
 %%       Para desligar: connectors off
+%% axis y off esconde o eixo de valores e a grelha, axis x off as legendas, grid off só a grelha, gap o espaço.
 title Receita 2026
 y "mi USD" 0 --> 500
 grid 100
@@ -1711,9 +1804,11 @@ break 300 --> 800 "quebra de eixo"
     waterfallMulti: `waterfall
 %% Várias séries: cada grupo tem a própria cor de base,
 %% aumentos 20% mais claros, quedas 25% mais escuras.
+%% gap 16% é uma parte do vazio. gap 8 dá o mesmo espaço em píxeis.
 title Plano e realizado
 y "mi USD" 0 --> 400
 grid 100
+gap 16%
 series Plano color=#1f6feb
 =120 : Q1
 +80 : Q2
@@ -1945,10 +2040,12 @@ Sudoeste : x=24, y=22, group=Região, color=#f97316`,
 %%   y "rótulo" min --> max     escala do eixo de valores
 %%   labels above|inside|none  rótulos dos valores
 %%   colors s1=#hex s2=#hex    paleta das séries (ou color=#hex na linha series, ou mono)
+%% axis y off e axis x off escondem esse eixo e a grelha. gap 4 é o espaço em píxeis.
 title Receita por canal de vendas
 categories Q1, Q2, Q3, Q4
 y "mi USD" 0 --> 200
 grid 50
+gap 4
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Loja virtual : 120, 145, 165, 190
@@ -1973,15 +2070,31 @@ series Parceiros : 45, 60, 75, 95 color=#f97316`,
     clusteredStacked: `series
 %% Barras empilhadas: as séries compartilham uma coluna em vez de ficarem lado a lado.
 %% stacked / bars stacked / layout stacked
+%% As áreas ficam no exemplo seriesArea. Aqui continuam colunas.
 %% Lado a lado de novo: stacked off ou bars grouped
 %% Valores positivos crescem para cima a partir do zero, os negativos para baixo.
 title Composição da receita
 stacked
+gap 8%
 categories Q1, Q2, Q3, Q4
 y "mi USD" 0 --> 400
 grid 50
-labels inside
+labels inside sum
 colors s1=#0969da s2=#8250df s3=#2da44e
+series Produto : 80, 90, 70, 110
+series Serviços : 50, 60, 55, 70
+series Parceiros : 30, 25, 40, 35`,
+    seriesArea: `series
+%% Áreas: stacked area liga a pilha pelos centros das categorias.
+%% Um vazio (-, vazio, null) corta a faixa e não soma altura.
+%% labels sum escreve a soma fora da pilha. Zero não aparece.
+%% Continua válido com rotate 90, line, break e cagr.
+title Composição em áreas
+stacked area
+labels sum
+gap 12%
+categories Q1, Q2, Q3, Q4
+y "mi USD" 0 --> 400
 series Produto : 80, 90, 70, 110
 series Serviços : 50, 60, 55, 70
 series Parceiros : 30, 25, 40, 35`,
@@ -2016,6 +2129,8 @@ title Realizados e referências
 categories Q1, Q2, Q3, Q4
 y "mi USD" 0 --> 220
 y2 "conversão, %" 0 --> 40
+%% grid y2 5 desenha a grelha do segundo eixo. grid y2 off e axis y2 off escondem-na.
+grid y2 5
 grid 20
 labels above
 series Realizado : 120, 145, 165, 190
@@ -2106,6 +2221,7 @@ line : 70, 100, 120, 150 style=dot`,
 %% Weitere Möglichkeiten: Beispiele «Achsenbruch», «mehrere Serien», «Beschriftungen».
 %% HINWEIS: die gestrichelten Linien zwischen den Balken sind Verbinder (standardmäßig an).
 %%       Ausschalten mit: connectors off
+%% axis y off blendet die Wertachse samt Gitter aus, axis x off die Spaltennamen, grid off nur das Gitter, gap den Abstand.
 title Umsatz 2026
 y "Mio. USD" 0 --> 500
 grid 100
@@ -2129,9 +2245,11 @@ break 300 --> 800 "Achsenbruch"
     waterfallMulti: `waterfall
 %% Mehrere Serien: jede Gruppe hat eine eigene Grundfarbe,
 %% Zuwächse 20% heller, Rückgänge 25% dunkler.
+%% gap 16% ist ein Anteil Leerraum. gap 8 setzt denselben Abstand in Pixeln.
 title Soll und Ist
 y "Mio. USD" 0 --> 400
 grid 100
+gap 16%
 series Soll color=#1f6feb
 =120 : Q1
 +80 : Q2
@@ -2363,10 +2481,12 @@ Südwesten : x=24, y=22, group=Region, color=#f97316`,
 %%   y "Beschriftung" min --> max     Skala der Werteachse
 %%   labels above|inside|none  Wertbeschriftungen
 %%   colors s1=#hex s2=#hex    Serienpalette (oder color=#hex in der series-Zeile, oder mono)
+%% axis y off und axis x off blenden die Achse samt Gitter aus. gap 4 ist der Abstand in Pixeln.
 title Umsatz nach Vertriebskanal
 categories Q1, Q2, Q3, Q4
 y "Mio. USD" 0 --> 200
 grid 50
+gap 4
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Onlinehandel : 120, 145, 165, 190
@@ -2391,15 +2511,31 @@ series Partner : 45, 60, 75, 95 color=#f97316`,
     clusteredStacked: `series
 %% Gestapelte Balken: die Serien teilen sich eine Säule, statt nebeneinander zu stehen.
 %% stacked / bars stacked / layout stacked
+%% Flächen stehen im eigenen Beispiel seriesArea. Hier bleiben Säulen.
 %% Wieder nebeneinander: stacked off oder bars grouped
 %% Positive Werte wachsen von null nach oben, negative nach unten.
 title Umsatzmix
 stacked
+gap 8%
 categories Q1, Q2, Q3, Q4
 y "Mio. USD" 0 --> 400
 grid 50
-labels inside
+labels inside sum
 colors s1=#0969da s2=#8250df s3=#2da44e
+series Produkt : 80, 90, 70, 110
+series Dienste : 50, 60, 55, 70
+series Partner : 30, 25, 40, 35`,
+    seriesArea: `series
+%% Flächen: stacked area verbindet den Stapel über die Kategoriemitten.
+%% Eine Lücke (-, leer, null) bricht das Band und addiert keine Höhe.
+%% labels sum schreibt die Summe außen. Null wird nicht beschriftet.
+%% Der Modus bleibt mit rotate 90, line, break und cagr nutzbar.
+title Zusammensetzung als Flächen
+stacked area
+labels sum
+gap 12%
+categories Q1, Q2, Q3, Q4
+y "Mio. USD" 0 --> 400
 series Produkt : 80, 90, 70, 110
 series Dienste : 50, 60, 55, 70
 series Partner : 30, 25, 40, 35`,
@@ -2434,6 +2570,8 @@ title Istwerte und Leitlinien
 categories Q1, Q2, Q3, Q4
 y "Mio. USD" 0 --> 220
 y2 "Conversion, %" 0 --> 40
+%% grid y2 5 zeichnet das Gitter der zweiten Achse. grid y2 off und axis y2 off blenden es aus.
+grid y2 5
 grid 20
 labels above
 series Ist : 120, 145, 165, 190
@@ -2524,6 +2662,7 @@ line : 70, 100, 120, 150 style=dot`,
 %% مزيد من الإمكانات: أمثلة «قطع المحور» و«سلاسل متعددة» و«التسميات».
 %% ملاحظة: الخطوط المتقطعة بين الأعمدة موصلات (مفعّلة افتراضيًا).
 %%       لإيقافها: connectors off
+%% axis y off يخفي محور القيم وشبكتَه، axis x off تسميات الأعمدة، grid off الشبكة فقط، gap الفجوة.
 title إيراد 2026
 y "مليون دولار" 0 --> 500
 grid 100
@@ -2547,9 +2686,11 @@ break 300 --> 800 "قطع المحور"
     waterfallMulti: `waterfall
 %% سلاسل متعددة: لكل مجموعة لون أساس،
 %% الزيادة أفتح بنسبة 20% والنقصان أغمق بنسبة 25%.
+%% gap 16% نسبة الفراغ. gap 8 يحدد المسافة نفسها بالبكسل.
 title الخطة والفعلي
 y "مليون دولار" 0 --> 400
 grid 100
+gap 16%
 series الخطة color=#1f6feb
 =120 : Q1
 +80 : Q2
@@ -2781,10 +2922,12 @@ data
 %%   y "تسمية" min --> max     مقياس محور القيم
 %%   labels above|inside|none  تسميات القيم
 %%   colors s1=#hex s2=#hex    لوحة السلاسل (أو color=#hex في صف series، أو mono)
+%% axis y off و axis x off يخفيان المحور وشبكتَه. gap 4 هي الفجوة بالبكسل.
 title الإيراد حسب قناة البيع
 categories Q1, Q2, Q3, Q4
 y "مليون دولار" 0 --> 200
 grid 50
+gap 4
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series الإلكتروني : 120, 145, 165, 190
@@ -2809,15 +2952,31 @@ series الشركاء : 45, 60, 75, 95 color=#f97316`,
     clusteredStacked: `series
 %% أشرطة مكدسة: السلاسل تشترك في عمود واحد بدل أن تقف جنبًا إلى جنب.
 %% stacked / bars stacked / layout stacked
+%% المساحات في المثال المنفصل seriesArea. هنا تبقى أعمدة.
 %% جنبًا إلى جنب من جديد: stacked off أو bars grouped
 %% القيم الموجبة تنمو من الصفر إلى الأعلى، والسالبة إلى الأسفل.
 title مزيج الإيراد
 stacked
+gap 8%
 categories Q1, Q2, Q3, Q4
 y "مليون دولار" 0 --> 400
 grid 50
-labels inside
+labels inside sum
 colors s1=#0969da s2=#8250df s3=#2da44e
+series المنتج : 80, 90, 70, 110
+series الخدمات : 50, 60, 55, 70
+series الشركاء : 30, 25, 40, 35`,
+    seriesArea: `series
+%% مساحات: stacked area يصل الكومة عبر مراكز الفئات.
+%% الفراغ (- أو فارغ أو null) يقطع الشريط ولا يضيف ارتفاعًا.
+%% labels sum يكتب المجموع خارج الكومة. الصفر لا يُعرض.
+%% يبقى مع rotate 90 و line و break و cagr.
+title التركيب كمساحات
+stacked area
+labels sum
+gap 12%
+categories Q1, Q2, Q3, Q4
+y "مليون دولار" 0 --> 400
 series المنتج : 80, 90, 70, 110
 series الخدمات : 50, 60, 55, 70
 series الشركاء : 30, 25, 40, 35`,
@@ -2852,6 +3011,8 @@ title الفعلي والمرجعيات
 categories Q1, Q2, Q3, Q4
 y "مليون دولار" 0 --> 220
 y2 "التحويل, %" 0 --> 40
+%% grid y2 5 يرسم شبكة المحور الثاني. grid y2 off و axis y2 off يخفيانها.
+grid y2 5
 grid 20
 labels above
 series الفعلي : 120, 145, 165, 190

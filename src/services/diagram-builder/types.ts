@@ -147,6 +147,16 @@ export interface BuilderOptionsSettings {
   labelsMode: string;
   connectors: boolean;
   stacked: boolean;
+  /** `stacked area` — площади вместо столбцов стопки. */
+  stackArea: boolean;
+  /** `labels sum` — сумма частей над стопкой series. */
+  showSum: boolean;
+  /** `gap 12` или `gap 20%`. Пусто — зазор по умолчанию. */
+  barGap: string;
+  /** Скрыть ось y2 у series. */
+  y2Hidden: boolean;
+  y2GridMode: "auto" | "fixed" | "off";
+  y2GridStep: string;
   showData: boolean;
   showSites: boolean;
   showLabels: boolean;

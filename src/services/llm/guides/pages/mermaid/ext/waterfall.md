@@ -10,6 +10,8 @@ How a starting number becomes a total through plus and minus steps.
 
 ```
 waterfall
+%% axis y off прячет ось значений и сетку. axis x off прячет подписи колонок.
+%% grid off прячет только сетку. gap задаёт просвет: 12 пикселей или 20%.
 title Выручка 2026
 y "млн" 0 --> 120
 =40 : Q1
@@ -18,4 +20,4 @@ y "млн" 0 --> 120
 =75 : Итог
 ```
 
-The first data row must be `=N : label`. `+` and `-` are steps. Do not emit a flowchart.
+The first data row must be `=N : label`. `+` and `-` are steps. Do not emit a flowchart. There is no second axis and no separate stack total.

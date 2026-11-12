@@ -102,6 +102,9 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.clusteredStacked.title": "Gráfico de barras apiladas",
   "llm.wizard.gallery.example.mermaid.clusteredStacked.description":
     "Series apiladas en una columna: los positivos crecen hacia arriba desde cero y los negativos hacia abajo.",
+  "llm.wizard.gallery.example.mermaid.seriesArea.title": "Áreas apiladas",
+  "llm.wizard.gallery.example.mermaid.seriesArea.description":
+    "La pila como áreas entre los centros de las categorías, con la suma de las partes fuera.",
   "llm.wizard.gallery.example.mermaid.clusteredMono.title": "Barras de series monocromas",
   "llm.wizard.gallery.example.mermaid.clusteredMono.description":
     "Las mismas barras en tonos de gris para impresión y documentos sin color.",

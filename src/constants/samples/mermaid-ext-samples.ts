@@ -11,6 +11,7 @@ export const MERMAID_EXT_SAMPLES_RU: Record<MermaidExtSampleId, string> = {
 %% Остальные возможности — в примерах «разрыв шкалы», «несколько серий» и «подписи».
 %% ВАЖНО: пунктирные линии между барами — это коннекторы (включены по умолчанию).
 %%         Выключить: connectors off
+%% axis y off прячет ось значений и сетку, axis x off — подписи колонок, grid off — только сетку, gap — просвет.
 title Выручка 2026
 y "млн ₽" 0 --> 500
 grid 100
@@ -34,9 +35,11 @@ break 300 --> 800 "разрыв шкалы"
   waterfallMulti: `waterfall
 %% Несколько серий: у каждой группы свой базовый цвет,
 %% рост — светлее на 20%, падение — темнее на 25%.
+%% gap 16% — доля пустого места. gap 8 задаёт тот же просвет в пикселях.
 title План и факт
 y "млн ₽" 0 --> 400
 grid 100
+gap 16%
 series План color=#1f6feb
 =120 : Q1
 +80 : Q2
@@ -268,10 +271,12 @@ data
 %%   y "подпись" min --> max   шкала значений
 %%   labels above|inside|none  подписи чисел
 %%   colors s1=#hex s2=#hex    цвета серий (или color=#hex в строке series, или mono)
+%% axis y off и axis x off прячут выбранную ось вместе с сеткой. gap 4 — просвет в пикселях.
 title Выручка по каналам продаж
 categories Q1, Q2, Q3, Q4
 y "млн ₽" 0 --> 200
 grid 50
+gap 4
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Онлайн : 120, 145, 165, 190
@@ -296,15 +301,31 @@ series Партнёры : 45, 60, 75, 95 color=#f97316`,
   clusteredStacked: `series
 %% Стопка: серии в одном столбце, а не рядом.
 %% stacked / bars stacked / layout stacked
+%% Площади — отдельный пример seriesArea, здесь остаются столбцы.
 %% Вернуть бары рядом: stacked off или bars grouped
 %% Положительные значения растут вверх от нуля, отрицательные — вниз.
 title Состав выручки
 stacked
+gap 8%
 categories Q1, Q2, Q3, Q4
 y "млн ₽" 0 --> 400
 grid 50
-labels inside
+labels inside sum
 colors s1=#0969da s2=#8250df s3=#2da44e
+series Продукт : 80, 90, 70, 110
+series Услуги : 50, 60, 55, 70
+series Партнёры : 30, 25, 40, 35`,
+  seriesArea: `series
+%% Площади: stacked area соединяет стопку по центрам категорий.
+%% Пропуск (-, пусто, null) обрывает ленту серии и не добавляет высоту.
+%% labels sum пишет сумму частей снаружи. Ноль не подписывается.
+%% Режим работает вместе с rotate 90, line, break и cagr.
+title Состав площадями
+stacked area
+labels sum
+gap 12%
+categories Q1, Q2, Q3, Q4
+y "млн ₽" 0 --> 400
 series Продукт : 80, 90, 70, 110
 series Услуги : 50, 60, 55, 70
 series Партнёры : 30, 25, 40, 35`,
@@ -341,6 +362,8 @@ title Факт и ориентиры
 categories Q1, Q2, Q3, Q4
 y "млн ₽" 0 --> 220
 y2 "конверсия, %" 0 --> 40
+%% grid y2 5 — сетка второй шкалы. grid y2 off и axis y2 off её прячут.
+grid y2 5
 grid 20
 labels above
 series Факт : 120, 145, 165, 190
@@ -432,6 +455,7 @@ export const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
 %% More features: samples "axis break", "multiple series", "labels".
 %% NOTE: the dashed lines between bars are connectors (default on).
 %%       Turn them off with: connectors off
+%% axis y off hides the value axis and its grid, axis x off hides column labels, grid off hides only the grid, gap sets the space.
 title Revenue 2026
 y "M USD" 0 --> 500
 grid 100
@@ -455,9 +479,11 @@ break 300 --> 800 "axis break"
   waterfallMulti: `waterfall
 %% Multiple series: each group has its own base colour,
 %% increases 20% lighter, decreases 25% darker.
+%% gap 16% is a share of empty space. gap 8 sets the same space in pixels.
 title Plan vs actual
 y "M USD" 0 --> 400
 grid 100
+gap 16%
 series Plan color=#1f6feb
 =120 : Q1
 +80 : Q2
@@ -689,10 +715,12 @@ Southwest : x=24, y=22, group=Regional, color=#f97316`,
 %%   y "label" min --> max     value axis scale
 %%   labels above|inside|none  value labels
 %%   colors s1=#hex s2=#hex    series palette (or color=#hex on a series row, or mono)
+%% axis y off and axis x off hide that axis and its grid. gap 4 is the space in pixels.
 title Revenue by sales channel
 categories Q1, Q2, Q3, Q4
 y "M USD" 0 --> 200
 grid 50
+gap 4
 labels above
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Online : 120, 145, 165, 190
@@ -717,15 +745,31 @@ series Partners : 45, 60, 75, 95 color=#f97316`,
   clusteredStacked: `series
 %% Stacked bars: series share one column instead of sitting side by side.
 %% stacked / bars stacked / layout stacked
+%% Areas live in the separate seriesArea example. These stay columns.
 %% Side by side again: stacked off or bars grouped
 %% Positive values grow up from zero, negative values grow down.
 title Revenue mix
 stacked
+gap 8%
 categories Q1, Q2, Q3, Q4
 y "M USD" 0 --> 400
 grid 50
-labels inside
+labels inside sum
 colors s1=#0969da s2=#8250df s3=#2da44e
+series Product : 80, 90, 70, 110
+series Services : 50, 60, 55, 70
+series Partners : 30, 25, 40, 35`,
+  seriesArea: `series
+%% Areas: stacked area joins the stack through category centers.
+%% A skip (-, empty, null) breaks that series band and adds no height.
+%% labels sum writes the part total outside the stack. Zero is omitted.
+%% The mode stays available with rotate 90, line, break and cagr.
+title Composition as areas
+stacked area
+labels sum
+gap 12%
+categories Q1, Q2, Q3, Q4
+y "M USD" 0 --> 400
 series Product : 80, 90, 70, 110
 series Services : 50, 60, 55, 70
 series Partners : 30, 25, 40, 35`,
@@ -762,6 +806,8 @@ title Actuals and guides
 categories Q1, Q2, Q3, Q4
 y "M USD" 0 --> 220
 y2 "conversion, %" 0 --> 40
+%% grid y2 5 draws the second scale grid. grid y2 off and axis y2 off hide it.
+grid y2 5
 grid 20
 labels above
 series Actual : 120, 145, 165, 190

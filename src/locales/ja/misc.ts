@@ -73,6 +73,7 @@ export const miscMessages = {
   "samples.mermaid.clustered": "系列チャート",
   "samples.mermaid.clusteredRotated": "系列チャート — 90° 回転",
   "samples.mermaid.clusteredStacked": "系列チャート — 積み上げ",
+  "samples.mermaid.seriesArea": "系列チャート — 面",
   "samples.mermaid.clusteredMono": "系列チャート — モノクロ",
   "samples.mermaid.clusteredMonoInvert": "系列チャート — 反転モノクロ",
   "samples.mermaid.seriesLines": "系列チャート — 線",

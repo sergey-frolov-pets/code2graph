@@ -102,6 +102,9 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.clusteredStacked.title": "Stacked bar chart",
   "llm.wizard.gallery.example.mermaid.clusteredStacked.description":
     "Series piled into one column: positives grow up from zero, negatives grow down.",
+  "llm.wizard.gallery.example.mermaid.seriesArea.title": "Stacked areas",
+  "llm.wizard.gallery.example.mermaid.seriesArea.description":
+    "Stack drawn as areas between category centers, with the part sum outside.",
   "llm.wizard.gallery.example.mermaid.clusteredMono.title": "Monochrome series bars",
   "llm.wizard.gallery.example.mermaid.clusteredMono.description":
     "The same bars in shades of grey for print and colourless documents.",

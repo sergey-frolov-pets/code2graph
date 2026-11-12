@@ -44,8 +44,16 @@ export interface WaterfallAxis {
   auto: boolean;
   /** Явный шаг сетки (`grid <шаг>`); без него — «круглые» деления. */
   gridStep?: number;
-  /** `axis off` — не рисовать ось и подписи делений. */
+  /** `grid off` прячет линии сетки. Подписи оси при этом остаются. */
+  grid: boolean;
+  /** `axis off` / `axis y off` — не рисовать ось и подписи делений. */
   hidden?: boolean;
+}
+
+/** Зазор между барами: пиксели или процент ширины колонки / бара. */
+export interface WaterfallBarGap {
+  unit: "px" | "percent";
+  value: number;
 }
 
 /** Цвета баров по типу шага. */
@@ -103,6 +111,10 @@ export interface WaterfallModel {
   textColor?: string;
   /** `ratio 16x9` — бары растягиваются, чтобы изображение заняло эти пропорции. */
   ratio?: ChartAspect;
+  /** `axis x off` — не рисовать подписи колонок. */
+  categoryAxisHidden?: boolean;
+  /** `gap 12` или `gap 20%`. Без директивы — BAR_GAP и 4 px между сериями. */
+  barGap?: WaterfallBarGap;
 }
 
 /** Разрыв оси: значения выше `after` и ниже `before` рисуются вплотную. */
