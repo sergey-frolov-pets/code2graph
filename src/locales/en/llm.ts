@@ -170,6 +170,7 @@ export const llmMessages = {
   "aiChat.dictateNoMicrophone": "No microphone was found.",
   "aiChat.dictateLanguageUnsupported": "This language is not supported for dictation.",
   "aiChat.dictateNetwork": "Speech recognition needs a network connection.",
+  "aiChat.dictateRecording": "Recording from the microphone",
   "aiChat.inputPlaceholder": "Message…",
   "aiChat.composerModes": "Modes",
   "aiChat.empty": "Describe the task in your own words. The AI can ask clarifying questions, propose a diagram change, switch its type or language, or explain syntax.",

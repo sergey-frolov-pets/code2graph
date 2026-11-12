@@ -478,6 +478,7 @@ export const llmMessages = {
   "aiChat.dictateNoMicrophone": "Kein Mikrofon gefunden.",
   "aiChat.dictateLanguageUnsupported": "Diese Sprache wird für Diktat nicht unterstützt.",
   "aiChat.dictateNetwork": "Spracherkennung braucht eine Netzwerkverbindung.",
+  "aiChat.dictateRecording": "Aufnahme über das Mikrofon läuft",
   "aiChat.unpin": "Loslösen",
   "llm.wizard.contextChatMovedHint": "Um die Aufgabe mit der KI zu besprechen, nutzen Sie den KI-Chat des Editors — hier beschreiben Sie nur das zu erzeugende Diagramm.",
   "llm.wizard.resultChatMovedHint": "Um das Ergebnis im Dialog zu verfeinern, wenden Sie das Diagramm an und fahren Sie im KI-Chat des Editors fort.",

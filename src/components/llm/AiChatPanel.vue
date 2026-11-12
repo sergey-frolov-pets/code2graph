@@ -1370,6 +1370,19 @@ async function onCopyChat(): Promise<void> {
 
     <div class="ai-chat-panel__dock">
       <p
+        v-if="dictationListening"
+        class="ai-chat-panel__recording"
+        data-testid="ai-chat-recording"
+        role="status"
+        aria-live="polite"
+      >
+        <span
+          class="ai-chat-panel__recording-dot"
+          aria-hidden="true"
+        />
+        {{ t("aiChat.dictateRecording") }}
+      </p>
+      <p
         v-if="errorMessage"
         class="ai-chat-panel__warning"
         role="alert"
@@ -1470,7 +1483,7 @@ async function onCopyChat(): Promise<void> {
         </ul>
         <div
           class="ai-chat-panel__composer-box"
-          :class="{ 'is-modes-open': modesOpen }"
+          :class="{ 'is-modes-open': modesOpen, 'is-recording': dictationListening }"
         >
           <input
             ref="fileInputRef"
@@ -2213,8 +2226,57 @@ async function onCopyChat(): Promise<void> {
 
 .ai-chat-panel__mic.is-listening,
 .ai-chat-panel__mic.is-listening:hover:not(:disabled) {
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  animation: ai-chat-mic-pulse 1.4s ease-in-out infinite;
+}
+
+.ai-chat-panel__composer-box.is-recording {
+  border-color: var(--danger);
+}
+
+.ai-chat-panel__recording {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+  color: var(--danger);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.ai-chat-panel__recording-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 55%, transparent);
+  animation: ai-chat-recording-pulse 1.4s ease-out infinite;
+}
+
+@keyframes ai-chat-recording-pulse {
+  70% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+
+@keyframes ai-chat-mic-pulse {
+  50% {
+    background: color-mix(in srgb, var(--danger) 32%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-chat-panel__recording-dot,
+  .ai-chat-panel__mic.is-listening {
+    animation: none;
+  }
 }
 
 .ai-chat-panel__attachments,

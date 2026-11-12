@@ -477,6 +477,7 @@ export const llmMessages = {
   "aiChat.dictateNoMicrophone": "未找到麦克风。",
   "aiChat.dictateLanguageUnsupported": "此语言不支持听写。",
   "aiChat.dictateNetwork": "语音识别需要网络连接。",
+  "aiChat.dictateRecording": "正在通过麦克风录音",
   "aiChat.unpin": "取消固定",
   "llm.wizard.contextChatMovedHint": "要和 AI 讨论任务，请使用编辑器的 AI 聊天模式——这里只需描述要生成的图表。",
   "llm.wizard.resultChatMovedHint": "要在对话中完善结果，请应用图表后在编辑器的 AI 聊天模式中继续。",

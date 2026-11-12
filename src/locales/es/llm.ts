@@ -478,6 +478,7 @@ export const llmMessages = {
   "aiChat.dictateNoMicrophone": "No se encontró un micrófono.",
   "aiChat.dictateLanguageUnsupported": "Este idioma no está disponible para dictado.",
   "aiChat.dictateNetwork": "El reconocimiento de voz necesita conexión de red.",
+  "aiChat.dictateRecording": "Grabando con el micrófono",
   "aiChat.unpin": "Quitar fijación",
   "llm.wizard.contextChatMovedHint": "Para hablar de la tarea con la IA, use el modo de chat de IA del editor; aquí solo describa el diagrama que quiere generar.",
   "llm.wizard.resultChatMovedHint": "Para afinar el resultado en un diálogo, aplique el diagrama y continúe en el modo de chat de IA del editor.",

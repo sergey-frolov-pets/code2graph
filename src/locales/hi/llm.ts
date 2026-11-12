@@ -477,6 +477,7 @@ export const llmMessages = {
   "aiChat.dictateNoMicrophone": "माइक्रोफ़ोन नहीं मिला।",
   "aiChat.dictateLanguageUnsupported": "यह भाषा श्रुतलेख के लिए उपलब्ध नहीं है।",
   "aiChat.dictateNetwork": "वाक् पहचान के लिए नेटवर्क चाहिए।",
+  "aiChat.dictateRecording": "माइक्रोफ़ोन से रिकॉर्ड हो रहा है",
   "aiChat.unpin": "पिन हटाएँ",
   "llm.wizard.contextChatMovedHint": "काम पर AI से बात करने के लिए संपादक का AI चैट मोड इस्तेमाल करें — यहाँ केवल बनने वाला आरेख लिखें।",
   "llm.wizard.resultChatMovedHint": "संवाद में परिणाम सुधारने के लिए आरेख लागू करें और संपादक के AI चैट मोड में जारी रखें।",
