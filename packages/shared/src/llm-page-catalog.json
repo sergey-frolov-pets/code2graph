@@ -1092,7 +1092,9 @@
       "series",
       "серийн",
       "кластерн",
-      "grouped bar"
+      "grouped bar",
+      "stacked area",
+      "площад"
     ],
     "sourceHints": [
       "(?m)^series\\b"

@@ -37,4 +37,4 @@ Reply with diagram source for the editor only. Do not return an image or an exte
 - [treemap](./ext/treemap.md) — Nested weights that fill a rectangle.
 - [radar](./ext/radar.md) — Several series compared on the same axes.
 - [voronoi](./ext/voronoi.md) — Regions around sites on a plane.
-- [series](./ext/series.md) — Grouped or stacked bars for categories.
+- [series](./ext/series.md) — Grouped bars, stacked columns, or a stacked area for categories.
