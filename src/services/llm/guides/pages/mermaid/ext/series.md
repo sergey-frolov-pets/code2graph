@@ -4,7 +4,7 @@ Reply with diagram source for the editor only. Do not return an image or an exte
 
 # series
 
-Grouped or stacked bars by category.
+Grouped bars, stacked columns, or a stacked area by category.
 
 [Scale break and second axis](./series-scale.md) · [Level line and CAGR](./series-analytics.md)
 
