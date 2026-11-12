@@ -102,6 +102,7 @@ async function dispatchByokChat(
     temperature: options.temperature,
     maxTokens: options.maxTokens,
     extraHeaders: provider.apiExtraHeaders,
+    chatRequest: provider.chatRequest,
   });
 }
 

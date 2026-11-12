@@ -15,7 +15,10 @@ vi.mock("@/constants/llm-providers", () => ({
   },
 }));
 
-import { callOpenAiCompatibleChat } from "@/services/llm/providers/byok-providers";
+import {
+  callOpenAiCompatibleChat,
+  omitFixedChatParameters,
+} from "@/services/llm/providers/byok-providers";
 
 describe("BYOK LLM providers", () => {
   afterEach(() => {
@@ -85,6 +88,53 @@ describe("BYOK LLM providers", () => {
       type: "image_url",
       image_url: { url: "data:image/png;base64,abcd" },
     });
+  });
+
+  it("omits parameters that the provider config marks as fixed", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '{"ok":true}' } }],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const chatRequest = {
+      fixedParameters: {
+        temperature: { value: 1 },
+        top_p: { value: 0.95 },
+        n: { value: 1 },
+        presence_penalty: { value: 0 },
+        frequency_penalty: { value: 0 },
+      },
+    };
+    const draft = {
+      temperature: 0.2,
+      top_p: 0.5,
+      n: 2,
+      presence_penalty: 0.1,
+      frequency_penalty: 0.1,
+    };
+    omitFixedChatParameters(draft, chatRequest);
+    expect(draft).toEqual({});
+
+    await callOpenAiCompatibleChat({
+      endpoint: "https://api.moonshot.ai/v1/chat/completions",
+      apiKey: "kimi-key",
+      model: "kimi-k3.1-pro",
+      messages: [{ role: "user", content: "ping" }],
+      temperature: 0.2,
+      chatRequest,
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+    expect(body.model).toBe("kimi-k3.1-pro");
+    expect(body).not.toHaveProperty("temperature");
+    expect(body).not.toHaveProperty("top_p");
+    expect(body).not.toHaveProperty("n");
+    expect(body).not.toHaveProperty("presence_penalty");
+    expect(body).not.toHaveProperty("frequency_penalty");
   });
 
   it("omits Authorization when a local server has no API key", async () => {

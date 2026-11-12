@@ -39,6 +39,11 @@ describe("llm-providers", () => {
     expect(moonshot?.apiEndpoint).toBe("https://api.moonshot.ai/v1/chat/completions");
     expect(moonshot?.defaultModel).toBe("kimi-k3.1-pro");
     expect(moonshot?.keyUrl).toBe("https://platform.kimi.ai/console/api-keys");
+    expect(moonshot?.chatRequest?.fixedParameters.temperature).toEqual({ value: 1 });
+    expect(moonshot?.chatRequest?.fixedParameters.top_p).toEqual({ value: 0.95 });
+    expect(moonshot?.chatRequest?.fixedParameters.n).toEqual({ value: 1 });
+    expect(moonshot?.chatRequest?.fixedParameters.presence_penalty).toEqual({ value: 0 });
+    expect(moonshot?.chatRequest?.fixedParameters.frequency_penalty).toEqual({ value: 0 });
   });
 
   it("includes a local OpenAI-compatible provider", () => {
