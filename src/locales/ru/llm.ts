@@ -170,6 +170,7 @@ export const llmMessages = {
   "aiChat.dictateNoMicrophone": "Микрофон не найден.",
   "aiChat.dictateLanguageUnsupported": "Этот язык не поддерживается для диктовки.",
   "aiChat.dictateNetwork": "Для распознавания речи нужна сеть.",
+  "aiChat.dictateRecording": "Идёт запись с микрофона",
   "aiChat.inputPlaceholder": "Сообщение…",
   "aiChat.composerModes": "Режимы",
   "aiChat.empty": "Опишите задачу своими словами. ИИ может задать уточняющие вопросы, предложить правку, сменить тип или язык диаграммы или объяснить синтаксис.",

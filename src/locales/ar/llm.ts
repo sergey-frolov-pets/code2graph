@@ -478,6 +478,7 @@ export const llmMessages = {
   "aiChat.dictateNoMicrophone": "لم يتم العثور على ميكروفون.",
   "aiChat.dictateLanguageUnsupported": "هذه اللغة غير مدعومة للإملاء.",
   "aiChat.dictateNetwork": "يحتاج التعرف على الكلام إلى اتصال بالشبكة.",
+  "aiChat.dictateRecording": "جارٍ التسجيل عبر الميكروفون",
   "aiChat.unpin": "إلغاء التثبيت",
   "llm.wizard.contextChatMovedHint": "لمناقشة المهمة مع الذكاء الاصطناعي، استخدم دردشة الذكاء الاصطناعي في المحرر — هنا صف المخطط المراد إنشاؤه فقط.",
   "llm.wizard.resultChatMovedHint": "لصقل النتيجة في حوار، طبّق المخطط وتابع في دردشة الذكاء الاصطناعي بالمحرر.",

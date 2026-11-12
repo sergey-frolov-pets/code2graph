@@ -417,9 +417,19 @@ describe("AiChatPanel layout", () => {
     );
     expect(FakeRecognition.calls).not.toContain("fr-FR");
 
+    expect(view.host.querySelector("[data-testid='ai-chat-recording']")).toBeNull();
+
     mic.click();
     await nextTick();
     expect(mic.getAttribute("aria-pressed")).toBe("true");
+    expect(mic.classList.contains("is-listening")).toBe(true);
+    const recording = view.host.querySelector("[data-testid='ai-chat-recording']");
+    expect(recording).not.toBeNull();
+    expect(recording!.getAttribute("role")).toBe("status");
+    expect(recording!.textContent).toContain("Идёт запись с микрофона");
+    expect(composer!.contains(recording)).toBe(false);
+    const composerBox = view.host.querySelector(".ai-chat-panel__composer-box");
+    expect(composerBox?.classList.contains("is-recording")).toBe(true);
     const recognition = FakeRecognition.latest;
     expect(recognition).not.toBeNull();
     recognition!.onresult?.({
@@ -435,6 +445,8 @@ describe("AiChatPanel layout", () => {
     mic.click();
     await nextTick();
     expect(mic.getAttribute("aria-pressed")).toBe("false");
+    expect(view.host.querySelector("[data-testid='ai-chat-recording']")).toBeNull();
+    expect(composerBox?.classList.contains("is-recording")).toBe(false);
     expect(textarea.value).toBe("Добавь участника");
     expect(recognition!.startCount).toBe(1);
     expect(sendAiChatMessage).not.toHaveBeenCalled();

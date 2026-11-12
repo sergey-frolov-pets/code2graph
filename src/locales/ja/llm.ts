@@ -478,6 +478,7 @@ export const llmMessages = {
   "aiChat.dictateNoMicrophone": "マイクが見つかりません。",
   "aiChat.dictateLanguageUnsupported": "この言語は音声入力に対応していません。",
   "aiChat.dictateNetwork": "音声認識にはネットワーク接続が必要です。",
+  "aiChat.dictateRecording": "マイクで録音しています",
   "aiChat.unpin": "ピン留めを外す",
   "llm.wizard.contextChatMovedHint": "タスクを AI と話し合うには、エディタの AI チャットを使ってください。ここでは生成する図を説明するだけです。",
   "llm.wizard.resultChatMovedHint": "対話で結果を詰めるには、図を適用したあとエディタの AI チャットで続けてください。",
