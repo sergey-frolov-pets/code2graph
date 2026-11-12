@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 
 import { createApp, h, nextTick } from "vue";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { resetDictationForTests } from "@/composables/useDictation";
+import {
+  DICTATION_LOCALE_ORDER,
+  DICTATION_SPEECH_TAGS,
+} from "@/constants/dictation";
+import type { DictationAvailabilityQuery, DictationSpeechEvent } from "@/utils/dictation-speech";
 import { AI_CHAT_MESSAGE_MAX_CHARS } from "@/constants/ai-chat";
 import { useLocale } from "@/composables/useLocale";
 import { sendAiChatMessage } from "@/services/llm/ai-chat-client";
@@ -52,7 +58,12 @@ function mountChat(source = MERMAID_SOURCE) {
 }
 
 describe("AiChatPanel layout", () => {
+  beforeEach(() => {
+    resetDictationForTests();
+  });
+
   afterEach(() => {
+    resetDictationForTests();
     document.body.innerHTML = "";
   });
 
@@ -77,6 +88,7 @@ describe("AiChatPanel layout", () => {
     expect(next!.querySelector(".ai-chat-panel__next-label")).toBeNull();
     expect(next!.textContent).toContain("Измени текущую диаграмму…");
     expect(view.host.querySelector("[data-testid='ai-chat-attach']")).not.toBeNull();
+    expect(view.host.querySelector("[data-testid='ai-chat-mic']")).toBeNull();
     const context = view.host.querySelector("[data-testid='ai-chat-context-mode']");
     const line = view.host.querySelector("[data-testid='ai-chat-composer-line']");
     expect(context).not.toBeNull();
@@ -353,6 +365,79 @@ describe("AiChatPanel layout", () => {
     expect(attachments!.textContent).toContain("Текст");
     expect(view.host.textContent).toContain("Большой текст прикреплён файлом pasted.txt.");
     expect(textarea.value).toBe("Краткий запрос");
+
+    view.unmount();
+  });
+
+  it("dictates into the composer and does not send on its own", async () => {
+    class FakeRecognition {
+      static calls: string[] = [];
+      static latest: FakeRecognition | null = null;
+
+      static available(options: DictationAvailabilityQuery): Promise<string> {
+        const tag = options.langs[0] ?? "";
+        FakeRecognition.calls.push(tag);
+        return Promise.resolve(tag === "ru-RU" || tag === "en-US" ? "available" : "unavailable");
+      }
+
+      lang = "";
+      continuous = false;
+      interimResults = false;
+      onresult: ((event: DictationSpeechEvent) => void) | null = null;
+      onerror: ((event: { error: string }) => void) | null = null;
+      onend: (() => void) | null = null;
+      startCount = 0;
+
+      start(): void {
+        this.startCount += 1;
+        FakeRecognition.latest = this;
+      }
+
+      stop(): void {
+        this.onend?.();
+      }
+    }
+
+    (window as unknown as { SpeechRecognition?: typeof FakeRecognition }).SpeechRecognition =
+      FakeRecognition;
+    useLocale().setLocale("ru");
+    vi.mocked(sendAiChatMessage).mockClear();
+    const view = mountChat();
+
+    const mic = await vi.waitFor(() => {
+      const button = view.host.querySelector("[data-testid='ai-chat-mic']");
+      expect(button).not.toBeNull();
+      return button as HTMLButtonElement;
+    });
+
+    const composer = view.host.querySelector("[data-testid='ai-chat-composer']");
+    expect(composer!.contains(mic)).toBe(true);
+    expect(FakeRecognition.calls).toEqual(
+      DICTATION_LOCALE_ORDER.map((locale) => DICTATION_SPEECH_TAGS[locale]),
+    );
+    expect(FakeRecognition.calls).not.toContain("fr-FR");
+
+    mic.click();
+    await nextTick();
+    expect(mic.getAttribute("aria-pressed")).toBe("true");
+    const recognition = FakeRecognition.latest;
+    expect(recognition).not.toBeNull();
+    recognition!.onresult?.({
+      resultIndex: 0,
+      results: [{ isFinal: false, 0: { transcript: "Добавь участника" } }],
+    });
+    await nextTick();
+
+    const textarea = view.host.querySelector("textarea") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("Добавь участника");
+    expect(sendAiChatMessage).not.toHaveBeenCalled();
+
+    mic.click();
+    await nextTick();
+    expect(mic.getAttribute("aria-pressed")).toBe("false");
+    expect(textarea.value).toBe("Добавь участника");
+    expect(recognition!.startCount).toBe(1);
+    expect(sendAiChatMessage).not.toHaveBeenCalled();
 
     view.unmount();
   });
