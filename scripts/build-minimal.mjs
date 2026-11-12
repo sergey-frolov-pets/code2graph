@@ -1,10 +1,11 @@
-import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import {
   appRoot,
   buildSingleHtmlDocument,
   ensureVendorFiles,
   readBuiltAssets,
+  writeStampedServiceWorker,
 } from "./lib/single-html-core.mjs";
 
 const minimalDir = path.join(appRoot, "dist-minimal");
@@ -32,7 +33,7 @@ function buildMinimalPackage() {
     path.join(appRoot, "public", "manifest.minimal.webmanifest"),
     path.join(minimalDir, "manifest.webmanifest"),
   );
-  copyFileSync(path.join(appRoot, "public", "sw.js"), path.join(minimalDir, "sw.js"));
+  writeStampedServiceWorker(path.join(minimalDir, "sw.js"));
 
   const outputSize = Buffer.byteLength(html, "utf8");
   console.log(`Minimal package (${MINIMAL_FILES.join(", ")}):`);

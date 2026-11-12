@@ -24,6 +24,7 @@ vi.mock("vue", async () => {
 });
 
 import { UPDATE_RELOAD_FALLBACK_MS, useAppUpdate } from "@/composables/useAppUpdate";
+import { stampServiceWorker } from "../../scripts/lib/single-html-core.mjs";
 
 class FakeWorker extends EventTarget {
   state: ServiceWorkerState;
@@ -147,5 +148,18 @@ describe("service worker update prompt", () => {
     expect(source).toContain("readCachedShell");
     expect(source).toContain("networkFirstDeploymentConfig");
     expect(source).toContain("/deployment.json");
+    expect(source).toContain('cache: "no-store"');
+    expect(source).toContain("__C2G_APP_VERSION__");
+  });
+});
+
+describe("stampServiceWorker", () => {
+  it("writes the release into the worker script", () => {
+    const source = 'const APP_RELEASE = "__C2G_APP_VERSION__";';
+    expect(stampServiceWorker(source, "1.2.32")).toBe('const APP_RELEASE = "1.2.32";');
+  });
+
+  it("refuses a worker without the version token", () => {
+    expect(() => stampServiceWorker("const CACHE = 1;", "1.2.32")).toThrow(/version token/);
   });
 });
