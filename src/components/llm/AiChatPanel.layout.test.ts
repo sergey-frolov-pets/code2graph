@@ -227,7 +227,7 @@ describe("AiChatPanel layout", () => {
     }
   });
 
-  it("shows the selected model and provider beside the mode icons", async () => {
+  it("stacks mode icons and places the provider under the model", async () => {
     useLocale().setLocale("ru");
     const added = addLlmAccount({
       providerId: LOCAL_LLM_PROVIDER_ID,
@@ -252,9 +252,32 @@ describe("AiChatPanel layout", () => {
       expect(view.host.querySelector("[data-testid='ai-chat-hint-provider']")?.textContent).toBe(
         "Локальный LLM",
       );
-      expect(view.host.querySelector("[data-testid='ai-chat-hint-context']")).not.toBeNull();
-      expect(view.host.querySelector("[data-testid='ai-chat-hint-apply']")).not.toBeNull();
-      expect(view.host.querySelector(".ai-chat-panel__hint-meta")).not.toBeNull();
+      const hint = view.host.querySelector("[data-testid='ai-chat-input-hint']");
+      const modes = hint?.querySelector(".ai-chat-panel__hint-modes");
+      const copy = hint?.querySelector(".ai-chat-panel__hint-copy");
+      expect(modes).not.toBeNull();
+      expect(copy).not.toBeNull();
+      expect(modes!.contains(view.host.querySelector("[data-testid='ai-chat-hint-context']"))).toBe(
+        true,
+      );
+      expect(modes!.contains(view.host.querySelector("[data-testid='ai-chat-hint-apply']"))).toBe(
+        true,
+      );
+      const model = view.host.querySelector("[data-testid='ai-chat-hint-model']");
+      const provider = view.host.querySelector("[data-testid='ai-chat-hint-provider']");
+      expect(copy!.contains(model)).toBe(true);
+      expect(copy!.contains(provider)).toBe(true);
+      expect(model!.compareDocumentPosition(provider!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(model!.parentElement).not.toBe(provider!.parentElement);
+      expect(view.host.querySelector("textarea")?.classList.contains("is-hinting")).toBe(true);
+
+      const select = view.host.querySelector("[data-testid='ai-chat-provider']") as HTMLSelectElement;
+      const chosen = [...select.options].find((option) => option.value === select.value);
+      expect(chosen?.textContent).toContain("Локальный LLM");
+      expect(chosen?.textContent).toContain("llama3.2");
+      expect(chosen!.textContent!.indexOf("Локальный LLM")).toBeLessThan(
+        chosen!.textContent!.indexOf("llama3.2"),
+      );
     } finally {
       view.unmount();
       removeLlmAccount(added.account.id);

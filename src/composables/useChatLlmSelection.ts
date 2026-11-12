@@ -6,10 +6,12 @@ import {
   useLlmAccountStore,
 } from "@/config/llm-accounts";
 import {
+  formatChatLlmOptionLabel,
   freeLlmSelectionId,
   isUsableLlmAccount,
   llmAccountChatLabel,
 } from "@/config/llm-account-record";
+import { resolveAccountLlmModel } from "@/config/llm-model-selection";
 import { useLlmProxyAvailability } from "@/composables/useLlmProxyAvailability";
 import { useLlmSettings } from "@/composables/useLlmSettings";
 import { useLocale } from "@/composables/useLocale";
@@ -35,7 +37,11 @@ export function useChatLlmSelection() {
         return {
           id: account.id,
           providerId: account.providerId,
-          label: llmAccountChatLabel(account, providerName),
+          label: llmAccountChatLabel(
+            account,
+            providerName,
+            resolveAccountLlmModel(account),
+          ),
         };
       });
 
@@ -44,7 +50,7 @@ export function useChatLlmSelection() {
       .map((provider) => ({
         id: freeLlmSelectionId(provider.id),
         providerId: provider.id,
-        label: t(provider.nameKey),
+        label: formatChatLlmOptionLabel(t(provider.nameKey), provider.defaultModel),
       }));
 
     return [...accountOptions, ...freeOptions];

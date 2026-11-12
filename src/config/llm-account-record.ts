@@ -194,17 +194,41 @@ export function llmAccountDisplayLabel(account: LlmAccount, providerName: string
   return account.label;
 }
 
-export function llmAccountChatLabel(account: LlmAccount, providerName: string): string {
-  const title = llmAccountDisplayLabel(account, providerName);
-  if (isLocalLlmAccount(account)) {
-    return account.model ? `${title} · ${account.model}` : title;
-  }
+const CHAT_LLM_OPTION_SEPARATOR = " · ";
 
-  if (title !== providerName) {
-    return `${title} · ${providerName}`;
+/** Подпись пункта выбора в чате: своё имя учётки, провайдер и модель. */
+export function formatChatLlmOptionLabel(
+  providerName: string,
+  model: string,
+  accountLabel = "",
+): string {
+  const provider = providerName.trim();
+  const resolvedModel = model.trim();
+  const label = accountLabel.trim();
+  const parts: string[] = [];
+  if (label && label !== provider) {
+    parts.push(label);
   }
+  if (provider) {
+    parts.push(provider);
+  }
+  if (resolvedModel) {
+    parts.push(resolvedModel);
+  }
+  return parts.join(CHAT_LLM_OPTION_SEPARATOR);
+}
 
-  return providerName;
+export function llmAccountChatLabel(
+  account: LlmAccount,
+  providerName: string,
+  model = "",
+): string {
+  const resolvedModel = model.trim() || account.model?.trim() || "";
+  return formatChatLlmOptionLabel(
+    providerName,
+    resolvedModel,
+    llmAccountDisplayLabel(account, providerName),
+  );
 }
 
 export function freeLlmSelectionId(providerId: string): string {
