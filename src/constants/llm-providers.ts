@@ -16,6 +16,26 @@ export const LLM_PROVIDER_KIND = {
 export type LlmProviderKind =
   (typeof LLM_PROVIDER_KIND)[keyof typeof LLM_PROVIDER_KIND];
 
+/** Поля chat completions, которые провайдер может зафиксировать. */
+export const LLM_CHAT_REQUEST_PARAMETERS = [
+  "temperature",
+  "top_p",
+  "n",
+  "presence_penalty",
+  "frequency_penalty",
+] as const;
+
+export type LlmChatRequestParameter = (typeof LLM_CHAT_REQUEST_PARAMETERS)[number];
+
+/** Значение зафиксировано моделью. В запрос его не отправляем. */
+export interface LlmFixedChatParameter {
+  value: number;
+}
+
+export interface LlmChatRequestConfig {
+  fixedParameters: Partial<Record<LlmChatRequestParameter, LlmFixedChatParameter>>;
+}
+
 export interface LlmProviderDefinition {
   id: string;
   kind: LlmProviderKind;
@@ -27,8 +47,25 @@ export interface LlmProviderDefinition {
   docsUrl?: string;
   apiEndpoint?: string;
   apiExtraHeaders?: Record<string, string>;
+  chatRequest?: LlmChatRequestConfig;
   recommended?: boolean;
 }
+
+/** K3, включая kimi-k3.1-pro: temperature, top_p, n и штрафы менять нельзя. */
+const KIMI_FIXED_TEMPERATURE = 1;
+const KIMI_FIXED_TOP_P = 0.95;
+const KIMI_FIXED_N = 1;
+const KIMI_FIXED_PENALTY = 0;
+
+const KIMI_CHAT_REQUEST: LlmChatRequestConfig = {
+  fixedParameters: {
+    temperature: { value: KIMI_FIXED_TEMPERATURE },
+    top_p: { value: KIMI_FIXED_TOP_P },
+    n: { value: KIMI_FIXED_N },
+    presence_penalty: { value: KIMI_FIXED_PENALTY },
+    frequency_penalty: { value: KIMI_FIXED_PENALTY },
+  },
+};
 
 export const DEFAULT_LLM_PROVIDER_ID = "google-gemini";
 export const DEFAULT_FREE_LLM_PROVIDER_ID = "google-gemini-free";
@@ -154,6 +191,7 @@ const BYOK_LLM_PROVIDERS: readonly LlmProviderDefinition[] = [
     keyUrl: "https://platform.kimi.ai/console/api-keys",
     docsUrl: "https://platform.kimi.ai/docs/api/quickstart",
     apiEndpoint: "https://api.moonshot.ai/v1/chat/completions",
+    chatRequest: KIMI_CHAT_REQUEST,
   },
 ];
 
