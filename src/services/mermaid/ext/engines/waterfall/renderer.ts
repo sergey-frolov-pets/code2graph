@@ -184,7 +184,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
       ? model.barGap.value
       : (barWidth * model.barGap.value) / 100
     : 4;
-  let groupSpan = barWidth * groups + Math.max(0, groups - 1) * seriesGap;
+  const groupSpan = barWidth * groups + Math.max(0, groups - 1) * seriesGap;
   if (model.barGap?.unit === "px") {
     const needed = groupSpan + model.barGap.value;
     if (needed > columnWidth) {

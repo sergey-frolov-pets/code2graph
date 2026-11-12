@@ -77,7 +77,7 @@ describe("AppHeader new diagram button", () => {
     const brand = mounted.host.querySelector(".app-header__brand");
     expect(brand).not.toBeNull();
 
-    const logo = brand!.querySelector("img.app-logo");
+    const logo = brand!.querySelector<HTMLImageElement>("img.app-logo");
     const name = brand!.querySelector(".app-header__name");
     expect(logo).not.toBeNull();
     expect(name?.textContent).toBe("Code2Graph");
