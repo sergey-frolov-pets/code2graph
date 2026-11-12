@@ -133,7 +133,10 @@ function onSampleChange(event: Event): void {
 </script>
 
 <template>
-  <header class="panel-header">
+  <header
+    class="panel-header"
+    :class="{ 'is-ai-chat': surfaceMode === 'ai-chat' }"
+  >
     <div class="panel-title-group">
       <div
         v-if="builderAvailable || aiChatAvailable"
@@ -184,7 +187,10 @@ function onSampleChange(event: Event): void {
       >
         {{ t("editor.title") }}
       </h2>
-      <label class="format-select-wrap">
+      <label
+        v-if="surfaceMode !== 'ai-chat'"
+        class="format-select-wrap"
+      >
         <span class="sr-only">{{ t("editor.language") }}</span>
         <select
           class="select format-select"
@@ -203,14 +209,17 @@ function onSampleChange(event: Event): void {
         </select>
       </label>
       <span
-        v-if="!formatDefinition.editable"
+        v-if="surfaceMode !== 'ai-chat' && !formatDefinition.editable"
         class="panel-title__badge panel-title__badge--muted"
       >
         {{ t("editor.viewOnly") }}
       </span>
     </div>
 
-    <div class="panel-header__toolbar">
+    <div
+      v-if="surfaceMode !== 'ai-chat'"
+      class="panel-header__toolbar"
+    >
       <IconButton
         :label="openFileLabel"
         data-testid="editor-open-file"
@@ -363,12 +372,22 @@ function onSampleChange(event: Event): void {
 
     <PanelFullscreenButton
       :active="isFullscreen"
+      :expand-label="surfaceMode === 'ai-chat' ? t('editor.surface.expand') : undefined"
+      :collapse-label="surfaceMode === 'ai-chat' ? t('editor.surface.collapse') : undefined"
       @toggle="emit('toggleFullscreen')"
     />
   </header>
 </template>
 
 <style scoped>
+.panel-header.is-ai-chat {
+  align-items: center;
+}
+
+.panel-header.is-ai-chat :deep(.panel-header__fullscreen) {
+  margin-inline-start: auto;
+}
+
 .panel-title-group {
   display: inline-flex;
   align-items: center;

@@ -3,6 +3,7 @@
 import { createApp, h, nextTick } from "vue";
 import { afterEach, describe, expect, it } from "vitest";
 import { SESSION_CHANGE_TRACKING_ENABLED } from "@/constants/editor-settings";
+import { useLocale } from "@/composables/useLocale";
 import { plantumlLanguageModule } from "@/languages/modules/plantuml";
 import EditorToolbar from "@/components/editor/EditorToolbar.vue";
 
@@ -10,6 +11,7 @@ function mountToolbar(options: {
   builderAvailable: boolean;
   aiChatAvailable: boolean;
   sessionTrackingEnabled?: boolean;
+  surfaceMode?: "code" | "builder" | "ai-chat";
 }) {
   const host = document.createElement("div");
   document.body.appendChild(host);
@@ -25,7 +27,7 @@ function mountToolbar(options: {
           canConvert: true,
           snippetsOpen: false,
           isFullscreen: false,
-          surfaceMode: "code",
+          surfaceMode: options.surfaceMode ?? "code",
           builderAvailable: options.builderAvailable,
           aiChatAvailable: options.aiChatAvailable,
           sessionTrackingEnabled: options.sessionTrackingEnabled ?? false,
@@ -61,6 +63,30 @@ describe("EditorToolbar surface switch", () => {
     await nextTick();
     expect(view.host.querySelector('[data-testid="editor-surface-ai-chat"]')).toBeNull();
     expect(view.host.querySelector('[data-testid="editor-surface-builder"]')).not.toBeNull();
+    view.unmount();
+  });
+
+  it("keeps only the mode switch and expand control while AI chat is open", async () => {
+    useLocale().setLocale("ru");
+    const view = mountToolbar({
+      builderAvailable: true,
+      aiChatAvailable: true,
+      surfaceMode: "ai-chat",
+    });
+    await nextTick();
+    expect(view.host.querySelector('[data-testid="editor-surface-code"]')?.textContent).toContain("Код");
+    expect(view.host.querySelector('[data-testid="editor-surface-builder"]')?.textContent).toContain(
+      "По шагам",
+    );
+    expect(view.host.querySelector('[data-testid="editor-surface-ai-chat"]')?.textContent).toContain(
+      "ИИ-чат",
+    );
+    expect(view.host.querySelector(".format-select")).toBeNull();
+    expect(view.host.querySelector(".panel-header__toolbar")).toBeNull();
+    expect(view.host.querySelector('[data-testid="editor-open-file"]')).toBeNull();
+    expect(view.host.querySelector(".panel-header__fullscreen")?.getAttribute("aria-label")).toBe(
+      "Развернуть",
+    );
     view.unmount();
   });
 

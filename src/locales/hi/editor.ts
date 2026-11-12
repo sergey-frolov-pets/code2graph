@@ -181,4 +181,6 @@ export const editorMessages = {
   "editor.tabs.label": "संपादक टैब",
   "editor.tabs.close": "टैब {label} बंद करें",
   "editor.surface.aiChat": "AI चैट",
+  "editor.surface.expand": "बढ़ाएँ",
+  "editor.surface.collapse": "समेटें",
 } as const satisfies LocaleMessages;

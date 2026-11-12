@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { ref, toRef } from 'vue';
-import { useLongPressTooltip } from '@/composables/useLongPressTooltip';
+import { computed, inject, ref, toRef, watch } from 'vue';
+import {
+  iconButtonTooltipsSuspendedKey,
+  useLongPressTooltip,
+} from '@/composables/useLongPressTooltip';
 
 const props = defineProps<{
   label: string;
@@ -28,8 +31,38 @@ const {
   onTouchCancel,
   onMouseEnter,
   onMouseLeave,
+  hideTooltip,
   consumeSuppressClick,
 } = useLongPressTooltip(rootRef, toRef(props, 'label'));
+
+const tooltipsSuspended = inject(iconButtonTooltipsSuspendedKey, computed(() => false));
+
+watch(tooltipsSuspended, (suspended) => {
+  if (suspended) {
+    hideTooltip();
+  }
+});
+
+function onMouseEnterGuarded(): void {
+  if (tooltipsSuspended.value) {
+    return;
+  }
+  onMouseEnter();
+}
+
+function onPointerDownGuarded(event: PointerEvent): void {
+  if (tooltipsSuspended.value) {
+    return;
+  }
+  onPointerDown(event);
+}
+
+function onTouchStartGuarded(event: TouchEvent): void {
+  if (tooltipsSuspended.value) {
+    return;
+  }
+  onTouchStart(event);
+}
 
 function onMousedown(event: MouseEvent): void {
   if (props.preventMousedownDefault) {
@@ -65,13 +98,13 @@ function onClick(event: MouseEvent): void {
     :disabled="disabled"
     :aria-label="label"
     :aria-pressed="pressed !== undefined ? pressed : undefined"
-    @pointerdown="onPointerDown"
+    @pointerdown="onPointerDownGuarded"
     @pointerup="onPointerUp"
     @pointercancel="onPointerCancel"
-    @touchstart.passive="onTouchStart"
+    @touchstart.passive="onTouchStartGuarded"
     @touchend="onTouchEnd"
     @touchcancel="onTouchCancel"
-    @mouseenter="onMouseEnter"
+    @mouseenter="onMouseEnterGuarded"
     @mouseleave="onMouseLeave"
     @contextmenu.prevent
     @mousedown="onMousedown"
