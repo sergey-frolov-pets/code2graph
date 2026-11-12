@@ -28,4 +28,4 @@ y "млн" 0 --> 200
 +20 : Рост
 ```
 
-`break <after> --> <before>` cuts a range out of the axis. `fontsize` is 6–28. `labels` is above, inside, both, or none. `labels auto` picks a contrasting color: the bar fill when the text is inside, the canvas when it is outside. Without `auto`, inside text stays white and outside text stays grey. `axis y off` hides the value axis and its grid. `axis x off` hides the column labels. `grid off` hides only the grid lines.
+`break <after> --> <before>` cuts a range out of the axis. `fontsize` is 6–28. `labels` is above, inside, both, or none. `labels fontcolor auto` picks a contrasting color: the bar fill when the text is inside, the canvas when it is outside. `labels fontcolor #1f2328` sets one color in both places. Without `fontcolor`, inside text stays white and outside text stays grey. `axis y off` hides the value axis and its grid. `axis x off` hides the column labels. `grid off` hides only the grid lines.

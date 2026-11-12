@@ -30,7 +30,7 @@ import {
 } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
-import { parseBreak, parseLine } from "./waterfall/directive-parsers";
+import { parseBreak, parseLine, takeLabelFontColor } from "./waterfall/directive-parsers";
 
 export type ClusteredLabelsMode = "above" | "inside" | "none";
 
@@ -141,10 +141,11 @@ export interface ClusteredModel {
   /** `labels sum` — сумма частей снаружи стопки. Ноль не подписывается. */
   showSum: boolean;
   /**
-   * `labels auto` — цвет числа контрастен фону под ним:
-   * внутри бара это заливка серии, снаружи и у суммы — холст.
+   * `labels fontcolor auto|#hex|имя`.
+   * `auto` — контраст к поверхности под текстом: внутри фигуры её заливка, снаружи и у суммы холст.
+   * Явный цвет красит и внутренние, и наружные подписи. Без директивы снаружи серый, внутри контраст к заливке.
    */
-  labelAuto: boolean;
+  labelFontColor?: string;
   /** Видимость основной шкалы `y`: линия, подписи делений, ноль. */
   axis: boolean;
   labels: ClusteredLabelsMode;
@@ -796,7 +797,7 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
   let y2GridStep: number | undefined;
   let barGap: SeriesBarGap | undefined;
   let showSum = false;
-  let labelAuto = false;
+  let labelFontColor: string | undefined;
   let axis = true;
   let labels: ClusteredLabelsMode = "above";
   let fontSize: number | undefined;
@@ -988,29 +989,31 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
       }
 
       if (/^labels\b/i.test(raw) && !raw.includes(":")) {
-        const tokens = raw.replace(/^labels\s*/i, "").trim().toLowerCase().split(/\s+/).filter(Boolean);
+        const body = raw.replace(/^labels\s*/i, "").trim();
+        const taken = takeLabelFontColor(body);
+        const tokens = taken.rest.toLowerCase().split(/\s+/).filter(Boolean);
         let mode: ClusteredLabelsMode | undefined;
         let sum = false;
-        let auto = false;
         let bad = false;
         for (const token of tokens) {
           if (token === "sum") sum = true;
-          else if (token === "auto" || token === "color=auto" || token === "colour=auto") auto = true;
           else if (token === "above" || token === "outside" || token === "on") mode = "above";
           else if (token === "inside") mode = "inside";
           else if (token === "none" || token === "off") mode = "none";
           else bad = true;
         }
-        if (bad || tokens.length === 0) {
+        if (taken.error || bad || (tokens.length === 0 && !taken.fontColor)) {
           errors.push({
-            message: `ожидается «labels above|inside|none», необязательные «sum» и «auto», получено «${raw.replace(/^labels\s*/i, "").trim()}»`,
+            message:
+              taken.error ??
+              `ожидается «labels above|inside|none», необязательные «sum» и «fontcolor <цвет|auto>», получено «${body}»`,
             line: lineNo,
             col: 0,
           });
         } else {
           if (mode) labels = mode;
           if (sum) showSum = true;
-          if (auto) labelAuto = true;
+          if (taken.fontColor) labelFontColor = taken.fontColor;
         }
         continue;
       }
@@ -1305,7 +1308,7 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
       y2GridStep,
       barGap,
       showSum,
-      labelAuto,
+      ...(labelFontColor ? { labelFontColor } : {}),
       axis,
       labels,
       fontSize,
@@ -1422,12 +1425,18 @@ function computeSecondaryScale(model: ClusteredModel): {
   return { min, max, ticks };
 }
 
-/** Просвет между барами одной категории. У стопки бары соприкасаются. */
-/** Цвет подписи снаружи бара и суммы: с `auto` — контраст к холсту. */
-function outsideLabelFill(model: ClusteredModel, canvas: string, fallback: string): string {
-  return model.labelAuto ? readableTextOnFill(canvas, fallback) : fallback;
+/**
+ * Цвет числа. `fontcolor #hex` — этот цвет.
+ * `fontcolor auto` и подпись внутри — контраст к поверхности. Иначе цвет темы.
+ */
+function labelFill(model: ClusteredModel, surface: string, fallback: string, inside: boolean): string {
+  const chosen = model.labelFontColor;
+  if (chosen && chosen !== "auto") return chosen;
+  if (inside || chosen === "auto") return readableTextOnFill(surface, fallback);
+  return fallback;
 }
 
+/** Просвет между барами одной категории. У стопки бары соприкасаются. */
 function seriesInnerGap(model: ClusteredModel, thickness: number): number {
   if (model.stack) return 0;
   const gap = model.barGap;
@@ -1742,18 +1751,18 @@ function drawStackedAreas(
         svg.text(mid.x, mid.y + fontSize * 0.35, text, {
           "font-size": labelSize,
           "font-weight": 600,
-          fill: readableTextOnFill(color, palette.fg),
+          fill: labelFill(model, color, palette.fg, true),
         });
       } else if (vertical) {
         svg.text(centerOf(category) + thickness / 2 + 4, mid.y + fontSize * 0.35, text, {
           "text-anchor": "start",
           "font-size": labelSize,
-          fill: outsideLabelFill(model, palette.bg, palette.fgDim),
+          fill: labelFill(model, palette.bg, palette.fgDim, false),
         });
       } else {
         svg.text(mid.x, centerOf(category) - thickness / 2 - 3, text, {
           "font-size": labelSize,
-          fill: outsideLabelFill(model, palette.bg, palette.fgDim),
+          fill: labelFill(model, palette.bg, palette.fgDim, false),
         });
       }
     }
@@ -1777,7 +1786,7 @@ function drawStackedAreas(
       svg.text(at.x, y, text, {
         "font-size": labelSize,
         "font-weight": 600,
-        fill: outsideLabelFill(model, palette.bg, palette.fg),
+        fill: labelFill(model, palette.bg, palette.fg, false),
         "data-stack-sum": "1",
       });
       obstacles[category] = Math.min(obstacles[category], y - fontSize);
@@ -1787,7 +1796,7 @@ function drawStackedAreas(
         "text-anchor": sum > 0 ? "start" : "end",
         "font-size": labelSize,
         "font-weight": 600,
-        fill: outsideLabelFill(model, palette.bg, palette.fg),
+        fill: labelFill(model, palette.bg, palette.fg, false),
         "data-stack-sum": "1",
       });
       obstacles[category] = Math.max(obstacles[category], sum > 0 ? x + measureText(text, labelSize) : x);
@@ -2519,7 +2528,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
         const stackedInside =
           Boolean(span) && barH >= fontSize + 4 && measureText(valText, fontSize - 1) <= barWidth - 2;
         if (insideFits || stackedInside) {
-          const textFill = readableTextOnFill(color, palette.fg);
+          const textFill = labelFill(model, color, palette.fg, true);
           svg.text(bx + barWidth / 2, barTop + barH / 2 + fontSize * 0.35, valText, {
             "font-size": Math.max(8, fontSize - 1),
             "font-weight": 600,
@@ -2529,13 +2538,13 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
           svg.text(bx + barWidth + 4, barTop + barH / 2 + fontSize * 0.35, valText, {
             "text-anchor": "start",
             "font-size": Math.max(8, fontSize - 1),
-            fill: outsideLabelFill(model, palette.bg, palette.fgDim),
+            fill: labelFill(model, palette.bg, palette.fgDim, false),
           });
         } else {
           const labelY = val >= 0 ? barTop - 5 : barTop + barH + fontSize + 2;
           svg.text(bx + barWidth / 2, labelY, valText, {
             "font-size": Math.max(8, fontSize - 1),
-            fill: outsideLabelFill(model, palette.bg, palette.fgDim),
+            fill: labelFill(model, palette.bg, palette.fgDim, false),
           });
         }
       }
@@ -2554,7 +2563,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
         svg.text(clusterCenter, sum > 0 ? y - 5 : y + fontSize + 2, fmt(sum), {
           "font-size": Math.max(8, fontSize - 1),
           "font-weight": 600,
-          fill: outsideLabelFill(model, palette.bg, palette.fg),
+          fill: labelFill(model, palette.bg, palette.fg, false),
           "data-stack-sum": "1",
         });
       }
@@ -3003,7 +3012,7 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
           barW >= measureText(valText, fontSize - 1) + 8 &&
           barHeight >= fontSize;
         if (insideFits || stackedInside) {
-          const textFill = readableTextOnFill(color, palette.fg);
+          const textFill = labelFill(model, color, palette.fg, true);
           svg.text(barLeft + barW / 2, by + barHeight / 2 + fontSize * 0.35, valText, {
             "font-size": Math.max(8, fontSize - 1),
             "font-weight": 600,
@@ -3012,7 +3021,7 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
         } else if (span) {
           svg.text(barLeft + barW / 2, by - 3, valText, {
             "font-size": Math.max(8, fontSize - 1),
-            fill: outsideLabelFill(model, palette.bg, palette.fgDim),
+            fill: labelFill(model, palette.bg, palette.fgDim, false),
           });
         } else {
           const lx = val >= 0 ? barLeft + barW + 6 : barLeft - 6;
@@ -3020,7 +3029,7 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
           svg.text(lx, by + barHeight / 2 + fontSize * 0.35, valText, {
             "text-anchor": anchor,
             "font-size": Math.max(8, fontSize - 1),
-            fill: outsideLabelFill(model, palette.bg, palette.fgDim),
+            fill: labelFill(model, palette.bg, palette.fgDim, false),
           });
         }
       }
@@ -3040,7 +3049,7 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
           "text-anchor": sum > 0 ? "start" : "end",
           "font-size": Math.max(8, fontSize - 1),
           "font-weight": 600,
-          fill: outsideLabelFill(model, palette.bg, palette.fg),
+          fill: labelFill(model, palette.bg, palette.fg, false),
           "data-stack-sum": "1",
         });
       }

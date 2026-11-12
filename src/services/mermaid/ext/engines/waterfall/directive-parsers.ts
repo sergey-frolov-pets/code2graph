@@ -1,3 +1,4 @@
+import { isValidExtColor, normalizeColorToHex } from "../../color-utils";
 import { clamp, fmt } from "../../common";
 import type { ExtParseError } from "../../types";
 import type {
@@ -409,33 +410,58 @@ export function parseLine(
   return { line: result };
 }
 
-/** `labels above|inside|both|none` и необязательное `auto` / `color=auto`. */
+const FONT_COLOR_RE =
+  /\bfontcolor\s*(?:=|\s)\s*(auto|#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})(?![0-9a-fA-F])|(?:rgba?|hsla?)\([^)]+\)|[A-Za-z][A-Za-z0-9]*)/i;
+
+/**
+ * `fontcolor auto` или `fontcolor #hex|имя` в строке `labels`.
+ * Цвет вырезается из текста, остаток — режим размещения.
+ */
+export function takeLabelFontColor(text: string): { rest: string; fontColor?: string; error?: string } {
+  if (!/\bfontcolor\b/i.test(text)) return { rest: text };
+  const match = FONT_COLOR_RE.exec(text);
+  if (!match) {
+    return { rest: text, error: `ожидается «fontcolor <цвет|auto>», получено «${text.trim()}»` };
+  }
+  const raw = match[1];
+  let fontColor: string;
+  if (raw.toLowerCase() === "auto") fontColor = "auto";
+  else if (isColor(raw) || isValidExtColor(raw)) fontColor = normalizeColorToHex(raw);
+  else return { rest: text, error: `неизвестный цвет «${raw}» в «fontcolor»` };
+  const rest = `${text.slice(0, match.index)} ${text.slice(match.index + match[0].length)}`
+    .replace(/\s+/g, " ")
+    .trim();
+  if (/\bfontcolor\b/i.test(rest)) return { rest, error: `«fontcolor» указан дважды` };
+  return { rest, fontColor };
+}
+
+/** `labels above|inside|both|none` и необязательное `fontcolor <цвет|auto>`. */
 export function parseLabelsMode(
   text: string,
   line: number,
-): { mode?: { above: boolean; inside: boolean }; auto?: boolean; error?: ExtParseError } {
-  const tokens = text.trim().toLowerCase().split(/\s+/).filter(Boolean);
+): { mode?: { above: boolean; inside: boolean }; fontColor?: string; error?: ExtParseError } {
+  const taken = takeLabelFontColor(text);
+  if (taken.error) return { error: { message: taken.error, line, col: 0 } };
+  const tokens = taken.rest.trim().toLowerCase().split(/\s+/).filter(Boolean);
   let mode: { above: boolean; inside: boolean } | undefined;
-  let auto = false;
   let bad = false;
   for (const token of tokens) {
-    if (token === "auto" || token === "color=auto" || token === "colour=auto") auto = true;
-    else if (token === "above") mode = { above: true, inside: false };
+    if (token === "above") mode = { above: true, inside: false };
     else if (token === "inside") mode = { above: false, inside: true };
     else if (token === "both") mode = { above: true, inside: true };
     else if (token === "none" || token === "off") mode = { above: false, inside: false };
     else bad = true;
   }
-  if (bad || tokens.length === 0) {
+  if (bad || (tokens.length === 0 && !taken.fontColor)) {
     return {
       error: {
-        message: `ожидается «labels above|inside|both|none» и необязательное «auto», получено «${text.trim()}»`,
+        message: `ожидается «labels above|inside|both|none» и необязательное «fontcolor <цвет|auto>», получено «${text.trim()}»`,
         line,
         col: 0,
       },
     };
   }
-  return { mode, auto };
+  return { mode, fontColor: taken.fontColor };
 }
 
 /**

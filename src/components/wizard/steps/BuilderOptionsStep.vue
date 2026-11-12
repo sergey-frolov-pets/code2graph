@@ -202,17 +202,41 @@ function removeHeatmapBand(idx: number): void {
         >
           <span class="builder-field__label">{{ t("builder.option.labelAuto") }}</span>
           <select
-            :value="builderState.options.labelAuto ? 'auto' : 'theme'"
+            :value="
+              builderState.options.labelFontColor === 'auto'
+                ? 'auto'
+                : builderState.options.labelFontColor
+                  ? 'custom'
+                  : 'theme'
+            "
             class="select builder-input"
             @change="
-              builderState.options.labelAuto =
-                ($event.target as HTMLSelectElement).value === 'auto';
+              builderState.options.labelFontColor =
+                ($event.target as HTMLSelectElement).value === 'auto'
+                  ? 'auto'
+                  : ($event.target as HTMLSelectElement).value === 'custom'
+                    ? builderState.options.labelFontColor &&
+                      builderState.options.labelFontColor !== 'auto'
+                      ? builderState.options.labelFontColor
+                      : '#1f2328'
+                    : '';
               notifyChange();
             "
           >
             <option value="theme">{{ t("builder.option.labelColor.theme") }}</option>
             <option value="auto">{{ t("builder.option.labelColor.auto") }}</option>
+            <option value="custom">{{ t("builder.option.labelColor.custom") }}</option>
           </select>
+          <input
+            v-if="builderState.options.labelFontColor && builderState.options.labelFontColor !== 'auto'"
+            type="color"
+            class="builder-color-picker"
+            :value="builderState.options.labelFontColor"
+            @input="
+              builderState.options.labelFontColor = ($event.target as HTMLInputElement).value;
+              notifyChange();
+            "
+          />
         </label>
 
         <label

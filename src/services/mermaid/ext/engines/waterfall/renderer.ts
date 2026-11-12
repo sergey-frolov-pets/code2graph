@@ -46,6 +46,14 @@ function isTransparentChartBackground(value: string | undefined): boolean {
   return normalized === "transparent" || normalized === "none";
 }
 
+/** `fontcolor auto` — контраст к поверхности, `fontcolor #hex` — этот цвет, иначе цвет темы. */
+function waterfallLabelFill(model: WaterfallModel, surface: string, theme: string, contrastFallback: string): string {
+  const chosen = model.labelFontColor;
+  if (!chosen) return theme;
+  if (chosen === "auto") return readableTextOnFill(surface, contrastFallback);
+  return chosen;
+}
+
 export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions): string {
   const chartBackground = model.background ?? options.background;
   const themeDark = Boolean(options.dark) || usesInvertedMono(model.mono, model.monoInvert, false);
@@ -604,7 +612,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
           valueFontSize,
           {
             "font-size": valueFontSize,
-            fill: model.labelAuto ? readableTextOnFill(color, INSIDE_TEXT) : INSIDE_TEXT,
+            fill: waterfallLabelFill(model, color, INSIDE_TEXT, INSIDE_TEXT),
             "font-weight": 600,
           },
           "center",
@@ -635,7 +643,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
           valueFontSize,
           {
             "font-size": valueFontSize,
-            fill: model.labelAuto ? readableTextOnFill(palette.bg, palette.fg) : palette.fgDim,
+            fill: waterfallLabelFill(model, palette.bg, palette.fgDim, palette.fg),
             "data-value-label": "1",
           },
           "up",
