@@ -768,6 +768,66 @@ series Q : 4, 6, 8`);
     expect(svg).not.toContain("data-bar=");
   });
 
+  it("ставит подписи частей площади на оси категории, прямо под суммой", () => {
+    const source = `series
+stacked area
+labels sum fontcolor auto
+categories Q1, Q2, Q3, Q4
+y "v" 0 --> 400
+series Продукт : 80, 90, 70, 110
+series Услуги : 50, 60, 55, 70
+series Партнёры : 30, 25, 40, 35`;
+    const readTexts = (svg: string) =>
+      [...svg.matchAll(/<text\b([^>]*)>([^<]*)<\/text>/g)].map((match) => {
+        const attrs = match[1] ?? "";
+        const num = (name: string) => Number(new RegExp(`\\b${name}="([\\d.]+)"`).exec(attrs)?.[1]);
+        return {
+          x: num("x"),
+          y: num("y"),
+          text: match[2] ?? "",
+          sum: attrs.includes('data-stack-sum="1"'),
+          anchor: /text-anchor="([^"]+)"/.exec(attrs)?.[1] ?? "middle",
+        };
+      });
+    const partsOnAxis = (
+      nodes: ReturnType<typeof readTexts>,
+      sum: { x: number; y: number },
+      axis: "x" | "y",
+    ) =>
+      nodes.filter(
+        (node) =>
+          !node.sum &&
+          /^-?\d+(?:\.\d+)?$/.test(node.text) &&
+          Math.abs(node[axis] - sum[axis]) < 0.01,
+      );
+
+    const vertical = readTexts(
+      clusteredEngine.render(clusteredEngine.parse(source).value as ClusteredModel, {}),
+    );
+    const sums = vertical.filter((node) => node.sum);
+    expect(sums.map((node) => node.text)).toEqual(["160", "175", "165", "215"]);
+    for (const sum of sums) {
+      const parts = partsOnAxis(vertical, sum, "x");
+      expect(parts, `категория суммы ${sum.text}`).toHaveLength(3);
+      for (const part of parts) {
+        expect(part.anchor).toBe("middle");
+        expect(part.y).toBeGreaterThan(sum.y);
+      }
+    }
+
+    const turned = readTexts(
+      clusteredEngine.render(
+        clusteredEngine.parse(`${source}\nrotate 90`).value as ClusteredModel,
+        {},
+      ),
+    );
+    for (const sum of turned.filter((node) => node.sum)) {
+      const parts = partsOnAxis(turned, sum, "y");
+      expect(parts, `ряд суммы ${sum.text}`).toHaveLength(3);
+      for (const part of parts) expect(part.x).toBeLessThan(sum.x);
+    }
+  });
+
   it("labels fontcolor красит подпись контрастом или заданным цветом", () => {
     const fillOf = (svg: string, text: string) => {
       const tag = new RegExp(`<text\\b[^>]*>${text}</text>`).exec(svg)?.[0] ?? "";

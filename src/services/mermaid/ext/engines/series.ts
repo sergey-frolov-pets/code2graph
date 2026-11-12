@@ -1770,25 +1770,20 @@ function drawStackedAreas(
         centerOf(category),
         (alongOf(span.start) + alongOf(span.end)) / 2,
       );
-      const insideFits = model.labels === "inside" && band >= fontSize + 4 && measureText(text, labelSize) <= thickness - 2;
-      if (insideFits) {
-        svg.text(mid.x, mid.y + fontSize * 0.35, text, {
-          "font-size": labelSize,
-          "font-weight": 600,
-          fill: labelFill(model, color, palette.fg, true),
-        });
-      } else if (vertical) {
-        svg.text(centerOf(category) + thickness / 2 + 4, mid.y + fontSize * 0.35, text, {
-          "text-anchor": "start",
-          "font-size": labelSize,
-          fill: labelFill(model, palette.bg, palette.fgDim, false),
-        });
-      } else {
-        svg.text(mid.x, centerOf(category) - thickness / 2 - 3, text, {
-          "font-size": labelSize,
-          fill: labelFill(model, palette.bg, palette.fgDim, false),
-        });
-      }
+      // Лента сходится в центре категории — там же стоит сумма сверху.
+      // Сдвиг к краю виртуального бара уводил подпись вправо от суммы,
+      // а у последней категории выносил её за край графика.
+      const insideFits =
+        model.labels === "inside" &&
+        band >= fontSize + 4 &&
+        measureText(text, labelSize) <= thickness - 2;
+      svg.text(mid.x, mid.y + fontSize * 0.35, text, {
+        "font-size": labelSize,
+        ...(insideFits ? { "font-weight": 600 } : {}),
+        fill: insideFits
+          ? labelFill(model, color, palette.fg, true)
+          : labelFill(model, palette.bg, palette.fgDim, false),
+      });
     }
   });
 
@@ -2276,8 +2271,12 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
   let plotHeight = Math.round(PLOT_HEIGHT_VERTICAL * Math.max(1, (scaleFactor - 1) * 0.4 + 1));
 
   const padLeft = (model.axis ? Math.max(68, breakEdgeRoom(model, fontSize)) : 28) + yExtra;
+  // У столбцов стопки подпись, которая не влезла в бар, уходит вправо — для неё нужен
+  // запас. У площади подпись стоит на оси категории, под суммой, и этот запас пустует.
   const padRight =
-    (model.stack && model.labels !== "none" ? 72 : 28) + secondaryRoom + annotationGutter(model, fontSize);
+    (model.stack && !model.area && model.labels !== "none" ? 72 : 28) +
+    secondaryRoom +
+    annotationGutter(model, fontSize);
   const padTop =
     (model.title ? 52 : 28) +
     (model.labels === "above" || model.showSum ? fontSize + 6 : 0) +
