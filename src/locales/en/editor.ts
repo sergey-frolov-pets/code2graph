@@ -5,6 +5,8 @@ export const editorMessages = {
   "editor.surface.label": "Editing mode",
   "editor.surface.builder": "Steps",
   "editor.surface.aiChat": "AI chat",
+  "editor.surface.expand": "Expand",
+  "editor.surface.collapse": "Collapse",
   "editor.surface.builderTitle": "Step-by-step editing",
   "editor.surface.builderLead": "Current diagram",
   "editor.titleTooltip.plantuml": "PlantUML source code",

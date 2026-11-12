@@ -181,4 +181,6 @@ export const editorMessages = {
   "editor.tabs.label": "Editor-Registerkarten",
   "editor.tabs.close": "Registerkarte {label} schließen",
   "editor.surface.aiChat": "KI-Chat",
+  "editor.surface.expand": "Erweitern",
+  "editor.surface.collapse": "Einklappen",
 } as const satisfies LocaleMessages;

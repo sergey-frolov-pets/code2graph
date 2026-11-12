@@ -115,6 +115,10 @@
   align-items: flex-start;
 }
 
+.editor-panel.is-chat-surface .panel-body {
+  padding: 0;
+}
+
 .editor-panel .panel-header__toolbar {
   flex-wrap: wrap;
   align-content: flex-start;

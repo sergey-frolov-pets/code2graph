@@ -21,7 +21,7 @@ import {
   X,
   Zap,
 } from "@lucide/vue";
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from "vue";
 import { isAgentDiagramType } from "@shared/agent-diagram";
 import IconButton from "@/components/IconButton.vue";
 import type { LayoutEngine } from "@/constants";
@@ -45,6 +45,7 @@ import { readStorageItem, writeStorageItem } from "@/core/safe-storage";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useAiChatSessions } from "@/composables/useAiChatSessions";
 import { useChatLlmSelection } from "@/composables/useChatLlmSelection";
+import { iconButtonTooltipsSuspendedKey } from "@/composables/useLongPressTooltip";
 import { useLocale } from "@/composables/useLocale";
 import { getLanguageModule } from "@/languages/registry";
 import { isLocaleKey } from "@/locales/types";
@@ -159,13 +160,18 @@ const canSend = computed(
 const expandedTitle = ref<string | null>(null);
 /** Полный текст подсказки: наведение или долгое нажатие, отправка — отдельной кнопкой. */
 const suggestionPreview = ref<string | null>(null);
+/** Наведение закрывается уходом мыши, долгое нажатие остаётся, пока его не закроют. */
+type SuggestionOpenMode = "hover" | "press";
+const suggestionPreviewMode = ref<SuggestionOpenMode | null>(null);
 const titlePopoverRef = ref<HTMLElement | null>(null);
 const suggestionPreviewRef = ref<HTMLElement | null>(null);
 const suggestionChipsRef = ref<HTMLElement | null>(null);
 const headerTitleRef = ref<HTMLElement | null>(null);
 
 const AI_CHAT_SUGGESTION_LONG_PRESS_MS = 400;
+const AI_CHAT_SUGGESTION_HOVER_CLOSE_MS = 160;
 let suggestionPressTimer: ReturnType<typeof setTimeout> | null = null;
+let suggestionHoverCloseTimer: ReturnType<typeof setTimeout> | null = null;
 let suppressSuggestionClick = false;
 let overlayListenerAttached = false;
 
@@ -196,6 +202,11 @@ const nextStepSuggestions = computed<string[]>(() => {
 const composerInputRef = ref<HTMLTextAreaElement | null>(null);
 const composerFocused = ref(false);
 const modesOpen = ref(false);
+
+provide(
+  iconButtonTooltipsSuspendedKey,
+  computed(() => modesOpen.value),
+);
 const pickedMessageId = ref<string | null>(null);
 const AI_CHAT_COMPOSER_MAX_LINES = 4;
 
@@ -241,12 +252,35 @@ function closeExpandedTitle(): void {
   expandedTitle.value = null;
 }
 
+function clearSuggestionHoverCloseTimer(): void {
+  if (suggestionHoverCloseTimer !== null) {
+    clearTimeout(suggestionHoverCloseTimer);
+    suggestionHoverCloseTimer = null;
+  }
+}
+
 function closeSuggestionPreview(): void {
   suggestionPreview.value = null;
+  suggestionPreviewMode.value = null;
+  clearSuggestionHoverCloseTimer();
+}
+
+function openSuggestionPreview(step: string, mode: SuggestionOpenMode): void {
+  if (modesOpen.value || isBusy.value) {
+    return;
+  }
+  clearSuggestionHoverCloseTimer();
+  expandedTitle.value = null;
+  suggestionPreviewMode.value = mode;
+  suggestionPreview.value = step;
+}
+
+function titleUnlessModesOpen(label: string): string | undefined {
+  return modesOpen.value ? undefined : label;
 }
 
 function showExpandedTitle(text: string): void {
-  suggestionPreview.value = null;
+  closeSuggestionPreview();
   expandedTitle.value = text;
 }
 
@@ -278,23 +312,37 @@ function clearSuggestionPressTimer(): void {
 }
 
 function onSuggestionHover(step: string): void {
-  if (isBusy.value) {
+  openSuggestionPreview(step, "hover");
+}
+
+function onSuggestionHoverEnd(): void {
+  if (suggestionPreviewMode.value !== "hover") {
     return;
   }
-  expandedTitle.value = null;
-  suggestionPreview.value = step;
+  clearSuggestionHoverCloseTimer();
+  suggestionHoverCloseTimer = setTimeout(() => {
+    suggestionHoverCloseTimer = null;
+    if (suggestionPreviewMode.value === "hover") {
+      closeSuggestionPreview();
+    }
+  }, AI_CHAT_SUGGESTION_HOVER_CLOSE_MS);
+}
+
+function onSuggestionPreviewEnter(): void {
+  if (suggestionPreviewMode.value === "hover") {
+    clearSuggestionHoverCloseTimer();
+  }
 }
 
 function onSuggestionPointerDown(event: PointerEvent, step: string): void {
-  if (event.button !== 0 || event.pointerType === "mouse" || isBusy.value) {
+  if (event.button !== 0 || event.pointerType === "mouse" || isBusy.value || modesOpen.value) {
     return;
   }
   clearSuggestionPressTimer();
   suggestionPressTimer = setTimeout(() => {
     suggestionPressTimer = null;
     suppressSuggestionClick = true;
-    expandedTitle.value = null;
-    suggestionPreview.value = step;
+    openSuggestionPreview(step, "press");
   }, AI_CHAT_SUGGESTION_LONG_PRESS_MS);
 }
 
@@ -380,6 +428,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   clearSuggestionPressTimer();
+  clearSuggestionHoverCloseTimer();
   overlayListenerAttached = false;
   document.removeEventListener("keydown", onOverlayKeydown);
   document.removeEventListener("pointerdown", onOverlayPointerDown);
@@ -391,6 +440,12 @@ watch(draft, () => {
 
 watch([suggestionPreview, expandedTitle], () => {
   syncOverlayListener();
+});
+
+watch(modesOpen, (open) => {
+  if (open) {
+    closeSuggestionPreview();
+  }
 });
 
 watch(
@@ -899,7 +954,7 @@ async function onCopyChat(): Promise<void> {
       </button>
       <IconButton
         :label="t('aiChat.newSession')"
-        :title="t('aiChat.newSession')"
+        :title="titleUnlessModesOpen(t('aiChat.newSession'))"
         extra-class="ai-chat-panel__tool"
         @click="createSession()"
       >
@@ -911,7 +966,7 @@ async function onCopyChat(): Promise<void> {
       </IconButton>
       <IconButton
         :label="t('aiChat.history')"
-        :title="t('aiChat.history')"
+        :title="titleUnlessModesOpen(t('aiChat.history'))"
         :pressed="historyOpen"
         extra-class="ai-chat-panel__tool"
         data-testid="ai-chat-history"
@@ -925,7 +980,7 @@ async function onCopyChat(): Promise<void> {
       </IconButton>
       <IconButton
         :label="t('aiChat.copyChat')"
-        :title="t('aiChat.copyChat')"
+        :title="titleUnlessModesOpen(t('aiChat.copyChat'))"
         :disabled="!activeSession"
         extra-class="ai-chat-panel__tool"
         data-testid="ai-chat-copy"
@@ -1005,7 +1060,7 @@ async function onCopyChat(): Promise<void> {
             <IconButton
               v-if="renamingId === session.id"
               :label="t('aiChat.rename')"
-              :title="t('aiChat.rename')"
+              :title="titleUnlessModesOpen(t('aiChat.rename'))"
               extra-class="ai-chat-panel__tool"
               @click="commitRename(session)"
             >
@@ -1017,7 +1072,7 @@ async function onCopyChat(): Promise<void> {
             </IconButton>
             <IconButton
               :label="session.pinned ? t('aiChat.unpin') : t('aiChat.pin')"
-              :title="session.pinned ? t('aiChat.unpin') : t('aiChat.pin')"
+              :title="titleUnlessModesOpen(session.pinned ? t('aiChat.unpin') : t('aiChat.pin'))"
               :pressed="session.pinned"
               extra-class="ai-chat-panel__tool"
               @click="togglePin(session.id)"
@@ -1037,7 +1092,7 @@ async function onCopyChat(): Promise<void> {
             </IconButton>
             <IconButton
               :label="t('aiChat.rename')"
-              :title="t('aiChat.rename')"
+              :title="titleUnlessModesOpen(t('aiChat.rename'))"
               extra-class="ai-chat-panel__tool"
               @click="startRename(session)"
             >
@@ -1049,7 +1104,7 @@ async function onCopyChat(): Promise<void> {
             </IconButton>
             <IconButton
               :label="t('aiChat.duplicate')"
-              :title="t('aiChat.duplicate')"
+              :title="titleUnlessModesOpen(t('aiChat.duplicate'))"
               extra-class="ai-chat-panel__tool"
               @click="duplicateSession(session.id)"
             >
@@ -1061,7 +1116,7 @@ async function onCopyChat(): Promise<void> {
             </IconButton>
             <IconButton
               :label="t('aiChat.delete')"
-              :title="t('aiChat.delete')"
+              :title="titleUnlessModesOpen(t('aiChat.delete'))"
               extra-class="ai-chat-panel__tool"
               @click="onDeleteSession(session)"
             >
@@ -1167,7 +1222,7 @@ async function onCopyChat(): Promise<void> {
                 <IconButton
                   v-if="message.proposal.status === 'pending'"
                   :label="t('aiChat.proposalApply')"
-                  :title="t('aiChat.proposalApply')"
+                  :title="titleUnlessModesOpen(t('aiChat.proposalApply'))"
                   :disabled="isStale(message)"
                   primary
                   extra-class="ai-chat-panel__tool"
@@ -1182,7 +1237,7 @@ async function onCopyChat(): Promise<void> {
                 <IconButton
                   v-if="message.proposal.status === 'pending'"
                   :label="t('aiChat.proposalReject')"
-                  :title="t('aiChat.proposalReject')"
+                  :title="titleUnlessModesOpen(t('aiChat.proposalReject'))"
                   extra-class="ai-chat-panel__tool"
                   @click="rejectProposal(message)"
                 >
@@ -1194,7 +1249,7 @@ async function onCopyChat(): Promise<void> {
                 </IconButton>
                 <IconButton
                   :label="diffOpenFor.has(message.id) ? t('aiChat.proposalHideDiff') : t('aiChat.proposalDiff')"
-                  :title="diffOpenFor.has(message.id) ? t('aiChat.proposalHideDiff') : t('aiChat.proposalDiff')"
+                  :title="titleUnlessModesOpen(diffOpenFor.has(message.id) ? t('aiChat.proposalHideDiff') : t('aiChat.proposalDiff'))"
                   :pressed="diffOpenFor.has(message.id)"
                   extra-class="ai-chat-panel__tool"
                   @click="toggleDiff(message.id)"
@@ -1234,7 +1289,7 @@ async function onCopyChat(): Promise<void> {
           <div class="ai-chat-panel__message-actions">
             <IconButton
               :label="t('aiChat.copyMessage')"
-              :title="t('aiChat.copyMessage')"
+              :title="titleUnlessModesOpen(t('aiChat.copyMessage'))"
               extra-class="ai-chat-panel__tool"
               @click="copyText(message.content)"
             >
@@ -1247,7 +1302,7 @@ async function onCopyChat(): Promise<void> {
             <IconButton
               v-if="message.role === 'user'"
               :label="t('aiChat.editResend')"
-              :title="t('aiChat.editResend')"
+              :title="titleUnlessModesOpen(t('aiChat.editResend'))"
               extra-class="ai-chat-panel__tool"
               data-testid="ai-chat-edit"
               @click="editAndResend(message)"
@@ -1261,7 +1316,7 @@ async function onCopyChat(): Promise<void> {
             <IconButton
               v-if="message.role === 'assistant'"
               :label="t('aiChat.regenerate')"
-              :title="t('aiChat.regenerate')"
+              :title="titleUnlessModesOpen(t('aiChat.regenerate'))"
               extra-class="ai-chat-panel__tool"
               @click="regenerate"
             >
@@ -1298,6 +1353,8 @@ async function onCopyChat(): Promise<void> {
         data-testid="ai-chat-suggestion-preview"
         role="dialog"
         :aria-label="suggestionPreview"
+        @mouseenter="onSuggestionPreviewEnter"
+        @mouseleave="onSuggestionHoverEnd"
       >
         <p class="ai-chat-panel__popover-text">
           {{ suggestionPreview }}
@@ -1311,14 +1368,6 @@ async function onCopyChat(): Promise<void> {
           >
             {{ t("aiChat.send") }}
           </button>
-          <button
-            class="btn"
-            type="button"
-            data-testid="ai-chat-suggestion-cancel"
-            @click="closeSuggestionPreview"
-          >
-            {{ t("aiChat.cancel") }}
-          </button>
         </div>
       </div>
 
@@ -1328,6 +1377,7 @@ async function onCopyChat(): Promise<void> {
         class="ai-chat-panel__next"
         data-testid="ai-chat-next"
         :aria-label="t('aiChat.nextSteps')"
+        @mouseleave="onSuggestionHoverEnd"
       >
         <span class="ai-chat-panel__role">{{ t("aiChat.nextSteps") }}</span>
         <div class="ai-chat-panel__chips">
@@ -1409,7 +1459,7 @@ async function onCopyChat(): Promise<void> {
               type="button"
               data-testid="ai-chat-attach"
               :aria-label="t('aiChat.attach')"
-              :title="t('aiChat.attachHint')"
+              :title="titleUnlessModesOpen(t('aiChat.attachHint'))"
               :disabled="isBusy || pendingAttachments.length >= AI_CHAT_MAX_ATTACHMENTS"
               @click="openAttachmentPicker"
             >
@@ -1454,7 +1504,7 @@ async function onCopyChat(): Promise<void> {
                 class="btn ai-chat-panel__send"
                 type="button"
                 :aria-label="t('aiChat.stop')"
-                :title="t('aiChat.stop')"
+                :title="titleUnlessModesOpen(t('aiChat.stop'))"
                 @click="stopGeneration"
               >
                 <Square
@@ -1470,7 +1520,7 @@ async function onCopyChat(): Promise<void> {
                 type="submit"
                 data-testid="ai-chat-send"
                 :aria-label="t('aiChat.send')"
-                :title="t('aiChat.send')"
+                :title="titleUnlessModesOpen(t('aiChat.send'))"
                 :disabled="!canSend"
               >
                 <Send
@@ -1522,7 +1572,6 @@ async function onCopyChat(): Promise<void> {
             >
               <IconButton
                 :label="t('aiChat.contextCurrent')"
-                :title="t('aiChat.contextCurrent')"
                 :pressed="contextMode === 'current'"
                 extra-class="ai-chat-panel__tool"
                 @click="contextMode = 'current'"
@@ -1535,7 +1584,6 @@ async function onCopyChat(): Promise<void> {
               </IconButton>
               <IconButton
                 :label="t('aiChat.contextNew')"
-                :title="t('aiChat.contextNew')"
                 :pressed="contextMode === 'new'"
                 extra-class="ai-chat-panel__tool"
                 data-testid="ai-chat-context-new"
@@ -1555,7 +1603,6 @@ async function onCopyChat(): Promise<void> {
             >
               <IconButton
                 :label="t('aiChat.applyModeProposal')"
-                :title="t('aiChat.applyModeProposal')"
                 :pressed="applyMode === 'proposal'"
                 extra-class="ai-chat-panel__tool"
                 @click="applyMode = 'proposal'"
@@ -1568,7 +1615,6 @@ async function onCopyChat(): Promise<void> {
               </IconButton>
               <IconButton
                 :label="t('aiChat.applyModeImmediate')"
-                :title="t('aiChat.applyModeImmediate')"
                 :pressed="applyMode === 'immediate'"
                 extra-class="ai-chat-panel__tool"
                 @click="applyMode = 'immediate'"
@@ -1593,6 +1639,11 @@ async function onCopyChat(): Promise<void> {
   /* Зазор под плавающую «Показать превью»: она fixed в правом нижнем углу редактора. */
   --ai-chat-preview-fab-clearance: calc(var(--btn-touch, 44px) + 0.25rem);
   --ai-chat-bubble-radius: 14px;
+  --ai-chat-composer-block-pad: 2px;
+  --ai-chat-composer-inline-pad: 2px;
+  --ai-chat-composer-icon-size: 32px;
+  --ai-chat-composer-send-size: 36px;
+  --ai-chat-composer-field-inset: 2px;
 
   position: relative;
   display: flex;
@@ -1683,7 +1734,7 @@ async function onCopyChat(): Promise<void> {
 
 .ai-chat-panel__popover-text {
   margin: 0;
-  padding: 10px 12px;
+  padding: 6px 10px;
   overflow: auto;
   max-height: min(9rem, 32vh);
   white-space: pre-wrap;
@@ -1696,7 +1747,7 @@ async function onCopyChat(): Promise<void> {
   display: flex;
   flex: 0 0 auto;
   gap: 6px;
-  padding: 0 12px 10px;
+  padding: 0 10px 6px;
 }
 
 .ai-chat-panel__suggestion-actions .btn {
@@ -1988,9 +2039,10 @@ async function onCopyChat(): Promise<void> {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 4px;
+  gap: 0;
   min-width: 0;
-  padding: 4px;
+  padding: var(--ai-chat-composer-block-pad) var(--ai-chat-composer-inline-pad)
+    var(--ai-chat-composer-block-pad) var(--ai-chat-composer-field-inset);
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--surface);
@@ -2005,8 +2057,8 @@ async function onCopyChat(): Promise<void> {
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: var(--btn-touch, 44px);
-  height: var(--btn-touch, 44px);
+  width: var(--ai-chat-composer-icon-size);
+  height: var(--ai-chat-composer-icon-size);
   margin: 0;
   padding: 0;
   border: 0;
@@ -2055,15 +2107,16 @@ async function onCopyChat(): Promise<void> {
   min-width: 0;
   margin: 0;
   padding: 0;
-  padding-block: calc((var(--btn-touch, 44px) - 1.4em) / 2);
+  padding-block: calc((var(--ai-chat-composer-send-size) - 1.4em) / 2);
+  padding-inline-start: var(--ai-chat-composer-field-inset);
   border: 0;
   border-radius: 0;
   background: transparent;
   color: var(--text);
   resize: none;
   line-height: 1.4;
-  min-height: var(--btn-touch, 44px);
-  max-height: calc(4 * 1.4em + (var(--btn-touch, 44px) - 1.4em));
+  min-height: var(--ai-chat-composer-send-size);
+  max-height: calc(4 * 1.4em + (var(--ai-chat-composer-send-size) - 1.4em));
   overflow-y: auto;
   field-sizing: fixed;
 }
@@ -2089,8 +2142,8 @@ async function onCopyChat(): Promise<void> {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--btn-touch, 44px);
-  height: var(--btn-touch, 44px);
+  width: var(--ai-chat-composer-icon-size);
+  height: var(--ai-chat-composer-icon-size);
   margin: 0;
   padding: 0;
   border: 0;
@@ -2167,9 +2220,9 @@ async function onCopyChat(): Promise<void> {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: var(--btn-touch, 44px);
-  min-width: var(--btn-touch, 44px);
-  min-height: var(--btn-touch, 44px);
+  width: var(--ai-chat-composer-send-size);
+  min-width: var(--ai-chat-composer-send-size);
+  min-height: var(--ai-chat-composer-send-size);
   padding: 0;
   border-radius: 12px;
   touch-action: manipulation;
@@ -2256,7 +2309,7 @@ async function onCopyChat(): Promise<void> {
     display: flex;
     flex: 1 1 auto;
     align-items: center;
-    gap: 2px;
+    gap: 0;
     min-width: 0;
     width: 100%;
   }

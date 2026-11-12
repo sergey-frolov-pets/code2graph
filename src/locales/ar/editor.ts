@@ -181,4 +181,6 @@ export const editorMessages = {
   "editor.tabs.label": "علامات تبويب المحرر",
   "editor.tabs.close": "إغلاق علامة التبويب {label}",
   "editor.surface.aiChat": "دردشة الذكاء الاصطناعي",
+  "editor.surface.expand": "توسيع",
+  "editor.surface.collapse": "طي",
 } as const satisfies LocaleMessages;

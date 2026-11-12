@@ -1,5 +1,18 @@
-import { nextTick, onBeforeUnmount, onMounted, ref, type Ref } from 'vue';
+import {
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  type ComputedRef,
+  type InjectionKey,
+  type Ref,
+} from 'vue';
 import { useTooltipRegistry } from '@/composables/useTooltipRegistry';
+
+/** Пока конфиг чата открыт, всплывающие подсказки в этой панели не показываем. */
+export const iconButtonTooltipsSuspendedKey: InjectionKey<ComputedRef<boolean>> = Symbol(
+  'iconButtonTooltipsSuspended',
+);
 
 const LONG_PRESS_MS = 400;
 const TOOLTIP_HIDE_MS = 2200;

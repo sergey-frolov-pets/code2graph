@@ -252,7 +252,7 @@ describe("AiChatPanel layout", () => {
     expect(dialog).not.toBeNull();
     expect(dialog!.textContent).toContain(heldText);
     expect(dialog!.textContent).toContain("Отправить");
-    expect(dialog!.textContent).toContain("Отмена");
+    expect(dialog!.querySelector("[data-testid='ai-chat-suggestion-cancel']")).toBeNull();
     expect(sendAiChatMessage).not.toHaveBeenCalled();
 
     held.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1, pointerType: "touch" }));
@@ -260,7 +260,7 @@ describe("AiChatPanel layout", () => {
     await nextTick();
     expect(sendAiChatMessage).not.toHaveBeenCalled();
 
-    (dialog!.querySelector("[data-testid='ai-chat-suggestion-cancel']") as HTMLButtonElement).click();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     await nextTick();
     expect(preview.host.querySelector("[data-testid='ai-chat-suggestion-preview']")).toBeNull();
     expect(sendAiChatMessage).not.toHaveBeenCalled();
@@ -283,6 +283,38 @@ describe("AiChatPanel layout", () => {
     });
 
     preview.unmount();
+  });
+
+  it("closes a hovered suggestion when the pointer leaves and skips it while modes are open", async () => {
+    useLocale().setLocale("ru");
+    const view = mountChat();
+    await nextTick();
+
+    const chip = view.host.querySelector("[data-testid='ai-chat-suggestion']") as HTMLButtonElement;
+    const suggestion = chip.textContent?.trim() ?? "";
+    chip.dispatchEvent(new MouseEvent("mouseenter"));
+    await nextTick();
+    expect(view.host.querySelector("[data-testid='ai-chat-suggestion-preview']")?.textContent).toContain(
+      suggestion,
+    );
+
+    view.host.querySelector("[data-testid='ai-chat-next']")!.dispatchEvent(new MouseEvent("mouseleave"));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 220);
+    });
+    await nextTick();
+    expect(view.host.querySelector("[data-testid='ai-chat-suggestion-preview']")).toBeNull();
+
+    (view.host.querySelector("[data-testid='ai-chat-modes']") as HTMLButtonElement).click();
+    await nextTick();
+    chip.dispatchEvent(new MouseEvent("mouseenter"));
+    await nextTick();
+    expect(view.host.querySelector("[data-testid='ai-chat-suggestion-preview']")).toBeNull();
+    expect(view.host.querySelector(".ai-chat-panel__composer-box")?.classList.contains("is-modes-open")).toBe(
+      true,
+    );
+
+    view.unmount();
   });
 
   it("attaches an oversized paste as a text file and leaves a short paste in the field", async () => {

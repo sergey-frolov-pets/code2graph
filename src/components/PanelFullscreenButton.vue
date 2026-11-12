@@ -2,8 +2,10 @@
 import IconButton from "@/components/IconButton.vue";
 import { useLocale } from "@/composables/useLocale";
 
-defineProps<{
+const props = defineProps<{
   active: boolean;
+  expandLabel?: string;
+  collapseLabel?: string;
 }>();
 
 const emit = defineEmits<{
@@ -16,7 +18,11 @@ const { t } = useLocale();
 <template>
   <IconButton
     extra-class="panel-header__fullscreen"
-    :label="active ? t('fullscreen.collapse') : t('fullscreen.expand')"
+    :label="
+      active
+        ? (props.collapseLabel ?? t('fullscreen.collapse'))
+        : (props.expandLabel ?? t('fullscreen.expand'))
+    "
     :pressed="active"
     @click="emit('toggle')"
   >

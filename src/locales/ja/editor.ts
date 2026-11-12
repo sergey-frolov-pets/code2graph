@@ -181,4 +181,6 @@ export const editorMessages = {
   "editor.tabs.label": "エディタのタブ",
   "editor.tabs.close": "タブ {label} を閉じる",
   "editor.surface.aiChat": "AI チャット",
+  "editor.surface.expand": "展開",
+  "editor.surface.collapse": "折りたたむ",
 } as const satisfies LocaleMessages;

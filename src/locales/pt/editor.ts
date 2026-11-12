@@ -181,4 +181,6 @@ export const editorMessages = {
   "editor.tabs.label": "Abas do editor",
   "editor.tabs.close": "Fechar a aba {label}",
   "editor.surface.aiChat": "Chat de IA",
+  "editor.surface.expand": "Expandir",
+  "editor.surface.collapse": "Recolher",
 } as const satisfies LocaleMessages;

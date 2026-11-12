@@ -181,4 +181,6 @@ export const editorMessages = {
   "editor.tabs.label": "Pestañas del editor",
   "editor.tabs.close": "Cerrar pestaña {label}",
   "editor.surface.aiChat": "Chat de IA",
+  "editor.surface.expand": "Expandir",
+  "editor.surface.collapse": "Contraer",
 } as const satisfies LocaleMessages;

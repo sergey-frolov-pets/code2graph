@@ -181,4 +181,6 @@ export const editorMessages = {
   "editor.tabs.label": "编辑器标签页",
   "editor.tabs.close": "关闭标签页 {label}",
   "editor.surface.aiChat": "AI 聊天",
+  "editor.surface.expand": "展开",
+  "editor.surface.collapse": "收起",
 } as const satisfies LocaleMessages;
