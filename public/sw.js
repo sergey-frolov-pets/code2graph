@@ -1,8 +1,13 @@
 const CACHE_PREFIX = "code2graph-";
-const PRECACHE = "code2graph-precache-v2";
+const PRECACHE = "code2graph-precache-v3";
 const SHARED_PUML_CACHE = "shared-puml-v1";
-const APP_SHELL_CACHE = "code2graph-shell-v2";
+const APP_SHELL_CACHE = "code2graph-shell-v3";
 const LIBRARY_API_CACHE = "code2graph-library-api-v1";
+
+// Подставляется при сборке. Новый релиз меняет байты sw.js, поэтому уже
+// открытая вкладка со старым ?v= замечает обновление.
+const APP_RELEASE = "__C2G_APP_VERSION__";
+self.__code2graphRelease = APP_RELEASE;
 
 const PRECACHE_URLS = [
   "./index.html",
@@ -80,12 +85,6 @@ function isAppShellNavigation(url) {
   );
 }
 
-function appShellRequest() {
-  return new Request(new URL(APP_SHELL_PATH, self.location.origin).href, {
-    credentials: "same-origin",
-  });
-}
-
 async function readCachedShell() {
   const shellUrl = new URL(APP_SHELL_PATH, self.location.origin).href;
   const precache = await caches.open(PRECACHE);
@@ -110,10 +109,18 @@ async function handleNavigation(request) {
   const url = new URL(request.url);
   const path = normalizedPath(url.pathname);
   const prettyPath = path !== "/" && path !== APP_SHELL_PATH;
-  const networkRequest = prettyPath ? appShellRequest() : request;
+  // Pages отдаёт index.html с max-age=600. Запрос по адресу, а не клоном
+  // навигации: mode "navigate" нельзя пересоздать, а no-store не даёт
+  // перезагрузке оставить прошлую версию из HTTP-кэша.
+  const target = prettyPath
+    ? new URL(APP_SHELL_PATH, self.location.origin).href
+    : request.url;
 
   try {
-    const response = await fetch(networkRequest);
+    const response = await fetch(target, {
+      cache: "no-store",
+      credentials: "same-origin",
+    });
     if (response.ok) {
       await storeShell(response);
       return response;

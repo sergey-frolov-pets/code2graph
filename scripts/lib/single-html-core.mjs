@@ -404,12 +404,31 @@ export function readBuiltAssets() {
   return { css, appJs, vizGlobalPayload, plantumlPayload };
 }
 
+export const SERVICE_WORKER_VERSION_TOKEN = "__C2G_APP_VERSION__";
+
+export function stampServiceWorker(source, version) {
+  if (!source.includes(SERVICE_WORKER_VERSION_TOKEN)) {
+    throw new Error("sw.js is missing the app version token");
+  }
+
+  return source.replaceAll(SERVICE_WORKER_VERSION_TOKEN, version);
+}
+
+export function readAppVersion() {
+  return JSON.parse(readFileSync(path.join(appRoot, "package.json"), "utf8")).version;
+}
+
+export function writeStampedServiceWorker(targetPath) {
+  const source = readFileSync(path.join(appRoot, "public", "sw.js"), "utf8");
+  writeFileSync(targetPath, stampServiceWorker(source, readAppVersion()), "utf8");
+}
+
 export function copyPwaDistAssets(targetDir = distDir) {
   copyFileSync(
     path.join(appRoot, "public", "manifest.webmanifest"),
     path.join(targetDir, "manifest.webmanifest"),
   );
-  copyFileSync(path.join(appRoot, "public", "sw.js"), path.join(targetDir, "sw.js"));
+  writeStampedServiceWorker(path.join(targetDir, "sw.js"));
   copyFileSync(
     path.join(appRoot, "public", "pwa-install-bootstrap.js"),
     path.join(targetDir, "pwa-install-bootstrap.js"),
