@@ -122,11 +122,11 @@ describe("AiChatPanel layout", () => {
     expect(textarea).not.toBeNull();
     expect(textarea).toHaveProperty("rows", 1);
     expect(line!.contains(textarea)).toBe(true);
-    expect(textarea!.getAttribute("placeholder")).toBe("Сообщение…");
+    expect(textarea!.getAttribute("placeholder")).toBeNull();
     const hint = view.host.querySelector("[data-testid='ai-chat-input-hint']");
     expect(hint).not.toBeNull();
     expect(line!.contains(hint)).toBe(true);
-    expect(hint!.textContent).toContain("Сообщение…");
+    expect(hint!.textContent).not.toContain("Сообщение");
     expect(hint!.querySelector("[data-testid='ai-chat-hint-context']")?.getAttribute("data-mode")).toBe(
       "current",
     );
