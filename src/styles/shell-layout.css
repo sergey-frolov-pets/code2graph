@@ -231,6 +231,10 @@
   flex-direction: column;
 }
 
+.app-main.app-main--ai-chat {
+  padding-bottom: 0;
+}
+
 .preview-panel .panel-body {
   min-height: 0;
 }

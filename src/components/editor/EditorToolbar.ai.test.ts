@@ -58,6 +58,35 @@ describe("EditorToolbar surface switch", () => {
     view.unmount();
   });
 
+  it("puts a compact show-preview control beside the mode switch in AI chat", async () => {
+    useLocale().setLocale("ru");
+    const view = mountToolbar({
+      builderAvailable: true,
+      aiChatAvailable: true,
+      surfaceMode: "ai-chat",
+    });
+    await nextTick();
+    const group = view.host.querySelector(".panel-title-group");
+    const modeSwitch = group?.querySelector(".editor-surface-switch");
+    const preview = group?.querySelector("[data-testid='editor-show-preview']");
+    expect(modeSwitch).not.toBeNull();
+    expect(preview).not.toBeNull();
+    expect(preview?.tagName).toBe("BUTTON");
+    expect(preview?.getAttribute("aria-label")).toBe("Показать превью");
+    expect(
+      modeSwitch!.compareDocumentPosition(preview!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(group?.querySelector(".panel-header__toolbar")).toBeNull();
+    view.unmount();
+  });
+
+  it("hides show-preview outside AI chat", async () => {
+    const view = mountToolbar({ builderAvailable: true, aiChatAvailable: true });
+    await nextTick();
+    expect(view.host.querySelector("[data-testid='editor-show-preview']")).toBeNull();
+    view.unmount();
+  });
+
   it("hides AI chat when no LLM is connected (aiChatAvailable=false)", async () => {
     const view = mountToolbar({ builderAvailable: true, aiChatAvailable: false });
     await nextTick();
@@ -83,6 +112,9 @@ describe("EditorToolbar surface switch", () => {
     );
     expect(view.host.querySelector(".format-select")).toBeNull();
     expect(view.host.querySelector(".panel-header__toolbar")).toBeNull();
+    expect(view.host.querySelector("[data-testid='editor-show-preview']")?.getAttribute("aria-label")).toBe(
+      "Показать превью",
+    );
     expect(view.host.querySelector('[data-testid="editor-open-file"]')).toBeNull();
     expect(view.host.querySelector(".panel-header__fullscreen")?.getAttribute("aria-label")).toBe(
       "Развернуть",

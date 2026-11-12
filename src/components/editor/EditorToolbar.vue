@@ -68,6 +68,7 @@ const emit = defineEmits<{
   changeFormat: [format: DiagramFormat];
   toggleFullscreen: [];
   toggleSessionFile: [];
+  showPreview: [];
 }>();
 
 const { t } = useLocale();
@@ -138,48 +139,60 @@ function onSampleChange(event: Event): void {
     :class="{ 'is-ai-chat': surfaceMode === 'ai-chat' }"
   >
     <div class="panel-title-group">
-      <div
-        v-if="builderAvailable || aiChatAvailable"
-        class="editor-surface-switch"
-        role="radiogroup"
-        :aria-label="t('editor.surface.label')"
-      >
-        <button
-          type="button"
-          class="editor-surface-switch__option"
-          role="radio"
-          :aria-checked="surfaceMode === 'code'"
-          :class="{ 'is-active': surfaceMode === 'code' }"
-          data-testid="editor-surface-code"
-          @click="emit('setSurfaceMode', 'code')"
+      <template v-if="builderAvailable || aiChatAvailable">
+        <div
+          class="editor-surface-switch"
+          role="radiogroup"
+          :aria-label="t('editor.surface.label')"
         >
-          {{ t("editor.title") }}
-        </button>
+          <button
+            type="button"
+            class="editor-surface-switch__option"
+            role="radio"
+            :aria-checked="surfaceMode === 'code'"
+            :class="{ 'is-active': surfaceMode === 'code' }"
+            data-testid="editor-surface-code"
+            @click="emit('setSurfaceMode', 'code')"
+          >
+            {{ t("editor.title") }}
+          </button>
+          <button
+            v-if="builderAvailable"
+            type="button"
+            class="editor-surface-switch__option"
+            role="radio"
+            :aria-checked="surfaceMode === 'builder'"
+            :class="{ 'is-active': surfaceMode === 'builder' }"
+            data-testid="editor-surface-builder"
+            @click="emit('setSurfaceMode', 'builder')"
+          >
+            {{ t("editor.surface.builder") }}
+          </button>
+          <button
+            v-if="aiChatAvailable"
+            type="button"
+            class="editor-surface-switch__option"
+            role="radio"
+            :aria-checked="surfaceMode === 'ai-chat'"
+            :class="{ 'is-active': surfaceMode === 'ai-chat' }"
+            data-testid="editor-surface-ai-chat"
+            @click="emit('setSurfaceMode', 'ai-chat')"
+          >
+            {{ t("editor.surface.aiChat") }}
+          </button>
+        </div>
         <button
-          v-if="builderAvailable"
+          v-if="surfaceMode === 'ai-chat'"
           type="button"
-          class="editor-surface-switch__option"
-          role="radio"
-          :aria-checked="surfaceMode === 'builder'"
-          :class="{ 'is-active': surfaceMode === 'builder' }"
-          data-testid="editor-surface-builder"
-          @click="emit('setSurfaceMode', 'builder')"
+          class="editor-show-preview"
+          data-testid="editor-show-preview"
+          :aria-label="t('app.showPreview')"
+          :title="t('app.showPreview')"
+          @click="emit('showPreview')"
         >
-          {{ t("editor.surface.builder") }}
+          <ActionIcon name="eye" />
         </button>
-        <button
-          v-if="aiChatAvailable"
-          type="button"
-          class="editor-surface-switch__option"
-          role="radio"
-          :aria-checked="surfaceMode === 'ai-chat'"
-          :class="{ 'is-active': surfaceMode === 'ai-chat' }"
-          data-testid="editor-surface-ai-chat"
-          @click="emit('setSurfaceMode', 'ai-chat')"
-        >
-          {{ t("editor.surface.aiChat") }}
-        </button>
-      </div>
+      </template>
       <h2
         v-else
         class="panel-title panel-title--editor"
@@ -424,6 +437,36 @@ function onSampleChange(event: Event): void {
 .editor-surface-switch__option.is-active {
   background: color-mix(in srgb, var(--accent) 18%, var(--surface));
   color: var(--accent);
+}
+
+.editor-show-preview {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.editor-show-preview :deep(svg) {
+  width: 14px;
+  height: 14px;
+}
+
+@media (max-width: 900px) {
+  .editor-show-preview {
+    display: inline-flex;
+  }
 }
 
 .panel-title--editor {

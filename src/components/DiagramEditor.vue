@@ -100,6 +100,8 @@ const emit = defineEmits<{
   "editor-blur": [];
   "editor-fullscreen": [active: boolean];
   refreshData: [];
+  showPreview: [];
+  surfaceMode: [mode: EditorSurfaceMode];
 }>();
 
 const { t } = useLocale();
@@ -134,6 +136,11 @@ const snippetsOpen = ref(false);
 export type EditorSurfaceMode = "code" | "builder" | "ai-chat";
 
 const surfaceMode = ref<EditorSurfaceMode>("code");
+
+watch(surfaceMode, (mode) => {
+  emit("surfaceMode", mode);
+});
+
 const builderAvailable = computed(
   () =>
     formatDefinition.value.editable &&
@@ -563,6 +570,7 @@ onUnmounted(() => {
       @load-sample="loadSample"
       @change-format="changeFormat"
       @toggle-fullscreen="isFullscreen = !isFullscreen"
+      @show-preview="emit('showPreview')"
     />
 
     <div

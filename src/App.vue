@@ -4,7 +4,7 @@ import AppDialogHost from "@/components/AppDialogHost.vue";
 import LibraryDataLinkImportDialog from "@/components/library/LibraryDataLinkImportDialog.vue";
 import AppModalHost from "@/components/AppModalHost.vue";
 import TooltipProvider from "@/components/ui/TooltipProvider.vue";
-import DiagramEditor from "@/components/DiagramEditor.vue";
+import DiagramEditor, { type EditorSurfaceMode } from "@/components/DiagramEditor.vue";
 import DiagramPreview from "@/components/DiagramPreview.vue";
 import ClipboardDiagramPrompt from "@/components/ClipboardDiagramPrompt.vue";
 import DiagramDataSourceDialog from "@/components/DiagramDataSourceDialog.vue";
@@ -28,6 +28,7 @@ const { alert } = useAppDialog();
 const mainRef = ref<HTMLElement | null>(null);
 const editorFocused = ref(false);
 const editorFullscreen = ref(false);
+const editorSurfaceMode = ref<EditorSurfaceMode>("code");
 const isDesktopLayout = useMediaQuery("(min-width: 901px)");
 
 const PREVIEW_FAB_BLUR_DELAY_MS = 250;
@@ -165,6 +166,7 @@ function showMobilePreview(): void {
 
 const showPreviewFab = computed(
   () =>
+    editorSurfaceMode.value !== "ai-chat" &&
     !isDesktopLayout.value &&
     activeMobilePanel.value === "editor" &&
     (editorFocused.value || editorFullscreen.value),
@@ -233,6 +235,7 @@ onUnmounted(() => {
         {
           'app-main--split-dragging': isDragging,
           'app-main--preview-detached': previewDetached,
+          'app-main--ai-chat': editorSurfaceMode === 'ai-chat',
         },
       ]"
     >
@@ -273,6 +276,8 @@ onUnmounted(() => {
         @editor-focus="onEditorFocus"
         @editor-blur="onEditorBlur"
         @editor-fullscreen="editorFullscreen = $event"
+        @surface-mode="editorSurfaceMode = $event"
+        @show-preview="showMobilePreview"
       />
 
       <div
