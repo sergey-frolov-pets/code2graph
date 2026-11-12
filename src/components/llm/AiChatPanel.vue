@@ -1685,8 +1685,6 @@ async function onCopyChat(): Promise<void> {
 <style scoped>
 .ai-chat-panel {
   --ai-chat-gap: 4px;
-  /* Зазор под плавающую «Показать превью»: она fixed в правом нижнем углу редактора. */
-  --ai-chat-preview-fab-clearance: calc(var(--btn-touch, 44px) + 0.25rem);
   --ai-chat-bubble-radius: 14px;
   --ai-chat-composer-block-pad: 2px;
   --ai-chat-composer-inline-pad: 2px;
@@ -2073,6 +2071,7 @@ async function onCopyChat(): Promise<void> {
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+  margin-top: auto;
 }
 
 .ai-chat-panel__composer {
@@ -2356,10 +2355,6 @@ async function onCopyChat(): Promise<void> {
 }
 
 @media (max-width: 900px) {
-  .ai-chat-panel__dock {
-    padding-bottom: var(--ai-chat-preview-fab-clearance);
-  }
-
   .ai-chat-panel__composer-line {
     display: flex;
     flex: 1 1 auto;
