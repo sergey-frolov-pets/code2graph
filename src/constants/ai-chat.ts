@@ -27,6 +27,12 @@ export const AI_CHAT_TITLE_MAX_CHARS = 60;
 /** Сколько раз повторяем запрос, если предложенный исходник не прошёл валидацию формата. */
 export const AI_CHAT_VALIDATION_RETRIES = 2;
 
+/** Сколько страниц синтаксиса модель может запросить одним скрытым ответом. */
+export const AI_CHAT_READ_PAGES_MAX = 4;
+
+/** Максимум символов одного пути в запросе страниц синтаксиса. */
+export const AI_CHAT_READ_PAGE_PATH_MAX_CHARS = 200;
+
 /** Максимум символов одного сообщения пользователя. */
 export const AI_CHAT_MESSAGE_MAX_CHARS = 8000;
 

@@ -29,6 +29,8 @@ Reply with diagram source for the editor only. Do not return an image or an exte
 ## Mermaid Ext
 
 - [waterfall](./ext/waterfall.md) — How a starting number becomes a total through plus and minus steps.
+- [waterfall-scale](./ext/waterfall-scale.md) — Scale breaks, where values are drawn, and font size.
+- [waterfall-series](./ext/waterfall-series.md) — Several scenarios side by side, connectors, and bar colors.
 - [bubble](./ext/bubble.md) — Points placed by x, y, and size.
 - [heatmap](./ext/heatmap.md) — A matrix of numbers colored by a scale.
 - [orgchart](./ext/orgchart.md) — People or units linked as a tree.
@@ -38,3 +40,5 @@ Reply with diagram source for the editor only. Do not return an image or an exte
 - [radar](./ext/radar.md) — Several series compared on the same axes.
 - [voronoi](./ext/voronoi.md) — Regions around sites on a plane.
 - [series](./ext/series.md) — Grouped bars, stacked columns, or a stacked area for categories.
+- [series-scale](./ext/series-scale.md) — A missing band on the axis (`break`), or a second axis (`y2`) for another unit.
+- [series-analytics](./ext/series-analytics.md) — A constant level line, or a CAGR arrow between bars.

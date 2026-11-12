@@ -13,14 +13,13 @@ import {
 } from "@/services/llm/ai-chat-diagram-target";
 import type { RenderMode } from "@/constants/render-settings";
 import { getFormatHandler } from "@/formats";
-import { parseAiChatEnvelope, type AiChatEnvelope } from "@/schemas/ai-chat-output";
-import { loadLlmPage } from "@/services/llm/guides/llm-page-text";
+import { parseAiChatEnvelope, parseAiChatReadPages, type AiChatEnvelope } from "@/schemas/ai-chat-output";
+import { chatSyntaxLanguage, loadChatSyntaxBodies } from "@/services/llm/guides/llm-chat-catalog";
 import {
   AI_CHAT_SYSTEM_PROMPT,
   buildAiChatContextBlock,
 } from "@/services/llm/ai-chat-prompts";
 import { addTokenUsage, type LlmTokenUsage } from "@shared/llm-chat-stream";
-import { resolveLlmPage } from "@shared/llm-pages";
 import { readChatLlmAccess } from "@/config/llm-accounts";
 import { llmChat } from "@/services/llm/llm-client";
 import {
@@ -115,39 +114,28 @@ export async function sendAiChatMessage(
     currentFormat: input.format,
   });
 
-  const syntaxPage = resolveLlmPage(
-    diagramChange.active
-      ? {
-          language: diagramChange.format,
-          request: input.userContent.trim() || diagramChange.diagramType || "",
-          source: "",
-        }
-      : {
-          language: input.format,
-          request: input.userContent,
-          source: input.contextMode === "new" ? "" : input.source,
-        },
-  );
-  const guideText = await loadLlmPage(syntaxPage.path);
+  const syntaxLanguage = chatSyntaxLanguage(input.format, diagramChange);
+  const systemContent = (guideText?: string): string =>
+    [
+      AI_CHAT_SYSTEM_PROMPT,
+      buildAiChatContextBlock({
+        format: input.format,
+        source: input.source,
+        userRequest: input.userContent,
+        guideText,
+        contextMode: input.contextMode,
+        selection: input.selection,
+        renderError: input.renderError,
+        summary: input.summary,
+        appliedCount,
+        rejectedTitles,
+        target: diagramChange,
+      }),
+    ].join("\n\n");
   const messages: LlmChatMessage[] = [
     {
       role: "system",
-      content: [
-        AI_CHAT_SYSTEM_PROMPT,
-        buildAiChatContextBlock({
-          format: input.format,
-          source: input.source,
-          userRequest: input.userContent,
-          guideText,
-          contextMode: input.contextMode,
-          selection: input.selection,
-          renderError: input.renderError,
-          summary: input.summary,
-          appliedCount,
-          rejectedTitles,
-          target: diagramChange,
-        }),
-      ].join("\n\n"),
+      content: systemContent(),
     },
     ...toHistoryMessages(input.history),
     {
@@ -158,6 +146,7 @@ export async function sendAiChatMessage(
   ];
 
   let usage: LlmTokenUsage | undefined;
+  let syntaxLoaded = false;
   for (let attempt = 0; attempt <= AI_CHAT_VALIDATION_RETRIES; attempt += 1) {
     const chatResult = await llmChat(
       messages,
@@ -167,11 +156,34 @@ export async function sendAiChatMessage(
         maxTokens: LLM_MAX_TOKENS_GENERATION,
         access: readChatLlmAccess(),
         signal: input.signal,
-        onOutputStart: input.onOutputStart,
+        onOutputStart: syntaxLoaded ? input.onOutputStart : undefined,
       },
       input.handlers,
     );
     usage = addTokenUsage(usage, chatResult.usage);
+
+    if (!syntaxLoaded) {
+      const requested = parseAiChatReadPages(chatResult.content);
+      if (requested) {
+        syntaxLoaded = true;
+        const bodies = await loadChatSyntaxBodies(syntaxLanguage, requested);
+        messages[0] = { role: "system", content: systemContent(bodies || undefined) };
+        messages.push({
+          role: "assistant",
+          content: chatResult.content,
+          ...(chatResult.reasoningContent ? { reasoningContent: chatResult.reasoningContent } : {}),
+        });
+        messages.push({
+          role: "user",
+          content: bodies
+            ? "Syntax pages are loaded in the system instructions. Return the normal JSON envelope only. Do not return read_pages."
+            : "None of those paths are in the syntax catalog. Return the normal JSON envelope only. Do not return read_pages.",
+        });
+        // Запрос страниц не тратит попытку проверки исходника.
+        attempt -= 1;
+        continue;
+      }
+    }
 
     const parsed = parseAiChatEnvelope(chatResult.content);
     if (!parsed.ok) {
