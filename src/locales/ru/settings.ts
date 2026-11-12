@@ -8,6 +8,8 @@ export const settingsMessages = {
   "settings.fontFamily": "Шрифт",
   "settings.syntaxHighlight": "Подсветка синтаксиса",
   "settings.autocomplete": "Подсказки при вводе",
+  "settings.dictation": "Диктовка",
+  "settings.dictationLanguage": "Язык диктовки",
   "settings.theme": "Тема интерфейса",
   "settings.darkTheme": "Тёмная тема",
   "settings.language": "Язык интерфейса",

@@ -2,7 +2,9 @@
 import { computed } from "vue";
 import { FORMAT_GUIDE_LINKS } from "@/constants/help-guides";
 import { APP_LINKS } from "@/constants";
+import { LOCALE_LABELS, isAppLocale } from "@/constants/i18n";
 import { getLlmApiKeysGuideHref } from "@/constants/llm-settings";
+import { useDictation } from "@/composables/useDictation";
 import {
   EDITOR_FONT_FAMILY_OPTIONS,
   EDITOR_FONT_SIZE_OPTIONS,
@@ -27,6 +29,14 @@ const emit = defineEmits<{
 }>();
 
 const { locale, t } = useLocale();
+const { availableLocales, selectedLocale, setDictationLocale } = useDictation();
+
+function onDictationLanguageChange(event: Event): void {
+  const value = (event.target as HTMLSelectElement).value;
+  if (isAppLocale(value)) {
+    setDictationLocale(value);
+  }
+}
 
 const fontFamilyOptions = computed(() =>
   EDITOR_FONT_FAMILY_OPTIONS.map((option) => ({
@@ -113,6 +123,31 @@ const llmApiKeysGuideHref = computed(() => getLlmApiKeysGuideHref(locale.value))
         "
       />
       <span>{{ t("settings.autocomplete") }}</span>
+    </label>
+  </div>
+
+  <div
+    v-if="availableLocales.length > 0"
+    class="settings-section"
+    data-testid="settings-dictation"
+  >
+    <h3 class="settings-section__title">{{ t("settings.dictation") }}</h3>
+    <label class="settings-field">
+      <span class="settings-field__label">{{ t("settings.dictationLanguage") }}</span>
+      <select
+        class="select"
+        data-testid="settings-dictation-language"
+        :value="selectedLocale ?? ''"
+        @change="onDictationLanguageChange"
+      >
+        <option
+          v-for="code in availableLocales"
+          :key="code"
+          :value="code"
+        >
+          {{ LOCALE_LABELS[code] }}
+        </option>
+      </select>
     </label>
   </div>
 

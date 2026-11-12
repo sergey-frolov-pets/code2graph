@@ -8,6 +8,8 @@ export const settingsMessages = {
   "settings.fontFamily": "Fonte",
   "settings.syntaxHighlight": "Realce de sintaxe",
   "settings.autocomplete": "Sugestões de digitação",
+  "settings.dictation": "Ditado",
+  "settings.dictationLanguage": "Idioma do ditado",
   "settings.theme": "Tema da interface",
   "settings.darkTheme": "Tema escuro",
   "settings.language": "Idioma da interface",

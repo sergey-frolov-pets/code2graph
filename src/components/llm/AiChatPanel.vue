@@ -8,6 +8,7 @@ import {
   FilePlus,
   GitCompare,
   History,
+  Mic,
   Paperclip,
   Pencil,
   Pin,
@@ -46,9 +47,10 @@ import { useAppDialog } from "@/composables/useAppDialog";
 import { useAiChatSessions } from "@/composables/useAiChatSessions";
 import { useChatLlmSelection } from "@/composables/useChatLlmSelection";
 import { iconButtonTooltipsSuspendedKey } from "@/composables/useLongPressTooltip";
+import { useDictation } from "@/composables/useDictation";
 import { useLocale } from "@/composables/useLocale";
 import { getLanguageModule } from "@/languages/registry";
-import { isLocaleKey } from "@/locales/types";
+import { isLocaleKey, type LocaleKey } from "@/locales/types";
 import { resolveDiagramFileName } from "@/utils/diagram-files";
 import { sendAiChatMessage } from "@/services/llm/ai-chat-client";
 import { buildSimpleDiffPreview } from "@/utils/llm-preview";
@@ -59,6 +61,7 @@ import {
   filterAiChatSessions,
 } from "@/utils/ai-chat-session";
 import type { LlmChatImagePart } from "@/services/llm/llm-types";
+import type { DictationFatalError } from "@/constants/dictation";
 import type { AiChatAttachment, AiChatMessage, AiChatSession } from "@/types/ai-chat-session";
 import {
   AI_CHAT_ATTACHMENT_ACCEPT,
@@ -121,6 +124,26 @@ const pendingAttachments = ref<Array<AiChatReadAttachment & { id: string }>>([])
 const attachmentNotice = ref("");
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const isBusy = ref(false);
+const {
+  availableLocales: dictationLocales,
+  listening: dictationListening,
+  toggleDictation,
+  stopDictation,
+} = useDictation();
+
+const DICTATION_ERROR_KEYS = {
+  "not-allowed": "aiChat.dictateNotAllowed",
+  "service-not-allowed": "aiChat.dictateNoService",
+  "audio-capture": "aiChat.dictateNoMicrophone",
+  "language-not-supported": "aiChat.dictateLanguageUnsupported",
+  network: "aiChat.dictateNetwork",
+} as const satisfies Record<DictationFatalError, LocaleKey>;
+
+function onDictateToggle(): void {
+  toggleDictation(draft, (error) => {
+    attachmentNotice.value = t(DICTATION_ERROR_KEYS[error]);
+  });
+}
 const threadRef = ref<HTMLElement | null>(null);
 const errorMessage = ref("");
 const historyOpen = ref(false);
@@ -427,6 +450,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  stopDictation();
   clearSuggestionPressTimer();
   clearSuggestionHoverCloseTimer();
   overlayListenerAttached = false;
@@ -436,6 +460,12 @@ onBeforeUnmount(() => {
 
 watch(draft, () => {
   void nextTick(resizeComposer);
+});
+
+watch(isBusy, (busy) => {
+  if (busy) {
+    stopDictation();
+  }
 });
 
 watch([suggestionPreview, expandedTitle], () => {
@@ -788,6 +818,7 @@ function liveImages(items: Array<AiChatReadAttachment & { id: string }>): LlmCha
 }
 
 async function onSend(content?: string): Promise<void> {
+  stopDictation();
   const typed = (content ?? draft.value).trim().slice(0, AI_CHAT_MESSAGE_MAX_CHARS);
   const pending = pendingAttachments.value;
   if ((typed.length === 0 && pending.length === 0) || isBusy.value) {
@@ -1500,6 +1531,24 @@ async function onCopyChat(): Promise<void> {
             />
             <div class="ai-chat-panel__composer-actions">
               <button
+                v-if="dictationLocales.length > 0"
+                class="ai-chat-panel__attach ai-chat-panel__mic"
+                :class="{ 'is-listening': dictationListening }"
+                type="button"
+                data-testid="ai-chat-mic"
+                :aria-label="dictationListening ? t('aiChat.dictateStop') : t('aiChat.dictate')"
+                :aria-pressed="dictationListening"
+                :title="titleUnlessModesOpen(dictationListening ? t('aiChat.dictateStop') : t('aiChat.dictate'))"
+                :disabled="isBusy"
+                @click="onDictateToggle"
+              >
+                <Mic
+                  :size="18"
+                  :stroke-width="1.8"
+                  aria-hidden="true"
+                />
+              </button>
+              <button
                 v-if="isBusy"
                 class="btn ai-chat-panel__send"
                 type="button"
@@ -2161,6 +2210,12 @@ async function onCopyChat(): Promise<void> {
 .ai-chat-panel__attach:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.ai-chat-panel__mic.is-listening,
+.ai-chat-panel__mic.is-listening:hover:not(:disabled) {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .ai-chat-panel__attachments,

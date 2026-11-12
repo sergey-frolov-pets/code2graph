@@ -8,6 +8,8 @@ export const settingsMessages = {
   "settings.fontFamily": "फ़ॉन्ट",
   "settings.syntaxHighlight": "सिंटैक्स हाइलाइटिंग",
   "settings.autocomplete": "इनपुट सुझाव",
+  "settings.dictation": "श्रुतलेख",
+  "settings.dictationLanguage": "श्रुतलेख की भाषा",
   "settings.theme": "इंटरफ़ेस थीम",
   "settings.darkTheme": "गहरी थीम",
   "settings.language": "इंटरफ़ेस भाषा",
