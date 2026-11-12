@@ -236,7 +236,7 @@ export const builderMessages = {
   "builder.option.stackedArea": "積み上げ面",
   "builder.option.showSum": "合計",
   "builder.option.barGap": "棒の間隔",
-  "builder.option.barGapPlaceholder": "12 または 20%",
+  "builder.option.barGapPlaceholder": "1 または 100%",
   "builder.option.labelAuto": "ラベルの色",
   "builder.option.labelColor.theme": "テーマどおり",
   "builder.option.labelColor.auto": "fontcolor auto、背景に対してコントラスト",

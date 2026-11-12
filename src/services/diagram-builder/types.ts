@@ -153,7 +153,7 @@ export interface BuilderOptionsSettings {
   showSum: boolean;
   /** `labels fontcolor auto` или `labels fontcolor #hex`. Пусто — цвет темы. */
   labelFontColor: string;
-  /** `gap 12` или `gap 20%`. Пусто — зазор по умолчанию. */
+  /** `gap 1` или `gap 100%` — просвет равен ширине бара. Пусто — зазор по умолчанию. */
   barGap: string;
   /** Скрыть ось y2 у series. */
   y2Hidden: boolean;

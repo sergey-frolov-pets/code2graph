@@ -238,7 +238,7 @@ describe("diagram-builder core", () => {
     expect(dualAgain.value?.y2Axis).toBe(false);
     expect(dualAgain.value?.y2Grid).toBe(true);
     expect(dualAgain.value?.y2GridStep).toBe(5);
-    expect(dualAgain.value?.barGap).toEqual({ unit: "px", value: 8 });
+    expect(dualAgain.value?.barGap).toEqual({ unit: "ratio", value: 8 });
     expect(dualAgain.value?.showSum).toBe(true);
   });
 

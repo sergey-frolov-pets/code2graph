@@ -282,7 +282,7 @@ export const builderMessages = {
   "builder.option.stackedArea": "Площади (stacked area)",
   "builder.option.showSum": "Сумма стопки",
   "builder.option.barGap": "Зазор между барами",
-  "builder.option.barGapPlaceholder": "12 или 20%",
+  "builder.option.barGapPlaceholder": "1 или 100%",
   "builder.option.labelAuto": "Цвет подписей",
   "builder.option.labelColor.theme": "Как в теме",
   "builder.option.labelColor.auto": "fontcolor auto, контраст к фону",

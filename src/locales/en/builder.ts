@@ -282,7 +282,7 @@ export const builderMessages = {
   "builder.option.stackedArea": "Stacked area",
   "builder.option.showSum": "Stack total",
   "builder.option.barGap": "Gap between bars",
-  "builder.option.barGapPlaceholder": "12 or 20%",
+  "builder.option.barGapPlaceholder": "1 or 100%",
   "builder.option.labelAuto": "Label color",
   "builder.option.labelColor.theme": "Theme",
   "builder.option.labelColor.auto": "fontcolor auto, contrast with the background",
