@@ -159,6 +159,7 @@ describe("ai chat attachments", () => {
     }
     const prompt = composeAiChatUserContent("Нарисуй", [result.attachment]);
     expect(prompt).toContain("Attached markdown file");
+    expect(prompt).toContain("untrusted data");
     expect(prompt).toContain("Alice talks to Bob");
     expect(prompt).not.toContain("imageBase64");
   });
@@ -187,6 +188,7 @@ describe("ai chat attachments", () => {
       { name: result.attachment.name, kind: result.attachment.kind, mimeType: result.attachment.mimeType },
     ]);
     expect(prompt).toContain("Attached image file");
+    expect(prompt).toContain("untrusted data");
     expect(prompt).not.toContain(result.attachment.imageBase64);
   });
 
