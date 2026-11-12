@@ -17,6 +17,7 @@ import {
   usesInvertedMono,
 } from "../../common";
 import type { ExtRenderOptions } from "../../types";
+import { readableTextOnFill } from "../../color-utils";
 import {
   BAR_GAP,
   createScale,
@@ -603,7 +604,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
           valueFontSize,
           {
             "font-size": valueFontSize,
-            fill: INSIDE_TEXT,
+            fill: model.labelAuto ? readableTextOnFill(color, INSIDE_TEXT) : INSIDE_TEXT,
             "font-weight": 600,
           },
           "center",
@@ -634,7 +635,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
           valueFontSize,
           {
             "font-size": valueFontSize,
-            fill: palette.fgDim,
+            fill: model.labelAuto ? readableTextOnFill(palette.bg, palette.fg) : palette.fgDim,
             "data-value-label": "1",
           },
           "up",

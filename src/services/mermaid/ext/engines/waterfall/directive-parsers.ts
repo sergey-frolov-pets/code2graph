@@ -409,30 +409,33 @@ export function parseLine(
   return { line: result };
 }
 
-/** `labels above|inside|both|none` */
+/** `labels above|inside|both|none` и необязательное `auto` / `color=auto`. */
 export function parseLabelsMode(
   text: string,
   line: number,
-): { mode?: { above: boolean; inside: boolean }; error?: ExtParseError } {
-  const token = text.trim().toLowerCase();
-  switch (token) {
-    case "above":
-      return { mode: { above: true, inside: false } };
-    case "inside":
-      return { mode: { above: false, inside: true } };
-    case "both":
-      return { mode: { above: true, inside: true } };
-    case "none":
-      return { mode: { above: false, inside: false } };
-    default:
-      return {
-        error: {
-          message: `ожидается «labels above|inside|both|none», получено «${text.trim()}»`,
-          line,
-          col: 0,
-        },
-      };
+): { mode?: { above: boolean; inside: boolean }; auto?: boolean; error?: ExtParseError } {
+  const tokens = text.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  let mode: { above: boolean; inside: boolean } | undefined;
+  let auto = false;
+  let bad = false;
+  for (const token of tokens) {
+    if (token === "auto" || token === "color=auto" || token === "colour=auto") auto = true;
+    else if (token === "above") mode = { above: true, inside: false };
+    else if (token === "inside") mode = { above: false, inside: true };
+    else if (token === "both") mode = { above: true, inside: true };
+    else if (token === "none" || token === "off") mode = { above: false, inside: false };
+    else bad = true;
   }
+  if (bad || tokens.length === 0) {
+    return {
+      error: {
+        message: `ожидается «labels above|inside|both|none» и необязательное «auto», получено «${text.trim()}»`,
+        line,
+        col: 0,
+      },
+    };
+  }
+  return { mode, auto };
 }
 
 /**

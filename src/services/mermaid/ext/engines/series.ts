@@ -140,6 +140,11 @@ export interface ClusteredModel {
   barGap?: SeriesBarGap;
   /** `labels sum` — сумма частей снаружи стопки. Ноль не подписывается. */
   showSum: boolean;
+  /**
+   * `labels auto` — цвет числа контрастен фону под ним:
+   * внутри бара это заливка серии, снаружи и у суммы — холст.
+   */
+  labelAuto: boolean;
   /** Видимость основной шкалы `y`: линия, подписи делений, ноль. */
   axis: boolean;
   labels: ClusteredLabelsMode;
@@ -791,6 +796,7 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
   let y2GridStep: number | undefined;
   let barGap: SeriesBarGap | undefined;
   let showSum = false;
+  let labelAuto = false;
   let axis = true;
   let labels: ClusteredLabelsMode = "above";
   let fontSize: number | undefined;
@@ -985,9 +991,11 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
         const tokens = raw.replace(/^labels\s*/i, "").trim().toLowerCase().split(/\s+/).filter(Boolean);
         let mode: ClusteredLabelsMode | undefined;
         let sum = false;
+        let auto = false;
         let bad = false;
         for (const token of tokens) {
           if (token === "sum") sum = true;
+          else if (token === "auto" || token === "color=auto" || token === "colour=auto") auto = true;
           else if (token === "above" || token === "outside" || token === "on") mode = "above";
           else if (token === "inside") mode = "inside";
           else if (token === "none" || token === "off") mode = "none";
@@ -995,13 +1003,14 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
         }
         if (bad || tokens.length === 0) {
           errors.push({
-            message: `ожидается «labels above|inside|none» и необязательное «sum», получено «${raw.replace(/^labels\s*/i, "").trim()}»`,
+            message: `ожидается «labels above|inside|none», необязательные «sum» и «auto», получено «${raw.replace(/^labels\s*/i, "").trim()}»`,
             line: lineNo,
             col: 0,
           });
         } else {
           if (mode) labels = mode;
           if (sum) showSum = true;
+          if (auto) labelAuto = true;
         }
         continue;
       }
@@ -1296,6 +1305,7 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
       y2GridStep,
       barGap,
       showSum,
+      labelAuto,
       axis,
       labels,
       fontSize,
@@ -1413,6 +1423,11 @@ function computeSecondaryScale(model: ClusteredModel): {
 }
 
 /** Просвет между барами одной категории. У стопки бары соприкасаются. */
+/** Цвет подписи снаружи бара и суммы: с `auto` — контраст к холсту. */
+function outsideLabelFill(model: ClusteredModel, canvas: string, fallback: string): string {
+  return model.labelAuto ? readableTextOnFill(canvas, fallback) : fallback;
+}
+
 function seriesInnerGap(model: ClusteredModel, thickness: number): number {
   if (model.stack) return 0;
   const gap = model.barGap;
@@ -1733,12 +1748,12 @@ function drawStackedAreas(
         svg.text(centerOf(category) + thickness / 2 + 4, mid.y + fontSize * 0.35, text, {
           "text-anchor": "start",
           "font-size": labelSize,
-          fill: palette.fgDim,
+          fill: outsideLabelFill(model, palette.bg, palette.fgDim),
         });
       } else {
         svg.text(mid.x, centerOf(category) - thickness / 2 - 3, text, {
           "font-size": labelSize,
-          fill: palette.fgDim,
+          fill: outsideLabelFill(model, palette.bg, palette.fgDim),
         });
       }
     }
@@ -1762,7 +1777,7 @@ function drawStackedAreas(
       svg.text(at.x, y, text, {
         "font-size": labelSize,
         "font-weight": 600,
-        fill: palette.fg,
+        fill: outsideLabelFill(model, palette.bg, palette.fg),
         "data-stack-sum": "1",
       });
       obstacles[category] = Math.min(obstacles[category], y - fontSize);
@@ -1772,7 +1787,7 @@ function drawStackedAreas(
         "text-anchor": sum > 0 ? "start" : "end",
         "font-size": labelSize,
         "font-weight": 600,
-        fill: palette.fg,
+        fill: outsideLabelFill(model, palette.bg, palette.fg),
         "data-stack-sum": "1",
       });
       obstacles[category] = Math.max(obstacles[category], sum > 0 ? x + measureText(text, labelSize) : x);
@@ -2514,13 +2529,13 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
           svg.text(bx + barWidth + 4, barTop + barH / 2 + fontSize * 0.35, valText, {
             "text-anchor": "start",
             "font-size": Math.max(8, fontSize - 1),
-            fill: palette.fgDim,
+            fill: outsideLabelFill(model, palette.bg, palette.fgDim),
           });
         } else {
           const labelY = val >= 0 ? barTop - 5 : barTop + barH + fontSize + 2;
           svg.text(bx + barWidth / 2, labelY, valText, {
             "font-size": Math.max(8, fontSize - 1),
-            fill: palette.fgDim,
+            fill: outsideLabelFill(model, palette.bg, palette.fgDim),
           });
         }
       }
@@ -2539,7 +2554,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
         svg.text(clusterCenter, sum > 0 ? y - 5 : y + fontSize + 2, fmt(sum), {
           "font-size": Math.max(8, fontSize - 1),
           "font-weight": 600,
-          fill: palette.fg,
+          fill: outsideLabelFill(model, palette.bg, palette.fg),
           "data-stack-sum": "1",
         });
       }
@@ -2997,7 +3012,7 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
         } else if (span) {
           svg.text(barLeft + barW / 2, by - 3, valText, {
             "font-size": Math.max(8, fontSize - 1),
-            fill: palette.fgDim,
+            fill: outsideLabelFill(model, palette.bg, palette.fgDim),
           });
         } else {
           const lx = val >= 0 ? barLeft + barW + 6 : barLeft - 6;
@@ -3005,7 +3020,7 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
           svg.text(lx, by + barHeight / 2 + fontSize * 0.35, valText, {
             "text-anchor": anchor,
             "font-size": Math.max(8, fontSize - 1),
-            fill: palette.fgDim,
+            fill: outsideLabelFill(model, palette.bg, palette.fgDim),
           });
         }
       }
@@ -3025,7 +3040,7 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
           "text-anchor": sum > 0 ? "start" : "end",
           "font-size": Math.max(8, fontSize - 1),
           "font-weight": 600,
-          fill: palette.fg,
+          fill: outsideLabelFill(model, palette.bg, palette.fg),
           "data-stack-sum": "1",
         });
       }

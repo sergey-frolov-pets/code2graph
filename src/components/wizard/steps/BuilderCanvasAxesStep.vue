@@ -986,6 +986,25 @@ function removeHeatmapBand(idx: number): void {
         </label>
 
         <label
+          v-if="builderState.diagramType === 'series' || builderState.diagramType === 'waterfall'"
+          class="builder-field"
+        >
+          <span class="builder-field__label">{{ t("builder.option.labelAuto") }}</span>
+          <select
+            :value="builderState.options.labelAuto ? 'auto' : 'theme'"
+            class="select builder-input"
+            @change="
+              builderState.options.labelAuto =
+                ($event.target as HTMLSelectElement).value === 'auto';
+              notifyChange();
+            "
+          >
+            <option value="theme">{{ t("builder.option.labelColor.theme") }}</option>
+            <option value="auto">{{ t("builder.option.labelColor.auto") }}</option>
+          </select>
+        </label>
+
+        <label
           v-if="cap.supportsConnectors"
           class="builder-field"
         >

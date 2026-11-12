@@ -117,6 +117,7 @@ export function createDefaultBuilderState(
     stacked: false,
     stackArea: false,
     showSum: false,
+    labelAuto: false,
     barGap: "",
     y2Hidden: false,
     y2GridMode: "off",
@@ -264,6 +265,7 @@ export function parseMermaidExtToBuilderState(
       state.canvas.yAxis.hidden = Boolean(model.axis.hidden);
       state.canvas.xAxis.hidden = Boolean(model.categoryAxisHidden);
       state.options.barGap = formatBarGap(model.barGap);
+      state.options.labelAuto = Boolean(model.labelAuto);
       if (!model.axis.grid) {
         state.canvas.yAxis.gridMode = "off";
       } else if (model.axis.gridStep && model.axis.gridStep > 0) {
@@ -690,6 +692,7 @@ export function parseMermaidExtToBuilderState(
       state.options.y2Hidden = !model.y2Axis;
       state.options.barGap = formatBarGap(model.barGap);
       state.options.showSum = model.showSum;
+      state.options.labelAuto = model.labelAuto;
       if (!model.grid) {
         state.canvas.yAxis.gridMode = "off";
       } else if (model.gridStep && model.gridStep > 0) {
@@ -872,9 +875,10 @@ export function emitMermaidExtFromBuilderState(
       }
       emitAxisAndGrid(lines, canvas);
       if (options.barGap.trim()) lines.push(`gap ${options.barGap.trim()}`);
-      if (options.labelsMode && options.labelsMode !== "above") {
-        lines.push(`labels ${options.labelsMode}`);
-      }
+      const waterfallLabelTokens: string[] = [];
+      if (options.labelsMode && options.labelsMode !== "above") waterfallLabelTokens.push(options.labelsMode);
+      if (options.labelAuto) waterfallLabelTokens.push("auto");
+      if (waterfallLabelTokens.length > 0) lines.push(`labels ${waterfallLabelTokens.join(" ")}`);
       if (!options.connectors) {
         lines.push("connectors off");
       }
@@ -1422,6 +1426,7 @@ export function emitMermaidExtFromBuilderState(
       const labelTokens: string[] = [];
       if (options.labelsMode && options.labelsMode !== "above") labelTokens.push(options.labelsMode);
       if (options.showSum) labelTokens.push("sum");
+      if (options.labelAuto) labelTokens.push("auto");
       if (labelTokens.length > 0) lines.push(`labels ${labelTokens.join(" ")}`);
 
       for (const brk of options.breaks) {
