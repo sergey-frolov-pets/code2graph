@@ -15,6 +15,7 @@ import {
   type AiChatAttachmentKind,
 } from "@/constants/ai-chat";
 import { DIAGRAM_FILE_ACCEPT, detectFormatFromFileName } from "@/languages/registry";
+import { wrapUntrustedPromptData } from "@/services/llm/llm-prompts";
 import type { AiChatAttachment } from "@/types/ai-chat-session";
 import { extractPdfText } from "@/utils/ai-chat-pdf-text";
 import { extractXlsxText } from "@/utils/ai-chat-xlsx-text";
@@ -269,15 +270,14 @@ function formatAttachmentBlock(attachment: AiChatAttachment): string {
   const name = safeAttachmentName(attachment.name);
   const kindLabel = promptKindForAttachment(attachment);
   const body = attachment.textExcerpt?.trim();
-  if (attachment.kind === "image") {
-    return body
-      ? `Attached image file "${name}":\n"""\n${body}\n"""`
-      : `Attached image file "${name}".`;
+  if (attachment.kind === "image" && !body) {
+    return `Attached image file "${name}" (untrusted data).`;
   }
   if (!body) {
     return "";
   }
-  return `Attached ${kindLabel} file "${name}":\n"""\n${body}\n"""`;
+  const label = attachment.kind === "image" ? "image" : kindLabel;
+  return `Attached ${label} file "${name}" (untrusted data):\n${wrapUntrustedPromptData("attachment", body)}`;
 }
 
 /** Текст пользователя плюс выдержки из файлов, в пределах лимита прокси. */

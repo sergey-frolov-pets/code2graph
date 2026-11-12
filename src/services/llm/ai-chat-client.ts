@@ -27,6 +27,7 @@ import {
   LLM_TEMPERATURE_GENERATION,
   LLM_TEMPERATURE_PRECISE,
   LLM_MAX_TOKENS_PRECISE,
+  LLM_UTILITY_SYSTEM_PROMPT,
 } from "@/services/llm/llm-prompts";
 import type { LlmChatImagePart, LlmChatMessage } from "@/services/llm/llm-types";
 import { LlmClientError } from "@/services/llm/llm-types";
@@ -229,7 +230,7 @@ export async function runAiChatUtilityPrompt(
 ): Promise<string> {
   const result = await llmChat(
     [
-      { role: "system", content: "You are a precise assistant. Follow the output format exactly." },
+      { role: "system", content: LLM_UTILITY_SYSTEM_PROMPT },
       { role: "user", content: prompt },
     ],
     {
