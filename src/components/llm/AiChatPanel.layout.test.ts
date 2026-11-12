@@ -13,6 +13,8 @@ import { addLlmAccount, removeLlmAccount, setChatLlmSelectionId } from "@/config
 import { LOCAL_LLM_DEFAULT_BASE_URL, LOCAL_LLM_PROVIDER_ID } from "@/constants/llm-account";
 import { useLocale } from "@/composables/useLocale";
 import { sendAiChatMessage } from "@/services/llm/ai-chat-client";
+import { listAiChatSessions } from "@/storage/ai-chat-sessions";
+import type { AiChatSession } from "@/types/ai-chat-session";
 import AiChatPanel from "@/components/llm/AiChatPanel.vue";
 
 vi.mock("@/storage/ai-chat-sessions", () => ({
@@ -146,11 +148,83 @@ describe("AiChatPanel layout", () => {
     await nextTick();
 
     expect(view.host.querySelector("[data-testid='ai-chat-input-hint']")).toBeNull();
+    expect(view.host.querySelector("[data-testid='ai-chat-modes']")).toBeNull();
+    expect(view.host.querySelector("[data-testid='ai-chat-next']")).toBeNull();
+    expect(view.host.querySelector("[data-testid='ai-chat-token-session']")).toBeNull();
+    expect(view.host.querySelector("[data-testid='ai-chat-attach']")).not.toBeNull();
     expect((view.host.querySelector("[data-testid='ai-chat-send']") as HTMLButtonElement).disabled).toBe(
       false,
     );
+    textarea!.blur();
+    await nextTick();
+    expect(view.host.querySelector("[data-testid='ai-chat-next']")).toBeNull();
+    expect(view.host.querySelector("[data-testid='ai-chat-modes']")).toBeNull();
 
     view.unmount();
+  });
+
+  it("shows compact token counts and hides composer hints while the draft has text", async () => {
+    useLocale().setLocale("ru");
+    const session: AiChatSession = {
+      id: "session-with-usage",
+      documentKey: "layout-test",
+      title: "Диаграмма",
+      pinned: false,
+      intent: "free",
+      diagramFormat: "mermaid",
+      messages: [
+        {
+          id: "user-1",
+          role: "user",
+          content: "Нарисуй",
+          createdAt: "2026-11-12T00:00:00.000Z",
+        },
+        {
+          id: "assistant-1",
+          role: "assistant",
+          content: "Готово",
+          createdAt: "2026-11-12T00:00:01.000Z",
+          usage: {
+            promptTokens: 8_000,
+            completionTokens: 1_872,
+            totalTokens: 9_872,
+          },
+        },
+      ],
+      createdAt: "2026-11-12T00:00:00.000Z",
+      updatedAt: "2026-11-12T00:00:01.000Z",
+    };
+    vi.mocked(listAiChatSessions).mockResolvedValue([session]);
+
+    const view = mountChat();
+    try {
+      await vi.waitFor(() => {
+        expect(view.host.querySelector("[data-testid='ai-chat-token-session']")?.textContent).toContain(
+          "10K",
+        );
+      });
+      const usage = view.host.querySelector("[data-testid='ai-chat-token-usage']")?.textContent ?? "";
+      expect(usage).toContain("вход 8K");
+      expect(usage).toContain("выход 2K");
+      expect(usage).toContain("всего 10K");
+      expect(view.host.querySelector("[data-testid='ai-chat-modes']")).not.toBeNull();
+
+      const textarea = view.host.querySelector("textarea") as HTMLTextAreaElement;
+      textarea.value = "Добавь участника";
+      textarea.dispatchEvent(new Event("input"));
+      await nextTick();
+
+      expect(view.host.querySelector("[data-testid='ai-chat-input-hint']")).toBeNull();
+      expect(view.host.querySelector("[data-testid='ai-chat-token-session']")).toBeNull();
+      expect(view.host.querySelector("[data-testid='ai-chat-modes']")).toBeNull();
+      expect(view.host.querySelector("[data-testid='ai-chat-next']")).toBeNull();
+      expect(view.host.querySelector("[data-testid='ai-chat-attach']")).not.toBeNull();
+      expect(view.host.querySelector("[data-testid='ai-chat-send']")).not.toBeNull();
+      expect(view.host.querySelector("[data-testid='ai-chat-token-usage']")?.textContent).toContain("10K");
+    } finally {
+      view.unmount();
+      vi.mocked(listAiChatSessions).mockImplementation(async () => []);
+    }
   });
 
   it("shows the selected model and provider beside the mode icons", async () => {

@@ -57,6 +57,7 @@ import { useLocale } from "@/composables/useLocale";
 import { getLanguageModule } from "@/languages/registry";
 import { isLocaleKey, type LocaleKey } from "@/locales/types";
 import { resolveDiagramFileName } from "@/utils/diagram-files";
+import { formatTokenCount } from "@/utils/format-token-count";
 import { sendAiChatMessage } from "@/services/llm/ai-chat-client";
 import {
   decideInflightFollowUp,
@@ -131,6 +132,8 @@ const {
 } = sessionsApi;
 
 const draft = ref("");
+/** Пустое поле показывает подсказки. С текстом остаются скрепка, микрофон и отправка. */
+const showComposerHints = computed(() => draft.value.length === 0);
 const pendingAttachments = ref<Array<AiChatReadAttachment & { id: string }>>([]);
 const attachmentNotice = ref("");
 const fileInputRef = ref<HTMLInputElement | null>(null);
@@ -540,6 +543,9 @@ onBeforeUnmount(() => {
 });
 
 watch(draft, () => {
+  if (draft.value.length > 0) {
+    modesOpen.value = false;
+  }
   void nextTick(resizeComposer);
 });
 
@@ -1408,9 +1414,9 @@ async function onCopyChat(): Promise<void> {
           >
             {{
               t("aiChat.tokenUsage", {
-                prompt: message.usage.promptTokens,
-                completion: message.usage.completionTokens,
-                total: message.usage.totalTokens,
+                prompt: formatTokenCount(message.usage.promptTokens),
+                completion: formatTokenCount(message.usage.completionTokens),
+                total: formatTokenCount(message.usage.totalTokens),
               })
             }}
           </p>
@@ -1639,7 +1645,7 @@ async function onCopyChat(): Promise<void> {
       </div>
 
       <div
-        v-if="nextStepSuggestions.length > 0 && !composerFocused"
+        v-if="showComposerHints && nextStepSuggestions.length > 0 && !composerFocused"
         ref="suggestionChipsRef"
         class="ai-chat-panel__next"
         data-testid="ai-chat-next"
@@ -1736,6 +1742,7 @@ async function onCopyChat(): Promise<void> {
               />
             </button>
             <button
+              v-if="showComposerHints"
               class="ai-chat-panel__modes-toggle"
               type="button"
               data-testid="ai-chat-modes"
@@ -1765,7 +1772,7 @@ async function onCopyChat(): Promise<void> {
                 @paste="onComposerPaste"
               />
               <div
-                v-if="draft.length === 0"
+                v-if="showComposerHints"
                 class="ai-chat-panel__hint"
                 data-testid="ai-chat-input-hint"
                 aria-hidden="true"
@@ -1812,16 +1819,11 @@ async function onCopyChat(): Promise<void> {
                     v-if="sessionTokenTotal > 0"
                     class="ai-chat-panel__hint-tokens"
                     data-testid="ai-chat-token-session"
-                  >{{ t("aiChat.tokenSession", { count: sessionTokenTotal }) }}</span>
+                  >{{ t("aiChat.tokenSession", { count: formatTokenCount(sessionTokenTotal) }) }}</span>
                 </span>
               </div>
             </div>
             <div class="ai-chat-panel__composer-actions">
-              <span
-                v-if="sessionTokenTotal > 0 && draft.length > 0"
-                class="ai-chat-panel__hint-tokens"
-                data-testid="ai-chat-token-session"
-              >{{ t("aiChat.tokenSession", { count: sessionTokenTotal }) }}</span>
               <button
                 v-if="dictationLocales.length > 0"
                 class="ai-chat-panel__attach ai-chat-panel__mic"
