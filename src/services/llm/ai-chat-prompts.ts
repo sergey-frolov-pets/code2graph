@@ -10,10 +10,7 @@ import {
   type AiChatContextMode,
 } from "@/constants/ai-chat";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
-import {
-  LLM_PAGE_PROMPT_HEADING,
-  resolveBundledLlmPage,
-} from "@/services/llm/guides/llm-page-text";
+import { buildLlmChatCatalog, chatSyntaxLanguage } from "@/services/llm/guides/llm-chat-catalog";
 import {
   LLM_UNTRUSTED_INPUT_RULES,
   wrapUntrustedPromptData,
@@ -36,6 +33,7 @@ Rules:
 - Respect rejected proposals: do not re-propose the same change unless the user asks again.
 - Completeness: include every entity, step, branch, and relationship the user named; numeric hints are floors, not caps. Short labels (max 8 words). Do not invent facts, actors, or data not implied by the request.
 - Match the user's language in message, labels, and titles.
+- When the syntax block is a catalog, do not invent diagram syntax. Return {"kind":"read_pages","paths":["catalog/path.md"]} and no other fields before writing or changing source. When the syntax block already contains page bodies, do not return read_pages.
 - Always include nextSteps: 2-4 short suggestions for what the user can do next (for example: apply or review the proposal, add a missing element, explain a part, refine styling, save the result). Each nextStep is a self-contained user instruction that can be sent as the next message.
 ${LLM_UNTRUSTED_INPUT_RULES}
 - For pure questions (how/why/syntax), use kind=answer and explain with a minimal example; do not attach a proposal unless the user asked to change the diagram.`;
@@ -69,7 +67,7 @@ export function formatAiChatSwitchBlock(target: RequestedDiagramChange): string 
         ? ` and proposal.diagramType to "${target.diagramType}".`
         : " and proposal.diagramType to the type id you wrote."
     }`,
-    "- The diagram syntax page, when present, describes proposal.source only. The chat reply itself stays the JSON envelope.",
+    "- The syntax catalog lists pages for proposal.source. Request their bodies with read_pages before writing source. The chat reply itself stays the JSON envelope.",
     "- If the user only asked a question, answer without a proposal.",
   );
   return lines.join("\n");
@@ -97,8 +95,7 @@ function formatDiagramSource(source: string, totalLength: number, truncated: boo
 }
 
 function formatSyntaxPage(body: string): string {
-  const guideBody = body.trim();
-  return guideBody ? `${LLM_PAGE_PROMPT_HEADING}\n\n${guideBody}` : "";
+  return body.trim();
 }
 
 function syntaxPageBody(input: {
@@ -109,25 +106,10 @@ function syntaxPageBody(input: {
   contextMode?: AiChatContextMode;
   target?: RequestedDiagramChange;
 }): string {
-  if (input.target?.active) {
-    if (input.guideText !== undefined) {
-      return input.guideText;
-    }
-    return resolveBundledLlmPage({
-      language: input.target.format,
-      request: input.userRequest?.trim() || input.target.diagramType || "",
-      source: "",
-    });
+  if (input.guideText !== undefined) {
+    return input.guideText;
   }
-
-  return (
-    input.guideText ??
-    resolveBundledLlmPage({
-      language: input.format,
-      request: input.userRequest ?? "",
-      source: input.contextMode === "new" ? "" : input.source,
-    })
-  );
+  return buildLlmChatCatalog(chatSyntaxLanguage(input.format, input.target));
 }
 
 export function buildAiChatContextBlock(input: {

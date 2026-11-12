@@ -4,7 +4,7 @@ Reply with diagram source for the editor only. Do not return an image or an exte
 
 # series scale
 
-A missing band on the axis, or a second axis for another unit.
+A missing band on the axis (`break`), or a second axis (`y2`) for another unit.
 
 ```
 series

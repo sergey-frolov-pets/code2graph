@@ -42,7 +42,7 @@ describe("buildAiChatContextBlock", () => {
     expect(block).not.toContain("SecretCurrent");
   });
 
-  it("puts one syntax page into the prompt and does not expand its links", () => {
+  it("puts the language catalog into the first prompt and not the page bodies", () => {
     const block = buildAiChatContextBlock({
       format: "mermaid",
       source: "waterfall\n=10 : Start",
@@ -50,8 +50,10 @@ describe("buildAiChatContextBlock", () => {
       appliedCount: 0,
       rejectedTitles: [],
     });
-    expect(block).toContain("break 200 --> 700");
-    expect(block).not.toContain("selects the Mermaid Ext type");
+    expect(block).toContain("mermaid/ext/series-analytics.md");
+    expect(block).toContain("selects the Mermaid Ext type");
+    expect(block).not.toContain("line 160");
+    expect(block).not.toContain("Follow a link");
   });
 
   it("still includes the open diagram in the current-diagram mode", () => {
@@ -80,7 +82,8 @@ describe("buildAiChatContextBlock", () => {
     });
     expect(block).toContain("Target language: mermaid");
     expect(block).toContain("Target diagram type: sequence");
-    expect(block).toContain("sequenceDiagram");
+    expect(block).toContain("mermaid/sequence.md");
+    expect(block).not.toContain("sequenceDiagram");
     expect(block).toContain("Alice -> Bob");
   });
 
