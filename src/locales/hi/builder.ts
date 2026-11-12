@@ -236,7 +236,7 @@ export const builderMessages = {
   "builder.option.stackedArea": "स्टैक्ड क्षेत्र",
   "builder.option.showSum": "स्टैक योग",
   "builder.option.barGap": "बारों के बीच अंतर",
-  "builder.option.barGapPlaceholder": "12 या 20%",
+  "builder.option.barGapPlaceholder": "1 या 100%",
   "builder.option.labelAuto": "लेबल का रंग",
   "builder.option.labelColor.theme": "थीम के अनुसार",
   "builder.option.labelColor.auto": "fontcolor auto, पृष्ठभूमि से कंट्रास्ट",

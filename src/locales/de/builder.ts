@@ -236,7 +236,7 @@ export const builderMessages = {
   "builder.option.stackedArea": "Gestapelte Fläche",
   "builder.option.showSum": "Stapelsumme",
   "builder.option.barGap": "Abstand zwischen Balken",
-  "builder.option.barGapPlaceholder": "12 oder 20%",
+  "builder.option.barGapPlaceholder": "1 oder 100%",
   "builder.option.labelAuto": "Farbe der Beschriftung",
   "builder.option.labelColor.theme": "Wie im Thema",
   "builder.option.labelColor.auto": "fontcolor auto, Kontrast zum Hintergrund",

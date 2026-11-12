@@ -573,13 +573,25 @@ series Один : 10, 20`);
     expect(restored.value?.axis).toBe(true);
     expect(restored.value?.grid).toBe(false);
 
-    for (const source of ["gap -1", "gap 100%", "stacked ribbons"]) {
+    for (const source of ["gap -1", "gap -5%", "stacked ribbons"]) {
       const bad = clusteredEngine.parse(`series\ncategories A, B\n${source}\nseries Один : 1, 2`);
       expect(bad.ok, source).toBe(false);
     }
     expect(clusteredEngine.parse(`series\ncategories A\ngap 0\nseries Один : 1`).value?.barGap).toEqual({
-      unit: "px",
+      unit: "ratio",
       value: 0,
+    });
+    expect(clusteredEngine.parse(`series\ncategories A\ngap 1\nseries Один : 1`).value?.barGap).toEqual({
+      unit: "ratio",
+      value: 1,
+    });
+    expect(clusteredEngine.parse(`series\ncategories A\ngap 100%\nseries Один : 1`).value?.barGap).toEqual({
+      unit: "percent",
+      value: 100,
+    });
+    expect(clusteredEngine.parse(`series\ncategories A\ngap 200%\nseries Один : 1`).value?.barGap).toEqual({
+      unit: "percent",
+      value: 200,
     });
   });
 
@@ -638,40 +650,95 @@ series Q : 5, -4`);
     expect(sums).toEqual(["15"]);
   });
 
-  it("меняет просвет между барами пикселями и процентами", () => {
+  it("ставит просвет кратно ширине бара", () => {
     const box = (svg: string, id: string) => {
       const tag = new RegExp(`<rect\\b[^>]*data-bar="${id}"[^>]*>`).exec(svg)?.[0] ?? "";
       const read = (name: string) => Number(new RegExp(`\\b${name}="([\\d.]+)"`).exec(tag)?.[1]);
-      return { x: read("x"), width: read("width") };
+      return { x: read("x"), y: read("y"), width: read("width"), height: read("height") };
     };
     const render = (extra: string) =>
       clusteredEngine.render(
         clusteredEngine.parse(`series
-categories А, Б
+categories A, B
 series П : 10, 12
 series Q : 8, 9
 ${extra}`).value as ClusteredModel,
         {},
       );
-    const plain = box(render(""), "0-1");
-    const pixels = box(render("gap 18"), "0-1");
-    const firstPlain = box(render(""), "0-0");
-    const firstPixels = box(render("gap 18"), "0-0");
-    expect(pixels.x - firstPixels.x).toBeCloseTo(firstPixels.width + 18, 5);
-    expect(plain.x - firstPlain.x).toBeCloseTo(firstPlain.width + 3, 5);
+    const beside = (svg: string) => {
+      const first = box(svg, "0-0");
+      const second = box(svg, "0-1");
+      return { gap: second.x - first.x - first.width, width: first.width };
+    };
+    const betweenCategories = (svg: string) => {
+      const last = box(svg, "0-1");
+      const next = box(svg, "1-0");
+      return { gap: next.x - last.x - last.width, width: last.width };
+    };
+    const plain = beside(render(""));
+    expect(plain.gap).toBeCloseTo(3, 1);
+    for (const [source, ratio] of [
+      ["gap 0", 0],
+      ["gap 0.5", 0.5],
+      ["gap 50%", 0.5],
+      ["gap 1", 1],
+      ["gap 100%", 1],
+      ["gap 2", 2],
+      ["gap 200%", 2],
+    ] as const) {
+      const measured = beside(render(source));
+      const across = betweenCategories(render(source));
+      expect(measured.gap, source).toBeCloseTo(measured.width * ratio, 1);
+      expect(across.gap, `между категориями ${source}`).toBeCloseTo(across.width * ratio, 1);
+    }
+    const wide = beside(render("ratio 16x9\ngap 50%"));
+    expect(wide.gap).toBeCloseTo(wide.width * 0.5, 1);
+    const turned = render("rotate 90\ngap 50%");
+    const turnedBar = box(turned, "0-0");
+    const turnedNext = box(turned, "0-1");
+    expect(turnedNext.y - turnedBar.y - turnedBar.height).toBeCloseTo(turnedBar.height * 0.5, 1);
 
     const stacked = (extra: string) =>
       clusteredEngine.render(
         clusteredEngine.parse(`series
 stacked
-categories А, Б
+categories A, B
 series П : 10, 12
 ${extra}`).value as ClusteredModel,
         {},
       );
-    const near = box(stacked(""), "1-0").x - box(stacked(""), "0-0").x;
-    const far = box(stacked("gap 80"), "1-0").x - box(stacked("gap 80"), "0-0").x;
-    expect(far).toBeGreaterThan(near);
+    const stackedGap = (svg: string) => {
+      const first = box(svg, "0-0");
+      const second = box(svg, "1-0");
+      return { gap: second.x - first.x - first.width, width: first.width };
+    };
+    for (const [source, ratio] of [
+      ["gap 0", 0],
+      ["gap 0.5", 0.5],
+      ["gap 50%", 0.5],
+      ["gap 1", 1],
+      ["gap 100%", 1],
+      ["gap 2", 2],
+      ["gap 200%", 2],
+    ] as const) {
+      const measured = stackedGap(stacked(source));
+      expect(measured.gap, `stacked ${source}`).toBeCloseTo(measured.width * ratio, 1);
+    }
+    const alone = clusteredEngine.render(
+      clusteredEngine.parse(`series
+categories A, B
+gap 50%
+series П : 10, 12`).value as ClusteredModel,
+      {},
+    );
+    const aloneBar = box(alone, "0-0");
+    const aloneNext = box(alone, "1-0");
+    expect(aloneNext.x - aloneBar.x - aloneBar.width).toBeCloseTo(aloneBar.width * 0.5, 1);
+
+    const turnedStack = stacked("rotate 90\ngap 1");
+    const stackBar = box(turnedStack, "0-0");
+    const stackNext = box(turnedStack, "1-0");
+    expect(stackNext.y - stackBar.y - stackBar.height).toBeCloseTo(stackBar.height, 1);
   });
 
   it("рисует площади при повороте и обрывает ленту на пропуске", () => {

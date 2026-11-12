@@ -236,7 +236,7 @@ export const builderMessages = {
   "builder.option.stackedArea": "مساحة مكدسة",
   "builder.option.showSum": "مجموع الكومة",
   "builder.option.barGap": "الفجوة بين الأعمدة",
-  "builder.option.barGapPlaceholder": "12 أو 20%",
+  "builder.option.barGapPlaceholder": "1 أو 100%",
   "builder.option.labelAuto": "لون التسميات",
   "builder.option.labelColor.theme": "حسب السمة",
   "builder.option.labelColor.auto": "fontcolor auto، تباين مع الخلفية",

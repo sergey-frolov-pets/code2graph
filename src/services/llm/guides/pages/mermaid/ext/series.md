@@ -10,11 +10,11 @@ Grouped or stacked bars by category.
 
 ```
 series
-%% Столбцы рядом. gap 4 — просвет в пикселях, gap 20% — доля толщины бара.
+%% Столбцы рядом. gap 0 — без просвета. gap 1 и gap 100% — как ширина бара. gap 2 и gap 200% — вдвое шире.
 %% axis y off прячет ось значений и её сетку, axis x off — подписи категорий.
 title Состав
 categories Q1, Q2
-gap 4
+gap 1
 series Продукт : 80, 90
 series Услуги : 50, 60
 ```

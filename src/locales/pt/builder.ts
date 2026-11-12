@@ -236,7 +236,7 @@ export const builderMessages = {
   "builder.option.stackedArea": "Área empilhada",
   "builder.option.showSum": "Soma da pilha",
   "builder.option.barGap": "Espaço entre barras",
-  "builder.option.barGapPlaceholder": "12 ou 20%",
+  "builder.option.barGapPlaceholder": "1 ou 100%",
   "builder.option.labelAuto": "Cor dos rótulos",
   "builder.option.labelColor.theme": "Do tema",
   "builder.option.labelColor.auto": "fontcolor auto, contraste com o fundo",

@@ -23,7 +23,7 @@ import type {
 
 const DEFAULT_FONT_SIZE = 11;
 
-function formatBarGap(gap: { unit: "px" | "percent"; value: number } | undefined): string {
+function formatBarGap(gap: { unit: "px" | "ratio" | "percent"; value: number } | undefined): string {
   if (!gap) return "";
   return gap.unit === "percent" ? `${fmt(gap.value)}%` : fmt(gap.value);
 }

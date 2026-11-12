@@ -236,7 +236,7 @@ export const builderMessages = {
   "builder.option.stackedArea": "堆叠面积",
   "builder.option.showSum": "堆叠合计",
   "builder.option.barGap": "柱间距",
-  "builder.option.barGapPlaceholder": "12 或 20%",
+  "builder.option.barGapPlaceholder": "1 或 100%",
   "builder.option.labelAuto": "标签颜色",
   "builder.option.labelColor.theme": "主题色",
   "builder.option.labelColor.auto": "fontcolor auto，按背景取对比色",

@@ -285,7 +285,7 @@ data
 Юго-Запад : x=24, y=22, group=Регион, color=#f97316`,
   clustered: `series
 %% Оси: axis y off и axis y2 off прячут шкалу вместе с её сеткой, axis x off — подписи категорий. Следующий grid возвращает линии без подписей.
-%% Зазор: gap 12 — пиксели, gap 20% — доля. У группы процент от толщины бара, у стопки он заменяет долю пустого места.
+%% Зазор: gap 0 — без просвета, gap 1 и gap 100% — как ширина бара, gap 2 и gap 200% — вдвое шире.
 %% Стопка: stacked — столбцы, stacked area — площади между центрами. labels sum пишет сумму частей снаружи, ноль не подписывается.
 %% Цвет подписей: labels fontcolor auto подбирает контраст к фону под текстом. labels fontcolor #1f2328 задаёт свой цвет. Внутри фигуры фон — её заливка, снаружи и у суммы — холст.
 %% Серийная диаграмма: столбцы нескольких серий по категориям.
@@ -300,7 +300,7 @@ title Выручка по каналам продаж
 categories Q1, Q2, Q3, Q4
 y "млн ₽" 0 --> 200
 grid 50
-gap 4
+gap 15%
 labels above fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Онлайн : 120, 145, 165, 190
@@ -308,7 +308,7 @@ series Розница : 85, 95, 110, 130
 series Партнёры : 45, 60, 75, 95 color=#f97316`,
   clusteredRotated: `series
 %% Оси: axis y off и axis y2 off прячут шкалу вместе с её сеткой, axis x off — подписи категорий. Следующий grid возвращает линии без подписей.
-%% Зазор: gap 12 — пиксели, gap 20% — доля. У группы процент от толщины бара, у стопки он заменяет долю пустого места.
+%% Зазор: gap 0 — без просвета, gap 1 и gap 100% — как ширина бара, gap 2 и gap 200% — вдвое шире.
 %% Стопка: stacked — столбцы, stacked area — площади между центрами. labels sum пишет сумму частей снаружи, ноль не подписывается.
 %% Цвет подписей: labels fontcolor auto подбирает контраст к фону под текстом. labels fontcolor #1f2328 задаёт свой цвет. Внутри фигуры фон — её заливка, снаружи и у суммы — холст.
 %% Серийная диаграмма С ПОВОРОТОМ НА 90 ГРАДУСОВ (rotate 90).
@@ -328,7 +328,7 @@ series Розница : 85, 95, 110, 130
 series Партнёры : 45, 60, 75, 95 color=#f97316`,
   clusteredStacked: `series
 %% Оси: axis y off и axis y2 off прячут шкалу вместе с её сеткой, axis x off — подписи категорий. Следующий grid возвращает линии без подписей.
-%% Зазор: gap 12 — пиксели, gap 20% — доля. У группы процент от толщины бара, у стопки он заменяет долю пустого места.
+%% Зазор: gap 0 — без просвета, gap 1 и gap 100% — как ширина бара, gap 2 и gap 200% — вдвое шире.
 %% Стопка: stacked — столбцы, stacked area — площади между центрами. labels sum пишет сумму частей снаружи, ноль не подписывается.
 %% Цвет подписей: labels fontcolor auto подбирает контраст к фону под текстом. labels fontcolor #1f2328 задаёт свой цвет. Внутри фигуры фон — её заливка, снаружи и у суммы — холст.
 %% Стопка: серии в одном столбце, а не рядом.
@@ -349,7 +349,7 @@ series Услуги : 50, 60, 55, 70
 series Партнёры : 30, 25, 40, 35`,
   seriesArea: `series
 %% Оси: axis y off и axis y2 off прячут шкалу вместе с её сеткой, axis x off — подписи категорий. Следующий grid возвращает линии без подписей.
-%% Зазор: gap 12 — пиксели, gap 20% — доля. У группы процент от толщины бара, у стопки он заменяет долю пустого места.
+%% Зазор: gap 0 — без просвета, gap 1 и gap 100% — как ширина бара, gap 2 и gap 200% — вдвое шире.
 %% Стопка: stacked — столбцы, stacked area — площади между центрами. labels sum пишет сумму частей снаружи, ноль не подписывается.
 %% Цвет подписей: labels fontcolor auto подбирает контраст к фону под текстом. labels fontcolor #1f2328 задаёт свой цвет. Внутри фигуры фон — её заливка, снаружи и у суммы — холст.
 %% Площади: stacked area соединяет стопку по центрам категорий.
@@ -367,7 +367,7 @@ series Услуги : 50, 60, 55, 70
 series Партнёры : 30, 25, 40, 35`,
   clusteredMono: `series
 %% Оси: axis y off и axis y2 off прячут шкалу вместе с её сеткой, axis x off — подписи категорий. Следующий grid возвращает линии без подписей.
-%% Зазор: gap 12 — пиксели, gap 20% — доля. У группы процент от толщины бара, у стопки он заменяет долю пустого места.
+%% Зазор: gap 0 — без просвета, gap 1 и gap 100% — как ширина бара, gap 2 и gap 200% — вдвое шире.
 %% Стопка: stacked — столбцы, stacked area — площади между центрами. labels sum пишет сумму частей снаружи, ноль не подписывается.
 %% Цвет подписей: labels fontcolor auto подбирает контраст к фону под текстом. labels fontcolor #1f2328 задаёт свой цвет. Внутри фигуры фон — её заливка, снаружи и у суммы — холст.
 %% Чёрно-белый режим: серии различаются светлотой, а не цветом.
@@ -382,7 +382,7 @@ series Розница : 85, 95, 110, 130
 series Партнёры : 45, 60, 75, 95`,
   clusteredMonoInvert: `series
 %% Оси: axis y off и axis y2 off прячут шкалу вместе с её сеткой, axis x off — подписи категорий. Следующий grid возвращает линии без подписей.
-%% Зазор: gap 12 — пиксели, gap 20% — доля. У группы процент от толщины бара, у стопки он заменяет долю пустого места.
+%% Зазор: gap 0 — без просвета, gap 1 и gap 100% — как ширина бара, gap 2 и gap 200% — вдвое шире.
 %% Стопка: stacked — столбцы, stacked area — площади между центрами. labels sum пишет сумму частей снаружи, ноль не подписывается.
 %% Цвет подписей: labels fontcolor auto подбирает контраст к фону под текстом. labels fontcolor #1f2328 задаёт свой цвет. Внутри фигуры фон — её заливка, снаружи и у суммы — холст.
 %% Инвертированный ч/б: светлые серые столбцы на тёмном холсте.
@@ -397,7 +397,7 @@ series Розница : 85, 95, 110, 130
 series Партнёры : 45, 60, 75, 95`,
   seriesLines: `series
 %% Оси: axis y off и axis y2 off прячут шкалу вместе с её сеткой, axis x off — подписи категорий. Следующий grid возвращает линии без подписей.
-%% Зазор: gap 12 — пиксели, gap 20% — доля. У группы процент от толщины бара, у стопки он заменяет долю пустого места.
+%% Зазор: gap 0 — без просвета, gap 1 и gap 100% — как ширина бара, gap 2 и gap 200% — вдвое шире.
 %% Стопка: stacked — столбцы, stacked area — площади между центрами. labels sum пишет сумму частей снаружи, ноль не подписывается.
 %% Цвет подписей: labels fontcolor auto подбирает контраст к фону под текстом. labels fontcolor #1f2328 задаёт свой цвет. Внутри фигуры фон — её заливка, снаружи и у суммы — холст.
 %% Линия поверх столбцов: line Подпись : зн1, зн2, … [color=#hex] [style=…] [width=N]
@@ -422,7 +422,7 @@ line Штрих-точка : 80, 120, null, 160 color=#f97316 style=dashdot widt
 line Конверсия : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
   seriesCagr: `series
 %% Оси: axis y off и axis y2 off прячут шкалу вместе с её сеткой, axis x off — подписи категорий. Следующий grid возвращает линии без подписей.
-%% Зазор: gap 12 — пиксели, gap 20% — доля. У группы процент от толщины бара, у стопки он заменяет долю пустого места.
+%% Зазор: gap 0 — без просвета, gap 1 и gap 100% — как ширина бара, gap 2 и gap 200% — вдвое шире.
 %% Стопка: stacked — столбцы, stacked area — площади между центрами. labels sum пишет сумму частей снаружи, ноль не подписывается.
 %% Цвет подписей: labels fontcolor auto подбирает контраст к фону под текстом. labels fontcolor #1f2328 задаёт свой цвет. Внутри фигуры фон — её заливка, снаружи и у суммы — холст.
 %% cagr без номеров — стрелка от первого бара к последнему.
@@ -434,7 +434,7 @@ series Выручка : 80, 110, 150, 190
 cagr`,
   seriesCagrRanges: `series
 %% Оси: axis y off и axis y2 off прячут шкалу вместе с её сеткой, axis x off — подписи категорий. Следующий grid возвращает линии без подписей.
-%% Зазор: gap 12 — пиксели, gap 20% — доля. У группы процент от толщины бара, у стопки он заменяет долю пустого места.
+%% Зазор: gap 0 — без просвета, gap 1 и gap 100% — как ширина бара, gap 2 и gap 200% — вдвое шире.
 %% Стопка: stacked — столбцы, stacked area — площади между центрами. labels sum пишет сумму частей снаружи, ноль не подписывается.
 %% Цвет подписей: labels fontcolor auto подбирает контраст к фону под текстом. labels fontcolor #1f2328 задаёт свой цвет. Внутри фигуры фон — её заливка, снаружи и у суммы — холст.
 %% Разные опции cagr на диапазонах баров 1–3, 4–6 и 7–9.
@@ -459,7 +459,7 @@ cagr 8, 9 format="+0.0%"
 cagr 6, 7 format="0%" prefix="+"`,
   seriesBreak: `series
 %% Оси: axis y off и axis y2 off прячут шкалу вместе с её сеткой, axis x off — подписи категорий. Следующий grid возвращает линии без подписей.
-%% Зазор: gap 12 — пиксели, gap 20% — доля. У группы процент от толщины бара, у стопки он заменяет долю пустого места.
+%% Зазор: gap 0 — без просвета, gap 1 и gap 100% — как ширина бара, gap 2 и gap 200% — вдвое шире.
 %% Стопка: stacked — столбцы, stacked area — площади между центрами. labels sum пишет сумму частей снаружи, ноль не подписывается.
 %% Цвет подписей: labels fontcolor auto подбирает контраст к фону под текстом. labels fontcolor #1f2328 задаёт свой цвет. Внутри фигуры фон — её заливка, снаружи и у суммы — холст.
 %% Разрыв шкалы: участок 200..700 ВЫРЕЗАН, чтобы мелкие столбцы стали крупнее.
@@ -474,7 +474,7 @@ series Онлайн : 120, 180, 860, 240
 series Розница : 80, 140, 790, 190`,
   seriesThresholds: `series
 %% Оси: axis y off и axis y2 off прячут шкалу вместе с её сеткой, axis x off — подписи категорий. Следующий grid возвращает линии без подписей.
-%% Зазор: gap 12 — пиксели, gap 20% — доля. У группы процент от толщины бара, у стопки он заменяет долю пустого места.
+%% Зазор: gap 0 — без просвета, gap 1 и gap 100% — как ширина бара, gap 2 и gap 200% — вдвое шире.
 %% Стопка: stacked — столбцы, stacked area — площади между центрами. labels sum пишет сумму частей снаружи, ноль не подписывается.
 %% Цвет подписей: labels fontcolor auto подбирает контраст к фону под текстом. labels fontcolor #1f2328 задаёт свой цвет. Внутри фигуры фон — её заливка, снаружи и у суммы — холст.
 %% ГОРИЗОНТАЛЬНЫЕ ЛИНИИ — уровень плана, цель, порог.
@@ -495,7 +495,7 @@ series Факт : 120, 145, 165, 190
 series Ориентир : 110, 130, 150, 180`,
   seriesUnnamed: `series
 %% Оси: axis y off и axis y2 off прячут шкалу вместе с её сеткой, axis x off — подписи категорий. Следующий grid возвращает линии без подписей.
-%% Зазор: gap 12 — пиксели, gap 20% — доля. У группы процент от толщины бара, у стопки он заменяет долю пустого места.
+%% Зазор: gap 0 — без просвета, gap 1 и gap 100% — как ширина бара, gap 2 и gap 200% — вдвое шире.
 %% Стопка: stacked — столбцы, stacked area — площади между центрами. labels sum пишет сумму частей снаружи, ноль не подписывается.
 %% Цвет подписей: labels fontcolor auto подбирает контраст к фону под текстом. labels fontcolor #1f2328 задаёт свой цвет. Внутри фигуры фон — её заливка, снаружи и у суммы — холст.
 %% Имя серии и подпись линии можно не писать.
@@ -798,7 +798,7 @@ Central Depot : x=50, y=50, group=Core
 Southwest : x=24, y=22, group=Regional, color=#f97316`,
   clustered: `series
 %% Axes: axis y off and axis y2 off hide that scale and its grid, axis x off hides category labels. A later grid brings the lines back without tick labels.
-%% Gap: gap 12 is pixels, gap 20% is a share. For a group the percent is of the bar thickness; for a stack it replaces the empty share of the column.
+%% Gap: gap 0 is no space, gap 1 and gap 100% match the bar width, gap 2 and gap 200% are twice as wide.
 %% Stack: stacked draws columns, stacked area draws bands between category centers. labels sum writes the signed part total outside; zero is omitted.
 %% Label color: labels fontcolor auto picks a contrasting color for the surface under the text. labels fontcolor #1f2328 sets a color. Inside a shape the surface is its fill, outside and for the sum it is the canvas.
 %% Series chart: groups multiple series side by side for each category.
@@ -812,7 +812,7 @@ title Revenue by sales channel
 categories Q1, Q2, Q3, Q4
 y "M USD" 0 --> 200
 grid 50
-gap 4
+gap 15%
 labels above fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Online : 120, 145, 165, 190
@@ -820,7 +820,7 @@ series Retail : 85, 95, 110, 130
 series Partners : 45, 60, 75, 95 color=#f97316`,
   clusteredRotated: `series
 %% Axes: axis y off and axis y2 off hide that scale and its grid, axis x off hides category labels. A later grid brings the lines back without tick labels.
-%% Gap: gap 12 is pixels, gap 20% is a share. For a group the percent is of the bar thickness; for a stack it replaces the empty share of the column.
+%% Gap: gap 0 is no space, gap 1 and gap 100% match the bar width, gap 2 and gap 200% are twice as wide.
 %% Stack: stacked draws columns, stacked area draws bands between category centers. labels sum writes the signed part total outside; zero is omitted.
 %% Label color: labels fontcolor auto picks a contrasting color for the surface under the text. labels fontcolor #1f2328 sets a color. Inside a shape the surface is its fill, outside and for the sum it is the canvas.
 %% Series chart ROTATED BY 90 DEGREES (rotate 90).
@@ -840,7 +840,7 @@ series Retail : 85, 95, 110, 130
 series Partners : 45, 60, 75, 95 color=#f97316`,
   clusteredStacked: `series
 %% Axes: axis y off and axis y2 off hide that scale and its grid, axis x off hides category labels. A later grid brings the lines back without tick labels.
-%% Gap: gap 12 is pixels, gap 20% is a share. For a group the percent is of the bar thickness; for a stack it replaces the empty share of the column.
+%% Gap: gap 0 is no space, gap 1 and gap 100% match the bar width, gap 2 and gap 200% are twice as wide.
 %% Stack: stacked draws columns, stacked area draws bands between category centers. labels sum writes the signed part total outside; zero is omitted.
 %% Label color: labels fontcolor auto picks a contrasting color for the surface under the text. labels fontcolor #1f2328 sets a color. Inside a shape the surface is its fill, outside and for the sum it is the canvas.
 %% Stacked bars: series share one column instead of sitting side by side.
@@ -861,7 +861,7 @@ series Services : 50, 60, 55, 70
 series Partners : 30, 25, 40, 35`,
   seriesArea: `series
 %% Axes: axis y off and axis y2 off hide that scale and its grid, axis x off hides category labels. A later grid brings the lines back without tick labels.
-%% Gap: gap 12 is pixels, gap 20% is a share. For a group the percent is of the bar thickness; for a stack it replaces the empty share of the column.
+%% Gap: gap 0 is no space, gap 1 and gap 100% match the bar width, gap 2 and gap 200% are twice as wide.
 %% Stack: stacked draws columns, stacked area draws bands between category centers. labels sum writes the signed part total outside; zero is omitted.
 %% Label color: labels fontcolor auto picks a contrasting color for the surface under the text. labels fontcolor #1f2328 sets a color. Inside a shape the surface is its fill, outside and for the sum it is the canvas.
 %% Areas: stacked area joins the stack through category centers.
@@ -879,7 +879,7 @@ series Services : 50, 60, 55, 70
 series Partners : 30, 25, 40, 35`,
   clusteredMono: `series
 %% Axes: axis y off and axis y2 off hide that scale and its grid, axis x off hides category labels. A later grid brings the lines back without tick labels.
-%% Gap: gap 12 is pixels, gap 20% is a share. For a group the percent is of the bar thickness; for a stack it replaces the empty share of the column.
+%% Gap: gap 0 is no space, gap 1 and gap 100% match the bar width, gap 2 and gap 200% are twice as wide.
 %% Stack: stacked draws columns, stacked area draws bands between category centers. labels sum writes the signed part total outside; zero is omitted.
 %% Label color: labels fontcolor auto picks a contrasting color for the surface under the text. labels fontcolor #1f2328 sets a color. Inside a shape the surface is its fill, outside and for the sum it is the canvas.
 %% Black-and-white: series differ by lightness, not hue.
@@ -894,7 +894,7 @@ series Retail : 85, 95, 110, 130
 series Partners : 45, 60, 75, 95`,
   clusteredMonoInvert: `series
 %% Axes: axis y off and axis y2 off hide that scale and its grid, axis x off hides category labels. A later grid brings the lines back without tick labels.
-%% Gap: gap 12 is pixels, gap 20% is a share. For a group the percent is of the bar thickness; for a stack it replaces the empty share of the column.
+%% Gap: gap 0 is no space, gap 1 and gap 100% match the bar width, gap 2 and gap 200% are twice as wide.
 %% Stack: stacked draws columns, stacked area draws bands between category centers. labels sum writes the signed part total outside; zero is omitted.
 %% Label color: labels fontcolor auto picks a contrasting color for the surface under the text. labels fontcolor #1f2328 sets a color. Inside a shape the surface is its fill, outside and for the sum it is the canvas.
 %% Inverted black-and-white: light grey bars on a dark canvas.
@@ -909,7 +909,7 @@ series Retail : 85, 95, 110, 130
 series Partners : 45, 60, 75, 95`,
   seriesLines: `series
 %% Axes: axis y off and axis y2 off hide that scale and its grid, axis x off hides category labels. A later grid brings the lines back without tick labels.
-%% Gap: gap 12 is pixels, gap 20% is a share. For a group the percent is of the bar thickness; for a stack it replaces the empty share of the column.
+%% Gap: gap 0 is no space, gap 1 and gap 100% match the bar width, gap 2 and gap 200% are twice as wide.
 %% Stack: stacked draws columns, stacked area draws bands between category centers. labels sum writes the signed part total outside; zero is omitted.
 %% Label color: labels fontcolor auto picks a contrasting color for the surface under the text. labels fontcolor #1f2328 sets a color. Inside a shape the surface is its fill, outside and for the sum it is the canvas.
 %% A line over the bars: line Label : v1, v2, … [color=#hex] [style=…] [width=N]
@@ -934,7 +934,7 @@ line Dash-dot : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
 line Conversion : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
   seriesCagr: `series
 %% Axes: axis y off and axis y2 off hide that scale and its grid, axis x off hides category labels. A later grid brings the lines back without tick labels.
-%% Gap: gap 12 is pixels, gap 20% is a share. For a group the percent is of the bar thickness; for a stack it replaces the empty share of the column.
+%% Gap: gap 0 is no space, gap 1 and gap 100% match the bar width, gap 2 and gap 200% are twice as wide.
 %% Stack: stacked draws columns, stacked area draws bands between category centers. labels sum writes the signed part total outside; zero is omitted.
 %% Label color: labels fontcolor auto picks a contrasting color for the surface under the text. labels fontcolor #1f2328 sets a color. Inside a shape the surface is its fill, outside and for the sum it is the canvas.
 %% Plain cagr draws an arrow from the first bar to the last.
@@ -946,7 +946,7 @@ series Revenue : 80, 110, 150, 190
 cagr`,
   seriesCagrRanges: `series
 %% Axes: axis y off and axis y2 off hide that scale and its grid, axis x off hides category labels. A later grid brings the lines back without tick labels.
-%% Gap: gap 12 is pixels, gap 20% is a share. For a group the percent is of the bar thickness; for a stack it replaces the empty share of the column.
+%% Gap: gap 0 is no space, gap 1 and gap 100% match the bar width, gap 2 and gap 200% are twice as wide.
 %% Stack: stacked draws columns, stacked area draws bands between category centers. labels sum writes the signed part total outside; zero is omitted.
 %% Label color: labels fontcolor auto picks a contrasting color for the surface under the text. labels fontcolor #1f2328 sets a color. Inside a shape the surface is its fill, outside and for the sum it is the canvas.
 %% Different cagr options on bar ranges 1–3, 4–6 and 7–9.
@@ -971,7 +971,7 @@ cagr 8, 9 format="+0.0%"
 cagr 6, 7 format="0%" prefix="+"`,
   seriesBreak: `series
 %% Axes: axis y off and axis y2 off hide that scale and its grid, axis x off hides category labels. A later grid brings the lines back without tick labels.
-%% Gap: gap 12 is pixels, gap 20% is a share. For a group the percent is of the bar thickness; for a stack it replaces the empty share of the column.
+%% Gap: gap 0 is no space, gap 1 and gap 100% match the bar width, gap 2 and gap 200% are twice as wide.
 %% Stack: stacked draws columns, stacked area draws bands between category centers. labels sum writes the signed part total outside; zero is omitted.
 %% Label color: labels fontcolor auto picks a contrasting color for the surface under the text. labels fontcolor #1f2328 sets a color. Inside a shape the surface is its fill, outside and for the sum it is the canvas.
 %% Axis break: the 200..700 span is CUT so small bars become bigger.
@@ -986,7 +986,7 @@ series Online : 120, 180, 860, 240
 series Retail : 80, 140, 790, 190`,
   seriesThresholds: `series
 %% Axes: axis y off and axis y2 off hide that scale and its grid, axis x off hides category labels. A later grid brings the lines back without tick labels.
-%% Gap: gap 12 is pixels, gap 20% is a share. For a group the percent is of the bar thickness; for a stack it replaces the empty share of the column.
+%% Gap: gap 0 is no space, gap 1 and gap 100% match the bar width, gap 2 and gap 200% are twice as wide.
 %% Stack: stacked draws columns, stacked area draws bands between category centers. labels sum writes the signed part total outside; zero is omitted.
 %% Label color: labels fontcolor auto picks a contrasting color for the surface under the text. labels fontcolor #1f2328 sets a color. Inside a shape the surface is its fill, outside and for the sum it is the canvas.
 %% HORIZONTAL LINES — plan, target, threshold.
@@ -1007,7 +1007,7 @@ series Actual : 120, 145, 165, 190
 series Guide : 110, 130, 150, 180`,
   seriesUnnamed: `series
 %% Axes: axis y off and axis y2 off hide that scale and its grid, axis x off hides category labels. A later grid brings the lines back without tick labels.
-%% Gap: gap 12 is pixels, gap 20% is a share. For a group the percent is of the bar thickness; for a stack it replaces the empty share of the column.
+%% Gap: gap 0 is no space, gap 1 and gap 100% match the bar width, gap 2 and gap 200% are twice as wide.
 %% Stack: stacked draws columns, stacked area draws bands between category centers. labels sum writes the signed part total outside; zero is omitted.
 %% Label color: labels fontcolor auto picks a contrasting color for the surface under the text. labels fontcolor #1f2328 sets a color. Inside a shape the surface is its fill, outside and for the sum it is the canvas.
 %% The series name and the line label can be left out.

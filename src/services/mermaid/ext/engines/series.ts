@@ -34,9 +34,12 @@ import { parseBreak, parseLine, takeLabelFontColor } from "./waterfall/directive
 
 export type ClusteredLabelsMode = "above" | "inside" | "none";
 
-/** Зазор между барами: пиксели или доля ширины (процент строго меньше 100). */
+/**
+ * Зазор между барами в долях ширины бара.
+ * `gap 1` и `gap 100%` — просвет равен бару, `gap 0` — без просвета, `gap 2` и `gap 200%` — вдвое шире.
+ */
 export interface SeriesBarGap {
-  unit: "px" | "percent";
+  unit: "ratio" | "percent";
   value: number;
 }
 
@@ -136,7 +139,7 @@ export interface ClusteredModel {
   /** Сетка второй оси. Без `grid y2` не рисуется. */
   y2Grid: boolean;
   y2GridStep?: number;
-  /** `gap 12` или `gap 20%`. Без директивы — прежние константы раскладки. */
+  /** `gap 1` или `gap 100%` — просвет равен ширине бара. Без директивы — прежние константы раскладки. */
   barGap?: SeriesBarGap;
   /** `labels sum` — сумма частей снаружи стопки. Ноль не подписывается. */
   showSum: boolean;
@@ -962,27 +965,20 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
       if (/^gap\b/i.test(raw) && !raw.includes(":")) {
         const arg = raw.replace(/^gap\s*/i, "").trim();
         const percent = /^(.*)\s*%$/.exec(arg);
+        const message = `ожидается «gap <множитель>» или «gap <процент>%»: 0 — без просвета, 1 и 100% — как ширина бара, получено «${arg}»`;
         if (percent) {
           const value = parseExtNumber(percent[1]);
-          if (value === null || value < 0 || value >= 100) {
-            errors.push({
-              message: `ожидается «gap <число>%» от 0 до 100 не включая 100, получено «${arg}»`,
-              line: lineNo,
-              col: 0,
-            });
+          if (value === null || value < 0) {
+            errors.push({ message, line: lineNo, col: 0 });
           } else {
             barGap = { unit: "percent", value };
           }
         } else {
           const value = parseExtNumber(arg);
           if (value === null || value < 0) {
-            errors.push({
-              message: `ожидается «gap <пиксели>» или «gap <процент>%», получено «${arg}»`,
-              line: lineNo,
-              col: 0,
-            });
+            errors.push({ message, line: lineNo, col: 0 });
           } else {
-            barGap = { unit: "px", value };
+            barGap = { unit: "ratio", value };
           }
         }
         continue;
@@ -1436,24 +1432,52 @@ function labelFill(model: ClusteredModel, surface: string, fallback: string, ins
   return fallback;
 }
 
-/** Просвет между барами одной категории. У стопки бары соприкасаются. */
-function seriesInnerGap(model: ClusteredModel, thickness: number): number {
-  if (model.stack) return 0;
-  const gap = model.barGap;
-  if (!gap) return INNER_BAR_GAP;
-  if (gap.unit === "px") return gap.value;
-  return (thickness * gap.value) / 100;
+interface SeriesBarPlacement {
+  thickness: number;
+  innerGap: number;
+  group: number;
+  pitch: number;
 }
 
-/** Доля колонки, не занятая стопкой. Процент заменяет её только у стопки и площади. */
-function seriesPaddingRatio(model: ClusteredModel): number {
-  if (model.stack && model.barGap?.unit === "percent") return model.barGap.value / 100;
-  return CLUSTER_PADDING_RATIO;
+/** Доля ширины бара: `50%` и `0.5` — половина, `100%` и `1` — как бар, `200%` и `2` — вдвое шире. */
+function seriesGapRatio(gap: SeriesBarGap): number {
+  return gap.unit === "percent" ? gap.value / 100 : gap.value;
 }
 
-function widenStackedPitch(model: ClusteredModel, groupSize: number, pitch: number): number {
-  if (model.stack && model.barGap?.unit === "px") return Math.max(pitch, groupSize + model.barGap.value);
-  return pitch;
+function seriesLayoutCount(model: ClusteredModel): number {
+  return model.stack ? 1 : Math.max(1, model.series.length);
+}
+
+/**
+ * Подгоняет бары под шаг категории.
+ * Каждый просвет — и между сериями, и между категориями — равен ratio × толщина бара.
+ */
+function refitSeriesBars(model: ClusteredModel, pitch: number, ratio: number): SeriesBarPlacement {
+  const count = seriesLayoutCount(model);
+  const thickness = pitch / (count * (1 + ratio));
+  const innerGap = model.stack ? 0 : thickness * ratio;
+  const group = count * thickness + Math.max(0, count - 1) * innerGap;
+  return { thickness, innerGap, group, pitch };
+}
+
+/** Раскладка баров. Без `gap` остаются прежние 3 px и доля пустого места в колонке. */
+function placeSeriesBars(
+  model: ClusteredModel,
+  naturalThickness: number,
+  minPitch: number,
+  labelPitch: number,
+): SeriesBarPlacement {
+  const count = seriesLayoutCount(model);
+  const thickness = clamp(naturalThickness, MIN_BAR_THICKNESS, MAX_BAR_THICKNESS);
+  if (!model.barGap) {
+    const innerGap = model.stack ? 0 : INNER_BAR_GAP;
+    const group = count * thickness + Math.max(0, count - 1) * innerGap;
+    const pitch = Math.max(Math.round(group / (1 - CLUSTER_PADDING_RATIO)), labelPitch, minPitch);
+    return { thickness, innerGap, group, pitch };
+  }
+  const ratio = seriesGapRatio(model.barGap);
+  const pitch = Math.max(thickness * count * (1 + ratio), labelPitch, minPitch);
+  return refitSeriesBars(model, pitch, ratio);
 }
 
 function stackSum(model: ClusteredModel, category: number): number | null {
@@ -2218,25 +2242,20 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
   const seriesCount = Math.max(1, model.series.length);
   const layoutCount = model.stack ? 1 : seriesCount;
 
-  let barWidth = clamp(
-    Math.round(24 * scaleFactor - Math.max(0, layoutCount - 2) * 2),
-    MIN_BAR_THICKNESS,
-    MAX_BAR_THICKNESS,
-  );
-  const innerGap = seriesInnerGap(model, barWidth);
-  let barsGroupWidth = layoutCount * barWidth + (layoutCount - 1) * innerGap;
   const longestCat = model.categories.reduce(
     (max, cat) => Math.max(max, measureLabelWidth(cat, fontSize)),
     0,
   );
-  let colWidth = widenStackedPitch(
+  let {
+    thickness: barWidth,
+    innerGap,
+    group: barsGroupWidth,
+    pitch: colWidth,
+  } = placeSeriesBars(
     model,
-    barsGroupWidth,
-    Math.max(
-      Math.round(barsGroupWidth / (1 - seriesPaddingRatio(model))),
-      Math.ceil(longestCat) + 20,
-      72,
-    ),
+    Math.round(24 * scaleFactor - Math.max(0, layoutCount - 2) * 2),
+    72,
+    Math.ceil(longestCat) + 20,
   );
   const catExtra = Math.max(0, ...model.categories.map((cat) => labelBlockExtra(cat, fontSize)));
   const titleExtra = labelBlockExtra(model.title, titleSize);
@@ -2282,11 +2301,19 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     if (grown.plotWidth > plotWidth) {
       const factor = grown.plotWidth / (colWidth * catCount);
       barWidth *= factor;
+      innerGap *= factor;
       barsGroupWidth *= factor;
       colWidth = grown.plotWidth / catCount;
       plotWidth = grown.plotWidth;
     }
     plotHeight = grown.plotHeight;
+  }
+
+  if (model.barGap) {
+    const fitted = refitSeriesBars(model, colWidth, seriesGapRatio(model.barGap));
+    barWidth = fitted.thickness;
+    innerGap = fitted.innerGap;
+    barsGroupWidth = fitted.group;
   }
 
   const width = padLeft + plotWidth + padRight;
@@ -2697,20 +2724,24 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
   const seriesCount = Math.max(1, model.series.length);
   const layoutCount = model.stack ? 1 : seriesCount;
 
-  let barHeight = clamp(
-    Math.round(20 * scaleFactor - Math.max(0, layoutCount - 2) * 1.5),
-    MIN_BAR_THICKNESS,
-    MAX_BAR_THICKNESS,
-  );
-  const innerGap = seriesInnerGap(model, barHeight);
-  let barsGroupHeight = layoutCount * barHeight + (layoutCount - 1) * innerGap;
   const catExtra = Math.max(0, ...model.categories.map((cat) => labelBlockExtra(cat, fontSize)));
-  let rowHeight =
-    widenStackedPitch(
-      model,
-      barsGroupHeight,
-      Math.max(Math.round(barsGroupHeight / (1 - seriesPaddingRatio(model))), 42),
-    ) + catExtra;
+  const placed = placeSeriesBars(
+    model,
+    Math.round(20 * scaleFactor - Math.max(0, layoutCount - 2) * 1.5),
+    42,
+    42,
+  );
+  let barHeight = placed.thickness;
+  let innerGap = placed.innerGap;
+  let barsGroupHeight = placed.group;
+  let rowHeight = placed.pitch + catExtra;
+  if (model.barGap) {
+    const fitted = refitSeriesBars(model, rowHeight, seriesGapRatio(model.barGap));
+    barHeight = fitted.thickness;
+    innerGap = fitted.innerGap;
+    barsGroupHeight = fitted.group;
+    rowHeight = fitted.pitch;
+  }
 
   const longestCat = model.categories.reduce(
     (max, cat) => Math.max(max, measureLabelWidth(cat, fontSize)),
@@ -2751,11 +2782,19 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
     if (grown.plotHeight > plotHeight) {
       const factor = grown.plotHeight / plotHeight;
       barHeight *= factor;
+      innerGap *= factor;
       barsGroupHeight *= factor;
       rowHeight *= factor;
       plotHeight = rowHeight * catCount;
     }
     if (grown.plotWidth > plotWidth) plotWidth = grown.plotWidth;
+  }
+
+  if (model.barGap) {
+    const fitted = refitSeriesBars(model, rowHeight, seriesGapRatio(model.barGap));
+    barHeight = fitted.thickness;
+    innerGap = fitted.innerGap;
+    barsGroupHeight = fitted.group;
   }
 
   const width = padLeft + plotWidth + padRight;
