@@ -26,6 +26,11 @@ import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } f
 import { isAgentDiagramType } from "@shared/agent-diagram";
 import IconButton from "@/components/IconButton.vue";
 import type { LayoutEngine } from "@/constants";
+import { getLlmAccount } from "@/config/llm-accounts";
+import { parseFreeLlmSelectionId } from "@/config/llm-account-record";
+import { resolveSelectedLlmModel } from "@/config/llm-model-selection";
+import { isValidLlmModelName } from "@/constants/llm-account";
+import { getLlmProvider } from "@/constants/llm-providers";
 import {
   AI_CHAT_APPLY_MODE_STORAGE_KEY,
   AI_CHAT_ATTACHMENT_FILE_MAX_BYTES,
@@ -301,6 +306,48 @@ function openSuggestionPreview(step: string, mode: SuggestionOpenMode): void {
 function titleUnlessModesOpen(label: string): string | undefined {
   return modesOpen.value ? undefined : label;
 }
+
+const contextHintIcon = computed(() => (contextMode.value === "new" ? FilePlus : FileCode));
+const applyHintIcon = computed(() => (applyMode.value === "immediate" ? Zap : Eye));
+
+/** Модель и провайдер выбранной в чате учётки — тем же правилом, что и отправка. */
+const composerSelection = computed(() => {
+  const option = chatProviderOptions.value.find((item) => item.id === chatProviderId.value);
+  if (!option) {
+    return { model: "", provider: "" };
+  }
+
+  const provider = getLlmProvider(option.providerId);
+  const providerName = provider ? t(provider.nameKey) : option.label;
+  if (parseFreeLlmSelectionId(option.id)) {
+    return {
+      model: provider?.defaultModel ?? "",
+      provider: providerName,
+    };
+  }
+
+  const accountModel = getLlmAccount(option.id)?.model?.trim() ?? "";
+  return {
+    model:
+      accountModel && isValidLlmModelName(accountModel)
+        ? accountModel
+        : resolveSelectedLlmModel(option.providerId),
+    provider: providerName,
+  };
+});
+
+const composerFieldLabel = computed(() => {
+  const selection = composerSelection.value;
+  const parts = [
+    contextMode.value === "new" ? t("aiChat.contextNew") : t("aiChat.contextCurrent"),
+    applyMode.value === "immediate"
+      ? t("aiChat.applyModeImmediate")
+      : t("aiChat.applyModeProposal"),
+    selection.model,
+    selection.provider,
+  ].filter((part) => part.length > 0);
+  return `${t("aiChat.inputPlaceholder")} · ${parts.join(" · ")}`;
+});
 
 function showExpandedTitle(text: string): void {
   closeSuggestionPreview();
@@ -1528,20 +1575,63 @@ async function onCopyChat(): Promise<void> {
                 aria-hidden="true"
               />
             </button>
-            <textarea
-              ref="composerInputRef"
-              v-model="draft"
-              class="ai-chat-panel__input"
-              rows="1"
-              enterkeyhint="send"
-              :aria-label="t('aiChat.inputPlaceholder')"
-              :placeholder="t('aiChat.inputPlaceholder')"
-              :disabled="isBusy"
-              @focus="onComposerFocus"
-              @blur="onComposerBlur"
-              @keydown="onComposerKeydown"
-              @paste="onComposerPaste"
-            />
+            <div class="ai-chat-panel__field">
+              <textarea
+                ref="composerInputRef"
+                v-model="draft"
+                class="ai-chat-panel__input"
+                rows="1"
+                enterkeyhint="send"
+                :aria-label="composerFieldLabel"
+                :placeholder="t('aiChat.inputPlaceholder')"
+                :disabled="isBusy"
+                @focus="onComposerFocus"
+                @blur="onComposerBlur"
+                @keydown="onComposerKeydown"
+                @paste="onComposerPaste"
+              />
+              <div
+                v-if="draft.length === 0"
+                class="ai-chat-panel__hint"
+                data-testid="ai-chat-input-hint"
+                aria-hidden="true"
+              >
+                <span class="ai-chat-panel__hint-prompt">{{ t("aiChat.inputPlaceholder") }}</span>
+                <span class="ai-chat-panel__hint-meta">
+                  <component
+                    :is="contextHintIcon"
+                    class="ai-chat-panel__hint-icon"
+                    data-testid="ai-chat-hint-context"
+                    :data-mode="contextMode"
+                    :stroke-width="1.8"
+                    aria-hidden="true"
+                  />
+                  <component
+                    :is="applyHintIcon"
+                    class="ai-chat-panel__hint-icon"
+                    data-testid="ai-chat-hint-apply"
+                    :data-mode="applyMode"
+                    :stroke-width="1.8"
+                    aria-hidden="true"
+                  />
+                  <span
+                    v-if="composerSelection.model"
+                    class="ai-chat-panel__hint-model"
+                    data-testid="ai-chat-hint-model"
+                  >{{ composerSelection.model }}</span>
+                  <span
+                    v-if="composerSelection.model && composerSelection.provider"
+                    class="ai-chat-panel__hint-dot"
+                    aria-hidden="true"
+                  >·</span>
+                  <span
+                    v-if="composerSelection.provider"
+                    class="ai-chat-panel__hint-provider"
+                    data-testid="ai-chat-hint-provider"
+                  >{{ composerSelection.provider }}</span>
+                </span>
+              </div>
+            </div>
             <div class="ai-chat-panel__composer-actions">
               <button
                 v-if="dictationLocales.length > 0"
@@ -2162,9 +2252,75 @@ async function onCopyChat(): Promise<void> {
   border-color: var(--accent);
 }
 
+.ai-chat-panel__field {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  min-width: 0;
+}
+
+.ai-chat-panel__hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  min-width: 0;
+  padding-inline-start: var(--ai-chat-composer-field-inset);
+  overflow: hidden;
+  color: var(--text-muted);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.ai-chat-panel__hint-prompt {
+  flex: 0 0 auto;
+  line-height: 1.4;
+}
+
+.ai-chat-panel__hint-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  min-width: 0;
+  font-size: 0.72em;
+  line-height: 1;
+}
+
+.ai-chat-panel__hint-icon {
+  flex: 0 0 auto;
+  width: 1em;
+  height: 1em;
+}
+
+.ai-chat-panel__hint-model,
+.ai-chat-panel__hint-provider {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-chat-panel__hint-model {
+  flex: 0 1 auto;
+  max-width: 11em;
+}
+
+.ai-chat-panel__hint-provider {
+  flex: 1 1 auto;
+}
+
+.ai-chat-panel__hint-dot {
+  flex: 0 0 auto;
+}
+
+.ai-chat-panel__field:has(.ai-chat-panel__hint) .ai-chat-panel__input::placeholder {
+  color: transparent;
+}
+
 .ai-chat-panel__input {
   flex: 1 1 auto;
-  width: auto;
+  width: 100%;
   min-width: 0;
   margin: 0;
   padding: 0;

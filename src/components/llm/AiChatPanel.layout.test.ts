@@ -9,6 +9,8 @@ import {
 } from "@/constants/dictation";
 import type { DictationAvailabilityQuery, DictationSpeechEvent } from "@/utils/dictation-speech";
 import { AI_CHAT_MESSAGE_MAX_CHARS } from "@/constants/ai-chat";
+import { addLlmAccount, removeLlmAccount, setChatLlmSelectionId } from "@/config/llm-accounts";
+import { LOCAL_LLM_DEFAULT_BASE_URL, LOCAL_LLM_PROVIDER_ID } from "@/constants/llm-account";
 import { useLocale } from "@/composables/useLocale";
 import { sendAiChatMessage } from "@/services/llm/ai-chat-client";
 import AiChatPanel from "@/components/llm/AiChatPanel.vue";
@@ -121,6 +123,18 @@ describe("AiChatPanel layout", () => {
     expect(textarea).toHaveProperty("rows", 1);
     expect(line!.contains(textarea)).toBe(true);
     expect(textarea!.getAttribute("placeholder")).toBe("Сообщение…");
+    const hint = view.host.querySelector("[data-testid='ai-chat-input-hint']");
+    expect(hint).not.toBeNull();
+    expect(line!.contains(hint)).toBe(true);
+    expect(hint!.textContent).toContain("Сообщение…");
+    expect(hint!.querySelector("[data-testid='ai-chat-hint-context']")?.getAttribute("data-mode")).toBe(
+      "current",
+    );
+    expect(hint!.querySelector("[data-testid='ai-chat-hint-apply']")?.getAttribute("data-mode")).toBe(
+      "proposal",
+    );
+    expect(textarea!.getAttribute("aria-label")).toContain("Текущая диаграмма");
+    expect(textarea!.getAttribute("aria-label")).toContain("Предлагать и ждать подтверждения");
     textarea!.focus();
     await nextTick();
     expect(view.host.querySelector("[data-testid='ai-chat-next']")).toBeNull();
@@ -131,11 +145,47 @@ describe("AiChatPanel layout", () => {
     textarea!.dispatchEvent(new Event("input"));
     await nextTick();
 
+    expect(view.host.querySelector("[data-testid='ai-chat-input-hint']")).toBeNull();
     expect((view.host.querySelector("[data-testid='ai-chat-send']") as HTMLButtonElement).disabled).toBe(
       false,
     );
 
     view.unmount();
+  });
+
+  it("shows the selected model and provider beside the mode icons", async () => {
+    useLocale().setLocale("ru");
+    const added = addLlmAccount({
+      providerId: LOCAL_LLM_PROVIDER_ID,
+      label: "Домашний",
+      apiKey: "",
+      active: true,
+      baseUrl: LOCAL_LLM_DEFAULT_BASE_URL,
+      model: "llama3.2",
+    });
+    expect(added.ok).toBe(true);
+    if (!added.ok) {
+      return;
+    }
+
+    const view = mountChat();
+    try {
+      await vi.waitFor(() => {
+        expect(view.host.querySelector("[data-testid='ai-chat-hint-model']")?.textContent).toBe(
+          "llama3.2",
+        );
+      });
+      expect(view.host.querySelector("[data-testid='ai-chat-hint-provider']")?.textContent).toBe(
+        "Локальный LLM",
+      );
+      expect(view.host.querySelector("[data-testid='ai-chat-hint-context']")).not.toBeNull();
+      expect(view.host.querySelector("[data-testid='ai-chat-hint-apply']")).not.toBeNull();
+      expect(view.host.querySelector(".ai-chat-panel__hint-meta")).not.toBeNull();
+    } finally {
+      view.unmount();
+      removeLlmAccount(added.account.id);
+      setChatLlmSelectionId("");
+    }
   });
 
   it("switches starter chips to a new diagram and accepts a markdown file", async () => {
@@ -150,6 +200,17 @@ describe("AiChatPanel layout", () => {
     expect(view.host.querySelector("[data-testid='ai-chat-next']")!.textContent).toContain(
       "Создай диаграмму по описанию",
     );
+    expect(
+      view.host.querySelector("[data-testid='ai-chat-hint-context']")?.getAttribute("data-mode"),
+    ).toBe("new");
+    const immediate = [...view.host.querySelectorAll("button")].find((button) =>
+      button.getAttribute("aria-label")?.includes("Применять сразу"),
+    );
+    immediate?.click();
+    await nextTick();
+    expect(
+      view.host.querySelector("[data-testid='ai-chat-hint-apply']")?.getAttribute("data-mode"),
+    ).toBe("immediate");
 
     const input = view.host.querySelector("[data-testid='ai-chat-file-input']") as HTMLInputElement;
     const file = new File(["# Actors\nAlice"], "actors.md", { type: "text/markdown" });
