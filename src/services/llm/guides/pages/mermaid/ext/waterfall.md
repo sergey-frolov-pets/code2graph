@@ -12,6 +12,7 @@ How a starting number becomes a total through plus and minus steps.
 waterfall
 %% axis y off прячет ось значений и сетку. axis x off прячет подписи колонок.
 %% grid off прячет только сетку. gap задаёт просвет: 12 пикселей или 20%.
+%% labels fontcolor auto красит подпись контрастом: внутри бара по заливке, снаружи по холсту. labels fontcolor #1f2328 задаёт свой цвет.
 title Выручка 2026
 y "млн" 0 --> 120
 =40 : Q1

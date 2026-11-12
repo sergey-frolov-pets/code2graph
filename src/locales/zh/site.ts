@@ -156,7 +156,7 @@ export const siteMessages = {
   "site.ext.mermaid.desc.clustered":
     "多个系列在各类别上的柱，可并排或堆叠，并带有叠加折线、水平线、坐标轴断开、CAGR 标注、90 度旋转（rotate 90）、翻转的纵轴（invert y），以及黑白模式（mono、mono invert）。",
   "site.ext.mermaid.syntax.waterfall":
-    "waterfall 打开图表。y 设置坐标轴。= 是绝对柱，+ 和 - 是一步，标签写在冒号后面。axis y off 隐藏数值轴及其网格，axis x off 隐藏列标签，grid off 只隐藏网格。gap 12 或 gap 20% 设置柱间距。标签中的 \\n 会换行。",
+    "waterfall 打开图表。y 设置坐标轴。= 是绝对柱，+ 和 - 是一步，标签写在冒号后面。axis y off 隐藏数值轴及其网格，axis x off 隐藏列标签，grid off 只隐藏网格。gap 12 或 gap 20% 设置柱间距。labels fontcolor auto 按文字底下的背景取对比色：柱内看柱色，柱外看画布。labels fontcolor #1f2328 指定颜色。标签中的 \\n 会换行。",
   "site.ext.mermaid.syntax.bubble":
     "bubble 打开图表。x、y 和 size 设置坐标轴和大小。在 data 内，一个点是 名称 : x=, y=, size=。名称中的 \\n 会换行。",
   "site.ext.mermaid.syntax.heatmap":
@@ -174,7 +174,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.voronoi":
     "voronoi 打开镶嵌。在 data 内，一个站点是 名称 : x=, y=, group=, color=#hex。名称中的 \\n 会换行。",
   "site.ext.mermaid.syntax.clustered":
-    "series 打开图表。categories 列出类别，series 名称 : v1, v2, … 画出柱，名称可以省略（`series : v1, v2`）；空位、\"-\" 或 null 会跳过一根柱。line 标签 : v1, v2, … 画出折线，标签可以省略（`line : v1, v2`）（跳过的位置会把两侧的点连起来），标签显示在图的右侧；color 和 style=solid|dash|dot|dashdot 设置描边。line 160 \"计划\" 画出一条水平线（没有冒号）。break 200 --> 700 从坐标轴上切掉一段。cagr 是从第一根柱到最后一根柱的复合年增长率，cagr 2, 7 连接这两根柱；format、prefix 和 label 控制椭圆。format=\"±0.0%\" 只在值为正时加上正号。互不重叠的箭头共用一层。连续的 cagr 行作用于同一个系列。stacked 把系列堆叠起来，stacked off 让柱并排，rotate 90 旋转图表。invert y 与 rotate 90 一起使用时，把第一个类别放在底部，invert y off 恢复从上到下的顺序。标签中的 \\n 会换行。y2 \"标签\" 0 --> 40 绘制第二条刻度（在右侧，rotate 90 时在上方），axis=y2 将系列、折线或水平线绑定到它。axis y off、axis y2 off 和 axis x off 隐藏所选轴及其网格。grid y2 10 绘制第二轴网格。stacked area 画出面积，labels sum 在堆叠上方写出各部分之和，gap 12 或 gap 8% 设置间距。",
+    "series 打开图表。categories 列出类别，series 名称 : v1, v2, … 画出柱，名称可以省略（`series : v1, v2`）；空位、\"-\" 或 null 会跳过一根柱。line 标签 : v1, v2, … 画出折线，标签可以省略（`line : v1, v2`）（跳过的位置会把两侧的点连起来），标签显示在图的右侧；color 和 style=solid|dash|dot|dashdot 设置描边。line 160 \"计划\" 画出一条水平线（没有冒号）。break 200 --> 700 从坐标轴上切掉一段。cagr 是从第一根柱到最后一根柱的复合年增长率，cagr 2, 7 连接这两根柱；format、prefix 和 label 控制椭圆。format=\"±0.0%\" 只在值为正时加上正号。互不重叠的箭头共用一层。连续的 cagr 行作用于同一个系列。stacked 把系列堆叠起来，stacked off 让柱并排，rotate 90 旋转图表。invert y 与 rotate 90 一起使用时，把第一个类别放在底部，invert y off 恢复从上到下的顺序。标签中的 \\n 会换行。y2 \"标签\" 0 --> 40 绘制第二条刻度（在右侧，rotate 90 时在上方），axis=y2 将系列、折线或水平线绑定到它。axis y off、axis y2 off 和 axis x off 隐藏所选轴及其网格。grid y2 10 绘制第二轴网格。stacked area 画出面积，labels sum 在堆叠上方写出各部分之和，gap 12 或 gap 8% 设置间距。labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。",
   "site.primer.graphml.kw.graphml":
     "文档根。必须有 GraphML 命名空间。",
   "site.primer.graphml.kw.graph":

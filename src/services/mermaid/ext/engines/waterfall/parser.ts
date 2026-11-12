@@ -35,6 +35,7 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
   let axisHidden = false;
   let categoryAxisHidden = false;
   let barGap: WaterfallBarGap | undefined;
+  let labelFontColor: string | undefined;
   let valueLabels = { above: true, inside: false };
   let connectors = true;
   let fontSize: number | undefined;
@@ -206,9 +207,12 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
     }
 
     if (/^labels\b/i.test(raw)) {
-      const { mode, error } = parseLabelsMode(raw.slice(6), lineNo);
+      const { mode, fontColor, error } = parseLabelsMode(raw.slice(6), lineNo);
       if (error) errors.push(error);
-      else if (mode) valueLabels = mode;
+      else {
+        if (mode) valueLabels = mode;
+        if (fontColor) labelFontColor = fontColor;
+      }
       continue;
     }
 
@@ -400,6 +404,7 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
       textColor,
       categoryAxisHidden,
       barGap,
+      ...(labelFontColor ? { labelFontColor } : {}),
     },
   };
 }

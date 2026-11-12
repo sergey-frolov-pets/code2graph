@@ -7,6 +7,9 @@ export const MERMAID_EXT_EXTRA: Record<
 > = {
   es: {
     waterfall: `waterfall
+%% Ejes: axis y off oculta el eje de valores y su rejilla, axis x off oculta las columnas. Un grid posterior devuelve las líneas sin rótulos. grid off oculta solo la rejilla.
+%% Hueco: gap 12 son píxeles entre barras y columnas, gap 20% es la parte vacía. No hay segundo eje ni suma de pila.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la barra el fondo es el relleno, fuera es el lienzo. Sin fontcolor, dentro queda blanco y fuera gris.
 %% Cascada básica: inicio, crecimiento, caída y total.
 %% Filas de datos: <signo><número> : <etiqueta>
 %%   =120 : Q1   valor absoluto (inicio o total)
@@ -16,7 +19,6 @@ export const MERMAID_EXT_EXTRA: Record<
 %% Más funciones: ejemplos «corte de eje», «varias series», «etiquetas».
 %% NOTA: las líneas discontinuas entre barras son conectores (activados por defecto).
 %%       Para apagarlos: connectors off
-%% axis y off oculta el eje de valores y su rejilla, axis x off las etiquetas, grid off solo la rejilla, gap el hueco.
 title Ingresos 2026
 y "mill. USD" 0 --> 500
 grid 100
@@ -27,6 +29,9 @@ grid 100
 +240 : Q4
 = : Suma del año`,
     waterfallBreak: `waterfall
+%% Ejes: axis y off oculta el eje de valores y su rejilla, axis x off oculta las columnas. Un grid posterior devuelve las líneas sin rótulos. grid off oculta solo la rejilla.
+%% Hueco: gap 12 son píxeles entre barras y columnas, gap 20% es la parte vacía. No hay segundo eje ni suma de pila.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la barra el fondo es el relleno, fuera es el lienzo. Sin fontcolor, dentro queda blanco y fuera gris.
 %% Corte de eje: el tramo 300..800 se RECORTA para que los pasos pequeños se vean más grandes.
 %% Una barra que cruza el corte se dibuja en trozos, con un zigzag en la línea.
 title Ingresos con corte de eje
@@ -38,6 +43,9 @@ break 300 --> 800 "corte de eje"
 +700 : Q3
 = : Suma`,
     waterfallMulti: `waterfall
+%% Ejes: axis y off oculta el eje de valores y su rejilla, axis x off oculta las columnas. Un grid posterior devuelve las líneas sin rótulos. grid off oculta solo la rejilla.
+%% Hueco: gap 12 son píxeles entre barras y columnas, gap 20% es la parte vacía. No hay segundo eje ni suma de pila.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la barra el fondo es el relleno, fuera es el lienzo. Sin fontcolor, dentro queda blanco y fuera gris.
 %% Varias series: cada grupo tiene su color de base,
 %% los aumentos son un 20% más claros y las caídas un 25% más oscuras.
 %% gap 16% es una parte del hueco. gap 8 lo da en píxeles.
@@ -56,6 +64,9 @@ series Real color=#8250df
 -35 : Q3
 = : Suma`,
     waterfallLabels: `waterfall
+%% Ejes: axis y off oculta el eje de valores y su rejilla, axis x off oculta las columnas. Un grid posterior devuelve las líneas sin rótulos. grid off oculta solo la rejilla.
+%% Hueco: gap 12 son píxeles entre barras y columnas, gap 20% es la parte vacía. No hay segundo eje ni suma de pila.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la barra el fondo es el relleno, fuera es el lienzo. Sin fontcolor, dentro queda blanco y fuera gris.
 %% ETIQUETAS Y LÍNEAS — lo que más suele faltar.
 %%
 %% 1) inside y above eligen dónde va la etiqueta del valor.
@@ -68,7 +79,7 @@ series Real color=#8250df
 %%    Ambas posiciones con el mismo número:
 %%      = : Suma inside above
 %%    Para todas las barras a la vez:  labels inside | above | both | none
-%%    La etiqueta interior es blanca; la de encima de la barra es gris.
+%%    labels fontcolor auto elige el contraste con el fondo bajo el texto: dentro, el relleno; fuera, el lienzo. labels fontcolor #1f2328 fija un color. Sin fontcolor, dentro es blanco y fuera gris.
 %%    El texto que no cabe dentro de la barra se mueve encima, una sola vez.
 %%
 %% 2) Las LÍNEAS entre barras son una DIRECTIVA en su propia línea (no una bandera):
@@ -87,11 +98,15 @@ y "mill. USD" 0 --> 200
 grid 50
 connectors on
 colors total=#1f6feb increase=#2da44e decrease=#cf222e
+labels fontcolor auto
 =90 : Q1 inside
 +60 : Q2 inside="60" above="+60 mill."
 -25 : Q3 above
 = : Suma inside above`,
     waterfallNoLines: `waterfall
+%% Ejes: axis y off oculta el eje de valores y su rejilla, axis x off oculta las columnas. Un grid posterior devuelve las líneas sin rótulos. grid off oculta solo la rejilla.
+%% Hueco: gap 12 son píxeles entre barras y columnas, gap 20% es la parte vacía. No hay segundo eje ni suma de pila.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la barra el fondo es el relleno, fuera es el lienzo. Sin fontcolor, dentro queda blanco y fuera gris.
 %% LÍNEAS APAGADAS — la misma cascada que «etiquetas y líneas»,
 %% pero sin los conectores discontinuos: una imagen limpia para presentar.
 %%
@@ -110,6 +125,9 @@ colors total=#1f6feb increase=#2da44e decrease=#cf222e
 -25 : Q3 above
 = : Suma inside above`,
     waterfallThresholds: `waterfall
+%% Ejes: axis y off oculta el eje de valores y su rejilla, axis x off oculta las columnas. Un grid posterior devuelve las líneas sin rótulos. grid off oculta solo la rejilla.
+%% Hueco: gap 12 son píxeles entre barras y columnas, gap 20% es la parte vacía. No hay segundo eje ni suma de pila.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la barra el fondo es el relleno, fuera es el lienzo. Sin fontcolor, dentro queda blanco y fuera gris.
 %% LÍNEAS HORIZONTALES CON ETIQUETA — nivel del plan, meta, umbral.
 %%
 %% La directiva va en su PROPIA línea (no es una bandera en una fila de datos):
@@ -135,6 +153,9 @@ line 250 "umbral" style=dot width=1
 +240 : Q4
 = : Suma del año`,
     waterfallMono: `waterfall
+%% Ejes: axis y off oculta el eje de valores y su rejilla, axis x off oculta las columnas. Un grid posterior devuelve las líneas sin rótulos. grid off oculta solo la rejilla.
+%% Hueco: gap 12 son píxeles entre barras y columnas, gap 20% es la parte vacía. No hay segundo eje ni suma de pila.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la barra el fondo es el relleno, fuera es el lienzo. Sin fontcolor, dentro queda blanco y fuera gris.
 %% Modo en blanco y negro: no hacen falta colores, las barras se distinguen por la claridad.
 %% Útil para imprimir y para documentos sin color.
 %% Los colores propios siguen funcionando aquí — sustituyen la escala de grises.
@@ -269,6 +290,10 @@ Terminal este : x=82, y=56, group=Región
 Depósito central : x=50, y=50, group=Núcleo
 Suroeste : x=24, y=22, group=Región, color=#f97316`,
     clustered: `series
+%% Ejes: axis y off y axis y2 off ocultan esa escala y su rejilla, axis x off oculta las categorías. Un grid posterior devuelve las líneas sin rótulos.
+%% Hueco: gap 12 son píxeles, gap 20% es una parte. En un grupo el porcentaje es del grosor de la barra; en una pila sustituye el hueco de la columna.
+%% Pila: stacked son columnas, stacked area son áreas entre los centros. labels sum escribe la suma firmada fuera; el cero no se muestra.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la figura el fondo es su relleno, fuera y en la suma es el lienzo.
 %% Diagrama de series: agrupa varias series una al lado de la otra en cada categoría.
 %% Para girar el gráfico 90 grados (barras horizontales), añada: rotate 90
 %% Directivas:
@@ -276,18 +301,21 @@ Suroeste : x=24, y=22, group=Región, color=#f97316`,
 %%   y "etiqueta" min --> max     escala del eje de valores
 %%   labels above|inside|none  etiquetas de los valores
 %%   colors s1=#hex s2=#hex    paleta de series (o color=#hex en la fila series, o mono)
-%% axis y off y axis x off ocultan ese eje y su rejilla. gap 4 es el hueco en píxeles.
 title Ingresos por canal de ventas
 categories Q1, Q2, Q3, Q4
 y "mill. USD" 0 --> 200
 grid 50
 gap 4
-labels above
+labels above fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series En línea : 120, 145, 165, 190
 series Minorista : 85, 95, 110, 130
 series Socios : 45, 60, 75, 95 color=#f97316`,
     clusteredRotated: `series
+%% Ejes: axis y off y axis y2 off ocultan esa escala y su rejilla, axis x off oculta las categorías. Un grid posterior devuelve las líneas sin rótulos.
+%% Hueco: gap 12 son píxeles, gap 20% es una parte. En un grupo el porcentaje es del grosor de la barra; en una pila sustituye el hueco de la columna.
+%% Pila: stacked son columnas, stacked area son áreas entre los centros. labels sum escribe la suma firmada fuera; el cero no se muestra.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la figura el fondo es su relleno, fuera y en la suma es el lienzo.
 %% Diagrama de series GIRADO 90 GRADOS (rotate 90).
 %% La directiva rotate 90 (u orientation horizontal) intercambia los ejes:
 %% las categorías bajan de arriba abajo a la izquierda, y las barras crecen de izquierda a derecha.
@@ -298,12 +326,16 @@ rotate 90
 categories Q1, Q2, Q3, Q4
 y "mill. USD" 0 --> 200
 grid 50
-labels above
+labels above fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series En línea : 120, 145, 165, 190
 series Minorista : 85, 95, 110, 130
 series Socios : 45, 60, 75, 95 color=#f97316`,
     clusteredStacked: `series
+%% Ejes: axis y off y axis y2 off ocultan esa escala y su rejilla, axis x off oculta las categorías. Un grid posterior devuelve las líneas sin rótulos.
+%% Hueco: gap 12 son píxeles, gap 20% es una parte. En un grupo el porcentaje es del grosor de la barra; en una pila sustituye el hueco de la columna.
+%% Pila: stacked son columnas, stacked area son áreas entre los centros. labels sum escribe la suma firmada fuera; el cero no se muestra.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la figura el fondo es su relleno, fuera y en la suma es el lienzo.
 %% Barras apiladas: las series comparten una columna en lugar de ir una al lado de la otra.
 %% stacked / bars stacked / layout stacked
 %% Las áreas están en el ejemplo seriesArea. Aquí siguen siendo columnas.
@@ -315,19 +347,23 @@ gap 8%
 categories Q1, Q2, Q3, Q4
 y "mill. USD" 0 --> 400
 grid 50
-labels inside sum
+labels inside sum fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Producto : 80, 90, 70, 110
 series Servicios : 50, 60, 55, 70
 series Socios : 30, 25, 40, 35`,
     seriesArea: `series
+%% Ejes: axis y off y axis y2 off ocultan esa escala y su rejilla, axis x off oculta las categorías. Un grid posterior devuelve las líneas sin rótulos.
+%% Hueco: gap 12 son píxeles, gap 20% es una parte. En un grupo el porcentaje es del grosor de la barra; en una pila sustituye el hueco de la columna.
+%% Pila: stacked son columnas, stacked area son áreas entre los centros. labels sum escribe la suma firmada fuera; el cero no se muestra.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la figura el fondo es su relleno, fuera y en la suma es el lienzo.
 %% Áreas: stacked area une la pila por los centros de las categorías.
 %% Un hueco (-, vacío, null) corta la banda y no suma altura.
 %% labels sum escribe la suma fuera de la pila. El cero no se muestra.
 %% Sigue valiendo con rotate 90, line, break y cagr.
 title Composición en áreas
 stacked area
-labels sum
+labels sum fontcolor auto
 gap 12%
 categories Q1, Q2, Q3, Q4
 y "mill. USD" 0 --> 400
@@ -335,6 +371,10 @@ series Producto : 80, 90, 70, 110
 series Servicios : 50, 60, 55, 70
 series Socios : 30, 25, 40, 35`,
     clusteredMono: `series
+%% Ejes: axis y off y axis y2 off ocultan esa escala y su rejilla, axis x off oculta las categorías. Un grid posterior devuelve las líneas sin rótulos.
+%% Hueco: gap 12 son píxeles, gap 20% es una parte. En un grupo el porcentaje es del grosor de la barra; en una pila sustituye el hueco de la columna.
+%% Pila: stacked son columnas, stacked area son áreas entre los centros. labels sum escribe la suma firmada fuera; el cero no se muestra.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la figura el fondo es su relleno, fuera y en la suma es el lienzo.
 %% Blanco y negro: las series se distinguen por la claridad, no por el tono.
 %% Unos colors explícitos sustituyen la escala de grises, por eso este ejemplo no los pone.
 title Ingresos, blanco y negro
@@ -346,6 +386,10 @@ series En línea : 120, 145, 165, 190
 series Minorista : 85, 95, 110, 130
 series Socios : 45, 60, 75, 95`,
     clusteredMonoInvert: `series
+%% Ejes: axis y off y axis y2 off ocultan esa escala y su rejilla, axis x off oculta las categorías. Un grid posterior devuelve las líneas sin rótulos.
+%% Hueco: gap 12 son píxeles, gap 20% es una parte. En un grupo el porcentaje es del grosor de la barra; en una pila sustituye el hueco de la columna.
+%% Pila: stacked son columnas, stacked area son áreas entre los centros. labels sum escribe la suma firmada fuera; el cero no se muestra.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la figura el fondo es su relleno, fuera y en la suma es el lienzo.
 %% Blanco y negro invertido: barras gris claro sobre un lienzo oscuro.
 %% Para temas oscuros y diapositivas oscuras. mono off devuelve el color.
 title Ingresos, blanco y negro invertido
@@ -357,6 +401,10 @@ series En línea : 120, 145, 165, 190
 series Minorista : 85, 95, 110, 130
 series Socios : 45, 60, 75, 95`,
     seriesLines: `series
+%% Ejes: axis y off y axis y2 off ocultan esa escala y su rejilla, axis x off oculta las categorías. Un grid posterior devuelve las líneas sin rótulos.
+%% Hueco: gap 12 son píxeles, gap 20% es una parte. En un grupo el porcentaje es del grosor de la barra; en una pila sustituye el hueco de la columna.
+%% Pila: stacked son columnas, stacked area son áreas entre los centros. labels sum escribe la suma firmada fuera; el cero no se muestra.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la figura el fondo es su relleno, fuera y en la suma es el lienzo.
 %% Una línea sobre las barras: line Etiqueta : n1, n2, … [color=#hex] [style=…] [width=N]
 %% style: solid | dash | dot | dashdot. Por defecto solid y grosor 1.75.
 %% Omita una categoría con un hueco vacío, "-", o null. La línea une los puntos a ambos lados.
@@ -368,7 +416,7 @@ y2 "conversión, %" 0 --> 40
 %% grid y2 5 dibuja la rejilla del segundo eje. grid y2 off y axis y2 off la ocultan.
 grid y2 5
 grid 20
-labels above
+labels above fontcolor auto
 series Real : 120, 145, 165, 190
 line Continua : 110, 130, 150, 180 color=#0969da style=solid width=2
 line Discontinua : 100, -, 160, 175 color=#8250df style=dash
@@ -376,6 +424,10 @@ line Puntos : 90, , 155, 170 color=#2da44e style=dot width=1
 line Trazo-punto : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
 line Conversión : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
     seriesCagr: `series
+%% Ejes: axis y off y axis y2 off ocultan esa escala y su rejilla, axis x off oculta las categorías. Un grid posterior devuelve las líneas sin rótulos.
+%% Hueco: gap 12 son píxeles, gap 20% es una parte. En un grupo el porcentaje es del grosor de la barra; en una pila sustituye el hueco de la columna.
+%% Pila: stacked son columnas, stacked area son áreas entre los centros. labels sum escribe la suma firmada fuera; el cero no se muestra.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la figura el fondo es su relleno, fuera y en la suma es el lienzo.
 %% Un cagr sin números dibuja una flecha desde la primera barra hasta la última.
 title Crecimiento de los ingresos
 categories 2021, 2022, 2023, 2024
@@ -384,6 +436,10 @@ grid 20
 series Ingresos : 80, 110, 150, 190
 cagr`,
     seriesCagrRanges: `series
+%% Ejes: axis y off y axis y2 off ocultan esa escala y su rejilla, axis x off oculta las categorías. Un grid posterior devuelve las líneas sin rótulos.
+%% Hueco: gap 12 son píxeles, gap 20% es una parte. En un grupo el porcentaje es del grosor de la barra; en una pila sustituye el hueco de la columna.
+%% Pila: stacked son columnas, stacked area son áreas entre los centros. labels sum escribe la suma firmada fuera; el cero no se muestra.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la figura el fondo es su relleno, fuera y en la suma es el lienzo.
 %% Distintas opciones de cagr en los rangos de barras 1–3, 4–6 y 7–9.
 %% Los números de barra empiezan en 1. Varios cagr seguidos pertenecen a la serie justo encima.
 %% format="0%"        entero, el valor por defecto
@@ -405,6 +461,10 @@ cagr 5, 6 label="meta"
 cagr 8, 9 format="+0.0%"
 cagr 6, 7 format="0%" prefix="+"`,
     seriesBreak: `series
+%% Ejes: axis y off y axis y2 off ocultan esa escala y su rejilla, axis x off oculta las categorías. Un grid posterior devuelve las líneas sin rótulos.
+%% Hueco: gap 12 son píxeles, gap 20% es una parte. En un grupo el porcentaje es del grosor de la barra; en una pila sustituye el hueco de la columna.
+%% Pila: stacked son columnas, stacked area son áreas entre los centros. labels sum escribe la suma firmada fuera; el cero no se muestra.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la figura el fondo es su relleno, fuera y en la suma es el lienzo.
 %% Corte de eje: el tramo 200..700 se RECORTA para que las barras pequeñas se vean más grandes.
 %% Una barra que cruza el corte se dibuja en trozos, con un zigzag en la línea.
 %% La misma sintaxis que waterfall: break <después> --> <antes> ["etiqueta"]
@@ -416,6 +476,10 @@ break 200 --> 700 "corte de eje"
 series En línea : 120, 180, 860, 240
 series Minorista : 80, 140, 790, 190`,
     seriesThresholds: `series
+%% Ejes: axis y off y axis y2 off ocultan esa escala y su rejilla, axis x off oculta las categorías. Un grid posterior devuelve las líneas sin rótulos.
+%% Hueco: gap 12 son píxeles, gap 20% es una parte. En un grupo el porcentaje es del grosor de la barra; en una pila sustituye el hueco de la columna.
+%% Pila: stacked son columnas, stacked area son áreas entre los centros. labels sum escribe la suma firmada fuera; el cero no se muestra.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la figura el fondo es su relleno, fuera y en la suma es el lienzo.
 %% LÍNEAS HORIZONTALES — plan, meta, umbral.
 %% Esto NO es una línea a través de las categorías: una línea de nivel no lleva dos puntos.
 %%
@@ -433,6 +497,10 @@ line 120 "umbral" style=dot width=1
 series Real : 120, 145, 165, 190
 series Referencia : 110, 130, 150, 180`,
     seriesUnnamed: `series
+%% Ejes: axis y off y axis y2 off ocultan esa escala y su rejilla, axis x off oculta las categorías. Un grid posterior devuelve las líneas sin rótulos.
+%% Hueco: gap 12 son píxeles, gap 20% es una parte. En un grupo el porcentaje es del grosor de la barra; en una pila sustituye el hueco de la columna.
+%% Pila: stacked son columnas, stacked area son áreas entre los centros. labels sum escribe la suma firmada fuera; el cero no se muestra.
+%% Color: labels fontcolor auto elige el contraste con el fondo bajo el texto. labels fontcolor #1f2328 fija un color. Dentro de la figura el fondo es su relleno, fuera y en la suma es el lienzo.
 %% Se puede omitir el nombre de la serie y la etiqueta de la línea.
 %%   series : n1, n2, …     barras sin fila en la leyenda
 %%   line : n1, n2, …       una línea sin leyenda a la derecha
@@ -448,6 +516,9 @@ line : 70, 100, 120, 150 style=dot`,
   },
   zh: {
     waterfall: `waterfall
+%% 坐标轴：axis y off 隐藏数值轴及其网格，axis x off 隐藏列标签。之后的 grid 只恢复线条、不恢复刻度文字。grid off 只隐藏网格。
+%% 间距：gap 12 是柱与柱之间的像素，gap 20% 是留白比例。没有第二轴，也没有堆叠合计。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。柱内看柱色，柱外看画布。没有 fontcolor 时柱内为白、柱外为灰。
 %% 基本瀑布图：起点、增长、下降、合计。
 %% 数据行：<符号><数字> : <标签>
 %%   =120 : Q1   绝对值（起点或合计）
@@ -457,7 +528,6 @@ line : 70, 100, 120, 150 style=dot`,
 %% 其余功能见示例「轴截断」「多系列」「标签」。
 %% 注意：柱之间的虚线是连接线（默认开启）。
 %%       关闭方式：connectors off
-%% axis y off 隐藏数值轴和网格，axis x off 隐藏列标签，grid off 只隐藏网格，gap 设置间距。
 title 2026 年收入
 y "百万美元" 0 --> 500
 grid 100
@@ -468,6 +538,9 @@ grid 100
 +240 : Q4
 = : 全年合计`,
     waterfallBreak: `waterfall
+%% 坐标轴：axis y off 隐藏数值轴及其网格，axis x off 隐藏列标签。之后的 grid 只恢复线条、不恢复刻度文字。grid off 只隐藏网格。
+%% 间距：gap 12 是柱与柱之间的像素，gap 20% 是留白比例。没有第二轴，也没有堆叠合计。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。柱内看柱色，柱外看画布。没有 fontcolor 时柱内为白、柱外为灰。
 %% 轴截断：区间 300..800 被切掉，使较小的台阶显得更大。
 %% 穿过截断的柱会分段绘制，并在线上加锯齿。
 title 带轴截断的收入
@@ -479,6 +552,9 @@ break 300 --> 800 "轴截断"
 +700 : Q3
 = : 合计`,
     waterfallMulti: `waterfall
+%% 坐标轴：axis y off 隐藏数值轴及其网格，axis x off 隐藏列标签。之后的 grid 只恢复线条、不恢复刻度文字。grid off 只隐藏网格。
+%% 间距：gap 12 是柱与柱之间的像素，gap 20% 是留白比例。没有第二轴，也没有堆叠合计。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。柱内看柱色，柱外看画布。没有 fontcolor 时柱内为白、柱外为灰。
 %% 多个系列：每组有自己的基色，
 %% 增长浅 20%，下降深 25%。
 %% gap 16% 是空白比例。gap 8 用像素给出同样的间距。
@@ -497,6 +573,9 @@ series 实际 color=#8250df
 -35 : Q3
 = : 合计`,
     waterfallLabels: `waterfall
+%% 坐标轴：axis y off 隐藏数值轴及其网格，axis x off 隐藏列标签。之后的 grid 只恢复线条、不恢复刻度文字。grid off 只隐藏网格。
+%% 间距：gap 12 是柱与柱之间的像素，gap 20% 是留白比例。没有第二轴，也没有堆叠合计。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。柱内看柱色，柱外看画布。没有 fontcolor 时柱内为白、柱外为灰。
 %% 标签和连线 — 最常被漏掉的两件事。
 %%
 %% 1) inside 和 above 决定数值标签写在哪里。
@@ -509,7 +588,7 @@ series 实际 color=#8250df
 %%    两个位置使用同一个数字：
 %%      = : 合计 inside above
 %%    一次性作用于所有柱：  labels inside | above | both | none
-%%    内部标签为白色，柱上方的标签为灰色。
+%%    labels fontcolor auto 按文字底下的背景取对比色：柱内看柱色，柱外看画布。labels fontcolor #1f2328 指定颜色。没有 fontcolor 时柱内为白、柱外为灰。
 %%    放不进柱内的文字会移到柱上方，只保留一份。
 %%
 %% 2) 柱与柱之间的连线是单独一行的指令（不是标志）：
@@ -528,11 +607,15 @@ y "百万美元" 0 --> 200
 grid 50
 connectors on
 colors total=#1f6feb increase=#2da44e decrease=#cf222e
+labels fontcolor auto
 =90 : Q1 inside
 +60 : Q2 inside="60" above="+60 百万"
 -25 : Q3 above
 = : 合计 inside above`,
     waterfallNoLines: `waterfall
+%% 坐标轴：axis y off 隐藏数值轴及其网格，axis x off 隐藏列标签。之后的 grid 只恢复线条、不恢复刻度文字。grid off 只隐藏网格。
+%% 间距：gap 12 是柱与柱之间的像素，gap 20% 是留白比例。没有第二轴，也没有堆叠合计。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。柱内看柱色，柱外看画布。没有 fontcolor 时柱内为白、柱外为灰。
 %% 连线关闭 — 与「标签与连线」同一张瀑布图，
 %% 但没有虚线连接：适合演示的干净图。
 %%
@@ -551,6 +634,9 @@ colors total=#1f6feb increase=#2da44e decrease=#cf222e
 -25 : Q3 above
 = : 合计 inside above`,
     waterfallThresholds: `waterfall
+%% 坐标轴：axis y off 隐藏数值轴及其网格，axis x off 隐藏列标签。之后的 grid 只恢复线条、不恢复刻度文字。grid off 只隐藏网格。
+%% 间距：gap 12 是柱与柱之间的像素，gap 20% 是留白比例。没有第二轴，也没有堆叠合计。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。柱内看柱色，柱外看画布。没有 fontcolor 时柱内为白、柱外为灰。
 %% 带标签的水平线 — 计划水平、目标、阈值。
 %%
 %% 该指令独占一行（不是数据行里的标志）：
@@ -576,6 +662,9 @@ line 250 "阈值" style=dot width=1
 +240 : Q4
 = : 全年合计`,
     waterfallMono: `waterfall
+%% 坐标轴：axis y off 隐藏数值轴及其网格，axis x off 隐藏列标签。之后的 grid 只恢复线条、不恢复刻度文字。grid off 只隐藏网格。
+%% 间距：gap 12 是柱与柱之间的像素，gap 20% 是留白比例。没有第二轴，也没有堆叠合计。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。柱内看柱色，柱外看画布。没有 fontcolor 时柱内为白、柱外为灰。
 %% 黑白模式：不需要颜色，柱靠明暗区分。
 %% 适合打印和无色彩的文档。
 %% 这里仍可指定自定义颜色 — 它们会覆盖灰度。
@@ -710,6 +799,10 @@ data
 中央仓库 : x=50, y=50, group=核心
 西南 : x=24, y=22, group=区域, color=#f97316`,
     clustered: `series
+%% 坐标轴：axis y off 与 axis y2 off 隐藏该轴及其网格，axis x off 隐藏类别。之后的 grid 只恢复线条、不恢复刻度文字。
+%% 间距：gap 12 是像素，gap 20% 是比例。分组时百分比相对柱厚，堆叠时它代替列内留白。
+%% 堆叠：stacked 是柱，stacked area 是类别中心之间的面积。labels sum 在外侧写出各部分之和，零不标注。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。图形内看填充，图形外和合计看画布。
 %% 系列图：每个类别里把多个系列并排分组。
 %% 要把图旋转 90 度（水平条），请添加：rotate 90
 %% 指令：
@@ -717,18 +810,21 @@ data
 %%   y "标签" min --> max     数值轴刻度
 %%   labels above|inside|none  数值标签
 %%   colors s1=#hex s2=#hex    系列调色板（或 series 行上的 color=#hex，或 mono）
-%% axis y off 和 axis x off 隐藏所选轴及其网格。gap 4 是像素间距。
 title 按销售渠道的收入
 categories Q1, Q2, Q3, Q4
 y "百万美元" 0 --> 200
 grid 50
 gap 4
-labels above
+labels above fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series 线上 : 120, 145, 165, 190
 series 零售 : 85, 95, 110, 130
 series 伙伴 : 45, 60, 75, 95 color=#f97316`,
     clusteredRotated: `series
+%% 坐标轴：axis y off 与 axis y2 off 隐藏该轴及其网格，axis x off 隐藏类别。之后的 grid 只恢复线条、不恢复刻度文字。
+%% 间距：gap 12 是像素，gap 20% 是比例。分组时百分比相对柱厚，堆叠时它代替列内留白。
+%% 堆叠：stacked 是柱，stacked area 是类别中心之间的面积。labels sum 在外侧写出各部分之和，零不标注。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。图形内看填充，图形外和合计看画布。
 %% 旋转 90 度的系列图 (rotate 90)。
 %% 指令 rotate 90（或 orientation horizontal）对调坐标轴：
 %% 类别在左侧从上到下排列，分组条从左向右生长。
@@ -739,12 +835,16 @@ rotate 90
 categories Q1, Q2, Q3, Q4
 y "百万美元" 0 --> 200
 grid 50
-labels above
+labels above fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series 线上 : 120, 145, 165, 190
 series 零售 : 85, 95, 110, 130
 series 伙伴 : 45, 60, 75, 95 color=#f97316`,
     clusteredStacked: `series
+%% 坐标轴：axis y off 与 axis y2 off 隐藏该轴及其网格，axis x off 隐藏类别。之后的 grid 只恢复线条、不恢复刻度文字。
+%% 间距：gap 12 是像素，gap 20% 是比例。分组时百分比相对柱厚，堆叠时它代替列内留白。
+%% 堆叠：stacked 是柱，stacked area 是类别中心之间的面积。labels sum 在外侧写出各部分之和，零不标注。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。图形内看填充，图形外和合计看画布。
 %% 堆积柱：系列共用一根柱，而不是并排。
 %% stacked / bars stacked / layout stacked
 %% 面积见单独示例 seriesArea。这里仍是柱。
@@ -756,19 +856,23 @@ gap 8%
 categories Q1, Q2, Q3, Q4
 y "百万美元" 0 --> 400
 grid 50
-labels inside sum
+labels inside sum fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series 产品 : 80, 90, 70, 110
 series 服务 : 50, 60, 55, 70
 series 伙伴 : 30, 25, 40, 35`,
     seriesArea: `series
+%% 坐标轴：axis y off 与 axis y2 off 隐藏该轴及其网格，axis x off 隐藏类别。之后的 grid 只恢复线条、不恢复刻度文字。
+%% 间距：gap 12 是像素，gap 20% 是比例。分组时百分比相对柱厚，堆叠时它代替列内留白。
+%% 堆叠：stacked 是柱，stacked area 是类别中心之间的面积。labels sum 在外侧写出各部分之和，零不标注。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。图形内看填充，图形外和合计看画布。
 %% 面积：stacked area 按类别中心连接堆叠。
 %% 空位（-、空、null）断开该系列并不会增加高度。
 %% labels sum 在外侧写出各部分之和。零不标注。
 %% 可与 rotate 90、line、break 和 cagr 一起使用。
 title 面积构成
 stacked area
-labels sum
+labels sum fontcolor auto
 gap 12%
 categories Q1, Q2, Q3, Q4
 y "百万美元" 0 --> 400
@@ -776,6 +880,10 @@ series 产品 : 80, 90, 70, 110
 series 服务 : 50, 60, 55, 70
 series 伙伴 : 30, 25, 40, 35`,
     clusteredMono: `series
+%% 坐标轴：axis y off 与 axis y2 off 隐藏该轴及其网格，axis x off 隐藏类别。之后的 grid 只恢复线条、不恢复刻度文字。
+%% 间距：gap 12 是像素，gap 20% 是比例。分组时百分比相对柱厚，堆叠时它代替列内留白。
+%% 堆叠：stacked 是柱，stacked area 是类别中心之间的面积。labels sum 在外侧写出各部分之和，零不标注。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。图形内看填充，图形外和合计看画布。
 %% 黑白：系列靠明暗区分，不靠色相。
 %% 显式 colors 会覆盖灰度，因此本示例不写它们。
 title 收入，黑白
@@ -787,6 +895,10 @@ series 线上 : 120, 145, 165, 190
 series 零售 : 85, 95, 110, 130
 series 伙伴 : 45, 60, 75, 95`,
     clusteredMonoInvert: `series
+%% 坐标轴：axis y off 与 axis y2 off 隐藏该轴及其网格，axis x off 隐藏类别。之后的 grid 只恢复线条、不恢复刻度文字。
+%% 间距：gap 12 是像素，gap 20% 是比例。分组时百分比相对柱厚，堆叠时它代替列内留白。
+%% 堆叠：stacked 是柱，stacked area 是类别中心之间的面积。labels sum 在外侧写出各部分之和，零不标注。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。图形内看填充，图形外和合计看画布。
 %% 反色黑白：深色画布上的浅灰柱。
 %% 用于深色主题和深色幻灯片。mono off 会恢复颜色。
 title 收入，反色黑白
@@ -798,6 +910,10 @@ series 线上 : 120, 145, 165, 190
 series 零售 : 85, 95, 110, 130
 series 伙伴 : 45, 60, 75, 95`,
     seriesLines: `series
+%% 坐标轴：axis y off 与 axis y2 off 隐藏该轴及其网格，axis x off 隐藏类别。之后的 grid 只恢复线条、不恢复刻度文字。
+%% 间距：gap 12 是像素，gap 20% 是比例。分组时百分比相对柱厚，堆叠时它代替列内留白。
+%% 堆叠：stacked 是柱，stacked area 是类别中心之间的面积。labels sum 在外侧写出各部分之和，零不标注。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。图形内看填充，图形外和合计看画布。
 %% 柱上的一条线：line 标签 : 值1, 值2, … [color=#hex] [style=…] [width=N]
 %% style: solid | dash | dot | dashdot。默认 solid，粗细 1.75。
 %% 用空位、"-" 或 null 跳过一个类别。线会连接缺口两侧的点。
@@ -809,7 +925,7 @@ y2 "转化率, %" 0 --> 40
 %% grid y2 5 绘制第二轴网格。grid y2 off 和 axis y2 off 会隐藏它。
 grid y2 5
 grid 20
-labels above
+labels above fontcolor auto
 series 实际 : 120, 145, 165, 190
 line 实线 : 110, 130, 150, 180 color=#0969da style=solid width=2
 line 虚线 : 100, -, 160, 175 color=#8250df style=dash
@@ -817,6 +933,10 @@ line 点线 : 90, , 155, 170 color=#2da44e style=dot width=1
 line 点划线 : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
 line 转化率 : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
     seriesCagr: `series
+%% 坐标轴：axis y off 与 axis y2 off 隐藏该轴及其网格，axis x off 隐藏类别。之后的 grid 只恢复线条、不恢复刻度文字。
+%% 间距：gap 12 是像素，gap 20% 是比例。分组时百分比相对柱厚，堆叠时它代替列内留白。
+%% 堆叠：stacked 是柱，stacked area 是类别中心之间的面积。labels sum 在外侧写出各部分之和，零不标注。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。图形内看填充，图形外和合计看画布。
 %% 不带数字的 cagr 从第一根柱画一根箭头到最后一根。
 title 收入增长
 categories 2021, 2022, 2023, 2024
@@ -825,6 +945,10 @@ grid 20
 series 收入 : 80, 110, 150, 190
 cagr`,
     seriesCagrRanges: `series
+%% 坐标轴：axis y off 与 axis y2 off 隐藏该轴及其网格，axis x off 隐藏类别。之后的 grid 只恢复线条、不恢复刻度文字。
+%% 间距：gap 12 是像素，gap 20% 是比例。分组时百分比相对柱厚，堆叠时它代替列内留白。
+%% 堆叠：stacked 是柱，stacked area 是类别中心之间的面积。labels sum 在外侧写出各部分之和，零不标注。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。图形内看填充，图形外和合计看画布。
 %% 柱区间 1–3、4–6 和 7–9 上不同的 cagr 选项。
 %% 柱编号从 1 开始。连续多条 cagr 属于紧挨在它们上面的系列。
 %% format="0%"        整数，默认
@@ -846,6 +970,10 @@ cagr 5, 6 label="目标"
 cagr 8, 9 format="+0.0%"
 cagr 6, 7 format="0%" prefix="+"`,
     seriesBreak: `series
+%% 坐标轴：axis y off 与 axis y2 off 隐藏该轴及其网格，axis x off 隐藏类别。之后的 grid 只恢复线条、不恢复刻度文字。
+%% 间距：gap 12 是像素，gap 20% 是比例。分组时百分比相对柱厚，堆叠时它代替列内留白。
+%% 堆叠：stacked 是柱，stacked area 是类别中心之间的面积。labels sum 在外侧写出各部分之和，零不标注。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。图形内看填充，图形外和合计看画布。
 %% 轴截断：区间 200..700 被切掉，使较小的柱显得更大。
 %% 穿过截断的柱会分段绘制，并在线上加锯齿。
 %% 语法与 waterfall 相同：break <之后> --> <之前> ["标签"]
@@ -857,6 +985,10 @@ break 200 --> 700 "轴截断"
 series 线上 : 120, 180, 860, 240
 series 零售 : 80, 140, 790, 190`,
     seriesThresholds: `series
+%% 坐标轴：axis y off 与 axis y2 off 隐藏该轴及其网格，axis x off 隐藏类别。之后的 grid 只恢复线条、不恢复刻度文字。
+%% 间距：gap 12 是像素，gap 20% 是比例。分组时百分比相对柱厚，堆叠时它代替列内留白。
+%% 堆叠：stacked 是柱，stacked area 是类别中心之间的面积。labels sum 在外侧写出各部分之和，零不标注。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。图形内看填充，图形外和合计看画布。
 %% 水平线 — 计划、目标、阈值。
 %% 这不是跨类别的折线：水平线没有冒号。
 %%
@@ -874,6 +1006,10 @@ line 120 "阈值" style=dot width=1
 series 实际 : 120, 145, 165, 190
 series 参照 : 110, 130, 150, 180`,
     seriesUnnamed: `series
+%% 坐标轴：axis y off 与 axis y2 off 隐藏该轴及其网格，axis x off 隐藏类别。之后的 grid 只恢复线条、不恢复刻度文字。
+%% 间距：gap 12 是像素，gap 20% 是比例。分组时百分比相对柱厚，堆叠时它代替列内留白。
+%% 堆叠：stacked 是柱，stacked area 是类别中心之间的面积。labels sum 在外侧写出各部分之和，零不标注。
+%% 标签颜色：labels fontcolor auto 按文字底下的背景取对比色。labels fontcolor #1f2328 指定颜色。图形内看填充，图形外和合计看画布。
 %% 系列名和线的标签都可以不写。
 %%   series : 值1, 值2, …     图例中没有对应行的柱
 %%   line : 值1, 值2, …       右侧没有说明的线
@@ -889,6 +1025,9 @@ line : 70, 100, 120, 150 style=dot`,
   },
   ja: {
     waterfall: `waterfall
+%% 軸: axis y off は値の軸と格子を隠し、axis x off は列ラベルを隠します。後の grid は目盛り文字なしで線だけ戻します。grid off は格子だけを隠します。
+%% 間隔: gap 12 は棒の間のピクセル、gap 20% は空きの割合です。第2軸と積み上げ合計はありません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。棒の中は塗り、外はキャンバスです。fontcolor がないと中は白、外は灰色です。
 %% 基本のウォーターフォール：開始、増加、減少、合計。
 %% データ行：<符号><数値> : <ラベル>
 %%   =120 : Q1   絶対値（開始または合計）
@@ -898,7 +1037,6 @@ line : 70, 100, 120, 150 style=dot`,
 %% その他の機能は例「軸の破断」「複数系列」「ラベル」を参照。
 %% 注意：棒の間の破線はコネクタです（既定でオン）。
 %%       オフにするには：connectors off
-%% axis y off は値軸と目盛り、axis x off は項目名、grid off は目盛り線だけ、gap は間隔です。
 title 2026 年の売上
 y "百万米ドル" 0 --> 500
 grid 100
@@ -909,6 +1047,9 @@ grid 100
 +240 : Q4
 = : 年間合計`,
     waterfallBreak: `waterfall
+%% 軸: axis y off は値の軸と格子を隠し、axis x off は列ラベルを隠します。後の grid は目盛り文字なしで線だけ戻します。grid off は格子だけを隠します。
+%% 間隔: gap 12 は棒の間のピクセル、gap 20% は空きの割合です。第2軸と積み上げ合計はありません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。棒の中は塗り、外はキャンバスです。fontcolor がないと中は白、外は灰色です。
 %% 軸の破断：区間 300..800 を切り取り、小さな段差を大きく見せます。
 %% 破断をまたぐ棒は切れ目で分かれ、線上にジグザグが付きます。
 title 軸破断付きの売上
@@ -920,6 +1061,9 @@ break 300 --> 800 "軸の破断"
 +700 : Q3
 = : 合計`,
     waterfallMulti: `waterfall
+%% 軸: axis y off は値の軸と格子を隠し、axis x off は列ラベルを隠します。後の grid は目盛り文字なしで線だけ戻します。grid off は格子だけを隠します。
+%% 間隔: gap 12 は棒の間のピクセル、gap 20% は空きの割合です。第2軸と積み上げ合計はありません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。棒の中は塗り、外はキャンバスです。fontcolor がないと中は白、外は灰色です。
 %% 複数系列：各グループに基準色があり、
 %% 増加は 20% 明るく、減少は 25% 暗くなります。
 %% gap 16% は空きの割合。gap 8 は同じ間隔をピクセルで指定します。
@@ -938,6 +1082,9 @@ series 実績 color=#8250df
 -35 : Q3
 = : 合計`,
     waterfallLabels: `waterfall
+%% 軸: axis y off は値の軸と格子を隠し、axis x off は列ラベルを隠します。後の grid は目盛り文字なしで線だけ戻します。grid off は格子だけを隠します。
+%% 間隔: gap 12 は棒の間のピクセル、gap 20% は空きの割合です。第2軸と積み上げ合計はありません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。棒の中は塗り、外はキャンバスです。fontcolor がないと中は白、外は灰色です。
 %% ラベルと線 — いちばん忘れられがちな二つ。
 %%
 %% 1) inside と above は値ラベルの位置を選びます。
@@ -950,7 +1097,7 @@ series 実績 color=#8250df
 %%    両方の位置に同じ数値：
 %%      = : 合計 inside above
 %%    すべての棒へ一度に：  labels inside | above | both | none
-%%    内側のラベルは白、棒の上のラベルは灰色です。
+%%    labels fontcolor auto は下地に対してコントラスト色を選びます。棒の中は塗り、外はキャンバスです。labels fontcolor #1f2328 は色を指定します。fontcolor がないと中は白、外は灰色です。
 %%    棒の中に収まらない文字は上へ移し、コピーは一つだけです。
 %%
 %% 2) 棒と棒の間の線は、独立した行の指令です（フラグではありません）：
@@ -969,11 +1116,15 @@ y "百万米ドル" 0 --> 200
 grid 50
 connectors on
 colors total=#1f6feb increase=#2da44e decrease=#cf222e
+labels fontcolor auto
 =90 : Q1 inside
 +60 : Q2 inside="60" above="+60 百万"
 -25 : Q3 above
 = : 合計 inside above`,
     waterfallNoLines: `waterfall
+%% 軸: axis y off は値の軸と格子を隠し、axis x off は列ラベルを隠します。後の grid は目盛り文字なしで線だけ戻します。grid off は格子だけを隠します。
+%% 間隔: gap 12 は棒の間のピクセル、gap 20% は空きの割合です。第2軸と積み上げ合計はありません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。棒の中は塗り、外はキャンバスです。fontcolor がないと中は白、外は灰色です。
 %% 線オフ — 「ラベルと線」と同じウォーターフォールで、
 %% ただし破線のコネクタはありません。発表用のすっきりした図です。
 %%
@@ -992,6 +1143,9 @@ colors total=#1f6feb increase=#2da44e decrease=#cf222e
 -25 : Q3 above
 = : 合計 inside above`,
     waterfallThresholds: `waterfall
+%% 軸: axis y off は値の軸と格子を隠し、axis x off は列ラベルを隠します。後の grid は目盛り文字なしで線だけ戻します。grid off は格子だけを隠します。
+%% 間隔: gap 12 は棒の間のピクセル、gap 20% は空きの割合です。第2軸と積み上げ合計はありません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。棒の中は塗り、外はキャンバスです。fontcolor がないと中は白、外は灰色です。
 %% ラベル付き水平線 — 計画の水準、目標、しきい値。
 %%
 %% 指令は独立した行に書きます（データ行のフラグではありません）：
@@ -1017,6 +1171,9 @@ line 250 "しきい値" style=dot width=1
 +240 : Q4
 = : 年間合計`,
     waterfallMono: `waterfall
+%% 軸: axis y off は値の軸と格子を隠し、axis x off は列ラベルを隠します。後の grid は目盛り文字なしで線だけ戻します。grid off は格子だけを隠します。
+%% 間隔: gap 12 は棒の間のピクセル、gap 20% は空きの割合です。第2軸と積み上げ合計はありません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。棒の中は塗り、外はキャンバスです。fontcolor がないと中は白、外は灰色です。
 %% 白黒モード：色は不要で、棒は明るさで区別します。
 %% 印刷や色のない文書に向きます。
 %% 独自の色もここで使えます — 灰色の階調を上書きします。
@@ -1151,6 +1308,10 @@ data
 中央倉庫 : x=50, y=50, group=中核
 南西 : x=24, y=22, group=地域, color=#f97316`,
     clustered: `series
+%% 軸: axis y off と axis y2 off はその目盛りと格子を隠し、axis x off はカテゴリを隠します。後の grid は目盛り文字なしで線だけ戻します。
+%% 間隔: gap 12 はピクセル、gap 20% は割合です。グループでは棒の太さに対する割合、積み上げでは列の空きを置き換えます。
+%% 積み上げ: stacked は柱、stacked area はカテゴリ中心の間の面です。labels sum は部分の合計を外に書き、ゼロは出しません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。図形の中は塗り、外と合計はキャンバスです。
 %% 系列図：各カテゴリで複数系列を横に並べます。
 %% 図を 90 度回す（横棒）には次を追加します：rotate 90
 %% 指令：
@@ -1158,18 +1319,21 @@ data
 %%   y "ラベル" min --> max     値軸の目盛り
 %%   labels above|inside|none  値のラベル
 %%   colors s1=#hex s2=#hex    系列のパレット（series 行の color=#hex、または mono）
-%% axis y off と axis x off は選んだ軸と目盛りを隠します。gap 4 はピクセル間隔。
 title 販路別の売上
 categories Q1, Q2, Q3, Q4
 y "百万米ドル" 0 --> 200
 grid 50
 gap 4
-labels above
+labels above fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series オンライン : 120, 145, 165, 190
 series 店舗 : 85, 95, 110, 130
 series パートナー : 45, 60, 75, 95 color=#f97316`,
     clusteredRotated: `series
+%% 軸: axis y off と axis y2 off はその目盛りと格子を隠し、axis x off はカテゴリを隠します。後の grid は目盛り文字なしで線だけ戻します。
+%% 間隔: gap 12 はピクセル、gap 20% は割合です。グループでは棒の太さに対する割合、積み上げでは列の空きを置き換えます。
+%% 積み上げ: stacked は柱、stacked area はカテゴリ中心の間の面です。labels sum は部分の合計を外に書き、ゼロは出しません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。図形の中は塗り、外と合計はキャンバスです。
 %% 90 度回転した系列図 (rotate 90)。
 %% 指令 rotate 90（または orientation horizontal）は軸を入れ替えます：
 %% カテゴリは左で上から下へ並び、棒は左から右へ伸びます。
@@ -1180,12 +1344,16 @@ rotate 90
 categories Q1, Q2, Q3, Q4
 y "百万米ドル" 0 --> 200
 grid 50
-labels above
+labels above fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series オンライン : 120, 145, 165, 190
 series 店舗 : 85, 95, 110, 130
 series パートナー : 45, 60, 75, 95 color=#f97316`,
     clusteredStacked: `series
+%% 軸: axis y off と axis y2 off はその目盛りと格子を隠し、axis x off はカテゴリを隠します。後の grid は目盛り文字なしで線だけ戻します。
+%% 間隔: gap 12 はピクセル、gap 20% は割合です。グループでは棒の太さに対する割合、積み上げでは列の空きを置き換えます。
+%% 積み上げ: stacked は柱、stacked area はカテゴリ中心の間の面です。labels sum は部分の合計を外に書き、ゼロは出しません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。図形の中は塗り、外と合計はキャンバスです。
 %% 積み上げ棒：系列は横並びではなく一つの柱を共有します。
 %% stacked / bars stacked / layout stacked
 %% 面は別例 seriesArea。ここは柱のまま。
@@ -1197,19 +1365,23 @@ gap 8%
 categories Q1, Q2, Q3, Q4
 y "百万米ドル" 0 --> 400
 grid 50
-labels inside sum
+labels inside sum fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series 製品 : 80, 90, 70, 110
 series サービス : 50, 60, 55, 70
 series パートナー : 30, 25, 40, 35`,
     seriesArea: `series
+%% 軸: axis y off と axis y2 off はその目盛りと格子を隠し、axis x off はカテゴリを隠します。後の grid は目盛り文字なしで線だけ戻します。
+%% 間隔: gap 12 はピクセル、gap 20% は割合です。グループでは棒の太さに対する割合、積み上げでは列の空きを置き換えます。
+%% 積み上げ: stacked は柱、stacked area はカテゴリ中心の間の面です。labels sum は部分の合計を外に書き、ゼロは出しません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。図形の中は塗り、外と合計はキャンバスです。
 %% 面：stacked area はカテゴリの中心をつないで積み上げます。
 %% 抜け（-、空、null）はその系列の帯を切り、高さは足しません。
 %% labels sum は合計を外側に書きます。ゼロは出しません。
 %% rotate 90、line、break、cagr と一緒に使えます。
 title 面で見る構成
 stacked area
-labels sum
+labels sum fontcolor auto
 gap 12%
 categories Q1, Q2, Q3, Q4
 y "百万米ドル" 0 --> 400
@@ -1217,6 +1389,10 @@ series 製品 : 80, 90, 70, 110
 series サービス : 50, 60, 55, 70
 series パートナー : 30, 25, 40, 35`,
     clusteredMono: `series
+%% 軸: axis y off と axis y2 off はその目盛りと格子を隠し、axis x off はカテゴリを隠します。後の grid は目盛り文字なしで線だけ戻します。
+%% 間隔: gap 12 はピクセル、gap 20% は割合です。グループでは棒の太さに対する割合、積み上げでは列の空きを置き換えます。
+%% 積み上げ: stacked は柱、stacked area はカテゴリ中心の間の面です。labels sum は部分の合計を外に書き、ゼロは出しません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。図形の中は塗り、外と合計はキャンバスです。
 %% 白黒：系列は色相ではなく明るさで区別します。
 %% 明示した colors は灰色の階調を上書きするので、この例では書きません。
 title 売上、白黒
@@ -1228,6 +1404,10 @@ series オンライン : 120, 145, 165, 190
 series 店舗 : 85, 95, 110, 130
 series パートナー : 45, 60, 75, 95`,
     clusteredMonoInvert: `series
+%% 軸: axis y off と axis y2 off はその目盛りと格子を隠し、axis x off はカテゴリを隠します。後の grid は目盛り文字なしで線だけ戻します。
+%% 間隔: gap 12 はピクセル、gap 20% は割合です。グループでは棒の太さに対する割合、積み上げでは列の空きを置き換えます。
+%% 積み上げ: stacked は柱、stacked area はカテゴリ中心の間の面です。labels sum は部分の合計を外に書き、ゼロは出しません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。図形の中は塗り、外と合計はキャンバスです。
 %% 反転した白黒：暗いキャンバス上の薄い灰色の棒。
 %% 暗いテーマと暗いスライド向けです。mono off で色が戻ります。
 title 売上、反転白黒
@@ -1239,6 +1419,10 @@ series オンライン : 120, 145, 165, 190
 series 店舗 : 85, 95, 110, 130
 series パートナー : 45, 60, 75, 95`,
     seriesLines: `series
+%% 軸: axis y off と axis y2 off はその目盛りと格子を隠し、axis x off はカテゴリを隠します。後の grid は目盛り文字なしで線だけ戻します。
+%% 間隔: gap 12 はピクセル、gap 20% は割合です。グループでは棒の太さに対する割合、積み上げでは列の空きを置き換えます。
+%% 積み上げ: stacked は柱、stacked area はカテゴリ中心の間の面です。labels sum は部分の合計を外に書き、ゼロは出しません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。図形の中は塗り、外と合計はキャンバスです。
 %% 棒の上の線：line ラベル : 値1, 値2, … [color=#hex] [style=…] [width=N]
 %% style: solid | dash | dot | dashdot。既定は solid、太さ 1.75。
 %% 空の枠、"-"、または null でカテゴリを飛ばします。線は両側の点をつなぎます。
@@ -1250,7 +1434,7 @@ y2 "コンバージョン, %" 0 --> 40
 %% grid y2 5 は第2軸の目盛りです。grid y2 off と axis y2 off で隠します。
 grid y2 5
 grid 20
-labels above
+labels above fontcolor auto
 series 実績 : 120, 145, 165, 190
 line 実線 : 110, 130, 150, 180 color=#0969da style=solid width=2
 line 破線 : 100, -, 160, 175 color=#8250df style=dash
@@ -1258,6 +1442,10 @@ line 点線 : 90, , 155, 170 color=#2da44e style=dot width=1
 line 一点鎖線 : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
 line コンバージョン : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
     seriesCagr: `series
+%% 軸: axis y off と axis y2 off はその目盛りと格子を隠し、axis x off はカテゴリを隠します。後の grid は目盛り文字なしで線だけ戻します。
+%% 間隔: gap 12 はピクセル、gap 20% は割合です。グループでは棒の太さに対する割合、積み上げでは列の空きを置き換えます。
+%% 積み上げ: stacked は柱、stacked area はカテゴリ中心の間の面です。labels sum は部分の合計を外に書き、ゼロは出しません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。図形の中は塗り、外と合計はキャンバスです。
 %% 番号のない cagr は最初の棒から最後の棒へ矢印を引きます。
 title 売上の成長
 categories 2021, 2022, 2023, 2024
@@ -1266,6 +1454,10 @@ grid 20
 series 売上 : 80, 110, 150, 190
 cagr`,
     seriesCagrRanges: `series
+%% 軸: axis y off と axis y2 off はその目盛りと格子を隠し、axis x off はカテゴリを隠します。後の grid は目盛り文字なしで線だけ戻します。
+%% 間隔: gap 12 はピクセル、gap 20% は割合です。グループでは棒の太さに対する割合、積み上げでは列の空きを置き換えます。
+%% 積み上げ: stacked は柱、stacked area はカテゴリ中心の間の面です。labels sum は部分の合計を外に書き、ゼロは出しません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。図形の中は塗り、外と合計はキャンバスです。
 %% 棒の範囲 1–3、4–6、7–9 で異なる cagr のオプション。
 %% 棒の番号は 1 から。連続する cagr は直前の系列に属します。
 %% format="0%"        整数、既定
@@ -1287,6 +1479,10 @@ cagr 5, 6 label="目標"
 cagr 8, 9 format="+0.0%"
 cagr 6, 7 format="0%" prefix="+"`,
     seriesBreak: `series
+%% 軸: axis y off と axis y2 off はその目盛りと格子を隠し、axis x off はカテゴリを隠します。後の grid は目盛り文字なしで線だけ戻します。
+%% 間隔: gap 12 はピクセル、gap 20% は割合です。グループでは棒の太さに対する割合、積み上げでは列の空きを置き換えます。
+%% 積み上げ: stacked は柱、stacked area はカテゴリ中心の間の面です。labels sum は部分の合計を外に書き、ゼロは出しません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。図形の中は塗り、外と合計はキャンバスです。
 %% 軸の破断：区間 200..700 を切り取り、小さな棒を大きく見せます。
 %% 破断をまたぐ棒は切れ目で分かれ、線上にジグザグが付きます。
 %% 構文は waterfall と同じ：break <後> --> <前> ["ラベル"]
@@ -1298,6 +1494,10 @@ break 200 --> 700 "軸の破断"
 series オンライン : 120, 180, 860, 240
 series 店舗 : 80, 140, 790, 190`,
     seriesThresholds: `series
+%% 軸: axis y off と axis y2 off はその目盛りと格子を隠し、axis x off はカテゴリを隠します。後の grid は目盛り文字なしで線だけ戻します。
+%% 間隔: gap 12 はピクセル、gap 20% は割合です。グループでは棒の太さに対する割合、積み上げでは列の空きを置き換えます。
+%% 積み上げ: stacked は柱、stacked area はカテゴリ中心の間の面です。labels sum は部分の合計を外に書き、ゼロは出しません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。図形の中は塗り、外と合計はキャンバスです。
 %% 水平線 — 計画、目標、しきい値。
 %% これはカテゴリをまたぐ折れ線ではありません。水準線にコロンはありません。
 %%
@@ -1315,6 +1515,10 @@ line 120 "しきい値" style=dot width=1
 series 実績 : 120, 145, 165, 190
 series 目安 : 110, 130, 150, 180`,
     seriesUnnamed: `series
+%% 軸: axis y off と axis y2 off はその目盛りと格子を隠し、axis x off はカテゴリを隠します。後の grid は目盛り文字なしで線だけ戻します。
+%% 間隔: gap 12 はピクセル、gap 20% は割合です。グループでは棒の太さに対する割合、積み上げでは列の空きを置き換えます。
+%% 積み上げ: stacked は柱、stacked area はカテゴリ中心の間の面です。labels sum は部分の合計を外に書き、ゼロは出しません。
+%% ラベル色: labels fontcolor auto は下地に対してコントラスト色を選びます。labels fontcolor #1f2328 は色を指定します。図形の中は塗り、外と合計はキャンバスです。
 %% 系列名と線のラベルは書かなくて構いません。
 %%   series : 値1, 値2, …     凡例の行がない棒
 %%   line : 値1, 値2, …       右に見出しのない線
@@ -1330,6 +1534,9 @@ line : 70, 100, 120, 150 style=dot`,
   },
   hi: {
     waterfall: `waterfall
+%% अक्ष: axis y off मान अक्ष और उसकी ग्रिड छिपाता है, axis x off स्तंभ लेबल। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है। grid off केवल ग्रिड छिपाता है।
+%% अंतर: gap 12 पिक्सेल है, gap 20% खाली हिस्सा। दूसरा अक्ष और स्टैक योग नहीं है।
+%% लेबल रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। अंदर भराई, बाहर कैनवास। fontcolor के बिना अंदर सफेद, बाहर धूसर।
 %% मूल जलप्रपात: प्रारंभ, वृद्धि, गिरावट, कुल।
 %% डेटा पंक्तियाँ: <चिह्न><संख्या> : <लेबल>
 %%   =120 : Q1   निरपेक्ष मान (प्रारंभ या कुल)
@@ -1339,7 +1546,6 @@ line : 70, 100, 120, 150 style=dot`,
 %% और सुविधाएँ उदाहरणों में: «अक्ष विराम», «कई शृंखलाएँ», «लेबल»।
 %% ध्यान दें: स्तंभों के बीच की डैश रेखाएँ कनेक्टर हैं (डिफ़ॉल्ट चालू)।
 %%       बंद करने के लिए: connectors off
-%% axis y off मान अक्ष और ग्रिड छिपाता है, axis x off स्तंभ नाम, grid off केवल ग्रिड, gap अंतर।
 title आय 2026
 y "मिलियन डॉलर" 0 --> 500
 grid 100
@@ -1350,6 +1556,9 @@ grid 100
 +240 : Q4
 = : वर्ष का कुल`,
     waterfallBreak: `waterfall
+%% अक्ष: axis y off मान अक्ष और उसकी ग्रिड छिपाता है, axis x off स्तंभ लेबल। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है। grid off केवल ग्रिड छिपाता है।
+%% अंतर: gap 12 पिक्सेल है, gap 20% खाली हिस्सा। दूसरा अक्ष और स्टैक योग नहीं है।
+%% लेबल रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। अंदर भराई, बाहर कैनवास। fontcolor के बिना अंदर सफेद, बाहर धूसर।
 %% अक्ष विराम: अंतर 300..800 काट दिया जाता है, ताकि छोटे चरण बड़े दिखें।
 %% विराम को पार करने वाला स्तंभ टुकड़ों में बनता है, रेखा पर टेढ़े निशान के साथ।
 title अक्ष विराम के साथ आय
@@ -1361,6 +1570,9 @@ break 300 --> 800 "अक्ष विराम"
 +700 : Q3
 = : कुल`,
     waterfallMulti: `waterfall
+%% अक्ष: axis y off मान अक्ष और उसकी ग्रिड छिपाता है, axis x off स्तंभ लेबल। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है। grid off केवल ग्रिड छिपाता है।
+%% अंतर: gap 12 पिक्सेल है, gap 20% खाली हिस्सा। दूसरा अक्ष और स्टैक योग नहीं है।
+%% लेबल रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। अंदर भराई, बाहर कैनवास। fontcolor के बिना अंदर सफेद, बाहर धूसर।
 %% कई शृंखलाएँ: प्रत्येक समूह का अपना आधार रंग होता है,
 %% वृद्धि 20% हल्की होती है, कमी 25% गहरी।
 %% gap 16% खाली जगह का हिस्सा है। gap 8 वही अंतर पिक्सेल में देता है।
@@ -1379,6 +1591,9 @@ series वास्तविक color=#8250df
 -35 : Q3
 = : कुल`,
     waterfallLabels: `waterfall
+%% अक्ष: axis y off मान अक्ष और उसकी ग्रिड छिपाता है, axis x off स्तंभ लेबल। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है। grid off केवल ग्रिड छिपाता है।
+%% अंतर: gap 12 पिक्सेल है, gap 20% खाली हिस्सा। दूसरा अक्ष और स्टैक योग नहीं है।
+%% लेबल रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। अंदर भराई, बाहर कैनवास। fontcolor के बिना अंदर सफेद, बाहर धूसर।
 %% लेबल और रेखाएँ — दो बातें जो सबसे अधिक छूट जाती हैं।
 %%
 %% 1) inside और above चुनते हैं कि मान का लेबल कहाँ लिखा जाए।
@@ -1391,7 +1606,7 @@ series वास्तविक color=#8250df
 %%    दोनों स्थानों पर वही संख्या:
 %%      = : कुल inside above
 %%    एक साथ हर स्तंभ के लिए:  labels inside | above | both | none
-%%    भीतरी लेबल सफेद है, स्तंभ के ऊपर वाला धूसर।
+%%    labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है: अंदर भराई, बाहर कैनवास। labels fontcolor #1f2328 रंग तय करता है। fontcolor के बिना अंदर सफेद, बाहर धूसर।
 %%    जो पाठ भीतर नहीं समाता, वह स्तंभ के ऊपर एक ही प्रति में चला जाता है।
 %%
 %% 2) स्तंभों के बीच की रेखाएँ अपनी ही पंक्ति पर एक निर्देश हैं (झंडा नहीं):
@@ -1410,11 +1625,15 @@ y "मिलियन डॉलर" 0 --> 200
 grid 50
 connectors on
 colors total=#1f6feb increase=#2da44e decrease=#cf222e
+labels fontcolor auto
 =90 : Q1 inside
 +60 : Q2 inside="60" above="+60 मिलियन"
 -25 : Q3 above
 = : कुल inside above`,
     waterfallNoLines: `waterfall
+%% अक्ष: axis y off मान अक्ष और उसकी ग्रिड छिपाता है, axis x off स्तंभ लेबल। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है। grid off केवल ग्रिड छिपाता है।
+%% अंतर: gap 12 पिक्सेल है, gap 20% खाली हिस्सा। दूसरा अक्ष और स्टैक योग नहीं है।
+%% लेबल रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। अंदर भराई, बाहर कैनवास। fontcolor के बिना अंदर सफेद, बाहर धूसर।
 %% रेखाएँ बंद — वही जलप्रपात जो «लेबल और रेखाएँ» में है,
 %% पर डैश कनेक्टर के बिना: प्रस्तुति के लिए साफ चित्र।
 %%
@@ -1433,6 +1652,9 @@ colors total=#1f6feb increase=#2da44e decrease=#cf222e
 -25 : Q3 above
 = : कुल inside above`,
     waterfallThresholds: `waterfall
+%% अक्ष: axis y off मान अक्ष और उसकी ग्रिड छिपाता है, axis x off स्तंभ लेबल। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है। grid off केवल ग्रिड छिपाता है।
+%% अंतर: gap 12 पिक्सेल है, gap 20% खाली हिस्सा। दूसरा अक्ष और स्टैक योग नहीं है।
+%% लेबल रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। अंदर भराई, बाहर कैनवास। fontcolor के बिना अंदर सफेद, बाहर धूसर।
 %% लेबल वाली क्षैतिज रेखाएँ — योजना स्तर, लक्ष्य, सीमा।
 %%
 %% निर्देश अपनी ही पंक्ति पर होता है (डेटा पंक्ति का झंडा नहीं):
@@ -1458,6 +1680,9 @@ line 250 "सीमा" style=dot width=1
 +240 : Q4
 = : वर्ष का कुल`,
     waterfallMono: `waterfall
+%% अक्ष: axis y off मान अक्ष और उसकी ग्रिड छिपाता है, axis x off स्तंभ लेबल। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है। grid off केवल ग्रिड छिपाता है।
+%% अंतर: gap 12 पिक्सेल है, gap 20% खाली हिस्सा। दूसरा अक्ष और स्टैक योग नहीं है।
+%% लेबल रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। अंदर भराई, बाहर कैनवास। fontcolor के बिना अंदर सफेद, बाहर धूसर।
 %% श्याम-श्वेत मोड: रंग की जरूरत नहीं, स्तंभ हल्के-गहरे से अलग होते हैं।
 %% छपाई और बिना रंग के दस्तावेज़ों के लिए उपयोगी।
 %% अपने रंग यहाँ भी चलते हैं — वे धूसर पैमाना ढक देते हैं।
@@ -1592,6 +1817,10 @@ data
 केंद्रीय डिपो : x=50, y=50, group=कोर
 दक्षिण-पश्चिम : x=24, y=22, group=क्षेत्र, color=#f97316`,
     clustered: `series
+%% अक्ष: axis y off और axis y2 off उस पैमाने और उसकी ग्रिड को छिपाते हैं, axis x off श्रेणियाँ। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है।
+%% अंतर: gap 12 पिक्सेल, gap 20% हिस्सा। समूह में प्रतिशत पट्टी की मोटाई का है, स्टैक में वह खाली हिस्सा बदलता है।
+%% स्टैक: stacked स्तंभ हैं, stacked area केंद्रों के बीच क्षेत्र। labels sum भागों का योग बाहर लिखता है, शून्य नहीं।
+%% रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। आकृति के अंदर भराई, बाहर और योग पर कैनवास।
 %% शृंखला आरेख: प्रत्येक श्रेणी में कई शृंखलाएँ साथ-साथ समूहित करता है।
 %% आरेख को 90 डिग्री घुमाने (क्षैतिज पट्टियाँ) के लिए जोड़ें: rotate 90
 %% निर्देश:
@@ -1599,18 +1828,21 @@ data
 %%   y "लेबल" min --> max     मान अक्ष का पैमाना
 %%   labels above|inside|none  मानों के लेबल
 %%   colors s1=#hex s2=#hex    शृंखला पैलेट (या series पंक्ति पर color=#hex, या mono)
-%% axis y off और axis x off चुनी धुरी और उसकी ग्रिड छिपाते हैं। gap 4 पिक्सेल अंतर है।
 title बिक्री माध्यम के अनुसार आय
 categories Q1, Q2, Q3, Q4
 y "मिलियन डॉलर" 0 --> 200
 grid 50
 gap 4
-labels above
+labels above fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series ऑनलाइन : 120, 145, 165, 190
 series खुदरा : 85, 95, 110, 130
 series साझेदार : 45, 60, 75, 95 color=#f97316`,
     clusteredRotated: `series
+%% अक्ष: axis y off और axis y2 off उस पैमाने और उसकी ग्रिड को छिपाते हैं, axis x off श्रेणियाँ। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है।
+%% अंतर: gap 12 पिक्सेल, gap 20% हिस्सा। समूह में प्रतिशत पट्टी की मोटाई का है, स्टैक में वह खाली हिस्सा बदलता है।
+%% स्टैक: stacked स्तंभ हैं, stacked area केंद्रों के बीच क्षेत्र। labels sum भागों का योग बाहर लिखता है, शून्य नहीं।
+%% रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। आकृति के अंदर भराई, बाहर और योग पर कैनवास।
 %% 90 डिग्री घुमाया शृंखला आरेख (rotate 90)।
 %% निर्देश rotate 90 (या orientation horizontal) अक्षों की अदला-बदली करता है:
 %% श्रेणियाँ बाईं ओर ऊपर से नीचे चलती हैं, और पट्टियाँ बाएँ से दाएँ बढ़ती हैं।
@@ -1621,12 +1853,16 @@ rotate 90
 categories Q1, Q2, Q3, Q4
 y "मिलियन डॉलर" 0 --> 200
 grid 50
-labels above
+labels above fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series ऑनलाइन : 120, 145, 165, 190
 series खुदरा : 85, 95, 110, 130
 series साझेदार : 45, 60, 75, 95 color=#f97316`,
     clusteredStacked: `series
+%% अक्ष: axis y off और axis y2 off उस पैमाने और उसकी ग्रिड को छिपाते हैं, axis x off श्रेणियाँ। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है।
+%% अंतर: gap 12 पिक्सेल, gap 20% हिस्सा। समूह में प्रतिशत पट्टी की मोटाई का है, स्टैक में वह खाली हिस्सा बदलता है।
+%% स्टैक: stacked स्तंभ हैं, stacked area केंद्रों के बीच क्षेत्र। labels sum भागों का योग बाहर लिखता है, शून्य नहीं।
+%% रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। आकृति के अंदर भराई, बाहर और योग पर कैनवास।
 %% स्टैक पट्टियाँ: शृंखलाएँ साथ-साथ नहीं, एक ही स्तंभ साझा करती हैं।
 %% stacked / bars stacked / layout stacked
 %% क्षेत्र अलग उदाहरण seriesArea में है। यहाँ स्तंभ रहते हैं।
@@ -1638,19 +1874,23 @@ gap 8%
 categories Q1, Q2, Q3, Q4
 y "मिलियन डॉलर" 0 --> 400
 grid 50
-labels inside sum
+labels inside sum fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series उत्पाद : 80, 90, 70, 110
 series सेवाएँ : 50, 60, 55, 70
 series साझेदार : 30, 25, 40, 35`,
     seriesArea: `series
+%% अक्ष: axis y off और axis y2 off उस पैमाने और उसकी ग्रिड को छिपाते हैं, axis x off श्रेणियाँ। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है।
+%% अंतर: gap 12 पिक्सेल, gap 20% हिस्सा। समूह में प्रतिशत पट्टी की मोटाई का है, स्टैक में वह खाली हिस्सा बदलता है।
+%% स्टैक: stacked स्तंभ हैं, stacked area केंद्रों के बीच क्षेत्र। labels sum भागों का योग बाहर लिखता है, शून्य नहीं।
+%% रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। आकृति के अंदर भराई, बाहर और योग पर कैनवास।
 %% क्षेत्र: stacked area श्रेणियों के केंद्रों से ढेर जोड़ता है।
 %% खाली स्थान (-, खाली, null) उस श्रृंखला को तोड़ता है और ऊँचाई नहीं जोड़ता।
 %% labels sum योग बाहर लिखता है। शून्य नहीं लिखा जाता।
 %% यह rotate 90, line, break और cagr के साथ रहता है।
 title क्षेत्र के रूप में रचना
 stacked area
-labels sum
+labels sum fontcolor auto
 gap 12%
 categories Q1, Q2, Q3, Q4
 y "मिलियन डॉलर" 0 --> 400
@@ -1658,6 +1898,10 @@ series उत्पाद : 80, 90, 70, 110
 series सेवाएँ : 50, 60, 55, 70
 series साझेदार : 30, 25, 40, 35`,
     clusteredMono: `series
+%% अक्ष: axis y off और axis y2 off उस पैमाने और उसकी ग्रिड को छिपाते हैं, axis x off श्रेणियाँ। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है।
+%% अंतर: gap 12 पिक्सेल, gap 20% हिस्सा। समूह में प्रतिशत पट्टी की मोटाई का है, स्टैक में वह खाली हिस्सा बदलता है।
+%% स्टैक: stacked स्तंभ हैं, stacked area केंद्रों के बीच क्षेत्र। labels sum भागों का योग बाहर लिखता है, शून्य नहीं।
+%% रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। आकृति के अंदर भराई, बाहर और योग पर कैनवास।
 %% श्याम-श्वेत: शृंखलाएँ रंग से नहीं, हल्के-गहरे से अलग होती हैं।
 %% स्पष्ट colors धूसर पैमाना ढक देते हैं, इसलिए यह उदाहरण उन्हें नहीं लिखता।
 title आय, श्याम-श्वेत
@@ -1669,6 +1913,10 @@ series ऑनलाइन : 120, 145, 165, 190
 series खुदरा : 85, 95, 110, 130
 series साझेदार : 45, 60, 75, 95`,
     clusteredMonoInvert: `series
+%% अक्ष: axis y off और axis y2 off उस पैमाने और उसकी ग्रिड को छिपाते हैं, axis x off श्रेणियाँ। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है।
+%% अंतर: gap 12 पिक्सेल, gap 20% हिस्सा। समूह में प्रतिशत पट्टी की मोटाई का है, स्टैक में वह खाली हिस्सा बदलता है।
+%% स्टैक: stacked स्तंभ हैं, stacked area केंद्रों के बीच क्षेत्र। labels sum भागों का योग बाहर लिखता है, शून्य नहीं।
+%% रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। आकृति के अंदर भराई, बाहर और योग पर कैनवास।
 %% उलटा श्याम-श्वेत: गहरे कैनवास पर हल्के धूसर स्तंभ।
 %% गहरी थीम और गहरी स्लाइडों के लिए। mono off रंग लौटाता है।
 title आय, उलटा श्याम-श्वेत
@@ -1680,6 +1928,10 @@ series ऑनलाइन : 120, 145, 165, 190
 series खुदरा : 85, 95, 110, 130
 series साझेदार : 45, 60, 75, 95`,
     seriesLines: `series
+%% अक्ष: axis y off और axis y2 off उस पैमाने और उसकी ग्रिड को छिपाते हैं, axis x off श्रेणियाँ। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है।
+%% अंतर: gap 12 पिक्सेल, gap 20% हिस्सा। समूह में प्रतिशत पट्टी की मोटाई का है, स्टैक में वह खाली हिस्सा बदलता है।
+%% स्टैक: stacked स्तंभ हैं, stacked area केंद्रों के बीच क्षेत्र। labels sum भागों का योग बाहर लिखता है, शून्य नहीं।
+%% रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। आकृति के अंदर भराई, बाहर और योग पर कैनवास।
 %% स्तंभों के ऊपर एक रेखा: line लेबल : म1, म2, … [color=#hex] [style=…] [width=N]
 %% style: solid | dash | dot | dashdot। डिफ़ॉल्ट solid और मोटाई 1.75।
 %% खाली स्थान, "-", या null से एक श्रेणी छोड़ें। रेखा दोनों ओर के बिंदु जोड़ती है।
@@ -1691,7 +1943,7 @@ y2 "रूपांतरण, %" 0 --> 40
 %% grid y2 5 दूसरी धुरी की ग्रिड है। grid y2 off और axis y2 off उसे छिपाते हैं।
 grid y2 5
 grid 20
-labels above
+labels above fontcolor auto
 series वास्तविक : 120, 145, 165, 190
 line सतत : 110, 130, 150, 180 color=#0969da style=solid width=2
 line डैश : 100, -, 160, 175 color=#8250df style=dash
@@ -1699,6 +1951,10 @@ line बिंदु : 90, , 155, 170 color=#2da44e style=dot width=1
 line डैश-बिंदु : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
 line रूपांतरण : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
     seriesCagr: `series
+%% अक्ष: axis y off और axis y2 off उस पैमाने और उसकी ग्रिड को छिपाते हैं, axis x off श्रेणियाँ। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है।
+%% अंतर: gap 12 पिक्सेल, gap 20% हिस्सा। समूह में प्रतिशत पट्टी की मोटाई का है, स्टैक में वह खाली हिस्सा बदलता है।
+%% स्टैक: stacked स्तंभ हैं, stacked area केंद्रों के बीच क्षेत्र। labels sum भागों का योग बाहर लिखता है, शून्य नहीं।
+%% रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। आकृति के अंदर भराई, बाहर और योग पर कैनवास।
 %% बिना संख्या के cagr पहली पट्टी से अंतिम पट्टी तक तीर खींचता है।
 title आय की वृद्धि
 categories 2021, 2022, 2023, 2024
@@ -1707,6 +1963,10 @@ grid 20
 series राजस्व : 80, 110, 150, 190
 cagr`,
     seriesCagrRanges: `series
+%% अक्ष: axis y off और axis y2 off उस पैमाने और उसकी ग्रिड को छिपाते हैं, axis x off श्रेणियाँ। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है।
+%% अंतर: gap 12 पिक्सेल, gap 20% हिस्सा। समूह में प्रतिशत पट्टी की मोटाई का है, स्टैक में वह खाली हिस्सा बदलता है।
+%% स्टैक: stacked स्तंभ हैं, stacked area केंद्रों के बीच क्षेत्र। labels sum भागों का योग बाहर लिखता है, शून्य नहीं।
+%% रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। आकृति के अंदर भराई, बाहर और योग पर कैनवास।
 %% पट्टी सीमाओं 1–3, 4–6 और 7–9 पर अलग-अलग cagr विकल्प।
 %% पट्टी संख्या 1 से शुरू होती है। लगातार cagr ठीक ऊपर वाली शृंखला के हैं।
 %% format="0%"        पूर्णांक, डिफ़ॉल्ट
@@ -1728,6 +1988,10 @@ cagr 5, 6 label="लक्ष्य"
 cagr 8, 9 format="+0.0%"
 cagr 6, 7 format="0%" prefix="+"`,
     seriesBreak: `series
+%% अक्ष: axis y off और axis y2 off उस पैमाने और उसकी ग्रिड को छिपाते हैं, axis x off श्रेणियाँ। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है।
+%% अंतर: gap 12 पिक्सेल, gap 20% हिस्सा। समूह में प्रतिशत पट्टी की मोटाई का है, स्टैक में वह खाली हिस्सा बदलता है।
+%% स्टैक: stacked स्तंभ हैं, stacked area केंद्रों के बीच क्षेत्र। labels sum भागों का योग बाहर लिखता है, शून्य नहीं।
+%% रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। आकृति के अंदर भराई, बाहर और योग पर कैनवास।
 %% अक्ष विराम: अंतर 200..700 काट दिया जाता है, ताकि छोटी पट्टियाँ बड़ी दिखें।
 %% विराम को पार करने वाली पट्टी टुकड़ों में बनती है, रेखा पर टेढ़े निशान के साथ।
 %% वाक्य waterfall जैसा: break <बाद> --> <पहले> ["लेबल"]
@@ -1739,6 +2003,10 @@ break 200 --> 700 "अक्ष विराम"
 series ऑनलाइन : 120, 180, 860, 240
 series खुदरा : 80, 140, 790, 190`,
     seriesThresholds: `series
+%% अक्ष: axis y off और axis y2 off उस पैमाने और उसकी ग्रिड को छिपाते हैं, axis x off श्रेणियाँ। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है।
+%% अंतर: gap 12 पिक्सेल, gap 20% हिस्सा। समूह में प्रतिशत पट्टी की मोटाई का है, स्टैक में वह खाली हिस्सा बदलता है।
+%% स्टैक: stacked स्तंभ हैं, stacked area केंद्रों के बीच क्षेत्र। labels sum भागों का योग बाहर लिखता है, शून्य नहीं।
+%% रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। आकृति के अंदर भराई, बाहर और योग पर कैनवास।
 %% क्षैतिज रेखाएँ — योजना, लक्ष्य, सीमा।
 %% यह श्रेणियों के पार की रेखा नहीं है: स्तर रेखा में कोलन नहीं होता।
 %%
@@ -1756,6 +2024,10 @@ line 120 "सीमा" style=dot width=1
 series वास्तविक : 120, 145, 165, 190
 series संदर्भ : 110, 130, 150, 180`,
     seriesUnnamed: `series
+%% अक्ष: axis y off और axis y2 off उस पैमाने और उसकी ग्रिड को छिपाते हैं, axis x off श्रेणियाँ। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है।
+%% अंतर: gap 12 पिक्सेल, gap 20% हिस्सा। समूह में प्रतिशत पट्टी की मोटाई का है, स्टैक में वह खाली हिस्सा बदलता है।
+%% स्टैक: stacked स्तंभ हैं, stacked area केंद्रों के बीच क्षेत्र। labels sum भागों का योग बाहर लिखता है, शून्य नहीं।
+%% रंग: labels fontcolor auto नीचे की सतह से कंट्रास्ट चुनता है। labels fontcolor #1f2328 रंग तय करता है। आकृति के अंदर भराई, बाहर और योग पर कैनवास।
 %% शृंखला का नाम और रेखा का लेबल छोड़ा जा सकता है।
 %%   series : म1, म2, …     संकेत में बिना पंक्ति के स्तंभ
 %%   line : म1, म2, …       दाईं ओर बिना शीर्षक की रेखा
@@ -1771,6 +2043,9 @@ line : 70, 100, 120, 150 style=dot`,
   },
   pt: {
     waterfall: `waterfall
+%% Eixos: axis y off esconde o eixo de valores e a grelha, axis x off esconde os rótulos das colunas. Um grid depois devolve as linhas sem os rótulos dos traços. grid off esconde só a grelha.
+%% Intervalo: gap 12 são píxeis entre barras e colunas, gap 20% é a parte vazia. Não há segundo eixo nem soma da pilha.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da barra o fundo é o preenchimento, fora é a tela. Sem fontcolor, dentro fica branco e fora cinza.
 %% Cascata básica: início, crescimento, queda e soma.
 %% Linhas de dados: <sinal><número> : <rótulo>
 %%   =120 : Q1   valor absoluto (início ou soma)
@@ -1780,7 +2055,6 @@ line : 70, 100, 120, 150 style=dot`,
 %% Mais recursos: exemplos «quebra de eixo», «várias séries», «rótulos».
 %% NOTA: as linhas tracejadas entre as barras são conectores (ligados por padrão).
 %%       Para desligar: connectors off
-%% axis y off esconde o eixo de valores e a grelha, axis x off as legendas, grid off só a grelha, gap o espaço.
 title Receita 2026
 y "mi USD" 0 --> 500
 grid 100
@@ -1791,6 +2065,9 @@ grid 100
 +240 : Q4
 = : Soma do ano`,
     waterfallBreak: `waterfall
+%% Eixos: axis y off esconde o eixo de valores e a grelha, axis x off esconde os rótulos das colunas. Um grid depois devolve as linhas sem os rótulos dos traços. grid off esconde só a grelha.
+%% Intervalo: gap 12 são píxeis entre barras e colunas, gap 20% é a parte vazia. Não há segundo eixo nem soma da pilha.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da barra o fundo é o preenchimento, fora é a tela. Sem fontcolor, dentro fica branco e fora cinza.
 %% Quebra de eixo: o trecho 300..800 é CORTADO para os passos pequenos ficarem maiores.
 %% Uma barra que atravessa a quebra é desenhada em pedaços, com um zigue-zague na linha.
 title Receita com quebra de eixo
@@ -1802,6 +2079,9 @@ break 300 --> 800 "quebra de eixo"
 +700 : Q3
 = : Soma`,
     waterfallMulti: `waterfall
+%% Eixos: axis y off esconde o eixo de valores e a grelha, axis x off esconde os rótulos das colunas. Um grid depois devolve as linhas sem os rótulos dos traços. grid off esconde só a grelha.
+%% Intervalo: gap 12 são píxeis entre barras e colunas, gap 20% é a parte vazia. Não há segundo eixo nem soma da pilha.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da barra o fundo é o preenchimento, fora é a tela. Sem fontcolor, dentro fica branco e fora cinza.
 %% Várias séries: cada grupo tem a própria cor de base,
 %% aumentos 20% mais claros, quedas 25% mais escuras.
 %% gap 16% é uma parte do vazio. gap 8 dá o mesmo espaço em píxeis.
@@ -1820,6 +2100,9 @@ series Realizado color=#8250df
 -35 : Q3
 = : Soma`,
     waterfallLabels: `waterfall
+%% Eixos: axis y off esconde o eixo de valores e a grelha, axis x off esconde os rótulos das colunas. Um grid depois devolve as linhas sem os rótulos dos traços. grid off esconde só a grelha.
+%% Intervalo: gap 12 são píxeis entre barras e colunas, gap 20% é a parte vazia. Não há segundo eixo nem soma da pilha.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da barra o fundo é o preenchimento, fora é a tela. Sem fontcolor, dentro fica branco e fora cinza.
 %% RÓTULOS E LINHAS — as duas coisas que mais faltam.
 %%
 %% 1) inside e above escolhem onde fica o rótulo do valor.
@@ -1832,7 +2115,7 @@ series Realizado color=#8250df
 %%    As duas posições com o mesmo número:
 %%      = : Soma inside above
 %%    Para todas as barras de uma vez:  labels inside | above | both | none
-%%    O rótulo interno é branco; o de cima da barra é cinza.
+%%    labels fontcolor auto escolhe o contraste com o fundo sob o texto: dentro, o preenchimento; fora, a tela. labels fontcolor #1f2328 fixa uma cor. Sem fontcolor, dentro fica branco e fora cinza.
 %%    O texto que não cabe dentro da barra sobe para cima dela, uma vez só.
 %%
 %% 2) As LINHAS entre barras são uma DIRETIVA na própria linha (não uma bandeira):
@@ -1851,11 +2134,15 @@ y "mi USD" 0 --> 200
 grid 50
 connectors on
 colors total=#1f6feb increase=#2da44e decrease=#cf222e
+labels fontcolor auto
 =90 : Q1 inside
 +60 : Q2 inside="60" above="+60 mi"
 -25 : Q3 above
 = : Soma inside above`,
     waterfallNoLines: `waterfall
+%% Eixos: axis y off esconde o eixo de valores e a grelha, axis x off esconde os rótulos das colunas. Um grid depois devolve as linhas sem os rótulos dos traços. grid off esconde só a grelha.
+%% Intervalo: gap 12 são píxeis entre barras e colunas, gap 20% é a parte vazia. Não há segundo eixo nem soma da pilha.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da barra o fundo é o preenchimento, fora é a tela. Sem fontcolor, dentro fica branco e fora cinza.
 %% LINHAS DESLIGADAS — a mesma cascata de «rótulos e linhas»,
 %% mas sem os conectores tracejados: uma imagem limpa para apresentar.
 %%
@@ -1874,6 +2161,9 @@ colors total=#1f6feb increase=#2da44e decrease=#cf222e
 -25 : Q3 above
 = : Soma inside above`,
     waterfallThresholds: `waterfall
+%% Eixos: axis y off esconde o eixo de valores e a grelha, axis x off esconde os rótulos das colunas. Um grid depois devolve as linhas sem os rótulos dos traços. grid off esconde só a grelha.
+%% Intervalo: gap 12 são píxeis entre barras e colunas, gap 20% é a parte vazia. Não há segundo eixo nem soma da pilha.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da barra o fundo é o preenchimento, fora é a tela. Sem fontcolor, dentro fica branco e fora cinza.
 %% LINHAS HORIZONTAIS COM RÓTULO — nível do plano, meta, limiar.
 %%
 %% A diretiva fica na PRÓPRIA linha (não é uma bandeira numa linha de dados):
@@ -1899,6 +2189,9 @@ line 250 "limiar" style=dot width=1
 +240 : Q4
 = : Soma do ano`,
     waterfallMono: `waterfall
+%% Eixos: axis y off esconde o eixo de valores e a grelha, axis x off esconde os rótulos das colunas. Um grid depois devolve as linhas sem os rótulos dos traços. grid off esconde só a grelha.
+%% Intervalo: gap 12 são píxeis entre barras e colunas, gap 20% é a parte vazia. Não há segundo eixo nem soma da pilha.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da barra o fundo é o preenchimento, fora é a tela. Sem fontcolor, dentro fica branco e fora cinza.
 %% Modo preto e branco: não precisa de cores, as barras diferem pela claridade.
 %% Útil para impressão e para documentos sem cor.
 %% Cores próprias ainda funcionam aqui — elas substituem a escala de cinza.
@@ -2033,6 +2326,10 @@ Terminal leste : x=82, y=56, group=Região
 Depósito central : x=50, y=50, group=Núcleo
 Sudoeste : x=24, y=22, group=Região, color=#f97316`,
     clustered: `series
+%% Eixos: axis y off e axis y2 off escondem essa escala e a grelha, axis x off esconde as categorias. Um grid depois devolve as linhas sem os rótulos dos traços.
+%% Intervalo: gap 12 são píxeis, gap 20% é uma parte. No grupo a percentagem é da espessura da barra; na pilha substitui o vazio da coluna.
+%% Pilha: stacked são colunas, stacked area são áreas entre os centros. labels sum escreve a soma das partes fora; o zero não aparece.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da forma o fundo é o preenchimento, fora e na soma é a tela.
 %% Diagrama de séries: agrupa várias séries lado a lado em cada categoria.
 %% Para girar o gráfico 90 graus (barras horizontais), acrescente: rotate 90
 %% Diretivas:
@@ -2040,18 +2337,21 @@ Sudoeste : x=24, y=22, group=Região, color=#f97316`,
 %%   y "rótulo" min --> max     escala do eixo de valores
 %%   labels above|inside|none  rótulos dos valores
 %%   colors s1=#hex s2=#hex    paleta das séries (ou color=#hex na linha series, ou mono)
-%% axis y off e axis x off escondem esse eixo e a grelha. gap 4 é o espaço em píxeis.
 title Receita por canal de vendas
 categories Q1, Q2, Q3, Q4
 y "mi USD" 0 --> 200
 grid 50
 gap 4
-labels above
+labels above fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Loja virtual : 120, 145, 165, 190
 series Varejo : 85, 95, 110, 130
 series Parceiros : 45, 60, 75, 95 color=#f97316`,
     clusteredRotated: `series
+%% Eixos: axis y off e axis y2 off escondem essa escala e a grelha, axis x off esconde as categorias. Um grid depois devolve as linhas sem os rótulos dos traços.
+%% Intervalo: gap 12 são píxeis, gap 20% é uma parte. No grupo a percentagem é da espessura da barra; na pilha substitui o vazio da coluna.
+%% Pilha: stacked são colunas, stacked area são áreas entre os centros. labels sum escreve a soma das partes fora; o zero não aparece.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da forma o fundo é o preenchimento, fora e na soma é a tela.
 %% Diagrama de séries GIRADO 90 GRAUS (rotate 90).
 %% A diretiva rotate 90 (ou orientation horizontal) troca os eixos:
 %% as categorias descem de cima para baixo à esquerda, e as barras crescem da esquerda para a direita.
@@ -2062,12 +2362,16 @@ rotate 90
 categories Q1, Q2, Q3, Q4
 y "mi USD" 0 --> 200
 grid 50
-labels above
+labels above fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Loja virtual : 120, 145, 165, 190
 series Varejo : 85, 95, 110, 130
 series Parceiros : 45, 60, 75, 95 color=#f97316`,
     clusteredStacked: `series
+%% Eixos: axis y off e axis y2 off escondem essa escala e a grelha, axis x off esconde as categorias. Um grid depois devolve as linhas sem os rótulos dos traços.
+%% Intervalo: gap 12 são píxeis, gap 20% é uma parte. No grupo a percentagem é da espessura da barra; na pilha substitui o vazio da coluna.
+%% Pilha: stacked são colunas, stacked area são áreas entre os centros. labels sum escreve a soma das partes fora; o zero não aparece.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da forma o fundo é o preenchimento, fora e na soma é a tela.
 %% Barras empilhadas: as séries compartilham uma coluna em vez de ficarem lado a lado.
 %% stacked / bars stacked / layout stacked
 %% As áreas ficam no exemplo seriesArea. Aqui continuam colunas.
@@ -2079,19 +2383,23 @@ gap 8%
 categories Q1, Q2, Q3, Q4
 y "mi USD" 0 --> 400
 grid 50
-labels inside sum
+labels inside sum fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Produto : 80, 90, 70, 110
 series Serviços : 50, 60, 55, 70
 series Parceiros : 30, 25, 40, 35`,
     seriesArea: `series
+%% Eixos: axis y off e axis y2 off escondem essa escala e a grelha, axis x off esconde as categorias. Um grid depois devolve as linhas sem os rótulos dos traços.
+%% Intervalo: gap 12 são píxeis, gap 20% é uma parte. No grupo a percentagem é da espessura da barra; na pilha substitui o vazio da coluna.
+%% Pilha: stacked são colunas, stacked area são áreas entre os centros. labels sum escreve a soma das partes fora; o zero não aparece.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da forma o fundo é o preenchimento, fora e na soma é a tela.
 %% Áreas: stacked area liga a pilha pelos centros das categorias.
 %% Um vazio (-, vazio, null) corta a faixa e não soma altura.
 %% labels sum escreve a soma fora da pilha. Zero não aparece.
 %% Continua válido com rotate 90, line, break e cagr.
 title Composição em áreas
 stacked area
-labels sum
+labels sum fontcolor auto
 gap 12%
 categories Q1, Q2, Q3, Q4
 y "mi USD" 0 --> 400
@@ -2099,6 +2407,10 @@ series Produto : 80, 90, 70, 110
 series Serviços : 50, 60, 55, 70
 series Parceiros : 30, 25, 40, 35`,
     clusteredMono: `series
+%% Eixos: axis y off e axis y2 off escondem essa escala e a grelha, axis x off esconde as categorias. Um grid depois devolve as linhas sem os rótulos dos traços.
+%% Intervalo: gap 12 são píxeis, gap 20% é uma parte. No grupo a percentagem é da espessura da barra; na pilha substitui o vazio da coluna.
+%% Pilha: stacked são colunas, stacked area são áreas entre os centros. labels sum escreve a soma das partes fora; o zero não aparece.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da forma o fundo é o preenchimento, fora e na soma é a tela.
 %% Preto e branco: as séries diferem pela claridade, não pelo matiz.
 %% colors explícitos substituem a escala de cinza, por isso este exemplo não os inclui.
 title Receita, preto e branco
@@ -2110,6 +2422,10 @@ series Loja virtual : 120, 145, 165, 190
 series Varejo : 85, 95, 110, 130
 series Parceiros : 45, 60, 75, 95`,
     clusteredMonoInvert: `series
+%% Eixos: axis y off e axis y2 off escondem essa escala e a grelha, axis x off esconde as categorias. Um grid depois devolve as linhas sem os rótulos dos traços.
+%% Intervalo: gap 12 são píxeis, gap 20% é uma parte. No grupo a percentagem é da espessura da barra; na pilha substitui o vazio da coluna.
+%% Pilha: stacked são colunas, stacked area são áreas entre os centros. labels sum escreve a soma das partes fora; o zero não aparece.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da forma o fundo é o preenchimento, fora e na soma é a tela.
 %% Preto e branco invertido: barras cinza-claro sobre uma tela escura.
 %% Para temas escuros e slides escuros. mono off devolve a cor.
 title Receita, preto e branco invertido
@@ -2121,6 +2437,10 @@ series Loja virtual : 120, 145, 165, 190
 series Varejo : 85, 95, 110, 130
 series Parceiros : 45, 60, 75, 95`,
     seriesLines: `series
+%% Eixos: axis y off e axis y2 off escondem essa escala e a grelha, axis x off esconde as categorias. Um grid depois devolve as linhas sem os rótulos dos traços.
+%% Intervalo: gap 12 são píxeis, gap 20% é uma parte. No grupo a percentagem é da espessura da barra; na pilha substitui o vazio da coluna.
+%% Pilha: stacked são colunas, stacked area são áreas entre os centros. labels sum escreve a soma das partes fora; o zero não aparece.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da forma o fundo é o preenchimento, fora e na soma é a tela.
 %% Uma linha sobre as barras: line Rótulo : n1, n2, … [color=#hex] [style=…] [width=N]
 %% style: solid | dash | dot | dashdot. O padrão é solid e espessura 1.75.
 %% Pule uma categoria com um espaço vazio, "-", ou null. A linha une os pontos dos dois lados.
@@ -2132,7 +2452,7 @@ y2 "conversão, %" 0 --> 40
 %% grid y2 5 desenha a grelha do segundo eixo. grid y2 off e axis y2 off escondem-na.
 grid y2 5
 grid 20
-labels above
+labels above fontcolor auto
 series Realizado : 120, 145, 165, 190
 line Contínua : 110, 130, 150, 180 color=#0969da style=solid width=2
 line Tracejada : 100, -, 160, 175 color=#8250df style=dash
@@ -2140,6 +2460,10 @@ line Pontilhada : 90, , 155, 170 color=#2da44e style=dot width=1
 line Traço-ponto : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
 line Conversão : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
     seriesCagr: `series
+%% Eixos: axis y off e axis y2 off escondem essa escala e a grelha, axis x off esconde as categorias. Um grid depois devolve as linhas sem os rótulos dos traços.
+%% Intervalo: gap 12 são píxeis, gap 20% é uma parte. No grupo a percentagem é da espessura da barra; na pilha substitui o vazio da coluna.
+%% Pilha: stacked são colunas, stacked area são áreas entre os centros. labels sum escreve a soma das partes fora; o zero não aparece.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da forma o fundo é o preenchimento, fora e na soma é a tela.
 %% Um cagr sem números desenha uma seta da primeira barra até a última.
 title Crescimento da receita
 categories 2021, 2022, 2023, 2024
@@ -2148,6 +2472,10 @@ grid 20
 series Receita : 80, 110, 150, 190
 cagr`,
     seriesCagrRanges: `series
+%% Eixos: axis y off e axis y2 off escondem essa escala e a grelha, axis x off esconde as categorias. Um grid depois devolve as linhas sem os rótulos dos traços.
+%% Intervalo: gap 12 são píxeis, gap 20% é uma parte. No grupo a percentagem é da espessura da barra; na pilha substitui o vazio da coluna.
+%% Pilha: stacked são colunas, stacked area são áreas entre os centros. labels sum escreve a soma das partes fora; o zero não aparece.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da forma o fundo é o preenchimento, fora e na soma é a tela.
 %% Opções diferentes de cagr nos intervalos de barras 1–3, 4–6 e 7–9.
 %% A numeração das barras começa em 1. Vários cagr seguidos pertencem à série logo acima.
 %% format="0%"        inteiro, o padrão
@@ -2169,6 +2497,10 @@ cagr 5, 6 label="meta"
 cagr 8, 9 format="+0.0%"
 cagr 6, 7 format="0%" prefix="+"`,
     seriesBreak: `series
+%% Eixos: axis y off e axis y2 off escondem essa escala e a grelha, axis x off esconde as categorias. Um grid depois devolve as linhas sem os rótulos dos traços.
+%% Intervalo: gap 12 são píxeis, gap 20% é uma parte. No grupo a percentagem é da espessura da barra; na pilha substitui o vazio da coluna.
+%% Pilha: stacked são colunas, stacked area são áreas entre os centros. labels sum escreve a soma das partes fora; o zero não aparece.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da forma o fundo é o preenchimento, fora e na soma é a tela.
 %% Quebra de eixo: o trecho 200..700 é CORTADO para as barras pequenas ficarem maiores.
 %% Uma barra que atravessa a quebra é desenhada em pedaços, com um zigue-zague na linha.
 %% A mesma sintaxe do waterfall: break <depois> --> <antes> ["rótulo"]
@@ -2180,6 +2512,10 @@ break 200 --> 700 "quebra de eixo"
 series Loja virtual : 120, 180, 860, 240
 series Varejo : 80, 140, 790, 190`,
     seriesThresholds: `series
+%% Eixos: axis y off e axis y2 off escondem essa escala e a grelha, axis x off esconde as categorias. Um grid depois devolve as linhas sem os rótulos dos traços.
+%% Intervalo: gap 12 são píxeis, gap 20% é uma parte. No grupo a percentagem é da espessura da barra; na pilha substitui o vazio da coluna.
+%% Pilha: stacked são colunas, stacked area são áreas entre os centros. labels sum escreve a soma das partes fora; o zero não aparece.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da forma o fundo é o preenchimento, fora e na soma é a tela.
 %% LINHAS HORIZONTAIS — plano, meta, limiar.
 %% Isto NÃO é uma linha através das categorias: uma linha de nível não tem dois-pontos.
 %%
@@ -2197,6 +2533,10 @@ line 120 "limiar" style=dot width=1
 series Realizado : 120, 145, 165, 190
 series Referência : 110, 130, 150, 180`,
     seriesUnnamed: `series
+%% Eixos: axis y off e axis y2 off escondem essa escala e a grelha, axis x off esconde as categorias. Um grid depois devolve as linhas sem os rótulos dos traços.
+%% Intervalo: gap 12 são píxeis, gap 20% é uma parte. No grupo a percentagem é da espessura da barra; na pilha substitui o vazio da coluna.
+%% Pilha: stacked são colunas, stacked area são áreas entre os centros. labels sum escreve a soma das partes fora; o zero não aparece.
+%% Cor: labels fontcolor auto escolhe o contraste com o fundo sob o texto. labels fontcolor #1f2328 fixa uma cor. Dentro da forma o fundo é o preenchimento, fora e na soma é a tela.
 %% O nome da série e o rótulo da linha podem ficar de fora.
 %%   series : n1, n2, …     barras sem linha na legenda
 %%   line : n1, n2, …       uma linha sem legenda à direita
@@ -2212,6 +2552,9 @@ line : 70, 100, 120, 150 style=dot`,
   },
   de: {
     waterfall: `waterfall
+%% Achsen: axis y off blendet die Wertachse und ihr Gitter aus, axis x off die Spaltenbeschriftung. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück. grid off blendet nur das Gitter aus.
+%% Abstand: gap 12 sind Pixel zwischen den Balken und Spalten, gap 20% der leere Anteil. Es gibt keine zweite Achse und keine Stapelsumme.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. Im Balken ist der Untergrund die Füllung, außen die Fläche. Ohne fontcolor bleibt innen weiß und außen grau.
 %% Einfacher Wasserfall: Start, Wachstum, Rückgang, Summe.
 %% Datenzeilen: <Vorzeichen><Zahl> : <Beschriftung>
 %%   =120 : Q1   absoluter Wert (Start oder Summe)
@@ -2221,7 +2564,6 @@ line : 70, 100, 120, 150 style=dot`,
 %% Weitere Möglichkeiten: Beispiele «Achsenbruch», «mehrere Serien», «Beschriftungen».
 %% HINWEIS: die gestrichelten Linien zwischen den Balken sind Verbinder (standardmäßig an).
 %%       Ausschalten mit: connectors off
-%% axis y off blendet die Wertachse samt Gitter aus, axis x off die Spaltennamen, grid off nur das Gitter, gap den Abstand.
 title Umsatz 2026
 y "Mio. USD" 0 --> 500
 grid 100
@@ -2232,6 +2574,9 @@ grid 100
 +240 : Q4
 = : Jahressumme`,
     waterfallBreak: `waterfall
+%% Achsen: axis y off blendet die Wertachse und ihr Gitter aus, axis x off die Spaltenbeschriftung. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück. grid off blendet nur das Gitter aus.
+%% Abstand: gap 12 sind Pixel zwischen den Balken und Spalten, gap 20% der leere Anteil. Es gibt keine zweite Achse und keine Stapelsumme.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. Im Balken ist der Untergrund die Füllung, außen die Fläche. Ohne fontcolor bleibt innen weiß und außen grau.
 %% Achsenbruch: der Bereich 300..800 wird AUSGESCHNITTEN, damit kleine Schritte größer wirken.
 %% Ein Balken, der den Bruch kreuzt, wird in Stücken gezeichnet, mit einem Zickzack auf der Linie.
 title Umsatz mit Achsenbruch
@@ -2243,6 +2588,9 @@ break 300 --> 800 "Achsenbruch"
 +700 : Q3
 = : Summe`,
     waterfallMulti: `waterfall
+%% Achsen: axis y off blendet die Wertachse und ihr Gitter aus, axis x off die Spaltenbeschriftung. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück. grid off blendet nur das Gitter aus.
+%% Abstand: gap 12 sind Pixel zwischen den Balken und Spalten, gap 20% der leere Anteil. Es gibt keine zweite Achse und keine Stapelsumme.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. Im Balken ist der Untergrund die Füllung, außen die Fläche. Ohne fontcolor bleibt innen weiß und außen grau.
 %% Mehrere Serien: jede Gruppe hat eine eigene Grundfarbe,
 %% Zuwächse 20% heller, Rückgänge 25% dunkler.
 %% gap 16% ist ein Anteil Leerraum. gap 8 setzt denselben Abstand in Pixeln.
@@ -2261,6 +2609,9 @@ series Ist color=#8250df
 -35 : Q3
 = : Summe`,
     waterfallLabels: `waterfall
+%% Achsen: axis y off blendet die Wertachse und ihr Gitter aus, axis x off die Spaltenbeschriftung. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück. grid off blendet nur das Gitter aus.
+%% Abstand: gap 12 sind Pixel zwischen den Balken und Spalten, gap 20% der leere Anteil. Es gibt keine zweite Achse und keine Stapelsumme.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. Im Balken ist der Untergrund die Füllung, außen die Fläche. Ohne fontcolor bleibt innen weiß und außen grau.
 %% BESCHRIFTUNGEN UND LINIEN — das, was am häufigsten fehlt.
 %%
 %% 1) inside und above wählen, wohin die Wertbeschriftung kommt.
@@ -2273,7 +2624,7 @@ series Ist color=#8250df
 %%    Beide Positionen mit derselben Zahl:
 %%      = : Summe inside above
 %%    Für alle Balken auf einmal:  labels inside | above | both | none
-%%    Die innere Beschriftung ist weiß, die über dem Balken grau.
+%%    labels fontcolor auto wählt den Kontrast zum Untergrund: im Balken die Füllung, außen die Fläche. labels fontcolor #1f2328 setzt eine Farbe. Ohne fontcolor bleibt innen weiß und außen grau.
 %%    Text, der nicht in den Balken passt, wandert einmalig darüber.
 %%
 %% 2) LINIEN zwischen Balken sind eine DIREKTIVE in einer eigenen Zeile (kein Flag):
@@ -2292,11 +2643,15 @@ y "Mio. USD" 0 --> 200
 grid 50
 connectors on
 colors total=#1f6feb increase=#2da44e decrease=#cf222e
+labels fontcolor auto
 =90 : Q1 inside
 +60 : Q2 inside="60" above="+60 Mio."
 -25 : Q3 above
 = : Summe inside above`,
     waterfallNoLines: `waterfall
+%% Achsen: axis y off blendet die Wertachse und ihr Gitter aus, axis x off die Spaltenbeschriftung. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück. grid off blendet nur das Gitter aus.
+%% Abstand: gap 12 sind Pixel zwischen den Balken und Spalten, gap 20% der leere Anteil. Es gibt keine zweite Achse und keine Stapelsumme.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. Im Balken ist der Untergrund die Füllung, außen die Fläche. Ohne fontcolor bleibt innen weiß und außen grau.
 %% LINIEN AUS — derselbe Wasserfall wie «Beschriftungen und Linien»,
 %% aber ohne die gestrichelten Verbinder: ein klares Bild für die Präsentation.
 %%
@@ -2315,6 +2670,9 @@ colors total=#1f6feb increase=#2da44e decrease=#cf222e
 -25 : Q3 above
 = : Summe inside above`,
     waterfallThresholds: `waterfall
+%% Achsen: axis y off blendet die Wertachse und ihr Gitter aus, axis x off die Spaltenbeschriftung. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück. grid off blendet nur das Gitter aus.
+%% Abstand: gap 12 sind Pixel zwischen den Balken und Spalten, gap 20% der leere Anteil. Es gibt keine zweite Achse und keine Stapelsumme.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. Im Balken ist der Untergrund die Füllung, außen die Fläche. Ohne fontcolor bleibt innen weiß und außen grau.
 %% HORIZONTALE LINIEN MIT BESCHRIFTUNG — Planniveau, Ziel, Schwelle.
 %%
 %% Die Direktive steht in einer EIGENEN Zeile (kein Flag in einer Datenzeile):
@@ -2340,6 +2698,9 @@ line 250 "Schwelle" style=dot width=1
 +240 : Q4
 = : Jahressumme`,
     waterfallMono: `waterfall
+%% Achsen: axis y off blendet die Wertachse und ihr Gitter aus, axis x off die Spaltenbeschriftung. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück. grid off blendet nur das Gitter aus.
+%% Abstand: gap 12 sind Pixel zwischen den Balken und Spalten, gap 20% der leere Anteil. Es gibt keine zweite Achse und keine Stapelsumme.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. Im Balken ist der Untergrund die Füllung, außen die Fläche. Ohne fontcolor bleibt innen weiß und außen grau.
 %% Schwarz-Weiß-Modus: keine Farben nötig, die Balken unterscheiden sich durch die Helligkeit.
 %% Praktisch für den Druck und für Dokumente ohne Farbe.
 %% Eigene Farben funktionieren auch hier — sie ersetzen die Grauskala.
@@ -2474,6 +2835,10 @@ Ostterminal : x=82, y=56, group=Region
 Zentrallager : x=50, y=50, group=Kern
 Südwesten : x=24, y=22, group=Region, color=#f97316`,
     clustered: `series
+%% Achsen: axis y off und axis y2 off blenden diese Skala und ihr Gitter aus, axis x off die Kategorien. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück.
+%% Abstand: gap 12 sind Pixel, gap 20% ein Anteil. In einer Gruppe ist der Prozentwert die Balkendicke, im Stapel ersetzt er den Leerraum der Spalte.
+%% Stapel: stacked zeichnet Säulen, stacked area Flächen zwischen den Kategoriemittelpunkten. labels sum schreibt die Summe der Teile außen; null entfällt.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. In der Form ist der Untergrund die Füllung, außen und bei der Summe die Fläche.
 %% Seriendiagramm: gruppiert mehrere Serien in jeder Kategorie nebeneinander.
 %% Um das Diagramm um 90 Grad zu drehen (waagerechte Balken), ergänzen: rotate 90
 %% Direktiven:
@@ -2481,18 +2846,21 @@ Südwesten : x=24, y=22, group=Region, color=#f97316`,
 %%   y "Beschriftung" min --> max     Skala der Werteachse
 %%   labels above|inside|none  Wertbeschriftungen
 %%   colors s1=#hex s2=#hex    Serienpalette (oder color=#hex in der series-Zeile, oder mono)
-%% axis y off und axis x off blenden die Achse samt Gitter aus. gap 4 ist der Abstand in Pixeln.
 title Umsatz nach Vertriebskanal
 categories Q1, Q2, Q3, Q4
 y "Mio. USD" 0 --> 200
 grid 50
 gap 4
-labels above
+labels above fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Onlinehandel : 120, 145, 165, 190
 series Einzelhandel : 85, 95, 110, 130
 series Partner : 45, 60, 75, 95 color=#f97316`,
     clusteredRotated: `series
+%% Achsen: axis y off und axis y2 off blenden diese Skala und ihr Gitter aus, axis x off die Kategorien. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück.
+%% Abstand: gap 12 sind Pixel, gap 20% ein Anteil. In einer Gruppe ist der Prozentwert die Balkendicke, im Stapel ersetzt er den Leerraum der Spalte.
+%% Stapel: stacked zeichnet Säulen, stacked area Flächen zwischen den Kategoriemittelpunkten. labels sum schreibt die Summe der Teile außen; null entfällt.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. In der Form ist der Untergrund die Füllung, außen und bei der Summe die Fläche.
 %% Seriendiagramm UM 90 GRAD GEDREHT (rotate 90).
 %% Die Direktive rotate 90 (oder orientation horizontal) tauscht die Achsen:
 %% Kategorien laufen links von oben nach unten, und die Balken wachsen von links nach rechts.
@@ -2503,12 +2871,16 @@ rotate 90
 categories Q1, Q2, Q3, Q4
 y "Mio. USD" 0 --> 200
 grid 50
-labels above
+labels above fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Onlinehandel : 120, 145, 165, 190
 series Einzelhandel : 85, 95, 110, 130
 series Partner : 45, 60, 75, 95 color=#f97316`,
     clusteredStacked: `series
+%% Achsen: axis y off und axis y2 off blenden diese Skala und ihr Gitter aus, axis x off die Kategorien. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück.
+%% Abstand: gap 12 sind Pixel, gap 20% ein Anteil. In einer Gruppe ist der Prozentwert die Balkendicke, im Stapel ersetzt er den Leerraum der Spalte.
+%% Stapel: stacked zeichnet Säulen, stacked area Flächen zwischen den Kategoriemittelpunkten. labels sum schreibt die Summe der Teile außen; null entfällt.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. In der Form ist der Untergrund die Füllung, außen und bei der Summe die Fläche.
 %% Gestapelte Balken: die Serien teilen sich eine Säule, statt nebeneinander zu stehen.
 %% stacked / bars stacked / layout stacked
 %% Flächen stehen im eigenen Beispiel seriesArea. Hier bleiben Säulen.
@@ -2520,19 +2892,23 @@ gap 8%
 categories Q1, Q2, Q3, Q4
 y "Mio. USD" 0 --> 400
 grid 50
-labels inside sum
+labels inside sum fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series Produkt : 80, 90, 70, 110
 series Dienste : 50, 60, 55, 70
 series Partner : 30, 25, 40, 35`,
     seriesArea: `series
+%% Achsen: axis y off und axis y2 off blenden diese Skala und ihr Gitter aus, axis x off die Kategorien. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück.
+%% Abstand: gap 12 sind Pixel, gap 20% ein Anteil. In einer Gruppe ist der Prozentwert die Balkendicke, im Stapel ersetzt er den Leerraum der Spalte.
+%% Stapel: stacked zeichnet Säulen, stacked area Flächen zwischen den Kategoriemittelpunkten. labels sum schreibt die Summe der Teile außen; null entfällt.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. In der Form ist der Untergrund die Füllung, außen und bei der Summe die Fläche.
 %% Flächen: stacked area verbindet den Stapel über die Kategoriemitten.
 %% Eine Lücke (-, leer, null) bricht das Band und addiert keine Höhe.
 %% labels sum schreibt die Summe außen. Null wird nicht beschriftet.
 %% Der Modus bleibt mit rotate 90, line, break und cagr nutzbar.
 title Zusammensetzung als Flächen
 stacked area
-labels sum
+labels sum fontcolor auto
 gap 12%
 categories Q1, Q2, Q3, Q4
 y "Mio. USD" 0 --> 400
@@ -2540,6 +2916,10 @@ series Produkt : 80, 90, 70, 110
 series Dienste : 50, 60, 55, 70
 series Partner : 30, 25, 40, 35`,
     clusteredMono: `series
+%% Achsen: axis y off und axis y2 off blenden diese Skala und ihr Gitter aus, axis x off die Kategorien. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück.
+%% Abstand: gap 12 sind Pixel, gap 20% ein Anteil. In einer Gruppe ist der Prozentwert die Balkendicke, im Stapel ersetzt er den Leerraum der Spalte.
+%% Stapel: stacked zeichnet Säulen, stacked area Flächen zwischen den Kategoriemittelpunkten. labels sum schreibt die Summe der Teile außen; null entfällt.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. In der Form ist der Untergrund die Füllung, außen und bei der Summe die Fläche.
 %% Schwarz-Weiß: die Serien unterscheiden sich durch die Helligkeit, nicht durch den Farbton.
 %% Ausdrückliche colors ersetzen die Grauskala, deshalb lässt dieses Beispiel sie weg.
 title Umsatz, Schwarz-Weiß
@@ -2551,6 +2931,10 @@ series Onlinehandel : 120, 145, 165, 190
 series Einzelhandel : 85, 95, 110, 130
 series Partner : 45, 60, 75, 95`,
     clusteredMonoInvert: `series
+%% Achsen: axis y off und axis y2 off blenden diese Skala und ihr Gitter aus, axis x off die Kategorien. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück.
+%% Abstand: gap 12 sind Pixel, gap 20% ein Anteil. In einer Gruppe ist der Prozentwert die Balkendicke, im Stapel ersetzt er den Leerraum der Spalte.
+%% Stapel: stacked zeichnet Säulen, stacked area Flächen zwischen den Kategoriemittelpunkten. labels sum schreibt die Summe der Teile außen; null entfällt.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. In der Form ist der Untergrund die Füllung, außen und bei der Summe die Fläche.
 %% Invertiertes Schwarz-Weiß: hellgraue Balken auf dunkler Fläche.
 %% Für dunkle Themen und dunkle Folien. mono off bringt die Farbe zurück.
 title Umsatz, invertiertes Schwarz-Weiß
@@ -2562,6 +2946,10 @@ series Onlinehandel : 120, 145, 165, 190
 series Einzelhandel : 85, 95, 110, 130
 series Partner : 45, 60, 75, 95`,
     seriesLines: `series
+%% Achsen: axis y off und axis y2 off blenden diese Skala und ihr Gitter aus, axis x off die Kategorien. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück.
+%% Abstand: gap 12 sind Pixel, gap 20% ein Anteil. In einer Gruppe ist der Prozentwert die Balkendicke, im Stapel ersetzt er den Leerraum der Spalte.
+%% Stapel: stacked zeichnet Säulen, stacked area Flächen zwischen den Kategoriemittelpunkten. labels sum schreibt die Summe der Teile außen; null entfällt.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. In der Form ist der Untergrund die Füllung, außen und bei der Summe die Fläche.
 %% Eine Linie über den Balken: line Beschriftung : w1, w2, … [color=#hex] [style=…] [width=N]
 %% style: solid | dash | dot | dashdot. Vorgabe ist solid und Stärke 1.75.
 %% Eine Kategorie mit einer leeren Stelle, "-", oder null auslassen. Die Linie verbindet die Punkte daneben.
@@ -2573,7 +2961,7 @@ y2 "Conversion, %" 0 --> 40
 %% grid y2 5 zeichnet das Gitter der zweiten Achse. grid y2 off und axis y2 off blenden es aus.
 grid y2 5
 grid 20
-labels above
+labels above fontcolor auto
 series Ist : 120, 145, 165, 190
 line Durchgezogen : 110, 130, 150, 180 color=#0969da style=solid width=2
 line Gestrichelt : 100, -, 160, 175 color=#8250df style=dash
@@ -2581,6 +2969,10 @@ line Gepunktet : 90, , 155, 170 color=#2da44e style=dot width=1
 line Strichpunkt : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
 line Conversion : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
     seriesCagr: `series
+%% Achsen: axis y off und axis y2 off blenden diese Skala und ihr Gitter aus, axis x off die Kategorien. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück.
+%% Abstand: gap 12 sind Pixel, gap 20% ein Anteil. In einer Gruppe ist der Prozentwert die Balkendicke, im Stapel ersetzt er den Leerraum der Spalte.
+%% Stapel: stacked zeichnet Säulen, stacked area Flächen zwischen den Kategoriemittelpunkten. labels sum schreibt die Summe der Teile außen; null entfällt.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. In der Form ist der Untergrund die Füllung, außen und bei der Summe die Fläche.
 %% Ein cagr ohne Nummern zeichnet einen Pfeil vom ersten Balken zum letzten.
 title Umsatzwachstum
 categories 2021, 2022, 2023, 2024
@@ -2589,6 +2981,10 @@ grid 20
 series Umsatz : 80, 110, 150, 190
 cagr`,
     seriesCagrRanges: `series
+%% Achsen: axis y off und axis y2 off blenden diese Skala und ihr Gitter aus, axis x off die Kategorien. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück.
+%% Abstand: gap 12 sind Pixel, gap 20% ein Anteil. In einer Gruppe ist der Prozentwert die Balkendicke, im Stapel ersetzt er den Leerraum der Spalte.
+%% Stapel: stacked zeichnet Säulen, stacked area Flächen zwischen den Kategoriemittelpunkten. labels sum schreibt die Summe der Teile außen; null entfällt.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. In der Form ist der Untergrund die Füllung, außen und bei der Summe die Fläche.
 %% Verschiedene cagr-Optionen auf den Balkenbereichen 1–3, 4–6 und 7–9.
 %% Die Balkennummern beginnen bei 1. Aufeinanderfolgende cagr gehören zur Serie direkt darüber.
 %% format="0%"        ganze Zahl, die Vorgabe
@@ -2610,6 +3006,10 @@ cagr 5, 6 label="Ziel"
 cagr 8, 9 format="+0.0%"
 cagr 6, 7 format="0%" prefix="+"`,
     seriesBreak: `series
+%% Achsen: axis y off und axis y2 off blenden diese Skala und ihr Gitter aus, axis x off die Kategorien. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück.
+%% Abstand: gap 12 sind Pixel, gap 20% ein Anteil. In einer Gruppe ist der Prozentwert die Balkendicke, im Stapel ersetzt er den Leerraum der Spalte.
+%% Stapel: stacked zeichnet Säulen, stacked area Flächen zwischen den Kategoriemittelpunkten. labels sum schreibt die Summe der Teile außen; null entfällt.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. In der Form ist der Untergrund die Füllung, außen und bei der Summe die Fläche.
 %% Achsenbruch: der Bereich 200..700 wird AUSGESCHNITTEN, damit kleine Balken größer wirken.
 %% Ein Balken, der den Bruch kreuzt, wird in Stücken gezeichnet, mit einem Zickzack auf der Linie.
 %% Dieselbe Syntax wie waterfall: break <danach> --> <davor> ["Beschriftung"]
@@ -2621,6 +3021,10 @@ break 200 --> 700 "Achsenbruch"
 series Onlinehandel : 120, 180, 860, 240
 series Einzelhandel : 80, 140, 790, 190`,
     seriesThresholds: `series
+%% Achsen: axis y off und axis y2 off blenden diese Skala und ihr Gitter aus, axis x off die Kategorien. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück.
+%% Abstand: gap 12 sind Pixel, gap 20% ein Anteil. In einer Gruppe ist der Prozentwert die Balkendicke, im Stapel ersetzt er den Leerraum der Spalte.
+%% Stapel: stacked zeichnet Säulen, stacked area Flächen zwischen den Kategoriemittelpunkten. labels sum schreibt die Summe der Teile außen; null entfällt.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. In der Form ist der Untergrund die Füllung, außen und bei der Summe die Fläche.
 %% HORIZONTALE LINIEN — Plan, Ziel, Schwelle.
 %% Das ist KEINE Linie über die Kategorien: eine Niveaulinie hat keinen Doppelpunkt.
 %%
@@ -2638,6 +3042,10 @@ line 120 "Schwelle" style=dot width=1
 series Ist : 120, 145, 165, 190
 series Leitwert : 110, 130, 150, 180`,
     seriesUnnamed: `series
+%% Achsen: axis y off und axis y2 off blenden diese Skala und ihr Gitter aus, axis x off die Kategorien. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück.
+%% Abstand: gap 12 sind Pixel, gap 20% ein Anteil. In einer Gruppe ist der Prozentwert die Balkendicke, im Stapel ersetzt er den Leerraum der Spalte.
+%% Stapel: stacked zeichnet Säulen, stacked area Flächen zwischen den Kategoriemittelpunkten. labels sum schreibt die Summe der Teile außen; null entfällt.
+%% Farbe: labels fontcolor auto wählt den Kontrast zum Untergrund. labels fontcolor #1f2328 setzt eine Farbe. In der Form ist der Untergrund die Füllung, außen und bei der Summe die Fläche.
 %% Der Serienname und die Linienbeschriftung können wegbleiben.
 %%   series : w1, w2, …     Balken ohne Zeile in der Legende
 %%   line : w1, w2, …       eine Linie ohne Beschriftung rechts
@@ -2653,6 +3061,9 @@ line : 70, 100, 120, 150 style=dot`,
   },
   ar: {
     waterfall: `waterfall
+%% المحاور: axis y off يخفي محور القيم وشبكةه، وaxis x off يخفي تسميات الأعمدة. grid لاحق يعيد الخطوط بلا تسميات التدريج. grid off يخفي الشبكة فقط.
+%% الفجوة: gap 12 بكسل بين الأعمدة، وgap 20% نسبة الفراغ. لا محور ثانٍ ولا مجموع تكديس.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل العمود السطح هو التعبئة، وخارجه لوحة الرسم. بلا fontcolor يبقى الداخل أبيض والخارج رماديًا.
 %% شلال أساسي: بداية ونمو وانخفاض وإجمالي.
 %% صفوف البيانات: <إشارة><عدد> : <تسمية>
 %%   =120 : Q1   قيمة مطلقة (بداية أو إجمالي)
@@ -2662,7 +3073,6 @@ line : 70, 100, 120, 150 style=dot`,
 %% مزيد من الإمكانات: أمثلة «قطع المحور» و«سلاسل متعددة» و«التسميات».
 %% ملاحظة: الخطوط المتقطعة بين الأعمدة موصلات (مفعّلة افتراضيًا).
 %%       لإيقافها: connectors off
-%% axis y off يخفي محور القيم وشبكتَه، axis x off تسميات الأعمدة، grid off الشبكة فقط، gap الفجوة.
 title إيراد 2026
 y "مليون دولار" 0 --> 500
 grid 100
@@ -2673,6 +3083,9 @@ grid 100
 +240 : Q4
 = : إجمالي السنة`,
     waterfallBreak: `waterfall
+%% المحاور: axis y off يخفي محور القيم وشبكةه، وaxis x off يخفي تسميات الأعمدة. grid لاحق يعيد الخطوط بلا تسميات التدريج. grid off يخفي الشبكة فقط.
+%% الفجوة: gap 12 بكسل بين الأعمدة، وgap 20% نسبة الفراغ. لا محور ثانٍ ولا مجموع تكديس.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل العمود السطح هو التعبئة، وخارجه لوحة الرسم. بلا fontcolor يبقى الداخل أبيض والخارج رماديًا.
 %% قطع المحور: المدى 300..800 مقطوع حتى تبدو الخطوات الصغيرة أكبر.
 %% العمود الذي يمر بالقطع يُرسم أجزاءً، مع خط متعرج على الحد.
 title إيراد مع قطع المحور
@@ -2684,6 +3097,9 @@ break 300 --> 800 "قطع المحور"
 +700 : Q3
 = : الإجمالي`,
     waterfallMulti: `waterfall
+%% المحاور: axis y off يخفي محور القيم وشبكةه، وaxis x off يخفي تسميات الأعمدة. grid لاحق يعيد الخطوط بلا تسميات التدريج. grid off يخفي الشبكة فقط.
+%% الفجوة: gap 12 بكسل بين الأعمدة، وgap 20% نسبة الفراغ. لا محور ثانٍ ولا مجموع تكديس.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل العمود السطح هو التعبئة، وخارجه لوحة الرسم. بلا fontcolor يبقى الداخل أبيض والخارج رماديًا.
 %% سلاسل متعددة: لكل مجموعة لون أساس،
 %% الزيادة أفتح بنسبة 20% والنقصان أغمق بنسبة 25%.
 %% gap 16% نسبة الفراغ. gap 8 يحدد المسافة نفسها بالبكسل.
@@ -2702,6 +3118,9 @@ series الفعلي color=#8250df
 -35 : Q3
 = : الإجمالي`,
     waterfallLabels: `waterfall
+%% المحاور: axis y off يخفي محور القيم وشبكةه، وaxis x off يخفي تسميات الأعمدة. grid لاحق يعيد الخطوط بلا تسميات التدريج. grid off يخفي الشبكة فقط.
+%% الفجوة: gap 12 بكسل بين الأعمدة، وgap 20% نسبة الفراغ. لا محور ثانٍ ولا مجموع تكديس.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل العمود السطح هو التعبئة، وخارجه لوحة الرسم. بلا fontcolor يبقى الداخل أبيض والخارج رماديًا.
 %% التسميات والخطوط — الأمران اللذان يُنسيان أكثر من غيرهما.
 %%
 %% 1) inside و above يحددان موضع تسمية القيمة.
@@ -2714,7 +3133,7 @@ series الفعلي color=#8250df
 %%    الموضعان بالعدد نفسه:
 %%      = : الإجمالي inside above
 %%    لكل الأعمدة دفعة واحدة:  labels inside | above | both | none
-%%    التسمية الداخلية بيضاء، والتي فوق العمود رمادية.
+%%    labels fontcolor auto يختار التباين مع السطح تحت النص: داخل العمود التعبئة، وخارجه لوحة الرسم. labels fontcolor #1f2328 يثبت لونًا. بلا fontcolor يبقى الداخل أبيض والخارج رماديًا.
 %%    النص الذي لا يتسع داخل العمود ينتقل فوقه مرة واحدة.
 %%
 %% 2) الخطوط بين الأعمدة توجيه في سطر مستقل (ليست علمًا):
@@ -2733,11 +3152,15 @@ y "مليون دولار" 0 --> 200
 grid 50
 connectors on
 colors total=#1f6feb increase=#2da44e decrease=#cf222e
+labels fontcolor auto
 =90 : Q1 inside
 +60 : Q2 inside="60" above="+60 مليون"
 -25 : Q3 above
 = : الإجمالي inside above`,
     waterfallNoLines: `waterfall
+%% المحاور: axis y off يخفي محور القيم وشبكةه، وaxis x off يخفي تسميات الأعمدة. grid لاحق يعيد الخطوط بلا تسميات التدريج. grid off يخفي الشبكة فقط.
+%% الفجوة: gap 12 بكسل بين الأعمدة، وgap 20% نسبة الفراغ. لا محور ثانٍ ولا مجموع تكديس.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل العمود السطح هو التعبئة، وخارجه لوحة الرسم. بلا fontcolor يبقى الداخل أبيض والخارج رماديًا.
 %% الخطوط متوقفة — الشلال نفسه كما في «التسميات والخطوط»،
 %% لكن بلا الموصلات المتقطعة: صورة نظيفة للعرض.
 %%
@@ -2756,6 +3179,9 @@ colors total=#1f6feb increase=#2da44e decrease=#cf222e
 -25 : Q3 above
 = : الإجمالي inside above`,
     waterfallThresholds: `waterfall
+%% المحاور: axis y off يخفي محور القيم وشبكةه، وaxis x off يخفي تسميات الأعمدة. grid لاحق يعيد الخطوط بلا تسميات التدريج. grid off يخفي الشبكة فقط.
+%% الفجوة: gap 12 بكسل بين الأعمدة، وgap 20% نسبة الفراغ. لا محور ثانٍ ولا مجموع تكديس.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل العمود السطح هو التعبئة، وخارجه لوحة الرسم. بلا fontcolor يبقى الداخل أبيض والخارج رماديًا.
 %% خطوط أفقية مع تسمية — مستوى الخطة والهدف والعتبة.
 %%
 %% التوجيه في سطر مستقل (ليس علمًا داخل صف بيانات):
@@ -2781,6 +3207,9 @@ line 250 "عتبة" style=dot width=1
 +240 : Q4
 = : إجمالي السنة`,
     waterfallMono: `waterfall
+%% المحاور: axis y off يخفي محور القيم وشبكةه، وaxis x off يخفي تسميات الأعمدة. grid لاحق يعيد الخطوط بلا تسميات التدريج. grid off يخفي الشبكة فقط.
+%% الفجوة: gap 12 بكسل بين الأعمدة، وgap 20% نسبة الفراغ. لا محور ثانٍ ولا مجموع تكديس.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل العمود السطح هو التعبئة، وخارجه لوحة الرسم. بلا fontcolor يبقى الداخل أبيض والخارج رماديًا.
 %% وضع أبيض وأسود: لا حاجة إلى الألوان، الأعمدة تختلف بدرجة الإضاءة.
 %% مناسب للطباعة وللمستندات بلا لون.
 %% الألوان الخاصة تظل تعمل هنا — وهي تستبدل تدرج الرمادي.
@@ -2915,6 +3344,10 @@ data
 المستودع المركزي : x=50, y=50, group=القلب
 الجنوب الغربي : x=24, y=22, group=الإقليم, color=#f97316`,
     clustered: `series
+%% المحاور: axis y off وaxis y2 off يخفيان ذلك المقياس وشبكةه، وaxis x off يخفي الفئات. grid لاحق يعيد الخطوط بلا تسميات التدريج.
+%% الفجوة: gap 12 بكسل، وgap 20% نسبة. في المجموعة النسبة من سُمك العمود، وفي التكديس تستبدل الفراغ.
+%% التكديس: stacked أعمدة، وstacked area مساحات بين مراكز الفئات. labels sum يكتب مجموع الأجزاء في الخارج، والصفر لا يُكتب.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل الشكل السطح هو التعبئة، وخارجه وعند المجموع لوحة الرسم.
 %% مخطط سلاسل: يجمع سلاسل عدة جنبًا إلى جنب في كل فئة.
 %% لتدوير الرسم 90 درجة (أشرطة أفقية)، أضف: rotate 90
 %% التوجيهات:
@@ -2922,18 +3355,21 @@ data
 %%   y "تسمية" min --> max     مقياس محور القيم
 %%   labels above|inside|none  تسميات القيم
 %%   colors s1=#hex s2=#hex    لوحة السلاسل (أو color=#hex في صف series، أو mono)
-%% axis y off و axis x off يخفيان المحور وشبكتَه. gap 4 هي الفجوة بالبكسل.
 title الإيراد حسب قناة البيع
 categories Q1, Q2, Q3, Q4
 y "مليون دولار" 0 --> 200
 grid 50
 gap 4
-labels above
+labels above fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series الإلكتروني : 120, 145, 165, 190
 series التجزئة : 85, 95, 110, 130
 series الشركاء : 45, 60, 75, 95 color=#f97316`,
     clusteredRotated: `series
+%% المحاور: axis y off وaxis y2 off يخفيان ذلك المقياس وشبكةه، وaxis x off يخفي الفئات. grid لاحق يعيد الخطوط بلا تسميات التدريج.
+%% الفجوة: gap 12 بكسل، وgap 20% نسبة. في المجموعة النسبة من سُمك العمود، وفي التكديس تستبدل الفراغ.
+%% التكديس: stacked أعمدة، وstacked area مساحات بين مراكز الفئات. labels sum يكتب مجموع الأجزاء في الخارج، والصفر لا يُكتب.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل الشكل السطح هو التعبئة، وخارجه وعند المجموع لوحة الرسم.
 %% مخطط سلاسل مُدوّر 90 درجة (rotate 90).
 %% التوجيه rotate 90 (أو orientation horizontal) يبادل المحورين:
 %% الفئات تنزل من الأعلى إلى الأسفل على اليسار، والأشرطة تنمو من اليسار إلى اليمين.
@@ -2944,12 +3380,16 @@ rotate 90
 categories Q1, Q2, Q3, Q4
 y "مليون دولار" 0 --> 200
 grid 50
-labels above
+labels above fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series الإلكتروني : 120, 145, 165, 190
 series التجزئة : 85, 95, 110, 130
 series الشركاء : 45, 60, 75, 95 color=#f97316`,
     clusteredStacked: `series
+%% المحاور: axis y off وaxis y2 off يخفيان ذلك المقياس وشبكةه، وaxis x off يخفي الفئات. grid لاحق يعيد الخطوط بلا تسميات التدريج.
+%% الفجوة: gap 12 بكسل، وgap 20% نسبة. في المجموعة النسبة من سُمك العمود، وفي التكديس تستبدل الفراغ.
+%% التكديس: stacked أعمدة، وstacked area مساحات بين مراكز الفئات. labels sum يكتب مجموع الأجزاء في الخارج، والصفر لا يُكتب.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل الشكل السطح هو التعبئة، وخارجه وعند المجموع لوحة الرسم.
 %% أشرطة مكدسة: السلاسل تشترك في عمود واحد بدل أن تقف جنبًا إلى جنب.
 %% stacked / bars stacked / layout stacked
 %% المساحات في المثال المنفصل seriesArea. هنا تبقى أعمدة.
@@ -2961,19 +3401,23 @@ gap 8%
 categories Q1, Q2, Q3, Q4
 y "مليون دولار" 0 --> 400
 grid 50
-labels inside sum
+labels inside sum fontcolor auto
 colors s1=#0969da s2=#8250df s3=#2da44e
 series المنتج : 80, 90, 70, 110
 series الخدمات : 50, 60, 55, 70
 series الشركاء : 30, 25, 40, 35`,
     seriesArea: `series
+%% المحاور: axis y off وaxis y2 off يخفيان ذلك المقياس وشبكةه، وaxis x off يخفي الفئات. grid لاحق يعيد الخطوط بلا تسميات التدريج.
+%% الفجوة: gap 12 بكسل، وgap 20% نسبة. في المجموعة النسبة من سُمك العمود، وفي التكديس تستبدل الفراغ.
+%% التكديس: stacked أعمدة، وstacked area مساحات بين مراكز الفئات. labels sum يكتب مجموع الأجزاء في الخارج، والصفر لا يُكتب.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل الشكل السطح هو التعبئة، وخارجه وعند المجموع لوحة الرسم.
 %% مساحات: stacked area يصل الكومة عبر مراكز الفئات.
 %% الفراغ (- أو فارغ أو null) يقطع الشريط ولا يضيف ارتفاعًا.
 %% labels sum يكتب المجموع خارج الكومة. الصفر لا يُعرض.
 %% يبقى مع rotate 90 و line و break و cagr.
 title التركيب كمساحات
 stacked area
-labels sum
+labels sum fontcolor auto
 gap 12%
 categories Q1, Q2, Q3, Q4
 y "مليون دولار" 0 --> 400
@@ -2981,6 +3425,10 @@ series المنتج : 80, 90, 70, 110
 series الخدمات : 50, 60, 55, 70
 series الشركاء : 30, 25, 40, 35`,
     clusteredMono: `series
+%% المحاور: axis y off وaxis y2 off يخفيان ذلك المقياس وشبكةه، وaxis x off يخفي الفئات. grid لاحق يعيد الخطوط بلا تسميات التدريج.
+%% الفجوة: gap 12 بكسل، وgap 20% نسبة. في المجموعة النسبة من سُمك العمود، وفي التكديس تستبدل الفراغ.
+%% التكديس: stacked أعمدة، وstacked area مساحات بين مراكز الفئات. labels sum يكتب مجموع الأجزاء في الخارج، والصفر لا يُكتب.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل الشكل السطح هو التعبئة، وخارجه وعند المجموع لوحة الرسم.
 %% أبيض وأسود: السلاسل تختلف بدرجة الإضاءة لا بالصبغة.
 %% colors الصريحة تستبدل تدرج الرمادي، لذا هذا المثال لا يكتبها.
 title الإيراد، أبيض وأسود
@@ -2992,6 +3440,10 @@ series الإلكتروني : 120, 145, 165, 190
 series التجزئة : 85, 95, 110, 130
 series الشركاء : 45, 60, 75, 95`,
     clusteredMonoInvert: `series
+%% المحاور: axis y off وaxis y2 off يخفيان ذلك المقياس وشبكةه، وaxis x off يخفي الفئات. grid لاحق يعيد الخطوط بلا تسميات التدريج.
+%% الفجوة: gap 12 بكسل، وgap 20% نسبة. في المجموعة النسبة من سُمك العمود، وفي التكديس تستبدل الفراغ.
+%% التكديس: stacked أعمدة، وstacked area مساحات بين مراكز الفئات. labels sum يكتب مجموع الأجزاء في الخارج، والصفر لا يُكتب.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل الشكل السطح هو التعبئة، وخارجه وعند المجموع لوحة الرسم.
 %% أبيض وأسود معكوس: أشرطة رمادية فاتحة على رقعة داكنة.
 %% للسمات الداكنة والشرائح الداكنة. mono off يعيد اللون.
 title الإيراد، أبيض وأسود معكوس
@@ -3003,6 +3455,10 @@ series الإلكتروني : 120, 145, 165, 190
 series التجزئة : 85, 95, 110, 130
 series الشركاء : 45, 60, 75, 95`,
     seriesLines: `series
+%% المحاور: axis y off وaxis y2 off يخفيان ذلك المقياس وشبكةه، وaxis x off يخفي الفئات. grid لاحق يعيد الخطوط بلا تسميات التدريج.
+%% الفجوة: gap 12 بكسل، وgap 20% نسبة. في المجموعة النسبة من سُمك العمود، وفي التكديس تستبدل الفراغ.
+%% التكديس: stacked أعمدة، وstacked area مساحات بين مراكز الفئات. labels sum يكتب مجموع الأجزاء في الخارج، والصفر لا يُكتب.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل الشكل السطح هو التعبئة، وخارجه وعند المجموع لوحة الرسم.
 %% خط فوق الأعمدة: line تسمية : ق1, ق2, … [color=#hex] [style=…] [width=N]
 %% style: solid | dash | dot | dashdot. الافتراضي solid والسماكة 1.75.
 %% تجاوز فئة بفراغ فارغ أو "-" أو null. يصل الخط النقاط على الجانبين.
@@ -3014,7 +3470,7 @@ y2 "التحويل, %" 0 --> 40
 %% grid y2 5 يرسم شبكة المحور الثاني. grid y2 off و axis y2 off يخفيانها.
 grid y2 5
 grid 20
-labels above
+labels above fontcolor auto
 series الفعلي : 120, 145, 165, 190
 line متصلة : 110, 130, 150, 180 color=#0969da style=solid width=2
 line متقطعة : 100, -, 160, 175 color=#8250df style=dash
@@ -3022,6 +3478,10 @@ line نقطية : 90, , 155, 170 color=#2da44e style=dot width=1
 line شرطة-نقطة : 80, 120, null, 160 color=#f97316 style=dashdot width=2.5
 line التحويل : 14, 19, 26, 34 axis=y2 color=#d33682 style=solid width=2`,
     seriesCagr: `series
+%% المحاور: axis y off وaxis y2 off يخفيان ذلك المقياس وشبكةه، وaxis x off يخفي الفئات. grid لاحق يعيد الخطوط بلا تسميات التدريج.
+%% الفجوة: gap 12 بكسل، وgap 20% نسبة. في المجموعة النسبة من سُمك العمود، وفي التكديس تستبدل الفراغ.
+%% التكديس: stacked أعمدة، وstacked area مساحات بين مراكز الفئات. labels sum يكتب مجموع الأجزاء في الخارج، والصفر لا يُكتب.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل الشكل السطح هو التعبئة، وخارجه وعند المجموع لوحة الرسم.
 %% cagr بلا أرقام يرسم سهمًا من أول عمود إلى آخر عمود.
 title نمو الإيراد
 categories 2021, 2022, 2023, 2024
@@ -3030,6 +3490,10 @@ grid 20
 series الإيراد : 80, 110, 150, 190
 cagr`,
     seriesCagrRanges: `series
+%% المحاور: axis y off وaxis y2 off يخفيان ذلك المقياس وشبكةه، وaxis x off يخفي الفئات. grid لاحق يعيد الخطوط بلا تسميات التدريج.
+%% الفجوة: gap 12 بكسل، وgap 20% نسبة. في المجموعة النسبة من سُمك العمود، وفي التكديس تستبدل الفراغ.
+%% التكديس: stacked أعمدة، وstacked area مساحات بين مراكز الفئات. labels sum يكتب مجموع الأجزاء في الخارج، والصفر لا يُكتب.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل الشكل السطح هو التعبئة، وخارجه وعند المجموع لوحة الرسم.
 %% خيارات cagr مختلفة على نطاقات الأعمدة 1–3 و4–6 و7–9.
 %% أرقام الأعمدة تبدأ من 1. أسطر cagr المتتالية تخص السلسلة التي فوقها مباشرة.
 %% format="0%"        عدد صحيح، وهو الافتراضي
@@ -3051,6 +3515,10 @@ cagr 5, 6 label="هدف"
 cagr 8, 9 format="+0.0%"
 cagr 6, 7 format="0%" prefix="+"`,
     seriesBreak: `series
+%% المحاور: axis y off وaxis y2 off يخفيان ذلك المقياس وشبكةه، وaxis x off يخفي الفئات. grid لاحق يعيد الخطوط بلا تسميات التدريج.
+%% الفجوة: gap 12 بكسل، وgap 20% نسبة. في المجموعة النسبة من سُمك العمود، وفي التكديس تستبدل الفراغ.
+%% التكديس: stacked أعمدة، وstacked area مساحات بين مراكز الفئات. labels sum يكتب مجموع الأجزاء في الخارج، والصفر لا يُكتب.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل الشكل السطح هو التعبئة، وخارجه وعند المجموع لوحة الرسم.
 %% قطع المحور: المدى 200..700 مقطوع حتى تبدو الأعمدة الصغيرة أكبر.
 %% العمود الذي يمر بالقطع يُرسم أجزاءً، مع خط متعرج على الحد.
 %% نفس الصياغة كما في waterfall: break <بعد> --> <قبل> ["تسمية"]
@@ -3062,6 +3530,10 @@ break 200 --> 700 "قطع المحور"
 series الإلكتروني : 120, 180, 860, 240
 series التجزئة : 80, 140, 790, 190`,
     seriesThresholds: `series
+%% المحاور: axis y off وaxis y2 off يخفيان ذلك المقياس وشبكةه، وaxis x off يخفي الفئات. grid لاحق يعيد الخطوط بلا تسميات التدريج.
+%% الفجوة: gap 12 بكسل، وgap 20% نسبة. في المجموعة النسبة من سُمك العمود، وفي التكديس تستبدل الفراغ.
+%% التكديس: stacked أعمدة، وstacked area مساحات بين مراكز الفئات. labels sum يكتب مجموع الأجزاء في الخارج، والصفر لا يُكتب.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل الشكل السطح هو التعبئة، وخارجه وعند المجموع لوحة الرسم.
 %% خطوط أفقية — خطة وهدف وعتبة.
 %% هذا ليس خطًا عبر الفئات: خط المستوى بلا نقطتين.
 %%
@@ -3079,6 +3551,10 @@ line 120 "عتبة" style=dot width=1
 series الفعلي : 120, 145, 165, 190
 series المرجع : 110, 130, 150, 180`,
     seriesUnnamed: `series
+%% المحاور: axis y off وaxis y2 off يخفيان ذلك المقياس وشبكةه، وaxis x off يخفي الفئات. grid لاحق يعيد الخطوط بلا تسميات التدريج.
+%% الفجوة: gap 12 بكسل، وgap 20% نسبة. في المجموعة النسبة من سُمك العمود، وفي التكديس تستبدل الفراغ.
+%% التكديس: stacked أعمدة، وstacked area مساحات بين مراكز الفئات. labels sum يكتب مجموع الأجزاء في الخارج، والصفر لا يُكتب.
+%% اللون: labels fontcolor auto يختار تباينًا مع السطح تحت النص. labels fontcolor #1f2328 يثبت لونًا. داخل الشكل السطح هو التعبئة، وخارجه وعند المجموع لوحة الرسم.
 %% يمكن ترك اسم السلسلة وتسمية الخط.
 %%   series : ق1, ق2, …     أعمدة بلا صف في المفتاح
 %%   line : ق1, ق2, …       خط بلا تعليق على اليمين

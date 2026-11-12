@@ -307,6 +307,7 @@ const KEYWORDS = new Set([
   "size",
   "solid",
   "area",
+  "auto",
   "gap",
   "stack",
   "stacked",

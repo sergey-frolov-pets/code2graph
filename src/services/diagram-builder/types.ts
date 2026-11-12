@@ -151,6 +151,8 @@ export interface BuilderOptionsSettings {
   stackArea: boolean;
   /** `labels sum` — сумма частей над стопкой series. */
   showSum: boolean;
+  /** `labels fontcolor auto` или `labels fontcolor #hex`. Пусто — цвет темы. */
+  labelFontColor: string;
   /** `gap 12` или `gap 20%`. Пусто — зазор по умолчанию. */
   barGap: string;
   /** Скрыть ось y2 у series. */

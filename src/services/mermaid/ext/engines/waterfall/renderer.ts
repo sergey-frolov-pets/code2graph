@@ -17,6 +17,7 @@ import {
   usesInvertedMono,
 } from "../../common";
 import type { ExtRenderOptions } from "../../types";
+import { readableTextOnFill } from "../../color-utils";
 import {
   BAR_GAP,
   createScale,
@@ -43,6 +44,14 @@ import type { WaterfallModel } from "./types";
 function isTransparentChartBackground(value: string | undefined): boolean {
   const normalized = value?.trim().toLowerCase() ?? "";
   return normalized === "transparent" || normalized === "none";
+}
+
+/** `fontcolor auto` — контраст к поверхности, `fontcolor #hex` — этот цвет, иначе цвет темы. */
+function waterfallLabelFill(model: WaterfallModel, surface: string, theme: string, contrastFallback: string): string {
+  const chosen = model.labelFontColor;
+  if (!chosen) return theme;
+  if (chosen === "auto") return readableTextOnFill(surface, contrastFallback);
+  return chosen;
 }
 
 export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions): string {
@@ -603,7 +612,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
           valueFontSize,
           {
             "font-size": valueFontSize,
-            fill: INSIDE_TEXT,
+            fill: waterfallLabelFill(model, color, INSIDE_TEXT, INSIDE_TEXT),
             "font-weight": 600,
           },
           "center",
@@ -634,7 +643,7 @@ export function renderWaterfall(model: WaterfallModel, options: ExtRenderOptions
           valueFontSize,
           {
             "font-size": valueFontSize,
-            fill: palette.fgDim,
+            fill: waterfallLabelFill(model, palette.bg, palette.fgDim, palette.fg),
             "data-value-label": "1",
           },
           "up",

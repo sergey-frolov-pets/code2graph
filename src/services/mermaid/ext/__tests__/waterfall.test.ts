@@ -1515,4 +1515,42 @@ series Факт
     const wideGap = barBox(multi("gap 60%"), "0-0").width;
     expect(wideGap).toBeLessThan(narrow);
   });
+
+  it("labels fontcolor подбирает контраст или берёт заданный цвет", () => {
+    const fillOf = (svg: string, text: string) => {
+      const tag = new RegExp(`<text\\b[^>]*>${text}</text>`).exec(svg)?.[0] ?? "";
+      return /fill="([^"]+)"/.exec(tag)?.[1];
+    };
+    const source = `waterfall
+y "v" 0 --> 80
+colors total=#fde68a
+connectors off
+=37 : А`;
+    const white = waterfallEngine.render(
+      waterfallEngine.parse(`${source}\nlabels inside`).value as WaterfallModel,
+      {},
+    );
+    const auto = waterfallEngine.parse(`${source}\nlabels inside fontcolor auto`);
+    expect(auto.ok).toBe(true);
+    expect(auto.value?.labelFontColor).toBe("auto");
+    expect(auto.value?.valueLabels).toEqual({ above: false, inside: true });
+    const contrasted = waterfallEngine.render(auto.value as WaterfallModel, {});
+    expect(fillOf(white, "37")).toBe("#ffffff");
+    expect(fillOf(contrasted, "37")).toBe("#1f2328");
+
+    const painted = waterfallEngine.parse(`${source}\nlabels inside fontcolor white`);
+    expect(painted.value?.labelFontColor).toBe("#ffffff");
+    const explicit = waterfallEngine.render(painted.value as WaterfallModel, {});
+    expect(fillOf(explicit, "37")).toBe("#ffffff");
+
+    const outside = waterfallEngine.parse(`${source}\nlabels fontcolor auto\nlabels inside`);
+    expect(outside.value?.labelFontColor).toBe("auto");
+    expect(outside.value?.valueLabels).toEqual({ above: false, inside: true });
+    const onDark = waterfallEngine.parse(`${source}\nlabels fontcolor auto`);
+    expect(onDark.value?.valueLabels).toEqual({ above: true, inside: false });
+    const darkSvg = waterfallEngine.render(onDark.value as WaterfallModel, { background: "#111111" });
+    expect(fillOf(darkSvg, "37")).toBe("#e6edf3");
+    expect(waterfallEngine.parse(`${source}\nlabels auto`).ok).toBe(false);
+    expect(waterfallEngine.parse(`${source}\nlabels rainbow`).ok).toBe(false);
+  });
 });

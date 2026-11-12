@@ -115,6 +115,12 @@ export interface WaterfallModel {
   categoryAxisHidden?: boolean;
   /** `gap 12` или `gap 20%`. Без директивы — BAR_GAP и 4 px между сериями. */
   barGap?: WaterfallBarGap;
+  /**
+   * `labels fontcolor auto|#hex|имя`.
+   * `auto` — контраст к поверхности под текстом: внутри бара это заливка, снаружи холст.
+   * Цвет красит и внутри, и снаружи. Без директивы внутри белый, снаружи серый.
+   */
+  labelFontColor?: string;
 }
 
 /** Разрыв оси: значения выше `after` и ниже `before` рисуются вплотную. */

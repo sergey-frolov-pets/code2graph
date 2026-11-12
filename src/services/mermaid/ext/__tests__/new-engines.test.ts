@@ -700,4 +700,43 @@ series Q : 4, 6, 8`);
     expect(svg).toContain('data-break="1"');
     expect(svg).not.toContain("data-bar=");
   });
+
+  it("labels fontcolor красит подпись контрастом или заданным цветом", () => {
+    const fillOf = (svg: string, text: string) => {
+      const tag = new RegExp(`<text\\b[^>]*>${text}</text>`).exec(svg)?.[0] ?? "";
+      return /fill="([^"]+)"/.exec(tag)?.[1];
+    };
+    const source = `series
+categories А
+y "v" 0 --> 20
+series Ряд : 7`;
+    const plain = clusteredEngine.render(clusteredEngine.parse(source).value as ClusteredModel, {});
+    const auto = clusteredEngine.parse(`${source}\nlabels above fontcolor auto`);
+    expect(auto.value?.labelFontColor).toBe("auto");
+    expect(auto.value?.labels).toBe("above");
+    const light = clusteredEngine.render(auto.value as ClusteredModel, { background: "#ffffff" });
+    const dark = clusteredEngine.render(auto.value as ClusteredModel, { background: "#111111" });
+    expect(fillOf(plain, "7")).toBe("#656d76");
+    expect(fillOf(light, "7")).toBe("#1f2328");
+    expect(fillOf(dark, "7")).toBe("#e6edf3");
+
+    const painted = clusteredEngine.parse(`${source}\nlabels fontcolor #cf222e`);
+    expect(painted.value?.labelFontColor).toBe("#cf222e");
+    expect(painted.value?.labels).toBe("above");
+    const red = clusteredEngine.render(painted.value as ClusteredModel, {});
+    expect(fillOf(red, "7")).toBe("#cf222e");
+    expect(clusteredEngine.parse(`${source}\nlabels auto`).ok).toBe(false);
+
+    const summed = clusteredEngine.parse(`series
+stacked
+labels none sum fontcolor auto
+categories А
+y "v" 0 --> 8
+series П : 3
+series Q : 2`);
+    expect(summed.value?.showSum).toBe(true);
+    expect(summed.value?.labelFontColor).toBe("auto");
+    const sumSvg = clusteredEngine.render(summed.value as ClusteredModel, { background: "#111111" });
+    expect(fillOf(sumSvg, "5")).toBe("#e6edf3");
+  });
 });

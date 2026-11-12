@@ -277,6 +277,30 @@ describe("diagram-builder core", () => {
     expect(hiddenAgain.value?.axis.grid).toBe(true);
   });
 
+  it("round-trips labels fontcolor for series and waterfall", () => {
+    const series = parseSourceToBuilderState(
+      ["series", "labels inside sum fontcolor auto", "categories Q1, Q2", "series A : 1, 2", "series B : 3, 4"].join("\n"),
+      "mermaid",
+    );
+    expect(series.options.labelFontColor).toBe("auto");
+    expect(series.options.showSum).toBe(true);
+    expect(series.options.labelsMode).toBe("inside");
+    const seriesAgain = parseClustered(emitSourceFromBuilderState(series));
+    expect(seriesAgain.value?.labelFontColor).toBe("auto");
+    expect(seriesAgain.value?.showSum).toBe(true);
+    expect(seriesAgain.value?.labels).toBe("inside");
+
+    const waterfall = parseSourceToBuilderState(
+      ["waterfall", "labels both fontcolor #cf222e", 'y "v" 0 --> 10', "=4 : A"].join("\n"),
+      "mermaid",
+    );
+    expect(waterfall.options.labelFontColor).toBe("#cf222e");
+    expect(waterfall.options.labelsMode).toBe("both");
+    const waterfallAgain = parseWaterfall(emitSourceFromBuilderState(waterfall));
+    expect(waterfallAgain.value?.labelFontColor).toBe("#cf222e");
+    expect(waterfallAgain.value?.valueLabels).toEqual({ above: true, inside: true });
+  });
+
   it("round-trips all remaining Mermaid Ext engines (bubble, heatmap, boxplot, treemap, radar, voronoi, orgchart, ev)", () => {
     const samples: Array<{
       type: string;
