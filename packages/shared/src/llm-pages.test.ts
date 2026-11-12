@@ -34,6 +34,18 @@ describe("resolveLlmPage", () => {
     ).toBe("mermaid/index.md");
   });
 
+  it("opens the series page for a stacked area request", () => {
+    expect(
+      resolveLlmPage({ request: "stacked area по регионам" }).path,
+    ).toBe("mermaid/ext/series.md");
+    expect(
+      resolveLlmPage({
+        language: "mermaid",
+        request: "построй площади по годам",
+      }).path,
+    ).toBe("mermaid/ext/series.md");
+  });
+
   it("does not pick a type that exists in several languages until a language is named", () => {
     expect(resolveLlmPage({ request: "sequence diagram" }).path).toBe("index.md");
     expect(
