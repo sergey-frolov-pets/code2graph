@@ -158,6 +158,32 @@ describe("llm account records", () => {
     expect(
       llmAccountChatLabel(
         {
+          id: "1",
+          providerId: "groq",
+          label: "Work",
+          apiKey: GROQ_KEY,
+          active: true,
+        },
+        "Groq",
+        "llama-3.3-70b-versatile",
+      ),
+    ).toBe("Work · Groq · llama-3.3-70b-versatile");
+    expect(
+      llmAccountChatLabel(
+        {
+          id: "3",
+          providerId: "groq",
+          label: "groq",
+          apiKey: GROQ_KEY,
+          active: true,
+        },
+        "Groq",
+        "llama-3.3-70b-versatile",
+      ),
+    ).toBe("Groq · llama-3.3-70b-versatile");
+    expect(
+      llmAccountChatLabel(
+        {
           id: "2",
           providerId: LOCAL_LLM_PROVIDER_ID,
           label: "Ollama",
@@ -168,7 +194,7 @@ describe("llm account records", () => {
         },
         "Local LLM",
       ),
-    ).toBe("Ollama · llama3.2");
+    ).toBe("Ollama · Local LLM · llama3.2");
     expect(freeLlmSelectionId("groq-free")).toBe("free:groq-free");
     expect(parseFreeLlmSelectionId("free:groq-free")).toBe("groq-free");
     expect(parseFreeLlmSelectionId("free:groq")).toBeUndefined();

@@ -102,6 +102,19 @@ export function resolveSelectedLlmModel(providerId: string): string {
   return fallback;
 }
 
+/** Модель, записанная в учётке, иначе выбранная для провайдера. */
+export function resolveAccountLlmModel(account: {
+  providerId: string;
+  model?: string;
+}): string {
+  const saved = account.model?.trim() ?? "";
+  if (saved && isValidLlmModelName(saved)) {
+    return saved;
+  }
+
+  return resolveSelectedLlmModel(account.providerId);
+}
+
 export function setSelectedLlmModel(providerId: string, modelId: string): void {
   if (!getLlmProvider(providerId) || !isValidLlmModelName(modelId)) {
     return;
