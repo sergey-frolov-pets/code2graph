@@ -12,7 +12,17 @@ export const LLM_API_KEY_MAX_LENGTH = 512;
 /** Случайная строка в `.env`. Короче этого порога сид не используется. */
 export const LLM_KEY_SEED_MIN_LENGTH = 16;
 
+/** Старый конверт: ключ выведен из `VITE_LLM_KEY_SEED` сборки. */
 export const LLM_KEY_CIPHER_PREFIX = "enc:v1:";
+
+/**
+ * Конверт этого браузера. Не зависит от сида сборки, поэтому обновление
+ * версии и смена `VITE_LLM_KEY_SEED` не делают сохранённый ключ нечитаемым.
+ */
+export const LLM_KEY_DEVICE_CIPHER_PREFIX = "enc:v2:";
+
+/** Сколько прошлых сидов сборки помнит браузер, чтобы открыть старые конверты. */
+export const LLM_KEY_REMEMBERED_SEED_LIMIT = 8;
 
 /** Соль и info для HKDF. Не секрет: отделяют ключ шифрования от других применений сида. */
 export const LLM_KEY_KDF_SALT = "code2graph.llm-key.v1";

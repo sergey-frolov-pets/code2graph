@@ -256,6 +256,26 @@ const StoredLlmAccountSchema = LlmAccountSchema.extend({
   apiKey: z.string().max(LLM_SEALED_SECRET_MAX_LENGTH),
 });
 
+/** Одна запись с диска: apiKey может быть запечатанным конвертом, ещё не открытым текстом. */
+export function parseStoredLlmAccountRecord(value: unknown): LlmAccount | null {
+  const parsed = StoredLlmAccountSchema.safeParse(value);
+  if (!parsed.success || !isLlmProviderId(parsed.data.providerId)) {
+    return null;
+  }
+
+  const parameters = parseLlmAccountParameters(parsed.data.parameters);
+  return {
+    id: parsed.data.id,
+    providerId: parsed.data.providerId,
+    label: parsed.data.label,
+    apiKey: parsed.data.apiKey,
+    active: parsed.data.active,
+    baseUrl: parsed.data.baseUrl?.trim() || undefined,
+    model: parsed.data.model?.trim() || undefined,
+    ...(parameters ? { parameters } : {}),
+  };
+}
+
 /** Запись с диска: apiKey может быть запечатанным конвертом, ещё не открытым текстом. */
 export function parseStoredLlmAccountRecords(value: unknown): LlmAccount[] {
   if (!Array.isArray(value)) {
@@ -263,24 +283,8 @@ export function parseStoredLlmAccountRecords(value: unknown): LlmAccount[] {
   }
 
   return value.flatMap((item) => {
-    const parsed = StoredLlmAccountSchema.safeParse(item);
-    if (!parsed.success || !isLlmProviderId(parsed.data.providerId)) {
-      return [];
-    }
-
-    const parameters = parseLlmAccountParameters(parsed.data.parameters);
-    return [
-      {
-        id: parsed.data.id,
-        providerId: parsed.data.providerId,
-        label: parsed.data.label,
-        apiKey: parsed.data.apiKey,
-        active: parsed.data.active,
-        baseUrl: parsed.data.baseUrl?.trim() || undefined,
-        model: parsed.data.model?.trim() || undefined,
-        ...(parameters ? { parameters } : {}),
-      },
-    ];
+    const account = parseStoredLlmAccountRecord(item);
+    return account ? [account] : [];
   });
 }
 
