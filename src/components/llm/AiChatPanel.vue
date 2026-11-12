@@ -1765,7 +1765,6 @@ async function onCopyChat(): Promise<void> {
                 rows="1"
                 enterkeyhint="send"
                 :aria-label="composerFieldLabel"
-                :placeholder="t('aiChat.inputPlaceholder')"
                 @focus="onComposerFocus"
                 @blur="onComposerBlur"
                 @keydown="onComposerKeydown"
@@ -1777,7 +1776,6 @@ async function onCopyChat(): Promise<void> {
                 data-testid="ai-chat-input-hint"
                 aria-hidden="true"
               >
-                <span class="ai-chat-panel__hint-prompt">{{ t("aiChat.inputPlaceholder") }}</span>
                 <span class="ai-chat-panel__hint-meta">
                   <component
                     :is="contextHintIcon"
@@ -2478,11 +2476,6 @@ async function onCopyChat(): Promise<void> {
   white-space: nowrap;
 }
 
-.ai-chat-panel__hint-prompt {
-  flex: 0 0 auto;
-  line-height: 1.4;
-}
-
 .ai-chat-panel__hint-meta {
   display: inline-flex;
   align-items: center;
@@ -2516,10 +2509,6 @@ async function onCopyChat(): Promise<void> {
 
 .ai-chat-panel__hint-dot {
   flex: 0 0 auto;
-}
-
-.ai-chat-panel__field:has(.ai-chat-panel__hint) .ai-chat-panel__input::placeholder {
-  color: transparent;
 }
 
 .ai-chat-panel__input {
