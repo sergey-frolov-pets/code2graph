@@ -16,6 +16,7 @@ vi.mock("@/constants/llm-providers", () => ({
 }));
 
 import {
+  applySavedChatParameters,
   callOpenAiCompatibleChat,
   omitFixedChatParameters,
 } from "@/services/llm/providers/byok-providers";
@@ -135,6 +136,40 @@ describe("BYOK LLM providers", () => {
     expect(body).not.toHaveProperty("n");
     expect(body).not.toHaveProperty("presence_penalty");
     expect(body).not.toHaveProperty("frequency_penalty");
+  });
+
+  it("sends parameters saved on the key unless the provider fixes them", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '{"ok":true}' } }],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const saved = {
+      temperature: 0.4,
+      topP: 0.8,
+      maxTokens: 256,
+    };
+    const openBody: Record<string, unknown> = { temperature: 0.2 };
+    applySavedChatParameters(openBody, saved);
+    expect(openBody).toMatchObject({ temperature: 0.4, top_p: 0.8, max_tokens: 256 });
+
+    await callOpenAiCompatibleChat({
+      endpoint: "https://api.groq.com/openai/v1/chat/completions",
+      apiKey: "gsk-user-secret-key",
+      model: "llama-3.3-70b-versatile",
+      messages: [{ role: "user", content: "ping" }],
+      temperature: 0.2,
+      parameters: saved,
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+    expect(body.temperature).toBe(0.4);
+    expect(body.top_p).toBe(0.8);
+    expect(body.max_tokens).toBe(256);
   });
 
   it("omits Authorization when a local server has no API key", async () => {

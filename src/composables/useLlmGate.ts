@@ -4,6 +4,7 @@ import {
   getPreferredLlmAccount,
   type LlmAccessTarget,
 } from "@/config/llm-accounts";
+import type { LlmAccountParameters } from "@/config/llm-account-record";
 import { isLocalLlmAccount } from "@/config/llm-account-record";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useLlmApiKeys } from "@/composables/useLlmApiKeys";
@@ -35,6 +36,8 @@ export type LlmGateSuccess =
       mode: "byok";
       providerId: string;
       apiKey: string;
+      model?: string;
+      parameters?: LlmAccountParameters;
     }
   | {
       ok: true;
@@ -43,6 +46,7 @@ export type LlmGateSuccess =
       apiKey: string;
       endpoint: string;
       model: string;
+      parameters?: LlmAccountParameters;
     };
 
 export type LlmGateFailure = {
@@ -89,6 +93,7 @@ export function useLlmGate() {
     apiKey: string;
     baseUrl?: string;
     model?: string;
+    parameters?: LlmAccountParameters;
   }): LlmGateResult {
     const endpoint = resolveOpenAiChatEndpoint(account.baseUrl ?? "");
     if (!endpoint || !account.model) {
@@ -102,6 +107,7 @@ export function useLlmGate() {
       apiKey: account.apiKey,
       endpoint,
       model: account.model,
+      ...(account.parameters ? { parameters: account.parameters } : {}),
     };
   }
 
@@ -167,6 +173,8 @@ export function useLlmGate() {
         mode: "byok",
         providerId: account.providerId,
         apiKey: account.apiKey,
+        ...(account.model ? { model: account.model } : {}),
+        ...(account.parameters ? { parameters: account.parameters } : {}),
       };
     }
 
@@ -252,11 +260,14 @@ export function useLlmGate() {
       return { ok: false, reason: "no_key" };
     }
 
+    const account = getPreferredLlmAccount(providerId);
     return {
       ok: true,
       mode: "byok",
       providerId,
       apiKey,
+      ...(account?.model ? { model: account.model } : {}),
+      ...(account?.parameters ? { parameters: account.parameters } : {}),
     };
   }
 

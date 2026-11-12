@@ -146,12 +146,30 @@
 
 .settings-llm-account {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
+}
+
+.settings-llm-account__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-model-select,
+.settings-model-select option {
+  font-size: 0.75rem;
+}
+
+.settings-llm-params {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 8px;
 }
 
 .settings-llm-account__label {

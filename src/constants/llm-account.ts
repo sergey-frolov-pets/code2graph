@@ -28,6 +28,19 @@ export const LLM_LOCAL_URL_MAX_LENGTH = 300;
 export const LLM_MODEL_NAME_MAX_LENGTH = 120;
 export const LLM_API_KEY_MASK_EDGE = 4;
 
+export const LLM_TEMPERATURE_MIN = 0;
+export const LLM_TEMPERATURE_MAX = 2;
+export const LLM_TOP_P_MIN = 0;
+export const LLM_TOP_P_MAX = 1;
+export const LLM_N_MIN = 1;
+export const LLM_N_MAX = 8;
+export const LLM_PENALTY_MIN = -2;
+export const LLM_PENALTY_MAX = 2;
+export const LLM_MAX_TOKENS_MIN = 1;
+export const LLM_MAX_TOKENS_MAX = 128000;
+export const LLM_PARAMETER_DECIMAL_STEP = 0.1;
+export const LLM_PARAMETER_INTEGER_STEP = 1;
+
 /** Префикс id в селекторе чата для бесплатных провайдеров без сохранённого ключа. */
 export const FREE_LLM_SELECTION_PREFIX = "free:";
 

@@ -1,4 +1,5 @@
 import { ref } from "vue";
+import { isValidLlmModelName } from "@/constants/llm-account";
 import {
   STORAGE_KEY_LLM_ACCOUNTS,
   STORAGE_KEY_LLM_API_KEYS,
@@ -17,10 +18,13 @@ import {
   type LlmAccountDraft,
   type LlmAccountDraftError,
   type LlmAccountDraftResult,
+  type LlmAccountParameterKey,
+  type LlmAccountParameters,
   isUsableLlmAccount,
   migrateLegacyLlmAccounts,
   parseFreeLlmSelectionId,
   parseLlmAccount,
+  parseLlmAccountParameterValue,
   parseStoredLlmAccountRecords,
   validateLlmAccountDraft,
 } from "@/config/llm-account-record";
@@ -244,6 +248,53 @@ export function setLlmAccountActive(id: string, active: boolean): void {
     const next = llmAccounts.value.slice();
     next[index] = { ...next[index], active };
     llmAccounts.value = next;
+  });
+}
+
+export function setLlmAccountModel(id: string, model: string): void {
+  const trimmed = model.trim();
+  if (!isValidLlmModelName(trimmed)) {
+    return;
+  }
+
+  applyAfterHydrate(() => {
+    llmAccounts.value = llmAccounts.value.map((account) =>
+      account.id === id ? { ...account, model: trimmed } : account,
+    );
+  });
+}
+
+export function setLlmAccountParameter(
+  id: string,
+  key: LlmAccountParameterKey,
+  raw: string,
+): void {
+  const value = parseLlmAccountParameterValue(key, raw);
+  if (raw.trim() && value === undefined) {
+    return;
+  }
+
+  applyAfterHydrate(() => {
+    llmAccounts.value = llmAccounts.value.map((account) => {
+      if (account.id !== id) {
+        return account;
+      }
+
+      const parameters: LlmAccountParameters = { ...account.parameters };
+      if (value === undefined) {
+        delete parameters[key];
+      } else {
+        parameters[key] = value;
+      }
+
+      if (Object.keys(parameters).length === 0) {
+        const next = { ...account };
+        delete next.parameters;
+        return next;
+      }
+
+      return { ...account, parameters };
+    });
   });
 }
 

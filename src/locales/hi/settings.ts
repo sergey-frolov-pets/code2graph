@@ -120,4 +120,11 @@ export const settingsMessages = {
   "settings.llmModelPriceNeedsKey": "इस प्रदाता के मॉडल ताज़ा करने के लिए API कुंजी जोड़ें।",
   "settings.llmModelPriceFailed": "कीमतें ताज़ा नहीं हो सकीं।",
   "settings.llmModelPriceUnavailable": "यह प्रदाता कीमतों की सूची प्रकाशित नहीं करता।",
+  "settings.llmTemperature": "तापमान",
+  "settings.llmTopP": "top_p",
+  "settings.llmResponseCount": "उत्तर",
+  "settings.llmPresencePenalty": "उपस्थिति जुर्माना",
+  "settings.llmFrequencyPenalty": "आवृत्ति जुर्माना",
+  "settings.llmMaxTokens": "अधिकतम टोकन",
+  "settings.llmFixedParameter": "स्थिर",
 } as const satisfies LocaleMessages;

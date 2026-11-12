@@ -7,6 +7,7 @@ import {
   migrateLegacyLlmAccounts,
   parseFreeLlmSelectionId,
   parseLlmAccountList,
+  parseLlmAccountParameterValue,
   validateLlmAccountDraft,
 } from "@/config/llm-account-record";
 
@@ -64,6 +65,37 @@ describe("llm account records", () => {
     ]);
 
     expect(accounts.map((account) => account.id)).toEqual(["groq-work", "groq-home"]);
+  });
+
+  it("keeps a key's model and drops parameters outside the allowed range", () => {
+    const accounts = parseLlmAccountList([
+      {
+        id: "groq-work",
+        providerId: "groq",
+        label: "Work",
+        apiKey: GROQ_KEY,
+        active: true,
+        model: "llama-3.3-70b-versatile",
+        parameters: {
+          temperature: 0.4,
+          topP: 0.9,
+          n: 1,
+          maxTokens: 2048,
+          presencePenalty: 9,
+        },
+      },
+    ]);
+
+    expect(accounts[0]?.model).toBe("llama-3.3-70b-versatile");
+    expect(accounts[0]?.parameters).toEqual({
+      temperature: 0.4,
+      topP: 0.9,
+      n: 1,
+      maxTokens: 2048,
+    });
+    expect(parseLlmAccountParameterValue("temperature", "")).toBeUndefined();
+    expect(parseLlmAccountParameterValue("temperature", "0.2")).toBe(0.2);
+    expect(parseLlmAccountParameterValue("n", "1.5")).toBeUndefined();
   });
 
   it("accepts a local endpoint without an API key", () => {

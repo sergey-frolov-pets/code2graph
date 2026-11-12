@@ -120,4 +120,11 @@ export const settingsMessages = {
   "settings.llmModelPriceNeedsKey": "このプロバイダのモデルを更新するには API キーを追加してください。",
   "settings.llmModelPriceFailed": "価格を更新できませんでした。",
   "settings.llmModelPriceUnavailable": "このプロバイダは価格カタログを公開していません。",
+  "settings.llmTemperature": "温度",
+  "settings.llmTopP": "top_p",
+  "settings.llmResponseCount": "応答数",
+  "settings.llmPresencePenalty": "存在ペナルティ",
+  "settings.llmFrequencyPenalty": "頻度ペナルティ",
+  "settings.llmMaxTokens": "最大トークン数",
+  "settings.llmFixedParameter": "固定",
 } as const satisfies LocaleMessages;

@@ -120,4 +120,11 @@ export const settingsMessages = {
   "settings.llmModelPriceNeedsKey": "Añada una clave API para actualizar los modelos de este proveedor.",
   "settings.llmModelPriceFailed": "No se pudieron actualizar los precios.",
   "settings.llmModelPriceUnavailable": "Este proveedor no publica un catálogo de precios.",
+  "settings.llmTemperature": "Temperatura",
+  "settings.llmTopP": "top_p",
+  "settings.llmResponseCount": "Respuestas",
+  "settings.llmPresencePenalty": "Penalización de presencia",
+  "settings.llmFrequencyPenalty": "Penalización de frecuencia",
+  "settings.llmMaxTokens": "Máx. tokens",
+  "settings.llmFixedParameter": "fijo",
 } as const satisfies LocaleMessages;
