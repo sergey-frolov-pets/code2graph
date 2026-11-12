@@ -25,15 +25,17 @@ import {
   parseFreeLlmSelectionId,
   parseLlmAccount,
   parseLlmAccountParameterValue,
-  parseStoredLlmAccountRecords,
+  parseStoredLlmAccountRecord,
   validateLlmAccountDraft,
 } from "@/config/llm-account-record";
 import {
-  hasLlmKeySeed,
+  canPersistLlmSecrets,
   isSealedLlmApiKey,
   LlmKeyCipherError,
   openLlmApiKey,
+  readLegacyLlmKeySeeds,
   sealLlmApiKey,
+  storedLlmApiKeyNeedsReseal,
 } from "@/services/llm/llm-key-cipher";
 
 export type { LlmAccessTarget, LlmAccount, LlmAccountDraft, LlmAccountDraftResult };
@@ -50,6 +52,7 @@ const llmKeyStoreError = ref<LlmKeyStoreError | null>(null);
 const chatLlmSelectionId = ref(readStorageItem(STORAGE_KEY_LLM_CHAT_SELECTION) ?? "");
 
 let sealBlocked = false;
+let preservedRecords: unknown[] = [];
 let queue: Promise<void> = Promise.resolve();
 
 function enqueue(task: () => Promise<void>): void {
@@ -80,7 +83,7 @@ async function persistEncrypted(): Promise<void> {
     return;
   }
 
-  if (accountsNeedSeed(llmAccounts.value) && !hasLlmKeySeed()) {
+  if (accountsNeedSeed(llmAccounts.value) && !canPersistLlmSecrets()) {
     llmKeyStoreError.value = "missing_seed";
     sealBlocked = true;
     return;
@@ -92,32 +95,45 @@ async function persistEncrypted(): Promise<void> {
       apiKey: await sealLlmApiKey(account.apiKey, account.providerId),
     })),
   );
-  writeStorageJson(STORAGE_KEY_LLM_ACCOUNTS, sealed);
-  removeStorageItem(STORAGE_KEY_LLM_API_KEYS);
+  const wrote = writeStorageJson(STORAGE_KEY_LLM_ACCOUNTS, [...sealed, ...preservedRecords]);
+  if (wrote) {
+    removeStorageItem(STORAGE_KEY_LLM_API_KEYS);
+  }
 }
 
-async function openStoredAccounts(records: readonly LlmAccount[]): Promise<{
+function keepSealedRecord(value: unknown): boolean {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const apiKey = (value as { apiKey?: unknown }).apiKey;
+  return typeof apiKey === "string" && isSealedLlmApiKey(apiKey);
+}
+
+async function openStoredAccounts(records: readonly unknown[]): Promise<{
   accounts: LlmAccount[];
+  preserved: unknown[];
   failed: boolean;
   missingSeed: boolean;
   reseal: boolean;
 }> {
   const accounts: LlmAccount[] = [];
+  const preserved: unknown[] = [];
   let failed = false;
   let missingSeed = false;
   let reseal = false;
 
-  for (const record of records) {
-    if (!record.apiKey) {
-      const account = parseLlmAccount(record);
-      if (account) {
-        accounts.push(account);
+  for (const item of records) {
+    const record = parseStoredLlmAccountRecord(item);
+    if (!record) {
+      if (keepSealedRecord(item)) {
+        preserved.push(item);
+        failed = true;
       }
       continue;
     }
 
-    if (!isSealedLlmApiKey(record.apiKey)) {
-      reseal = true;
+    if (!record.apiKey) {
       const account = parseLlmAccount(record);
       if (account) {
         accounts.push(account);
@@ -128,32 +144,44 @@ async function openStoredAccounts(records: readonly LlmAccount[]): Promise<{
     try {
       const apiKey = await openLlmApiKey(record.apiKey, record.providerId);
       const account = parseLlmAccount({ ...record, apiKey });
-      if (account) {
-        accounts.push(account);
+      if (!account) {
+        if (isSealedLlmApiKey(record.apiKey)) {
+          preserved.push(item);
+          failed = true;
+        }
+        continue;
+      }
+
+      accounts.push(account);
+      if (storedLlmApiKeyNeedsReseal(record.apiKey)) {
+        reseal = true;
       }
     } catch (error) {
       failed = true;
+      preserved.push(item);
       if (error instanceof LlmKeyCipherError && error.code === "missing_seed") {
         missingSeed = true;
       }
     }
   }
 
-  return { accounts, failed, missingSeed, reseal };
+  return { accounts, preserved, failed, missingSeed, reseal };
 }
 
 async function hydrate(): Promise<void> {
   try {
+    readLegacyLlmKeySeeds();
     const raw = readStorageItem(STORAGE_KEY_LLM_ACCOUNTS);
     if (raw === null) {
+      preservedRecords = [];
       const migrated = migrateLegacyLlmAccounts(
         parseLlmApiKeysMap(readStorageItem(STORAGE_KEY_LLM_API_KEYS)),
       );
       llmAccounts.value = migrated;
-      if (!accountsNeedSeed(migrated)) {
+      if (!accountsNeedSeed(migrated) && migrated.length === 0) {
         return;
       }
-      if (!hasLlmKeySeed()) {
+      if (accountsNeedSeed(migrated) && !canPersistLlmSecrets()) {
         llmKeyStoreError.value = "missing_seed";
         sealBlocked = true;
         return;
@@ -166,22 +194,23 @@ async function hydrate(): Promise<void> {
     try {
       parsed = JSON.parse(raw) as unknown;
     } catch {
-      parsed = [];
+      // Битый JSON не затираем пустым списком.
+      return;
     }
 
-    const opened = await openStoredAccounts(parseStoredLlmAccountRecords(parsed));
+    const opened = await openStoredAccounts(Array.isArray(parsed) ? parsed : []);
+    preservedRecords = opened.preserved;
     llmAccounts.value = opened.accounts;
     if (opened.failed) {
-      sealBlocked = true;
-      llmKeyStoreError.value = opened.missingSeed ? "missing_seed" : "decrypt_failed";
-      return;
+      llmKeyStoreError.value =
+        opened.accounts.length === 0 && opened.missingSeed ? "missing_seed" : "decrypt_failed";
     }
 
     if (!opened.reseal) {
       return;
     }
 
-    if (!hasLlmKeySeed()) {
+    if (!canPersistLlmSecrets()) {
       llmKeyStoreError.value = "missing_seed";
       sealBlocked = true;
       return;
@@ -191,6 +220,25 @@ async function hydrate(): Promise<void> {
   } finally {
     llmAccountsHydrated.value = true;
   }
+}
+
+export async function reloadStoredLlmAccounts(): Promise<void> {
+  let done = (): void => {};
+  const finished = new Promise<void>((resolve) => {
+    done = resolve;
+  });
+  enqueue(async () => {
+    try {
+      sealBlocked = false;
+      llmKeyStoreError.value = null;
+      llmAccountsHydrated.value = false;
+      preservedRecords = [];
+      await hydrate();
+    } finally {
+      done();
+    }
+  });
+  await finished;
 }
 
 enqueue(hydrate);
@@ -210,7 +258,7 @@ export function getPreferredLlmAccount(providerId: string): LlmAccount | undefin
 }
 
 function rejectWithoutSeed(apiKey: string): boolean {
-  if (!apiKey || hasLlmKeySeed()) {
+  if (!apiKey || canPersistLlmSecrets()) {
     return false;
   }
 

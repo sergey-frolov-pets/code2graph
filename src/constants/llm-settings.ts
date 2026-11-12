@@ -8,6 +8,10 @@ import { DEFAULT_LOCALE, type AppLocale } from "@/constants/i18n";
 export const STORAGE_KEY_LLM_PROVIDER = "code2graph-llm-provider";
 export const STORAGE_KEY_LLM_API_KEYS = "code2graph-llm-api-keys";
 export const STORAGE_KEY_LLM_ACCOUNTS = "code2graph-llm-accounts";
+/** Случайный сид этого браузера. Переживает обновление версии сайта. */
+export const STORAGE_KEY_LLM_DEVICE_SEED = "code2graph-llm-device-seed";
+/** Сиды сборок, которыми уже удавалось (или могло) открыть старые конверты. */
+export const STORAGE_KEY_LLM_LEGACY_SEEDS = "code2graph-llm-legacy-seeds";
 export const STORAGE_KEY_LLM_CHAT_SELECTION = "code2graph-llm-chat-selection";
 export const STORAGE_KEY_LLM_CONSENT = "code2graph-llm-consent";
 export const STORAGE_KEY_LLM_SELECTED_MODELS = "code2graph-llm-selected-models";
