@@ -1,3 +1,4 @@
+import type { LlmAccountParameters } from "@/config/llm-account-record";
 import type { LlmChatRequestConfig } from "@/constants/llm-providers";
 import { toGeminiContentParts, toOpenAiChatMessage } from "@/services/llm/llm-message-parts";
 import type { LlmChatMessage } from "@/services/llm/llm-types";
@@ -13,9 +14,38 @@ type OpenAiCompatibleOptions = {
   maxTokens?: number;
   extraHeaders?: Record<string, string>;
   chatRequest?: LlmChatRequestConfig;
+  parameters?: LlmAccountParameters;
 };
 
 const DEFAULT_CHAT_TEMPERATURE = 0.2;
+
+export function applySavedChatParameters(
+  body: Record<string, unknown>,
+  parameters: LlmAccountParameters | undefined,
+): void {
+  if (!parameters) {
+    return;
+  }
+
+  if (parameters.temperature !== undefined) {
+    body.temperature = parameters.temperature;
+  }
+  if (parameters.topP !== undefined) {
+    body.top_p = parameters.topP;
+  }
+  if (parameters.n !== undefined) {
+    body.n = parameters.n;
+  }
+  if (parameters.presencePenalty !== undefined) {
+    body.presence_penalty = parameters.presencePenalty;
+  }
+  if (parameters.frequencyPenalty !== undefined) {
+    body.frequency_penalty = parameters.frequencyPenalty;
+  }
+  if (parameters.maxTokens !== undefined) {
+    body.max_tokens = parameters.maxTokens;
+  }
+}
 
 export function omitFixedChatParameters(
   body: Record<string, unknown>,
@@ -40,11 +70,11 @@ export async function callOpenAiCompatibleChat(
     temperature: options.temperature ?? DEFAULT_CHAT_TEMPERATURE,
     response_format: options.jsonMode ? { type: "json_object" } : undefined,
   };
-  omitFixedChatParameters(body, options.chatRequest);
-
   if (options.maxTokens !== undefined) {
     body.max_tokens = options.maxTokens;
   }
+  applySavedChatParameters(body, options.parameters);
+  omitFixedChatParameters(body, options.chatRequest);
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",

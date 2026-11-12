@@ -120,4 +120,11 @@ export const settingsMessages = {
   "settings.llmModelPriceNeedsKey": "أضف مفتاح API لتحديث نماذج هذا المزوّد.",
   "settings.llmModelPriceFailed": "تعذر تحديث الأسعار.",
   "settings.llmModelPriceUnavailable": "هذا المزوّد لا ينشر قائمة أسعار.",
+  "settings.llmTemperature": "درجة الحرارة",
+  "settings.llmTopP": "top_p",
+  "settings.llmResponseCount": "الردود",
+  "settings.llmPresencePenalty": "عقوبة التكرار",
+  "settings.llmFrequencyPenalty": "عقوبة التواتر",
+  "settings.llmMaxTokens": "الحد الأقصى للرموز",
+  "settings.llmFixedParameter": "ثابت",
 } as const satisfies LocaleMessages;

@@ -7,8 +7,18 @@ import {
   LLM_API_KEY_MASK_EDGE,
   LLM_API_KEY_MAX_LENGTH,
   LLM_LOCAL_URL_MAX_LENGTH,
+  LLM_MAX_TOKENS_MAX,
+  LLM_MAX_TOKENS_MIN,
   LLM_MODEL_NAME_MAX_LENGTH,
+  LLM_N_MAX,
+  LLM_N_MIN,
+  LLM_PENALTY_MAX,
+  LLM_PENALTY_MIN,
   LLM_SEALED_SECRET_MAX_LENGTH,
+  LLM_TEMPERATURE_MAX,
+  LLM_TEMPERATURE_MIN,
+  LLM_TOP_P_MAX,
+  LLM_TOP_P_MIN,
   LOCAL_LLM_PROVIDER_ID,
   isValidLlmModelName,
 } from "@/constants/llm-account";
@@ -29,7 +39,20 @@ export interface LlmAccount {
   active: boolean;
   baseUrl?: string;
   model?: string;
+  parameters?: LlmAccountParameters;
 }
+
+/** Параметры chat completions, сохранённые на конкретном ключе. */
+export interface LlmAccountParameters {
+  temperature?: number;
+  topP?: number;
+  n?: number;
+  presencePenalty?: number;
+  frequencyPenalty?: number;
+  maxTokens?: number;
+}
+
+export type LlmAccountParameterKey = keyof LlmAccountParameters;
 
 export interface LlmAccountDraft {
   providerId: string;
@@ -66,7 +89,75 @@ const LlmAccountSchema = z.object({
   active: z.boolean(),
   baseUrl: z.string().max(LLM_LOCAL_URL_MAX_LENGTH).optional(),
   model: z.string().max(LLM_MODEL_NAME_MAX_LENGTH).optional(),
+  parameters: z.unknown().optional(),
 });
+
+function readBoundedNumber(
+  value: unknown,
+  min: number,
+  max: number,
+  integer = false,
+): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return undefined;
+  }
+
+  if (integer && !Number.isInteger(value)) {
+    return undefined;
+  }
+
+  if (value < min || value > max) {
+    return undefined;
+  }
+
+  return value;
+}
+
+export function parseLlmAccountParameters(value: unknown): LlmAccountParameters | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+
+  const record = value as Record<string, unknown>;
+  const parameters: LlmAccountParameters = {};
+  const temperature = readBoundedNumber(record.temperature, LLM_TEMPERATURE_MIN, LLM_TEMPERATURE_MAX);
+  const topP = readBoundedNumber(record.topP, LLM_TOP_P_MIN, LLM_TOP_P_MAX);
+  const choices = readBoundedNumber(record.n, LLM_N_MIN, LLM_N_MAX, true);
+  const presencePenalty = readBoundedNumber(
+    record.presencePenalty,
+    LLM_PENALTY_MIN,
+    LLM_PENALTY_MAX,
+  );
+  const frequencyPenalty = readBoundedNumber(
+    record.frequencyPenalty,
+    LLM_PENALTY_MIN,
+    LLM_PENALTY_MAX,
+  );
+  const maxTokens = readBoundedNumber(record.maxTokens, LLM_MAX_TOKENS_MIN, LLM_MAX_TOKENS_MAX, true);
+
+  if (temperature !== undefined) parameters.temperature = temperature;
+  if (topP !== undefined) parameters.topP = topP;
+  if (choices !== undefined) parameters.n = choices;
+  if (presencePenalty !== undefined) parameters.presencePenalty = presencePenalty;
+  if (frequencyPenalty !== undefined) parameters.frequencyPenalty = frequencyPenalty;
+  if (maxTokens !== undefined) parameters.maxTokens = maxTokens;
+
+  return Object.keys(parameters).length > 0 ? parameters : undefined;
+}
+
+export function parseLlmAccountParameterValue(
+  key: LlmAccountParameterKey,
+  raw: string,
+): number | undefined {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const value = Number(trimmed);
+  const parsed = parseLlmAccountParameters({ [key]: value });
+  return parsed?.[key];
+}
 
 export function isLocalLlmAccount(account: Pick<LlmAccount, "providerId">): boolean {
   return account.providerId === LOCAL_LLM_PROVIDER_ID;
@@ -135,6 +226,7 @@ export function parseLlmAccount(value: unknown): LlmAccount | null {
     return null;
   }
 
+  const parameters = parseLlmAccountParameters(parsed.data.parameters);
   const account: LlmAccount = {
     id: parsed.data.id,
     providerId: parsed.data.providerId,
@@ -143,6 +235,7 @@ export function parseLlmAccount(value: unknown): LlmAccount | null {
     active: parsed.data.active,
     baseUrl: parsed.data.baseUrl?.trim() || undefined,
     model: parsed.data.model?.trim() || undefined,
+    ...(parameters ? { parameters } : {}),
   };
 
   if (isLocalLlmAccount(account)) {
@@ -175,6 +268,7 @@ export function parseStoredLlmAccountRecords(value: unknown): LlmAccount[] {
       return [];
     }
 
+    const parameters = parseLlmAccountParameters(parsed.data.parameters);
     return [
       {
         id: parsed.data.id,
@@ -184,6 +278,7 @@ export function parseStoredLlmAccountRecords(value: unknown): LlmAccount[] {
         active: parsed.data.active,
         baseUrl: parsed.data.baseUrl?.trim() || undefined,
         model: parsed.data.model?.trim() || undefined,
+        ...(parameters ? { parameters } : {}),
       },
     ];
   });

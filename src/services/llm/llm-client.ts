@@ -1,3 +1,5 @@
+import type { LlmAccountParameters } from "@/config/llm-account-record";
+import { isValidLlmModelName } from "@/constants/llm-account";
 import { resolveSelectedLlmModel } from "@/config/llm-model-selection";
 import { getLlmProvider } from "@/constants/llm-providers";
 import type { LlmGateSuccess } from "@/composables/useLlmGate";
@@ -28,6 +30,7 @@ async function callLocalChat(
   model: string,
   messages: LlmChatMessage[],
   options: LlmChatOptions,
+  parameters?: LlmAccountParameters,
 ): Promise<string> {
   const request = {
     endpoint,
@@ -36,6 +39,7 @@ async function callLocalChat(
     messages,
     temperature: options.temperature,
     maxTokens: options.maxTokens,
+    parameters,
   };
 
   const jsonMode = options.jsonMode ?? true;
@@ -61,19 +65,30 @@ async function callLocalChat(
   }
 }
 
+function accountModel(providerId: string, model: string | undefined): string {
+  if (model && isValidLlmModelName(model)) {
+    return model;
+  }
+
+  return resolveSelectedLlmModel(providerId);
+}
+
 async function dispatchByokChat(
   providerId: string,
   apiKey: string,
   messages: LlmChatMessage[],
   options: LlmChatOptions,
+  accountChat?: { model?: string; parameters?: LlmAccountParameters },
 ): Promise<string> {
   const provider = getLlmProvider(providerId);
   if (!provider) {
     throw new LlmClientError("provider_invalid", `Unknown provider: ${providerId}`);
   }
 
-  const model = resolveSelectedLlmModel(providerId);
+  const model = accountModel(providerId, accountChat?.model);
   const jsonMode = options.jsonMode ?? true;
+  const temperature = accountChat?.parameters?.temperature ?? options.temperature;
+  const maxTokens = accountChat?.parameters?.maxTokens ?? options.maxTokens;
 
   if (providerId === "google-gemini") {
     return callGeminiChat(
@@ -81,8 +96,8 @@ async function dispatchByokChat(
       model,
       messages,
       jsonMode,
-      options.temperature,
-      options.maxTokens,
+      temperature,
+      maxTokens,
     );
   }
 
@@ -99,10 +114,11 @@ async function dispatchByokChat(
     model,
     messages,
     jsonMode,
-    temperature: options.temperature,
-    maxTokens: options.maxTokens,
+    temperature,
+    maxTokens,
     extraHeaders: provider.apiExtraHeaders,
     chatRequest: provider.chatRequest,
+    parameters: accountChat?.parameters,
   });
 }
 
@@ -116,7 +132,7 @@ async function dispatchGateChat(
     gate.mode === "local"
       ? gate.model
       : gate.mode === "byok"
-        ? resolveSelectedLlmModel(gate.providerId)
+        ? accountModel(gate.providerId, gate.model)
         : (provider?.defaultModel ?? "unknown");
 
   if (gate.mode === "proxy") {
@@ -135,6 +151,7 @@ async function dispatchGateChat(
       gate.model,
       messages,
       options,
+      gate.parameters,
     );
     return {
       content,
@@ -148,6 +165,7 @@ async function dispatchGateChat(
     gate.apiKey,
     messages,
     options,
+    { model: gate.model, parameters: gate.parameters },
   );
 
   return {

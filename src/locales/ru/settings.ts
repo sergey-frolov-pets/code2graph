@@ -120,4 +120,11 @@ export const settingsMessages = {
   "settings.llmModelPriceNeedsKey": "Добавьте API-ключ, чтобы обновить модели этого провайдера.",
   "settings.llmModelPriceFailed": "Не удалось обновить цены.",
   "settings.llmModelPriceUnavailable": "У этого провайдера нет публичного каталога цен.",
+  "settings.llmTemperature": "Температура",
+  "settings.llmTopP": "top_p",
+  "settings.llmResponseCount": "Ответы",
+  "settings.llmPresencePenalty": "Штраф присутствия",
+  "settings.llmFrequencyPenalty": "Штраф частоты",
+  "settings.llmMaxTokens": "Макс. токенов",
+  "settings.llmFixedParameter": "фикс.",
 } as const satisfies LocaleMessages;

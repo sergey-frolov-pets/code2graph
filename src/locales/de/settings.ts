@@ -120,4 +120,11 @@ export const settingsMessages = {
   "settings.llmModelPriceNeedsKey": "Fügen Sie einen API-Schlüssel hinzu, um die Modelle dieses Anbieters zu aktualisieren.",
   "settings.llmModelPriceFailed": "Preise konnten nicht aktualisiert werden.",
   "settings.llmModelPriceUnavailable": "Dieser Anbieter veröffentlicht keinen Preiskatalog.",
+  "settings.llmTemperature": "Temperatur",
+  "settings.llmTopP": "top_p",
+  "settings.llmResponseCount": "Antworten",
+  "settings.llmPresencePenalty": "Presence-Penalty",
+  "settings.llmFrequencyPenalty": "Frequency-Penalty",
+  "settings.llmMaxTokens": "Max. Tokens",
+  "settings.llmFixedParameter": "fest",
 } as const satisfies LocaleMessages;

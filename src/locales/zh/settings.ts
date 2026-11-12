@@ -118,4 +118,11 @@ export const settingsMessages = {
   "settings.llmModelPriceNeedsKey": "添加 API 密钥后即可刷新此提供商的模型。",
   "settings.llmModelPriceFailed": "无法刷新价格。",
   "settings.llmModelPriceUnavailable": "此提供商不公布价格目录。",
+  "settings.llmTemperature": "温度",
+  "settings.llmTopP": "top_p",
+  "settings.llmResponseCount": "回复数",
+  "settings.llmPresencePenalty": "存在惩罚",
+  "settings.llmFrequencyPenalty": "频率惩罚",
+  "settings.llmMaxTokens": "最大 token 数",
+  "settings.llmFixedParameter": "固定",
 } as const satisfies LocaleMessages;

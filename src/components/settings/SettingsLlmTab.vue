@@ -57,15 +57,6 @@ const { t } = useLocale();
     </p>
 
     <template v-if="llm.isActiveProviderByok">
-      <label class="settings-field">
-        <span class="settings-field__label">{{ t("settings.llmModel") }}</span>
-        <select class="select" :value="llm.selectedModelId" @change="llm.onModelChange">
-          <option v-for="model in llm.modelOptions" :key="model.id" :value="model.id">
-            {{ model.label }}
-          </option>
-        </select>
-        <span class="settings-field__hint">{{ llm.selectedModelPrice }}</span>
-      </label>
       <div class="settings-key-actions">
         <button
           class="btn"
@@ -110,19 +101,67 @@ const { t } = useLocale();
           :key="account.id"
           class="settings-llm-account"
         >
-          <span class="settings-llm-account__label">{{ account.label }}</span>
-          <span class="settings-llm-account__meta">{{ account.meta }}</span>
-          <label class="settings-llm-account__active">
+          <div class="settings-llm-account__head">
+            <span class="settings-llm-account__label">{{ account.label }}</span>
+            <span class="settings-llm-account__meta">{{ account.meta }}</span>
+            <label class="settings-llm-account__active">
+              <input
+                type="checkbox"
+                :checked="account.active"
+                @change="llm.onAccountActiveChange(account.id, $event)"
+              />
+              <span>{{ t("settings.llmAccountActive") }}</span>
+            </label>
+            <button class="btn" type="button" @click="llm.removeAccount(account.id)">
+              {{ t("settings.llmAccountRemove") }}
+            </button>
+          </div>
+          <label class="settings-field">
+            <span class="settings-field__label">{{ t("settings.llmModel") }}</span>
+            <select
+              v-if="!account.isLocal"
+              class="select settings-model-select"
+              :value="account.modelId"
+              @change="llm.onAccountModelChange(account.id, $event)"
+            >
+              <option
+                v-if="account.modelId && !llm.modelOptions.some((model) => model.id === account.modelId)"
+                :value="account.modelId"
+              >
+                {{ account.modelId }}
+              </option>
+              <option v-for="model in llm.modelOptions" :key="model.id" :value="model.id">
+                {{ model.label }}
+              </option>
+            </select>
             <input
-              type="checkbox"
-              :checked="account.active"
-              @change="llm.onAccountActiveChange(account.id, $event)"
+              v-else
+              class="select settings-model-select"
+              type="text"
+              :value="account.modelId"
+              spellcheck="false"
+              @change="llm.onAccountModelChange(account.id, $event)"
             />
-            <span>{{ t("settings.llmAccountActive") }}</span>
+            <span v-if="account.modelPrice" class="settings-field__hint">{{ account.modelPrice }}</span>
           </label>
-          <button class="btn" type="button" @click="llm.removeAccount(account.id)">
-            {{ t("settings.llmAccountRemove") }}
-          </button>
+          <div class="settings-llm-params">
+            <label v-for="parameter in account.parameters" :key="parameter.key" class="settings-field">
+              <span class="settings-field__label">
+                {{ parameter.label }}
+                <template v-if="parameter.fixed"> ({{ t("settings.llmFixedParameter") }})</template>
+              </span>
+              <input
+                class="select settings-model-select"
+                type="number"
+                :min="parameter.min"
+                :max="parameter.max"
+                :step="parameter.step"
+                :value="parameter.value"
+                :disabled="parameter.fixed"
+                @change="llm.onAccountParameterChange(account.id, parameter.key, $event)"
+              />
+            </label>
+          </div>
         </li>
       </ul>
       <p v-else class="settings-field__hint">

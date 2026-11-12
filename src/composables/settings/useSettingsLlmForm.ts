@@ -1,28 +1,46 @@
 import { computed, type InjectionKey, inject, ref, watch, type UnwrapNestedRefs } from "vue";
 import type { LocaleKey, TranslateFn } from "@/locales/types";
 import {
+  LLM_MAX_TOKENS_MAX,
+  LLM_MAX_TOKENS_MIN,
+  LLM_N_MAX,
+  LLM_N_MIN,
+  LLM_PARAMETER_DECIMAL_STEP,
+  LLM_PARAMETER_INTEGER_STEP,
+  LLM_PENALTY_MAX,
+  LLM_PENALTY_MIN,
+  LLM_TEMPERATURE_MAX,
+  LLM_TEMPERATURE_MIN,
+  LLM_TOP_P_MAX,
+  LLM_TOP_P_MIN,
   LOCAL_LLM_DEFAULT_BASE_URL,
   LOCAL_LLM_DEFAULT_MODEL,
   LOCAL_LLM_PROVIDER_ID,
 } from "@/constants/llm-account";
-import { ALL_LLM_PROVIDERS, getLlmProvider, LLM_PROVIDER_KIND } from "@/constants/llm-providers";
+import {
+  ALL_LLM_PROVIDERS,
+  getLlmProvider,
+  LLM_PROVIDER_KIND,
+  type LlmChatRequestParameter,
+} from "@/constants/llm-providers";
 import {
   addLlmAccount,
   removeLlmAccount,
   setLlmAccountActive,
+  setLlmAccountModel,
+  setLlmAccountParameter,
   useLlmAccountStore,
 } from "@/config/llm-accounts";
 import {
   llmAccountDisplayLabel,
   maskLlmApiKey,
   type LlmAccountDraftError,
+  type LlmAccountParameterKey,
 } from "@/config/llm-account-record";
 import {
   formatLlmModelPrice,
   listLlmModelChoices,
-  resolveSelectedLlmModel,
   saveLlmModelCatalog,
-  setSelectedLlmModel,
 } from "@/config/llm-model-selection";
 import { getLlmApiKey } from "@/composables/useLlmApiKeys";
 import { useLlmKeysGuide } from "@/composables/useLlmKeysGuide";
@@ -40,6 +58,63 @@ const PRICE_ERROR_KEY: Record<LlmModelCatalogFailure, LocaleKey> = {
   unavailable: "settings.llmModelPriceUnavailable",
   failed: "settings.llmModelPriceFailed",
 };
+
+const ACCOUNT_PARAMETER_FIELDS: readonly {
+  key: LlmAccountParameterKey;
+  requestParameter?: LlmChatRequestParameter;
+  labelKey: LocaleKey;
+  min: number;
+  max: number;
+  step: number;
+}[] = [
+  {
+    key: "temperature",
+    requestParameter: "temperature",
+    labelKey: "settings.llmTemperature",
+    min: LLM_TEMPERATURE_MIN,
+    max: LLM_TEMPERATURE_MAX,
+    step: LLM_PARAMETER_DECIMAL_STEP,
+  },
+  {
+    key: "topP",
+    requestParameter: "top_p",
+    labelKey: "settings.llmTopP",
+    min: LLM_TOP_P_MIN,
+    max: LLM_TOP_P_MAX,
+    step: LLM_PARAMETER_DECIMAL_STEP,
+  },
+  {
+    key: "n",
+    requestParameter: "n",
+    labelKey: "settings.llmResponseCount",
+    min: LLM_N_MIN,
+    max: LLM_N_MAX,
+    step: LLM_PARAMETER_INTEGER_STEP,
+  },
+  {
+    key: "presencePenalty",
+    requestParameter: "presence_penalty",
+    labelKey: "settings.llmPresencePenalty",
+    min: LLM_PENALTY_MIN,
+    max: LLM_PENALTY_MAX,
+    step: LLM_PARAMETER_DECIMAL_STEP,
+  },
+  {
+    key: "frequencyPenalty",
+    requestParameter: "frequency_penalty",
+    labelKey: "settings.llmFrequencyPenalty",
+    min: LLM_PENALTY_MIN,
+    max: LLM_PENALTY_MAX,
+    step: LLM_PARAMETER_DECIMAL_STEP,
+  },
+  {
+    key: "maxTokens",
+    labelKey: "settings.llmMaxTokens",
+    min: LLM_MAX_TOKENS_MIN,
+    max: LLM_MAX_TOKENS_MAX,
+    step: LLM_PARAMETER_INTEGER_STEP,
+  },
+];
 
 const ACCOUNT_SAVE_ERROR_KEY: Record<LlmAccountDraftError, LocaleKey> = {
   invalid_url: "settings.llmLocalInvalidUrl",
@@ -108,6 +183,14 @@ export function useSettingsLlmForm(t: TranslateFn) {
     () => activeProvider.value?.kind === LLM_PROVIDER_KIND.LOCAL,
   );
 
+  const modelOptions = computed(() =>
+    listLlmModelChoices(llmProviderId.value).map((model) => ({
+      id: model.id,
+      label: `${model.id} — ${formatLlmModelPrice(model, t)}`,
+      price: formatLlmModelPrice(model, t),
+    })),
+  );
+
   function nextDefaultLabel(providerId: string): string {
     const provider = getLlmProvider(providerId);
     const base = provider ? t(provider.nameKey) : providerId;
@@ -126,11 +209,32 @@ export function useSettingsLlmForm(t: TranslateFn) {
             ? [account.model, account.baseUrl].filter(Boolean).join(" · ")
             : maskLlmApiKey(account.apiKey);
 
+        const modelId = account.model || provider?.defaultModel || "";
+        const modelQuote = modelOptions.value.find((model) => model.id === modelId);
+
         return {
           id: account.id,
           active: account.active,
           label: llmAccountDisplayLabel(account, providerName),
           meta,
+          isLocal: account.providerId === LOCAL_LLM_PROVIDER_ID,
+          modelId,
+          modelPrice: modelQuote?.price ?? "",
+          parameters: ACCOUNT_PARAMETER_FIELDS.map((field) => {
+            const fixed = field.requestParameter
+              ? provider?.chatRequest?.fixedParameters[field.requestParameter]?.value
+              : undefined;
+            const saved = account.parameters?.[field.key];
+            return {
+              key: field.key,
+              label: t(field.labelKey),
+              min: field.min,
+              max: field.max,
+              step: field.step,
+              fixed: fixed !== undefined,
+              value: fixed !== undefined ? String(fixed) : saved === undefined ? "" : String(saved),
+            };
+          }),
         };
       }),
   );
@@ -167,20 +271,6 @@ export function useSettingsLlmForm(t: TranslateFn) {
     ),
   );
 
-  const modelOptions = computed(() =>
-    listLlmModelChoices(llmProviderId.value).map((model) => ({
-      id: model.id,
-      label: `${model.id} — ${formatLlmModelPrice(model, t)}`,
-      price: formatLlmModelPrice(model, t),
-    })),
-  );
-
-  const selectedModelId = computed(() => resolveSelectedLlmModel(llmProviderId.value));
-
-  const selectedModelPrice = computed(
-    () => modelOptions.value.find((model) => model.id === selectedModelId.value)?.price ?? "",
-  );
-
   watch(llmProviderId, () => {
     apiKeyInput.value = "";
     apiKeyError.value = "";
@@ -193,10 +283,6 @@ export function useSettingsLlmForm(t: TranslateFn) {
 
   function onProviderChange(event: Event): void {
     setLlmProviderId((event.target as HTMLSelectElement).value);
-  }
-
-  function onModelChange(event: Event): void {
-    setSelectedLlmModel(llmProviderId.value, (event.target as HTMLSelectElement).value);
   }
 
   async function refreshModelPrices(): Promise<void> {
@@ -283,6 +369,18 @@ export function useSettingsLlmForm(t: TranslateFn) {
     setLlmAccountActive(accountId, (event.target as HTMLInputElement).checked);
   }
 
+  function onAccountModelChange(accountId: string, event: Event): void {
+    setLlmAccountModel(accountId, (event.target as HTMLSelectElement | HTMLInputElement).value);
+  }
+
+  function onAccountParameterChange(
+    accountId: string,
+    key: LlmAccountParameterKey,
+    event: Event,
+  ): void {
+    setLlmAccountParameter(accountId, key, (event.target as HTMLInputElement).value);
+  }
+
   function removeAccount(accountId: string): void {
     removeLlmAccount(accountId);
   }
@@ -326,8 +424,6 @@ export function useSettingsLlmForm(t: TranslateFn) {
     isRefreshingPrices,
     modelPriceError,
     modelOptions,
-    selectedModelId,
-    selectedModelPrice,
     isActiveProviderByok,
     isActiveProviderLocal,
     llmProviderOptions,
@@ -336,12 +432,13 @@ export function useSettingsLlmForm(t: TranslateFn) {
     hasActiveApiKey,
     refreshLlmProxyAvailability,
     onProviderChange,
-    onModelChange,
     refreshModelPrices,
     onConsentChange,
     addProviderKey,
     addLocalProvider,
     onAccountActiveChange,
+    onAccountModelChange,
+    onAccountParameterChange,
     removeAccount,
     openKeysGuideForActiveProvider,
     onTestLlmConnection,
