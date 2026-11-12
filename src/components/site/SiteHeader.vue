@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppLogo from "@/components/AppLogo.vue";
 import InstallAppButton from "@/components/InstallAppButton.vue";
 import HeaderControls from "@/components/layout/HeaderControls.vue";
 import GithubStarButton from "@/components/site/GithubStarButton.vue";
@@ -34,7 +35,10 @@ const { isLocalMode } = useLibraryApiUrl();
         type="button"
         @click="navigateTo('landing')"
       >
-        <span class="site-header__logo">{{ APP_META.name }}</span>
+        <span class="site-header__logo">
+          <AppLogo />
+          <span class="site-header__name">{{ APP_META.name }}</span>
+        </span>
         <span
           v-if="props.landingNav"
           class="site-header__tagline"

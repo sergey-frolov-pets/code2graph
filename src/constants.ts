@@ -2,6 +2,7 @@ import { publicAsset } from "@/utils/public-asset";
 
 export const APP_META = {
   name: "Code2Graph",
+  logo: publicAsset("icons/icon.svg"),
   developer: "FSVibe",
   developerLogo: publicAsset("icons/fsvibe-logo.svg"),
   developerLogoWidth: 835,
