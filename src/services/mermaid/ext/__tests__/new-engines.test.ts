@@ -537,4 +537,167 @@ line План : 9, 11, 14`);
     const legendNames = svg.match(/<text[^>]*>Имя<\/text>/g) ?? [];
     expect(legendNames.length).toBeGreaterThan(0);
   });
+
+  it("разбирает скрытие осей, сетку y2, зазор, площади и сумму стопки", () => {
+    const parsed = clusteredEngine.parse(`series
+stacked area
+gap 12%
+categories A, B
+y "v" 0 --> 40
+axis x off
+axis y off
+grid
+axis y2 off
+grid y2 5
+labels inside sum
+series Один : 10, 20`);
+    expect(parsed.ok).toBe(true);
+    const model = parsed.value as ClusteredModel;
+    expect(model.area).toBe(true);
+    expect(model.stack).toBe(true);
+    expect(model.categoryAxis).toBe(false);
+    expect(model.axis).toBe(false);
+    expect(model.grid).toBe(true);
+    expect(model.y2Axis).toBe(false);
+    expect(model.y2Grid).toBe(true);
+    expect(model.y2GridStep).toBe(5);
+    expect(model.barGap).toEqual({ unit: "percent", value: 12 });
+    expect(model.labels).toBe("inside");
+    expect(model.showSum).toBe(true);
+
+    const restored = clusteredEngine.parse(`series
+categories A, B
+axis y off
+axis y on
+series Один : 10, 20`);
+    expect(restored.value?.axis).toBe(true);
+    expect(restored.value?.grid).toBe(false);
+
+    for (const source of ["gap -1", "gap 100%", "stacked ribbons"]) {
+      const bad = clusteredEngine.parse(`series\ncategories A, B\n${source}\nseries Один : 1, 2`);
+      expect(bad.ok, source).toBe(false);
+    }
+    expect(clusteredEngine.parse(`series\ncategories A\ngap 0\nseries Один : 1`).value?.barGap).toEqual({
+      unit: "px",
+      value: 0,
+    });
+  });
+
+  it("прячет выбранную ось вместе с её линиями и рисует сетку y2 отдельно", () => {
+    const source = `series
+labels none
+categories Альфа, Бета
+y "основная" 0 --> 100
+y2 "вторая" 0 --> 40
+series Факт : 20, 40
+line Доля : 10, 30 axis=y2`;
+    const shown = clusteredEngine.render(
+      clusteredEngine.parse(`${source}\ngrid y2 10`).value as ClusteredModel,
+      {},
+    );
+    expect(shown).toMatch(/stroke-dasharray="6 4"[^>]*data-grid="y2"/);
+    expect(shown).toContain('data-y2-tick="10"');
+    expect(shown).toContain(">вторая<");
+    expect(shown).toContain('stroke-dasharray="3 3"');
+
+    const hidden = clusteredEngine.render(
+      clusteredEngine.parse(`${source}\naxis y off\naxis y2 off\naxis x off`).value as ClusteredModel,
+      {},
+    );
+    expect(hidden).not.toContain('stroke-dasharray="3 3"');
+    expect(hidden).not.toContain('data-grid="y2"');
+    expect(hidden).not.toContain("data-y2-tick");
+    expect(hidden).not.toContain(">основная<");
+    expect(hidden).not.toContain(">вторая<");
+    expect(hidden).not.toContain(">Альфа<");
+    expect(hidden).not.toContain(">20<");
+    expect(hidden).toContain('data-bar="0-0"');
+
+    const gridOnly = clusteredEngine.render(
+      clusteredEngine.parse(`${source}\naxis y off\ngrid\naxis y2 off\ngrid y2`).value as ClusteredModel,
+      {},
+    );
+    expect(gridOnly).toContain('stroke-dasharray="3 3"');
+    expect(gridOnly).toContain('data-grid="y2"');
+    expect(gridOnly).not.toContain(">20<");
+    expect(gridOnly).not.toContain("data-y2-tick");
+    expect(gridOnly).not.toContain('data-axis-zero="y2"');
+  });
+
+  it("ставит сумму над стопкой и пропускает нулевую", () => {
+    const parsed = clusteredEngine.parse(`series
+stacked
+labels none sum
+categories Плюс, Ноль
+y "v" 0 --> 30
+series П : 10, 4
+series Q : 5, -4`);
+    expect(parsed.ok).toBe(true);
+    const svg = clusteredEngine.render(parsed.value as ClusteredModel, {});
+    const sums = [...svg.matchAll(/data-stack-sum="1">([^<]*)</g)].map((match) => match[1]);
+    expect(sums).toEqual(["15"]);
+  });
+
+  it("меняет просвет между барами пикселями и процентами", () => {
+    const box = (svg: string, id: string) => {
+      const tag = new RegExp(`<rect\\b[^>]*data-bar="${id}"[^>]*>`).exec(svg)?.[0] ?? "";
+      const read = (name: string) => Number(new RegExp(`\\b${name}="([\\d.]+)"`).exec(tag)?.[1]);
+      return { x: read("x"), width: read("width") };
+    };
+    const render = (extra: string) =>
+      clusteredEngine.render(
+        clusteredEngine.parse(`series
+categories А, Б
+series П : 10, 12
+series Q : 8, 9
+${extra}`).value as ClusteredModel,
+        {},
+      );
+    const plain = box(render(""), "0-1");
+    const pixels = box(render("gap 18"), "0-1");
+    const firstPlain = box(render(""), "0-0");
+    const firstPixels = box(render("gap 18"), "0-0");
+    expect(pixels.x - firstPixels.x).toBeCloseTo(firstPixels.width + 18, 5);
+    expect(plain.x - firstPlain.x).toBeCloseTo(firstPlain.width + 3, 5);
+
+    const stacked = (extra: string) =>
+      clusteredEngine.render(
+        clusteredEngine.parse(`series
+stacked
+categories А, Б
+series П : 10, 12
+${extra}`).value as ClusteredModel,
+        {},
+      );
+    const near = box(stacked(""), "1-0").x - box(stacked(""), "0-0").x;
+    const far = box(stacked("gap 80"), "1-0").x - box(stacked("gap 80"), "0-0").x;
+    expect(far).toBeGreaterThan(near);
+  });
+
+  it("рисует площади при повороте и обрывает ленту на пропуске", () => {
+    const parsed = clusteredEngine.parse(`series
+stacked area
+rotate 90
+invert y
+labels sum
+categories А, Б, В
+y "v" 0 --> 40
+break 15 --> 25
+line 30 "план"
+series П : 10, -, 20
+cagr
+series Q : 4, 6, 8`);
+    expect(parsed.ok).toBe(true);
+    const model = parsed.value as ClusteredModel;
+    expect(model.area).toBe(true);
+    expect(model.rotate90).toBe(true);
+    expect(model.series[0]?.values[1]).toBeNull();
+    const svg = clusteredEngine.render(model, {});
+    expect(svg.match(/data-area="0"/g)).toHaveLength(2);
+    expect(svg.match(/data-area="1"/g)).toHaveLength(1);
+    expect(svg).toContain('data-stack-sum="1"');
+    expect(svg).toContain("data-cagr=");
+    expect(svg).toContain('data-break="1"');
+    expect(svg).not.toContain("data-bar=");
+  });
 });

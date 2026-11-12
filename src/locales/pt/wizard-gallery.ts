@@ -102,6 +102,9 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.clusteredStacked.title": "Gráfico de barras empilhadas",
   "llm.wizard.gallery.example.mermaid.clusteredStacked.description":
     "Séries empilhadas em uma coluna: os positivos crescem para cima a partir do zero, os negativos crescem para baixo.",
+  "llm.wizard.gallery.example.mermaid.seriesArea.title": "Áreas empilhadas",
+  "llm.wizard.gallery.example.mermaid.seriesArea.description":
+    "A pilha como áreas entre os centros das categorias, com a soma das partes por fora.",
   "llm.wizard.gallery.example.mermaid.clusteredMono.title": "Barras de série monocromáticas",
   "llm.wizard.gallery.example.mermaid.clusteredMono.description":
     "As mesmas barras em tons de cinza para impressão e documentos sem cor.",

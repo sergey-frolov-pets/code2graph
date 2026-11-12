@@ -73,6 +73,7 @@ export const miscMessages = {
   "samples.mermaid.clustered": "Reihendiagramm",
   "samples.mermaid.clusteredRotated": "Reihendiagramm — um 90° gedreht",
   "samples.mermaid.clusteredStacked": "Reihendiagramm — gestapelt",
+  "samples.mermaid.seriesArea": "Reihendiagramm — Flächen",
   "samples.mermaid.clusteredMono": "Reihendiagramm — Mono",
   "samples.mermaid.clusteredMonoInvert": "Reihendiagramm — invertiertes Mono",
   "samples.mermaid.seriesLines": "Reihendiagramm — Linien",

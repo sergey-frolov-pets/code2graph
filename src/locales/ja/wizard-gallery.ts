@@ -102,6 +102,9 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.clusteredStacked.title": "積み上げ棒グラフ",
   "llm.wizard.gallery.example.mermaid.clusteredStacked.description":
     "系列を 1 本の列に積みます。正の値はゼロから上へ、負の値は下へ伸びます。",
+  "llm.wizard.gallery.example.mermaid.seriesArea.title": "積み上げ面グラフ",
+  "llm.wizard.gallery.example.mermaid.seriesArea.description":
+    "カテゴリ中心の間を面でつなぐ積み上げ。外側に部分の合計を書きます。",
   "llm.wizard.gallery.example.mermaid.clusteredMono.title": "モノクロの系列棒",
   "llm.wizard.gallery.example.mermaid.clusteredMono.description":
     "印刷や色のない文書向けに、同じ棒を灰色の濃淡で描きます。",

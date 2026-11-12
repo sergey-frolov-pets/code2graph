@@ -34,6 +34,12 @@ import { parseBreak, parseLine } from "./waterfall/directive-parsers";
 
 export type ClusteredLabelsMode = "above" | "inside" | "none";
 
+/** Зазор между барами: пиксели или доля ширины (процент строго меньше 100). */
+export interface SeriesBarGap {
+  unit: "px" | "percent";
+  value: number;
+}
+
 /** Пропуск на горизонтальной шкале: бара или точки линии в этой категории нет. */
 export type SeriesSlot = number | null;
 
@@ -117,10 +123,24 @@ export interface ClusteredModel {
    * первая категория оказывается снизу. Без поворота на раскладку не влияет.
    */
   invertY: boolean;
-  /** `stacked` — серии в одном столбце, а не рядом. */
+  /** `stacked` и `stacked area` — серии в одном столбце, а не рядом. */
   stack: boolean;
+  /** `stacked area` — стопка рисуется площадями между центрами категорий. */
+  area: boolean;
+  /** Подписи категорий (`axis x`). */
+  categoryAxis: boolean;
+  /** Линия, подписи и ноль второй оси. Сетка `y2` задаётся отдельно. */
+  y2Axis: boolean;
   grid: boolean;
   gridStep?: number;
+  /** Сетка второй оси. Без `grid y2` не рисуется. */
+  y2Grid: boolean;
+  y2GridStep?: number;
+  /** `gap 12` или `gap 20%`. Без директивы — прежние константы раскладки. */
+  barGap?: SeriesBarGap;
+  /** `labels sum` — сумма частей снаружи стопки. Ноль не подписывается. */
+  showSum: boolean;
+  /** Видимость основной шкалы `y`: линия, подписи делений, ноль. */
   axis: boolean;
   labels: ClusteredLabelsMode;
   fontSize?: number;
@@ -148,6 +168,10 @@ const MIN_BAR_THICKNESS = 12;
 const MAX_BAR_THICKNESS = 36;
 const INNER_BAR_GAP = 3;
 const CLUSTER_PADDING_RATIO = 0.26;
+/** Пунктир сетки второй оси длиннее основной (`3 3`), чтобы шкалы различались. */
+const Y2_GRID_DASH = "6 4";
+/** Сумма ближе нуля, чем это, не подписывается. */
+const SUM_LABEL_EPSILON = 1e-9;
 /** Нижний отступ вертикальной диаграммы без легенды: подписи категорий. */
 const VERTICAL_BOTTOM_PAD = 40;
 /** Полоса легенды. Вместе с VERTICAL_BOTTOM_PAD даёт прежние 68 px, если у серий есть имена. */
@@ -758,8 +782,15 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
   let rotate90 = false;
   let invertY = false;
   let stack = false;
+  let area = false;
+  let categoryAxis = true;
+  let y2AxisVisible = true;
   let grid = true;
   let gridStep: number | undefined;
+  let y2Grid = false;
+  let y2GridStep: number | undefined;
+  let barGap: SeriesBarGap | undefined;
+  let showSum = false;
   let axis = true;
   let labels: ClusteredLabelsMode = "above";
   let fontSize: number | undefined;
@@ -835,8 +866,37 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
         continue;
       }
 
-      if (/^axis\s+(?:on|off)$/i.test(raw)) {
-        axis = /on$/i.test(raw);
+      if (/^axis\b/i.test(raw) && !raw.includes(":")) {
+        const parts = raw.replace(/^axis\s*/i, "").trim().toLowerCase().split(/\s+/).filter(Boolean);
+        const hideValueAxis = (which: "y" | "y2" | "all", on: boolean) => {
+          if (which === "all" || which === "y") {
+            axis = on;
+            if (!on) grid = false;
+          }
+          if (which === "all" || which === "y2") {
+            y2AxisVisible = on;
+            if (!on) y2Grid = false;
+          }
+        };
+        const isOn = (token: string) => token === "on";
+        const isOff = (token: string) => token === "off" || token === "none" || token === "hidden";
+        if (parts.length === 1 && (isOn(parts[0]) || isOff(parts[0]))) {
+          hideValueAxis("all", isOn(parts[0]));
+          continue;
+        }
+        if (parts.length === 2 && (parts[0] === "x" || parts[0] === "y" || parts[0] === "y2")) {
+          const [which, state] = parts;
+          if (isOn(state) || isOff(state)) {
+            if (which === "x") categoryAxis = isOn(state);
+            else hideValueAxis(which, isOn(state));
+            continue;
+          }
+        }
+        errors.push({
+          message: `ожидается «axis on|off» или «axis x|y|y2 on|off», получено «${raw}»`,
+          line: lineNo,
+          col: 0,
+        });
         continue;
       }
 
@@ -861,36 +921,87 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
       }
 
       if (/^grid\b/i.test(raw) && !raw.includes(":")) {
-        const arg = raw.replace(/^grid\s*/i, "").trim().toLowerCase();
-        if (!arg || arg === "on") grid = true;
-        else if (arg === "off") grid = false;
+        const arg = raw.replace(/^grid\s*/i, "").trim();
+        const secondary = /^y2\b/i.test(arg);
+        const body = (secondary ? arg.replace(/^y2\s*/i, "") : arg).trim().toLowerCase();
+        const applyGrid = (on: boolean, step?: number) => {
+          if (secondary) {
+            y2Grid = on;
+            y2GridStep = step;
+          } else {
+            grid = on;
+            gridStep = step;
+          }
+        };
+        if (!body || body === "on") applyGrid(true, undefined);
+        else if (body === "off") applyGrid(false, undefined);
         else {
-          const step = parseExtNumber(arg);
+          const step = parseExtNumber(body);
           if (step === null || !(step > 0)) {
             errors.push({
-              message: `ожидается «grid», «grid off» или «grid <положительный шаг>», получено «${arg}»`,
+              message: secondary
+                ? `ожидается «grid y2», «grid y2 off» или «grid y2 <положительный шаг>», получено «${arg}»`
+                : `ожидается «grid», «grid off» или «grid <положительный шаг>», получено «${arg}»`,
               line: lineNo,
               col: 0,
             });
           } else {
-            grid = true;
-            gridStep = step;
+            applyGrid(true, step);
+          }
+        }
+        continue;
+      }
+
+      if (/^gap\b/i.test(raw) && !raw.includes(":")) {
+        const arg = raw.replace(/^gap\s*/i, "").trim();
+        const percent = /^(.*)\s*%$/.exec(arg);
+        if (percent) {
+          const value = parseExtNumber(percent[1]);
+          if (value === null || value < 0 || value >= 100) {
+            errors.push({
+              message: `ожидается «gap <число>%» от 0 до 100 не включая 100, получено «${arg}»`,
+              line: lineNo,
+              col: 0,
+            });
+          } else {
+            barGap = { unit: "percent", value };
+          }
+        } else {
+          const value = parseExtNumber(arg);
+          if (value === null || value < 0) {
+            errors.push({
+              message: `ожидается «gap <пиксели>» или «gap <процент>%», получено «${arg}»`,
+              line: lineNo,
+              col: 0,
+            });
+          } else {
+            barGap = { unit: "px", value };
           }
         }
         continue;
       }
 
       if (/^labels\b/i.test(raw) && !raw.includes(":")) {
-        const mode = raw.replace(/^labels\s*/i, "").trim().toLowerCase();
-        if (mode === "above" || mode === "outside" || mode === "on") labels = "above";
-        else if (mode === "inside") labels = "inside";
-        else if (mode === "none" || mode === "off") labels = "none";
-        else {
+        const tokens = raw.replace(/^labels\s*/i, "").trim().toLowerCase().split(/\s+/).filter(Boolean);
+        let mode: ClusteredLabelsMode | undefined;
+        let sum = false;
+        let bad = false;
+        for (const token of tokens) {
+          if (token === "sum") sum = true;
+          else if (token === "above" || token === "outside" || token === "on") mode = "above";
+          else if (token === "inside") mode = "inside";
+          else if (token === "none" || token === "off") mode = "none";
+          else bad = true;
+        }
+        if (bad || tokens.length === 0) {
           errors.push({
-            message: `ожидается «labels above|inside|none», получено «${mode}»`,
+            message: `ожидается «labels above|inside|none» и необязательное «sum», получено «${raw.replace(/^labels\s*/i, "").trim()}»`,
             line: lineNo,
             col: 0,
           });
+        } else {
+          if (mode) labels = mode;
+          if (sum) showSum = true;
         }
         continue;
       }
@@ -912,13 +1023,18 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
 
       if (/^(?:stacked|bars|layout)\b/i.test(raw) && !raw.includes(":")) {
         const token = raw.replace(/^(?:stacked|bars|layout)\s*/i, "").trim().toLowerCase();
-        if (raw.toLowerCase() === "stacked" || token === "stacked" || token === "stack" || token === "on") {
+        if (token === "area") {
           stack = true;
+          area = true;
+        } else if (raw.toLowerCase() === "stacked" || token === "stacked" || token === "stack" || token === "on") {
+          stack = true;
+          area = false;
         } else if (token === "grouped" || token === "off" || token === "") {
           stack = false;
+          area = false;
         } else {
           errors.push({
-            message: `ожидается «stacked» или «stacked off», получено «${raw}»`,
+            message: `ожидается «stacked», «stacked area» или «stacked off», получено «${raw}»`,
             line: lineNo,
             col: 0,
           });
@@ -1001,7 +1117,7 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
     }
 
     errors.push({
-      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, rotate 90, invert y, categories, y, y2, grid, axis, labels, fontsize, mono, stacked, colors, ratio, series, line, break, cagr)`,
+      message: `неизвестная директива «${raw.split(/\s+/)[0]}» (допустимы title, rotate 90, invert y, categories, y, y2, grid, axis, labels, fontsize, mono, stacked, gap, colors, ratio, series, line, break, cagr)`,
       line: lineNo,
       col: 0,
     });
@@ -1171,8 +1287,15 @@ export function parseClustered(source: string): ExtParseResult<ClusteredModel> {
       rotate90,
       invertY,
       stack,
+      area,
+      categoryAxis,
+      y2Axis: y2AxisVisible,
       grid,
       gridStep,
+      y2Grid,
+      y2GridStep,
+      barGap,
+      showSum,
       axis,
       labels,
       fontSize,
@@ -1275,14 +1398,51 @@ function computeValueScale(model: ClusteredModel): {
   return { min, max, ticks };
 }
 
-/** Вторая шкала: свой диапазон по рядам `axis=y2`, деления всегда «круглые» (grid — про основную). */
+/** Вторая шкала: свой диапазон по рядам `axis=y2`. Шаг — из `grid y2 <шаг>`, иначе «круглые» деления. */
 function computeSecondaryScale(model: ClusteredModel): {
   min: number;
   max: number;
   ticks: number[];
 } {
   const { min, max } = resolveValueBounds(model, "y2");
-  return { min, max, ticks: niceTicks(min, max, 5) };
+  const ticks =
+    model.y2GridStep && model.y2GridStep > 0
+      ? fixedTicks(min, max, model.y2GridStep)
+      : niceTicks(min, max, 5);
+  return { min, max, ticks };
+}
+
+/** Просвет между барами одной категории. У стопки бары соприкасаются. */
+function seriesInnerGap(model: ClusteredModel, thickness: number): number {
+  if (model.stack) return 0;
+  const gap = model.barGap;
+  if (!gap) return INNER_BAR_GAP;
+  if (gap.unit === "px") return gap.value;
+  return (thickness * gap.value) / 100;
+}
+
+/** Доля колонки, не занятая стопкой. Процент заменяет её только у стопки и площади. */
+function seriesPaddingRatio(model: ClusteredModel): number {
+  if (model.stack && model.barGap?.unit === "percent") return model.barGap.value / 100;
+  return CLUSTER_PADDING_RATIO;
+}
+
+function widenStackedPitch(model: ClusteredModel, groupSize: number, pitch: number): number {
+  if (model.stack && model.barGap?.unit === "px") return Math.max(pitch, groupSize + model.barGap.value);
+  return pitch;
+}
+
+function stackSum(model: ClusteredModel, category: number): number | null {
+  let sum = 0;
+  let any = false;
+  for (const series of model.series) {
+    const value = series.values[category];
+    if (value === null || value === undefined) continue;
+    sum += value;
+    any = true;
+  }
+  if (!any || Math.abs(sum) < SUM_LABEL_EPSILON) return null;
+  return sum;
 }
 
 interface ValueScale {
@@ -1461,6 +1621,163 @@ const LINE_DASH: Record<SeriesLineStyle, string | undefined> = {
 interface PlotPoint {
   x: number;
   y: number;
+}
+
+function areaPoint(vertical: boolean, across: number, along: number): PlotPoint {
+  return vertical ? { x: across, y: along } : { x: along, y: across };
+}
+
+/** Замкнутая лента серии: вперёд по верху стопки, назад по основанию. */
+function areaRibbonPath(
+  model: ClusteredModel,
+  seriesIndex: number,
+  run: readonly number[],
+  vertical: boolean,
+  thickness: number,
+  centerOf: (category: number) => number,
+  alongOf: (value: number) => number,
+): string {
+  const points: PlotPoint[] = [];
+  const push = (across: number, value: number) => {
+    points.push(areaPoint(vertical, across, alongOf(value)));
+  };
+  if (run.length === 1) {
+    const index = run[0];
+    const span = stackedSpans(model, index)[seriesIndex];
+    const across = centerOf(index);
+    const half = thickness / 2;
+    push(across - half, span.end);
+    push(across + half, span.end);
+    push(across + half, span.start);
+    push(across - half, span.start);
+  } else {
+    for (const index of run) {
+      push(centerOf(index), stackedSpans(model, index)[seriesIndex].end);
+    }
+    for (let cursor = run.length - 1; cursor >= 0; cursor -= 1) {
+      const index = run[cursor];
+      push(centerOf(index), stackedSpans(model, index)[seriesIndex].start);
+    }
+  }
+  const body = points.map((point, index) => `${index === 0 ? "M" : "L"}${fmt(point.x)} ${fmt(point.y)}`).join(" ");
+  return `${body} Z`;
+}
+
+function drawStackedAreas(
+  svg: ReturnType<typeof createSvg>,
+  model: ClusteredModel,
+  options: ExtRenderOptions,
+  palette: Palette,
+  fontSize: number,
+  vertical: boolean,
+  thickness: number,
+  centerOf: (category: number) => number,
+  alongOf: (value: number) => number,
+  anchors: Array<Array<PlotPoint | null>>,
+  obstacles: number[],
+): void {
+  const labelSize = Math.max(8, fontSize - 1);
+  model.series.forEach((series, seriesIndex) => {
+    const color = resolveSeriesColor(seriesIndex, {
+      explicitColor: series.color,
+      seriesColors: model.seriesColors,
+      mono: model.mono,
+      dark: chartIsDark(options.dark, model.monoInvert),
+    });
+    let run: number[] = [];
+    const flush = () => {
+      if (run.length === 0) return;
+      svg.path(areaRibbonPath(model, seriesIndex, run, vertical, thickness, centerOf, alongOf), {
+        fill: color,
+        "data-area": String(seriesIndex),
+      });
+      run = [];
+    };
+    for (let category = 0; category < model.categories.length; category += 1) {
+      const value = series.values[category];
+      if (value === null || value === undefined) flush();
+      else run.push(category);
+    }
+    flush();
+
+    for (let category = 0; category < model.categories.length; category += 1) {
+      const value = series.values[category];
+      if (value === null || value === undefined) {
+        anchors[seriesIndex][category] = null;
+        continue;
+      }
+      const span = stackedSpans(model, category)[seriesIndex];
+      const endPoint = areaPoint(vertical, centerOf(category), alongOf(span.end));
+      anchors[seriesIndex][category] = endPoint;
+      const band = Math.abs(alongOf(span.end) - alongOf(span.start));
+      if (vertical) {
+        obstacles[category] = Math.min(obstacles[category], Math.min(alongOf(span.start), alongOf(span.end)) - 2);
+      } else {
+        obstacles[category] = Math.max(obstacles[category], Math.max(alongOf(span.start), alongOf(span.end)) + 4);
+      }
+      if (model.labels === "none") continue;
+      const text = fmt(value);
+      const mid = areaPoint(
+        vertical,
+        centerOf(category),
+        (alongOf(span.start) + alongOf(span.end)) / 2,
+      );
+      const insideFits = model.labels === "inside" && band >= fontSize + 4 && measureText(text, labelSize) <= thickness - 2;
+      if (insideFits) {
+        svg.text(mid.x, mid.y + fontSize * 0.35, text, {
+          "font-size": labelSize,
+          "font-weight": 600,
+          fill: readableTextOnFill(color, palette.fg),
+        });
+      } else if (vertical) {
+        svg.text(centerOf(category) + thickness / 2 + 4, mid.y + fontSize * 0.35, text, {
+          "text-anchor": "start",
+          "font-size": labelSize,
+          fill: palette.fgDim,
+        });
+      } else {
+        svg.text(mid.x, centerOf(category) - thickness / 2 - 3, text, {
+          "font-size": labelSize,
+          fill: palette.fgDim,
+        });
+      }
+    }
+  });
+
+  if (!model.showSum) return;
+  for (let category = 0; category < model.categories.length; category += 1) {
+    const sum = stackSum(model, category);
+    if (sum === null) continue;
+    let edge = 0;
+    for (const series of model.series) {
+      const value = series.values[category];
+      if (value === null || value === undefined) continue;
+      if (sum > 0 && value > 0) edge += value;
+      if (sum < 0 && value < 0) edge += value;
+    }
+    const at = areaPoint(vertical, centerOf(category), alongOf(edge));
+    const text = fmt(sum);
+    if (vertical) {
+      const y = sum > 0 ? at.y - 5 : at.y + fontSize + 2;
+      svg.text(at.x, y, text, {
+        "font-size": labelSize,
+        "font-weight": 600,
+        fill: palette.fg,
+        "data-stack-sum": "1",
+      });
+      obstacles[category] = Math.min(obstacles[category], y - fontSize);
+    } else {
+      const x = sum > 0 ? at.x + 6 : at.x - 6;
+      svg.text(x, at.y + fontSize * 0.35, text, {
+        "text-anchor": sum > 0 ? "start" : "end",
+        "font-size": labelSize,
+        "font-weight": 600,
+        fill: palette.fg,
+        "data-stack-sum": "1",
+      });
+      obstacles[category] = Math.max(obstacles[category], sum > 0 ? x + measureText(text, labelSize) : x);
+    }
+  }
 }
 
 function lineLabelGutter(model: ClusteredModel, fontSize: number): number {
@@ -1882,15 +2199,20 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     MIN_BAR_THICKNESS,
     MAX_BAR_THICKNESS,
   );
-  let barsGroupWidth = layoutCount * barWidth + (layoutCount - 1) * INNER_BAR_GAP;
+  const innerGap = seriesInnerGap(model, barWidth);
+  let barsGroupWidth = layoutCount * barWidth + (layoutCount - 1) * innerGap;
   const longestCat = model.categories.reduce(
     (max, cat) => Math.max(max, measureLabelWidth(cat, fontSize)),
     0,
   );
-  let colWidth = Math.max(
-    Math.round(barsGroupWidth / (1 - CLUSTER_PADDING_RATIO)),
-    Math.ceil(longestCat) + 20,
-    72,
+  let colWidth = widenStackedPitch(
+    model,
+    barsGroupWidth,
+    Math.max(
+      Math.round(barsGroupWidth / (1 - seriesPaddingRatio(model))),
+      Math.ceil(longestCat) + 20,
+      72,
+    ),
   );
   const catExtra = Math.max(0, ...model.categories.map((cat) => labelBlockExtra(cat, fontSize)));
   const titleExtra = labelBlockExtra(model.title, titleSize);
@@ -1903,7 +2225,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     ? Math.max(0, ...secondaryScale.ticks.map((tick) => measureText(fmt(tick), fontSize)))
     : 0;
   const secondaryRoom =
-    secondaryScale && model.axis
+    secondaryScale && model.y2Axis
       ? SECONDARY_TICK_GAP + Math.ceil(secondaryTickWidth) + 6 + (model.y2?.label ? SECONDARY_LABEL_ROOM + y2Extra : 0)
       : 0;
 
@@ -1915,10 +2237,13 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     (model.stack && model.labels !== "none" ? 72 : 28) + secondaryRoom + annotationGutter(model, fontSize);
   const padTop =
     (model.title ? 52 : 28) +
-    (model.labels === "above" ? fontSize + 6 : 0) +
+    (model.labels === "above" || model.showSum ? fontSize + 6 : 0) +
     titleExtra +
     cagrHeadroom(model, fontSize);
-  const padBottom = VERTICAL_BOTTOM_PAD + (hasNamedSeries(model) ? NAMED_LEGEND_BAND : 0) + catExtra + seriesExtra;
+  const padBottom =
+    (model.categoryAxis ? VERTICAL_BOTTOM_PAD + catExtra : 16) +
+    (hasNamedSeries(model) ? NAMED_LEGEND_BAND : 0) +
+    seriesExtra;
 
   if (model.ratio) {
     const grown = growPlotToAspect(
@@ -2013,6 +2338,18 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     }
   }
 
+  if (model.y2Grid && secondaryScale) {
+    for (const tick of secondaryScale.ticks) {
+      const y = y2Of(tick);
+      svg.line(plotLeft, y, plotRight, y, {
+        stroke: palette.grid,
+        "stroke-width": 1,
+        "stroke-dasharray": Y2_GRID_DASH,
+        "data-grid": "y2",
+      });
+    }
+  }
+
   if (model.axis && model.y?.label) {
     const cx = 18 + yExtra;
     const cy = plotTop + plotHeight / 2;
@@ -2024,7 +2361,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     }, "up");
   }
 
-  if (model.axis && secondaryScale) {
+  if (model.y2Axis && secondaryScale) {
     svg.line(plotRight, plotTop, plotRight, plotBottom, {
       stroke: palette.axis,
       "stroke-width": 1.2,
@@ -2069,7 +2406,36 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
   );
   const obstacles = Array.from({ length: catCount }, () => Number.POSITIVE_INFINITY);
 
-  for (let c = 0; c < catCount; c += 1) {
+  if (model.area) {
+    drawStackedAreas(
+      svg,
+      model,
+      options,
+      palette,
+      fontSize,
+      true,
+      barWidth,
+      (category) => plotLeft + (category + 0.5) * colWidth,
+      yOf,
+      anchors,
+      obstacles,
+    );
+    if (model.categoryAxis) {
+      for (let c = 0; c < catCount; c += 1) {
+        drawLabelLines(
+          svg,
+          plotLeft + (c + 0.5) * colWidth,
+          plotBottom + fontSize + 8,
+          truncateLabel(model.categories[c] ?? "", colWidth - 6, fontSize),
+          fontSize,
+          {
+            "font-size": fontSize,
+            fill: palette.fg,
+          },
+        );
+      }
+    }
+  } else for (let c = 0; c < catCount; c += 1) {
     const clusterCenter = plotLeft + (c + 0.5) * colWidth;
     const clusterLeft = clusterCenter - barsGroupWidth / 2;
 
@@ -2088,7 +2454,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
         mono: model.mono,
         dark: chartIsDark(options.dark, model.monoInvert),
       });
-      const bx = span ? clusterLeft : clusterLeft + sIdx * (barWidth + INNER_BAR_GAP);
+      const bx = span ? clusterLeft : clusterLeft + sIdx * (barWidth + innerGap);
       const onSecondary = s.axis === "y2" && Boolean(secondaryScale);
       const seriesYOf = onSecondary ? y2Of : yOf;
       const seriesZero = onSecondary ? y2Zero : yZero;
@@ -2160,17 +2526,38 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
       }
     });
 
-    drawLabelLines(
-      svg,
-      clusterCenter,
-      plotBottom + fontSize + 8,
-      truncateLabel(model.categories[c] ?? "", colWidth - 6, fontSize),
-      fontSize,
-      {
-        "font-size": fontSize,
-        fill: palette.fg,
-      },
-    );
+    if (model.stack && model.showSum) {
+      const sum = stackSum(model, c);
+      if (sum !== null) {
+        let edge = 0;
+        for (const series of model.series) {
+          const value = series.values[c];
+          if (value === null || value === undefined) continue;
+          if ((sum > 0 && value > 0) || (sum < 0 && value < 0)) edge += value;
+        }
+        const y = yOf(edge);
+        svg.text(clusterCenter, sum > 0 ? y - 5 : y + fontSize + 2, fmt(sum), {
+          "font-size": Math.max(8, fontSize - 1),
+          "font-weight": 600,
+          fill: palette.fg,
+          "data-stack-sum": "1",
+        });
+      }
+    }
+
+    if (model.categoryAxis) {
+      drawLabelLines(
+        svg,
+        clusterCenter,
+        plotBottom + fontSize + 8,
+        truncateLabel(model.categories[c] ?? "", colWidth - 6, fontSize),
+        fontSize,
+        {
+          "font-size": fontSize,
+          fill: palette.fg,
+        },
+      );
+    }
   }
 
   if (model.axis && !inValueGap(0)) {
@@ -2180,7 +2567,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     });
   }
 
-  if (model.axis && secondaryScale && Math.abs(y2Zero - yZero) > 0.5) {
+  if (model.y2Axis && secondaryScale && Math.abs(y2Zero - yZero) > 0.5) {
     svg.line(plotLeft, y2Zero, plotRight, y2Zero, {
       stroke: palette.axis,
       "stroke-width": 0.8,
@@ -2291,9 +2678,15 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
     MIN_BAR_THICKNESS,
     MAX_BAR_THICKNESS,
   );
-  let barsGroupHeight = layoutCount * barHeight + (layoutCount - 1) * INNER_BAR_GAP;
+  const innerGap = seriesInnerGap(model, barHeight);
+  let barsGroupHeight = layoutCount * barHeight + (layoutCount - 1) * innerGap;
   const catExtra = Math.max(0, ...model.categories.map((cat) => labelBlockExtra(cat, fontSize)));
-  let rowHeight = Math.max(Math.round(barsGroupHeight / (1 - CLUSTER_PADDING_RATIO)), 42) + catExtra;
+  let rowHeight =
+    widenStackedPitch(
+      model,
+      barsGroupHeight,
+      Math.max(Math.round(barsGroupHeight / (1 - seriesPaddingRatio(model))), 42),
+    ) + catExtra;
 
   const longestCat = model.categories.reduce(
     (max, cat) => Math.max(max, measureLabelWidth(cat, fontSize)),
@@ -2302,13 +2695,15 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
   const titleExtra = labelBlockExtra(model.title, titleSize);
   const seriesExtra = Math.max(0, ...model.series.map((series) => labelBlockExtra(series.name, fontSize)));
   const yExtra = labelBlockExtra(model.y?.label, fontSize);
-  const padLeft = clamp(Math.ceil(longestCat) + 28, 76, 180);
+  const padLeft = model.categoryAxis ? clamp(Math.ceil(longestCat) + 28, 76, 180) : 28;
   const padRight =
-    (model.labels === "above" ? 56 : 28) + annotationGutter(model, fontSize) + cagrHeadroom(model, fontSize);
+    (model.labels === "above" || model.showSum ? 56 : 28) +
+    annotationGutter(model, fontSize) +
+    cagrHeadroom(model, fontSize);
   const secondaryScale = model.y2 ? computeSecondaryScale(model) : null;
   // Вторая ось у повёрнутой диаграммы — сверху: деления над краем, подпись над делениями.
   const secondaryRoom =
-    secondaryScale && model.axis ? fontSize + 14 + (model.y2?.label ? fontSize + 10 : 0) : 0;
+    secondaryScale && model.y2Axis ? fontSize + 14 + (model.y2?.label ? fontSize + 10 : 0) : 0;
   const padTop = (model.title ? 48 : 24) + titleExtra + rotatedMarkRoom(model, fontSize) + secondaryRoom;
   const padBottom =
     (model.y?.label ? 80 : 62) -
@@ -2410,6 +2805,18 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
     }
   }
 
+  if (model.y2Grid && secondaryScale) {
+    for (const tick of secondaryScale.ticks) {
+      const x = x2Of(tick);
+      svg.line(x, plotTop, x, plotBottom, {
+        stroke: palette.grid,
+        "stroke-width": 1,
+        "stroke-dasharray": Y2_GRID_DASH,
+        "data-grid": "y2",
+      });
+    }
+  }
+
   if (model.axis && model.y?.label) {
     drawLabelLines(svg, (plotLeft + plotRight) / 2, plotBottom + fontSize * 2 + 16, model.y.label, fontSize, {
       "text-anchor": "middle",
@@ -2418,7 +2825,7 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
     });
   }
 
-  if (model.axis && secondaryScale) {
+  if (model.y2Axis && secondaryScale) {
     svg.line(plotLeft, plotTop, plotRight, plotTop, {
       stroke: palette.axis,
       "stroke-width": 1.2,
@@ -2459,23 +2866,59 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
   );
   const obstacles = Array.from({ length: catCount }, () => Number.NEGATIVE_INFINITY);
 
-  for (let c = 0; c < catCount; c += 1) {
-    const rowCenter = plotTop + (categoryRowSlot(c, catCount, model.invertY) + 0.5) * rowHeight;
+  const categoryCenterY = (category: number): number =>
+    plotTop + (categoryRowSlot(category, catCount, model.invertY) + 0.5) * rowHeight;
+
+  if (model.area) {
+    drawStackedAreas(
+      svg,
+      model,
+      options,
+      palette,
+      fontSize,
+      false,
+      barHeight,
+      categoryCenterY,
+      xOf,
+      anchors,
+      obstacles,
+    );
+    if (model.categoryAxis) {
+      for (let c = 0; c < catCount; c += 1) {
+        drawLabelLines(
+          svg,
+          plotLeft - 10,
+          categoryCenterY(c) + fontSize * 0.35,
+          truncateLabel(model.categories[c] ?? "", padLeft - 18, fontSize),
+          fontSize,
+          {
+            "text-anchor": "end",
+            "font-size": fontSize,
+            fill: palette.fg,
+          },
+          "center",
+        );
+      }
+    }
+  } else for (let c = 0; c < catCount; c += 1) {
+    const rowCenter = categoryCenterY(c);
     const clusterTop = rowCenter - barsGroupHeight / 2;
 
-    drawLabelLines(
-      svg,
-      plotLeft - 10,
-      rowCenter + fontSize * 0.35,
-      truncateLabel(model.categories[c] ?? "", padLeft - 18, fontSize),
-      fontSize,
-      {
-        "text-anchor": "end",
-        "font-size": fontSize,
-        fill: palette.fg,
-      },
-      "center",
-    );
+    if (model.categoryAxis) {
+      drawLabelLines(
+        svg,
+        plotLeft - 10,
+        rowCenter + fontSize * 0.35,
+        truncateLabel(model.categories[c] ?? "", padLeft - 18, fontSize),
+        fontSize,
+        {
+          "text-anchor": "end",
+          "font-size": fontSize,
+          fill: palette.fg,
+        },
+        "center",
+      );
+    }
 
     const spans = model.stack ? stackedSpans(model, c) : null;
     model.series.forEach((s, sIdx) => {
@@ -2492,7 +2935,7 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
         mono: model.mono,
         dark: chartIsDark(options.dark, model.monoInvert),
       });
-      const by = span ? clusterTop : clusterTop + sIdx * (barHeight + INNER_BAR_GAP);
+      const by = span ? clusterTop : clusterTop + sIdx * (barHeight + innerGap);
       const onSecondary = s.axis === "y2" && Boolean(secondaryScale);
       const seriesXOf = onSecondary ? x2Of : xOf;
       const seriesZero = onSecondary ? x2Zero : xZero;
@@ -2567,6 +3010,26 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
         }
       }
     });
+
+    if (model.stack && model.showSum) {
+      const sum = stackSum(model, c);
+      if (sum !== null) {
+        let edge = 0;
+        for (const series of model.series) {
+          const value = series.values[c];
+          if (value === null || value === undefined) continue;
+          if ((sum > 0 && value > 0) || (sum < 0 && value < 0)) edge += value;
+        }
+        const x = xOf(edge);
+        svg.text(sum > 0 ? x + 6 : x - 6, rowCenter + fontSize * 0.35, fmt(sum), {
+          "text-anchor": sum > 0 ? "start" : "end",
+          "font-size": Math.max(8, fontSize - 1),
+          "font-weight": 600,
+          fill: palette.fg,
+          "data-stack-sum": "1",
+        });
+      }
+    }
   }
 
   if (model.axis && !inValueGap(0)) {
@@ -2576,7 +3039,7 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
     });
   }
 
-  if (model.axis && secondaryScale && Math.abs(x2Zero - xZero) > 0.5) {
+  if (model.y2Axis && secondaryScale && Math.abs(x2Zero - xZero) > 0.5) {
     svg.line(x2Zero, plotTop, x2Zero, plotBottom, {
       stroke: palette.axis,
       "stroke-width": 0.8,

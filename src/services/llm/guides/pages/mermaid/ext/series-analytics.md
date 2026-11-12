@@ -16,4 +16,4 @@ line 160 "план"
 cagr
 ```
 
-`line <number> "label"` is a level line and has no colon. `cagr` draws the growth from the first bar to the last.
+`line <number> "label"` is a level line and has no colon. `cagr` draws the growth from the first bar to the last. A level line, a break, and `cagr` stay on a `stacked` column chart and on `stacked area`.

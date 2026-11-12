@@ -177,6 +177,106 @@ describe("diagram-builder core", () => {
     expect(reParsed.value?.cagrs[0]?.seriesIndex).toBe(1);
   });
 
+  it("round-trips series axes, y2 grid, gap, stacked area and the stack sum", () => {
+    const source = [
+      "series",
+      "title Mix",
+      "stacked area",
+      "gap 12%",
+      "categories Q1, Q2",
+      'y "USD" 0 --> 100',
+      "axis x off",
+      "axis y off",
+      "grid",
+      "labels inside sum",
+      "series Online : 20, 30",
+      "series Retail : 10, 15",
+    ].join("\n");
+
+    const state = parseSourceToBuilderState(source, "mermaid");
+    expect(state.options.stackArea).toBe(true);
+    expect(state.options.stacked).toBe(false);
+    expect(state.options.barGap).toBe("12%");
+    expect(state.options.showSum).toBe(true);
+    expect(state.options.labelsMode).toBe("inside");
+    expect(state.canvas.xAxis.hidden).toBe(true);
+    expect(state.canvas.yAxis.hidden).toBe(true);
+    expect(state.canvas.yAxis.gridMode).toBe("auto");
+
+    const emitted = emitSourceFromBuilderState(state);
+    const again = parseClustered(emitted);
+    expect(again.ok).toBe(true);
+    expect(again.value?.area).toBe(true);
+    expect(again.value?.stack).toBe(true);
+    expect(again.value?.barGap).toEqual({ unit: "percent", value: 12 });
+    expect(again.value?.showSum).toBe(true);
+    expect(again.value?.labels).toBe("inside");
+    expect(again.value?.categoryAxis).toBe(false);
+    expect(again.value?.axis).toBe(false);
+    expect(again.value?.grid).toBe(true);
+
+    const dual = [
+      "series",
+      "categories Q1, Q2",
+      'y "USD" 0 --> 100',
+      'y2 "%" 0 --> 40',
+      "gap 8",
+      "axis y2 off",
+      "grid y2 5",
+      "labels sum",
+      "series Online : 20, 30",
+      "series Rate : 10, 15 axis=y2",
+    ].join("\n");
+    const dualState = parseSourceToBuilderState(dual, "mermaid");
+    expect(dualState.options.y2Hidden).toBe(true);
+    expect(dualState.options.y2GridMode).toBe("fixed");
+    expect(dualState.options.y2GridStep).toBe("5");
+    expect(dualState.options.barGap).toBe("8");
+    expect(dualState.options.showSum).toBe(true);
+    const dualAgain = parseClustered(emitSourceFromBuilderState(dualState));
+    expect(dualAgain.ok).toBe(true);
+    expect(dualAgain.value?.y2Axis).toBe(false);
+    expect(dualAgain.value?.y2Grid).toBe(true);
+    expect(dualAgain.value?.y2GridStep).toBe(5);
+    expect(dualAgain.value?.barGap).toEqual({ unit: "px", value: 8 });
+    expect(dualAgain.value?.showSum).toBe(true);
+  });
+
+  it("round-trips waterfall axis visibility, grid off and gap", () => {
+    const source = [
+      "waterfall",
+      "title Plan",
+      'y "mln" 0 --> 200',
+      "axis x off",
+      "grid off",
+      "gap 16%",
+      "=40 : Q1",
+      "+20 : Q2",
+    ].join("\n");
+    const state = parseSourceToBuilderState(source, "mermaid");
+    expect(state.canvas.xAxis.hidden).toBe(true);
+    expect(state.canvas.yAxis.hidden).toBe(false);
+    expect(state.canvas.yAxis.gridMode).toBe("off");
+    expect(state.options.barGap).toBe("16%");
+
+    const again = parseWaterfall(emitSourceFromBuilderState(state));
+    expect(again.ok).toBe(true);
+    expect(again.value?.categoryAxisHidden).toBe(true);
+    expect(again.value?.axis.grid).toBe(false);
+    expect(again.value?.axis.hidden).toBeFalsy();
+    expect(again.value?.barGap).toEqual({ unit: "percent", value: 16 });
+
+    const hidden = parseSourceToBuilderState(
+      ["waterfall", 'y "mln" -10 --> 40', "axis y off", "grid", "=10 : A", "-5 : B"].join("\n"),
+      "mermaid",
+    );
+    expect(hidden.canvas.yAxis.hidden).toBe(true);
+    expect(hidden.canvas.yAxis.gridMode).toBe("auto");
+    const hiddenAgain = parseWaterfall(emitSourceFromBuilderState(hidden));
+    expect(hiddenAgain.value?.axis.hidden).toBe(true);
+    expect(hiddenAgain.value?.axis.grid).toBe(true);
+  });
+
   it("round-trips all remaining Mermaid Ext engines (bubble, heatmap, boxplot, treemap, radar, voronoi, orgchart, ev)", () => {
     const samples: Array<{
       type: string;

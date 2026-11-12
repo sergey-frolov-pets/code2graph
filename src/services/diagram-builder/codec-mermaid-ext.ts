@@ -22,6 +22,39 @@ import type {
 } from "./types";
 
 const DEFAULT_FONT_SIZE = 11;
+
+function formatBarGap(gap: { unit: "px" | "percent"; value: number } | undefined): string {
+  if (!gap) return "";
+  return gap.unit === "percent" ? `${fmt(gap.value)}%` : fmt(gap.value);
+}
+
+function emitAxisAndGrid(
+  lines: string[],
+  canvas: { xAxis: { hidden: boolean }; yAxis: { hidden: boolean; gridMode: string; gridStep: string } },
+  y2?: { hidden: boolean; gridMode: string; gridStep: string },
+): void {
+  if (canvas.xAxis.hidden) lines.push("axis x off");
+  if (canvas.yAxis.hidden) lines.push("axis y off");
+  if (y2?.hidden) lines.push("axis y2 off");
+  if (canvas.yAxis.gridMode === "off") {
+    if (!canvas.yAxis.hidden) lines.push("grid off");
+  } else if (canvas.yAxis.gridMode === "fixed") {
+    const step = Number(canvas.yAxis.gridStep);
+    if (Number.isFinite(step) && step > 0) lines.push(`grid ${formatCleanNumber(step)}`);
+  } else if (canvas.yAxis.hidden) {
+    lines.push("grid");
+  }
+  if (!y2) return;
+  if (y2.gridMode === "off") {
+    if (!y2.hidden) return;
+  } else if (y2.gridMode === "fixed") {
+    const step = Number(y2.gridStep);
+    if (Number.isFinite(step) && step > 0) lines.push(`grid y2 ${formatCleanNumber(step)}`);
+    else if (y2.hidden) lines.push("grid y2");
+  } else {
+    lines.push("grid y2");
+  }
+}
 const DEFAULT_RADAR_RINGS = 4;
 const DEFAULT_RADAR_FILL = 0.22;
 
@@ -82,6 +115,12 @@ export function createDefaultBuilderState(
     labelsMode: diagramType === "treemap" ? "both" : "above",
     connectors: true,
     stacked: false,
+    stackArea: false,
+    showSum: false,
+    barGap: "",
+    y2Hidden: false,
+    y2GridMode: "off",
+    y2GridStep: "",
     showData: true,
     showSites: true,
     showLabels: true,
@@ -223,7 +262,11 @@ export function parseMermaidExtToBuilderState(
       state.canvas.yAxis.min = fmt(model.axis.min);
       state.canvas.yAxis.max = fmt(model.axis.max);
       state.canvas.yAxis.hidden = Boolean(model.axis.hidden);
-      if (model.axis.gridStep && model.axis.gridStep > 0) {
+      state.canvas.xAxis.hidden = Boolean(model.categoryAxisHidden);
+      state.options.barGap = formatBarGap(model.barGap);
+      if (!model.axis.grid) {
+        state.canvas.yAxis.gridMode = "off";
+      } else if (model.axis.gridStep && model.axis.gridStep > 0) {
         state.canvas.yAxis.gridMode = "fixed";
         state.canvas.yAxis.gridStep = fmt(model.axis.gridStep);
       } else {
@@ -643,6 +686,10 @@ export function parseMermaidExtToBuilderState(
         }
       }
       state.canvas.yAxis.hidden = !model.axis;
+      state.canvas.xAxis.hidden = !model.categoryAxis;
+      state.options.y2Hidden = !model.y2Axis;
+      state.options.barGap = formatBarGap(model.barGap);
+      state.options.showSum = model.showSum;
       if (!model.grid) {
         state.canvas.yAxis.gridMode = "off";
       } else if (model.gridStep && model.gridStep > 0) {
@@ -651,9 +698,18 @@ export function parseMermaidExtToBuilderState(
       } else {
         state.canvas.yAxis.gridMode = "auto";
       }
+      if (!model.y2Grid) {
+        state.options.y2GridMode = "off";
+      } else if (model.y2GridStep && model.y2GridStep > 0) {
+        state.options.y2GridMode = "fixed";
+        state.options.y2GridStep = fmt(model.y2GridStep);
+      } else {
+        state.options.y2GridMode = "auto";
+      }
 
       state.options.labelsMode = model.labels;
-      state.options.stacked = model.stack;
+      state.options.stackArea = model.area;
+      state.options.stacked = model.stack && !model.area;
       state.options.monoMode = model.monoInvert
         ? "invert"
         : model.mono
@@ -814,15 +870,8 @@ export function emitMermaidExtFromBuilderState(
           lines.push(`y ${lbl}${formatCleanNumber(min)} --> ${formatCleanNumber(max)}`);
         }
       }
-      if (canvas.yAxis.hidden) {
-        lines.push("axis off");
-      }
-      if (canvas.yAxis.gridMode === "fixed") {
-        const step = Number(canvas.yAxis.gridStep);
-        if (Number.isFinite(step) && step > 0) {
-          lines.push(`grid ${formatCleanNumber(step)}`);
-        }
-      }
+      emitAxisAndGrid(lines, canvas);
+      if (options.barGap.trim()) lines.push(`gap ${options.barGap.trim()}`);
       if (options.labelsMode && options.labelsMode !== "above") {
         lines.push(`labels ${options.labelsMode}`);
       }
@@ -1320,7 +1369,9 @@ export function emitMermaidExtFromBuilderState(
       if (canvas.title.trim()) lines.push(`title ${canvas.title.trim()}`);
       if (canvas.rotate90) lines.push("rotate 90");
       if (canvas.invertY) lines.push("invert y");
-      if (options.stacked) lines.push("stacked");
+      if (options.stackArea) lines.push("stacked area");
+      else if (options.stacked) lines.push("stacked");
+      if (options.barGap.trim()) lines.push(`gap ${options.barGap.trim()}`);
       const ratioLine = emitAspectDirective(canvas);
       if (ratioLine) lines.push(ratioLine);
       if (canvas.fontSize && canvas.fontSize !== DEFAULT_FONT_SIZE) {
@@ -1362,21 +1413,16 @@ export function emitMermaidExtFromBuilderState(
         lines.push(`y "${canvas.yAxis.label.trim().replace(/"/g, '\\"')}"`);
       }
 
-      if (canvas.yAxis.hidden) {
-        lines.push("axis off");
-      }
-      if (canvas.yAxis.gridMode === "off") {
-        lines.push("grid off");
-      } else if (canvas.yAxis.gridMode === "fixed") {
-        const step = Number(canvas.yAxis.gridStep);
-        if (Number.isFinite(step) && step > 0) {
-          lines.push(`grid ${formatCleanNumber(step)}`);
-        }
-      }
+      emitAxisAndGrid(lines, canvas, {
+        hidden: options.y2Hidden,
+        gridMode: options.y2GridMode,
+        gridStep: options.y2GridStep,
+      });
 
-      if (options.labelsMode && options.labelsMode !== "above") {
-        lines.push(`labels ${options.labelsMode}`);
-      }
+      const labelTokens: string[] = [];
+      if (options.labelsMode && options.labelsMode !== "above") labelTokens.push(options.labelsMode);
+      if (options.showSum) labelTokens.push("sum");
+      if (labelTokens.length > 0) lines.push(`labels ${labelTokens.join(" ")}`);
 
       for (const brk of options.breaks) {
         const after = Number(brk.after);

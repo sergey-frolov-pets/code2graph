@@ -73,6 +73,7 @@ export const miscMessages = {
   "samples.mermaid.clustered": "系列图",
   "samples.mermaid.clusteredRotated": "系列图 — 旋转 90°",
   "samples.mermaid.clusteredStacked": "系列图 — 堆叠",
+  "samples.mermaid.seriesArea": "系列图 — 面积",
   "samples.mermaid.clusteredMono": "系列图 — 单色",
   "samples.mermaid.clusteredMonoInvert": "系列图 — 反相单色",
   "samples.mermaid.seriesLines": "系列图 — 折线",

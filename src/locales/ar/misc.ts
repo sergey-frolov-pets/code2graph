@@ -73,6 +73,7 @@ export const miscMessages = {
   "samples.mermaid.clustered": "مخطط سلاسل",
   "samples.mermaid.clusteredRotated": "مخطط سلاسل — مدوّر 90°",
   "samples.mermaid.clusteredStacked": "مخطط سلاسل — متراكم",
+  "samples.mermaid.seriesArea": "مخطط سلاسل — مساحات",
   "samples.mermaid.clusteredMono": "مخطط سلاسل — أحادي اللون",
   "samples.mermaid.clusteredMonoInvert": "مخطط سلاسل — أحادي معكوس",
   "samples.mermaid.seriesLines": "مخطط سلاسل — خطوط",

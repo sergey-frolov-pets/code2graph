@@ -870,18 +870,51 @@ function removeHeatmapBand(idx: number): void {
         >
           <span class="builder-field__label">{{ t("builder.option.barLayout") }}</span>
           <select
-            :value="builderState.options.stacked ? 'stacked' : 'grouped'"
+            :value="builderState.options.stackArea ? 'area' : builderState.options.stacked ? 'stacked' : 'grouped'"
             class="select builder-input"
             data-testid="builder-bar-layout-select"
             @change="
-              builderState.options.stacked =
-                ($event.target as HTMLSelectElement).value === 'stacked';
+              builderState.options.stackArea = ($event.target as HTMLSelectElement).value === 'area';
+              builderState.options.stacked = ($event.target as HTMLSelectElement).value === 'stacked';
               notifyChange();
             "
           >
             <option value="grouped">{{ t("builder.option.grouped") }}</option>
             <option value="stacked">{{ t("builder.option.stacked") }}</option>
+            <option value="area">{{ t("builder.option.stackedArea") }}</option>
           </select>
+        </label>
+
+        <label
+          v-if="cap.supportsStacked"
+          class="builder-field"
+        >
+          <span class="builder-field__label">{{ t("builder.option.showSum") }}</span>
+          <select
+            :value="builderState.options.showSum ? 'on' : 'off'"
+            class="select builder-input"
+            @change="
+              builderState.options.showSum = ($event.target as HTMLSelectElement).value === 'on';
+              notifyChange();
+            "
+          >
+            <option value="off">{{ t("builder.option.hide") }}</option>
+            <option value="on">{{ t("builder.option.show") }}</option>
+          </select>
+        </label>
+
+        <label
+          v-if="cap.supportsStacked || builderState.diagramType === 'waterfall'"
+          class="builder-field"
+        >
+          <span class="builder-field__label">{{ t("builder.option.barGap") }}</span>
+          <input
+            v-model="builderState.options.barGap"
+            type="text"
+            class="builder-input"
+            :placeholder="t('builder.option.barGapPlaceholder')"
+            @input="notifyChange"
+          >
         </label>
 
         <label
@@ -1208,6 +1241,42 @@ function removeHeatmapBand(idx: number): void {
           </select>
         </label>
 
+        <label
+          v-if="cap.supportsAxisToggle && (builderState.diagramType === 'series' || builderState.diagramType === 'waterfall')"
+          class="builder-field"
+        >
+          <span class="builder-field__label">{{ t("builder.axis.category") }}</span>
+          <select
+            :value="builderState.canvas.xAxis.hidden ? 'off' : 'on'"
+            class="select builder-input"
+            @change="
+              builderState.canvas.xAxis.hidden = ($event.target as HTMLSelectElement).value === 'off';
+              notifyChange();
+            "
+          >
+            <option value="on">{{ t("builder.option.show") }}</option>
+            <option value="off">{{ t("builder.option.hide") }}</option>
+          </select>
+        </label>
+
+        <label
+          v-if="builderState.diagramType === 'series'"
+          class="builder-field"
+        >
+          <span class="builder-field__label">{{ t("builder.axis.y2") }}</span>
+          <select
+            :value="builderState.options.y2Hidden ? 'off' : 'on'"
+            class="select builder-input"
+            @change="
+              builderState.options.y2Hidden = ($event.target as HTMLSelectElement).value === 'off';
+              notifyChange();
+            "
+          >
+            <option value="on">{{ t("builder.option.show") }}</option>
+            <option value="off">{{ t("builder.option.hide") }}</option>
+          </select>
+        </label>
+
         <!-- Grid -->
         <div
           v-if="cap.supportsGrid"
@@ -1227,10 +1296,7 @@ function removeHeatmapBand(idx: number): void {
               >
                 {{ t("builder.axis.gridStep") }}
               </option>
-              <option
-                v-if="builderState.diagramType !== 'waterfall'"
-                value="off"
-              >
+              <option value="off">
                 {{ t("builder.option.hide") }}
               </option>
             </select>
@@ -1242,6 +1308,34 @@ function removeHeatmapBand(idx: number): void {
               step="any"
               class="builder-input builder-input--short"
               placeholder="50"
+              @input="notifyChange"
+            >
+          </div>
+        </div>
+
+        <div
+          v-if="builderState.diagramType === 'series'"
+          class="builder-field"
+        >
+          <span class="builder-field__label">{{ t("builder.axis.y2Grid") }}</span>
+          <div class="builder-inline-inputs">
+            <select
+              v-model="builderState.options.y2GridMode"
+              class="select builder-input"
+              @change="notifyChange"
+            >
+              <option value="off">{{ t("builder.option.hide") }}</option>
+              <option value="auto">{{ t("builder.option.auto") }}</option>
+              <option value="fixed">{{ t("builder.axis.gridStep") }}</option>
+            </select>
+            <input
+              v-if="builderState.options.y2GridMode === 'fixed'"
+              v-model="builderState.options.y2GridStep"
+              type="number"
+              min="0.1"
+              step="any"
+              class="builder-input builder-input--short"
+              placeholder="10"
               @input="notifyChange"
             >
           </div>

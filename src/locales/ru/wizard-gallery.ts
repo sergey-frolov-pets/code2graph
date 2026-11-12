@@ -102,6 +102,9 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.clusteredStacked.title": "Серийная — стопка",
   "llm.wizard.gallery.example.mermaid.clusteredStacked.description":
     "Серии сложены в один столбец: положительные вверх от нуля, отрицательные вниз.",
+  "llm.wizard.gallery.example.mermaid.seriesArea.title": "Серийная — площади",
+  "llm.wizard.gallery.example.mermaid.seriesArea.description":
+    "Стопка площадями между центрами категорий, с суммой частей снаружи.",
   "llm.wizard.gallery.example.mermaid.clusteredMono.title": "Серийная — ч/б",
   "llm.wizard.gallery.example.mermaid.clusteredMono.description":
     "Те же столбцы серыми оттенками для печати и документов без цвета.",

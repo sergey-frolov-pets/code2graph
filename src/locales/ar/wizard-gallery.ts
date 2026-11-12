@@ -102,6 +102,9 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.clusteredStacked.title": "مخطط أعمدة متراكم",
   "llm.wizard.gallery.example.mermaid.clusteredStacked.description":
     "سلاسل مكدّسة في عمود واحد: الموجب ينمو صعودًا من الصفر، والسالب ينمو نزولًا.",
+  "llm.wizard.gallery.example.mermaid.seriesArea.title": "مساحات متراكمة",
+  "llm.wizard.gallery.example.mermaid.seriesArea.description":
+    "التراكم كمساحات بين مراكز الفئات، مع مجموع الأجزاء في الخارج.",
   "llm.wizard.gallery.example.mermaid.clusteredMono.title": "أشرطة سلاسل أحادية اللون",
   "llm.wizard.gallery.example.mermaid.clusteredMono.description":
     "الأشرطة نفسها بدرجات الرمادي للطباعة والمستندات بلا ألوان.",

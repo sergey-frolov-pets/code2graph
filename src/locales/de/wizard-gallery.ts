@@ -102,6 +102,9 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.clusteredStacked.title": "Gestapeltes Balkendiagramm",
   "llm.wizard.gallery.example.mermaid.clusteredStacked.description":
     "Reihen in einer Spalte gestapelt: Positive wachsen von null nach oben, Negative nach unten.",
+  "llm.wizard.gallery.example.mermaid.seriesArea.title": "Gestapelte Flächen",
+  "llm.wizard.gallery.example.mermaid.seriesArea.description":
+    "Stapel als Flächen zwischen den Kategoriezentren, mit der Teilsumme außen.",
   "llm.wizard.gallery.example.mermaid.clusteredMono.title": "Monochrome Reihenbalken",
   "llm.wizard.gallery.example.mermaid.clusteredMono.description":
     "Dieselben Balken in Grautönen für den Druck und farblose Dokumente.",

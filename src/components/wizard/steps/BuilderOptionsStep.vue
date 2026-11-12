@@ -221,18 +221,51 @@ function removeHeatmapBand(idx: number): void {
         >
           <span class="builder-field__label">{{ t("builder.option.barLayout") }}</span>
           <select
-            :value="builderState.options.stacked ? 'stacked' : 'grouped'"
+            :value="builderState.options.stackArea ? 'area' : builderState.options.stacked ? 'stacked' : 'grouped'"
             class="select builder-input"
             data-testid="builder-bar-layout-select"
             @change="
-              builderState.options.stacked =
-                ($event.target as HTMLSelectElement).value === 'stacked';
+              builderState.options.stackArea = ($event.target as HTMLSelectElement).value === 'area';
+              builderState.options.stacked = ($event.target as HTMLSelectElement).value === 'stacked';
               notifyChange();
             "
           >
             <option value="grouped">{{ t("builder.option.grouped") }}</option>
             <option value="stacked">{{ t("builder.option.stacked") }}</option>
+            <option value="area">{{ t("builder.option.stackedArea") }}</option>
           </select>
+        </label>
+
+        <label
+          v-if="cap.supportsStacked"
+          class="builder-field"
+        >
+          <span class="builder-field__label">{{ t("builder.option.showSum") }}</span>
+          <select
+            :value="builderState.options.showSum ? 'on' : 'off'"
+            class="select builder-input"
+            @change="
+              builderState.options.showSum = ($event.target as HTMLSelectElement).value === 'on';
+              notifyChange();
+            "
+          >
+            <option value="off">{{ t("builder.option.hide") }}</option>
+            <option value="on">{{ t("builder.option.show") }}</option>
+          </select>
+        </label>
+
+        <label
+          v-if="cap.supportsStacked || builderState.diagramType === 'waterfall'"
+          class="builder-field"
+        >
+          <span class="builder-field__label">{{ t("builder.option.barGap") }}</span>
+          <input
+            v-model="builderState.options.barGap"
+            type="text"
+            class="builder-input"
+            :placeholder="t('builder.option.barGapPlaceholder')"
+            @input="notifyChange"
+          >
         </label>
 
         <label

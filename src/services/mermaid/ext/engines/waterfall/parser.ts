@@ -13,6 +13,7 @@ import {
 import { parseAspectDirective, type ChartAspect } from "../../chart-aspect";
 import type {
   WaterfallAxis,
+  WaterfallBarGap,
   WaterfallBreak,
   WaterfallColors,
   WaterfallLine,
@@ -30,7 +31,10 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
   let title: string | undefined;
   let axis: WaterfallAxis | null = null;
   let gridStep: number | undefined;
+  let grid = true;
   let axisHidden = false;
+  let categoryAxisHidden = false;
+  let barGap: WaterfallBarGap | undefined;
   let valueLabels = { above: true, inside: false };
   let connectors = true;
   let fontSize: number | undefined;
@@ -70,7 +74,7 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
         });
         continue;
       }
-      axis = { label: parsed.label, min: parsed.min, max: parsed.max, auto: false };
+      axis = { label: parsed.label, min: parsed.min, max: parsed.max, auto: false, grid };
       continue;
     }
 
@@ -103,31 +107,100 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
     }
 
     if (/^grid\b/i.test(raw)) {
-      const value = parseNumber(raw.slice(4).trim());
-      if (value === null || !(value > 0)) {
+      const arg = raw.slice(4).trim();
+      if (/^y2\b/i.test(arg)) {
         errors.push({
-          message: `ожидается «grid <положительный шаг>», получено «${raw.slice(4).trim()}»`,
+          message: `у waterfall нет второй оси: «grid y2» не поддерживается`,
           line: lineNo,
           col: 0,
         });
         continue;
       }
-      gridStep = value;
+      const body = arg.toLowerCase();
+      if (!body || body === "on") {
+        grid = true;
+        gridStep = undefined;
+      } else if (body === "off") {
+        grid = false;
+        gridStep = undefined;
+      } else {
+        const value = parseNumber(body);
+        if (value === null || !(value > 0)) {
+          errors.push({
+            message: `ожидается «grid», «grid off» или «grid <положительный шаг>», получено «${arg}»`,
+            line: lineNo,
+            col: 0,
+          });
+          continue;
+        }
+        grid = true;
+        gridStep = value;
+      }
       continue;
     }
 
     if (/^axis\b/i.test(raw)) {
-      const token = raw.slice(4).trim().toLowerCase();
-      if (token === "off" || token === "none" || token === "hidden") {
-        axisHidden = true;
-      } else if (token === "on" || token === "auto" || token === "") {
+      const parts = raw.slice(4).trim().toLowerCase().split(/\s+/).filter(Boolean);
+      const isOn = (token: string) => token === "on" || token === "auto";
+      const isOff = (token: string) => token === "off" || token === "none" || token === "hidden";
+      if (parts.length === 0 || (parts.length === 1 && isOn(parts[0]))) {
         axisHidden = false;
-      } else {
+        continue;
+      }
+      if (parts.length === 1 && isOff(parts[0])) {
+        axisHidden = true;
+        grid = false;
+        continue;
+      }
+      if (parts[0] === "y2") {
         errors.push({
-          message: `ожидается «axis off» (или «axis on»)`,
+          message: `у waterfall нет второй оси`,
           line: lineNo,
           col: 0,
         });
+        continue;
+      }
+      if (parts.length === 2 && (parts[0] === "x" || parts[0] === "y") && (isOn(parts[1]) || isOff(parts[1]))) {
+        if (parts[0] === "x") categoryAxisHidden = isOff(parts[1]);
+        else {
+          axisHidden = isOff(parts[1]);
+          if (axisHidden) grid = false;
+        }
+        continue;
+      }
+      errors.push({
+        message: `ожидается «axis on|off» или «axis x|y on|off», получено «${raw.slice(4).trim()}»`,
+        line: lineNo,
+        col: 0,
+      });
+      continue;
+    }
+
+    if (/^gap\b/i.test(raw)) {
+      const arg = raw.replace(/^gap\s*/i, "").trim();
+      const percent = /^(.*)\s*%$/.exec(arg);
+      if (percent) {
+        const value = parseNumber(percent[1]);
+        if (value === null || value < 0 || value >= 100) {
+          errors.push({
+            message: `ожидается «gap <число>%» от 0 до 100 не включая 100, получено «${arg}»`,
+            line: lineNo,
+            col: 0,
+          });
+        } else {
+          barGap = { unit: "percent", value };
+        }
+      } else {
+        const value = parseNumber(arg);
+        if (value === null || value < 0) {
+          errors.push({
+            message: `ожидается «gap <пиксели>» или «gap <процент>%», получено «${arg}»`,
+            line: lineNo,
+            col: 0,
+          });
+        } else {
+          barGap = { unit: "px", value };
+        }
       }
       continue;
     }
@@ -283,10 +356,11 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
   if (!axis) {
     const extent = computeExtent(series);
     const rounded = niceRange(extent.min, extent.max, 4);
-    axis = { min: rounded.min, max: rounded.max, auto: true };
+    axis = { min: rounded.min, max: rounded.max, auto: true, grid };
   }
 
-  if (gridStep !== undefined) axis.gridStep = gridStep;
+  axis.grid = grid;
+  if (grid && gridStep !== undefined) axis.gridStep = gridStep;
   if (axisHidden) axis.hidden = true;
 
   // Разрывы вне диапазона шкалы — просто не участвуют в сжатии.
@@ -324,6 +398,8 @@ export function parseWaterfall(source: string): ExtParseResult<WaterfallModel> {
       seriesColors,
       background,
       textColor,
+      categoryAxisHidden,
+      barGap,
     },
   };
 }
