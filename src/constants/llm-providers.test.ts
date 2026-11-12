@@ -44,6 +44,15 @@ describe("llm-providers", () => {
     expect(moonshot?.chatRequest?.fixedParameters.n).toEqual({ value: 1 });
     expect(moonshot?.chatRequest?.fixedParameters.presence_penalty).toEqual({ value: 0 });
     expect(moonshot?.chatRequest?.fixedParameters.frequency_penalty).toEqual({ value: 0 });
+    expect(moonshot?.chatRequest?.reasoningStyle).toBe("moonshot");
+    expect(moonshot?.chatRequest?.completionTokenField).toBe("max_completion_tokens");
+    expect(moonshot?.chatRequest?.completionTokenFloor).toBe(16_000);
+    expect(moonshot?.chatRequest?.stream).toBe(true);
+    expect(moonshot?.chatRequest?.preserveReasoning).toBe(true);
+    expect(moonshot?.chatRequest?.inflightInput).toBe("amend");
+    expect(getLlmProvider("openrouter")?.chatRequest?.reasoningStyle).toBe("openrouter");
+    expect(getLlmProvider("openrouter")?.chatRequest?.stream).toBe(true);
+    expect(getLlmProvider("openrouter-free")?.chatRequest?.inflightInput).toBe("amend");
   });
 
   it("includes a local OpenAI-compatible provider", () => {

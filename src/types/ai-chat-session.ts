@@ -41,6 +41,14 @@ export interface AiChatMessage {
   createdAt: string;
   /** Фактический провайдер/модель ответа ассистента, если известны. */
   model?: string;
+  /** Расход токенов этого ответа. Старые сообщения поля не имеют. */
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+  /** Рассуждение Kimi для следующего хода. В пузыре и в шаринге не показывается. */
+  reasoningContent?: string;
 }
 
 export interface AiChatSession {

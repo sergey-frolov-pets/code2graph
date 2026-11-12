@@ -5,9 +5,14 @@ const DATA_URL_BASE64_MARKER = ";base64,";
 export function toOpenAiChatMessage(message: LlmChatMessage): {
   role: LlmChatMessage["role"];
   content: string | Array<Record<string, unknown>>;
+  reasoning_content?: string;
 } {
+  const reasoning =
+    message.role === "assistant" && message.reasoningContent
+      ? { reasoning_content: message.reasoningContent }
+      : {};
   if (!message.images?.length) {
-    return { role: message.role, content: message.content };
+    return { role: message.role, content: message.content, ...reasoning };
   }
   return {
     role: message.role,
@@ -20,6 +25,7 @@ export function toOpenAiChatMessage(message: LlmChatMessage): {
         },
       })),
     ],
+    ...reasoning,
   };
 }
 

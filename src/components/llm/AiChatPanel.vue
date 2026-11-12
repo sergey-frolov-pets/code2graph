@@ -30,7 +30,7 @@ import { getLlmAccount } from "@/config/llm-accounts";
 import { parseFreeLlmSelectionId } from "@/config/llm-account-record";
 import { resolveSelectedLlmModel } from "@/config/llm-model-selection";
 import { isValidLlmModelName } from "@/constants/llm-account";
-import { getLlmProvider } from "@/constants/llm-providers";
+import { getLlmProvider, resolveInflightInput } from "@/constants/llm-providers";
 import {
   AI_CHAT_APPLY_MODE_STORAGE_KEY,
   AI_CHAT_ATTACHMENT_FILE_MAX_BYTES,
@@ -58,6 +58,11 @@ import { getLanguageModule } from "@/languages/registry";
 import { isLocaleKey, type LocaleKey } from "@/locales/types";
 import { resolveDiagramFileName } from "@/utils/diagram-files";
 import { sendAiChatMessage } from "@/services/llm/ai-chat-client";
+import {
+  decideInflightFollowUp,
+  joinAmendedUserText,
+  type InflightPhase,
+} from "@/services/llm/inflight-follow-up";
 import { buildSimpleDiffPreview } from "@/utils/llm-preview";
 import {
   buildAiChatTranscriptMarkdown,
@@ -66,6 +71,7 @@ import {
   filterAiChatSessions,
 } from "@/utils/ai-chat-session";
 import type { LlmChatImagePart } from "@/services/llm/llm-types";
+import { LlmClientError } from "@/services/llm/llm-types";
 import type { DictationFatalError } from "@/constants/dictation";
 import type { AiChatAttachment, AiChatMessage, AiChatSession } from "@/types/ai-chat-session";
 import {
@@ -180,8 +186,36 @@ const filteredSessions = computed(() =>
 );
 const totalMessages = computed(() => countAiChatMessages(sessions.value));
 const canSend = computed(
-  () =>
-    (draft.value.trim().length > 0 || pendingAttachments.value.length > 0) && !isBusy.value,
+  () => draft.value.trim().length > 0 || pendingAttachments.value.length > 0,
+);
+
+interface QueuedChatTurn {
+  id: string;
+  text: string;
+  attachments: AiChatAttachment[];
+  images: LlmChatImagePart[];
+}
+
+interface InflightTurn {
+  abort: AbortController;
+  phase: InflightPhase;
+  text: string;
+  attachments: AiChatAttachment[];
+  images: LlmChatImagePart[];
+}
+
+const outboundQueue = ref<QueuedChatTurn[]>([]);
+let inflight: InflightTurn | null = null;
+
+const activeChatProviderId = computed(
+  () => chatProviderOptions.value.find((item) => item.id === chatProviderId.value)?.providerId ?? "",
+);
+
+const sessionTokenTotal = computed(() =>
+  (activeSession.value?.messages ?? []).reduce(
+    (sum, message) => sum + (message.usage?.totalTokens ?? 0),
+    0,
+  ),
 );
 
 /** Полное название, если в шапке или списке оно обрезано многоточием. */
@@ -735,8 +769,34 @@ async function regenerate(): Promise<void> {
 }
 
 function stopGeneration(): void {
+  inflight?.abort.abort();
+  inflight = null;
   generationToken += 1;
   isBusy.value = false;
+}
+
+function removeQueued(id: string): void {
+  outboundQueue.value = outboundQueue.value.filter((item) => item.id !== id);
+}
+
+function chatErrorText(error: unknown): string {
+  if (error instanceof LlmClientError) {
+    if (error.code === "connection_dropped") {
+      return t("aiChat.connectionDropped");
+    }
+    if (error.code === "reasoning_budget") {
+      return t("aiChat.reasoningBudget");
+    }
+    return error.message;
+  }
+  return error instanceof Error ? error.message : t("aiChat.generateError");
+}
+
+function enqueueTurn(text: string, attachments: AiChatAttachment[], images: LlmChatImagePart[]): void {
+  outboundQueue.value = [
+    ...outboundQueue.value,
+    { id: createAiChatMessageId(), text, attachments, images },
+  ];
 }
 
 function attachmentKindLabel(attachment: { name: string; kind: AiChatAttachmentKind }): string {
@@ -763,10 +823,6 @@ function openAttachmentPicker(): void {
 }
 
 function onComposerPaste(event: ClipboardEvent): void {
-  if (isBusy.value) {
-    return;
-  }
-
   const text = event.clipboardData?.getData("text/plain") ?? "";
   if (!isOversizedChatPaste(text)) {
     return;
@@ -800,7 +856,7 @@ async function onFilesSelected(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement;
   const files = [...(input.files ?? [])];
   input.value = "";
-  if (files.length === 0 || isBusy.value) {
+  if (files.length === 0) {
     return;
   }
 
@@ -864,12 +920,11 @@ function liveImages(items: Array<AiChatReadAttachment & { id: string }>): LlmCha
     .map((item) => ({ mimeType: item.mimeType, dataBase64: item.imageBase64 }));
 }
 
-async function onSend(content?: string): Promise<void> {
-  stopDictation();
+function takeComposerTurn(content?: string): QueuedChatTurn | null {
   const typed = (content ?? draft.value).trim().slice(0, AI_CHAT_MESSAGE_MAX_CHARS);
   const pending = pendingAttachments.value;
-  if ((typed.length === 0 && pending.length === 0) || isBusy.value) {
-    return;
+  if (typed.length === 0 && pending.length === 0) {
+    return null;
   }
   const text = typed || t("aiChat.attachmentsOnlyPrompt");
   const attachments = storedAttachments(pending);
@@ -877,7 +932,73 @@ async function onSend(content?: string): Promise<void> {
   draft.value = "";
   pendingAttachments.value = [];
   attachmentNotice.value = "";
-  await runSend(text, { attachments, images });
+  return { id: createAiChatMessageId(), text, attachments, images };
+}
+
+function followUpFits(turn: QueuedChatTurn): boolean {
+  const current = inflight;
+  if (!current) {
+    return false;
+  }
+  const joined = joinAmendedUserText(current.text, turn.text);
+  return (
+    joined.length <= AI_CHAT_MESSAGE_MAX_CHARS &&
+    current.attachments.length + turn.attachments.length <= AI_CHAT_MAX_ATTACHMENTS &&
+    current.images.length + turn.images.length <= AI_CHAT_MAX_IMAGE_ATTACHMENTS
+  );
+}
+
+async function amendInflight(turn: QueuedChatTurn): Promise<void> {
+  const current = inflight;
+  const session = activeSession.value;
+  if (!current || !session || !followUpFits(turn)) {
+    enqueueTurn(turn.text, turn.attachments, turn.images);
+    return;
+  }
+
+  const text = joinAmendedUserText(current.text, turn.text);
+  const attachments = [...current.attachments, ...turn.attachments];
+  const images = [...current.images, ...turn.images];
+  const lastUser = [...session.messages].reverse().find((message) => message.role === "user");
+  if (lastUser) {
+    lastUser.content = text;
+    lastUser.attachments = attachments.length > 0 ? attachments : undefined;
+    await persist(session);
+  }
+  current.abort.abort();
+  generationToken += 1;
+  await runSend(text, { skipUserAppend: true, attachments, images });
+}
+
+async function onSend(content?: string): Promise<void> {
+  stopDictation();
+  const turn = takeComposerTurn(content);
+  if (!turn) {
+    return;
+  }
+  if (!isBusy.value) {
+    await runSend(turn.text, { attachments: turn.attachments, images: turn.images });
+    return;
+  }
+
+  const action = decideInflightFollowUp({
+    phase: inflight?.phase ?? "streaming",
+    inflightInput: resolveInflightInput(activeChatProviderId.value),
+  });
+  if (action === "amend" && followUpFits(turn)) {
+    await amendInflight(turn);
+    return;
+  }
+  enqueueTurn(turn.text, turn.attachments, turn.images);
+}
+
+async function flushQueuedTurn(): Promise<void> {
+  const next = outboundQueue.value[0];
+  if (!next || isBusy.value) {
+    return;
+  }
+  outboundQueue.value = outboundQueue.value.slice(1);
+  await runSend(next.text, { attachments: next.attachments, images: next.images });
 }
 
 async function runSend(
@@ -888,18 +1009,26 @@ async function runSend(
     images?: LlmChatImagePart[];
   } = {},
 ): Promise<void> {
-  const session = await ensureActiveSession();
   const token = ++generationToken;
+  const abort = new AbortController();
+  const attachments = options.attachments ?? [];
+  const images = options.images ?? [];
+  inflight = { abort, phase: "waiting", text, attachments, images };
   isBusy.value = true;
   errorMessage.value = "";
+  let failed = false;
 
   try {
+    const session = await ensureActiveSession();
+    if (token !== generationToken) {
+      return;
+    }
     if (!options.skipUserAppend) {
       session.messages.push({
         id: createAiChatMessageId(),
         role: "user",
         content: text,
-        attachments: options.attachments?.length ? options.attachments : undefined,
+        attachments: attachments.length > 0 ? attachments : undefined,
         createdAt: new Date().toISOString(),
       });
       applyDerivedTitle(session);
@@ -922,10 +1051,16 @@ async function runSend(
       diagramDarkMode: props.diagramDarkMode,
       renderMode: props.renderMode,
       handlers: { openSettings: () => emit("openSettings"), silent: false },
+      signal: abort.signal,
+      onOutputStart: () => {
+        if (inflight?.abort === abort) {
+          inflight.phase = "streaming";
+        }
+      },
     });
 
     if (token !== generationToken) {
-      return; // Пользователь нажал «Остановить» — ответ отбрасываем.
+      return; // Пользователь нажал «Остановить» или дописал запрос — ответ отбрасываем.
     }
 
     const assistant: AiChatMessage = {
@@ -937,6 +1072,8 @@ async function runSend(
       nextSteps: result.nextSteps,
       createdAt: new Date().toISOString(),
       model: `${result.providerId}/${result.model}`,
+      ...(result.usage ? { usage: result.usage } : {}),
+      ...(result.reasoningContent ? { reasoningContent: result.reasoningContent } : {}),
     };
 
     if (result.proposal?.source) {
@@ -968,15 +1105,20 @@ async function runSend(
 
     void maybeSummarize(session);
   } catch (error) {
-    if (token !== generationToken) {
+    if (token !== generationToken || (error instanceof Error && error.name === "AbortError")) {
       return;
     }
-    errorMessage.value =
-      error instanceof Error ? error.message : t("aiChat.generateError");
+    failed = true;
+    errorMessage.value = chatErrorText(error);
   } finally {
     if (token === generationToken) {
       isBusy.value = false;
+      inflight = null;
     }
+  }
+
+  if (token === generationToken && !failed) {
+    await flushQueuedTurn();
   }
 }
 
@@ -1259,6 +1401,19 @@ async function onCopyChat(): Promise<void> {
           >
             {{ message.content }}
           </p>
+          <p
+            v-if="message.role === 'assistant' && message.usage"
+            class="ai-chat-panel__tokens"
+            data-testid="ai-chat-token-usage"
+          >
+            {{
+              t("aiChat.tokenUsage", {
+                prompt: message.usage.promptTokens,
+                completion: message.usage.completionTokens,
+                total: message.usage.totalTokens,
+              })
+            }}
+          </p>
           <ul
             v-if="message.attachments?.length"
             class="ai-chat-panel__message-files"
@@ -1406,6 +1561,27 @@ async function onCopyChat(): Promise<void> {
             </IconButton>
           </div>
         </article>
+        <article
+          v-for="item in outboundQueue"
+          :key="item.id"
+          class="ai-chat-panel__message ai-chat-panel__message--queued"
+          data-testid="ai-chat-queued"
+        >
+          <span class="ai-chat-panel__role">{{ t("aiChat.queued") }}</span>
+          <p class="ai-chat-panel__content">{{ item.text }}</p>
+          <button
+            class="ai-chat-panel__attachment-remove"
+            type="button"
+            :aria-label="t('aiChat.removeQueued')"
+            @click="removeQueued(item.id)"
+          >
+            <X
+              :size="14"
+              :stroke-width="1.8"
+              aria-hidden="true"
+            />
+          </button>
+        </article>
         <p
           v-if="isBusy"
           class="ai-chat-panel__thinking"
@@ -1517,7 +1693,6 @@ async function onCopyChat(): Promise<void> {
               class="ai-chat-panel__attachment-remove"
               type="button"
               :aria-label="t('aiChat.removeAttachment', { name: item.name })"
-              :disabled="isBusy"
               @click="removeAttachment(item.id)"
             >
               <X
@@ -1551,7 +1726,7 @@ async function onCopyChat(): Promise<void> {
               data-testid="ai-chat-attach"
               :aria-label="t('aiChat.attach')"
               :title="titleUnlessModesOpen(t('aiChat.attachHint'))"
-              :disabled="isBusy || pendingAttachments.length >= AI_CHAT_MAX_ATTACHMENTS"
+              :disabled="pendingAttachments.length >= AI_CHAT_MAX_ATTACHMENTS"
               @click="openAttachmentPicker"
             >
               <Paperclip
@@ -1584,7 +1759,6 @@ async function onCopyChat(): Promise<void> {
                 enterkeyhint="send"
                 :aria-label="composerFieldLabel"
                 :placeholder="t('aiChat.inputPlaceholder')"
-                :disabled="isBusy"
                 @focus="onComposerFocus"
                 @blur="onComposerBlur"
                 @keydown="onComposerKeydown"
@@ -1629,10 +1803,25 @@ async function onCopyChat(): Promise<void> {
                     class="ai-chat-panel__hint-provider"
                     data-testid="ai-chat-hint-provider"
                   >{{ composerSelection.provider }}</span>
+                  <span
+                    v-if="sessionTokenTotal > 0"
+                    class="ai-chat-panel__hint-dot"
+                    aria-hidden="true"
+                  >·</span>
+                  <span
+                    v-if="sessionTokenTotal > 0"
+                    class="ai-chat-panel__hint-tokens"
+                    data-testid="ai-chat-token-session"
+                  >{{ t("aiChat.tokenSession", { count: sessionTokenTotal }) }}</span>
                 </span>
               </div>
             </div>
             <div class="ai-chat-panel__composer-actions">
+              <span
+                v-if="sessionTokenTotal > 0 && draft.length > 0"
+                class="ai-chat-panel__hint-tokens"
+                data-testid="ai-chat-token-session"
+              >{{ t("aiChat.tokenSession", { count: sessionTokenTotal }) }}</span>
               <button
                 v-if="dictationLocales.length > 0"
                 class="ai-chat-panel__attach ai-chat-panel__mic"
@@ -1642,7 +1831,6 @@ async function onCopyChat(): Promise<void> {
                 :aria-label="dictationListening ? t('aiChat.dictateStop') : t('aiChat.dictate')"
                 :aria-pressed="dictationListening"
                 :title="titleUnlessModesOpen(dictationListening ? t('aiChat.dictateStop') : t('aiChat.dictate'))"
-                :disabled="isBusy"
                 @click="onDictateToggle"
               >
                 <Mic
@@ -1667,7 +1855,6 @@ async function onCopyChat(): Promise<void> {
                 <span class="sr-only">{{ t("aiChat.stop") }}</span>
               </button>
               <button
-                v-else
                 class="btn btn-primary ai-chat-panel__send"
                 type="submit"
                 data-testid="ai-chat-send"
@@ -2020,6 +2207,21 @@ async function onCopyChat(): Promise<void> {
   margin-inline-start: 2rem;
   background: color-mix(in srgb, var(--accent) 14%, var(--surface));
   border-end-end-radius: 4px;
+}
+
+.ai-chat-panel__message--queued {
+  align-self: flex-end;
+  margin-inline-start: 2rem;
+  border: 1px dashed color-mix(in srgb, var(--text-muted) 55%, transparent);
+  opacity: 0.8;
+}
+
+.ai-chat-panel__tokens,
+.ai-chat-panel__hint-tokens {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.3;
 }
 
 .ai-chat-panel__message--assistant {

@@ -13,16 +13,16 @@ import {
   LLM_RATE_LIMIT_PER_MINUTE,
   LLM_MAX_OUTPUT_TOKENS,
 } from "../config.js";
-import { toGeminiContentParts, toOpenAiChatMessage } from "../llm-message-parts.js";
+import { encodeSseEvent } from "../../../packages/shared/src/llm-chat-stream.js";
 import {
   containsForbiddenClientLlmKeyField,
   parseLlmProxyChatBody,
-  type LlmChatMessage,
 } from "../llm-proxy-request.js";
 import {
   FREE_BUILTIN_LLM_PROVIDERS,
   type FreeBuiltinLlmProviderId,
 } from "../llm-providers.js";
+import { dispatchLlmChat } from "../llm-upstream.js";
 
 export type { LlmChatMessage } from "../llm-proxy-request.js";
 
@@ -31,6 +31,9 @@ export interface LlmChatResponseBody {
   providerId: string;
   model: string;
 }
+
+/** Пока апстрим молчит, шлём ping, чтобы шлюз не оборвал ожидание. */
+const PROXY_PING_INTERVAL_MS = 15_000;
 
 type RateLimitEntry = {
   count: number;
@@ -73,146 +76,6 @@ function resolveProviderApiKey(
     default:
       return undefined;
   }
-}
-
-async function callGemini(
-  apiKey: string,
-  model: string,
-  messages: LlmChatMessage[],
-  jsonMode: boolean,
-  maxOutputTokens: number,
-): Promise<string> {
-  const systemMessage = messages.find((message) => message.role === "system");
-  const contents = messages
-    .filter((message) => message.role !== "system")
-    .map((message) => ({
-      role: message.role === "assistant" ? "model" : "user",
-      parts: toGeminiContentParts(message),
-    }));
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: systemMessage
-        ? { parts: [{ text: systemMessage.content }] }
-        : undefined,
-      contents,
-      generationConfig: {
-        maxOutputTokens,
-        ...(jsonMode ? { responseMimeType: "application/json" } : {}),
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini API error ${response.status}: ${errorText.slice(0, 200)}`);
-  }
-
-  const data = (await response.json()) as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-  };
-
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    throw new Error("Gemini API returned empty response");
-  }
-
-  return text;
-}
-
-async function callOpenAiCompatible(
-  endpoint: string,
-  apiKey: string,
-  model: string,
-  messages: LlmChatMessage[],
-  jsonMode: boolean,
-  maxOutputTokens: number,
-  extraHeaders?: Record<string, string>,
-): Promise<string> {
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-      ...extraHeaders,
-    },
-    body: JSON.stringify({
-      model,
-      messages: messages.map(toOpenAiChatMessage),
-      max_tokens: maxOutputTokens,
-      response_format: jsonMode ? { type: "json_object" } : undefined,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`LLM API error ${response.status}: ${errorText.slice(0, 200)}`);
-  }
-
-  const data = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) {
-    throw new Error("LLM API returned empty response");
-  }
-
-  return content;
-}
-
-async function dispatchLlmChat(
-  providerId: FreeBuiltinLlmProviderId,
-  messages: LlmChatMessage[],
-  jsonMode: boolean,
-  apiKey: string,
-  maxOutputTokens: number,
-): Promise<LlmChatResponseBody> {
-  const config = FREE_BUILTIN_LLM_PROVIDERS[providerId];
-
-  let content: string;
-
-  switch (providerId) {
-    case "google-gemini-free":
-      content = await callGemini(apiKey, config.model, messages, jsonMode, maxOutputTokens);
-      break;
-    case "groq-free":
-      content = await callOpenAiCompatible(
-        "https://api.groq.com/openai/v1/chat/completions",
-        apiKey,
-        config.model,
-        messages,
-        jsonMode,
-        maxOutputTokens,
-      );
-      break;
-    case "openrouter-free":
-      content = await callOpenAiCompatible(
-        "https://openrouter.ai/api/v1/chat/completions",
-        apiKey,
-        config.model,
-        messages,
-        jsonMode,
-        maxOutputTokens,
-        {
-          "HTTP-Referer": "https://github.com/sergey-frolov-pets/code2graph",
-          "X-Title": "Code2Graph",
-        },
-      );
-      break;
-    default:
-      throw new Error(`Unsupported provider: ${providerId}`);
-  }
-
-  return {
-    content,
-    providerId,
-    model: config.model,
-  };
 }
 
 export const llmRouter = new Hono<{ Variables: AuthVariables }>();
@@ -292,21 +155,53 @@ llmRouter.post("/chat", async (context) => {
     );
   }
 
-  try {
-    const result = await dispatchLlmChat(
-      body.providerId,
-      body.messages,
-      body.jsonMode ?? false,
-      apiKey,
-      access.maxOutputTokens,
-    );
-    debitTokens(database, user.id, BILLING_LLM_TOKEN_COST, randomUUID());
-    return context.json(result);
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unknown LLM proxy error";
-    return context.json({ error: "llm_upstream_error", message }, 502);
-  }
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      let closed = false;
+      const write = (payload: unknown) => {
+        if (closed) {
+          return;
+        }
+        controller.enqueue(encoder.encode(encodeSseEvent(payload)));
+      };
+      const ping = setInterval(() => write({ type: "ping" }), PROXY_PING_INTERVAL_MS);
+      try {
+        const result = await dispatchLlmChat(
+          body.providerId,
+          body.messages,
+          body.jsonMode ?? false,
+          apiKey,
+          access.maxOutputTokens,
+          {
+            onDelta: (content) => write({ type: "delta", content }),
+            onWaiting: () => write({ type: "ping" }),
+          },
+        );
+        debitTokens(database, user.id, BILLING_LLM_TOKEN_COST, randomUUID());
+        write({
+          type: "done",
+          content: result.content,
+          providerId: result.providerId,
+          model: result.model,
+          ...(result.usage ? { usage: result.usage } : {}),
+          ...(result.reasoningContent ? { reasoningContent: result.reasoningContent } : {}),
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown LLM proxy error";
+        write({ type: "error", message });
+      } finally {
+        clearInterval(ping);
+        closed = true;
+        controller.close();
+      }
+    },
+  });
+
+  return context.body(stream, 200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+  });
 });
 
 llmRouter.get("/status", (context) => {

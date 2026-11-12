@@ -19,6 +19,7 @@ import {
   AI_CHAT_SYSTEM_PROMPT,
   buildAiChatContextBlock,
 } from "@/services/llm/ai-chat-prompts";
+import { addTokenUsage, type LlmTokenUsage } from "@shared/llm-chat-stream";
 import { resolveLlmPage } from "@shared/llm-pages";
 import { readChatLlmAccess } from "@/config/llm-accounts";
 import { llmChat } from "@/services/llm/llm-client";
@@ -37,6 +38,8 @@ import { composeAiChatUserContent } from "@/utils/ai-chat-attachments";
 export interface AiChatTurnResult extends AiChatEnvelope {
   providerId: string;
   model: string;
+  usage?: LlmTokenUsage;
+  reasoningContent?: string;
 }
 
 export interface SendAiChatMessageInput {
@@ -54,6 +57,8 @@ export interface SendAiChatMessageInput {
   diagramDarkMode: boolean;
   renderMode: RenderMode;
   handlers?: LlmGateHandlers;
+  signal?: AbortSignal;
+  onOutputStart?: () => void;
 }
 
 function historyContent(message: AiChatMessage): string {
@@ -75,6 +80,7 @@ function toHistoryMessages(history: AiChatMessage[]): LlmChatMessage[] {
   return history.slice(-AI_CHAT_RECENT_MESSAGES).map((message) => ({
     role: message.role,
     content: historyContent(message),
+    ...(message.reasoningContent ? { reasoningContent: message.reasoningContent } : {}),
   }));
 }
 
@@ -151,6 +157,7 @@ export async function sendAiChatMessage(
     },
   ];
 
+  let usage: LlmTokenUsage | undefined;
   for (let attempt = 0; attempt <= AI_CHAT_VALIDATION_RETRIES; attempt += 1) {
     const chatResult = await llmChat(
       messages,
@@ -159,16 +166,23 @@ export async function sendAiChatMessage(
         temperature: LLM_TEMPERATURE_GENERATION,
         maxTokens: LLM_MAX_TOKENS_GENERATION,
         access: readChatLlmAccess(),
+        signal: input.signal,
+        onOutputStart: input.onOutputStart,
       },
       input.handlers,
     );
+    usage = addTokenUsage(usage, chatResult.usage);
 
     const parsed = parseAiChatEnvelope(chatResult.content);
     if (!parsed.ok) {
       if (attempt >= AI_CHAT_VALIDATION_RETRIES) {
         throw new LlmClientError("validation_failed", parsed.message);
       }
-      messages.push({ role: "assistant", content: chatResult.content });
+      messages.push({
+        role: "assistant",
+        content: chatResult.content,
+        ...(chatResult.reasoningContent ? { reasoningContent: chatResult.reasoningContent } : {}),
+      });
       messages.push({
         role: "user",
         content: `Return corrected JSON only matching the required envelope: ${parsed.message}`,
@@ -195,7 +209,11 @@ export async function sendAiChatMessage(
           format === input.format
             ? ""
             : `The user asked for language "${format}". proposal.format must be "${format}" and proposal.source must be valid ${format}.\n`;
-        messages.push({ role: "assistant", content: chatResult.content });
+        messages.push({
+          role: "assistant",
+          content: chatResult.content,
+          ...(chatResult.reasoningContent ? { reasoningContent: chatResult.reasoningContent } : {}),
+        });
         messages.push({
           role: "user",
           content: `${formatHint}The proposed source has syntax errors. Fix them and return the full JSON envelope again:\n${issues.join("\n")}`,
@@ -217,6 +235,8 @@ export async function sendAiChatMessage(
       ...envelope,
       providerId: chatResult.providerId,
       model: chatResult.model,
+      ...(usage ? { usage } : {}),
+      ...(chatResult.reasoningContent ? { reasoningContent: chatResult.reasoningContent } : {}),
     };
   }
 
