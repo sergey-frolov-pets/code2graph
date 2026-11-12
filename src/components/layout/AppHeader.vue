@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppLogo from "@/components/AppLogo.vue";
 import InstallAppButton from "@/components/InstallAppButton.vue";
 import HeaderControls from "@/components/layout/HeaderControls.vue";
 import IconButton from "@/components/IconButton.vue";
@@ -33,7 +34,8 @@ const { t } = useLocale();
             :title="t('site.backHome')"
             @click="navigateTo('landing')"
           >
-            {{ APP_META.name }}
+            <AppLogo />
+            <span class="app-header__name">{{ APP_META.name }}</span>
           </button>
         </h1>
         <span class="app-header__version">v{{ APP_META.version }}</span>
@@ -95,7 +97,7 @@ const { t } = useLocale();
 .app-header__title-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
 }
 
@@ -105,6 +107,9 @@ const { t } = useLocale();
 }
 
 .app-header__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   padding: 0;
   border: none;
@@ -118,6 +123,10 @@ const { t } = useLocale();
 .app-header__brand:hover,
 .app-header__brand:focus-visible {
   color: var(--accent);
+}
+
+.app-header__brand:hover .app-header__name,
+.app-header__brand:focus-visible .app-header__name {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
