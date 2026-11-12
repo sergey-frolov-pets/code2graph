@@ -1,22 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Code2Graph">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Code2Graph">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#42b883"/>
-      <stop offset="55%" stop-color="#3aa876"/>
-      <stop offset="100%" stop-color="#35495e"/>
-    </linearGradient>
-    <linearGradient id="vue-inner" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#e8f8f0"/>
+    <linearGradient id="bg" x1="32" y1="0" x2="32" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4C44DD"/>
+      <stop offset="1" stop-color="#1F1C4D"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <path fill="#ffffff" opacity="0.95" d="M256 88 L104 392 h56 L256 220 l96 172 h56 Z"/>
-  <path fill="#35495e" d="M256 220 L168 360 h36 L256 276 l52 84 h36 Z"/>
-  <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="156" cy="392" r="24" stroke-width="12"/>
-    <circle cx="356" cy="392" r="24" stroke-width="12"/>
-    <circle cx="256" cy="448" r="24" stroke-width="12"/>
-    <path d="M174 398 L238 432 M338 398 L274 432" stroke-width="10"/>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <g stroke="#38BDF8" stroke-width="4.2" stroke-linecap="round" fill="none">
+    <path d="M24.4 33.2 L19.4 41.2"/>
+    <path d="M39.6 33.2 L44.6 41.2"/>
+  </g>
+  <circle cx="17.6" cy="48.6" r="8.15" fill="#38BDF8"/>
+  <circle cx="46.4" cy="48.6" r="8.15" fill="#38BDF8"/>
+  <rect x="17.6" y="46.45" width="28.8" height="4.3" fill="#38BDF8"/>
+  <rect x="11" y="9" width="42" height="25" rx="6.2" fill="#E6EDF7"/>
+  <g fill="none" stroke="#0B1220" stroke-width="3.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M24.4 14.2 L17.4 21.2 L24.4 28.2"/>
+    <path d="M34.4 13.6 L29.4 28.6"/>
+    <path d="M39.6 14.2 L46.6 21.2 L39.6 28.2"/>
   </g>
 </svg>
