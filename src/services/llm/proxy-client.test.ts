@@ -32,11 +32,11 @@ describe("proxyLlmChat", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    const content = await proxyLlmChat("google-gemini-free", [
+    const result = await proxyLlmChat("google-gemini-free", [
       { role: "user", content: "hi" },
     ]);
 
-    expect(content).toBe('{"ok":true}');
+    expect(result.content).toBe('{"ok":true}');
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 });

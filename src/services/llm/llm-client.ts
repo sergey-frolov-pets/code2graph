@@ -31,7 +31,7 @@ async function callLocalChat(
   messages: LlmChatMessage[],
   options: LlmChatOptions,
   parameters?: LlmAccountParameters,
-): Promise<string> {
+) {
   const request = {
     endpoint,
     apiKey,
@@ -40,6 +40,8 @@ async function callLocalChat(
     temperature: options.temperature,
     maxTokens: options.maxTokens,
     parameters,
+    signal: options.signal,
+    onOutputStart: options.onOutputStart,
   };
 
   const jsonMode = options.jsonMode ?? true;
@@ -79,7 +81,7 @@ async function dispatchByokChat(
   messages: LlmChatMessage[],
   options: LlmChatOptions,
   accountChat?: { model?: string; parameters?: LlmAccountParameters },
-): Promise<string> {
+) {
   const provider = getLlmProvider(providerId);
   if (!provider) {
     throw new LlmClientError("provider_invalid", `Unknown provider: ${providerId}`);
@@ -98,6 +100,8 @@ async function dispatchByokChat(
       jsonMode,
       temperature,
       maxTokens,
+      options.signal,
+      options.onOutputStart,
     );
   }
 
@@ -119,6 +123,8 @@ async function dispatchByokChat(
     extraHeaders: provider.apiExtraHeaders,
     chatRequest: provider.chatRequest,
     parameters: accountChat?.parameters,
+    signal: options.signal,
+    onOutputStart: options.onOutputStart,
   });
 }
 
@@ -136,16 +142,18 @@ async function dispatchGateChat(
         : (provider?.defaultModel ?? "unknown");
 
   if (gate.mode === "proxy") {
-    const content = await proxyLlmChat(gate.providerId, messages, options);
+    const proxied = await proxyLlmChat(gate.providerId, messages, options);
     return {
-      content,
+      content: proxied.content,
       providerId: gate.providerId,
       model,
+      usage: proxied.usage,
+      reasoningContent: proxied.reasoningContent,
     };
   }
 
   if (gate.mode === "local") {
-    const content = await callLocalChat(
+    const local = await callLocalChat(
       gate.endpoint,
       gate.apiKey,
       gate.model,
@@ -154,13 +162,15 @@ async function dispatchGateChat(
       gate.parameters,
     );
     return {
-      content,
+      content: local.content,
       providerId: gate.providerId,
       model: gate.model,
+      usage: local.usage,
+      reasoningContent: local.reasoningContent,
     };
   }
 
-  const content = await dispatchByokChat(
+  const byok = await dispatchByokChat(
     gate.providerId,
     gate.apiKey,
     messages,
@@ -169,9 +179,11 @@ async function dispatchGateChat(
   );
 
   return {
-    content,
+    content: byok.content,
     providerId: gate.providerId,
     model,
+    usage: byok.usage,
+    reasoningContent: byok.reasoningContent,
   };
 }
 

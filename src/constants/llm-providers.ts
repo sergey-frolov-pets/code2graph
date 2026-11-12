@@ -32,8 +32,27 @@ export interface LlmFixedChatParameter {
   value: number;
 }
 
+/** Дописать текущий ход, пока ответа нет, или всегда ставить следующее сообщение в очередь. */
+export const LLM_INFLIGHT_INPUT = {
+  AMEND: "amend",
+  QUEUE: "queue",
+} as const;
+
+export type LlmInflightInput = (typeof LLM_INFLIGHT_INPUT)[keyof typeof LLM_INFLIGHT_INPUT];
+
+export type LlmReasoningStyle = "moonshot" | "openrouter";
+
+export type LlmCompletionTokenField = "max_tokens" | "max_completion_tokens";
+
 export interface LlmChatRequestConfig {
   fixedParameters: Partial<Record<LlmChatRequestParameter, LlmFixedChatParameter>>;
+  /** Пока нет токенов ответа, отменяем ход и дописываем текст. После первого токена — очередь. */
+  inflightInput?: LlmInflightInput;
+  reasoningStyle?: LlmReasoningStyle;
+  completionTokenField?: LlmCompletionTokenField;
+  completionTokenFloor?: number;
+  stream?: boolean;
+  preserveReasoning?: boolean;
 }
 
 export interface LlmProviderDefinition {
@@ -57,6 +76,9 @@ const KIMI_FIXED_TOP_P = 0.95;
 const KIMI_FIXED_N = 1;
 const KIMI_FIXED_PENALTY = 0;
 
+/** K3 думает всегда. Ниже этого пола рассуждение часто забирает весь ответ. */
+export const KIMI_MIN_COMPLETION_TOKENS = 16_000;
+
 const KIMI_CHAT_REQUEST: LlmChatRequestConfig = {
   fixedParameters: {
     temperature: { value: KIMI_FIXED_TEMPERATURE },
@@ -65,6 +87,20 @@ const KIMI_CHAT_REQUEST: LlmChatRequestConfig = {
     presence_penalty: { value: KIMI_FIXED_PENALTY },
     frequency_penalty: { value: KIMI_FIXED_PENALTY },
   },
+  inflightInput: LLM_INFLIGHT_INPUT.AMEND,
+  reasoningStyle: "moonshot",
+  completionTokenField: "max_completion_tokens",
+  completionTokenFloor: KIMI_MIN_COMPLETION_TOKENS,
+  stream: true,
+  preserveReasoning: true,
+};
+
+const OPENROUTER_CHAT_REQUEST: LlmChatRequestConfig = {
+  fixedParameters: {},
+  inflightInput: LLM_INFLIGHT_INPUT.AMEND,
+  reasoningStyle: "openrouter",
+  completionTokenField: "max_tokens",
+  stream: true,
 };
 
 export const DEFAULT_LLM_PROVIDER_ID = "google-gemini";
@@ -95,6 +131,7 @@ const FREE_BUILTIN_LLM_PROVIDERS: readonly LlmProviderDefinition[] = [
     nameKey: "llm.provider.openrouterFree",
     descriptionKey: "llm.provider.openrouterFreeDesc",
     defaultModel: OPENROUTER_DEFAULT_MODEL,
+    chatRequest: OPENROUTER_CHAT_REQUEST,
   },
 ];
 
@@ -135,6 +172,7 @@ const BYOK_LLM_PROVIDERS: readonly LlmProviderDefinition[] = [
       "HTTP-Referer": "https://github.com/sergey-frolov-pets/code2graph",
       "X-Title": "Code2Graph",
     },
+    chatRequest: OPENROUTER_CHAT_REQUEST,
   },
   {
     id: "mistral",
@@ -260,4 +298,12 @@ export function getRecommendedLlmProvider(): LlmProviderDefinition {
     ALL_LLM_PROVIDERS.find((provider) => provider.recommended) ??
     getLlmProvider(DEFAULT_LLM_PROVIDER_ID)!;
   return recommended;
+}
+
+/** Нет явной настройки — ход можно дописать, пока модель не начала ответ. */
+export function resolveInflightInput(providerId: string | undefined): LlmInflightInput {
+  if (!providerId) {
+    return LLM_INFLIGHT_INPUT.AMEND;
+  }
+  return getLlmProvider(providerId)?.chatRequest?.inflightInput ?? LLM_INFLIGHT_INPUT.AMEND;
 }

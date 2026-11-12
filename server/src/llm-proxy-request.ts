@@ -20,6 +20,7 @@ export interface LlmChatMessage {
   role: LlmChatRole;
   content: string;
   images?: LlmChatImagePart[];
+  reasoningContent?: string;
 }
 
 export interface LlmProxyChatRequestBody {
@@ -109,7 +110,20 @@ export function parseLlmProxyChatBody(raw: unknown): LlmProxyChatRequestBody | n
     }
     imageCount += images.length;
 
-    parsedMessages.push(images.length > 0 ? { role, content, images } : { role, content });
+    const reasoningContent = readReasoningContent(role, message.reasoningContent);
+    const keptReasoning =
+      reasoningContent && totalChars + reasoningContent.length <= LLM_MAX_TOTAL_CHARS
+        ? reasoningContent
+        : undefined;
+    if (keptReasoning) {
+      totalChars += keptReasoning.length;
+    }
+    parsedMessages.push({
+      role,
+      content,
+      ...(images.length > 0 ? { images } : {}),
+      ...(keptReasoning ? { reasoningContent: keptReasoning } : {}),
+    });
   }
 
   return {
@@ -117,6 +131,17 @@ export function parseLlmProxyChatBody(raw: unknown): LlmProxyChatRequestBody | n
     messages: parsedMessages,
     jsonMode: jsonMode === true,
   };
+}
+
+function readReasoningContent(role: string, raw: unknown): string | undefined {
+  if (role !== "assistant" || typeof raw !== "string") {
+    return undefined;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.length > LLM_MAX_MESSAGE_CHARS) {
+    return undefined;
+  }
+  return trimmed;
 }
 
 const BASE64_PATTERN = /^[A-Za-z0-9+/]+={0,2}$/;
