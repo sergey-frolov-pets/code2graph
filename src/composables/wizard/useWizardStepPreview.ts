@@ -1,4 +1,5 @@
 import { computed, ref, type Ref } from "vue";
+import type { AppLocale } from "@/constants/i18n";
 import type { LayoutEngine } from "@/constants";
 import type { WizardState, WizardStepId } from "@/constants/llm-wizard";
 import type { RenderMode } from "@/constants/render-settings";
@@ -15,6 +16,7 @@ export interface UseWizardStepPreviewOptions {
   renderMode: Ref<RenderMode>;
   diagramDarkMode: Ref<boolean>;
   errorMessage: Ref<string>;
+  locale: Ref<AppLocale>;
   t: TranslateFn;
 }
 
@@ -26,6 +28,7 @@ export function useWizardStepPreview(options: UseWizardStepPreviewOptions) {
     renderMode,
     diagramDarkMode,
     errorMessage,
+    locale,
     t,
   } = options;
 
@@ -61,7 +64,7 @@ export function useWizardStepPreview(options: UseWizardStepPreviewOptions) {
     if (language === "mermaid") {
       return renderMermaidToSvg(
         source,
-        { dark: diagramDarkMode.value },
+        { dark: diagramDarkMode.value, locale: locale.value },
         renderMode.value,
       );
     }

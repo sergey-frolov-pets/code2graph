@@ -80,39 +80,38 @@ export function avatarBoxSize(framePx: number, node: NodeAvatar): number {
   return framePx;
 }
 
-function scaleGroup(
+/**
+ * Силуэты — Material Design Icons (Pictogrammers), лицензия Apache-2.0.
+ * https://pictogrammers.com/library/mdi/icon/human-male/
+ * https://pictogrammers.com/library/mdi/icon/human-female/
+ * https://pictogrammers.com/library/mdi/icon/account-question/
+ */
+const SILHOUETTE_VIEW = 24;
+const SILHOUETTE_FILL = "#6e7781";
+const SILHOUETTES: Record<AvatarGender, string> = {
+  m: "M12 2a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 1 2-2m-1.5 5h3a2 2 0 0 1 2 2v5.5H14V22h-4v-7.5H8.5V9a2 2 0 0 1 2-2",
+  f: "M12 2a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 1 2-2m-1.5 20v-6h-3l2.59-7.59C10.34 7.59 11.1 7 12 7s1.66.59 1.91 1.41L16.5 16h-3v6z",
+  "?": "M13 8a4 4 0 0 1-4 4a4 4 0 0 1-4-4a4 4 0 0 1 4-4a4 4 0 0 1 4 4m4 10v2H1v-2c0-2.21 3.58-4 8-4s8 1.79 8 4m3.5-3.5V16H19v-1.5zm-2-5H17V9a3 3 0 0 1 3-3a3 3 0 0 1 3 3c0 .97-.5 1.88-1.29 2.41l-.3.19c-.57.4-.91 1.01-.91 1.7v.2H19v-.2c0-1.19.6-2.3 1.59-2.95l.29-.19c.39-.26.62-.69.62-1.16A1.5 1.5 0 0 0 20 7.5A1.5 1.5 0 0 0 18.5 9z",
+};
+
+function drawSilhouette(
   svg: SvgBuilder,
   x: number,
   y: number,
   size: number,
-  draw: () => void,
+  gender: AvatarGender,
 ): void {
+  const pad = size * 0.14;
+  const scale = (size - pad * 2) / SILHOUETTE_VIEW;
   svg.group(
-    { transform: `translate(${fmt(x)} ${fmt(y)}) scale(${fmt(size / 64)})` },
-    draw,
+    {
+      "data-avatar": gender,
+      transform: `translate(${fmt(x + pad)} ${fmt(y + pad)}) scale(${fmt(scale)})`,
+    },
+    () => {
+      svg.path(SILHOUETTES[gender], { fill: SILHOUETTE_FILL });
+    },
   );
-}
-
-function drawMale(svg: SvgBuilder): void {
-  svg.circle(32, 16, 10, { fill: "#c9d1d9", stroke: "#8b949e", "stroke-width": 1.5 });
-  svg.path("M14 62 L20 34 Q32 26 44 34 L50 62 Z", { fill: "#8b949e" });
-}
-
-function drawFemale(svg: SvgBuilder): void {
-  svg.path("M16 20 Q32 0 48 20 Q44 10 32 10 Q20 10 16 20 Z", { fill: "#6e7781" });
-  svg.circle(32, 18, 9, { fill: "#c9d1d9", stroke: "#8b949e", "stroke-width": 1.5 });
-  svg.path("M18 62 L24 36 Q32 30 40 36 L46 62 Q32 54 18 62 Z", { fill: "#8b949e" });
-}
-
-function drawUnknown(svg: SvgBuilder): void {
-  svg.circle(30, 18, 10, { fill: "#c9d1d9", stroke: "#8b949e", "stroke-width": 1.5 });
-  svg.path("M14 62 L20 36 Q30 28 40 36 L46 62 Z", { fill: "#8b949e" });
-  svg.circle(50, 14, 10, { fill: "#ffffff", stroke: "#656d76", "stroke-width": 1.4 });
-  svg.text(50, 18, "?", {
-    "font-size": 14,
-    "font-weight": 700,
-    fill: "#1f2328",
-  });
 }
 
 /** Квадрат фото, силуэт или снимок. Снимок заменяет силуэт. */
@@ -139,10 +138,5 @@ export function renderAvatarBox(
     );
     return;
   }
-  const gender = node.gender ?? "?";
-  scaleGroup(svg, x, y, size, () => {
-    if (gender === "m") drawMale(svg);
-    else if (gender === "f") drawFemale(svg);
-    else drawUnknown(svg);
-  });
+  drawSilhouette(svg, x, y, size, node.gender ?? "?");
 }

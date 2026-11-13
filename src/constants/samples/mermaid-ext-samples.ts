@@ -221,6 +221,7 @@ avatar 48
   powermap: `powermap
 %% Карта влияния: оценки, фото и именные стрелки поверх дерева подчинения.
 %% company "Имя" — компания под заголовком. legend on|off — легенда (по умолчанию on).
+%% lang ru — язык легенды. Без строки берётся язык интерфейса.
 %% avatar 48 — сторона блока фото в px (24–128). avatar off прячет все блоки.
 %% Узел: id [Имя|Должность] gender=m|f|? photo="https://…" или data:image/png;base64,…
 %%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
@@ -230,20 +231,23 @@ avatar 48
 %% Влияние не меняет руководителя:
 %%   link supporter color=#1a7f37 style=solid|dash|dot|dashdot label="союзник"
 %%   A -supporter-> B
+%% label у link — только строка легенды, на стрелке её нет.
+%% Подпись одной стрелки: A -supporter-> B label="бюджет"
+%% Легенда рисуется под схемой и содержит только стили из link.
 %% supporter (зелёная сплошная) и enemy (красный пунктир) есть, пока строка link их не заменит.
-%% В легенде — шкалы и каждый тип связи, созданный в этой диаграмме.
 title Карта влияния
 company "Север"
 avatar 48
 link supporter color=#1a7f37 style=solid label="союзник"
 link coach color=#bf8700 style=dot label="наставник"
+link enemy color=#cf222e style=dash label="противник"
 ceo [Анна Орлова|Президент] gender=f role=E influence=L action=M attitude=+ counterpart=-
 cfo [Илья Сомов|Финансы] gender=m role=D influence=L action=S attitude=0 counterpart="Анна Орлова"
 ops [Мария Ким|Операции] gender=? role=A influence=M action=U attitude=- counterpart="Илья Сомов"
 ceo -> cfo
 ceo -> ops
 cfo -.-> ops
-cfo -supporter-> ops
+cfo -supporter-> ops label="бюджет"
 ops -enemy-> cfo`,
   ev: `ev
 title Освоение бюджета
@@ -773,6 +777,7 @@ CEO -> Ops`,
   powermap: `powermap
 %% Power map: scores, photos and named influence arrows on a reporting tree.
 %% company "Name" — company under the title. legend on|off — the key (default on).
+%% lang en — legend language. Without the line the interface language is used.
 %% avatar 48 — photo box side in px (24–128). avatar off hides every box.
 %% Node: id [Name|Title] gender=m|f|? photo="https://…" or data:image/png;base64,…
 %%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
@@ -782,20 +787,23 @@ CEO -> Ops`,
 %% Influence does not change the manager:
 %%   link supporter color=#1a7f37 style=solid|dash|dot|dashdot label="ally"
 %%   A -supporter-> B
+%% label on link is legend text only. The arrow itself has no caption.
+%% A caption on one arrow: A -supporter-> B label="budget"
+%% The legend sits under the chart and lists only styles declared with link.
 %% supporter (green solid) and enemy (red dash) exist until a link line replaces them.
-%% The legend lists the scales and every link type created in this diagram.
 title Power Map
 company "Northwind"
 avatar 48
 link supporter color=#1a7f37 style=solid label="ally"
 link coach color=#bf8700 style=dot label="coach"
+link enemy color=#cf222e style=dash label="opponent"
 ceo [Anna Orlova|President] gender=f role=E influence=L action=M attitude=+ counterpart=-
 cfo [Ilya Somov|Finance] gender=m role=D influence=L action=S attitude=0 counterpart="Anna Orlova"
 ops [Maria Kim|Operations] gender=? role=A influence=M action=U attitude=- counterpart="Ilya Somov"
 ceo -> cfo
 ceo -> ops
 cfo -.-> ops
-cfo -supporter-> ops
+cfo -supporter-> ops label="budget"
 ops -enemy-> cfo`,
   ev: `ev
 title Budget earned value

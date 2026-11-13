@@ -393,19 +393,21 @@ describe("diagram-builder core", () => {
         source: [
           "powermap",
           "company Northwind",
+          "lang de",
           "link ally color=#1a7f37 style=solid label=ally",
           "CEO [Alex|Lead] role=D gender=m",
           "CFO [Elena|Finance] role=A gender=f",
           "CEO -> CFO",
-          "CFO -ally-> CEO",
+          'CFO -ally-> CEO label="личный союз"',
         ].join("\n"),
         verify: (s) => {
           const parsed = parsePowermap(s);
           return (
             parsed.ok &&
             parsed.value?.company === "Northwind" &&
+            parsed.value.legendLang === "de" &&
             parsed.value.people.some((person) => person.name === "Elena" && person.role?.code === "A") &&
-            parsed.value.influences.some((edge) => edge.name === "ally")
+            parsed.value.influences.some((edge) => edge.name === "ally" && edge.label === "личный союз")
           );
         },
       },
