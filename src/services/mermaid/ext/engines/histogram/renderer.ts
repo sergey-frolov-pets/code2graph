@@ -47,8 +47,9 @@ const PAD = { top: 46, right: 24, bottom: 58, left: 64 };
 const BAR_OPACITY = 0.78;
 const CI_OPACITY = 0.16;
 const CURVE_WIDTH = 2;
-const STATS_GAP = 16;
+const STATS_GAP = 20;
 const LEGEND_ROW = 18;
+const LEGEND_ITEM_GAP = 14;
 const LINE_DASH: Record<WaterfallLineStyle, string | undefined> = {
   solid: undefined,
   dash: "7 4",
@@ -147,7 +148,11 @@ export function renderHistogram(model: HistogramModel, options: ExtRenderOptions
   const seriesCount = Math.max(1, prepared.length);
   const ratio = gapRatio(model);
   const titleExtra = model.title ? labelBlockExtra(model.title, fontSize + 2) : 0;
-  const legendExtra = prepared.length + curves.length > 0 ? LEGEND_ROW + 8 : 0;
+  const legendItems = legendEntries(prepared, curves);
+  const lineLabelWidth = Math.max(
+    0,
+    ...model.lines.map((line) => (line.label && !model.rotate90 ? measureLabelWidth(line.label, fontSize - 1) : 0)),
+  );
   const binLabel = model.categoryAxis ? fontSize + 10 : 4;
   const statsLines = model.stats === "off" ? 0 : prepared.reduce((sum, item) => sum + statLineCount(model, item) + 1, 0);
   const statsWidth =
@@ -161,8 +166,12 @@ export function renderHistogram(model: HistogramModel, options: ExtRenderOptions
   let plotAlong = along;
   const padLeft = model.rotate90 ? PAD.left + (model.categoryAxis ? 72 : 8) : PAD.left;
   const padBottom = model.rotate90 ? PAD.bottom : PAD.bottom + binLabel;
+  const legendAvail = Math.max(160, across + (lineLabelWidth > 0 ? lineLabelWidth + 8 : 0) + statsWidth);
+  const legendRowCount = legendItems.length > 0 ? wrapLegend(legendItems, legendAvail, fontSize).length : 0;
+  const legendExtra = legendRowCount > 0 ? legendRowCount * (LEGEND_ROW + 4) + 8 : 0;
+  const lineLabelRoom = lineLabelWidth > 0 ? lineLabelWidth + 10 : 0;
   const padTop = PAD.top + titleExtra + legendExtra;
-  const padRight = PAD.right + statsWidth + (statsWidth > 0 ? STATS_GAP : 0);
+  const padRight = PAD.right + lineLabelRoom + statsWidth + (statsWidth > 0 ? STATS_GAP : 0);
   if (model.ratio) {
     const grown = growPlotToAspect(
       {
@@ -209,8 +218,14 @@ export function renderHistogram(model: HistogramModel, options: ExtRenderOptions
     }
   }
   const rawMax = Math.max(...heights.filter((value) => Number.isFinite(value)), 0);
-  const auto = niceRange(0, rawMax || 1, 5);
   const valueMin = model.y?.min ?? 0;
+  let auto = niceRange(valueMin, Math.max(rawMax, valueMin + 1), 5);
+  // Круглая верхняя граница совпадает с данными — столбик и линия уровня
+  // прилипают к рамке и накрывают подпись. Добавляем один шаг шкалы.
+  if (model.y?.max === undefined && auto.max <= rawMax + 1e-9) {
+    const step = (auto.max - auto.min) / 5 || 1;
+    auto = niceRange(valueMin, rawMax + step, 5);
+  }
   const valueMax = model.y?.max ?? Math.max(auto.max, valueMin + 1);
   const span = valueMax - valueMin || 1;
 
@@ -224,6 +239,24 @@ export function renderHistogram(model: HistogramModel, options: ExtRenderOptions
       ? { x: valueCoord(value), y: binCoord(binOffset) }
       : { x: binCoord(binOffset), y: valueCoord(value) };
   const baseline = valueCoord(Math.max(valueMin, 0));
+  const binOffsetForValue = (value: number): number => {
+    if (edges.length < 2) return 0;
+    if (value <= edges[0]) return 0;
+    const last = edges.length - 1;
+    let offset = 0;
+    for (let index = 0; index < last; index += 1) {
+      const slot = slotAt(index);
+      const right = edges[index + 1];
+      if (value >= right && index < last - 1) {
+        offset += slot;
+        continue;
+      }
+      const spanWidth = right - edges[index] || 1;
+      const t = clamp((value - edges[index]) / spanWidth, 0, 1);
+      return offset + t * slot;
+    }
+    return plotAcross;
+  };
 
   const svg = createSvg({
     width,
@@ -241,7 +274,7 @@ export function renderHistogram(model: HistogramModel, options: ExtRenderOptions
     });
   }
 
-  drawLegend(svg, prepared, curves, plotLeft, padTop - legendExtra + 4, fontSize, palette.fg);
+  drawLegend(svg, legendItems, plotLeft, padTop - legendExtra + 4, legendAvail, fontSize, palette.fg);
 
   const ticks =
     model.gridStep && model.gridStep > 0
@@ -307,20 +340,18 @@ export function renderHistogram(model: HistogramModel, options: ExtRenderOptions
   if (model.stats !== "off") {
     for (const item of prepared) {
       if (shows(model, "ci") && item.summary.ciLow !== undefined && item.summary.ciHigh !== undefined) {
-        const a = valueCoord(item.summary.ciLow);
-        const b = valueCoord(item.summary.ciHigh);
-        const color = normalizeColorToHex(model.namedColors.ci ?? item.color);
-        if (model.rotate90) {
-          svg.rect(Math.min(a, b), plotTop, Math.abs(b - a), plotAcross, {
-            fill: color,
-            opacity: CI_OPACITY,
-          });
-        } else {
-          svg.rect(plotLeft, Math.min(a, b), plotAcross, Math.abs(b - a), {
-            fill: color,
-            opacity: CI_OPACITY,
-          });
-        }
+      const offLow = binOffsetForValue(item.summary.ciLow);
+      const offHigh = binOffsetForValue(item.summary.ciHigh);
+      const bandA = pointOf(Math.min(offLow, offHigh), valueMin);
+      const bandB = pointOf(Math.max(offLow, offHigh), valueMax);
+      const color = normalizeColorToHex(model.namedColors.ci ?? item.color);
+      svg.rect(
+        Math.min(bandA.x, bandB.x),
+        Math.min(bandA.y, bandB.y),
+        Math.abs(bandB.x - bandA.x),
+        Math.abs(bandB.y - bandA.y),
+        { fill: color, opacity: CI_OPACITY },
+      );
       }
     }
   }
@@ -407,8 +438,8 @@ export function renderHistogram(model: HistogramModel, options: ExtRenderOptions
 
   if (model.stats !== "off") {
     for (const item of prepared) {
-      drawMarker(svg, model, item, "mean", item.summary.mean, plotAcross, pointOf, palette.fg, model.rotate90);
-      drawMarker(svg, model, item, "median", item.summary.median, plotAcross, pointOf, palette.fg, model.rotate90);
+      drawMarker(svg, model, item, "mean", binOffsetForValue(item.summary.mean), valueMin, valueMax, pointOf);
+      drawMarker(svg, model, item, "median", binOffsetForValue(item.summary.median), valueMin, valueMax, pointOf);
     }
   }
 
@@ -431,10 +462,10 @@ export function renderHistogram(model: HistogramModel, options: ExtRenderOptions
     }
     if (line.label) {
       const labelAt = model.rotate90
-        ? { x: at, y: plotTop - 4 }
-        : { x: plotLeft + plotAcross - 4, y: at - 4 };
+        ? { x: at, y: plotTop - 4, anchor: "middle" }
+        : { x: plotLeft + plotAcross + 6, y: at + (fontSize - 1) * 0.35, anchor: "start" };
       svg.text(labelAt.x, labelAt.y, line.label, {
-        "text-anchor": model.rotate90 ? "middle" : "end",
+        "text-anchor": labelAt.anchor,
         "font-size": fontSize - 1,
         fill: color,
       });
@@ -443,7 +474,7 @@ export function renderHistogram(model: HistogramModel, options: ExtRenderOptions
 
   if (model.stats !== "off" && statsWidth > 0) {
     let y = plotTop + fontSize;
-    const x = plotLeft + plotAcross + STATS_GAP;
+    const x = plotLeft + plotAcross + lineLabelRoom + STATS_GAP;
     for (const item of prepared) {
       for (const row of statRows(model, item)) {
         svg.text(model.rotate90 ? plotLeft + plotAlong + STATS_GAP : x, y, row, {
@@ -480,32 +511,66 @@ function labelFill(
   return fontColor === "auto" ? readableTextOnFill(bg, fg) : fg;
 }
 
-function drawLegend(
-  svg: ReturnType<typeof createSvg>,
-  series: PreparedSeries[],
-  curves: PreparedCurve[],
-  x: number,
-  y: number,
-  fontSize: number,
-  fg: string,
-): void {
-  let cursor = x;
-  const items = [
+interface LegendEntry {
+  color: string;
+  label: string;
+}
+
+function legendEntries(series: PreparedSeries[], curves: PreparedCurve[]): LegendEntry[] {
+  return [
     ...series.map((item) => ({
       color: item.color,
       label: item.series.name || "series",
     })),
     ...curves.map((item) => ({ color: item.color, label: item.label })),
   ];
+}
+
+function legendItemWidth(item: LegendEntry, fontSize: number): number {
+  return 22 + measureLabelWidth(item.label, fontSize);
+}
+
+function wrapLegend(items: LegendEntry[], maxWidth: number, fontSize: number): LegendEntry[][] {
+  const rows: LegendEntry[][] = [];
+  let row: LegendEntry[] = [];
+  let used = 0;
   for (const item of items) {
-    svg.rect(cursor, y - fontSize + 2, 10, 10, { fill: item.color });
-    svg.text(cursor + 14, y, item.label, {
-      "text-anchor": "start",
-      "font-size": fontSize,
-      fill: fg,
-    });
-    cursor += 22 + measureLabelWidth(item.label, fontSize);
+    const width = legendItemWidth(item, fontSize);
+    if (row.length > 0 && used + width > maxWidth) {
+      rows.push(row);
+      row = [];
+      used = 0;
+    }
+    row.push(item);
+    used += width + LEGEND_ITEM_GAP;
   }
+  if (row.length > 0) rows.push(row);
+  return rows;
+}
+
+function drawLegend(
+  svg: ReturnType<typeof createSvg>,
+  items: LegendEntry[],
+  x: number,
+  y: number,
+  maxWidth: number,
+  fontSize: number,
+  fg: string,
+): void {
+  const rows = wrapLegend(items, maxWidth, fontSize);
+  rows.forEach((row, index) => {
+    let cursor = x;
+    const rowY = y + index * (LEGEND_ROW + 4);
+    for (const item of row) {
+      svg.rect(cursor, rowY - fontSize + 2, 10, 10, { fill: item.color });
+      svg.text(cursor + 14, rowY, item.label, {
+        "text-anchor": "start",
+        "font-size": fontSize,
+        fill: fg,
+      });
+      cursor += legendItemWidth(item, fontSize) + LEGEND_ITEM_GAP;
+    }
+  });
 }
 
 function drawMarker(
@@ -513,26 +578,23 @@ function drawMarker(
   model: HistogramModel,
   item: PreparedSeries,
   name: "mean" | "median",
-  value: number,
-  plotAcross: number,
+  binOffset: number,
+  valueMin: number,
+  valueMax: number,
   pointOf: (offset: number, value: number) => { x: number; y: number },
-  fg: string,
-  rotate90: boolean,
 ): void {
   if (!shows(model, name)) return;
   const color = normalizeColorToHex(
     (name === "mean" ? model.namedColors.mean : model.namedColors.median) ?? item.color,
   );
-  const at = pointOf(0, value);
-  const end = pointOf(plotAcross, value);
+  const at = pointOf(binOffset, valueMin);
+  const end = pointOf(binOffset, valueMax);
   svg.line(at.x, at.y, end.x, end.y, {
     stroke: color,
     "stroke-width": name === "mean" ? 1.75 : 1.25,
     ...(name === "median" ? { "stroke-dasharray": "5 4" } : {}),
     opacity: 0.9,
   });
-  void fg;
-  void rotate90;
 }
 
 function sampleCurves(

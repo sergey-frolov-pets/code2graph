@@ -122,14 +122,16 @@ const CHIP_STROKE = "#d0d7de";
 const NAME_FONT = 12;
 const TITLE_FONT = 10;
 const CHIP_FONT = 10;
-const LINE_HEIGHT = 13;
-const CARD_PAD_X = 8;
-const CARD_PAD_Y = 6;
-const CARD_GAP = 4;
+const LINE_HEIGHT = 16;
+const CARD_PAD_X = 10;
+const CARD_PAD_Y = 8;
+const CARD_GAP = 8;
 const CHIP_H = 16;
 const COUNTER_H = 16;
-const CARD_MIN_WIDTH = 112;
-const HEADER_PAD = 16;
+const CARD_MIN_WIDTH = 120;
+const HEADER_PAD = 20;
+/** Зазор между низом легенды и первой карточкой. */
+const LEGEND_CLEARANCE = 28;
 
 const LINK_STROKE_WIDTH = 1.4;
 const BUILTIN_LINK_WIDTH = 1.4;
@@ -608,8 +610,12 @@ const LEGEND_FONT = 10;
 const LEGEND_TITLE = 11;
 const SWATCH = 16;
 const LEGEND_ROW = 18;
-const LEGEND_PAD = 8;
-const LEGEND_GAP = 12;
+const LEGEND_PAD = 10;
+const LEGEND_GAP = 20;
+/** Заголовки колонок жирные, измерение этого не учитывает. */
+const LEGEND_TITLE_EMPHASIS = 1.12;
+const LEGEND_ROW_ORIGIN = 28;
+const INFLUENCE_LANE_GAP = 18;
 
 interface LegendColumn {
   title: string;
@@ -626,26 +632,30 @@ function legendColumns(): LegendColumn[] {
   ];
 }
 
+function legendColumnWidth(column: LegendColumn): number {
+  const titleW = measureText(column.title, LEGEND_TITLE) * LEGEND_TITLE_EMPHASIS;
+  const body = Math.max(
+    SWATCH,
+    ...column.rows.map((row) => SWATCH + 6 + measureText(row.name || row.code, LEGEND_FONT)),
+  );
+  return Math.max(titleW, body);
+}
+
 function measureLegend(model: PowerModel): { width: number; height: number; columns: LegendColumn[]; links: LegendLink[] } {
   const columns = legendColumns();
   let width = LEGEND_PAD;
   let rows = 1;
   for (const column of columns) {
-    const titleW = measureText(column.title, LEGEND_TITLE);
-    const body = Math.max(
-      0,
-      ...column.rows.map((row) => SWATCH + 4 + measureText(row.name || row.code, LEGEND_FONT)),
-    );
-    width += Math.max(titleW, body, SWATCH) + LEGEND_GAP;
+    width += legendColumnWidth(column) + LEGEND_GAP;
     rows = Math.max(rows, column.rows.length);
   }
   const links = legendLinks(model);
   const linkW = links.reduce(
-    (max, link) => Math.max(max, 28 + 6 + measureText(link.label, LEGEND_FONT)),
+    (max, link) => Math.max(max, 28 + 8 + measureText(link.label, LEGEND_FONT)),
     0,
   );
-  const scalesH = LEGEND_PAD + 16 + rows * LEGEND_ROW + 4;
-  const linksH = links.length > 0 ? 16 + links.length * LEGEND_ROW : 0;
+  const scalesH = LEGEND_PAD + LEGEND_ROW_ORIGIN + rows * LEGEND_ROW + 8;
+  const linksH = links.length > 0 ? 18 + links.length * LEGEND_ROW : 0;
   return {
     width: Math.max(width, linkW + LEGEND_PAD * 2),
     height: scalesH + linksH + LEGEND_PAD,
@@ -677,6 +687,81 @@ function measureCard(person: PowerPerson, framePx: number): { width: number; hei
   return { width, height, titleLines };
 }
 
+interface AxisBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+function segmentHits(x1: number, y1: number, x2: number, y2: number, skip: AxisBox, boxes: readonly AxisBox[]): boolean {
+  const minX = Math.min(x1, x2);
+  const maxX = Math.max(x1, x2);
+  const minY = Math.min(y1, y2);
+  const maxY = Math.max(y1, y2);
+  for (const box of boxes) {
+    if (box === skip) continue;
+    if (maxX <= box.x + 1 || minX >= box.x + box.width - 1) continue;
+    if (maxY <= box.y + 1 || minY >= box.y + box.height - 1) continue;
+    return true;
+  }
+  return false;
+}
+
+interface InfluencePort {
+  x: number;
+  y: number;
+  via: "right" | "top" | "bottom";
+  gateY: number;
+}
+
+/** Выход из карточки в правый коридор, не через чужие карточки. */
+function influencePort(box: AxisBox, laneX: number, boxes: readonly AxisBox[], slot: number): InfluencePort {
+  const right = box.x + box.width;
+  const midY = box.y + box.height / 2;
+  if (!segmentHits(right, midY, laneX, midY, box, boxes)) {
+    return { x: right, y: midY, via: "right", gateY: midY };
+  }
+  const drop = 16 + slot * 14;
+  const cx = box.x + box.width / 2;
+  const downY = box.y + box.height + drop;
+  if (
+    !segmentHits(cx, box.y + box.height, cx, downY, box, boxes) &&
+    !segmentHits(cx, downY, laneX, downY, box, boxes)
+  ) {
+    return { x: cx, y: box.y + box.height, via: "bottom", gateY: downY };
+  }
+  const upY = box.y - drop;
+  return { x: cx, y: box.y, via: "top", gateY: upY };
+}
+
+function routeInfluence(
+  from: AxisBox,
+  to: AxisBox,
+  laneX: number,
+  boxes: readonly AxisBox[],
+  slot: number,
+): { d: string; labelY: number } {
+  const start = influencePort(from, laneX, boxes, slot);
+  const end = influencePort(to, laneX, boxes, slot);
+  const points: Array<[number, number]> = [[start.x, start.y]];
+  if (start.via !== "right") points.push([start.x, start.gateY]);
+  points.push([laneX, start.gateY]);
+  points.push([laneX, end.gateY]);
+  if (end.via !== "right") points.push([end.x, end.gateY]);
+  points.push([end.x, end.y]);
+  const compact: Array<[number, number]> = [];
+  for (const point of points) {
+    const prev = compact[compact.length - 1];
+    if (prev && Math.abs(prev[0] - point[0]) < 0.4 && Math.abs(prev[1] - point[1]) < 0.4) continue;
+    compact.push(point);
+  }
+  const d = compact.map((point, index) => `${index === 0 ? "M" : "L"}${fmt(point[0])} ${fmt(point[1])}`).join("");
+  const laneYs = compact.filter((point) => Math.abs(point[0] - laneX) < 0.4).map((point) => point[1]);
+  const labelY = laneYs.length > 0 ? (Math.min(...laneYs) + Math.max(...laneYs)) / 2 : (start.y + end.y) / 2;
+  return { d, labelY };
+}
+
 export function renderPowermap(model: PowerModel, options: ExtRenderOptions): string {
   const themeDark = Boolean(options.dark) || usesInvertedMono(model.mono, model.monoInvert, false);
   const invertedMono = usesInvertedMono(model.mono, model.monoInvert, options.dark);
@@ -701,17 +786,31 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
   const titleBlock =
     (titleLines.length > 0 ? 22 + (titleLines.length - 1) * labelLineStep(15) : 0) +
     (companyLines.length > 0 ? 18 : 0);
-  const headerH = Math.max(titleBlock + HEADER_PAD, legend ? legend.height + 12 : 0, titleLines.length || companyLines.length || legend ? 36 : 16);
+  const headerH = Math.max(
+    titleBlock + HEADER_PAD,
+    legend ? legend.height + LEGEND_CLEARANCE : 0,
+    titleLines.length || companyLines.length || legend ? 36 : 16,
+  );
 
   const influenceLabels = model.influences.map((edge) => resolveLink(model, edge.name));
-  const influencePad = model.influences.reduce((pad, _edge, index) => {
-    const label = influenceLabels[index]?.label ?? "";
-    return Math.max(pad, 36 + index * 14 + measureText(label, 10) + 8);
-  }, 0);
+  const influenceLabelWidth = influenceLabels.reduce(
+    (max, link) => Math.max(max, measureText(link.label, 10)),
+    0,
+  );
+  const influenceLanes = model.influences.length;
+  const influencePad =
+    influenceLanes === 0
+      ? 0
+      : 24 + (influenceLanes - 1) * INFLUENCE_LANE_GAP + influenceLabelWidth + 12;
 
   let width = 24 + laid.width + 24 + influencePad;
-  let height = headerH + laid.height + 28;
-  if (legend) width = Math.max(width, 24 + measureText(model.title ?? "", 15) + 16 + legend.width + 16);
+  let height = headerH + laid.height + 36 + influenceLanes * 14;
+  const headingWidth = Math.max(
+    0,
+    ...titleLines.map((line) => measureText(line, 15)),
+    model.company ? measureText(model.company, 12) : 0,
+  );
+  if (legend) width = Math.max(width, 24 + headingWidth + 28 + legend.width + 16);
   let padX = 0;
   let padY = 0;
   if (model.ratio) {
@@ -766,30 +865,39 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
   });
 
   const byId = new Map(placed.map((card) => [card.node.id, card]));
+  const cardBoxes: AxisBox[] = placed.map((card) => ({
+    x: offsetX + card.x,
+    y: offsetY + card.y,
+    width: card.width,
+    height: card.height,
+  }));
+  const treeRight = offsetX + laid.width;
+  const labelX = treeRight + 24 + Math.max(0, influenceLanes - 1) * INFLUENCE_LANE_GAP + 8;
+  const usedLabelY: number[] = [];
   model.influences.forEach((edge, index) => {
     const from = byId.get(edge.from);
     const to = byId.get(edge.to);
     if (!from || !to) return;
     const link = resolveLink(model, edge.name);
     const color = mono ? monoPaint(link.color, invertedMono) : link.color;
-    const x1 = offsetX + from.x + from.width;
-    const y1 = offsetY + from.y + from.height / 2;
-    const x2 = offsetX + to.x + to.width;
-    const y2 = offsetY + to.y + to.height / 2;
-    const bulge = 28 + index * 14;
-    const cx = Math.max(x1, x2) + bulge;
-    const cy = (y1 + y2) / 2;
+    const fromBox = cardBoxes[placed.indexOf(from)];
+    const toBox = cardBoxes[placed.indexOf(to)];
+    const laneX = treeRight + 24 + index * INFLUENCE_LANE_GAP;
+    const route = routeInfluence(fromBox, toBox, laneX, cardBoxes, index);
     const arrow = arrowMarker(palette, `ext-pm-link-${index}`, color);
     svg.raw(arrow.markup);
     const dash = STROKE_DASH[link.style];
-    svg.path(`M ${fmt(x1)} ${fmt(y1)} Q ${fmt(cx)} ${fmt(cy)} ${fmt(x2)} ${fmt(y2)}`, {
+    svg.path(route.d, {
       fill: "none",
       stroke: color,
       "stroke-width": link.width,
       "marker-end": arrow.ref,
       ...(dash ? { "stroke-dasharray": dash } : {}),
     });
-    svg.text(cx, cy - 4, link.label, {
+    let labelY = route.labelY;
+    while (usedLabelY.some((prev) => Math.abs(prev - labelY) < 12)) labelY += 12;
+    usedLabelY.push(labelY);
+    svg.text(labelX, labelY, link.label, {
       "font-size": 10,
       fill: color,
       "text-anchor": "start",
@@ -824,7 +932,7 @@ function drawLegend(
       "text-anchor": "start",
     });
     column.rows.forEach((row, index) => {
-      const rowY = y + 22 + index * LEGEND_ROW;
+      const rowY = y + LEGEND_ROW_ORIGIN + index * LEGEND_ROW;
       const fill = chipFill(row.color, mono, invert, index);
       svg.rect(cursor, rowY, SWATCH, 12, { fill, stroke: CHIP_STROKE, rx: 2 });
       if (row.code) {
@@ -835,19 +943,14 @@ function drawLegend(
         });
       }
       if (row.name) {
-        svg.text(cursor + SWATCH + 4, rowY + 10, row.name, {
+        svg.text(cursor + SWATCH + 6, rowY + 10, row.name, {
           "font-size": LEGEND_FONT,
           fill: fg,
           "text-anchor": "start",
         });
       }
     });
-    const titleW = measureText(column.title, LEGEND_TITLE);
-    const body = Math.max(
-      SWATCH,
-      ...column.rows.map((row) => SWATCH + 4 + measureText(row.name || row.code, LEGEND_FONT)),
-    );
-    cursor += Math.max(titleW, body) + LEGEND_GAP;
+    cursor += legendColumnWidth(column) + LEGEND_GAP;
   }
   if (legend.links.length === 0) return;
   const linksTop = y + legend.height - LEGEND_PAD - legend.links.length * LEGEND_ROW - 14;

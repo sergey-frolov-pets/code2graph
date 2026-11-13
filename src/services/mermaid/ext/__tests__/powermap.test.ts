@@ -132,6 +132,58 @@ B -enemy-> A`);
     expect(svg).toContain("ext-pm-link-");
   });
 
+  it("легенда не наезжает на карточки, стрелка влияния их не пересекает", () => {
+    const model = modelOf(`powermap
+title Power map
+company Northwind
+legend on
+avatar 48
+CEO [Alex Morgan|President] role=D influence=L action=U attitude=++ counterpart=yes gender=m
+CFO [Elena Chen|Finance] role=A influence=M action=S attitude=+ counterpart=- gender=f
+Board [Samir Patel|Advisor] role=E influence=S action=M attitude=0 gender=?
+CEO -> CFO
+CEO -.-> Board
+CFO -supporter-> CEO
+Board -enemy-> CFO`);
+    const svg = powermapEngine.render(model, {});
+    const rects = [...svg.matchAll(/<rect\b([^>]*)\/?>/g)].map((match) => {
+      const attrs = match[1];
+      const num = (name: string) => Number(new RegExp(`${name}="([^"]+)"`).exec(attrs)?.[1] ?? NaN);
+      return { x: num("x"), y: num("y"), width: num("width"), height: num("height") };
+    });
+    const blocks = rects.filter((rect) => rect.width > 80 && rect.height > 40);
+    const legend = blocks.reduce((top, rect) => (rect.y < top.y ? rect : top));
+    const cards = blocks.filter((rect) => rect !== legend);
+    expect(cards.length).toBeGreaterThan(0);
+    const legendBottom = legend.y + legend.height;
+    for (const card of cards) {
+      expect(card.y).toBeGreaterThanOrEqual(legendBottom + 12);
+    }
+    const linkPath = /<path\b([^>]*ext-pm-link-[^>]*)\/>/.exec(svg)?.[1];
+    expect(linkPath).toBeTruthy();
+    const d = /d="([^"]+)"/.exec(linkPath ?? "")?.[1] ?? "";
+    const points = [...d.matchAll(/[ML]\s*(-?[\d.]+)\s+(-?[\d.]+)/g)].map((match) => ({
+      x: Number(match[1]),
+      y: Number(match[2]),
+    }));
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const a = points[index];
+      const b = points[index + 1];
+      const minX = Math.min(a.x, b.x);
+      const maxX = Math.max(a.x, b.x);
+      const minY = Math.min(a.y, b.y);
+      const maxY = Math.max(a.y, b.y);
+      for (const card of cards) {
+        const inside =
+          minX > card.x + 2 &&
+          maxX < card.x + card.width - 2 &&
+          minY > card.y + 2 &&
+          maxY < card.y + card.height - 2;
+        expect(inside).toBe(false);
+      }
+    }
+  });
+
   it("legend off и avatar off убирают легенду и блок фото", () => {
     const model = modelOf(`powermap
 legend off
