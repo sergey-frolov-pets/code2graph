@@ -610,6 +610,7 @@ export function usePresentationSession(options: {
           hideMarks: t("presentation.hideMarks"),
           showMarks: t("presentation.showMarks"),
           pen: t("presentation.pen"),
+          eraser: t("presentation.eraser"),
           penColor: t("presentation.penColor"),
           penWidth: t("presentation.penWidth"),
           copySuffix: t("presentation.copySuffix"),

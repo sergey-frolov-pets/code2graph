@@ -43,6 +43,7 @@ const LABELS = {
   hideMarks: "Скрыть правки",
   showMarks: "Показать правки",
   pen: "Карандаш",
+  eraser: "Ластик",
   penColor: "Цвет линии",
   penWidth: "Толщина линии",
   copySuffix: "копия",
@@ -64,12 +65,12 @@ const LABELS = {
     "Стрелки — двигать схему, Shift — быстрее",
     "+ и − — масштаб, 0 — к этому кадру",
     "Enter — добавить стикер",
-    "P — карандаш, [ и ] — толщина линии",
+    "P — карандаш, E — ластик, [ и ] — толщина линии",
     "C — сохранить вид в PNG",
     "H — скрыть или показать правки",
     "S — сохранить копию",
     "M — к проигрыванию",
-    "Esc — выключить карандаш, затем к проигрыванию",
+    "Esc — выключить карандаш или ластик, затем к проигрыванию",
   ].join("\n"),
 };
 
@@ -494,6 +495,47 @@ describe("presentation html export", () => {
     window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 7, bubbles: true }));
     expect(drawn?.getAttribute("points")).toBe(drawnPoints);
     expect(scene?.style.transform).not.toBe(transformWithInk);
+
+    const eraser = doc.getElementById("c2g-eraser");
+    expect(eraser?.getAttribute("aria-label")).toBe("Ластик");
+    eraser?.click();
+    expect(stage?.classList.contains("is-erasing")).toBe(true);
+    expect(stage?.classList.contains("is-drawing")).toBe(false);
+    expect(pen?.getAttribute("aria-pressed")).toBe("false");
+    expect(eraser?.getAttribute("aria-pressed")).toBe("true");
+    expect(doc.querySelector("style")?.textContent).toContain("#c2g-stage.is-erasing");
+    stage?.dispatchEvent(new PointerEvent("pointerdown", {
+      clientX: 140,
+      clientY: 110,
+      pointerId: 9,
+      bubbles: true,
+    }));
+    window.dispatchEvent(new PointerEvent("pointermove", {
+      clientX: 160,
+      clientY: 125,
+      pointerId: 9,
+      bubbles: true,
+    }));
+    window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 9, bubbles: true }));
+    expect(ink?.querySelector("polyline")).toBeNull();
+    eraser?.click();
+    expect(stage?.classList.contains("is-erasing")).toBe(false);
+    pen?.click();
+    stage?.dispatchEvent(new PointerEvent("pointerdown", {
+      clientX: 40,
+      clientY: 40,
+      pointerId: 11,
+      bubbles: true,
+    }));
+    window.dispatchEvent(new PointerEvent("pointermove", {
+      clientX: 90,
+      clientY: 70,
+      pointerId: 11,
+      bubbles: true,
+    }));
+    window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 11, bubbles: true }));
+    pen?.click();
+    expect(ink?.querySelector("polyline")).not.toBeNull();
 
     const marks = doc.getElementById("c2g-marks");
     marks?.click();

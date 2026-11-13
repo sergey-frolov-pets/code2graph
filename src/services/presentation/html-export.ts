@@ -126,6 +126,15 @@ const FALLBACK_TITLE = "presentation";
 const THEME_ACCENT = "#0f6cbd";
 const THEME_SURFACE = "#ffffff";
 const THEME_TEXT = "#1a1f24";
+/** Screen-pixel reach of the eraser, before the current zoom. */
+const HTML_ERASER_RADIUS = 12;
+const HTML_ERASER_CURSOR_SIZE = 24;
+const HTML_ERASER_CURSOR_HOT_X = 6;
+const HTML_ERASER_CURSOR_HOT_Y = 20;
+const HTML_ERASER_CURSOR_STROKE = 1.6;
+const ERASER_CURSOR_URL = `data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${HTML_ERASER_CURSOR_SIZE}" height="${HTML_ERASER_CURSOR_SIZE}" viewBox="0 0 ${HTML_ERASER_CURSOR_SIZE} ${HTML_ERASER_CURSOR_SIZE}"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21" fill="${THEME_SURFACE}" stroke="${THEME_TEXT}" stroke-width="${HTML_ERASER_CURSOR_STROKE}" stroke-linejoin="round"/><path d="M22 21H7" fill="none" stroke="${THEME_TEXT}" stroke-width="${HTML_ERASER_CURSOR_STROKE}" stroke-linecap="round"/><path d="m5 11 9 9" fill="none" stroke="${HTML_PEN_COLOR}" stroke-width="${HTML_ERASER_CURSOR_STROKE}" stroke-linecap="round"/></svg>`,
+)}`;
 const PEN_COLORS = [
   HTML_PEN_COLOR,
   THEME_ACCENT,
@@ -171,6 +180,7 @@ export interface PresentationHtmlLabels {
   hideMarks: string;
   showMarks: string;
   pen: string;
+  eraser: string;
   penColor: string;
   penWidth: string;
   copySuffix: string;
@@ -618,6 +628,9 @@ body.c2g-checker {
   display: none;
 }
 #c2g-stage.is-drawing { cursor: crosshair; }
+#c2g-stage.is-erasing {
+  cursor: url("${ERASER_CURSOR_URL}") ${HTML_ERASER_CURSOR_HOT_X} ${HTML_ERASER_CURSOR_HOT_Y}, auto;
+}
 #c2g-notes[hidden],
 #c2g-transport[hidden],
 #c2g-zoom[hidden],
@@ -729,6 +742,9 @@ body.c2g-checker {
 }
 #c2g-pen[aria-pressed="true"] .c2g-icon-pen { display: none; }
 #c2g-pen[aria-pressed="true"] .c2g-icon-pencil { display: block; }
+#c2g-eraser[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--c2g-accent) 18%, transparent);
+}
 #c2g-marks .c2g-icon-show { display: none; }
 #c2g-marks[data-state="hidden"] .c2g-icon-hide { display: none; }
 #c2g-marks[data-state="hidden"] .c2g-icon-show { display: block; }
@@ -857,6 +873,7 @@ const PLAYER_SCRIPT = `
   var cameraButton = document.getElementById("c2g-camera");
   var stickerButton = document.getElementById("c2g-sticker");
   var penButton = document.getElementById("c2g-pen");
+  var eraserButton = document.getElementById("c2g-eraser");
   var penTools = document.getElementById("c2g-pen-tools");
   var penColors = document.getElementById("c2g-pen-colors");
   var penWidthInput = document.getElementById("c2g-pen-width");
@@ -873,7 +890,7 @@ const PLAYER_SCRIPT = `
   if (
     !dataNode || !stage || !scene || !diagramWrap || !playButton || !prevButton || !nextButton
     || !indexNode || !modeButton || !transport || !zoomPanel || !zoomInButton || !zoomOutButton
-    || !zoomResetButton || !cameraButton || !stickerButton || !penButton || !saveCopyButton
+    || !zoomResetButton || !cameraButton || !stickerButton || !penButton || !eraserButton || !saveCopyButton
     || !marksButton || !keysButton || !keysPanel || !keysClose || !notes || !ink
   ) {
     return;
@@ -920,6 +937,7 @@ const PLAYER_SCRIPT = `
   var drag = null;
   var stickerSeq = 0;
   var penOn = false;
+  var eraserOn = false;
   var penColor = safeColor(payload.penColor, payload.stickerInk);
   var penWidth = clampPenWidth(payload.penWidth);
   var marksHidden = false;
@@ -1305,6 +1323,10 @@ const PLAYER_SCRIPT = `
     if (!exploring || event.button > 0) return;
     var target = event.target;
     if (target && target.closest && target.closest(".c2g-sticker, #c2g-bar")) return;
+    if (eraserOn) {
+      event.preventDefault();
+      if (beginErase(event)) return;
+    }
     if (penOn) {
       event.preventDefault();
       if (beginStroke(event)) return;
@@ -1340,6 +1362,12 @@ const PLAYER_SCRIPT = `
         drag.panY + (event.clientY - drag.startY),
         camera.scale
       );
+      return;
+    }
+    if (drag.kind === "erase") {
+      eraseSegment(drag.x, drag.y, event.clientX, event.clientY);
+      drag.x = event.clientX;
+      drag.y = event.clientY;
       return;
     }
     if (drag.kind === "draw" && drag.stroke) {
@@ -1659,13 +1687,71 @@ const PLAYER_SCRIPT = `
   }
   function syncStrokeNode(state) {
     var stroke = state.stroke;
-    if (stroke.points.length >= 2 && state.node.localName === "polyline") {
-      state.node.setAttribute("points", pointsAttr(stroke.points));
+    var node = stroke.node;
+    if (stroke.points.length >= 2 && node && node.localName === "polyline") {
+      node.setAttribute("points", pointsAttr(stroke.points));
       return;
     }
     var next = renderStroke(stroke);
-    if (state.node.parentNode) state.node.parentNode.replaceChild(next, state.node);
+    if (node && node.parentNode) node.parentNode.replaceChild(next, node);
+    stroke.node = next;
     state.node = next;
+  }
+  function segmentDistance(point, start, end) {
+    var dx = end.x - start.x;
+    var dy = end.y - start.y;
+    var lengthSq = dx * dx + dy * dy;
+    if (lengthSq === 0) return Math.hypot(point.x - start.x, point.y - start.y);
+    var t = ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSq;
+    if (t < 0) t = 0;
+    else if (t > 1) t = 1;
+    return Math.hypot(point.x - (start.x + t * dx), point.y - (start.y + t * dy));
+  }
+  function pointHitsStroke(stroke, point, radius) {
+    var reach = radius + stroke.width / 2;
+    var points = stroke.points;
+    var i;
+    if (!points.length) return false;
+    if (points.length === 1) return Math.hypot(point.x - points[0].x, point.y - points[0].y) <= reach;
+    for (i = 1; i < points.length; i += 1) {
+      if (segmentDistance(point, points[i - 1], points[i]) <= reach) return true;
+    }
+    return false;
+  }
+  function eraseScenePoint(point) {
+    var radius = payload.eraserRadius / (camera.scale || 1);
+    var kept = [];
+    var i;
+    for (i = 0; i < strokes.length; i += 1) {
+      var stroke = strokes[i];
+      if (pointHitsStroke(stroke, point, radius)) {
+        if (stroke.node && stroke.node.parentNode) stroke.node.parentNode.removeChild(stroke.node);
+      } else {
+        kept.push(stroke);
+      }
+    }
+    strokes = kept;
+  }
+  function eraseSegment(fromX, fromY, toX, toY) {
+    var from = scenePoint(fromX, fromY);
+    var to = scenePoint(toX, toY);
+    var span = Math.hypot(to.x - from.x, to.y - from.y);
+    var step = Math.max(payload.eraserRadius / (camera.scale || 1), 1);
+    var count = Math.ceil(span / step);
+    var i;
+    for (i = 0; i <= count; i += 1) {
+      var t = count === 0 ? 1 : i / count;
+      eraseScenePoint({
+        x: from.x + (to.x - from.x) * t,
+        y: from.y + (to.y - from.y) * t
+      });
+    }
+  }
+  function beginErase(event) {
+    drag = { kind: "erase", pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+    capturePointer(stage, event.pointerId);
+    eraseSegment(event.clientX, event.clientY, event.clientX, event.clientY);
+    return true;
   }
   function normalizeStroke(raw) {
     if (!raw || !raw.points || !raw.points.length) return null;
@@ -1687,11 +1773,11 @@ const PLAYER_SCRIPT = `
   function beginStroke(event) {
     if (!ink || strokes.length >= payload.penStrokeLimit) return false;
     var point = scenePoint(event.clientX, event.clientY);
-    var stroke = { color: penColor, width: penWidth, points: [point] };
+    var stroke = { color: penColor, width: penWidth, points: [point], node: null };
     strokes.push(stroke);
-    var node = renderStroke(stroke);
-    ink.appendChild(node);
-    drag = { kind: "draw", pointerId: event.pointerId, stroke: stroke, node: node };
+    stroke.node = renderStroke(stroke);
+    ink.appendChild(stroke.node);
+    drag = { kind: "draw", pointerId: event.pointerId, stroke: stroke, node: stroke.node };
     capturePointer(stage, event.pointerId);
     return true;
   }
@@ -1983,8 +2069,9 @@ const PLAYER_SCRIPT = `
     for (i = 0; i < drawn.length && strokes.length < payload.penStrokeLimit; i += 1) {
       var stroke = normalizeStroke(drawn[i]);
       if (!stroke) continue;
+      stroke.node = renderStroke(stroke);
       strokes.push(stroke);
-      ink.appendChild(renderStroke(stroke));
+      ink.appendChild(stroke.node);
     }
   }
   function finishSave() {
@@ -2171,8 +2258,10 @@ const PLAYER_SCRIPT = `
     zoomPanel.hidden = !exploring;
     if (repeatWrap) repeatWrap.hidden = exploring;
     stage.classList.toggle("is-drawing", exploring && penOn);
+    stage.classList.toggle("is-erasing", exploring && eraserOn);
     if (penTools) penTools.hidden = !(exploring && penOn);
     penButton.setAttribute("aria-pressed", penOn ? "true" : "false");
+    eraserButton.setAttribute("aria-pressed", eraserOn ? "true" : "false");
     stage.classList.toggle("is-marks-hidden", marksHidden);
     marksButton.setAttribute("aria-pressed", marksHidden ? "true" : "false");
     marksButton.setAttribute("aria-label", marksHidden ? payload.labels.showMarks : payload.labels.hideMarks);
@@ -2190,7 +2279,10 @@ const PLAYER_SCRIPT = `
     barHeld = false;
     endDrag();
     exploring = !exploring;
-    if (!exploring) penOn = false;
+    if (!exploring) {
+      penOn = false;
+      eraserOn = false;
+    }
     kick();
   }
   function resetView() {
@@ -2354,11 +2446,25 @@ const PLAYER_SCRIPT = `
   zoomResetButton.addEventListener("click", resetView);
   cameraButton.addEventListener("click", savePng);
   stickerButton.addEventListener("click", addSticker);
-  penButton.addEventListener("click", function () {
-    if (!exploring) return;
-    penOn = !penOn;
+  function setPen(on) {
+    penOn = on;
+    if (on) eraserOn = false;
     endDrag();
     updateChrome();
+  }
+  function setEraser(on) {
+    eraserOn = on;
+    if (on) penOn = false;
+    endDrag();
+    updateChrome();
+  }
+  penButton.addEventListener("click", function () {
+    if (!exploring) return;
+    setPen(!penOn);
+  });
+  eraserButton.addEventListener("click", function () {
+    if (!exploring) return;
+    setEraser(!eraserOn);
   });
   saveCopyButton.addEventListener("click", saveCopy);
   marksButton.addEventListener("click", function () {
@@ -2414,8 +2520,9 @@ const PLAYER_SCRIPT = `
         sticker.classList.remove("is-active");
         return;
       }
-      if (exploring && penOn) {
+      if (exploring && (penOn || eraserOn)) {
         penOn = false;
+        eraserOn = false;
         endDrag();
         updateChrome();
         return;
@@ -2474,9 +2581,11 @@ const PLAYER_SCRIPT = `
       else if (event.key === "Enter") { event.preventDefault(); addSticker(); }
       else if (event.code === "KeyP") {
         event.preventDefault();
-        penOn = !penOn;
-        endDrag();
-        updateChrome();
+        setPen(!penOn);
+      }
+      else if (event.code === "KeyE") {
+        event.preventDefault();
+        setEraser(!eraserOn);
       }
       else if (event.code === "KeyC") { event.preventDefault(); savePng(); }
       else if (event.code === "BracketLeft") { event.preventDefault(); nudgePenWidth(-1); }
@@ -2553,6 +2662,7 @@ function playerChrome(title: string, labels: PresentationHtmlLabels, stepCount: 
         ${glyph(`<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>`, "c2g-icon-pen")}
         ${glyph(`<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>`, "c2g-icon-pencil")}
       </button>
+      <button id="c2g-eraser" type="button" aria-pressed="false" aria-label="${htmlEscape(labels.eraser)}">${glyph(`<path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/>`)}</button>
       <div id="c2g-pen-tools" class="c2g-pen-tools" hidden>
         <input id="c2g-pen-width" type="range" min="${HTML_PEN_WIDTH_MIN}" max="${HTML_PEN_WIDTH_MAX}" value="${HTML_PEN_WIDTH_DEFAULT}" aria-label="${htmlEscape(labels.penWidth)}">
         <span id="c2g-pen-width-value">${HTML_PEN_WIDTH_DEFAULT}</span>
@@ -2698,6 +2808,7 @@ export function renderPresentationHtml(source: PresentationHtmlSource): string {
     penMinStep: HTML_PEN_MIN_STEP,
     penStrokeLimit: HTML_PEN_STROKE_LIMIT,
     penPointLimit: HTML_PEN_POINT_LIMIT,
+    eraserRadius: HTML_ERASER_RADIUS,
     noteTextLimit: HTML_NOTE_TEXT_LIMIT,
     noteColors: NOTE_COLORS,
     penColors: PEN_COLORS,
