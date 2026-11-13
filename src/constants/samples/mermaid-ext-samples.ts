@@ -205,6 +205,44 @@ data
 Техдир -> Бэкенд
 Техдир -> Фронтенд
 Финдир -.-> Бэкенд`,
+  orgchartAvatar: `orgchart
+%% avatar 48 включает блок фото. avatar off прячет его. Без директивы блок выключен, старые схемы остаются текстовыми.
+%% gender=m — мужской силуэт, gender=f — женский, gender=? — пол неизвестен, силуэт со знаком вопроса.
+%% photo="https://…" или photo="data:image/png;base64,…" заменяет силуэт. avatar=off на узле прячет один блок.
+%% Сторона блока 24–128 px.
+avatar 48
+Гендиректор [Генеральный директор|Иван Петров] gender=m
+Техдир [Технический директор|Анна Смирнова] gender=f
+Операции [Руководитель операций|Не указан] gender=?
+Гендиректор -> Техдир
+Гендиректор -> Операции`,
+  powermap: `powermap
+%% Карта влияния: оценки, фото и именные стрелки поверх дерева подчинения.
+%% company "Имя" — компания под заголовком. legend on|off — легенда (по умолчанию on).
+%% avatar 48 — сторона блока фото в px (24–128). avatar off прячет все блоки.
+%% Узел: id [Имя|Должность] gender=m|f|? photo="https://…" или data:image/png;base64,…
+%%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
+%%   counterpart="Имя"   avatar=off прячет фото одного человека.
+%%   Нет фото и нет пола — силуэт со знаком вопроса.
+%% Подчинение строит дерево: A -> B сплошная, A -.-> B пунктир.
+%% Влияние не меняет руководителя:
+%%   link supporter color=#1a7f37 style=solid|dash|dot|dashdot label="союзник"
+%%   A -supporter-> B
+%% supporter (зелёная сплошная) и enemy (красный пунктир) есть, пока строка link их не заменит.
+%% В легенде — шкалы и каждый тип связи, созданный в этой диаграмме.
+title Карта влияния
+company "Север"
+avatar 48
+link supporter color=#1a7f37 style=solid label="союзник"
+link coach color=#bf8700 style=dot label="наставник"
+ceo [Анна Орлова|Президент] gender=f role=E influence=L action=M attitude=+ counterpart=-
+cfo [Илья Сомов|Финансы] gender=m role=D influence=L action=S attitude=0 counterpart="Анна Орлова"
+ops [Мария Ким|Операции] gender=? role=A influence=M action=U attitude=- counterpart="Илья Сомов"
+ceo -> cfo
+ceo -> ops
+cfo -.-> ops
+cfo -supporter-> ops
+ops -enemy-> cfo`,
   ev: `ev
 title Освоение бюджета
 days 1, 2, 3, 4, 5
@@ -718,6 +756,44 @@ CEO -> CFO
 CTO -> Backend
 CTO -> Frontend
 CFO -.-> Backend`,
+  orgchartAvatar: `orgchart
+%% avatar 48 turns the photo box on. avatar off hides it. Without the line the box stays off, so old charts remain text-only.
+%% gender=m is a male silhouette, gender=f a female one, gender=? unknown — a silhouette with a question mark.
+%% photo="https://…" or photo="data:image/png;base64,…" replaces the silhouette. avatar=off on a node hides one box.
+%% The side is 24–128 px.
+avatar 48
+CEO [Chief executive officer|Alex Morgan] gender=m
+CTO [Chief technology officer|Elena Chen] gender=f
+Ops [Head of operations|Unknown] gender=?
+CEO -> CTO
+CEO -> Ops`,
+  powermap: `powermap
+%% Power map: scores, photos and named influence arrows on a reporting tree.
+%% company "Name" — company under the title. legend on|off — the key (default on).
+%% avatar 48 — photo box side in px (24–128). avatar off hides every box.
+%% Node: id [Name|Title] gender=m|f|? photo="https://…" or data:image/png;base64,…
+%%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
+%%   counterpart="Name"   avatar=off hides one photo.
+%%   No photo and no gender — a silhouette with a question mark.
+%% Reporting builds the tree: A -> B solid, A -.-> B dotted.
+%% Influence does not change the manager:
+%%   link supporter color=#1a7f37 style=solid|dash|dot|dashdot label="ally"
+%%   A -supporter-> B
+%% supporter (green solid) and enemy (red dash) exist until a link line replaces them.
+%% The legend lists the scales and every link type created in this diagram.
+title Power Map
+company "Northwind"
+avatar 48
+link supporter color=#1a7f37 style=solid label="ally"
+link coach color=#bf8700 style=dot label="coach"
+ceo [Anna Orlova|President] gender=f role=E influence=L action=M attitude=+ counterpart=-
+cfo [Ilya Somov|Finance] gender=m role=D influence=L action=S attitude=0 counterpart="Anna Orlova"
+ops [Maria Kim|Operations] gender=? role=A influence=M action=U attitude=- counterpart="Ilya Somov"
+ceo -> cfo
+ceo -> ops
+cfo -.-> ops
+cfo -supporter-> ops
+ops -enemy-> cfo`,
   ev: `ev
 title Budget earned value
 days 1, 2, 3, 4, 5

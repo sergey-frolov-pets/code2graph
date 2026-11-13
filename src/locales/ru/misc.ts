@@ -490,4 +490,7 @@ export const miscMessages = {
   "pwa.updateAvailable": "Доступна новая версия сайта",
   "pwa.updateReload": "Обновить",
   "pwa.updateDismiss": "Позже",
+  "samples.mermaid.orgchartAvatar": "Оргструктура — фото",
+  "samples.mermaid.powermap": "Карта влияния",
+
 } as const satisfies LocaleMessages;

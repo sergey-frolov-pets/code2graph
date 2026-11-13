@@ -13,6 +13,8 @@ export const BUBBLE_MAX_COLUMNS = 5;
 export const XYCHART_MIN_COLUMNS = 1;
 export const ORGCHART_MIN_COLUMNS = 2;
 export const ORGCHART_MAX_COLUMNS = 3;
+export const POWERMAP_MIN_COLUMNS = 3;
+export const POWERMAP_MAX_COLUMNS = 9;
 export const GANTT_MIN_COLUMNS = 2;
 export const GANTT_MAX_COLUMNS = 4;
 export const TIMELINE_MIN_COLUMNS = 2;
@@ -209,6 +211,17 @@ const EXPECTED_SPECS_BY_TYPE: Record<
       ["Гендиректор", "Техдир", ""],
       ["Гендиректор", "Финдир", ""],
       ["Финдир", "Бэкенд", "dotted"],
+    ],
+  },
+  powermap: {
+    titleKey: "tablePaste.type.powermap",
+    columnsKey: "tablePaste.expected.powermap.columns",
+    rulesKey: "tablePaste.expected.powermap.rules",
+    sampleHeadersKey: "tablePaste.expected.powermap.headers",
+    sampleRows: [
+      ["Иван Петров", "Генеральный директор", "", "D", "L", "U", "++", "да", ""],
+      ["Ольга Орлова", "Финансовый директор", "Иван Петров", "A", "M", "S", "+", "-", "solid"],
+      ["Пётр Иванов", "Член совета", "Иван Петров", "E", "S", "M", "0", "", "supporter"],
     ],
   },
   gantt: {

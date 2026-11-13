@@ -169,4 +169,9 @@ export const tablePasteMessages = {
   "tablePaste.expected.wireframe.rules":
     "TableHead और TableBody वाला WireMark Table घटक बनाता है (संख्यात्मक स्तंभ दाएँ संरेखित होते हैं)।",
   "tablePaste.expected.wireframe.headers": "नाम|लेखक|स्थिति|दृश्य",
+  "tablePaste.type.powermap": "पावर मैप",
+  "tablePaste.expected.powermap.columns": "नाम, पद, प्रबंधक, भूमिका, प्रभाव, कार्रवाई, रुख, समकक्ष और कड़ी (solid, dotted या नाम)।",
+  "tablePaste.expected.powermap.rules": "हर पंक्ति एक व्यक्ति है। solid और dotted रिपोर्टिंग हैं। कोई अन्य नाम प्रभाव का तीर है।",
+  "tablePaste.expected.powermap.headers": "नाम|पद|प्रबंधक|भूमिका|प्रभाव|कार्रवाई|रुख|समकक्ष|कड़ी",
+
 } as const satisfies LocaleMessages;

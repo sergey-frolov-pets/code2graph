@@ -51,6 +51,7 @@ export const tablePasteMessages = {
   "tablePaste.type.quadrant": "Quadrant Chart",
   "tablePaste.type.sankey": "Sankey diagram",
   "tablePaste.type.orgchart": "Org chart",
+  "tablePaste.type.powermap": "Power map",
   "tablePaste.type.gantt": "Gantt chart",
   "tablePaste.type.timeline": "Timeline",
   "tablePaste.type.journey": "User Journey",
@@ -129,6 +130,12 @@ export const tablePasteMessages = {
   "tablePaste.expected.orgchart.rules":
     "Generates orgchart nodes and solid (->) or dotted (-.->) reporting lines.",
   "tablePaste.expected.orgchart.headers": "Manager|Report|Link",
+  "tablePaste.expected.powermap.columns":
+    "Name, title, manager, role, influence, action, attitude, counterpart, and link (solid, dotted, or a link name).",
+  "tablePaste.expected.powermap.rules":
+    "Each row is a person. solid and dotted are reporting lines. Any other link name is an influence arrow.",
+  "tablePaste.expected.powermap.headers":
+    "Name|Title|Manager|Role|Influence|Action|Attitude|Counterpart|Link",
   "tablePaste.expected.gantt.columns":
     "2 to 4 columns: 'Task', 'Start date or duration', ['Duration (5d)'], ['Section'].",
   "tablePaste.expected.gantt.rules":

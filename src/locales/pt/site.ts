@@ -96,7 +96,7 @@ export const siteMessages = {
   "site.ext.mermaid.desc.waterfall": "Como um valor inicial vira um total por passos + e −. Colunas absolutas começam com =, vários cenários são declarados com series. Quebras de eixo, modo preto e branco (mono e mono invert) e cores personalizadas são suportados.",
   "site.ext.mermaid.desc.bubble": "Três dimensões de uma vez: x, y e o tamanho da bolha. Opcionalmente quadrantes BCG e grupos de cor.",
   "site.ext.mermaid.desc.heatmap": "Uma matriz de valores com escala de cor. Os intervalos da escala são explícitos, uma célula vazia (dois separadores seguidos) fica cinza.",
-  "site.ext.mermaid.desc.orgchart": "Uma árvore de subordinação com arestas explícitas: cheia é a linha principal, pontilhada -.-> é um gestor secundário. Um bloco pode definir o preenchimento (color) e a borda (border, style). Várias raízes ficam sob uma raiz invisível.",
+  "site.ext.mermaid.desc.orgchart": "Uma árvore de subordinação com arestas explícitas: cheia é a linha principal, pontilhada -.-> é um gestor secundário. Um bloco pode definir o preenchimento (color) e a borda (border, style). Várias raízes ficam sob uma raiz invisível. avatar mostra uma foto ou uma silhueta: masculina, feminina ou de gênero desconhecido.",
   "site.ext.mermaid.desc.ev": "Três curvas acumuladas por dia: valor planejado PV, valor agregado EV e custo real AC. Mais os desvios SV e CV na legenda.",
   "site.ext.mermaid.desc.boxplot": "Distribuição por categorias: mínimo, quartis inferior e superior (Q1, Q3), mediana, máximo, média e outliers. Aceita um resumo explícito de cinco números ou observações brutas (values=).",
   "site.ext.mermaid.desc.treemap": "Partição hierárquica em retângulos de grupos e itens proporcional ao peso numérico, com percentuais automáticos e sombreamento de cor.",
@@ -106,7 +106,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.waterfall": "waterfall abre o gráfico. y define o eixo. = é uma coluna absoluta, + e - são um passo, e o rótulo vem depois dos dois-pontos. \\n num rótulo quebra a linha.",
   "site.ext.mermaid.syntax.bubble": "bubble abre o gráfico. x, y e size definem os eixos e o tamanho. Dentro de data um ponto é nome : x=, y=, size=. \\n num nome quebra a linha.",
   "site.ext.mermaid.syntax.heatmap": "heatmap abre o mapa. x e y são os rótulos dos eixos. Dentro de data uma linha é nome : números separados por vírgula. \\n num rótulo quebra a linha.",
-  "site.ext.mermaid.syntax.orgchart": "orgchart abre a árvore. Um nó é id [papel\\nnome] (\\n quebra a linha, a caixa cabe o texto); color=#hex define o preenchimento, border=#hex e style=solid|dash|dot|dashdot definem a cor e o estilo da borda. Uma aresta cheia é ->, um gestor secundário é -.->.",
+  "site.ext.mermaid.syntax.orgchart": "orgchart abre a árvore. Um nó é id [papel\\nnome] (\\n quebra a linha, a caixa cabe o texto); color=#hex define o preenchimento, border=#hex e style=solid|dash|dot|dashdot definem a cor e o estilo da borda. avatar 48 mostra a caixa; gender=m|f|? escolhe a silhueta, photo= define a imagem, avatar off esconde a caixa. Uma aresta cheia é ->, um gestor secundário é -.->.",
   "site.ext.mermaid.syntax.ev": "ev abre o gráfico. days são os dias, pv é o plano, ev é o valor agregado, ac é o custo real. \\n num rótulo de dia quebra a linha.",
   "site.ext.mermaid.syntax.boxplot": "boxplot abre o gráfico. Linha de categoria: Nome : min=, q1=, median=, q3=, max= (ou values=v1, v2, …) com color=#hex opcional. \\n num nome quebra a linha.",
   "site.ext.mermaid.syntax.treemap": "treemap abre o mapa. Linha: Grupo / Item : peso [color=#hex]. labels controla a exibição do valor e da percentagem. \\n num nome quebra a linha.",
@@ -320,4 +320,8 @@ export const siteMessages = {
   "site.landing.usp.managers": "Plano e status numa imagem: Gantt e gráficos na apresentação num clique",
   "site.landing.usp.students": "Um diagrama em um minuto: modelos, dicas, sem instalar nada",
   "site.landing.usp.vibecoders": "O agente desenha, você edita: o MCP dá ao Cursor código e imagem",
+  "site.ext.mermaid.type.powermap": "Mapa de poder",
+  "site.ext.mermaid.desc.powermap": "Mapa de poder sobre uma árvore de subordinação: papel, influência, necessidade de ação e atitude, mais o interlocutor da empresa. Fotos ou silhuetas, legenda e setas nomeadas, como supporter e enemy.",
+  "site.ext.mermaid.syntax.powermap": "powermap abre o mapa. company define a empresa, legend on|off a legenda, avatar 48 ou avatar off a caixa da foto. Uma pessoa é id [Nome|Cargo] com role, influence, action, attitude, counterpart, gender e photo. -> e -.-> são linhas de subordinação. link nome color=#hex style=solid|dash|dot|dashdot define uma seta, A -nome-> B desenha-a.",
+
 } as const satisfies LocaleMessages;

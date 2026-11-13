@@ -169,4 +169,9 @@ export const tablePasteMessages = {
   "tablePaste.expected.wireframe.rules":
     "生成带 TableHead 和 TableBody 的 WireMark Table 组件（数字列右对齐）。",
   "tablePaste.expected.wireframe.headers": "名称|作者|状态|浏览",
+  "tablePaste.type.powermap": "权力图",
+  "tablePaste.expected.powermap.columns": "姓名、职务、上级、角色、影响力、行动需求、态度、对接人和关系（solid、dotted 或关系名）。",
+  "tablePaste.expected.powermap.rules": "每一行是一个人。solid 和 dotted 是汇报线。其他名称是影响箭头。",
+  "tablePaste.expected.powermap.headers": "姓名|职务|上级|角色|影响力|行动|态度|对接人|关系",
+
 } as const satisfies LocaleMessages;

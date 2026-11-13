@@ -1,0 +1,13 @@
+powermap
+title Power map
+company Northwind
+legend on
+avatar 48
+link coach color=#e3c34a style=dot label=coach
+CEO [Alex Morgan|President] role=D influence=L action=U attitude=++ counterpart=yes gender=m
+CFO [Elena Chen|Finance] role=A influence=M action=S attitude=+ counterpart=- gender=f photo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==
+Board [Samir Patel|Advisor] role=E influence=S action=M attitude=0 gender=?
+CEO -> CFO
+CEO -.-> Board
+CFO -supporter-> CEO
+Board -enemy-> CFO

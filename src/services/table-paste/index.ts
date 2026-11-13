@@ -20,6 +20,7 @@ import {
   parseJourneyTable,
   parseNwdiagTable,
   parseOrgChartTable,
+  parsePowermapTable,
   parsePacketTable,
   parseTimelineTable,
   parseWiremarkTable,
@@ -139,6 +140,9 @@ export function applyTableFromClipboardText(input: {
       break;
     case "orgchart":
       result = parseOrgChartTable(grid, source, format);
+      break;
+    case "powermap":
+      result = parsePowermapTable(grid, source, format);
       break;
     case "gantt":
       result = parseGanttTable(grid, source, format);

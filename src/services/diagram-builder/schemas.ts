@@ -50,6 +50,8 @@ const BASE_CAPABILITY: DiagramBuilderCapability = {
   supportsGanttStyle: false,
   supportsBlockStyle: false,
   supportsSequenceAutonumber: false,
+  supportsPowerMap: false,
+  supportsPersonAvatar: false,
 };
 
 const WATERFALL_LABELS_OPTIONS: readonly BuilderSelectOption[] = [
@@ -90,6 +92,13 @@ const WATERFALL_STEP_LABEL_OPTIONS: readonly BuilderSelectOption[] = [
 const ORG_EDGE_STYLE_OPTIONS: readonly BuilderSelectOption[] = [
   { value: "solid", labelKey: "builder.orgchart.edge.solid" },
   { value: "dotted", labelKey: "builder.orgchart.edge.dotted" },
+];
+
+const PERSON_GENDER_OPTIONS: readonly BuilderSelectOption[] = [
+  { value: "", labelKey: "builder.gender.unset" },
+  { value: "m", labelKey: "builder.gender.male" },
+  { value: "f", labelKey: "builder.gender.female" },
+  { value: "?", labelKey: "builder.gender.unknown" },
 ];
 
 const JOURNEY_SCORE_OPTIONS: readonly BuilderSelectOption[] = [
@@ -224,7 +233,9 @@ export function hasBuilderOptionsCapabilities(
       cap.supportsHeatmapScale ||
       cap.supportsBreaks ||
       cap.supportsThresholds ||
-      cap.supportsCagr,
+      cap.supportsCagr ||
+      cap.supportsPowerMap ||
+      cap.supportsPersonAvatar,
   );
 }
 
@@ -332,6 +343,39 @@ function columnsForDiagramType(
           options: ORG_EDGE_STYLE_OPTIONS,
         },
         { id: "color", labelKey: "builder.col.color", type: "color" },
+        {
+          id: "employeeGender",
+          labelKey: "builder.col.gender",
+          type: "select",
+          options: PERSON_GENDER_OPTIONS,
+        },
+        { id: "employeePhoto", labelKey: "builder.col.photo", type: "image" },
+        {
+          id: "managerGender",
+          labelKey: "builder.col.gender",
+          type: "select",
+          options: PERSON_GENDER_OPTIONS,
+        },
+        { id: "managerPhoto", labelKey: "builder.col.photo", type: "image" },
+      ];
+    case "powermap":
+      return [
+        { id: "name", labelKey: "builder.col.person", type: "text", required: true },
+        { id: "title", labelKey: "builder.col.jobTitle", type: "text" },
+        {
+          id: "gender",
+          labelKey: "builder.col.gender",
+          type: "select",
+          options: PERSON_GENDER_OPTIONS,
+        },
+        { id: "photo", labelKey: "builder.col.photo", type: "image" },
+        { id: "role", labelKey: "builder.col.role", type: "text" },
+        { id: "influence", labelKey: "builder.col.influence", type: "text" },
+        { id: "action", labelKey: "builder.col.action", type: "text" },
+        { id: "attitude", labelKey: "builder.col.attitude", type: "text" },
+        { id: "counterpart", labelKey: "builder.col.counterpart", type: "text" },
+        { id: "manager", labelKey: "builder.col.manager", type: "text" },
+        { id: "relation", labelKey: "builder.col.relation", type: "text" },
       ];
     case "ev":
       return [
@@ -553,6 +597,12 @@ export function getDiagramBuilderSchema(
         break;
       case "orgchart":
         cap.supportsMono = true;
+        cap.supportsPersonAvatar = true;
+        break;
+      case "powermap":
+        cap.supportsMono = true;
+        cap.supportsPowerMap = true;
+        cap.supportsPersonAvatar = true;
         break;
       case "ev":
         cap.supportsAspectRatio = true;

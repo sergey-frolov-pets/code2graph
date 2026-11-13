@@ -178,4 +178,7 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.favorite.kind.serverLink": "服务器链接",
   "llm.wizard.gallery.favorite.open": "打开 {title}",
   "llm.wizard.gallery.favorite.listLabel": "收藏的图表",
+  "llm.wizard.gallery.tag.diagramType.powermap": "权力图",
+  "llm.wizard.gallery.desc.powermap": "带评分、照片和影响箭头的人。",
+
 } as const;

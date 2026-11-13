@@ -169,4 +169,9 @@ export const tablePasteMessages = {
   "tablePaste.expected.wireframe.rules":
     "Генерирует компонент Table с TableHead и TableBody (числовые колонки автоматически выравниваются вправо align=right).",
   "tablePaste.expected.wireframe.headers": "Название|Автор|Статус|Просмотры",
+  "tablePaste.type.powermap": "Карта влияния",
+  "tablePaste.expected.powermap.columns": "Имя, должность, руководитель, роль, влияние, действие, отношение, контрагент и связь (solid, dotted или имя связи).",
+  "tablePaste.expected.powermap.rules": "Каждая строка — человек. solid и dotted — подчинение. Любое другое имя — стрелка влияния.",
+  "tablePaste.expected.powermap.headers": "Имя|Должность|Руководитель|Роль|Влияние|Действие|Отношение|Контрагент|Связь",
+
 } as const satisfies LocaleMessages;

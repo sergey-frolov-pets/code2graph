@@ -6,8 +6,20 @@ import { assertSvgInvariants } from "./svg-invariants";
 
 const DIR = join(process.cwd(), "sandbox", "fixtures");
 
-const GOOD = ["40-ev-basic.mmd", "41-ev-grid-off.mmd", "30-orgchart-basic.mmd", "32-orgchart-multi-root.mmd"];
-const BAD = ["42-ev-mismatch.mmd", "33-orgchart-invalid.mmd", "31-orgchart-cycle.mmd"];
+const GOOD = [
+  "40-ev-basic.mmd",
+  "41-ev-grid-off.mmd",
+  "30-orgchart-basic.mmd",
+  "32-orgchart-multi-root.mmd",
+  "62-powermap-basic.mmd",
+  "63-orgchart-avatar.mmd",
+];
+const BAD = [
+  "42-ev-mismatch.mmd",
+  "33-orgchart-invalid.mmd",
+  "31-orgchart-cycle.mmd",
+  "64-powermap-unknown-link.mmd",
+];
 
 describe("smoke: песочница", () => {
   for (const name of GOOD) {
@@ -29,7 +41,7 @@ describe("smoke: песочница", () => {
   it("битые фикстуры дают внятную ошибку", async () => {
     for (const name of BAD) {
       const src = readFileSync(join(DIR, name), "utf8");
-      await expect(tryRenderExtension(src)).rejects.toThrow(/ev|orgchart/);
+      await expect(tryRenderExtension(src)).rejects.toThrow(/ev|orgchart|powermap/);
       const v = validateExtensionSource(src);
       expect(v?.valid).toBe(false);
       const issue = v?.issues[0];

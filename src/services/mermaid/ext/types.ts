@@ -8,6 +8,7 @@ export type ExtDiagramType =
   | "bubble"
   | "heatmap"
   | "orgchart"
+  | "powermap"
   | "ev"
   | "boxplot"
   | "treemap"

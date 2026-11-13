@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import { detectType, firstMeaningfulLine, listTypes } from "../registry";
 
 describe("detectType", () => {
-  it("распознаёт все 10 канонических типов", () => {
+  it("распознаёт все 11 канонических типов", () => {
     expect(detectType("waterfall\n=10 : A")).toBe("waterfall");
     expect(detectType('bubble\nx "X" 0 --> 1')).toBe("bubble");
     expect(detectType("heatmap\nx A, B")).toBe("heatmap");
     expect(detectType("orgchart\nA -> B")).toBe("orgchart");
+    expect(detectType("powermap\nA -> B")).toBe("powermap");
     expect(detectType("ev\ndays 1, 2")).toBe("ev");
     expect(detectType("boxplot\nA : 10, 20, 30, 40, 50")).toBe("boxplot");
     expect(detectType("treemap\nA : 40")).toBe("treemap");
@@ -22,6 +23,8 @@ describe("detectType", () => {
     expect(detectType("bubblechart")).toBe("bubble");
     expect(detectType("heat-map")).toBe("heatmap");
     expect(detectType("org")).toBe("orgchart");
+    expect(detectType("power-map")).toBe("powermap");
+    expect(detectType("power")).toBe("powermap");
     expect(detectType("evchart")).toBe("ev");
     expect(detectType("box-plot")).toBe("boxplot");
     expect(detectType("box")).toBe("boxplot");
@@ -60,6 +63,7 @@ describe("detectType", () => {
     expect(detectType("waterfallish")).toBeNull();
     expect(detectType("evolve")).toBeNull();
     expect(detectType("organization")).toBeNull();
+    expect(detectType("powerpoint")).toBeNull();
   });
 });
 
@@ -73,15 +77,16 @@ describe("firstMeaningfulLine", () => {
 });
 
 describe("listTypes", () => {
-  it("перечисляет ровно 10 типов", () => {
+  it("перечисляет ровно 11 типов", () => {
     const types = listTypes();
-    expect(types).toHaveLength(10);
+    expect(types).toHaveLength(11);
     expect(new Set(types)).toEqual(
       new Set([
         "waterfall",
         "bubble",
         "heatmap",
         "orgchart",
+        "powermap",
         "ev",
         "boxplot",
         "treemap",

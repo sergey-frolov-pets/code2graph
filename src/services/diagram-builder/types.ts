@@ -14,7 +14,8 @@ export type BuilderCellType =
   | "select"
   | "color"
   | "date"
-  | "duration";
+  | "duration"
+  | "image";
 
 export interface BuilderSelectOption {
   value: string;
@@ -143,6 +144,13 @@ export interface BuilderCanvasSettings {
   blockColumns: number;
 }
 
+export interface BuilderPowerLink {
+  name: string;
+  color: string;
+  style: string;
+  label: string;
+}
+
 export interface BuilderOptionsSettings {
   labelsMode: string;
   connectors: boolean;
@@ -180,6 +188,14 @@ export interface BuilderOptionsSettings {
   breaks: BuilderBreakItem[];
   thresholds: BuilderThresholdItem[];
   cagrs: BuilderCagrItem[];
+  /** Название компании на карте влияния. */
+  company: string;
+  /** Легенда шкал и связей. По умолчанию включена. */
+  showLegend: boolean;
+  /** Сторона блока фото. Пусто — размер по умолчанию типа. `off` прячет блок. */
+  avatarSize: string;
+  /** Объявленные стрелки влияния (`link`). */
+  powerLinks: BuilderPowerLink[];
 }
 
 export interface DiagramBuilderState {
@@ -322,6 +338,10 @@ export interface DiagramBuilderCapability {
   supportsGanttStyle: boolean;
   supportsBlockStyle: boolean;
   supportsSequenceAutonumber: boolean;
+  /** Компания, легенда, связи влияния. */
+  supportsPowerMap: boolean;
+  /** Размер блока фото у оргструктуры. */
+  supportsPersonAvatar: boolean;
 }
 
 export interface DiagramBuilderSchema {

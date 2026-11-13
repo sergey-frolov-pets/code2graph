@@ -16,6 +16,7 @@ export const TABLE_PASTE_DIAGRAM_TYPES = [
   "quadrant",
   "sankey",
   "orgchart",
+  "powermap",
   "gantt",
   "timeline",
   "journey",

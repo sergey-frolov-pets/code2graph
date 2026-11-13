@@ -169,4 +169,9 @@ export const tablePasteMessages = {
   "tablePaste.expected.wireframe.rules":
     "Erzeugt eine WireMark-Table-Komponente mit TableHead und TableBody (Zahlenspalten werden rechtsbündig ausgerichtet).",
   "tablePaste.expected.wireframe.headers": "Name|Autor|Status|Aufrufe",
+  "tablePaste.type.powermap": "Machtkarte",
+  "tablePaste.expected.powermap.columns": "Name, Rolle, Vorgesetzter, Machtrolle, Einfluss, Handlungsbedarf, Haltung, Gegenstelle und Beziehung (solid, dotted oder ein Linkname).",
+  "tablePaste.expected.powermap.rules": "Jede Zeile ist eine Person. solid und dotted sind Berichtslinien. Jeder andere Name ist ein Einflusspfeil.",
+  "tablePaste.expected.powermap.headers": "Name|Rolle|Vorgesetzter|Machtrolle|Einfluss|Handlung|Haltung|Gegenstelle|Beziehung",
+
 } as const satisfies LocaleMessages;

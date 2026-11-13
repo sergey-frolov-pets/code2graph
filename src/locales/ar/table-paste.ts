@@ -169,4 +169,9 @@ export const tablePasteMessages = {
   "tablePaste.expected.wireframe.rules":
     "يولّد مكون جدول WireMark مع TableHead وTableBody (الأعمدة الرقمية تُحاذى إلى اليمين).",
   "tablePaste.expected.wireframe.headers": "الاسم|المؤلف|الحالة|المشاهدات",
+  "tablePaste.type.powermap": "خريطة النفوذ",
+  "tablePaste.expected.powermap.columns": "الاسم والمنصب والمدير والدور والتأثير والفعل والموقف والنظير والعلاقة (solid أو dotted أو اسم).",
+  "tablePaste.expected.powermap.rules": "كل صف شخص. solid و dotted تبعية. أي اسم آخر سهم تأثير.",
+  "tablePaste.expected.powermap.headers": "الاسم|المنصب|المدير|الدور|التأثير|الفعل|الموقف|النظير|العلاقة",
+
 } as const satisfies LocaleMessages;

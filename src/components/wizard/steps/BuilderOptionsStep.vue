@@ -156,6 +156,21 @@ function removeHeatmapBand(idx: number): void {
   builderState.value.options.heatmapBands.splice(idx, 1);
   notifyChange();
 }
+
+function addPowerLink(): void {
+  builderState.value.options.powerLinks.push({
+    name: "",
+    color: "#1a7f37",
+    style: "solid",
+    label: "",
+  });
+  notifyChange();
+}
+
+function removePowerLink(idx: number): void {
+  builderState.value.options.powerLinks.splice(idx, 1);
+  notifyChange();
+}
 </script>
 
 <template>
@@ -396,6 +411,123 @@ function removeHeatmapBand(idx: number): void {
           </label>
         </template>
       </div>
+    </section>
+
+    <section
+      v-if="cap.supportsPowerMap || cap.supportsPersonAvatar"
+      class="builder-card"
+    >
+      <h3 class="builder-card__title">{{ t("builder.section.visualOptions") }}</h3>
+      <div class="builder-form-grid">
+        <label
+          v-if="cap.supportsPowerMap"
+          class="builder-field"
+        >
+          <span class="builder-field__label">{{ t("builder.powermap.company") }}</span>
+          <input
+            v-model="builderState.options.company"
+            type="text"
+            class="builder-input"
+            data-testid="builder-company-input"
+            @input="notifyChange"
+          >
+        </label>
+        <label
+          v-if="cap.supportsPowerMap"
+          class="builder-field"
+        >
+          <span class="builder-field__label">{{ t("builder.powermap.legend") }}</span>
+          <input
+            v-model="builderState.options.showLegend"
+            type="checkbox"
+            data-testid="builder-legend-toggle"
+            @change="notifyChange"
+          >
+        </label>
+        <label
+          v-if="cap.supportsPowerMap || cap.supportsPersonAvatar"
+          class="builder-field"
+        >
+          <span class="builder-field__label">
+            {{ t(cap.supportsPowerMap ? "builder.powermap.avatar" : "builder.orgchart.avatar") }}
+          </span>
+          <input
+            v-model="builderState.options.avatarSize"
+            type="text"
+            class="builder-input"
+            :placeholder="t('builder.powermap.avatarHint')"
+            data-testid="builder-avatar-size"
+            @input="notifyChange"
+          >
+        </label>
+      </div>
+      <template v-if="cap.supportsPowerMap">
+        <div class="builder-subsection">
+          <div class="builder-list-header">
+            <span class="builder-subsection__label">{{ t("builder.powermap.links") }}</span>
+          <button
+            type="button"
+            class="btn builder-btn"
+            data-testid="builder-add-link-btn"
+            @click="addPowerLink"
+          >
+            <ActionIcon name="plus" />
+            <span>{{ t("builder.powermap.addLink") }}</span>
+          </button>
+          </div>
+        </div>
+        <div
+          v-if="builderState.options.powerLinks.length > 0"
+          class="builder-list"
+        >
+          <div
+            v-for="(link, idx) in builderState.options.powerLinks"
+            :key="idx"
+            class="builder-list-row"
+          >
+            <input
+              v-model="link.name"
+              type="text"
+              class="builder-input"
+              :placeholder="t('builder.powermap.linkName')"
+              @input="notifyChange"
+            >
+            <input
+              v-model="link.color"
+              type="color"
+              class="builder-color-picker"
+              @input="notifyChange"
+            >
+            <select
+              v-model="link.style"
+              class="select builder-input"
+              @change="notifyChange"
+            >
+              <option
+                v-for="opt in LINE_STYLE_OPTIONS"
+                :key="opt.value"
+                :value="opt.value"
+              >
+                {{ t(opt.labelKey) }}
+              </option>
+            </select>
+            <input
+              v-model="link.label"
+              type="text"
+              class="builder-input"
+              :placeholder="t('builder.powermap.linkLabel')"
+              @input="notifyChange"
+            >
+            <button
+              type="button"
+              class="builder-icon-mini builder-icon-mini--danger"
+              @click="removePowerLink(idx)"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      </template>
     </section>
 
     <!-- SECTION 2: COLORS & PALETTE -->
@@ -905,7 +1037,9 @@ function removeHeatmapBand(idx: number): void {
         !cap.supportsHeatmapScale &&
         !cap.supportsBreaks &&
         !cap.supportsThresholds &&
-        !cap.supportsCagr
+        !cap.supportsCagr &&
+        !cap.supportsPowerMap &&
+        !cap.supportsPersonAvatar
       "
       class="wizard-hint"
     >

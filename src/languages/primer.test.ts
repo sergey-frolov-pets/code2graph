@@ -34,6 +34,7 @@ const MERMAID_EXT_TYPE_IDS = [
   "ext-bubble",
   "ext-heatmap",
   "ext-orgchart",
+  "ext-powermap",
   "ext-ev",
   "ext-boxplot",
   "ext-treemap",

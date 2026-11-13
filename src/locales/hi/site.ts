@@ -142,7 +142,7 @@ export const siteMessages = {
   "site.ext.mermaid.desc.heatmap":
     "रंग स्केल वाली मान मैट्रिक्स। स्केल सीमाएँ स्पष्ट हैं, खाली कक्ष (लगातार दो विभाजक) धूसर बनता है।",
   "site.ext.mermaid.desc.orgchart":
-    "स्पष्ट किनारों वाला रिपोर्टिंग वृक्ष: ठोस मुख्य रेखा है, बिंदुयुक्त -.-> द्वितीयक प्रबंधक है। ब्लॉक अपना भराव (color) और अपनी सीमा (border, style) सेट कर सकता है। कई मूल एक अदृश्य मूल के नीचे जुड़ते हैं।",
+    "स्पष्ट किनारों वाला रिपोर्टिंग वृक्ष: ठोस मुख्य रेखा है, बिंदुयुक्त -.-> द्वितीयक प्रबंधक है। ब्लॉक अपना भराव (color) और अपनी सीमा (border, style) सेट कर सकता है। कई मूल एक अदृश्य मूल के नीचे जुड़ते हैं। avatar फ़ोटो या छाया दिखाता है: पुरुष, महिला या अज्ञात लिंग।",
   "site.ext.mermaid.desc.ev":
     "दिन के अनुसार तीन संचयी वक्र: नियोजित मूल्य PV, अर्जित मूल्य EV और वास्तविक लागत AC। साथ में लेजेंड में SV और CV विचलन।",
   "site.ext.mermaid.desc.boxplot":
@@ -162,7 +162,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.heatmap":
     "heatmap मानचित्र खोलता है। x और y अक्ष लेबल हैं। data के अंदर पंक्ति name : अल्पविराम से अलग संख्याएँ है। लेबल में \\n पंक्ति तोड़ता है।",
   "site.ext.mermaid.syntax.orgchart":
-    "orgchart वृक्ष खोलता है। नोड id [role\\nname] है (\\n पंक्ति तोड़ता है, बॉक्स पाठ के अनुसार फिट होता है); color=#hex भराव सेट करता है, border=#hex और style=solid|dash|dot|dashdot सीमा का रंग और शैली सेट करते हैं। ठोस किनारा -> है, द्वितीयक प्रबंधक -.-> है।",
+    "orgchart वृक्ष खोलता है। नोड id [role\\nname] है (\\n पंक्ति तोड़ता है, बॉक्स पाठ के अनुसार फिट होता है); color=#hex भराव सेट करता है, border=#hex और style=solid|dash|dot|dashdot सीमा का रंग और शैली सेट करते हैं। avatar 48 फ़ोटो बॉक्स दिखाता है; gender=m|f|? छाया चुनता है, photo= चित्र देता है, avatar off बॉक्स छिपाता है। ठोस किनारा -> है, द्वितीयक प्रबंधक -.-> है।",
   "site.ext.mermaid.syntax.ev":
     "ev चार्ट खोलता है। days दिन हैं, pv योजना है, ev अर्जित मूल्य है, ac वास्तविक लागत है। दिन लेबल में \\n पंक्ति तोड़ता है।",
   "site.ext.mermaid.syntax.boxplot":
@@ -455,4 +455,8 @@ export const siteMessages = {
   "site.landing.usp.managers": "योजना और स्थिति एक तस्वीर में: Gantt और चार्ट एक क्लिक में स्लाइड में",
   "site.landing.usp.students": "एक मिनट में आरेख: टेम्पलेट, संकेत, कोई इंस्टॉल नहीं",
   "site.landing.usp.vibecoders": "एजेंट बनाता है, आप बदलते हैं: MCP Cursor को कोड और तस्वीर देता है",
+  "site.ext.mermaid.type.powermap": "पावर मैप",
+  "site.ext.mermaid.desc.powermap": "रिपोर्टिंग ट्री पर हितधारक: भूमिका, प्रभाव, कार्रवाई की ज़रूरत और रुख, साथ में कंपनी का समकक्ष। फ़ोटो या छाया, संकेत, और supporter तथा enemy जैसे नाम वाले तीर।",
+  "site.ext.mermaid.syntax.powermap": "powermap नक्शा खोलता है। company कंपनी है, legend on|off संकेत है, avatar 48 या avatar off फ़ोटो बॉक्स है। व्यक्ति id [नाम|पद] है, role, influence, action, attitude, counterpart, gender और photo के साथ। -> और -.-> रिपोर्टिंग हैं। link नाम color=#hex style=solid|dash|dot|dashdot तीर बनाता है, A -नाम-> B उसे खींचता है।",
+
 } as const satisfies LocaleMessages;

@@ -11,7 +11,7 @@ import {
 } from "./index";
 
 describe("detectTableDiagramType & supportsTablePaste", () => {
-  it("detects all 16 supported diagram types and hides button for non-tabular types", () => {
+  it("detects supported diagram types and hides the button for non-tabular types", () => {
     expect(detectTableDiagramType("waterfall\n=100 : Q1", "mermaid")).toBe("waterfall");
     expect(detectTableDiagramType("pie\n\"A\" : 10", "mermaid")).toBe("pie");
     expect(detectTableDiagramType("heatmap\nx A, B\ndata\nR : 1, 2", "mermaid")).toBe("heatmap");
@@ -27,6 +27,8 @@ describe("detectTableDiagramType & supportsTablePaste", () => {
     expect(detectTableDiagramType("quadrantChart\nA: [0.5, 0.5]", "mermaid")).toBe("quadrant");
     expect(detectTableDiagramType("sankey-beta\nA,B,10", "mermaid")).toBe("sankey");
     expect(detectTableDiagramType("orgchart\nA -> B", "mermaid")).toBe("orgchart");
+    expect(detectTableDiagramType("powermap\nA -> B", "mermaid")).toBe("powermap");
+    expect(detectTableDiagramType("power-map\nA -> B", "mermaid")).toBe("powermap");
     expect(detectTableDiagramType("gantt\ntitle Plan", "mermaid")).toBe("gantt");
     expect(detectTableDiagramType("@startgantt\n@endgantt", "plantuml")).toBe("gantt");
     expect(detectTableDiagramType("timeline\n2024 : A", "mermaid")).toBe("timeline");
@@ -415,6 +417,20 @@ describe("Category A & B table parsers", () => {
     if (orgRes.ok) {
       expect(orgRes.fullSource).toContain("CEO -> CTO");
       expect(orgRes.fullSource).toContain("CFO -.-> Backend");
+    }
+
+    const powerRes = applyTableFromClipboardText({
+      clipboardText:
+        "Имя\tДолжность\tРуководитель\tРоль\tВлияние\tДействие\tОтношение\tКонтрагент\tСвязь\nОльга\tФинансы\tИван\tA\tM\tS\t+\t-\tsolid\nПётр\tСовет\tИван\tE\tS\tM\t0\t\tsupporter",
+      source: "powermap\ncompany Север\nA -> B",
+      format: "mermaid",
+    });
+    expect(powerRes.ok).toBe(true);
+    if (powerRes.ok) {
+      expect(powerRes.fullSource).toContain("company Север");
+      expect(powerRes.fullSource).toContain("Иван -> Ольга");
+      expect(powerRes.fullSource).toContain("Пётр -supporter-> Иван");
+      expect(powerRes.fullSource).not.toContain("A -> B");
     }
 
     const wbsRes = applyTableFromClipboardText({

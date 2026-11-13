@@ -178,4 +178,7 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.favorite.kind.serverLink": "サーバーリンク",
   "llm.wizard.gallery.favorite.open": "{title} を開く",
   "llm.wizard.gallery.favorite.listLabel": "お気に入りの図",
+  "llm.wizard.gallery.tag.diagramType.powermap": "パワーマップ",
+  "llm.wizard.gallery.desc.powermap": "評価、写真、影響の矢印を持つ人です。",
+
 } as const;

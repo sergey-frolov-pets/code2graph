@@ -103,6 +103,21 @@ function syncGraphNodesFromEdges(): void {
   }
 }
 
+function onPhotoFile(row: string[], colIndex: number, event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = "";
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const result = typeof reader.result === "string" ? reader.result : "";
+    if (!result.startsWith("data:image/")) return;
+    row[colIndex] = result;
+    notifyChange();
+  };
+  reader.readAsDataURL(file);
+}
+
 function onGraphEdgeEndpointChange(): void {
   syncGraphNodesFromEdges();
   notifyChange();
@@ -507,6 +522,25 @@ async function handlePasteFromClipboard(): Promise<void> {
                 >
                   ×
                 </button>
+              </div>
+
+              <div
+                v-else-if="col.type === 'image'"
+                class="builder-color-cell"
+              >
+                <input
+                  v-model="row[colIndex]"
+                  type="text"
+                  class="builder-cell-input"
+                  :placeholder="t('builder.col.photo')"
+                  @input="notifyChange"
+                >
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/gif,image/webp"
+                  :aria-label="t('builder.col.photo')"
+                  @change="onPhotoFile(row, colIndex, $event)"
+                >
               </div>
 
               <input

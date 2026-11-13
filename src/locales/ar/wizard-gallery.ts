@@ -178,4 +178,7 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.favorite.kind.serverLink": "رابط الخادم",
   "llm.wizard.gallery.favorite.open": "فتح {title}",
   "llm.wizard.gallery.favorite.listLabel": "المخططات المفضلة",
+  "llm.wizard.gallery.tag.diagramType.powermap": "خريطة النفوذ",
+  "llm.wizard.gallery.desc.powermap": "أشخاص بدرجات وصور وأسهم تأثير.",
+
 } as const;

@@ -142,7 +142,7 @@ export const siteMessages = {
   "site.ext.mermaid.desc.heatmap":
     "带色标的数值矩阵。刻度范围是显式的，空单元格（连续两个分隔符）画成灰色。",
   "site.ext.mermaid.desc.orgchart":
-    "带显式边的汇报树：实线是主线，虚线 -.-> 是次要上级。块可以设置填充（color）和边框（border、style）。多个根会汇集到一个不可见的根下面。",
+    "带显式边的汇报树：实线是主线，虚线 -.-> 是次要上级。块可以设置填充（color）和边框（border、style）。多个根会汇集到一个不可见的根下面。avatar 显示照片或剪影：男、女或未知性别。",
   "site.ext.mermaid.desc.ev":
     "按天的三条累计曲线：计划值 PV、挣值 EV 和实际成本 AC。图例中还有 SV 和 CV 偏差。",
   "site.ext.mermaid.desc.boxplot":
@@ -162,7 +162,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.heatmap":
     "heatmap 打开图。x 和 y 是坐标轴标签。在 data 内，一行是 名称 : 逗号分隔的数字。标签中的 \\n 会换行。",
   "site.ext.mermaid.syntax.orgchart":
-    "orgchart 打开树。节点是 id [角色\\n姓名]（\\n 换行，方框适应文字）；color=#hex 设置填充，border=#hex 和 style=solid|dash|dot|dashdot 设置边框颜色和样式。实线边是 ->，次要上级是 -.->。",
+    "orgchart 打开树。节点是 id [角色\\n姓名]（\\n 换行，方框适应文字）；color=#hex 设置填充，border=#hex 和 style=solid|dash|dot|dashdot 设置边框颜色和样式。avatar 48 显示照片框；gender=m|f|? 选择剪影，photo= 设置照片，avatar off 隐藏照片框。实线边是 ->，次要上级是 -.->。",
   "site.ext.mermaid.syntax.ev":
     "ev 打开图表。days 是日期，pv 是计划，ev 是挣值，ac 是实际成本。日期标签中的 \\n 会换行。",
   "site.ext.mermaid.syntax.boxplot":
@@ -455,4 +455,8 @@ export const siteMessages = {
   "site.landing.usp.managers": "计划与状态一张图说清：甘特图和图表一键进演示文稿",
   "site.landing.usp.students": "一分钟做出图表：模板、提示、免安装",
   "site.landing.usp.vibecoders": "智能体画图，你来修改：MCP 给 Cursor 源码和图片",
+  "site.ext.mermaid.type.powermap": "权力图",
+  "site.ext.mermaid.desc.powermap": "画在汇报树上的利益相关者权力图：角色、影响力、行动需求和态度，以及公司对接人。照片或剪影、图例，以及 supporter、enemy 这样的具名箭头。",
+  "site.ext.mermaid.syntax.powermap": "powermap 打开图。company 写公司，legend on|off 写图例，avatar 48 或 avatar off 写照片框。人是 id [姓名|职务]，带 role、influence、action、attitude、counterpart、gender 和 photo。-> 和 -.-> 是汇报线。link 名称 color=#hex style=solid|dash|dot|dashdot 定义箭头，A -名称-> B 画出它。",
+
 } as const satisfies LocaleMessages;

@@ -178,4 +178,7 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.favorite.kind.serverLink": "Ligação do servidor",
   "llm.wizard.gallery.favorite.open": "Abrir {title}",
   "llm.wizard.gallery.favorite.listLabel": "Diagramas favoritos",
+  "llm.wizard.gallery.tag.diagramType.powermap": "Mapa de poder",
+  "llm.wizard.gallery.desc.powermap": "Pessoas com notas, foto e setas de influência.",
+
 } as const;
