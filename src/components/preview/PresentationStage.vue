@@ -160,7 +160,7 @@ function fromEvent(event: PointerEvent): NormPoint {
 const pathD = computed(() => {
   const ends = transitionEnds.value;
   const current = transition.value;
-  if (!ends || !current || !pathEditable.value) {
+  if (!props.showOverlays || !ends || !current || !pathEditable.value) {
     return "";
   }
   const start = toScreen(ends.from);
@@ -534,12 +534,12 @@ function overlayLabelLines(overlay: PresentationOverlay): OverlayTextLine[] {
     </defs>
 
     <path
-      v-if="pathD"
+      v-if="showOverlays && pathD"
       :d="pathD"
       class="presentation-path"
     />
 
-    <template v-if="pathEditable && transition && transitionEnds">
+    <template v-if="showOverlays && pathEditable && transition && transitionEnds">
       <line
         v-for="(control, index) in transition.controls"
         :key="`guide-${index}`"
@@ -592,7 +592,7 @@ function overlayLabelLines(overlay: PresentationOverlay): OverlayTextLine[] {
       @pointerdown="onOverlayPointerDown($event, overlay)"
     >
       <rect
-        v-if="editing && overlay.id === selectedOverlayId"
+        v-if="arranging && overlay.id === selectedOverlayId"
         class="presentation-selection"
         :x="selectionBox(overlay).x"
         :y="selectionBox(overlay).y"
@@ -679,7 +679,7 @@ function overlayLabelLines(overlay: PresentationOverlay): OverlayTextLine[] {
         </tspan>
       </text>
       <rect
-        v-for="handle in editing && overlay.id === selectedOverlayId ? resizeHandles(overlay) : []"
+        v-for="handle in arranging && overlay.id === selectedOverlayId ? resizeHandles(overlay) : []"
         :key="`${overlay.id}-${handle.id}`"
         class="presentation-handle presentation-resize"
         :x="handle.x - resizeHandleSize / 2"
@@ -691,7 +691,7 @@ function overlayLabelLines(overlay: PresentationOverlay): OverlayTextLine[] {
         @pointerdown="beginResize($event, overlay, handle.id)"
       />
       <circle
-        v-if="editing && overlay.id === selectedOverlayId && isBubble(overlay)"
+        v-if="arranging && overlay.id === selectedOverlayId && isBubble(overlay)"
         class="presentation-handle presentation-tail"
         :cx="tailScreen(overlay).x"
         :cy="tailScreen(overlay).y"
