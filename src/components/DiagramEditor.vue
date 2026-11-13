@@ -522,7 +522,7 @@ onUnmounted(() => {
 <template>
   <section
     class="panel editor-panel"
-    :class="{ 'is-fullscreen': isFullscreen, 'is-chat-surface': surfaceMode === 'ai-chat' }"
+    :class="{ 'is-fullscreen': isFullscreen }"
     :style="editorStyle"
     :aria-label="t('app.editorRegion')"
     @focusin="emit('editor-focus')"

@@ -25,6 +25,7 @@
   --preview-checker: rgba(15, 23, 42, 0.08);
   --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
   --radius: 12px;
+  --editor-radius: 8px;
   --z-modal: 1000;
   --z-library: 1100;
   --z-dialog: 1200;

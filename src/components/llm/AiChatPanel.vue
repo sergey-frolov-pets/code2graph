@@ -2015,7 +2015,7 @@ async function onCopyChat(): Promise<void> {
   flex-wrap: nowrap;
   min-width: 0;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--editor-radius);
   padding: 2px 4px;
   background: var(--surface-muted);
 }
@@ -2413,7 +2413,7 @@ async function onCopyChat(): Promise<void> {
   padding: var(--ai-chat-composer-block-pad) var(--ai-chat-composer-inline-pad)
     var(--ai-chat-composer-block-pad) var(--ai-chat-composer-field-inset);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--editor-radius);
   background: var(--surface);
 }
 
