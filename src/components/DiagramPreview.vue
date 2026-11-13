@@ -117,6 +117,13 @@ const {
   onPointerCancel,
 } = usePreviewPanZoom(viewportRef, contentRef, previewMarkup);
 
+function onViewportPointerLeave(event: PointerEvent): void {
+  if (event.buttons !== 0) {
+    return;
+  }
+  onPointerUp(event);
+}
+
 const panSheetStyle = computed(() => {
   const sheet = panSheetBox(snapshot.value.imageWidth, snapshot.value.imageHeight);
   return {
@@ -369,7 +376,7 @@ watch(
           @pointermove="onPointerMove"
           @pointerup="onPointerUp"
           @pointercancel="onPointerCancel"
-          @pointerleave="onPointerUp"
+          @pointerleave="onViewportPointerLeave"
         >
           <div
             ref="contentRef"

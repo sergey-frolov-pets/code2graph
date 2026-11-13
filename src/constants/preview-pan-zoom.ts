@@ -16,6 +16,7 @@ export const PREVIEW_FIT_MARGIN_RATIO = 0.95;
 /**
  * Pannable sheet around the picture: a square grid of equal cells.
  * The picture is the center cell, so the count stays odd.
+ * The sheet may leave the viewport, which pulls the picture past the edge.
  */
 export const PREVIEW_PAN_GRID_CELLS = 3;
 
