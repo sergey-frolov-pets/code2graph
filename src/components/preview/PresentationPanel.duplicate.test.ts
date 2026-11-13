@@ -188,13 +188,20 @@ describe("presentation track duplicate button", () => {
     mounted.push(panel);
     await nextTick();
 
-    expect(panel.host.querySelector("[aria-label='presentation.playbackMode']")).toBeInstanceOf(HTMLButtonElement);
+    expect(panel.host.querySelectorAll("[aria-label='presentation.playbackMode']")).toHaveLength(1);
+    expect(panel.host.querySelector("[aria-label='presentation.arrangeMode']")).toBeNull();
+    expect(panel.host.textContent).toContain("presentation.repeat");
     expect(panel.host.querySelector("[aria-label='presentation.first']")).toBeInstanceOf(HTMLButtonElement);
     expect(panel.host.querySelector("[aria-label='editor.undo']")).toBeNull();
 
-    panel.barMode.value = "arrange";
+    panel.host.querySelector("[aria-label='presentation.playbackMode']")
+      ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     await nextTick();
 
+    expect(panel.barMode.value).toBe("arrange");
+    expect(panel.host.querySelector("[aria-label='presentation.playbackMode']")).toBeNull();
+    expect(panel.host.querySelectorAll("[aria-label='presentation.arrangeMode']")).toHaveLength(1);
+    expect(panel.host.textContent).not.toContain("presentation.repeat");
     const undo = panel.host.querySelector("[aria-label='editor.undo']");
     expect(undo).toBeInstanceOf(HTMLButtonElement);
     expect((undo as HTMLButtonElement).disabled).toBe(false);

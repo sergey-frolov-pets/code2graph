@@ -595,7 +595,7 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
         </IconButton>
       </div>
       <label
-        v-if="track"
+        v-if="track && (mode === 'edit' || barMode === 'play')"
         class="presentation-check"
       >
         <input
@@ -606,22 +606,14 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
         {{ t("presentation.repeat") }}
       </label>
       <div class="presentation-dock__transport">
-        <template v-if="mode === 'view'">
-          <IconButton
-            :label="t('presentation.playbackMode')"
-            :pressed="barMode === 'play'"
-            @click="barMode = 'play'"
-          >
-            <PresentationGlyph name="play" />
-          </IconButton>
-          <IconButton
-            :label="t('presentation.arrangeMode')"
-            :pressed="barMode === 'arrange'"
-            @click="barMode = 'arrange'"
-          >
-            <PresentationGlyph name="edit" />
-          </IconButton>
-        </template>
+        <IconButton
+          v-if="mode === 'view'"
+          :label="barMode === 'play' ? t('presentation.playbackMode') : t('presentation.arrangeMode')"
+          :pressed="barMode === 'arrange'"
+          @click="barMode = barMode === 'play' ? 'arrange' : 'play'"
+        >
+          <PresentationGlyph :name="barMode === 'play' ? 'playback' : 'arrange'" />
+        </IconButton>
         <template v-if="mode === 'edit' || barMode === 'play'">
           <IconButton
             :label="t('presentation.first')"

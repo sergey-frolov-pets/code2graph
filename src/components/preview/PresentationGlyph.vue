@@ -11,6 +11,7 @@ import {
   ChevronRight,
   ChevronsDown,
   Circle,
+  Clapperboard,
   Copy,
   Eye,
   EyeOff,
@@ -20,6 +21,7 @@ import {
   GripHorizontal,
   LoaderCircle,
   Minus,
+  Move,
   Octagon,
   Palette,
   Pause,
@@ -52,6 +54,8 @@ export type PresentationGlyphName =
   | "first"
   | "play"
   | "pause"
+  | "playback"
+  | "arrange"
   | "gif"
   | "html"
   | "loader"
@@ -89,6 +93,8 @@ const ICONS: Record<PresentationGlyphName, Component> = {
   first: SkipBack,
   play: Play,
   pause: Pause,
+  playback: Clapperboard,
+  arrange: Move,
   gif: Film,
   html: FileCode,
   loader: LoaderCircle,
