@@ -46,6 +46,8 @@ const props = defineProps<{
   diagramFormat?: DiagramFormat;
   /** Правка трека доступна только редактору, который может записать исходник. */
   canEditPresentation?: boolean;
+  canUndo?: boolean;
+  canRedo?: boolean;
   /** Drop SVG/PNG создаёт новую диаграмму. Во втором окне превью выключен. */
   acceptFrameDrop?: boolean;
 }>();
@@ -65,6 +67,8 @@ const emit = defineEmits<{
   toggleDualScreen: [];
   "update:source": [value: string];
   importFrame: [payload: { label: string; source: string }];
+  undo: [];
+  redo: [];
 }>();
 
 const { t } = useLocale();
@@ -120,6 +124,10 @@ const presentation = usePresentationSession({
   setFrame: setCameraFrame,
   setLocked: setInteractionLocked,
   onSource: (value) => emit("update:source", value),
+  canUndo: computed(() => props.canUndo === true),
+  canRedo: computed(() => props.canRedo === true),
+  undo: () => emit("undo"),
+  redo: () => emit("redo"),
   getGifContext: () => {
     const viewport = viewportRef.value;
     if (!viewport || !previewMarkup.value) {

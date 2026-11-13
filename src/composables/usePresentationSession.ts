@@ -70,6 +70,7 @@ export interface PresentationGifContext {
 }
 
 export type PresentationMode = "view" | "edit";
+export type PresentationBarMode = "play" | "arrange";
 export type OverlayAttachTarget = "viewpoint" | "transition";
 
 export function usePresentationSession(options: {
@@ -81,10 +82,15 @@ export function usePresentationSession(options: {
   setLocked: (locked: boolean) => void;
   onSource: (source: string) => void;
   getGifContext: () => PresentationGifContext | null;
+  canUndo?: Ref<boolean>;
+  canRedo?: Ref<boolean>;
+  undo?: () => void;
+  redo?: () => void;
 }) {
   const open = ref(false);
   const panelOpen = ref(false);
   const mode = ref<PresentationMode>("view");
+  const barMode = ref<PresentationBarMode>("play");
   const document = ref<PresentationDocument | null>(null);
   const selectedOverlayId = ref<string | null>(null);
   const addPointArmed = ref(false);
@@ -622,6 +628,15 @@ export function usePresentationSession(options: {
     arranging,
     editing,
     mode,
+    barMode,
+    canUndo: computed(() => options.canUndo?.value ?? false),
+    canRedo: computed(() => options.canRedo?.value ?? false),
+    onUndo: () => {
+      options.undo?.();
+    },
+    onRedo: () => {
+      options.redo?.();
+    },
     document,
     currentTrack,
     dimChrome,

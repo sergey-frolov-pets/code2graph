@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PanZoomSnapshot } from "@/services/preview/pan-zoom-types";
 import type {
   NormPoint,
+  PresentationOverlay,
   PresentationTrack,
   PresentationTransition,
   Viewpoint,
@@ -86,10 +87,41 @@ function tour(paths: {
   };
 }
 
+function selectedRect(): PresentationOverlay {
+  return {
+    id: "note",
+    owner: { kind: "viewpoint", id: "b" },
+    shape: "rect",
+    x: 0.2,
+    y: 0.2,
+    width: 0.3,
+    height: 0.2,
+    text: "",
+    backing: "none",
+    bubbleShape: "rectangle",
+    cornerRadius: 0,
+    tailX: 0.08,
+    tailY: 1.34,
+    arrowKind: "straight",
+    arrowForm: "line",
+    arrowDirection: "right",
+    rotation: 0,
+    mark: "warning",
+    arrowHead: "end",
+    stroke: "",
+    fill: "",
+    textColor: "",
+    font: "sans",
+    line: "solid",
+  };
+}
+
 function mountStage(options: {
   arranging: boolean;
   editing: boolean;
   track: PresentationTrack;
+  showOverlays?: boolean;
+  selectedOverlayId?: string | null;
   onMoveControl?: (index: number, point: NormPoint) => void;
 }) {
   const host = document.createElement("div");
@@ -101,11 +133,11 @@ function mountStage(options: {
         track: options.track,
         arranging: options.arranging,
         editing: options.editing,
-        showOverlays: true,
+        showOverlays: options.showOverlays !== false,
         viewpointIndex: CURRENT_VIEWPOINT,
         phase: "dwell",
         travelOrigin: TRAVEL_ORIGIN,
-        selectedOverlayId: null,
+        selectedOverlayId: options.selectedOverlayId ?? null,
         addPointArmed: false,
         effectsLive: false,
         effectElapsedMs: 0,
@@ -220,5 +252,38 @@ describe("presentation transition handles", () => {
       x: DRAG_CLIENT_X / IMAGE_SIZE,
       y: DRAG_CLIENT_Y / IMAGE_SIZE,
     });
+  });
+
+  it("resizes the selected object while the panel is collapsed", async () => {
+    const track = tour({ first: "line", second: "line" });
+    track.overlays = [selectedRect()];
+    const stage = mountStage({
+      arranging: true,
+      editing: false,
+      track,
+      selectedOverlayId: "note",
+    });
+    mounted.push(stage);
+    await nextTick();
+
+    expect(stage.host.querySelectorAll(".presentation-resize").length).toBeGreaterThan(0);
+  });
+
+  it("hides movement paths together with overlays", async () => {
+    const stage = mountStage({
+      arranging: true,
+      editing: false,
+      showOverlays: false,
+      track: tour({
+        first: "quadratic",
+        second: "quadratic",
+        secondControl: { x: 0.8, y: 0.6 },
+      }),
+    });
+    mounted.push(stage);
+    await nextTick();
+
+    expect(stage.host.querySelector(".presentation-path")).toBeNull();
+    expect(stage.host.querySelector(".presentation-handle")).toBeNull();
   });
 });

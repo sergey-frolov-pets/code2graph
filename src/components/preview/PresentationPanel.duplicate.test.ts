@@ -55,6 +55,9 @@ function mountPanel(options: { mode: "view" | "edit"; tracks: PresentationTrack[
     tracks: options.tracks,
   });
   const viewpointIndex = ref(0);
+  const barMode = ref<"play" | "arrange">("play");
+  const onUndo = vi.fn();
+  const onRedo = vi.fn();
   const session = {
     enabled: computed(() => true),
     canEdit: computed(() => true),
@@ -96,6 +99,11 @@ function mountPanel(options: { mode: "view" | "edit"; tracks: PresentationTrack[
     exportingHtml: ref(false),
     onExportHtml: vi.fn(),
     repeat: ref(false),
+    barMode,
+    canUndo: computed(() => true),
+    canRedo: computed(() => false),
+    onUndo,
+    onRedo,
     playback: {
       playing: ref(false),
       viewpointIndex,
@@ -117,6 +125,8 @@ function mountPanel(options: { mode: "view" | "edit"; tracks: PresentationTrack[
   return {
     host,
     mode,
+    barMode,
+    onUndo,
     onDuplicateTrack,
     unmount() {
       app.unmount();
@@ -171,5 +181,25 @@ describe("presentation track duplicate button", () => {
 
     expect(panel.host.textContent).toContain("Эффекты кадра 1");
     expect(panel.host.querySelector("[aria-label='presentation.effectAdd']")).toBeInstanceOf(HTMLButtonElement);
+  });
+
+  it("switches the collapsed bar between playback and undo", async () => {
+    const panel = mountPanel({ mode: "view", tracks: [track("Обход")] });
+    mounted.push(panel);
+    await nextTick();
+
+    expect(panel.host.querySelector("[aria-label='presentation.playbackMode']")).toBeInstanceOf(HTMLButtonElement);
+    expect(panel.host.querySelector("[aria-label='presentation.first']")).toBeInstanceOf(HTMLButtonElement);
+    expect(panel.host.querySelector("[aria-label='editor.undo']")).toBeNull();
+
+    panel.barMode.value = "arrange";
+    await nextTick();
+
+    const undo = panel.host.querySelector("[aria-label='editor.undo']");
+    expect(undo).toBeInstanceOf(HTMLButtonElement);
+    expect((undo as HTMLButtonElement).disabled).toBe(false);
+    expect(panel.host.querySelector("[aria-label='presentation.first']")).toBeNull();
+    undo?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(panel.onUndo).toHaveBeenCalledOnce();
   });
 });

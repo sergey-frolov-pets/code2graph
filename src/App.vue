@@ -316,8 +316,12 @@ onUnmounted(() => {
         :source="source"
         :diagram-format="diagramFormat"
         can-edit-presentation
+        :can-undo="canUndo"
+        :can-redo="canRedo"
         accept-frame-drop
         @update:source="source = $event"
+        @undo="shell.applySourceUndo"
+        @redo="shell.applySourceRedo"
         @import-frame="shell.openFrameDiagram"
         @toggle-dual-screen="openDualScreen"
         @render-now="shell.renderDiagram"

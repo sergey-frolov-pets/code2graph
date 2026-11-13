@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, onUnmounted, ref, watch } from "vue";
+import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
 import PresentationGlyph from "@/components/preview/PresentationGlyph.vue";
 import { presentationSessionKey } from "@/components/preview/presentation-session";
@@ -97,6 +98,9 @@ const {
   repeat,
 } = session;
 const { playing, viewpointIndex, togglePlay, step, pause, goToViewpoint } = session.playback;
+const barMode = session.barMode ?? ref<"play" | "arrange">("play");
+const canUndo = computed(() => session.canUndo?.value ?? false);
+const canRedo = computed(() => session.canRedo?.value ?? false);
 const holdHeaderDim = session.holdHeaderDim;
 const chromeRevealed = session.chromeRevealed;
 
@@ -549,7 +553,7 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
         </button>
         <IconButton
           v-if="canEdit"
-          :label="mode === 'edit' ? t('presentation.view') : t('presentation.edit')"
+          :label="mode === 'edit' ? t('presentation.view') : t('presentation.openEditor')"
           :pressed="mode === 'edit'"
           @click="mode = mode === 'edit' ? 'view' : 'edit'"
         >
@@ -602,41 +606,75 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
         {{ t("presentation.repeat") }}
       </label>
       <div class="presentation-dock__transport">
-        <IconButton
-          :label="t('presentation.first')"
-          :disabled="!track || track.viewpoints.length === 0"
-          @click="goToFirst()"
-        >
-          <PresentationGlyph name="first" />
-        </IconButton>
-        <IconButton
-          :label="t('presentation.prev')"
-          :disabled="!canStep"
-          @click="step(-1)"
-        >
-          <PresentationGlyph name="prev" />
-        </IconButton>
-        <span
-          v-if="track && track.viewpoints.length"
-          class="presentation-dock__index"
-        >
-          {{ trackLabel(viewpointIndex) }} / {{ track.viewpoints.length }}
-        </span>
-        <IconButton
-          :label="t('presentation.next')"
-          :disabled="!canStep"
-          @click="step(1)"
-        >
-          <PresentationGlyph name="next" />
-        </IconButton>
-        <IconButton
-          :label="playing ? t('presentation.pause') : t('presentation.play')"
-          primary
-          :disabled="!track || track.viewpoints.length === 0"
-          @click="onPlay()"
-        >
-          <PresentationGlyph :name="playing ? 'pause' : 'play'" />
-        </IconButton>
+        <template v-if="mode === 'view'">
+          <IconButton
+            :label="t('presentation.playbackMode')"
+            :pressed="barMode === 'play'"
+            @click="barMode = 'play'"
+          >
+            <PresentationGlyph name="play" />
+          </IconButton>
+          <IconButton
+            :label="t('presentation.arrangeMode')"
+            :pressed="barMode === 'arrange'"
+            @click="barMode = 'arrange'"
+          >
+            <PresentationGlyph name="edit" />
+          </IconButton>
+        </template>
+        <template v-if="mode === 'edit' || barMode === 'play'">
+          <IconButton
+            :label="t('presentation.first')"
+            :disabled="!track || track.viewpoints.length === 0"
+            @click="goToFirst()"
+          >
+            <PresentationGlyph name="first" />
+          </IconButton>
+          <IconButton
+            :label="t('presentation.prev')"
+            :disabled="!canStep"
+            @click="step(-1)"
+          >
+            <PresentationGlyph name="prev" />
+          </IconButton>
+          <span
+            v-if="track && track.viewpoints.length"
+            class="presentation-dock__index"
+          >
+            {{ trackLabel(viewpointIndex) }} / {{ track.viewpoints.length }}
+          </span>
+          <IconButton
+            :label="t('presentation.next')"
+            :disabled="!canStep"
+            @click="step(1)"
+          >
+            <PresentationGlyph name="next" />
+          </IconButton>
+          <IconButton
+            :label="playing ? t('presentation.pause') : t('presentation.play')"
+            primary
+            :disabled="!track || track.viewpoints.length === 0"
+            @click="onPlay()"
+          >
+            <PresentationGlyph :name="playing ? 'pause' : 'play'" />
+          </IconButton>
+        </template>
+        <template v-if="mode === 'view' && barMode === 'arrange'">
+          <IconButton
+            :label="t('editor.undo')"
+            :disabled="!canUndo"
+            @click="session.onUndo?.()"
+          >
+            <ActionIcon name="undo" />
+          </IconButton>
+          <IconButton
+            :label="t('editor.redo')"
+            :disabled="!canRedo"
+            @click="session.onRedo?.()"
+          >
+            <ActionIcon name="redo" />
+          </IconButton>
+        </template>
         <IconButton
           :label="t('presentation.overlaysShow')"
           :pressed="presentation?.showOverlays !== false"
