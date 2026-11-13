@@ -122,6 +122,7 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     renderMode,
     diagramDarkMode,
     errorMessage,
+    locale,
     t,
   });
 
@@ -162,6 +163,12 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
   function handleBuilderChange(): void {
     syncBuilderToSource(false);
   }
+
+  watch(locale, () => {
+    if (resultSource.value.trim()) {
+      void loadPreview(resultSource.value);
+    }
+  });
 
   watch(currentStepId, (step, previous) => {
     if (!isBuilderMode.value || galleryVisible.value || step === previous) {

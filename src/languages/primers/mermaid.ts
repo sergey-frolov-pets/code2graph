@@ -1853,7 +1853,7 @@ export const MERMAID_PRIMER: LanguagePrimer = {
           "Директор [Иван Петров|Генеральный директор] role=D influence=L action=U attitude=++ counterpart=да gender=m",
           "Финансы [Ольга Орлова|Финансовый директор] role=A influence=M action=S attitude=+ counterpart=- gender=f",
           "Директор -> Финансы",
-          "Финансы -supporter-> Директор",
+          "Финансы -supporter-> Директор label=поддерживает",
         ),
         lines(
           "powermap",
@@ -1864,7 +1864,7 @@ export const MERMAID_PRIMER: LanguagePrimer = {
           "CEO [Alex Morgan|Chief executive] role=D influence=L action=U attitude=++ counterpart=yes gender=m",
           "CFO [Elena Chen|Finance lead] role=A influence=M action=S attitude=+ counterpart=- gender=f",
           "CEO -> CFO",
-          "CFO -supporter-> CEO",
+          "CFO -supporter-> CEO label=budget",
         ),
         {
           es: lines(
@@ -1876,7 +1876,7 @@ export const MERMAID_PRIMER: LanguagePrimer = {
             "DG [Carlos Vega|Director general] role=D influence=L action=U attitude=++ counterpart=sí gender=m",
             "DF [Lucía Romero|Directora financiera] role=A influence=M action=S attitude=+ counterpart=- gender=f",
             "DG -> DF",
-            "DF -supporter-> DG",
+            "DF -supporter-> DG label=presupuesto",
           ),
           zh: lines(
             "powermap",
@@ -1887,7 +1887,7 @@ export const MERMAID_PRIMER: LanguagePrimer = {
             "首席 [王伟|首席执行官] role=D influence=L action=U attitude=++ counterpart=是 gender=m",
             "财务 [李娜|财务负责人] role=A influence=M action=S attitude=+ counterpart=- gender=f",
             "首席 -> 财务",
-            "财务 -supporter-> 首席",
+            "财务 -supporter-> 首席 label=预算",
           ),
           ja: lines(
             "powermap",
@@ -1898,7 +1898,7 @@ export const MERMAID_PRIMER: LanguagePrimer = {
             "社長 [佐藤健|最高経営責任者] role=D influence=L action=U attitude=++ counterpart=あり gender=m",
             "財務 [鈴木美咲|財務責任者] role=A influence=M action=S attitude=+ counterpart=- gender=f",
             "社長 -> 財務",
-            "財務 -supporter-> 社長",
+            "財務 -supporter-> 社長 label=予算",
           ),
           hi: lines(
             "powermap",
@@ -1909,7 +1909,7 @@ export const MERMAID_PRIMER: LanguagePrimer = {
             "सीईओ [अर्जुन शर्मा|मुख्य कार्यकारी] role=D influence=L action=U attitude=++ counterpart=हाँ gender=m",
             "सीएफओ [प्रिया वर्मा|वित्त प्रमुख] role=A influence=M action=S attitude=+ counterpart=- gender=f",
             "सीईओ -> सीएफओ",
-            "सीएफओ -supporter-> सीईओ",
+            "सीएफओ -supporter-> सीईओ label=बजट",
           ),
           pt: lines(
             "powermap",
@@ -1920,7 +1920,7 @@ export const MERMAID_PRIMER: LanguagePrimer = {
             "DG [Lucas Almeida|Diretor-geral] role=D influence=L action=U attitude=++ counterpart=sim gender=m",
             "DF [Ana Costa|Diretora financeira] role=A influence=M action=S attitude=+ counterpart=- gender=f",
             "DG -> DF",
-            "DF -supporter-> DG",
+            "DF -supporter-> DG label=orçamento",
           ),
           de: lines(
             "powermap",
@@ -1931,7 +1931,7 @@ export const MERMAID_PRIMER: LanguagePrimer = {
             "GF [Jonas Berger|Geschäftsführer] role=D influence=L action=U attitude=++ counterpart=ja gender=m",
             "FL [Elena Koch|Finanzleitung] role=A influence=M action=S attitude=+ counterpart=- gender=f",
             "GF -> FL",
-            "FL -supporter-> GF",
+            "FL -supporter-> GF label=Budget",
           ),
           ar: lines(
             "powermap",
@@ -1942,7 +1942,7 @@ export const MERMAID_PRIMER: LanguagePrimer = {
             "المدير [أحمد حسن|الرئيس التنفيذي] role=D influence=L action=U attitude=++ counterpart=نعم gender=m",
             "المالية [ليلى محمود|مديرة المالية] role=A influence=M action=S attitude=+ counterpart=- gender=f",
             "المدير -> المالية",
-            "المالية -supporter-> المدير",
+            "المالية -supporter-> المدير label=ميزانية",
           ),
         },
       ),

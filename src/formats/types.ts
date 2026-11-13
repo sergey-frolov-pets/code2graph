@@ -28,6 +28,8 @@ export interface FormatContext {
   diagramFontFamily?: string;
   diagramFontWeight?: string;
   diagramFontStyle?: string;
+  /** Язык интерфейса. Легенда powermap переводится на него, если в источнике нет `lang`. */
+  locale?: string;
 }
 
 /** @deprecated Use FormatContext */

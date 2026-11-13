@@ -850,6 +850,7 @@ body.c2g-checker {
   height: ${HTML_STICKER_BAR_HEIGHT}px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: ${HTML_STICKER_COLOR_GAP}px;
   pointer-events: none;
 }
@@ -903,7 +904,10 @@ body.c2g-checker {
 .c2g-sticker-resize:hover { background: color-mix(in srgb, ${THEME_ACCENT} 10%, ${THEME_SURFACE}); }
 .c2g-sticker-move svg { width: ${HTML_GRIP_ICON_WIDTH}px; height: ${HTML_GRIP_ICON_HEIGHT}px; display: block; }
 .c2g-sticker-font {
-  margin-left: auto;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
   height: ${HTML_STICKER_HANDLE_SIZE}px;
