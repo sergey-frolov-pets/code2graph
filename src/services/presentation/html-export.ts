@@ -128,13 +128,32 @@ const THEME_SURFACE = "#ffffff";
 const THEME_TEXT = "#1a1f24";
 /** Screen-pixel reach of the eraser, before the current zoom. */
 const HTML_ERASER_RADIUS = 12;
-const HTML_ERASER_CURSOR_SIZE = 24;
+const HTML_TOOL_CURSOR_SIZE = 24;
+const HTML_TOOL_CURSOR_STROKE = 1.6;
+/** Tip of the pencil glyph, where a stroke should start. */
+const HTML_PENCIL_CURSOR_HOT_X = 2;
+const HTML_PENCIL_CURSOR_HOT_Y = 21;
+/** Lower corner of the eraser glyph. */
 const HTML_ERASER_CURSOR_HOT_X = 6;
 const HTML_ERASER_CURSOR_HOT_Y = 20;
-const HTML_ERASER_CURSOR_STROKE = 1.6;
-const ERASER_CURSOR_URL = `data:image/svg+xml,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="${HTML_ERASER_CURSOR_SIZE}" height="${HTML_ERASER_CURSOR_SIZE}" viewBox="0 0 ${HTML_ERASER_CURSOR_SIZE} ${HTML_ERASER_CURSOR_SIZE}"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21" fill="${THEME_SURFACE}" stroke="${THEME_TEXT}" stroke-width="${HTML_ERASER_CURSOR_STROKE}" stroke-linejoin="round"/><path d="M22 21H7" fill="none" stroke="${THEME_TEXT}" stroke-width="${HTML_ERASER_CURSOR_STROKE}" stroke-linecap="round"/><path d="m5 11 9 9" fill="none" stroke="${HTML_PEN_COLOR}" stroke-width="${HTML_ERASER_CURSOR_STROKE}" stroke-linecap="round"/></svg>`,
-)}`;
+const PENCIL_CURSOR_SHAPE = "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z";
+const ERASER_CURSOR_BODY = "m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21";
+
+function toolCursorUrl(body: string): string {
+  const frame = `xmlns="http://www.w3.org/2000/svg" width="${HTML_TOOL_CURSOR_SIZE}" height="${HTML_TOOL_CURSOR_SIZE}" viewBox="0 0 ${HTML_TOOL_CURSOR_SIZE} ${HTML_TOOL_CURSOR_SIZE}"`;
+  return `data:image/svg+xml,${encodeURIComponent(`<svg ${frame}>${body}</svg>`)}`;
+}
+
+const PENCIL_CURSOR_URL = toolCursorUrl(
+  `<path d="${PENCIL_CURSOR_SHAPE}" fill="none" stroke="${THEME_SURFACE}" stroke-width="${HTML_TOOL_CURSOR_STROKE * 2}" stroke-linejoin="round"/>`
+  + `<path d="${PENCIL_CURSOR_SHAPE}" fill="${HTML_PEN_COLOR}" stroke="${THEME_TEXT}" stroke-width="${HTML_TOOL_CURSOR_STROKE}" stroke-linejoin="round"/>`
+  + `<path d="m15 5 4 4" fill="none" stroke="${THEME_TEXT}" stroke-width="${HTML_TOOL_CURSOR_STROKE}" stroke-linecap="round"/>`,
+);
+const ERASER_CURSOR_URL = toolCursorUrl(
+  `<path d="${ERASER_CURSOR_BODY}" fill="${THEME_SURFACE}" stroke="${THEME_TEXT}" stroke-width="${HTML_TOOL_CURSOR_STROKE}" stroke-linejoin="round"/>`
+  + `<path d="M22 21H7" fill="none" stroke="${THEME_TEXT}" stroke-width="${HTML_TOOL_CURSOR_STROKE}" stroke-linecap="round"/>`
+  + `<path d="m5 11 9 9" fill="none" stroke="${HTML_PEN_COLOR}" stroke-width="${HTML_TOOL_CURSOR_STROKE}" stroke-linecap="round"/>`,
+);
 const PEN_COLORS = [
   HTML_PEN_COLOR,
   THEME_ACCENT,
@@ -627,10 +646,6 @@ body.c2g-checker {
 #c2g-stage.is-marks-hidden #c2g-ink {
   display: none;
 }
-#c2g-stage.is-drawing { cursor: crosshair; }
-#c2g-stage.is-erasing {
-  cursor: url("${ERASER_CURSOR_URL}") ${HTML_ERASER_CURSOR_HOT_X} ${HTML_ERASER_CURSOR_HOT_Y}, auto;
-}
 #c2g-notes[hidden],
 #c2g-transport[hidden],
 #c2g-zoom[hidden],
@@ -684,6 +699,20 @@ body.c2g-checker {
 #c2g-keys-close:focus-visible { outline: 2px solid var(--c2g-accent); outline-offset: 2px; }
 #c2g-stage.is-exploring { cursor: grab; touch-action: none; }
 #c2g-stage.is-panning { cursor: grabbing; }
+#c2g-stage.is-drawing,
+#c2g-stage.is-drawing #c2g-scene,
+#c2g-stage.is-drawing #c2g-picture,
+#c2g-stage.is-drawing #c2g-diagram-wrap,
+#c2g-stage.is-drawing #c2g-frame {
+  cursor: url("${PENCIL_CURSOR_URL}") ${HTML_PENCIL_CURSOR_HOT_X} ${HTML_PENCIL_CURSOR_HOT_Y}, crosshair;
+}
+#c2g-stage.is-erasing,
+#c2g-stage.is-erasing #c2g-scene,
+#c2g-stage.is-erasing #c2g-picture,
+#c2g-stage.is-erasing #c2g-diagram-wrap,
+#c2g-stage.is-erasing #c2g-frame {
+  cursor: url("${ERASER_CURSOR_URL}") ${HTML_ERASER_CURSOR_HOT_X} ${HTML_ERASER_CURSOR_HOT_Y}, cell;
+}
 #c2g-mode .c2g-icon-playback { display: none; }
 #c2g-mode[data-state="playback"] .c2g-icon-explore { display: none; }
 #c2g-mode[data-state="playback"] .c2g-icon-playback { display: block; }
@@ -914,7 +943,7 @@ const PLAYER_SCRIPT = `
   if (svgRoot && svgRoot.localName === "svg") {
     var shadow = diagramWrap.attachShadow({ mode: "open" });
     var style = document.createElement("style");
-    style.textContent = "svg{display:block;width:100%;height:100%}";
+    style.textContent = "svg{display:block;width:100%;height:100%;cursor:inherit}";
     shadow.appendChild(style);
     shadow.appendChild(document.importNode(svgRoot, true));
   }

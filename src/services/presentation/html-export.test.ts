@@ -503,7 +503,14 @@ describe("presentation html export", () => {
     expect(stage?.classList.contains("is-drawing")).toBe(false);
     expect(pen?.getAttribute("aria-pressed")).toBe("false");
     expect(eraser?.getAttribute("aria-pressed")).toBe("true");
-    expect(doc.querySelector("style")?.textContent).toContain("#c2g-stage.is-erasing");
+    const exploreAt = playerCss.indexOf("#c2g-stage.is-exploring");
+    const drawAt = playerCss.indexOf("#c2g-stage.is-drawing");
+    const eraseAt = playerCss.indexOf("#c2g-stage.is-erasing");
+    expect(drawAt).toBeGreaterThan(exploreAt);
+    expect(eraseAt).toBeGreaterThan(drawAt);
+    expect(playerCss.slice(drawAt, eraseAt)).toContain("data:image/svg+xml");
+    expect(playerCss.slice(eraseAt)).toContain("data:image/svg+xml");
+    expect(doc.documentElement.innerHTML).toContain("cursor:inherit");
     stage?.dispatchEvent(new PointerEvent("pointerdown", {
       clientX: 140,
       clientY: 110,
