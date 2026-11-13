@@ -110,6 +110,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
       diagramFontFamily: diagramFontFamily?.value,
       diagramFontWeight: diagramFontWeight?.value,
       diagramFontStyle: diagramFontStyle?.value,
+      locale: locale.value,
     };
   }
 
@@ -128,6 +129,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
       diagramFontFamily?.value ?? "",
       diagramFontWeight?.value ?? "",
       diagramFontStyle?.value ?? "",
+      locale.value,
     ]);
   }
 
@@ -487,6 +489,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
 
   watch(locale, () => {
     updateEngineStatusLabel();
+    scheduleRender();
   });
 
   watch(renderMode, () => {

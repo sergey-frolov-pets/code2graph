@@ -98,9 +98,12 @@ export { splitLabelLines } from "../common";
 function unquoteLabel(raw: string): string {
   const base = unquote(raw).replace(/\\\[/g, "[").replace(/\\\]/g, "]");
   if (!base) return "";
-  // Всегда нормализуем: `\n` становится настоящим переводом строки,
-  // пробелы по краям строк снимаются — как до выноса splitLabelLines в common.
-  const parts = base.split(/\\n|\r?\n/).map((line) => line.trim());
+  // `\n`, настоящий перевод строки, `<br>` и `|` (как имя|должность в powermap)
+  // становятся строками блока. `\|` остаётся символом «|».
+  const protectedPipes = base.replace(/\\\|/g, "\uE000");
+  const parts = protectedPipes
+    .split(/\\n|\r?\n|<br\s*\/?>|\|/i)
+    .map((line) => line.trim().replace(/\uE000/g, "|"));
   const nonEmpty = parts.filter((line) => line.length > 0);
   return (nonEmpty.length > 0 ? nonEmpty : [""]).join("\n");
 }

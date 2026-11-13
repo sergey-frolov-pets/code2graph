@@ -220,6 +220,8 @@ export interface BuilderOptionsSettings {
   company: string;
   /** Легенда шкал и связей. По умолчанию включена. */
   showLegend: boolean;
+  /** `lang`: пусто — язык интерфейса. */
+  legendLang: string;
   /** Сторона блока фото. Пусто — размер по умолчанию типа. `off` прячет блок. */
   avatarSize: string;
   /** Объявленные стрелки влияния (`link`). */

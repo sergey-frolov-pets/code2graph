@@ -173,6 +173,7 @@ export function createDefaultBuilderState(
     cagrs: [],
     company: "",
     showLegend: true,
+    legendLang: "",
     avatarSize: "",
     powerLinks: [],
   };
@@ -690,6 +691,7 @@ export function parseMermaidExtToBuilderState(
           : "off";
       state.options.company = model.company ?? "";
       state.options.showLegend = model.legend;
+      state.options.legendLang = model.legendLang ?? "";
       state.options.avatarSize =
         model.avatarSize === AVATAR_DEFAULT_PX
           ? ""
@@ -706,7 +708,7 @@ export function parseMermaidExtToBuilderState(
       const byId = new Map(model.people.map((person) => [person.id, person]));
       const seen = new Set<string>();
       const rows: string[][] = [];
-      const pushPerson = (personId: string, other: string, relation: string) => {
+      const pushPerson = (personId: string, other: string, relation: string, edgeLabel = "") => {
         const person = byId.get(personId);
         if (!person) return;
         const otherPerson = byId.get(other);
@@ -722,6 +724,7 @@ export function parseMermaidExtToBuilderState(
           person.counterpart && person.counterpart !== "-" ? person.counterpart : "",
           otherPerson?.name || other,
           relation,
+          edgeLabel,
         ]);
         seen.add(person.id);
       };
@@ -729,7 +732,7 @@ export function parseMermaidExtToBuilderState(
         pushPerson(edge.to, edge.from, edge.style === "dotted" ? "dotted" : "solid");
       }
       for (const edge of model.influences) {
-        pushPerson(edge.from, edge.to, edge.name);
+        pushPerson(edge.from, edge.to, edge.name, edge.label ?? "");
       }
       for (const person of model.people) {
         if (!seen.has(person.id)) pushPerson(person.id, "", "");
@@ -1459,6 +1462,7 @@ export function emitMermaidExtFromBuilderState(
       const monoLine = emitMonoDirective(options.monoMode);
       if (monoLine) lines.push(monoLine);
       if (!options.showLegend) lines.push("legend off");
+      if (options.legendLang?.trim()) lines.push(`lang ${options.legendLang.trim()}`);
       const avatarLine = emitAvatarDirective(options.avatarSize);
       if (avatarLine) lines.push(avatarLine);
       for (const link of options.powerLinks) {
@@ -1527,16 +1531,18 @@ export function emitMermaidExtFromBuilderState(
 
         const otherName = (row[9] ?? "").trim();
         const relation = (row[10] ?? "").trim();
+        const edgeLabel = (row[11] ?? "").trim();
         if (!otherName) return;
         const otherId = toSafeId(otherName, idx + 100);
         if (!people.has(otherId)) people.set(otherId, blankPerson(otherName));
         const rel = relation.toLowerCase();
+        const labelAttr = edgeLabel ? ` label=${quoteIfNeeded(edgeLabel)}` : "";
         if (POWER_DOTTED_RELATIONS.has(rel)) {
           edgeLines.push(`${otherId} -.-> ${id}`);
         } else if (POWER_SOLID_RELATIONS.has(rel)) {
           edgeLines.push(`${otherId} -> ${id}`);
         } else {
-          edgeLines.push(`${id} -${relation}-> ${otherId}`);
+          edgeLines.push(`${id} -${relation}-> ${otherId}${labelAttr}`);
         }
       });
 

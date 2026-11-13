@@ -1,8 +1,10 @@
+import { isAppLocale, STORAGE_KEY_LOCALE } from "@/constants/i18n";
 import {
   DEFAULT_RENDER_MODE,
   isOnlineRenderMode,
   type RenderMode,
 } from "@/constants/render-settings";
+import { readStorageItem } from "@/core/safe-storage";
 import { loadMermaid } from "@/services/mermaid/mermaid-loader";
 import { renderMermaidOnlineToSvg } from "@/services/mermaid/mermaid-online";
 import { LocalizedAppError } from "@/utils/localized-app-error";
@@ -80,6 +82,21 @@ export interface MermaidRenderOptions {
   fontFamily?: string;
   fontWeight?: string;
   fontStyle?: string;
+  /** Язык интерфейса для подписей, которые рисует расширение. */
+  locale?: string;
+}
+
+/** Текущий язык интерфейса, если вызывающий код его не передал. */
+function currentUiLocale(): string | undefined {
+  const saved = readStorageItem(STORAGE_KEY_LOCALE);
+  if (saved && isAppLocale(saved)) return saved;
+  try {
+    const browser = navigator.language.slice(0, 2).toLowerCase();
+    if (isAppLocale(browser)) return browser;
+  } catch {
+    return undefined;
+  }
+  return undefined;
 }
 
 async function renderMermaidOfflineToSvg(
@@ -103,6 +120,7 @@ async function renderMermaidOfflineToSvg(
       fontFamily: options.fontFamily,
       fontWeight: options.fontWeight,
       fontStyle: options.fontStyle,
+      locale: options.locale ?? currentUiLocale(),
     });
     if (extSvg) return applyDiagramTypography(extSvg, options);
   }

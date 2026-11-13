@@ -38,6 +38,8 @@ export interface ExtRenderOptions {
   fontFamily?: string;
   fontWeight?: string;
   fontStyle?: string;
+  /** Язык интерфейса. Легенда powermap берёт его, если в диаграмме нет `lang`. */
+  locale?: string;
   /** Ошибка вместо фолбэка при нераспознанном типе */
   strict?: boolean;
   /** Обводка каждого элемента + его id (для отладки раскладки) */
