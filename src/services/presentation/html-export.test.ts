@@ -472,6 +472,8 @@ describe("presentation html export", () => {
     const playerCss = doc.querySelector("style")?.textContent ?? "";
     expect(playerCss).toMatch(/\.c2g-sticker-resize\s*\{[^}]*border-radius:\s*999px/);
     expect(playerCss).toMatch(/\.c2g-sticker-move\s*\{[^}]*border-radius:\s*999px/);
+    expect(playerCss).toMatch(/\.c2g-sticker-font\s*\{[^}]*left:\s*50%/);
+    expect(playerCss).not.toMatch(/\.c2g-sticker-font\s*\{[^}]*margin-left:\s*auto/);
     expect(playerCss).toContain(".c2g-sticker:not(.is-active) .c2g-sticker-ui");
     expect(playerCss).not.toMatch(/\.c2g-sticker:not\(\.is-active\)\s*\{[^}]*transparent/);
     expect(playerCss).toMatch(/#c2g-pen-colors\s*\{[^}]*flex-flow:\s*row nowrap/);
