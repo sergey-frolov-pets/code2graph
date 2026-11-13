@@ -235,14 +235,17 @@ avatar 48
 %% Подпись одной стрелки: A -supporter-> B label="бюджет"
 %% Легенда рисуется под схемой и содержит только стили из link.
 %% supporter (зелёная сплошная) и enemy (красный пунктир) есть, пока строка link их не заменит.
+%% comms on — таблица коммуникаций под легендой (по умолчанию выключена).
+%% counterpart через запятую или точку с запятой даёт отдельные строки, повторы схлопываются.
 title Карта влияния
 company "Север"
 avatar 48
+comms on
 link supporter color=#1a7f37 style=solid label="союзник"
 link coach color=#bf8700 style=dot label="наставник"
 link enemy color=#cf222e style=dash label="противник"
 ceo [Анна Орлова|Президент] gender=f role=E influence=L action=M attitude=+ counterpart=-
-cfo [Илья Сомов|Финансы] gender=m role=D influence=L action=S attitude=0 counterpart="Анна Орлова"
+cfo [Илья Сомов|Финансы] gender=m role=D influence=L action=S attitude=0 counterpart="Анна Орлова, Мария Ким; Анна Орлова"
 ops [Мария Ким|Операции] gender=? role=A influence=M action=U attitude=- counterpart="Илья Сомов"
 ceo -> cfo
 ceo -> ops
@@ -791,14 +794,17 @@ CEO -> Ops`,
 %% A caption on one arrow: A -supporter-> B label="budget"
 %% The legend sits under the chart and lists only styles declared with link.
 %% supporter (green solid) and enemy (red dash) exist until a link line replaces them.
+%% comms on draws the communications table under the legend (off by default).
+%% A comma or semicolon in counterpart starts a new row, and duplicates collapse.
 title Power Map
 company "Northwind"
 avatar 48
+comms on
 link supporter color=#1a7f37 style=solid label="ally"
 link coach color=#bf8700 style=dot label="coach"
 link enemy color=#cf222e style=dash label="opponent"
 ceo [Anna Orlova|President] gender=f role=E influence=L action=M attitude=+ counterpart=-
-cfo [Ilya Somov|Finance] gender=m role=D influence=L action=S attitude=0 counterpart="Anna Orlova"
+cfo [Ilya Somov|Finance] gender=m role=D influence=L action=S attitude=0 counterpart="Anna Orlova, Maria Kim; Anna Orlova"
 ops [Maria Kim|Operations] gender=? role=A influence=M action=U attitude=- counterpart="Ilya Somov"
 ceo -> cfo
 ceo -> ops

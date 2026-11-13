@@ -173,6 +173,7 @@ export function createDefaultBuilderState(
     cagrs: [],
     company: "",
     showLegend: true,
+    showComms: false,
     legendLang: "",
     avatarSize: "",
     powerLinks: [],
@@ -691,6 +692,7 @@ export function parseMermaidExtToBuilderState(
           : "off";
       state.options.company = model.company ?? "";
       state.options.showLegend = model.legend;
+      state.options.showComms = model.comms;
       state.options.legendLang = model.legendLang ?? "";
       state.options.avatarSize =
         model.avatarSize === AVATAR_DEFAULT_PX
@@ -1462,6 +1464,7 @@ export function emitMermaidExtFromBuilderState(
       const monoLine = emitMonoDirective(options.monoMode);
       if (monoLine) lines.push(monoLine);
       if (!options.showLegend) lines.push("legend off");
+      if (options.showComms) lines.push("comms on");
       if (options.legendLang?.trim()) lines.push(`lang ${options.legendLang.trim()}`);
       const avatarLine = emitAvatarDirective(options.avatarSize);
       if (avatarLine) lines.push(avatarLine);

@@ -339,6 +339,7 @@ export const builderMessages = {
   "builder.gender.unknown": "未知",
   "builder.powermap.company": "公司",
   "builder.powermap.legend": "图例",
+  "builder.powermap.comms": "沟通表",
   "builder.powermap.avatar": "照片尺寸",
   "builder.powermap.avatarHint": "留空用默认尺寸。off 隐藏照片框。数字是边长（px）。",
   "builder.powermap.links": "影响关系",

@@ -454,6 +454,18 @@ function removePowerLink(idx: number): void {
           v-if="cap.supportsPowerMap"
           class="builder-field"
         >
+          <span class="builder-field__label">{{ t("builder.powermap.comms") }}</span>
+          <input
+            v-model="builderState.options.showComms"
+            type="checkbox"
+            data-testid="builder-comms-toggle"
+            @change="notifyChange"
+          >
+        </label>
+        <label
+          v-if="cap.supportsPowerMap"
+          class="builder-field"
+        >
           <span class="builder-field__label">{{ t("builder.powermap.legendLang") }}</span>
           <input
             v-model="builderState.options.legendLang"

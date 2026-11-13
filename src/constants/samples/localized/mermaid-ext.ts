@@ -244,11 +244,12 @@ DirectorGeneral -> Operaciones`,
 title Mapa de poder
 company "Norte"
 avatar 48
+comms on
 link supporter color=#1a7f37 style=solid label="aliado"
 link coach color=#bf8700 style=dot label="mentor"
 link enemy color=#cf222e style=dash label="oponente"
 ceo [Ana Vidal|Presidenta] gender=f role=E influence=L action=M attitude=+ counterpart=-
-cfo [Ilya Sanz|Finanzas] gender=m role=D influence=L action=S attitude=0 counterpart="Ana Vidal"
+cfo [Ilya Sanz|Finanzas] gender=m role=D influence=L action=S attitude=0 counterpart="Ana Vidal, María Soler; Ana Vidal"
 ops [María Soler|Operaciones] gender=? role=A influence=M action=U attitude=- counterpart="Ilya Sanz"
 ceo -> cfo
 ceo -> ops
@@ -796,11 +797,12 @@ avatar 48
 title 权力图
 company "北风"
 avatar 48
+comms on
 link supporter color=#1a7f37 style=solid label="支持者"
 link coach color=#bf8700 style=dot label="导师"
 link enemy color=#cf222e style=dash label="对手"
 ceo [陈丽|总裁] gender=f role=E influence=L action=M attitude=+ counterpart=-
-cfo [王伟|财务] gender=m role=D influence=L action=S attitude=0 counterpart="陈丽"
+cfo [王伟|财务] gender=m role=D influence=L action=S attitude=0 counterpart="陈丽, 刘洋; 陈丽"
 ops [刘洋|运营] gender=? role=A influence=M action=U attitude=- counterpart="王伟"
 ceo -> cfo
 ceo -> ops
@@ -1348,11 +1350,12 @@ avatar 48
 title パワーマップ
 company "北風"
 avatar 48
+comms on
 link supporter color=#1a7f37 style=solid label="支援者"
 link coach color=#bf8700 style=dot label="指導者"
 link enemy color=#cf222e style=dash label="敵対者"
 ceo [鈴木美咲|社長] gender=f role=E influence=L action=M attitude=+ counterpart=-
-cfo [佐藤健|財務] gender=m role=D influence=L action=S attitude=0 counterpart="鈴木美咲"
+cfo [佐藤健|財務] gender=m role=D influence=L action=S attitude=0 counterpart="鈴木美咲, 伊藤彩; 鈴木美咲"
 ops [伊藤彩|運営] gender=? role=A influence=M action=U attitude=- counterpart="佐藤健"
 ceo -> cfo
 ceo -> ops
@@ -1900,11 +1903,12 @@ avatar 48
 title पावर मैप
 company "उत्तर"
 avatar 48
+comms on
 link supporter color=#1a7f37 style=solid label="समर्थक"
 link coach color=#bf8700 style=dot label="मार्गदर्शक"
 link enemy color=#cf222e style=dash label="विरोधी"
 ceo [अनन्या वर्मा|अध्यक्ष] gender=f role=E influence=L action=M attitude=+ counterpart=-
-cfo [अर्जुन शर्मा|वित्त] gender=m role=D influence=L action=S attitude=0 counterpart="अनन्या वर्मा"
+cfo [अर्जुन शर्मा|वित्त] gender=m role=D influence=L action=S attitude=0 counterpart="अनन्या वर्मा, मेघा जोशी; अनन्या वर्मा"
 ops [मेघा जोशी|संचालन] gender=? role=A influence=M action=U attitude=- counterpart="अर्जुन शर्मा"
 ceo -> cfo
 ceo -> ops
@@ -2452,11 +2456,12 @@ DiretorGeral -> Operacoes`,
 title Mapa de poder
 company "Norte"
 avatar 48
+comms on
 link supporter color=#1a7f37 style=solid label="aliado"
 link coach color=#bf8700 style=dot label="mentor"
 link enemy color=#cf222e style=dash label="oponente"
 ceo [Elena Costa|Presidente] gender=f role=E influence=L action=M attitude=+ counterpart=-
-cfo [André Moraes|Finanças] gender=m role=D influence=L action=S attitude=0 counterpart="Elena Costa"
+cfo [André Moraes|Finanças] gender=m role=D influence=L action=S attitude=0 counterpart="Elena Costa, Clara Duarte; Elena Costa"
 ops [Clara Duarte|Operações] gender=? role=A influence=M action=U attitude=- counterpart="André Moraes"
 ceo -> cfo
 ceo -> ops
@@ -3004,11 +3009,12 @@ Geschäftsführung -> Betrieb`,
 title Machtkarte
 company "Nordwind"
 avatar 48
+comms on
 link supporter color=#1a7f37 style=solid label="Unterstützer"
 link coach color=#bf8700 style=dot label="Mentor"
 link enemy color=#cf222e style=dash label="Gegner"
 ceo [Elena Hofmann|Vorsitz] gender=f role=E influence=L action=M attitude=+ counterpart=-
-cfo [Alexander Berger|Finanzen] gender=m role=D influence=L action=S attitude=0 counterpart="Elena Hofmann"
+cfo [Alexander Berger|Finanzen] gender=m role=D influence=L action=S attitude=0 counterpart="Elena Hofmann, Clara Vogel; Elena Hofmann"
 ops [Clara Vogel|Betrieb] gender=? role=A influence=M action=U attitude=- counterpart="Alexander Berger"
 ceo -> cfo
 ceo -> ops
@@ -3556,11 +3562,12 @@ avatar 48
 title خريطة النفوذ
 company "شمال"
 avatar 48
+comms on
 link supporter color=#1a7f37 style=solid label="مؤيد"
 link coach color=#bf8700 style=dot label="موجه"
 link enemy color=#cf222e style=dash label="خصم"
 ceo [ليلى حسن|رئيسة] gender=f role=E influence=L action=M attitude=+ counterpart=-
-cfo [أحمد منصور|المالية] gender=m role=D influence=L action=S attitude=0 counterpart="ليلى حسن"
+cfo [أحمد منصور|المالية] gender=m role=D influence=L action=S attitude=0 counterpart="ليلى حسن, نورا فهد; ليلى حسن"
 ops [نورا فهد|التشغيل] gender=? role=A influence=M action=U attitude=- counterpart="أحمد منصور"
 ceo -> cfo
 ceo -> ops

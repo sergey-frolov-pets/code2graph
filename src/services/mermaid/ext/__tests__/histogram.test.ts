@@ -114,6 +114,50 @@ curve weibull shape=1.6 scale=28 "эталон"`);
     assertSvgInvariants(svg, { minElements: 4, expectSize: renderSize(svg) });
   });
 
+  it("среднее и медиана идут по оси наблюдений и не ложатся на рамку", () => {
+    const parsed = histogramEngine.parse(`histogram
+title Latency
+x "ms" 0 --> 80
+y "count"
+bins auto
+stats mean median ci
+colors mean=#cf222e median=#8250df
+series Observations : 12, 18, 22, 25, 30, 28, 35, 40, 16, 21, 27, 33, 19, 24, 38, 14`);
+    expect(parsed.ok).toBe(true);
+    const svg = histogramEngine.render(parsed.value as HistogramModel, {});
+    const mean = /<line\b([^>]*stroke-width="1\.75"[^>]*)\/?>/.exec(svg)?.[1];
+    const median = /<line\b([^>]*stroke-width="1\.25"[^>]*)\/?>/.exec(svg)?.[1];
+    expect(mean).toBeTruthy();
+    expect(median).toBeTruthy();
+    for (const attrs of [mean, median]) {
+      const x1 = Number(/x1="([^"]+)"/.exec(attrs ?? "")?.[1]);
+      const x2 = Number(/x2="([^"]+)"/.exec(attrs ?? "")?.[1]);
+      const y1 = Number(/y1="([^"]+)"/.exec(attrs ?? "")?.[1]);
+      const y2 = Number(/y2="([^"]+)"/.exec(attrs ?? "")?.[1]);
+      expect(x1).toBeCloseTo(x2, 3);
+      expect(Math.abs(y2 - y1)).toBeGreaterThan(40);
+    }
+    const meanX = Number(/x1="([^"]+)"/.exec(mean ?? "")?.[1]);
+    const medianX = Number(/x1="([^"]+)"/.exec(median ?? "")?.[1]);
+    expect(Math.abs(meanX - medianX)).toBeGreaterThan(0.5);
+  });
+
+  it("длинная легенда переносится на следующую строку", () => {
+    const parsed = histogramEngine.parse(`histogram
+series "Очень длинное имя первой выборки" : 1, 2, 3, 4, 8, 9
+series "Вторая ещё более длинная подпись ряда" : 2, 3, 4, 5, 6, 7
+fit normal
+curve normal mu=4 sigma=1 "эталонная кривая распределения"`);
+    expect(parsed.ok, parsed.errors.map((error) => error.message).join("; ")).toBe(true);
+    const svg = histogramEngine.render(parsed.value as HistogramModel, {});
+    const rows = new Set(
+      [...svg.matchAll(/<text\b([^>]*)>([^<]*)<\/text>/g)]
+        .filter((match) => /выборки|подписи|эталонная|fit normal/.test(match[2]))
+        .map((match) => / y="([^"]+)"/.exec(match[1])?.[1]),
+    );
+    expect(rows.size).toBeGreaterThan(1);
+  });
+
   it("не смешивает явные интервалы с числом бинов", () => {
     const parsed = histogramEngine.parse(`histogram
 bins 20

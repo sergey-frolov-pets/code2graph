@@ -339,6 +339,7 @@ export const builderMessages = {
   "builder.gender.unknown": "غير معروف",
   "builder.powermap.company": "الشركة",
   "builder.powermap.legend": "المفتاح",
+  "builder.powermap.comms": "جدول التواصل",
   "builder.powermap.avatar": "حجم الصورة",
   "builder.powermap.avatarHint": "الفراغ هو الحجم الافتراضي. off يخفي المربع. الرقم هو الضلع بالبكسل.",
   "builder.powermap.links": "علاقات التأثير",

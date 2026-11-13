@@ -339,6 +339,7 @@ export const builderMessages = {
   "builder.gender.unknown": "Unbekannt",
   "builder.powermap.company": "Firma",
   "builder.powermap.legend": "Legende",
+  "builder.powermap.comms": "Kommunikationstabelle",
   "builder.powermap.avatar": "Fotogröße",
   "builder.powermap.avatarHint": "Leer ist die Vorgabe. off blendet das Feld aus. Eine Zahl ist die Seite in px.",
   "builder.powermap.links": "Einflusslinien",

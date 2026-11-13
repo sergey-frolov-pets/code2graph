@@ -339,6 +339,7 @@ export const builderMessages = {
   "builder.gender.unknown": "अज्ञात",
   "builder.powermap.company": "कंपनी",
   "builder.powermap.legend": "संकेत",
+  "builder.powermap.comms": "संचार तालिका",
   "builder.powermap.avatar": "फ़ोटो आकार",
   "builder.powermap.avatarHint": "खाली डिफ़ॉल्ट है। off बॉक्स छिपाता है। संख्या भुजा px में है।",
   "builder.powermap.links": "प्रभाव की कड़ियाँ",

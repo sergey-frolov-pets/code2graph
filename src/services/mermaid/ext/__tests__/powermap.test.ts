@@ -150,6 +150,111 @@ B -enemy-> A`);
     expect(legendY).toBeGreaterThanOrEqual(cardBottom - 1);
   });
 
+  it("легенда не наезжает на карточки, стрелка влияния их не пересекает", () => {
+    const model = modelOf(`powermap
+title Power map
+company Northwind
+legend on
+avatar 48
+link supporter color=#1a7f37 style=solid label=supporter
+link enemy color=#cf222e style=dash label=enemy
+CEO [Alex Morgan|President] role=D influence=L action=U attitude=++ counterpart=yes gender=m
+CFO [Elena Chen|Finance] role=A influence=M action=S attitude=+ counterpart=- gender=f
+Board [Samir Patel|Advisor] role=E influence=S action=M attitude=0 gender=?
+CEO -> CFO
+CEO -.-> Board
+CFO -supporter-> CEO
+Board -enemy-> CFO`);
+    const svg = powermapEngine.render(model, {});
+    const num = (attrs: string, name: string) => Number(new RegExp(`${name}="([^"]+)"`).exec(attrs)?.[1] ?? NaN);
+    const rects = [...svg.matchAll(/<rect\b([^>]*)\/?>/g)].map((match) => {
+      const attrs = match[1];
+      return {
+        x: num(attrs, "x"),
+        y: num(attrs, "y"),
+        width: num(attrs, "width"),
+        height: num(attrs, "height"),
+        legend: attrs.includes('data-legend="powermap"'),
+      };
+    });
+    const legend = rects.find((rect) => rect.legend);
+    expect(legend).toBeTruthy();
+    const cards = rects.filter((rect) => !rect.legend && rect.width > 80 && rect.height > 40);
+    expect(cards.length).toBeGreaterThan(0);
+    const cardBottom = Math.max(...cards.map((card) => card.y + card.height));
+    expect(legend!.y).toBeGreaterThanOrEqual(cardBottom - 1);
+    for (const card of cards) {
+      const overlaps =
+        card.x < legend!.x + legend!.width &&
+        card.x + card.width > legend!.x &&
+        card.y < legend!.y + legend!.height &&
+        card.y + card.height > legend!.y;
+      expect(overlaps).toBe(false);
+    }
+    const linkPath = /<path\b([^>]*ext-pm-link-[^>]*)\/>/.exec(svg)?.[1];
+    expect(linkPath).toBeTruthy();
+    const d = /d="([^"]+)"/.exec(linkPath ?? "")?.[1] ?? "";
+    const points = [...d.matchAll(/[ML]\s*(-?[\d.]+)\s+(-?[\d.]+)/g)].map((match) => ({
+      x: Number(match[1]),
+      y: Number(match[2]),
+    }));
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const a = points[index];
+      const b = points[index + 1];
+      const minX = Math.min(a.x, b.x);
+      const maxX = Math.max(a.x, b.x);
+      const minY = Math.min(a.y, b.y);
+      const maxY = Math.max(a.y, b.y);
+      for (const card of cards) {
+        const inside =
+          minX > card.x + 2 &&
+          maxX < card.x + card.width - 2 &&
+          minY > card.y + 2 &&
+          maxY < card.y + card.height - 2;
+        expect(inside).toBe(false);
+      }
+    }
+  });
+
+  it("таблица коммуникаций сортирует людей и раскладывает контакты", () => {
+    const model = modelOf(`powermap
+comms on
+legend off
+link coach color=#bf8700 style=dot label=наставник
+Мария [Мария Ким] counterpart="Илья Сомов; илья сомов, -"
+Илья [Илья Сомов] counterpart="Мария Ким, Анна Орлова"
+Анна [Анна Орлова] counterpart=-
+Мария -coach-> Илья
+Анна -> Мария`);
+    expect(model.comms).toBe(true);
+    expect(model.legend).toBe(false);
+    const svg = powermapEngine.render(model, {});
+    const texts = [...svg.matchAll(/<text\b[^>]*>([^<]*)<\/text>/g)].map((match) => match[1]);
+    const people = ["Анна Орлова", "Илья Сомов", "Мария Ким"];
+    const positions = people.map((name) => texts.indexOf(name));
+    expect(positions.every((index) => index >= 0)).toBe(true);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+    expect(texts.filter((text) => text === "Илья Сомов")).toHaveLength(3);
+    expect(texts).not.toContain("илья сомов");
+    expect(texts).toContain("coach — наставник");
+    expect(texts).not.toContain("Roles");
+    const legendBottom = 0;
+    const personY = Number(/<text\b[^>]* y="([^"]+)"[^>]*>Анна Орлова<\/text>/.exec(svg)?.[1]);
+    expect(personY).toBeGreaterThan(legendBottom);
+    expect(svg).toContain("Contacts");
+    expect(svg).toContain("Links");
+  });
+
+  it("без comms таблица не рисуется", () => {
+    const model = modelOf(`powermap
+A [Анна]
+B [Борис]
+A -> B`);
+    expect(model.comms).toBe(false);
+    const svg = powermapEngine.render(model, {});
+    expect(svg).not.toContain("Contacts");
+  });
+
   it("legend off и avatar off убирают легенду и блок фото", () => {
     const model = modelOf(`powermap
 legend off

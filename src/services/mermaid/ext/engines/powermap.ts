@@ -78,6 +78,8 @@ export interface PowerModel {
   title?: string;
   company?: string;
   legend: boolean;
+  /** Таблица коммуникаций под легендой. По умолчанию выключена. */
+  comms: boolean;
   /** `lang ru` — язык легенды. Пусто — язык интерфейса на момент рендера. */
   legendLang?: string;
   avatarSize: number;
@@ -127,14 +129,14 @@ const CHIP_STROKE = "#d0d7de";
 const NAME_FONT = 12;
 const TITLE_FONT = 10;
 const CHIP_FONT = 10;
-const LINE_HEIGHT = 13;
-const CARD_PAD_X = 8;
-const CARD_PAD_Y = 6;
-const CARD_GAP = 4;
+const LINE_HEIGHT = 16;
+const CARD_PAD_X = 10;
+const CARD_PAD_Y = 8;
+const CARD_GAP = 8;
 const CHIP_H = 16;
 const COUNTER_H = 16;
-const CARD_MIN_WIDTH = 112;
-const HEADER_PAD = 16;
+const CARD_MIN_WIDTH = 120;
+const HEADER_PAD = 20;
 
 const LINK_STROKE_WIDTH = 1.4;
 const BUILTIN_LINK_WIDTH = 1.4;
@@ -399,6 +401,7 @@ export function parsePowermap(source: string): ExtParseResult<PowerModel> {
   let title: string | undefined;
   let company: string | undefined;
   let legend = true;
+  let comms = false;
   let legendLang: string | undefined;
   let avatarSize = AVATAR_DEFAULT_PX;
   let mono = false;
@@ -458,6 +461,13 @@ export function parsePowermap(source: string): ExtParseResult<PowerModel> {
       if (!flag || flag === "on") legend = true;
       else if (flag === "off") legend = false;
       else errors.push({ message: `легенда: ожидается on или off, получено «${flag}»`, line: lineNo, col: 0 });
+      continue;
+    }
+    if (/^comms\b/i.test(raw)) {
+      const flag = raw.replace(/^comms\s*/i, "").trim().toLowerCase();
+      if (!flag || flag === "on") comms = true;
+      else if (flag === "off") comms = false;
+      else errors.push({ message: `таблица коммуникаций: ожидается on или off, получено «${flag}»`, line: lineNo, col: 0 });
       continue;
     }
     const langLine = /^(?:lang|language|locale)\s+(\S+)\s*$/i.exec(raw);
@@ -594,6 +604,7 @@ export function parsePowermap(source: string): ExtParseResult<PowerModel> {
       title,
       company,
       legend,
+      comms,
       legendLang,
       avatarSize,
       mono,
@@ -933,6 +944,152 @@ function measureCard(person: PowerPerson, framePx: number): { width: number; hei
   return { width, height, titleLines };
 }
 
+const COMMS_FONT = 11;
+const COMMS_LINE = 16;
+const COMMS_PAD_X = 8;
+const COMMS_PAD_Y = 6;
+const COMMS_HEADERS = ["Person", "Contacts", "Links"] as const;
+
+interface CommsRow {
+  name: string;
+  contacts: string[];
+  links: string[];
+}
+
+function compareAlpha(a: string, b: string): number {
+  return a.localeCompare(b, "ru", { sensitivity: "base" });
+}
+
+function uniqueFold(values: string[]): string[] {
+  const seen = new Set<string>();
+  const kept: string[] = [];
+  for (const value of values) {
+    const key = value.toLocaleLowerCase("ru");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    kept.push(value);
+  }
+  return kept.sort(compareAlpha);
+}
+
+function contactLines(raw: string): string[] {
+  return uniqueFold(
+    raw
+      .split(/[,;]/)
+      .map((part) => part.trim())
+      .filter((part) => part.length > 0 && part !== "-"),
+  );
+}
+
+function linkCaption(model: PowerModel, name: string): string {
+  const link = resolveLink(model, name);
+  const label = link.label.trim();
+  if (label && label.toLocaleLowerCase("ru") !== link.name.toLocaleLowerCase("ru")) {
+    return `${link.name} — ${label}`;
+  }
+  return link.name;
+}
+
+function linkLines(model: PowerModel, personId: string): string[] {
+  const captions: string[] = [];
+  for (const edge of model.influences) {
+    if (edge.from !== personId && edge.to !== personId) continue;
+    captions.push(linkCaption(model, edge.name));
+  }
+  return uniqueFold(captions);
+}
+
+interface CommsTable {
+  width: number;
+  height: number;
+  columns: number[];
+  rows: CommsRow[];
+  headerHeight: number;
+  rowHeights: number[];
+}
+
+function measureComms(model: PowerModel): CommsTable {
+  const rows = model.people
+    .map((person) => ({
+      name: person.name,
+      contacts: contactLines(person.counterpart),
+      links: linkLines(model, person.id),
+    }))
+    .sort((a, b) => compareAlpha(a.name, b.name));
+  const cells = (row: CommsRow): string[][] => [[row.name], row.contacts, row.links];
+  const columns = COMMS_HEADERS.map((header, index) => {
+    const widest = rows.reduce((max, row) => {
+      const lines = cells(row)[index];
+      return Math.max(max, ...lines.map((line) => measureText(line, COMMS_FONT)), 0);
+    }, measureText(header, COMMS_FONT));
+    return widest + COMMS_PAD_X * 2;
+  });
+  const headerHeight = COMMS_LINE + COMMS_PAD_Y * 2;
+  const rowHeights = rows.map((row) => {
+    const lines = Math.max(1, row.contacts.length, row.links.length);
+    return lines * COMMS_LINE + COMMS_PAD_Y * 2;
+  });
+  return {
+    width: columns.reduce((sum, width) => sum + width, 0),
+    height: headerHeight + rowHeights.reduce((sum, height) => sum + height, 0),
+    columns,
+    rows,
+    headerHeight,
+    rowHeights,
+  };
+}
+
+function drawComms(
+  svg: ReturnType<typeof createSvg>,
+  x: number,
+  y: number,
+  table: CommsTable,
+  fg: string,
+  bg: string,
+): void {
+  svg.rect(x, y, table.width, table.height, {
+    fill: bg,
+    stroke: CHIP_STROKE,
+    "stroke-width": 1,
+    rx: 4,
+  });
+  let cursor = x;
+  COMMS_HEADERS.forEach((header, index) => {
+    svg.text(cursor + COMMS_PAD_X, y + COMMS_PAD_Y + 12, header, {
+      "font-size": COMMS_FONT,
+      "font-weight": 700,
+      fill: fg,
+      "text-anchor": "start",
+    });
+    cursor += table.columns[index];
+  });
+  let ruleX = x;
+  for (let index = 0; index < table.columns.length - 1; index += 1) {
+    ruleX += table.columns[index];
+    svg.line(ruleX, y, ruleX, y + table.height, { stroke: CHIP_STROKE, "stroke-width": 1 });
+  }
+  let rowY = y + table.headerHeight;
+  svg.line(x, rowY, x + table.width, rowY, { stroke: CHIP_STROKE, "stroke-width": 1 });
+  table.rows.forEach((row, rowIndex) => {
+    const groups = [[row.name], row.contacts, row.links];
+    let cellX = x;
+    groups.forEach((lines, index) => {
+      lines.forEach((line, lineIndex) => {
+        svg.text(cellX + COMMS_PAD_X, rowY + COMMS_PAD_Y + 12 + lineIndex * COMMS_LINE, line, {
+          "font-size": COMMS_FONT,
+          fill: fg,
+          "text-anchor": "start",
+        });
+      });
+      cellX += table.columns[index];
+    });
+    rowY += table.rowHeights[rowIndex];
+    if (rowIndex < table.rows.length - 1) {
+      svg.line(x, rowY, x + table.width, rowY, { stroke: CHIP_STROKE, "stroke-width": 1 });
+    }
+  });
+}
+
 export function renderPowermap(model: PowerModel, options: ExtRenderOptions): string {
   const themeDark = Boolean(options.dark) || usesInvertedMono(model.mono, model.monoInvert, false);
   const invertedMono = usesInvertedMono(model.mono, model.monoInvert, options.dark);
@@ -953,6 +1110,7 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
   );
   const locale = legendLocale(model, options);
   const legend = measureLegend(model, locale);
+  const comms = model.comms ? measureComms(model) : null;
   const titleLines = model.title ? (hasLabelBreak(model.title) ? splitLabelLines(model.title) : [model.title]) : [];
   const companyLines = model.company ? [model.company] : [];
   const titleBlock =
@@ -963,6 +1121,7 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
   let width = 24 + laid.width + 24;
   let height = headerH + laid.height + 28;
   if (legend) width = Math.max(width, 24 + legend.width + 24);
+  if (comms) width = Math.max(width, 24 + comms.width + 24);
   let padX = 0;
   let padY = 0;
   if (model.ratio) {
@@ -981,7 +1140,10 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
   const treeBottom = offsetY + laid.height;
   const routed = routeInfluences(laid.placed, model, offsetX, offsetY, treeBottom, mono, invertedMono);
   const legendBlock = legend ? 12 + legend.height + 8 : 0;
-  height = treeBottom + Math.max(20, 12 + routed.overflow + legendBlock);
+  const commsBlock = comms ? 12 + comms.height + 8 : 0;
+  height = treeBottom + Math.max(20, 12 + routed.overflow + legendBlock + commsBlock);
+  const legendY = treeBottom + routed.overflow + 12;
+  const commsY = legend ? legendY + legend.height + 12 : legendY;
 
   const svg = createSvg({
     width,
@@ -1005,6 +1167,10 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
       fill: palette.fgDim,
       "text-anchor": "start",
     });
+  }
+
+  if (comms) {
+    drawComms(svg, 24, commsY, comms, palette.fg, palette.bg);
   }
 
   const marker = arrowMarker(palette, "ext-pm-report");
@@ -1037,7 +1203,7 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
   });
 
   if (legend) {
-    drawLegend(svg, 24, treeBottom + routed.overflow + 12, legend, palette.fg, palette.bg, mono, invertedMono);
+    drawLegend(svg, 24, legendY, legend, palette.fg, palette.bg, mono, invertedMono);
   }
 
   return svg.toString();

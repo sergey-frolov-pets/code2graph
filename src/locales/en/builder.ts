@@ -120,6 +120,7 @@ export const builderMessages = {
   "builder.gender.unknown": "Unknown",
   "builder.powermap.company": "Company",
   "builder.powermap.legend": "Legend",
+  "builder.powermap.comms": "Communications table",
   "builder.powermap.avatar": "Photo size",
   "builder.powermap.avatarHint": "Empty uses the default. off hides the photo box. A number is the side in px.",
   "builder.powermap.links": "Influence links",
