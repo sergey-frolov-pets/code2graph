@@ -156,6 +156,7 @@ export const miscMessages = {
   "presentation.addSticker": "स्टिकर जोड़ें",
   "presentation.removeSticker": "स्टिकर हटाएँ",
   "presentation.resizeSticker": "स्टिकर का आकार बदलें",
+  "presentation.moveSticker": "स्टिकर खिसकाएँ",
   "presentation.sticker": "टिप्पणी",
   "presentation.stickerColor": "स्टिकर का रंग",
   "presentation.saveCopy": "बदलावों के साथ प्रतिलिपि सहेजें",

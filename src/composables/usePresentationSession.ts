@@ -603,6 +603,7 @@ export function usePresentationSession(options: {
           addSticker: t("presentation.addSticker"),
           removeSticker: t("presentation.removeSticker"),
           resizeSticker: t("presentation.resizeSticker"),
+          moveSticker: t("presentation.moveSticker"),
           sticker: t("presentation.sticker"),
           stickerColor: t("presentation.stickerColor"),
           saveCopy: t("presentation.saveCopy"),

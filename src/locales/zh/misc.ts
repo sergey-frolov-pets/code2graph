@@ -156,6 +156,7 @@ export const miscMessages = {
   "presentation.addSticker": "添加贴纸",
   "presentation.removeSticker": "移除贴纸",
   "presentation.resizeSticker": "调整贴纸大小",
+  "presentation.moveSticker": "移动贴纸",
   "presentation.sticker": "评论",
   "presentation.stickerColor": "贴纸颜色",
   "presentation.saveCopy": "保存带修改的副本",

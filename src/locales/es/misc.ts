@@ -156,6 +156,7 @@ export const miscMessages = {
   "presentation.addSticker": "Añadir una nota",
   "presentation.removeSticker": "Quitar la nota",
   "presentation.resizeSticker": "Cambiar el tamaño de la nota",
+  "presentation.moveSticker": "Mover la nota",
   "presentation.sticker": "Comentario",
   "presentation.stickerColor": "Color de la nota",
   "presentation.saveCopy": "Guardar una copia con los cambios",

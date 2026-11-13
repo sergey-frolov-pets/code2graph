@@ -70,6 +70,22 @@ const HTML_STICKER_NUDGE = 16;
 const HTML_STICKER_RADIUS = 10;
 const HTML_STICKER_PAD = 3;
 const HTML_STICKER_CHROME = 16;
+/** Six-dot drag handle, same grip as the in-app presentation dock. */
+const HTML_STICKER_GRIP_WIDTH = 28;
+const HTML_STICKER_GRIP_HEIGHT = 22;
+const HTML_STICKER_COLOR_GAP = 4;
+const HTML_GRIP_COLUMNS = 3;
+const HTML_GRIP_ROWS = 2;
+const HTML_GRIP_ORIGIN_X = 5;
+const HTML_GRIP_ORIGIN_Y = 9;
+const HTML_GRIP_STEP_X = 7;
+const HTML_GRIP_STEP_Y = 6;
+const HTML_GRIP_DOT_RADIUS = 1;
+const HTML_GRIP_DOT_STROKE = 2;
+const HTML_GRIP_VIEWBOX = 24;
+const HTML_GRIP_ICON_WIDTH = 22;
+const HTML_GRIP_ICON_HEIGHT = 16;
+const HTML_STICKER_GRIP_RADIUS = 8;
 const HTML_STICKER_FONT_PX = 14;
 const HTML_STICKER_FILL = "#fff4b8";
 const HTML_STICKER_STROKE = "#e2c56a";
@@ -148,6 +164,7 @@ export interface PresentationHtmlLabels {
   addSticker: string;
   removeSticker: string;
   resizeSticker: string;
+  moveSticker: string;
   sticker: string;
   stickerColor: string;
   saveCopy: string;
@@ -668,8 +685,15 @@ body.c2g-checker {
 }
 .c2g-pen-tools {
   display: flex;
+  flex-flow: row nowrap;
   align-items: center;
   gap: 6px;
+}
+#c2g-pen-colors {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: 4px;
 }
 #c2g-bar button.c2g-swatch {
   width: 18px;
@@ -699,9 +723,12 @@ body.c2g-checker {
   background: transparent;
   cursor: pointer;
 }
+#c2g-pen .c2g-icon-pencil { display: none; }
 #c2g-pen[aria-pressed="true"] {
   background: color-mix(in srgb, var(--c2g-accent) 18%, transparent);
 }
+#c2g-pen[aria-pressed="true"] .c2g-icon-pen { display: none; }
+#c2g-pen[aria-pressed="true"] .c2g-icon-pencil { display: block; }
 #c2g-marks .c2g-icon-show { display: none; }
 #c2g-marks[data-state="hidden"] .c2g-icon-hide { display: none; }
 #c2g-marks[data-state="hidden"] .c2g-icon-show { display: block; }
@@ -718,16 +745,11 @@ body.c2g-checker {
   box-shadow: 0 8px 18px color-mix(in srgb, ${HTML_STICKER_INK} 18%, transparent);
   font-family: sans-serif;
 }
-.c2g-sticker:not(.is-active) {
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
-}
 .c2g-sticker:not(.is-active) .c2g-sticker-ui { display: none; }
 .c2g-sticker-colors {
   position: absolute;
   left: 0;
-  bottom: calc(100% + ${HTML_STICKER_CHROME + 4}px);
+  bottom: calc(100% + ${HTML_STICKER_GRIP_HEIGHT + HTML_STICKER_COLOR_GAP}px);
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -749,18 +771,27 @@ body.c2g-checker {
 .c2g-sticker-move {
   position: absolute;
   left: 0;
-  right: ${HTML_STICKER_CHROME + 2}px;
-  top: -${HTML_STICKER_CHROME}px;
-  height: ${HTML_STICKER_CHROME}px;
+  top: -${HTML_STICKER_GRIP_HEIGHT}px;
+  width: ${HTML_STICKER_GRIP_WIDTH}px;
+  height: ${HTML_STICKER_GRIP_HEIGHT}px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: var(--c2g-note, ${HTML_STICKER_FILL});
+  color: var(--c2g-note-ink, ${HTML_STICKER_INK});
+  border-radius: ${HTML_STICKER_GRIP_RADIUS}px;
   cursor: grab;
   touch-action: none;
 }
+.c2g-sticker-move:active { cursor: grabbing; }
+.c2g-sticker-move svg { width: ${HTML_GRIP_ICON_WIDTH}px; height: ${HTML_GRIP_ICON_HEIGHT}px; display: block; }
 .c2g-sticker-close {
   position: absolute;
   right: 0;
-  top: -${HTML_STICKER_CHROME}px;
-  width: ${HTML_STICKER_CHROME}px;
-  height: ${HTML_STICKER_CHROME}px;
+  top: -${HTML_STICKER_GRIP_HEIGHT}px;
+  width: ${HTML_STICKER_GRIP_HEIGHT}px;
+  height: ${HTML_STICKER_GRIP_HEIGHT}px;
   border: 0;
   padding: 0;
   border-radius: 999px;
@@ -1494,8 +1525,12 @@ const PLAYER_SCRIPT = `
       applyNoteColor(note, picker.value, inkFor(safeColor(picker.value, payload.stickerFill)));
     });
     colors.appendChild(picker);
-    var mover = document.createElement("div");
+    var mover = document.createElement("button");
+    mover.type = "button";
     mover.className = "c2g-sticker-ui c2g-sticker-move";
+    mover.setAttribute("aria-label", payload.labels.moveSticker);
+    mover.setAttribute("title", payload.labels.moveSticker);
+    mover.appendChild(gripIcon());
     var close = document.createElement("button");
     close.type = "button";
     close.className = "c2g-sticker-ui c2g-sticker-close";
@@ -1575,6 +1610,26 @@ const PLAYER_SCRIPT = `
     }, true);
   }
   var svgNs = "http://www.w3.org/2000/svg";
+  function gripIcon() {
+    var svg = document.createElementNS(svgNs, "svg");
+    svg.setAttribute("viewBox", "0 0 ${HTML_GRIP_VIEWBOX} ${HTML_GRIP_VIEWBOX}");
+    svg.setAttribute("aria-hidden", "true");
+    var row;
+    var col;
+    for (row = 0; row < ${HTML_GRIP_ROWS}; row += 1) {
+      for (col = 0; col < ${HTML_GRIP_COLUMNS}; col += 1) {
+        var dot = document.createElementNS(svgNs, "circle");
+        dot.setAttribute("cx", String(${HTML_GRIP_ORIGIN_X} + col * ${HTML_GRIP_STEP_X}));
+        dot.setAttribute("cy", String(${HTML_GRIP_ORIGIN_Y} + row * ${HTML_GRIP_STEP_Y}));
+        dot.setAttribute("r", "${HTML_GRIP_DOT_RADIUS}");
+        dot.setAttribute("fill", "none");
+        dot.setAttribute("stroke", "currentColor");
+        dot.setAttribute("stroke-width", "${HTML_GRIP_DOT_STROKE}");
+        svg.appendChild(dot);
+      }
+    }
+    return svg;
+  }
   function pointsAttr(points) {
     var parts = [];
     var i;
@@ -1782,16 +1837,13 @@ const PLAYER_SCRIPT = `
       var box = readBox(note);
       var textNode = note.querySelector(".c2g-sticker-text");
       var text = notePlain(textNode).trim();
-      var active = note.classList.contains("is-active");
       ctx.save();
-      if (active) {
-        roundedRect(ctx, box.left, box.top, box.width, box.height, payload.stickerRadius);
-        ctx.fillStyle = note.getAttribute("data-fill") || payload.stickerFill;
-        ctx.fill();
-        ctx.strokeStyle = note.getAttribute("data-ink") || payload.stickerStroke;
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
+      roundedRect(ctx, box.left, box.top, box.width, box.height, payload.stickerRadius);
+      ctx.fillStyle = note.getAttribute("data-fill") || payload.stickerFill;
+      ctx.fill();
+      ctx.strokeStyle = note.getAttribute("data-ink") || payload.stickerStroke;
+      ctx.lineWidth = 1;
+      ctx.stroke();
       if (text) {
         ctx.fillStyle = note.getAttribute("data-ink") || payload.stickerInk;
         ctx.font = payload.stickerFontPx + "px sans-serif";
@@ -2497,11 +2549,14 @@ function playerChrome(title: string, labels: PresentationHtmlLabels, stepCount: 
       <button id="c2g-zoom-reset" type="button" aria-label="${htmlEscape(labels.resetView)}">${glyph(`<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/>`)}</button>
       <button id="c2g-camera" type="button" aria-label="${htmlEscape(labels.savePng)}">${glyph(`<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>`)}</button>
       <button id="c2g-sticker" type="button" aria-label="${htmlEscape(labels.addSticker)}">${glyph(`<path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3z"/><path d="M15 3v6h6"/>`)}</button>
-      <button id="c2g-pen" type="button" aria-pressed="false" aria-label="${htmlEscape(labels.pen)}">${glyph(`<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>`)}</button>
+      <button id="c2g-pen" type="button" aria-pressed="false" aria-label="${htmlEscape(labels.pen)}">
+        ${glyph(`<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>`, "c2g-icon-pen")}
+        ${glyph(`<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>`, "c2g-icon-pencil")}
+      </button>
       <div id="c2g-pen-tools" class="c2g-pen-tools" hidden>
-        <div id="c2g-pen-colors"></div>
         <input id="c2g-pen-width" type="range" min="${HTML_PEN_WIDTH_MIN}" max="${HTML_PEN_WIDTH_MAX}" value="${HTML_PEN_WIDTH_DEFAULT}" aria-label="${htmlEscape(labels.penWidth)}">
         <span id="c2g-pen-width-value">${HTML_PEN_WIDTH_DEFAULT}</span>
+        <div id="c2g-pen-colors"></div>
         <input id="c2g-pen-custom" type="color" value="${HTML_PEN_COLOR}" aria-label="${htmlEscape(labels.penColor)}">
       </div>
     </div>
@@ -2654,6 +2709,7 @@ export function renderPresentationHtml(source: PresentationHtmlSource): string {
       zoomLevel: source.labels.zoomLevel,
       removeSticker: source.labels.removeSticker,
       resizeSticker: source.labels.resizeSticker,
+      moveSticker: source.labels.moveSticker,
       sticker: source.labels.sticker,
       stickerColor: source.labels.stickerColor,
       showMarks: source.labels.showMarks,

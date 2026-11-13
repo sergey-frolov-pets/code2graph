@@ -36,6 +36,7 @@ const LABELS = {
   addSticker: "Добавить стикер",
   removeSticker: "Убрать стикер",
   resizeSticker: "Изменить размер стикера",
+  moveSticker: "Перетащить стикер",
   sticker: "Комментарий",
   stickerColor: "Цвет стикера",
   saveCopy: "Сохранить копию с правками",
@@ -372,6 +373,27 @@ describe("presentation html export", () => {
     expect(text?.getAttribute("data-placeholder")).toBe("Комментарий");
     expect((sticker as HTMLElement).style.width).toBe("168px");
     expect((sticker as HTMLElement).classList.contains("is-active")).toBe(true);
+    const grip = sticker?.querySelector(".c2g-sticker-move");
+    expect(grip?.tagName).toBe("BUTTON");
+    expect(grip?.getAttribute("aria-label")).toBe("Перетащить стикер");
+    expect(grip?.querySelectorAll("circle")).toHaveLength(6);
+    const beforeDragLeft = (sticker as HTMLElement).style.left;
+    const beforeDragTop = (sticker as HTMLElement).style.top;
+    grip?.dispatchEvent(new PointerEvent("pointerdown", {
+      clientX: 12,
+      clientY: 12,
+      pointerId: 8,
+      bubbles: true,
+    }));
+    window.dispatchEvent(new PointerEvent("pointermove", {
+      clientX: 36,
+      clientY: 28,
+      pointerId: 8,
+      bubbles: true,
+    }));
+    window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 8, bubbles: true }));
+    expect((sticker as HTMLElement).style.left).not.toBe(beforeDragLeft);
+    expect((sticker as HTMLElement).style.top).not.toBe(beforeDragTop);
     const anchoredLeft = (sticker as HTMLElement).style.left;
     if (text) text.textContent = "Заметка на схеме";
     const handle = sticker?.querySelector(".c2g-sticker-resize");
@@ -416,10 +438,20 @@ describe("presentation html export", () => {
 
     sticker?.dispatchEvent(new FocusEvent("focusout", { relatedTarget: doc.body }));
     expect((sticker as HTMLElement).classList.contains("is-active")).toBe(false);
+    const playerCss = doc.querySelector("style")?.textContent ?? "";
+    expect(playerCss).toContain(".c2g-sticker:not(.is-active) .c2g-sticker-ui");
+    expect(playerCss).not.toMatch(/\.c2g-sticker:not\(\.is-active\)\s*\{[^}]*transparent/);
+    expect(playerCss).toMatch(/#c2g-pen-colors\s*\{[^}]*flex-flow:\s*row nowrap/);
     (sticker as HTMLElement).classList.add("is-active");
 
-    doc.getElementById("c2g-pen")?.click();
+    const pen = doc.getElementById("c2g-pen");
+    expect(pen?.querySelector(".c2g-icon-pen")).not.toBeNull();
+    expect(pen?.querySelector(".c2g-icon-pencil")).not.toBeNull();
+    pen?.click();
     expect(stage?.classList.contains("is-drawing")).toBe(true);
+    expect(pen?.getAttribute("aria-pressed")).toBe("true");
+    const toolOrder = [...(doc.getElementById("c2g-pen-tools")?.children ?? [])].map((node) => node.id);
+    expect(toolOrder.indexOf("c2g-pen-width")).toBeLessThan(toolOrder.indexOf("c2g-pen-colors"));
     const widthInput = doc.getElementById("c2g-pen-width") as HTMLInputElement | null;
     if (widthInput) {
       widthInput.value = "6";

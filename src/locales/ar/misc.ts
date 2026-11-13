@@ -156,6 +156,7 @@ export const miscMessages = {
   "presentation.addSticker": "إضافة ملاحظة",
   "presentation.removeSticker": "إزالة الملاحظة",
   "presentation.resizeSticker": "تغيير حجم الملاحظة",
+  "presentation.moveSticker": "تحريك الملاحظة",
   "presentation.sticker": "تعليق",
   "presentation.stickerColor": "لون الملاحظة",
   "presentation.saveCopy": "حفظ نسخة مع التغييرات",

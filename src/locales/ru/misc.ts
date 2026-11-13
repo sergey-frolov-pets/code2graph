@@ -156,6 +156,7 @@ export const miscMessages = {
   "presentation.addSticker": "Добавить стикер",
   "presentation.removeSticker": "Убрать стикер",
   "presentation.resizeSticker": "Изменить размер стикера",
+  "presentation.moveSticker": "Перетащить стикер",
   "presentation.sticker": "Комментарий",
   "presentation.stickerColor": "Цвет стикера",
   "presentation.saveCopy": "Сохранить копию с правками",
