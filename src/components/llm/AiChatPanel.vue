@@ -190,6 +190,8 @@ const totalMessages = computed(() => countAiChatMessages(sessions.value));
 const canSend = computed(
   () => draft.value.trim().length > 0 || pendingAttachments.value.length > 0,
 );
+/** Одна кнопка: стоп, пока ответ идёт и композер пуст, иначе — отправить. */
+const composerPrimaryIsStop = computed(() => isBusy.value && !canSend.value);
 
 interface QueuedChatTurn {
   id: string;
@@ -777,6 +779,14 @@ function stopGeneration(): void {
   inflight = null;
   generationToken += 1;
   isBusy.value = false;
+}
+
+function onComposerPrimaryClick(event: Event): void {
+  if (!composerPrimaryIsStop.value) {
+    return;
+  }
+  event.preventDefault();
+  stopGeneration();
 }
 
 function removeQueued(id: string): void {
@@ -1844,34 +1854,28 @@ async function onCopyChat(): Promise<void> {
                 />
               </button>
               <button
-                v-if="isBusy"
                 class="btn ai-chat-panel__send"
-                type="button"
-                :aria-label="t('aiChat.stop')"
-                :title="titleUnlessModesOpen(t('aiChat.stop'))"
-                @click="stopGeneration"
+                :class="{ 'btn-primary': !composerPrimaryIsStop }"
+                :type="composerPrimaryIsStop ? 'button' : 'submit'"
+                :data-testid="composerPrimaryIsStop ? 'ai-chat-stop' : 'ai-chat-send'"
+                :aria-label="composerPrimaryIsStop ? t('aiChat.stop') : t('aiChat.send')"
+                :title="titleUnlessModesOpen(composerPrimaryIsStop ? t('aiChat.stop') : t('aiChat.send'))"
+                :disabled="!composerPrimaryIsStop && !canSend"
+                @click="onComposerPrimaryClick"
               >
                 <Square
+                  v-if="composerPrimaryIsStop"
                   :size="16"
                   :stroke-width="1.8"
                   aria-hidden="true"
                 />
-                <span class="sr-only">{{ t("aiChat.stop") }}</span>
-              </button>
-              <button
-                class="btn btn-primary ai-chat-panel__send"
-                type="submit"
-                data-testid="ai-chat-send"
-                :aria-label="t('aiChat.send')"
-                :title="titleUnlessModesOpen(t('aiChat.send'))"
-                :disabled="!canSend"
-              >
                 <Send
+                  v-else
                   :size="18"
                   :stroke-width="1.8"
                   aria-hidden="true"
                 />
-                <span class="sr-only">{{ t("aiChat.send") }}</span>
+                <span class="sr-only">{{ composerPrimaryIsStop ? t("aiChat.stop") : t("aiChat.send") }}</span>
               </button>
             </div>
           </div>

@@ -163,6 +163,90 @@ describe("AiChatPanel layout", () => {
     view.unmount();
   });
 
+  it("switches the composer button to stop only while a request is in flight and the field is empty", async () => {
+    useLocale().setLocale("ru");
+    const signals: AbortSignal[] = [];
+    vi.mocked(sendAiChatMessage).mockImplementation(
+      (input) =>
+        new Promise((_resolve, reject) => {
+          const signal = input.signal;
+          if (!signal) {
+            return;
+          }
+          signals.push(signal);
+          const abort = (): void => {
+            reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
+          };
+          if (signal.aborted) {
+            abort();
+            return;
+          }
+          signal.addEventListener("abort", abort, { once: true });
+        }),
+    );
+
+    const view = mountChat();
+    try {
+      await nextTick();
+      const textarea = view.host.querySelector("textarea") as HTMLTextAreaElement;
+      textarea.value = "Нарисуй процесс";
+      textarea.dispatchEvent(new Event("input"));
+      await nextTick();
+
+      expect(view.host.querySelectorAll(".ai-chat-panel__send")).toHaveLength(1);
+      expect(view.host.querySelector("[data-testid='ai-chat-stop']")).toBeNull();
+      const send = view.host.querySelector("[data-testid='ai-chat-send']") as HTMLButtonElement;
+      expect(send.disabled).toBe(false);
+      expect(send.textContent).toContain("Отправить");
+
+      send.click();
+      await vi.waitFor(() => {
+        expect(view.host.querySelector("[data-testid='ai-chat-stop']")).not.toBeNull();
+      });
+      expect(view.host.querySelector("[data-testid='ai-chat-send']")).toBeNull();
+      expect(view.host.querySelectorAll(".ai-chat-panel__send")).toHaveLength(1);
+      expect(view.host.querySelector("[data-testid='ai-chat-stop']")?.getAttribute("aria-label")).toBe(
+        "Остановить",
+      );
+      expect((view.host.querySelector("textarea") as HTMLTextAreaElement).value).toBe("");
+
+      textarea.value = "И добавь актёра";
+      textarea.dispatchEvent(new Event("input"));
+      await nextTick();
+      expect(view.host.querySelector("[data-testid='ai-chat-stop']")).toBeNull();
+      const followUp = view.host.querySelector("[data-testid='ai-chat-send']") as HTMLButtonElement;
+      expect(followUp).not.toBeNull();
+      expect(followUp.disabled).toBe(false);
+      expect(view.host.querySelectorAll(".ai-chat-panel__send")).toHaveLength(1);
+
+      textarea.value = "   ";
+      textarea.dispatchEvent(new Event("input"));
+      await nextTick();
+      expect(view.host.querySelector("[data-testid='ai-chat-send']")).toBeNull();
+      const stop = view.host.querySelector("[data-testid='ai-chat-stop']") as HTMLButtonElement;
+      expect(stop).not.toBeNull();
+      expect(signals).toHaveLength(1);
+      expect(signals[0]?.aborted).toBe(false);
+
+      stop.click();
+      await nextTick();
+      expect(signals[0]?.aborted).toBe(true);
+      expect(view.host.querySelector("[data-testid='ai-chat-stop']")).toBeNull();
+      expect((view.host.querySelector("[data-testid='ai-chat-send']") as HTMLButtonElement).disabled).toBe(
+        true,
+      );
+      expect(view.host.querySelectorAll(".ai-chat-panel__send")).toHaveLength(1);
+    } finally {
+      view.unmount();
+      vi.mocked(sendAiChatMessage).mockImplementation(async () => ({
+        kind: "answer",
+        message: "ok",
+        providerId: "test",
+        model: "test",
+      }));
+    }
+  });
+
   it("shows compact token counts and hides composer hints while the draft has text", async () => {
     useLocale().setLocale("ru");
     const session: AiChatSession = {
