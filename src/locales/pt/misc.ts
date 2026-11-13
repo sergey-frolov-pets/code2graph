@@ -159,6 +159,8 @@ export const miscMessages = {
   "presentation.moveSticker": "Mover o adesivo",
   "presentation.sticker": "Comentário",
   "presentation.stickerColor": "Cor do adesivo",
+  "presentation.stickerFontSmaller": "Texto menor",
+  "presentation.stickerFontLarger": "Texto maior",
   "presentation.saveCopy": "Salvar uma cópia com as alterações",
   "presentation.hideMarks": "Ocultar alterações",
   "presentation.showMarks": "Mostrar alterações",

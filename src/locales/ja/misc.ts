@@ -159,6 +159,8 @@ export const miscMessages = {
   "presentation.moveSticker": "付箋を移動",
   "presentation.sticker": "コメント",
   "presentation.stickerColor": "付箋の色",
+  "presentation.stickerFontSmaller": "文字を小さく",
+  "presentation.stickerFontLarger": "文字を大きく",
   "presentation.saveCopy": "変更入りのコピーを保存",
   "presentation.hideMarks": "変更を隠す",
   "presentation.showMarks": "変更を表示",

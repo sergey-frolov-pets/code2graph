@@ -606,6 +606,8 @@ export function usePresentationSession(options: {
           moveSticker: t("presentation.moveSticker"),
           sticker: t("presentation.sticker"),
           stickerColor: t("presentation.stickerColor"),
+          stickerFontSmaller: t("presentation.stickerFontSmaller"),
+          stickerFontLarger: t("presentation.stickerFontLarger"),
           saveCopy: t("presentation.saveCopy"),
           hideMarks: t("presentation.hideMarks"),
           showMarks: t("presentation.showMarks"),

@@ -76,8 +76,22 @@ const HTML_STICKER_SHADOW_ALPHA = 18;
 const HTML_STICKER_CHROME = 16;
 const HTML_STICKER_CLOSE_FONT = 16;
 const HTML_STICKER_PALETTE_MAX = "11rem";
+const HTML_STICKER_BAR_HEIGHT = 28;
+const HTML_HANDLE_PILL = 999;
+const HTML_STICKER_HANDLE_SIZE = 22;
+const HTML_STICKER_RESIZE_SIZE = 22;
+const HTML_STICKER_RESIZE_OUTSET = 8;
+const HTML_STICKER_RESIZE_ICON = 14;
+const HTML_STICKER_RESIZE_STROKE = 1.6;
+const HTML_STICKER_RESIZE_PATH = "M3.2 10.8 L10.8 3.2 M7.4 3.2 H10.8 V6.6 M3.2 7.4 V10.8 H6.6";
+const HTML_STICKER_FONT_DOWN_PX = 12;
+const HTML_STICKER_FONT_MARK_PX = 13;
+const HTML_STICKER_FONT_UP_PX = 16;
+const HTML_STICKER_FONT_BUTTON = 20;
+/** Steps around the design size. Resizing the card still scales the text on top of this. */
+const HTML_STICKER_FONT_SCALES = [0.75, 1, 1.25, 1.5, 2] as const;
 /** Six-dot drag handle, same grip as the in-app presentation dock. */
-const HTML_STICKER_GRIP_WIDTH = 28;
+const HTML_STICKER_GRIP_WIDTH = 40;
 const HTML_STICKER_GRIP_HEIGHT = 22;
 const HTML_STICKER_COLOR_GAP = 4;
 const HTML_GRIP_COLUMNS = 3;
@@ -86,12 +100,10 @@ const HTML_GRIP_ORIGIN_X = 5;
 const HTML_GRIP_ORIGIN_Y = 9;
 const HTML_GRIP_STEP_X = 7;
 const HTML_GRIP_STEP_Y = 6;
-const HTML_GRIP_DOT_RADIUS = 1;
-const HTML_GRIP_DOT_STROKE = 2;
+const HTML_GRIP_DOT_RADIUS = 1.45;
 const HTML_GRIP_VIEWBOX = 24;
 const HTML_GRIP_ICON_WIDTH = 22;
 const HTML_GRIP_ICON_HEIGHT = 16;
-const HTML_STICKER_GRIP_RADIUS = 8;
 const HTML_STICKER_FONT_PX = 14;
 const HTML_STICKER_FILL = "#fff4b8";
 const HTML_STICKER_STROKE = "#e2c56a";
@@ -201,6 +213,8 @@ export interface PresentationHtmlLabels {
   moveSticker: string;
   sticker: string;
   stickerColor: string;
+  stickerFontSmaller: string;
+  stickerFontLarger: string;
   saveCopy: string;
   hideMarks: string;
   showMarks: string;
@@ -809,12 +823,24 @@ body.c2g-checker {
   transform-origin: 0 0;
   pointer-events: none;
   z-index: 1;
+  --c2g-handle-shadow: 0 1px 2px color-mix(in srgb, ${HTML_STICKER_INK} 14%, transparent), 0 8px 16px color-mix(in srgb, ${HTML_STICKER_INK} 16%, transparent);
 }
 .c2g-sticker-chrome .c2g-sticker-ui { pointer-events: auto; }
+.c2g-sticker-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -${HTML_STICKER_BAR_HEIGHT}px;
+  height: ${HTML_STICKER_BAR_HEIGHT}px;
+  display: flex;
+  align-items: center;
+  gap: ${HTML_STICKER_COLOR_GAP}px;
+  pointer-events: none;
+}
 .c2g-sticker-colors {
   position: absolute;
   left: 0;
-  bottom: calc(100% + ${HTML_STICKER_GRIP_HEIGHT + HTML_STICKER_COLOR_GAP}px);
+  bottom: calc(100% + ${HTML_STICKER_BAR_HEIGHT + HTML_STICKER_COLOR_GAP}px);
   display: flex;
   flex-wrap: wrap;
   gap: ${HTML_STICKER_COLOR_GAP}px;
@@ -824,7 +850,7 @@ body.c2g-checker {
 .c2g-sticker-picker {
   width: ${HTML_STICKER_CHROME}px;
   height: ${HTML_STICKER_CHROME}px;
-  border-radius: 999px;
+  border-radius: ${HTML_HANDLE_PILL}px;
   border: ${HTML_STICKER_BORDER}px solid color-mix(in srgb, ${HTML_STICKER_INK} 35%, transparent);
   padding: 0;
   cursor: pointer;
@@ -833,35 +859,70 @@ body.c2g-checker {
   border-radius: 4px;
   background: transparent;
 }
+.c2g-sticker-move,
+.c2g-sticker-close,
+.c2g-sticker-font,
+.c2g-sticker-resize {
+  box-sizing: border-box;
+  border: ${HTML_STICKER_BORDER}px solid color-mix(in srgb, ${HTML_STICKER_INK} 16%, transparent);
+  background: ${THEME_SURFACE};
+  color: ${HTML_STICKER_INK};
+  box-shadow: var(--c2g-handle-shadow);
+}
 .c2g-sticker-move {
-  position: absolute;
-  left: 0;
-  top: -${HTML_STICKER_GRIP_HEIGHT}px;
+  position: relative;
+  flex: none;
   width: ${HTML_STICKER_GRIP_WIDTH}px;
   height: ${HTML_STICKER_GRIP_HEIGHT}px;
   display: grid;
   place-items: center;
   padding: 0;
-  border: 0;
-  background: var(--c2g-note, ${HTML_STICKER_FILL});
-  color: var(--c2g-note-ink, ${HTML_STICKER_INK});
-  border-radius: ${HTML_STICKER_GRIP_RADIUS}px;
+  border-radius: ${HTML_HANDLE_PILL}px;
   cursor: grab;
   touch-action: none;
 }
 .c2g-sticker-move:active { cursor: grabbing; }
+.c2g-sticker-move:hover,
+.c2g-sticker-close:hover,
+.c2g-sticker-resize:hover { background: color-mix(in srgb, ${THEME_ACCENT} 10%, ${THEME_SURFACE}); }
 .c2g-sticker-move svg { width: ${HTML_GRIP_ICON_WIDTH}px; height: ${HTML_GRIP_ICON_HEIGHT}px; display: block; }
-.c2g-sticker-close {
-  position: absolute;
-  right: 0;
-  top: -${HTML_STICKER_GRIP_HEIGHT}px;
-  width: ${HTML_STICKER_GRIP_HEIGHT}px;
-  height: ${HTML_STICKER_GRIP_HEIGHT}px;
+.c2g-sticker-font {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  height: ${HTML_STICKER_HANDLE_SIZE}px;
+  padding: 0 2px;
+  border-radius: ${HTML_HANDLE_PILL}px;
+}
+.c2g-sticker-font button {
+  width: ${HTML_STICKER_FONT_BUTTON}px;
+  height: ${HTML_STICKER_FONT_BUTTON}px;
   border: 0;
   padding: 0;
-  border-radius: 999px;
-  background: var(--c2g-note, ${HTML_STICKER_FILL});
-  color: var(--c2g-note-ink, ${HTML_STICKER_INK});
+  border-radius: ${HTML_HANDLE_PILL}px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-family: sans-serif;
+  line-height: 1;
+}
+.c2g-sticker-font button:hover:not(:disabled) { background: color-mix(in srgb, ${THEME_ACCENT} 12%, transparent); }
+.c2g-sticker-font button:disabled { opacity: 0.35; cursor: default; }
+.c2g-sticker-font-down { font-size: ${HTML_STICKER_FONT_DOWN_PX}px; }
+.c2g-sticker-font-mark {
+  width: ${HTML_STICKER_FONT_MARK_PX}px;
+  font-size: ${HTML_STICKER_FONT_MARK_PX}px;
+  font-weight: 700;
+  text-align: center;
+}
+.c2g-sticker-font-up { font-size: ${HTML_STICKER_FONT_UP_PX}px; font-weight: 700; }
+.c2g-sticker-close {
+  position: relative;
+  flex: none;
+  width: ${HTML_STICKER_HANDLE_SIZE}px;
+  height: ${HTML_STICKER_HANDLE_SIZE}px;
+  border-radius: ${HTML_HANDLE_PILL}px;
+  padding: 0;
   cursor: pointer;
   font-size: ${HTML_STICKER_CLOSE_FONT}px;
   line-height: 1;
@@ -885,16 +946,18 @@ body.c2g-checker {
 }
 .c2g-sticker-resize {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  width: ${HTML_STICKER_CHROME}px;
-  height: ${HTML_STICKER_CHROME}px;
-  border: 0;
+  right: -${HTML_STICKER_RESIZE_OUTSET}px;
+  bottom: -${HTML_STICKER_RESIZE_OUTSET}px;
+  width: ${HTML_STICKER_RESIZE_SIZE}px;
+  height: ${HTML_STICKER_RESIZE_SIZE}px;
+  border-radius: ${HTML_HANDLE_PILL}px;
   padding: 0;
-  background: linear-gradient(135deg, transparent 50%, var(--c2g-note-ink, ${HTML_STICKER_STROKE}) 50%);
+  display: grid;
+  place-items: center;
   cursor: nwse-resize;
   touch-action: none;
 }
+.c2g-sticker-resize svg { width: ${HTML_STICKER_RESIZE_ICON}px; height: ${HTML_STICKER_RESIZE_ICON}px; display: block; }
 `.trim();
 
 const PLAYER_SCRIPT = `
@@ -1515,9 +1578,40 @@ const PLAYER_SCRIPT = `
     var ratio = payload.stickerHeight > 0 ? height / payload.stickerHeight : 1;
     return ratio > 0 ? ratio : 1;
   }
+  function fontScales() {
+    var scales = payload.stickerFontScales;
+    return scales && scales.length ? scales : [1];
+  }
+  function fontScaleIndex(scale) {
+    var scales = fontScales();
+    var best = 0;
+    var i;
+    for (i = 1; i < scales.length; i += 1) {
+      if (Math.abs(scales[i] - scale) < Math.abs(scales[best] - scale)) best = i;
+    }
+    return best;
+  }
+  function stickerFontScale(note) {
+    var raw = note ? Number(note.getAttribute("data-font-scale")) : 1;
+    var scales = fontScales();
+    if (!isFinite(raw) || !(raw > 0)) return scales[fontScaleIndex(1)];
+    return scales[fontScaleIndex(raw)];
+  }
+  function applyFontScale(note, index) {
+    var scales = fontScales();
+    var next = index;
+    if (next < 0) next = 0;
+    if (next > scales.length - 1) next = scales.length - 1;
+    note.setAttribute("data-font-scale", String(scales[next]));
+    syncStickerScale(note);
+    var down = note.querySelector(".c2g-sticker-font-down");
+    var up = note.querySelector(".c2g-sticker-font-up");
+    if (down) down.disabled = next <= 0;
+    if (up) up.disabled = next >= scales.length - 1;
+  }
   function syncStickerScale(note) {
     var ratio = stickerRatio(readBox(note).height);
-    note.style.fontSize = (payload.stickerFontPx * ratio) + "px";
+    note.style.fontSize = (payload.stickerFontPx * ratio * stickerFontScale(note)) + "px";
     note.style.borderRadius = (payload.stickerRadius * ratio) + "px";
     note.style.borderWidth = ratio + "px";
     note.style.boxShadow = "0 " + (${HTML_STICKER_SHADOW_Y} * ratio) + "px " + (${HTML_STICKER_SHADOW_BLUR} * ratio) + "px color-mix(in srgb, ${HTML_STICKER_INK} ${HTML_STICKER_SHADOW_ALPHA}%, transparent)";
@@ -1632,6 +1726,27 @@ const PLAYER_SCRIPT = `
     mover.setAttribute("aria-label", payload.labels.moveSticker);
     mover.setAttribute("title", payload.labels.moveSticker);
     mover.appendChild(gripIcon());
+    var font = document.createElement("div");
+    font.className = "c2g-sticker-ui c2g-sticker-font";
+    var fontDown = document.createElement("button");
+    fontDown.type = "button";
+    fontDown.className = "c2g-sticker-font-down";
+    fontDown.textContent = "\\u2212";
+    fontDown.setAttribute("aria-label", payload.labels.stickerFontSmaller);
+    fontDown.setAttribute("title", payload.labels.stickerFontSmaller);
+    var fontMark = document.createElement("span");
+    fontMark.className = "c2g-sticker-font-mark";
+    fontMark.setAttribute("aria-hidden", "true");
+    fontMark.textContent = "A";
+    var fontUp = document.createElement("button");
+    fontUp.type = "button";
+    fontUp.className = "c2g-sticker-font-up";
+    fontUp.textContent = "+";
+    fontUp.setAttribute("aria-label", payload.labels.stickerFontLarger);
+    fontUp.setAttribute("title", payload.labels.stickerFontLarger);
+    font.appendChild(fontDown);
+    font.appendChild(fontMark);
+    font.appendChild(fontUp);
     var close = document.createElement("button");
     close.type = "button";
     close.className = "c2g-sticker-ui c2g-sticker-close";
@@ -1651,16 +1766,31 @@ const PLAYER_SCRIPT = `
     handle.className = "c2g-sticker-ui c2g-sticker-resize";
     handle.setAttribute("aria-label", payload.labels.resizeSticker);
     handle.setAttribute("title", payload.labels.resizeSticker);
+    handle.appendChild(resizeIcon());
+    var toolbar = document.createElement("div");
+    toolbar.className = "c2g-sticker-bar";
+    toolbar.appendChild(mover);
+    toolbar.appendChild(font);
+    toolbar.appendChild(close);
     chrome.appendChild(colors);
-    chrome.appendChild(mover);
-    chrome.appendChild(close);
+    chrome.appendChild(toolbar);
     chrome.appendChild(handle);
     note.appendChild(text);
     note.appendChild(chrome);
     notes.appendChild(note);
     applyNoteColor(note, spec.fill, spec.ink);
     clampSticker(note);
-    syncStickerScale(note);
+    applyFontScale(note, fontScaleIndex(finiteNumber(spec.fontScale, 1)));
+    fontDown.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    fontUp.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    fontDown.addEventListener("click", function (event) {
+      event.stopPropagation();
+      applyFontScale(note, fontScaleIndex(stickerFontScale(note)) - 1);
+    });
+    fontUp.addEventListener("click", function (event) {
+      event.stopPropagation();
+      applyFontScale(note, fontScaleIndex(stickerFontScale(note)) + 1);
+    });
     mover.addEventListener("pointerdown", function (event) {
       event.preventDefault();
       event.stopPropagation();
@@ -1726,12 +1856,24 @@ const PLAYER_SCRIPT = `
         dot.setAttribute("cx", String(${HTML_GRIP_ORIGIN_X} + col * ${HTML_GRIP_STEP_X}));
         dot.setAttribute("cy", String(${HTML_GRIP_ORIGIN_Y} + row * ${HTML_GRIP_STEP_Y}));
         dot.setAttribute("r", "${HTML_GRIP_DOT_RADIUS}");
-        dot.setAttribute("fill", "none");
-        dot.setAttribute("stroke", "currentColor");
-        dot.setAttribute("stroke-width", "${HTML_GRIP_DOT_STROKE}");
+        dot.setAttribute("fill", "currentColor");
         svg.appendChild(dot);
       }
     }
+    return svg;
+  }
+  function resizeIcon() {
+    var svg = document.createElementNS(svgNs, "svg");
+    svg.setAttribute("viewBox", "0 0 ${HTML_STICKER_RESIZE_ICON} ${HTML_STICKER_RESIZE_ICON}");
+    svg.setAttribute("aria-hidden", "true");
+    var mark = document.createElementNS(svgNs, "path");
+    mark.setAttribute("d", "${HTML_STICKER_RESIZE_PATH}");
+    mark.setAttribute("fill", "none");
+    mark.setAttribute("stroke", "currentColor");
+    mark.setAttribute("stroke-width", "${HTML_STICKER_RESIZE_STROKE}");
+    mark.setAttribute("stroke-linecap", "round");
+    mark.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(mark);
     return svg;
   }
   function pointsAttr(points) {
@@ -2009,7 +2151,7 @@ const PLAYER_SCRIPT = `
       ctx.stroke();
       if (text) {
         ctx.fillStyle = note.getAttribute("data-ink") || payload.stickerInk;
-        var fontPx = payload.stickerFontPx * ratio;
+        var fontPx = payload.stickerFontPx * ratio * stickerFontScale(note);
         ctx.font = fontPx + "px sans-serif";
         var pad = payload.stickerPad * ratio;
         var maxWidth = Math.max(fontPx, box.width - pad * 2);
@@ -2092,6 +2234,7 @@ const PLAYER_SCRIPT = `
         w: roundCoord(box.width),
         h: roundCoord(box.height),
         text: notePlain(textNode).slice(0, payload.noteTextLimit),
+        fontScale: roundCoord(stickerFontScale(note)),
         fill: note.getAttribute("data-fill") || payload.stickerFill,
         ink: note.getAttribute("data-ink") || payload.stickerInk
       });
@@ -2140,6 +2283,7 @@ const PLAYER_SCRIPT = `
         w: finiteNumber(item.w, payload.stickerWidth),
         h: finiteNumber(item.h, payload.stickerHeight),
         text: typeof item.text === "string" ? item.text : "",
+        fontScale: finiteNumber(item.fontScale, 1),
         fill: item.fill,
         ink: item.ink
       }, false);
@@ -2875,6 +3019,7 @@ export function renderPresentationHtml(source: PresentationHtmlSource): string {
     stickerRadius: HTML_STICKER_RADIUS,
     stickerPad: HTML_STICKER_PAD,
     stickerFontPx: HTML_STICKER_FONT_PX,
+    stickerFontScales: HTML_STICKER_FONT_SCALES,
     stickerFill: HTML_STICKER_FILL,
     stickerStroke: HTML_STICKER_STROKE,
     stickerInk: HTML_STICKER_INK,
@@ -2902,6 +3047,8 @@ export function renderPresentationHtml(source: PresentationHtmlSource): string {
       moveSticker: source.labels.moveSticker,
       sticker: source.labels.sticker,
       stickerColor: source.labels.stickerColor,
+      stickerFontSmaller: source.labels.stickerFontSmaller,
+      stickerFontLarger: source.labels.stickerFontLarger,
       showMarks: source.labels.showMarks,
       hideMarks: source.labels.hideMarks,
       penColor: source.labels.penColor,
