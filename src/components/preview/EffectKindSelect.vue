@@ -25,6 +25,7 @@ import {
 import { FRAME_EFFECT_KINDS } from "@/services/presentation/types";
 import type { FrameEffectKind } from "@/services/presentation/types";
 import type { TranslateFn } from "@/locales/types";
+import { PRESENTATION_EFFECT_MENU_Z_INDEX } from "@/storage/presentation-dock";
 
 const EFFECT_ICON_SIZE = 16;
 const EFFECT_ICON_STROKE = 1.8;
@@ -33,7 +34,6 @@ const EFFECT_MENU_EDGE = 8;
 const EFFECT_MENU_MIN_WIDTH = 220;
 const EFFECT_MENU_MAX_HEIGHT = 280;
 const EFFECT_MENU_OPEN_UP_THRESHOLD = 160;
-const EFFECT_MENU_Z_INDEX = 40;
 
 const EFFECT_KIND_ICONS: Record<FrameEffectKind, Component> = {
   fade: Sunrise,
@@ -88,7 +88,7 @@ function placeMenu(): void {
     left: `${left}px`,
     width: `${width}px`,
     maxHeight: `${maxHeight}px`,
-    zIndex: EFFECT_MENU_Z_INDEX,
+    zIndex: PRESENTATION_EFFECT_MENU_Z_INDEX,
     ...(openUp
       ? { bottom: `${window.innerHeight - rect.top + EFFECT_MENU_GAP}px` }
       : { top: `${rect.bottom + EFFECT_MENU_GAP}px` }),
