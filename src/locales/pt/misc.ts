@@ -492,5 +492,13 @@ export const miscMessages = {
   "presentation.transparent": "Transparente",
   "samples.mermaid.orgchartAvatar": "Organograma — fotos",
   "samples.mermaid.powermap": "Mapa de poder",
-
+  "samples.mermaid.histogram": "Histograma de latência",
+  "samples.mermaid.histogramBins": "Histograma — intervalos explícitos",
+  "samples.mermaid.histogramCurves": "Histograma — curvas de distribuição",
+  "samples.mermaid.histogramLabels": "Histograma — rótulos internos",
+  "samples.mermaid.histogramClean": "Histograma — limpeza dos dados",
+  "samples.mermaid.histogramDensity": "Histograma — densidade",
+  "samples.mermaid.histogramMono": "Histograma — monocromático",
+  "samples.mermaid.histogramRotate": "Histograma — rotação de 90°",
+  "samples.mermaid.histogramLine": "Histograma — linha de nível",
 } as const satisfies LocaleMessages;

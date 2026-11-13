@@ -56,6 +56,8 @@ describe("highlightMermaidLine", () => {
       "radar",
       "voronoi",
       "series",
+      "histogram",
+      "hist",
       "spider",
       "kanban",
     ];

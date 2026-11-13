@@ -69,6 +69,9 @@ const DIAGRAM_KEYWORDS = new Set([
   "voronoi",
   "voronoi-diagram",
   "series",
+  "histogram",
+  "hist",
+  "dist",
 ]);
 
 const KEYWORDS = new Set([
@@ -142,6 +145,15 @@ const KEYWORDS = new Set([
   "scale",
   "series",
   "sites",
+  "bins",
+  "binwidth",
+  "fit",
+  "curve",
+  "stats",
+  "outliers",
+  "missing",
+  "errors",
+  "ci",
 
   // Flowchart / sequence / class / state / ER
   "accdescr",

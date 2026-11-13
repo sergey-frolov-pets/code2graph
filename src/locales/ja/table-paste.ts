@@ -173,5 +173,8 @@ export const tablePasteMessages = {
   "tablePaste.expected.powermap.columns": "名前、役職、上司、役割、影響力、行動の必要性、態度、相手、関係（solid、dotted、または関係名）。",
   "tablePaste.expected.powermap.rules": "各行が一人です。solid と dotted は報告線です。それ以外の名前は影響の矢印です。",
   "tablePaste.expected.powermap.headers": "名前|役職|上司|役割|影響力|行動|態度|相手|関係",
-
+  "tablePaste.type.histogram": "ヒストグラム",
+  "tablePaste.expected.histogram.columns": "列が1系列です。先頭行は系列名にできます。空白、na、不正な値もそのまま残します。",
+  "tablePaste.expected.histogram.rules": "各列は series 名前 : v1, v2, … になります。空白と非数値は残し、missing、errors、outliers が処理します。",
+  "tablePaste.expected.histogram.headers": "朝|夜",
 } as const satisfies LocaleMessages;

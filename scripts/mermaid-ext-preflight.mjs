@@ -199,6 +199,7 @@ const MINIMAL_SOURCES = {
   radar: "radar\naxes A, B, C\nseries S : 50, 70, 90",
   voronoi: "voronoi\ndata\nA : x=25, y=50\nB : x=75, y=50",
   series: "series\nrotate 90\ncategories Q1, Q2\nseries A : 10, 20\nseries B : 15, 25",
+  histogram: "histogram\nbins 4\nseries A : 10, 12, 14, 18, 22\nfit normal",
 };
 
 async function checkWiring() {
@@ -213,7 +214,7 @@ async function checkWiring() {
 
   const { tryRenderExtension, detectType, listTypes } = ext;
 
-  record("wiring", "реестр отдаёт 11 типов", listTypes().length === 11, listTypes().join(", "));
+  record("wiring", "реестр отдаёт 12 типов", listTypes().length === 12, listTypes().join(", "));
 
   for (const [type, source] of Object.entries(MINIMAL_SOURCES)) {
     const detected = detectType(source);

@@ -1,6 +1,8 @@
 import type { MermaidExtSampleId } from "@/constants/mermaid-sample-diagrams";
+import { HISTOGRAM_SAMPLES_EN, HISTOGRAM_SAMPLES_RU } from "@/constants/samples/histogram-gallery-samples";
 
 export const MERMAID_EXT_SAMPLES_RU: Record<MermaidExtSampleId, string> = {
+  ...HISTOGRAM_SAMPLES_RU,
   waterfall: `waterfall
 %% Оси: axis y off прячет ось значений и её сетку, axis x off — подписи колонок. Следующий grid возвращает линии без подписей. grid off прячет только сетку.
 %% Зазор: gap 12 — пиксели между барами и колонками, gap 20% — доля пустого места. Второй оси и суммы стопки нет.
@@ -551,6 +553,7 @@ line : 70, 100, 120, 150 style=dot`,
 };
 
 export const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
+  ...HISTOGRAM_SAMPLES_EN,
   waterfall: `waterfall
 %% Axes: axis y off hides the value axis and its grid, axis x off hides column labels. A later grid brings the lines back without tick labels. grid off hides only the grid.
 %% Gap: gap 12 is the pixel space between bars and columns, gap 20% is the empty share. There is no second axis and no stack total.

@@ -492,5 +492,13 @@ export const miscMessages = {
   "presentation.transparent": "透明",
   "samples.mermaid.orgchartAvatar": "组织结构图 — 照片",
   "samples.mermaid.powermap": "权力图",
-
+  "samples.mermaid.histogram": "延迟直方图",
+  "samples.mermaid.histogramBins": "直方图 — 手动区间",
+  "samples.mermaid.histogramCurves": "直方图 — 分布曲线",
+  "samples.mermaid.histogramLabels": "直方图 — 柱内标签",
+  "samples.mermaid.histogramClean": "直方图 — 数据清洗",
+  "samples.mermaid.histogramDensity": "直方图 — 密度",
+  "samples.mermaid.histogramMono": "直方图 — 单色",
+  "samples.mermaid.histogramRotate": "直方图 — 旋转 90°",
+  "samples.mermaid.histogramLine": "直方图 — 水平线",
 } as const satisfies LocaleMessages;

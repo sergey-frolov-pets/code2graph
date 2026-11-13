@@ -173,5 +173,8 @@ export const tablePasteMessages = {
   "tablePaste.expected.powermap.columns": "Name, Rolle, Vorgesetzter, Machtrolle, Einfluss, Handlungsbedarf, Haltung, Gegenstelle und Beziehung (solid, dotted oder ein Linkname).",
   "tablePaste.expected.powermap.rules": "Jede Zeile ist eine Person. solid und dotted sind Berichtslinien. Jeder andere Name ist ein Einflusspfeil.",
   "tablePaste.expected.powermap.headers": "Name|Rolle|Vorgesetzter|Machtrolle|Einfluss|Handlung|Haltung|Gegenstelle|Beziehung",
-
+  "tablePaste.type.histogram": "Histogramm",
+  "tablePaste.expected.histogram.columns": "Eine Spalte je Serie. Die erste Zeile kann die Serien benennen. Zellen bleiben unverändert, einschließlich leerer Zellen, na und ungültiger Token.",
+  "tablePaste.expected.histogram.rules": "Jede Spalte wird zu series Name : v1, v2, …. Leere und nicht numerische Zellen bleiben, damit missing, errors und outliers sie bereinigen.",
+  "tablePaste.expected.histogram.headers": "Morgen|Abend",
 } as const satisfies LocaleMessages;

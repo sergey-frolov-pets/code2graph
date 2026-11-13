@@ -16,6 +16,7 @@ export const TYPE_ALIASES: Record<ExtDiagramType, string[]> = {
   radar: ["radar", "radarchart", "spider"],
   voronoi: ["voronoi", "voronoi-diagram"],
   series: ["series"],
+  histogram: ["histogram", "hist", "dist"],
 };
 
 const ALIAS_TO_TYPE = new Map<string, ExtDiagramType>();

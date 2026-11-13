@@ -458,5 +458,7 @@ export const siteMessages = {
   "site.ext.mermaid.type.powermap": "权力图",
   "site.ext.mermaid.desc.powermap": "画在汇报树上的利益相关者权力图：角色、影响力、行动需求和态度，以及公司对接人。照片或剪影、图例，以及 supporter、enemy 这样的具名箭头。",
   "site.ext.mermaid.syntax.powermap": "powermap 打开图。company 写公司，legend on|off 写图例，avatar 48 或 avatar off 写照片框。人是 id [姓名|职务]，带 role、influence、action、attitude、counterpart、gender 和 photo。-> 和 -.-> 是汇报线。link 名称 color=#hex style=solid|dash|dot|dashdot 定义箭头，A -名称-> B 画出它。",
-
+  "site.ext.mermaid.type.histogram": "直方图",
+  "site.ext.mermaid.desc.histogram": "按分箱显示次数或密度，可叠加拟合或给定的分布曲线，以及均值、中位数和置信区间。",
+  "site.ext.mermaid.syntax.histogram": "histogram 打开图表（别名 hist、dist）。series 名称 : v1, v2, … 是一组观测；空单元格、na、n/a、null、none、nan、-、— 和 . 都是缺失。bins auto、bins N、binwidth W 或 bins a --> b, b --> c 设定区间。scale count 或 scale density 设定柱高。fit normal 拟合曲线，curve weibull shape=1.6 scale=28 按给定参数绘制。stats 列出 mean median sd var ci，ci 0.95 是均值区间。labels、gap、colors、mono、rotate 90、fontsize、ratio、grid、axis 和 line 与 series 相同。",
 } as const satisfies LocaleMessages;

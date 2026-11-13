@@ -13,6 +13,7 @@ import { treemapEngine } from "./engines/treemap";
 import { radarEngine } from "./engines/radar";
 import { voronoiEngine } from "./engines/voronoi";
 import { seriesEngine } from "./engines/series";
+import { histogramEngine } from "./engines/histogram";
 
 /**
  * Точка входа расширения.
@@ -85,6 +86,8 @@ function loadEngineSync(type: ExtDiagramType) {
       return voronoiEngine;
     case "series":
       return seriesEngine;
+    case "histogram":
+      return histogramEngine;
   }
 }
 
@@ -112,6 +115,8 @@ async function loadEngine(type: ExtDiagramType) {
       return (await import("./engines/voronoi")).voronoiEngine;
     case "series":
       return (await import("./engines/series")).seriesEngine;
+    case "histogram":
+      return (await import("./engines/histogram")).histogramEngine;
   }
 }
 

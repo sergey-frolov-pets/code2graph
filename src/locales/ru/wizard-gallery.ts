@@ -60,6 +60,7 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.tag.diagramType.radar": "Лепестковая диаграмма",
   "llm.wizard.gallery.tag.diagramType.voronoi": "Диаграмма Вороного",
   "llm.wizard.gallery.tag.diagramType.clustered": "Серийная диаграмма",
+  "llm.wizard.gallery.tag.diagramType.histogram": "Гистограмма",
   "llm.wizard.gallery.tag.diagramType.decision": "Решение",
   "llm.wizard.gallery.desc.bubble": "Точки на двух осях, размер задаёт третье значение.",
   "llm.wizard.gallery.desc.heatmap": "Матрица, цвет ячейки показывает величину.",
@@ -70,6 +71,8 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.desc.radar": "Сравнение нескольких серий по осям-лучам из одного центра.",
   "llm.wizard.gallery.desc.voronoi": "Разбиение плоскости на зоны ближайших опорных точек.",
   "llm.wizard.gallery.desc.clustered": "Сгруппированные столбцы нескольких серий по категориям.",
+  "llm.wizard.gallery.desc.histogram":
+    "Число или плотность по бинам, кривая заданного или подобранного распределения, среднее, медиана и доверительный интервал.",
   "llm.wizard.gallery.desc.decision": "Поток, который ветвится на решении.",
   "llm.wizard.gallery.example.mermaid.waterfall.title": "Водопад",
   "llm.wizard.gallery.example.mermaid.waterfall.description":
@@ -129,6 +132,33 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.seriesUnnamed.title": "Серийная — без названий",
   "llm.wizard.gallery.example.mermaid.seriesUnnamed.description":
     "Столбцы и линии без имён: легенды и подписей у линий нет.",
+  "llm.wizard.gallery.example.mermaid.histogram.title": "Гистограмма задержки",
+  "llm.wizard.gallery.example.mermaid.histogram.description":
+    "Автобины, шкала числа, среднее, медиана, доверительный интервал и нормальная кривая по наблюдениям.",
+  "llm.wizard.gallery.example.mermaid.histogramBins.title": "Гистограмма — явные интервалы",
+  "llm.wizard.gallery.example.mermaid.histogramBins.description":
+    "Неравные стыкующиеся интервалы. Точка на границе попадает в правый бин.",
+  "llm.wizard.gallery.example.mermaid.histogramCurves.title": "Гистограмма — кривые распределений",
+  "llm.wizard.gallery.example.mermaid.histogramCurves.description":
+    "Две серии рядом, подбор normal и weibull и кривая Вейбулла с заданными параметрами.",
+  "llm.wizard.gallery.example.mermaid.histogramLabels.title": "Гистограмма — подписи внутри",
+  "llm.wizard.gallery.example.mermaid.histogramLabels.description":
+    "Числа внутри столбцов, зазор и свой размер шрифта.",
+  "llm.wizard.gallery.example.mermaid.histogramClean.title": "Гистограмма — очистка данных",
+  "llm.wizard.gallery.example.mermaid.histogramClean.description":
+    "Пропуск заполняется средним, ошибочный токен отбрасывается, выброс поджимается к забору.",
+  "llm.wizard.gallery.example.mermaid.histogramDensity.title": "Гистограмма — плотность",
+  "llm.wizard.gallery.example.mermaid.histogramDensity.description":
+    "Высота столбца — count/(n·ширина), поэтому кривая совпадает с плотностью.",
+  "llm.wizard.gallery.example.mermaid.histogramMono.title": "Гистограмма — монохром",
+  "llm.wizard.gallery.example.mermaid.histogramMono.description":
+    "Та же гистограмма в чёрно-белом режиме. Явный цвет всё равно важнее.",
+  "llm.wizard.gallery.example.mermaid.histogramRotate.title": "Гистограмма — поворот 90°",
+  "llm.wizard.gallery.example.mermaid.histogramRotate.description":
+    "Бины идут сверху вниз, столбцы растут вправо.",
+  "llm.wizard.gallery.example.mermaid.histogramLine.title": "Гистограмма — линия уровня",
+  "llm.wizard.gallery.example.mermaid.histogramLine.description":
+    "Пунктирный горизонтальный уровень через бины, со своим цветом и толщиной.",
   "llm.wizard.gallery.example.wiremark.login.title": "Макет входа",
   "llm.wizard.gallery.example.wiremark.login.description":
     "Вайрфрейм входа: поля, вкладки и основное действие.",

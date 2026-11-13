@@ -173,5 +173,8 @@ export const tablePasteMessages = {
   "tablePaste.expected.powermap.columns": "नाम, पद, प्रबंधक, भूमिका, प्रभाव, कार्रवाई, रुख, समकक्ष और कड़ी (solid, dotted या नाम)।",
   "tablePaste.expected.powermap.rules": "हर पंक्ति एक व्यक्ति है। solid और dotted रिपोर्टिंग हैं। कोई अन्य नाम प्रभाव का तीर है।",
   "tablePaste.expected.powermap.headers": "नाम|पद|प्रबंधक|भूमिका|प्रभाव|कार्रवाई|रुख|समकक्ष|कड़ी",
-
+  "tablePaste.type.histogram": "हिस्टोग्राम",
+  "tablePaste.expected.histogram.columns": "हर स्तंभ एक शृंखला है। पहली पंक्ति नाम हो सकती है। खाली सेल, na और गलत मान ज्यों के त्यों रहते हैं।",
+  "tablePaste.expected.histogram.rules": "हर स्तंभ series नाम : v1, v2, … बनता है। खाली और गैर-संख्या missing, errors और outliers के लिए रहती हैं।",
+  "tablePaste.expected.histogram.headers": "सुबह|शाम",
 } as const satisfies LocaleMessages;

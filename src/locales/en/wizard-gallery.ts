@@ -61,6 +61,7 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.tag.diagramType.radar": "Radar chart",
   "llm.wizard.gallery.tag.diagramType.voronoi": "Voronoi diagram",
   "llm.wizard.gallery.tag.diagramType.clustered": "Series chart",
+  "llm.wizard.gallery.tag.diagramType.histogram": "Histogram",
   "llm.wizard.gallery.tag.diagramType.decision": "Decision",
   "llm.wizard.gallery.desc.bubble": "Points sized by a third value on two axes.",
   "llm.wizard.gallery.desc.heatmap": "A matrix colored by value.",
@@ -72,6 +73,8 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.desc.radar": "Compares multiple series across radial axes from a shared center.",
   "llm.wizard.gallery.desc.voronoi": "Partitions a plane into nearest-neighbor coverage cells.",
   "llm.wizard.gallery.desc.clustered": "Grouped multi-series bars compared across categories.",
+  "llm.wizard.gallery.desc.histogram":
+    "Counts or density by bin, with a fitted or given distribution curve, mean, median, and a confidence interval.",
   "llm.wizard.gallery.desc.decision": "A flow that branches on a decision.",
   "llm.wizard.gallery.example.mermaid.waterfall.title": "Waterfall",
   "llm.wizard.gallery.example.mermaid.waterfall.description":
@@ -131,6 +134,33 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.example.mermaid.seriesUnnamed.title": "Series chart — no names",
   "llm.wizard.gallery.example.mermaid.seriesUnnamed.description":
     "Bars and lines with no names: no legend entries and no line captions.",
+  "llm.wizard.gallery.example.mermaid.histogram.title": "Latency histogram",
+  "llm.wizard.gallery.example.mermaid.histogram.description":
+    "Automatic bins, a count scale, mean, median, confidence interval, and a normal curve fitted to the observations.",
+  "llm.wizard.gallery.example.mermaid.histogramBins.title": "Histogram — explicit bins",
+  "llm.wizard.gallery.example.mermaid.histogramBins.description":
+    "Unequal abutting intervals. A boundary belongs to the bin on the right.",
+  "llm.wizard.gallery.example.mermaid.histogramCurves.title": "Histogram — distribution curves",
+  "llm.wizard.gallery.example.mermaid.histogramCurves.description":
+    "Two series side by side, a fitted normal and Weibull, and a Weibull drawn from given parameters.",
+  "llm.wizard.gallery.example.mermaid.histogramLabels.title": "Histogram — inside labels",
+  "llm.wizard.gallery.example.mermaid.histogramLabels.description":
+    "Counts written inside the bars, with a gap and a custom font size.",
+  "llm.wizard.gallery.example.mermaid.histogramClean.title": "Histogram — data cleaning",
+  "llm.wizard.gallery.example.mermaid.histogramClean.description":
+    "A missing value is filled with the mean, a bad token is dropped, and an outlier is winsorized.",
+  "llm.wizard.gallery.example.mermaid.histogramDensity.title": "Histogram — density",
+  "llm.wizard.gallery.example.mermaid.histogramDensity.description":
+    "Bar height is count divided by n times the bin width, so the curve matches the pdf.",
+  "llm.wizard.gallery.example.mermaid.histogramMono.title": "Histogram — mono",
+  "llm.wizard.gallery.example.mermaid.histogramMono.description":
+    "The same histogram in black and white. An explicit color still wins.",
+  "llm.wizard.gallery.example.mermaid.histogramRotate.title": "Histogram — rotated 90°",
+  "llm.wizard.gallery.example.mermaid.histogramRotate.description":
+    "Bins run from top to bottom and bars grow to the right.",
+  "llm.wizard.gallery.example.mermaid.histogramLine.title": "Histogram — level line",
+  "llm.wizard.gallery.example.mermaid.histogramLine.description":
+    "A dashed horizontal level across the bins, with its own color and width.",
   "llm.wizard.gallery.example.wiremark.login.title": "Login screen",
   "llm.wizard.gallery.example.wiremark.login.description":
     "A sign-in wireframe with fields, tabs, and a primary action.",

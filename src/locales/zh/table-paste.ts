@@ -173,5 +173,8 @@ export const tablePasteMessages = {
   "tablePaste.expected.powermap.columns": "姓名、职务、上级、角色、影响力、行动需求、态度、对接人和关系（solid、dotted 或关系名）。",
   "tablePaste.expected.powermap.rules": "每一行是一个人。solid 和 dotted 是汇报线。其他名称是影响箭头。",
   "tablePaste.expected.powermap.headers": "姓名|职务|上级|角色|影响力|行动|态度|对接人|关系",
-
+  "tablePaste.type.histogram": "直方图",
+  "tablePaste.expected.histogram.columns": "每一列是一条序列。首行可以是序列名。单元格原样保留，包括空白、na 和错误记号。",
+  "tablePaste.expected.histogram.rules": "每一列变成 series 名称 : v1, v2, …。空白和非数字会保留，交给 missing、errors 和 outliers 处理。",
+  "tablePaste.expected.histogram.headers": "上午|晚间",
 } as const satisfies LocaleMessages;

@@ -1,0 +1,9 @@
+histogram
+title Explicit bins
+x "ms" 0 --> 80
+y "count"
+bins 0 --> 10, 10 --> 25, 25 --> 50, 50 --> 80
+labels above
+series Observations : 12, 18, 22, 25, 30, 28, 35, 40, 16, 21, 27, 33, 19, 24, 38, 14
+fit weibull
+curve weibull shape=1.8 scale=30 "reference" color=#8250df

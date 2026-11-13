@@ -47,6 +47,7 @@ export const tablePasteMessages = {
   "tablePaste.type.radar": "Лепестковая диаграмма (Radar)",
   "tablePaste.type.voronoi": "Диаграмма Вороного (Voronoi)",
   "tablePaste.type.clustered": "Серийная диаграмма (series)",
+  "tablePaste.type.histogram": "Гистограмма",
   "tablePaste.type.xychart": "XY-график (Bar / Line)",
   "tablePaste.type.quadrant": "Квадрант (Quadrant Chart)",
   "tablePaste.type.sankey": "Диаграмма Санки (Sankey)",
@@ -109,6 +110,11 @@ export const tablePasteMessages = {
   "tablePaste.expected.clustered.rules":
     "Формирует categories и строки series. Сохраняет директивы rotate 90, invert y и цвета.",
   "tablePaste.expected.clustered.headers": "Категория|Москва|Регионы|Экспорт",
+  "tablePaste.expected.histogram.columns":
+    "По колонке на серию. Первая строка может назвать серии. Ячейки тела сохраняются как есть, включая пустые, na и ошибочные токены.",
+  "tablePaste.expected.histogram.rules":
+    "Каждая колонка становится series Имя : зн1, зн2, …. Пустые ячейки и нечисла остаются, чтобы missing, errors и outliers обработали их сами.",
+  "tablePaste.expected.histogram.headers": "Утро|Вечер",
   "tablePaste.expected.xychart.columns":
     "От 1 колонки. Одна колонка — числа для bar [Val 1, ..., Val n]. Две — «Категория X» и «Значение bar». Три и больше — «Категория X» и отдельный bar на каждую следующую колонку.",
   "tablePaste.expected.xychart.rules":

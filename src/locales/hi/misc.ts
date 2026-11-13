@@ -492,5 +492,13 @@ export const miscMessages = {
   "presentation.transparent": "पारदर्शी",
   "samples.mermaid.orgchartAvatar": "संगठन चार्ट — फ़ोटो",
   "samples.mermaid.powermap": "पावर मैप",
-
+  "samples.mermaid.histogram": "विलंब का हिस्टोग्राम",
+  "samples.mermaid.histogramBins": "हिस्टोग्राम — स्पष्ट अंतराल",
+  "samples.mermaid.histogramCurves": "हिस्टोग्राम — वितरण वक्र",
+  "samples.mermaid.histogramLabels": "हिस्टोग्राम — भीतरी लेबल",
+  "samples.mermaid.histogramClean": "हिस्टोग्राम — डेटा सफाई",
+  "samples.mermaid.histogramDensity": "हिस्टोग्राम — घनत्व",
+  "samples.mermaid.histogramMono": "हिस्टोग्राम — मोनो",
+  "samples.mermaid.histogramRotate": "हिस्टोग्राम — 90° घुमाव",
+  "samples.mermaid.histogramLine": "हिस्टोग्राम — स्तर रेखा",
 } as const satisfies LocaleMessages;

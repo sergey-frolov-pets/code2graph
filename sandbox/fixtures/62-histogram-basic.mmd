@@ -1,0 +1,17 @@
+histogram
+title Latency
+x "ms" 0 --> 80
+y "count"
+bins auto
+scale count
+gap 0
+labels above fontcolor auto
+missing drop
+errors drop
+outliers iqr 1.5 drop
+ci 0.95
+stats mean median sd var ci
+grid
+colors s1=#0969da mean=#cf222e median=#8250df ci=#d0d7de
+series Observations : 12, 18, , 22, na, 30, 25, 28, 35, 40, 16, 21, 27, 33, 19, 24, 38
+fit normal

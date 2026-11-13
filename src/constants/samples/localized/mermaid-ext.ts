@@ -1,11 +1,13 @@
 import type { AppLocale } from "@/constants/i18n";
 import type { MermaidExtSampleId } from "@/constants/mermaid-sample-diagrams";
+import { HISTOGRAM_GALLERY_SAMPLES } from "@/constants/samples/histogram-gallery-samples";
 
 export const MERMAID_EXT_EXTRA: Record<
   Exclude<AppLocale, "ru" | "en">,
   Record<MermaidExtSampleId, string>
 > = {
   es: {
+    ...HISTOGRAM_GALLERY_SAMPLES.es,
     waterfall: `waterfall
 %% Ejes: axis y off oculta el eje de valores y su rejilla, axis x off oculta las columnas. Un grid posterior devuelve las líneas sin rótulos. grid off oculta solo la rejilla.
 %% Hueco: gap 12 son píxeles entre barras y columnas, gap 20% es la parte vacía. No hay segundo eje ni suma de pila.
@@ -553,6 +555,7 @@ line : 110, 130, 155, 180 color=#0969da style=dash width=2
 line : 70, 100, 120, 150 style=dot`,
   },
   zh: {
+    ...HISTOGRAM_GALLERY_SAMPLES.zh,
     waterfall: `waterfall
 %% 坐标轴：axis y off 隐藏数值轴及其网格，axis x off 隐藏列标签。之后的 grid 只恢复线条、不恢复刻度文字。grid off 只隐藏网格。
 %% 间距：gap 12 是柱与柱之间的像素，gap 20% 是留白比例。没有第二轴，也没有堆叠合计。
@@ -1100,6 +1103,7 @@ line : 110, 130, 155, 180 color=#0969da style=dash width=2
 line : 70, 100, 120, 150 style=dot`,
   },
   ja: {
+    ...HISTOGRAM_GALLERY_SAMPLES.ja,
     waterfall: `waterfall
 %% 軸: axis y off は値の軸と格子を隠し、axis x off は列ラベルを隠します。後の grid は目盛り文字なしで線だけ戻します。grid off は格子だけを隠します。
 %% 間隔: gap 12 は棒の間のピクセル、gap 20% は空きの割合です。第2軸と積み上げ合計はありません。
@@ -1647,6 +1651,7 @@ line : 110, 130, 155, 180 color=#0969da style=dash width=2
 line : 70, 100, 120, 150 style=dot`,
   },
   hi: {
+    ...HISTOGRAM_GALLERY_SAMPLES.hi,
     waterfall: `waterfall
 %% अक्ष: axis y off मान अक्ष और उसकी ग्रिड छिपाता है, axis x off स्तंभ लेबल। बाद का grid रेखाएँ बिना अंक-लेबल लौटाता है। grid off केवल ग्रिड छिपाता है।
 %% अंतर: gap 12 पिक्सेल है, gap 20% खाली हिस्सा। दूसरा अक्ष और स्टैक योग नहीं है।
@@ -2194,6 +2199,7 @@ line : 110, 130, 155, 180 color=#0969da style=dash width=2
 line : 70, 100, 120, 150 style=dot`,
   },
   pt: {
+    ...HISTOGRAM_GALLERY_SAMPLES.pt,
     waterfall: `waterfall
 %% Eixos: axis y off esconde o eixo de valores e a grelha, axis x off esconde os rótulos das colunas. Um grid depois devolve as linhas sem os rótulos dos traços. grid off esconde só a grelha.
 %% Intervalo: gap 12 são píxeis entre barras e colunas, gap 20% é a parte vazia. Não há segundo eixo nem soma da pilha.
@@ -2741,6 +2747,7 @@ line : 110, 130, 155, 180 color=#0969da style=dash width=2
 line : 70, 100, 120, 150 style=dot`,
   },
   de: {
+    ...HISTOGRAM_GALLERY_SAMPLES.de,
     waterfall: `waterfall
 %% Achsen: axis y off blendet die Wertachse und ihr Gitter aus, axis x off die Spaltenbeschriftung. Ein späteres grid bringt die Linien ohne Teilstrichtexte zurück. grid off blendet nur das Gitter aus.
 %% Abstand: gap 12 sind Pixel zwischen den Balken und Spalten, gap 20% der leere Anteil. Es gibt keine zweite Achse und keine Stapelsumme.
@@ -3288,6 +3295,7 @@ line : 110, 130, 155, 180 color=#0969da style=dash width=2
 line : 70, 100, 120, 150 style=dot`,
   },
   ar: {
+    ...HISTOGRAM_GALLERY_SAMPLES.ar,
     waterfall: `waterfall
 %% المحاور: axis y off يخفي محور القيم وشبكةه، وaxis x off يخفي تسميات الأعمدة. grid لاحق يعيد الخطوط بلا تسميات التدريج. grid off يخفي الشبكة فقط.
 %% الفجوة: gap 12 بكسل بين الأعمدة، وgap 20% نسبة الفراغ. لا محور ثانٍ ولا مجموع تكديس.

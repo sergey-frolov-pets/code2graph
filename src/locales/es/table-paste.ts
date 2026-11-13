@@ -173,5 +173,8 @@ export const tablePasteMessages = {
   "tablePaste.expected.powermap.columns": "Nombre, cargo, jefe, rol, influencia, acción, actitud, interlocutor y vínculo (solid, dotted o un nombre).",
   "tablePaste.expected.powermap.rules": "Cada fila es una persona. solid y dotted son líneas de mando. Cualquier otro nombre es una flecha de influencia.",
   "tablePaste.expected.powermap.headers": "Nombre|Cargo|Jefe|Rol|Influencia|Acción|Actitud|Interlocutor|Vínculo",
-
+  "tablePaste.type.histogram": "Histograma",
+  "tablePaste.expected.histogram.columns": "Una columna por serie. La primera fila puede nombrar las series. Las celdas se conservan tal cual, incluidos vacíos, na y tokens inválidos.",
+  "tablePaste.expected.histogram.rules": "Cada columna se vuelve series Nombre : v1, v2, …. Las celdas vacías y no numéricas se conservan para que missing, errors y outliers las limpien.",
+  "tablePaste.expected.histogram.headers": "Mañana|Tarde",
 } as const satisfies LocaleMessages;

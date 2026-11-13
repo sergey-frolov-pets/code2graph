@@ -482,6 +482,7 @@ export function getDiagramBuilderSchema(
     diagramType === "heatmap" ||
     diagramType === "radar" ||
     diagramType === "series" ||
+    diagramType === "histogram" ||
     diagramType === "xychart" ||
     diagramType === "wireframe"
   ) {
@@ -496,21 +497,22 @@ export function getDiagramBuilderSchema(
       cap.supportsSeriesColors = true;
       cap.supportsRadarScale = true;
       cap.supportsRadarVisuals = true;
-    } else if (diagramType === "series") {
+    } else if (diagramType === "series" || diagramType === "histogram") {
       cap.supportsRotate90 = true;
       cap.supportsAspectRatio = true;
       cap.supportsFontSize = true;
+      cap.supportsXAxis = diagramType === "histogram";
       cap.supportsYAxis = true;
       cap.supportsGrid = true;
       cap.supportsAxisToggle = true;
       cap.supportsLabelsMode = true;
       cap.labelsModeOptions = SERIES_LABELS_OPTIONS;
-      cap.supportsStacked = true;
+      cap.supportsStacked = diagramType === "series";
       cap.supportsMono = true;
       cap.supportsSeriesColors = true;
-      cap.supportsBreaks = true;
+      cap.supportsBreaks = diagramType === "series";
       cap.supportsThresholds = true;
-      cap.supportsCagr = true;
+      cap.supportsCagr = diagramType === "series";
     } else if (diagramType === "xychart") {
       cap.supportsYAxis = true;
     }
@@ -526,11 +528,13 @@ export function getDiagramBuilderSchema(
           ? "builder.col.series"
           : diagramType === "heatmap"
             ? "builder.col.row"
-            : "builder.col.category",
+            : diagramType === "histogram"
+              ? "builder.col.observation"
+              : "builder.col.category",
       matrixColHeaderPrefix:
         diagramType === "radar"
           ? "Axis"
-          : diagramType === "series" || diagramType === "xychart"
+          : diagramType === "series" || diagramType === "xychart" || diagramType === "histogram"
             ? "Series"
             : "Col",
       capabilities: cap,

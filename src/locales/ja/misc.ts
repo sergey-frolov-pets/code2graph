@@ -492,5 +492,13 @@ export const miscMessages = {
   "presentation.transparent": "透明",
   "samples.mermaid.orgchartAvatar": "組織図 — 写真",
   "samples.mermaid.powermap": "パワーマップ",
-
+  "samples.mermaid.histogram": "遅延のヒストグラム",
+  "samples.mermaid.histogramBins": "ヒストグラム — 明示区間",
+  "samples.mermaid.histogramCurves": "ヒストグラム — 分布曲線",
+  "samples.mermaid.histogramLabels": "ヒストグラム — 内側ラベル",
+  "samples.mermaid.histogramClean": "ヒストグラム — データ洗浄",
+  "samples.mermaid.histogramDensity": "ヒストグラム — 密度",
+  "samples.mermaid.histogramMono": "ヒストグラム — モノクロ",
+  "samples.mermaid.histogramRotate": "ヒストグラム — 90度回転",
+  "samples.mermaid.histogramLine": "ヒストグラム — 水準線",
 } as const satisfies LocaleMessages;

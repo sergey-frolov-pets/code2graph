@@ -1121,6 +1121,25 @@
     ]
   },
   {
+    "id": "mermaid/ext/histogram",
+    "path": "mermaid/ext/histogram.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "histogram",
+    "kind": "card",
+    "keywords": [
+      "histogram",
+      "hist",
+      "dist",
+      "гистограмм"
+    ],
+    "sourceHints": [
+      "(?m)^histogram\\b",
+      "(?m)^hist\\b",
+      "(?m)^dist\\b"
+    ]
+  },
+  {
     "id": "mermaid/ext/waterfall-scale",
     "path": "mermaid/ext/waterfall-scale.md",
     "parent": "mermaid/ext/waterfall",

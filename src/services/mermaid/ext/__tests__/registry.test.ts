@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { detectType, firstMeaningfulLine, listTypes } from "../registry";
 
 describe("detectType", () => {
-  it("распознаёт все 11 канонических типов", () => {
+  it("распознаёт все 12 канонических типов", () => {
     expect(detectType("waterfall\n=10 : A")).toBe("waterfall");
     expect(detectType('bubble\nx "X" 0 --> 1')).toBe("bubble");
     expect(detectType("heatmap\nx A, B")).toBe("heatmap");
@@ -14,6 +14,7 @@ describe("detectType", () => {
     expect(detectType("radar\naxes A, B, C\nS : 1, 2, 3")).toBe("radar");
     expect(detectType("voronoi\nA : x=10, y=20")).toBe("voronoi");
     expect(detectType("series\ncategories A, B\nS : 10, 20")).toBe("series");
+    expect(detectType("histogram\nseries A : 10, 12, 14")).toBe("histogram");
   });
 
   it("понимает алиасы", () => {
@@ -33,6 +34,8 @@ describe("detectType", () => {
     expect(detectType("spider")).toBe("radar");
     expect(detectType("voronoi-diagram")).toBe("voronoi");
     expect(detectType("series:")).toBe("series");
+    expect(detectType("hist")).toBe("histogram");
+    expect(detectType("dist")).toBe("histogram");
     expect(detectType("clustered\ncategories A, B")).toBeNull();
     expect(detectType("clustered-bar")).toBeNull();
   });
@@ -77,9 +80,9 @@ describe("firstMeaningfulLine", () => {
 });
 
 describe("listTypes", () => {
-  it("перечисляет ровно 11 типов", () => {
+  it("перечисляет ровно 12 типов", () => {
     const types = listTypes();
-    expect(types).toHaveLength(11);
+    expect(types).toHaveLength(12);
     expect(new Set(types)).toEqual(
       new Set([
         "waterfall",
@@ -93,6 +96,7 @@ describe("listTypes", () => {
         "radar",
         "voronoi",
         "series",
+        "histogram",
       ]),
     );
   });

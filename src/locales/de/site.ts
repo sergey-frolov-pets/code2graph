@@ -458,5 +458,7 @@ export const siteMessages = {
   "site.ext.mermaid.type.powermap": "Machtkarte",
   "site.ext.mermaid.desc.powermap": "Stakeholder auf einem Berichtsbaum: Rolle, Einfluss, Handlungsbedarf und Haltung, plus Firmengegenseite. Fotos oder Silhouetten, eine Legende und benannte Pfeile wie supporter und enemy.",
   "site.ext.mermaid.syntax.powermap": "powermap öffnet die Karte. company setzt die Firma, legend on|off die Legende, avatar 48 oder avatar off das Fotofeld. Eine Person ist id [Name|Rolle] mit role, influence, action, attitude, counterpart, gender und photo. -> und -.-> sind Berichtslinien. link Name color=#hex style=solid|dash|dot|dashdot definiert einen Pfeil, A -Name-> B zeichnet ihn.",
-
+  "site.ext.mermaid.type.histogram": "Histogramm",
+  "site.ext.mermaid.desc.histogram": "Anzahl oder Dichte je Bin, mit einer geschätzten oder vorgegebenen Verteilungskurve, Mittelwert, Median und Konfidenzintervall.",
+  "site.ext.mermaid.syntax.histogram": "histogram öffnet das Diagramm (Aliase hist und dist). series Name : v1, v2, … ist eine Stichprobe. Eine leere Zelle, na, n/a, null, none, nan, -, — oder . ist fehlend. bins auto, bins N, binwidth W oder bins a --> b, b --> c setzen die Intervalle. scale count oder scale density setzt die Höhe. fit normal schätzt die Kurve, curve weibull shape=1.6 scale=28 zeichnet gegebene Parameter. stats listet mean median sd var ci, ci 0.95 ist das Intervall des Mittelwerts. labels, gap, colors, mono, rotate 90, fontsize, ratio, grid, axis und line gelten wie bei series.",
 } as const satisfies LocaleMessages;

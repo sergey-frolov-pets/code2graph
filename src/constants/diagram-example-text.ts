@@ -33,6 +33,15 @@ const TITLE_KEYS: Record<string, LocaleKey> = {
   "mermaid:seriesBreak": "llm.wizard.gallery.example.mermaid.seriesBreak.title",
   "mermaid:seriesThresholds": "llm.wizard.gallery.example.mermaid.seriesThresholds.title",
   "mermaid:seriesUnnamed": "llm.wizard.gallery.example.mermaid.seriesUnnamed.title",
+  "mermaid:histogram": "llm.wizard.gallery.example.mermaid.histogram.title",
+  "mermaid:histogramBins": "llm.wizard.gallery.example.mermaid.histogramBins.title",
+  "mermaid:histogramCurves": "llm.wizard.gallery.example.mermaid.histogramCurves.title",
+  "mermaid:histogramLabels": "llm.wizard.gallery.example.mermaid.histogramLabels.title",
+  "mermaid:histogramClean": "llm.wizard.gallery.example.mermaid.histogramClean.title",
+  "mermaid:histogramDensity": "llm.wizard.gallery.example.mermaid.histogramDensity.title",
+  "mermaid:histogramMono": "llm.wizard.gallery.example.mermaid.histogramMono.title",
+  "mermaid:histogramRotate": "llm.wizard.gallery.example.mermaid.histogramRotate.title",
+  "mermaid:histogramLine": "llm.wizard.gallery.example.mermaid.histogramLine.title",
   "wiremark:login": "llm.wizard.gallery.example.wiremark.login.title",
   "wiremark:dashboard": "llm.wizard.gallery.example.wiremark.dashboard.title",
   "wiremark:form": "llm.wizard.gallery.example.wiremark.form.title",
@@ -75,6 +84,15 @@ const DESCRIPTION_KEYS: Record<string, LocaleKey> = {
   "mermaid:seriesThresholds":
     "llm.wizard.gallery.example.mermaid.seriesThresholds.description",
   "mermaid:seriesUnnamed": "llm.wizard.gallery.example.mermaid.seriesUnnamed.description",
+  "mermaid:histogram": "llm.wizard.gallery.example.mermaid.histogram.description",
+  "mermaid:histogramBins": "llm.wizard.gallery.example.mermaid.histogramBins.description",
+  "mermaid:histogramCurves": "llm.wizard.gallery.example.mermaid.histogramCurves.description",
+  "mermaid:histogramLabels": "llm.wizard.gallery.example.mermaid.histogramLabels.description",
+  "mermaid:histogramClean": "llm.wizard.gallery.example.mermaid.histogramClean.description",
+  "mermaid:histogramDensity": "llm.wizard.gallery.example.mermaid.histogramDensity.description",
+  "mermaid:histogramMono": "llm.wizard.gallery.example.mermaid.histogramMono.description",
+  "mermaid:histogramRotate": "llm.wizard.gallery.example.mermaid.histogramRotate.description",
+  "mermaid:histogramLine": "llm.wizard.gallery.example.mermaid.histogramLine.description",
   "wiremark:login": "llm.wizard.gallery.example.wiremark.login.description",
   "wiremark:dashboard": "llm.wizard.gallery.example.wiremark.dashboard.description",
   "wiremark:form": "llm.wizard.gallery.example.wiremark.form.description",
@@ -95,6 +113,7 @@ const EXTRA_DIAGRAM_LABELS: Partial<Record<DiagramTypeTag, LocaleKey>> = {
   radar: "llm.wizard.gallery.tag.diagramType.radar",
   voronoi: "llm.wizard.gallery.tag.diagramType.voronoi",
   series: "llm.wizard.gallery.tag.diagramType.clustered",
+  histogram: "llm.wizard.gallery.tag.diagramType.histogram",
   decision: "llm.wizard.gallery.tag.diagramType.decision",
 };
 
@@ -109,6 +128,7 @@ const EXTRA_DIAGRAM_DESCRIPTIONS: Partial<Record<DiagramTypeTag, LocaleKey>> = {
   radar: "llm.wizard.gallery.desc.radar",
   voronoi: "llm.wizard.gallery.desc.voronoi",
   series: "llm.wizard.gallery.desc.clustered",
+  histogram: "llm.wizard.gallery.desc.histogram",
   decision: "llm.wizard.gallery.desc.decision",
 };
 

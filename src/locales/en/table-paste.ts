@@ -47,6 +47,7 @@ export const tablePasteMessages = {
   "tablePaste.type.radar": "Radar chart",
   "tablePaste.type.voronoi": "Voronoi diagram",
   "tablePaste.type.clustered": "Series chart",
+  "tablePaste.type.histogram": "Histogram",
   "tablePaste.type.xychart": "XY Chart (Bar / Line)",
   "tablePaste.type.quadrant": "Quadrant Chart",
   "tablePaste.type.sankey": "Sankey diagram",
@@ -110,6 +111,11 @@ export const tablePasteMessages = {
   "tablePaste.expected.clustered.rules":
     "Generates categories and series lines while keeping rotate 90, invert y, and color directives.",
   "tablePaste.expected.clustered.headers": "Category|North|South|Export",
+  "tablePaste.expected.histogram.columns":
+    "One column per series. The first row may name the series. Body cells stay as written, including blanks, na, and bad tokens.",
+  "tablePaste.expected.histogram.rules":
+    "Each column becomes series Name : v1, v2, …. Empty cells and non-numbers are kept so missing, errors, and outliers can clean them.",
+  "tablePaste.expected.histogram.headers": "Morning|Evening",
   "tablePaste.expected.xychart.columns":
     "1 or more columns. One column is numbers for bar [Val 1, ..., Val n]. Two columns are 'X category' and 'Bar value'. Three or more are 'X category' plus one bar series per extra column.",
   "tablePaste.expected.xychart.rules":

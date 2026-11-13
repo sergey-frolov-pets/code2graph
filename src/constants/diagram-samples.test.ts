@@ -320,6 +320,50 @@ describe("diagram samples coverage", () => {
       expect(levels).toContain("color=#cf222e");
       expect(levels).toContain("style=dot");
 
+      const histogram = [
+        "histogram",
+        "histogramBins",
+        "histogramCurves",
+        "histogramLabels",
+        "histogramClean",
+        "histogramDensity",
+        "histogramMono",
+        "histogramRotate",
+        "histogramLine",
+      ].map((id) => getMermaidSampleSource(id as "histogram", locale)).join("\n");
+      for (const token of [
+        "bins auto",
+        "bins 8",
+        "bins 0 --> 10, 10 --> 25, 25 --> 50, 50 --> 80",
+        "binwidth 10",
+        "scale count",
+        "scale density",
+        "gap 0",
+        "gap 1",
+        "gap 100%",
+        "labels above",
+        "labels inside",
+        "labels none",
+        "fontcolor auto",
+        "axis y off",
+        "axis x off",
+        "rotate 90",
+        "fontsize",
+        "ratio 16x9",
+        "mono",
+        "fit normal",
+        "fit weibull",
+        "curve weibull",
+        "outliers iqr",
+        "missing drop",
+        "errors drop",
+        "stats mean median sd var ci",
+        "ci 0.95",
+        "line 5",
+      ]) {
+        expect(histogram, `${locale}:${token}`).toContain(token);
+      }
+
       const unnamed = getMermaidSampleSource("seriesUnnamed", locale);
       expect(unnamed).toMatch(/^series : /m);
       expect(unnamed).toMatch(/^line : /m);

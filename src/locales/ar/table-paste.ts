@@ -173,5 +173,8 @@ export const tablePasteMessages = {
   "tablePaste.expected.powermap.columns": "الاسم والمنصب والمدير والدور والتأثير والفعل والموقف والنظير والعلاقة (solid أو dotted أو اسم).",
   "tablePaste.expected.powermap.rules": "كل صف شخص. solid و dotted تبعية. أي اسم آخر سهم تأثير.",
   "tablePaste.expected.powermap.headers": "الاسم|المنصب|المدير|الدور|التأثير|الفعل|الموقف|النظير|العلاقة",
-
+  "tablePaste.type.histogram": "مدرج تكراري",
+  "tablePaste.expected.histogram.columns": "عمود لكل سلسلة. الصف الأول قد يسمي السلاسل. تبقى الخلايا كما هي، بما فيها الفارغة وna والرموز الخاطئة.",
+  "tablePaste.expected.histogram.rules": "كل عمود يصبح series الاسم : v1, v2, …. تبقى الخلايا الفارغة وغير الرقمية حتى تعالجها missing وerrors وoutliers.",
+  "tablePaste.expected.histogram.headers": "الصباح|المساء",
 } as const satisfies LocaleMessages;
