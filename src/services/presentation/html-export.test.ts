@@ -589,6 +589,38 @@ describe("presentation html export", () => {
       window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 5, bubbles: true }));
       expect((sticker as HTMLElement).style.width).toBe("18px");
       expect((sticker as HTMLElement).style.height).toBe("18px");
+
+      doc.getElementById("c2g-zoom-in")?.click();
+      const zoomedScale = cameraOf(scene?.style.transform).scale;
+      doc.getElementById("c2g-pen")?.click();
+      const zoomedWidth = doc.getElementById("c2g-pen-width") as HTMLInputElement | null;
+      if (zoomedWidth) {
+        zoomedWidth.value = "6";
+        zoomedWidth.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      stage?.dispatchEvent(new PointerEvent("pointerdown", {
+        clientX: 24,
+        clientY: 24,
+        pointerId: 12,
+        bubbles: true,
+      }));
+      window.dispatchEvent(new PointerEvent("pointermove", {
+        clientX: 96,
+        clientY: 64,
+        pointerId: 12,
+        bubbles: true,
+      }));
+      window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 12, bubbles: true }));
+      const scaledLines = ink?.querySelectorAll("polyline");
+      const scaledLine = scaledLines?.[scaledLines.length - 1];
+      expect(parseFloat(scaledLine?.getAttribute("stroke-width") ?? "")).toBeCloseTo(6 / zoomedScale, 2);
+      doc.getElementById("c2g-pen")?.click();
+      const stickerCount = doc.querySelectorAll(".c2g-sticker").length;
+      doc.getElementById("c2g-sticker")?.click();
+      const scaledSticker = doc.querySelectorAll(".c2g-sticker")[stickerCount] as HTMLElement | undefined;
+      expect(parseFloat(scaledSticker?.style.width ?? "")).toBeCloseTo(168 / zoomedScale, 2);
+      expect(parseFloat(scaledSticker?.style.height ?? "")).toBeCloseTo(112 / zoomedScale, 2);
+      expect(parseFloat(scaledSticker?.style.getPropertyValue("--c2g-unit") ?? "")).toBeCloseTo(1 / zoomedScale, 2);
     } finally {
       HTMLCanvasElement.prototype.getContext = realGetContext;
       HTMLAnchorElement.prototype.click = realClick;
