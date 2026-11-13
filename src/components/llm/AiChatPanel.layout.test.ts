@@ -269,6 +269,13 @@ describe("AiChatPanel layout", () => {
       expect(copy!.contains(provider)).toBe(true);
       expect(model!.compareDocumentPosition(provider!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(model!.parentElement).not.toBe(provider!.parentElement);
+      const hintRow = view.host.querySelector(".ai-chat-panel__hint-row");
+      const settings = view.host.querySelector("[data-testid='ai-chat-modes']");
+      expect(hintRow?.contains(settings ?? null)).toBe(true);
+      expect(hintRow?.contains(hint)).toBe(true);
+      expect(
+        settings!.compareDocumentPosition(model!) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
       expect(view.host.querySelector("textarea")?.classList.contains("is-hinting")).toBe(true);
 
       const select = view.host.querySelector("[data-testid='ai-chat-provider']") as HTMLSelectElement;

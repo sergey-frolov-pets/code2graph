@@ -1739,22 +1739,6 @@ async function onCopyChat(): Promise<void> {
                 aria-hidden="true"
               />
             </button>
-            <button
-              v-if="showComposerHints"
-              class="ai-chat-panel__modes-toggle"
-              type="button"
-              data-testid="ai-chat-modes"
-              :aria-label="t('aiChat.composerModes')"
-              :aria-expanded="modesOpen"
-              :disabled="isBusy"
-              @click="modesOpen = !modesOpen"
-            >
-              <SlidersHorizontal
-                :size="18"
-                :stroke-width="1.8"
-                aria-hidden="true"
-              />
-            </button>
             <div class="ai-chat-panel__field">
               <textarea
                 ref="composerInputRef"
@@ -1771,55 +1755,74 @@ async function onCopyChat(): Promise<void> {
               />
               <div
                 v-if="showComposerHints"
-                class="ai-chat-panel__hint"
-                data-testid="ai-chat-input-hint"
-                aria-hidden="true"
+                class="ai-chat-panel__hint-row"
               >
-                <span class="ai-chat-panel__hint-modes">
-                  <component
-                    :is="contextHintIcon"
-                    class="ai-chat-panel__hint-icon"
-                    data-testid="ai-chat-hint-context"
-                    :data-mode="contextMode"
+                <button
+                  class="ai-chat-panel__modes-toggle"
+                  type="button"
+                  data-testid="ai-chat-modes"
+                  :aria-label="t('aiChat.composerModes')"
+                  :aria-expanded="modesOpen"
+                  :disabled="isBusy"
+                  @click="modesOpen = !modesOpen"
+                >
+                  <SlidersHorizontal
+                    :size="18"
                     :stroke-width="1.8"
                     aria-hidden="true"
                   />
-                  <component
-                    :is="applyHintIcon"
-                    class="ai-chat-panel__hint-icon"
-                    data-testid="ai-chat-hint-apply"
-                    :data-mode="applyMode"
-                    :stroke-width="1.8"
-                    aria-hidden="true"
-                  />
-                </span>
-                <span class="ai-chat-panel__hint-copy">
-                  <span
-                    v-if="composerSelection.model"
-                    class="ai-chat-panel__hint-model"
-                    data-testid="ai-chat-hint-model"
-                  >{{ composerSelection.model }}</span>
-                  <span
-                    v-if="composerSelection.provider || sessionTokenTotal > 0"
-                    class="ai-chat-panel__hint-sub"
-                  >
-                    <span
-                      v-if="composerSelection.provider"
-                      class="ai-chat-panel__hint-provider"
-                      data-testid="ai-chat-hint-provider"
-                    >{{ composerSelection.provider }}</span>
-                    <span
-                      v-if="composerSelection.provider && sessionTokenTotal > 0"
-                      class="ai-chat-panel__hint-dot"
+                </button>
+                <div
+                  class="ai-chat-panel__hint"
+                  data-testid="ai-chat-input-hint"
+                  aria-hidden="true"
+                >
+                  <span class="ai-chat-panel__hint-modes">
+                    <component
+                      :is="contextHintIcon"
+                      class="ai-chat-panel__hint-icon"
+                      data-testid="ai-chat-hint-context"
+                      :data-mode="contextMode"
+                      :stroke-width="1.8"
                       aria-hidden="true"
-                    >·</span>
-                    <span
-                      v-if="sessionTokenTotal > 0"
-                      class="ai-chat-panel__hint-tokens"
-                      data-testid="ai-chat-token-session"
-                    >{{ t("aiChat.tokenSession", { count: formatTokenCount(sessionTokenTotal) }) }}</span>
+                    />
+                    <component
+                      :is="applyHintIcon"
+                      class="ai-chat-panel__hint-icon"
+                      data-testid="ai-chat-hint-apply"
+                      :data-mode="applyMode"
+                      :stroke-width="1.8"
+                      aria-hidden="true"
+                    />
                   </span>
-                </span>
+                  <span class="ai-chat-panel__hint-copy">
+                    <span
+                      v-if="composerSelection.model"
+                      class="ai-chat-panel__hint-model"
+                      data-testid="ai-chat-hint-model"
+                    >{{ composerSelection.model }}</span>
+                    <span
+                      v-if="composerSelection.provider || sessionTokenTotal > 0"
+                      class="ai-chat-panel__hint-sub"
+                    >
+                      <span
+                        v-if="composerSelection.provider"
+                        class="ai-chat-panel__hint-provider"
+                        data-testid="ai-chat-hint-provider"
+                      >{{ composerSelection.provider }}</span>
+                      <span
+                        v-if="composerSelection.provider && sessionTokenTotal > 0"
+                        class="ai-chat-panel__hint-dot"
+                        aria-hidden="true"
+                      >·</span>
+                      <span
+                        v-if="sessionTokenTotal > 0"
+                        class="ai-chat-panel__hint-tokens"
+                        data-testid="ai-chat-token-session"
+                      >{{ t("aiChat.tokenSession", { count: formatTokenCount(sessionTokenTotal) }) }}</span>
+                    </span>
+                  </span>
+                </div>
               </div>
             </div>
             <div class="ai-chat-panel__composer-actions">
@@ -1987,6 +1990,7 @@ async function onCopyChat(): Promise<void> {
   --ai-chat-hint-font-size: 0.72rem;
   --ai-chat-provider-font-size: 0.65rem;
   --ai-chat-provider-max-width: 16rem;
+  --ai-chat-assistant-inset: 0.75rem;
 
   position: relative;
   display: flex;
@@ -2238,6 +2242,7 @@ async function onCopyChat(): Promise<void> {
 .ai-chat-panel__message--assistant {
   align-self: flex-start;
   margin-inline-end: 1.25rem;
+  margin-inline-start: var(--ai-chat-assistant-inset);
   background: transparent;
   border: 0;
   padding-inline: 0;
@@ -2430,6 +2435,7 @@ async function onCopyChat(): Promise<void> {
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .ai-chat-panel__modes-toggle:hover:not(:disabled) {
@@ -2473,14 +2479,26 @@ async function onCopyChat(): Promise<void> {
   min-width: 0;
 }
 
-.ai-chat-panel__hint {
+.ai-chat-panel__hint-row {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
-  gap: 0.4em;
+  justify-content: flex-end;
+  gap: var(--ai-chat-composer-field-inset);
   min-width: 0;
   padding-inline: var(--ai-chat-composer-field-inset);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ai-chat-panel__hint {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4em;
+  min-width: 0;
   overflow: hidden;
   color: var(--text-muted);
   pointer-events: none;
@@ -2497,7 +2515,7 @@ async function onCopyChat(): Promise<void> {
 
 .ai-chat-panel__hint-copy {
   display: flex;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   flex-direction: column;
   align-items: flex-end;
   justify-content: center;
