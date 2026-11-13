@@ -14,6 +14,9 @@ export const PRESENTATION_DOCK_MARGIN = 8;
  */
 export const PRESENTATION_DOCK_Z_INDEX = 950;
 
+/** Effect menu is portaled to the document, so it must paint over the dock. */
+export const PRESENTATION_EFFECT_MENU_Z_INDEX = PRESENTATION_DOCK_Z_INDEX + 1;
+
 export interface PresentationDockPosition {
   x: number;
   y: number;

@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
   PRESENTATION_DOCK_MARGIN,
+  PRESENTATION_DOCK_Z_INDEX,
+  PRESENTATION_EFFECT_MENU_Z_INDEX,
   clampPresentationDockPosition,
 } from "@/storage/presentation-dock";
 
 describe("presentation dock position", () => {
+  it("paints the effect menu above the dock", () => {
+    expect(PRESENTATION_EFFECT_MENU_Z_INDEX).toBeGreaterThan(PRESENTATION_DOCK_Z_INDEX);
+  });
+
   it("keeps the panel inside the window", () => {
     expect(clampPresentationDockPosition(
       { x: -40, y: -10 },
