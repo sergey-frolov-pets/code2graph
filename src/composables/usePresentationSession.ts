@@ -593,6 +593,17 @@ export function usePresentationSession(options: {
           play: t("presentation.play"),
           pause: t("presentation.pause"),
           repeat: t("presentation.repeat"),
+          explore: t("presentation.explore"),
+          playback: t("presentation.playback"),
+          zoomIn: t("toolbar.zoomIn"),
+          zoomOut: t("toolbar.zoomOut"),
+          zoomLevel: t("toolbar.zoomLevel"),
+          resetView: t("presentation.resetView"),
+          savePng: t("presentation.savePng"),
+          addSticker: t("presentation.addSticker"),
+          removeSticker: t("presentation.removeSticker"),
+          resizeSticker: t("presentation.resizeSticker"),
+          sticker: t("presentation.sticker"),
         },
       });
       downloadTextFile(html, presentationHtmlFileName(track.name), PRESENTATION_HTML_MIME);

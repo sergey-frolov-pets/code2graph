@@ -1,6 +1,12 @@
-import { PREVIEW_MIN_ZOOM } from "@/constants/preview-pan-zoom";
+import {
+  PREVIEW_MIN_ZOOM,
+  PREVIEW_WHEEL_LINE_PIXELS,
+  PREVIEW_ZOOM_SENSITIVITY,
+  PREVIEW_ZOOM_STEP,
+} from "@/constants/preview-pan-zoom";
 import { isTransparentBackground } from "@/services/export/svg-background";
 import { parseSvgCssSize } from "@/services/export/svg-geometry";
+import { PAN_ZOOM_SCALE_EPSILON } from "@/services/preview/pan-zoom-math";
 import {
   FRAME_EFFECT_FLY_DISTANCE,
   FRAME_EFFECT_POP_OVERSHOOT,
@@ -55,6 +61,23 @@ const HTML_FALLBACK_VIEWPORT_HEIGHT = 540;
 const HTML_FRAME_FALLBACK_MS = 16;
 /** Same resting opacity as the in-app presentation dock while a tour plays. */
 const HTML_PLAYER_DIM_OPACITY = 0.12;
+const HTML_STICKER_WIDTH = 168;
+const HTML_STICKER_HEIGHT = 112;
+const HTML_STICKER_MIN_SIZE = 72;
+const HTML_STICKER_NUDGE = 16;
+const HTML_STICKER_RADIUS = 10;
+const HTML_STICKER_PAD = 10;
+const HTML_STICKER_HEADER = 22;
+const HTML_STICKER_FONT_PX = 14;
+const HTML_STICKER_FILL = "#fff4b8";
+const HTML_STICKER_STROKE = "#e2c56a";
+const HTML_STICKER_INK = "#1a1f24";
+const HTML_PAN_KEY_STEP = 48;
+const HTML_PNG_MAX_PIXEL_RATIO = 2;
+const HTML_CHECKER_CELL = 8;
+const HTML_DOWNLOAD_REVOKE_MS = 1000;
+const HTML_WHEEL_CTRL_MULTIPLIER = 2;
+const HTML_WHEEL_LINE_STEP_LIMIT = 3;
 const SHAPE_STROKE_PX = 2;
 const ARROW_STROKE_PX = 2.5;
 const ARROW_HEAD_SCREEN_PX = 12;
@@ -83,6 +106,17 @@ export interface PresentationHtmlLabels {
   play: string;
   pause: string;
   repeat: string;
+  explore: string;
+  playback: string;
+  zoomIn: string;
+  zoomOut: string;
+  zoomLevel: string;
+  resetView: string;
+  savePng: string;
+  addSticker: string;
+  removeSticker: string;
+  resizeSticker: string;
+  sticker: string;
 }
 
 export interface PresentationHtmlSource {
@@ -474,6 +508,93 @@ body.c2g-checker {
   font-size: 0.85rem;
   white-space: nowrap;
 }
+#c2g-notes {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+#c2g-notes[hidden],
+#c2g-transport[hidden],
+#c2g-zoom[hidden],
+#c2g-repeat-wrap[hidden] {
+  display: none;
+}
+#c2g-stage.is-exploring { cursor: grab; touch-action: none; }
+#c2g-stage.is-panning { cursor: grabbing; }
+#c2g-mode .c2g-icon-playback { display: none; }
+#c2g-mode[data-state="playback"] .c2g-icon-explore { display: none; }
+#c2g-mode[data-state="playback"] .c2g-icon-playback { display: block; }
+#c2g-mode[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--c2g-accent) 18%, transparent);
+}
+#c2g-zoom-level {
+  min-width: 3.5rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+}
+.c2g-sticker {
+  position: absolute;
+  pointer-events: auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: ${HTML_STICKER_FILL};
+  color: ${HTML_STICKER_INK};
+  border: 1px solid ${HTML_STICKER_STROKE};
+  border-radius: ${HTML_STICKER_RADIUS}px;
+  box-shadow: 0 8px 18px color-mix(in srgb, ${HTML_STICKER_INK} 18%, transparent);
+  font-family: sans-serif;
+}
+.c2g-sticker-move {
+  height: ${HTML_STICKER_HEADER}px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  cursor: grab;
+  touch-action: none;
+}
+.c2g-sticker-close {
+  width: ${HTML_STICKER_HEADER}px;
+  height: ${HTML_STICKER_HEADER}px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: ${HTML_STICKER_INK};
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+.c2g-sticker-text {
+  flex: 1;
+  min-height: 0;
+  margin: 0 ${HTML_STICKER_PAD}px ${HTML_STICKER_PAD}px;
+  overflow: auto;
+  outline: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: ${HTML_STICKER_FONT_PX}px;
+  line-height: 1.35;
+}
+.c2g-sticker-text:empty:before {
+  content: attr(data-placeholder);
+  opacity: 0.45;
+}
+.c2g-sticker-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: ${HTML_STICKER_HEADER}px;
+  height: ${HTML_STICKER_HEADER}px;
+  border: 0;
+  padding: 0;
+  background: linear-gradient(135deg, transparent 50%, ${HTML_STICKER_STROKE} 50%);
+  cursor: nwse-resize;
+  touch-action: none;
+}
 `.trim();
 
 const PLAYER_SCRIPT = `
@@ -491,7 +612,22 @@ const PLAYER_SCRIPT = `
   var nextButton = document.getElementById("c2g-next");
   var indexNode = document.getElementById("c2g-index");
   var repeatBox = document.getElementById("c2g-repeat");
-  if (!dataNode || !stage || !scene || !diagramWrap || !playButton || !prevButton || !nextButton || !indexNode) {
+  var modeButton = document.getElementById("c2g-mode");
+  var transport = document.getElementById("c2g-transport");
+  var zoomPanel = document.getElementById("c2g-zoom");
+  var zoomInButton = document.getElementById("c2g-zoom-in");
+  var zoomOutButton = document.getElementById("c2g-zoom-out");
+  var zoomResetButton = document.getElementById("c2g-zoom-reset");
+  var zoomLevelNode = document.getElementById("c2g-zoom-level");
+  var cameraButton = document.getElementById("c2g-camera");
+  var stickerButton = document.getElementById("c2g-sticker");
+  var notes = document.getElementById("c2g-notes");
+  var repeatWrap = document.getElementById("c2g-repeat-wrap");
+  if (
+    !dataNode || !stage || !scene || !diagramWrap || !playButton || !prevButton || !nextButton
+    || !indexNode || !modeButton || !transport || !zoomPanel || !zoomInButton || !zoomOutButton
+    || !zoomResetButton || !cameraButton || !stickerButton || !notes
+  ) {
     return;
   }
   var payload;
@@ -529,6 +665,12 @@ const PLAYER_SCRIPT = `
   var effectElapsed = 0;
   var playing = false;
   var moving = false;
+  var exploring = false;
+  var saving = false;
+  var camera = { panX: 0, panY: 0, scale: 1 };
+  var pointers = {};
+  var drag = null;
+  var stickerSeq = 0;
   var barHeld = false;
   var revealTimer = 0;
   var phaseStarted = 0;
@@ -816,12 +958,14 @@ const PLAYER_SCRIPT = `
       height: height > 0 ? height : payload.fallbackHeight
     };
   }
-  function place(anchorX, anchorY, scale) {
-    var size = viewportSize();
+  function applyCamera(panX, panY, scale) {
     var clamped = Math.min(payload.maxScale, Math.max(payload.minScale, scale));
     if (!isFinite(clamped) || clamped <= 0) clamped = 1;
-    var panX = size.width / 2 - anchorX * payload.imageWidth * clamped;
-    var panY = size.height / 2 - anchorY * payload.imageHeight * clamped;
+    if (!isFinite(panX)) panX = 0;
+    if (!isFinite(panY)) panY = 0;
+    camera.panX = panX;
+    camera.panY = panY;
+    camera.scale = clamped;
     scene.style.transform = "translate(" + panX + "px, " + panY + "px) scale(" + clamped + ")";
     var head = payload.arrowHead / clamped;
     for (var i = 0; i < markers.length; i += 1) {
@@ -832,6 +976,438 @@ const PLAYER_SCRIPT = `
     var texts = document.querySelectorAll("#c2g-overlays text[data-box-height]");
     for (var n = 0; n < texts.length; n += 1) {
       texts[n].setAttribute("font-size", String(noteFont(Number(texts[n].getAttribute("data-box-height")), clamped)));
+    }
+  }
+  function place(anchorX, anchorY, scale) {
+    var size = viewportSize();
+    var clamped = Math.min(payload.maxScale, Math.max(payload.minScale, scale));
+    if (!isFinite(clamped) || clamped <= 0) clamped = 1;
+    applyCamera(
+      size.width / 2 - anchorX * payload.imageWidth * clamped,
+      size.height / 2 - anchorY * payload.imageHeight * clamped,
+      clamped
+    );
+  }
+  function updateZoomLabel() {
+    if (!zoomLevelNode) return;
+    var percent = String(Math.round(camera.scale * 100));
+    zoomLevelNode.textContent = percent + "%";
+    var template = payload.labels.zoomLevel || "{percent}%";
+    zoomLevelNode.setAttribute("aria-label", template.split("{percent}").join(percent));
+  }
+  function zoomAt(cursorX, cursorY, factor) {
+    if (!exploring || factor === 1 || !isFinite(factor)) return;
+    var oldScale = camera.scale;
+    var nextScale = Math.min(payload.maxScale, Math.max(payload.minScale, oldScale * factor));
+    if (Math.abs(nextScale - oldScale) < payload.scaleEpsilon) return;
+    var ratio = nextScale / oldScale;
+    applyCamera(
+      cursorX - (cursorX - camera.panX) * ratio,
+      cursorY - (cursorY - camera.panY) * ratio,
+      nextScale
+    );
+    updateZoomLabel();
+  }
+  function zoomByStep(direction) {
+    var size = viewportSize();
+    zoomAt(size.width / 2, size.height / 2, direction < 0 ? 1 / payload.zoomStep : payload.zoomStep);
+  }
+  function wheelFactor(event) {
+    var delta = event.deltaY;
+    var lineMode = window.WheelEvent ? WheelEvent.DOM_DELTA_LINE : 1;
+    var pageMode = window.WheelEvent ? WheelEvent.DOM_DELTA_PAGE : 2;
+    if (event.deltaMode === lineMode) delta *= payload.wheelLine;
+    else if (event.deltaMode === pageMode) delta *= viewportSize().height;
+    if (event.ctrlKey) delta *= payload.wheelCtrl;
+    if (delta === 0) return 1;
+    if (event.deltaMode === lineMode && Math.abs(event.deltaY) <= payload.wheelLineLimit) {
+      return event.deltaY < 0 ? payload.zoomStep : 1 / payload.zoomStep;
+    }
+    return Math.exp(-delta * payload.wheelSensitivity);
+  }
+  function onWheel(event) {
+    if (!exploring) return;
+    event.preventDefault();
+    var rect = stage.getBoundingClientRect();
+    zoomAt(event.clientX - rect.left, event.clientY - rect.top, wheelFactor(event));
+  }
+  function pointerList() {
+    var list = [];
+    for (var id in pointers) {
+      if (Object.prototype.hasOwnProperty.call(pointers, id)) list.push(pointers[id]);
+    }
+    return list;
+  }
+  function endDrag() {
+    drag = null;
+    pointers = {};
+    stage.classList.remove("is-panning");
+  }
+  function capturePointer(target, pointerId) {
+    if (!target || !target.setPointerCapture) return;
+    try { target.setPointerCapture(pointerId); } catch (error) { void error; }
+  }
+  function onStagePointerDown(event) {
+    if (!exploring || event.button > 0) return;
+    var target = event.target;
+    if (target && target.closest && target.closest(".c2g-sticker, #c2g-bar")) return;
+    pointers[event.pointerId] = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    var list = pointerList();
+    if (list.length >= 2) {
+      var dist = Math.hypot(list[0].x - list[1].x, list[0].y - list[1].y);
+      drag = { kind: "pinch", pointerId: null, distance: dist || 1 };
+      stage.classList.remove("is-panning");
+      return;
+    }
+    drag = {
+      kind: "pan",
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      panX: camera.panX,
+      panY: camera.panY
+    };
+    stage.classList.add("is-panning");
+    capturePointer(stage, event.pointerId);
+  }
+  function onPointerMove(event) {
+    if (pointers[event.pointerId]) {
+      pointers[event.pointerId].x = event.clientX;
+      pointers[event.pointerId].y = event.clientY;
+    }
+    if (!drag || (drag.pointerId && drag.pointerId !== event.pointerId && drag.kind !== "pinch")) return;
+    if (drag.kind === "pan") {
+      applyCamera(
+        drag.panX + (event.clientX - drag.startX),
+        drag.panY + (event.clientY - drag.startY),
+        camera.scale
+      );
+      return;
+    }
+    if (drag.kind === "move" && drag.note) {
+      drag.note.style.left = (drag.left + event.clientX - drag.startX) + "px";
+      drag.note.style.top = (drag.top + event.clientY - drag.startY) + "px";
+      clampSticker(drag.note);
+      return;
+    }
+    if (drag.kind === "resize" && drag.note) {
+      drag.note.style.width = Math.max(payload.stickerMin, drag.width + event.clientX - drag.startX) + "px";
+      drag.note.style.height = Math.max(payload.stickerMin, drag.height + event.clientY - drag.startY) + "px";
+      return;
+    }
+    if (drag.kind === "pinch") {
+      var list = pointerList();
+      if (list.length < 2 || !(drag.distance > 0)) return;
+      var dist = Math.hypot(list[0].x - list[1].x, list[0].y - list[1].y);
+      var rect = stage.getBoundingClientRect();
+      zoomAt(
+        (list[0].x + list[1].x) / 2 - rect.left,
+        (list[0].y + list[1].y) / 2 - rect.top,
+        dist / drag.distance
+      );
+      drag.distance = dist;
+    }
+  }
+  function onPointerUp(event) {
+    if (pointers[event.pointerId]) delete pointers[event.pointerId];
+    if (!drag) return;
+    if (drag.kind === "pinch") {
+      var list = pointerList();
+      if (list.length >= 2) return;
+      if (list.length === 1) {
+        drag = {
+          kind: "pan",
+          pointerId: list[0].id,
+          startX: list[0].x,
+          startY: list[0].y,
+          panX: camera.panX,
+          panY: camera.panY
+        };
+        return;
+      }
+    } else if (drag.pointerId !== event.pointerId) {
+      return;
+    }
+    endDrag();
+  }
+  function readBox(note) {
+    return {
+      left: parseFloat(note.style.left) || 0,
+      top: parseFloat(note.style.top) || 0,
+      width: note.offsetWidth || parseFloat(note.style.width) || payload.stickerWidth,
+      height: note.offsetHeight || parseFloat(note.style.height) || payload.stickerHeight
+    };
+  }
+  function clampSticker(note) {
+    var size = viewportSize();
+    var box = readBox(note);
+    var keep = payload.stickerMin / 2;
+    var left = Math.min(size.width - keep, Math.max(keep - box.width, box.left));
+    var top = Math.min(size.height - keep, Math.max(keep - box.height, box.top));
+    note.style.left = left + "px";
+    note.style.top = top + "px";
+  }
+  function beginStickerDrag(event, note, kind) {
+    var box = readBox(note);
+    drag = {
+      kind: kind,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      left: box.left,
+      top: box.top,
+      width: box.width,
+      height: box.height,
+      note: note
+    };
+    capturePointer(event.currentTarget, event.pointerId);
+  }
+  function addSticker() {
+    if (!exploring) return;
+    var size = viewportSize();
+    var width = payload.stickerWidth;
+    var height = payload.stickerHeight;
+    var nudge = (stickerSeq % 5) * payload.stickerNudge;
+    stickerSeq += 1;
+    var note = document.createElement("article");
+    note.className = "c2g-sticker";
+    note.style.left = Math.round(size.width / 2 - width / 2 + nudge) + "px";
+    note.style.top = Math.round(size.height / 2 - height / 2 + nudge) + "px";
+    note.style.width = width + "px";
+    note.style.height = height + "px";
+    var header = document.createElement("div");
+    header.className = "c2g-sticker-move";
+    var close = document.createElement("button");
+    close.type = "button";
+    close.className = "c2g-sticker-close";
+    close.setAttribute("aria-label", payload.labels.removeSticker);
+    close.textContent = "×";
+    var text = document.createElement("div");
+    text.className = "c2g-sticker-text";
+    text.contentEditable = "true";
+    text.setAttribute("role", "textbox");
+    text.setAttribute("aria-label", payload.labels.sticker);
+    text.setAttribute("data-placeholder", payload.labels.sticker);
+    var handle = document.createElement("button");
+    handle.type = "button";
+    handle.className = "c2g-sticker-resize";
+    handle.setAttribute("aria-label", payload.labels.resizeSticker);
+    header.appendChild(close);
+    note.appendChild(header);
+    note.appendChild(text);
+    note.appendChild(handle);
+    notes.appendChild(note);
+    clampSticker(note);
+    text.focus();
+    header.addEventListener("pointerdown", function (event) {
+      if (event.target === close) return;
+      event.preventDefault();
+      event.stopPropagation();
+      beginStickerDrag(event, note, "move");
+    });
+    handle.addEventListener("pointerdown", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      beginStickerDrag(event, note, "resize");
+    });
+    close.addEventListener("click", function (event) {
+      event.stopPropagation();
+      note.remove();
+    });
+  }
+  function roundedRect(ctx, x, y, width, height, radius) {
+    var r = Math.max(0, Math.min(radius, width / 2, height / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + width, y, x + width, y + height, r);
+    ctx.arcTo(x + width, y + height, x, y + height, r);
+    ctx.arcTo(x, y + height, x, y, r);
+    ctx.arcTo(x, y, x + width, y, r);
+    ctx.closePath();
+  }
+  function wrapLines(ctx, text, maxWidth) {
+    var paragraphs = String(text || "").split("\\n");
+    var lines = [];
+    var p;
+    for (p = 0; p < paragraphs.length; p += 1) {
+      var words = paragraphs[p].split(/\\s+/);
+      var line = "";
+      var i;
+      for (i = 0; i < words.length; i += 1) {
+        var word = words[i];
+        if (!word) continue;
+        var next = line ? line + " " + word : word;
+        if (line && ctx.measureText(next).width > maxWidth) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = next;
+        }
+      }
+      lines.push(line);
+    }
+    return lines;
+  }
+  function loadImage(src) {
+    return new Promise(function (resolve, reject) {
+      var image = new Image();
+      var settled = false;
+      function ok() {
+        if (settled) return;
+        settled = true;
+        resolve(image);
+      }
+      function fail() {
+        if (settled) return;
+        settled = true;
+        reject(new Error("image"));
+      }
+      image.onload = ok;
+      image.onerror = fail;
+      image.src = src;
+      if (image.complete && image.naturalWidth > 0) ok();
+    });
+  }
+  function loadSvg(node, width, height) {
+    var clone = node.cloneNode(true);
+    if (!clone.getAttribute("xmlns")) clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    clone.setAttribute("width", String(width));
+    clone.setAttribute("height", String(height));
+    var xml = new XMLSerializer().serializeToString(clone);
+    var url = URL.createObjectURL(new Blob([xml], { type: "image/svg+xml;charset=utf-8" }));
+    return loadImage(url).then(function (image) {
+      URL.revokeObjectURL(url);
+      return image;
+    }, function (error) {
+      URL.revokeObjectURL(url);
+      throw error;
+    });
+  }
+  function paintChecker(ctx, width, height) {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = "#e4e4e4";
+    var cell = payload.checkerCell;
+    var x;
+    var y;
+    for (y = 0; y < height; y += cell) {
+      for (x = 0; x < width; x += cell) {
+        if (((x / cell) + (y / cell)) % 2 === 0) ctx.fillRect(x, y, cell, cell);
+      }
+    }
+  }
+  function drawStickers(ctx) {
+    var items = notes.querySelectorAll(".c2g-sticker");
+    var i;
+    for (i = 0; i < items.length; i += 1) {
+      var note = items[i];
+      var box = readBox(note);
+      ctx.save();
+      roundedRect(ctx, box.left, box.top, box.width, box.height, payload.stickerRadius);
+      ctx.fillStyle = payload.stickerFill;
+      ctx.fill();
+      ctx.strokeStyle = payload.stickerStroke;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(box.left, box.top + payload.stickerHeader);
+      ctx.lineTo(box.left + box.width, box.top + payload.stickerHeader);
+      ctx.stroke();
+      var textNode = note.querySelector(".c2g-sticker-text");
+      var text = textNode && textNode.textContent ? textNode.textContent.trim() : "";
+      if (text) {
+        ctx.fillStyle = payload.stickerInk;
+        ctx.font = payload.stickerFontPx + "px sans-serif";
+        var maxWidth = Math.max(8, box.width - payload.stickerPad * 2);
+        var lines = wrapLines(ctx, text, maxWidth);
+        var lineHeight = payload.stickerFontPx * 1.35;
+        var n;
+        for (n = 0; n < lines.length; n += 1) {
+          var lineY = box.top + payload.stickerHeader + payload.stickerPad + payload.stickerFontPx + n * lineHeight;
+          if (lineY > box.top + box.height - payload.stickerPad) break;
+          ctx.fillText(lines[n], box.left + payload.stickerPad, lineY);
+        }
+      }
+      ctx.restore();
+    }
+  }
+  function downloadBlob(blob, name) {
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, payload.downloadRevokeMs);
+  }
+  function finishSave() {
+    saving = false;
+    updateChrome();
+  }
+  function savePng() {
+    if (!exploring || saving) return;
+    saving = true;
+    try {
+      updateChrome();
+      var size = viewportSize();
+      var ratio = Math.min(payload.maxPixelRatio, window.devicePixelRatio || 1);
+      if (!isFinite(ratio) || ratio <= 0) ratio = 1;
+      var canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(size.width * ratio));
+      canvas.height = Math.max(1, Math.round(size.height * ratio));
+      var ctx = canvas.getContext("2d");
+      var jobs = [];
+      var diagramImage = null;
+      var overlayImage = null;
+      var frameImage = null;
+      var shadowSvg = diagramWrap.shadowRoot && diagramWrap.shadowRoot.querySelector("svg");
+      var overlaySvg = document.getElementById("c2g-overlays");
+      if (shadowSvg) {
+        jobs.push(loadSvg(shadowSvg, payload.imageWidth, payload.imageHeight).then(function (image) {
+          diagramImage = image;
+        }));
+      }
+      if (overlaySvg) {
+        jobs.push(loadSvg(overlaySvg, payload.imageWidth, payload.imageHeight).then(function (image) {
+          overlayImage = image;
+        }));
+      }
+      if (frame && frameWrap && !frameWrap.hidden && frame.getAttribute("src")) {
+        jobs.push(loadImage(frame.getAttribute("src")).then(function (image) {
+          frameImage = image;
+        }));
+      }
+      Promise.all(jobs).then(function () {
+        if (!ctx) return null;
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        ctx.beginPath();
+        ctx.rect(0, 0, size.width, size.height);
+        ctx.clip();
+        if (document.body.classList.contains("c2g-checker")) paintChecker(ctx, size.width, size.height);
+        else {
+          ctx.fillStyle = payload.background;
+          ctx.fillRect(0, 0, size.width, size.height);
+        }
+        ctx.save();
+        ctx.translate(camera.panX, camera.panY);
+        ctx.scale(camera.scale, camera.scale);
+        if (frameImage) ctx.drawImage(frameImage, 0, 0, payload.imageWidth, payload.imageHeight);
+        if (diagramImage) ctx.drawImage(diagramImage, 0, 0, payload.imageWidth, payload.imageHeight);
+        if (overlayImage) ctx.drawImage(overlayImage, 0, 0, payload.imageWidth, payload.imageHeight);
+        ctx.restore();
+        drawStickers(ctx);
+        return new Promise(function (resolve) {
+          canvas.toBlob(function (blob) { resolve(blob); }, "image/png");
+        });
+      }).then(function (blob) {
+        if (blob) downloadBlob(blob, payload.pngName);
+      }).catch(function () {
+        return null;
+      }).then(finishSave);
+    } catch (error) {
+      void error;
+      finishSave();
     }
   }
   function showOwner(kind, id, effects, elapsed, animate) {
@@ -847,21 +1423,22 @@ const PLAYER_SCRIPT = `
     }
   }
   function paint() {
-    var animate = playing || moving;
+    var animate = !exploring && (playing || moving);
+    if (exploring) applyCamera(camera.panX, camera.panY, camera.scale);
     if (phase === "travel" && count > 1) {
       var from = payload.viewpoints[travelOrigin];
       var to = payload.viewpoints[(travelOrigin + 1) % count];
       var transition = transitionAt(travelOrigin);
       var eased = ease(travelAmount);
       var point = sample({ x: from.x, y: from.y }, { x: to.x, y: to.y }, transition, eased);
-      place(point.x, point.y, lerpScale(from.scale, to.scale, eased));
+      if (!exploring) place(point.x, point.y, lerpScale(from.scale, to.scale, eased));
       applyVisual(frameWrap, identity);
       applyVisual(diagramWrap, identity);
       showOwner("transition", transition.id, from.effects, effectElapsed, animate);
       return;
     }
     var current = payload.viewpoints[index];
-    place(current.x, current.y, current.scale);
+    if (!exploring) place(current.x, current.y, current.scale);
     applyVisual(frameWrap, animate ? effectVisual(current.effects, effectElapsed, "frame", "") : identity);
     applyVisual(diagramWrap, animate ? effectVisual(current.effects, effectElapsed, "diagram", "") : identity);
     showOwner("viewpoint", current.id, current.effects, effectElapsed, animate);
@@ -939,10 +1516,36 @@ const PLAYER_SCRIPT = `
     playButton.dataset.state = playing ? "pause" : "play";
     prevButton.disabled = count < 2;
     nextButton.disabled = count < 2;
+    stage.classList.toggle("is-exploring", exploring);
+    stage.dataset.mode = exploring ? "explore" : "playback";
+    transport.hidden = exploring;
+    zoomPanel.hidden = !exploring;
+    if (repeatWrap) repeatWrap.hidden = exploring;
+    notes.hidden = !exploring;
+    modeButton.setAttribute("aria-pressed", exploring ? "true" : "false");
+    modeButton.setAttribute("aria-label", exploring ? payload.labels.playback : payload.labels.explore);
+    modeButton.dataset.state = exploring ? "playback" : "explore";
+    cameraButton.disabled = saving;
+    updateZoomLabel();
     syncBar();
   }
+  function toggleExplore() {
+    playing = false;
+    moving = false;
+    barHeld = false;
+    endDrag();
+    exploring = !exploring;
+    kick();
+  }
+  function resetView() {
+    if (!exploring) return;
+    exploring = false;
+    paint();
+    exploring = true;
+    updateChrome();
+  }
   function render(now) {
-    if (playing || moving) integrate(now);
+    if (!exploring && (playing || moving)) integrate(now);
     paint();
     updateChrome();
   }
@@ -1029,6 +1632,17 @@ const PLAYER_SCRIPT = `
   prevButton.addEventListener("click", function () { step(-1); });
   nextButton.addEventListener("click", function () { step(1); });
   playButton.addEventListener("click", togglePlay);
+  modeButton.addEventListener("click", toggleExplore);
+  zoomInButton.addEventListener("click", function () { zoomByStep(1); });
+  zoomOutButton.addEventListener("click", function () { zoomByStep(-1); });
+  zoomResetButton.addEventListener("click", resetView);
+  cameraButton.addEventListener("click", savePng);
+  stickerButton.addEventListener("click", addSticker);
+  stage.addEventListener("pointerdown", onStagePointerDown);
+  stage.addEventListener("wheel", onWheel, { passive: false });
+  window.addEventListener("pointermove", onPointerMove);
+  window.addEventListener("pointerup", onPointerUp);
+  window.addEventListener("pointercancel", onPointerUp);
   if (bar) {
     bar.addEventListener("pointerleave", function () {
       barHeld = false;
@@ -1039,23 +1653,39 @@ const PLAYER_SCRIPT = `
     if (!playing || !event.pointerType || event.pointerType === "mouse") return;
     revealBar();
   });
+  function typingTarget(event) {
+    var target = event.target;
+    if (!target) return false;
+    if (target.closest && target.closest(".c2g-sticker")) return true;
+    var tag = target.tagName;
+    return tag === "INPUT" || tag === "TEXTAREA";
+  }
   window.addEventListener("keydown", function (event) {
-    if (event.altKey || event.metaKey || event.ctrlKey) return;
+    if (event.altKey || event.metaKey || event.ctrlKey || typingTarget(event)) return;
+    if (exploring) {
+      var distance = event.shiftKey ? payload.panKeyStep * 2 : payload.panKeyStep;
+      if (event.key === "ArrowRight") { event.preventDefault(); applyCamera(camera.panX + distance, camera.panY, camera.scale); }
+      else if (event.key === "ArrowLeft") { event.preventDefault(); applyCamera(camera.panX - distance, camera.panY, camera.scale); }
+      else if (event.key === "ArrowUp") { event.preventDefault(); applyCamera(camera.panX, camera.panY - distance, camera.scale); }
+      else if (event.key === "ArrowDown") { event.preventDefault(); applyCamera(camera.panX, camera.panY + distance, camera.scale); }
+      else if (event.key === "+" || event.key === "=") { event.preventDefault(); zoomByStep(1); }
+      else if (event.key === "-" || event.key === "_") { event.preventDefault(); zoomByStep(-1); }
+      else if (event.key === "Escape") { event.preventDefault(); toggleExplore(); }
+      else if (event.key === "0") { event.preventDefault(); resetView(); }
+      return;
+    }
     var tag = event.target && event.target.tagName;
     if (event.key === "ArrowRight") {
-      if (tag === "INPUT" || tag === "TEXTAREA") return;
       event.preventDefault();
       step(1);
     } else if (event.key === "ArrowLeft") {
-      if (tag === "INPUT" || tag === "TEXTAREA") return;
       event.preventDefault();
       step(-1);
     } else if (event.key === "Home") {
-      if (tag === "INPUT" || tag === "TEXTAREA") return;
       event.preventDefault();
       goFirst();
     } else if (event.key === " " || event.key === "Spacebar") {
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "BUTTON") return;
+      if (tag === "BUTTON") return;
       event.preventDefault();
       togglePlay();
     }
@@ -1071,11 +1701,22 @@ function icon(path: string, className = ""): string {
   return `<svg${classAttr} viewBox="0 0 24 24" aria-hidden="true"><path d="${path}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
+const GLYPH_STROKE = `fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"`;
+
+function glyph(body: string, className = ""): string {
+  const classAttr = className ? ` class="${className}"` : "";
+  return `<svg${classAttr} viewBox="0 0 24 24" aria-hidden="true" ${GLYPH_STROKE}>${body}</svg>`;
+}
+
 function playerChrome(title: string, labels: PresentationHtmlLabels, stepCount: number): string {
   const safeTitle = htmlEscape(title);
   return `<nav id="c2g-bar" aria-label="${safeTitle}">
     <strong class="c2g-name" title="${safeTitle}">${safeTitle}</strong>
-    <div class="c2g-transport">
+    <button id="c2g-mode" type="button" data-state="explore" aria-pressed="false" aria-label="${htmlEscape(labels.explore)}">
+      ${glyph(`<path d="M5 9 2 12l3 3"/><path d="M9 5l3-3 3 3"/><path d="M15 19l-3 3-3-3"/><path d="M19 9l3 3-3 3"/><path d="M2 12h20"/><path d="M12 2v20"/>`, "c2g-icon-explore")}
+      ${glyph(`<path d="M8 5.5v13l11-6.5L8 5.5z" fill="currentColor" stroke="none"/>`, "c2g-icon-playback")}
+    </button>
+    <div id="c2g-transport" class="c2g-transport">
       <button id="c2g-first" type="button" aria-label="${htmlEscape(labels.first)}">${icon("M6 6v12M18 6 11 12l7 6")}</button>
       <button id="c2g-prev" type="button" aria-label="${htmlEscape(labels.prev)}">${icon("M14.5 6.5 8.5 12l6 5.5")}</button>
       <span id="c2g-index" aria-live="polite">1 / ${stepCount}</span>
@@ -1085,7 +1726,15 @@ function playerChrome(title: string, labels: PresentationHtmlLabels, stepCount: 
         <svg class="c2g-icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>
       </button>
     </div>
-    <label class="c2g-repeat"><input id="c2g-repeat" type="checkbox"> ${htmlEscape(labels.repeat)}</label>
+    <div id="c2g-zoom" class="c2g-transport" hidden>
+      <button id="c2g-zoom-out" type="button" aria-label="${htmlEscape(labels.zoomOut)}">${glyph(`<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/>`)}</button>
+      <span id="c2g-zoom-level" aria-live="polite">100%</span>
+      <button id="c2g-zoom-in" type="button" aria-label="${htmlEscape(labels.zoomIn)}">${glyph(`<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6"/><path d="M8 11h6"/>`)}</button>
+      <button id="c2g-zoom-reset" type="button" aria-label="${htmlEscape(labels.resetView)}">${glyph(`<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/>`)}</button>
+      <button id="c2g-camera" type="button" aria-label="${htmlEscape(labels.savePng)}">${glyph(`<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>`)}</button>
+      <button id="c2g-sticker" type="button" aria-label="${htmlEscape(labels.addSticker)}">${glyph(`<path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3z"/><path d="M15 3v6h6"/>`)}</button>
+    </div>
+    <label id="c2g-repeat-wrap" class="c2g-repeat"><input id="c2g-repeat" type="checkbox"> ${htmlEscape(labels.repeat)}</label>
   </nav>`;
 }
 
@@ -1093,6 +1742,10 @@ export function presentationHtmlFileName(trackName: string): string {
   const cleaned = trackName.replace(UNSAFE_FILE_CHARS, " ").replace(/\s+/g, " ").trim();
   const base = cleaned || FALLBACK_TITLE;
   return base.toLowerCase().endsWith(HTML_FILE_EXTENSION) ? base : `${base}${HTML_FILE_EXTENSION}`;
+}
+
+function presentationPngFileName(trackName: string): string {
+  return presentationHtmlFileName(trackName).replace(/\.html$/i, ".png");
 }
 
 export function renderPresentationHtml(source: PresentationHtmlSource): string {
@@ -1153,9 +1806,38 @@ export function renderPresentationHtml(source: PresentationHtmlSource): string {
     fallbackHeight: HTML_FALLBACK_VIEWPORT_HEIGHT,
     frameMs: HTML_FRAME_FALLBACK_MS,
     revealMs: PRESENTATION_CHROME_REVEAL_MS,
+    background,
+    pngName: presentationPngFileName(source.track.name),
+    zoomStep: PREVIEW_ZOOM_STEP,
+    wheelLine: PREVIEW_WHEEL_LINE_PIXELS,
+    wheelSensitivity: PREVIEW_ZOOM_SENSITIVITY,
+    wheelCtrl: HTML_WHEEL_CTRL_MULTIPLIER,
+    wheelLineLimit: HTML_WHEEL_LINE_STEP_LIMIT,
+    scaleEpsilon: PAN_ZOOM_SCALE_EPSILON,
+    panKeyStep: HTML_PAN_KEY_STEP,
+    maxPixelRatio: HTML_PNG_MAX_PIXEL_RATIO,
+    checkerCell: HTML_CHECKER_CELL,
+    downloadRevokeMs: HTML_DOWNLOAD_REVOKE_MS,
+    stickerWidth: HTML_STICKER_WIDTH,
+    stickerHeight: HTML_STICKER_HEIGHT,
+    stickerMin: HTML_STICKER_MIN_SIZE,
+    stickerNudge: HTML_STICKER_NUDGE,
+    stickerRadius: HTML_STICKER_RADIUS,
+    stickerPad: HTML_STICKER_PAD,
+    stickerHeader: HTML_STICKER_HEADER,
+    stickerFontPx: HTML_STICKER_FONT_PX,
+    stickerFill: HTML_STICKER_FILL,
+    stickerStroke: HTML_STICKER_STROKE,
+    stickerInk: HTML_STICKER_INK,
     labels: {
       play: source.labels.play,
       pause: source.labels.pause,
+      explore: source.labels.explore,
+      playback: source.labels.playback,
+      zoomLevel: source.labels.zoomLevel,
+      removeSticker: source.labels.removeSticker,
+      resizeSticker: source.labels.resizeSticker,
+      sticker: source.labels.sticker,
     },
     viewpoints: playerViewpoints(source.track),
     transitions: playerTransitions(source.track),
@@ -1192,6 +1874,7 @@ ${PLAYER_CSS}
     </svg>
   </div>
 </main>
+<div id="c2g-notes" hidden></div>
 ${playerChrome(title, source.labels, source.track.viewpoints.length)}
 <script type="application/json" id="c2g-data">${embedJson(payload)}</script>
 <script>${PLAYER_SCRIPT}</script>
