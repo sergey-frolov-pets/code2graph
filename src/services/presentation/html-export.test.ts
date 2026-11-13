@@ -589,6 +589,7 @@ describe("presentation html export", () => {
       window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 5, bubbles: true }));
       expect((sticker as HTMLElement).style.width).toBe("18px");
       expect((sticker as HTMLElement).style.height).toBe("18px");
+      expect(parseFloat((sticker as HTMLElement).style.fontSize)).toBeCloseTo((14 * 18) / 112, 2);
 
       doc.getElementById("c2g-zoom-in")?.click();
       const zoomedScale = cameraOf(scene?.style.transform).scale;
@@ -620,7 +621,9 @@ describe("presentation html export", () => {
       const scaledSticker = doc.querySelectorAll(".c2g-sticker")[stickerCount] as HTMLElement | undefined;
       expect(parseFloat(scaledSticker?.style.width ?? "")).toBeCloseTo(168 / zoomedScale, 2);
       expect(parseFloat(scaledSticker?.style.height ?? "")).toBeCloseTo(112 / zoomedScale, 2);
-      expect(parseFloat(scaledSticker?.style.getPropertyValue("--c2g-unit") ?? "")).toBeCloseTo(1 / zoomedScale, 2);
+      expect(parseFloat(scaledSticker?.style.fontSize ?? "")).toBeCloseTo(14 / zoomedScale, 2);
+      expect(parseFloat(doc.getElementById("c2g-stage")?.style.getPropertyValue("--c2g-inv") ?? "")).toBeCloseTo(1 / zoomedScale, 2);
+      expect(scaledSticker?.querySelector(".c2g-sticker-chrome")).not.toBeNull();
     } finally {
       HTMLCanvasElement.prototype.getContext = realGetContext;
       HTMLAnchorElement.prototype.click = realClick;
