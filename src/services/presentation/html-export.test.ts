@@ -26,7 +26,26 @@ const LABELS = {
   play: "Смотреть",
   pause: "Пауза",
   repeat: "По кругу",
+  explore: "Свободное перемещение",
+  playback: "К проигрыванию",
+  zoomIn: "Увеличить",
+  zoomOut: "Уменьшить",
+  zoomLevel: "Масштаб {percent}%",
+  resetView: "К этому кадру",
+  savePng: "Сохранить вид в PNG",
+  addSticker: "Добавить стикер",
+  removeSticker: "Убрать стикер",
+  resizeSticker: "Изменить размер стикера",
+  sticker: "Комментарий",
 };
+
+function cameraOf(value: string | null | undefined): { x: number; y: number; scale: number } {
+  const match = /translate\(([-\d.]+)px, ([-\d.]+)px\) scale\(([-\d.]+)\)/.exec(value ?? "");
+  if (!match?.[1] || !match[2] || !match[3]) {
+    throw new Error(value ?? "");
+  }
+  return { x: Number(match[1]), y: Number(match[2]), scale: Number(match[3]) };
+}
 
 function tour(name = "Walk / tour"): PresentationTrack {
   let document = createPresentation(name);
@@ -136,6 +155,153 @@ describe("presentation html export", () => {
     expect(bar?.classList.contains("is-revealed")).toBe(true);
     doc.getElementById("c2g-play")?.click();
     expect(bar?.classList.contains("is-dim")).toBe(false);
+    expect(doc.getElementById("c2g-zoom")?.hidden).toBe(true);
+    expect(doc.getElementById("c2g-mode")?.getAttribute("aria-label")).toBe("Свободное перемещение");
+  });
+
+  it("pans and zooms the saved tour, then saves a PNG with a sticker", async () => {
+    const downloads: string[] = [];
+    const painted: string[] = [];
+    const realGetContext = HTMLCanvasElement.prototype.getContext;
+    const realClick = HTMLAnchorElement.prototype.click;
+    const realCreate = URL.createObjectURL;
+    const realRevoke = URL.revokeObjectURL;
+    const realSrc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src");
+    let blobSeq = 0;
+    URL.createObjectURL = () => {
+      blobSeq += 1;
+      return `blob:test-${blobSeq}`;
+    };
+    URL.revokeObjectURL = () => {};
+    Object.defineProperty(HTMLImageElement.prototype, "src", {
+      configurable: true,
+      enumerable: realSrc?.enumerable ?? true,
+      get() {
+        return realSrc?.get?.call(this) ?? "";
+      },
+      set(value: string) {
+        const handler = this.onload;
+        if (typeof handler === "function") handler.call(this, new Event("load"));
+        realSrc?.set?.call(this, value);
+      },
+    });
+    HTMLCanvasElement.prototype.getContext = (() => ({
+      setTransform() {},
+      translate() {},
+      scale() {},
+      fillRect() {},
+      drawImage() { painted.push("image"); },
+      save() {},
+      restore() {},
+      beginPath() {},
+      rect() {},
+      moveTo() {},
+      lineTo() {},
+      arcTo() {},
+      closePath() {},
+      fill() {},
+      stroke() {},
+      clip() {},
+      fillText(value: string) { painted.push(value); },
+      measureText(value: string) { return { width: value.length * 8 }; },
+    })) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.toBlob = function toBlob(callback) {
+      callback(new Blob(["png"], { type: "image/png" }));
+    };
+    HTMLAnchorElement.prototype.click = function clickDownload() {
+      downloads.push(this.download);
+    };
+
+    const html = renderPresentationHtml(source());
+    const doc = openPlayer(html);
+    const scene = doc.getElementById("c2g-scene");
+    const stage = doc.getElementById("c2g-stage");
+    const before = cameraOf(scene?.style.transform);
+
+    doc.getElementById("c2g-mode")?.click();
+    expect(doc.getElementById("c2g-transport")?.hidden).toBe(true);
+    expect(doc.getElementById("c2g-zoom")?.hidden).toBe(false);
+    expect(doc.getElementById("c2g-repeat-wrap")?.hidden).toBe(true);
+    expect(doc.getElementById("c2g-mode")?.getAttribute("aria-label")).toBe("К проигрыванию");
+    expect(stage?.dataset.mode).toBe("explore");
+    expect(cameraOf(scene?.style.transform)).toEqual(before);
+
+    doc.getElementById("c2g-zoom-in")?.click();
+    const zoomed = cameraOf(scene?.style.transform);
+    expect(zoomed.scale).toBeCloseTo(before.scale * 1.15, 5);
+    expect(doc.getElementById("c2g-zoom-level")?.textContent).toBe(`${Math.round(zoomed.scale * 100)}%`);
+    expect(doc.getElementById("c2g-zoom-level")?.getAttribute("aria-label")).toBe(
+      `Масштаб ${Math.round(zoomed.scale * 100)}%`,
+    );
+
+    doc.getElementById("c2g-zoom-reset")?.click();
+    expect(cameraOf(scene?.style.transform)).toEqual(before);
+
+    stage?.dispatchEvent(new PointerEvent("pointerdown", {
+      clientX: 80,
+      clientY: 60,
+      pointerId: 1,
+      bubbles: true,
+    }));
+    window.dispatchEvent(new PointerEvent("pointermove", {
+      clientX: 120,
+      clientY: 40,
+      pointerId: 1,
+      bubbles: true,
+    }));
+    window.dispatchEvent(new PointerEvent("pointerup", {
+      clientX: 120,
+      clientY: 40,
+      pointerId: 1,
+      bubbles: true,
+    }));
+    const panned = cameraOf(scene?.style.transform);
+    expect(panned.x).toBeCloseTo(before.x + 40, 5);
+    expect(panned.y).toBeCloseTo(before.y - 20, 5);
+
+    doc.getElementById("c2g-sticker")?.click();
+    const sticker = doc.querySelector(".c2g-sticker");
+    const text = sticker?.querySelector(".c2g-sticker-text");
+    expect(sticker).toBeInstanceOf(HTMLElement);
+    expect(text?.getAttribute("data-placeholder")).toBe("Комментарий");
+    expect((sticker as HTMLElement).style.width).toBe("168px");
+    if (text) text.textContent = "Заметка на схеме";
+    const handle = sticker?.querySelector(".c2g-sticker-resize");
+    handle?.dispatchEvent(new PointerEvent("pointerdown", {
+      clientX: 10,
+      clientY: 10,
+      pointerId: 2,
+      bubbles: true,
+    }));
+    window.dispatchEvent(new PointerEvent("pointermove", {
+      clientX: 40,
+      clientY: 28,
+      pointerId: 2,
+      bubbles: true,
+    }));
+    expect((sticker as HTMLElement).style.width).toBe("198px");
+    expect((sticker as HTMLElement).style.height).toBe("130px");
+
+    try {
+      doc.getElementById("c2g-camera")?.click();
+      await new Promise((resolve) => { setTimeout(resolve, 0); });
+      expect(downloads).toEqual(["Walk tour.png"]);
+      expect(painted).toContain("image");
+      expect(painted).toContain("Заметка на схеме");
+      expect(painted).not.toContain("Walk / tour");
+    } finally {
+      HTMLCanvasElement.prototype.getContext = realGetContext;
+      HTMLAnchorElement.prototype.click = realClick;
+      URL.createObjectURL = realCreate;
+      URL.revokeObjectURL = realRevoke;
+      if (realSrc) Object.defineProperty(HTMLImageElement.prototype, "src", realSrc);
+    }
+
+    doc.getElementById("c2g-mode")?.click();
+    expect(doc.getElementById("c2g-transport")?.hidden).toBe(false);
+    expect(doc.getElementById("c2g-zoom")?.hidden).toBe(true);
+    expect(cameraOf(scene?.style.transform)).toEqual(before);
+    expect(doc.getElementById("c2g-notes")?.hidden).toBe(true);
   });
 
   it("keeps a hostile title and diagram script out of the running page", () => {
