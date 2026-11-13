@@ -444,9 +444,27 @@ describe("presentation html export", () => {
     expect(handle?.querySelector("svg")).not.toBeNull();
     const sizedFont = parseFloat((sticker as HTMLElement).style.fontSize);
     fontUp?.click();
-    expect((sticker as HTMLElement).getAttribute("data-font-scale")).toBe("1.25");
-    expect(parseFloat((sticker as HTMLElement).style.fontSize)).toBeCloseTo(sizedFont * 1.25, 2);
+    expect((sticker as HTMLElement).getAttribute("data-font-scale")).toBe("1.5");
+    expect(parseFloat((sticker as HTMLElement).style.fontSize)).toBeCloseTo(sizedFont * 1.5, 2);
     fontDown?.click();
+    expect(parseFloat((sticker as HTMLElement).style.fontSize)).toBeCloseTo(sizedFont, 2);
+    let fontGuard = 0;
+    while (!fontDown?.disabled && fontGuard < 30) {
+      fontDown?.click();
+      fontGuard += 1;
+    }
+    expect((sticker as HTMLElement).getAttribute("data-font-scale")).toBe("0.5");
+    fontGuard = 0;
+    while (!fontUp?.disabled && fontGuard < 30) {
+      fontUp?.click();
+      fontGuard += 1;
+    }
+    expect((sticker as HTMLElement).getAttribute("data-font-scale")).toBe("10");
+    fontGuard = 0;
+    while ((sticker as HTMLElement).getAttribute("data-font-scale") !== "1" && fontGuard < 30) {
+      fontDown?.click();
+      fontGuard += 1;
+    }
     expect(parseFloat((sticker as HTMLElement).style.fontSize)).toBeCloseTo(sizedFont, 2);
 
     sticker?.dispatchEvent(new FocusEvent("focusout", { relatedTarget: doc.body }));
@@ -541,6 +559,10 @@ describe("presentation html export", () => {
     expect(ink?.querySelector("polyline")).toBeNull();
     eraser?.click();
     expect(stage?.classList.contains("is-erasing")).toBe(false);
+    expect(stage?.classList.contains("is-exploring")).toBe(false);
+    expect(eraser?.getAttribute("aria-pressed")).toBe("false");
+    expect(doc.getElementById("c2g-transport")?.hidden).toBe(false);
+    doc.getElementById("c2g-mode")?.click();
     pen?.click();
     stage?.dispatchEvent(new PointerEvent("pointerdown", {
       clientX: 40,

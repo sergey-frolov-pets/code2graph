@@ -88,8 +88,24 @@ const HTML_STICKER_FONT_DOWN_PX = 12;
 const HTML_STICKER_FONT_MARK_PX = 13;
 const HTML_STICKER_FONT_UP_PX = 16;
 const HTML_STICKER_FONT_BUTTON = 20;
-/** Steps around the design size. Resizing the card still scales the text on top of this. */
-const HTML_STICKER_FONT_SCALES = [0.75, 1, 1.25, 1.5, 2] as const;
+const HTML_STICKER_FONT_SCALE_MIN = 0.5;
+const HTML_STICKER_FONT_SCALE_MAX = 10;
+const HTML_STICKER_FONT_SCALE_STEP = 0.5;
+
+function stickerFontScaleSteps(): number[] {
+  const scales: number[] = [];
+  for (
+    let value = HTML_STICKER_FONT_SCALE_MIN;
+    value <= HTML_STICKER_FONT_SCALE_MAX;
+    value += HTML_STICKER_FONT_SCALE_STEP
+  ) {
+    scales.push(Math.round(value * 100) / 100);
+  }
+  return scales;
+}
+
+/** Text size relative to the card. Resizing the card still scales the text on top of this. */
+const HTML_STICKER_FONT_SCALES = stickerFontScaleSteps();
 /** Six-dot drag handle, same grip as the in-app presentation dock. */
 const HTML_STICKER_GRIP_WIDTH = 40;
 const HTML_STICKER_GRIP_HEIGHT = 22;
@@ -2687,7 +2703,11 @@ const PLAYER_SCRIPT = `
   });
   eraserButton.addEventListener("click", function () {
     if (!exploring) return;
-    setEraser(!eraserOn);
+    if (eraserOn) {
+      toggleExplore();
+      return;
+    }
+    setEraser(true);
   });
   saveCopyButton.addEventListener("click", saveCopy);
   marksButton.addEventListener("click", function () {
