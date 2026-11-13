@@ -783,18 +783,20 @@ body.c2g-checker {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  --c2g-unit: 1px;
   background: var(--c2g-note, ${HTML_STICKER_FILL});
   color: var(--c2g-note-ink, ${HTML_STICKER_INK});
-  border: 1px solid color-mix(in srgb, var(--c2g-note-ink, ${HTML_STICKER_INK}) 28%, var(--c2g-note, ${HTML_STICKER_FILL}));
-  border-radius: ${HTML_STICKER_RADIUS}px;
-  box-shadow: 0 8px 18px color-mix(in srgb, ${HTML_STICKER_INK} 18%, transparent);
+  border: var(--c2g-unit) solid color-mix(in srgb, var(--c2g-note-ink, ${HTML_STICKER_INK}) 28%, var(--c2g-note, ${HTML_STICKER_FILL}));
+  border-radius: calc(${HTML_STICKER_RADIUS} * var(--c2g-unit));
+  box-shadow: 0 calc(8 * var(--c2g-unit)) calc(18 * var(--c2g-unit)) color-mix(in srgb, ${HTML_STICKER_INK} 18%, transparent);
   font-family: sans-serif;
+  font-size: calc(${HTML_STICKER_FONT_PX} * var(--c2g-unit));
 }
 .c2g-sticker:not(.is-active) .c2g-sticker-ui { display: none; }
 .c2g-sticker-colors {
   position: absolute;
   left: 0;
-  bottom: calc(100% + ${HTML_STICKER_GRIP_HEIGHT + HTML_STICKER_COLOR_GAP}px);
+  bottom: calc(100% + ${(HTML_STICKER_GRIP_HEIGHT + HTML_STICKER_COLOR_GAP)} * var(--c2g-unit));
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -802,10 +804,10 @@ body.c2g-checker {
 }
 .c2g-sticker-swatch,
 .c2g-sticker-picker {
-  width: ${HTML_STICKER_CHROME}px;
-  height: ${HTML_STICKER_CHROME}px;
+  width: calc(${HTML_STICKER_CHROME} * var(--c2g-unit));
+  height: calc(${HTML_STICKER_CHROME} * var(--c2g-unit));
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, ${HTML_STICKER_INK} 35%, transparent);
+  border: var(--c2g-unit) solid color-mix(in srgb, ${HTML_STICKER_INK} 35%, transparent);
   padding: 0;
   cursor: pointer;
 }
@@ -816,46 +818,46 @@ body.c2g-checker {
 .c2g-sticker-move {
   position: absolute;
   left: 0;
-  top: -${HTML_STICKER_GRIP_HEIGHT}px;
-  width: ${HTML_STICKER_GRIP_WIDTH}px;
-  height: ${HTML_STICKER_GRIP_HEIGHT}px;
+  top: calc(-1 * ${HTML_STICKER_GRIP_HEIGHT} * var(--c2g-unit));
+  width: calc(${HTML_STICKER_GRIP_WIDTH} * var(--c2g-unit));
+  height: calc(${HTML_STICKER_GRIP_HEIGHT} * var(--c2g-unit));
   display: grid;
   place-items: center;
   padding: 0;
   border: 0;
   background: var(--c2g-note, ${HTML_STICKER_FILL});
   color: var(--c2g-note-ink, ${HTML_STICKER_INK});
-  border-radius: ${HTML_STICKER_GRIP_RADIUS}px;
+  border-radius: calc(${HTML_STICKER_GRIP_RADIUS} * var(--c2g-unit));
   cursor: grab;
   touch-action: none;
 }
 .c2g-sticker-move:active { cursor: grabbing; }
-.c2g-sticker-move svg { width: ${HTML_GRIP_ICON_WIDTH}px; height: ${HTML_GRIP_ICON_HEIGHT}px; display: block; }
+.c2g-sticker-move svg { width: calc(${HTML_GRIP_ICON_WIDTH} * var(--c2g-unit)); height: calc(${HTML_GRIP_ICON_HEIGHT} * var(--c2g-unit)); display: block; }
 .c2g-sticker-close {
   position: absolute;
   right: 0;
-  top: -${HTML_STICKER_GRIP_HEIGHT}px;
-  width: ${HTML_STICKER_GRIP_HEIGHT}px;
-  height: ${HTML_STICKER_GRIP_HEIGHT}px;
+  top: calc(-1 * ${HTML_STICKER_GRIP_HEIGHT} * var(--c2g-unit));
+  width: calc(${HTML_STICKER_GRIP_HEIGHT} * var(--c2g-unit));
+  height: calc(${HTML_STICKER_GRIP_HEIGHT} * var(--c2g-unit));
   border: 0;
   padding: 0;
   border-radius: 999px;
   background: var(--c2g-note, ${HTML_STICKER_FILL});
   color: var(--c2g-note-ink, ${HTML_STICKER_INK});
   cursor: pointer;
-  font-size: 14px;
+  font-size: 1em;
   line-height: 1;
 }
 .c2g-sticker-text {
   flex: 1;
   min-height: 0;
   margin: 0;
-  padding: ${HTML_STICKER_PAD}px;
+  padding: calc(${HTML_STICKER_PAD} * var(--c2g-unit));
   overflow: hidden;
   outline: none;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  font-size: ${HTML_STICKER_FONT_PX}px;
+  font-size: inherit;
   line-height: 1.25;
 }
 .c2g-sticker.is-active .c2g-sticker-text { overflow: auto; }
@@ -867,8 +869,8 @@ body.c2g-checker {
   position: absolute;
   right: 0;
   bottom: 0;
-  width: ${HTML_STICKER_CHROME}px;
-  height: ${HTML_STICKER_CHROME}px;
+  width: calc(${HTML_STICKER_CHROME} * var(--c2g-unit));
+  height: calc(${HTML_STICKER_CHROME} * var(--c2g-unit));
   border: 0;
   padding: 0;
   background: linear-gradient(135deg, transparent 50%, var(--c2g-note-ink, ${HTML_STICKER_STROKE}) 50%);
@@ -1403,7 +1405,7 @@ const PLAYER_SCRIPT = `
       var drawn = scenePoint(event.clientX, event.clientY);
       var pts = drag.stroke.points;
       var last = pts[pts.length - 1];
-      if (!last || Math.hypot(drawn.x - last.x, drawn.y - last.y) < payload.penMinStep) return;
+      if (!last || Math.hypot(drawn.x - last.x, drawn.y - last.y) < payload.penMinStep / (camera.scale || 1)) return;
       if (pts.length >= payload.penPointLimit) return;
       pts.push(drawn);
       syncStrokeNode(drag);
@@ -1420,8 +1422,9 @@ const PLAYER_SCRIPT = `
     if (drag.kind === "resize" && drag.note) {
       var grownX = (event.clientX - drag.startX) / camera.scale;
       var grownY = (event.clientY - drag.startY) / camera.scale;
-      drag.note.style.width = Math.max(payload.stickerMinWidth, drag.width + grownX) + "px";
-      drag.note.style.height = Math.max(payload.stickerMinHeight, drag.height + grownY) + "px";
+      var unit = stickerUnit(drag.note);
+      drag.note.style.width = Math.max(payload.stickerMinWidth * unit, drag.width + grownX) + "px";
+      drag.note.style.height = Math.max(payload.stickerMinHeight * unit, drag.height + grownY) + "px";
       return;
     }
     if (drag.kind === "pinch") {
@@ -1484,6 +1487,14 @@ const PLAYER_SCRIPT = `
   function roundCoord(value) {
     return Math.round(value * 100) / 100;
   }
+  function screenUnit() {
+    var scale = camera.scale || 1;
+    return scale > 0 ? 1 / scale : 1;
+  }
+  function stickerUnit(note) {
+    var unit = note ? parseFloat(note.style.getPropertyValue("--c2g-unit")) : 0;
+    return unit > 0 ? unit : 1;
+  }
   function scenePoint(clientX, clientY) {
     var rect = stage.getBoundingClientRect();
     var scale = camera.scale || 1;
@@ -1542,11 +1553,14 @@ const PLAYER_SCRIPT = `
   }
   function createSticker(spec, focusNow) {
     var note = document.createElement("article");
+    var unit = finiteNumber(spec.unit, 0);
+    if (!(unit > 0)) unit = 1;
     note.className = "c2g-sticker";
+    note.style.setProperty("--c2g-unit", unit + "px");
     note.style.left = spec.x + "px";
     note.style.top = spec.y + "px";
-    note.style.width = Math.max(payload.stickerMinWidth, spec.w) + "px";
-    note.style.height = Math.max(payload.stickerMinHeight, spec.h) + "px";
+    note.style.width = Math.max(payload.stickerMinWidth * unit, spec.w) + "px";
+    note.style.height = Math.max(payload.stickerMinHeight * unit, spec.h) + "px";
     var colors = document.createElement("div");
     colors.className = "c2g-sticker-ui c2g-sticker-colors";
     var palette = payload.noteColors || [];
@@ -1651,9 +1665,10 @@ const PLAYER_SCRIPT = `
     if (!exploring) return;
     var rect = stage.getBoundingClientRect();
     var size = viewportSize();
-    var width = payload.stickerWidth / camera.scale;
-    var height = payload.stickerHeight / camera.scale;
-    var nudge = (stickerSeq % 5) * payload.stickerNudge / camera.scale;
+    var unit = screenUnit();
+    var width = payload.stickerWidth * unit;
+    var height = payload.stickerHeight * unit;
+    var nudge = (stickerSeq % 5) * payload.stickerNudge * unit;
     stickerSeq += 1;
     var point = scenePoint(rect.left + size.width / 2, rect.top + size.height / 2);
     createSticker({
@@ -1661,6 +1676,7 @@ const PLAYER_SCRIPT = `
       y: point.y - height / 2 + nudge,
       w: width,
       h: height,
+      unit: unit,
       text: "",
       fill: payload.stickerFill,
       ink: payload.stickerInk
@@ -1701,7 +1717,7 @@ const PLAYER_SCRIPT = `
       var point = stroke.points[0] || { x: 0, y: 0 };
       dot.setAttribute("cx", String(roundCoord(point.x)));
       dot.setAttribute("cy", String(roundCoord(point.y)));
-      dot.setAttribute("r", String(roundCoord(Math.max(stroke.width / 2, 0.5))));
+      dot.setAttribute("r", String(roundCoord(stroke.width / 2)));
       dot.setAttribute("fill", stroke.color);
       return dot;
     }
@@ -1802,7 +1818,7 @@ const PLAYER_SCRIPT = `
   function beginStroke(event) {
     if (!ink || strokes.length >= payload.penStrokeLimit) return false;
     var point = scenePoint(event.clientX, event.clientY);
-    var stroke = { color: penColor, width: penWidth, points: [point], node: null };
+    var stroke = { color: penColor, width: penWidth * screenUnit(), points: [point], node: null };
     strokes.push(stroke);
     stroke.node = renderStroke(stroke);
     ink.appendChild(stroke.node);
@@ -1931,7 +1947,7 @@ const PLAYER_SCRIPT = `
       ctx.lineWidth = stroke.width;
       ctx.beginPath();
       if (stroke.points.length < 2) {
-        var radius = Math.max(stroke.width / 2, 0.5);
+        var radius = stroke.width / 2;
         ctx.moveTo(stroke.points[0].x + radius, stroke.points[0].y);
         ctx.arc(stroke.points[0].x, stroke.points[0].y, radius, 0, Math.PI * 2);
         ctx.fill();
@@ -1952,24 +1968,26 @@ const PLAYER_SCRIPT = `
       var box = readBox(note);
       var textNode = note.querySelector(".c2g-sticker-text");
       var text = notePlain(textNode).trim();
+      var unit = stickerUnit(note);
       ctx.save();
-      roundedRect(ctx, box.left, box.top, box.width, box.height, payload.stickerRadius);
+      roundedRect(ctx, box.left, box.top, box.width, box.height, payload.stickerRadius * unit);
       ctx.fillStyle = note.getAttribute("data-fill") || payload.stickerFill;
       ctx.fill();
       ctx.strokeStyle = note.getAttribute("data-ink") || payload.stickerStroke;
-      ctx.lineWidth = 1;
+      ctx.lineWidth = unit;
       ctx.stroke();
       if (text) {
         ctx.fillStyle = note.getAttribute("data-ink") || payload.stickerInk;
-        ctx.font = payload.stickerFontPx + "px sans-serif";
-        var maxWidth = Math.max(8, box.width - payload.stickerPad * 2);
+        var fontPx = payload.stickerFontPx * unit;
+        ctx.font = fontPx + "px sans-serif";
+        var maxWidth = Math.max(fontPx, box.width - payload.stickerPad * unit * 2);
         var lines = wrapLines(ctx, text, maxWidth);
-        var lineHeight = payload.stickerFontPx * 1.25;
+        var lineHeight = fontPx * 1.25;
         var n;
         for (n = 0; n < lines.length; n += 1) {
-          var lineY = box.top + payload.stickerPad + payload.stickerFontPx + n * lineHeight;
+          var lineY = box.top + (payload.stickerPad + payload.stickerFontPx) * unit + n * lineHeight;
           if (lineY > box.top + box.height) break;
-          ctx.fillText(lines[n], box.left + payload.stickerPad, lineY);
+          ctx.fillText(lines[n], box.left + payload.stickerPad * unit, lineY);
         }
       }
       ctx.restore();
@@ -2042,6 +2060,7 @@ const PLAYER_SCRIPT = `
         w: roundCoord(box.width),
         h: roundCoord(box.height),
         text: notePlain(textNode).slice(0, payload.noteTextLimit),
+        unit: roundCoord(stickerUnit(note)),
         fill: note.getAttribute("data-fill") || payload.stickerFill,
         ink: note.getAttribute("data-ink") || payload.stickerInk
       });
@@ -2090,6 +2109,7 @@ const PLAYER_SCRIPT = `
         w: finiteNumber(item.w, payload.stickerWidth),
         h: finiteNumber(item.h, payload.stickerHeight),
         text: typeof item.text === "string" ? item.text : "",
+        unit: finiteNumber(item.unit, 1),
         fill: item.fill,
         ink: item.ink
       }, false);
