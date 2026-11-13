@@ -3,8 +3,16 @@ import { readStorageJson, writeStorageJson } from "@/core/safe-storage";
 export const STORAGE_KEY_PRESENTATION_DOCK_POSITION =
   "code2graph-presentation-dock-position";
 
-/** Gap kept between the presentation panel and the preview frame. */
+/** Positions are viewport coordinates, not offsets inside the preview frame. */
+const PRESENTATION_DOCK_POSITION_SPACE = "window";
+
+/** Gap kept between the presentation panel and the application window. */
 export const PRESENTATION_DOCK_MARGIN = 8;
+
+/**
+ * Above the status bar (910) and the fullscreen panels (900), below modals (1000).
+ */
+export const PRESENTATION_DOCK_Z_INDEX = 950;
 
 export interface PresentationDockPosition {
   x: number;
@@ -19,6 +27,7 @@ export function loadPresentationDockPosition(): PresentationDockPosition | null 
 
     const record = parsed as Record<string, unknown>;
     if (
+      record.space !== PRESENTATION_DOCK_POSITION_SPACE ||
       typeof record.x !== "number" ||
       typeof record.y !== "number" ||
       !Number.isFinite(record.x) ||
@@ -32,7 +41,10 @@ export function loadPresentationDockPosition(): PresentationDockPosition | null 
 }
 
 export function savePresentationDockPosition(position: PresentationDockPosition): void {
-  writeStorageJson(STORAGE_KEY_PRESENTATION_DOCK_POSITION, position);
+  writeStorageJson(STORAGE_KEY_PRESENTATION_DOCK_POSITION, {
+    ...position,
+    space: PRESENTATION_DOCK_POSITION_SPACE,
+  });
 }
 
 export function clampPresentationDockPosition(

@@ -5,7 +5,7 @@ import {
 } from "@/storage/presentation-dock";
 
 describe("presentation dock position", () => {
-  it("keeps the panel inside the preview frame", () => {
+  it("keeps the panel inside the window", () => {
     expect(clampPresentationDockPosition(
       { x: -40, y: -10 },
       200,
