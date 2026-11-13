@@ -197,6 +197,8 @@ const MARK_FONT_RATIO = 0.91;
 const SECONDARY_TICK_GAP = 8;
 /** Запас после делений второй оси под её подпись (повёрнутую у вертикальной диаграммы). */
 const SECONDARY_LABEL_ROOM = 18;
+/** Просвет между подписью отрицательного значения и подписью категории. */
+const NEGATIVE_LABEL_GAP = 12;
 
 function splitCsvLabels(raw: string): string[] {
   return raw
@@ -1391,8 +1393,17 @@ function resolveValueBounds(
   }
   const explicit = axisId === "y2" ? model.y2 : model.y;
   const auto = niceRange(rawMin, rawMax, 5);
-  const min = explicit?.min ?? Math.min(0, auto.min);
-  const max = explicit?.max ?? (auto.max <= min ? min + 10 : auto.max);
+  // Явный `y 0 --> N` не должен отрезать данные: иначе отрицательный бар
+  // схлопывается в ноль, а его подпись встаёт на ось категорий.
+  // Диапазон только расширяется до круглых границ и не сужается.
+  let min = explicit?.min ?? Math.min(0, auto.min);
+  let max = explicit?.max ?? (auto.max <= min ? min + 10 : auto.max);
+  if (rawMin < min || rawMax > max) {
+    const fitted = niceRange(Math.min(rawMin, min), Math.max(rawMax, max), 5);
+    if (rawMin < min) min = fitted.min;
+    if (rawMax > max) max = fitted.max;
+  }
+  if (!(max > min)) max = min + 10;
   return { min, max };
 }
 
@@ -1478,6 +1489,44 @@ function placeSeriesBars(
   const ratio = seriesGapRatio(model.barGap);
   const pitch = Math.max(thickness * count * (1 + ratio), labelPitch, minPitch);
   return refitSeriesBars(model, pitch, ratio);
+}
+
+/**
+ * Ширина подписей, которые стоят за концом отрицательного бара
+ * (сгруппированные значения и сумма стопки). Ноль — если таких подписей нет.
+ */
+function negativeOutsideCaptionWidth(model: ClusteredModel, fontSize: number): number {
+  const labelSize = Math.max(8, fontSize - 1);
+  let width = 0;
+  const consider = (value: number | null) => {
+    if (value === null || value >= 0) return;
+    width = Math.max(width, measureText(fmt(value), labelSize));
+  };
+  if (model.labels !== "none" && !model.stack && !model.area) {
+    for (const series of model.series) {
+      for (const value of series.values) consider(value ?? null);
+    }
+  }
+  if (model.showSum && model.stack) {
+    for (let category = 0; category < model.categories.length; category += 1) {
+      consider(stackSum(model, category));
+    }
+  }
+  return width;
+}
+
+/**
+ * Место под отрицательные подписи со стороны оси категорий.
+ * По горизонтали это ширина числа, по вертикали — одна строка под столбцом.
+ */
+function negativeCaptionRoom(
+  model: ClusteredModel,
+  fontSize: number,
+  along: "horizontal" | "vertical",
+): number {
+  const width = negativeOutsideCaptionWidth(model, fontSize);
+  if (width === 0) return 0;
+  return along === "horizontal" ? width + NEGATIVE_LABEL_GAP : fontSize + NEGATIVE_LABEL_GAP;
 }
 
 function stackSum(model: ClusteredModel, category: number): number | null {
@@ -2271,6 +2320,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
   let plotHeight = Math.round(PLOT_HEIGHT_VERTICAL * Math.max(1, (scaleFactor - 1) * 0.4 + 1));
 
   const padLeft = (model.axis ? Math.max(68, breakEdgeRoom(model, fontSize)) : 28) + yExtra;
+  const negativeLabelRoom = negativeCaptionRoom(model, fontSize, "vertical");
   // У столбцов стопки подпись, которая не влезла в бар, уходит вправо — для неё нужен
   // запас. У площади подпись стоит на оси категории, под суммой, и этот запас пустует.
   const padRight =
@@ -2284,6 +2334,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
     cagrHeadroom(model, fontSize);
   const padBottom =
     (model.categoryAxis ? VERTICAL_BOTTOM_PAD + catExtra : 16) +
+    negativeLabelRoom +
     (hasNamedSeries(model) ? NAMED_LEGEND_BAND : 0) +
     seriesExtra;
 
@@ -2322,6 +2373,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
   const plotTop = padTop;
   const plotBottom = plotTop + plotHeight;
   const plotRight = plotLeft + plotWidth;
+  const categoryAnchorY = plotBottom + fontSize + 8 + negativeLabelRoom;
 
   const { min: yMin, max: yMax, ticks } = computeValueScale(model);
   const ySpan = yMax - yMin || 1;
@@ -2475,7 +2527,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
         drawLabelLines(
           svg,
           plotLeft + (c + 0.5) * colWidth,
-          plotBottom + fontSize + 8,
+          categoryAnchorY,
           truncateLabel(model.categories[c] ?? "", colWidth - 6, fontSize),
           fontSize,
           {
@@ -2599,7 +2651,7 @@ function renderVerticalClustered(model: ClusteredModel, options: ExtRenderOption
       drawLabelLines(
         svg,
         clusterCenter,
-        plotBottom + fontSize + 8,
+        categoryAnchorY,
         truncateLabel(model.categories[c] ?? "", colWidth - 6, fontSize),
         fontSize,
         {
@@ -2749,7 +2801,9 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
   const titleExtra = labelBlockExtra(model.title, titleSize);
   const seriesExtra = Math.max(0, ...model.series.map((series) => labelBlockExtra(series.name, fontSize)));
   const yExtra = labelBlockExtra(model.y?.label, fontSize);
-  const padLeft = model.categoryAxis ? clamp(Math.ceil(longestCat) + 28, 76, 180) : 28;
+  const categoryGutter = model.categoryAxis ? clamp(Math.ceil(longestCat) + 28, 76, 180) : 28;
+  const negativeLabelRoom = negativeCaptionRoom(model, fontSize, "horizontal");
+  const padLeft = categoryGutter + negativeLabelRoom;
   const padRight =
     (model.labels === "above" || model.showSum ? 56 : 28) +
     annotationGutter(model, fontSize) +
@@ -2803,6 +2857,7 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
   const plotTop = padTop;
   const plotRight = plotLeft + plotWidth;
   const plotBottom = plotTop + plotHeight;
+  const categoryAnchorX = plotLeft - 10 - negativeLabelRoom;
 
   const { min: xMin, max: xMax, ticks } = computeValueScale(model);
   const xSpan = xMax - xMin || 1;
@@ -2949,9 +3004,9 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
       for (let c = 0; c < catCount; c += 1) {
         drawLabelLines(
           svg,
-          plotLeft - 10,
+          categoryAnchorX,
           categoryCenterY(c) + fontSize * 0.35,
-          truncateLabel(model.categories[c] ?? "", padLeft - 18, fontSize),
+          truncateLabel(model.categories[c] ?? "", categoryGutter - 18, fontSize),
           fontSize,
           {
             "text-anchor": "end",
@@ -2969,9 +3024,9 @@ function renderHorizontalClustered(model: ClusteredModel, options: ExtRenderOpti
     if (model.categoryAxis) {
       drawLabelLines(
         svg,
-        plotLeft - 10,
+        categoryAnchorX,
         rowCenter + fontSize * 0.35,
-        truncateLabel(model.categories[c] ?? "", padLeft - 18, fontSize),
+        truncateLabel(model.categories[c] ?? "", categoryGutter - 18, fontSize),
         fontSize,
         {
           "text-anchor": "end",
