@@ -162,7 +162,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.heatmap":
     "heatmap 打开图。x 和 y 是坐标轴标签。在 data 内，一行是 名称 : 逗号分隔的数字。标签中的 \\n 会换行。",
   "site.ext.mermaid.syntax.orgchart":
-    "orgchart 打开树。节点是 id [角色\\n姓名]（\\n 换行，方框适应文字）；color=#hex 设置填充，border=#hex 和 style=solid|dash|dot|dashdot 设置边框颜色和样式。avatar 48 显示照片框；gender=m|f|? 选择剪影，photo= 设置照片，avatar off 隐藏照片框。实线边是 ->，次要上级是 -.->。",
+    "orgchart 打开树。节点是 id [角色\\n姓名]（\\n、<br> 和 | 换行，\\| 仍是 |，方框适应文字）；color=#hex 设置填充，border=#hex 和 style=solid|dash|dot|dashdot 设置边框颜色和样式。avatar 48 显示照片框；gender=m|f|? 选择剪影，photo= 设置照片，avatar off 隐藏照片框。实线边是 ->，次要上级是 -.->。",
   "site.ext.mermaid.syntax.ev":
     "ev 打开图表。days 是日期，pv 是计划，ev 是挣值，ac 是实际成本。日期标签中的 \\n 会换行。",
   "site.ext.mermaid.syntax.boxplot":
@@ -457,7 +457,7 @@ export const siteMessages = {
   "site.landing.usp.vibecoders": "智能体画图，你来修改：MCP 给 Cursor 源码和图片",
   "site.ext.mermaid.type.powermap": "权力图",
   "site.ext.mermaid.desc.powermap": "画在汇报树上的利益相关者权力图：角色、影响力、行动需求和态度，以及公司对接人。照片或剪影、图例，以及 supporter、enemy 这样的具名箭头。",
-  "site.ext.mermaid.syntax.powermap": "powermap 打开图。company 写公司，legend on|off 写图例，avatar 48 或 avatar off 写照片框。人是 id [姓名|职务]，带 role、influence、action、attitude、counterpart、gender 和 photo。-> 和 -.-> 是汇报线。link 名称 color=#hex style=solid|dash|dot|dashdot 定义箭头，A -名称-> B 画出它。comms on 在图例下方画出沟通表。",
+  "site.ext.mermaid.syntax.powermap": "powermap 打开图。company 写公司，legend on|off 把图例画在图下方且只含 link 样式，lang zh 指定图例语言。avatar 48 或 avatar off 写照片框。人是 id [姓名|职务]，带 role、influence、action、attitude、counterpart、gender 和 photo。-> 和 -.-> 是汇报线。link 名称 color=#hex style=solid|dash|dot|dashdot label=文字 定义样式，这个 label 只出现在图例。A -名称-> B 画无文字的箭头，A -名称-> B label=文字 给这一条箭头写字。comms on 在图例下方画出沟通表。",
   "site.ext.mermaid.type.histogram": "直方图",
   "site.ext.mermaid.desc.histogram": "按分箱显示次数或密度，可叠加拟合或给定的分布曲线，以及均值、中位数和置信区间。",
   "site.ext.mermaid.syntax.histogram": "histogram 打开图表（别名 hist、dist）。series 名称 : v1, v2, … 是一组观测；空单元格、na、n/a、null、none、nan、-、— 和 . 都是缺失。bins auto、bins N、binwidth W 或 bins a --> b, b --> c 设定区间。scale count 或 scale density 设定柱高。fit normal 拟合曲线，curve weibull shape=1.6 scale=28 按给定参数绘制。stats 列出 mean median sd var ci，ci 0.95 是均值区间。labels、gap、colors、mono、rotate 90、fontsize、ratio、grid、axis 和 line 与 series 相同。",

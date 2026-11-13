@@ -72,6 +72,14 @@ Board -enemy-> CFO`;
     expect(model.links.map((link) => link.label)).toEqual(["союзник"]);
   });
 
+  it("оставляет \\| символом | внутри имени", () => {
+    const model = modelOf(`powermap
+A [Иван\\|Пётр|Директор]
+B [Ольга]
+A -> B`);
+    expect(model.people[0]).toMatchObject({ name: "Иван|Пётр", title: "Директор" });
+  });
+
   it("стрелка влияния не делает руководителя", () => {
     const model = modelOf(`powermap
 A [Анна] gender=f
@@ -122,14 +130,24 @@ B -enemy-> A`);
     const height = Number(/viewBox="0 0 [\d.]+ ([\d.]+)/.exec(svg)?.[1]);
     assertSvgInvariants(svg, { expectSize: { width, height } });
     expect(svg).toContain("Northwind");
-    expect(svg).toContain("Roles");
-    expect(svg).toContain("Direct report");
+    expect(svg).not.toContain("Roles");
+    expect(svg).not.toContain("Direct report");
     expect(svg).toContain("Links");
     expect(svg).toContain("coach");
-    expect(svg).toContain("enemy");
-    expect(svg).toContain(">?</text>");
+    expect(svg).not.toContain("enemy");
+    expect(svg).toContain('data-avatar="?"');
+    expect(svg).not.toContain(">?</text>");
     expect(svg).toContain(`href="${PHOTO}"`);
     expect(svg).toContain("ext-pm-link-");
+    expect(svg).not.toContain(" Q ");
+    const legendY = Number(/data-legend="powermap"[^>]*y="([\d.]+)"/.exec(svg)?.[1] ?? /y="([\d.]+)"[^>]*data-legend="powermap"/.exec(svg)?.[1]);
+    const cardBottom = Math.max(
+      ...[...svg.matchAll(/<rect x="[\d.]+" y="([\d.]+)" width="[\d.]+" height="([\d.]+)"([^>]*)>/g)]
+        .filter((match) => !match[3].includes("data-legend"))
+        .map((match) => Number(match[1]) + Number(match[2])),
+    );
+    expect(legendY).toBeGreaterThan(0);
+    expect(legendY).toBeGreaterThanOrEqual(cardBottom - 1);
   });
 
   it("легенда не наезжает на карточки, стрелка влияния их не пересекает", () => {
@@ -138,6 +156,8 @@ title Power map
 company Northwind
 legend on
 avatar 48
+link supporter color=#1a7f37 style=solid label=supporter
+link enemy color=#cf222e style=dash label=enemy
 CEO [Alex Morgan|President] role=D influence=L action=U attitude=++ counterpart=yes gender=m
 CFO [Elena Chen|Finance] role=A influence=M action=S attitude=+ counterpart=- gender=f
 Board [Samir Patel|Advisor] role=E influence=S action=M attitude=0 gender=?
@@ -146,18 +166,30 @@ CEO -.-> Board
 CFO -supporter-> CEO
 Board -enemy-> CFO`);
     const svg = powermapEngine.render(model, {});
+    const num = (attrs: string, name: string) => Number(new RegExp(`${name}="([^"]+)"`).exec(attrs)?.[1] ?? NaN);
     const rects = [...svg.matchAll(/<rect\b([^>]*)\/?>/g)].map((match) => {
       const attrs = match[1];
-      const num = (name: string) => Number(new RegExp(`${name}="([^"]+)"`).exec(attrs)?.[1] ?? NaN);
-      return { x: num("x"), y: num("y"), width: num("width"), height: num("height") };
+      return {
+        x: num(attrs, "x"),
+        y: num(attrs, "y"),
+        width: num(attrs, "width"),
+        height: num(attrs, "height"),
+        legend: attrs.includes('data-legend="powermap"'),
+      };
     });
-    const blocks = rects.filter((rect) => rect.width > 80 && rect.height > 40);
-    const legend = blocks.reduce((top, rect) => (rect.y < top.y ? rect : top));
-    const cards = blocks.filter((rect) => rect !== legend);
+    const legend = rects.find((rect) => rect.legend);
+    expect(legend).toBeTruthy();
+    const cards = rects.filter((rect) => !rect.legend && rect.width > 80 && rect.height > 40);
     expect(cards.length).toBeGreaterThan(0);
-    const legendBottom = legend.y + legend.height;
+    const cardBottom = Math.max(...cards.map((card) => card.y + card.height));
+    expect(legend!.y).toBeGreaterThanOrEqual(cardBottom - 1);
     for (const card of cards) {
-      expect(card.y).toBeGreaterThanOrEqual(legendBottom + 12);
+      const overlaps =
+        card.x < legend!.x + legend!.width &&
+        card.x + card.width > legend!.x &&
+        card.y < legend!.y + legend!.height &&
+        card.y + card.height > legend!.y;
+      expect(overlaps).toBe(false);
     }
     const linkPath = /<path\b([^>]*ext-pm-link-[^>]*)\/>/.exec(svg)?.[1];
     expect(linkPath).toBeTruthy();
@@ -232,7 +264,105 @@ B [Борис]
 A -> B`);
     const svg = powermapEngine.render(model, {});
     expect(svg).not.toContain("Roles");
+    expect(svg).not.toContain("Links");
     expect(svg).not.toContain("clipPath");
-    expect(svg).not.toContain(">?</text>");
+    expect(svg).not.toContain('data-avatar="?"');
+  });
+
+  it("не пишет подпись типа на стрелке и пишет label только у конкретной связи", () => {
+    const plain = modelOf(`powermap
+legend on
+link ally color=#1a7f37 style=solid label=союзник
+A [Анна]
+B [Борис]
+A -> B
+B -ally-> A`);
+    const plainSvg = powermapEngine.render(plain, {});
+    expect(plainSvg.match(/союзник/g)).toHaveLength(1);
+    expect(plainSvg).not.toContain("data-edge-label");
+
+    const captioned = modelOf(`powermap
+link ally color=#1a7f37 style=solid label=союзник
+A [Анна]
+B [Борис]
+A -> B
+B -ally-> A label="личный союз"`);
+    expect(captioned.influences[0]).toMatchObject({ name: "ally", label: "личный союз" });
+    const captionedSvg = powermapEngine.render(captioned, {});
+    expect(captionedSvg).toContain("личный союз");
+    expect(captionedSvg).toContain('data-edge-label="1"');
+  });
+
+  it("переводит легенду на язык диаграммы, иначе на язык интерфейса", () => {
+    const source = `powermap
+link supporter color=#1a7f37 style=solid
+A [Анна]
+B [Борис]
+A -> B
+B -supporter-> A`;
+    const ru = powermapEngine.render(modelOf(`powermap\nlang ru\n${source.slice("powermap\n".length)}`), {});
+    expect(ru).toContain("Связи");
+    expect(ru).toContain("сторонник");
+    expect(ru).not.toContain(">supporter<");
+
+    const fromUi = powermapEngine.render(modelOf(source), { locale: "de" });
+    expect(fromUi).toContain("Verbindungen");
+    expect(fromUi).toContain("Unterstützer");
+
+    const bad = powermapEngine.parse("powermap\nlang xx\nA [A]\nB [B]\nA -> B");
+    expect(bad.ok).toBe(false);
+    expect(bad.errors[0].message).toMatch(/язык легенды/);
+  });
+
+  it("стрелки влияния не накладываются", () => {
+    const model = modelOf(`powermap
+link ally color=#1a7f37 style=solid label=ally
+link foe color=#cf222e style=dash label=foe
+A [Анна]
+B [Борис]
+C [Олег]
+A -> B
+A -> C
+B -ally-> A
+C -foe-> B label=спор`);
+    const svg = powermapEngine.render(model, {});
+    const paths = [...svg.matchAll(/<path d="([^"]+)"([^>]*)\/>/g)]
+      .filter((match) => match[2].includes("ext-pm-link-"))
+      .map((match) => {
+        const nums = [...match[1].matchAll(/-?\d+(?:\.\d+)?/g)].map((item) => Number(item[0]));
+        const points: { x: number; y: number }[] = [];
+        for (let i = 0; i + 1 < nums.length; i += 2) points.push({ x: nums[i], y: nums[i + 1] });
+        return points;
+      });
+    expect(paths.length).toBe(2);
+    expect(strokesOverlay(paths[0], paths[1])).toBe(false);
+    expect(svg).toContain("спор");
+    expect(svg.match(/data-edge-label/g)).toHaveLength(1);
   });
 });
+
+function rangesOverlap(a0: number, a1: number, b0: number, b1: number): boolean {
+  const overlap =
+    Math.min(Math.max(a0, a1), Math.max(b0, b1)) - Math.max(Math.min(a0, a1), Math.min(b0, b1));
+  return overlap > 0.5;
+}
+
+function strokesOverlay(left: { x: number; y: number }[], right: { x: number; y: number }[]): boolean {
+  for (let i = 0; i < left.length - 1; i += 1) {
+    for (let j = 0; j < right.length - 1; j += 1) {
+      const a1 = left[i];
+      const a2 = left[i + 1];
+      const b1 = right[j];
+      const b2 = right[j + 1];
+      const bothVertical = Math.abs(a1.x - a2.x) < 0.01 && Math.abs(b1.x - b2.x) < 0.01;
+      const bothHorizontal = Math.abs(a1.y - a2.y) < 0.01 && Math.abs(b1.y - b2.y) < 0.01;
+      if (bothVertical && Math.abs(a1.x - b1.x) < 0.01 && rangesOverlap(a1.y, a2.y, b1.y, b2.y)) {
+        return true;
+      }
+      if (bothHorizontal && Math.abs(a1.y - b1.y) < 0.01 && rangesOverlap(a1.x, a2.x, b1.x, b2.x)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}

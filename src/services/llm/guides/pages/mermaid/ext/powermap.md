@@ -16,11 +16,11 @@ link supporter color=#1a7f37 style=solid label=ally
 CEO [Alex Morgan|Chief executive] role=D influence=L action=U attitude=++ counterpart=- gender=m
 CFO [Elena Chen|Finance lead] role=A influence=M action=S attitude=+ counterpart="Alex Morgan, Board; Alex Morgan" gender=f
 CEO -> CFO
-CFO -supporter-> CEO
+CFO -supporter-> CEO label=budget
 ```
 
-`company` is the company name. `legend on|off` shows the scale legend. `comms on` draws a communications table under that block, even when the legend is off. It is off by default. People are sorted by name. The Contacts column lists `counterpart`, split on commas and semicolons, one name per line, with empty values, `-`, and repeated names removed. The Links column lists each influence link touching that person, and adds the label when it differs from the link name. `avatar 48` sets the photo box (24–128); `avatar off` hides it. A person is `id [Name|Title]`.
+`company` is the company name. `legend on|off` draws the key under the chart. The key lists only styles declared with `link`. `lang ru` (also `language` or `locale`) sets that key's language; otherwise the interface language is used. `comms on` draws a communications table under that key, even when the legend is off. It is off by default. People are sorted by name. The Contacts column lists `counterpart`, split on commas and semicolons, one name per line, with empty values, `-`, and repeated names removed. The Links column lists each influence link touching that person, and adds the label when it differs from the link name. `avatar 48` sets the photo box (24–128); `avatar off` hides it. A person is `id [Name|Title]`.
 
 Scores: `role` E/D/A/U/C, `influence` L/M/S, `action` U/S/M, `attitude` ++ / + / 0 / - / --. `counterpart` is the bar text. `gender=m|f|?` picks a silhouette when `photo` is absent. `photo` is an http(s) URL or a png/jpeg/gif/webp data URI.
 
-`->` is a solid report and `-.->` is a dotted report. They build the tree. `A -name-> B` is an influence arrow and does not change the manager. `supporter` (green solid) and `enemy` (red dash) exist without a `link` line. Any other name needs `link name color=#hex style=solid|dash|dot|dashdot label=…`.
+`->` is a solid report and `-.->` is a dotted report. They build the tree. `A -name-> B` is an influence arrow with no caption and does not change the manager. `A -name-> B label="budget"` captions that one arrow. `label` on a `link` line is legend text only. `supporter` (green solid) and `enemy` (red dash) exist without a `link` line, and they stay out of the legend until declared. Any other name needs `link name color=#hex style=solid|dash|dot|dashdot label=…`.

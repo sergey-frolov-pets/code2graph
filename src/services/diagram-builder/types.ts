@@ -222,6 +222,8 @@ export interface BuilderOptionsSettings {
   showLegend: boolean;
   /** Таблица коммуникаций под легендой. По умолчанию выключена. */
   showComms: boolean;
+  /** `lang`: пусто — язык интерфейса. */
+  legendLang: string;
   /** Сторона блока фото. Пусто — размер по умолчанию типа. `off` прячет блок. */
   avatarSize: string;
   /** Объявленные стрелки влияния (`link`). */

@@ -146,6 +146,24 @@ describe("orgchart: разбор", () => {
     });
   });
 
+  it("читает перенос через | и br", () => {
+    const piped = orgchartEngine.parse(`orgchart
+CEO [Генеральный директор|Иван Петров]
+CTO [Технический<br/>директор]
+CEO -> CTO`);
+    expect(piped.ok).toBe(true);
+    const model = piped.value as OrgModel;
+    expect(model.nodes[0].label).toBe("Генеральный директор\nИван Петров");
+    expect(model.nodes[1].label).toBe("Технический\nдиректор");
+    const literal = orgchartEngine.parse("orgchart\nA [A\\|B]\nB [B]\nA -> B");
+    expect(literal.ok).toBe(true);
+    expect((literal.value as OrgModel).nodes[0].label).toBe("A|B");
+    const svg = orgchartEngine.render(model, {});
+    expect(svg).toContain("Генеральный директор");
+    expect(svg).toContain("Иван Петров");
+    expect(svg).not.toContain("Генеральный директор|Иван");
+  });
+
   it("понимает пунктирное ребро", () => {
     const r = orgchartEngine.parse(`orgchart
 A [A]
@@ -598,7 +616,7 @@ A -> B`);
     expect(model.avatarSize).toBe(0);
     const svg = orgchartEngine.render(model, {});
     expect(svg).not.toContain("clipPath");
-    expect(svg).not.toContain(">?</text>");
+    expect(svg).not.toContain('data-avatar="?"');
   });
 
   it("avatar 48 рисует силуэт, вопрос и снимок", () => {
@@ -618,7 +636,9 @@ A -> D`);
     expect(model.avatarSize).toBe(48);
     expect(model.nodes.find((node) => node.id === "D")?.hideAvatar).toBe(true);
     const svg = orgchartEngine.render(model, {});
-    expect(svg).toContain(">?</text>");
+    expect(svg).toContain('data-avatar="?"');
+    expect(svg).toContain('data-avatar="m"');
+    expect(svg).not.toContain(">?</text>");
     expect(svg).toContain(`href="${photo}"`);
     expect((svg.match(/<clipPath/g) ?? []).length).toBe(1);
   });

@@ -236,21 +236,25 @@ DirectorGeneral -> Operaciones`,
 %% La influencia no cambia al jefe:
 %%   link supporter color=#1a7f37 style=solid|dash|dot|dashdot label="aliado"
 %%   A -supporter-> B
+%% label en link es solo el texto de la leyenda. La flecha no lleva texto.
+%% Texto de una flecha: A -supporter-> B label="presupuesto"
+%% La leyenda va bajo el diagrama y muestra solo los estilos de link.
+%% lang es fija el idioma de la leyenda; si no, se usa el de la interfaz.
 %% supporter (verde continua) y enemy (rojo discontinua) existen hasta que link las reemplace.
-%% La leyenda muestra las escalas y cada tipo de vínculo creado en el diagrama.
 title Mapa de poder
 company "Norte"
 avatar 48
 comms on
 link supporter color=#1a7f37 style=solid label="aliado"
 link coach color=#bf8700 style=dot label="mentor"
+link enemy color=#cf222e style=dash label="oponente"
 ceo [Ana Vidal|Presidenta] gender=f role=E influence=L action=M attitude=+ counterpart=-
 cfo [Ilya Sanz|Finanzas] gender=m role=D influence=L action=S attitude=0 counterpart="Ana Vidal, María Soler; Ana Vidal"
 ops [María Soler|Operaciones] gender=? role=A influence=M action=U attitude=- counterpart="Ilya Sanz"
 ceo -> cfo
 ceo -> ops
 cfo -.-> ops
-cfo -supporter-> ops
+cfo -supporter-> ops label="presupuesto"
 ops -enemy-> cfo`,
     ev: `ev
 title Valor ganado del presupuesto
@@ -785,21 +789,25 @@ avatar 48
 %% 影响关系不改变上级：
 %%   link supporter color=#1a7f37 style=solid|dash|dot|dashdot label="支持者"
 %%   A -supporter-> B
+%% link 上的 label 只出现在图例里，箭头本身没有文字。
+%% 某一条箭头的文字：A -supporter-> B label="预算"
+%% 图例画在图下方，只列出 link 声明的线型。
+%% lang zh 指定图例语言；省略时使用界面语言。
 %% supporter（绿色实线）和 enemy（红色虚线）一直存在，直到 link 行替换它们。
-%% 图例列出量表，以及本图中创建的每一种关系。
 title 权力图
 company "北风"
 avatar 48
 comms on
 link supporter color=#1a7f37 style=solid label="支持者"
 link coach color=#bf8700 style=dot label="导师"
+link enemy color=#cf222e style=dash label="对手"
 ceo [陈丽|总裁] gender=f role=E influence=L action=M attitude=+ counterpart=-
 cfo [王伟|财务] gender=m role=D influence=L action=S attitude=0 counterpart="陈丽, 刘洋; 陈丽"
 ops [刘洋|运营] gender=? role=A influence=M action=U attitude=- counterpart="王伟"
 ceo -> cfo
 ceo -> ops
 cfo -.-> ops
-cfo -supporter-> ops
+cfo -supporter-> ops label="预算"
 ops -enemy-> cfo`,
     ev: `ev
 title 预算挣值
@@ -1334,21 +1342,25 @@ avatar 48
 %% 影響は上司を変えません:
 %%   link supporter color=#1a7f37 style=solid|dash|dot|dashdot label="支援者"
 %%   A -supporter-> B
+%% link の label は凡例の文字だけです。矢印自体には書きません。
+%% 一本の矢印の文字: A -supporter-> B label="予算"
+%% 凡例は図の下に描き、link で宣言した線だけを出します。
+%% lang ja は凡例の言語です。無いときは画面の言語です。
 %% supporter（緑の実線）と enemy（赤の破線）は、link 行が置き換えるまで使えます。
-%% 凡例には尺度と、この図で作ったすべての関係が表示されます。
 title パワーマップ
 company "北風"
 avatar 48
 comms on
 link supporter color=#1a7f37 style=solid label="支援者"
 link coach color=#bf8700 style=dot label="指導者"
+link enemy color=#cf222e style=dash label="敵対者"
 ceo [鈴木美咲|社長] gender=f role=E influence=L action=M attitude=+ counterpart=-
 cfo [佐藤健|財務] gender=m role=D influence=L action=S attitude=0 counterpart="鈴木美咲, 伊藤彩; 鈴木美咲"
 ops [伊藤彩|運営] gender=? role=A influence=M action=U attitude=- counterpart="佐藤健"
 ceo -> cfo
 ceo -> ops
 cfo -.-> ops
-cfo -supporter-> ops
+cfo -supporter-> ops label="予算"
 ops -enemy-> cfo`,
     ev: `ev
 title 予算のアーンドバリュー
@@ -1883,21 +1895,25 @@ avatar 48
 %% प्रभाव प्रबंधक नहीं बदलता:
 %%   link supporter color=#1a7f37 style=solid|dash|dot|dashdot label="समर्थक"
 %%   A -supporter-> B
+%% link का label केवल संकेत का पाठ है। तीर पर वह नहीं लिखा जाता।
+%% एक तीर का पाठ: A -supporter-> B label="बजट"
+%% संकेत चित्र के नीचे है और केवल link की रेखाएँ दिखाता है।
+%% lang hi संकेत की भाषा है। न हो तो इंटरफ़ेस की भाषा।
 %% supporter (हरी ठोस) और enemy (लाल डैश) तब तक रहते हैं जब तक link पंक्ति उन्हें न बदले।
-%% संकेत में पैमाने और इस चित्र में बनी हर कड़ी दिखती है।
 title पावर मैप
 company "उत्तर"
 avatar 48
 comms on
 link supporter color=#1a7f37 style=solid label="समर्थक"
 link coach color=#bf8700 style=dot label="मार्गदर्शक"
+link enemy color=#cf222e style=dash label="विरोधी"
 ceo [अनन्या वर्मा|अध्यक्ष] gender=f role=E influence=L action=M attitude=+ counterpart=-
 cfo [अर्जुन शर्मा|वित्त] gender=m role=D influence=L action=S attitude=0 counterpart="अनन्या वर्मा, मेघा जोशी; अनन्या वर्मा"
 ops [मेघा जोशी|संचालन] gender=? role=A influence=M action=U attitude=- counterpart="अर्जुन शर्मा"
 ceo -> cfo
 ceo -> ops
 cfo -.-> ops
-cfo -supporter-> ops
+cfo -supporter-> ops label="बजट"
 ops -enemy-> cfo`,
     ev: `ev
 title बजट का अर्जित मूल्य
@@ -2432,21 +2448,25 @@ DiretorGeral -> Operacoes`,
 %% A influência não muda o chefe:
 %%   link supporter color=#1a7f37 style=solid|dash|dot|dashdot label="aliado"
 %%   A -supporter-> B
+%% label em link é só o texto da legenda. A seta em si não leva texto.
+%% Texto de uma seta: A -supporter-> B label="orçamento"
+%% A legenda fica sob o diagrama e mostra só os estilos de link.
+%% lang pt define o idioma da legenda; sem a linha usa-se o da interface.
 %% supporter (verde cheia) e enemy (vermelho tracejado) existem até uma linha link os substituir.
-%% A legenda mostra as escalas e cada tipo de vínculo criado neste diagrama.
 title Mapa de poder
 company "Norte"
 avatar 48
 comms on
 link supporter color=#1a7f37 style=solid label="aliado"
 link coach color=#bf8700 style=dot label="mentor"
+link enemy color=#cf222e style=dash label="oponente"
 ceo [Elena Costa|Presidente] gender=f role=E influence=L action=M attitude=+ counterpart=-
 cfo [André Moraes|Finanças] gender=m role=D influence=L action=S attitude=0 counterpart="Elena Costa, Clara Duarte; Elena Costa"
 ops [Clara Duarte|Operações] gender=? role=A influence=M action=U attitude=- counterpart="André Moraes"
 ceo -> cfo
 ceo -> ops
 cfo -.-> ops
-cfo -supporter-> ops
+cfo -supporter-> ops label="orçamento"
 ops -enemy-> cfo`,
     ev: `ev
 title Valor agregado do orçamento
@@ -2981,21 +3001,25 @@ Geschäftsführung -> Betrieb`,
 %% Einfluss ändert den Vorgesetzten nicht:
 %%   link supporter color=#1a7f37 style=solid|dash|dot|dashdot label="Unterstützer"
 %%   A -supporter-> B
+%% label an link ist nur der Legendentext. Der Pfeil selbst bleibt ohne Beschriftung.
+%% Beschriftung eines Pfeils: A -supporter-> B label="Budget"
+%% Die Legende steht unter dem Diagramm und zeigt nur Stile aus link.
+%% lang de setzt die Legendensprache, sonst gilt die Sprache der Oberfläche.
 %% supporter (grün, durchgezogen) und enemy (rot, gestrichelt) gelten, bis eine link-Zeile sie ersetzt.
-%% Die Legende zeigt die Skalen und jeden Beziehungstyp, den dieses Diagramm anlegt.
 title Machtkarte
 company "Nordwind"
 avatar 48
 comms on
 link supporter color=#1a7f37 style=solid label="Unterstützer"
 link coach color=#bf8700 style=dot label="Mentor"
+link enemy color=#cf222e style=dash label="Gegner"
 ceo [Elena Hofmann|Vorsitz] gender=f role=E influence=L action=M attitude=+ counterpart=-
 cfo [Alexander Berger|Finanzen] gender=m role=D influence=L action=S attitude=0 counterpart="Elena Hofmann, Clara Vogel; Elena Hofmann"
 ops [Clara Vogel|Betrieb] gender=? role=A influence=M action=U attitude=- counterpart="Alexander Berger"
 ceo -> cfo
 ceo -> ops
 cfo -.-> ops
-cfo -supporter-> ops
+cfo -supporter-> ops label="Budget"
 ops -enemy-> cfo`,
     ev: `ev
 title Fertigstellungswert des Budgets
@@ -3530,21 +3554,25 @@ avatar 48
 %% التأثير لا يغيّر المدير:
 %%   link supporter color=#1a7f37 style=solid|dash|dot|dashdot label="مؤيد"
 %%   A -supporter-> B
+%% label في link نص المفتاح فقط. السهم نفسه بلا نص.
+%% نص سهم واحد: A -supporter-> B label="ميزانية"
+%% يُرسم المفتاح تحت المخطط ويعرض فقط أنماط link.
+%% lang ar لغة المفتاح، وإلا تُستخدم لغة الواجهة.
 %% supporter (أخضر متصل) و enemy (أحمر متقطع) موجودان حتى يستبدلهما سطر link.
-%% يعرض المفتاح المقاييس وكل نوع علاقة أُنشئ في هذا المخطط.
 title خريطة النفوذ
 company "شمال"
 avatar 48
 comms on
 link supporter color=#1a7f37 style=solid label="مؤيد"
 link coach color=#bf8700 style=dot label="موجه"
+link enemy color=#cf222e style=dash label="خصم"
 ceo [ليلى حسن|رئيسة] gender=f role=E influence=L action=M attitude=+ counterpart=-
 cfo [أحمد منصور|المالية] gender=m role=D influence=L action=S attitude=0 counterpart="ليلى حسن, نورا فهد; ليلى حسن"
 ops [نورا فهد|التشغيل] gender=? role=A influence=M action=U attitude=- counterpart="أحمد منصور"
 ceo -> cfo
 ceo -> ops
 cfo -.-> ops
-cfo -supporter-> ops
+cfo -supporter-> ops label="ميزانية"
 ops -enemy-> cfo`,
     ev: `ev
 title القيمة المكتسبة للميزانية

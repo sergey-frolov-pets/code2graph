@@ -168,9 +168,9 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.heatmap":
     "heatmap opens the map. x and y are the axis labels. Inside data a row is name : comma-separated numbers. \\n in a label breaks the line.",
   "site.ext.mermaid.syntax.orgchart":
-    "orgchart opens the tree. A node is id [role\\nname] (\\n breaks the line, the box fits the text); color=#hex sets the fill, border=#hex and style=solid|dash|dot|dashdot set the border color and style. avatar 48 shows a photo box; gender=m|f|? picks a silhouette, photo= sets an image, avatar off hides the box. A solid edge is ->, a secondary manager is -.->.",
+    "orgchart opens the tree. A node is id [role\\nname] (\\n, <br> and | break the line, \\| stays a pipe, the box fits the text); color=#hex sets the fill, border=#hex and style=solid|dash|dot|dashdot set the border color and style. avatar 48 shows a photo box; gender=m|f|? picks a silhouette, photo= sets an image, avatar off hides the box. A solid edge is ->, a secondary manager is -.->.",
   "site.ext.mermaid.syntax.powermap":
-    "powermap opens the map. company sets the company, legend on|off the key, avatar 48 or avatar off the photo box. A person is id [Name|Title] with role, influence, action, attitude, counterpart, gender, and photo. -> and -.-> are reporting lines. link name color=#hex style=solid|dash|dot|dashdot defines an arrow, and A -name-> B draws it. comms on draws the communications table under the legend: people, counterpart contacts, and link labels.",
+    "powermap opens the map. company sets the company, legend on|off the key under the chart (link styles only), lang ru sets its language. avatar 48 or avatar off the photo box. A person is id [Name|Title] with role, influence, action, attitude, counterpart, gender, and photo. -> and -.-> are reporting lines. link name color=#hex style=solid|dash|dot|dashdot label=text defines a style; that label is legend text only. A -name-> B draws the arrow with no caption, A -name-> B label=text captions that arrow. comms on draws the communications table under the legend: people, counterpart contacts, and link labels.",
   "site.ext.mermaid.syntax.ev":
     "ev opens the chart. days are the days, pv is the plan, ev is earned value, ac is actual cost. \\n in a day label breaks the line.",
   "site.ext.mermaid.syntax.boxplot":

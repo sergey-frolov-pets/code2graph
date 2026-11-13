@@ -162,7 +162,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.heatmap":
     "heatmap がマップを開きます。x と y は軸のラベルです。data の中の行は 名前 : カンマ区切りの数値 です。ラベル内の \\n は改行です。",
   "site.ext.mermaid.syntax.orgchart":
-    "orgchart が木を開きます。ノードは id [役割\\n名前] です（\\n は改行、箱はテキストに合わせます）。color=#hex が塗り、border=#hex と style=solid|dash|dot|dashdot が枠の色とスタイルです。avatar 48 は写真枠を出し、gender=m|f|? がシルエット、photo= が画像、avatar off が枠を隠します。実線のエッジは ->、副担当の上司は -.-> です。",
+    "orgchart が木を開きます。ノードは id [役割\\n名前] です（\\n、<br>、| は改行、\\| は | のまま、箱はテキストに合わせます）。color=#hex が塗り、border=#hex と style=solid|dash|dot|dashdot が枠の色とスタイルです。avatar 48 は写真枠を出し、gender=m|f|? がシルエット、photo= が画像、avatar off が枠を隠します。実線のエッジは ->、副担当の上司は -.-> です。",
   "site.ext.mermaid.syntax.ev":
     "ev がチャートを開きます。days が日、pv が計画、ev が出来高、ac が実績コストです。日のラベル内の \\n は改行です。",
   "site.ext.mermaid.syntax.boxplot":
@@ -457,7 +457,7 @@ export const siteMessages = {
   "site.landing.usp.vibecoders": "エージェントが描き、あなたが直す。MCPがCursorへソースと画像を返す",
   "site.ext.mermaid.type.powermap": "パワーマップ",
   "site.ext.mermaid.desc.powermap": "報告ツリー上のステークホルダー図です。役割、影響力、行動の必要性、態度、会社側の相手を持ちます。写真かシルエット、凡例、supporter や enemy のような名前付き矢印があります。",
-  "site.ext.mermaid.syntax.powermap": "powermap が図を開きます。company は会社、legend on|off は凡例、avatar 48 か avatar off は写真枠です。人は id [名前|役職] で、role、influence、action、attitude、counterpart、gender、photo を持ちます。-> と -.-> は報告線です。link 名前 color=#hex style=solid|dash|dot|dashdot が矢印を定義し、A -名前-> B が描きます。comms on は凡例の下に連絡表を描きます。",
+  "site.ext.mermaid.syntax.powermap": "powermap が図を開きます。company は会社、legend on|off は図の下の凡例（link の線だけ）、lang ja はその言語です。avatar 48 か avatar off は写真枠です。人は id [名前|役職] で、role、influence、action、attitude、counterpart、gender、photo を持ちます。-> と -.-> は報告線です。link 名前 color=#hex style=solid|dash|dot|dashdot label=文字 が様式を定義し、その label は凡例だけに出ます。A -名前-> B は文字なしの矢印、A -名前-> B label=文字 がその矢印に文字を書きます。comms on は凡例の下に連絡表を描きます。",
   "site.ext.mermaid.type.histogram": "ヒストグラム",
   "site.ext.mermaid.desc.histogram": "ビンごとの件数または密度に、推定または指定した分布曲線、平均、中央値、信頼区間を重ねます。",
   "site.ext.mermaid.syntax.histogram": "histogram で開きます（別名 hist、dist）。series 名前 : v1, v2, … が1標本です。空欄、na、n/a、null、none、nan、-、—、. は欠損です。bins auto、bins N、binwidth W、または bins a --> b, b --> c が区間です。scale count か scale density が高さです。fit normal は曲線を推定し、curve weibull shape=1.6 scale=28 は指定パラメータを描きます。stats は mean median sd var ci、ci 0.95 は平均の区間です。labels、gap、colors、mono、rotate 90、fontsize、ratio、grid、axis、line は series と同じです。",

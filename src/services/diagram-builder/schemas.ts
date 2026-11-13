@@ -376,6 +376,7 @@ function columnsForDiagramType(
         { id: "counterpart", labelKey: "builder.col.counterpart", type: "text" },
         { id: "manager", labelKey: "builder.col.manager", type: "text" },
         { id: "relation", labelKey: "builder.col.relation", type: "text" },
+        { id: "edgeLabel", labelKey: "builder.powermap.edgeLabel", type: "text" },
       ];
     case "ev":
       return [

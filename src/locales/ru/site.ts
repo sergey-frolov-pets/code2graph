@@ -168,9 +168,9 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.heatmap":
     "heatmap открывает карту. x и y — подписи осей. В блоке data строка: имя : числа через запятую. \\n в подписи переносит строку.",
   "site.ext.mermaid.syntax.orgchart":
-    "orgchart открывает дерево. Узел — id [роль\\nимя] (\\n переносит строку, блок подгоняется под текст); color=#hex задаёт заливку, border=#hex и style=solid|dash|dot|dashdot — цвет и стиль границы. avatar 48 показывает блок фото; gender=m|f|? выбирает силуэт, photo= задаёт снимок, avatar off прячет блок. Основное ребро — ->, второй руководитель — -.->.",
+    "orgchart открывает дерево. Узел — id [роль\\nимя] (\\n, <br> и | переносят строку, \\| остаётся символом |, блок подгоняется под текст); color=#hex задаёт заливку, border=#hex и style=solid|dash|dot|dashdot — цвет и стиль границы. avatar 48 показывает блок фото; gender=m|f|? выбирает силуэт, photo= задаёт снимок, avatar off прячет блок. Основное ребро — ->, второй руководитель — -.->.",
   "site.ext.mermaid.syntax.powermap":
-    "powermap открывает карту. company задаёт компанию, legend on|off — легенду, avatar 48 или avatar off — блок фото. Человек — id [Имя|Должность] с role, influence, action, attitude, counterpart, gender и photo. -> и -.-> — подчинение. link имя color=#hex style=solid|dash|dot|dashdot задаёт стрелку, A -имя-> B её рисует. comms on включает таблицу коммуникаций под легендой: сотрудники, контакты counterpart и подписи связей.",
+    "powermap открывает карту. company задаёт компанию, legend on|off — легенду под схемой из стилей link, lang ru задаёт её язык. avatar 48 или avatar off — блок фото. Человек — id [Имя|Должность] с role, influence, action, attitude, counterpart, gender и photo. -> и -.-> — подчинение. link имя color=#hex style=solid|dash|dot|dashdot label=текст задаёт стиль; label типа виден только в легенде. A -имя-> B рисует стрелку без подписи, A -имя-> B label=текст подписывает эту стрелку. comms on включает таблицу коммуникаций под легендой: сотрудники, контакты counterpart и подписи связей.",
   "site.ext.mermaid.syntax.ev":
     "ev открывает график. days — дни, pv — план, ev — освоенный объём, ac — фактические затраты. \\n в подписи дня переносит строку.",
   "site.ext.mermaid.syntax.boxplot":

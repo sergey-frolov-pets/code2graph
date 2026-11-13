@@ -76,6 +76,7 @@ export const mermaidFormatHandler: FormatHandler = {
         fontFamily: context.diagramFontFamily,
         fontWeight: context.diagramFontWeight,
         fontStyle: context.diagramFontStyle,
+        locale: context.locale,
       },
       context.renderMode,
     );

@@ -162,7 +162,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.heatmap":
     "heatmap मानचित्र खोलता है। x और y अक्ष लेबल हैं। data के अंदर पंक्ति name : अल्पविराम से अलग संख्याएँ है। लेबल में \\n पंक्ति तोड़ता है।",
   "site.ext.mermaid.syntax.orgchart":
-    "orgchart वृक्ष खोलता है। नोड id [role\\nname] है (\\n पंक्ति तोड़ता है, बॉक्स पाठ के अनुसार फिट होता है); color=#hex भराव सेट करता है, border=#hex और style=solid|dash|dot|dashdot सीमा का रंग और शैली सेट करते हैं। avatar 48 फ़ोटो बॉक्स दिखाता है; gender=m|f|? छाया चुनता है, photo= चित्र देता है, avatar off बॉक्स छिपाता है। ठोस किनारा -> है, द्वितीयक प्रबंधक -.-> है।",
+    "orgchart वृक्ष खोलता है। नोड id [role\\nname] है (\\n, <br> और | पंक्ति तोड़ते हैं, \\| | रहता है, बॉक्स पाठ के अनुसार फिट होता है); color=#hex भराव सेट करता है, border=#hex और style=solid|dash|dot|dashdot सीमा का रंग और शैली सेट करते हैं। avatar 48 फ़ोटो बॉक्स दिखाता है; gender=m|f|? छाया चुनता है, photo= चित्र देता है, avatar off बॉक्स छिपाता है। ठोस किनारा -> है, द्वितीयक प्रबंधक -.-> है।",
   "site.ext.mermaid.syntax.ev":
     "ev चार्ट खोलता है। days दिन हैं, pv योजना है, ev अर्जित मूल्य है, ac वास्तविक लागत है। दिन लेबल में \\n पंक्ति तोड़ता है।",
   "site.ext.mermaid.syntax.boxplot":
@@ -457,7 +457,7 @@ export const siteMessages = {
   "site.landing.usp.vibecoders": "एजेंट बनाता है, आप बदलते हैं: MCP Cursor को कोड और तस्वीर देता है",
   "site.ext.mermaid.type.powermap": "पावर मैप",
   "site.ext.mermaid.desc.powermap": "रिपोर्टिंग ट्री पर हितधारक: भूमिका, प्रभाव, कार्रवाई की ज़रूरत और रुख, साथ में कंपनी का समकक्ष। फ़ोटो या छाया, संकेत, और supporter तथा enemy जैसे नाम वाले तीर।",
-  "site.ext.mermaid.syntax.powermap": "powermap नक्शा खोलता है। company कंपनी है, legend on|off संकेत है, avatar 48 या avatar off फ़ोटो बॉक्स है। व्यक्ति id [नाम|पद] है, role, influence, action, attitude, counterpart, gender और photo के साथ। -> और -.-> रिपोर्टिंग हैं। link नाम color=#hex style=solid|dash|dot|dashdot तीर बनाता है, A -नाम-> B उसे खींचता है। comms on संकेत के नीचे संचार तालिका बनाता है।",
+  "site.ext.mermaid.syntax.powermap": "powermap नक्शा खोलता है। company कंपनी है, legend on|off चित्र के नीचे संकेत है (केवल link शैलियाँ), lang hi उसकी भाषा है। avatar 48 या avatar off फ़ोटो बॉक्स है। व्यक्ति id [नाम|पद] है, role, influence, action, attitude, counterpart, gender और photo के साथ। -> और -.-> रिपोर्टिंग हैं। link नाम color=#hex style=solid|dash|dot|dashdot label=पाठ शैली बनाता है; यह label केवल संकेत में है। A -नाम-> B बिना पाठ का तीर है, A -नाम-> B label=पाठ उसी तीर पर पाठ लिखता है। comms on संकेत के नीचे संचार तालिका बनाता है।",
   "site.ext.mermaid.type.histogram": "हिस्टोग्राम",
   "site.ext.mermaid.desc.histogram": "बिन के अनुसार गिनती या घनत्व, फिट या दी गई वितरण वक्र, माध्य, माध्यिका और विश्वास अंतराल के साथ।",
   "site.ext.mermaid.syntax.histogram": "histogram चार्ट खोलता है (उपनाम hist और dist)। series नाम : v1, v2, … एक नमूना है। खाली सेल, na, n/a, null, none, nan, -, — या . कमी है। bins auto, bins N, binwidth W या bins a --> b, b --> c अंतराल तय करते हैं। scale count या scale density ऊँचाई तय करता है। fit normal वक्र अनुमानित करता है, curve weibull shape=1.6 scale=28 दिए पैरामीटर खींचता है। stats में mean median sd var ci हैं, ci 0.95 माध्य का अंतराल है। labels, gap, colors, mono, rotate 90, fontsize, ratio, grid, axis और line series जैसे हैं।",

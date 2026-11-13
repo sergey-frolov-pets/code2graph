@@ -371,6 +371,9 @@ export const builderMessages = {
   "builder.powermap.linkName": "Имя",
   "builder.powermap.linkLabel": "Подпись",
   "builder.powermap.addLink": "Добавить связь",
+  "builder.powermap.edgeLabel": "Подпись стрелки",
+  "builder.powermap.legendLang": "Язык легенды",
+  "builder.powermap.legendLangHint": "Пусто — язык интерфейса. en, ru, es, zh, ja, hi, pt, de, ar.",
   "builder.orgchart.avatar": "Размер фото",
 
 } as const satisfies LocaleMessages;

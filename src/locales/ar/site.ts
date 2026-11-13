@@ -162,7 +162,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.heatmap":
     "يفتح heatmap الخريطة. x وy تسميتا المحورين. داخل data يكون الصف الاسم : أرقام مفصولة بفواصل. يكسر \\n في التسمية السطر.",
   "site.ext.mermaid.syntax.orgchart":
-    "يفتح orgchart الشجرة. العقدة هي id [الدور\\nالاسم] (يكسر \\n السطر، وينطبق الصندوق على النص)؛ يضبط color=#hex التعبئة، ويضبط border=#hex وstyle=solid|dash|dot|dashdot لون الحد ونمطه. يعرض avatar 48 مربع الصورة؛ يختار gender=m|f|? الصورة الظلية، ويضع photo= الصورة، ويخفي avatar off المربع. الحافة المتصلة ->، والمدير الثانوي -.->.",
+    "يفتح orgchart الشجرة. العقدة هي id [الدور\\nالاسم] (يكسر \\n و<br> و| السطر، ويبقى \\| رمز |، وينطبق الصندوق على النص)؛ يضبط color=#hex التعبئة، ويضبط border=#hex وstyle=solid|dash|dot|dashdot لون الحد ونمطه. يعرض avatar 48 مربع الصورة؛ يختار gender=m|f|? الصورة الظلية، ويضع photo= الصورة، ويخفي avatar off المربع. الحافة المتصلة ->، والمدير الثانوي -.->.",
   "site.ext.mermaid.syntax.ev":
     "يفتح ev المخطط. days هي الأيام، وpv الخطة، وev القيمة المكتسبة، وac التكلفة الفعلية. يكسر \\n في تسمية اليوم السطر.",
   "site.ext.mermaid.syntax.boxplot":
@@ -457,7 +457,7 @@ export const siteMessages = {
   "site.landing.usp.vibecoders": "الوكيل يرسم وأنت تحرّر: MCP يعطي Cursor المصدر والصورة",
   "site.ext.mermaid.type.powermap": "خريطة النفوذ",
   "site.ext.mermaid.desc.powermap": "خريطة نفوذ على شجرة تبعية: الدور والتأثير والحاجة إلى الفعل والموقف، مع نظير الشركة. صور أو صور ظلية، ومفتاح، وأسهم مسماة مثل supporter و enemy.",
-  "site.ext.mermaid.syntax.powermap": "powermap يفتح الخريطة. company اسم الشركة، legend on|off المفتاح، avatar 48 أو avatar off مربع الصورة. الشخص id [الاسم|المنصب] مع role و influence و action و attitude و counterpart و gender و photo. -> و -.-> خطّا تبعية. link اسم color=#hex style=solid|dash|dot|dashdot يعرّف سهمًا، و A -اسم-> B يرسمه. comms on يرسم جدول التواصل تحت المفتاح.",
+  "site.ext.mermaid.syntax.powermap": "powermap يفتح الخريطة. company اسم الشركة، legend on|off المفتاح تحت المخطط (أنماط link فقط)، lang ar لغته. avatar 48 أو avatar off مربع الصورة. الشخص id [الاسم|المنصب] مع role و influence و action و attitude و counterpart و gender و photo. -> و -.-> خطّا تبعية. link اسم color=#hex style=solid|dash|dot|dashdot label=نص يعرّف النمط، وهذا label يظهر في المفتاح فقط. A -اسم-> B يرسم السهم بلا نص، و A -اسم-> B label=نص يكتب على هذا السهم. comms on يرسم جدول التواصل تحت المفتاح.",
   "site.ext.mermaid.type.histogram": "مدرج تكراري",
   "site.ext.mermaid.desc.histogram": "العدد أو الكثافة حسب الفترة، مع منحنى توزيع مُقدَّر أو مُعطى، والمتوسط والوسيط وفاصل الثقة.",
   "site.ext.mermaid.syntax.histogram": "histogram يفتح الرسم (الأسماء البديلة hist وdist). series الاسم : v1, v2, … عينة واحدة. الخلية الفارغة وna وn/a وnull وnone وnan و- و— و. قيمة ناقصة. bins auto أو bins N أو binwidth W أو bins a --> b, b --> c تحدد الفترات. scale count أو scale density يحدد الارتفاع. fit normal يقدّر المنحنى، وcurve weibull shape=1.6 scale=28 يرسم المعاملات المعطاة. stats تسرد mean median sd var ci، وci 0.95 فاصل المتوسط. labels وgap وcolors وmono وrotate 90 وfontsize وratio وgrid وaxis وline تعمل كما في series.",
