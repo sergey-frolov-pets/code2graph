@@ -339,6 +339,7 @@ export const builderMessages = {
   "builder.gender.unknown": "Desconocido",
   "builder.powermap.company": "Empresa",
   "builder.powermap.legend": "Leyenda",
+  "builder.powermap.comms": "Tabla de comunicación",
   "builder.powermap.avatar": "Tamaño de la foto",
   "builder.powermap.avatarHint": "Vacío usa el tamaño por defecto. off oculta el recuadro. Un número es el lado en px.",
   "builder.powermap.links": "Vínculos de influencia",

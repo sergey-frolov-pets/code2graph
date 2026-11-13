@@ -339,6 +339,7 @@ export const builderMessages = {
   "builder.gender.unknown": "不明",
   "builder.powermap.company": "会社",
   "builder.powermap.legend": "凡例",
+  "builder.powermap.comms": "連絡表",
   "builder.powermap.avatar": "写真のサイズ",
   "builder.powermap.avatarHint": "空は既定サイズです。off は枠を隠します。数字は一辺の px です。",
   "builder.powermap.links": "影響の関係",

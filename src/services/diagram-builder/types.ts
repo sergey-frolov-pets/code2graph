@@ -220,6 +220,8 @@ export interface BuilderOptionsSettings {
   company: string;
   /** Легенда шкал и связей. По умолчанию включена. */
   showLegend: boolean;
+  /** Таблица коммуникаций под легендой. По умолчанию выключена. */
+  showComms: boolean;
   /** Сторона блока фото. Пусто — размер по умолчанию типа. `off` прячет блок. */
   avatarSize: string;
   /** Объявленные стрелки влияния (`link`). */

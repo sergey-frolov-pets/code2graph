@@ -364,6 +364,7 @@ export const builderMessages = {
   "builder.gender.unknown": "Неизвестен",
   "builder.powermap.company": "Компания",
   "builder.powermap.legend": "Легенда",
+  "builder.powermap.comms": "Таблица коммуникаций",
   "builder.powermap.avatar": "Размер фото",
   "builder.powermap.avatarHint": "Пусто — размер по умолчанию. off прячет блок. Число — сторона в px.",
   "builder.powermap.links": "Связи влияния",

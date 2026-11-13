@@ -184,6 +184,45 @@ Board -enemy-> CFO`);
     }
   });
 
+  it("таблица коммуникаций сортирует людей и раскладывает контакты", () => {
+    const model = modelOf(`powermap
+comms on
+legend off
+link coach color=#bf8700 style=dot label=наставник
+Мария [Мария Ким] counterpart="Илья Сомов; илья сомов, -"
+Илья [Илья Сомов] counterpart="Мария Ким, Анна Орлова"
+Анна [Анна Орлова] counterpart=-
+Мария -coach-> Илья
+Анна -> Мария`);
+    expect(model.comms).toBe(true);
+    expect(model.legend).toBe(false);
+    const svg = powermapEngine.render(model, {});
+    const texts = [...svg.matchAll(/<text\b[^>]*>([^<]*)<\/text>/g)].map((match) => match[1]);
+    const people = ["Анна Орлова", "Илья Сомов", "Мария Ким"];
+    const positions = people.map((name) => texts.indexOf(name));
+    expect(positions.every((index) => index >= 0)).toBe(true);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+    expect(texts.filter((text) => text === "Илья Сомов")).toHaveLength(3);
+    expect(texts).not.toContain("илья сомов");
+    expect(texts).toContain("coach — наставник");
+    expect(texts).not.toContain("Roles");
+    const legendBottom = 0;
+    const personY = Number(/<text\b[^>]* y="([^"]+)"[^>]*>Анна Орлова<\/text>/.exec(svg)?.[1]);
+    expect(personY).toBeGreaterThan(legendBottom);
+    expect(svg).toContain("Contacts");
+    expect(svg).toContain("Links");
+  });
+
+  it("без comms таблица не рисуется", () => {
+    const model = modelOf(`powermap
+A [Анна]
+B [Борис]
+A -> B`);
+    expect(model.comms).toBe(false);
+    const svg = powermapEngine.render(model, {});
+    expect(svg).not.toContain("Contacts");
+  });
+
   it("legend off и avatar off убирают легенду и блок фото", () => {
     const model = modelOf(`powermap
 legend off
