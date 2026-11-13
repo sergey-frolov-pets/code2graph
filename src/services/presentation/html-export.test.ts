@@ -36,12 +36,14 @@ const LABELS = {
   addSticker: "Добавить стикер",
   removeSticker: "Убрать стикер",
   resizeSticker: "Изменить размер стикера",
+  moveSticker: "Перетащить стикер",
   sticker: "Комментарий",
   stickerColor: "Цвет стикера",
   saveCopy: "Сохранить копию с правками",
   hideMarks: "Скрыть правки",
   showMarks: "Показать правки",
   pen: "Карандаш",
+  eraser: "Ластик",
   penColor: "Цвет линии",
   penWidth: "Толщина линии",
   copySuffix: "копия",
@@ -63,12 +65,12 @@ const LABELS = {
     "Стрелки — двигать схему, Shift — быстрее",
     "+ и − — масштаб, 0 — к этому кадру",
     "Enter — добавить стикер",
-    "P — карандаш, [ и ] — толщина линии",
+    "P — карандаш, E — ластик, [ и ] — толщина линии",
     "C — сохранить вид в PNG",
     "H — скрыть или показать правки",
     "S — сохранить копию",
     "M — к проигрыванию",
-    "Esc — выключить карандаш, затем к проигрыванию",
+    "Esc — выключить карандаш или ластик, затем к проигрыванию",
   ].join("\n"),
 };
 
@@ -372,6 +374,27 @@ describe("presentation html export", () => {
     expect(text?.getAttribute("data-placeholder")).toBe("Комментарий");
     expect((sticker as HTMLElement).style.width).toBe("168px");
     expect((sticker as HTMLElement).classList.contains("is-active")).toBe(true);
+    const grip = sticker?.querySelector(".c2g-sticker-move");
+    expect(grip?.tagName).toBe("BUTTON");
+    expect(grip?.getAttribute("aria-label")).toBe("Перетащить стикер");
+    expect(grip?.querySelectorAll("circle")).toHaveLength(6);
+    const beforeDragLeft = (sticker as HTMLElement).style.left;
+    const beforeDragTop = (sticker as HTMLElement).style.top;
+    grip?.dispatchEvent(new PointerEvent("pointerdown", {
+      clientX: 12,
+      clientY: 12,
+      pointerId: 8,
+      bubbles: true,
+    }));
+    window.dispatchEvent(new PointerEvent("pointermove", {
+      clientX: 36,
+      clientY: 28,
+      pointerId: 8,
+      bubbles: true,
+    }));
+    window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 8, bubbles: true }));
+    expect((sticker as HTMLElement).style.left).not.toBe(beforeDragLeft);
+    expect((sticker as HTMLElement).style.top).not.toBe(beforeDragTop);
     const anchoredLeft = (sticker as HTMLElement).style.left;
     if (text) text.textContent = "Заметка на схеме";
     const handle = sticker?.querySelector(".c2g-sticker-resize");
@@ -416,10 +439,20 @@ describe("presentation html export", () => {
 
     sticker?.dispatchEvent(new FocusEvent("focusout", { relatedTarget: doc.body }));
     expect((sticker as HTMLElement).classList.contains("is-active")).toBe(false);
+    const playerCss = doc.querySelector("style")?.textContent ?? "";
+    expect(playerCss).toContain(".c2g-sticker:not(.is-active) .c2g-sticker-ui");
+    expect(playerCss).not.toMatch(/\.c2g-sticker:not\(\.is-active\)\s*\{[^}]*transparent/);
+    expect(playerCss).toMatch(/#c2g-pen-colors\s*\{[^}]*flex-flow:\s*row nowrap/);
     (sticker as HTMLElement).classList.add("is-active");
 
-    doc.getElementById("c2g-pen")?.click();
+    const pen = doc.getElementById("c2g-pen");
+    expect(pen?.querySelector(".c2g-icon-pen")).not.toBeNull();
+    expect(pen?.querySelector(".c2g-icon-pencil")).not.toBeNull();
+    pen?.click();
     expect(stage?.classList.contains("is-drawing")).toBe(true);
+    expect(pen?.getAttribute("aria-pressed")).toBe("true");
+    const toolOrder = [...(doc.getElementById("c2g-pen-tools")?.children ?? [])].map((node) => node.id);
+    expect(toolOrder.indexOf("c2g-pen-width")).toBeLessThan(toolOrder.indexOf("c2g-pen-colors"));
     const widthInput = doc.getElementById("c2g-pen-width") as HTMLInputElement | null;
     if (widthInput) {
       widthInput.value = "6";
@@ -462,6 +495,47 @@ describe("presentation html export", () => {
     window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 7, bubbles: true }));
     expect(drawn?.getAttribute("points")).toBe(drawnPoints);
     expect(scene?.style.transform).not.toBe(transformWithInk);
+
+    const eraser = doc.getElementById("c2g-eraser");
+    expect(eraser?.getAttribute("aria-label")).toBe("Ластик");
+    eraser?.click();
+    expect(stage?.classList.contains("is-erasing")).toBe(true);
+    expect(stage?.classList.contains("is-drawing")).toBe(false);
+    expect(pen?.getAttribute("aria-pressed")).toBe("false");
+    expect(eraser?.getAttribute("aria-pressed")).toBe("true");
+    expect(doc.querySelector("style")?.textContent).toContain("#c2g-stage.is-erasing");
+    stage?.dispatchEvent(new PointerEvent("pointerdown", {
+      clientX: 140,
+      clientY: 110,
+      pointerId: 9,
+      bubbles: true,
+    }));
+    window.dispatchEvent(new PointerEvent("pointermove", {
+      clientX: 160,
+      clientY: 125,
+      pointerId: 9,
+      bubbles: true,
+    }));
+    window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 9, bubbles: true }));
+    expect(ink?.querySelector("polyline")).toBeNull();
+    eraser?.click();
+    expect(stage?.classList.contains("is-erasing")).toBe(false);
+    pen?.click();
+    stage?.dispatchEvent(new PointerEvent("pointerdown", {
+      clientX: 40,
+      clientY: 40,
+      pointerId: 11,
+      bubbles: true,
+    }));
+    window.dispatchEvent(new PointerEvent("pointermove", {
+      clientX: 90,
+      clientY: 70,
+      pointerId: 11,
+      bubbles: true,
+    }));
+    window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 11, bubbles: true }));
+    pen?.click();
+    expect(ink?.querySelector("polyline")).not.toBeNull();
 
     const marks = doc.getElementById("c2g-marks");
     marks?.click();
