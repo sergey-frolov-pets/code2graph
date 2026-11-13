@@ -131,6 +131,7 @@ export class PanZoomPointerController {
       return;
     }
 
+    event.preventDefault();
     viewport.setPointerCapture(event.pointerId);
     this.activePointers.set(event.pointerId, toTrackedPointer(event, viewport));
 

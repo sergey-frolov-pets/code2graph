@@ -21,14 +21,13 @@ export function readViewportSize(viewport: HTMLElement): Size {
   };
 }
 
+/** Lets the sheet slide until it has passed completely out of the viewport. */
 function clampAxis(
   value: number,
   contentSize: number,
   viewportSize: number,
 ): number {
-  const min = Math.min(0, viewportSize - contentSize);
-  const max = Math.max(0, viewportSize - contentSize);
-  return Math.min(max, Math.max(min, value));
+  return Math.min(viewportSize, Math.max(-contentSize, value));
 }
 
 /** Sheet around the picture. Its origin is the top-left of the center cell. */
@@ -48,9 +47,10 @@ export function panSheetBox(width: number, height: number): {
 }
 
 /**
- * Keeps the picture inside a sheet of {@link PREVIEW_PAN_GRID_CELLS} by
+ * Slides the picture across a sheet of {@link PREVIEW_PAN_GRID_CELLS} by
  * {@link PREVIEW_PAN_GRID_CELLS} cells of its own size. The picture is the
- * center cell; `pan` is still the picture's top-left in the viewport.
+ * center cell. The sheet may leave the viewport, so a camera move can pull
+ * the picture fully past an edge. `pan` is the picture's top-left.
  */
 export function clampPan(
   panX: number,

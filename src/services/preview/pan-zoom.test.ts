@@ -97,6 +97,36 @@ describe("PreviewPanZoomController", () => {
     expect(controller.getZoomPercent()).toBe(Math.round(PREVIEW_MIN_ZOOM * 100));
   });
 
+  it("drags the picture fully past the viewport edge", async () => {
+    const { controller } = await createController({
+      viewportWidth: 400,
+      viewportHeight: 300,
+      imageWidth: 200,
+      imageHeight: 150,
+    });
+    controller.fitToView();
+    const start = controller.getSnapshot();
+    const scaledWidth = start.imageWidth * start.scale;
+
+    controller.onPointerDown(new PointerEvent("pointerdown", {
+      pointerId: 1,
+      clientX: 40,
+      clientY: 40,
+      button: 0,
+      bubbles: true,
+    }));
+    controller.onPointerMove(new PointerEvent("pointermove", {
+      pointerId: 1,
+      clientX: 40 - scaledWidth - start.panX - 50,
+      clientY: 40,
+      bubbles: true,
+    }));
+
+    const next = controller.getSnapshot();
+    expect(next.isDragging).toBe(true);
+    expect(next.panX + next.imageWidth * next.scale).toBeLessThanOrEqual(0);
+  });
+
   it("fits diagram to viewport on double tap", async () => {
     const { controller, viewport } = await createController({
       viewportWidth: 800,

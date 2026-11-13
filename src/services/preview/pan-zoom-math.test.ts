@@ -20,22 +20,19 @@ describe("pan-zoom-math", () => {
     });
   });
 
-  it("keeps a large picture inside a 3 by 3 sheet of its own size", () => {
-    const result = clampPan(500, 500, 200, 100, 300, 200);
-    expect(result.panX).toBe(200);
-    expect(result.panY).toBe(100);
-
-    const far = clampPan(-400, -300, 200, 100, 300, 200);
-    expect(far.panX).toBe(-100);
-    expect(far.panY).toBe(0);
+  it("lets the picture leave the viewport by one surrounding cell", () => {
+    expect(clampPan(500, 500, 200, 100, 300, 200)).toEqual({ panX: 500, panY: 300 });
+    expect(clampPan(-400, -300, 200, 100, 300, 200)).toEqual({ panX: -400, panY: -200 });
   });
 
-  it("slides a small 3 by 3 sheet inside the viewport", () => {
-    const result = clampPan(0, 0, 40, 20, 300, 200);
-    expect(result).toEqual({ panX: 40, panY: 20 });
+  it("lets a small picture be pulled fully past the viewport edge", () => {
+    const offLeft = clampPan(-80, -40, 40, 20, 300, 200);
+    expect(offLeft).toEqual({ panX: -80, panY: -40 });
+    expect(offLeft.panX + 40).toBeLessThanOrEqual(0);
 
-    const far = clampPan(500, 500, 40, 20, 300, 200);
-    expect(far).toEqual({ panX: 220, panY: 160 });
+    const offRight = clampPan(500, 500, 40, 20, 300, 200);
+    expect(offRight).toEqual({ panX: 340, panY: 220 });
+    expect(offRight.panX).toBeGreaterThanOrEqual(300);
   });
 
   it("allows negative pan when content is larger than viewport", () => {
