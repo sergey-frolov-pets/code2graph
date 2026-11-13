@@ -66,7 +66,25 @@ export interface NormPoint {
   y: number;
 }
 
-export const FRAME_EFFECT_KINDS = ["fade", "pulse", "zoom"] as const;
+export const FRAME_EFFECT_KINDS = [
+  "fade",
+  "pulse",
+  "zoom",
+  "flyInLeft",
+  "flyInRight",
+  "flyInUp",
+  "flyInDown",
+  "flyOutLeft",
+  "flyOutRight",
+  "flyOutUp",
+  "flyOutDown",
+  "fadeOut",
+  "tear",
+  "wipe",
+  "spin",
+  "pop",
+  "shrink",
+] as const;
 
 export type FrameEffectKind = (typeof FRAME_EFFECT_KINDS)[number];
 

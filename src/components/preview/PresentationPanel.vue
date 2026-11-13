@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref, watch } from "vue";
+import { computed, inject, nextTick, onUnmounted, ref, watch } from "vue";
 import IconButton from "@/components/IconButton.vue";
 import PresentationGlyph from "@/components/preview/PresentationGlyph.vue";
 import { presentationSessionKey } from "@/components/preview/presentation-session";
@@ -28,6 +28,12 @@ import {
   PRESENTATION_TEXT_BACKINGS,
 } from "@/services/presentation/types";
 import type { LocaleKey, TranslateFn } from "@/locales/types";
+import {
+  clampPresentationDockPosition,
+  loadPresentationDockPosition,
+  savePresentationDockPosition,
+  type PresentationDockPosition,
+} from "@/storage/presentation-dock";
 import type {
   PresentationArrowForm,
   PresentationMark,
@@ -106,6 +112,177 @@ const selectedOverlay = computed(
 );
 const canStep = computed(() => (track.value?.viewpoints.length ?? 0) > 1);
 const dimHeld = ref(false);
+const dockRef = ref<HTMLElement | null>(null);
+const dockPosition = ref<PresentationDockPosition | null>(null);
+const isDragging = ref(false);
+const dockStyle = computed(() => {
+  if (!dockPosition.value) {
+    return undefined;
+  }
+  return {
+    left: `${dockPosition.value.x}px`,
+    top: `${dockPosition.value.y}px`,
+    bottom: "auto",
+    transform: "none",
+  };
+});
+
+const dragState = {
+  pointerId: -1,
+  offsetX: 0,
+  offsetY: 0,
+};
+
+function dockParent(): HTMLElement | null {
+  const parent = dockRef.value?.offsetParent;
+  return parent instanceof HTMLElement ? parent : null;
+}
+
+function clampDock(): void {
+  const panel = dockRef.value;
+  const parent = dockParent();
+  if (!panel || !parent || !dockPosition.value) {
+    return;
+  }
+  if (parent.clientWidth <= 0 || parent.clientHeight <= 0 || panel.offsetWidth <= 0) {
+    return;
+  }
+  const next = clampPresentationDockPosition(
+    dockPosition.value,
+    panel.offsetWidth,
+    panel.offsetHeight,
+    parent.clientWidth,
+    parent.clientHeight,
+  );
+  dockPosition.value = next;
+  savePresentationDockPosition(next);
+}
+
+function parentContentOrigin(parent: HTMLElement): { x: number; y: number } {
+  const rect = parent.getBoundingClientRect();
+  return {
+    x: rect.left + parent.clientLeft,
+    y: rect.top + parent.clientTop,
+  };
+}
+
+function positionFromRect(): PresentationDockPosition | null {
+  const panel = dockRef.value;
+  const parent = dockParent();
+  if (!panel || !parent) {
+    return null;
+  }
+  const panelRect = panel.getBoundingClientRect();
+  const origin = parentContentOrigin(parent);
+  return clampPresentationDockPosition(
+    {
+      x: panelRect.left - origin.x,
+      y: panelRect.top - origin.y,
+    },
+    panel.offsetWidth,
+    panel.offsetHeight,
+    parent.clientWidth,
+    parent.clientHeight,
+  );
+}
+
+function onGripPointerDown(event: PointerEvent): void {
+  const parent = dockParent();
+  const current = dockPosition.value ?? positionFromRect();
+  if (!parent || !current) {
+    return;
+  }
+  dockPosition.value = current;
+  isDragging.value = true;
+  dragState.pointerId = event.pointerId;
+  const origin = parentContentOrigin(parent);
+  dragState.offsetX = event.clientX - origin.x - current.x;
+  dragState.offsetY = event.clientY - origin.y - current.y;
+  (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+}
+
+function onGripPointerMove(event: PointerEvent): void {
+  if (!isDragging.value || event.pointerId !== dragState.pointerId) {
+    return;
+  }
+  const panel = dockRef.value;
+  const parent = dockParent();
+  if (!panel || !parent) {
+    return;
+  }
+  const origin = parentContentOrigin(parent);
+  dockPosition.value = clampPresentationDockPosition(
+    {
+      x: event.clientX - origin.x - dragState.offsetX,
+      y: event.clientY - origin.y - dragState.offsetY,
+    },
+    panel.offsetWidth,
+    panel.offsetHeight,
+    parent.clientWidth,
+    parent.clientHeight,
+  );
+}
+
+function onGripPointerUp(event: PointerEvent): void {
+  if (event.pointerId !== dragState.pointerId) {
+    return;
+  }
+  isDragging.value = false;
+  dragState.pointerId = -1;
+  if (event.currentTarget instanceof HTMLElement && event.currentTarget.hasPointerCapture(event.pointerId)) {
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+  if (dockPosition.value) {
+    savePresentationDockPosition(dockPosition.value);
+  }
+}
+
+let dockResizeObserver: ResizeObserver | null = null;
+
+function watchDockSize(): void {
+  dockResizeObserver?.disconnect();
+  dockResizeObserver = null;
+  const parent = dockParent();
+  if (!parent || typeof ResizeObserver === "undefined") {
+    return;
+  }
+  dockResizeObserver = new ResizeObserver(() => {
+    clampDock();
+  });
+  dockResizeObserver.observe(parent);
+  if (dockRef.value) {
+    dockResizeObserver.observe(dockRef.value);
+  }
+}
+
+watch(
+  () => enabled.value && panelOpen.value,
+  async (open) => {
+    if (!open) {
+      dockResizeObserver?.disconnect();
+      dockResizeObserver = null;
+      return;
+    }
+    await nextTick();
+    const saved = loadPresentationDockPosition();
+    if (saved) {
+      dockPosition.value = saved;
+      await nextTick();
+      clampDock();
+    }
+    watchDockSize();
+  },
+  { immediate: true },
+);
+
+onUnmounted(() => {
+  dockResizeObserver?.disconnect();
+});
+
+watch(mode, async () => {
+  await nextTick();
+  clampDock();
+});
 const selectedEffectId = ref<string | null>(null);
 const selectedEffect = computed(
   () => viewpoint.value?.effects.find((effect) => effect.id === selectedEffectId.value) ?? null,
@@ -342,13 +519,16 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
 <template>
   <div
     v-if="enabled && panelOpen"
+    ref="dockRef"
     class="presentation-dock"
     :class="{
       'is-editing': mode === 'edit' && canEdit,
       'is-dim': playing,
       'is-dim-held': dimHeld,
       'is-revealed': chromeRevealed,
+      'is-dragging': isDragging,
     }"
+    :style="dockStyle"
     role="toolbar"
     :aria-label="t('presentation.expand')"
     @pointerleave="dimHeld = false"
@@ -356,6 +536,17 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
   >
     <div class="presentation-dock__bar">
       <div class="presentation-dock__title">
+        <button
+          type="button"
+          class="presentation-dock__grip"
+          :aria-label="t('presentation.move')"
+          @pointerdown="onGripPointerDown"
+          @pointermove="onGripPointerMove"
+          @pointerup="onGripPointerUp"
+          @pointercancel="onGripPointerUp"
+        >
+          <PresentationGlyph name="grip" />
+        </button>
         <IconButton
           v-if="canEdit"
           :label="mode === 'edit' ? t('presentation.view') : t('presentation.edit')"
@@ -636,24 +827,27 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
           </div>
           <div
             v-if="viewpoint"
-            class="presentation-dock__row"
+            class="presentation-field presentation-field--grow"
           >
-            <IconButton
-              :label="t('presentation.effectAdd')"
-              @click="addEffect()"
-            >
-              <PresentationGlyph name="plus" />
-            </IconButton>
-            <button
-              v-for="effect in viewpoint.effects"
-              :key="effect.id"
-              type="button"
-              class="btn"
-              :class="{ 'btn-primary': effect.id === selectedEffectId }"
-              @click="selectedEffectId = effect.id"
-            >
-              {{ t(`presentation.effect.${effect.kind}`) }}
-            </button>
+            <span>{{ t("presentation.frameEffects", { n: trackLabel(viewpointIndex) }) }}</span>
+            <div class="presentation-effect-line">
+              <IconButton
+                :label="t('presentation.effectAdd')"
+                @click="addEffect()"
+              >
+                <PresentationGlyph name="plus" />
+              </IconButton>
+              <button
+                v-for="effect in viewpoint.effects"
+                :key="effect.id"
+                type="button"
+                class="btn"
+                :class="{ 'btn-primary': effect.id === selectedEffectId }"
+                @click="selectedEffectId = effect.id"
+              >
+                {{ t(`presentation.effect.${effect.kind}`) }}
+              </button>
+            </div>
           </div>
           <div
             v-if="selectedEffect"
@@ -1105,6 +1299,30 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
   gap: 6px;
 }
 
+.presentation-dock__row:has(.presentation-field) {
+  align-items: flex-end;
+}
+
+.presentation-dock__grip {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 28px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: grab;
+  touch-action: none;
+}
+
+.presentation-dock.is-dragging .presentation-dock__grip,
+.presentation-dock__grip:active {
+  cursor: grabbing;
+}
+
 .presentation-dock__bar {
   flex-direction: column;
   align-items: stretch;
@@ -1186,6 +1404,14 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
 
 .presentation-field--grow {
   flex: 1;
+}
+
+.presentation-effect-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
 }
 
 .presentation-swatch {

@@ -14,7 +14,7 @@ import { useImageSize } from "@/composables/useImageSize";
 import { usePresentationSession } from "@/composables/usePresentationSession";
 import { usePreviewPanZoom } from "@/composables/usePreviewPanZoom";
 import { isTransparentPreviewBg, TRANSPARENT_PREVIEW_BG } from "@/constants/editor-settings";
-import { effectStyle, effectVisualAt } from "@/services/presentation/effects";
+import { EFFECT_IDENTITY, effectStyle, effectVisualAt } from "@/services/presentation/effects";
 import { readFrameFile, readFrameHref } from "@/services/presentation/frame";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
 import { sanitizeSvgForPreview } from "@/utils/export";
@@ -192,7 +192,7 @@ const effectsLive = computed(
 
 function sceneStyle(target: "frame" | "diagram"): Record<string, string> {
   if (!effectsLive.value || presentation.playback.phase.value !== "dwell") {
-    return effectStyle({ opacity: 1, scale: 1 });
+    return effectStyle(EFFECT_IDENTITY);
   }
   const viewpoint = presentation.currentTrack.value?.viewpoints[
     presentation.playback.viewpointIndex.value

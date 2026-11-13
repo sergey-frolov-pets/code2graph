@@ -2,7 +2,14 @@ import { PREVIEW_MIN_ZOOM } from "@/constants/preview-pan-zoom";
 import { isTransparentBackground } from "@/services/export/svg-background";
 import { parseSvgCssSize } from "@/services/export/svg-geometry";
 import {
+  FRAME_EFFECT_FLY_DISTANCE,
+  FRAME_EFFECT_POP_OVERSHOOT,
+  FRAME_EFFECT_POP_START,
   FRAME_EFFECT_PULSE_AMOUNT,
+  FRAME_EFFECT_SPIN_DEGREES,
+  FRAME_EFFECT_SPIN_MIN_OPACITY,
+  FRAME_EFFECT_TEAR_AMPLITUDE,
+  FRAME_EFFECT_TEAR_TEETH,
   FRAME_EFFECT_ZOOM_AMOUNT,
   PRESENTATION_CHROME_REVEAL_MS,
   PRESENTATION_DEFAULT_TRANSITION_MS,
@@ -316,12 +323,13 @@ function overlayMarkup(
   index: number,
 ): { defs: string; group: string } {
   const box = imageBox(overlay, imageWidth, imageHeight);
+  const placed = positiveBox(box);
   const visible = overlay.owner.kind === "viewpoint" && overlay.owner.id === firstViewpointId;
   const hidden = visible ? "" : " style=\"display:none\"";
   const drawn = overlayBody(overlay, box, index);
   return {
     defs: drawn.defs,
-    group: `<g data-owner-kind="${xmlEscape(overlay.owner.kind)}" data-owner-id="${xmlEscape(overlay.owner.id)}" data-overlay-id="${xmlEscape(overlay.id)}" data-cx="${formatNumber(box.x + box.width / 2)}" data-cy="${formatNumber(box.y + box.height / 2)}"${hidden}>${drawn.body}</g>`,
+    group: `<g data-owner-kind="${xmlEscape(overlay.owner.kind)}" data-owner-id="${xmlEscape(overlay.owner.id)}" data-overlay-id="${xmlEscape(overlay.id)}" data-cx="${formatNumber(placed.x + placed.width / 2)}" data-cy="${formatNumber(placed.y + placed.height / 2)}" data-x="${formatNumber(placed.x)}" data-y="${formatNumber(placed.y)}" data-w="${formatNumber(placed.width)}" data-h="${formatNumber(placed.height)}"${hidden}>${drawn.body}</g>`,
   };
 }
 
@@ -526,7 +534,17 @@ const PLAYER_SCRIPT = `
   var phaseStarted = 0;
   var frameId = 0;
   var reduceMotion = Boolean(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  var identity = { opacity: 1, scale: 1 };
+  function visualOf(opacity, scale, translateX, translateY, rotate, clip) {
+    return {
+      opacity: opacity,
+      scale: scale,
+      translateX: translateX,
+      translateY: translateY,
+      rotate: rotate,
+      clip: clip
+    };
+  }
+  var identity = visualOf(1, 1, 0, 0, 0, null);
 
   function nowMs() {
     return performance.now();
@@ -618,28 +636,172 @@ const PLAYER_SCRIPT = `
       controls: []
     };
   }
+  function clamp01(value) {
+    if (value <= 0) return 0;
+    if (value >= 1) return 1;
+    return value;
+  }
+  function flyDirection(kind) {
+    if (kind === "flyInLeft" || kind === "flyOutLeft") return { x: -1, y: 0 };
+    if (kind === "flyInRight" || kind === "flyOutRight") return { x: 1, y: 0 };
+    if (kind === "flyInUp" || kind === "flyOutUp") return { x: 0, y: -1 };
+    if (kind === "flyInDown" || kind === "flyOutDown") return { x: 0, y: 1 };
+    return null;
+  }
+  function holdsFinal(kind) {
+    return kind === "fadeOut" || kind === "shrink" || kind.indexOf("flyOut") === 0;
+  }
+  function tearClip(progress) {
+    if (progress >= 1) return null;
+    var amplitude = payload.tearAmplitude * (1 - progress);
+    var reveal = progress / 2;
+    var points = [];
+    var index;
+    for (index = 0; index <= payload.tearTeeth; index += 1) {
+      var topTooth = index % 2 === 0 ? -amplitude : amplitude;
+      points.push({ x: index / payload.tearTeeth, y: clamp01(0.5 - reveal + topTooth) });
+    }
+    for (index = payload.tearTeeth; index >= 0; index -= 1) {
+      var bottomTooth = index % 2 === 0 ? amplitude : -amplitude;
+      points.push({ x: index / payload.tearTeeth, y: clamp01(0.5 + reveal + bottomTooth) });
+    }
+    return points;
+  }
+  function wipeClip(progress) {
+    if (progress >= 1) return null;
+    return [
+      { x: 0, y: 0 },
+      { x: progress, y: 0 },
+      { x: progress, y: 1 },
+      { x: 0, y: 1 }
+    ];
+  }
+  function sampleEffect(kind, progress) {
+    var direction = flyDirection(kind);
+    if (direction) {
+      var entering = kind.indexOf("flyIn") === 0;
+      var travel = (entering ? 1 - progress : progress) * payload.fly;
+      return visualOf(1, 1, direction.x * travel, direction.y * travel, 0, null);
+    }
+    if (kind === "fade") return visualOf(progress, 1, 0, 0, 0, null);
+    if (kind === "fadeOut") return visualOf(1 - progress, 1, 0, 0, 0, null);
+    if (kind === "pulse") {
+      return visualOf(1, 1 + payload.pulse * Math.sin(progress * Math.PI), 0, 0, 0, null);
+    }
+    if (kind === "zoom") return visualOf(1, 1 + payload.zoom * progress, 0, 0, 0, null);
+    if (kind === "tear") return visualOf(1, 1, 0, 0, 0, tearClip(progress));
+    if (kind === "wipe") return visualOf(1, 1, 0, 0, 0, wipeClip(progress));
+    if (kind === "spin") {
+      return visualOf(
+        payload.spinOpacity + (1 - payload.spinOpacity) * progress,
+        1,
+        0,
+        0,
+        (1 - progress) * -payload.spin,
+        null
+      );
+    }
+    if (kind === "pop") {
+      var settled = payload.popStart + (1 - payload.popStart) * progress;
+      return visualOf(1, settled + payload.popOvershoot * Math.sin(progress * Math.PI), 0, 0, 0, null);
+    }
+    if (kind === "shrink") return visualOf(1 - progress, 1 - progress, 0, 0, 0, null);
+    return identity;
+  }
   function effectVisual(effects, elapsed, target, overlayId) {
     var list = effects || [];
-    var latest = null;
-    for (var i = 0; i < list.length; i += 1) {
+    var applicable = [];
+    var i;
+    for (i = 0; i < list.length; i += 1) {
       var effect = list[i];
       if (effect.target !== target) continue;
       if (target === "overlay" && effect.overlayId !== overlayId) continue;
-      if (elapsed < effect.startMs || elapsed >= effect.startMs + effect.durationMs) continue;
-      if (!latest || effect.startMs >= latest.startMs) latest = effect;
+      applicable.push(effect);
     }
-    if (!latest || latest.durationMs <= 0) return identity;
-    var progress = (elapsed - latest.startMs) / latest.durationMs;
-    if (latest.kind === "fade") return { opacity: progress, scale: 1 };
-    if (latest.kind === "pulse") {
-      return { opacity: 1, scale: 1 + payload.pulse * Math.sin(progress * Math.PI) };
+    var latest = null;
+    for (i = 0; i < applicable.length; i += 1) {
+      var active = applicable[i];
+      if (active.durationMs <= 0) continue;
+      if (elapsed < active.startMs || elapsed >= active.startMs + active.durationMs) continue;
+      if (!latest || active.startMs >= latest.startMs) latest = active;
     }
-    return { opacity: 1, scale: 1 + payload.zoom * progress };
+    if (latest) return sampleEffect(latest.kind, (elapsed - latest.startMs) / latest.durationMs);
+    var held = null;
+    for (i = 0; i < applicable.length; i += 1) {
+      var done = applicable[i];
+      if (!holdsFinal(done.kind) || done.durationMs <= 0) continue;
+      if (elapsed < done.startMs + done.durationMs) continue;
+      if (!held) {
+        held = done;
+        continue;
+      }
+      var end = done.startMs + done.durationMs;
+      var heldEnd = held.startMs + held.durationMs;
+      if (end > heldEnd || (end === heldEnd && done.startMs >= held.startMs)) held = done;
+    }
+    if (held) return sampleEffect(held.kind, 1);
+    return identity;
+  }
+  function clipCss(points) {
+    var parts = [];
+    for (var i = 0; i < points.length; i += 1) {
+      parts.push((points[i].x * 100) + "% " + (points[i].y * 100) + "%");
+    }
+    return "polygon(" + parts.join(", ") + ")";
   }
   function applyVisual(element, visual) {
     if (!element) return;
     element.style.opacity = String(visual.opacity);
-    element.style.transform = visual.scale === 1 ? "" : "scale(" + visual.scale + ")";
+    var parts = [];
+    if (visual.translateX || visual.translateY) {
+      parts.push("translate(" + (visual.translateX * 100) + "%, " + (visual.translateY * 100) + "%)");
+    }
+    if (visual.rotate) parts.push("rotate(" + visual.rotate + "deg)");
+    if (visual.scale !== 1) parts.push("scale(" + visual.scale + ")");
+    element.style.transform = parts.join(" ");
+    element.style.clipPath = visual.clip ? clipCss(visual.clip) : "";
+  }
+  function applyOverlayVisual(node, visual) {
+    node.style.opacity = String(visual.opacity);
+    var cx = Number(node.getAttribute("data-cx"));
+    var cy = Number(node.getAttribute("data-cy"));
+    var width = Number(node.getAttribute("data-w"));
+    var height = Number(node.getAttribute("data-h"));
+    if (visual.scale === 1 && !visual.translateX && !visual.translateY && !visual.rotate) {
+      node.removeAttribute("transform");
+    } else {
+      var shiftX = visual.translateX * width;
+      var shiftY = visual.translateY * height;
+      node.setAttribute(
+        "transform",
+        "translate(" + cx + " " + cy + ") rotate(" + visual.rotate + ") translate(" + shiftX + " " + shiftY + ") scale(" + visual.scale + ") translate(" + (-cx) + " " + (-cy) + ")"
+      );
+    }
+    var clipId = "c2g-clip-" + (node.getAttribute("data-overlay-id") || "");
+    var svg = node.ownerSVGElement;
+    var existing = document.getElementById(clipId);
+    if (!visual.clip || !svg) {
+      node.removeAttribute("clip-path");
+      if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+      return;
+    }
+    var x = Number(node.getAttribute("data-x"));
+    var y = Number(node.getAttribute("data-y"));
+    var coords = [];
+    for (var p = 0; p < visual.clip.length; p += 1) {
+      coords.push((x + visual.clip[p].x * width) + "," + (y + visual.clip[p].y * height));
+    }
+    var clip = existing;
+    if (!clip) {
+      clip = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+      clip.setAttribute("id", clipId);
+      clip.setAttribute("clipPathUnits", "userSpaceOnUse");
+      clip.appendChild(document.createElementNS("http://www.w3.org/2000/svg", "polygon"));
+      svg.appendChild(clip);
+    }
+    var polygon = clip.querySelector("polygon");
+    if (polygon) polygon.setAttribute("points", coords.join(" "));
+    node.setAttribute("clip-path", "url(#" + clipId + ")");
   }
   function noteFont(boxHeight, scale) {
     var scaled = Math.abs(boxHeight) * scale * payload.textRatio;
@@ -681,14 +843,7 @@ const PLAYER_SCRIPT = `
       var visual = animate
         ? effectVisual(effects, elapsed, "overlay", node.getAttribute("data-overlay-id") || "")
         : identity;
-      node.style.opacity = String(visual.opacity);
-      if (visual.scale === 1) {
-        node.removeAttribute("transform");
-      } else {
-        var cx = Number(node.getAttribute("data-cx"));
-        var cy = Number(node.getAttribute("data-cy"));
-        node.setAttribute("transform", "translate(" + cx + " " + cy + ") scale(" + visual.scale + ") translate(" + (-cx) + " " + (-cy) + ")");
-      }
+      applyOverlayVisual(node, visual);
     }
   }
   function paint() {
@@ -983,6 +1138,13 @@ export function renderPresentationHtml(source: PresentationHtmlSource): string {
     defaultTransitionMs: PRESENTATION_DEFAULT_TRANSITION_MS,
     pulse: FRAME_EFFECT_PULSE_AMOUNT,
     zoom: FRAME_EFFECT_ZOOM_AMOUNT,
+    fly: FRAME_EFFECT_FLY_DISTANCE,
+    tearTeeth: FRAME_EFFECT_TEAR_TEETH,
+    tearAmplitude: FRAME_EFFECT_TEAR_AMPLITUDE,
+    spin: FRAME_EFFECT_SPIN_DEGREES,
+    spinOpacity: FRAME_EFFECT_SPIN_MIN_OPACITY,
+    popStart: FRAME_EFFECT_POP_START,
+    popOvershoot: FRAME_EFFECT_POP_OVERSHOOT,
     textMin: PRESENTATION_OVERLAY_TEXT_MIN_PX,
     textMax: PRESENTATION_OVERLAY_TEXT_MAX_PX,
     textRatio: PRESENTATION_OVERLAY_TEXT_HEIGHT_RATIO,

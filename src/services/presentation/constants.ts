@@ -16,6 +16,27 @@ export const FRAME_EFFECT_PULSE_AMOUNT = 0.06;
 /** Extra scale at the end of a zoom. */
 export const FRAME_EFFECT_ZOOM_AMOUNT = 0.12;
 
+/** How far a fly effect travels, as a fraction of the target size. */
+export const FRAME_EFFECT_FLY_DISTANCE = 1.1;
+
+/** Teeth along one edge of a paper tear. */
+export const FRAME_EFFECT_TEAR_TEETH = 8;
+
+/** Jag height of a paper tear, as a fraction of the target height. */
+export const FRAME_EFFECT_TEAR_AMPLITUDE = 0.045;
+
+/** Starting turn of a spin, in degrees. */
+export const FRAME_EFFECT_SPIN_DEGREES = 90;
+
+/** Opacity at the start of a spin. The effect ends fully visible. */
+export const FRAME_EFFECT_SPIN_MIN_OPACITY = 0.35;
+
+/** Scale at the start of a pop. */
+export const FRAME_EFFECT_POP_START = 0.2;
+
+/** Extra scale at the middle of a pop. The effect ends at scale 1. */
+export const FRAME_EFFECT_POP_OVERSHOOT = 0.45;
+
 export const PRESENTATION_SCHEMA_VERSION = 1;
 
 /** How long the camera stays on a new viewpoint. */
