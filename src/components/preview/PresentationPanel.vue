@@ -2,6 +2,7 @@
 import { computed, inject, nextTick, onUnmounted, ref, watch } from "vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import IconButton from "@/components/IconButton.vue";
+import EffectKindSelect from "@/components/preview/EffectKindSelect.vue";
 import PresentationGlyph from "@/components/preview/PresentationGlyph.vue";
 import { presentationSessionKey } from "@/components/preview/presentation-session";
 import { PRESENTATION_NOTE_TEXT_ROWS } from "@/services/presentation/constants";
@@ -24,7 +25,6 @@ import {
   PRESENTATION_BUBBLE_SHAPES,
   PRESENTATION_FONTS,
   PRESENTATION_LINE_STYLES,
-  FRAME_EFFECT_KINDS,
   PRESENTATION_PATH_KINDS,
   PRESENTATION_TEXT_BACKINGS,
 } from "@/services/presentation/types";
@@ -41,7 +41,6 @@ import type {
   PresentationArrowHead,
   PresentationArrowKind,
   PresentationBubbleShape,
-  FrameEffectKind,
   FrameEffectTargetKind,
   PresentationFont,
   PresentationLineStyle,
@@ -905,20 +904,13 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
                 </option>
               </select>
             </label>
-            <label class="presentation-field">
+            <label class="presentation-field presentation-field--effect">
               <span>{{ t("presentation.effectKind") }}</span>
-              <select
-                :value="selectedEffect.kind"
-                @change="onUpdateEffect(selectedEffect.id, { kind: ($event.target as HTMLSelectElement).value as FrameEffectKind })"
-              >
-                <option
-                  v-for="kind in FRAME_EFFECT_KINDS"
-                  :key="kind"
-                  :value="kind"
-                >
-                  {{ t(`presentation.effect.${kind}`) }}
-                </option>
-              </select>
+              <EffectKindSelect
+                :kind="selectedEffect.kind"
+                :t="t"
+                @change="onUpdateEffect(selectedEffect.id, { kind: $event })"
+              />
             </label>
             <label class="presentation-field">
               <span>{{ t("presentation.effectStart") }}</span>
@@ -1434,6 +1426,10 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
 
 .presentation-field--grow {
   flex: 1;
+}
+
+.presentation-field--effect {
+  min-width: 11rem;
 }
 
 .presentation-effect-line {
