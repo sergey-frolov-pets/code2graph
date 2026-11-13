@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { measureText } from "../common";
 import { boxplotEngine, type BoxplotModel } from "../engines/boxplot";
 import {
   assignCagrLanes,
@@ -865,5 +866,157 @@ series Q : 2`);
     expect(summed.value?.labelFontColor).toBe("auto");
     const sumSvg = clusteredEngine.render(summed.value as ClusteredModel, { background: "#111111" });
     expect(fillOf(sumSvg, "5")).toBe("#e6edf3");
+  });
+
+  it("рисует отрицательные бары от нуля и не сажает подпись на ось категорий", () => {
+    const source = `series
+title Выручка
+categories Q1, Q2, Q3, Q4
+y "млн ₽" 0 --> 200
+grid 50
+labels above
+series Онлайн : 120, 145, 165, -190
+series Розница : -85, 95, 110, 130
+series Партнёры : 45, 60, -75, 95`;
+    const parsed = clusteredEngine.parse(source);
+    expect(parsed.ok).toBe(true);
+    expect(parsed.value?.series[0]?.values[3]).toBe(-190);
+    expect(parsed.value?.series[1]?.values[0]).toBe(-85);
+
+    const readTexts = (svg: string) =>
+      [...svg.matchAll(/<text\b([^>]*)>([^<]*)<\/text>/g)].map((match) => {
+        const attrs = match[1] ?? "";
+        const num = (name: string) => Number(new RegExp(`\\b${name}="(-?[\\d.]+)"`).exec(attrs)?.[1]);
+        return {
+          x: num("x"),
+          y: num("y"),
+          text: match[2] ?? "",
+          anchor: /text-anchor="([^"]+)"/.exec(attrs)?.[1] ?? "middle",
+          fontSize: num("font-size"),
+        };
+      });
+    const barBox = (svg: string, id: string) => {
+      const tag = new RegExp(`<rect\\b(?=[^>]*\\bdata-bar="${id}")[^>]*/>`).exec(svg)?.[0] ?? "";
+      const num = (name: string) => Number(new RegExp(`\\b${name}="(-?[\\d.]+)"`).exec(tag)?.[1]);
+      return { x: num("x"), y: num("y"), width: num("width"), height: num("height") };
+    };
+
+    for (const horizontal of [false, true]) {
+      const model = clusteredEngine.parse(horizontal ? `${source}\nrotate 90` : source).value as ClusteredModel;
+      const svg = clusteredEngine.render(model, {});
+      const nodes = readTexts(svg);
+      const positive = barBox(svg, "0-0");
+      const negative = barBox(svg, "3-0");
+      const label = nodes.find((node) => node.text === "-190");
+      const category = nodes.find((node) => node.text === "Q4");
+      expect(label, horizontal ? "горизонтальная подпись" : "вертикальная подпись").toBeTruthy();
+      expect(category).toBeTruthy();
+
+      if (horizontal) {
+        expect(positive.x).toBeCloseTo(negative.x + negative.width, 1);
+        expect(negative.x).toBeLessThan(positive.x - 10);
+        expect(negative.width).toBeGreaterThan(10);
+        const ticks = nodes.filter((node) => node.anchor === "middle" && /^-\d/.test(node.text));
+        expect(ticks.length).toBeGreaterThan(0);
+        const labelLeft = label!.x - measureText(label!.text, label!.fontSize);
+        expect(labelLeft).toBeGreaterThan(category!.x + 4);
+      } else {
+        expect(positive.y + positive.height).toBeCloseTo(negative.y, 1);
+        expect(negative.y).toBeGreaterThan(positive.y + 10);
+        expect(negative.height).toBeGreaterThan(10);
+        const ticks = nodes.filter((node) => node.anchor === "end" && /^-\d/.test(node.text));
+        expect(ticks.length).toBeGreaterThan(0);
+        expect(category!.y - label!.y).toBeGreaterThan(label!.fontSize);
+      }
+    }
+
+    const positiveOnly = clusteredEngine.render(
+      clusteredEngine.parse(`series
+categories Q1
+y "млн" 0 --> 200
+series А : 120`).value as ClusteredModel,
+      {},
+    );
+    expect(readTexts(positiveOnly).some((node) => node.text.startsWith("-"))).toBe(false);
+
+    const wide = clusteredEngine.render(
+      clusteredEngine.parse(`series
+categories A
+y "v" -100 --> 100
+series А : -5`).value as ClusteredModel,
+      {},
+    );
+    expect(wide).toContain(">-100<");
+    expect(wide).toContain(">100<");
+  });
+
+  it("в стопке отрицательные части растут от нуля в обратную сторону", () => {
+    const source = `series
+stacked
+labels sum
+categories A
+y "v" 0 --> 20
+series Плюс : 5
+series Минус : -12`;
+    const barBox = (svg: string, id: string) => {
+      const tag = new RegExp(`<rect\\b(?=[^>]*\\bdata-bar="${id}")[^>]*/>`).exec(svg)?.[0] ?? "";
+      const num = (name: string) => Number(new RegExp(`\\b${name}="(-?[\\d.]+)"`).exec(tag)?.[1]);
+      return { x: num("x"), y: num("y"), width: num("width"), height: num("height") };
+    };
+
+    for (const horizontal of [false, true]) {
+      const svg = clusteredEngine.render(
+        clusteredEngine.parse(horizontal ? `${source}\nrotate 90` : source).value as ClusteredModel,
+        {},
+      );
+      const up = barBox(svg, "0-0");
+      const down = barBox(svg, "0-1");
+      expect(svg).toContain(">-7<");
+      if (horizontal) {
+        expect(up.x).toBeCloseTo(down.x + down.width, 1);
+        expect(down.x).toBeLessThan(up.x - 8);
+      } else {
+        expect(up.y + up.height).toBeCloseTo(down.y, 1);
+        expect(down.y).toBeGreaterThan(up.y + 8);
+      }
+    }
+  });
+
+  it("вторая шкала тоже показывает отрицательные значения", () => {
+    const source = `series
+categories A
+y "шт" 0 --> 10
+y2 "%" 0 --> 20
+series Основные : 8
+series Доля : -6 axis=y2`;
+    const barBox = (svg: string, id: string) => {
+      const tag = new RegExp(`<rect\\b(?=[^>]*\\bdata-bar="${id}")[^>]*/>`).exec(svg)?.[0] ?? "";
+      const num = (name: string) => Number(new RegExp(`\\b${name}="(-?[\\d.]+)"`).exec(tag)?.[1]);
+      return { x: num("x"), y: num("y"), width: num("width"), height: num("height") };
+    };
+    const zeroTick = (svg: string) => {
+      const tag = /<text\b(?=[^>]*\bdata-y2-tick="0")[^>]*>/.exec(svg)?.[0] ?? "";
+      const num = (name: string) => Number(new RegExp(`\\b${name}="(-?[\\d.]+)"`).exec(tag)?.[1]);
+      return { x: num("x"), y: num("y") };
+    };
+
+    for (const horizontal of [false, true]) {
+      const svg = clusteredEngine.render(
+        clusteredEngine.parse(horizontal ? `${source}\nrotate 90` : source).value as ClusteredModel,
+        {},
+      );
+      const bar = barBox(svg, "0-1");
+      const zero = zeroTick(svg);
+      expect(bar.width).toBeGreaterThan(0);
+      if (horizontal) {
+        expect(bar.width).toBeGreaterThan(8);
+        expect(bar.x).toBeLessThan(zero.x - 5);
+        expect(bar.x + bar.width).toBeCloseTo(zero.x, 0);
+      } else {
+        expect(bar.height).toBeGreaterThan(8);
+        expect(bar.y).toBeLessThan(zero.y);
+        expect(bar.y + bar.height).toBeGreaterThan(zero.y);
+      }
+    }
   });
 });
