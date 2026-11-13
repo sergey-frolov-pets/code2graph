@@ -159,6 +159,8 @@ export const miscMessages = {
   "presentation.moveSticker": "स्टिकर खिसकाएँ",
   "presentation.sticker": "टिप्पणी",
   "presentation.stickerColor": "स्टिकर का रंग",
+  "presentation.stickerFontSmaller": "छोटा पाठ",
+  "presentation.stickerFontLarger": "बड़ा पाठ",
   "presentation.saveCopy": "बदलावों के साथ प्रतिलिपि सहेजें",
   "presentation.hideMarks": "बदलाव छिपाएँ",
   "presentation.showMarks": "बदलाव दिखाएँ",

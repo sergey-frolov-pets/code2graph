@@ -159,6 +159,8 @@ export const miscMessages = {
   "presentation.moveSticker": "تحريك الملاحظة",
   "presentation.sticker": "تعليق",
   "presentation.stickerColor": "لون الملاحظة",
+  "presentation.stickerFontSmaller": "تصغير الخط",
+  "presentation.stickerFontLarger": "تكبير الخط",
   "presentation.saveCopy": "حفظ نسخة مع التغييرات",
   "presentation.hideMarks": "إخفاء التغييرات",
   "presentation.showMarks": "إظهار التغييرات",

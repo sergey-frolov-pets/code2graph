@@ -39,6 +39,8 @@ const LABELS = {
   moveSticker: "Перетащить стикер",
   sticker: "Комментарий",
   stickerColor: "Цвет стикера",
+  stickerFontSmaller: "Мельче",
+  stickerFontLarger: "Крупнее",
   saveCopy: "Сохранить копию с правками",
   hideMarks: "Скрыть правки",
   showMarks: "Показать правки",
@@ -436,10 +438,22 @@ describe("presentation html export", () => {
     }));
     expect((sticker as HTMLElement).getAttribute("data-fill")).toBe("#ffd6e0");
     expect((sticker as HTMLElement).style.getPropertyValue("--c2g-note")).toBe("#ffd6e0");
+    const fontUp = sticker?.querySelector<HTMLButtonElement>(".c2g-sticker-font-up");
+    const fontDown = sticker?.querySelector<HTMLButtonElement>(".c2g-sticker-font-down");
+    expect(fontUp?.getAttribute("aria-label")).toBe("Крупнее");
+    expect(handle?.querySelector("svg")).not.toBeNull();
+    const sizedFont = parseFloat((sticker as HTMLElement).style.fontSize);
+    fontUp?.click();
+    expect((sticker as HTMLElement).getAttribute("data-font-scale")).toBe("1.25");
+    expect(parseFloat((sticker as HTMLElement).style.fontSize)).toBeCloseTo(sizedFont * 1.25, 2);
+    fontDown?.click();
+    expect(parseFloat((sticker as HTMLElement).style.fontSize)).toBeCloseTo(sizedFont, 2);
 
     sticker?.dispatchEvent(new FocusEvent("focusout", { relatedTarget: doc.body }));
     expect((sticker as HTMLElement).classList.contains("is-active")).toBe(false);
     const playerCss = doc.querySelector("style")?.textContent ?? "";
+    expect(playerCss).toMatch(/\.c2g-sticker-resize\s*\{[^}]*border-radius:\s*999px/);
+    expect(playerCss).toMatch(/\.c2g-sticker-move\s*\{[^}]*border-radius:\s*999px/);
     expect(playerCss).toContain(".c2g-sticker:not(.is-active) .c2g-sticker-ui");
     expect(playerCss).not.toMatch(/\.c2g-sticker:not\(\.is-active\)\s*\{[^}]*transparent/);
     expect(playerCss).toMatch(/#c2g-pen-colors\s*\{[^}]*flex-flow:\s*row nowrap/);

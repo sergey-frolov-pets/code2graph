@@ -159,6 +159,8 @@ export const miscMessages = {
   "presentation.moveSticker": "Move sticker",
   "presentation.sticker": "Comment",
   "presentation.stickerColor": "Sticker color",
+  "presentation.stickerFontSmaller": "Smaller text",
+  "presentation.stickerFontLarger": "Larger text",
   "presentation.saveCopy": "Save a copy with changes",
   "presentation.hideMarks": "Hide changes",
   "presentation.showMarks": "Show changes",

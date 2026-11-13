@@ -159,6 +159,8 @@ export const miscMessages = {
   "presentation.moveSticker": "Mover la nota",
   "presentation.sticker": "Comentario",
   "presentation.stickerColor": "Color de la nota",
+  "presentation.stickerFontSmaller": "Texto más pequeño",
+  "presentation.stickerFontLarger": "Texto más grande",
   "presentation.saveCopy": "Guardar una copia con los cambios",
   "presentation.hideMarks": "Ocultar cambios",
   "presentation.showMarks": "Mostrar cambios",
