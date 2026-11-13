@@ -7,13 +7,35 @@ import {
   getPointersMidpoint,
   getWheelZoomFactor,
   normalizeWheelDelta,
+  panSheetBox,
 } from "@/services/preview/pan-zoom-math";
 
 describe("pan-zoom-math", () => {
-  it("clamps pan inside viewport bounds", () => {
+  it("places the picture in the center cell of the pan sheet", () => {
+    expect(panSheetBox(200, 100)).toEqual({
+      x: -200,
+      y: -100,
+      width: 600,
+      height: 300,
+    });
+  });
+
+  it("keeps a large picture inside a 3 by 3 sheet of its own size", () => {
     const result = clampPan(500, 500, 200, 100, 300, 200);
-    expect(result.panX).toBe(300);
-    expect(result.panY).toBe(200);
+    expect(result.panX).toBe(200);
+    expect(result.panY).toBe(100);
+
+    const far = clampPan(-400, -300, 200, 100, 300, 200);
+    expect(far.panX).toBe(-100);
+    expect(far.panY).toBe(0);
+  });
+
+  it("slides a small 3 by 3 sheet inside the viewport", () => {
+    const result = clampPan(0, 0, 40, 20, 300, 200);
+    expect(result).toEqual({ panX: 40, panY: 20 });
+
+    const far = clampPan(500, 500, 40, 20, 300, 200);
+    expect(far).toEqual({ panX: 220, panY: 160 });
   });
 
   it("allows negative pan when content is larger than viewport", () => {

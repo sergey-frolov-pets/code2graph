@@ -1,4 +1,5 @@
 import {
+  PREVIEW_PAN_GRID_CELLS,
   PREVIEW_WHEEL_LINE_PIXELS,
   PREVIEW_ZOOM_SENSITIVITY,
   PREVIEW_ZOOM_STEP,
@@ -20,6 +21,37 @@ export function readViewportSize(viewport: HTMLElement): Size {
   };
 }
 
+function clampAxis(
+  value: number,
+  contentSize: number,
+  viewportSize: number,
+): number {
+  const min = Math.min(0, viewportSize - contentSize);
+  const max = Math.max(0, viewportSize - contentSize);
+  return Math.min(max, Math.max(min, value));
+}
+
+/** Sheet around the picture. Its origin is the top-left of the center cell. */
+export function panSheetBox(width: number, height: number): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
+  const pad = (PREVIEW_PAN_GRID_CELLS - 1) / 2;
+  return {
+    x: -width * pad,
+    y: -height * pad,
+    width: width * PREVIEW_PAN_GRID_CELLS,
+    height: height * PREVIEW_PAN_GRID_CELLS,
+  };
+}
+
+/**
+ * Keeps the picture inside a sheet of {@link PREVIEW_PAN_GRID_CELLS} by
+ * {@link PREVIEW_PAN_GRID_CELLS} cells of its own size. The picture is the
+ * center cell; `pan` is still the picture's top-left in the viewport.
+ */
 export function clampPan(
   panX: number,
   panY: number,
@@ -28,14 +60,12 @@ export function clampPan(
   containerWidth: number,
   containerHeight: number,
 ): { panX: number; panY: number } {
-  const minX = -scaledWidth;
-  const maxX = containerWidth;
-  const minY = -scaledHeight;
-  const maxY = containerHeight;
-
+  const sheet = panSheetBox(scaledWidth, scaledHeight);
+  const originX = clampAxis(panX + sheet.x, sheet.width, containerWidth);
+  const originY = clampAxis(panY + sheet.y, sheet.height, containerHeight);
   return {
-    panX: Math.min(maxX, Math.max(minX, panX)),
-    panY: Math.min(maxY, Math.max(minY, panY)),
+    panX: originX - sheet.x,
+    panY: originY - sheet.y,
   };
 }
 

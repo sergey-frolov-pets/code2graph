@@ -14,6 +14,7 @@ import { useImageSize } from "@/composables/useImageSize";
 import { usePresentationSession } from "@/composables/usePresentationSession";
 import { usePreviewPanZoom } from "@/composables/usePreviewPanZoom";
 import { isTransparentPreviewBg, TRANSPARENT_PREVIEW_BG } from "@/constants/editor-settings";
+import { panSheetBox } from "@/services/preview/pan-zoom-math";
 import { EFFECT_IDENTITY, effectStyle, effectVisualAt } from "@/services/presentation/effects";
 import { readFrameFile, readFrameHref } from "@/services/presentation/frame";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
@@ -115,6 +116,17 @@ const {
   onPointerUp,
   onPointerCancel,
 } = usePreviewPanZoom(viewportRef, contentRef, previewMarkup);
+
+const panSheetStyle = computed(() => {
+  const sheet = panSheetBox(snapshot.value.imageWidth, snapshot.value.imageHeight);
+  return {
+    left: `${sheet.x}px`,
+    top: `${sheet.y}px`,
+    width: `${sheet.width}px`,
+    height: `${sheet.height}px`,
+    background: transparentPreview.value ? "transparent" : props.previewBackground,
+  };
+});
 
 const presentation = usePresentationSession({
   source: toRef(props, "source"),
@@ -352,6 +364,7 @@ watch(
           ref="viewportRef"
           class="preview-viewport"
           :class="{ 'is-dragging': isDragging, 'is-pinching': isPinching }"
+          :style="transparentPreview ? undefined : { background: previewBackground }"
           @pointerdown="onPointerDown"
           @pointermove="onPointerMove"
           @pointerup="onPointerUp"
@@ -364,6 +377,12 @@ watch(
             :data-preview-ready="Boolean(previewMarkup)"
             :style="contentStyle"
           >
+            <div
+              v-if="snapshot.imageWidth > 0 && snapshot.imageHeight > 0"
+              class="preview-pan-sheet"
+              :style="panSheetStyle"
+              aria-hidden="true"
+            />
             <div class="preview-scene">
               <img
                 v-if="frameHref"
@@ -478,11 +497,19 @@ watch(
 }
 
 .preview-content {
+  position: relative;
   will-change: transform;
+}
+
+.preview-pan-sheet {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .preview-scene {
   position: relative;
+  z-index: 1;
   display: inline-block;
 }
 
