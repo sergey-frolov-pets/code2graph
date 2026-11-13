@@ -27,6 +27,7 @@ import {
 import {
   parseBoxplotTable,
   parseClusteredTable,
+  parseHistogramTable,
   parseRadarTable,
   parseTreemapTable,
   parseVoronoiTable,
@@ -127,6 +128,9 @@ export function applyTableFromClipboardText(input: {
       break;
     case "series":
       result = parseClusteredTable(grid, source, format);
+      break;
+    case "histogram":
+      result = parseHistogramTable(grid, source, format);
       break;
     case "xychart":
       result = parseXyChartTable(grid, source, format);

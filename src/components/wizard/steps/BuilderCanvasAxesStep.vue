@@ -34,7 +34,7 @@ const cap = computed(() => schema.value.capabilities);
 
 const seriesCount = computed(() => {
   const dt = builderState.value.diagramType;
-  if (dt === "series") {
+  if (dt === "series" || dt === "histogram") {
     return Math.max(
       1,
       builderState.value.matrixHeaders.filter((h) => !/^line:/i.test(h.trim()))
@@ -904,7 +904,7 @@ function removeHeatmapBand(idx: number): void {
         </label>
 
         <label
-          v-if="cap.supportsStacked || builderState.diagramType === 'waterfall'"
+          v-if="cap.supportsStacked || builderState.diagramType === 'waterfall' || builderState.diagramType === 'histogram'"
           class="builder-field"
         >
           <span class="builder-field__label">{{ t("builder.option.barGap") }}</span>
@@ -986,7 +986,7 @@ function removeHeatmapBand(idx: number): void {
         </label>
 
         <label
-          v-if="builderState.diagramType === 'series' || builderState.diagramType === 'waterfall'"
+          v-if="builderState.diagramType === 'series' || builderState.diagramType === 'waterfall' || builderState.diagramType === 'histogram'"
           class="builder-field"
         >
           <span class="builder-field__label">{{ t("builder.option.labelAuto") }}</span>
@@ -1285,7 +1285,7 @@ function removeHeatmapBand(idx: number): void {
         </label>
 
         <label
-          v-if="cap.supportsAxisToggle && (builderState.diagramType === 'series' || builderState.diagramType === 'waterfall')"
+          v-if="cap.supportsAxisToggle && (builderState.diagramType === 'series' || builderState.diagramType === 'waterfall' || builderState.diagramType === 'histogram')"
           class="builder-field"
         >
           <span class="builder-field__label">{{ t("builder.axis.category") }}</span>

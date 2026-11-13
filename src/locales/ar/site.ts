@@ -455,4 +455,7 @@ export const siteMessages = {
   "site.landing.usp.managers": "الخطة والحالة في صورة واحدة: Gantt والرسوم إلى العرض بنقرة",
   "site.landing.usp.students": "مخطط في دقيقة: قوالب وتلميحات وبلا تثبيت",
   "site.landing.usp.vibecoders": "الوكيل يرسم وأنت تحرّر: MCP يعطي Cursor المصدر والصورة",
+  "site.ext.mermaid.type.histogram": "مدرج تكراري",
+  "site.ext.mermaid.desc.histogram": "العدد أو الكثافة حسب الفترة، مع منحنى توزيع مُقدَّر أو مُعطى، والمتوسط والوسيط وفاصل الثقة.",
+  "site.ext.mermaid.syntax.histogram": "histogram يفتح الرسم (الأسماء البديلة hist وdist). series الاسم : v1, v2, … عينة واحدة. الخلية الفارغة وna وn/a وnull وnone وnan و- و— و. قيمة ناقصة. bins auto أو bins N أو binwidth W أو bins a --> b, b --> c تحدد الفترات. scale count أو scale density يحدد الارتفاع. fit normal يقدّر المنحنى، وcurve weibull shape=1.6 scale=28 يرسم المعاملات المعطاة. stats تسرد mean median sd var ci، وci 0.95 فاصل المتوسط. labels وgap وcolors وmono وrotate 90 وfontsize وratio وgrid وaxis وline تعمل كما في series.",
 } as const satisfies LocaleMessages;

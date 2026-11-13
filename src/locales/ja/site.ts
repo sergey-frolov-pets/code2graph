@@ -455,4 +455,7 @@ export const siteMessages = {
   "site.landing.usp.managers": "計画と進捗を1枚に。ガントとグラフをワンクリックで資料へ",
   "site.landing.usp.students": "1分で図が完成。テンプレートと補完つき、インストール不要",
   "site.landing.usp.vibecoders": "エージェントが描き、あなたが直す。MCPがCursorへソースと画像を返す",
+  "site.ext.mermaid.type.histogram": "ヒストグラム",
+  "site.ext.mermaid.desc.histogram": "ビンごとの件数または密度に、推定または指定した分布曲線、平均、中央値、信頼区間を重ねます。",
+  "site.ext.mermaid.syntax.histogram": "histogram で開きます（別名 hist、dist）。series 名前 : v1, v2, … が1標本です。空欄、na、n/a、null、none、nan、-、—、. は欠損です。bins auto、bins N、binwidth W、または bins a --> b, b --> c が区間です。scale count か scale density が高さです。fit normal は曲線を推定し、curve weibull shape=1.6 scale=28 は指定パラメータを描きます。stats は mean median sd var ci、ci 0.95 は平均の区間です。labels、gap、colors、mono、rotate 90、fontsize、ratio、grid、axis、line は series と同じです。",
 } as const satisfies LocaleMessages;

@@ -490,4 +490,13 @@ export const miscMessages = {
   "pwa.updateDismiss": "あとで",
   "presentation.opacity": "不透明度",
   "presentation.transparent": "透明",
+  "samples.mermaid.histogram": "遅延のヒストグラム",
+  "samples.mermaid.histogramBins": "ヒストグラム — 明示区間",
+  "samples.mermaid.histogramCurves": "ヒストグラム — 分布曲線",
+  "samples.mermaid.histogramLabels": "ヒストグラム — 内側ラベル",
+  "samples.mermaid.histogramClean": "ヒストグラム — データ洗浄",
+  "samples.mermaid.histogramDensity": "ヒストグラム — 密度",
+  "samples.mermaid.histogramMono": "ヒストグラム — モノクロ",
+  "samples.mermaid.histogramRotate": "ヒストグラム — 90度回転",
+  "samples.mermaid.histogramLine": "ヒストグラム — 水準線",
 } as const satisfies LocaleMessages;

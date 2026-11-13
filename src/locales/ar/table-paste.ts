@@ -169,4 +169,8 @@ export const tablePasteMessages = {
   "tablePaste.expected.wireframe.rules":
     "يولّد مكون جدول WireMark مع TableHead وTableBody (الأعمدة الرقمية تُحاذى إلى اليمين).",
   "tablePaste.expected.wireframe.headers": "الاسم|المؤلف|الحالة|المشاهدات",
+  "tablePaste.type.histogram": "مدرج تكراري",
+  "tablePaste.expected.histogram.columns": "عمود لكل سلسلة. الصف الأول قد يسمي السلاسل. تبقى الخلايا كما هي، بما فيها الفارغة وna والرموز الخاطئة.",
+  "tablePaste.expected.histogram.rules": "كل عمود يصبح series الاسم : v1, v2, …. تبقى الخلايا الفارغة وغير الرقمية حتى تعالجها missing وerrors وoutliers.",
+  "tablePaste.expected.histogram.headers": "الصباح|المساء",
 } as const satisfies LocaleMessages;

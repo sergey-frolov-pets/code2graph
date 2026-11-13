@@ -11,7 +11,7 @@ const MERMAID_DIAGRAM_DECLARATION_PATTERN =
  * Список — только ключевые слова, без алиасов: алиасы проверяет движок.
  */
 const MERMAID_EXT_DECLARATION_PATTERN =
-  /^(waterfall(?:-variance|-multi|-scenario)?|bubble(?:chart)?|heat-?map|org(?:chart)?|ev(?:chart)?|box(?:-?plot)?|tree-?map|radar(?:chart)?|spider|voronoi(?:-diagram)?|series)\b/i;
+  /^(waterfall(?:-variance|-multi|-scenario)?|bubble(?:chart)?|heat-?map|org(?:chart)?|ev(?:chart)?|box(?:-?plot)?|tree-?map|radar(?:chart)?|spider|voronoi(?:-diagram)?|series|histogram|hist|dist)\b/i;
 
 const FENCED_MERMAID_START_PATTERN = /^```mermaid\b/i;
 

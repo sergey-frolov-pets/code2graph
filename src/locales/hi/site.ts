@@ -455,4 +455,7 @@ export const siteMessages = {
   "site.landing.usp.managers": "योजना और स्थिति एक तस्वीर में: Gantt और चार्ट एक क्लिक में स्लाइड में",
   "site.landing.usp.students": "एक मिनट में आरेख: टेम्पलेट, संकेत, कोई इंस्टॉल नहीं",
   "site.landing.usp.vibecoders": "एजेंट बनाता है, आप बदलते हैं: MCP Cursor को कोड और तस्वीर देता है",
+  "site.ext.mermaid.type.histogram": "हिस्टोग्राम",
+  "site.ext.mermaid.desc.histogram": "बिन के अनुसार गिनती या घनत्व, फिट या दी गई वितरण वक्र, माध्य, माध्यिका और विश्वास अंतराल के साथ।",
+  "site.ext.mermaid.syntax.histogram": "histogram चार्ट खोलता है (उपनाम hist और dist)। series नाम : v1, v2, … एक नमूना है। खाली सेल, na, n/a, null, none, nan, -, — या . कमी है। bins auto, bins N, binwidth W या bins a --> b, b --> c अंतराल तय करते हैं। scale count या scale density ऊँचाई तय करता है। fit normal वक्र अनुमानित करता है, curve weibull shape=1.6 scale=28 दिए पैरामीटर खींचता है। stats में mean median sd var ci हैं, ci 0.95 माध्य का अंतराल है। labels, gap, colors, mono, rotate 90, fontsize, ratio, grid, axis और line series जैसे हैं।",
 } as const satisfies LocaleMessages;

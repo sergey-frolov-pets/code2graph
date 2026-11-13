@@ -490,4 +490,13 @@ export const miscMessages = {
   "pwa.updateDismiss": "Später",
   "presentation.opacity": "Deckkraft",
   "presentation.transparent": "Transparent",
+  "samples.mermaid.histogram": "Histogramm der Latenz",
+  "samples.mermaid.histogramBins": "Histogramm — explizite Intervalle",
+  "samples.mermaid.histogramCurves": "Histogramm — Verteilungskurven",
+  "samples.mermaid.histogramLabels": "Histogramm — Beschriftung innen",
+  "samples.mermaid.histogramClean": "Histogramm — Datenbereinigung",
+  "samples.mermaid.histogramDensity": "Histogramm — Dichte",
+  "samples.mermaid.histogramMono": "Histogramm — monochrom",
+  "samples.mermaid.histogramRotate": "Histogramm — Drehung 90°",
+  "samples.mermaid.histogramLine": "Histogramm — Niveaulinie",
 } as const satisfies LocaleMessages;

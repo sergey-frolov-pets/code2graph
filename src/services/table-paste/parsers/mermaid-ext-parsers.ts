@@ -551,3 +551,67 @@ export function parseClusteredTable(
     "series",
   );
 }
+
+const HISTOGRAM_MIN_COLUMNS = 1;
+const HISTOGRAM_MIN_ROWS = 1;
+const HISTOGRAM_MISSING_TOKEN = /^(?:na|n\/a|null|none|nan|-|—|\.)$/i;
+
+function isHistogramHeaderCell(cell: string): boolean {
+  const raw = cell.trim();
+  if (!raw || HISTOGRAM_MISSING_TOKEN.test(raw)) return false;
+  return parseTableNumber(raw) === null;
+}
+
+function isHistogramSeriesLine(trimmed: string): boolean {
+  return /^series\b/i.test(trimmed) && trimmed.includes(":");
+}
+
+function quoteHistogramName(name: string): string {
+  if (/[\s,"]/.test(name)) return `"${name.replace(/"/g, '\\"')}"`;
+  return name;
+}
+
+export function parseHistogramTable(
+  grid: ParsedClipboardGrid,
+  source: string,
+  format: DiagramFormat,
+): TablePasteResult {
+  if (grid.colCount < HISTOGRAM_MIN_COLUMNS || grid.rowCount < HISTOGRAM_MIN_ROWS) {
+    return makeTablePasteError(
+      "histogram",
+      format,
+      "too_few_columns",
+      "tablePaste.error.tooFewColumnsMin",
+      { min: HISTOGRAM_MIN_COLUMNS, actual: grid.colCount },
+    );
+  }
+
+  const headerRow = grid.rows[0] ?? [];
+  const hasHeader = headerRow.some((cell) => isHistogramHeaderCell(cell));
+  const dataRows = hasHeader ? grid.rows.slice(1) : grid.rows;
+  if (dataRows.length === 0) {
+    return makeTablePasteError("histogram", format, "no_valid_rows", "tablePaste.error.noDataRows");
+  }
+
+  const names = hasHeader
+    ? headerRow.map((cell, index) => cell.trim() || `Series ${index + 1}`)
+    : Array.from({ length: grid.colCount }, (_, index) => `Series ${index + 1}`);
+  const columns = names.map(() => [] as string[]);
+  for (const row of dataRows) {
+    names.forEach((_, index) => {
+      columns[index].push((row[index] ?? "").trim());
+    });
+  }
+
+  const generated = names.flatMap((name, index) => {
+    const cells = columns[index];
+    while (cells.length > 0 && cells[cells.length - 1] === "") cells.pop();
+    if (cells.length === 0) return [];
+    return [`series ${quoteHistogramName(name)} : ${cells.join(", ")}`];
+  });
+  if (generated.length === 0) {
+    return makeTablePasteError("histogram", format, "no_valid_rows", "tablePaste.error.noDataRows");
+  }
+
+  return replaceDataLinesInSource(source, "histogram", generated, isHistogramSeriesLine, "histogram");
+}

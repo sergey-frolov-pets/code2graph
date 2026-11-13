@@ -169,4 +169,8 @@ export const tablePasteMessages = {
   "tablePaste.expected.wireframe.rules":
     "TableHead と TableBody を持つ WireMark の Table コンポーネントを生成します（数値の列は右揃え）。",
   "tablePaste.expected.wireframe.headers": "名前|著者|状態|閲覧数",
+  "tablePaste.type.histogram": "ヒストグラム",
+  "tablePaste.expected.histogram.columns": "列が1系列です。先頭行は系列名にできます。空白、na、不正な値もそのまま残します。",
+  "tablePaste.expected.histogram.rules": "各列は series 名前 : v1, v2, … になります。空白と非数値は残し、missing、errors、outliers が処理します。",
+  "tablePaste.expected.histogram.headers": "朝|夜",
 } as const satisfies LocaleMessages;

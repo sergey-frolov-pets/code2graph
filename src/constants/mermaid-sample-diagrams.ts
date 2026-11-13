@@ -70,6 +70,15 @@ export const MERMAID_SAMPLE_IDS = [
   "seriesBreak",
   "seriesThresholds",
   "seriesUnnamed",
+  "histogram",
+  "histogramBins",
+  "histogramCurves",
+  "histogramLabels",
+  "histogramClean",
+  "histogramDensity",
+  "histogramMono",
+  "histogramRotate",
+  "histogramLine",
 ] as const;
 
 export type MermaidSampleId = (typeof MERMAID_SAMPLE_IDS)[number];
@@ -106,6 +115,15 @@ export const MERMAID_EXT_SAMPLE_IDS = [
   "seriesBreak",
   "seriesThresholds",
   "seriesUnnamed",
+  "histogram",
+  "histogramBins",
+  "histogramCurves",
+  "histogramLabels",
+  "histogramClean",
+  "histogramDensity",
+  "histogramMono",
+  "histogramRotate",
+  "histogramLine",
 ] as const satisfies readonly MermaidSampleId[];
 
 export type MermaidExtSampleId = (typeof MERMAID_EXT_SAMPLE_IDS)[number];
@@ -176,6 +194,15 @@ export const MERMAID_SAMPLE_WIZARD_TYPES: Record<MermaidSampleId, import("@/cons
   seriesBreak: "xychart",
   seriesThresholds: "xychart",
   seriesUnnamed: "xychart",
+  histogram: "xychart",
+  histogramBins: "xychart",
+  histogramCurves: "xychart",
+  histogramLabels: "xychart",
+  histogramClean: "xychart",
+  histogramDensity: "xychart",
+  histogramMono: "xychart",
+  histogramRotate: "xychart",
+  histogramLine: "xychart",
 };
 
 import {

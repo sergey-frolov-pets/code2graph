@@ -135,6 +135,7 @@ export const siteMessages = {
   "site.ext.mermaid.type.radar": "Radar chart",
   "site.ext.mermaid.type.voronoi": "Voronoi tessellation",
   "site.ext.mermaid.type.clustered": "Series chart",
+  "site.ext.mermaid.type.histogram": "Histogram",
   "site.ext.mermaid.desc.waterfall":
     "How a starting value turns into a total through + and − steps. Absolute columns start with =, several scenarios are declared with series. Axis breaks, black-and-white mode (mono and mono invert) and custom colours are supported.",
   "site.ext.mermaid.desc.bubble":
@@ -155,6 +156,8 @@ export const siteMessages = {
     "Geometric partitioning of a plane into convex nearest-neighbor cells with colour groups and centroid labels.",
   "site.ext.mermaid.desc.clustered":
     "Bars for multiple series across categories, side by side or stacked, with overlay lines, horizontal levels, an axis break, CAGR callouts, a 90-degree rotation (rotate 90), a flipped vertical axis (invert y), and black-and-white mode (mono, mono invert).",
+  "site.ext.mermaid.desc.histogram":
+    "A histogram of numeric observations: automatic, counted, or explicit bins, a count or density scale, a fitted or given distribution curve (normal, lognormal, exponential, uniform, gamma, Weibull), mean, median, variance, and a Student-t confidence interval of the mean. Missing values, bad tokens, and outliers can be cleaned first.",
   "site.ext.mermaid.syntax.waterfall":
     "waterfall opens the chart. y sets the axis. = is an absolute column, + and - are a step, and the label follows the colon. axis y off hides the value axis and its grid, axis x off hides column labels, and grid off hides only the grid. gap 12 or gap 20% sets the space between bars. labels fontcolor auto picks a contrasting color for the surface under the text: the bar fill inside, the canvas outside. labels fontcolor #1f2328 sets a color. \\n in a label breaks the line.",
   "site.ext.mermaid.syntax.bubble":
@@ -173,6 +176,8 @@ export const siteMessages = {
     "radar opens the chart. axes lists spoke labels, series Name : v1, v2, … defines a data series. \\n in a label breaks the line.",
   "site.ext.mermaid.syntax.voronoi":
     "voronoi opens the tessellation. Inside data a site is Name : x=, y=, group=, color=#hex. \\n in a name breaks the line.",
+  "site.ext.mermaid.syntax.histogram":
+    "histogram opens the chart (aliases hist and dist). series Name : v1, v2, … is one sample; an empty cell, na, n/a, null, none, nan, -, — or . is missing. bins auto, bins N, binwidth W, or bins a --> b, b --> c set the intervals. scale count or scale density sets the bar height. fit normal estimates a curve, curve weibull shape=1.6 scale=28 \"reference\" draws given parameters. stats lists mean median sd var ci and the other moments, ci 0.95 is the mean interval. labels above|inside|none, gap, colors, mono, rotate 90, fontsize, ratio, grid, axis x|y off, and line N \"label\" match the series chart.",
   "site.ext.mermaid.syntax.clustered":
     "series opens the chart. categories lists categories, series Name : v1, v2, … draws bars, and the name may be omitted (`series : v1, v2`); an empty slot, \"-\" or null skips a bar. line Label : v1, v2, … draws a line, and the label may be omitted (`line : v1, v2`) (a skipped slot joins the points on either side) with its label to the right of the plot; color and style=solid|dash|dot|dashdot set the stroke. line 160 \"plan\" draws a horizontal level (no colon). break 200 --> 700 cuts a span out of the axis. cagr is the CAGR from the first bar to the last, cagr 2, 7 joins those bars; format, prefix and label control the oval. format=\"±0.0%\" adds a plus only when the value is positive. Arrows that do not overlap share one level. Consecutive cagr lines apply to one series. stacked piles the series, stacked off puts bars side by side, rotate 90 turns the chart. invert y with rotate 90 places the first category at the bottom, and invert y off restores top-to-bottom order. y2 \"label\" 0 --> 40 draws a second scale (on the right, on top with rotate 90), and axis=y2 on a series, line, or level reads its values against that scale. axis y off, axis y2 off and axis x off hide that axis together with its grid. grid y2 10 draws the second scale's grid. stacked area draws filled bands, labels sum writes the part total above the stack, and gap 1 or gap 100% sets a gap as wide as a bar. labels fontcolor auto picks a contrasting color for the surface under the text. labels fontcolor #1f2328 sets a color. \\n in a label breaks the line.",
   "site.primer.graphml.kw.graphml":

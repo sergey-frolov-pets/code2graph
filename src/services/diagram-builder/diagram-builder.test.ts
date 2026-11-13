@@ -22,6 +22,7 @@ import { parseBoxplot } from "@/services/mermaid/ext/engines/boxplot";
 import { parseTreemap } from "@/services/mermaid/ext/engines/treemap";
 import { parseRadar } from "@/services/mermaid/ext/engines/radar";
 import { parseVoronoi } from "@/services/mermaid/ext/engines/voronoi";
+import { parseHistogram } from "@/services/mermaid/ext/engines/histogram";
 import { parseOrgchart } from "@/services/mermaid/ext/engines/orgchart";
 import { parseEv } from "@/services/mermaid/ext/engines/ev";
 
@@ -1034,5 +1035,46 @@ stop
     expect(flowEmitted).toContain("%% Flow comment");
     expect(flowEmitted).toContain("classDef hot fill:#f96,stroke:#333");
     expect(flowEmitted).toContain("style A fill:#bbf");
+  });
+
+  it("round-trips a histogram with explicit bins, cleaning, and a Weibull curve", () => {
+    const source = [
+      "histogram",
+      "title Latency",
+      "rotate 90",
+      "ratio 16x9",
+      'x "ms" 0 --> 80',
+      'y "count"',
+      "bins 0 --> 10, 10 --> 25, 25 --> 80",
+      "scale density",
+      "gap 20%",
+      "labels inside fontcolor auto",
+      "missing mean",
+      "errors drop",
+      "outliers iqr 1.5 winsor",
+      "ci 0.9",
+      "stats mean median sd",
+      "colors s1=#0969da mean=#cf222e",
+      'line 0.05 "plan" color=#8250df style=dot',
+      "series Morning : 12, 18, na, 22, 30",
+      'curve weibull shape=1.6 scale=28 "reference" color=#2da44e',
+    ].join("\n");
+
+    const state = parseSourceToBuilderState(source, "mermaid");
+    expect(state?.diagramType).toBe("histogram");
+    expect(state?.canvas.rotate90).toBe(true);
+    expect(state?.options.histogram.scale).toBe("density");
+    expect(state?.options.histogram.binMode).toBe("edges");
+    expect(state?.options.histogram.missing).toBe("mean");
+    expect(state?.matrixRows[2]?.[1]).toBe("na");
+    expect(state?.options.histogram.curves[0]?.distribution).toBe("weibull");
+
+    const emitted = emitSourceFromBuilderState(state!);
+    const reparsed = parseHistogram(emitted);
+    expect(reparsed.ok, reparsed.errors.map((error) => error.message).join("; ")).toBe(true);
+    expect(reparsed.value?.bins.mode).toBe("edges");
+    expect(reparsed.value?.scale).toBe("density");
+    expect(reparsed.value?.curves[0]?.distribution).toBe("weibull");
+    expect(reparsed.value?.series[0]?.tokens[2]?.kind).toBe("missing");
   });
 });

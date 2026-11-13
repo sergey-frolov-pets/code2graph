@@ -455,4 +455,7 @@ export const siteMessages = {
   "site.landing.usp.managers": "计划与状态一张图说清：甘特图和图表一键进演示文稿",
   "site.landing.usp.students": "一分钟做出图表：模板、提示、免安装",
   "site.landing.usp.vibecoders": "智能体画图，你来修改：MCP 给 Cursor 源码和图片",
+  "site.ext.mermaid.type.histogram": "直方图",
+  "site.ext.mermaid.desc.histogram": "按分箱显示次数或密度，可叠加拟合或给定的分布曲线，以及均值、中位数和置信区间。",
+  "site.ext.mermaid.syntax.histogram": "histogram 打开图表（别名 hist、dist）。series 名称 : v1, v2, … 是一组观测；空单元格、na、n/a、null、none、nan、-、— 和 . 都是缺失。bins auto、bins N、binwidth W 或 bins a --> b, b --> c 设定区间。scale count 或 scale density 设定柱高。fit normal 拟合曲线，curve weibull shape=1.6 scale=28 按给定参数绘制。stats 列出 mean median sd var ci，ci 0.95 是均值区间。labels、gap、colors、mono、rotate 90、fontsize、ratio、grid、axis 和 line 与 series 相同。",
 } as const satisfies LocaleMessages;

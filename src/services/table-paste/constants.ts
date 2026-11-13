@@ -156,6 +156,18 @@ const EXPECTED_SPECS_BY_TYPE: Record<
       ["Восток", "82", "54", "Город"],
     ],
   },
+  histogram: {
+    titleKey: "tablePaste.type.histogram",
+    columnsKey: "tablePaste.expected.histogram.columns",
+    rulesKey: "tablePaste.expected.histogram.rules",
+    sampleHeadersKey: "tablePaste.expected.histogram.headers",
+    sampleRows: [
+      ["12", "8"],
+      ["18", "14"],
+      ["na", "18"],
+      ["22", "oops"],
+    ],
+  },
   series: {
     titleKey: "tablePaste.type.clustered",
     columnsKey: "tablePaste.expected.clustered.columns",

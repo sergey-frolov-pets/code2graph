@@ -169,4 +169,8 @@ export const tablePasteMessages = {
   "tablePaste.expected.wireframe.rules":
     "生成带 TableHead 和 TableBody 的 WireMark Table 组件（数字列右对齐）。",
   "tablePaste.expected.wireframe.headers": "名称|作者|状态|浏览",
+  "tablePaste.type.histogram": "直方图",
+  "tablePaste.expected.histogram.columns": "每一列是一条序列。首行可以是序列名。单元格原样保留，包括空白、na 和错误记号。",
+  "tablePaste.expected.histogram.rules": "每一列变成 series 名称 : v1, v2, …。空白和非数字会保留，交给 missing、errors 和 outliers 处理。",
+  "tablePaste.expected.histogram.headers": "上午|晚间",
 } as const satisfies LocaleMessages;

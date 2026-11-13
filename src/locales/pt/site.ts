@@ -320,4 +320,7 @@ export const siteMessages = {
   "site.landing.usp.managers": "Plano e status numa imagem: Gantt e gráficos na apresentação num clique",
   "site.landing.usp.students": "Um diagrama em um minuto: modelos, dicas, sem instalar nada",
   "site.landing.usp.vibecoders": "O agente desenha, você edita: o MCP dá ao Cursor código e imagem",
+  "site.ext.mermaid.type.histogram": "Histograma",
+  "site.ext.mermaid.desc.histogram": "Contagens ou densidade por intervalo, com uma curva ajustada ou dada, média, mediana e um intervalo de confiança.",
+  "site.ext.mermaid.syntax.histogram": "histogram abre o gráfico (aliases hist e dist). series Nome : v1, v2, … é uma amostra; uma célula vazia, na, n/a, null, none, nan, -, — ou . é um valor em falta. bins auto, bins N, binwidth W ou bins a --> b, b --> c definem os intervalos. scale count ou scale density define a altura. fit normal estima a curva e curve weibull shape=1.6 scale=28 desenha parâmetros dados. stats lista mean median sd var ci, e ci 0.95 é o intervalo da média. labels, gap, colors, mono, rotate 90, fontsize, ratio, grid, axis e line funcionam como em series.",
 } as const satisfies LocaleMessages;

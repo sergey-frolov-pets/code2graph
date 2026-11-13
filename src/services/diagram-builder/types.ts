@@ -58,6 +58,31 @@ export interface BuilderThresholdItem {
   style: "solid" | "dash" | "dot" | "dashdot";
 }
 
+export interface BuilderHistogramCurve {
+  kind: "fit" | "curve";
+  distribution: string;
+  seriesName: string;
+  label: string;
+  color: string;
+  params: string;
+}
+
+export interface BuilderHistogramSettings {
+  binMode: "auto" | "count" | "width" | "edges";
+  binCount: string;
+  binWidth: string;
+  binEdges: string;
+  scale: "count" | "density";
+  missing: "drop" | "mean" | "median" | "zero";
+  errors: "drop" | "fail";
+  outlierMethod: "none" | "iqr" | "z" | "mad";
+  outlierK: string;
+  outlierAction: "drop" | "winsor" | "mark";
+  ci: string;
+  stats: string;
+  curves: BuilderHistogramCurve[];
+}
+
 export interface BuilderCagrItem {
   seriesIndex: number;
   from: number;
@@ -173,7 +198,10 @@ export interface BuilderOptionsSettings {
     median: string;
     whisker: string;
     outlier: string;
+    mean: string;
+    ci: string;
   };
+  histogram: BuilderHistogramSettings;
   seriesColors: string[];
   heatmapAutoScale: boolean;
   heatmapBands: BuilderHeatmapScaleBand[];

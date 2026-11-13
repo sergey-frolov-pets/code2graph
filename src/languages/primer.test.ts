@@ -40,6 +40,7 @@ const MERMAID_EXT_TYPE_IDS = [
   "ext-radar",
   "ext-voronoi",
   "ext-clustered",
+  "ext-histogram",
 ] as const;
 
 describe("language page primer", () => {

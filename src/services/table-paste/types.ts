@@ -12,6 +12,7 @@ export const TABLE_PASTE_DIAGRAM_TYPES = [
   "radar",
   "voronoi",
   "series",
+  "histogram",
   "xychart",
   "quadrant",
   "sankey",

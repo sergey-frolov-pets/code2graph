@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
+import BuilderHistogramPanel from "@/components/wizard/steps/panels/BuilderHistogramPanel.vue";
 import { useLocale } from "@/composables/useLocale";
 import {
   CAGR_FORMAT_OPTIONS,
@@ -53,7 +54,7 @@ const cagrSeriesOptions = computed(() => {
 
 const seriesCount = computed(() => {
   const dt = builderState.value.diagramType;
-  if (dt === "series") {
+  if (dt === "series" || dt === "histogram") {
     return Math.max(
       1,
       builderState.value.matrixHeaders.filter((h) => !/^line:/i.test(h.trim()))
@@ -160,6 +161,11 @@ function removeHeatmapBand(idx: number): void {
 
 <template>
   <div class="builder-step builder-cards" data-testid="builder-options-step">
+    <BuilderHistogramPanel
+      v-if="builderState.diagramType === 'histogram'"
+      v-model:builder-state="builderState"
+      @change="notifyChange"
+    />
     <!-- SECTION 1: VISUAL OPTIONS & LABELS -->
     <section
       v-if="
@@ -197,7 +203,7 @@ function removeHeatmapBand(idx: number): void {
         </label>
 
         <label
-          v-if="builderState.diagramType === 'series' || builderState.diagramType === 'waterfall'"
+          v-if="builderState.diagramType === 'series' || builderState.diagramType === 'waterfall' || builderState.diagramType === 'histogram'"
           class="builder-field"
         >
           <span class="builder-field__label">{{ t("builder.option.labelAuto") }}</span>
@@ -298,7 +304,7 @@ function removeHeatmapBand(idx: number): void {
         </label>
 
         <label
-          v-if="cap.supportsStacked || builderState.diagramType === 'waterfall'"
+          v-if="cap.supportsStacked || builderState.diagramType === 'waterfall' || builderState.diagramType === 'histogram'"
           class="builder-field"
         >
           <span class="builder-field__label">{{ t("builder.option.barGap") }}</span>

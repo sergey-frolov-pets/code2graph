@@ -169,4 +169,8 @@ export const tablePasteMessages = {
   "tablePaste.expected.wireframe.rules":
     "Erzeugt eine WireMark-Table-Komponente mit TableHead und TableBody (Zahlenspalten werden rechtsbündig ausgerichtet).",
   "tablePaste.expected.wireframe.headers": "Name|Autor|Status|Aufrufe",
+  "tablePaste.type.histogram": "Histogramm",
+  "tablePaste.expected.histogram.columns": "Eine Spalte je Serie. Die erste Zeile kann die Serien benennen. Zellen bleiben unverändert, einschließlich leerer Zellen, na und ungültiger Token.",
+  "tablePaste.expected.histogram.rules": "Jede Spalte wird zu series Name : v1, v2, …. Leere und nicht numerische Zellen bleiben, damit missing, errors und outliers sie bereinigen.",
+  "tablePaste.expected.histogram.headers": "Morgen|Abend",
 } as const satisfies LocaleMessages;

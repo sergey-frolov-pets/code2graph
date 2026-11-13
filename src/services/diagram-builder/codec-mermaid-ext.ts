@@ -10,6 +10,10 @@ import { parseRadar } from "@/services/mermaid/ext/engines/radar";
 import { parseTreemap } from "@/services/mermaid/ext/engines/treemap";
 import { parseVoronoi } from "@/services/mermaid/ext/engines/voronoi";
 import { parseWaterfall } from "@/services/mermaid/ext/engines/waterfall/parser";
+import {
+  applyHistogramBuilderState,
+  emitHistogramBuilderSource,
+} from "./histogram-builder";
 import { fmt } from "@/services/mermaid/ext/common";
 import { formatCleanNumber } from "@/services/table-paste/parse-clipboard-grid";
 import { createDefaultDiagramAppearance } from "./builder-appearance";
@@ -112,7 +116,8 @@ export function createDefaultBuilderState(
   };
 
   const options: BuilderOptionsSettings = {
-    labelsMode: diagramType === "treemap" ? "both" : "above",
+    labelsMode:
+      diagramType === "treemap" ? "both" : diagramType === "histogram" ? "none" : "above",
     connectors: true,
     stacked: false,
     stackArea: false,
@@ -136,6 +141,23 @@ export function createDefaultBuilderState(
       median: "",
       whisker: "",
       outlier: "",
+      mean: "",
+      ci: "",
+    },
+    histogram: {
+      binMode: "auto",
+      binCount: "10",
+      binWidth: "5",
+      binEdges: "0 --> 10, 10 --> 20",
+      scale: "count",
+      missing: "drop",
+      errors: "drop",
+      outlierMethod: "none",
+      outlierK: "1.5",
+      outlierAction: "drop",
+      ci: "0.95",
+      stats: "mean median sd var ci",
+      curves: [],
     },
     seriesColors: [],
     heatmapAutoScale: true,
@@ -771,6 +793,9 @@ export function parseMermaidExtToBuilderState(
       ]);
       return state;
     }
+
+    case "histogram":
+      return applyHistogramBuilderState(state, source);
 
     default:
       return null;
@@ -1502,6 +1527,9 @@ export function emitMermaidExtFromBuilderState(
 
       return lines.join("\n");
     }
+
+    case "histogram":
+      return emitHistogramBuilderSource(state);
 
     default:
       return null;

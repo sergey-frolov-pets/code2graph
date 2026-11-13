@@ -490,4 +490,13 @@ export const miscMessages = {
   "pwa.updateDismiss": "لاحقًا",
   "presentation.opacity": "العتمة",
   "presentation.transparent": "شفاف",
+  "samples.mermaid.histogram": "مدرج تكراري للتأخير",
+  "samples.mermaid.histogramBins": "مدرج — فترات صريحة",
+  "samples.mermaid.histogramCurves": "مدرج — منحنيات التوزيع",
+  "samples.mermaid.histogramLabels": "مدرج — تسميات داخلية",
+  "samples.mermaid.histogramClean": "مدرج — تنظيف البيانات",
+  "samples.mermaid.histogramDensity": "مدرج — الكثافة",
+  "samples.mermaid.histogramMono": "مدرج — أحادي اللون",
+  "samples.mermaid.histogramRotate": "مدرج — دوران 90°",
+  "samples.mermaid.histogramLine": "مدرج — خط المستوى",
 } as const satisfies LocaleMessages;

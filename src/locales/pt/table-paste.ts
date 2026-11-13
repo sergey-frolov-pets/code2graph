@@ -169,4 +169,8 @@ export const tablePasteMessages = {
   "tablePaste.expected.wireframe.rules":
     "Gera um componente Table do WireMark com TableHead e TableBody (colunas numéricas ficam alinhadas à direita).",
   "tablePaste.expected.wireframe.headers": "Nome|Autor|Status|Visualizações",
+  "tablePaste.type.histogram": "Histograma",
+  "tablePaste.expected.histogram.columns": "Uma coluna por série. A primeira linha pode nomear as séries. As células ficam como estão, incluindo vazias, na e tokens inválidos.",
+  "tablePaste.expected.histogram.rules": "Cada coluna vira series Nome : v1, v2, …. Células vazias e não numéricas ficam para missing, errors e outliers as limparem.",
+  "tablePaste.expected.histogram.headers": "Manhã|Noite",
 } as const satisfies LocaleMessages;

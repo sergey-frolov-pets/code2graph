@@ -47,6 +47,8 @@ describe("checkMermaidSyntax", () => {
       "heatmap\nx A, B",
       "orgchart\nCEO [Chief]",
       "ev\ndays 1, 2",
+      "histogram\nseries A : 10, 12, 14",
+      "hist\nseries A : 10, 12, 14",
       "%% комментарий\nWaterfall\n=10 : A",
     ];
 
