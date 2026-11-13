@@ -171,13 +171,32 @@ function drawArrow(
 function drawWithVisual(
   context: CanvasRenderingContext2D,
   visual: EffectVisual,
-  centerX: number,
-  centerY: number,
+  box: { x: number; y: number; width: number; height: number },
   draw: () => void,
 ): void {
+  const placed = positiveBox(box);
+  const centerX = placed.x + placed.width / 2;
+  const centerY = placed.y + placed.height / 2;
   context.save();
   context.globalAlpha *= visual.opacity;
+  if (visual.clip && visual.clip.length >= 3) {
+    context.beginPath();
+    for (let index = 0; index < visual.clip.length; index += 1) {
+      const point = visual.clip[index];
+      const x = placed.x + point.x * placed.width;
+      const y = placed.y + point.y * placed.height;
+      if (index === 0) {
+        context.moveTo(x, y);
+      } else {
+        context.lineTo(x, y);
+      }
+    }
+    context.closePath();
+    context.clip();
+  }
   context.translate(centerX, centerY);
+  context.translate(visual.translateX * placed.width, visual.translateY * placed.height);
+  context.rotate((visual.rotate * Math.PI) / PRESENTATION_HALF_CIRCLE);
   context.scale(visual.scale, visual.scale);
   context.translate(-centerX, -centerY);
   draw();
@@ -196,7 +215,7 @@ function drawOverlay(
   visual: EffectVisual,
 ): void {
   const box = screenBox(overlay, panX, panY, scale, imageWidth, imageHeight);
-  drawWithVisual(context, visual, box.x + box.width / 2, box.y + box.height / 2, () => {
+  drawWithVisual(context, visual, box, () => {
     paintOverlay(context, overlay, panX, panY, scale, imageWidth, imageHeight, theme);
   });
 }
@@ -315,8 +334,7 @@ function paintFrame(
     drawWithVisual(
       context,
       visual,
-      placed.panX + placed.width / 2,
-      placed.panY + placed.height / 2,
+      { x: placed.panX, y: placed.panY, width: placed.width, height: placed.height },
       () => {
         context.drawImage(bitmap, placed.panX, placed.panY, placed.width, placed.height);
       },

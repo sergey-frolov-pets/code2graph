@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import PresentationPanel from "@/components/preview/PresentationPanel.vue";
 import { presentationSessionKey, type PresentationSession } from "@/components/preview/presentation-session";
 import type { TranslateFn } from "@/locales/types";
-import type { PresentationDocument, PresentationTrack } from "@/services/presentation/types";
+import type { PresentationDocument, PresentationTrack, Viewpoint } from "@/services/presentation/types";
 
 const translate = ((key: string, params?: Record<string, string | number>) => {
   if (key === "presentation.trackDuplicate") {
@@ -17,16 +17,29 @@ const translate = ((key: string, params?: Record<string, string | number>) => {
   if (key === "presentation.trackDefault") {
     return `Трек ${params?.n ?? ""}`;
   }
+  if (key === "presentation.frameEffects") {
+    return `Эффекты кадра ${params?.n ?? ""}`;
+  }
   return key;
 }) as TranslateFn;
 
-function track(name: string): PresentationTrack {
+function track(name: string, viewpoints: Viewpoint[] = []): PresentationTrack {
   return {
     id: `track-${name}`,
     name,
-    viewpoints: [],
+    viewpoints,
     transitions: [],
     overlays: [],
+  };
+}
+
+function emptyViewpoint(): Viewpoint {
+  return {
+    id: "view-1",
+    anchor: { x: 0.5, y: 0.5 },
+    scale: 1,
+    dwellMs: 2000,
+    effects: [],
   };
 }
 
@@ -146,5 +159,17 @@ describe("presentation track duplicate button", () => {
     const button = panel.host.querySelector("[aria-label='Дублировать трек']");
     expect(button).toBeInstanceOf(HTMLButtonElement);
     expect((button as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("names the empty effect row after the selected frame", async () => {
+    const panel = mountPanel({
+      mode: "edit",
+      tracks: [track("Обход", [emptyViewpoint()])],
+    });
+    mounted.push(panel);
+    await nextTick();
+
+    expect(panel.host.textContent).toContain("Эффекты кадра 1");
+    expect(panel.host.querySelector("[aria-label='presentation.effectAdd']")).toBeInstanceOf(HTMLButtonElement);
   });
 });

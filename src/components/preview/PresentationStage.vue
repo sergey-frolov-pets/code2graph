@@ -34,7 +34,11 @@ import type {
 } from "@/services/presentation/types";
 import type { PanZoomSnapshot } from "@/services/preview/pan-zoom";
 import type { PresentationPhase } from "@/composables/usePresentationPlayback";
-import { effectVisualAt, overlayEffectTransform } from "@/services/presentation/effects";
+import {
+  effectClipPoints,
+  effectVisualAt,
+  overlayEffectTransform,
+} from "@/services/presentation/effects";
 
 const props = defineProps<{
   snapshot: PanZoomSnapshot;
@@ -224,6 +228,10 @@ const visibleOverlays = computed(() => {
       )
     : [];
 });
+
+const clippedOverlays = computed(() =>
+  visibleOverlays.value.filter((overlay) => overlayEffect(overlay).clip),
+);
 
 function screenBox(overlay: PresentationOverlay): {
   x: number;
@@ -424,7 +432,16 @@ function onPointerUp(): void {
   drag = null;
 }
 
-function overlayEffect(overlay: PresentationOverlay): { opacity: number; transform?: string } {
+function overlayClipId(id: string): string {
+  return `presentation-effect-${id}`;
+}
+
+function overlayEffect(overlay: PresentationOverlay): {
+  opacity: number;
+  transform?: string;
+  clip?: string;
+  clipUrl?: string;
+} {
   if (!props.effectsLive || !props.track) {
     return { opacity: 1 };
   }
@@ -437,9 +454,13 @@ function overlayEffect(overlay: PresentationOverlay): { opacity: number; transfo
     "overlay",
     overlay.id,
   );
+  const box = positiveBox(screenBox(overlay));
+  const clip = effectClipPoints(box, visual.clip);
   return {
     opacity: visual.opacity,
-    transform: overlayEffectTransform(screenBox(overlay), visual.scale),
+    transform: overlayEffectTransform(box, visual),
+    clip,
+    clipUrl: clip ? `url(#${overlayClipId(overlay.id)})` : undefined,
   };
 }
 
@@ -502,6 +523,14 @@ function overlayLabelLines(overlay: PresentationOverlay): OverlayTextLine[] {
           fill="context-stroke"
         />
       </marker>
+      <clipPath
+        v-for="overlay in clippedOverlays"
+        :id="overlayClipId(overlay.id)"
+        :key="`clip-${overlay.id}`"
+        clipPathUnits="userSpaceOnUse"
+      >
+        <polygon :points="overlayEffect(overlay).clip" />
+      </clipPath>
     </defs>
 
     <path
@@ -559,6 +588,7 @@ function overlayLabelLines(overlay: PresentationOverlay): OverlayTextLine[] {
       :style="overlayVars(overlay)"
       :opacity="overlayEffect(overlay).opacity"
       :transform="overlayEffect(overlay).transform"
+      :clip-path="overlayEffect(overlay).clipUrl"
       @pointerdown="onOverlayPointerDown($event, overlay)"
     >
       <rect

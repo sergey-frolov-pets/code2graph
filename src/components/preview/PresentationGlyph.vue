@@ -17,6 +17,7 @@ import {
   FileCode,
   Film,
   Flag,
+  GripHorizontal,
   LoaderCircle,
   Minus,
   Octagon,
@@ -76,7 +77,8 @@ export type PresentationGlyphName =
   | "rotate-right"
   | "copy"
   | "up"
-  | "down";
+  | "down"
+  | "grip";
 
 const ICONS: Record<PresentationGlyphName, Component> = {
   presentation: Presentation,
@@ -113,6 +115,7 @@ const ICONS: Record<PresentationGlyphName, Component> = {
   copy: Copy,
   up: ArrowUp,
   down: ArrowDown,
+  grip: GripHorizontal,
 };
 
 const props = defineProps<{
