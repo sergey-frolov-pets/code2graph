@@ -604,6 +604,17 @@ export function usePresentationSession(options: {
           removeSticker: t("presentation.removeSticker"),
           resizeSticker: t("presentation.resizeSticker"),
           sticker: t("presentation.sticker"),
+          stickerColor: t("presentation.stickerColor"),
+          saveCopy: t("presentation.saveCopy"),
+          hideMarks: t("presentation.hideMarks"),
+          showMarks: t("presentation.showMarks"),
+          pen: t("presentation.pen"),
+          penColor: t("presentation.penColor"),
+          penWidth: t("presentation.penWidth"),
+          copySuffix: t("presentation.copySuffix"),
+          keys: t("presentation.keys"),
+          keysClose: t("presentation.keysClose"),
+          keysHelp: t("presentation.keysHelp"),
         },
       });
       downloadTextFile(html, presentationHtmlFileName(track.name), PRESENTATION_HTML_MIME);

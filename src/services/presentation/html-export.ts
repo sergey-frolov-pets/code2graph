@@ -63,15 +63,38 @@ const HTML_FRAME_FALLBACK_MS = 16;
 const HTML_PLAYER_DIM_OPACITY = 0.12;
 const HTML_STICKER_WIDTH = 168;
 const HTML_STICKER_HEIGHT = 112;
-const HTML_STICKER_MIN_SIZE = 72;
+/** Smallest sticker box: about one line of the sticker font. */
+const HTML_STICKER_MIN_WIDTH = 18;
+const HTML_STICKER_MIN_HEIGHT = 18;
 const HTML_STICKER_NUDGE = 16;
 const HTML_STICKER_RADIUS = 10;
-const HTML_STICKER_PAD = 10;
-const HTML_STICKER_HEADER = 22;
+const HTML_STICKER_PAD = 3;
+const HTML_STICKER_CHROME = 16;
 const HTML_STICKER_FONT_PX = 14;
 const HTML_STICKER_FILL = "#fff4b8";
 const HTML_STICKER_STROKE = "#e2c56a";
 const HTML_STICKER_INK = "#1a1f24";
+const HTML_INK_LIGHT = "#ffffff";
+const HTML_INK_LUMA = 0.62;
+const HTML_PEN_COLOR = "#e23d3d";
+const HTML_PEN_WIDTH_MIN = 1;
+const HTML_PEN_WIDTH_MAX = 16;
+const HTML_PEN_WIDTH_DEFAULT = 3;
+const HTML_PEN_MIN_STEP = 0.75;
+const HTML_PEN_STROKE_LIMIT = 200;
+const HTML_PEN_POINT_LIMIT = 4000;
+const HTML_NOTE_TEXT_LIMIT = 8000;
+const HTML_COPY_SUFFIX = "copy";
+const NOTE_COLORS: ReadonlyArray<{ fill: string; ink: string }> = [
+  { fill: HTML_STICKER_FILL, ink: HTML_STICKER_INK },
+  { fill: "#ffd6e0", ink: HTML_STICKER_INK },
+  { fill: "#d9f5d3", ink: HTML_STICKER_INK },
+  { fill: "#d6ecff", ink: HTML_STICKER_INK },
+  { fill: "#ffe0c2", ink: HTML_STICKER_INK },
+  { fill: "#e4d7ff", ink: HTML_STICKER_INK },
+  { fill: HTML_INK_LIGHT, ink: HTML_STICKER_INK },
+  { fill: HTML_STICKER_INK, ink: HTML_INK_LIGHT },
+];
 const HTML_PAN_KEY_STEP = 48;
 const HTML_PNG_MAX_PIXEL_RATIO = 2;
 const HTML_CHECKER_CELL = 8;
@@ -87,6 +110,15 @@ const FALLBACK_TITLE = "presentation";
 const THEME_ACCENT = "#0f6cbd";
 const THEME_SURFACE = "#ffffff";
 const THEME_TEXT = "#1a1f24";
+const PEN_COLORS = [
+  HTML_PEN_COLOR,
+  THEME_ACCENT,
+  "#1f8a4c",
+  "#e09b12",
+  "#6b4c9a",
+  HTML_STICKER_INK,
+  HTML_INK_LIGHT,
+] as const;
 const OVERLAY_FILL_FALLBACK = "color-mix(in srgb, var(--c2g-surface) 88%, transparent)";
 const OVERLAY_STROKE_FALLBACK = "var(--c2g-accent)";
 const OVERLAY_TEXT_FALLBACK = "var(--c2g-text)";
@@ -117,6 +149,17 @@ export interface PresentationHtmlLabels {
   removeSticker: string;
   resizeSticker: string;
   sticker: string;
+  stickerColor: string;
+  saveCopy: string;
+  hideMarks: string;
+  showMarks: string;
+  pen: string;
+  penColor: string;
+  penWidth: string;
+  copySuffix: string;
+  keys: string;
+  keysClose: string;
+  keysHelp: string;
 }
 
 export interface PresentationHtmlSource {
@@ -475,6 +518,7 @@ body.c2g-checker {
   direction: ltr;
 }
 #c2g-bar button {
+  position: relative;
   width: 36px;
   height: 36px;
   display: grid;
@@ -485,6 +529,32 @@ body.c2g-checker {
   background: transparent;
   color: var(--c2g-text);
   cursor: pointer;
+}
+#c2g-bar button[aria-label]::after {
+  content: attr(aria-label);
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  max-width: 16rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--c2g-text);
+  color: var(--c2g-surface);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: normal;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+}
+#c2g-bar button[aria-label]:hover::after,
+#c2g-bar button[aria-label]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
 }
 #c2g-bar button svg { width: 18px; height: 18px; display: block; }
 #c2g-bar button:hover { background: color-mix(in srgb, var(--c2g-accent) 14%, transparent); }
@@ -508,19 +578,80 @@ body.c2g-checker {
   font-size: 0.85rem;
   white-space: nowrap;
 }
-#c2g-notes {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
+#c2g-ink {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  overflow: visible;
   pointer-events: none;
-  overflow: hidden;
 }
+#c2g-notes {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  width: 0;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+#c2g-stage.is-marks-hidden #c2g-notes,
+#c2g-stage.is-marks-hidden #c2g-ink {
+  display: none;
+}
+#c2g-stage.is-drawing { cursor: crosshair; }
 #c2g-notes[hidden],
 #c2g-transport[hidden],
 #c2g-zoom[hidden],
+#c2g-pen-tools[hidden],
+#c2g-keys[hidden],
 #c2g-repeat-wrap[hidden] {
   display: none;
 }
+#c2g-keys {
+  position: fixed;
+  z-index: 5;
+  left: 50%;
+  bottom: 84px;
+  transform: translateX(-50%);
+  width: min(32rem, calc(100% - 24px));
+  max-height: min(70vh, 28rem);
+  overflow: auto;
+  padding: 16px 16px 12px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--c2g-surface) 96%, transparent);
+  color: var(--c2g-text);
+  border: 1px solid color-mix(in srgb, var(--c2g-text) 16%, transparent);
+  box-shadow: 0 12px 40px color-mix(in srgb, var(--c2g-text) 22%, transparent);
+}
+.c2g-keys-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+#c2g-keys h2,
+#c2g-keys h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+#c2g-keys h3 { margin: 12px 0 6px; font-size: 0.95rem; }
+#c2g-keys p { margin: 0 0 6px; font-size: 0.9rem; line-height: 1.45; }
+#c2g-keys-close {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--c2g-text);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+#c2g-keys-close:hover { background: color-mix(in srgb, var(--c2g-accent) 14%, transparent); }
+#c2g-keys-close:focus-visible { outline: 2px solid var(--c2g-accent); outline-offset: 2px; }
 #c2g-stage.is-exploring { cursor: grab; touch-action: none; }
 #c2g-stage.is-panning { cursor: grabbing; }
 #c2g-mode .c2g-icon-playback { display: none; }
@@ -535,50 +666,123 @@ body.c2g-checker {
   font-variant-numeric: tabular-nums;
   font-size: 0.9rem;
 }
+.c2g-pen-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#c2g-bar button.c2g-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--c2g-text) 35%, transparent);
+}
+#c2g-bar button.c2g-swatch[aria-pressed="true"] {
+  outline: 2px solid var(--c2g-accent);
+  outline-offset: 1px;
+}
+#c2g-pen-width {
+  width: 4.5rem;
+  accent-color: var(--c2g-accent);
+}
+#c2g-pen-width-value {
+  min-width: 1.25rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+}
+#c2g-pen-custom {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+#c2g-pen[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--c2g-accent) 18%, transparent);
+}
+#c2g-marks .c2g-icon-show { display: none; }
+#c2g-marks[data-state="hidden"] .c2g-icon-hide { display: none; }
+#c2g-marks[data-state="hidden"] .c2g-icon-show { display: block; }
 .c2g-sticker {
   position: absolute;
   pointer-events: auto;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  background: ${HTML_STICKER_FILL};
-  color: ${HTML_STICKER_INK};
-  border: 1px solid ${HTML_STICKER_STROKE};
+  background: var(--c2g-note, ${HTML_STICKER_FILL});
+  color: var(--c2g-note-ink, ${HTML_STICKER_INK});
+  border: 1px solid color-mix(in srgb, var(--c2g-note-ink, ${HTML_STICKER_INK}) 28%, var(--c2g-note, ${HTML_STICKER_FILL}));
   border-radius: ${HTML_STICKER_RADIUS}px;
   box-shadow: 0 8px 18px color-mix(in srgb, ${HTML_STICKER_INK} 18%, transparent);
   font-family: sans-serif;
 }
-.c2g-sticker-move {
-  height: ${HTML_STICKER_HEADER}px;
-  flex: none;
+.c2g-sticker:not(.is-active) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.c2g-sticker:not(.is-active) .c2g-sticker-ui { display: none; }
+.c2g-sticker-colors {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + ${HTML_STICKER_CHROME + 4}px);
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 11rem;
+}
+.c2g-sticker-swatch,
+.c2g-sticker-picker {
+  width: ${HTML_STICKER_CHROME}px;
+  height: ${HTML_STICKER_CHROME}px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, ${HTML_STICKER_INK} 35%, transparent);
+  padding: 0;
+  cursor: pointer;
+}
+.c2g-sticker-picker {
+  border-radius: 4px;
+  background: transparent;
+}
+.c2g-sticker-move {
+  position: absolute;
+  left: 0;
+  right: ${HTML_STICKER_CHROME + 2}px;
+  top: -${HTML_STICKER_CHROME}px;
+  height: ${HTML_STICKER_CHROME}px;
   cursor: grab;
   touch-action: none;
 }
 .c2g-sticker-close {
-  width: ${HTML_STICKER_HEADER}px;
-  height: ${HTML_STICKER_HEADER}px;
+  position: absolute;
+  right: 0;
+  top: -${HTML_STICKER_CHROME}px;
+  width: ${HTML_STICKER_CHROME}px;
+  height: ${HTML_STICKER_CHROME}px;
   border: 0;
   padding: 0;
-  background: transparent;
-  color: ${HTML_STICKER_INK};
+  border-radius: 999px;
+  background: var(--c2g-note, ${HTML_STICKER_FILL});
+  color: var(--c2g-note-ink, ${HTML_STICKER_INK});
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1;
 }
 .c2g-sticker-text {
   flex: 1;
   min-height: 0;
-  margin: 0 ${HTML_STICKER_PAD}px ${HTML_STICKER_PAD}px;
-  overflow: auto;
+  margin: 0;
+  padding: ${HTML_STICKER_PAD}px;
+  overflow: hidden;
   outline: none;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   font-size: ${HTML_STICKER_FONT_PX}px;
-  line-height: 1.35;
+  line-height: 1.25;
 }
+.c2g-sticker.is-active .c2g-sticker-text { overflow: auto; }
 .c2g-sticker-text:empty:before {
   content: attr(data-placeholder);
   opacity: 0.45;
@@ -587,11 +791,11 @@ body.c2g-checker {
   position: absolute;
   right: 0;
   bottom: 0;
-  width: ${HTML_STICKER_HEADER}px;
-  height: ${HTML_STICKER_HEADER}px;
+  width: ${HTML_STICKER_CHROME}px;
+  height: ${HTML_STICKER_CHROME}px;
   border: 0;
   padding: 0;
-  background: linear-gradient(135deg, transparent 50%, ${HTML_STICKER_STROKE} 50%);
+  background: linear-gradient(135deg, transparent 50%, var(--c2g-note-ink, ${HTML_STICKER_STROKE}) 50%);
   cursor: nwse-resize;
   touch-action: none;
 }
@@ -621,12 +825,25 @@ const PLAYER_SCRIPT = `
   var zoomLevelNode = document.getElementById("c2g-zoom-level");
   var cameraButton = document.getElementById("c2g-camera");
   var stickerButton = document.getElementById("c2g-sticker");
+  var penButton = document.getElementById("c2g-pen");
+  var penTools = document.getElementById("c2g-pen-tools");
+  var penColors = document.getElementById("c2g-pen-colors");
+  var penWidthInput = document.getElementById("c2g-pen-width");
+  var penWidthValue = document.getElementById("c2g-pen-width-value");
+  var penCustom = document.getElementById("c2g-pen-custom");
+  var saveCopyButton = document.getElementById("c2g-save-copy");
+  var marksButton = document.getElementById("c2g-marks");
+  var keysButton = document.getElementById("c2g-help");
+  var keysPanel = document.getElementById("c2g-keys");
+  var keysClose = document.getElementById("c2g-keys-close");
   var notes = document.getElementById("c2g-notes");
+  var ink = document.getElementById("c2g-ink");
   var repeatWrap = document.getElementById("c2g-repeat-wrap");
   if (
     !dataNode || !stage || !scene || !diagramWrap || !playButton || !prevButton || !nextButton
     || !indexNode || !modeButton || !transport || !zoomPanel || !zoomInButton || !zoomOutButton
-    || !zoomResetButton || !cameraButton || !stickerButton || !notes
+    || !zoomResetButton || !cameraButton || !stickerButton || !penButton || !saveCopyButton
+    || !marksButton || !keysButton || !keysPanel || !keysClose || !notes || !ink
   ) {
     return;
   }
@@ -671,6 +888,12 @@ const PLAYER_SCRIPT = `
   var pointers = {};
   var drag = null;
   var stickerSeq = 0;
+  var penOn = false;
+  var penColor = safeColor(payload.penColor, payload.stickerInk);
+  var penWidth = clampPenWidth(payload.penWidth);
+  var marksHidden = false;
+  var keysOpen = false;
+  var strokes = [];
   var barHeld = false;
   var revealTimer = 0;
   var phaseStarted = 0;
@@ -1051,6 +1274,10 @@ const PLAYER_SCRIPT = `
     if (!exploring || event.button > 0) return;
     var target = event.target;
     if (target && target.closest && target.closest(".c2g-sticker, #c2g-bar")) return;
+    if (penOn) {
+      event.preventDefault();
+      if (beginStroke(event)) return;
+    }
     pointers[event.pointerId] = { id: event.pointerId, x: event.clientX, y: event.clientY };
     var list = pointerList();
     if (list.length >= 2) {
@@ -1084,15 +1311,29 @@ const PLAYER_SCRIPT = `
       );
       return;
     }
+    if (drag.kind === "draw" && drag.stroke) {
+      var drawn = scenePoint(event.clientX, event.clientY);
+      var pts = drag.stroke.points;
+      var last = pts[pts.length - 1];
+      if (!last || Math.hypot(drawn.x - last.x, drawn.y - last.y) < payload.penMinStep) return;
+      if (pts.length >= payload.penPointLimit) return;
+      pts.push(drawn);
+      syncStrokeNode(drag);
+      return;
+    }
     if (drag.kind === "move" && drag.note) {
-      drag.note.style.left = (drag.left + event.clientX - drag.startX) + "px";
-      drag.note.style.top = (drag.top + event.clientY - drag.startY) + "px";
+      var movedX = (event.clientX - drag.startX) / camera.scale;
+      var movedY = (event.clientY - drag.startY) / camera.scale;
+      drag.note.style.left = (drag.left + movedX) + "px";
+      drag.note.style.top = (drag.top + movedY) + "px";
       clampSticker(drag.note);
       return;
     }
     if (drag.kind === "resize" && drag.note) {
-      drag.note.style.width = Math.max(payload.stickerMin, drag.width + event.clientX - drag.startX) + "px";
-      drag.note.style.height = Math.max(payload.stickerMin, drag.height + event.clientY - drag.startY) + "px";
+      var grownX = (event.clientX - drag.startX) / camera.scale;
+      var grownY = (event.clientY - drag.startY) / camera.scale;
+      drag.note.style.width = Math.max(payload.stickerMinWidth, drag.width + grownX) + "px";
+      drag.note.style.height = Math.max(payload.stickerMinHeight, drag.height + grownY) + "px";
       return;
     }
     if (drag.kind === "pinch") {
@@ -1130,20 +1371,55 @@ const PLAYER_SCRIPT = `
     }
     endDrag();
   }
+  function safeColor(value, fallback) {
+    if (typeof value !== "string" || !/^#[0-9a-fA-F]{6}$/.test(value)) return fallback;
+    return value;
+  }
+  function finiteNumber(value, fallback) {
+    var number = Number(value);
+    return isFinite(number) ? number : fallback;
+  }
+  function clampPenWidth(value) {
+    var width = Number(value);
+    if (!isFinite(width)) width = payload.penWidth;
+    return Math.min(payload.penWidthMax, Math.max(payload.penWidthMin, width));
+  }
+  function inkFor(fill) {
+    var hex = String(fill || "").slice(1);
+    var red = parseInt(hex.slice(0, 2), 16);
+    var green = parseInt(hex.slice(2, 4), 16);
+    var blue = parseInt(hex.slice(4, 6), 16);
+    if (!isFinite(red) || !isFinite(green) || !isFinite(blue)) return payload.stickerInk;
+    var luma = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
+    return luma >= payload.inkLuma ? payload.stickerInk : payload.inkLight;
+  }
+  function roundCoord(value) {
+    return Math.round(value * 100) / 100;
+  }
+  function scenePoint(clientX, clientY) {
+    var rect = stage.getBoundingClientRect();
+    var scale = camera.scale || 1;
+    return {
+      x: (clientX - rect.left - camera.panX) / scale,
+      y: (clientY - rect.top - camera.panY) / scale
+    };
+  }
   function readBox(note) {
     return {
       left: parseFloat(note.style.left) || 0,
       top: parseFloat(note.style.top) || 0,
-      width: note.offsetWidth || parseFloat(note.style.width) || payload.stickerWidth,
-      height: note.offsetHeight || parseFloat(note.style.height) || payload.stickerHeight
+      width: parseFloat(note.style.width) || note.offsetWidth || payload.stickerWidth,
+      height: parseFloat(note.style.height) || note.offsetHeight || payload.stickerHeight
     };
   }
   function clampSticker(note) {
-    var size = viewportSize();
     var box = readBox(note);
-    var keep = payload.stickerMin / 2;
-    var left = Math.min(size.width - keep, Math.max(keep - box.width, box.left));
-    var top = Math.min(size.height - keep, Math.max(keep - box.height, box.top));
+    var limitW = Math.max(payload.imageWidth, payload.layoutWidth);
+    var limitH = Math.max(payload.imageHeight, payload.layoutHeight);
+    var keepX = Math.min(box.width / 2, payload.stickerMinWidth);
+    var keepY = Math.min(box.height / 2, payload.stickerMinHeight);
+    var left = Math.min(limitW - keepX, Math.max(keepX - box.width, box.left));
+    var top = Math.min(limitH - keepY, Math.max(keepY - box.height, box.top));
     note.style.left = left + "px";
     note.style.top = top + "px";
   }
@@ -1162,45 +1438,92 @@ const PLAYER_SCRIPT = `
     };
     capturePointer(event.currentTarget, event.pointerId);
   }
-  function addSticker() {
-    if (!exploring) return;
-    var size = viewportSize();
-    var width = payload.stickerWidth;
-    var height = payload.stickerHeight;
-    var nudge = (stickerSeq % 5) * payload.stickerNudge;
-    stickerSeq += 1;
+  function notePlain(node) {
+    if (!node) return "";
+    return (node.textContent || "").replace(/\\u00a0/g, " ");
+  }
+  function applyNoteColor(note, fill, ink) {
+    var safeFill = safeColor(fill, payload.stickerFill);
+    var safeInk = safeColor(ink, inkFor(safeFill));
+    note.style.setProperty("--c2g-note", safeFill);
+    note.style.setProperty("--c2g-note-ink", safeInk);
+    note.setAttribute("data-fill", safeFill);
+    note.setAttribute("data-ink", safeInk);
+    var picker = note.querySelector(".c2g-sticker-picker");
+    if (picker && picker.value !== safeFill) picker.value = safeFill;
+  }
+  function createSticker(spec, focusNow) {
     var note = document.createElement("article");
     note.className = "c2g-sticker";
-    note.style.left = Math.round(size.width / 2 - width / 2 + nudge) + "px";
-    note.style.top = Math.round(size.height / 2 - height / 2 + nudge) + "px";
-    note.style.width = width + "px";
-    note.style.height = height + "px";
-    var header = document.createElement("div");
-    header.className = "c2g-sticker-move";
+    note.style.left = spec.x + "px";
+    note.style.top = spec.y + "px";
+    note.style.width = Math.max(payload.stickerMinWidth, spec.w) + "px";
+    note.style.height = Math.max(payload.stickerMinHeight, spec.h) + "px";
+    var colors = document.createElement("div");
+    colors.className = "c2g-sticker-ui c2g-sticker-colors";
+    var palette = payload.noteColors || [];
+    var i;
+    for (i = 0; i < palette.length; i += 1) {
+      var entry = palette[i];
+      if (!entry) continue;
+      var fill = safeColor(entry.fill, "");
+      var ink = safeColor(entry.ink, "");
+      if (!fill || !ink) continue;
+      var swatch = document.createElement("button");
+      swatch.type = "button";
+      swatch.className = "c2g-sticker-swatch";
+      swatch.style.background = fill;
+      swatch.setAttribute("data-fill", fill);
+      swatch.setAttribute("data-ink", ink);
+      swatch.setAttribute("aria-label", payload.labels.stickerColor);
+      swatch.setAttribute("title", payload.labels.stickerColor);
+      swatch.addEventListener("pointerdown", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        var target = event.currentTarget;
+        applyNoteColor(note, target.getAttribute("data-fill"), target.getAttribute("data-ink"));
+      });
+      colors.appendChild(swatch);
+    }
+    var picker = document.createElement("input");
+    picker.type = "color";
+    picker.className = "c2g-sticker-picker";
+    picker.setAttribute("aria-label", payload.labels.stickerColor);
+    picker.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    picker.addEventListener("input", function () {
+      applyNoteColor(note, picker.value, inkFor(safeColor(picker.value, payload.stickerFill)));
+    });
+    colors.appendChild(picker);
+    var mover = document.createElement("div");
+    mover.className = "c2g-sticker-ui c2g-sticker-move";
     var close = document.createElement("button");
     close.type = "button";
-    close.className = "c2g-sticker-close";
+    close.className = "c2g-sticker-ui c2g-sticker-close";
     close.setAttribute("aria-label", payload.labels.removeSticker);
+    close.setAttribute("title", payload.labels.removeSticker);
     close.textContent = "×";
     var text = document.createElement("div");
     text.className = "c2g-sticker-text";
-    text.contentEditable = "true";
+    text.setAttribute("contenteditable", "true");
+    text.tabIndex = 0;
     text.setAttribute("role", "textbox");
     text.setAttribute("aria-label", payload.labels.sticker);
     text.setAttribute("data-placeholder", payload.labels.sticker);
+    if (spec.text) text.textContent = String(spec.text).slice(0, payload.noteTextLimit);
     var handle = document.createElement("button");
     handle.type = "button";
-    handle.className = "c2g-sticker-resize";
+    handle.className = "c2g-sticker-ui c2g-sticker-resize";
     handle.setAttribute("aria-label", payload.labels.resizeSticker);
-    header.appendChild(close);
-    note.appendChild(header);
+    handle.setAttribute("title", payload.labels.resizeSticker);
+    note.appendChild(colors);
+    note.appendChild(mover);
+    note.appendChild(close);
     note.appendChild(text);
     note.appendChild(handle);
     notes.appendChild(note);
+    applyNoteColor(note, spec.fill, spec.ink);
     clampSticker(note);
-    text.focus();
-    header.addEventListener("pointerdown", function (event) {
-      if (event.target === close) return;
+    mover.addEventListener("pointerdown", function (event) {
       event.preventDefault();
       event.stopPropagation();
       beginStickerDrag(event, note, "move");
@@ -1210,10 +1533,142 @@ const PLAYER_SCRIPT = `
       event.stopPropagation();
       beginStickerDrag(event, note, "resize");
     });
+    close.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
     close.addEventListener("click", function (event) {
       event.stopPropagation();
       note.remove();
     });
+    note.addEventListener("pointerdown", function (event) { event.stopPropagation(); });
+    note.addEventListener("focusin", function () { note.classList.add("is-active"); });
+    note.addEventListener("focusout", function (event) {
+      var next = event.relatedTarget;
+      if (next && note.contains(next)) return;
+      note.classList.remove("is-active");
+    });
+    text.addEventListener("input", function () {
+      var raw = text.textContent || "";
+      if (raw.length > payload.noteTextLimit) text.textContent = raw.slice(0, payload.noteTextLimit);
+    });
+    if (focusNow) {
+      note.classList.add("is-active");
+      text.focus();
+    }
+    return note;
+  }
+  function addSticker() {
+    if (!exploring) return;
+    var rect = stage.getBoundingClientRect();
+    var size = viewportSize();
+    var width = payload.stickerWidth / camera.scale;
+    var height = payload.stickerHeight / camera.scale;
+    var nudge = (stickerSeq % 5) * payload.stickerNudge / camera.scale;
+    stickerSeq += 1;
+    var point = scenePoint(rect.left + size.width / 2, rect.top + size.height / 2);
+    createSticker({
+      x: point.x - width / 2 + nudge,
+      y: point.y - height / 2 + nudge,
+      w: width,
+      h: height,
+      text: "",
+      fill: payload.stickerFill,
+      ink: payload.stickerInk
+    }, true);
+  }
+  var svgNs = "http://www.w3.org/2000/svg";
+  function pointsAttr(points) {
+    var parts = [];
+    var i;
+    for (i = 0; i < points.length; i += 1) {
+      parts.push(roundCoord(points[i].x) + "," + roundCoord(points[i].y));
+    }
+    return parts.join(" ");
+  }
+  function renderStroke(stroke) {
+    if (stroke.points.length < 2) {
+      var dot = document.createElementNS(svgNs, "circle");
+      var point = stroke.points[0] || { x: 0, y: 0 };
+      dot.setAttribute("cx", String(roundCoord(point.x)));
+      dot.setAttribute("cy", String(roundCoord(point.y)));
+      dot.setAttribute("r", String(roundCoord(Math.max(stroke.width / 2, 0.5))));
+      dot.setAttribute("fill", stroke.color);
+      return dot;
+    }
+    var poly = document.createElementNS(svgNs, "polyline");
+    poly.setAttribute("fill", "none");
+    poly.setAttribute("stroke", stroke.color);
+    poly.setAttribute("stroke-width", String(stroke.width));
+    poly.setAttribute("stroke-linecap", "round");
+    poly.setAttribute("stroke-linejoin", "round");
+    poly.setAttribute("points", pointsAttr(stroke.points));
+    return poly;
+  }
+  function syncStrokeNode(state) {
+    var stroke = state.stroke;
+    if (stroke.points.length >= 2 && state.node.localName === "polyline") {
+      state.node.setAttribute("points", pointsAttr(stroke.points));
+      return;
+    }
+    var next = renderStroke(stroke);
+    if (state.node.parentNode) state.node.parentNode.replaceChild(next, state.node);
+    state.node = next;
+  }
+  function normalizeStroke(raw) {
+    if (!raw || !raw.points || !raw.points.length) return null;
+    var color = safeColor(raw.color, penColor);
+    var width = clampPenWidth(raw.width);
+    var points = [];
+    var i;
+    for (i = 0; i < raw.points.length && points.length < payload.penPointLimit; i += 1) {
+      var point = raw.points[i];
+      if (!point) continue;
+      var x = finiteNumber(point.x !== undefined ? point.x : point[0], NaN);
+      var y = finiteNumber(point.y !== undefined ? point.y : point[1], NaN);
+      if (!isFinite(x) || !isFinite(y)) continue;
+      points.push({ x: x, y: y });
+    }
+    if (!points.length) return null;
+    return { color: color, width: width, points: points };
+  }
+  function beginStroke(event) {
+    if (!ink || strokes.length >= payload.penStrokeLimit) return false;
+    var point = scenePoint(event.clientX, event.clientY);
+    var stroke = { color: penColor, width: penWidth, points: [point] };
+    strokes.push(stroke);
+    var node = renderStroke(stroke);
+    ink.appendChild(node);
+    drag = { kind: "draw", pointerId: event.pointerId, stroke: stroke, node: node };
+    capturePointer(stage, event.pointerId);
+    return true;
+  }
+  function selectPenColor(color) {
+    penColor = safeColor(color, penColor);
+    if (penCustom && penCustom.value !== penColor) penCustom.value = penColor;
+    if (!penColors) return;
+    var swatches = penColors.querySelectorAll(".c2g-swatch");
+    var i;
+    for (i = 0; i < swatches.length; i += 1) {
+      swatches[i].setAttribute("aria-pressed", swatches[i].getAttribute("data-color") === penColor ? "true" : "false");
+    }
+  }
+  function buildPenColors() {
+    if (!penColors || !payload.penColors) return;
+    var i;
+    for (i = 0; i < payload.penColors.length; i += 1) {
+      var color = safeColor(payload.penColors[i], "");
+      if (!color) continue;
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "c2g-swatch";
+      button.style.background = color;
+      button.setAttribute("data-color", color);
+      button.setAttribute("aria-label", payload.labels.penColor);
+      button.addEventListener("click", function (event) {
+        event.stopPropagation();
+        selectPenColor(event.currentTarget.getAttribute("data-color"));
+      });
+      penColors.appendChild(button);
+    }
+    selectPenColor(penColor);
   }
   function roundedRect(ctx, x, y, width, height, radius) {
     var r = Math.max(0, Math.min(radius, width / 2, height / 2));
@@ -1274,14 +1729,11 @@ const PLAYER_SCRIPT = `
     clone.setAttribute("width", String(width));
     clone.setAttribute("height", String(height));
     var xml = new XMLSerializer().serializeToString(clone);
-    var url = URL.createObjectURL(new Blob([xml], { type: "image/svg+xml;charset=utf-8" }));
-    return loadImage(url).then(function (image) {
-      URL.revokeObjectURL(url);
-      return image;
-    }, function (error) {
-      URL.revokeObjectURL(url);
-      throw error;
-    });
+    // data: stays readable. blob: taints the canvas when the diagram has a foreignObject.
+    return loadImage("data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml));
+  }
+  function settledImage(task) {
+    return task.then(function (image) { return image; }, function () { return null; });
   }
   function paintChecker(ctx, width, height) {
     ctx.fillStyle = "#ffffff";
@@ -1296,35 +1748,60 @@ const PLAYER_SCRIPT = `
       }
     }
   }
+  function drawStrokes(ctx) {
+    var i;
+    for (i = 0; i < strokes.length; i += 1) {
+      var stroke = strokes[i];
+      if (!stroke.points.length) continue;
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = stroke.color;
+      ctx.fillStyle = stroke.color;
+      ctx.lineWidth = stroke.width;
+      ctx.beginPath();
+      if (stroke.points.length < 2) {
+        var radius = Math.max(stroke.width / 2, 0.5);
+        ctx.moveTo(stroke.points[0].x + radius, stroke.points[0].y);
+        ctx.arc(stroke.points[0].x, stroke.points[0].y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+        var n;
+        for (n = 1; n < stroke.points.length; n += 1) ctx.lineTo(stroke.points[n].x, stroke.points[n].y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
   function drawStickers(ctx) {
     var items = notes.querySelectorAll(".c2g-sticker");
     var i;
     for (i = 0; i < items.length; i += 1) {
       var note = items[i];
       var box = readBox(note);
-      ctx.save();
-      roundedRect(ctx, box.left, box.top, box.width, box.height, payload.stickerRadius);
-      ctx.fillStyle = payload.stickerFill;
-      ctx.fill();
-      ctx.strokeStyle = payload.stickerStroke;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(box.left, box.top + payload.stickerHeader);
-      ctx.lineTo(box.left + box.width, box.top + payload.stickerHeader);
-      ctx.stroke();
       var textNode = note.querySelector(".c2g-sticker-text");
-      var text = textNode && textNode.textContent ? textNode.textContent.trim() : "";
+      var text = notePlain(textNode).trim();
+      var active = note.classList.contains("is-active");
+      ctx.save();
+      if (active) {
+        roundedRect(ctx, box.left, box.top, box.width, box.height, payload.stickerRadius);
+        ctx.fillStyle = note.getAttribute("data-fill") || payload.stickerFill;
+        ctx.fill();
+        ctx.strokeStyle = note.getAttribute("data-ink") || payload.stickerStroke;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
       if (text) {
-        ctx.fillStyle = payload.stickerInk;
+        ctx.fillStyle = note.getAttribute("data-ink") || payload.stickerInk;
         ctx.font = payload.stickerFontPx + "px sans-serif";
         var maxWidth = Math.max(8, box.width - payload.stickerPad * 2);
         var lines = wrapLines(ctx, text, maxWidth);
-        var lineHeight = payload.stickerFontPx * 1.35;
+        var lineHeight = payload.stickerFontPx * 1.25;
         var n;
         for (n = 0; n < lines.length; n += 1) {
-          var lineY = box.top + payload.stickerHeader + payload.stickerPad + payload.stickerFontPx + n * lineHeight;
-          if (lineY > box.top + box.height - payload.stickerPad) break;
+          var lineY = box.top + payload.stickerPad + payload.stickerFontPx + n * lineHeight;
+          if (lineY > box.top + box.height) break;
           ctx.fillText(lines[n], box.left + payload.stickerPad, lineY);
         }
       }
@@ -1340,6 +1817,123 @@ const PLAYER_SCRIPT = `
     link.click();
     link.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, payload.downloadRevokeMs);
+  }
+  function pngFromDataUrl(canvas) {
+    try {
+      var data = canvas.toDataURL("image/png");
+      var comma = data.indexOf(",");
+      var binary = atob(comma >= 0 ? data.slice(comma + 1) : "");
+      var bytes = new Uint8Array(binary.length);
+      var i;
+      for (i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+      return new Blob([bytes], { type: "image/png" });
+    } catch (error) {
+      void error;
+      return null;
+    }
+  }
+  function canvasPng(canvas) {
+    return new Promise(function (resolve) {
+      var done = false;
+      function finish(blob) {
+        if (done) return;
+        done = true;
+        resolve(blob || null);
+      }
+      try {
+        if (typeof canvas.toBlob === "function") {
+          canvas.toBlob(function (blob) {
+            if (blob) { finish(blob); return; }
+            finish(pngFromDataUrl(canvas));
+          }, "image/png");
+          return;
+        }
+      } catch (error) {
+        void error;
+      }
+      finish(pngFromDataUrl(canvas));
+    });
+  }
+  function safeJson(value) {
+    return JSON.stringify(value).replace(/[<>&]/g, function (char) {
+      var hex = char.charCodeAt(0).toString(16);
+      while (hex.length < 4) hex = "0" + hex;
+      return "\\\\u" + hex;
+    });
+  }
+  function collectAnnotations() {
+    var items = notes.querySelectorAll(".c2g-sticker");
+    var stickers = [];
+    var i;
+    for (i = 0; i < items.length; i += 1) {
+      var note = items[i];
+      var box = readBox(note);
+      var textNode = note.querySelector(".c2g-sticker-text");
+      stickers.push({
+        x: roundCoord(box.left),
+        y: roundCoord(box.top),
+        w: roundCoord(box.width),
+        h: roundCoord(box.height),
+        text: notePlain(textNode).slice(0, payload.noteTextLimit),
+        fill: note.getAttribute("data-fill") || payload.stickerFill,
+        ink: note.getAttribute("data-ink") || payload.stickerInk
+      });
+    }
+    var drawn = [];
+    for (i = 0; i < strokes.length; i += 1) {
+      var stroke = strokes[i];
+      var points = [];
+      var n;
+      for (n = 0; n < stroke.points.length; n += 1) {
+        points.push([roundCoord(stroke.points[n].x), roundCoord(stroke.points[n].y)]);
+      }
+      drawn.push({ color: stroke.color, width: stroke.width, points: points });
+    }
+    return { hidden: marksHidden, stickers: stickers, strokes: drawn };
+  }
+  function saveCopy() {
+    var next = {};
+    var key;
+    for (key in payload) {
+      if (Object.prototype.hasOwnProperty.call(payload, key)) next[key] = payload[key];
+    }
+    next.annotations = collectAnnotations();
+    var clone = document.documentElement.cloneNode(true);
+    var data = clone.querySelector("#c2g-data");
+    if (data) data.textContent = safeJson(next);
+    var cloneNotes = clone.querySelector("#c2g-notes");
+    if (cloneNotes) cloneNotes.textContent = "";
+    var cloneInk = clone.querySelector("#c2g-ink");
+    if (cloneInk) cloneInk.textContent = "";
+    var cloneKeys = clone.querySelector("#c2g-keys");
+    if (cloneKeys) cloneKeys.hidden = true;
+    downloadBlob(new Blob(["<!DOCTYPE html>\\n" + clone.outerHTML], { type: "text/html;charset=utf-8" }), payload.copyName);
+  }
+  function restoreAnnotations(saved) {
+    if (!saved) return;
+    marksHidden = Boolean(saved.hidden);
+    var list = saved.stickers || [];
+    var i;
+    for (i = 0; i < list.length; i += 1) {
+      var item = list[i];
+      if (!item) continue;
+      createSticker({
+        x: finiteNumber(item.x, 0),
+        y: finiteNumber(item.y, 0),
+        w: finiteNumber(item.w, payload.stickerWidth),
+        h: finiteNumber(item.h, payload.stickerHeight),
+        text: typeof item.text === "string" ? item.text : "",
+        fill: item.fill,
+        ink: item.ink
+      }, false);
+    }
+    var drawn = saved.strokes || [];
+    for (i = 0; i < drawn.length && strokes.length < payload.penStrokeLimit; i += 1) {
+      var stroke = normalizeStroke(drawn[i]);
+      if (!stroke) continue;
+      strokes.push(stroke);
+      ink.appendChild(renderStroke(stroke));
+    }
   }
   function finishSave() {
     saving = false;
@@ -1363,18 +1957,20 @@ const PLAYER_SCRIPT = `
       var frameImage = null;
       var shadowSvg = diagramWrap.shadowRoot && diagramWrap.shadowRoot.querySelector("svg");
       var overlaySvg = document.getElementById("c2g-overlays");
+      var pictureWidth = payload.layoutWidth > 0 ? payload.layoutWidth : payload.imageWidth;
+      var pictureHeight = payload.layoutHeight > 0 ? payload.layoutHeight : payload.imageHeight;
       if (shadowSvg) {
-        jobs.push(loadSvg(shadowSvg, payload.imageWidth, payload.imageHeight).then(function (image) {
+        jobs.push(settledImage(loadSvg(shadowSvg, pictureWidth, pictureHeight)).then(function (image) {
           diagramImage = image;
         }));
       }
       if (overlaySvg) {
-        jobs.push(loadSvg(overlaySvg, payload.imageWidth, payload.imageHeight).then(function (image) {
+        jobs.push(settledImage(loadSvg(overlaySvg, payload.imageWidth, payload.imageHeight)).then(function (image) {
           overlayImage = image;
         }));
       }
       if (frame && frameWrap && !frameWrap.hidden && frame.getAttribute("src")) {
-        jobs.push(loadImage(frame.getAttribute("src")).then(function (image) {
+        jobs.push(settledImage(loadImage(frame.getAttribute("src"))).then(function (image) {
           frameImage = image;
         }));
       }
@@ -1392,14 +1988,15 @@ const PLAYER_SCRIPT = `
         ctx.save();
         ctx.translate(camera.panX, camera.panY);
         ctx.scale(camera.scale, camera.scale);
-        if (frameImage) ctx.drawImage(frameImage, 0, 0, payload.imageWidth, payload.imageHeight);
-        if (diagramImage) ctx.drawImage(diagramImage, 0, 0, payload.imageWidth, payload.imageHeight);
+        if (frameImage) ctx.drawImage(frameImage, 0, 0, pictureWidth, pictureHeight);
+        if (diagramImage) ctx.drawImage(diagramImage, 0, 0, pictureWidth, pictureHeight);
         if (overlayImage) ctx.drawImage(overlayImage, 0, 0, payload.imageWidth, payload.imageHeight);
+        if (!marksHidden) {
+          drawStrokes(ctx);
+          drawStickers(ctx);
+        }
         ctx.restore();
-        drawStickers(ctx);
-        return new Promise(function (resolve) {
-          canvas.toBlob(function (blob) { resolve(blob); }, "image/png");
-        });
+        return canvasPng(canvas);
       }).then(function (blob) {
         if (blob) downloadBlob(blob, payload.pngName);
       }).catch(function () {
@@ -1521,7 +2118,13 @@ const PLAYER_SCRIPT = `
     transport.hidden = exploring;
     zoomPanel.hidden = !exploring;
     if (repeatWrap) repeatWrap.hidden = exploring;
-    notes.hidden = !exploring;
+    stage.classList.toggle("is-drawing", exploring && penOn);
+    if (penTools) penTools.hidden = !(exploring && penOn);
+    penButton.setAttribute("aria-pressed", penOn ? "true" : "false");
+    stage.classList.toggle("is-marks-hidden", marksHidden);
+    marksButton.setAttribute("aria-pressed", marksHidden ? "true" : "false");
+    marksButton.setAttribute("aria-label", marksHidden ? payload.labels.showMarks : payload.labels.hideMarks);
+    marksButton.dataset.state = marksHidden ? "hidden" : "shown";
     modeButton.setAttribute("aria-pressed", exploring ? "true" : "false");
     modeButton.setAttribute("aria-label", exploring ? payload.labels.playback : payload.labels.explore);
     modeButton.dataset.state = exploring ? "playback" : "explore";
@@ -1535,6 +2138,7 @@ const PLAYER_SCRIPT = `
     barHeld = false;
     endDrag();
     exploring = !exploring;
+    if (!exploring) penOn = false;
     kick();
   }
   function resetView() {
@@ -1627,6 +2231,66 @@ const PLAYER_SCRIPT = `
     phaseStarted = nowMs();
     kick();
   }
+  function goLast() {
+    playing = false;
+    moving = false;
+    index = count - 1;
+    phase = "dwell";
+    reverse = false;
+    effectElapsed = 0;
+    phaseStarted = nowMs();
+    kick();
+  }
+  function setKeys(open) {
+    keysOpen = open;
+    keysPanel.hidden = !open;
+    keysButton.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) keysClose.focus();
+    else keysButton.focus();
+  }
+  function visibleControl(node) {
+    if (!node || node.disabled) return false;
+    var current = node;
+    while (current && current !== document.body) {
+      if (current.hidden) return false;
+      var style = window.getComputedStyle(current);
+      if (style.display === "none" || style.visibility === "hidden") return false;
+      current = current.parentElement;
+    }
+    return true;
+  }
+  function tabbables() {
+    var selector = keysOpen
+      ? "#c2g-keys button, #c2g-keys input, #c2g-keys a"
+      : "#c2g-bar button, #c2g-bar input, .c2g-sticker-text, .c2g-sticker.is-active button, .c2g-sticker.is-active input";
+    var nodes = document.querySelectorAll(selector);
+    var list = [];
+    var i;
+    for (i = 0; i < nodes.length; i += 1) {
+      if (visibleControl(nodes[i])) list.push(nodes[i]);
+    }
+    return list;
+  }
+  function moveFocus(direction) {
+    var list = tabbables();
+    if (!list.length) return;
+    var index = list.indexOf(document.activeElement);
+    var next = index < 0
+      ? (direction < 0 ? list[list.length - 1] : list[0])
+      : list[(index + direction + list.length) % list.length];
+    if (next && next.focus) next.focus();
+  }
+  function nudgePenWidth(direction) {
+    penWidth = clampPenWidth(penWidth + direction);
+    var shown = String(penWidth);
+    if (penWidthInput) penWidthInput.value = shown;
+    if (penWidthValue) penWidthValue.textContent = shown;
+  }
+  function focusedSticker() {
+    var active = document.activeElement;
+    if (!active || !active.closest) return null;
+    return active.closest(".c2g-sticker");
+  }
 
   document.getElementById("c2g-first").addEventListener("click", goFirst);
   prevButton.addEventListener("click", function () { step(-1); });
@@ -1638,6 +2302,28 @@ const PLAYER_SCRIPT = `
   zoomResetButton.addEventListener("click", resetView);
   cameraButton.addEventListener("click", savePng);
   stickerButton.addEventListener("click", addSticker);
+  penButton.addEventListener("click", function () {
+    if (!exploring) return;
+    penOn = !penOn;
+    endDrag();
+    updateChrome();
+  });
+  saveCopyButton.addEventListener("click", saveCopy);
+  marksButton.addEventListener("click", function () {
+    marksHidden = !marksHidden;
+    updateChrome();
+  });
+  keysButton.addEventListener("click", function () { setKeys(!keysOpen); });
+  keysClose.addEventListener("click", function () { setKeys(false); });
+  if (penWidthInput) {
+    penWidthInput.addEventListener("input", function () {
+      penWidth = clampPenWidth(penWidthInput.value);
+      if (penWidthValue) penWidthValue.textContent = String(penWidth);
+    });
+  }
+  if (penCustom) {
+    penCustom.addEventListener("input", function () { selectPenColor(penCustom.value); });
+  }
   stage.addEventListener("pointerdown", onStagePointerDown);
   stage.addEventListener("wheel", onWheel, { passive: false });
   window.addEventListener("pointermove", onPointerMove);
@@ -1650,18 +2336,80 @@ const PLAYER_SCRIPT = `
     });
   }
   window.addEventListener("pointerdown", function (event) {
+    if (keysOpen && !keysPanel.contains(event.target) && !keysButton.contains(event.target)) setKeys(false);
     if (!playing || !event.pointerType || event.pointerType === "mouse") return;
     revealBar();
   });
   function typingTarget(event) {
     var target = event.target;
     if (!target) return false;
-    if (target.closest && target.closest(".c2g-sticker")) return true;
+    if (target.closest && target.closest(".c2g-sticker-text")) return true;
+    if (target.isContentEditable) return true;
     var tag = target.tagName;
     return tag === "INPUT" || tag === "TEXTAREA";
   }
   window.addEventListener("keydown", function (event) {
-    if (event.altKey || event.metaKey || event.ctrlKey || typingTarget(event)) return;
+    if (event.altKey || event.metaKey || event.ctrlKey) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      if (keysOpen) {
+        setKeys(false);
+        return;
+      }
+      var sticker = focusedSticker();
+      if (sticker) {
+        if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+        sticker.classList.remove("is-active");
+        return;
+      }
+      if (exploring && penOn) {
+        penOn = false;
+        endDrag();
+        updateChrome();
+        return;
+      }
+      if (exploring) {
+        toggleExplore();
+        return;
+      }
+      if (playing) togglePlay();
+      return;
+    }
+    if (event.key === "Tab") {
+      event.preventDefault();
+      moveFocus(event.shiftKey ? -1 : 1);
+      return;
+    }
+    if (event.key === "F1" || event.code === "F1") {
+      event.preventDefault();
+      setKeys(!keysOpen);
+      return;
+    }
+    if (event.key === "?" && !typingTarget(event)) {
+      event.preventDefault();
+      setKeys(!keysOpen);
+      return;
+    }
+    if (keysOpen || typingTarget(event)) return;
+    var tag = event.target && event.target.tagName;
+    var onButton = tag === "BUTTON";
+    if (onButton && (event.key === "Enter" || event.key === " " || event.key === "Spacebar")) return;
+    if (event.code === "KeyM") {
+      event.preventDefault();
+      toggleExplore();
+      return;
+    }
+    if (event.code === "KeyH") {
+      event.preventDefault();
+      marksHidden = !marksHidden;
+      updateChrome();
+      return;
+    }
+    if (event.code === "KeyS") {
+      event.preventDefault();
+      saveCopy();
+      return;
+    }
     if (exploring) {
       var distance = event.shiftKey ? payload.panKeyStep * 2 : payload.panKeyStep;
       if (event.key === "ArrowRight") { event.preventDefault(); applyCamera(camera.panX + distance, camera.panY, camera.scale); }
@@ -1670,27 +2418,43 @@ const PLAYER_SCRIPT = `
       else if (event.key === "ArrowDown") { event.preventDefault(); applyCamera(camera.panX, camera.panY + distance, camera.scale); }
       else if (event.key === "+" || event.key === "=") { event.preventDefault(); zoomByStep(1); }
       else if (event.key === "-" || event.key === "_") { event.preventDefault(); zoomByStep(-1); }
-      else if (event.key === "Escape") { event.preventDefault(); toggleExplore(); }
       else if (event.key === "0") { event.preventDefault(); resetView(); }
+      else if (event.key === "Enter") { event.preventDefault(); addSticker(); }
+      else if (event.code === "KeyP") {
+        event.preventDefault();
+        penOn = !penOn;
+        endDrag();
+        updateChrome();
+      }
+      else if (event.code === "KeyC") { event.preventDefault(); savePng(); }
+      else if (event.code === "BracketLeft") { event.preventDefault(); nudgePenWidth(-1); }
+      else if (event.code === "BracketRight") { event.preventDefault(); nudgePenWidth(1); }
       return;
     }
-    var tag = event.target && event.target.tagName;
-    if (event.key === "ArrowRight") {
+    var rtl = document.documentElement.getAttribute("dir") === "rtl";
+    var nextKey = rtl ? "ArrowLeft" : "ArrowRight";
+    var prevKey = rtl ? "ArrowRight" : "ArrowLeft";
+    if (event.key === nextKey || event.key === "ArrowDown") {
       event.preventDefault();
       step(1);
-    } else if (event.key === "ArrowLeft") {
+    } else if (event.key === prevKey || event.key === "ArrowUp") {
       event.preventDefault();
       step(-1);
     } else if (event.key === "Home") {
       event.preventDefault();
       goFirst();
-    } else if (event.key === " " || event.key === "Spacebar") {
-      if (tag === "BUTTON") return;
+    } else if (event.key === "End") {
+      event.preventDefault();
+      goLast();
+    } else if (event.key === "Enter" || event.key === " " || event.key === "Spacebar") {
       event.preventDefault();
       togglePlay();
     }
   });
   window.addEventListener("resize", function () { render(nowMs()); });
+  buildPenColors();
+  if (penWidthValue) penWidthValue.textContent = String(penWidth);
+  restoreAnnotations(payload.annotations);
   phaseStarted = nowMs();
   kick();
 })();
@@ -1733,9 +2497,40 @@ function playerChrome(title: string, labels: PresentationHtmlLabels, stepCount: 
       <button id="c2g-zoom-reset" type="button" aria-label="${htmlEscape(labels.resetView)}">${glyph(`<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/>`)}</button>
       <button id="c2g-camera" type="button" aria-label="${htmlEscape(labels.savePng)}">${glyph(`<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>`)}</button>
       <button id="c2g-sticker" type="button" aria-label="${htmlEscape(labels.addSticker)}">${glyph(`<path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3z"/><path d="M15 3v6h6"/>`)}</button>
+      <button id="c2g-pen" type="button" aria-pressed="false" aria-label="${htmlEscape(labels.pen)}">${glyph(`<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>`)}</button>
+      <div id="c2g-pen-tools" class="c2g-pen-tools" hidden>
+        <div id="c2g-pen-colors"></div>
+        <input id="c2g-pen-width" type="range" min="${HTML_PEN_WIDTH_MIN}" max="${HTML_PEN_WIDTH_MAX}" value="${HTML_PEN_WIDTH_DEFAULT}" aria-label="${htmlEscape(labels.penWidth)}">
+        <span id="c2g-pen-width-value">${HTML_PEN_WIDTH_DEFAULT}</span>
+        <input id="c2g-pen-custom" type="color" value="${HTML_PEN_COLOR}" aria-label="${htmlEscape(labels.penColor)}">
+      </div>
     </div>
+    <button id="c2g-help" type="button" aria-expanded="false" aria-controls="c2g-keys" aria-label="${htmlEscape(labels.keys)}">${glyph(`<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.2 2.4c-.8.3-1.2 1-1.2 1.8"/><path d="M12 17h.01"/>`)}</button>
+    <button id="c2g-save-copy" type="button" aria-label="${htmlEscape(labels.saveCopy)}">${glyph(`<path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/>`)}</button>
+    <button id="c2g-marks" type="button" data-state="shown" aria-pressed="false" aria-label="${htmlEscape(labels.hideMarks)}">
+      ${glyph(`<path d="M3 3 21 21"/><path d="M10.6 6.1A11 11 0 0 1 12 6c6.5 0 10 6 10 6a18 18 0 0 1-3.2 4.2"/><path d="M6.7 6.7C4 8.4 2 12 2 12s3.5 6 10 6c1.6 0 3-.4 4.3-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>`, "c2g-icon-hide")}
+      ${glyph(`<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>`, "c2g-icon-show")}
+    </button>
     <label id="c2g-repeat-wrap" class="c2g-repeat"><input id="c2g-repeat" type="checkbox"> ${htmlEscape(labels.repeat)}</label>
-  </nav>`;
+  </nav>
+  <div id="c2g-keys" role="dialog" aria-modal="true" aria-labelledby="c2g-keys-title" hidden>
+    <div class="c2g-keys-head">
+      <h2 id="c2g-keys-title">${htmlEscape(labels.keys)}</h2>
+      <button id="c2g-keys-close" type="button" aria-label="${htmlEscape(labels.keysClose)}">×</button>
+    </div>
+    ${keysHelpMarkup(labels.keysHelp)}
+  </div>`;
+}
+
+function keysHelpMarkup(value: string): string {
+  return value.split(/\n\s*\n/).map((section) => {
+    const lines = section.split("\n").map((line) => line.trim()).filter(Boolean);
+    const title = lines[0];
+    if (!title) return "";
+    const heading = `<h3>${htmlEscape(title)}</h3>`;
+    const body = lines.slice(1).map((line) => `<p>${htmlEscape(line)}</p>`).join("");
+    return heading + body;
+  }).join("");
 }
 
 export function presentationHtmlFileName(trackName: string): string {
@@ -1746,6 +2541,13 @@ export function presentationHtmlFileName(trackName: string): string {
 
 function presentationPngFileName(trackName: string): string {
   return presentationHtmlFileName(trackName).replace(/\.html$/i, ".png");
+}
+
+function presentationHtmlCopyFileName(trackName: string, suffix: string): string {
+  const file = presentationHtmlFileName(trackName);
+  const cleaned = suffix.replace(UNSAFE_FILE_CHARS, " ").replace(/\s+/g, " ").trim();
+  const label = cleaned || HTML_COPY_SUFFIX;
+  return file.replace(/\.html$/i, ` ${label}.html`);
 }
 
 export function renderPresentationHtml(source: PresentationHtmlSource): string {
@@ -1785,6 +2587,8 @@ export function renderPresentationHtml(source: PresentationHtmlSource): string {
     frame,
     imageWidth: source.imageWidth,
     imageHeight: source.imageHeight,
+    layoutWidth: layout.width,
+    layoutHeight: layout.height,
     showOverlays: source.showOverlays,
     minScale: PREVIEW_MIN_ZOOM,
     maxScale: PRESENTATION_MAX_SCALE,
@@ -1808,6 +2612,7 @@ export function renderPresentationHtml(source: PresentationHtmlSource): string {
     revealMs: PRESENTATION_CHROME_REVEAL_MS,
     background,
     pngName: presentationPngFileName(source.track.name),
+    copyName: presentationHtmlCopyFileName(source.track.name, source.labels.copySuffix),
     zoomStep: PREVIEW_ZOOM_STEP,
     wheelLine: PREVIEW_WHEEL_LINE_PIXELS,
     wheelSensitivity: PREVIEW_ZOOM_SENSITIVITY,
@@ -1820,15 +2625,27 @@ export function renderPresentationHtml(source: PresentationHtmlSource): string {
     downloadRevokeMs: HTML_DOWNLOAD_REVOKE_MS,
     stickerWidth: HTML_STICKER_WIDTH,
     stickerHeight: HTML_STICKER_HEIGHT,
-    stickerMin: HTML_STICKER_MIN_SIZE,
+    stickerMinWidth: HTML_STICKER_MIN_WIDTH,
+    stickerMinHeight: HTML_STICKER_MIN_HEIGHT,
     stickerNudge: HTML_STICKER_NUDGE,
     stickerRadius: HTML_STICKER_RADIUS,
     stickerPad: HTML_STICKER_PAD,
-    stickerHeader: HTML_STICKER_HEADER,
     stickerFontPx: HTML_STICKER_FONT_PX,
     stickerFill: HTML_STICKER_FILL,
     stickerStroke: HTML_STICKER_STROKE,
     stickerInk: HTML_STICKER_INK,
+    inkLight: HTML_INK_LIGHT,
+    inkLuma: HTML_INK_LUMA,
+    penColor: HTML_PEN_COLOR,
+    penWidth: HTML_PEN_WIDTH_DEFAULT,
+    penWidthMin: HTML_PEN_WIDTH_MIN,
+    penWidthMax: HTML_PEN_WIDTH_MAX,
+    penMinStep: HTML_PEN_MIN_STEP,
+    penStrokeLimit: HTML_PEN_STROKE_LIMIT,
+    penPointLimit: HTML_PEN_POINT_LIMIT,
+    noteTextLimit: HTML_NOTE_TEXT_LIMIT,
+    noteColors: NOTE_COLORS,
+    penColors: PEN_COLORS,
     labels: {
       play: source.labels.play,
       pause: source.labels.pause,
@@ -1838,6 +2655,10 @@ export function renderPresentationHtml(source: PresentationHtmlSource): string {
       removeSticker: source.labels.removeSticker,
       resizeSticker: source.labels.resizeSticker,
       sticker: source.labels.sticker,
+      stickerColor: source.labels.stickerColor,
+      showMarks: source.labels.showMarks,
+      hideMarks: source.labels.hideMarks,
+      penColor: source.labels.penColor,
     },
     viewpoints: playerViewpoints(source.track),
     transitions: playerTransitions(source.track),
@@ -1872,9 +2693,10 @@ ${PLAYER_CSS}
       ${overlayDefs ? `<defs>${overlayDefs}</defs>` : ""}
       ${overlays}
     </svg>
+    <svg id="c2g-ink" xmlns="${SVG_XMLNS}" width="${formatNumber(layout.width)}" height="${formatNumber(layout.height)}" viewBox="0 0 ${formatNumber(layout.width)} ${formatNumber(layout.height)}" overflow="visible"></svg>
+    <div id="c2g-notes"></div>
   </div>
 </main>
-<div id="c2g-notes" hidden></div>
 ${playerChrome(title, source.labels, source.track.viewpoints.length)}
 <script type="application/json" id="c2g-data">${embedJson(payload)}</script>
 <script>${PLAYER_SCRIPT}</script>
