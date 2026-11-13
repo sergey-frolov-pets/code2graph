@@ -169,4 +169,9 @@ export const tablePasteMessages = {
   "tablePaste.expected.wireframe.rules":
     "TableHead と TableBody を持つ WireMark の Table コンポーネントを生成します（数値の列は右揃え）。",
   "tablePaste.expected.wireframe.headers": "名前|著者|状態|閲覧数",
+  "tablePaste.type.powermap": "パワーマップ",
+  "tablePaste.expected.powermap.columns": "名前、役職、上司、役割、影響力、行動の必要性、態度、相手、関係（solid、dotted、または関係名）。",
+  "tablePaste.expected.powermap.rules": "各行が一人です。solid と dotted は報告線です。それ以外の名前は影響の矢印です。",
+  "tablePaste.expected.powermap.headers": "名前|役職|上司|役割|影響力|行動|態度|相手|関係",
+
 } as const satisfies LocaleMessages;

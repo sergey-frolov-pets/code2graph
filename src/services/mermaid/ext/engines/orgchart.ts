@@ -14,7 +14,16 @@ import {
   parseMonoDirective,
   splitLabelLines,
   usesInvertedMono,
+  type SvgBuilder,
 } from "../common";
+import {
+  avatarBoxSize,
+  parseAvatarDirective,
+  parseGender,
+  renderAvatarBox,
+  sanitizePhotoHref,
+  type AvatarGender,
+} from "./avatar";
 import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 import { isColor } from "./waterfall/directive-parsers";
@@ -37,6 +46,12 @@ export interface OrgNode {
   borderStyle?: OrgBorderStyle;
   /** Толщина границы в px (`width=`). */
   borderWidth?: number;
+  /** Снимок `photo=`. */
+  photo?: string;
+  /** Силуэт, если снимка нет. */
+  gender?: AvatarGender;
+  /** `avatar=off` прячет блок только у этого узла. */
+  hideAvatar?: boolean;
 }
 
 export interface OrgEdge {
@@ -58,6 +73,11 @@ export interface OrgModel {
   /** true — корней несколько, рисуется виртуальный корень. */
   virtualRoot: boolean;
   ratio?: ChartAspect;
+  /**
+   * Сторона блока фото. 0 — аватар выключен (так и есть, пока нет `avatar`).
+   * Старые схемы без директивы рисуются как раньше.
+   */
+  avatarSize: number;
 }
 
 /** Служебный id виртуального корня. */
@@ -103,7 +123,7 @@ const STYLE_KEYS = new Set(["style", "borderstyle", "border-style"]);
 const WIDTH_KEYS = new Set(["width", "thickness", "borderwidth", "border-width"]);
 
 const NODE_ATTR_RE =
-  /^(border-style|borderstyle|border-width|borderwidth|color|colour|fill|border|stroke|style|width|thickness)=("[^"]*"|'[^']*'|\S*)\s*/i;
+  /^(border-style|borderstyle|border-width|borderwidth|color|colour|fill|border|stroke|style|width|thickness|photo|gender|avatar)=("[^"]*"|'[^']*'|\S*)\s*/i;
 
 /** Имена, которые принимает `isColor`, в hex — чтобы подобрать контрастный текст. */
 const NAMED_COLORS: Record<string, string> = {
@@ -134,6 +154,9 @@ interface OrgNodePaint {
   border?: string;
   borderStyle?: OrgBorderStyle;
   borderWidth?: number;
+  photo?: string;
+  gender?: AvatarGender;
+  hideAvatar?: boolean;
 }
 
 function unquoteAttr(raw: string): string {
@@ -199,7 +222,7 @@ function firstUnescaped(raw: string, ch: string): number {
  * Без скобок параметры — хвост из `key=value`.
  */
 const NODE_ATTR_START_RE =
-  /(?:^|\s)(?:border-style|borderstyle|border-width|borderwidth|color|colour|fill|border|stroke|style|width|thickness)=/i;
+  /(?:^|\s)(?:border-style|borderstyle|border-width|borderwidth|color|colour|fill|border|stroke|style|width|thickness|photo|gender|avatar)=/i;
 
 function splitNodeAttrs(raw: string): { body: string; tail: string } {
   const open = firstUnescaped(raw, "[");
@@ -221,7 +244,7 @@ function parseNodeAttrs(
   if (!tail) return { paint: {} };
   const paint: OrgNodePaint = {};
   let rest = tail.trim();
-  for (let guard = 0; guard < 12 && rest; guard += 1) {
+  for (let guard = 0; guard < 24 && rest; guard += 1) {
     const match = NODE_ATTR_RE.exec(rest);
     if (!match) {
       return {
@@ -264,6 +287,25 @@ function parseNodeAttrs(
         };
       }
       paint.borderWidth = clamp(width, MIN_NODE_STROKE_WIDTH, MAX_NODE_STROKE_WIDTH);
+    } else if (key === "photo") {
+      const href = sanitizePhotoHref(value);
+      if (!href) {
+        return {
+          error: `фото: ожидается http(s)-адрес или data:image (png, jpeg, gif, webp), получено «${value.slice(0, 48)}»`,
+        };
+      }
+      paint.photo = href;
+    } else if (key === "gender") {
+      const gender = parseGender(value);
+      if (!gender) {
+        return { error: `пол: ожидается m, f или ?, получено «${value}»` };
+      }
+      paint.gender = gender;
+    } else if (key === "avatar") {
+      if (!/^(off|none|hide)$/i.test(value)) {
+        return { error: `avatar узла: ожидается off, получено «${value}»` };
+      }
+      paint.hideAvatar = true;
     }
     rest = rest.slice(match[0].length).trim();
   }
@@ -301,6 +343,9 @@ function applyPaint(node: OrgNode, paint?: OrgNodePaint): void {
   if (paint.border) node.border = paint.border;
   if (paint.borderStyle) node.borderStyle = paint.borderStyle;
   if (paint.borderWidth) node.borderWidth = paint.borderWidth;
+  if (paint.photo) node.photo = paint.photo;
+  if (paint.gender) node.gender = paint.gender;
+  if (paint.hideAvatar) node.hideAvatar = true;
 }
 
 /** Hex или имя → цвет, по которому можно посчитать контраст текста. */
@@ -347,6 +392,7 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
   let mono = false;
   let monoInvert = false;
   let ratio: ChartAspect | undefined;
+  let avatarSize = 0;
   const nodes: OrgNode[] = [];
   const nodeIndex = new Map<string, OrgNode>();
   const edges: OrgEdge[] = [];
@@ -387,6 +433,16 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
         errors.push({ message: aspect.error, line: lineNo, col: 0 });
       } else {
         ratio = aspect.aspect;
+      }
+      continue;
+    }
+
+    const avatarDirective = parseAvatarDirective(raw);
+    if (avatarDirective) {
+      if ("error" in avatarDirective) {
+        errors.push({ message: avatarDirective.error, line: lineNo, col: 0 });
+      } else {
+        avatarSize = avatarDirective.enabled ? avatarDirective.size : 0;
       }
       continue;
     }
@@ -474,22 +530,12 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
       root: virtualRoot ? null : roots[0],
       virtualRoot,
       ratio,
+      avatarSize,
     },
   };
 }
 
 // --- Раскладка ------------------------------------------------------------
-
-interface PlacedNode {
-  node: OrgNode;
-  lines: string[];
-  depth: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rowHeight: number;
-}
 
 const FONT = 11;
 const LINE_HEIGHT = FONT * 1.2;
@@ -499,18 +545,47 @@ const NODE_MIN_WIDTH = 72;
 const H_GAP = 18;
 const V_GAP = 52;
 
-function measureNode(node: OrgNode): { lines: string[]; width: number; height: number } {
+const AVATAR_TEXT_GAP = 6;
+
+function measureNode(node: OrgNode, framePx: number): { lines: string[]; width: number; height: number } {
   const lines = splitLabelLines(node.label);
   const maxTextWidth = Math.max(0, ...lines.map((line) => measureText(line, FONT)));
-  const width = Math.max(NODE_MIN_WIDTH, maxTextWidth + NODE_PADDING_X * 2);
-  const height = Math.max(1, lines.length) * LINE_HEIGHT + NODE_PADDING_Y * 2;
-  return { lines, width, height };
+  const textWidth = Math.max(NODE_MIN_WIDTH, maxTextWidth + NODE_PADDING_X * 2);
+  const textHeight = Math.max(1, lines.length) * LINE_HEIGHT + NODE_PADDING_Y * 2;
+  const slot = avatarBoxSize(framePx, node);
+  if (slot === 0) return { lines, width: textWidth, height: textHeight };
+  return {
+    lines,
+    width: Math.max(textWidth, slot + NODE_PADDING_X * 2),
+    height: textHeight + slot + AVATAR_TEXT_GAP,
+  };
+}
+
+export interface PlacedTreeNode<T> {
+  node: T;
+  lines: string[];
+  depth: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rowHeight: number;
+}
+
+interface TreeEdgeRef {
+  from: string;
+  to: string;
 }
 
 /** Глубина узла от корня; циклы не разворачиваем повторно. */
-function computeDepths(model: OrgModel): Map<string, number> {
+function computeDepths(
+  nodes: readonly { id: string }[],
+  edges: readonly TreeEdgeRef[],
+  virtualRoot: boolean,
+  root: string | null,
+): Map<string, number> {
   const children = new Map<string, string[]>();
-  for (const e of model.edges) {
+  for (const e of edges) {
     const list = children.get(e.from) ?? [];
     list.push(e.to);
     children.set(e.from, list);
@@ -519,16 +594,16 @@ function computeDepths(model: OrgModel): Map<string, number> {
   const depth = new Map<string, number>();
   const queue: string[] = [];
 
-  if (model.virtualRoot) {
-    for (const n of model.nodes) {
-      if (!model.edges.some((e) => e.to === n.id)) {
+  if (virtualRoot) {
+    for (const n of nodes) {
+      if (!edges.some((e) => e.to === n.id)) {
         depth.set(n.id, 1);
         queue.push(n.id);
       }
     }
-  } else if (model.root) {
-    depth.set(model.root, 0);
-    queue.push(model.root);
+  } else if (root) {
+    depth.set(root, 0);
+    queue.push(root);
   }
 
   // BFS: первый визит задаёт глубину, повторный (цикл) — игнорируем.
@@ -545,7 +620,7 @@ function computeDepths(model: OrgModel): Map<string, number> {
   // Узлы, недостижимые из корня (циклы, висящие ветки) — на последний уровень.
   let maxDepth = 0;
   for (const d of depth.values()) maxDepth = Math.max(maxDepth, d);
-  for (const n of model.nodes) {
+  for (const n of nodes) {
     if (!depth.has(n.id)) {
       depth.set(n.id, maxDepth + 1);
       maxDepth += 1;
@@ -555,29 +630,35 @@ function computeDepths(model: OrgModel): Map<string, number> {
   return depth;
 }
 
-function layout(model: OrgModel): { placed: PlacedNode[]; width: number; height: number } {
-  const depth = computeDepths(model);
-  const levels = new Map<number, OrgNode[]>();
-  for (const n of model.nodes) {
+export function layoutOrgTree<T extends { id: string }>(
+  nodes: readonly T[],
+  edges: readonly TreeEdgeRef[],
+  virtualRoot: boolean,
+  root: string | null,
+  measure: (node: T) => { lines: string[]; width: number; height: number },
+): { placed: PlacedTreeNode<T>[]; width: number; height: number } {
+  const depth = computeDepths(nodes, edges, virtualRoot, root);
+  const levels = new Map<number, T[]>();
+  for (const n of nodes) {
     const d = depth.get(n.id) ?? 0;
     const list = levels.get(d) ?? [];
     list.push(n);
     levels.set(d, list);
   }
 
-  const placed: PlacedNode[] = [];
+  const placed: PlacedTreeNode<T>[] = [];
   const levelKeys = [...levels.keys()].sort((a, b) => a - b);
 
   const measuredById = new Map<string, { lines: string[]; width: number; height: number }>();
-  for (const n of model.nodes) {
-    measuredById.set(n.id, measureNode(n));
+  for (const n of nodes) {
+    measuredById.set(n.id, measure(n));
   }
 
   let maxRowWidth = 0;
   const rowWidths = new Map<number, number>();
   const rowHeights = new Map<number, number>();
   for (const d of levelKeys) {
-    const row = levels.get(d) as OrgNode[];
+    const row = levels.get(d) as T[];
     const widths = row.map((n) => measuredById.get(n.id)!.width);
     const heights = row.map((n) => measuredById.get(n.id)!.height);
     const total = widths.reduce((a, b) => a + b, 0) + H_GAP * Math.max(0, row.length - 1);
@@ -590,7 +671,7 @@ function layout(model: OrgModel): { placed: PlacedNode[]; width: number; height:
 
   let y = 0;
   for (const d of levelKeys) {
-    const row = levels.get(d) as OrgNode[];
+    const row = levels.get(d) as T[];
     const total = rowWidths.get(d) ?? 0;
     let x = (contentWidth - total) / 2;
     const rowH = rowHeights.get(d) ?? 40;
@@ -613,6 +694,16 @@ function layout(model: OrgModel): { placed: PlacedNode[]; width: number; height:
 
   const height = Math.max(0, y - V_GAP);
   return { placed, width: contentWidth, height };
+}
+
+function layout(model: OrgModel): { placed: PlacedTreeNode<OrgNode>[]; width: number; height: number } {
+  return layoutOrgTree(
+    model.nodes,
+    model.edges,
+    model.virtualRoot,
+    model.root,
+    (node) => measureNode(node, model.avatarSize ?? 0),
+  );
 }
 
 // --- Рендер ---------------------------------------------------------------
@@ -640,9 +731,9 @@ const ARRIVAL_ALIGN_NUDGE = 16;
 const ALIGN_EPS = 0.75;
 
 interface DrawableEdge {
-  edge: OrgEdge;
-  from: PlacedNode;
-  to: PlacedNode;
+  edge: { from: string; to: string; style: OrgEdgeStyle };
+  from: PlacedTreeNode<{ id: string }>;
+  to: PlacedTreeNode<{ id: string }>;
   y1: number;
   y2: number;
   corridorTop: number;
@@ -724,7 +815,7 @@ function elbowLaneY(y1: number, y2: number, lane: number, laneCount: number): nu
   return mid - span / 2 + lane * gap;
 }
 
-function contactLimits(card: PlacedNode, offsetX: number): { left: number; right: number } {
+function contactLimits(card: PlacedTreeNode<{ id: string }>, offsetX: number): { left: number; right: number } {
   const left = offsetX + card.x + CONTACT_EDGE_INSET;
   const right = offsetX + card.x + card.width - CONTACT_EDGE_INSET;
   if (right <= left) {
@@ -785,6 +876,88 @@ function assignElbowLanes(groups: EdgeLaneGroup[]): Map<string, { lane: number; 
   return assigned;
 }
 
+export function drawReportingElbows<T extends { id: string }>(
+  svg: SvgBuilder,
+  placed: readonly PlacedTreeNode<T>[],
+  edges: readonly { from: string; to: string; style: OrgEdgeStyle }[],
+  offsetX: number,
+  offsetY: number,
+  stroke: string,
+  markerRef: string,
+): void {
+  const byId = new Map(placed.map((p) => [p.node.id, p]));
+  const drawable: DrawableEdge[] = [];
+  for (const edge of edges) {
+    const from = byId.get(edge.from);
+    const to = byId.get(edge.to);
+    if (!from || !to) continue;
+    const y1 = offsetY + from.y + from.height;
+    const y2 = offsetY + to.y;
+    const corridorTop = from.depth < to.depth ? offsetY + from.y + from.rowHeight : y1;
+    drawable.push({
+      edge,
+      from,
+      to,
+      y1,
+      y2,
+      corridorTop,
+      x1: offsetX + from.x + from.width / 2,
+      x2: offsetX + to.x + to.width / 2,
+    });
+  }
+
+  for (const item of drawable) {
+    const outStyles = uniqueStyles(drawable, (candidate) => candidate.edge.from === item.edge.from);
+    const inStyles = uniqueStyles(drawable, (candidate) => candidate.edge.to === item.edge.to);
+    item.x1 =
+      offsetX + item.from.x + item.from.width / 2 + styleContactShift(item.from.width, outStyles, item.edge.style);
+    item.x2 =
+      offsetX + item.to.x + item.to.width / 2 + styleContactShift(item.to.width, inStyles, item.edge.style);
+  }
+
+  const corridors = new Map<string, DrawableEdge[]>();
+  for (const item of drawable) {
+    const key = corridorKey(item.corridorTop, item.y2);
+    const list = corridors.get(key) ?? [];
+    list.push(item);
+    corridors.set(key, list);
+  }
+
+  const laneByEdge = new Map<DrawableEdge, { lane: number; laneCount: number }>();
+  for (const items of corridors.values()) {
+    const groups = new Map<string, EdgeLaneGroup>();
+    for (const item of items) {
+      const key = `${item.edge.from}|${item.edge.style}`;
+      const group = groups.get(key) ?? { key, x: item.x1, style: item.edge.style, edges: [] };
+      group.edges.push(item);
+      groups.set(key, group);
+    }
+    const groupList = [...groups.values()];
+    const lanes = assignElbowLanes(groupList);
+    separateMergedArrivals(groupList, offsetX);
+    for (const group of groupList) {
+      const lane = lanes.get(group.key) ?? { lane: 0, laneCount: 1 };
+      for (const item of group.edges) laneByEdge.set(item, lane);
+    }
+  }
+
+  for (const item of drawable) {
+    const { edge, y1, y2, corridorTop, x1, x2 } = item;
+    const lane = laneByEdge.get(item) ?? { lane: 0, laneCount: 1 };
+    const midY = elbowLaneY(corridorTop, y2, lane.lane, lane.laneCount);
+    const d = `M ${fmt(x1)} ${fmt(y1)} L ${fmt(x1)} ${fmt(midY)} L ${fmt(x2)} ${fmt(midY)} L ${fmt(x2)} ${fmt(y2)}`;
+    const attrs: Record<string, string | number> = {
+      d,
+      fill: "none",
+      stroke,
+      "stroke-width": 1.2,
+      "marker-end": markerRef,
+    };
+    if (edge.style === "dotted") attrs["stroke-dasharray"] = "4 4";
+    svg.path(d, attrs);
+  }
+}
+
 export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): string {
   const themeDark = Boolean(options.dark) || usesInvertedMono(model.mono, model.monoInvert, false);
   const invertedMono = usesInvertedMono(model.mono, model.monoInvert, options.dark);
@@ -836,88 +1009,12 @@ export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): stri
     });
   }
 
-  const byId = new Map(placed.map((p) => [p.node.id, p]));
   const offsetX = PADDING.left + padX / 2;
   const offsetY = PADDING.top + titleExtra + padY / 2;
 
   const marker = arrowMarker(palette, "ext-org-arrow");
   svg.raw(marker.markup);
-
-  const drawable: DrawableEdge[] = [];
-  for (const edge of model.edges) {
-    const from = byId.get(edge.from);
-    const to = byId.get(edge.to);
-    if (!from || !to) continue;
-    const y1 = offsetY + from.y + from.height;
-    const y2 = offsetY + to.y;
-    const corridorTop = from.depth < to.depth ? offsetY + from.y + from.rowHeight : y1;
-    drawable.push({
-      edge,
-      from,
-      to,
-      y1,
-      y2,
-      corridorTop,
-      x1: offsetX + from.x + from.width / 2,
-      x2: offsetX + to.x + to.width / 2,
-    });
-  }
-
-  for (const item of drawable) {
-    const outStyles = uniqueStyles(drawable, (candidate) => candidate.edge.from === item.edge.from);
-    const inStyles = uniqueStyles(drawable, (candidate) => candidate.edge.to === item.edge.to);
-    item.x1 =
-      offsetX + item.from.x + item.from.width / 2 + styleContactShift(item.from.width, outStyles, item.edge.style);
-    item.x2 =
-      offsetX + item.to.x + item.to.width / 2 + styleContactShift(item.to.width, inStyles, item.edge.style);
-  }
-
-  const corridors = new Map<string, DrawableEdge[]>();
-  for (const item of drawable) {
-    const key = corridorKey(item.corridorTop, item.y2);
-    const list = corridors.get(key) ?? [];
-    list.push(item);
-    corridors.set(key, list);
-  }
-
-  const laneByEdge = new Map<DrawableEdge, { lane: number; laneCount: number }>();
-  for (const items of corridors.values()) {
-    const groups = new Map<string, EdgeLaneGroup>();
-    for (const item of items) {
-      const key = `${item.edge.from}|${item.edge.style}`;
-      const group = groups.get(key) ?? { key, x: item.x1, style: item.edge.style, edges: [] };
-      group.edges.push(item);
-      groups.set(key, group);
-    }
-    const groupList = [...groups.values()];
-    // Сначала разводим шины по тем x, с которыми линии реально слипаются,
-    // и только потом сдвигаем точку прихода — иначе сдвиг спрячет причину.
-    const lanes = assignElbowLanes(groupList);
-    separateMergedArrivals(groupList, offsetX);
-    for (const group of groupList) {
-      const lane = lanes.get(group.key) ?? { lane: 0, laneCount: 1 };
-      for (const item of group.edges) laneByEdge.set(item, lane);
-    }
-  }
-
-  // Рёбра — под узлами. Сплошная и пунктирная не делят точку контакта.
-  // Шины разных руководителей не ложатся на одну горизонталь и не продолжают
-  // чужую вертикаль, иначе непонятно, от кого стрелка и к кому она приходит.
-  for (const item of drawable) {
-    const { edge, y1, y2, corridorTop, x1, x2 } = item;
-    const lane = laneByEdge.get(item) ?? { lane: 0, laneCount: 1 };
-    const midY = elbowLaneY(corridorTop, y2, lane.lane, lane.laneCount);
-    const d = `M ${fmt(x1)} ${fmt(y1)} L ${fmt(x1)} ${fmt(midY)} L ${fmt(x2)} ${fmt(midY)} L ${fmt(x2)} ${fmt(y2)}`;
-    const attrs: Record<string, string | number> = {
-      d,
-      fill: "none",
-      stroke: palette.axis,
-      "stroke-width": 1.2,
-      "marker-end": marker.ref,
-    };
-    if (edge.style === "dotted") attrs["stroke-dasharray"] = "4 4";
-    svg.path(d, attrs);
-  }
+  drawReportingElbows(svg, placed, model.edges, offsetX, offsetY, palette.axis, marker.ref);
 
   // Узлы
   for (const p of placed) {
@@ -951,7 +1048,20 @@ export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): stri
       ...(dash ? { "stroke-dasharray": dash } : {}),
       rx: 4,
     });
-    const firstLineY = y + p.height / 2 - ((p.lines.length - 1) * LINE_HEIGHT) / 2 + 4;
+    const slot = avatarBoxSize(model.avatarSize ?? 0, p.node);
+    let firstLineY = y + p.height / 2 - ((p.lines.length - 1) * LINE_HEIGHT) / 2 + 4;
+    if (slot > 0) {
+      renderAvatarBox(
+        svg,
+        x + (p.width - slot) / 2,
+        y + NODE_PADDING_Y,
+        slot,
+        p.node,
+        `ext-org-avatar-${placed.indexOf(p)}`,
+      );
+      const textTop = y + NODE_PADDING_Y + slot + AVATAR_TEXT_GAP;
+      firstLineY = textTop + 4;
+    }
     p.lines.forEach((line, idx) => {
       svg.text(x + p.width / 2, firstLineY + idx * LINE_HEIGHT, line, {
         "font-size": FONT,

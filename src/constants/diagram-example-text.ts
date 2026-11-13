@@ -39,6 +39,7 @@ const TITLE_KEYS: Record<string, LocaleKey> = {
   "wiremark:settings": "llm.wizard.gallery.example.wiremark.settings.title",
   "wiremark:flow": "llm.wizard.gallery.example.wiremark.flow.title",
   "wiremark:product": "llm.wizard.gallery.example.wiremark.product.title",
+  "mermaid:orgchartAvatar": "samples.mermaid.orgchartAvatar",
 };
 
 const DESCRIPTION_KEYS: Record<string, LocaleKey> = {
@@ -87,6 +88,7 @@ const EXTRA_DIAGRAM_LABELS: Partial<Record<DiagramTypeTag, LocaleKey>> = {
   bubble: "llm.wizard.gallery.tag.diagramType.bubble",
   heatmap: "llm.wizard.gallery.tag.diagramType.heatmap",
   orgchart: "llm.wizard.gallery.tag.diagramType.orgchart",
+  powermap: "llm.wizard.gallery.tag.diagramType.powermap",
   ev: "llm.wizard.gallery.tag.diagramType.ev",
   boxplot: "llm.wizard.gallery.tag.diagramType.boxplot",
   treemap: "llm.wizard.gallery.tag.diagramType.treemap",
@@ -100,6 +102,7 @@ const EXTRA_DIAGRAM_DESCRIPTIONS: Partial<Record<DiagramTypeTag, LocaleKey>> = {
   bubble: "llm.wizard.gallery.desc.bubble",
   heatmap: "llm.wizard.gallery.desc.heatmap",
   orgchart: "llm.wizard.gallery.desc.orgchart",
+  powermap: "llm.wizard.gallery.desc.powermap",
   ev: "llm.wizard.gallery.desc.ev",
   boxplot: "llm.wizard.gallery.desc.boxplot",
   treemap: "llm.wizard.gallery.desc.treemap",

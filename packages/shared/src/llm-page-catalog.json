@@ -990,6 +990,26 @@
     ]
   },
   {
+    "id": "mermaid/ext/powermap",
+    "path": "mermaid/ext/powermap.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "powermap",
+    "kind": "card",
+    "keywords": [
+      "powermap",
+      "power-map",
+      "power",
+      "карта влияния",
+      "power map"
+    ],
+    "sourceHints": [
+      "(?m)^powermap\\b",
+      "(?m)^power-map\\b",
+      "(?m)^power\\b"
+    ]
+  },
+  {
     "id": "mermaid/ext/ev",
     "path": "mermaid/ext/ev.md",
     "parent": "mermaid/index",

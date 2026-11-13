@@ -14,6 +14,8 @@ import {
   NWDIAG_MIN_COLUMNS,
   ORGCHART_MAX_COLUMNS,
   ORGCHART_MIN_COLUMNS,
+  POWERMAP_MAX_COLUMNS,
+  POWERMAP_MIN_COLUMNS,
   PACKET_EXPECTED_COLUMNS,
   TIMELINE_MAX_COLUMNS,
   TIMELINE_MIN_COLUMNS,
@@ -124,6 +126,101 @@ export function parseOrgChartTable(
       !/^title\b/i.test(trimmed) &&
       trimmed.length > 0,
     "orgchart",
+  );
+}
+
+const POWER_BUILTIN_LINKS = new Set(["supporter", "enemy"]);
+
+function looksLikePowerHeader(row: readonly string[]): boolean {
+  const joined = row.join(" ").toLowerCase();
+  return /(?:name|имя|title|должност|role|роль|manager|руковод|attitude|отношен|influence|влиян)/i.test(
+    joined,
+  );
+}
+
+export function parsePowermapTable(
+  grid: ParsedClipboardGrid,
+  source: string,
+  format: DiagramFormat,
+): TablePasteResult {
+  if (grid.colCount < POWERMAP_MIN_COLUMNS || grid.colCount > POWERMAP_MAX_COLUMNS) {
+    return makeTablePasteError(
+      "powermap",
+      format,
+      "invalid_column_count",
+      "tablePaste.error.expectedColumnRange",
+      { min: POWERMAP_MIN_COLUMNS, max: POWERMAP_MAX_COLUMNS, actual: grid.colCount },
+    );
+  }
+
+  const skipHeader = grid.rows.length > 1 && looksLikePowerHeader(grid.rows[0]);
+  const dataRows = skipHeader ? grid.rows.slice(1) : grid.rows;
+  if (dataRows.length === 0) {
+    return makeTablePasteError("powermap", format, "no_valid_rows", "tablePaste.error.noDataRows");
+  }
+
+  const nodeDecls = new Map<string, string>();
+  const edgeLines: string[] = [];
+  const linkLines: string[] = [];
+  const declaredLinks = new Set<string>();
+
+  for (let i = 0; i < dataRows.length; i += 1) {
+    const row = dataRows[i];
+    const name = (row[0] ?? "").trim();
+    const title = (row[1] ?? "").trim();
+    const manager = (row[2] ?? "").trim();
+    const role = (row[3] ?? "").trim();
+    const influence = (row[4] ?? "").trim();
+    const action = (row[5] ?? "").trim();
+    const attitude = (row[6] ?? "").trim();
+    const counterpart = (row[7] ?? "").trim();
+    const relation = (row[8] ?? "").trim();
+    if (!name) continue;
+
+    const id = toSafeOrgId(name, i + 1);
+    const label = title ? `${name}|${title}` : name;
+    const attrs = [
+      role ? `role=${role}` : "",
+      influence ? `influence=${influence}` : "",
+      action ? `action=${action}` : "",
+      attitude ? `attitude=${attitude}` : "",
+      counterpart ? `counterpart=${counterpart.includes(" ") ? `"${counterpart}"` : counterpart}` : "",
+    ].filter(Boolean);
+    nodeDecls.set(id, `${id} [${label}]${attrs.length ? ` ${attrs.join(" ")}` : ""}`);
+
+    if (!manager) continue;
+    const managerId = toSafeOrgId(manager, i + 100);
+    if (!nodeDecls.has(managerId)) {
+      nodeDecls.set(managerId, `${managerId} [${manager}]`);
+    }
+    const rel = relation.toLowerCase();
+    if (!relation || rel === "solid" || rel === "->") {
+      edgeLines.push(`${managerId} -> ${id}`);
+    } else if (isDottedMarker(relation)) {
+      edgeLines.push(`${managerId} -.-> ${id}`);
+    } else {
+      edgeLines.push(`${id} -${relation}-> ${managerId}`);
+      if (!POWER_BUILTIN_LINKS.has(rel) && !declaredLinks.has(rel)) {
+        declaredLinks.add(rel);
+        linkLines.push(`link ${relation} color=#6e7781 style=solid`);
+      }
+    }
+  }
+
+  if (nodeDecls.size === 0) {
+    return makeTablePasteError("powermap", format, "no_valid_rows", "tablePaste.error.noDataRows");
+  }
+
+  return replaceDataLinesInSource(
+    source,
+    "powermap",
+    [...linkLines, ...nodeDecls.values(), ...edgeLines],
+    (trimmed) =>
+      !trimmed.startsWith("%%") &&
+      !/^power(?:-?map)?\b/i.test(trimmed) &&
+      !/^(title|company|legend|avatar|mono|ratio)\b/i.test(trimmed) &&
+      trimmed.length > 0,
+    "powermap",
   );
 }
 

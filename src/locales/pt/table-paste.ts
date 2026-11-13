@@ -169,4 +169,9 @@ export const tablePasteMessages = {
   "tablePaste.expected.wireframe.rules":
     "Gera um componente Table do WireMark com TableHead e TableBody (colunas numéricas ficam alinhadas à direita).",
   "tablePaste.expected.wireframe.headers": "Nome|Autor|Status|Visualizações",
+  "tablePaste.type.powermap": "Mapa de poder",
+  "tablePaste.expected.powermap.columns": "Nome, cargo, chefe, papel, influência, ação, atitude, interlocutor e ligação (solid, dotted ou um nome).",
+  "tablePaste.expected.powermap.rules": "Cada linha é uma pessoa. solid e dotted são subordinação. Qualquer outro nome é uma seta de influência.",
+  "tablePaste.expected.powermap.headers": "Nome|Cargo|Chefe|Papel|Influência|Ação|Atitude|Interlocutor|Ligação",
+
 } as const satisfies LocaleMessages;

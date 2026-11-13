@@ -142,7 +142,7 @@ export const siteMessages = {
   "site.ext.mermaid.desc.heatmap":
     "Eine Wertematrix mit Farbskala. Skalenbereiche sind ausdrücklich gesetzt, eine leere Zelle (zwei Trennzeichen hintereinander) wird grau gezeichnet.",
   "site.ext.mermaid.desc.orgchart":
-    "Ein Berichtsbaum mit ausdrücklichen Kanten: durchgezogen ist die Hauptlinie, gepunktet -.-> eine zweite Führungskraft. Ein Block kann seine Füllung (color) und seinen Rand (border, style) setzen. Mehrere Wurzeln werden unter einer unsichtbaren Wurzel gesammelt.",
+    "Ein Berichtsbaum mit ausdrücklichen Kanten: durchgezogen ist die Hauptlinie, gepunktet -.-> eine zweite Führungskraft. Ein Block kann seine Füllung (color) und seinen Rand (border, style) setzen. Mehrere Wurzeln werden unter einer unsichtbaren Wurzel gesammelt. avatar zeigt ein Foto oder eine Silhouette: männlich, weiblich oder unbekanntes Geschlecht.",
   "site.ext.mermaid.desc.ev":
     "Drei kumulierte Kurven nach Tag: Planwert PV, Fertigstellungswert EV und Istkosten AC. Dazu die Abweichungen SV und CV in der Legende.",
   "site.ext.mermaid.desc.boxplot":
@@ -162,7 +162,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.heatmap":
     "heatmap öffnet die Karte. x und y sind die Achsenbeschriftungen. In data ist eine Zeile name : kommagetrennte Zahlen. \\n in einer Beschriftung bricht die Zeile um.",
   "site.ext.mermaid.syntax.orgchart":
-    "orgchart öffnet den Baum. Ein Knoten ist id [role\\nname] (\\n bricht die Zeile um, der Kasten passt sich dem Text an); color=#hex setzt die Füllung, border=#hex und style=solid|dash|dot|dashdot setzen Randfarbe und Stil. Eine durchgezogene Kante ist ->, eine zweite Führungskraft ist -.->.",
+    "orgchart öffnet den Baum. Ein Knoten ist id [role\\nname] (\\n bricht die Zeile um, der Kasten passt sich dem Text an); color=#hex setzt die Füllung, border=#hex und style=solid|dash|dot|dashdot setzen Randfarbe und Stil. avatar 48 zeigt das Fotofeld; gender=m|f|? wählt die Silhouette, photo= setzt ein Bild, avatar off blendet das Feld aus. Eine durchgezogene Kante ist ->, eine zweite Führungskraft ist -.->.",
   "site.ext.mermaid.syntax.ev":
     "ev öffnet das Diagramm. days sind die Tage, pv der Plan, ev der Fertigstellungswert, ac die Istkosten. \\n in einer Tagesbeschriftung bricht die Zeile um.",
   "site.ext.mermaid.syntax.boxplot":
@@ -455,4 +455,8 @@ export const siteMessages = {
   "site.landing.usp.managers": "Plan und Status in einem Bild: Gantt und Charts per Klick in die Folien",
   "site.landing.usp.students": "Ein Diagramm in einer Minute: Vorlagen, Tipps, keine Installation",
   "site.landing.usp.vibecoders": "Der Agent zeichnet, Sie bearbeiten: MCP gibt Cursor Quelle und Bild",
+  "site.ext.mermaid.type.powermap": "Machtkarte",
+  "site.ext.mermaid.desc.powermap": "Stakeholder auf einem Berichtsbaum: Rolle, Einfluss, Handlungsbedarf und Haltung, plus Firmengegenseite. Fotos oder Silhouetten, eine Legende und benannte Pfeile wie supporter und enemy.",
+  "site.ext.mermaid.syntax.powermap": "powermap öffnet die Karte. company setzt die Firma, legend on|off die Legende, avatar 48 oder avatar off das Fotofeld. Eine Person ist id [Name|Rolle] mit role, influence, action, attitude, counterpart, gender und photo. -> und -.-> sind Berichtslinien. link Name color=#hex style=solid|dash|dot|dashdot definiert einen Pfeil, A -Name-> B zeichnet ihn.",
+
 } as const satisfies LocaleMessages;

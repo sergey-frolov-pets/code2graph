@@ -490,4 +490,7 @@ export const miscMessages = {
   "pwa.updateDismiss": "稍后",
   "presentation.opacity": "不透明度",
   "presentation.transparent": "透明",
+  "samples.mermaid.orgchartAvatar": "组织结构图 — 照片",
+  "samples.mermaid.powermap": "权力图",
+
 } as const satisfies LocaleMessages;

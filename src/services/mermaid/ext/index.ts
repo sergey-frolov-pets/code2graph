@@ -6,6 +6,7 @@ import { waterfallEngine } from "./engines/waterfall";
 import { bubbleEngine } from "./engines/bubble";
 import { heatmapEngine } from "./engines/heatmap";
 import { orgchartEngine } from "./engines/orgchart";
+import { powermapEngine } from "./engines/powermap";
 import { evEngine } from "./engines/ev";
 import { boxplotEngine } from "./engines/boxplot";
 import { treemapEngine } from "./engines/treemap";
@@ -70,6 +71,8 @@ function loadEngineSync(type: ExtDiagramType) {
       return heatmapEngine;
     case "orgchart":
       return orgchartEngine;
+    case "powermap":
+      return powermapEngine;
     case "ev":
       return evEngine;
     case "boxplot":
@@ -95,6 +98,8 @@ async function loadEngine(type: ExtDiagramType) {
       return (await import("./engines/heatmap")).heatmapEngine;
     case "orgchart":
       return (await import("./engines/orgchart")).orgchartEngine;
+    case "powermap":
+      return (await import("./engines/powermap")).powermapEngine;
     case "ev":
       return (await import("./engines/ev")).evEngine;
     case "boxplot":

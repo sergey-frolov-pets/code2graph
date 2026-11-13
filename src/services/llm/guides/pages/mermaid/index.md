@@ -34,6 +34,7 @@ Reply with diagram source for the editor only. Do not return an image or an exte
 - [bubble](./ext/bubble.md) — Points placed by x, y, and size.
 - [heatmap](./ext/heatmap.md) — A matrix of numbers colored by a scale.
 - [orgchart](./ext/orgchart.md) — People or units linked as a tree.
+- [powermap](./ext/powermap.md) — People on a reporting tree with scores, photos, and named influence arrows.
 - [ev](./ext/ev.md) — Planned value, earned value, and actual cost over periods.
 - [boxplot](./ext/boxplot.md) — Spread of values per category.
 - [treemap](./ext/treemap.md) — Nested weights that fill a rectangle.

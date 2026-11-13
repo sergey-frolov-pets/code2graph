@@ -129,6 +129,7 @@ export const siteMessages = {
   "site.ext.mermaid.type.bubble": "Bubble",
   "site.ext.mermaid.type.heatmap": "Heatmap",
   "site.ext.mermaid.type.orgchart": "Org chart",
+  "site.ext.mermaid.type.powermap": "Power map",
   "site.ext.mermaid.type.ev": "Earned value",
   "site.ext.mermaid.type.boxplot": "Box plot",
   "site.ext.mermaid.type.treemap": "Tree map",
@@ -142,7 +143,9 @@ export const siteMessages = {
   "site.ext.mermaid.desc.heatmap":
     "A value matrix with a color scale. Scale ranges are explicit, an empty cell (two separators in a row) is drawn gray.",
   "site.ext.mermaid.desc.orgchart":
-    "A reporting tree with explicit edges: solid is the main line, dotted -.-> is a secondary manager. A block can set its fill (color) and its border (border, style). Several roots are gathered under an invisible root.",
+    "A reporting tree with explicit edges: solid is the main line, dotted -.-> is a secondary manager. A block can set its fill (color) and its border (border, style). avatar turns on a photo or a male, female, or unknown silhouette. Several roots are gathered under an invisible root.",
+  "site.ext.mermaid.desc.powermap":
+    "A stakeholder power map on a reporting tree: role, influence, need for action, and attitude, plus a company counterpart. Photos or silhouettes, a legend, and named influence arrows such as supporter and enemy.",
   "site.ext.mermaid.desc.ev":
     "Three cumulative curves by day: planned value PV, earned value EV, and actual cost AC. Plus SV and CV deviations in the legend.",
   "site.ext.mermaid.desc.boxplot":
@@ -162,7 +165,9 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.heatmap":
     "heatmap opens the map. x and y are the axis labels. Inside data a row is name : comma-separated numbers. \\n in a label breaks the line.",
   "site.ext.mermaid.syntax.orgchart":
-    "orgchart opens the tree. A node is id [role\\nname] (\\n breaks the line, the box fits the text); color=#hex sets the fill, border=#hex and style=solid|dash|dot|dashdot set the border color and style. A solid edge is ->, a secondary manager is -.->.",
+    "orgchart opens the tree. A node is id [role\\nname] (\\n breaks the line, the box fits the text); color=#hex sets the fill, border=#hex and style=solid|dash|dot|dashdot set the border color and style. avatar 48 shows a photo box; gender=m|f|? picks a silhouette, photo= sets an image, avatar off hides the box. A solid edge is ->, a secondary manager is -.->.",
+  "site.ext.mermaid.syntax.powermap":
+    "powermap opens the map. company sets the company, legend on|off the key, avatar 48 or avatar off the photo box. A person is id [Name|Title] with role, influence, action, attitude, counterpart, gender, and photo. -> and -.-> are reporting lines. link name color=#hex style=solid|dash|dot|dashdot defines an arrow, and A -name-> B draws it.",
   "site.ext.mermaid.syntax.ev":
     "ev opens the chart. days are the days, pv is the plan, ev is earned value, ac is actual cost. \\n in a day label breaks the line.",
   "site.ext.mermaid.syntax.boxplot":

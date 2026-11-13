@@ -19,6 +19,7 @@ const EXPECTED_FAILURES = new Set([
   "31-orgchart-cycle.mmd",
   "33-orgchart-invalid.mmd",
   "42-ev-mismatch.mmd",
+  "64-powermap-unknown-link.mmd",
 ]);
 
 function loadFixtures(): { name: string; source: string }[] {

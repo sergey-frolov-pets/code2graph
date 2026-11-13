@@ -48,6 +48,8 @@ describe("highlightMermaidLine", () => {
       "bubble",
       "heatmap",
       "orgchart",
+      "powermap",
+      "power-map",
       "ev",
       "boxplot",
       "treemap",

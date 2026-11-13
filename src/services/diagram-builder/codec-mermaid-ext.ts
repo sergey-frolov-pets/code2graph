@@ -6,6 +6,8 @@ import { parseClustered } from "@/services/mermaid/ext/engines/series";
 import { parseEv } from "@/services/mermaid/ext/engines/ev";
 import { parseHeatmap } from "@/services/mermaid/ext/engines/heatmap";
 import { parseOrgchart } from "@/services/mermaid/ext/engines/orgchart";
+import { parsePowermap } from "@/services/mermaid/ext/engines/powermap";
+import { AVATAR_DEFAULT_PX } from "@/services/mermaid/ext/engines/avatar";
 import { parseRadar } from "@/services/mermaid/ext/engines/radar";
 import { parseTreemap } from "@/services/mermaid/ext/engines/treemap";
 import { parseVoronoi } from "@/services/mermaid/ext/engines/voronoi";
@@ -147,6 +149,10 @@ export function createDefaultBuilderState(
     breaks: [],
     thresholds: [],
     cagrs: [],
+    company: "",
+    showLegend: true,
+    avatarSize: "",
+    powerLinks: [],
   };
 
   const initialColCount = diagramType === "radar" ? 3 : 2;
@@ -626,6 +632,7 @@ export function parseMermaidExtToBuilderState(
         : model.mono
           ? "on"
           : "off";
+      state.options.avatarSize = model.avatarSize > 0 ? String(model.avatarSize) : "";
 
       const nodeMap = new Map(model.nodes.map((n) => [n.id, n]));
       state.rows = model.edges.map((edge) => {
@@ -636,8 +643,76 @@ export function parseMermaidExtToBuilderState(
           orgTableLabel(toNode?.label || edge.to),
           edge.style,
           toNode?.fill ?? toNode?.border ?? "",
+          toNode?.gender ?? "",
+          toNode?.photo ?? "",
+          fromNode?.gender ?? "",
+          fromNode?.photo ?? "",
         ];
       });
+      return state;
+    }
+
+    case "powermap": {
+      const parsed = parsePowermap(source);
+      if (!parsed.ok || !parsed.value) return null;
+      const model = parsed.value;
+      state.canvas.title = model.title ?? "";
+      const aspect = aspectRatioToString(model.ratio);
+      state.canvas.aspectRatio = aspect.preset;
+      state.canvas.customAspectWidth = aspect.customW;
+      state.canvas.customAspectHeight = aspect.customH;
+      state.options.monoMode = model.monoInvert
+        ? "invert"
+        : model.mono
+          ? "on"
+          : "off";
+      state.options.company = model.company ?? "";
+      state.options.showLegend = model.legend;
+      state.options.avatarSize =
+        model.avatarSize === AVATAR_DEFAULT_PX
+          ? ""
+          : model.avatarSize > 0
+            ? String(model.avatarSize)
+            : "off";
+      state.options.powerLinks = model.links.map((link) => ({
+        name: link.name,
+        color: link.color,
+        style: link.style,
+        label: link.label,
+      }));
+
+      const byId = new Map(model.people.map((person) => [person.id, person]));
+      const seen = new Set<string>();
+      const rows: string[][] = [];
+      const pushPerson = (personId: string, other: string, relation: string) => {
+        const person = byId.get(personId);
+        if (!person) return;
+        const otherPerson = byId.get(other);
+        rows.push([
+          person.name,
+          person.title,
+          person.gender ?? "",
+          person.photo ?? "",
+          person.role?.code ?? "",
+          person.influence?.code ?? "",
+          person.action?.code ?? "",
+          person.attitude?.code ?? "",
+          person.counterpart && person.counterpart !== "-" ? person.counterpart : "",
+          otherPerson?.name || other,
+          relation,
+        ]);
+        seen.add(person.id);
+      };
+      for (const edge of model.reports) {
+        pushPerson(edge.to, edge.from, edge.style === "dotted" ? "dotted" : "solid");
+      }
+      for (const edge of model.influences) {
+        pushPerson(edge.from, edge.to, edge.name);
+      }
+      for (const person of model.people) {
+        if (!seen.has(person.id)) pushPerson(person.id, "", "");
+      }
+      state.rows = rows.length > 0 ? rows : state.rows;
       return state;
     }
 
@@ -799,6 +874,24 @@ function emitAspectDirective(canvas: BuilderCanvasSettings): string | null {
   }
   return `ratio ${canvas.aspectRatio}`;
 }
+
+function emitAvatarDirective(raw: string): string | null {
+  const value = raw.trim();
+  if (!value) return null;
+  if (/^(off|none|hide)$/i.test(value)) return "avatar off";
+  if (/^(on|default)$/i.test(value)) return "avatar on";
+  return `avatar ${value.replace(/px$/i, "")}`;
+}
+
+function personAvatarSuffix(gender: string, photo: string): string {
+  const parts: string[] = [];
+  if (gender.trim()) parts.push(`gender=${gender.trim()}`);
+  if (photo.trim()) parts.push(`photo=${quoteIfNeeded(photo.trim())}`);
+  return parts.length > 0 ? ` ${parts.join(" ")}` : "";
+}
+
+const POWER_SOLID_RELATIONS = new Set(["", "solid", "->", "direct"]);
+const POWER_DOTTED_RELATIONS = new Set(["dotted", "dashed", "-.->", ".."]);
 
 function emitMonoDirective(monoMode: "off" | "on" | "invert"): string | null {
   if (monoMode === "on") return "mono";
@@ -1291,6 +1384,8 @@ export function emitMermaidExtFromBuilderState(
       if (ratioLine) lines.push(ratioLine);
       const monoLine = emitMonoDirective(options.monoMode);
       if (monoLine) lines.push(monoLine);
+      const avatarLine = emitAvatarDirective(options.avatarSize);
+      if (avatarLine) lines.push(avatarLine);
 
       const nodeDecls = new Map<string, string>();
       const edgeLines: string[] = [];
@@ -1306,15 +1401,17 @@ export function emitMermaidExtFromBuilderState(
         if (!mgrLabel && !empLabel) return;
         const style = (row[2] ?? "solid").trim();
         const color = (row[3] ?? "").trim();
+        const empAvatar = personAvatarSuffix(row[4] ?? "", row[5] ?? "");
+        const mgrAvatar = personAvatarSuffix(row[6] ?? "", row[7] ?? "");
 
         const fromId = toSafeId(mgrLabel, idx * 2 + 1);
         const toId = toSafeId(empLabel, idx * 2 + 2);
 
         if (!nodeDecls.has(fromId)) {
-          nodeDecls.set(fromId, `${fromId} [${mgrLabel || fromId}]`);
+          nodeDecls.set(fromId, `${fromId} [${mgrLabel || fromId}]${mgrAvatar}`);
         }
         const colorSuffix = color ? ` color=${color}` : "";
-        nodeDecls.set(toId, `${toId} [${empLabel || toId}]${colorSuffix}`);
+        nodeDecls.set(toId, `${toId} [${empLabel || toId}]${colorSuffix}${empAvatar}`);
 
         const arrow = style === "dotted" ? "-.->" : "->";
         edgeLines.push(`${fromId} ${arrow} ${toId}`);
@@ -1325,6 +1422,122 @@ export function emitMermaidExtFromBuilderState(
       } else {
         lines.push(...nodeDecls.values(), ...edgeLines);
       }
+      return lines.join("\n");
+    }
+
+    case "powermap": {
+      lines.push("powermap");
+      if (canvas.title.trim()) lines.push(`title ${canvas.title.trim()}`);
+      if (options.company.trim()) lines.push(`company ${options.company.trim()}`);
+      const ratioLine = emitAspectDirective(canvas);
+      if (ratioLine) lines.push(ratioLine);
+      const monoLine = emitMonoDirective(options.monoMode);
+      if (monoLine) lines.push(monoLine);
+      if (!options.showLegend) lines.push("legend off");
+      const avatarLine = emitAvatarDirective(options.avatarSize);
+      if (avatarLine) lines.push(avatarLine);
+      for (const link of options.powerLinks) {
+        const name = link.name.trim();
+        if (!name) continue;
+        const color = link.color.trim() || "#6e7781";
+        const style = link.style.trim() || "solid";
+        const label = link.label.trim();
+        const labelAttr = label ? ` label=${quoteIfNeeded(label)}` : "";
+        lines.push(`link ${name} color=${color} style=${style}${labelAttr}`);
+      }
+
+      const people = new Map<
+        string,
+        {
+          name: string;
+          title: string;
+          gender: string;
+          photo: string;
+          role: string;
+          influence: string;
+          action: string;
+          attitude: string;
+          counterpart: string;
+        }
+      >();
+      const edgeLines: string[] = [];
+      const toSafeId = (raw: string, fallback: number): string =>
+        raw
+          .trim()
+          .replace(/\s+/g, "_")
+          .replace(/[^\p{L}\p{N}_-]/gu, "") || `Person_${fallback}`;
+      const blankPerson = (name: string) => ({
+        name,
+        title: "",
+        gender: "",
+        photo: "",
+        role: "",
+        influence: "",
+        action: "",
+        attitude: "",
+        counterpart: "",
+      });
+      const fillPerson = (
+        current: ReturnType<typeof blankPerson>,
+        row: readonly string[],
+      ) => {
+        const take = (prev: string, next: string | undefined) => prev || (next ?? "").trim();
+        current.title = take(current.title, row[1]);
+        current.gender = take(current.gender, row[2]);
+        current.photo = take(current.photo, row[3]);
+        current.role = take(current.role, row[4]);
+        current.influence = take(current.influence, row[5]);
+        current.action = take(current.action, row[6]);
+        current.attitude = take(current.attitude, row[7]);
+        current.counterpart = take(current.counterpart, row[8]);
+      };
+
+      state.rows.forEach((row, idx) => {
+        const name = (row[0] ?? "").trim();
+        if (!name) return;
+        const id = toSafeId(name, idx + 1);
+        const person = people.get(id) ?? blankPerson(name);
+        fillPerson(person, row);
+        people.set(id, person);
+
+        const otherName = (row[9] ?? "").trim();
+        const relation = (row[10] ?? "").trim();
+        if (!otherName) return;
+        const otherId = toSafeId(otherName, idx + 100);
+        if (!people.has(otherId)) people.set(otherId, blankPerson(otherName));
+        const rel = relation.toLowerCase();
+        if (POWER_DOTTED_RELATIONS.has(rel)) {
+          edgeLines.push(`${otherId} -.-> ${id}`);
+        } else if (POWER_SOLID_RELATIONS.has(rel)) {
+          edgeLines.push(`${otherId} -> ${id}`);
+        } else {
+          edgeLines.push(`${id} -${relation}-> ${otherId}`);
+        }
+      });
+
+      if (people.size === 0) {
+        lines.push(
+          "CEO [Alex|Lead] role=D gender=m",
+          "CTO [Sam|Tech] role=A gender=f",
+          "CEO -> CTO",
+        );
+        return lines.join("\n");
+      }
+
+      for (const [id, person] of people) {
+        const label = person.title ? `${person.name}|${person.title}` : person.name;
+        const attrs = [
+          person.role ? `role=${person.role}` : "",
+          person.influence ? `influence=${person.influence}` : "",
+          person.action ? `action=${person.action}` : "",
+          person.attitude ? `attitude=${person.attitude}` : "",
+          person.counterpart ? `counterpart=${quoteIfNeeded(person.counterpart)}` : "",
+          person.gender ? `gender=${person.gender}` : "",
+          person.photo ? `photo=${quoteIfNeeded(person.photo)}` : "",
+        ].filter(Boolean);
+        lines.push(`${id} [${label}]${attrs.length ? ` ${attrs.join(" ")}` : ""}`);
+      }
+      lines.push(...edgeLines);
       return lines.join("\n");
     }
 

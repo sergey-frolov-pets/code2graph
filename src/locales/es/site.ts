@@ -142,7 +142,7 @@ export const siteMessages = {
   "site.ext.mermaid.desc.heatmap":
     "Una matriz de valores con una escala de color. Los rangos de la escala son explícitos; una celda vacía (dos separadores seguidos) se dibuja en gris.",
   "site.ext.mermaid.desc.orgchart":
-    "Un árbol de reporte con aristas explícitas: la continua es la línea principal, la punteada -.-> es un responsable secundario. Un bloque puede fijar su relleno (color) y su borde (border, style). Varias raíces se agrupan bajo una raíz invisible.",
+    "Un árbol de reporte con aristas explícitas: la continua es la línea principal, la punteada -.-> es un responsable secundario. Un bloque puede fijar su relleno (color) y su borde (border, style). Varias raíces se agrupan bajo una raíz invisible. avatar muestra una foto o una silueta: masculina, femenina o de género desconocido.",
   "site.ext.mermaid.desc.ev":
     "Tres curvas acumuladas por día: valor planificado PV, valor ganado EV y coste real AC. Además, las desviaciones SV y CV en la leyenda.",
   "site.ext.mermaid.desc.boxplot":
@@ -162,7 +162,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.heatmap":
     "heatmap abre el mapa. x e y son las etiquetas de los ejes. Dentro de data una fila es nombre : números separados por comas. \\n en una etiqueta parte la línea.",
   "site.ext.mermaid.syntax.orgchart":
-    "orgchart abre el árbol. Un nodo es id [rol\\nnombre] (\\n parte la línea y la caja se ajusta al texto); color=#hex fija el relleno, border=#hex y style=solid|dash|dot|dashdot fijan el color y el estilo del borde. Una arista continua es ->, un responsable secundario es -.->.",
+    "orgchart abre el árbol. Un nodo es id [rol\\nnombre] (\\n parte la línea y la caja se ajusta al texto); color=#hex fija el relleno, border=#hex y style=solid|dash|dot|dashdot fijan el color y el estilo del borde. avatar 48 muestra el recuadro; gender=m|f|? elige la silueta, photo= pone la imagen, avatar off oculta el recuadro. Una arista continua es ->, un responsable secundario es -.->.",
   "site.ext.mermaid.syntax.ev":
     "ev abre el gráfico. days son los días, pv es el plan, ev es el valor ganado y ac es el coste real. \\n en la etiqueta de un día parte la línea.",
   "site.ext.mermaid.syntax.boxplot":
@@ -455,4 +455,8 @@ export const siteMessages = {
   "site.landing.usp.managers": "Plan y estado en una imagen: Gantt y gráficos a la presentación en un clic",
   "site.landing.usp.students": "Un diagrama en un minuto: plantillas, ayudas, sin instalar nada",
   "site.landing.usp.vibecoders": "El agente dibuja, tú editas: MCP da a Cursor código e imagen",
+  "site.ext.mermaid.type.powermap": "Mapa de poder",
+  "site.ext.mermaid.desc.powermap": "Mapa de poder sobre un árbol de mando: rol, influencia, necesidad de acción y actitud, más el interlocutor de la empresa. Fotos o siluetas, leyenda y flechas con nombre, como supporter y enemy.",
+  "site.ext.mermaid.syntax.powermap": "powermap abre el mapa. company pone la empresa, legend on|off la leyenda, avatar 48 o avatar off el recuadro. Una persona es id [Nombre|Cargo] con role, influence, action, attitude, counterpart, gender y photo. -> y -.-> son líneas de mando. link nombre color=#hex style=solid|dash|dot|dashdot define una flecha, A -nombre-> B la dibuja.",
+
 } as const satisfies LocaleMessages;

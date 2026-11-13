@@ -178,4 +178,7 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.favorite.kind.serverLink": "सर्वर कड़ी",
   "llm.wizard.gallery.favorite.open": "{title} खोलें",
   "llm.wizard.gallery.favorite.listLabel": "पसंदीदा आरेख",
+  "llm.wizard.gallery.tag.diagramType.powermap": "पावर मैप",
+  "llm.wizard.gallery.desc.powermap": "अंक, फ़ोटो और प्रभाव के तीर वाले लोग।",
+
 } as const;

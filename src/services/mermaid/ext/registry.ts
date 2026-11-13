@@ -9,6 +9,7 @@ export const TYPE_ALIASES: Record<ExtDiagramType, string[]> = {
   bubble: ["bubble", "bubblechart"],
   heatmap: ["heatmap", "heat-map"],
   orgchart: ["orgchart", "org"],
+  powermap: ["powermap", "power-map", "power"],
   ev: ["ev", "evchart"],
   boxplot: ["boxplot", "box-plot", "box"],
   treemap: ["treemap", "tree-map"],

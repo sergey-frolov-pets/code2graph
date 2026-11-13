@@ -586,3 +586,40 @@ A -> B`);
     expect((r.value as OrgModel).monoInvert).toBe(true);
   });
 });
+
+describe("orgchart: фото и силуэты", () => {
+  it("без директивы avatar блок фото выключен", () => {
+    const r = orgchartEngine.parse(`orgchart
+A [A]
+B [B] gender=f
+A -> B`);
+    expect(r.ok).toBe(true);
+    const model = r.value as OrgModel;
+    expect(model.avatarSize).toBe(0);
+    const svg = orgchartEngine.render(model, {});
+    expect(svg).not.toContain("clipPath");
+    expect(svg).not.toContain(">?</text>");
+  });
+
+  it("avatar 48 рисует силуэт, вопрос и снимок", () => {
+    const photo =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const r = orgchartEngine.parse(`orgchart
+avatar 48
+A [A] gender=m
+B [B] gender=?
+C [C] photo=${photo}
+D [D] avatar=off
+A -> B
+A -> C
+A -> D`);
+    expect(r.ok).toBe(true);
+    const model = r.value as OrgModel;
+    expect(model.avatarSize).toBe(48);
+    expect(model.nodes.find((node) => node.id === "D")?.hideAvatar).toBe(true);
+    const svg = orgchartEngine.render(model, {});
+    expect(svg).toContain(">?</text>");
+    expect(svg).toContain(`href="${photo}"`);
+    expect((svg.match(/<clipPath/g) ?? []).length).toBe(1);
+  });
+});

@@ -129,6 +129,7 @@ export const siteMessages = {
   "site.ext.mermaid.type.bubble": "Пузырьковая",
   "site.ext.mermaid.type.heatmap": "Тепловая карта",
   "site.ext.mermaid.type.orgchart": "Оргструктура",
+  "site.ext.mermaid.type.powermap": "Карта влияния",
   "site.ext.mermaid.type.ev": "Освоенный объём",
   "site.ext.mermaid.type.boxplot": "Ящик с усами (Box plot)",
   "site.ext.mermaid.type.treemap": "Древовидная карта (Tree map)",
@@ -142,7 +143,9 @@ export const siteMessages = {
   "site.ext.mermaid.desc.heatmap":
     "Матрица значений с цветовой шкалой. Диапазоны шкалы задаются явно, пустая ячейка (два разделителя подряд) рисуется серой.",
   "site.ext.mermaid.desc.orgchart":
-    "Дерево подчинённости с явными рёбрами: сплошное — основная линия, пунктирное -.-> — второй руководитель. У блока можно задать заливку (color) и границу (border, style). Несколько корней собираются под невидимый корень.",
+    "Дерево подчинённости с явными рёбрами: сплошное — основная линия, пунктирное -.-> — второй руководитель. У блока можно задать заливку (color) и границу (border, style). avatar включает фото или силуэт: мужской, женский или неизвестный пол. Несколько корней собираются под невидимый корень.",
+  "site.ext.mermaid.desc.powermap":
+    "Карта влияния на дереве подчинения: роль, влияние, потребность в действии и отношение к компании, плюс контрагент компании. Фото или силуэты, легенда и именные стрелки, например supporter и enemy.",
   "site.ext.mermaid.desc.ev":
     "Три кумулятивные кривые по дням: плановый объём PV, освоенный EV и фактические затраты AC. Плюс отклонения SV и CV в легенде.",
   "site.ext.mermaid.desc.boxplot":
@@ -162,7 +165,9 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.heatmap":
     "heatmap открывает карту. x и y — подписи осей. В блоке data строка: имя : числа через запятую. \\n в подписи переносит строку.",
   "site.ext.mermaid.syntax.orgchart":
-    "orgchart открывает дерево. Узел — id [роль\\nимя] (\\n переносит строку, блок подгоняется под текст); color=#hex задаёт заливку, border=#hex и style=solid|dash|dot|dashdot — цвет и стиль границы. Основное ребро — ->, второй руководитель — -.->.",
+    "orgchart открывает дерево. Узел — id [роль\\nимя] (\\n переносит строку, блок подгоняется под текст); color=#hex задаёт заливку, border=#hex и style=solid|dash|dot|dashdot — цвет и стиль границы. avatar 48 показывает блок фото; gender=m|f|? выбирает силуэт, photo= задаёт снимок, avatar off прячет блок. Основное ребро — ->, второй руководитель — -.->.",
+  "site.ext.mermaid.syntax.powermap":
+    "powermap открывает карту. company задаёт компанию, legend on|off — легенду, avatar 48 или avatar off — блок фото. Человек — id [Имя|Должность] с role, influence, action, attitude, counterpart, gender и photo. -> и -.-> — подчинение. link имя color=#hex style=solid|dash|dot|dashdot задаёт стрелку, A -имя-> B её рисует.",
   "site.ext.mermaid.syntax.ev":
     "ev открывает график. days — дни, pv — план, ev — освоенный объём, ac — фактические затраты. \\n в подписи дня переносит строку.",
   "site.ext.mermaid.syntax.boxplot":

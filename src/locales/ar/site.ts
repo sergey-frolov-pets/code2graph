@@ -142,7 +142,7 @@ export const siteMessages = {
   "site.ext.mermaid.desc.heatmap":
     "مصفوفة قيم بمقياس ألوان. نطاقات المقياس صريحة، والخلية الفارغة (فاصلان متتاليان) تُرسم رمادية.",
   "site.ext.mermaid.desc.orgchart":
-    "شجرة تبعية بحواف صريحة: المتصل هو الخط الرئيس، والمنقط -.-> مدير ثانوي. يمكن للكتلة ضبط تعبئتها (color) وحدّها (border وstyle). تُجمع عدة جذور تحت جذر غير مرئي.",
+    "شجرة تبعية بحواف صريحة: المتصل هو الخط الرئيس، والمنقط -.-> مدير ثانوي. يمكن للكتلة ضبط تعبئتها (color) وحدّها (border وstyle). تُجمع عدة جذور تحت جذر غير مرئي. يعرض avatar صورة أو صورة ظلية: ذكر أو أنثى أو جنس غير معروف.",
   "site.ext.mermaid.desc.ev":
     "ثلاثة منحنيات تراكمية حسب اليوم: القيمة المخططة PV، والقيمة المكتسبة EV، والتكلفة الفعلية AC. بالإضافة إلى انحرافَي SV وCV في وسيلة الإيضاح.",
   "site.ext.mermaid.desc.boxplot":
@@ -162,7 +162,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.heatmap":
     "يفتح heatmap الخريطة. x وy تسميتا المحورين. داخل data يكون الصف الاسم : أرقام مفصولة بفواصل. يكسر \\n في التسمية السطر.",
   "site.ext.mermaid.syntax.orgchart":
-    "يفتح orgchart الشجرة. العقدة هي id [الدور\\nالاسم] (يكسر \\n السطر، وينطبق الصندوق على النص)؛ يضبط color=#hex التعبئة، ويضبط border=#hex وstyle=solid|dash|dot|dashdot لون الحد ونمطه. الحافة المتصلة ->، والمدير الثانوي -.->.",
+    "يفتح orgchart الشجرة. العقدة هي id [الدور\\nالاسم] (يكسر \\n السطر، وينطبق الصندوق على النص)؛ يضبط color=#hex التعبئة، ويضبط border=#hex وstyle=solid|dash|dot|dashdot لون الحد ونمطه. يعرض avatar 48 مربع الصورة؛ يختار gender=m|f|? الصورة الظلية، ويضع photo= الصورة، ويخفي avatar off المربع. الحافة المتصلة ->، والمدير الثانوي -.->.",
   "site.ext.mermaid.syntax.ev":
     "يفتح ev المخطط. days هي الأيام، وpv الخطة، وev القيمة المكتسبة، وac التكلفة الفعلية. يكسر \\n في تسمية اليوم السطر.",
   "site.ext.mermaid.syntax.boxplot":
@@ -455,4 +455,8 @@ export const siteMessages = {
   "site.landing.usp.managers": "الخطة والحالة في صورة واحدة: Gantt والرسوم إلى العرض بنقرة",
   "site.landing.usp.students": "مخطط في دقيقة: قوالب وتلميحات وبلا تثبيت",
   "site.landing.usp.vibecoders": "الوكيل يرسم وأنت تحرّر: MCP يعطي Cursor المصدر والصورة",
+  "site.ext.mermaid.type.powermap": "خريطة النفوذ",
+  "site.ext.mermaid.desc.powermap": "خريطة نفوذ على شجرة تبعية: الدور والتأثير والحاجة إلى الفعل والموقف، مع نظير الشركة. صور أو صور ظلية، ومفتاح، وأسهم مسماة مثل supporter و enemy.",
+  "site.ext.mermaid.syntax.powermap": "powermap يفتح الخريطة. company اسم الشركة، legend on|off المفتاح، avatar 48 أو avatar off مربع الصورة. الشخص id [الاسم|المنصب] مع role و influence و action و attitude و counterpart و gender و photo. -> و -.-> خطّا تبعية. link اسم color=#hex style=solid|dash|dot|dashdot يعرّف سهمًا، و A -اسم-> B يرسمه.",
+
 } as const satisfies LocaleMessages;

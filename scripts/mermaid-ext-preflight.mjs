@@ -192,6 +192,7 @@ const MINIMAL_SOURCES = {
   ].join("\n"),
   heatmap: "heatmap\nx A, B\ny Строка\ndata\nСтрока : 10, 20",
   orgchart: "orgchart\nCEO\nCTO\nCEO -> CTO",
+  powermap: "powermap\nCEO [Alex|Lead] role=D gender=m\nCTO [Sam|Tech] role=A gender=f\nCEO -> CTO",
   ev: "ev\ndays 1, 2\npv 10, 25\nev 8, 20\nac 12, 28",
   boxplot: "boxplot\nA : 10, 20, 30, 40, 50",
   treemap: "treemap\nГруппа / A : 60\nГруппа / B : 40",
@@ -212,7 +213,7 @@ async function checkWiring() {
 
   const { tryRenderExtension, detectType, listTypes } = ext;
 
-  record("wiring", "реестр отдаёт 10 типов", listTypes().length === 10, listTypes().join(", "));
+  record("wiring", "реестр отдаёт 11 типов", listTypes().length === 11, listTypes().join(", "));
 
   for (const [type, source] of Object.entries(MINIMAL_SOURCES)) {
     const detected = detectType(source);

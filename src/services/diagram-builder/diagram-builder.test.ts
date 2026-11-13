@@ -23,6 +23,7 @@ import { parseTreemap } from "@/services/mermaid/ext/engines/treemap";
 import { parseRadar } from "@/services/mermaid/ext/engines/radar";
 import { parseVoronoi } from "@/services/mermaid/ext/engines/voronoi";
 import { parseOrgchart } from "@/services/mermaid/ext/engines/orgchart";
+import { parsePowermap } from "@/services/mermaid/ext/engines/powermap";
 import { parseEv } from "@/services/mermaid/ext/engines/ev";
 
 describe("graph clipboard paste", () => {
@@ -385,6 +386,27 @@ describe("diagram-builder core", () => {
         type: "orgchart",
         source: ["orgchart", "CEO [CEO]", "CTO [CTO]", "Dev [Lead]", "CEO -> CTO", "CTO -.-> Dev"].join("\n"),
         verify: (s) => parseOrgchart(s).ok,
+      },
+      {
+        type: "powermap",
+        source: [
+          "powermap",
+          "company Northwind",
+          "link ally color=#1a7f37 style=solid label=ally",
+          "CEO [Alex|Lead] role=D gender=m",
+          "CFO [Elena|Finance] role=A gender=f",
+          "CEO -> CFO",
+          "CFO -ally-> CEO",
+        ].join("\n"),
+        verify: (s) => {
+          const parsed = parsePowermap(s);
+          return (
+            parsed.ok &&
+            parsed.value?.company === "Northwind" &&
+            parsed.value.people.some((person) => person.name === "Elena" && person.role?.code === "A") &&
+            parsed.value.influences.some((edge) => edge.name === "ally")
+          );
+        },
       },
       {
         type: "ev",
@@ -791,7 +813,16 @@ Site,"Bounce, no click",40`,
       "CEO -> CTO",
     ].join("\n");
     const state = parseSourceToBuilderState(source, "mermaid");
-    expect(state.rows[0]).toEqual(["Chief\\nExecutive", "Tech\\nLead", "solid", ""]);
+    expect(state.rows[0]).toEqual([
+      "Chief\\nExecutive",
+      "Tech\\nLead",
+      "solid",
+      "",
+      "",
+      "",
+      "",
+      "",
+    ]);
 
     const emitted = emitSourceFromBuilderState(state);
     expect(emitted).toContain("[Chief\\nExecutive]");

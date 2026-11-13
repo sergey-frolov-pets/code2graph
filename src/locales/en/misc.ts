@@ -65,6 +65,8 @@ export const miscMessages = {
   "samples.mermaid.bubble": "Bubble — labels and font",
   "samples.mermaid.heatmap": "Heatmap",
   "samples.mermaid.orgchart": "Org chart",
+  "samples.mermaid.orgchartAvatar": "Org chart — photos",
+  "samples.mermaid.powermap": "Power map",
   "samples.mermaid.ev": "Earned value",
   "samples.mermaid.boxplot": "Box plot",
   "samples.mermaid.treemap": "Tree map",

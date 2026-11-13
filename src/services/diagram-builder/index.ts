@@ -64,6 +64,7 @@ const MERMAID_EXT_TYPES = new Set<string>([
   "bubble",
   "heatmap",
   "orgchart",
+  "powermap",
   "ev",
   "boxplot",
   "treemap",
