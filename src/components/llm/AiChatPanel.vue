@@ -2480,7 +2480,7 @@ async function onCopyChat(): Promise<void> {
   align-items: center;
   gap: 0.4em;
   min-width: 0;
-  padding-inline-start: var(--ai-chat-composer-field-inset);
+  padding-inline: var(--ai-chat-composer-field-inset);
   overflow: hidden;
   color: var(--text-muted);
   pointer-events: none;
@@ -2499,17 +2499,21 @@ async function onCopyChat(): Promise<void> {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
+  align-items: flex-end;
   justify-content: center;
   gap: 0.05rem;
   min-width: 0;
   font-size: var(--ai-chat-hint-font-size);
   line-height: 1.15;
+  text-align: end;
 }
 
 .ai-chat-panel__hint-sub {
   display: flex;
   align-items: baseline;
+  justify-content: flex-end;
   gap: 0.35em;
+  max-width: 100%;
   min-width: 0;
 }
 
@@ -2521,6 +2525,7 @@ async function onCopyChat(): Promise<void> {
 
 .ai-chat-panel__hint-model,
 .ai-chat-panel__hint-provider {
+  max-width: 100%;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2528,7 +2533,7 @@ async function onCopyChat(): Promise<void> {
 }
 
 .ai-chat-panel__hint-provider {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
 }
 
 .ai-chat-panel__hint-dot {
