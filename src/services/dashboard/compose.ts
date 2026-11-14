@@ -23,6 +23,17 @@ const rendering = new Set<string>();
 export async function loadDashboardDiagram(id: string): Promise<DiagramDto | null> {
   const cached = await loadDiagramDetailFromCache(id);
   if (cached) return cached;
+  return loadServerDiagram(id);
+}
+
+/** Серверная копия диаграммы, а если сервер недоступен — локальный кэш. */
+export async function loadDashboardDiagramFresh(id: string): Promise<DiagramDto | null> {
+  const remote = await loadServerDiagram(id);
+  if (remote) return remote;
+  return loadDiagramDetailFromCache(id);
+}
+
+async function loadServerDiagram(id: string): Promise<DiagramDto | null> {
   const baseUrl = getLibraryApiBaseUrl();
   if (!baseUrl) return null;
   try {

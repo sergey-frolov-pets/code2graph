@@ -1265,14 +1265,14 @@ zone 85 100 #dc2626 "перегруз"
 dashboard
 size 1280x720
 refresh 5m
-title "Выручка"
-header "ноябрь"
-footer "источник: таблица"
+title "Выручка" font "Inter" fontsize 22 color #0f172a background #ffffff shadow
+header "ноябрь" font "Inter" fontsize 16 color #0f172a background #f1f5f9 shadow
+footer "источник: таблица" font "Inter" fontsize 13 color #64748b background #f8fafc shadow
 zone 0 0 0.5 0.5 diagram "revenue"
 zone 0.5 0 0.5 1 diagram "load"
 ```
 
-`size` — пиксели мира. `refresh` — `30s`, `5m` или `1h`. `title`, `header` и `footer` необязательны: заголовок сверху, шапка под ним, подвал снизу, зоны занимают оставшуюся область. `zone` — доли `x y w h` этой области и идентификатор одной диаграммы этой библиотеки. Движок сам библиотеку не читает: SVG зон приходит в `ExtRenderOptions.zoneSvgs`.
+`size` — пиксели мира. `refresh` — `30s`, `5m` или `1h`. `title`, `header` и `footer` необязательны: заголовок сверху, шапка под ним, подвал снизу, зоны занимают оставшуюся область. У каждой подписи свои `font`, `fontsize`, `color`, `background` и `shadow` (или `noshadow`). `zone` — доли `x y w h` этой области и идентификатор одной диаграммы этой библиотеки. Движок сам библиотеку не читает: SVG зон приходит в `ExtRenderOptions.zoneSvgs`. Обновление зоны берёт сохранённый исходник с сервера и, если есть настроенная локальная ссылка, накладывает файл поверх него.
 
 ---
 

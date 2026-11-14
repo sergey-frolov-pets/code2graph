@@ -42,7 +42,7 @@ import {
   readDashboardSvgCache,
   writeDashboardSvgCache,
 } from "@/services/dashboard/cache";
-import { composeDashboardSvg, loadDashboardDiagram } from "@/services/dashboard/compose";
+import { composeDashboardSvg, loadDashboardDiagramFresh } from "@/services/dashboard/compose";
 import { refreshDashboardZoneSources } from "@/services/dashboard/refresh";
 
 export interface UseDiagramRenderOptions {
@@ -247,7 +247,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     }
     const zoneSources = [];
     for (const zone of parsed.value.zones) {
-      const diagram = await loadDashboardDiagram(zone.diagramId);
+      const diagram = await loadDashboardDiagramFresh(zone.diagramId);
       if (!diagram) continue;
       zoneSources.push({
         id: diagram.id,

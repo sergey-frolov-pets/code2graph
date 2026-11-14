@@ -28,26 +28,22 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/** Полная страница с iframe: её можно сохранить и открыть для проверки. */
+/** Страница сразу открывает сам дашборд, без кадра. */
 export function dashboardEmbedDocument(src: string, title: string): string {
   const safeTitle = escapeHtml(title.trim() || "Dashboard");
   const safeSrc = escapeHtml(src);
+  const scriptSrc = JSON.stringify(src);
   return `<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="0;url=${safeSrc}">
 <title>${safeTitle}</title>
-<style>
-html,body{margin:0;height:100%}
-body{min-height:100dvh;display:flex;flex-direction:column}
-.dashboard-open{display:block;padding:max(12px,env(safe-area-inset-top)) 16px 12px;font:16px/1.4 sans-serif}
-iframe{flex:1;width:100%;min-height:70dvh;border:0}
-</style>
+<script>location.replace(${scriptSrc})</script>
 </head>
 <body>
-<a class="dashboard-open" href="${safeSrc}">Открыть дашборд</a>
-<iframe src="${safeSrc}" title="${safeTitle}"></iframe>
+<p><a href="${safeSrc}">${safeTitle}</a></p>
 </body>
 </html>
 `;

@@ -42,13 +42,13 @@ describe("dashboard layout", () => {
 });
 
 describe("dashboard embed html", () => {
-  it("сохраняет страницу с iframe для проверки", () => {
+  it("сохранённая страница сразу открывает дашборд", () => {
     const html = dashboardEmbedDocument("https://app.example/#/embed/local/1", "Выручка");
     expect(html.startsWith("<!DOCTYPE html>")).toBe(true);
     expect(html).toContain('href="https://app.example/#/embed/local/1"');
-    expect(html).toContain('<iframe src="https://app.example/#/embed/local/1"');
-    expect(html).toContain("100dvh");
+    expect(html).toContain('http-equiv="refresh"');
+    expect(html).toContain('location.replace("https://app.example/#/embed/local/1")');
+    expect(html).not.toContain("<iframe");
     expect(html).toContain("Выручка");
-    expect(html).toContain("height:100%");
   });
 });

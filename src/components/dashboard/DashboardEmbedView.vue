@@ -8,7 +8,7 @@ import {
   readDashboardSvgCache,
   writeDashboardSvgCache,
 } from "@/services/dashboard/cache";
-import { composeDashboardSvg, loadDashboardDiagram } from "@/services/dashboard/compose";
+import { composeDashboardSvg, loadDashboardDiagram, loadDashboardDiagramFresh } from "@/services/dashboard/compose";
 import { parseDashboard } from "@/services/mermaid/ext/engines/dashboard";
 import { refreshDashboardZoneSources } from "@/services/dashboard/refresh";
 import type { DashboardZoneSource } from "@/services/dashboard/refresh";
@@ -63,11 +63,17 @@ async function show(force: boolean): Promise<void> {
       }
       diagramId = diagram.id;
       source = diagram.source;
-      const parsed = parseDashboard(source);
-      if (parsed.ok && parsed.value) {
+      const early = parseDashboard(source);
+      if (early.ok && early.value) {
+        const cachedEarly = readDashboardSvgCache(diagramId);
+        if (!force && dashboardCacheFresh(cachedEarly, early.value.refreshMs)) {
+          svg.value = cachedEarly!.svg;
+          arm(early.value.refreshMs, cachedEarly!.at);
+          return;
+        }
         const loaded = [];
-        for (const zone of parsed.value.zones) {
-          const child = await loadDashboardDiagram(zone.diagramId);
+        for (const zone of early.value.zones) {
+          const child = await loadDashboardDiagramFresh(zone.diagramId);
           if (child) loaded.push(child);
         }
         zones = await zoneSourcesFor(loaded);
