@@ -188,8 +188,12 @@ describe("presentation track duplicate button", () => {
     mounted.push(panel);
     await nextTick();
 
+    const playbackMode = panel.host.querySelector("[aria-label='presentation.playbackMode']");
+    expect(playbackMode).toBeInstanceOf(HTMLButtonElement);
     expect(panel.host.querySelectorAll("[aria-label='presentation.playbackMode']")).toHaveLength(1);
     expect(panel.host.querySelector("[aria-label='presentation.arrangeMode']")).toBeNull();
+    expect(playbackMode?.querySelector(".lucide-move")).toBeInstanceOf(SVGElement);
+    expect(playbackMode?.querySelector(".lucide-clapperboard")).toBeNull();
     expect(panel.host.textContent).toContain("presentation.repeat");
     expect(panel.host.querySelector("[aria-label='presentation.first']")).toBeInstanceOf(HTMLButtonElement);
     expect(panel.host.querySelector("[aria-label='editor.undo']")).toBeNull();
@@ -199,8 +203,11 @@ describe("presentation track duplicate button", () => {
     await nextTick();
 
     expect(panel.barMode.value).toBe("arrange");
+    const arrangeMode = panel.host.querySelector("[aria-label='presentation.arrangeMode']");
     expect(panel.host.querySelector("[aria-label='presentation.playbackMode']")).toBeNull();
     expect(panel.host.querySelectorAll("[aria-label='presentation.arrangeMode']")).toHaveLength(1);
+    expect(arrangeMode?.querySelector(".lucide-clapperboard")).toBeInstanceOf(SVGElement);
+    expect(arrangeMode?.querySelector(".lucide-move")).toBeNull();
     expect(panel.host.textContent).not.toContain("presentation.repeat");
     const undo = panel.host.querySelector("[aria-label='editor.undo']");
     expect(undo).toBeInstanceOf(HTMLButtonElement);
