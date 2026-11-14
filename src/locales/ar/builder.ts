@@ -331,7 +331,7 @@ export const builderMessages = {
   "builder.col.influence": "التأثير",
   "builder.col.action": "الحاجة إلى الفعل",
   "builder.col.attitude": "الموقف",
-  "builder.col.counterpart": "نظير الشركة",
+  "builder.col.counterpart": "الطرف المقابل (شركة أخرى)",
   "builder.col.relation": "العلاقة",
   "builder.gender.unset": "غير محدد",
   "builder.gender.male": "ذكر",

@@ -230,7 +230,7 @@ DirectorGeneral -> Operaciones`,
 %% avatar 48 — lado de la foto en px (24–128). avatar off oculta todos los recuadros.
 %% Nodo: id [Nombre|Cargo] gender=m|f|? photo="https://…" o data:image/png;base64,…
 %%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
-%%   counterpart="Nombre"   avatar=off oculta una foto.
+%%   counterpart="Nombre" es una persona de otra empresa, no de las tarjetas. avatar=off oculta una foto.
 %%   Sin foto ni género — silueta con ?.
 %% El mando arma el árbol: A -> B continua, A -.-> B punteada.
 %% La influencia no cambia al jefe:
@@ -238,7 +238,7 @@ DirectorGeneral -> Operaciones`,
 %%   A -supporter-> B
 %% label en link es solo el texto de la leyenda. La flecha no lleva texto.
 %% Texto de una flecha: A -supporter-> B label="presupuesto"
-%% La leyenda va bajo el diagrama y muestra solo los estilos de link.
+%% La leyenda va bajo el diagrama: escalas y color de la contraparte. Las líneas son solo estilos link.
 %% lang es fija el idioma de la leyenda; si no, se usa el de la interfaz.
 %% supporter (verde continua) y enemy (rojo discontinua) existen hasta que link las reemplace.
 title Mapa de poder
@@ -249,8 +249,8 @@ link supporter color=#1a7f37 style=solid label="aliado"
 link coach color=#bf8700 style=dot label="mentor"
 link enemy color=#cf222e style=dash label="oponente"
 ceo [Ana Vidal|Presidenta] gender=f role=E influence=L action=M attitude=+ counterpart=-
-cfo [Ilya Sanz|Finanzas] gender=m role=D influence=L action=S attitude=0 counterpart="Ana Vidal, María Soler; Ana Vidal"
-ops [María Soler|Operaciones] gender=? role=A influence=M action=U attitude=- counterpart="Ilya Sanz"
+cfo [Ilya Sanz|Finanzas] gender=m role=D influence=L action=S attitude=0 counterpart="Pedro Ruiz, Elena Paz; Pedro Ruiz"
+ops [María Soler|Operaciones] gender=? role=A influence=M action=U attitude=- counterpart="Elena Paz"
 ceo -> cfo
 ceo -> ops
 cfo -.-> ops
@@ -783,7 +783,7 @@ avatar 48
 %% avatar 48 — 照片边长，单位 px（24–128）。avatar off 隐藏所有照片框。
 %% 节点：id [姓名|职务] gender=m|f|? photo="https://…" 或 data:image/png;base64,…
 %%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
-%%   counterpart="姓名"   avatar=off 隐藏一个人的照片。
+%%   counterpart="姓名" 是另一家公司的人，不是卡片上的同事。avatar=off 隐藏一个人的照片。
 %%   没有照片也没有性别 — 带问号的剪影。
 %% 汇报关系构成树：A -> B 实线，A -.-> B 虚线。
 %% 影响关系不改变上级：
@@ -791,7 +791,7 @@ avatar 48
 %%   A -supporter-> B
 %% link 上的 label 只出现在图例里，箭头本身没有文字。
 %% 某一条箭头的文字：A -supporter-> B label="预算"
-%% 图例画在图下方，只列出 link 声明的线型。
+%% 图例画在图下方：刻度、外部对接人颜色，线型只列出 link。
 %% lang zh 指定图例语言；省略时使用界面语言。
 %% supporter（绿色实线）和 enemy（红色虚线）一直存在，直到 link 行替换它们。
 title 权力图
@@ -802,8 +802,8 @@ link supporter color=#1a7f37 style=solid label="支持者"
 link coach color=#bf8700 style=dot label="导师"
 link enemy color=#cf222e style=dash label="对手"
 ceo [陈丽|总裁] gender=f role=E influence=L action=M attitude=+ counterpart=-
-cfo [王伟|财务] gender=m role=D influence=L action=S attitude=0 counterpart="陈丽, 刘洋; 陈丽"
-ops [刘洋|运营] gender=? role=A influence=M action=U attitude=- counterpart="王伟"
+cfo [王伟|财务] gender=m role=D influence=L action=S attitude=0 counterpart="赵敏, 孙浩; 赵敏"
+ops [刘洋|运营] gender=? role=A influence=M action=U attitude=- counterpart="孙浩"
 ceo -> cfo
 ceo -> ops
 cfo -.-> ops
@@ -1336,7 +1336,7 @@ avatar 48
 %% avatar 48 — 写真枠の一辺（px、24–128）。avatar off はすべての枠を隠します。
 %% ノード: id [名前|役職] gender=m|f|? photo="https://…" または data:image/png;base64,…
 %%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
-%%   counterpart="名前"   avatar=off は一人の写真を隠します。
+%%   counterpart="名前" は別の会社の人で、カードの同僚ではありません。avatar=off は一人の写真を隠します。
 %%   写真も性別もないときは疑問符付きのシルエットです。
 %% 報告が木を作ります: A -> B 実線、A -.-> B 点線。
 %% 影響は上司を変えません:
@@ -1344,7 +1344,7 @@ avatar 48
 %%   A -supporter-> B
 %% link の label は凡例の文字だけです。矢印自体には書きません。
 %% 一本の矢印の文字: A -supporter-> B label="予算"
-%% 凡例は図の下に描き、link で宣言した線だけを出します。
+%% 凡例は図の下です。尺度と外部の相手の色、線は link の様式だけです。
 %% lang ja は凡例の言語です。無いときは画面の言語です。
 %% supporter（緑の実線）と enemy（赤の破線）は、link 行が置き換えるまで使えます。
 title パワーマップ
@@ -1355,8 +1355,8 @@ link supporter color=#1a7f37 style=solid label="支援者"
 link coach color=#bf8700 style=dot label="指導者"
 link enemy color=#cf222e style=dash label="敵対者"
 ceo [鈴木美咲|社長] gender=f role=E influence=L action=M attitude=+ counterpart=-
-cfo [佐藤健|財務] gender=m role=D influence=L action=S attitude=0 counterpart="鈴木美咲, 伊藤彩; 鈴木美咲"
-ops [伊藤彩|運営] gender=? role=A influence=M action=U attitude=- counterpart="佐藤健"
+cfo [佐藤健|財務] gender=m role=D influence=L action=S attitude=0 counterpart="高橋蓮, 小林葵; 高橋蓮"
+ops [伊藤彩|運営] gender=? role=A influence=M action=U attitude=- counterpart="小林葵"
 ceo -> cfo
 ceo -> ops
 cfo -.-> ops
@@ -1889,7 +1889,7 @@ avatar 48
 %% avatar 48 — फ़ोटो की भुजा px में (24–128)। avatar off सभी बॉक्स छिपाता है।
 %% नोड: id [नाम|पद] gender=m|f|? photo="https://…" या data:image/png;base64,…
 %%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
-%%   counterpart="नाम"   avatar=off एक फ़ोटो छिपाता है।
+%%   counterpart="नाम" दूसरी कंपनी का व्यक्ति है, कार्ड वाला सहकर्मी नहीं। avatar=off एक फ़ोटो छिपाता है।
 %%   न फ़ोटो न लिंग — प्रश्न चिह्न वाली छाया।
 %% रिपोर्टिंग पेड़ बनाती है: A -> B ठोस, A -.-> B बिंदीदार।
 %% प्रभाव प्रबंधक नहीं बदलता:
@@ -1897,7 +1897,7 @@ avatar 48
 %%   A -supporter-> B
 %% link का label केवल संकेत का पाठ है। तीर पर वह नहीं लिखा जाता।
 %% एक तीर का पाठ: A -supporter-> B label="बजट"
-%% संकेत चित्र के नीचे है और केवल link की रेखाएँ दिखाता है।
+%% संकेत चित्र के नीचे है: पैमाने और बाहरी प्रतिपक्ष का रंग। रेखाएँ केवल link की हैं।
 %% lang hi संकेत की भाषा है। न हो तो इंटरफ़ेस की भाषा।
 %% supporter (हरी ठोस) और enemy (लाल डैश) तब तक रहते हैं जब तक link पंक्ति उन्हें न बदले।
 title पावर मैप
@@ -1908,8 +1908,8 @@ link supporter color=#1a7f37 style=solid label="समर्थक"
 link coach color=#bf8700 style=dot label="मार्गदर्शक"
 link enemy color=#cf222e style=dash label="विरोधी"
 ceo [अनन्या वर्मा|अध्यक्ष] gender=f role=E influence=L action=M attitude=+ counterpart=-
-cfo [अर्जुन शर्मा|वित्त] gender=m role=D influence=L action=S attitude=0 counterpart="अनन्या वर्मा, मेघा जोशी; अनन्या वर्मा"
-ops [मेघा जोशी|संचालन] gender=? role=A influence=M action=U attitude=- counterpart="अर्जुन शर्मा"
+cfo [अर्जुन शर्मा|वित्त] gender=m role=D influence=L action=S attitude=0 counterpart="रिया मेहता, करण सिंह; रिया मेहता"
+ops [मेघा जोशी|संचालन] gender=? role=A influence=M action=U attitude=- counterpart="करण सिंह"
 ceo -> cfo
 ceo -> ops
 cfo -.-> ops
@@ -2442,7 +2442,7 @@ DiretorGeral -> Operacoes`,
 %% avatar 48 — lado da foto em px (24–128). avatar off esconde todas as caixas.
 %% Nó: id [Nome|Cargo] gender=m|f|? photo="https://…" ou data:image/png;base64,…
 %%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
-%%   counterpart="Nome"   avatar=off esconde uma foto.
+%%   counterpart="Nome" é uma pessoa de outra empresa, não das fichas. avatar=off esconde uma foto.
 %%   Sem foto e sem gênero — silhueta com ?.
 %% A subordinação monta a árvore: A -> B cheia, A -.-> B pontilhada.
 %% A influência não muda o chefe:
@@ -2450,7 +2450,7 @@ DiretorGeral -> Operacoes`,
 %%   A -supporter-> B
 %% label em link é só o texto da legenda. A seta em si não leva texto.
 %% Texto de uma seta: A -supporter-> B label="orçamento"
-%% A legenda fica sob o diagrama e mostra só os estilos de link.
+%% A legenda fica sob o diagrama: escalas e a cor da contraparte. As linhas são só estilos link.
 %% lang pt define o idioma da legenda; sem a linha usa-se o da interface.
 %% supporter (verde cheia) e enemy (vermelho tracejado) existem até uma linha link os substituir.
 title Mapa de poder
@@ -2461,8 +2461,8 @@ link supporter color=#1a7f37 style=solid label="aliado"
 link coach color=#bf8700 style=dot label="mentor"
 link enemy color=#cf222e style=dash label="oponente"
 ceo [Elena Costa|Presidente] gender=f role=E influence=L action=M attitude=+ counterpart=-
-cfo [André Moraes|Finanças] gender=m role=D influence=L action=S attitude=0 counterpart="Elena Costa, Clara Duarte; Elena Costa"
-ops [Clara Duarte|Operações] gender=? role=A influence=M action=U attitude=- counterpart="André Moraes"
+cfo [André Moraes|Finanças] gender=m role=D influence=L action=S attitude=0 counterpart="Pedro Lima, Rita Nunes; Pedro Lima"
+ops [Clara Duarte|Operações] gender=? role=A influence=M action=U attitude=- counterpart="Rita Nunes"
 ceo -> cfo
 ceo -> ops
 cfo -.-> ops
@@ -2995,7 +2995,7 @@ Geschäftsführung -> Betrieb`,
 %% avatar 48 — Seitenlänge des Fotos in px (24–128). avatar off blendet alle Felder aus.
 %% Knoten: id [Name|Rolle] gender=m|f|? photo="https://…" oder data:image/png;base64,…
 %%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
-%%   counterpart="Name"   avatar=off blendet ein Foto aus.
+%%   counterpart="Name" ist eine Person einer anderen Firma, nicht von den Karten. avatar=off blendet ein Foto aus.
 %%   Kein Foto und kein Geschlecht — Silhouette mit Fragezeichen.
 %% Die Berichtslinie baut den Baum: A -> B durchgezogen, A -.-> B gepunktet.
 %% Einfluss ändert den Vorgesetzten nicht:
@@ -3003,7 +3003,7 @@ Geschäftsführung -> Betrieb`,
 %%   A -supporter-> B
 %% label an link ist nur der Legendentext. Der Pfeil selbst bleibt ohne Beschriftung.
 %% Beschriftung eines Pfeils: A -supporter-> B label="Budget"
-%% Die Legende steht unter dem Diagramm und zeigt nur Stile aus link.
+%% Die Legende steht unter dem Diagramm: Skalen und die Farbe der Gegenseite. Linien sind nur link-Stile.
 %% lang de setzt die Legendensprache, sonst gilt die Sprache der Oberfläche.
 %% supporter (grün, durchgezogen) und enemy (rot, gestrichelt) gelten, bis eine link-Zeile sie ersetzt.
 title Machtkarte
@@ -3014,8 +3014,8 @@ link supporter color=#1a7f37 style=solid label="Unterstützer"
 link coach color=#bf8700 style=dot label="Mentor"
 link enemy color=#cf222e style=dash label="Gegner"
 ceo [Elena Hofmann|Vorsitz] gender=f role=E influence=L action=M attitude=+ counterpart=-
-cfo [Alexander Berger|Finanzen] gender=m role=D influence=L action=S attitude=0 counterpart="Elena Hofmann, Clara Vogel; Elena Hofmann"
-ops [Clara Vogel|Betrieb] gender=? role=A influence=M action=U attitude=- counterpart="Alexander Berger"
+cfo [Alexander Berger|Finanzen] gender=m role=D influence=L action=S attitude=0 counterpart="Karl Weber, Nora Klein; Karl Weber"
+ops [Clara Vogel|Betrieb] gender=? role=A influence=M action=U attitude=- counterpart="Nora Klein"
 ceo -> cfo
 ceo -> ops
 cfo -.-> ops
@@ -3548,7 +3548,7 @@ avatar 48
 %% avatar 48 — ضلع الصورة بالبكسل (24–128). avatar off يخفي كل المربعات.
 %% عقدة: id [الاسم|المنصب] gender=m|f|? photo="https://…" أو data:image/png;base64,…
 %%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
-%%   counterpart="الاسم"   avatar=off يخفي صورة شخص واحد.
+%%   counterpart="الاسم" شخص من شركة أخرى، وليس من البطاقات. avatar=off يخفي صورة شخص واحد.
 %%   بلا صورة وبلا جنس — صورة ظلية مع ?.
 %% التبعية تبني الشجرة: A -> B متصلة، A -.-> B منقطة.
 %% التأثير لا يغيّر المدير:
@@ -3556,7 +3556,7 @@ avatar 48
 %%   A -supporter-> B
 %% label في link نص المفتاح فقط. السهم نفسه بلا نص.
 %% نص سهم واحد: A -supporter-> B label="ميزانية"
-%% يُرسم المفتاح تحت المخطط ويعرض فقط أنماط link.
+%% يُرسم المفتاح تحت المخطط: المقاييس ولون الطرف الخارجي. الخطوط أنماط link فقط.
 %% lang ar لغة المفتاح، وإلا تُستخدم لغة الواجهة.
 %% supporter (أخضر متصل) و enemy (أحمر متقطع) موجودان حتى يستبدلهما سطر link.
 title خريطة النفوذ
@@ -3567,8 +3567,8 @@ link supporter color=#1a7f37 style=solid label="مؤيد"
 link coach color=#bf8700 style=dot label="موجه"
 link enemy color=#cf222e style=dash label="خصم"
 ceo [ليلى حسن|رئيسة] gender=f role=E influence=L action=M attitude=+ counterpart=-
-cfo [أحمد منصور|المالية] gender=m role=D influence=L action=S attitude=0 counterpart="ليلى حسن, نورا فهد; ليلى حسن"
-ops [نورا فهد|التشغيل] gender=? role=A influence=M action=U attitude=- counterpart="أحمد منصور"
+cfo [أحمد منصور|المالية] gender=m role=D influence=L action=S attitude=0 counterpart="سامي نور, هدى كريم; سامي نور"
+ops [نورا فهد|التشغيل] gender=? role=A influence=M action=U attitude=- counterpart="هدى كريم"
 ceo -> cfo
 ceo -> ops
 cfo -.-> ops

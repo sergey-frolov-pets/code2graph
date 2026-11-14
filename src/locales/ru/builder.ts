@@ -356,7 +356,7 @@ export const builderMessages = {
   "builder.col.influence": "Влияние",
   "builder.col.action": "Нужность действия",
   "builder.col.attitude": "Отношение",
-  "builder.col.counterpart": "Контрагент компании",
+  "builder.col.counterpart": "Контрагент (другая компания)",
   "builder.col.relation": "Связь",
   "builder.gender.unset": "Не задан",
   "builder.gender.male": "Мужской",

@@ -331,7 +331,7 @@ export const builderMessages = {
   "builder.col.influence": "影响力",
   "builder.col.action": "行动需求",
   "builder.col.attitude": "态度",
-  "builder.col.counterpart": "公司对接人",
+  "builder.col.counterpart": "对接人（另一家公司）",
   "builder.col.relation": "关系",
   "builder.gender.unset": "未设置",
   "builder.gender.male": "男",
