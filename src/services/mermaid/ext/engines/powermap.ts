@@ -27,7 +27,7 @@ import {
   sanitizePhotoHref,
   type AvatarGender,
 } from "./avatar";
-import { drawReportingElbows, layoutOrgTree, type PlacedTreeNode } from "./orgchart";
+import { drawReportingElbows, layoutOrgTree, reportingElbowRoutes, type PlacedTreeNode } from "./orgchart";
 
 export type ReportStyle = "solid" | "dotted";
 export type LinkStroke = "solid" | "dash" | "dot" | "dashdot";
@@ -267,7 +267,9 @@ function parsePersonAttrs(tail: string): { attrs?: PersonAttrs; error?: string }
     } else if (key === "photo") {
       const href = sanitizePhotoHref(value);
       if (!href) {
-        return { error: `фото: ожидается http(s)-адрес или data:image (png, jpeg, gif, webp)` };
+        return {
+          error: `фото: ожидается ссылка на файл или http(s)-адрес; запасной вид — data:image (png, jpeg, gif, webp)`,
+        };
       }
       attrs.photo = href;
     } else if (key === "gender") {
@@ -1211,6 +1213,396 @@ interface RoutedInfluence {
   maxX: number;
 }
 
+/** Кегль подписи на стрелке и полоса над линией, которую нельзя пересекать. */
+const EDGE_LABEL_FONT = 10;
+const EDGE_LABEL_BAND = 14;
+/** Минимальный зазор между параллельными штрихами, иначе они читаются как одна линия. */
+const TRACK_CLEAR = 12;
+
+function personDepths(model: PowerModel): Map<string, number> {
+  const children = new Map<string, string[]>();
+  for (const edge of model.reports) {
+    const list = children.get(edge.from) ?? [];
+    list.push(edge.to);
+    children.set(edge.from, list);
+  }
+  const depth = new Map<string, number>();
+  const queue: string[] = [];
+  if (model.virtualRoot) {
+    for (const person of model.people) {
+      if (!model.reports.some((edge) => edge.to === person.id)) {
+        depth.set(person.id, 1);
+        queue.push(person.id);
+      }
+    }
+  } else if (model.root) {
+    depth.set(model.root, 0);
+    queue.push(model.root);
+  }
+  while (queue.length > 0) {
+    const id = queue.shift() as string;
+    const rank = depth.get(id) ?? 0;
+    for (const child of children.get(id) ?? []) {
+      if (depth.has(child)) continue;
+      depth.set(child, rank + 1);
+      queue.push(child);
+    }
+  }
+  let maxDepth = 0;
+  for (const value of depth.values()) maxDepth = Math.max(maxDepth, value);
+  for (const person of model.people) {
+    if (!depth.has(person.id)) {
+      depth.set(person.id, maxDepth + 1);
+      maxDepth += 1;
+    }
+  }
+  return depth;
+}
+
+/** Вертикальный зазор под уровнем: шины подчинения, стрелки влияния и их подписи. */
+function rankGapBelow(model: PowerModel): (upperDepth: number) => number {
+  const depth = personDepths(model);
+  const cache = new Map<number, number>();
+  return (upper) => {
+    const known = cache.get(upper);
+    if (known !== undefined) return known;
+    const lower = upper + 1;
+    const reportGroups = new Set<string>();
+    for (const edge of model.reports) {
+      if (depth.get(edge.from) === upper && depth.get(edge.to) === lower) {
+        reportGroups.add(`${edge.from}|${edge.style}`);
+      }
+    }
+    let influences = 0;
+    let labels = 0;
+    let stubs = 0;
+    for (const edge of model.influences) {
+      const from = depth.get(edge.from);
+      const to = depth.get(edge.to);
+      if (from === undefined || to === undefined) continue;
+      const inGap =
+        (from === upper && to === lower) ||
+        (to === upper && from === lower) ||
+        (from === upper && to === upper);
+      const stub = (from === upper && to > lower) || (to === lower && from < upper);
+      if (inGap) influences += 1;
+      else if (stub) stubs += 1;
+      else continue;
+      if (edge.label) labels += 1;
+    }
+    const need = 12 + reportGroups.size * 14 + influences * 14 + stubs * 14 + labels * 20;
+    const gap = Math.max(52, need);
+    cache.set(upper, gap);
+    return gap;
+  };
+}
+
+function contactLimitsOf(card: PlacedTreeNode<PowerPerson>, offsetX: number): { left: number; right: number } {
+  const inset = Math.min(12, Math.max(4, card.width * 0.16));
+  const left = offsetX + card.x + inset;
+  const right = offsetX + card.x + card.width - inset;
+  if (right <= left) {
+    const center = offsetX + card.x + card.width / 2;
+    return { left: center, right: center };
+  }
+  return { left, right };
+}
+
+function endSide(draft: InfluenceDraft, end: "x1" | "x2"): "top" | "bottom" {
+  if (end === "x1") return draft.mode === "up" ? "top" : "bottom";
+  return draft.mode === "down" ? "top" : "bottom";
+}
+
+/** Разводит концы подписанной стрелки, чтобы полка была длиннее текста. */
+function spreadLabeledSpans(drafts: readonly InfluenceDraft[], offsetX: number): void {
+  const taken = (cardId: string, side: "top" | "bottom", except: InfluenceDraft): number[] => {
+    const xs: number[] = [];
+    for (const other of drafts) {
+      if (other === except) continue;
+      if (other.from.node.id === cardId && endSide(other, "x1") === side) xs.push(other.x1);
+      if (other.to.node.id === cardId && endSide(other, "x2") === side) xs.push(other.x2);
+    }
+    return xs;
+  };
+  const push = (
+    draft: InfluenceDraft,
+    key: "x1" | "x2",
+    dir: number,
+    limits: { left: number; right: number },
+    blocked: readonly number[],
+  ): boolean => {
+    const current = draft[key];
+    for (const step of [8, 16, 24, 40]) {
+      const next = Math.min(limits.right, Math.max(limits.left, current + dir * step));
+      if (Math.abs(next - current) < 1) continue;
+      if (blocked.some((x) => Math.abs(x - next) < 10)) continue;
+      draft[key] = next;
+      return true;
+    }
+    return false;
+  };
+  for (const draft of drafts) {
+    if (!draft.label) continue;
+    const need = measureText(draft.label, EDGE_LABEL_FONT) + 100;
+    for (let step = 0; step < 48 && Math.abs(draft.x2 - draft.x1) < need; step += 1) {
+      const sign = draft.x2 >= draft.x1 ? 1 : -1;
+      const movedTo = push(
+        draft,
+        "x2",
+        sign,
+        contactLimitsOf(draft.to, offsetX),
+        taken(draft.to.node.id, endSide(draft, "x2"), draft),
+      );
+      const movedFrom = push(
+        draft,
+        "x1",
+        -sign,
+        contactLimitsOf(draft.from, offsetX),
+        taken(draft.from.node.id, endSide(draft, "x1"), draft),
+      );
+      if (!movedTo && !movedFrom) break;
+    }
+  }
+}
+
+interface TrackObstacle {
+  y: number;
+  x0: number;
+  x1: number;
+  labelTop?: number;
+  labelBottom?: number;
+}
+
+function hostSegmentIndex(points: readonly RoutePoint[]): number {
+  let best = -1;
+  let span = 0;
+  for (let index = 0; index < points.length - 1; index += 1) {
+    if (index === 0 || index + 1 === points.length - 1) continue;
+    const a = points[index];
+    const b = points[index + 1];
+    if (Math.abs(a.y - b.y) > 0.4) continue;
+    const width = Math.abs(a.x - b.x);
+    if (width <= span) continue;
+    span = width;
+    best = index;
+  }
+  return best;
+}
+
+function labelReserve(y: number, labeled: boolean): { top: number; bottom: number } | null {
+  if (!labeled) return null;
+  const bottom = y - 4;
+  return { top: bottom - EDGE_LABEL_BAND, bottom };
+}
+
+function trackConflicts(
+  y: number,
+  x0: number,
+  x1: number,
+  labeled: boolean,
+  obstacle: TrackObstacle,
+): boolean {
+  if (!rangesOverlap(x0, x1, obstacle.x0, obstacle.x1)) return false;
+  if (Math.abs(y - obstacle.y) < TRACK_CLEAR) return true;
+  const reserve = labelReserve(y, labeled);
+  if (reserve && obstacle.y > reserve.top - 3 && obstacle.y < y + 3) return true;
+  if (
+    reserve &&
+    obstacle.labelTop !== undefined &&
+    obstacle.labelBottom !== undefined &&
+    rangesOverlap(reserve.top, reserve.bottom, obstacle.labelTop, obstacle.labelBottom)
+  ) {
+    return true;
+  }
+  if (obstacle.labelTop !== undefined && obstacle.labelBottom !== undefined) {
+    if (y > obstacle.labelTop - 3 && y < obstacle.labelBottom + 3) return true;
+  }
+  return false;
+}
+
+function gapBand(x0: number, x1: number, y: number, cards: readonly CardBox[]): { top: number; bottom: number } {
+  for (const card of cards) {
+    if (!rangesOverlap(x0, x1, card.left, card.right)) continue;
+    if (card.top < y - 1 && card.bottom > y + 1) return { top: y, bottom: y };
+  }
+  let top = Number.NEGATIVE_INFINITY;
+  let bottom = Number.POSITIVE_INFINITY;
+  for (const card of cards) {
+    if (!rangesOverlap(x0, x1, card.left, card.right)) continue;
+    if (card.bottom <= y + 1) top = Math.max(top, card.bottom);
+    if (card.top >= y - 1) bottom = Math.min(bottom, card.top);
+  }
+  if (!Number.isFinite(top)) top = y - 40;
+  if (!Number.isFinite(bottom)) bottom = y + 40;
+  return { top, bottom };
+}
+
+function writeObstacle(obstacle: TrackObstacle, y: number, labeled: boolean): void {
+  obstacle.y = y;
+  const reserve = labelReserve(y, labeled);
+  obstacle.labelTop = reserve?.top;
+  obstacle.labelBottom = reserve?.bottom;
+}
+
+/** Сдвигает горизонтали влияния с шины подчинения и с подписей других стрелок. */
+function separateInfluenceTracks(
+  routes: readonly { points: RoutePoint[]; label?: string }[],
+  reports: readonly { x1: number; y1: number; x2: number; y2: number; midY: number }[],
+  cards: readonly CardBox[],
+): void {
+  const fixed: TrackObstacle[] = reports.map((elbow) => ({
+    y: elbow.midY,
+    x0: Math.min(elbow.x1, elbow.x2),
+    x1: Math.max(elbow.x1, elbow.x2),
+  }));
+  const tracks: { points: RoutePoint[]; index: number; labeled: boolean; obstacle: TrackObstacle }[] = [];
+  for (const route of routes) {
+    const host = hostSegmentIndex(route.points);
+    for (let index = 0; index < route.points.length - 1; index += 1) {
+      if (index === 0 || index + 1 === route.points.length - 1) continue;
+      const a = route.points[index];
+      const b = route.points[index + 1];
+      if (Math.abs(a.y - b.y) > 0.4 || Math.abs(a.x - b.x) < 8) continue;
+      const labeled = Boolean(route.label) && index === host;
+      const obstacle: TrackObstacle = {
+        y: a.y,
+        x0: Math.min(a.x, b.x),
+        x1: Math.max(a.x, b.x),
+      };
+      writeObstacle(obstacle, a.y, labeled);
+      tracks.push({ points: route.points, index, labeled, obstacle });
+    }
+  }
+  const ordered = [...tracks].sort((a, b) => Number(b.labeled) - Number(a.labeled));
+  for (const track of ordered) {
+    const a = track.points[track.index];
+    const b = track.points[track.index + 1];
+    const x0 = Math.min(a.x, b.x);
+    const x1 = Math.max(a.x, b.x);
+    const band = gapBand(x0, x1, a.y, cards);
+    const others = [...fixed, ...tracks.map((item) => item.obstacle)];
+    let next = a.y;
+    const span = Math.max(0, band.bottom - band.top);
+    for (let delta = 0; delta <= span + 1; delta += 1) {
+      const candidates = delta === 0 ? [a.y] : [a.y + delta, a.y - delta];
+      const found = candidates.find(
+        (y) =>
+          y >= band.top + 4 &&
+          y <= band.bottom - 4 &&
+          !others.some((obstacle) => obstacle !== track.obstacle && trackConflicts(y, x0, x1, track.labeled, obstacle)),
+      );
+      if (found !== undefined) {
+        next = found;
+        break;
+      }
+    }
+    a.y = next;
+    b.y = next;
+    writeObstacle(track.obstacle, next, track.labeled);
+  }
+}
+
+interface FlatSegment {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  owner: number;
+  host: boolean;
+}
+
+function flatSegments(
+  routes: readonly { points: RoutePoint[] }[],
+  reports: readonly { x1: number; y1: number; x2: number; y2: number; midY: number }[],
+): FlatSegment[] {
+  const segments: FlatSegment[] = [];
+  reports.forEach((elbow, index) => {
+    const owner = -1 - index;
+    segments.push({ x0: elbow.x1, y0: elbow.y1, x1: elbow.x1, y1: elbow.midY, owner, host: false });
+    segments.push({ x0: elbow.x1, y0: elbow.midY, x1: elbow.x2, y1: elbow.midY, owner, host: false });
+    segments.push({ x0: elbow.x2, y0: elbow.midY, x1: elbow.x2, y1: elbow.y2, owner, host: false });
+  });
+  routes.forEach((route, owner) => {
+    const host = hostSegmentIndex(route.points);
+    for (let index = 0; index < route.points.length - 1; index += 1) {
+      const a = route.points[index];
+      const b = route.points[index + 1];
+      segments.push({
+        x0: a.x,
+        y0: a.y,
+        x1: b.x,
+        y1: b.y,
+        owner,
+        host: index === host,
+      });
+    }
+  });
+  return segments;
+}
+
+/** Подпись над своей полкой, в промежутке, где нет чужого штриха. */
+function placeEdgeLabel(
+  points: readonly RoutePoint[],
+  text: string,
+  segments: readonly FlatSegment[],
+  owner: number,
+): RoutePoint {
+  const hostIndex = hostSegmentIndex(points);
+  if (hostIndex < 0) return labelAnchor(points);
+  const a = points[hostIndex];
+  const b = points[hostIndex + 1];
+  const lineY = a.y;
+  const width = measureText(text, EDGE_LABEL_FONT) + 10;
+  const boxBottom = lineY - 4;
+  const boxTop = boxBottom - EDGE_LABEL_BAND;
+  const xMin = Math.min(a.x, b.x);
+  const xMax = Math.max(a.x, b.x);
+  const blocked: { lo: number; hi: number }[] = [];
+  for (const segment of segments) {
+    if (segment.owner === owner && segment.host) continue;
+    const vertical = Math.abs(segment.x0 - segment.x1) < 0.6;
+    const horizontal = Math.abs(segment.y0 - segment.y1) < 0.6;
+    if (vertical) {
+      const y0 = Math.min(segment.y0, segment.y1);
+      const y1 = Math.max(segment.y0, segment.y1);
+      if (y1 <= boxTop || y0 >= boxBottom) continue;
+      blocked.push({ lo: segment.x0 - 6, hi: segment.x0 + 6 });
+      continue;
+    }
+    if (!horizontal) continue;
+    if (segment.y0 <= boxTop - 1 || segment.y0 >= boxBottom + 1) continue;
+    if (!rangesOverlap(xMin, xMax, segment.x0, segment.x1)) continue;
+    blocked.push({
+      lo: Math.min(segment.x0, segment.x1) - 4,
+      hi: Math.max(segment.x0, segment.x1) + 4,
+    });
+  }
+  const marks = blocked
+    .map((interval) => ({ lo: Math.max(xMin, interval.lo), hi: Math.min(xMax, interval.hi) }))
+    .filter((interval) => interval.hi > interval.lo)
+    .sort((left, right) => left.lo - right.lo);
+  const free: { lo: number; hi: number }[] = [];
+  let cursor = xMin;
+  for (const mark of marks) {
+    if (mark.lo > cursor) free.push({ lo: cursor, hi: mark.lo });
+    cursor = Math.max(cursor, mark.hi);
+  }
+  if (cursor < xMax) free.push({ lo: cursor, hi: xMax });
+  const center = (xMin + xMax) / 2;
+  let slot = free.find((interval) => interval.hi - interval.lo >= width) ?? null;
+  if (!slot && free.length > 0) {
+    slot = [...free].sort((left, right) => right.hi - right.lo - (left.hi - left.lo))[0];
+  }
+  const span = slot ?? { lo: xMin, hi: xMax };
+  let x = center;
+  if (span.hi - span.lo >= width) {
+    x = Math.min(span.hi - width / 2, Math.max(span.lo + width / 2, center));
+  } else {
+    x = (span.lo + span.hi) / 2;
+  }
+  return { x, y: boxBottom - 2 };
+}
+
 /** Ломаные стрелки влияния, как линии подчинения: без наложения друг на друга. */
 function routeInfluences(
   placed: readonly PlacedTreeNode<PowerPerson>[],
@@ -1302,6 +1694,7 @@ function routeInfluences(
       else item.draft.x2 = x;
     });
   }
+  spreadLabeledSpans(drafts, offsetX);
 
   const laneOf = new Map<InfluenceDraft, { lane: number; count: number }>();
   const corridors = new Map<string, InfluenceDraft[]>();
@@ -1333,10 +1726,6 @@ function routeInfluences(
     const points = pathHitsCards(elbow, obstacles)
       ? routeAroundCards(draft, fromBox, toBox, obstacles, lane.lane)
       : elbow;
-    const labelAt = labelAnchor(points);
-    const xs = points.map((point) => point.x);
-    const ys = points.map((point) => point.y);
-    overflow = Math.max(overflow, ...ys.map((y) => y - treeBottom), 0);
     const color = mono ? monoPaint(draft.link.color, invert) : draft.link.color;
     return {
       points,
@@ -1344,12 +1733,26 @@ function routeInfluences(
       dash: STROKE_DASH[draft.link.style],
       width: draft.link.width,
       label: draft.label,
-      labelX: labelAt.x,
-      labelY: labelAt.y,
+      labelX: 0,
+      labelY: 0,
       both: draft.both,
-      minX: Math.min(...xs),
-      maxX: Math.max(...xs),
+      minX: 0,
+      maxX: 0,
     };
+  });
+  const reports = reportingElbowRoutes(placed, model.reports, offsetX, offsetY);
+  const cards = placed.map((card) => cardBox(card, offsetX, offsetY));
+  separateInfluenceTracks(routes, reports, cards);
+  const segments = flatSegments(routes, reports);
+  routes.forEach((route, index) => {
+    const labelAt = route.label ? placeEdgeLabel(route.points, route.label, segments, index) : labelAnchor(route.points);
+    route.labelX = labelAt.x;
+    route.labelY = labelAt.y;
+    const xs = route.points.map((point) => point.x);
+    const ys = route.points.map((point) => point.y);
+    route.minX = Math.min(...xs);
+    route.maxX = Math.max(...xs);
+    overflow = Math.max(overflow, ...ys.map((y) => y - treeBottom), 0);
   });
   return { routes, overflow: Math.max(0, overflow) };
 }
@@ -1721,6 +2124,7 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
       const box = measured.get(person.id)!;
       return { lines: [person.name], width: box.width, height: box.height };
     },
+    rankGapBelow(model),
   );
   const locale = legendLocale(model, options);
   const legend = measureLegend(model, locale);
@@ -1776,6 +2180,7 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
     title: model.title,
     debugFrames: options.debugFrames,
     background: model.monoInvert ? true : false,
+    xlink: model.people.some((person) => Boolean(person.photo)),
   });
   titleLines.forEach((line, idx) => {
     svg.text(24, 22 + idx * labelLineStep(15), line, {
@@ -1820,13 +2225,22 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
       ...(route.both ? { "marker-start": arrow.ref } : {}),
       ...(route.dash ? { "stroke-dasharray": route.dash } : {}),
     });
-    if (route.label) {
-      svg.text(route.labelX, route.labelY, route.label, {
-        "font-size": 10,
-        fill: route.color,
-        "data-edge-label": "1",
-      });
-    }
+  });
+  routed.routes.forEach((route) => {
+    if (!route.label) return;
+    const plateWidth = measureText(route.label, EDGE_LABEL_FONT) + 10;
+    const plateX = route.labelX - plateWidth / 2;
+    const plateY = route.labelY - EDGE_LABEL_BAND + 2;
+    svg.rect(plateX, plateY, plateWidth, EDGE_LABEL_BAND, {
+      fill: palette.bg,
+      stroke: "none",
+      "data-label-plate": "1",
+    });
+    svg.text(route.labelX, route.labelY, route.label, {
+      "font-size": EDGE_LABEL_FONT,
+      fill: route.color,
+      "data-edge-label": "1",
+    });
   });
 
   if (legend) {

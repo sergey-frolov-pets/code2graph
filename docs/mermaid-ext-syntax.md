@@ -692,7 +692,7 @@ orgchart
 | `<id1> -.-> <id2>` | пунктирное ребро (dotted, «второй руководитель») |
 | `avatar <n>` / `avatar off` | сторона блока фото в px (24–128, по умолчанию для orgchart блок выключен). `avatar on` включает сторону 48 |
 | `<id> [<подпись>] gender=m\|f\|?` | силуэт, если фото нет: мужской, женский или неизвестный пол. Синонимы: `male`/`м`, `female`/`ж`, `unknown`/`н` |
-| `<id> [<подпись>] photo=` | ссылка `http(s)` или `data:image` png/jpeg/gif/webp |
+| `<id> [<подпись>] photo=` | ссылка на файл (`photos/a.jpg`, `./a.jpg`, `C:\\…`, `file://…`) или адрес `http(s)`. Запасной вид: `data:image` png/jpeg/gif/webp |
 | `<id> [<подпись>] avatar=off` | спрятать блок фото только у этого узла |
 | `mono` / `mono invert` | серые блоки (см. §0) |
 
@@ -1115,7 +1115,7 @@ link coach color=#e3c34a style=dot label=наставник
 | `action=` | U Urgent, S Significant, M Modest |
 | `attitude=` | `++` Enthusiastic, `+` Positive, `0` Neutral, `-` Negative, `--` Hostile |
 | `counterpart=` | люди другой компании в полосе и в колонке «Контакты». Пустое значение и `-` не попадают в таблицу |
-| `gender=` / `photo=` / `avatar=off` | как у `orgchart`. `photo=` принимает ссылку на портрет |
+| `gender=` / `photo=` / `avatar=off` | как у `orgchart`. `photo=` — ссылка на файл или адрес в интернете; `data:image` — запасной вид |
 | `comms on` / `comms off` | таблица под легендой, по умолчанию выключена. Заголовки: «Компания» и имя `company` (без имени — только слово), «Контакты», «Связи» |
 | `A -> B` / `A -.-> B` | сплошное и пунктирное подчинение |
 | `link имя color=#hex style=solid\|dash\|dot\|dashdot label=… width=` | объявление типа связи. `label` — только текст легенды, на стрелках не пишется. Последнее объявление побеждает |

@@ -219,7 +219,8 @@ DirectorFinanciero -.-> Servidor`,
     orgchartAvatar: `orgchart
 %% avatar 48 enciende el recuadro de la foto. avatar off lo oculta. Sin la línea el recuadro sigue apagado.
 %% gender=m silueta masculina, gender=f femenina, gender=? desconocido: silueta con signo de interrogación.
-%% photo="https://…" o photo="data:image/png;base64,…" sustituye la silueta. avatar=off en un nodo oculta solo ese recuadro.
+%% photo= es un enlace. Archivo en el dispositivo: photo="photos/ana-vidal.jpg". En internet: photo="https://example.com/photos/ana-vidal.jpg".
+%% Forma auxiliar, imagen dentro del texto: photo="data:image/png;base64,…". avatar=off en un nodo oculta solo ese recuadro.
 %% El lado mide 24–128 px.
 avatar 48
 DirectorGeneral [Director general|Alejandro Mora] gender=m
@@ -231,7 +232,8 @@ DirectorGeneral -> Operaciones`,
 %% Mapa de poder: puntuaciones, fotos y flechas de influencia con nombre sobre el árbol.
 %% company "Nombre" — empresa bajo el título. legend on|off — leyenda (por defecto on).
 %% avatar 48 — lado de la foto en px (24–128). avatar off oculta todos los recuadros.
-%% Nodo: id [Nombre|Cargo] gender=m|f|? photo="https://…" o data:image/png;base64,…
+%% Nodo: id [Nombre|Cargo] gender=m|f|? photo="photos/ana-vidal.jpg" o photo="https://example.com/photos/ana-vidal.jpg"
+%% Forma auxiliar: photo="data:image/jpeg;base64,…". Las tarjetas de abajo la usan para verse con caras sin red.
 %%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
 %%   counterpart="Nombre" es una persona de otra empresa, no de las tarjetas. avatar=off oculta una foto.
 %%   Sin foto ni género — silueta con ?.
@@ -778,7 +780,8 @@ data
     orgchartAvatar: `orgchart
 %% avatar 48 打开照片框。avatar off 隐藏它。没有这行时框保持关闭，旧图仍是纯文字。
 %% gender=m 男性剪影，gender=f 女性剪影，gender=? 性别未知，带问号的剪影。
-%% photo="https://…" 或 photo="data:image/png;base64,…" 替换剪影。节点上的 avatar=off 只隐藏这一框。
+%% photo= 是链接。设备上的文件：photo="photos/chen-li.jpg"。网上地址：photo="https://example.com/photos/chen-li.jpg"。
+%% 备用形式，图片写在文本里：photo="data:image/png;base64,…". 节点上的 avatar=off 只隐藏这一框。
 %% 边长 24–128 px。
 avatar 48
 首席执行官 [首席执行官|王伟] gender=m
@@ -790,7 +793,8 @@ avatar 48
 %% 权力图：评分、照片，以及画在汇报树之上的具名影响箭头。
 %% company "名称" — 标题下的公司。legend on|off — 图例（默认 on）。
 %% avatar 48 — 照片边长，单位 px（24–128）。avatar off 隐藏所有照片框。
-%% 节点：id [姓名|职务] gender=m|f|? photo="https://…" 或 data:image/png;base64,…
+%% 节点：id [姓名|职务] gender=m|f|? photo="photos/chen-li.jpg" 或 photo="https://example.com/photos/chen-li.jpg"
+%% 备用形式：photo="data:image/jpeg;base64,…". 下面的卡片用它，这样示例离线也能显示头像。
 %%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
 %%   counterpart="姓名" 是另一家公司的人，不是卡片上的同事。avatar=off 隐藏一个人的照片。
 %%   没有照片也没有性别 — 带问号的剪影。
@@ -1337,7 +1341,8 @@ data
     orgchartAvatar: `orgchart
 %% avatar 48 で写真枠を出します。avatar off で隠します。行がなければ枠はオフのままです。
 %% gender=m は男性のシルエット、gender=f は女性、gender=? は性別不明で疑問符付きのシルエットです。
-%% photo="https://…" または photo="data:image/png;base64,…" がシルエットを置き換えます。ノードの avatar=off はその枠だけ隠します。
+%% photo= はリンクです。端末上のファイル: photo="photos/misaki.jpg"。インターネット: photo="https://example.com/photos/misaki.jpg"。
+%% 補助形式、本文に画像を埋め込む: photo="data:image/png;base64,…". ノードの avatar=off はその枠だけ隠します。
 %% 一辺は 24–128 px です。
 avatar 48
 社長 [最高経営責任者|佐藤健] gender=m
@@ -1349,7 +1354,8 @@ avatar 48
 %% パワーマップ: 評価、写真、そして報告ツリーの上に描く名前付きの影響矢印。
 %% company "名前" — 見出しの下の会社。legend on|off — 凡例（既定は on）。
 %% avatar 48 — 写真枠の一辺（px、24–128）。avatar off はすべての枠を隠します。
-%% ノード: id [名前|役職] gender=m|f|? photo="https://…" または data:image/png;base64,…
+%% ノード: id [名前|役職] gender=m|f|? photo="photos/misaki.jpg" または photo="https://example.com/photos/misaki.jpg"
+%% 補助形式: photo="data:image/jpeg;base64,…". 下のカードはオフラインでも顔が出るよう、この形式です。
 %%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
 %%   counterpart="名前" は別の会社の人で、カードの同僚ではありません。avatar=off は一人の写真を隠します。
 %%   写真も性別もないときは疑問符付きのシルエットです。
@@ -1896,7 +1902,8 @@ data
     orgchartAvatar: `orgchart
 %% avatar 48 फ़ोटो बॉक्स चालू करता है। avatar off उसे छिपाता है। पंक्ति न हो तो बॉक्स बंद रहता है।
 %% gender=m पुरुष छाया, gender=f महिला छाया, gender=? अज्ञात लिंग — प्रश्न चिह्न वाली छाया।
-%% photo="https://…" या photo="data:image/png;base64,…" छाया की जगह लेता है। नोड पर avatar=off केवल वही बॉक्स छिपाता है।
+%% photo= एक लिंक है। डिवाइस पर फ़ाइल: photo="photos/ananya.jpg". इंटरनेट: photo="https://example.com/photos/ananya.jpg".
+%% सहायक रूप, पाठ के अंदर चित्र: photo="data:image/png;base64,…". नोड पर avatar=off केवल वही बॉक्स छिपाता है।
 %% भुजा 24–128 px है।
 avatar 48
 मुख्यकार्यकारी [मुख्य कार्यकारी अधिकारी|अर्जुन शर्मा] gender=m
@@ -1908,7 +1915,8 @@ avatar 48
 %% पावर मैप: अंक, फ़ोटो, और रिपोर्टिंग ट्री पर नाम वाली प्रभाव तीर।
 %% company "नाम" — शीर्षक के नीचे कंपनी। legend on|off — संकेत (डिफ़ॉल्ट on)।
 %% avatar 48 — फ़ोटो की भुजा px में (24–128)। avatar off सभी बॉक्स छिपाता है।
-%% नोड: id [नाम|पद] gender=m|f|? photo="https://…" या data:image/png;base64,…
+%% नोड: id [नाम|पद] gender=m|f|? photo="photos/ananya.jpg" या photo="https://example.com/photos/ananya.jpg"
+%% सहायक रूप: photo="data:image/jpeg;base64,…". नीचे के कार्ड इसी रूप में हैं, ताकि बिना नेटवर्क चेहरे दिखें।
 %%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
 %%   counterpart="नाम" दूसरी कंपनी का व्यक्ति है, कार्ड वाला सहकर्मी नहीं। avatar=off एक फ़ोटो छिपाता है।
 %%   न फ़ोटो न लिंग — प्रश्न चिह्न वाली छाया।
@@ -2455,7 +2463,8 @@ DiretoraFinanceira -.-> Servidor`,
     orgchartAvatar: `orgchart
 %% avatar 48 liga a caixa da foto. avatar off a esconde. Sem a linha a caixa continua desligada.
 %% gender=m é a silhueta masculina, gender=f a feminina, gender=? desconhecido — silhueta com ponto de interrogação.
-%% photo="https://…" ou photo="data:image/png;base64,…" substitui a silhueta. avatar=off num nó esconde só essa caixa.
+%% photo= é uma ligação. Ficheiro no dispositivo: photo="photos/elena-costa.jpg". Na internet: photo="https://example.com/photos/elena-costa.jpg".
+%% Forma auxiliar, imagem dentro do texto: photo="data:image/png;base64,…". avatar=off num nó esconde só essa caixa.
 %% O lado tem 24–128 px.
 avatar 48
 DiretorGeral [Diretor-geral|André Moraes] gender=m
@@ -2467,7 +2476,8 @@ DiretorGeral -> Operacoes`,
 %% Mapa de poder: notas, fotos e setas de influência nomeadas sobre a árvore.
 %% company "Nome" — empresa sob o título. legend on|off — legenda (padrão on).
 %% avatar 48 — lado da foto em px (24–128). avatar off esconde todas as caixas.
-%% Nó: id [Nome|Cargo] gender=m|f|? photo="https://…" ou data:image/png;base64,…
+%% Nó: id [Nome|Cargo] gender=m|f|? photo="photos/elena-costa.jpg" ou photo="https://example.com/photos/elena-costa.jpg"
+%% Forma auxiliar: photo="data:image/jpeg;base64,…". Os cartões abaixo usam-na para abrir com rostos sem rede.
 %%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
 %%   counterpart="Nome" é uma pessoa de outra empresa, não das fichas. avatar=off esconde uma foto.
 %%   Sem foto e sem gênero — silhueta com ?.
@@ -3014,7 +3024,8 @@ Finanzleitung -.-> Server`,
     orgchartAvatar: `orgchart
 %% avatar 48 schaltet das Fotofeld ein. avatar off blendet es aus. Ohne die Zeile bleibt es aus.
 %% gender=m männliche Silhouette, gender=f weibliche, gender=? unbekannt — Silhouette mit Fragezeichen.
-%% photo="https://…" oder photo="data:image/png;base64,…" ersetzt die Silhouette. avatar=off an einem Knoten blendet nur dieses Feld aus.
+%% photo= ist ein Link. Datei auf dem Gerät: photo="photos/elena-hofmann.jpg". Im Internet: photo="https://example.com/photos/elena-hofmann.jpg".
+%% Hilfsform, Bild im Text: photo="data:image/png;base64,…". avatar=off an einem Knoten blendet nur dieses Feld aus.
 %% Die Seite ist 24–128 px.
 avatar 48
 Geschäftsführung [Geschäftsführer|Alexander Berger] gender=m
@@ -3026,7 +3037,8 @@ Geschäftsführung -> Betrieb`,
 %% Power Map: Bewertungen, Fotos und benannte Einflusspfeile über dem Berichtsbaum.
 %% company "Name" — Firma unter der Überschrift. legend on|off — Legende (Vorgabe on).
 %% avatar 48 — Seitenlänge des Fotos in px (24–128). avatar off blendet alle Felder aus.
-%% Knoten: id [Name|Rolle] gender=m|f|? photo="https://…" oder data:image/png;base64,…
+%% Knoten: id [Name|Rolle] gender=m|f|? photo="photos/elena-hofmann.jpg" oder photo="https://example.com/photos/elena-hofmann.jpg"
+%% Hilfsform: photo="data:image/jpeg;base64,…". Die Karten unten nutzen sie, damit das Beispiel ohne Netz Gesichter zeigt.
 %%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
 %%   counterpart="Name" ist eine Person einer anderen Firma, nicht von den Karten. avatar=off blendet ein Foto aus.
 %%   Kein Foto und kein Geschlecht — Silhouette mit Fragezeichen.
@@ -3573,7 +3585,8 @@ data
     orgchartAvatar: `orgchart
 %% avatar 48 يظهر مربع الصورة. avatar off يخفيه. بلا هذا السطر يبقى المربع مخفيًا.
 %% gender=m صورة ظلية لرجل، gender=f لامرأة، gender=? جنس غير معروف — صورة ظلية مع علامة استفهام.
-%% photo="https://…" أو photo="data:image/png;base64,…" يحل محل الصورة الظلية. avatar=off على عقدة يخفي مربعها فقط.
+%% photo= رابط. ملف على الجهاز: photo="photos/layla.jpg". على الإنترنت: photo="https://example.com/photos/layla.jpg".
+%% شكل احتياطي، الصورة داخل النص: photo="data:image/png;base64,…". avatar=off على عقدة يخفي مربعها فقط.
 %% طول الضلع 24–128 px.
 avatar 48
 الرئيس_التنفيذي [الرئيس التنفيذي|أحمد منصور] gender=m
@@ -3585,7 +3598,8 @@ avatar 48
 %% خريطة النفوذ: درجات وصور وأسهم تأثير مسماة فوق شجرة التبعية.
 %% company "الاسم" — الشركة تحت العنوان. legend on|off — المفتاح (الافتراضي on).
 %% avatar 48 — ضلع الصورة بالبكسل (24–128). avatar off يخفي كل المربعات.
-%% عقدة: id [الاسم|المنصب] gender=m|f|? photo="https://…" أو data:image/png;base64,…
+%% عقدة: id [الاسم|المنصب] gender=m|f|? photo="photos/layla.jpg" أو photo="https://example.com/photos/layla.jpg"
+%% شكل احتياطي: photo="data:image/jpeg;base64,…". البطاقات أدناه تستخدمه لتظهر الوجوه دون شبكة.
 %%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
 %%   counterpart="الاسم" شخص من شركة أخرى، وليس من البطاقات. avatar=off يخفي صورة شخص واحد.
 %%   بلا صورة وبلا جنس — صورة ظلية مع ?.

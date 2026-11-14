@@ -294,7 +294,7 @@ function parseNodeAttrs(
       const href = sanitizePhotoHref(value);
       if (!href) {
         return {
-          error: `фото: ожидается http(s)-адрес или data:image (png, jpeg, gif, webp), получено «${value.slice(0, 48)}»`,
+          error: `фото: ожидается ссылка на файл или http(s)-адрес; запасной вид — data:image (png, jpeg, gif, webp), получено «${value.slice(0, 48)}»`,
         };
       }
       paint.photo = href;
@@ -639,6 +639,7 @@ export function layoutOrgTree<T extends { id: string }>(
   virtualRoot: boolean,
   root: string | null,
   measure: (node: T) => { lines: string[]; width: number; height: number },
+  vGap?: number | ((upperDepth: number) => number),
 ): { placed: PlacedTreeNode<T>[]; width: number; height: number } {
   const depth = computeDepths(nodes, edges, virtualRoot, root);
   const levels = new Map<number, T[]>();
@@ -673,7 +674,8 @@ export function layoutOrgTree<T extends { id: string }>(
   const contentWidth = Math.max(maxRowWidth, NODE_MIN_WIDTH);
 
   let y = 0;
-  for (const d of levelKeys) {
+  for (let index = 0; index < levelKeys.length; index += 1) {
+    const d = levelKeys[index];
     const row = levels.get(d) as T[];
     const total = rowWidths.get(d) ?? 0;
     let x = (contentWidth - total) / 2;
@@ -692,10 +694,16 @@ export function layoutOrgTree<T extends { id: string }>(
       });
       x += m.width + H_GAP;
     }
-    y += rowH + V_GAP;
+    const gap =
+      index < levelKeys.length - 1
+        ? typeof vGap === "function"
+          ? vGap(d)
+          : (vGap ?? V_GAP)
+        : 0;
+    y += rowH + gap;
   }
 
-  const height = Math.max(0, y - V_GAP);
+  const height = Math.max(0, y);
   return { placed, width: contentWidth, height };
 }
 
@@ -879,15 +887,22 @@ function assignElbowLanes(groups: EdgeLaneGroup[]): Map<string, { lane: number; 
   return assigned;
 }
 
-export function drawReportingElbows<T extends { id: string }>(
-  svg: SvgBuilder,
+export interface ReportingElbow {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  midY: number;
+  style: OrgEdgeStyle;
+}
+
+/** Ломаные подчинения: те же точки, что рисует `drawReportingElbows`. */
+export function reportingElbowRoutes<T extends { id: string }>(
   placed: readonly PlacedTreeNode<T>[],
   edges: readonly { from: string; to: string; style: OrgEdgeStyle }[],
   offsetX: number,
   offsetY: number,
-  stroke: string,
-  markerRef: string,
-): void {
+): ReportingElbow[] {
   const byId = new Map(placed.map((p) => [p.node.id, p]));
   const drawable: DrawableEdge[] = [];
   for (const edge of edges) {
@@ -944,10 +959,27 @@ export function drawReportingElbows<T extends { id: string }>(
     }
   }
 
+  const elbows: ReportingElbow[] = [];
   for (const item of drawable) {
     const { edge, y1, y2, corridorTop, x1, x2 } = item;
     const lane = laneByEdge.get(item) ?? { lane: 0, laneCount: 1 };
     const midY = elbowLaneY(corridorTop, y2, lane.lane, lane.laneCount);
+    elbows.push({ x1, y1, x2, y2, midY, style: edge.style });
+  }
+  return elbows;
+}
+
+export function drawReportingElbows<T extends { id: string }>(
+  svg: SvgBuilder,
+  placed: readonly PlacedTreeNode<T>[],
+  edges: readonly { from: string; to: string; style: OrgEdgeStyle }[],
+  offsetX: number,
+  offsetY: number,
+  stroke: string,
+  markerRef: string,
+): void {
+  for (const elbow of reportingElbowRoutes(placed, edges, offsetX, offsetY)) {
+    const { x1, y1, x2, y2, midY } = elbow;
     const d = `M ${fmt(x1)} ${fmt(y1)} L ${fmt(x1)} ${fmt(midY)} L ${fmt(x2)} ${fmt(midY)} L ${fmt(x2)} ${fmt(y2)}`;
     const attrs: Record<string, string | number> = {
       d,
@@ -956,7 +988,7 @@ export function drawReportingElbows<T extends { id: string }>(
       "stroke-width": 1.2,
       "marker-end": markerRef,
     };
-    if (edge.style === "dotted") attrs["stroke-dasharray"] = "4 4";
+    if (elbow.style === "dotted") attrs["stroke-dasharray"] = "4 4";
     svg.path(d, attrs);
   }
 }
@@ -998,6 +1030,7 @@ export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): stri
     // Тесты считают прямоугольники по тегам: фон дал бы лишний <rect>.
     // У инвертированного ч/б тёмный холст нужен, иначе светлые блоки теряются.
     background: model.monoInvert ? true : false,
+    xlink: model.nodes.some((node) => Boolean(node.photo)),
   });
 
   if (model.title) {
