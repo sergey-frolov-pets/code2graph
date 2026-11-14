@@ -1,68 +1,130 @@
-import type { DashboardZone } from "@/services/mermaid/ext/engines/dashboard";
+import type { DashboardCell, DashboardModel } from "@/services/mermaid/ext/engines/dashboard";
 
-function overlaps(a: DashboardZone, b: DashboardZone): boolean {
-  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+export const DASHBOARD_MIN_TRACK = 0.08;
+
+export interface DashboardDivider {
+  axis: "col" | "row";
+  /** Граница после этой доли: между `index` и `index + 1`. */
+  index: number;
 }
 
-/** Первое свободное место, которое не наезжает на уже лежащие зоны. */
-export function placeDashboardZone(zones: DashboardZone[], diagramId: string): DashboardZone {
-  const sizes = [0.5, 0.34, 0.25];
-  for (const size of sizes) {
-    const step = size;
-    for (let y = 0; y + size <= 1.0001; y += step) {
-      for (let x = 0; x + size <= 1.0001; x += step) {
-        const candidate: DashboardZone = {
-          x: Number(x.toFixed(4)),
-          y: Number(y.toFixed(4)),
-          w: size,
-          h: size,
-          diagramId,
-        };
-        if (!zones.some((zone) => overlaps(zone, candidate))) return candidate;
-      }
-    }
+function tracksOf(model: DashboardModel, axis: "col" | "row"): number[] {
+  return axis === "col" ? model.cols : model.rows;
+}
+
+function withTracks(model: DashboardModel, axis: "col" | "row", tracks: number[]): DashboardModel {
+  return axis === "col" ? { ...model, cols: tracks } : { ...model, rows: tracks };
+}
+
+function widestIndex(tracks: number[]): number {
+  let best = 0;
+  for (let index = 1; index < tracks.length; index += 1) {
+    if (tracks[index] > tracks[best]) best = index;
   }
-  return { x: 0, y: 0, w: 0.25, h: 0.25, diagramId };
+  return best;
 }
 
-export type DashboardArrange = "columns" | "rows" | "grid";
-
-function round4(value: number): number {
-  return Number(value.toFixed(4));
-}
-
-function fractionSpan(index: number, count: number): { start: number; size: number } {
-  const start = round4(index / count);
-  const end = round4((index + 1) / count);
-  return { start, size: round4(end - start) };
-}
-
-/** Раскладывает выбранные диаграммы по колонкам, строкам или сетке. */
-export function arrangeDashboardZones(
-  ids: readonly string[],
-  preset: DashboardArrange,
-): DashboardZone[] {
-  const unique: string[] = [];
-  for (const id of ids) {
-    if (!unique.includes(id)) unique.push(id);
-  }
-  const count = unique.length;
-  if (count === 0) return [];
-
-  if (preset === "columns" || preset === "rows") {
-    return unique.map((diagramId, index) => {
-      const span = fractionSpan(index, count);
-      return preset === "columns"
-        ? { x: span.start, y: 0, w: span.size, h: 1, diagramId }
-        : { x: 0, y: span.start, w: 1, h: span.size, diagramId };
-    });
-  }
-
-  const cols = Math.ceil(Math.sqrt(count));
-  const rows = Math.ceil(count / cols);
-  return unique.map((diagramId, index) => {
-    const col = fractionSpan(index % cols, cols);
-    const row = fractionSpan(Math.floor(index / cols), rows);
-    return { x: col.start, y: row.start, w: col.size, h: row.size, diagramId };
+/** Режет выбранную или самую широкую долю пополам. `null`, если половина меньше минимума. */
+export function insertDashboardLine(
+  model: DashboardModel,
+  axis: "col" | "row",
+  selectedIndex: number | null,
+): DashboardModel | null {
+  const tracks = tracksOf(model, axis);
+  const index = selectedIndex !== null && selectedIndex >= 0 && selectedIndex < tracks.length
+    ? selectedIndex
+    : widestIndex(tracks);
+  const size = tracks[index];
+  if (size / 2 < DASHBOARD_MIN_TRACK - 1e-6) return null;
+  const left = size / 2;
+  const next = [
+    ...tracks.slice(0, index),
+    left,
+    size - left,
+    ...tracks.slice(index + 1),
+  ];
+  const cells = model.cells.map((cell) => {
+    const at = axis === "col" ? cell.col : cell.row;
+    if (at <= index) return cell;
+    return axis === "col" ? { ...cell, col: cell.col + 1 } : { ...cell, row: cell.row + 1 };
   });
+  return { ...withTracks(model, axis, next), cells };
+}
+
+/** Сдвигает границу, не опуская соседние доли ниже минимума. */
+export function moveDashboardDivider(
+  tracks: readonly number[],
+  index: number,
+  nextStart: number,
+): number[] {
+  if (index < 0 || index >= tracks.length - 1) return [...tracks];
+  const before = tracks.slice(0, index).reduce((sum, value) => sum + value, 0);
+  const pair = tracks[index] + tracks[index + 1];
+  const min = DASHBOARD_MIN_TRACK;
+  const local = Math.min(pair - min, Math.max(min, nextStart - before));
+  const next = [...tracks];
+  next[index] = local;
+  next[index + 1] = pair - local;
+  return next;
+}
+
+export interface DashboardLineRemoval {
+  model: DashboardModel;
+  dropped: DashboardCell[];
+}
+
+/** Сливает две доли. При двух привязках в одной строке или колонке остаётся левая или верхняя. */
+export function removeDashboardLine(model: DashboardModel, divider: DashboardDivider): DashboardLineRemoval | null {
+  const tracks = tracksOf(model, divider.axis);
+  if (divider.index < 0 || divider.index >= tracks.length - 1) return null;
+  const nextTracks = [
+    ...tracks.slice(0, divider.index),
+    tracks[divider.index] + tracks[divider.index + 1],
+    ...tracks.slice(divider.index + 2),
+  ];
+  const dropped: DashboardCell[] = [];
+  const kept: DashboardCell[] = [];
+  const groups = new Map<number, DashboardCell[]>();
+  for (const cell of model.cells) {
+    const along = divider.axis === "col" ? cell.col : cell.row;
+    const across = divider.axis === "col" ? cell.row : cell.col;
+    if (along !== divider.index && along !== divider.index + 1) {
+      const shifted = along > divider.index + 1 ? along - 1 : along;
+      kept.push(divider.axis === "col" ? { ...cell, col: shifted } : { ...cell, row: shifted });
+      continue;
+    }
+    const list = groups.get(across) ?? [];
+    list.push(cell);
+    groups.set(across, list);
+  }
+  for (const list of groups.values()) {
+    const lower = list.find((cell) => (divider.axis === "col" ? cell.col : cell.row) === divider.index);
+    const upper = list.find((cell) => (divider.axis === "col" ? cell.col : cell.row) === divider.index + 1);
+    if (lower && upper) dropped.push(upper);
+    const winner = lower ?? upper;
+    if (!winner) continue;
+    kept.push(divider.axis === "col"
+      ? { ...winner, col: divider.index }
+      : { ...winner, row: divider.index });
+  }
+  return { model: { ...withTracks(model, divider.axis, nextTracks), cells: kept }, dropped };
+}
+
+export function bindDashboardCell(
+  model: DashboardModel,
+  col: number,
+  row: number,
+  kind: DashboardCell["kind"],
+  ref: string,
+): DashboardModel {
+  const cells = model.cells.filter((cell) => cell.col !== col || cell.row !== row);
+  cells.push({ col, row, kind, ref });
+  return { ...model, cells };
+}
+
+export function clearDashboardCell(model: DashboardModel, col: number, row: number): DashboardModel {
+  return {
+    ...model,
+    cells: model.cells.filter((cell) => cell.col !== col || cell.row !== row),
+  };
 }

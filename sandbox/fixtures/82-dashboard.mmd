@@ -1,5 +1,10 @@
 dashboard
 size 1280x720
 refresh 5m
-zone 0 0 0.5 0.5 diagram "revenue"
-zone 0.5 0 0.5 1 diagram "load"
+title "Board"
+header "Today" font "sans-serif" fontsize 16 color none background #f1f5f9 shadow align start middle
+footer "Notes" font "sans-serif" fontsize 13 color none background #f8fafc noshadow align end bottom
+cols 0.5 0.5
+rows 1
+cell 0 0 diagram "revenue"
+cell 1 0 diagram "load"
