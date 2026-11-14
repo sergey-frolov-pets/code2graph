@@ -4,6 +4,7 @@ import type { Component } from "vue";
 import {
   ArrowDown,
   ArrowLeft,
+  AlignHorizontalSpaceAround,
   ArrowLeftRight,
   ArrowRight,
   Braces,
@@ -21,6 +22,7 @@ import {
   Globe,
   History,
   House,
+  Expand,
   Library,
   Moon,
   Plus,
@@ -32,6 +34,8 @@ import {
   SlidersHorizontal,
   Sparkles,
   SquarePen,
+  SquareSplitHorizontal,
+  SquareSplitVertical,
   Star,
   Sun,
   Table,
@@ -87,7 +91,11 @@ export type ActionIconName =
   | "code"
   | "table-paste"
   | "builder"
-  | "session-compare";
+  | "session-compare"
+  | "split-vertical"
+  | "split-horizontal"
+  | "center-line"
+  | "fit";
 
 const props = withDefaults(
   defineProps<{
@@ -142,6 +150,10 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   "table-paste": Table,
   builder: SlidersHorizontal,
   "session-compare": GitCompare,
+  "split-vertical": SquareSplitVertical,
+  "split-horizontal": SquareSplitHorizontal,
+  "center-line": AlignHorizontalSpaceAround,
+  fit: Expand,
 };
 
 const iconComponent = computed(() => ICON_MAP[props.name]);

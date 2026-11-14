@@ -42,7 +42,6 @@ const emit = defineEmits<{
   "filters-change": [];
   "delete-diagram": [payload: { id: string; title: string }];
   "move-diagram": [payload: MoveDiagramRequest];
-  "create-dashboard": [];
 }>();
 
 const { t } = useLocale();
@@ -163,13 +162,6 @@ function onMove(diagram: DiagramListItemDto): void {
           type="search"
           :placeholder="t('library.searchPlaceholder')"
         >
-        <button
-          class="btn"
-          type="button"
-          @click="emit('create-dashboard')"
-        >
-          {{ t("library.dashboard.create") }}
-        </button>
         <button
           class="btn library-filters__toggle"
           type="button"

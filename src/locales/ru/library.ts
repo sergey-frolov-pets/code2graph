@@ -458,4 +458,7 @@ export const libraryMessages = {
   "library.dashboard.alignTop": "Сверху",
   "library.dashboard.alignMiddle": "Посередине",
   "library.dashboard.alignBottom": "Снизу",
+  "library.dashboard.centerLine": "Поставить по середине",
+  "library.dashboard.border": "Граница",
+  "library.dashboard.borderWidth": "Толщина",
 } as const satisfies LocaleMessages;

@@ -227,7 +227,7 @@ function defaultExtRawSource(diagramType: DiagramTypeTag): string | undefined {
     return "gauge\nmin 0\nmax 100\nvalue 0\n";
   }
   if (diagramType === "dashboard") {
-    return "dashboard\nsize 1280x720\n";
+    return "dashboard\nsize 1280x720\ncols 1\nrows 1\n";
   }
   return undefined;
 }

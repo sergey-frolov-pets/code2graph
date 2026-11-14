@@ -44,6 +44,7 @@ import {
   supportsTablePaste,
 } from "@/services/table-paste";
 import { supportsDiagramBuilder } from "@/services/diagram-builder";
+import { detectType } from "@/services/mermaid/ext/registry";
 import { useEditorFoldOnboarding } from "@/composables/wizard/useWizardOnboarding";
 import { useEditorAutocomplete } from "@/composables/useEditorAutocomplete";
 import { useCodeFolds } from "@/composables/editor/useCodeFolds";
@@ -103,7 +104,6 @@ const emit = defineEmits<{
   "editor-fullscreen": [active: boolean];
   refreshData: [];
   showPreview: [];
-  openDashboard: [];
   surfaceMode: [mode: EditorSurfaceMode];
 }>();
 
@@ -193,6 +193,14 @@ function setSurfaceMode(mode: EditorSurfaceMode): void {
   preferredSurfaceMode.value = mode;
   syncSurfaceFromPreference();
 }
+
+watch(
+  () => diagramFormat.value === "mermaid" && detectType(source.value) === "dashboard",
+  (isDashboard, wasDashboard) => {
+    if (isDashboard && !wasDashboard) setSurfaceMode("builder");
+  },
+  { immediate: true },
+);
 
 
 const textareaRef = computed(
@@ -600,7 +608,6 @@ onUnmounted(() => {
         v-if="surfaceMode === 'builder'"
         v-model:source="source"
         :format="diagramFormat"
-        @open-dashboard="emit('openDashboard')"
       />
 
       <AiChatPanel

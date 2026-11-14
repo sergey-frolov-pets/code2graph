@@ -458,4 +458,7 @@ export const libraryMessages = {
   "library.dashboard.alignTop": "Topo",
   "library.dashboard.alignMiddle": "Meio",
   "library.dashboard.alignBottom": "Base",
+  "library.dashboard.centerLine": "Centrar entre vizinhos",
+  "library.dashboard.border": "Borda",
+  "library.dashboard.borderWidth": "Espessura",
 } as const satisfies LocaleMessages;

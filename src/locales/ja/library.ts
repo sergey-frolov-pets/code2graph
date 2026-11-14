@@ -458,4 +458,7 @@ export const libraryMessages = {
   "library.dashboard.alignTop": "上",
   "library.dashboard.alignMiddle": "中央",
   "library.dashboard.alignBottom": "下",
+  "library.dashboard.centerLine": "隣との中央に置く",
+  "library.dashboard.border": "枠線",
+  "library.dashboard.borderWidth": "太さ",
 } as const satisfies LocaleMessages;

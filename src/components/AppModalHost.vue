@@ -41,8 +41,6 @@ const {
   isWizardModalOpen,
   isSaveToLibraryModalOpen,
   isConvertModalOpen,
-  libraryDashboardNonce,
-  openLibraryDashboard,
   openSettingsModal,
   openAboutFromSettings,
   closeSyntaxModal,
@@ -94,7 +92,6 @@ function onWizardApply(payload: {
     :render-mode="renderMode"
     :layout="layout"
     :diagram-dark-mode="diagramDarkMode"
-    :start-dashboard="libraryDashboardNonce"
     @close="isLibraryModalOpen = false"
     @open-diagram="onFileLoaded"
   />
@@ -141,7 +138,6 @@ function onWizardApply(payload: {
     @close="closeWizardModal"
     @apply="onWizardApply"
     @open-settings="openSettingsModal"
-    @open-dashboard="openLibraryDashboard(); closeWizardModal()"
   />
 
   <component

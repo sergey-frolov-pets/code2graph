@@ -458,4 +458,7 @@ export const libraryMessages = {
   "library.dashboard.alignTop": "ऊपर",
   "library.dashboard.alignMiddle": "बीच",
   "library.dashboard.alignBottom": "नीचे",
+  "library.dashboard.centerLine": "पड़ोसियों के बीच केंद्र में रखें",
+  "library.dashboard.border": "सीमा",
+  "library.dashboard.borderWidth": "मोटाई",
 } as const satisfies LocaleMessages;

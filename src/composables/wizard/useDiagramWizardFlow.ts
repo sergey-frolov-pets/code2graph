@@ -48,7 +48,6 @@ export interface UseDiagramWizardFlowOptions {
     target?: BuilderApplyTarget;
   }) => void;
   onClose: () => void;
-  onOpenDashboard?: () => void;
 }
 
 /**
@@ -66,7 +65,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     t,
     onApply,
     onClose,
-    onOpenDashboard,
   } = options;
 
   const stepIndex = ref(0);
@@ -258,11 +256,6 @@ export function useDiagramWizardFlow(options: UseDiagramWizardFlowOptions) {
     prompt: string;
   }): void {
     if (payload.action === "builder") {
-      if (payload.example.diagramType === "dashboard") {
-        onOpenDashboard?.();
-        onClose();
-        return;
-      }
       openBuilderForType({
         format: payload.example.format,
         diagramType: payload.example.diagramType,

@@ -3,6 +3,7 @@ import { dashboardCacheFresh } from "@/services/dashboard/cache";
 import { dashboardEmbedDocument } from "@/services/dashboard/embed-url";
 import {
   bindDashboardCell,
+  centerDashboardDivider,
   insertDashboardLine,
   moveDashboardDivider,
   removeDashboardLine,
@@ -50,6 +51,18 @@ describe("dashboard layout", () => {
     expect(moveDashboardDivider(split!.cols, 0, 0.01)[0]).toBeCloseTo(0.08);
   });
 
+  it("без выбора режет первую долю, а не самую широкую", () => {
+    const wide = { ...board(), cols: [0.2, 0.8] };
+    const split = insertDashboardLine(wide, "col", null);
+    expect(split?.cols[0]).toBeCloseTo(0.1);
+    expect(split?.cols[1]).toBeCloseTo(0.1);
+    expect(split?.cols[2]).toBeCloseTo(0.8);
+  });
+
+  it("ставит выбранную границу по середине соседних долей", () => {
+    expect(centerDashboardDivider([0.2, 0.8], 0)).toEqual([0.5, 0.5]);
+  });
+
   it("при удалении линии оставляет левую связь", () => {
     const split = insertDashboardLine(board(), "col", null)!;
     const bound = bindDashboardCell(
@@ -71,6 +84,26 @@ describe("dashboard layout", () => {
     expect(parsed.value?.refreshMs).toBe(300_000);
     const again = parseDashboard(emitDashboard(parsed.value!));
     expect(again.value?.cells[0]).toMatchObject({ kind: "diagram", ref: "a" });
+  });
+
+  it("читает и пишет необязательную границу ячейки", () => {
+    const parsed = parseDashboard(`dashboard
+cols 0.5 0.5
+rows 1
+cell 0 0 diagram "revenue" border #0f172a 2
+cell 1 0 diagram "load"
+`);
+    expect(parsed.ok).toBe(true);
+    expect(parsed.value?.cells[0]).toMatchObject({
+      ref: "revenue",
+      borderColor: "#0f172a",
+      borderWidth: 2,
+    });
+    expect(parsed.value?.cells[1].borderColor).toBeUndefined();
+    const emitted = emitDashboard(parsed.value!);
+    expect(emitted).toContain('cell 0 0 diagram "revenue" border #0f172a 2');
+    expect(emitted).toContain('cell 1 0 diagram "load"');
+    expect(emitted).not.toMatch(/cell 1 0 diagram "load".*border/);
   });
 });
 

@@ -3,9 +3,24 @@
 import { computed, createApp, defineComponent, h, nextTick, ref } from "vue";
 import { describe, expect, it, vi } from "vitest";
 import type { DiagramFormat } from "@/constants/diagram-formats";
-import { useEditorHistory } from "@/composables/useEditorHistory";
-import { useEditorSourceHistory } from "@/composables/useEditorSourceHistory";
-import InlineDiagramBuilder from "@/components/editor/InlineDiagramBuilder.vue";
+
+Object.defineProperty(window, "matchMedia", {
+  writable: true,
+  value: vi.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
+
+const { useEditorHistory } = await import("@/composables/useEditorHistory");
+const { useEditorSourceHistory } = await import("@/composables/useEditorSourceHistory");
+const { default: InlineDiagramBuilder } = await import("@/components/editor/InlineDiagramBuilder.vue");
 
 const FLOW = "flowchart LR\n  A[Start] --> B[End]";
 
