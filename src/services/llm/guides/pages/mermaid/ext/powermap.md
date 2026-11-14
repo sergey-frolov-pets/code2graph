@@ -13,6 +13,7 @@ legend on
 comms on
 avatar 48
 link supporter color=#1a7f37 style=solid label=ally
+link coach color=#bf8700 style=dot label=mentor
 CEO [Alex Morgan|Chief executive] role=D influence=L action=U attitude=++ counterpart="Sam Reed" gender=m
 CFO [Elena Chen|Finance lead] role=A influence=M action=S attitude=+ counterpart="Lea Ortiz, Sam Reed; Sam Reed" gender=f
 CEO -> CFO
