@@ -25,22 +25,19 @@ const { t } = useLocale();
 
 <template>
   <header class="app-header">
-    <div class="app-header__main">
-      <div class="app-header__title-row">
-        <h1>
-          <button
-            class="app-header__brand"
-            type="button"
-            :title="t('site.backHome')"
-            @click="navigateTo('landing')"
-          >
-            <AppLogo />
-            <span class="app-header__name">{{ APP_META.name }}</span>
-          </button>
-        </h1>
-        <span class="app-header__version">v{{ APP_META.version }}</span>
-      </div>
-      <p class="app-header__subtitle">{{ t("app.subtitle") }}</p>
+    <div class="app-header__title-row">
+      <h1>
+        <button
+          class="app-header__brand"
+          type="button"
+          :title="t('site.backHome')"
+          @click="navigateTo('landing')"
+        >
+          <AppLogo />
+          <span class="app-header__name">{{ APP_META.name }}</span>
+        </button>
+      </h1>
+      <span class="app-header__version">v{{ APP_META.version }}</span>
     </div>
     <nav class="app-header__nav" :aria-label="t('app.mainNav')">
       <HeaderControls />
@@ -77,6 +74,7 @@ const { t } = useLocale();
         <ActionIcon name="settings" />
       </IconButton>
     </nav>
+    <p class="app-header__subtitle">{{ t("app.subtitle") }}</p>
   </header>
 </template>
 
@@ -84,14 +82,10 @@ const { t } = useLocale();
 .app-header {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  align-items: flex-start;
+  column-gap: 12px;
+  row-gap: 4px;
+  align-items: center;
   justify-content: space-between;
-}
-
-.app-header__main {
-  flex: 1;
-  min-width: 220px;
 }
 
 .app-header__title-row {
@@ -145,9 +139,12 @@ const { t } = useLocale();
 }
 
 .app-header__subtitle {
-  margin: 6px 0 0;
+  flex: 1 0 100%;
+  width: 100%;
+  margin: 0;
   color: var(--text-muted);
   font-size: 0.9rem;
+  line-height: 1.35;
 }
 
 .app-header__nav {
