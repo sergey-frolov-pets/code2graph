@@ -246,8 +246,9 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
       return cached.svg;
     }
     const zoneSources = [];
-    for (const zone of parsed.value.zones) {
-      const diagram = await loadDashboardDiagramFresh(zone.diagramId);
+    for (const cell of parsed.value.cells) {
+      if (cell.kind !== "diagram") continue;
+      const diagram = await loadDashboardDiagramFresh(cell.ref);
       if (!diagram) continue;
       zoneSources.push({
         id: diagram.id,

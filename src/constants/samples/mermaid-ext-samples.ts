@@ -647,8 +647,10 @@ zone 85 100 #dc2626 "перегруз"`,
   dashboard: `dashboard
 size 1280x720
 refresh 5m
-zone 0 0 0.5 1 diagram "revenue"
-zone 0.5 0 0.5 1 diagram "load"`,
+cols 0.5 0.5
+rows 1
+cell 0 0 diagram "revenue"
+cell 1 0 diagram "load"`,
 };
 
 export const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
@@ -1296,6 +1298,8 @@ zone 85 100 #dc2626 "hot"`,
   dashboard: `dashboard
 size 1280x720
 refresh 5m
-zone 0 0 0.5 1 diagram "revenue"
-zone 0.5 0 0.5 1 diagram "load"`,
+cols 0.5 0.5
+rows 1
+cell 0 0 diagram "revenue"
+cell 1 0 diagram "load"`,
 };

@@ -3,7 +3,12 @@ import type { DiagramDto } from "@/constants/diagram-library";
 import { renderDiagram } from "@/formats";
 import type { FormatContext } from "@/formats/types";
 import { fetchDiagram } from "@/services/library/api/diagrams";
-import { parseDashboard } from "@/services/mermaid/ext/engines/dashboard";
+import { fetchPublicLibraryLink } from "@/services/library/api/library-links";
+import {
+  dashboardCellKey,
+  parseDashboard,
+  type DashboardCell,
+} from "@/services/mermaid/ext/engines/dashboard";
 import { tryRenderExtension } from "@/services/mermaid/ext";
 import type { ExtRenderOptions } from "@/services/mermaid/ext/types";
 import { loadDiagramDetailFromCache } from "@/storage/diagram-store";
@@ -43,6 +48,75 @@ async function loadServerDiagram(id: string): Promise<DiagramDto | null> {
   }
 }
 
+function extensionOptions(context: FormatContext, zoneSvgs?: Record<string, string>): ExtRenderOptions {
+  return {
+    dark: context.diagramDarkMode,
+    background: context.diagramBackground,
+    textColor: context.diagramTextColor,
+    fontFamily: context.diagramFontFamily,
+    fontWeight: context.diagramFontWeight,
+    fontStyle: context.diagramFontStyle,
+    locale: context.locale,
+    zoneSvgs,
+  };
+}
+
+async function renderChild(
+  source: string,
+  fileName: string | undefined,
+  language: string | undefined,
+  context: FormatContext,
+): Promise<string | null> {
+  const known = language && isDiagramLanguage(language) ? language : undefined;
+  const format = resolveLibraryDiagramFormat(source, fileName, known);
+  try {
+    return await renderDiagram(format, source, context);
+  } catch {
+    return null;
+  }
+}
+
+function splitLinkRef(ref: string): { username: string; slug: string } | null {
+  const slash = ref.indexOf("/");
+  if (slash <= 0 || slash === ref.length - 1) return null;
+  return { username: ref.slice(0, slash), slug: ref.slice(slash + 1) };
+}
+
+async function svgForCell(
+  cell: DashboardCell,
+  context: FormatContext,
+  zoneSources: Map<string, string> | undefined,
+  zoneSvgs: Record<string, string>,
+): Promise<void> {
+  const key = dashboardCellKey(cell);
+  if (zoneSvgs[key]) return;
+  if (cell.kind === "diagram") {
+    const loaded = await loadDashboardDiagram(cell.ref);
+    const childSource = zoneSources?.get(cell.ref) ?? loaded?.source;
+    if (!childSource) return;
+    const svg = await renderChild(childSource, loaded?.fileName, loaded?.language, context);
+    if (svg) zoneSvgs[key] = svg;
+    return;
+  }
+  const names = splitLinkRef(cell.ref);
+  const baseUrl = getLibraryApiBaseUrl();
+  if (!names || !baseUrl) return;
+  try {
+    const payload = await fetchPublicLibraryLink(names.username, names.slug, baseUrl);
+    if (payload.delivery === "view" && payload.svg.includes("<svg")) {
+      zoneSvgs[key] = payload.svg;
+      return;
+    }
+    const diagram = payload.diagram;
+    if (!diagram?.source) return;
+    const childSource = zoneSources?.get(diagram.id) ?? diagram.source;
+    const svg = await renderChild(childSource, diagram.fileName, diagram.language, context);
+    if (svg) zoneSvgs[key] = svg;
+  } catch {
+    // Пустая ячейка вместо падения всего холста.
+  }
+}
+
 /**
  * Собирает SVG дашборда. Повтор того же исходника в стеке (цикл зон) рисует пустые зоны.
  */
@@ -54,48 +128,16 @@ export async function composeDashboardSvg(
   const parsed = parseDashboard(source);
   if (!parsed.ok || !parsed.value) return null;
   if (rendering.has(source)) {
-    return tryRenderExtension(source, {
-      dark: context.diagramDarkMode,
-      background: context.diagramBackground,
-      textColor: context.diagramTextColor,
-      fontFamily: context.diagramFontFamily,
-      fontWeight: context.diagramFontWeight,
-      fontStyle: context.diagramFontStyle,
-      locale: context.locale,
-    });
+    return tryRenderExtension(source, extensionOptions(context));
   }
 
   rendering.add(source);
   try {
     const zoneSvgs: Record<string, string> = {};
-    for (const zone of parsed.value.zones) {
-      if (zoneSvgs[zone.diagramId]) continue;
-      const loaded = await loadDashboardDiagram(zone.diagramId);
-      const childSource = zoneSources?.get(zone.diagramId) ?? loaded?.source;
-      if (!childSource) continue;
-      const language = loaded && isDiagramLanguage(loaded.language) ? loaded.language : undefined;
-      const format = resolveLibraryDiagramFormat(
-        childSource,
-        loaded?.fileName,
-        language,
-      );
-      try {
-        zoneSvgs[zone.diagramId] = await renderDiagram(format, childSource, context);
-      } catch {
-        // Пустая подпись зоны вместо падения всего холста.
-      }
+    for (const cell of parsed.value.cells) {
+      await svgForCell(cell, context, zoneSources, zoneSvgs);
     }
-    const options: ExtRenderOptions = {
-      dark: context.diagramDarkMode,
-      background: context.diagramBackground,
-      textColor: context.diagramTextColor,
-      fontFamily: context.diagramFontFamily,
-      fontWeight: context.diagramFontWeight,
-      fontStyle: context.diagramFontStyle,
-      locale: context.locale,
-      zoneSvgs,
-    };
-    return tryRenderExtension(source, options);
+    return tryRenderExtension(source, extensionOptions(context, zoneSvgs));
   } finally {
     rendering.delete(source);
   }

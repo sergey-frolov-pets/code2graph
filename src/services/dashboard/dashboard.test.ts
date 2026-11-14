@@ -1,8 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { dashboardCacheFresh } from "@/services/dashboard/cache";
 import { dashboardEmbedDocument } from "@/services/dashboard/embed-url";
-import { arrangeDashboardZones, placeDashboardZone } from "@/services/dashboard/layout";
-import { parseDashboard } from "@/services/mermaid/ext/engines/dashboard";
+import {
+  bindDashboardCell,
+  insertDashboardLine,
+  moveDashboardDivider,
+  removeDashboardLine,
+} from "@/services/dashboard/layout";
+import {
+  createDashboardBand,
+  createDashboardCaption,
+  emitDashboard,
+  parseDashboard,
+  type DashboardModel,
+} from "@/services/mermaid/ext/engines/dashboard";
 
 describe("dashboard cache", () => {
   it("показывает сохранённый SVG, пока период не прошёл", () => {
@@ -15,29 +26,51 @@ describe("dashboard cache", () => {
   });
 });
 
+function board(): DashboardModel {
+  return {
+    width: 1280,
+    height: 720,
+    refreshMs: null,
+    title: createDashboardCaption(22, "#ffffff"),
+    header: createDashboardBand(16, "#f1f5f9"),
+    footer: createDashboardBand(13, "#f8fafc"),
+    cols: [1],
+    rows: [1],
+    cells: [],
+  };
+}
+
 describe("dashboard layout", () => {
-  it("кладёт новую зону в свободное место", () => {
-    const first = placeDashboardZone([], "a");
-    const second = placeDashboardZone([first], "b");
-    expect(first).toEqual({ x: 0, y: 0, w: 0.5, h: 0.5, diagramId: "a" });
-    expect(second.x).toBeGreaterThanOrEqual(0.5);
-    expect(second.diagramId).toBe("b");
+  it("режет холст пополам и сдвигает границу", () => {
+    const split = insertDashboardLine(board(), "col", null);
+    expect(split?.cols).toEqual([0.5, 0.5]);
+    const moved = moveDashboardDivider(split!.cols, 0, 0.25);
+    expect(moved[0]).toBeCloseTo(0.25);
+    expect(moved[1]).toBeCloseTo(0.75);
+    expect(moveDashboardDivider(split!.cols, 0, 0.01)[0]).toBeCloseTo(0.08);
   });
 
-  it("раскладывает зоны колонками и сеткой на весь холст", () => {
-    const columns = arrangeDashboardZones(["a", "b"], "columns");
-    expect(columns[0]).toMatchObject({ x: 0, y: 0, h: 1, diagramId: "a" });
-    expect(columns[1].x + columns[1].w).toBeCloseTo(1);
-    const grid = arrangeDashboardZones(["a", "b", "c", "d"], "grid");
-    expect(grid).toHaveLength(4);
-    expect(grid[3].x + grid[3].w).toBeCloseTo(1);
-    expect(grid[3].y + grid[3].h).toBeCloseTo(1);
+  it("при удалении линии оставляет левую связь", () => {
+    const split = insertDashboardLine(board(), "col", null)!;
+    const bound = bindDashboardCell(
+      bindDashboardCell(split, 0, 0, "diagram", "left"),
+      1,
+      0,
+      "diagram",
+      "right",
+    );
+    const removed = removeDashboardLine(bound, { axis: "col", index: 0 });
+    expect(removed?.model.cols).toEqual([1]);
+    expect(removed?.model.cells).toEqual([{ col: 0, row: 0, kind: "diagram", ref: "left" }]);
+    expect(removed?.dropped).toEqual([{ col: 1, row: 0, kind: "diagram", ref: "right" }]);
   });
 
   it("разбор refresh 5m равен пяти минутам", () => {
-    const parsed = parseDashboard("dashboard\nrefresh 5m\nzone 0 0 1 1 diagram a");
+    const parsed = parseDashboard("dashboard\nrefresh 5m\ncell 0 0 diagram a");
     expect(parsed.ok).toBe(true);
     expect(parsed.value?.refreshMs).toBe(300_000);
+    const again = parseDashboard(emitDashboard(parsed.value!));
+    expect(again.value?.cells[0]).toMatchObject({ kind: "diagram", ref: "a" });
   });
 });
 

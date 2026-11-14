@@ -47,7 +47,7 @@ export interface ExtRenderOptions {
   strict?: boolean;
   /** Обводка каждого элемента + его id (для отладки раскладки) */
   debugFrames?: boolean;
-  /** Готовые SVG зон дашборда по идентификатору диаграммы. */
+  /** Готовые SVG ячеек дашборда. Ключ — `diagram:<id>` или `link:<user>/<slug>`. */
   zoneSvgs?: Record<string, string>;
 }
 

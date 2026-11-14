@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getMermaidSampleSource } from "@/constants/mermaid-sample-diagrams";
 import { measureText } from "../common";
-import { emitDashboard, parseDashboard, renderDashboard } from "../engines/dashboard";
+import { dashboardCellKey, emitDashboard, parseDashboard, renderDashboard } from "../engines/dashboard";
 import { gaugeFraction, parseGauge, renderGauge } from "../engines/gauge";
 import {
   parseInfographic,
@@ -215,19 +215,25 @@ zone 0 0 0.5 0.5 diagram "revenue"
 zone 0.5 0 0.5 1 diagram "load"
 `;
 
-  it("разбирает size, refresh и зоны", () => {
+  it("разбирает size, refresh и старые зоны в сетку", () => {
     const parsed = parseDashboard(source);
     expect(parsed.ok).toBe(true);
     expect(parsed.value?.width).toBe(1280);
     expect(parsed.value?.refreshMs).toBe(300_000);
-    expect(parsed.value?.zones).toHaveLength(2);
-    expect(parsed.value?.zones[1].h).toBe(1);
+    expect(parsed.value?.cols).toEqual([0.5, 0.5]);
+    expect(parsed.value?.rows).toEqual([0.5, 0.5]);
+    const load = parsed.value?.cells.filter((cell) => cell.ref === "load") ?? [];
+    expect(load).toHaveLength(2);
+    expect(load.every((cell) => cell.col === 1)).toBe(true);
   });
 
   it("рисует доли холста и пустую зону без SVG", () => {
     const parsed = parseDashboard(source);
+    const cell = parsed.value!.cells.find((item) => item.ref === "revenue")!;
     const svg = renderDashboard(parsed.value!, {
-      zoneSvgs: { revenue: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>` },
+      zoneSvgs: {
+        [dashboardCellKey(cell)]: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>`,
+      },
     });
     expect(svg).toContain('data-diagram="revenue"');
     expect(svg).toContain('data-zone-empty="load"');
@@ -266,15 +272,40 @@ header "ноябрь" font "Inter" fontsize 18 color #0f172a background #e2e8f0 
       color: "#0f172a",
       background: "#e2e8f0",
       shadow: true,
+      alignX: "start",
+      alignY: "baseline",
     });
     const again = parseDashboard(emitDashboard(parsed.value!));
     expect(again.value?.header.font).toBe("Inter");
     expect(again.value?.header.shadow).toBe(true);
+    expect(again.value?.header.alignY).toBe("baseline");
+    expect(emitDashboard(parsed.value!)).not.toContain(" align ");
     const svg = renderDashboard(parsed.value!);
     assertTextInside(svg);
     expect(svg).toContain('font-family="Inter"');
     expect(svg).toContain('fill="#e2e8f0"');
     expect(svg).toContain('data-role="header-shadow"');
+  });
+
+  it("выравнивает шапку и подвал внутри полосы", () => {
+    const parsed = parseDashboard(`dashboard
+size 1000x200
+header "ноябрь" fontsize 16 align center middle
+footer "низ" fontsize 13 align end bottom
+`);
+    expect(parsed.ok).toBe(true);
+    expect(parsed.value?.header.alignX).toBe("center");
+    expect(parsed.value?.header.alignY).toBe("middle");
+    const svg = renderDashboard(parsed.value!);
+    expect(svg).toContain('data-role="header"');
+    expect(svg).toContain('text-anchor="middle"');
+    expect(svg).toContain('dominant-baseline="middle"');
+    expect(svg).toContain('text-anchor="end"');
+    const again = parseDashboard(emitDashboard(parsed.value!));
+    expect(again.value?.footer.alignX).toBe("end");
+    expect(again.value?.footer.alignY).toBe("bottom");
+    const frameTop = 36;
+    expect(svg).toContain(`y="${frameTop}"`);
   });
 
   it("не принимает зону за краем холста", () => {

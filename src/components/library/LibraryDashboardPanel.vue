@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import DashboardCollageBoard from "@/components/dashboard/DashboardCollageBoard.vue";
+import { useAppShellContext } from "@/composables/useAppShell";
 import { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import { useLibraryAuth } from "@/composables/useLibraryAuth";
 import { useLocale } from "@/composables/useLocale";
 import { getLibraryApiBaseUrl } from "@/config/library-api";
-import type { DiagramListItemDto } from "@/constants/diagram-library";
 import {
   downloadTextFile,
   dashboardEmbedDocument,
@@ -13,24 +14,36 @@ import {
   readDashboardEmbedHtml,
   writeDashboardEmbedHtml,
 } from "@/services/dashboard/embed-url";
-import { arrangeDashboardZones, placeDashboardZone, type DashboardArrange } from "@/services/dashboard/layout";
+import {
+  bindDashboardCell,
+  clearDashboardCell,
+  insertDashboardLine,
+  removeDashboardLine,
+  type DashboardDivider,
+} from "@/services/dashboard/layout";
 import { writeDashboardSvgCache } from "@/services/dashboard/cache";
 import { composeDashboardSvg, loadDashboardDiagram, loadDashboardDiagramFresh } from "@/services/dashboard/compose";
 import { refreshDashboardZoneSources } from "@/services/dashboard/refresh";
 import {
+  createDashboardBand,
   createDashboardCaption,
-  dashboardContentFrame,
   emitDashboard,
+  formatRefreshInterval,
   parseDashboard,
   parseRefreshInterval,
   renderDashboard,
+  type DashboardAlignX,
+  type DashboardAlignY,
+  type DashboardBand,
+  type DashboardCaption,
   type DashboardModel,
-  type DashboardZone,
 } from "@/services/mermaid/ext/engines/dashboard";
 import {
   createLibraryLink,
   fetchLibraryLinks,
+  type LibraryLinkDto,
 } from "@/services/library/api/library-links";
+import type { FormatContext } from "@/formats/types";
 
 const props = defineProps<{
   diagramId: string | null;
@@ -40,7 +53,8 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-const { t } = useLocale();
+const { t, locale } = useLocale();
+const shell = useAppShellContext();
 const library = useDiagramLibrary();
 const auth = useLibraryAuth();
 const title = ref(t("library.dashboard.create"));
@@ -50,40 +64,52 @@ const notice = ref("");
 const missingFiles = ref<string[]>([]);
 const embedCode = ref("");
 const query = ref("");
-const showSource = ref(false);
-const gesture = ref<"move" | "resize">("move");
-const zoom = ref(1);
-const source = ref("dashboard\nsize 1280x720\n");
+const step = ref<"collage" | "bind" | "preview">("collage");
+const previewSvg = ref("");
+const previewBusy = ref(false);
+const selectedCell = ref<{ col: number; row: number } | null>(null);
+const selectedDivider = ref<DashboardDivider | null>(null);
+const customRefresh = ref("30s");
+const source = ref("dashboard\nsize 1280x720\ncols 1\nrows 1\n");
 const model = ref<DashboardModel>({
   width: 1280,
   height: 720,
   refreshMs: null,
   title: createDashboardCaption(22, "#ffffff"),
-  header: createDashboardCaption(16, "#f1f5f9"),
-  footer: createDashboardCaption(13, "#f8fafc"),
-  zones: [],
+  header: createDashboardBand(16, "#f1f5f9"),
+  footer: createDashboardBand(13, "#f8fafc"),
+  cols: [1],
+  rows: [1],
+  cells: [],
 });
-const previewSvg = ref("");
-const stageRef = ref<HTMLElement | null>(null);
-const boardRef = ref<HTMLElement | null>(null);
-const stageSize = ref({ w: 640, h: 480 });
 
-interface DragState {
-  index: number;
-  mode: "move" | "resize";
-  startX: number;
-  startY: number;
-  origin: DashboardZone;
-  boardW: number;
-  boardH: number;
+interface BoardPick {
+  kind: "diagram" | "link";
+  ref: string;
+  title: string;
 }
 
-const dragging = ref<DragState | null>(null);
-let stageObserver: ResizeObserver | null = null;
+const picked = ref<BoardPick | null>(null);
+const linkRows = ref<BoardPick[]>([]);
+let previewSerial = 0;
+
+const refreshPresets = ["30000", "300000", "3600000"];
 
 const refreshChoice = computed({
-  get: () => (model.value.refreshMs === null ? "" : String(model.value.refreshMs)),
+  get: () => {
+    if (model.value.refreshMs === null) return "";
+    const value = String(model.value.refreshMs);
+    return refreshPresets.includes(value) ? value : "custom";
+  },
   set: (value: string) => {
+    if (value === "custom") {
+      customRefresh.value = formatRefreshInterval(model.value.refreshMs ?? 30_000);
+      if (model.value.refreshMs === null || refreshPresets.includes(String(model.value.refreshMs))) {
+        const parsed = parseRefreshInterval(customRefresh.value);
+        if (parsed) commitModel({ ...model.value, refreshMs: parsed });
+      }
+      return;
+    }
     commitModel({ ...model.value, refreshMs: value ? Number(value) : null });
   },
 });
@@ -94,9 +120,15 @@ const diagrams = computed(() =>
 
 const visibleDiagrams = computed(() => {
   const needle = query.value.trim().toLowerCase();
-  if (!needle) return diagrams.value;
   return diagrams.value.filter((diagram) =>
-    `${diagram.title} ${diagram.id}`.toLowerCase().includes(needle),
+    !needle || `${diagram.title} ${diagram.id}`.toLowerCase().includes(needle),
+  );
+});
+
+const visibleLinks = computed(() => {
+  const needle = query.value.trim().toLowerCase();
+  return linkRows.value.filter((link) =>
+    !needle || `${link.title} ${link.ref}`.toLowerCase().includes(needle),
   );
 });
 
@@ -106,27 +138,30 @@ const titleById = computed(() => {
   return titles;
 });
 
-const fit = computed(() => {
-  const pad = 32;
-  const scaleX = Math.max(1, stageSize.value.w - pad) / Math.max(1, model.value.width);
-  const scaleY = Math.max(1, stageSize.value.h - pad) / Math.max(1, model.value.height);
-  return Math.max(0.05, Math.min(scaleX, scaleY));
+const linkTitleByRef = computed(() => {
+  const titles = new Map<string, string>();
+  for (const link of linkRows.value) titles.set(link.ref, link.title);
+  return titles;
 });
 
-const boardStyle = computed(() => ({
-  width: `${Math.max(1, Math.round(model.value.width * fit.value * zoom.value))}px`,
-  height: `${Math.max(1, Math.round(model.value.height * fit.value * zoom.value))}px`,
-}));
-
-function zoneLabel(diagramId: string): string {
-  return titleById.value.get(diagramId) ?? diagramId;
+function viewContext(): FormatContext {
+  return {
+    layout: shell.layout.value,
+    diagramDarkMode: shell.diagramDarkMode.value,
+    renderMode: shell.renderMode.value,
+    diagramBackground: shell.previewBackground.value,
+    diagramTextColor: shell.diagramTextColor.value,
+    diagramFontFamily: shell.diagramFontFamily.value,
+    diagramFontWeight: shell.diagramFontWeight.value,
+    diagramFontStyle: shell.diagramFontStyle.value,
+    locale: locale.value,
+  };
 }
 
 function commitModel(next: DashboardModel): void {
   model.value = next;
   source.value = emitDashboard(next);
   parseError.value = "";
-  void paint();
 }
 
 function applySource(text: string): void {
@@ -138,125 +173,119 @@ function applySource(text: string): void {
   }
   parseError.value = "";
   model.value = parsed.value;
-  void paint();
+  if (parsed.value.refreshMs !== null && !refreshPresets.includes(String(parsed.value.refreshMs))) {
+    customRefresh.value = formatRefreshInterval(parsed.value.refreshMs);
+  }
 }
 
-function toggleDiagram(diagram: DiagramListItemDto): void {
-  const existing = model.value.zones.findIndex((zone) => zone.diagramId === diagram.id);
-  const zones = [...model.value.zones];
-  if (existing >= 0) zones.splice(existing, 1);
-  else zones.push(placeDashboardZone(zones, diagram.id));
-  commitModel({ ...model.value, zones });
-}
-
-function arrange(preset: DashboardArrange): void {
-  const ids = model.value.zones.map((zone) => zone.diagramId);
-  if (ids.length === 0) return;
-  commitModel({ ...model.value, zones: arrangeDashboardZones(ids, preset) });
-}
-
-function clampZone(zone: DashboardZone): DashboardZone {
-  const w = Math.min(1, Math.max(0.08, zone.w));
-  const h = Math.min(1, Math.max(0.08, zone.h));
-  return {
-    ...zone,
-    w,
-    h,
-    x: Math.min(Math.max(0, zone.x), 1 - w),
-    y: Math.min(Math.max(0, zone.y), 1 - h),
+function setCaption(key: "title" | "header" | "footer", patch: Partial<DashboardCaption>): void {
+  if (key === "title") {
+    commitModel({ ...model.value, title: { ...model.value.title, ...patch } });
+    return;
+  }
+  const current = model.value[key];
+  const next: DashboardBand = {
+    ...current,
+    ...patch,
+    alignY: current.alignY === "baseline" ? "middle" : current.alignY,
   };
+  commitModel({ ...model.value, [key]: next });
 }
 
-function updateZone(index: number, patch: Partial<DashboardZone>, paintNow: boolean): void {
-  const zones = model.value.zones.map((zone, zoneIndex) =>
-    zoneIndex === index ? clampZone({ ...zone, ...patch }) : zone,
-  );
-  model.value = { ...model.value, zones };
-  if (!paintNow) return;
-  source.value = emitDashboard(model.value);
-  parseError.value = "";
-  void paint();
+function setAlign(key: "header" | "footer", axis: "alignX" | "alignY", value: string): void {
+  const current = model.value[key];
+  const next: DashboardBand = { ...current, [axis]: value };
+  if (next.alignY === "baseline") next.alignY = "middle";
+  commitModel({ ...model.value, [key]: next });
 }
 
-async function paint(): Promise<void> {
-  const composed = await composeDashboardSvg(source.value, {
-    layout: "elk",
-    diagramDarkMode: false,
-    renderMode: "offline",
-  }).catch(() => null);
-  if (dragging.value) return;
-  previewSvg.value = composed ?? renderDashboard(model.value);
+function setSize(axis: "width" | "height", raw: string): void {
+  const value = Math.max(100, Math.round(Number(raw)) || 100);
+  commitModel({ ...model.value, [axis]: value });
 }
 
-function stopDragListeners(): void {
-  window.removeEventListener("pointermove", onPointerMove);
-  window.removeEventListener("pointerup", onPointerUp);
-  window.removeEventListener("pointercancel", onPointerUp);
+function addLine(axis: "col" | "row"): void {
+  const selected = selectedCell.value
+    ? (axis === "col" ? selectedCell.value.col : selectedCell.value.row)
+    : null;
+  const next = insertDashboardLine(model.value, axis, selected);
+  if (!next) {
+    notice.value = t("library.dashboard.lineTooSmall");
+    return;
+  }
+  notice.value = "";
+  selectedDivider.value = null;
+  commitModel(next);
 }
 
-function onPointerDown(event: PointerEvent, index: number, mode: "move" | "resize"): void {
-  const bounds = boardRef.value?.getBoundingClientRect();
-  const zone = model.value.zones[index];
-  if (!bounds || !zone || bounds.width < 1 || bounds.height < 1) return;
-  event.preventDefault();
-  event.stopPropagation();
-  dragging.value = {
-    index,
-    mode,
-    startX: event.clientX,
-    startY: event.clientY,
-    origin: { ...zone },
-    boardW: bounds.width,
-    boardH: bounds.height,
-  };
-  window.addEventListener("pointermove", onPointerMove);
-  window.addEventListener("pointerup", onPointerUp);
-  window.addEventListener("pointercancel", onPointerUp);
+function removeLine(): void {
+  if (!selectedDivider.value) return;
+  const result = removeDashboardLine(model.value, selectedDivider.value);
+  if (!result) return;
+  notice.value = result.dropped.length > 0 ? t("library.dashboard.bindingKept") : "";
+  selectedDivider.value = null;
+  commitModel(result.model);
 }
 
-function onPointerMove(event: PointerEvent): void {
-  const drag = dragging.value;
-  if (!drag) return;
-  const frame = dashboardContentFrame(model.value);
-  const spanX = frame.width / Math.max(1, model.value.width);
-  const spanY = frame.height / Math.max(1, model.value.height);
-  const dx = (event.clientX - drag.startX) / drag.boardW / spanX;
-  const dy = (event.clientY - drag.startY) / drag.boardH / spanY;
-  const next = drag.mode === "move"
-    ? { x: drag.origin.x + dx, y: drag.origin.y + dy }
-    : { w: drag.origin.w + dx, h: drag.origin.h + dy };
-  updateZone(drag.index, next, false);
+function onTracks(patch: { cols?: number[]; rows?: number[] }): void {
+  commitModel({ ...model.value, ...patch });
 }
 
-function zoneStyle(zone: DashboardZone): Record<string, string> {
-  const frame = dashboardContentFrame(model.value);
-  const spanX = frame.width / Math.max(1, model.value.width);
-  const spanY = frame.height / Math.max(1, model.value.height);
-  return {
-    left: `${(frame.left / model.value.width + zone.x * spanX) * 100}%`,
-    top: `${(frame.top / model.value.height + zone.y * spanY) * 100}%`,
-    width: `${zone.w * spanX * 100}%`,
-    height: `${zone.h * spanY * 100}%`,
-  };
+function cellLabel(col: number, row: number): string {
+  const cell = model.value.cells.find((item) => item.col === col && item.row === row);
+  if (!cell) return "";
+  if (cell.kind === "diagram") return titleById.value.get(cell.ref) ?? cell.ref;
+  return linkTitleByRef.value.get(cell.ref) ?? cell.ref;
 }
 
-function onPointerUp(): void {
-  if (!dragging.value) return;
-  dragging.value = null;
-  stopDragListeners();
-  source.value = emitDashboard(model.value);
-  void paint();
+function pickItem(item: BoardPick): void {
+  if (picked.value?.kind === item.kind && picked.value.ref === item.ref) picked.value = null;
+  else picked.value = item;
 }
 
-function onZoneClick(diagramId: string): void {
-  if (missingFiles.value.includes(diagramId)) void refreshNow();
+function onSelectCell(cell: { col: number; row: number } | null): void {
+  if (step.value === "collage") {
+    selectedCell.value = cell;
+    return;
+  }
+  if (!cell || step.value !== "bind") return;
+  if (picked.value) {
+    commitModel(bindDashboardCell(model.value, cell.col, cell.row, picked.value.kind, picked.value.ref));
+    return;
+  }
+  const bound = model.value.cells.some((item) => item.col === cell.col && item.row === cell.row);
+  if (bound) commitModel(clearDashboardCell(model.value, cell.col, cell.row));
 }
 
-function onWheel(event: WheelEvent): void {
-  if (!event.ctrlKey && !event.metaKey) return;
-  event.preventDefault();
-  const factor = event.deltaY > 0 ? 0.9 : 1.1;
-  zoom.value = Math.min(4, Math.max(0.25, zoom.value * factor));
+function applyCustomRefresh(): void {
+  const parsed = parseRefreshInterval(customRefresh.value);
+  if (!parsed) {
+    parseError.value = t("library.dashboard.parseError");
+    return;
+  }
+  commitModel({ ...model.value, refreshMs: parsed });
+}
+
+async function loadLinks(): Promise<void> {
+  const baseUrl = getLibraryApiBaseUrl();
+  const user = auth.currentUser.value?.username;
+  if (!baseUrl || !user || library.isLocalMode.value) {
+    linkRows.value = [];
+    return;
+  }
+  const rows: BoardPick[] = [];
+  const lists = await Promise.all(diagrams.value.map(async (diagram) => {
+    const response = await fetchLibraryLinks(diagram.id, baseUrl).catch(() => ({ links: [] as LibraryLinkDto[] }));
+    return { diagram, links: response.links };
+  }));
+  for (const entry of lists) {
+    for (const link of entry.links) {
+      const ref = `${link.username}/${link.slug}`;
+      if (rows.some((item) => item.ref === ref)) continue;
+      rows.push({ kind: "link", ref, title: `${entry.diagram.title} · ${link.slug}` });
+    }
+  }
+  linkRows.value = rows;
 }
 
 async function embedSrc(diagramId: string): Promise<string> {
@@ -323,10 +352,13 @@ async function copyHtml(): Promise<void> {
   notice.value = t("library.dashboard.copied");
 }
 
-async function refreshNow(): Promise<void> {
+async function showPreview(): Promise<void> {
+  const serial = ++previewSerial;
+  previewBusy.value = true;
   const zones = [];
-  for (const zone of model.value.zones) {
-    const diagram = await loadDashboardDiagramFresh(zone.diagramId);
+  for (const cell of model.value.cells) {
+    if (cell.kind !== "diagram") continue;
+    const diagram = await loadDashboardDiagramFresh(cell.ref);
     if (diagram) zones.push(diagram);
   }
   const refreshed = await refreshDashboardZoneSources(
@@ -337,53 +369,54 @@ async function refreshNow(): Promise<void> {
       language: diagram.language,
     })),
   );
+  if (serial !== previewSerial) return;
   missingFiles.value = refreshed.missingDiagramIds;
-  const composed = await composeDashboardSvg(
-    source.value,
-    { layout: "elk", diagramDarkMode: false, renderMode: "offline" },
-    refreshed.sources,
-  );
-  if (composed) {
-    previewSvg.value = composed;
-    if (savedId.value) writeDashboardSvgCache(savedId.value, composed);
-  }
+  const context = viewContext();
+  const composed = await composeDashboardSvg(source.value, context, refreshed.sources).catch(() => null);
+  if (serial !== previewSerial) return;
+  previewSvg.value = composed ?? renderDashboard(model.value, {
+    dark: context.diagramDarkMode,
+    background: context.diagramBackground,
+    textColor: context.diagramTextColor,
+    fontFamily: context.diagramFontFamily,
+    fontWeight: context.diagramFontWeight,
+    fontStyle: context.diagramFontStyle,
+    locale: context.locale,
+  });
+  if (composed && savedId.value) writeDashboardSvgCache(savedId.value, composed);
+  previewBusy.value = false;
 }
 
-function measureStage(): void {
-  const rect = stageRef.value?.getBoundingClientRect();
-  if (!rect) return;
-  stageSize.value = { w: rect.width, h: rect.height };
+function onKey(event: KeyboardEvent): void {
+  if (event.key !== "Delete" && event.key !== "Backspace") return;
+  const target = event.target;
+  if (target instanceof HTMLElement && target.closest("input, textarea, select")) return;
+  if (step.value !== "collage" || !selectedDivider.value) return;
+  event.preventDefault();
+  removeLine();
 }
 
 onMounted(async () => {
-  measureStage();
-  if (stageRef.value && typeof ResizeObserver !== "undefined") {
-    stageObserver = new ResizeObserver(() => measureStage());
-    stageObserver.observe(stageRef.value);
-  }
+  window.addEventListener("keydown", onKey);
   if (props.diagramId) {
     embedCode.value = readDashboardEmbedHtml(props.diagramId);
     const diagram = await loadDashboardDiagram(props.diagramId);
     if (diagram) {
       title.value = diagram.title;
       applySource(diagram.source);
-      return;
     }
   }
-  void paint();
+  void loadLinks();
 });
 
 onUnmounted(() => {
-  stopDragListeners();
-  stageObserver?.disconnect();
+  window.removeEventListener("keydown", onKey);
+  previewSerial += 1;
 });
 
-watch(
-  () => [model.value.width, model.value.height],
-  () => {
-    if (!dragging.value) source.value = emitDashboard(model.value);
-  },
-);
+watch(step, (value) => {
+  if (value === "bind") void loadLinks();
+});
 </script>
 
 <template>
@@ -412,300 +445,367 @@ watch(
             type="text"
           >
         </label>
-        <label>
-          {{ t("library.dashboard.width") }}
-          <input
-            v-model.number="model.width"
-            class="select"
-            type="number"
-            min="100"
-            @change="commitModel({ ...model })"
-          >
-        </label>
-        <fieldset class="band">
-          <legend>{{ t("library.dashboard.heading") }}</legend>
-          <input
-            v-model="model.title.text"
-            class="select"
-            type="text"
-            @change="commitModel({ ...model })"
-          >
-          <input
-            v-model="model.title.font"
-            class="select"
-            type="text"
-            :placeholder="t('library.dashboard.font')"
-            @change="commitModel({ ...model })"
-          >
-          <input
-            v-model.number="model.title.fontSize"
-            class="select"
-            type="number"
-            min="8"
-            max="96"
-            @change="commitModel({ ...model })"
-          >
-          <input
-            v-model="model.title.color"
-            class="select"
-            type="text"
-            :placeholder="t('library.dashboard.color')"
-            @change="commitModel({ ...model })"
-          >
-          <input
-            v-model="model.title.background"
-            class="select"
-            type="text"
-            :placeholder="t('library.dashboard.background')"
-            @change="commitModel({ ...model })"
-          >
-          <label class="check">
-            <input
-              v-model="model.title.shadow"
-              type="checkbox"
-              @change="commitModel({ ...model })"
-            >
-            {{ t("library.dashboard.shadow") }}
-          </label>
-        </fieldset>
-        <fieldset class="band">
-          <legend>{{ t("library.dashboard.header") }}</legend>
-          <input
-            v-model="model.header.text"
-            class="select"
-            type="text"
-            @change="commitModel({ ...model })"
-          >
-          <input
-            v-model="model.header.font"
-            class="select"
-            type="text"
-            :placeholder="t('library.dashboard.font')"
-            @change="commitModel({ ...model })"
-          >
-          <input
-            v-model.number="model.header.fontSize"
-            class="select"
-            type="number"
-            min="8"
-            max="96"
-            @change="commitModel({ ...model })"
-          >
-          <input
-            v-model="model.header.color"
-            class="select"
-            type="text"
-            :placeholder="t('library.dashboard.color')"
-            @change="commitModel({ ...model })"
-          >
-          <input
-            v-model="model.header.background"
-            class="select"
-            type="text"
-            :placeholder="t('library.dashboard.background')"
-            @change="commitModel({ ...model })"
-          >
-          <label class="check">
-            <input
-              v-model="model.header.shadow"
-              type="checkbox"
-              @change="commitModel({ ...model })"
-            >
-            {{ t("library.dashboard.shadow") }}
-          </label>
-        </fieldset>
-        <fieldset class="band">
-          <legend>{{ t("library.dashboard.footer") }}</legend>
-          <input
-            v-model="model.footer.text"
-            class="select"
-            type="text"
-            @change="commitModel({ ...model })"
-          >
-          <input
-            v-model="model.footer.font"
-            class="select"
-            type="text"
-            :placeholder="t('library.dashboard.font')"
-            @change="commitModel({ ...model })"
-          >
-          <input
-            v-model.number="model.footer.fontSize"
-            class="select"
-            type="number"
-            min="8"
-            max="96"
-            @change="commitModel({ ...model })"
-          >
-          <input
-            v-model="model.footer.color"
-            class="select"
-            type="text"
-            :placeholder="t('library.dashboard.color')"
-            @change="commitModel({ ...model })"
-          >
-          <input
-            v-model="model.footer.background"
-            class="select"
-            type="text"
-            :placeholder="t('library.dashboard.background')"
-            @change="commitModel({ ...model })"
-          >
-          <label class="check">
-            <input
-              v-model="model.footer.shadow"
-              type="checkbox"
-              @change="commitModel({ ...model })"
-            >
-            {{ t("library.dashboard.shadow") }}
-          </label>
-        </fieldset>
-        <label>
-          {{ t("library.dashboard.height") }}
-          <input
-            v-model.number="model.height"
-            class="select"
-            type="number"
-            min="100"
-            @change="commitModel({ ...model })"
-          >
-        </label>
-        <label>
-          {{ t("library.dashboard.refresh") }}
-          <select
-            v-model="refreshChoice"
-            class="select"
-          >
-            <option value="">
-              {{ t("library.dashboard.refreshOff") }}
-            </option>
-            <option :value="String(parseRefreshInterval('30s'))">
-              30s
-            </option>
-            <option :value="String(parseRefreshInterval('5m'))">
-              5m
-            </option>
-            <option :value="String(parseRefreshInterval('1h'))">
-              1h
-            </option>
-          </select>
-        </label>
-
-        <label>
-          {{ t("library.dashboard.search") }}
-          <input
-            v-model="query"
-            class="select"
-            type="search"
-          >
-        </label>
-        <ul class="dashboard-panel__list">
-          <li
-            v-for="diagram in visibleDiagrams"
-            :key="diagram.id"
-          >
-            <label>
-              <input
-                type="checkbox"
-                :checked="model.zones.some((zone) => zone.diagramId === diagram.id)"
-                @change="toggleDiagram(diagram)"
-              >
-              {{ diagram.title }}
-            </label>
-          </li>
-        </ul>
-        <div class="dashboard-panel__actions">
-          <span>{{ t("library.dashboard.arrange") }}</span>
+        <div
+          class="dashboard-panel__actions"
+          role="tablist"
+        >
           <button
             class="btn"
             type="button"
-            @click="arrange('columns')"
+            :aria-pressed="step === 'collage'"
+            @click="step = 'collage'"
           >
-            {{ t("library.dashboard.presetColumns") }}
+            {{ t("library.dashboard.stepCollage") }}
           </button>
           <button
             class="btn"
             type="button"
-            @click="arrange('rows')"
+            :aria-pressed="step === 'bind'"
+            @click="step = 'bind'"
           >
-            {{ t("library.dashboard.presetRows") }}
+            {{ t("library.dashboard.stepBind") }}
           </button>
           <button
             class="btn"
             type="button"
-            @click="arrange('grid')"
+            :aria-pressed="step === 'preview'"
+            @click="step = 'preview'"
           >
-            {{ t("library.dashboard.presetGrid") }}
+            {{ t("library.dashboard.stepPreview") }}
           </button>
         </div>
 
-        <label
-          v-for="(zone, index) in model.zones"
-          :key="`${zone.diagramId}-${index}`"
-          class="dashboard-zone-fields"
-        >
-          <span>{{ zoneLabel(zone.diagramId) }}</span>
-          <input
-            class="select"
-            type="number"
-            min="0"
-            max="1"
-            step="0.01"
-            :value="zone.x"
-            @change="updateZone(index, { x: Number(($event.target as HTMLInputElement).value) }, true)"
-          >
-          <input
-            class="select"
-            type="number"
-            min="0"
-            max="1"
-            step="0.01"
-            :value="zone.y"
-            @change="updateZone(index, { y: Number(($event.target as HTMLInputElement).value) }, true)"
-          >
-          <input
-            class="select"
-            type="number"
-            min="0.08"
-            max="1"
-            step="0.01"
-            :value="zone.w"
-            @change="updateZone(index, { w: Number(($event.target as HTMLInputElement).value) }, true)"
-          >
-          <input
-            class="select"
-            type="number"
-            min="0.08"
-            max="1"
-            step="0.01"
-            :value="zone.h"
-            @change="updateZone(index, { h: Number(($event.target as HTMLInputElement).value) }, true)"
-          >
-        </label>
+        <template v-if="step === 'collage'">
+          <label>
+            {{ t("library.dashboard.width") }}
+            <input
+              class="select"
+              type="number"
+              min="100"
+              :value="model.width"
+              @change="setSize('width', ($event.target as HTMLInputElement).value)"
+            >
+          </label>
+          <label>
+            {{ t("library.dashboard.height") }}
+            <input
+              class="select"
+              type="number"
+              min="100"
+              :value="model.height"
+              @change="setSize('height', ($event.target as HTMLInputElement).value)"
+            >
+          </label>
+          <div class="dashboard-panel__actions">
+            <button
+              class="btn"
+              type="button"
+              @click="addLine('col')"
+            >
+              {{ t("library.dashboard.addVertical") }}
+            </button>
+            <button
+              class="btn"
+              type="button"
+              @click="addLine('row')"
+            >
+              {{ t("library.dashboard.addHorizontal") }}
+            </button>
+            <button
+              class="btn"
+              type="button"
+              :disabled="!selectedDivider"
+              @click="removeLine"
+            >
+              {{ t("library.dashboard.removeLine") }}
+            </button>
+          </div>
+          <fieldset class="band">
+            <legend>{{ t("library.dashboard.heading") }}</legend>
+            <input
+              class="select"
+              type="text"
+              :value="model.title.text"
+              @change="setCaption('title', { text: ($event.target as HTMLInputElement).value })"
+            >
+            <input
+              class="select"
+              type="text"
+              :placeholder="t('library.dashboard.font')"
+              :value="model.title.font"
+              @change="setCaption('title', { font: ($event.target as HTMLInputElement).value })"
+            >
+            <input
+              class="select"
+              type="number"
+              min="8"
+              max="96"
+              :value="model.title.fontSize"
+              @change="setCaption('title', { fontSize: Number(($event.target as HTMLInputElement).value) })"
+            >
+            <input
+              class="select"
+              type="text"
+              :placeholder="t('library.dashboard.color')"
+              :value="model.title.color"
+              @change="setCaption('title', { color: ($event.target as HTMLInputElement).value })"
+            >
+            <input
+              class="select"
+              type="text"
+              :placeholder="t('library.dashboard.background')"
+              :value="model.title.background"
+              @change="setCaption('title', { background: ($event.target as HTMLInputElement).value })"
+            >
+            <label class="check">
+              <input
+                type="checkbox"
+                :checked="model.title.shadow"
+                @change="setCaption('title', { shadow: ($event.target as HTMLInputElement).checked })"
+              >
+              {{ t("library.dashboard.shadow") }}
+            </label>
+          </fieldset>
+          <fieldset class="band">
+            <legend>{{ t("library.dashboard.header") }}</legend>
+            <input
+              class="select"
+              type="text"
+              :value="model.header.text"
+              @change="setCaption('header', { text: ($event.target as HTMLInputElement).value })"
+            >
+            <input
+              class="select"
+              type="text"
+              :placeholder="t('library.dashboard.font')"
+              :value="model.header.font"
+              @change="setCaption('header', { font: ($event.target as HTMLInputElement).value })"
+            >
+            <input
+              class="select"
+              type="number"
+              min="8"
+              max="96"
+              :value="model.header.fontSize"
+              @change="setCaption('header', { fontSize: Number(($event.target as HTMLInputElement).value) })"
+            >
+            <input
+              class="select"
+              type="text"
+              :placeholder="t('library.dashboard.color')"
+              :value="model.header.color"
+              @change="setCaption('header', { color: ($event.target as HTMLInputElement).value })"
+            >
+            <input
+              class="select"
+              type="text"
+              :placeholder="t('library.dashboard.background')"
+              :value="model.header.background"
+              @change="setCaption('header', { background: ($event.target as HTMLInputElement).value })"
+            >
+            <label class="check">
+              <input
+                type="checkbox"
+                :checked="model.header.shadow"
+                @change="setCaption('header', { shadow: ($event.target as HTMLInputElement).checked })"
+              >
+              {{ t("library.dashboard.shadow") }}
+            </label>
+            <label>
+              {{ t("library.dashboard.alignX") }}
+              <select
+                class="select"
+                :value="model.header.alignX"
+                @change="setAlign('header', 'alignX', ($event.target as HTMLSelectElement).value as DashboardAlignX)"
+              >
+                <option value="start">{{ t("library.dashboard.alignStart") }}</option>
+                <option value="center">{{ t("library.dashboard.alignCenter") }}</option>
+                <option value="end">{{ t("library.dashboard.alignEnd") }}</option>
+              </select>
+            </label>
+            <label>
+              {{ t("library.dashboard.alignY") }}
+              <select
+                class="select"
+                :value="model.header.alignY === 'baseline' ? 'middle' : model.header.alignY"
+                @change="setAlign('header', 'alignY', ($event.target as HTMLSelectElement).value as DashboardAlignY)"
+              >
+                <option value="top">{{ t("library.dashboard.alignTop") }}</option>
+                <option value="middle">{{ t("library.dashboard.alignMiddle") }}</option>
+                <option value="bottom">{{ t("library.dashboard.alignBottom") }}</option>
+              </select>
+            </label>
+          </fieldset>
+          <fieldset class="band">
+            <legend>{{ t("library.dashboard.footer") }}</legend>
+            <input
+              class="select"
+              type="text"
+              :value="model.footer.text"
+              @change="setCaption('footer', { text: ($event.target as HTMLInputElement).value })"
+            >
+            <input
+              class="select"
+              type="text"
+              :placeholder="t('library.dashboard.font')"
+              :value="model.footer.font"
+              @change="setCaption('footer', { font: ($event.target as HTMLInputElement).value })"
+            >
+            <input
+              class="select"
+              type="number"
+              min="8"
+              max="96"
+              :value="model.footer.fontSize"
+              @change="setCaption('footer', { fontSize: Number(($event.target as HTMLInputElement).value) })"
+            >
+            <input
+              class="select"
+              type="text"
+              :placeholder="t('library.dashboard.color')"
+              :value="model.footer.color"
+              @change="setCaption('footer', { color: ($event.target as HTMLInputElement).value })"
+            >
+            <input
+              class="select"
+              type="text"
+              :placeholder="t('library.dashboard.background')"
+              :value="model.footer.background"
+              @change="setCaption('footer', { background: ($event.target as HTMLInputElement).value })"
+            >
+            <label class="check">
+              <input
+                type="checkbox"
+                :checked="model.footer.shadow"
+                @change="setCaption('footer', { shadow: ($event.target as HTMLInputElement).checked })"
+              >
+              {{ t("library.dashboard.shadow") }}
+            </label>
+            <label>
+              {{ t("library.dashboard.alignX") }}
+              <select
+                class="select"
+                :value="model.footer.alignX"
+                @change="setAlign('footer', 'alignX', ($event.target as HTMLSelectElement).value as DashboardAlignX)"
+              >
+                <option value="start">{{ t("library.dashboard.alignStart") }}</option>
+                <option value="center">{{ t("library.dashboard.alignCenter") }}</option>
+                <option value="end">{{ t("library.dashboard.alignEnd") }}</option>
+              </select>
+            </label>
+            <label>
+              {{ t("library.dashboard.alignY") }}
+              <select
+                class="select"
+                :value="model.footer.alignY === 'baseline' ? 'middle' : model.footer.alignY"
+                @change="setAlign('footer', 'alignY', ($event.target as HTMLSelectElement).value as DashboardAlignY)"
+              >
+                <option value="top">{{ t("library.dashboard.alignTop") }}</option>
+                <option value="middle">{{ t("library.dashboard.alignMiddle") }}</option>
+                <option value="bottom">{{ t("library.dashboard.alignBottom") }}</option>
+              </select>
+            </label>
+          </fieldset>
+        </template>
 
-        <button
-          class="btn"
-          type="button"
-          @click="showSource = !showSource"
-        >
-          {{ t("library.dashboard.sourceToggle") }}
-        </button>
-        <label v-if="showSource">
-          {{ t("library.dashboard.source") }}
-          <textarea
-            class="select"
-            rows="8"
-            :value="source"
-            @input="applySource(($event.target as HTMLTextAreaElement).value)"
-          />
-        </label>
+        <template v-else-if="step === 'bind'">
+          <p>{{ t("library.dashboard.bindHint") }}</p>
+          <label>
+            {{ t("library.dashboard.search") }}
+            <input
+              v-model="query"
+              class="select"
+              type="search"
+            >
+          </label>
+          <strong>{{ t("library.dashboard.diagrams") }}</strong>
+          <ul class="dashboard-panel__list">
+            <li
+              v-for="diagram in visibleDiagrams"
+              :key="diagram.id"
+            >
+              <button
+                class="btn"
+                type="button"
+                :aria-pressed="picked?.kind === 'diagram' && picked.ref === diagram.id"
+                @click="pickItem({ kind: 'diagram', ref: diagram.id, title: diagram.title })"
+              >
+                {{ diagram.title }}
+              </button>
+            </li>
+          </ul>
+          <strong>{{ t("library.dashboard.links") }}</strong>
+          <p v-if="visibleLinks.length === 0">{{ t("library.dashboard.emptyLinks") }}</p>
+          <ul class="dashboard-panel__list">
+            <li
+              v-for="link in visibleLinks"
+              :key="link.ref"
+            >
+              <button
+                class="btn"
+                type="button"
+                :aria-pressed="picked?.kind === 'link' && picked.ref === link.ref"
+                @click="pickItem(link)"
+              >
+                {{ link.title }}
+              </button>
+            </li>
+          </ul>
+        </template>
+
+        <template v-else>
+          <label>
+            {{ t("library.dashboard.refresh") }}
+            <select
+              v-model="refreshChoice"
+              class="select"
+            >
+              <option value="">{{ t("library.dashboard.refreshOff") }}</option>
+              <option :value="String(parseRefreshInterval('30s'))">30s</option>
+              <option :value="String(parseRefreshInterval('5m'))">5m</option>
+              <option :value="String(parseRefreshInterval('1h'))">1h</option>
+              <option value="custom">{{ t("library.dashboard.refreshCustom") }}</option>
+            </select>
+          </label>
+          <label v-if="refreshChoice === 'custom'">
+            {{ t("library.dashboard.refreshCustom") }}
+            <input
+              v-model="customRefresh"
+              class="select"
+              type="text"
+              @change="applyCustomRefresh"
+            >
+          </label>
+          <div class="dashboard-panel__actions">
+            <button
+              class="btn"
+              type="button"
+              :disabled="previewBusy"
+              @click="showPreview"
+            >
+              {{ previewBusy ? t("library.dashboard.previewBusy") : t("library.dashboard.preview") }}
+            </button>
+            <button
+              class="btn"
+              type="button"
+              :disabled="previewBusy"
+              @click="showPreview"
+            >
+              {{ t("library.dashboard.refreshNow") }}
+            </button>
+          </div>
+        </template>
+
         <p
           v-if="parseError"
           class="dashboard-panel__error"
         >
           {{ parseError }}
         </p>
-
+        <p v-if="missingFiles.length">
+          {{ t("library.dashboard.missingFiles") }}: {{ missingFiles.join(", ") }}
+        </p>
+        <p v-if="notice">{{ notice }}</p>
         <div class="dashboard-panel__actions">
           <button
             class="btn"
@@ -721,20 +821,7 @@ watch(
           >
             {{ t("library.dashboard.saveHtml") }}
           </button>
-          <button
-            class="btn"
-            type="button"
-            @click="refreshNow"
-          >
-            {{ t("library.dashboard.refreshNow") }}
-          </button>
         </div>
-        <p v-if="missingFiles.length">
-          {{ t("library.dashboard.missingFiles") }}: {{ missingFiles.join(", ") }}
-        </p>
-        <p v-if="notice">
-          {{ notice }}
-        </p>
         <label v-if="embedCode">
           {{ t("library.dashboard.embed") }}
           <textarea
@@ -753,77 +840,17 @@ watch(
         </label>
       </div>
 
-      <div class="dashboard-stage-wrap">
-        <div class="dashboard-panel__actions">
-          <label>
-            {{ t("library.dashboard.zoom") }}
-            <input
-              v-model.number="zoom"
-              type="range"
-              min="0.25"
-              max="4"
-              step="0.05"
-            >
-          </label>
-          <button
-            class="btn"
-            type="button"
-            @click="zoom = 1"
-          >
-            {{ t("library.dashboard.fit") }}
-          </button>
-          <button
-            class="btn"
-            type="button"
-            :aria-pressed="gesture === 'move'"
-            @click="gesture = 'move'"
-          >
-            {{ t("library.dashboard.move") }}
-          </button>
-          <button
-            class="btn"
-            type="button"
-            :aria-pressed="gesture === 'resize'"
-            @click="gesture = 'resize'"
-          >
-            {{ t("library.dashboard.resize") }}
-          </button>
-        </div>
-        <div
-          ref="stageRef"
-          class="dashboard-stage"
-          @wheel="onWheel"
-        >
-          <div
-            ref="boardRef"
-            class="dashboard-board"
-            :style="boardStyle"
-          >
-            <!-- eslint-disable vue/no-v-html -->
-            <div
-              class="dashboard-board__svg"
-              v-html="previewSvg"
-            />
-            <!-- eslint-enable vue/no-v-html -->
-            <button
-              v-for="(zone, index) in model.zones"
-              :key="`${zone.diagramId}-hit-${index}`"
-              class="dashboard-hit"
-              :class="{ 'is-dragging': dragging?.index === index }"
-              type="button"
-              :style="zoneStyle(zone)"
-              @pointerdown="onPointerDown($event, index, gesture)"
-              @click="onZoneClick(zone.diagramId)"
-            >
-              <span class="dashboard-hit__label">{{ zoneLabel(zone.diagramId) }}</span>
-              <span
-                class="dashboard-hit__resize"
-                @pointerdown.stop="onPointerDown($event, index, 'resize')"
-              />
-            </button>
-          </div>
-        </div>
-      </div>
+      <DashboardCollageBoard
+        :model="model"
+        :mode="step"
+        :preview-svg="previewSvg"
+        :cell-label="cellLabel"
+        :selected-cell="selectedCell"
+        :selected-divider="selectedDivider"
+        @select-cell="onSelectCell"
+        @select-divider="selectedDivider = $event"
+        @tracks="onTracks"
+      />
     </div>
   </div>
 </template>
@@ -840,8 +867,7 @@ watch(
   background: var(--bg, #fff);
 }
 .dashboard-panel__bar,
-.dashboard-panel__actions,
-.dashboard-zone-fields {
+.dashboard-panel__actions {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -885,82 +911,7 @@ watch(
   padding: 0;
   list-style: none;
 }
-.dashboard-stage-wrap {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  gap: 8px;
-}
-.dashboard-stage {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  display: grid;
-  place-items: center;
-  background:
-    linear-gradient(45deg, #e2e8f0 25%, transparent 25%),
-    linear-gradient(-45deg, #e2e8f0 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
-    linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
-  background-size: 24px 24px;
-  background-position: 0 0, 0 12px, 12px -12px, -12px 0;
-  background-color: #f8fafc;
-  border: 1px solid var(--border, #cbd5e1);
-}
-.dashboard-board {
-  position: relative;
-  flex: none;
-  background: #fff;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
-}
-.dashboard-board__svg {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.dashboard-board__svg :deep(svg) {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-.dashboard-hit {
-  position: absolute;
-  border: 1px solid rgba(15, 118, 110, 0.85);
-  background: rgba(15, 118, 110, 0.12);
-  padding: 4px;
-  text-align: left;
-  cursor: grab;
-  touch-action: none;
-  color: #0f172a;
-}
-.dashboard-hit.is-dragging {
-  cursor: grabbing;
-}
-.dashboard-hit__label {
-  display: block;
-  overflow: hidden;
-  font-size: 12px;
-  line-height: 1.2;
-  pointer-events: none;
-}
-.dashboard-hit__resize {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 28px;
-  height: 28px;
-  background: #0f766e;
-  cursor: nwse-resize;
-  touch-action: none;
-}
-@media (pointer: coarse) {
-  .dashboard-hit__resize {
-    width: 48px;
-    height: 48px;
-  }
-}
+.dashboard-panel__error { color: #b91c1c; }
 @media (max-width: 800px) {
   .dashboard-panel {
     overflow: auto;
@@ -980,18 +931,6 @@ watch(
     flex-direction: column;
     overflow: visible;
   }
-  .dashboard-stage-wrap {
-    order: -1;
-  }
-  .dashboard-stage {
-    height: 58dvh;
-    flex: none;
-  }
-  .dashboard-panel__form {
-    overflow: visible;
-  }
-}
-.dashboard-panel__error {
-  color: #b91c1c;
+  .dashboard-panel__form { overflow: visible; }
 }
 </style>

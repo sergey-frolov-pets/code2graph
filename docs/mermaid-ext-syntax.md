@@ -1266,13 +1266,15 @@ dashboard
 size 1280x720
 refresh 5m
 title "Выручка" font "Inter" fontsize 22 color #0f172a background #ffffff shadow
-header "ноябрь" font "Inter" fontsize 16 color #0f172a background #f1f5f9 shadow
-footer "источник: таблица" font "Inter" fontsize 13 color #64748b background #f8fafc shadow
-zone 0 0 0.5 0.5 diagram "revenue"
-zone 0.5 0 0.5 1 diagram "load"
+header "ноябрь" font "Inter" fontsize 16 color #0f172a background #f1f5f9 shadow align center middle
+footer "источник: таблица" font "Inter" fontsize 13 color #64748b background #f8fafc shadow align end bottom
+cols 0.5 0.5
+rows 0.5 0.5
+cell 0 0 diagram "revenue"
+cell 1 0 link "alice/weekly"
 ```
 
-`size` — пиксели мира. `refresh` — `30s`, `5m` или `1h`. `title`, `header` и `footer` необязательны: заголовок сверху, шапка под ним, подвал снизу, зоны занимают оставшуюся область. У каждой подписи свои `font`, `fontsize`, `color`, `background` и `shadow` (или `noshadow`). `zone` — доли `x y w h` этой области и идентификатор одной диаграммы этой библиотеки. Движок сам библиотеку не читает: SVG зон приходит в `ExtRenderOptions.zoneSvgs`. Обновление зоны берёт сохранённый исходник с сервера и, если есть настроенная локальная ссылка, накладывает файл поверх него.
+`size` — пиксели холста. `refresh` — `30s`, `5m`, `1h` или любое `Ns` / `Nm` / `Nh`. `title`, `header` и `footer` необязательны: высота непустой полосы равна `fontsize + 20`, сумма вычитается из холста до сетки. У полосы свои `font`, `fontsize`, `color`, `background` и `shadow` (или `noshadow`). У шапки и подвала ещё `align <start|center|end> <top|middle|bottom>`. `cols` и `rows` — доли оставшегося прямоугольника, сумма 1. `cell` — `колонка строка diagram "id"` или `link "username/slug"`. Старый `zone x y w h diagram "id"` ещё читается: его края становятся линиями, диаграмма заполняет ячейки, в которых лежит центр её прямоугольника. Движок сам библиотеку не читает: SVG ячеек приходит в `ExtRenderOptions.zoneSvgs` с ключом `diagram:<id>` или `link:<user>/<slug>`. Обновление зоны берёт сохранённый исходник с сервера и, если есть настроенная локальная ссылка, накладывает файл поверх него.
 
 ---
 
