@@ -1001,7 +1001,9 @@ interface LegendBox {
   height: number;
   columns: LegendColumn[];
   linksTitle: string;
-  rows: LegendRow[];
+  /** Строки типов связей: в ряд, со переносом, если ряд не влезает. */
+  linkLines: LegendRow[][];
+  scalesHeight: number;
 }
 
 function legendText(key: string, locale: AppLocale): string {
@@ -1046,19 +1048,64 @@ function measureLegend(model: PowerModel, locale: AppLocale): LegendBox | null {
     width: link.width,
   }));
   const linksTitle = legendText("links", locale);
-  const linkW = rows.reduce(
-    (max, link) => Math.max(max, 28 + measureText(link.label, LEGEND_FONT)),
-    measureText(linksTitle, LEGEND_TITLE),
-  );
+  const inner = Math.max(columnsWidth - LEGEND_PAD * 2, legendTitleWidth(linksTitle));
+  let linkLines = wrapLegendLinks(rows, inner);
+  let linkSpan = legendLinkSpan(linkLines);
+  const width = Math.max(columnsWidth, linkSpan + LEGEND_PAD * 2);
+  if (width > columnsWidth + 0.5) {
+    linkLines = wrapLegendLinks(rows, width - LEGEND_PAD * 2);
+    linkSpan = legendLinkSpan(linkLines);
+  }
   const scalesH = LEGEND_PAD + 16 + rowCount * LEGEND_ROW + 4;
-  const linksH = rows.length > 0 ? 16 + rows.length * LEGEND_ROW : 0;
+  const linksH = linkLines.length > 0 ? 16 + linkLines.length * LEGEND_ROW : 0;
   return {
-    width: Math.max(columnsWidth, linkW + LEGEND_PAD * 2),
+    width: Math.max(width, linkSpan + LEGEND_PAD * 2),
     height: scalesH + linksH + LEGEND_PAD,
     columns,
     linksTitle,
-    rows,
+    linkLines,
+    scalesHeight: scalesH,
   };
+}
+
+const LEGEND_LINK_SAMPLE = 22;
+const LEGEND_LINK_GAP = 6;
+
+function legendLinkItemWidth(label: string): number {
+  return LEGEND_LINK_SAMPLE + LEGEND_LINK_GAP + measureText(label, LEGEND_FONT);
+}
+
+function legendLinkSpan(lines: readonly LegendRow[][]): number {
+  let span = 0;
+  for (const line of lines) {
+    let used = 0;
+    line.forEach((item, index) => {
+      used += (index > 0 ? LEGEND_GAP : 0) + legendLinkItemWidth(item.label);
+    });
+    span = Math.max(span, used);
+  }
+  return span;
+}
+
+/** Типы связей в строку. Следующий образец, который не влезает, начинает новую строку. */
+function wrapLegendLinks(rows: readonly LegendRow[], inner: number): LegendRow[][] {
+  const lines: LegendRow[][] = [];
+  let line: LegendRow[] = [];
+  let used = 0;
+  for (const row of rows) {
+    const item = legendLinkItemWidth(row.label);
+    const gap = line.length > 0 ? LEGEND_GAP : 0;
+    if (line.length > 0 && used + gap + item > inner) {
+      lines.push(line);
+      line = [row];
+      used = item;
+      continue;
+    }
+    line.push(row);
+    used += gap + item;
+  }
+  if (line.length > 0) lines.push(line);
+  return lines;
 }
 
 const INFLUENCE_X_SHIFT = 14;
@@ -1116,33 +1163,52 @@ function contactX(
   return left + (span * (slot + 0.5)) / count;
 }
 
+/** Минимальный зазор между параллельными стрелками влияния, чтобы они не читались как одна. */
+const INFLUENCE_LANE_GAP = 14;
+
 function influenceLaneY(gapTop: number, gapBottom: number, lane: number, count: number, mode: InfluenceDraft["mode"]): number {
   const lo = Math.min(gapTop, gapBottom);
   const hi = Math.max(gapTop, gapBottom);
   const room = hi - lo;
-  const inset = Math.min(6, room / 4);
+  const inset = Math.min(10, room / 4);
   const innerLo = lo + inset;
   const innerHi = hi - inset;
-  if (innerHi <= innerLo) return (lo + hi) / 2;
   if (count <= 1) {
-    if (mode === "same") return innerLo;
-    const shift = Math.min(8, (innerHi - innerLo) / 4);
-    return (innerLo + innerHi) / 2 + shift;
+    if (mode === "same") return Math.min(innerHi, innerLo);
+    if (innerHi <= innerLo) return (lo + hi) / 2;
+    return (innerLo + innerHi) / 2;
   }
-  return innerLo + ((innerHi - innerLo) * (lane + 0.5)) / count;
+  const span = INFLUENCE_LANE_GAP * (count - 1);
+  if (innerHi - innerLo >= span) {
+    const mid = (innerLo + innerHi) / 2;
+    return mid - span / 2 + lane * INFLUENCE_LANE_GAP;
+  }
+  return innerLo + lane * INFLUENCE_LANE_GAP;
+}
+
+interface RoutePoint {
+  x: number;
+  y: number;
+}
+
+interface CardBox {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
 }
 
 interface RoutedInfluence {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  midY: number;
+  points: RoutePoint[];
   color: string;
   dash?: string;
   width: number;
   label?: string;
+  labelX: number;
+  labelY: number;
   both?: boolean;
+  minX: number;
+  maxX: number;
 }
 
 /** Ломаные стрелки влияния, как линии подчинения: без наложения друг на друга. */
@@ -1210,24 +1276,30 @@ function routeInfluences(
     });
   }
 
-  const fromGroups = new Map<string, InfluenceDraft[]>();
-  const toGroups = new Map<string, InfluenceDraft[]>();
+  const cardCenterX = (card: PlacedTreeNode<PowerPerson>) => offsetX + card.x + card.width / 2;
+  const touches = new Map<string, { draft: InfluenceDraft; end: "x1" | "x2"; otherX: number }[]>();
   for (const draft of drafts) {
     const fromSide = draft.mode === "up" ? "top" : "bottom";
     const toSide = draft.mode === "down" ? "top" : "bottom";
     const fromKey = `${draft.from.node.id}|${fromSide}`;
     const toKey = `${draft.to.node.id}|${toSide}`;
-    fromGroups.set(fromKey, [...(fromGroups.get(fromKey) ?? []), draft]);
-    toGroups.set(toKey, [...(toGroups.get(toKey) ?? []), draft]);
+    touches.set(fromKey, [
+      ...(touches.get(fromKey) ?? []),
+      { draft, end: "x1", otherX: cardCenterX(draft.to) },
+    ]);
+    touches.set(toKey, [
+      ...(touches.get(toKey) ?? []),
+      { draft, end: "x2", otherX: cardCenterX(draft.from) },
+    ]);
   }
-  for (const list of fromGroups.values()) {
-    list.forEach((draft, index) => {
-      draft.x1 = contactX(draft.from, offsetX, index, list.length);
-    });
-  }
-  for (const list of toGroups.values()) {
-    list.forEach((draft, index) => {
-      draft.x2 = contactX(draft.to, offsetX, index, list.length);
+  for (const [key, list] of touches) {
+    const card = byId.get(key.slice(0, key.lastIndexOf("|")));
+    if (!card) continue;
+    const ordered = [...list].sort((a, b) => a.otherX - b.otherX || (a.end === "x1" ? -1 : 1));
+    ordered.forEach((item, index) => {
+      const x = contactX(card, offsetX, index, ordered.length);
+      if (item.end === "x1") item.draft.x1 = x;
+      else item.draft.x2 = x;
     });
   }
 
@@ -1254,22 +1326,178 @@ function routeInfluences(
   const routes = drafts.map((draft) => {
     const lane = laneOf.get(draft) ?? { lane: 0, count: 1 };
     const midY = influenceLaneY(draft.gapTop, draft.gapBottom, lane.lane, lane.count, draft.mode);
-    overflow = Math.max(overflow, midY - treeBottom, draft.y1 - treeBottom, draft.y2 - treeBottom);
+    const fromBox = cardBox(draft.from, offsetX, offsetY);
+    const toBox = cardBox(draft.to, offsetX, offsetY);
+    const obstacles = cardsBetween(placed, draft, offsetX, offsetY);
+    const elbow = elbowPoints(draft.x1, draft.y1, draft.x2, draft.y2, midY);
+    const points = pathHitsCards(elbow, obstacles)
+      ? routeAroundCards(draft, fromBox, toBox, obstacles, lane.lane)
+      : elbow;
+    const labelAt = labelAnchor(points);
+    const xs = points.map((point) => point.x);
+    const ys = points.map((point) => point.y);
+    overflow = Math.max(overflow, ...ys.map((y) => y - treeBottom), 0);
     const color = mono ? monoPaint(draft.link.color, invert) : draft.link.color;
     return {
-      x1: draft.x1,
-      y1: draft.y1,
-      x2: draft.x2,
-      y2: draft.y2,
-      midY,
+      points,
       color,
       dash: STROKE_DASH[draft.link.style],
       width: draft.link.width,
       label: draft.label,
+      labelX: labelAt.x,
+      labelY: labelAt.y,
       both: draft.both,
+      minX: Math.min(...xs),
+      maxX: Math.max(...xs),
     };
   });
   return { routes, overflow: Math.max(0, overflow) };
+}
+
+function cardBox(card: PlacedTreeNode<PowerPerson>, offsetX: number, offsetY: number): CardBox {
+  return {
+    left: offsetX + card.x,
+    right: offsetX + card.x + card.width,
+    top: offsetY + card.y,
+    bottom: offsetY + card.y + card.height,
+  };
+}
+
+function cardsBetween(
+  placed: readonly PlacedTreeNode<PowerPerson>[],
+  draft: InfluenceDraft,
+  offsetX: number,
+  offsetY: number,
+): CardBox[] {
+  const y0 = Math.min(draft.y1, draft.y2);
+  const y1 = Math.max(draft.y1, draft.y2);
+  const boxes: CardBox[] = [];
+  for (const card of placed) {
+    if (card.node.id === draft.from.node.id || card.node.id === draft.to.node.id) continue;
+    const box = cardBox(card, offsetX, offsetY);
+    if (box.bottom > y0 + 1 && box.top < y1 - 1) boxes.push(box);
+  }
+  return boxes;
+}
+
+function dedupePoints(points: readonly RoutePoint[]): RoutePoint[] {
+  const kept: RoutePoint[] = [];
+  for (const point of points) {
+    const prev = kept[kept.length - 1];
+    if (prev && Math.abs(prev.x - point.x) < 0.4 && Math.abs(prev.y - point.y) < 0.4) continue;
+    kept.push(point);
+  }
+  return kept;
+}
+
+function elbowPoints(x1: number, y1: number, x2: number, y2: number, midY: number): RoutePoint[] {
+  return dedupePoints([
+    { x: x1, y: y1 },
+    { x: x1, y: midY },
+    { x: x2, y: midY },
+    { x: x2, y: y2 },
+  ]);
+}
+
+function segmentHitsCard(a: RoutePoint, b: RoutePoint, box: CardBox): boolean {
+  const pad = 3;
+  const left = box.left + pad;
+  const right = box.right - pad;
+  const top = box.top + pad;
+  const bottom = box.bottom - pad;
+  if (right <= left || bottom <= top) return false;
+  if (Math.abs(a.x - b.x) < 0.6) {
+    if (a.x <= left || a.x >= right) return false;
+    const y0 = Math.min(a.y, b.y);
+    const y1 = Math.max(a.y, b.y);
+    return y1 > top && y0 < bottom;
+  }
+  if (Math.abs(a.y - b.y) < 0.6) {
+    if (a.y <= top || a.y >= bottom) return false;
+    const x0 = Math.min(a.x, b.x);
+    const x1 = Math.max(a.x, b.x);
+    return x1 > left && x0 < right;
+  }
+  return false;
+}
+
+function pathHitsCards(points: readonly RoutePoint[], boxes: readonly CardBox[]): boolean {
+  for (let index = 0; index < points.length - 1; index += 1) {
+    for (const box of boxes) {
+      if (segmentHitsCard(points[index], points[index + 1], box)) return true;
+    }
+  }
+  return false;
+}
+
+const AROUND_GUTTER = 16;
+const AROUND_STUB = 12;
+
+/** Обход карточек промежуточных уровней: вниз (или вверх) сбоку от них, затем к цели. */
+function routeAroundCards(
+  draft: InfluenceDraft,
+  fromBox: CardBox,
+  toBox: CardBox,
+  boxes: readonly CardBox[],
+  lane: number,
+): RoutePoint[] {
+  const dir = draft.y2 >= draft.y1 ? 1 : -1;
+  let exitY = draft.y1 + dir * AROUND_STUB;
+  let enterY = draft.y2 - dir * AROUND_STUB;
+  for (const box of boxes) {
+    if (dir > 0) {
+      if (exitY > box.top - 4) exitY = Math.min(exitY, box.top - 4);
+      if (enterY < box.bottom + 4) enterY = Math.max(enterY, box.bottom + 4);
+    } else {
+      if (exitY < box.bottom + 4) exitY = Math.max(exitY, box.bottom + 4);
+      if (enterY > box.top - 4) enterY = Math.min(enterY, box.top - 4);
+    }
+  }
+  const left = Math.min(fromBox.left, toBox.left, ...boxes.map((box) => box.left)) - AROUND_GUTTER;
+  const right = Math.max(fromBox.right, toBox.right, ...boxes.map((box) => box.right)) + AROUND_GUTTER;
+  const leftCost = Math.abs(left - draft.x1) + Math.abs(left - draft.x2);
+  const rightCost = Math.abs(right - draft.x1) + Math.abs(right - draft.x2);
+  const order: Array<"left" | "right"> = leftCost <= rightCost ? ["left", "right"] : ["right", "left"];
+  for (const side of order) {
+    for (let extra = 0; extra < 4; extra += 1) {
+      const channel = side === "left" ? left - (lane + extra) * 12 : right + (lane + extra) * 12;
+      const points = dedupePoints([
+        { x: draft.x1, y: draft.y1 },
+        { x: draft.x1, y: exitY },
+        { x: channel, y: exitY },
+        { x: channel, y: enterY },
+        { x: draft.x2, y: enterY },
+        { x: draft.x2, y: draft.y2 },
+      ]);
+      if (!pathHitsCards(points, boxes)) return points;
+    }
+  }
+  const channel = order[0] === "left" ? left - lane * 12 : right + lane * 12;
+  return dedupePoints([
+    { x: draft.x1, y: draft.y1 },
+    { x: draft.x1, y: exitY },
+    { x: channel, y: exitY },
+    { x: channel, y: enterY },
+    { x: draft.x2, y: enterY },
+    { x: draft.x2, y: draft.y2 },
+  ]);
+}
+
+function labelAnchor(points: readonly RoutePoint[]): RoutePoint {
+  let best = 0;
+  let x = points[0]?.x ?? 0;
+  let y = points[0]?.y ?? 0;
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const a = points[index];
+    const b = points[index + 1];
+    if (Math.abs(a.y - b.y) > 0.4) continue;
+    const span = Math.abs(a.x - b.x);
+    if (span < best) continue;
+    best = span;
+    x = (a.x + b.x) / 2;
+    y = a.y;
+  }
+  return { x, y: y - 4 };
 }
 
 function chipFill(color: string, mono: boolean, invert: boolean, index: number): string {
@@ -1297,7 +1525,6 @@ function measureCard(person: PowerPerson, framePx: number): { width: number; hei
 
 const COMMS_FONT = 11;
 const COMMS_LINE = 16;
-const COMMS_PAD_X = 8;
 const COMMS_PAD_Y = 6;
 
 interface CommsRow {
@@ -1363,10 +1590,16 @@ interface CommsTable {
   height: number;
   headers: readonly [string, string, string];
   columns: number[];
+  pads: readonly [number, number, number];
   rows: CommsRow[];
   headerHeight: number;
   rowHeights: number[];
 }
+
+/** Заголовок жирный, measureText этого не видит. Колонка связей ещё и с запасом, чтобы текст не обрезался. */
+const COMMS_HEADER_BOLD = 1.12;
+const COMMS_LINK_SLACK = 1.15;
+const COMMS_PADS = [16, 8, 8] as const;
 
 function measureComms(model: PowerModel, locale: AppLocale): CommsTable {
   const companyWord = legendText("companyWord", locale);
@@ -1385,11 +1618,12 @@ function measureComms(model: PowerModel, locale: AppLocale): CommsTable {
     .sort((a, b) => compareAlpha(a.name, b.name));
   const cells = (row: CommsRow): string[][] => [[row.name], row.contacts, row.links];
   const columns = headers.map((header, index) => {
+    const slack = index === 2 ? COMMS_LINK_SLACK : 1;
     const widest = rows.reduce((max, row) => {
       const lines = cells(row)[index];
-      return Math.max(max, ...lines.map((line) => measureText(line, COMMS_FONT)), 0);
-    }, measureText(header, COMMS_FONT));
-    return widest + COMMS_PAD_X * 2;
+      return Math.max(max, ...lines.map((line) => measureText(line, COMMS_FONT) * slack), 0);
+    }, measureText(header, COMMS_FONT) * COMMS_HEADER_BOLD);
+    return widest + COMMS_PADS[index] * 2;
   });
   const headerHeight = COMMS_LINE + COMMS_PAD_Y * 2;
   const rowHeights = rows.map((row) => {
@@ -1401,10 +1635,15 @@ function measureComms(model: PowerModel, locale: AppLocale): CommsTable {
     height: headerHeight + rowHeights.reduce((sum, height) => sum + height, 0),
     headers,
     columns,
+    pads: COMMS_PADS,
     rows,
     headerHeight,
     rowHeights,
   };
+}
+
+function commsHeaderFill(dark: boolean): string {
+  return dark ? "#2a3036" : "#f6f8fa";
 }
 
 function drawComms(
@@ -1414,6 +1653,7 @@ function drawComms(
   table: CommsTable,
   fg: string,
   bg: string,
+  dark: boolean,
 ): void {
   svg.rect(x, y, table.width, table.height, {
     fill: bg,
@@ -1422,9 +1662,14 @@ function drawComms(
     rx: 4,
     "data-comms": "powermap",
   });
+  svg.rect(x + 1, y + 1, Math.max(0, table.width - 2), Math.max(0, table.headerHeight - 1), {
+    fill: commsHeaderFill(dark),
+    rx: 3,
+    "data-comms-header": "powermap",
+  });
   let cursor = x;
   table.headers.forEach((header, index) => {
-    svg.text(cursor + COMMS_PAD_X, y + COMMS_PAD_Y + 12, header, {
+    svg.text(cursor + table.pads[index], y + COMMS_PAD_Y + 12, header, {
       "font-size": COMMS_FONT,
       "font-weight": 700,
       fill: fg,
@@ -1444,7 +1689,7 @@ function drawComms(
     let cellX = x;
     groups.forEach((lines, index) => {
       lines.forEach((line, lineIndex) => {
-        svg.text(cellX + COMMS_PAD_X, rowY + COMMS_PAD_Y + 12 + lineIndex * COMMS_LINE, line, {
+        svg.text(cellX + table.pads[index], rowY + COMMS_PAD_Y + 12 + lineIndex * COMMS_LINE, line, {
           "font-size": COMMS_FONT,
           fill: fg,
           "text-anchor": "start",
@@ -1504,10 +1749,20 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
     height += padY;
   }
 
-  const offsetX = 24 + padX / 2;
+  let offsetX = 24 + padX / 2;
   const offsetY = headerH + padY / 2;
   const treeBottom = offsetY + laid.height;
-  const routed = routeInfluences(laid.placed, model, offsetX, offsetY, treeBottom, mono, invertedMono);
+  let routed = routeInfluences(laid.placed, model, offsetX, offsetY, treeBottom, mono, invertedMono);
+  const routeXs = routed.routes.flatMap((route) => route.points.map((point) => point.x));
+  if (routeXs.length > 0) {
+    const extraLeft = Math.max(0, 8 - Math.min(...routeXs));
+    const extraRight = Math.max(0, Math.max(...routeXs) - (width - 8));
+    if (extraLeft > 0 || extraRight > 0) {
+      offsetX += extraLeft;
+      width += extraLeft + extraRight;
+      routed = routeInfluences(laid.placed, model, offsetX, offsetY, treeBottom, mono, invertedMono);
+    }
+  }
   const legendBlock = legend ? 12 + legend.height + 8 : 0;
   const commsBlock = comms ? 12 + comms.height + 8 : 0;
   height = treeBottom + Math.max(20, 12 + routed.overflow + legendBlock + commsBlock);
@@ -1539,7 +1794,7 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
   }
 
   if (comms) {
-    drawComms(svg, 24, commsY, comms, palette.fg, palette.bg);
+    drawComms(svg, 24, commsY, comms, palette.fg, palette.bg, themeDark);
   }
 
   const marker = arrowMarker(palette, "ext-pm-report");
@@ -1554,7 +1809,9 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
   routed.routes.forEach((route, index) => {
     const arrow = arrowMarker(palette, `ext-pm-link-${index}`, route.color);
     svg.raw(arrow.markup);
-    const d = `M ${fmt(route.x1)} ${fmt(route.y1)} L ${fmt(route.x1)} ${fmt(route.midY)} L ${fmt(route.x2)} ${fmt(route.midY)} L ${fmt(route.x2)} ${fmt(route.y2)}`;
+    const d = route.points
+      .map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${fmt(point.x)} ${fmt(point.y)}`)
+      .join(" ");
     svg.path(d, {
       fill: "none",
       stroke: route.color,
@@ -1564,7 +1821,7 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
       ...(route.dash ? { "stroke-dasharray": route.dash } : {}),
     });
     if (route.label) {
-      svg.text((route.x1 + route.x2) / 2, route.midY - 4, route.label, {
+      svg.text(route.labelX, route.labelY, route.label, {
         "font-size": 10,
         fill: route.color,
         "data-edge-label": "1",
@@ -1625,27 +1882,35 @@ function drawLegend(
     });
     cursor += legendColumnWidth(column) + LEGEND_GAP;
   }
-  if (legend.rows.length === 0) return;
-  const linksTop = y + legend.height - LEGEND_PAD - legend.rows.length * LEGEND_ROW - 14;
+  if (legend.linkLines.length === 0) return;
+  const linksTop = y + legend.scalesHeight;
   svg.text(x + LEGEND_PAD, linksTop + 12, legend.linksTitle, {
     "font-size": LEGEND_TITLE,
     "font-weight": 700,
     fill: fg,
     "text-anchor": "start",
   });
-  legend.rows.forEach((link, index) => {
-    const rowY = linksTop + 18 + index * LEGEND_ROW;
-    const color = mono ? monoGray(index, Math.max(legend.rows.length, 2), invert) : link.color;
-    const dash = STROKE_DASH[link.style];
-    svg.line(x + LEGEND_PAD, rowY, x + LEGEND_PAD + 22, rowY, {
-      stroke: color,
-      "stroke-width": Math.max(1.4, link.width),
-      ...(dash ? { "stroke-dasharray": dash } : {}),
-    });
-    svg.text(x + LEGEND_PAD + 28, rowY + 3, link.label, {
-      "font-size": LEGEND_FONT,
-      fill: fg,
-      "text-anchor": "start",
+  const linkCount = legend.linkLines.reduce((sum, line) => sum + line.length, 0);
+  let drawn = 0;
+  legend.linkLines.forEach((line, lineIndex) => {
+    const rowY = linksTop + 18 + lineIndex * LEGEND_ROW;
+    let cursor = x + LEGEND_PAD;
+    line.forEach((link, index) => {
+      const color = mono ? monoGray(drawn, Math.max(linkCount, 2), invert) : link.color;
+      drawn += 1;
+      const dash = STROKE_DASH[link.style];
+      svg.line(cursor, rowY, cursor + LEGEND_LINK_SAMPLE, rowY, {
+        stroke: color,
+        "stroke-width": Math.max(1.4, link.width),
+        ...(dash ? { "stroke-dasharray": dash } : {}),
+      });
+      svg.text(cursor + LEGEND_LINK_SAMPLE + LEGEND_LINK_GAP, rowY + 3, link.label, {
+        "font-size": LEGEND_FONT,
+        fill: fg,
+        "text-anchor": "start",
+      });
+      cursor += legendLinkItemWidth(link.label);
+      if (index < line.length - 1) cursor += LEGEND_GAP;
     });
   });
 }

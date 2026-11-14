@@ -125,4 +125,11 @@ describe("offline render stays on the device", () => {
     expect(cleaned).toContain("url(#shade)");
     expect(cleaned).toContain("https://plantuml.com/guide");
   });
+
+  it("keeps an embedded portrait on the image", () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg"><image href="data:image/png;base64,aaaa" xlink:href="data:image/png;base64,aaaa"/></svg>';
+    const cleaned = stripOffDeviceSvgResources(svg);
+    expect(cleaned).toContain("data:image/png;base64,aaaa");
+  });
 });
