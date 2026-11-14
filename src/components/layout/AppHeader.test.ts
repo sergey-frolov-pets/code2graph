@@ -70,6 +70,21 @@ describe("AppHeader new diagram button", () => {
     expect(onOpenWizard).toHaveBeenCalledTimes(1);
   });
 
+  it("places the subtitle on its own full-width row under the title and nav", async () => {
+    mounted = mountAppHeader();
+    await nextTick();
+
+    const header = mounted.host.querySelector(".app-header");
+    const subtitle = header?.querySelector(":scope > .app-header__subtitle");
+    const nav = header?.querySelector(":scope > .app-header__nav");
+    expect(subtitle).not.toBeNull();
+    expect(nav).not.toBeNull();
+    expect(subtitle!.textContent?.length).toBeGreaterThan(0);
+    expect(
+      nav!.compareDocumentPosition(subtitle!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("shows the Code2Graph icon to the left of the name", async () => {
     mounted = mountAppHeader();
     await nextTick();
