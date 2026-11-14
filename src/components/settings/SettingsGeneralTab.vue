@@ -8,8 +8,10 @@ import { useDictation } from "@/composables/useDictation";
 import {
   EDITOR_FONT_FAMILY_OPTIONS,
   EDITOR_FONT_SIZE_OPTIONS,
+  EDITOR_SURFACE_OPTIONS,
   type EditorFontFamilyId,
   type EditorFontSize,
+  type EditorSurfaceMode,
 } from "@/constants/editor-settings";
 import { useLocale } from "@/composables/useLocale";
 
@@ -18,6 +20,7 @@ defineProps<{
   editorFontFamilyId: EditorFontFamilyId;
   editorSyntaxHighlight: boolean;
   editorAutocomplete: boolean;
+  editorSurfaceMode: EditorSurfaceMode;
 }>();
 
 const emit = defineEmits<{
@@ -25,6 +28,7 @@ const emit = defineEmits<{
   "update:editorFontFamilyId": [value: EditorFontFamilyId];
   "update:editorSyntaxHighlight": [value: boolean];
   "update:editorAutocomplete": [value: boolean];
+  "update:editorSurfaceMode": [value: EditorSurfaceMode];
   openAbout: [];
 }>();
 
@@ -123,6 +127,30 @@ const llmApiKeysGuideHref = computed(() => getLlmApiKeysGuideHref(locale.value))
         "
       />
       <span>{{ t("settings.autocomplete") }}</span>
+    </label>
+
+    <label class="settings-field">
+      <span class="settings-field__label">{{ t("settings.editorSurface") }}</span>
+      <select
+        class="select"
+        data-testid="settings-editor-surface"
+        :value="editorSurfaceMode"
+        @change="
+          emit(
+            'update:editorSurfaceMode',
+            ($event.target as HTMLSelectElement).value as EditorSurfaceMode,
+          )
+        "
+      >
+        <option
+          v-for="option in EDITOR_SURFACE_OPTIONS"
+          :key="option.id"
+          :value="option.id"
+        >
+          {{ t(option.labelKey) }}
+        </option>
+      </select>
+      <span class="settings-field__hint">{{ t("settings.editorSurfaceHint") }}</span>
     </label>
   </div>
 

@@ -23,15 +23,18 @@ import {
   DEFAULT_EDITOR_AUTOCOMPLETE,
   DEFAULT_EDITOR_FONT_FAMILY_ID,
   DEFAULT_EDITOR_FONT_SIZE,
+  DEFAULT_EDITOR_SURFACE,
   DEFAULT_EDITOR_SYNTAX_HIGHLIGHT,
   DEFAULT_PREVIEW_BG,
   isEditorFontFamilyId,
   isEditorFontSize,
+  isEditorSurfaceMode,
   isTransparentPreviewBg,
   resolveEditorFontFamily,
   STORAGE_KEY_EDITOR_AUTOCOMPLETE,
   STORAGE_KEY_EDITOR_FONT_FAMILY,
   STORAGE_KEY_EDITOR_FONT_SIZE,
+  STORAGE_KEY_EDITOR_SURFACE,
   STORAGE_KEY_EDITOR_SYNTAX_HIGHLIGHT,
   STORAGE_KEY_PREVIEW_BG,
   STORAGE_KEY_DIAGRAM_TEXT_COLOR,
@@ -43,6 +46,7 @@ import {
   DEFAULT_DIAGRAM_FONT_STYLE,
   type EditorFontFamilyId,
   type EditorFontSize,
+  type EditorSurfaceMode,
 } from "@/constants/editor-settings";
 import { useLocale } from "@/composables/useLocale";
 import { useUiTheme } from "@/composables/useUiTheme";
@@ -101,6 +105,15 @@ function readInitialEditorAutocomplete(): boolean {
   );
 }
 
+function readInitialEditorSurface(): EditorSurfaceMode {
+  const saved = readStorageItem(STORAGE_KEY_EDITOR_SURFACE);
+  if (saved && isEditorSurfaceMode(saved)) {
+    return saved;
+  }
+
+  return DEFAULT_EDITOR_SURFACE;
+}
+
 function normalizeColor(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -135,6 +148,7 @@ export function usePersistedSettings() {
   );
   const editorSyntaxHighlight = ref(readInitialEditorSyntaxHighlight());
   const editorAutocomplete = ref(readInitialEditorAutocomplete());
+  const editorSurfaceMode = ref<EditorSurfaceMode>(readInitialEditorSurface());
   const previewBackground = ref(
     readInitialPreviewBackground(diagramDarkMode.value),
   );
@@ -170,6 +184,7 @@ export function usePersistedSettings() {
       STORAGE_KEY_EDITOR_AUTOCOMPLETE,
       String(editorAutocomplete.value),
     );
+    writeStorageItem(STORAGE_KEY_EDITOR_SURFACE, editorSurfaceMode.value);
     writeStorageItem(STORAGE_KEY_PREVIEW_BG, previewBackground.value);
     writeStorageItem(STORAGE_KEY_DIAGRAM_TEXT_COLOR, diagramTextColor.value);
     writeStorageItem(STORAGE_KEY_DIAGRAM_FONT_FAMILY, diagramFontFamily.value);
@@ -248,6 +263,7 @@ export function usePersistedSettings() {
       editorFontFamilyId,
       editorSyntaxHighlight,
       editorAutocomplete,
+      editorSurfaceMode,
       previewBackground,
       uiDarkMode,
     ],
@@ -290,6 +306,7 @@ export function usePersistedSettings() {
     editorFontFamilyId,
     editorSyntaxHighlight,
     editorAutocomplete,
+    editorSurfaceMode,
     previewBackground,
     diagramTextColor,
     diagramFontFamily,

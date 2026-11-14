@@ -8,6 +8,8 @@ export const settingsMessages = {
   "settings.fontFamily": "フォント",
   "settings.syntaxHighlight": "構文の強調表示",
   "settings.autocomplete": "入力候補",
+  "settings.editorSurface": "起動時の表示",
+  "settings.editorSurfaceHint": "次回は、閉じたときに表示していた画面で開きます。",
   "settings.dictation": "音声入力",
   "settings.dictationLanguage": "音声入力の言語",
   "settings.theme": "画面のテーマ",

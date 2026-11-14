@@ -8,6 +8,8 @@ export const settingsMessages = {
   "settings.fontFamily": "Шрифт",
   "settings.syntaxHighlight": "Подсветка синтаксиса",
   "settings.autocomplete": "Подсказки при вводе",
+  "settings.editorSurface": "Вид при открытии",
+  "settings.editorSurfaceHint": "В следующий раз откроется вид, который был активен при закрытии.",
   "settings.dictation": "Диктовка",
   "settings.dictationLanguage": "Язык диктовки",
   "settings.theme": "Тема интерфейса",

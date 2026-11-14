@@ -8,6 +8,8 @@ export const settingsMessages = {
   "settings.fontFamily": "Font",
   "settings.syntaxHighlight": "Syntax highlighting",
   "settings.autocomplete": "Input suggestions",
+  "settings.editorSurface": "View on open",
+  "settings.editorSurfaceHint": "Next time, the editor opens in the view that was active when you closed it.",
   "settings.dictation": "Dictation",
   "settings.dictationLanguage": "Dictation language",
   "settings.theme": "Interface theme",

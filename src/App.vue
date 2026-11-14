@@ -31,7 +31,7 @@ const { alert } = useAppDialog();
 const mainRef = ref<HTMLElement | null>(null);
 const editorFocused = ref(false);
 const editorFullscreen = ref(false);
-const editorSurfaceMode = ref<EditorSurfaceMode>("code");
+const activeSurfaceMode = ref<EditorSurfaceMode>("code");
 const isDesktopLayout = useMediaQuery("(min-width: 901px)");
 
 const PREVIEW_FAB_BLUR_DELAY_MS = 250;
@@ -77,6 +77,7 @@ const {
   editorFontFamily,
   editorSyntaxHighlight,
   editorAutocomplete,
+  editorSurfaceMode: preferredSurfaceMode,
   previewBackground,
   diagramTextColor,
   diagramFontFamily,
@@ -170,7 +171,7 @@ function showMobilePreview(): void {
 const showPreviewFab = computed(
   () =>
     // В режимах «По шагам» и «ИИ-чат» переход к превью стоит в шапке редактора.
-    editorSurfaceMode.value === "code" &&
+    activeSurfaceMode.value === "code" &&
     !isDesktopLayout.value &&
     activeMobilePanel.value === "editor" &&
     (editorFocused.value || editorFullscreen.value),
@@ -240,7 +241,7 @@ onUnmounted(() => {
         {
           'app-main--split-dragging': isDragging,
           'app-main--preview-detached': previewDetached,
-          'app-main--ai-chat': editorSurfaceMode === 'ai-chat',
+          'app-main--ai-chat': activeSurfaceMode === 'ai-chat',
         },
       ]"
     >
@@ -249,6 +250,7 @@ onUnmounted(() => {
         :style="isDesktopLayout && !previewDetached ? editorPaneStyle : undefined"
         v-model="source"
         v-model:diagram-format="diagramFormat"
+        v-model:preferred-surface-mode="preferredSurfaceMode"
         :error-lines="syntaxErrorLines"
         :editor-font-size="editorFontSize"
         :editor-font-family="editorFontFamily"
@@ -282,7 +284,7 @@ onUnmounted(() => {
         @editor-focus="onEditorFocus"
         @editor-blur="onEditorBlur"
         @editor-fullscreen="editorFullscreen = $event"
-        @surface-mode="editorSurfaceMode = $event"
+        @surface-mode="activeSurfaceMode = $event"
         @show-preview="showMobilePreview"
       />
 
