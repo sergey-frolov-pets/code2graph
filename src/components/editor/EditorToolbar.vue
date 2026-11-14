@@ -182,7 +182,7 @@ function onSampleChange(event: Event): void {
           </button>
         </div>
         <button
-          v-if="surfaceMode === 'ai-chat'"
+          v-if="surfaceMode === 'ai-chat' || surfaceMode === 'builder'"
           type="button"
           class="editor-show-preview"
           data-testid="editor-show-preview"

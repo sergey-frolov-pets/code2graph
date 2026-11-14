@@ -80,7 +80,22 @@ describe("EditorToolbar surface switch", () => {
     view.unmount();
   });
 
-  it("hides show-preview outside AI chat", async () => {
+  it("puts a compact show-preview control beside the mode switch in the step editor", async () => {
+    useLocale().setLocale("ru");
+    const view = mountToolbar({
+      builderAvailable: true,
+      aiChatAvailable: true,
+      surfaceMode: "builder",
+    });
+    await nextTick();
+    const group = view.host.querySelector(".panel-title-group");
+    const preview = group?.querySelector("[data-testid='editor-show-preview']");
+    expect(preview?.tagName).toBe("BUTTON");
+    expect(preview?.getAttribute("aria-label")).toBe("Показать превью");
+    view.unmount();
+  });
+
+  it("hides show-preview in the code editor", async () => {
     const view = mountToolbar({ builderAvailable: true, aiChatAvailable: true });
     await nextTick();
     expect(view.host.querySelector("[data-testid='editor-show-preview']")).toBeNull();

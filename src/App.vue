@@ -169,7 +169,8 @@ function showMobilePreview(): void {
 
 const showPreviewFab = computed(
   () =>
-    editorSurfaceMode.value !== "ai-chat" &&
+    // В режимах «По шагам» и «ИИ-чат» переход к превью стоит в шапке редактора.
+    editorSurfaceMode.value === "code" &&
     !isDesktopLayout.value &&
     activeMobilePanel.value === "editor" &&
     (editorFocused.value || editorFullscreen.value),
