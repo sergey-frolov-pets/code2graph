@@ -211,7 +211,8 @@ data
   orgchartAvatar: `orgchart
 %% avatar 48 включает блок фото. avatar off прячет его. Без директивы блок выключен, старые схемы остаются текстовыми.
 %% gender=m — мужской силуэт, gender=f — женский, gender=? — пол неизвестен, силуэт со знаком вопроса.
-%% photo="https://…" или photo="data:image/png;base64,…" заменяет силуэт. avatar=off на узле прячет один блок.
+%% photo= — ссылка на снимок. Файл на устройстве: photo="photos/ivan-petrov.jpg". В интернете: photo="https://example.com/photos/ivan-petrov.jpg".
+%% Запасной вид, картинка внутри текста: photo="data:image/png;base64,…". avatar=off на узле прячет один блок.
 %% Сторона блока 24–128 px.
 avatar 48
 Гендиректор [Генеральный директор|Иван Петров] gender=m
@@ -224,7 +225,7 @@ avatar 48
 %% company "Имя" — компания под заголовком. legend on|off — легенда (по умолчанию on).
 %% lang ru — язык легенды. Без строки берётся язык интерфейса.
 %% avatar 48 — сторона блока фото в px (24–128). avatar off прячет все блоки.
-%% Узел: id [Имя|Должность] gender=m|f|? photo="https://…" или data:image/png;base64,…
+%% Узел: id [Имя|Должность] gender=m|f|? photo="photos/anna-orlova.jpg" или photo="https://example.com/photos/anna-orlova.jpg"
 %%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
 %%   counterpart="Имя" — человек другой компании, не сотрудник с карточек. avatar=off прячет фото одного человека.
 %%   Нет фото и нет пола — силуэт со знаком вопроса.
@@ -241,7 +242,14 @@ avatar 48
 %% comms on — таблица под легендой. Колонки: «Компания …», «Контакты», «Связи».
 %% В ячейке связи — направление и второй человек, затем тип и подпись.
 %% counterpart — люди другой компании. Запятая или точка с запятой даёт отдельные строки, повторы схлопываются.
-%% photo= — снимок внутри примера: data:image jpeg, png, webp или gif. Внешний http(s) превью убирает.
+%% Основной photo= — ссылка. Файл рядом со схемой или полный путь:
+%%   photo="photos/anna-orlova.jpg"
+%%   photo="C:/Users/anna/Pictures/anna-orlova.jpg"
+%% Адрес в интернете:
+%%   photo="https://example.com/photos/anna-orlova.jpg"
+%% Запасной вид — data:image jpeg, png, webp или gif, снимок внутри текста.
+%% В карточках ниже он вместо ссылки: так пример открывается с лицами без сети и без файлов на диске.
+%% Превью убирает внешний http(s), локальный путь в браузере не открывает.
 title Карта влияния
 company "Север"
 avatar 48
@@ -798,7 +806,8 @@ CFO -.-> Backend`,
   orgchartAvatar: `orgchart
 %% avatar 48 turns the photo box on. avatar off hides it. Without the line the box stays off, so old charts remain text-only.
 %% gender=m is a male silhouette, gender=f a female one, gender=? unknown — a silhouette with a question mark.
-%% photo="https://…" or photo="data:image/png;base64,…" replaces the silhouette. avatar=off on a node hides one box.
+%% photo= is a link. A file on the device: photo="photos/alex-morgan.jpg". On the internet: photo="https://example.com/photos/alex-morgan.jpg".
+%% The fallback, a picture inside the text: photo="data:image/png;base64,…". avatar=off on a node hides one box.
 %% The side is 24–128 px.
 avatar 48
 CEO [Chief executive officer|Alex Morgan] gender=m
@@ -811,7 +820,7 @@ CEO -> Ops`,
 %% company "Name" — company under the title. legend on|off — the key (default on).
 %% lang en — legend language. Without the line the interface language is used.
 %% avatar 48 — photo box side in px (24–128). avatar off hides every box.
-%% Node: id [Name|Title] gender=m|f|? photo="https://…" or data:image/png;base64,…
+%% Node: id [Name|Title] gender=m|f|? photo="photos/anna-orlova.jpg" or photo="https://example.com/photos/anna-orlova.jpg"
 %%   role=E|D|A|U|C  influence=L|M|S  action=U|S|M  attitude=++|+|0|-|--
 %%   counterpart="Name" is a person at another company, not someone on these cards. avatar=off hides one photo.
 %%   No photo and no gender — a silhouette with a question mark.
@@ -828,7 +837,14 @@ CEO -> Ops`,
 %% comms on draws the table under the legend. Headers: Company …, Contacts, Links.
 %% A link cell names the direction and the other person, then the type and label.
 %% counterpart names people at the other company. A comma or semicolon starts a new row, and duplicates collapse.
-%% photo= embeds the portrait: data:image jpeg, png, webp or gif. The preview drops an external http(s) URL.
+%% The usual photo= is a link. A file next to the chart, or a full path:
+%%   photo="photos/anna-orlova.jpg"
+%%   photo="C:/Users/anna/Pictures/anna-orlova.jpg"
+%% An address on the internet:
+%%   photo="https://example.com/photos/anna-orlova.jpg"
+%% The fallback is data:image jpeg, png, webp or gif: the picture lives inside the text.
+%% The cards below use that form instead of a link, so the sample opens with faces and no network or disk files.
+%% The preview drops an external http(s) URL, and a browser does not open a local path.
 title Power Map
 company "Northwind"
 avatar 48

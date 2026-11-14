@@ -19,15 +19,35 @@ export interface NodeAvatar {
 const DATA_IMAGE_RE =
   /^data:image\/(?:png|jpe?g|gif|webp);base64,[a-z0-9+/]+=*$/i;
 const HTTP_IMAGE_RE = /^https?:\/\/[^\s"'<>]+$/i;
+const IMAGE_EXT_RE = /\.(?:png|jpe?g|gif|webp)$/i;
 
-/** http(s) или data:image png/jpeg/gif/webp. Иначе null. */
+/**
+ * Основной вид `photo=` — ссылка: файл на устройстве или адрес http(s).
+ * `data:image` png/jpeg/gif/webp — запасной вид, снимок внутри текста.
+ * Иначе null.
+ */
 export function sanitizePhotoHref(raw: string): string | null {
   const value = raw.trim();
-  if (!value) return null;
+  if (!value || /["'<>]/.test(value)) return null;
   if (/^javascript:/i.test(value) || /^data:(?!image\/)/i.test(value)) return null;
-  if (DATA_IMAGE_RE.test(value.replace(/\s+/g, ""))) return value.replace(/\s+/g, "");
+  const packed = value.replace(/\s+/g, "");
+  if (DATA_IMAGE_RE.test(packed)) return packed;
   if (HTTP_IMAGE_RE.test(value)) return value;
+  if (isLocalPhotoHref(value)) return value;
   return null;
+}
+
+/** `photos/anna.jpg`, `./anna.jpg`, `/home/…`, `C:\\…`, `file://…`. */
+function isLocalPhotoHref(value: string): boolean {
+  if (/[\r\n]/.test(value) || value.startsWith("//")) return false;
+  if (/^[A-Za-z]:[\\/]/.test(value)) return true;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(value) && !/^file:\/\//i.test(value)) return false;
+  if (/^file:\/\//i.test(value)) return value.length > "file://".length;
+  if (/^(?:\.|\.\.)[\\/]/.test(value) || value.startsWith("/") || value.startsWith("\\")) {
+    return true;
+  }
+  if (value.includes("://")) return false;
+  return value.includes("/") || value.includes("\\") || IMAGE_EXT_RE.test(value);
 }
 
 export function parseGender(raw: string): AvatarGender | null {

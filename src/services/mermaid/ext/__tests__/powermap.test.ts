@@ -72,6 +72,35 @@ Board -enemy-> CFO`;
     expect(model.links.map((link) => link.label)).toEqual(["союзник"]);
   });
 
+  it("photo= принимает файл на устройстве и адрес в интернете, data:image остаётся запасным", () => {
+    const model = modelOf(`powermap
+A [Анна] photo="photos/anna-orlova.jpg"
+B [Илья] photo="https://example.com/photos/ilya.jpg"
+C [Мария] photo="${PHOTO}"
+D [Павел] photo="C:/Users/Павел Морозов/pavel.jpg"
+E [Елена] photo="file:///home/elena/elena.png"
+A -> B
+A -> C
+A -> D
+B -> E`);
+    expect(model.people.map((person) => person.photo)).toEqual([
+      "photos/anna-orlova.jpg",
+      "https://example.com/photos/ilya.jpg",
+      PHOTO,
+      "C:/Users/Павел Морозов/pavel.jpg",
+      "file:///home/elena/elena.png",
+    ]);
+    const svg = powermapEngine.render(model, {});
+    expect(svg).toContain('href="photos/anna-orlova.jpg"');
+    expect(svg).toContain('href="file:///home/elena/elena.png"');
+    const bad = powermapEngine.parse(`powermap
+A [Анна] photo="javascript:alert(1)"
+B [Илья] photo="notes.txt"
+A -> B`);
+    expect(bad.ok).toBe(false);
+    expect(bad.errors.some((error) => /фото/.test(error.message))).toBe(true);
+  });
+
   it("оставляет \\| символом | внутри имени", () => {
     const model = modelOf(`powermap
 A [Иван\\|Пётр|Директор]
@@ -478,6 +507,56 @@ C -foe-> B label=спор`);
     expect(svg).toContain("спор");
     expect(svg.match(/data-edge-label/g)).toHaveLength(1);
   });
+
+  it("не сливает coach с шиной подчинения и не ведёт штрих сквозь подпись", () => {
+    const svg = powermapEngine.render(modelOf(`powermap
+link supporter color=#1a7f37 style=solid label=союзник
+link enemy color=#cf222e style=dash label=противник
+link coach color=#bf8700 style=dot label=наставник
+ceo [Анна Орлова|Президент] gender=f
+cfo [Илья Сомов|Финансы] gender=m
+ops [Мария Ким|Операции] gender=f
+sales [Павел Морозов|Продажи] gender=m
+legal [Елена Волкова|Юрист] gender=f
+ceo -> cfo
+ceo -> ops
+ceo -> sales
+cfo -> legal
+cfo -supporter-> ops label=бюджет
+ops -enemy-> cfo label="конфликт по результатам 2025"
+ceo <-coach-> sales
+ceo -coach-> legal`), {});
+    const paths = linkPaths(svg);
+    const reports = reportPaths(svg);
+    const coach = paths.filter((path) => path.dash === "1.5 3.5" && path.both);
+    expect(coach).toHaveLength(1);
+    expect(reports.length).toBeGreaterThan(0);
+    for (const report of reports) {
+      expect(parallelGap(coach[0].points, report.points)).toBeGreaterThanOrEqual(10);
+    }
+    const texts = [...svg.matchAll(/<text\b[^>]*data-edge-label="1"[^>]*>([^<]*)<\/text>/g)].map((match) => match[1]);
+    expect(texts.sort()).toEqual(["бюджет", "конфликт по результатам 2025"]);
+    const plates = labelPlates(svg);
+    expect(plates).toHaveLength(2);
+    const strokes = [...paths, ...reports];
+    for (const plate of plates) {
+      for (const path of strokes) {
+        for (let index = 0; index < path.points.length - 1; index += 1) {
+          expect(segmentHitsRect(path.points[index], path.points[index + 1], plate)).toBe(false);
+        }
+      }
+    }
+  });
+
+  it("объявляет пространство имён xlink у снимка", () => {
+    const svg = powermapEngine.render(modelOf(`powermap
+ceo [Анна] gender=f photo="${PHOTO}"
+cfo [Илья] gender=m
+ceo -> cfo`), {});
+    expect(svg).toContain("<image ");
+    expect(svg).toContain('xmlns:xlink="http://www.w3.org/1999/xlink"');
+    expect(svg.indexOf('xmlns:xlink="http://www.w3.org/1999/xlink"')).toBeLessThan(svg.indexOf("xlink:href="));
+  });
 });
 
 function rangesOverlap(a0: number, a1: number, b0: number, b1: number): boolean {
@@ -530,6 +609,65 @@ function parallelGap(left: { x: number; y: number }[], right: { x: number; y: nu
     }
   }
   return gap;
+}
+
+function linkPaths(svg: string): { points: { x: number; y: number }[]; dash: string; both: boolean }[] {
+  return [...svg.matchAll(/<path d="([^"]+)"([^>]*)\/>/g)]
+    .filter((match) => match[2].includes("ext-pm-link-"))
+    .map((match) => ({
+      points: pathPoints(match[1]),
+      dash: /stroke-dasharray="([^"]+)"/.exec(match[2])?.[1] ?? "solid",
+      both: match[2].includes("marker-start"),
+    }));
+}
+
+function reportPaths(svg: string): { points: { x: number; y: number }[] }[] {
+  return [...svg.matchAll(/<path d="([^"]+)"([^>]*)\/>/g)]
+    .filter((match) => match[2].includes("ext-pm-report"))
+    .map((match) => ({ points: pathPoints(match[1]) }));
+}
+
+function pathPoints(d: string): { x: number; y: number }[] {
+  const nums = [...d.matchAll(/-?\d+(?:\.\d+)?/g)].map((item) => Number(item[0]));
+  const points: { x: number; y: number }[] = [];
+  for (let index = 0; index + 1 < nums.length; index += 2) points.push({ x: nums[index], y: nums[index + 1] });
+  return points;
+}
+
+function labelPlates(svg: string): { x: number; y: number; width: number; height: number }[] {
+  return [...svg.matchAll(/<rect\b([^>]*)\/>/g)]
+    .map((match) => match[1])
+    .filter((attrs) => attrs.includes('data-label-plate="1"'))
+    .map((attrs) => ({
+      x: Number(/\bx="([^"]+)"/.exec(attrs)?.[1]),
+      y: Number(/\by="([^"]+)"/.exec(attrs)?.[1]),
+      width: Number(/\bwidth="([^"]+)"/.exec(attrs)?.[1]),
+      height: Number(/\bheight="([^"]+)"/.exec(attrs)?.[1]),
+    }));
+}
+
+function segmentHitsRect(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+  rect: { x: number; y: number; width: number; height: number },
+): boolean {
+  const left = rect.x;
+  const right = rect.x + rect.width;
+  const top = rect.y;
+  const bottom = rect.y + rect.height;
+  if (Math.abs(a.x - b.x) < 0.6) {
+    if (a.x <= left || a.x >= right) return false;
+    const y0 = Math.min(a.y, b.y);
+    const y1 = Math.max(a.y, b.y);
+    return y1 > top && y0 < bottom;
+  }
+  if (Math.abs(a.y - b.y) < 0.6) {
+    if (a.y <= top || a.y >= bottom) return false;
+    const x0 = Math.min(a.x, b.x);
+    const x1 = Math.max(a.x, b.x);
+    return x1 > left && x0 < right;
+  }
+  return false;
 }
 
 function strokesOverlay(left: { x: number; y: number }[], right: { x: number; y: number }[]): boolean {

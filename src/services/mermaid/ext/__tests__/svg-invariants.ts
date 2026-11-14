@@ -5,7 +5,9 @@
 
 /** Убирает единственный легальный URL — namespace SVG. */
 function stripXmlns(svg: string): string {
-  return svg.replace(/xmlns="http:\/\/www\.w3\.org\/2000\/svg"/g, "");
+  return svg
+    .replace(/xmlns="http:\/\/www\.w3\.org\/2000\/svg"/g, "")
+    .replace(/xmlns:xlink="http:\/\/www\.w3\.org\/1999\/xlink"/g, "");
 }
 
 export interface SvgInvariantOptions {
