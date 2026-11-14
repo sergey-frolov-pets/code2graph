@@ -435,4 +435,9 @@ export const libraryMessages = {
   "library.dashboard.htmlSaved": "जाँच पृष्ठ सहेजा गया",
   "library.dashboard.copyHtml": "HTML कॉपी करें",
   "library.dashboard.sourceToggle": "स्रोत",
+  "library.dashboard.heading": "कैनवास शीर्षक",
+  "library.dashboard.header": "शीर्षक पट्टी",
+  "library.dashboard.footer": "पाद",
+  "library.dashboard.move": "खिसकाएँ",
+  "library.dashboard.resize": "आकार",
 } as const satisfies LocaleMessages;

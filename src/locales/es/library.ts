@@ -435,4 +435,9 @@ export const libraryMessages = {
   "library.dashboard.htmlSaved": "Página de prueba guardada",
   "library.dashboard.copyHtml": "Copiar HTML",
   "library.dashboard.sourceToggle": "Fuente",
+  "library.dashboard.heading": "Título del lienzo",
+  "library.dashboard.header": "Cabecera",
+  "library.dashboard.footer": "Pie",
+  "library.dashboard.move": "Mover",
+  "library.dashboard.resize": "Tamaño",
 } as const satisfies LocaleMessages;

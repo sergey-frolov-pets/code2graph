@@ -38,9 +38,15 @@ export function dashboardEmbedDocument(src: string, title: string): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${safeTitle}</title>
-<style>html,body{height:100%;margin:0}iframe{display:block;width:100%;height:100%;border:0}</style>
+<style>
+html,body{margin:0;height:100%}
+body{min-height:100dvh;display:flex;flex-direction:column}
+.dashboard-open{display:block;padding:max(12px,env(safe-area-inset-top)) 16px 12px;font:16px/1.4 sans-serif}
+iframe{flex:1;width:100%;min-height:70dvh;border:0}
+</style>
 </head>
 <body>
+<a class="dashboard-open" href="${safeSrc}">Открыть дашборд</a>
 <iframe src="${safeSrc}" title="${safeTitle}"></iframe>
 </body>
 </html>

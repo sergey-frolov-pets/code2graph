@@ -435,4 +435,9 @@ export const libraryMessages = {
   "library.dashboard.htmlSaved": "Testseite gespeichert",
   "library.dashboard.copyHtml": "HTML kopieren",
   "library.dashboard.sourceToggle": "Quelltext",
+  "library.dashboard.heading": "Titel der Fläche",
+  "library.dashboard.header": "Kopfzeile",
+  "library.dashboard.footer": "Fußzeile",
+  "library.dashboard.move": "Verschieben",
+  "library.dashboard.resize": "Größe",
 } as const satisfies LocaleMessages;

@@ -123,6 +123,16 @@ describe("app routes", () => {
     ).toBeNull();
   });
 
+  it("opens a dashboard embed from the path on a phone", () => {
+    expect(parseAppRoute({ hash: "", pathname: "/embed/local/board-1" })).toEqual({
+      name: "dashboardEmbed",
+      languageId: null,
+      diagramSlug: "board-1",
+      libraryUsername: null,
+      libraryLinkSlug: null,
+    });
+  });
+
   it("reads /local/w from the path", () => {
     expect(parseAppRoute({ hash: "", pathname: "/local/w" })).toEqual({
       name: "diagram",

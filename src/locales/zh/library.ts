@@ -435,4 +435,9 @@ export const libraryMessages = {
   "library.dashboard.htmlSaved": "测试页已保存",
   "library.dashboard.copyHtml": "复制 HTML",
   "library.dashboard.sourceToggle": "源码",
+  "library.dashboard.heading": "画布标题",
+  "library.dashboard.header": "页眉",
+  "library.dashboard.footer": "页脚",
+  "library.dashboard.move": "移动",
+  "library.dashboard.resize": "大小",
 } as const satisfies LocaleMessages;

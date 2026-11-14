@@ -435,4 +435,9 @@ export const libraryMessages = {
   "library.dashboard.htmlSaved": "حُفظت صفحة الاختبار",
   "library.dashboard.copyHtml": "نسخ HTML",
   "library.dashboard.sourceToggle": "المصدر",
+  "library.dashboard.heading": "عنوان اللوحة",
+  "library.dashboard.header": "الرأس",
+  "library.dashboard.footer": "التذييل",
+  "library.dashboard.move": "تحريك",
+  "library.dashboard.resize": "الحجم",
 } as const satisfies LocaleMessages;

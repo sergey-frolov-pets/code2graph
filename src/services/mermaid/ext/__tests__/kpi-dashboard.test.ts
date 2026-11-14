@@ -115,6 +115,23 @@ zone 0.5 0 0.5 1 diagram "load"
     expect(svg).toContain('width="640"');
   });
 
+  it("рисует заголовок, шапку и подвал и оставляет зоны внутри", () => {
+    const parsed = parseDashboard(`dashboard
+size 1000x500
+title "Выручка"
+header "ноябрь"
+footer "1С"
+zone 0 0 1 1 diagram "a"
+`);
+    expect(parsed.ok).toBe(true);
+    const svg = renderDashboard(parsed.value!);
+    expect(svg).toContain('data-role="title"');
+    expect(svg).toContain('data-role="header"');
+    expect(svg).toContain('data-role="footer"');
+    expect(svg).toContain("Выручка");
+    expect(svg).toContain('y="72"');
+  });
+
   it("не принимает зону за краем холста", () => {
     const parsed = parseDashboard(`dashboard\nzone 0.8 0 0.5 0.5 diagram "a"`);
     expect(parsed.ok).toBe(false);

@@ -16,16 +16,18 @@ vi.mock("@/services/table-paste", () => ({
   ),
 }));
 
-vi.mock("@/storage/local-data-links", () => ({
-  getLocalDataLink: vi.fn(async (id: string) => ({
-    diagramId: id,
-    fileName: "shared.csv",
-    fileHandle: { name: "shared.csv" },
-    sheetRange: "",
-    untilEmptyRow: false,
-  })),
-  isActiveLocalDataLink: () => true,
-}));
+const getLocalDataLink = vi.fn();
+const findLocalDataLinkBySlug = vi.fn();
+
+vi.mock("@/storage/local-data-links", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/storage/local-data-links")>();
+  return {
+    ...actual,
+    getLocalDataLink: (...args: unknown[]) => getLocalDataLink(...args),
+    findLocalDataLinkBySlug: (...args: unknown[]) => findLocalDataLinkBySlug(...args),
+    isActiveLocalDataLink: () => true,
+  };
+});
 
 vi.mock("@/storage/diagram-store", () => ({
   loadDiagramDetailFromCache: vi.fn(async (id: string) => ({
@@ -58,6 +60,17 @@ describe("dashboard refresh", () => {
   beforeEach(() => {
     readPermittedFile.mockReset();
     readPermittedFile.mockResolvedValue(new File(["a"], "shared.csv"));
+    getLocalDataLink.mockReset();
+    findLocalDataLinkBySlug.mockReset();
+    getLocalDataLink.mockImplementation(async (id: string) => ({
+      diagramId: id,
+      slug: "",
+      fileName: "shared.csv",
+      fileHandle: { name: "shared.csv" },
+      sheetRange: "",
+      untilEmptyRow: false,
+    }));
+    findLocalDataLinkBySlug.mockResolvedValue(null);
   });
 
   it("читает один файл один раз на несколько зон", async () => {
@@ -70,6 +83,30 @@ describe("dashboard refresh", () => {
     expect(result.sources.get("a")).toContain("%% refreshed");
     expect(result.sources.get("b")).toContain("%% refreshed");
     expect(result.missingDiagramIds).toEqual([]);
+  });
+
+  it("читает файл по настроенной ссылке, если у зоны нет своего файла", async () => {
+    getLocalDataLink.mockResolvedValue(null);
+    findLocalDataLinkBySlug.mockResolvedValue({
+      diagramId: "other",
+      slug: "sales",
+      fileName: "shared.csv",
+      fileHandle: { name: "shared.csv" },
+      sheetRange: "A1:B2",
+      untilEmptyRow: false,
+    });
+    const { refreshDashboardZoneSources } = await import("@/services/dashboard/refresh");
+    const result = await refreshDashboardZoneSources([
+      {
+        id: "zone",
+        source: "infographic\nvalue 1\n%% code2graph-data-link slug=sales&ext=csv&range=A1:B2&untilEmpty=0\n",
+        fileName: "info.mmd",
+        language: "mermaid",
+      },
+    ]);
+    expect(findLocalDataLinkBySlug).toHaveBeenCalledWith("sales");
+    expect(readPermittedFile).toHaveBeenCalledTimes(1);
+    expect(result.sources.get("zone")).toContain("%% refreshed");
   });
 });
 

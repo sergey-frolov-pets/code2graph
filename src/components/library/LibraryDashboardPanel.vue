@@ -18,6 +18,7 @@ import { writeDashboardSvgCache } from "@/services/dashboard/cache";
 import { composeDashboardSvg, loadDashboardDiagram } from "@/services/dashboard/compose";
 import { refreshDashboardZoneSources } from "@/services/dashboard/refresh";
 import {
+  dashboardContentFrame,
   emitDashboard,
   parseDashboard,
   parseRefreshInterval,
@@ -49,12 +50,16 @@ const missingFiles = ref<string[]>([]);
 const embedCode = ref("");
 const query = ref("");
 const showSource = ref(false);
+const gesture = ref<"move" | "resize">("move");
 const zoom = ref(1);
 const source = ref("dashboard\nsize 1280x720\n");
 const model = ref<DashboardModel>({
   width: 1280,
   height: 720,
   refreshMs: null,
+  title: "",
+  header: "",
+  footer: "",
   zones: [],
 });
 const previewSvg = ref("");
@@ -211,12 +216,27 @@ function onPointerDown(event: PointerEvent, index: number, mode: "move" | "resiz
 function onPointerMove(event: PointerEvent): void {
   const drag = dragging.value;
   if (!drag) return;
-  const dx = (event.clientX - drag.startX) / drag.boardW;
-  const dy = (event.clientY - drag.startY) / drag.boardH;
+  const frame = dashboardContentFrame(model.value);
+  const spanX = frame.width / Math.max(1, model.value.width);
+  const spanY = frame.height / Math.max(1, model.value.height);
+  const dx = (event.clientX - drag.startX) / drag.boardW / spanX;
+  const dy = (event.clientY - drag.startY) / drag.boardH / spanY;
   const next = drag.mode === "move"
     ? { x: drag.origin.x + dx, y: drag.origin.y + dy }
     : { w: drag.origin.w + dx, h: drag.origin.h + dy };
   updateZone(drag.index, next, false);
+}
+
+function zoneStyle(zone: DashboardZone): Record<string, string> {
+  const frame = dashboardContentFrame(model.value);
+  const spanX = frame.width / Math.max(1, model.value.width);
+  const spanY = frame.height / Math.max(1, model.value.height);
+  return {
+    left: `${(frame.left / model.value.width + zone.x * spanX) * 100}%`,
+    top: `${(frame.top / model.value.height + zone.y * spanY) * 100}%`,
+    width: `${zone.w * spanX * 100}%`,
+    height: `${zone.h * spanY * 100}%`,
+  };
 }
 
 function onPointerUp(): void {
@@ -398,6 +418,33 @@ watch(
             class="select"
             type="number"
             min="100"
+            @change="commitModel({ ...model })"
+          >
+        </label>
+        <label>
+          {{ t("library.dashboard.heading") }}
+          <input
+            v-model="model.title"
+            class="select"
+            type="text"
+            @change="commitModel({ ...model })"
+          >
+        </label>
+        <label>
+          {{ t("library.dashboard.header") }}
+          <input
+            v-model="model.header"
+            class="select"
+            type="text"
+            @change="commitModel({ ...model })"
+          >
+        </label>
+        <label>
+          {{ t("library.dashboard.footer") }}
+          <input
+            v-model="model.footer"
+            class="select"
+            type="text"
             @change="commitModel({ ...model })"
           >
         </label>
@@ -613,6 +660,22 @@ watch(
           >
             {{ t("library.dashboard.fit") }}
           </button>
+          <button
+            class="btn"
+            type="button"
+            :aria-pressed="gesture === 'move'"
+            @click="gesture = 'move'"
+          >
+            {{ t("library.dashboard.move") }}
+          </button>
+          <button
+            class="btn"
+            type="button"
+            :aria-pressed="gesture === 'resize'"
+            @click="gesture = 'resize'"
+          >
+            {{ t("library.dashboard.resize") }}
+          </button>
         </div>
         <div
           ref="stageRef"
@@ -636,13 +699,8 @@ watch(
               class="dashboard-hit"
               :class="{ 'is-dragging': dragging?.index === index }"
               type="button"
-              :style="{
-                left: `${zone.x * 100}%`,
-                top: `${zone.y * 100}%`,
-                width: `${zone.w * 100}%`,
-                height: `${zone.h * 100}%`,
-              }"
-              @pointerdown="onPointerDown($event, index, 'move')"
+              :style="zoneStyle(zone)"
+              @pointerdown="onPointerDown($event, index, gesture)"
               @click="onZoneClick(zone.diagramId)"
             >
               <span class="dashboard-hit__label">{{ zoneLabel(zone.diagramId) }}</span>
@@ -767,11 +825,47 @@ watch(
   position: absolute;
   right: 0;
   bottom: 0;
-  width: 18px;
-  height: 18px;
+  width: 28px;
+  height: 28px;
   background: #0f766e;
   cursor: nwse-resize;
   touch-action: none;
+}
+@media (pointer: coarse) {
+  .dashboard-hit__resize {
+    width: 48px;
+    height: 48px;
+  }
+}
+@media (max-width: 800px) {
+  .dashboard-panel {
+    overflow: auto;
+    padding:
+      max(8px, env(safe-area-inset-top))
+      8px
+      max(8px, env(safe-area-inset-bottom));
+  }
+  .dashboard-panel__bar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--bg, #fff);
+  }
+  .dashboard-panel__body {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+  .dashboard-stage-wrap {
+    order: -1;
+  }
+  .dashboard-stage {
+    height: 58dvh;
+    flex: none;
+  }
+  .dashboard-panel__form {
+    overflow: visible;
+  }
 }
 .dashboard-panel__error {
   color: #b91c1c;
