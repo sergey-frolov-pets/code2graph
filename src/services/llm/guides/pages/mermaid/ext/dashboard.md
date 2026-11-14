@@ -4,14 +4,19 @@ Reply with diagram source for the editor only. Do not return an image or an exte
 
 # dashboard
 
-A canvas that places one library diagram in each marked zone.
+A canvas of library diagrams. Vertical and horizontal lines cut the area under the title and header and above the footer into a grid. Each filled cell holds one diagram or one public library link.
 
 ```
 dashboard
 size 1280x720
 refresh 5m
-zone 0 0 0.5 0.5 diagram "revenue"
-zone 0.5 0 0.5 1 diagram "load"
+title "Сводка" font "sans-serif" fontsize 22 color none background #ffffff shadow
+header "Сегодня" font "sans-serif" fontsize 16 color none background #f1f5f9 shadow align center middle
+footer "Источник" font "sans-serif" fontsize 13 color none background #f8fafc noshadow align end bottom
+cols 0.35 0.65
+rows 0.5 0.5
+cell 0 0 diagram "revenue"
+cell 1 0 link "alice/weekly"
 ```
 
-`size` is the world in pixels. `refresh` is `30s`, `5m`, or `1h`. Each `zone` is `x y w h` as fractions of the world plus one diagram id from the same library.
+`size` is the canvas in pixels. `refresh` is `30s`, `5m`, `1h`, or any `Ns` / `Nm` / `Nh`. `title`, `header` and `footer` are optional bands. A band with text is `fontSize + 20` pixels tall and is subtracted before the grid. `cols` and `rows` are fractions of that remaining rectangle and sum to 1. `header` and `footer` may set `align <start|center|end> <top|middle|bottom>`. `cell` is `column row diagram "id"` or `link "username/slug"`. Empty cells are omitted. An older `zone x y w h diagram "id"` still reads: its edges become the grid and the diagram fills every cell whose center lies inside the zone.

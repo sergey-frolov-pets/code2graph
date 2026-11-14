@@ -366,10 +366,13 @@ function isDashboardSource(source: string): boolean {
 function dashboardZoneIds(source: string): string[] {
   const ids: string[] = [];
   for (const raw of source.split(/\r?\n/)) {
-    const match = /^zone\s+\S+\s+\S+\s+\S+\s+\S+\s+diagram\s+(.+)$/i.exec(raw.trim());
+    const line = raw.trim();
+    const cell = /^cell\s+\d+\s+\d+\s+diagram\s+(.+)$/i.exec(line);
+    const zone = /^zone\s+\S+\s+\S+\s+\S+\s+\S+\s+diagram\s+(.+)$/i.exec(line);
+    const match = cell ?? zone;
     if (!match) continue;
-    const quoted = /^"([^"]*)"/.exec(match[1].trim());
-    const id = quoted ? quoted[1] : match[1].trim();
+    const quoted = /^"((?:\\"|[^"])*)"/.exec(match[1].trim());
+    const id = quoted ? quoted[1].replace(/\\"/g, '"') : match[1].trim();
     if (id && !ids.includes(id)) ids.push(id);
   }
   return ids;

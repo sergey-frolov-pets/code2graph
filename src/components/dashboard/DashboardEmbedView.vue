@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onUnmounted, ref, watch } from "vue";
 import { useAppRouter } from "@/composables/useAppRouter";
+import { useAppShellContext } from "@/composables/useAppShell";
 import { useLocale } from "@/composables/useLocale";
 import { fetchPublicLibraryLink } from "@/services/library/api/library-links";
 import {
@@ -14,7 +15,8 @@ import { refreshDashboardZoneSources } from "@/services/dashboard/refresh";
 import type { DashboardZoneSource } from "@/services/dashboard/refresh";
 
 const { route } = useAppRouter();
-const { t } = useLocale();
+const { t, locale } = useLocale();
+const shell = useAppShellContext();
 const svg = ref("");
 const errorMessage = ref("");
 const busy = ref(false);
@@ -72,8 +74,9 @@ async function show(force: boolean): Promise<void> {
           return;
         }
         const loaded = [];
-        for (const zone of early.value.zones) {
-          const child = await loadDashboardDiagramFresh(zone.diagramId);
+        for (const cell of early.value.cells) {
+          if (cell.kind !== "diagram") continue;
+          const child = await loadDashboardDiagramFresh(cell.ref);
           if (child) loaded.push(child);
         }
         zones = await zoneSourcesFor(loaded);
@@ -96,7 +99,17 @@ async function show(force: boolean): Promise<void> {
     const refreshed = await refreshDashboardZoneSources(zones);
     const composed = await composeDashboardSvg(
       source,
-      { layout: "elk", diagramDarkMode: false, renderMode: "offline" },
+      {
+        layout: shell.layout.value,
+        diagramDarkMode: shell.diagramDarkMode.value,
+        renderMode: shell.renderMode.value,
+        diagramBackground: shell.previewBackground.value,
+        diagramTextColor: shell.diagramTextColor.value,
+        diagramFontFamily: shell.diagramFontFamily.value,
+        diagramFontWeight: shell.diagramFontWeight.value,
+        diagramFontStyle: shell.diagramFontStyle.value,
+        locale: locale.value,
+      },
       refreshed.sources,
     );
     if (!composed) {
