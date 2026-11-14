@@ -577,18 +577,73 @@ series : 80, 95, 110, 130 color=#8250df
 line : 110, 130, 155, 180 color=#0969da style=dash width=2
 line : 70, 100, 120, 150 style=dot`,
   infographic: `infographic
+%% Крупная цифра или короткая надпись. Первая строка — infographic, псевдоним — kpi.
+%% value обязателен. Если строка не влезает в холст, кегль уменьшается и текст остаётся внутри рамки.
+%%
+%%   value 1280                 само число
+%%   text "готово"              рисуется вместо числа; value всё равно нужен — по нему срабатывает when
+%%   prefix "₽ "                приставка перед значением, по умолчанию видна
+%%   postfix " за месяц"        окончание после значения, по умолчанию видно
+%%   font Inter                 шрифт значения
+%%   fontsize 64                размер значения, пиксели
+%%   color #0f766e              цвет значения, #hex
+%%   size 480x240               холст: ширинаxвысота
+%%   label top "Выручка" font Inter fontsize 18 color #334155
+%%                              подпись со стороны left, right, top или bottom
+%%                              у подписи свои font, fontsize и color; на сторону — одна подпись
+%%   when >= 1000 color #15803d fontsize 72 show prefix show postfix
+%%   when < 0 color #b91c1c hide prefix hide postfix
+%%                              сравнение value: >  >=  <  <=  ==  !=
+%%                              совпавшее правило меняет color и fontsize
+%%                              show/hide относятся к prefix или postfix; правила идут сверху вниз
 value 1280
 prefix "₽ "
 postfix " за месяц"
-fontsize 64
+font Inter
+fontsize 48
 color #0f766e
 size 480x240
-label top "Выручка" fontsize 18`,
+label top "Выручка" font Inter fontsize 18 color #334155
+label bottom "за год" fontsize 14 color #64748b
+when >= 1000 color #15803d show prefix show postfix
+when < 0 color #b91c1c hide prefix`,
   gauge: `gauge
-title Загрузка
+%% Спидометр: стрелка на полукруглой шкале. Ключевое слово — gauge.
+%% Доля = (value − min) / (max − min). За края дуги стрелка не выходит.
+%% Обязательны max и value. min по умолчанию 0.
+%%
+%%   title "Загрузка сервера"   заголовок над дугой
+%%   min 0                      левый край шкалы
+%%   max 100                    правый край шкалы
+%%   value 72                   положение стрелки
+%%   label "72 %"               подпись под осью; без label пишется само число
+%%
+%% Внешний вид
+%%   color #1d4ed8              цвет стрелки и оси, #hex
+%%   track #e2e8f0              цвет пустой дуги
+%%   arc #0f766e                залить дугу от минимума до стрелки
+%%   thickness 16               толщина дуги, пиксели
+%%   needle 5                   толщина стрелки, пиксели
+%%   font Inter                 шрифт подписей
+%%   fontsize 26                размер подписи значения
+%%   size 420x250               холст: ширинаxвысота
+%%   zone 0 60 #16a34a "норма"  сектор: от, до, цвет и необязательная подпись
+%%                              подписи секторов стоят внизу; дуга ими не обрезается
+title Загрузка сервера
 min 0
 max 100
-value 72`,
+value 72
+label "72 %"
+color #1d4ed8
+track #e2e8f0
+thickness 16
+needle 5
+font Inter
+fontsize 26
+size 420x250
+zone 0 60 #16a34a "норма"
+zone 60 85 #ca8a04 "внимание"
+zone 85 100 #dc2626 "перегруз"`,
   dashboard: `dashboard
 size 1280x720
 refresh 5m
@@ -1171,18 +1226,73 @@ series : 80, 95, 110, 130 color=#8250df
 line : 110, 130, 155, 180 color=#0969da style=dash width=2
 line : 70, 100, 120, 150 style=dot`,
   infographic: `infographic
+%% A large number or a short line of text. The first line is infographic; the alias is kpi.
+%% value is required. A string that does not fit is scaled down and stays inside the frame.
+%%
+%%   value 1280                 the number
+%%   text "done"                drawn instead of the number; value is still required for when
+%%   prefix "$ "                text before the value, shown by default
+%%   postfix " / mo"            text after the value, shown by default
+%%   font Inter                 typeface of the value
+%%   fontsize 64                value size in pixels
+%%   color #0f766e              value color, #hex
+%%   size 480x240               canvas, widthxheight
+%%   label top "Revenue" font Inter fontsize 18 color #334155
+%%                              a caption on left, right, top, or bottom
+%%                              the caption has its own font, fontsize, and color; one per side
+%%   when >= 1000 color #15803d fontsize 72 show prefix show postfix
+%%   when < 0 color #b91c1c hide prefix hide postfix
+%%                              value tests: >  >=  <  <=  ==  !=
+%%                              a matching rule changes color and fontsize
+%%                              show/hide apply to prefix or postfix; rules run top to bottom
 value 1280
-prefix "₽ "
-postfix " за месяц"
-fontsize 64
+prefix "$ "
+postfix " / mo"
+font Inter
+fontsize 48
 color #0f766e
 size 480x240
-label top "Выручка" fontsize 18`,
+label top "Revenue" font Inter fontsize 18 color #334155
+label bottom "this year" fontsize 14 color #64748b
+when >= 1000 color #15803d show prefix show postfix
+when < 0 color #b91c1c hide prefix`,
   gauge: `gauge
-title Загрузка
+%% A dial: a needle on a semicircle. The keyword is gauge.
+%% Fraction = (value − min) / (max − min). The needle stays on the arc.
+%% max and value are required. min defaults to 0.
+%%
+%%   title "Server load"        heading above the arc
+%%   min 0                      left end of the scale
+%%   max 100                    right end of the scale
+%%   value 72                   where the needle points
+%%   label "72 %"               caption under the hub; without label the number is shown
+%%
+%% Appearance
+%%   color #1d4ed8              needle and hub color, #hex
+%%   track #e2e8f0              color of the empty arc
+%%   arc #0f766e                fill the arc from the minimum up to the needle
+%%   thickness 16               arc thickness in pixels
+%%   needle 5                   needle thickness in pixels
+%%   font Inter                 caption typeface
+%%   fontsize 26                value caption size
+%%   size 420x250               canvas, widthxheight
+%%   zone 0 60 #16a34a "ok"     band: from, to, color, and an optional caption
+%%                              band captions sit along the bottom and do not cover the arc
+title Server load
 min 0
 max 100
-value 72`,
+value 72
+label "72 %"
+color #1d4ed8
+track #e2e8f0
+thickness 16
+needle 5
+font Inter
+fontsize 26
+size 420x250
+zone 0 60 #16a34a "ok"
+zone 60 85 #ca8a04 "watch"
+zone 85 100 #dc2626 "hot"`,
   dashboard: `dashboard
 size 1280x720
 refresh 5m

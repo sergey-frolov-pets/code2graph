@@ -92,7 +92,7 @@ export const miscMessages = {
   "samples.mermaid.histogramRotate": "Гистограмма — поворот 90°",
   "samples.mermaid.histogramLine": "Гистограмма — линия уровня",
   "samples.mermaid.infographic": "Инфографика",
-  "samples.mermaid.gauge": "Гауч",
+  "samples.mermaid.gauge": "Спидометр",
   "samples.mermaid.dashboard": "Дашборд",
   "samples.wiremark.login": "Вход",
   "samples.wiremark.dashboard": "Дашборд",

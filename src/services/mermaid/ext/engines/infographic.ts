@@ -1,4 +1,4 @@
-import { createSvg, fmt, resolvePalette } from "../common";
+import { createSvg, fmt, measureText, resolvePalette } from "../common";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 
 export type InfographicSide = "left" | "right" | "top" | "bottom";
@@ -315,6 +315,32 @@ export function emitInfographic(model: InfographicModel): string {
   return lines.join("\n");
 }
 
+/** Запас к оценке ширины: реальный шрифт бывает шире таблицы глифов. */
+const TEXT_SAFE = 1.15;
+const ASCENT = 0.92;
+const DESCENT = 0.28;
+
+function textWidth(text: string, fontSize: number): number {
+  return measureText(text, fontSize) * TEXT_SAFE;
+}
+
+/**
+ * Уменьшает кегль, пока строка не влезает в прямоугольник.
+ * Исходный размер возвращается как есть, если он уже помещается.
+ */
+function fitFont(text: string, fontSize: number, maxWidth: number, maxHeight?: number): number {
+  let size = fontSize;
+  if (maxWidth > 0) {
+    const width = textWidth(text, size);
+    if (width > maxWidth) size *= maxWidth / width;
+  }
+  if (maxHeight && maxHeight > 0 && size * (ASCENT + DESCENT) > maxHeight) {
+    size *= maxHeight / (size * (ASCENT + DESCENT));
+  }
+  if (size >= fontSize - 0.01) return fontSize;
+  return Math.max(1, Math.floor(size * 100) / 100);
+}
+
 export function renderInfographic(model: InfographicModel, options: ExtRenderOptions = {}): string {
   const palette = resolvePalette(options.dark, options.background, options.textColor);
   const style = resolveInfographicStyle(model);
@@ -324,39 +350,60 @@ export function renderInfographic(model: InfographicModel, options: ExtRenderOpt
     palette,
     title: model.text || String(model.value),
   });
-  const labelSize = (label: InfographicLabel) => label.fontSize ?? Math.max(12, Math.round(style.fontSize * 0.35));
+  const requestedLabelSize = (label: InfographicLabel) =>
+    label.fontSize ?? Math.max(12, Math.round(style.fontSize * 0.35));
   const top = model.labels.find((label) => label.side === "top");
   const bottom = model.labels.find((label) => label.side === "bottom");
   const left = model.labels.find((label) => label.side === "left");
   const right = model.labels.find((label) => label.side === "right");
   const pad = 12;
-  const topH = top ? labelSize(top) + pad : pad;
-  const bottomH = bottom ? labelSize(bottom) + pad : pad;
-  const leftW = left ? Math.max(48, labelSize(left) * left.text.length * 0.6) : pad;
-  const rightW = right ? Math.max(48, labelSize(right) * right.text.length * 0.6) : pad;
+  const innerW = Math.max(1, model.width - pad * 2);
+  const topSize = top ? fitFont(top.text, requestedLabelSize(top), innerW, model.height * 0.3) : 0;
+  const bottomSize = bottom ? fitFont(bottom.text, requestedLabelSize(bottom), innerW, model.height * 0.3) : 0;
+  const topH = top ? topSize + pad : pad;
+  const bottomH = bottom ? bottomSize + pad : pad;
+  const sideBudget = Math.max(1, innerW * 0.32);
+  const sideY = topH + (model.height - topH - bottomH) / 2;
+  const sideMax = Math.max(1, Math.min((sideY - 2) / ASCENT, (model.height - 2 - sideY) / DESCENT));
+  const leftSize = left ? fitFont(left.text, Math.min(requestedLabelSize(left), sideMax), sideBudget) : 0;
+  const rightSize = right ? fitFont(right.text, Math.min(requestedLabelSize(right), sideMax), sideBudget) : 0;
+  const leftW = left ? textWidth(left.text, leftSize) + 10 : pad;
+  const rightW = right ? textWidth(right.text, rightSize) + 10 : pad;
 
-  function paintLabel(label: InfographicLabel, x: number, y: number, anchor: string): void {
+  function paintLabel(label: InfographicLabel, x: number, y: number, anchor: string, fontSize: number): void {
     svg.text(x, y, label.text, {
       fill: label.color ?? palette.fg,
       "font-family": label.font ?? model.font,
-      "font-size": labelSize(label),
+      "font-size": fontSize,
       "text-anchor": anchor,
       "data-side": label.side,
     });
   }
 
-  if (top) paintLabel(top, model.width / 2, topH - 4, "middle");
-  if (bottom) paintLabel(bottom, model.width / 2, model.height - 8, "middle");
-  if (left) paintLabel(left, 8, topH + (model.height - topH - bottomH) / 2, "start");
-  if (right) paintLabel(right, model.width - 8, topH + (model.height - topH - bottomH) / 2, "end");
+  if (top) {
+    let y = topH - 4;
+    if (y - topSize * ASCENT < 2) y = 2 + topSize * ASCENT;
+    paintLabel(top, model.width / 2, y, "middle", topSize);
+  }
+  if (bottom) {
+    let y = model.height - 8;
+    if (y + bottomSize * DESCENT > model.height - 2) y = model.height - 2 - bottomSize * DESCENT;
+    paintLabel(bottom, model.width / 2, y, "middle", bottomSize);
+  }
+  if (left) paintLabel(left, pad, sideY, "start", leftSize);
+  if (right) paintLabel(right, model.width - pad, sideY, "end", rightSize);
 
   const shown = model.text && model.text.length > 0 ? model.text : fmt(model.value);
   const prefix = style.showPrefix ? model.prefix : "";
   const postfix = style.showPostfix ? model.postfix : "";
-  svg.text(leftW + (model.width - leftW - rightW) / 2, topH + (model.height - topH - bottomH) / 2, `${prefix}${shown}${postfix}`, {
+  const valueText = `${prefix}${shown}${postfix}`;
+  const valueMaxW = Math.max(1, model.width - leftW - rightW);
+  const valueMaxH = Math.max(1, model.height - topH - bottomH);
+  const valueSize = fitFont(valueText, style.fontSize, valueMaxW, valueMaxH);
+  svg.text(leftW + (model.width - leftW - rightW) / 2, sideY, valueText, {
     fill: style.color,
     "font-family": model.font,
-    "font-size": style.fontSize,
+    "font-size": valueSize,
     "text-anchor": "middle",
     "dominant-baseline": "middle",
     "data-role": "value",
