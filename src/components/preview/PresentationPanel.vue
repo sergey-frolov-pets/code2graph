@@ -624,7 +624,7 @@ function arrowHeadLabel(head: PresentationArrowHead): LocaleKey {
             :pressed="barMode === 'arrange'"
             @click="barMode = barMode === 'play' ? 'arrange' : 'play'"
           >
-            <PresentationGlyph :name="barMode === 'play' ? 'playback' : 'arrange'" />
+            <PresentationGlyph :name="barMode === 'play' ? 'arrange' : 'playback'" />
           </IconButton>
           <template v-if="mode === 'edit' || barMode === 'play'">
             <IconButton
