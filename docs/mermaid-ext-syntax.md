@@ -1220,31 +1220,44 @@ curve weibull shape=1.6 scale=28 "эталон" color=#8250df
 
 ```
 infographic
+%% value обязателен. Длинная строка уменьшается и остаётся внутри холста.
 value 1280
 prefix "₽ "
 postfix " за месяц"
 font Inter
-fontsize 64
+fontsize 48
 color #0f766e
 size 480x240
 label top "Выручка" font Inter fontsize 18 color #334155
-when >= 1000 color #15803d show prefix
+label bottom "за год" fontsize 14 color #64748b
+when >= 1000 color #15803d show prefix show postfix
 when < 0 color #b91c1c hide prefix
 ```
 
-`value` обязателен. `text` заменяет число. `prefix` и `postfix` по умолчанию видны. `label` — одна подпись на сторону `left`, `right`, `top` или `bottom`, со своим `font`, `fontsize` и `color`. `when` сравнивает `value` (`>`, `>=`, `<`, `<=`, `==`, `!=`) и может сменить `color`, `fontsize` и показать или скрыть `prefix` / `postfix`.
+`value` обязателен. `text` заменяет число на холсте, но `when` по-прежнему смотрит на `value`. `prefix` и `postfix` по умолчанию видны. `font`, `fontsize` и `color` задают шрифт, кегль и цвет значения. `size` — ширина и высота холста, по умолчанию `480x240`. `label` — одна подпись на сторону `left`, `right`, `top` или `bottom`, со своим `font`, `fontsize` и `color`. `when` сравнивает `value` (`>`, `>=`, `<`, `<=`, `==`, `!=`) и может сменить `color`, `fontsize` и показать или скрыть `prefix` / `postfix`; правила применяются сверху вниз. Если значение вместе с приставкой и окончанием или подпись шире рамки, кегль уменьшается, текст не вылезает за край.
 
-## 11c. `gauge` — стрелка от минимума до максимума
+## 11c. `gauge` — спидометр
 
 ```
 gauge
-title Загрузка
+title Загрузка сервера
 min 0
 max 100
 value 72
+label "72 %"
+color #1d4ed8
+track #e2e8f0
+thickness 16
+needle 5
+font Inter
+fontsize 26
+size 420x250
+zone 0 60 #16a34a "норма"
+zone 60 85 #ca8a04 "внимание"
+zone 85 100 #dc2626 "перегруз"
 ```
 
-`min` по умолчанию 0. `max` и `value` обязательны. Стрелка стоит на доле `(value - min) / (max - min)`, обрезанной к отрезку 0..1.
+`min` по умолчанию 0. `max` и `value` обязательны. Стрелка стоит на доле `(value - min) / (max - min)`, обрезанной к отрезку 0..1. `label` заменяет число под осью. Внешний вид: `color` — стрелка и ось, `track` — пустая дуга, `arc` — заливка от минимума до стрелки, `thickness` — толщина дуги, `needle` — толщина стрелки, `font` и `fontsize` — подпись значения, `size` — холст (по умолчанию `360x220`). `zone от до #hex "подпись"` красит сектор шкалы; подпись необязательна и рисуется под дугой.
 
 ## 11d. `dashboard` — холст из диаграмм библиотеки
 

@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { getMermaidSampleSource } from "@/constants/mermaid-sample-diagrams";
+import { measureText } from "../common";
 import { parseDashboard, renderDashboard } from "../engines/dashboard";
 import { gaugeFraction, parseGauge, renderGauge } from "../engines/gauge";
 import {
@@ -6,6 +8,36 @@ import {
   renderInfographic,
   resolveInfographicStyle,
 } from "../engines/infographic";
+
+function assertTextInside(svg: string): void {
+  const size = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg);
+  expect(size).toBeTruthy();
+  const width = Number(size?.[1]);
+  const height = Number(size?.[2]);
+  const re = /<text\b([^>]*)>([^<]*)<\/text>/g;
+  for (const match of svg.matchAll(re)) {
+    const attrs = match[1];
+    const content = match[2]
+      .replaceAll("&amp;", "&")
+      .replaceAll("&lt;", "<")
+      .replaceAll("&gt;", ">")
+      .replaceAll("&quot;", '"');
+    const num = (name: string) => Number(new RegExp(`\\b${name}="([\\d.]+)"`).exec(attrs)?.[1]);
+    const x = num("x");
+    const y = num("y");
+    const fontSize = num("font-size");
+    const anchor = /text-anchor="([^"]+)"/.exec(attrs)?.[1] ?? "middle";
+    const middle = /dominant-baseline="middle"/.test(attrs);
+    const textWidth = measureText(content, fontSize);
+    const left = anchor === "start" ? x : anchor === "end" ? x - textWidth : x - textWidth / 2;
+    expect(left, content).toBeGreaterThanOrEqual(-1);
+    expect(left + textWidth, content).toBeLessThanOrEqual(width + 1);
+    const top = middle ? y - fontSize * 0.55 : y - fontSize * 0.92;
+    const bottom = middle ? y + fontSize * 0.55 : y + fontSize * 0.28;
+    expect(top, content).toBeGreaterThanOrEqual(-1);
+    expect(bottom, content).toBeLessThanOrEqual(height + 1);
+  }
+}
 
 const INFO = `infographic
 value 1280
@@ -62,6 +94,33 @@ describe("infographic", () => {
     expect(parsed.ok).toBe(true);
     expect(renderInfographic(parsed.value!)).toContain("готово");
   });
+
+  it("уменьшает длинную строку, чтобы рамка её не обрезала", () => {
+    const parsed = parseInfographic(`infographic
+value 1280
+prefix "₽ "
+postfix " за месяц"
+fontsize 200
+size 220x90
+label top "Очень длинная подпись выручки"
+label left "план на год"
+label right "факт"
+`);
+    expect(parsed.ok).toBe(true);
+    const svg = renderInfographic(parsed.value!);
+    expect(svg).toContain("₽ ");
+    expect(svg).toContain("за месяц");
+    const size = /data-role="value"[^>]*font-size="([\d.]+)"|font-size="([\d.]+)"[^>]*data-role="value"/.exec(svg);
+    const painted = Number(size?.[1] ?? size?.[2]);
+    expect(painted).toBeLessThan(200);
+    assertTextInside(svg);
+  });
+
+  it("не трогает кегль, которому и так хватает места", () => {
+    const parsed = parseInfographic("infographic\nvalue 5\nfontsize 64\nsize 480x240\n");
+    expect(parsed.ok).toBe(true);
+    expect(renderInfographic(parsed.value!)).toContain('font-size="64"');
+  });
 });
 
 describe("gauge", () => {
@@ -85,6 +144,66 @@ describe("gauge", () => {
     const parsed = parseGauge("gauge\nmin 20\nmax 40\nvalue 30");
     expect(parsed.ok).toBe(true);
     expect(gaugeFraction(parsed.value!)).toBeCloseTo(0.5);
+  });
+
+  it("без опций внешнего вида рисует прежнюю дугу", () => {
+    const parsed = parseGauge("gauge\ntitle Load\nmin 0\nmax 100\nvalue 72");
+    expect(parsed.ok).toBe(true);
+    const svg = renderGauge(parsed.value!);
+    expect(svg).toContain('width="360"');
+    expect(svg).toContain('d="M 60 168 A 120 120 0 0 1 300 168"');
+    expect(svg).toContain('stroke-width="14"');
+    expect(svg).toContain('stroke-width="4"');
+    assertTextInside(svg);
+  });
+
+  it("разбирает цвет, толщину, размер и секторы", () => {
+    const parsed = parseGauge(`gauge
+title Загрузка сервера
+min 0
+max 100
+value 72
+label "72 %"
+color #1d4ed8
+track #e2e8f0
+arc #0f766e
+thickness 16
+needle 5
+font Inter
+fontsize 26
+size 420x250
+zone 0 60 #16a34a "норма"
+zone 60 85 #ca8a04 "внимание"
+zone 85 100 #dc2626 "перегруз"
+`);
+    expect(parsed.ok).toBe(true);
+    const model = parsed.value!;
+    expect(model.track).toBe("#e2e8f0");
+    expect(model.arc).toBe("#0f766e");
+    expect(model.thickness).toBe(16);
+    expect(model.needle).toBe(5);
+    expect(model.fontSize).toBe(26);
+    expect(model.width).toBe(420);
+    expect(model.zones).toHaveLength(3);
+    expect(model.zones[0].label).toBe("норма");
+    const svg = renderGauge(model);
+    expect(svg).toContain('data-role="zone"');
+    expect(svg).toContain('data-role="arc"');
+    expect(svg).toContain('data-role="legend"');
+    expect(svg).toContain("#16a34a");
+    expect(svg).toContain("перегруз");
+    assertTextInside(svg);
+  });
+
+  it("примеры на русском и английском держат текст внутри рамки", () => {
+    for (const locale of ["ru", "en"] as const) {
+      const gauge = parseGauge(getMermaidSampleSource("gauge", locale));
+      expect(gauge.ok, gauge.errors.map((issue) => issue.message).join("; ")).toBe(true);
+      assertTextInside(renderGauge(gauge.value!));
+      const info = parseInfographic(getMermaidSampleSource("infographic", locale));
+      expect(info.ok, info.errors.map((issue) => issue.message).join("; ")).toBe(true);
+      assertTextInside(renderInfographic(info.value!));
+    }
   });
 });
 

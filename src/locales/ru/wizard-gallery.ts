@@ -62,7 +62,7 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.tag.diagramType.clustered": "Серийная диаграмма",
   "llm.wizard.gallery.tag.diagramType.histogram": "Гистограмма",
   "llm.wizard.gallery.tag.diagramType.infographic": "Инфографика",
-  "llm.wizard.gallery.tag.diagramType.gauge": "Гауч",
+  "llm.wizard.gallery.tag.diagramType.gauge": "Спидометр",
   "llm.wizard.gallery.tag.diagramType.dashboard": "Дашборд",
   "llm.wizard.gallery.tag.diagramType.decision": "Решение",
   "llm.wizard.gallery.desc.bubble": "Точки на двух осях, размер задаёт третье значение.",
@@ -79,7 +79,7 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.desc.infographic":
     "Цифра или текст своего шрифта, цвета и размера, подписи по сторонам и приставка или окончание по условию.",
   "llm.wizard.gallery.desc.gauge":
-    "Стрелка от минимума до максимума.",
+    "Стрелка на шкале от минимума до максимума: цвет, толщина и цветные секторы.",
   "llm.wizard.gallery.desc.dashboard":
     "Холст, в размеченных зонах которого стоят другие диаграммы библиотеки.",
   "llm.wizard.gallery.desc.decision": "Поток, который ветвится на решении.",
