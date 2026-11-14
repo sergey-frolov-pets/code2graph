@@ -15,9 +15,10 @@ import {
 } from "@/services/dashboard/embed-url";
 import { arrangeDashboardZones, placeDashboardZone, type DashboardArrange } from "@/services/dashboard/layout";
 import { writeDashboardSvgCache } from "@/services/dashboard/cache";
-import { composeDashboardSvg, loadDashboardDiagram } from "@/services/dashboard/compose";
+import { composeDashboardSvg, loadDashboardDiagram, loadDashboardDiagramFresh } from "@/services/dashboard/compose";
 import { refreshDashboardZoneSources } from "@/services/dashboard/refresh";
 import {
+  createDashboardCaption,
   dashboardContentFrame,
   emitDashboard,
   parseDashboard,
@@ -57,9 +58,9 @@ const model = ref<DashboardModel>({
   width: 1280,
   height: 720,
   refreshMs: null,
-  title: "",
-  header: "",
-  footer: "",
+  title: createDashboardCaption(22, "#ffffff"),
+  header: createDashboardCaption(16, "#f1f5f9"),
+  footer: createDashboardCaption(13, "#f8fafc"),
   zones: [],
 });
 const previewSvg = ref("");
@@ -325,7 +326,7 @@ async function copyHtml(): Promise<void> {
 async function refreshNow(): Promise<void> {
   const zones = [];
   for (const zone of model.value.zones) {
-    const diagram = await loadDashboardDiagram(zone.diagramId);
+    const diagram = await loadDashboardDiagramFresh(zone.diagramId);
     if (diagram) zones.push(diagram);
   }
   const refreshed = await refreshDashboardZoneSources(
@@ -421,33 +422,144 @@ watch(
             @change="commitModel({ ...model })"
           >
         </label>
-        <label>
-          {{ t("library.dashboard.heading") }}
+        <fieldset class="band">
+          <legend>{{ t("library.dashboard.heading") }}</legend>
           <input
-            v-model="model.title"
+            v-model="model.title.text"
             class="select"
             type="text"
             @change="commitModel({ ...model })"
           >
-        </label>
-        <label>
-          {{ t("library.dashboard.header") }}
           <input
-            v-model="model.header"
+            v-model="model.title.font"
+            class="select"
+            type="text"
+            :placeholder="t('library.dashboard.font')"
+            @change="commitModel({ ...model })"
+          >
+          <input
+            v-model.number="model.title.fontSize"
+            class="select"
+            type="number"
+            min="8"
+            max="96"
+            @change="commitModel({ ...model })"
+          >
+          <input
+            v-model="model.title.color"
+            class="select"
+            type="text"
+            :placeholder="t('library.dashboard.color')"
+            @change="commitModel({ ...model })"
+          >
+          <input
+            v-model="model.title.background"
+            class="select"
+            type="text"
+            :placeholder="t('library.dashboard.background')"
+            @change="commitModel({ ...model })"
+          >
+          <label class="check">
+            <input
+              v-model="model.title.shadow"
+              type="checkbox"
+              @change="commitModel({ ...model })"
+            >
+            {{ t("library.dashboard.shadow") }}
+          </label>
+        </fieldset>
+        <fieldset class="band">
+          <legend>{{ t("library.dashboard.header") }}</legend>
+          <input
+            v-model="model.header.text"
             class="select"
             type="text"
             @change="commitModel({ ...model })"
           >
-        </label>
-        <label>
-          {{ t("library.dashboard.footer") }}
           <input
-            v-model="model.footer"
+            v-model="model.header.font"
+            class="select"
+            type="text"
+            :placeholder="t('library.dashboard.font')"
+            @change="commitModel({ ...model })"
+          >
+          <input
+            v-model.number="model.header.fontSize"
+            class="select"
+            type="number"
+            min="8"
+            max="96"
+            @change="commitModel({ ...model })"
+          >
+          <input
+            v-model="model.header.color"
+            class="select"
+            type="text"
+            :placeholder="t('library.dashboard.color')"
+            @change="commitModel({ ...model })"
+          >
+          <input
+            v-model="model.header.background"
+            class="select"
+            type="text"
+            :placeholder="t('library.dashboard.background')"
+            @change="commitModel({ ...model })"
+          >
+          <label class="check">
+            <input
+              v-model="model.header.shadow"
+              type="checkbox"
+              @change="commitModel({ ...model })"
+            >
+            {{ t("library.dashboard.shadow") }}
+          </label>
+        </fieldset>
+        <fieldset class="band">
+          <legend>{{ t("library.dashboard.footer") }}</legend>
+          <input
+            v-model="model.footer.text"
             class="select"
             type="text"
             @change="commitModel({ ...model })"
           >
-        </label>
+          <input
+            v-model="model.footer.font"
+            class="select"
+            type="text"
+            :placeholder="t('library.dashboard.font')"
+            @change="commitModel({ ...model })"
+          >
+          <input
+            v-model.number="model.footer.fontSize"
+            class="select"
+            type="number"
+            min="8"
+            max="96"
+            @change="commitModel({ ...model })"
+          >
+          <input
+            v-model="model.footer.color"
+            class="select"
+            type="text"
+            :placeholder="t('library.dashboard.color')"
+            @change="commitModel({ ...model })"
+          >
+          <input
+            v-model="model.footer.background"
+            class="select"
+            type="text"
+            :placeholder="t('library.dashboard.background')"
+            @change="commitModel({ ...model })"
+          >
+          <label class="check">
+            <input
+              v-model="model.footer.shadow"
+              type="checkbox"
+              @change="commitModel({ ...model })"
+            >
+            {{ t("library.dashboard.shadow") }}
+          </label>
+        </fieldset>
         <label>
           {{ t("library.dashboard.height") }}
           <input
@@ -753,6 +865,18 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+.band {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid var(--border, #d0d7de);
+}
+.band .check {
+  flex-direction: row;
+  align-items: center;
 }
 .dashboard-panel__list {
   max-height: 220px;

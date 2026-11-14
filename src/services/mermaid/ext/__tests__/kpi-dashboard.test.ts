@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getMermaidSampleSource } from "@/constants/mermaid-sample-diagrams";
 import { measureText } from "../common";
-import { parseDashboard, renderDashboard } from "../engines/dashboard";
+import { emitDashboard, parseDashboard, renderDashboard } from "../engines/dashboard";
 import { gaugeFraction, parseGauge, renderGauge } from "../engines/gauge";
 import {
   parseInfographic,
@@ -244,11 +244,37 @@ zone 0 0 1 1 diagram "a"
 `);
     expect(parsed.ok).toBe(true);
     const svg = renderDashboard(parsed.value!);
+    assertTextInside(svg);
     expect(svg).toContain('data-role="title"');
     expect(svg).toContain('data-role="header"');
     expect(svg).toContain('data-role="footer"');
     expect(svg).toContain("Выручка");
-    expect(svg).toContain('y="72"');
+    expect(svg).toContain('data-role="header-background"');
+    expect(svg).toContain('data-role="header-shadow"');
+    expect(svg).toContain('y="78"');
+  });
+
+  it("у шапки свой шрифт, фон и тень", () => {
+    const parsed = parseDashboard(`dashboard
+header "ноябрь" font "Inter" fontsize 18 color #0f172a background #e2e8f0 shadow
+`);
+    expect(parsed.ok).toBe(true);
+    expect(parsed.value?.header).toMatchObject({
+      text: "ноябрь",
+      font: "Inter",
+      fontSize: 18,
+      color: "#0f172a",
+      background: "#e2e8f0",
+      shadow: true,
+    });
+    const again = parseDashboard(emitDashboard(parsed.value!));
+    expect(again.value?.header.font).toBe("Inter");
+    expect(again.value?.header.shadow).toBe(true);
+    const svg = renderDashboard(parsed.value!);
+    assertTextInside(svg);
+    expect(svg).toContain('font-family="Inter"');
+    expect(svg).toContain('fill="#e2e8f0"');
+    expect(svg).toContain('data-role="header-shadow"');
   });
 
   it("не принимает зону за краем холста", () => {

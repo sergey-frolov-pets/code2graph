@@ -9,20 +9,36 @@ export interface DashboardZone {
   diagramId: string;
 }
 
+export interface DashboardCaption {
+  text: string;
+  font: string;
+  fontSize: number;
+  color: string;
+  background: string;
+  shadow: boolean;
+}
+
 export interface DashboardModel {
   width: number;
   height: number;
   /** Период в миллисекундах. `null` — только открытие и запрос. */
   refreshMs: number | null;
-  title: string;
-  header: string;
-  footer: string;
+  title: DashboardCaption;
+  header: DashboardCaption;
+  footer: DashboardCaption;
   zones: DashboardZone[];
 }
 
-const TITLE_BAND = 40;
-const HEADER_BAND = 32;
-const FOOTER_BAND = 28;
+export function createDashboardCaption(fontSize: number, background: string): DashboardCaption {
+  return {
+    text: "",
+    font: "sans-serif",
+    fontSize,
+    color: "",
+    background,
+    shadow: true,
+  };
+}
 
 export interface DashboardContentFrame {
   top: number;
@@ -31,17 +47,19 @@ export interface DashboardContentFrame {
   height: number;
 }
 
+function captionBand(caption: DashboardCaption): number {
+  return caption.text.trim() ? caption.fontSize + 20 : 0;
+}
+
 /** Область зон под заголовком и шапкой и над подвалом. */
 export function dashboardContentFrame(model: Pick<DashboardModel, "width" | "height" | "title" | "header" | "footer">): DashboardContentFrame {
-  const titleBand = model.title.trim() ? TITLE_BAND : 0;
-  const headerBand = model.header.trim() ? HEADER_BAND : 0;
-  const footerBand = model.footer.trim() ? FOOTER_BAND : 0;
-  const top = titleBand + headerBand;
+  const top = captionBand(model.title) + captionBand(model.header);
+  const footer = captionBand(model.footer);
   return {
     top,
     left: 0,
     width: model.width,
-    height: Math.max(48, model.height - top - footerBand),
+    height: Math.max(48, model.height - top - footer),
   };
 }
 
@@ -55,6 +73,93 @@ function unquote(raw: string): string {
     return t.slice(1, -1).replace(/\\"/g, '"');
   }
   return t;
+}
+
+function parseCaption(rest: string, fallback: DashboardCaption): DashboardCaption {
+  let body = rest.trim();
+  let text = "";
+  const quoted = /^"((?:\\"|[^"])*)"\s*(.*)$/.exec(body);
+  if (quoted) {
+    text = quoted[1].replace(/\\"/g, '"');
+    body = quoted[2] ?? "";
+  } else {
+    const plain = /^(.*?)(?=\s+(?:font|fontsize|color|background|shadow|noshadow)\b|$)/i.exec(body);
+    text = (plain?.[1] ?? "").trim();
+    body = body.slice(text.length);
+  }
+  const font = /(?:^|\s)font\s+(?:"([^"]+)"|(\S+))/i.exec(body);
+  const fontSize = /(?:^|\s)fontsize\s+(\d+)/i.exec(body);
+  const color = /(?:^|\s)color\s+(\S+)/i.exec(body);
+  const background = /(?:^|\s)background\s+(\S+)/i.exec(body);
+  const size = fontSize ? Number(fontSize[1]) : fallback.fontSize;
+  return {
+    text,
+    font: font?.[1] || font?.[2] || fallback.font,
+    fontSize: Number.isFinite(size) && size > 0 ? size : fallback.fontSize,
+    color: !color?.[1] || color[1].toLowerCase() === "none" ? fallback.color : color[1],
+    background: background?.[1]
+      ? (background[1].toLowerCase() === "none" ? "" : background[1])
+      : fallback.background,
+    shadow: /\bnoshadow\b/i.test(body) ? false : fallback.shadow,
+  };
+}
+
+function quoteArg(value: string): string {
+  return `"${value.replace(/"/g, '\\"')}"`;
+}
+
+function emitCaption(keyword: string, caption: DashboardCaption): string | null {
+  if (!caption.text.trim()) return null;
+  const parts = [
+    keyword,
+    quoteArg(caption.text),
+    "font",
+    quoteArg(caption.font || "sans-serif"),
+    "fontsize",
+    String(caption.fontSize),
+    "color",
+    caption.color.trim() || "none",
+    "background",
+    caption.background.trim() || "none",
+    caption.shadow ? "shadow" : "noshadow",
+  ];
+  return parts.join(" ");
+}
+
+function drawCaption(
+  svg: {
+    rect(x: number, y: number, w: number, h: number, attrs?: Record<string, string | number>): void;
+    text(x: number, y: number, content: string, attrs?: Record<string, string | number>): void;
+  },
+  caption: DashboardCaption,
+  y: number,
+  width: number,
+  role: string,
+  anchor: "middle" | "start",
+  fallbackColor: string,
+): void {
+  const height = captionBand(caption);
+  if (!height) return;
+  if (caption.shadow) {
+    svg.rect(3, y + 4, Math.max(0, width - 6), height, {
+      fill: "#0f172a",
+      opacity: 0.2,
+      "data-role": `${role}-shadow`,
+    });
+  }
+  if (caption.background.trim()) {
+    svg.rect(0, y, width, height, {
+      fill: caption.background,
+      "data-role": `${role}-background`,
+    });
+  }
+  svg.text(anchor === "middle" ? width / 2 : 12, y + caption.fontSize + 6, caption.text, {
+    fill: caption.color.trim() || fallbackColor,
+    "font-size": caption.fontSize,
+    "font-family": caption.font,
+    "text-anchor": anchor,
+    "data-role": role,
+  });
 }
 
 export function parseRefreshInterval(raw: string): number | null {
@@ -79,9 +184,9 @@ export function parseDashboard(source: string): ExtParseResult<DashboardModel> {
     width: 1280,
     height: 720,
     refreshMs: null,
-    title: "",
-    header: "",
-    footer: "",
+    title: createDashboardCaption(22, "#ffffff"),
+    header: createDashboardCaption(16, "#f1f5f9"),
+    footer: createDashboardCaption(13, "#f8fafc"),
     zones: [],
   };
   let seenType = false;
@@ -114,7 +219,7 @@ export function parseDashboard(source: string): ExtParseResult<DashboardModel> {
     const caption = /^(title|header|footer)\b\s*(.*)$/i.exec(raw);
     if (caption) {
       const key = caption[1].toLowerCase() as "title" | "header" | "footer";
-      model[key] = unquote(caption[2] ?? "");
+      model[key] = parseCaption(caption[2] ?? "", model[key]);
       continue;
     }
     const zone = /^zone\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+diagram\s+(.+)$/i.exec(raw);
@@ -149,9 +254,12 @@ export function parseDashboard(source: string): ExtParseResult<DashboardModel> {
 export function emitDashboard(model: DashboardModel): string {
   const lines = ["dashboard", `size ${model.width}x${model.height}`];
   if (model.refreshMs !== null) lines.push(`refresh ${formatRefreshInterval(model.refreshMs)}`);
-  if (model.title.trim()) lines.push(`title "${model.title.replace(/"/g, '\\"')}"`);
-  if (model.header.trim()) lines.push(`header "${model.header.replace(/"/g, '\\"')}"`);
-  if (model.footer.trim()) lines.push(`footer "${model.footer.replace(/"/g, '\\"')}"`);
+  const titleLine = emitCaption("title", model.title);
+  const headerLine = emitCaption("header", model.header);
+  const footerLine = emitCaption("footer", model.footer);
+  if (titleLine) lines.push(titleLine);
+  if (headerLine) lines.push(headerLine);
+  if (footerLine) lines.push(footerLine);
   for (const zone of model.zones) {
     const id = /[\s"]/.test(zone.diagramId) ? `"${zone.diagramId.replace(/"/g, '\\"')}"` : `"${zone.diagramId}"`;
     lines.push(
@@ -178,28 +286,17 @@ export function renderDashboard(model: DashboardModel, options: ExtRenderOptions
     title: "dashboard",
   });
   const frame = dashboardContentFrame(model);
-  if (model.title.trim()) {
-    svg.text(model.width / 2, 26, model.title, {
-      fill: palette.fg,
-      "font-size": 22,
-      "text-anchor": "middle",
-      "data-role": "title",
-    });
-  }
-  if (model.header.trim()) {
-    svg.text(12, (model.title.trim() ? TITLE_BAND : 0) + 22, model.header, {
-      fill: palette.fg,
-      "font-size": 14,
-      "data-role": "header",
-    });
-  }
-  if (model.footer.trim()) {
-    svg.text(12, model.height - 10, model.footer, {
-      fill: palette.fgDim,
-      "font-size": 12,
-      "data-role": "footer",
-    });
-  }
+  drawCaption(svg, model.title, 0, model.width, "title", "middle", palette.fg);
+  drawCaption(svg, model.header, captionBand(model.title), model.width, "header", "start", palette.fg);
+  drawCaption(
+    svg,
+    model.footer,
+    model.height - captionBand(model.footer),
+    model.width,
+    "footer",
+    "start",
+    palette.fgDim,
+  );
   model.zones.forEach((zone, index) => {
     const x = frame.left + zone.x * frame.width;
     const y = frame.top + zone.y * frame.height;
