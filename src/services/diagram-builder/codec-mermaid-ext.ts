@@ -734,7 +734,7 @@ export function parseMermaidExtToBuilderState(
         pushPerson(edge.to, edge.from, edge.style === "dotted" ? "dotted" : "solid");
       }
       for (const edge of model.influences) {
-        pushPerson(edge.from, edge.to, edge.name, edge.label ?? "");
+        pushPerson(edge.from, edge.to, edge.both ? `both:${edge.name}` : edge.name, edge.label ?? "");
       }
       for (const person of model.people) {
         if (!seen.has(person.id)) pushPerson(person.id, "", "");
@@ -1540,10 +1540,13 @@ export function emitMermaidExtFromBuilderState(
         if (!people.has(otherId)) people.set(otherId, blankPerson(otherName));
         const rel = relation.toLowerCase();
         const labelAttr = edgeLabel ? ` label=${quoteIfNeeded(edgeLabel)}` : "";
+        const both = /^both:(.+)$/i.exec(relation);
         if (POWER_DOTTED_RELATIONS.has(rel)) {
           edgeLines.push(`${otherId} -.-> ${id}`);
         } else if (POWER_SOLID_RELATIONS.has(rel)) {
           edgeLines.push(`${otherId} -> ${id}`);
+        } else if (both) {
+          edgeLines.push(`${id} <-${both[1]}-> ${otherId}${labelAttr}`);
         } else {
           edgeLines.push(`${id} -${relation}-> ${otherId}${labelAttr}`);
         }
