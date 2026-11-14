@@ -81,6 +81,9 @@ export const MERMAID_SAMPLE_IDS = [
   "histogramMono",
   "histogramRotate",
   "histogramLine",
+  "infographic",
+  "gauge",
+  "dashboard",
 ] as const;
 
 export type MermaidSampleId = (typeof MERMAID_SAMPLE_IDS)[number];
@@ -128,6 +131,9 @@ export const MERMAID_EXT_SAMPLE_IDS = [
   "histogramMono",
   "histogramRotate",
   "histogramLine",
+  "infographic",
+  "gauge",
+  "dashboard",
 ] as const satisfies readonly MermaidSampleId[];
 
 export type MermaidExtSampleId = (typeof MERMAID_EXT_SAMPLE_IDS)[number];
@@ -209,6 +215,9 @@ export const MERMAID_SAMPLE_WIZARD_TYPES: Record<MermaidSampleId, import("@/cons
   histogramMono: "xychart",
   histogramRotate: "xychart",
   histogramLine: "xychart",
+  infographic: "xychart",
+  gauge: "xychart",
+  dashboard: "xychart",
 };
 
 import {
@@ -237,7 +246,13 @@ const MERMAID_EXT_SOURCES_BY_LOCALE: Record<
 > = {
   ru: MERMAID_EXT_SAMPLES_RU,
   en: MERMAID_EXT_SAMPLES_EN,
-  ...MERMAID_EXT_EXTRA,
+  es: { ...MERMAID_EXT_SAMPLES_EN, ...MERMAID_EXT_EXTRA.es },
+  zh: { ...MERMAID_EXT_SAMPLES_EN, ...MERMAID_EXT_EXTRA.zh },
+  ja: { ...MERMAID_EXT_SAMPLES_EN, ...MERMAID_EXT_EXTRA.ja },
+  hi: { ...MERMAID_EXT_SAMPLES_EN, ...MERMAID_EXT_EXTRA.hi },
+  pt: { ...MERMAID_EXT_SAMPLES_EN, ...MERMAID_EXT_EXTRA.pt },
+  de: { ...MERMAID_EXT_SAMPLES_EN, ...MERMAID_EXT_EXTRA.de },
+  ar: { ...MERMAID_EXT_SAMPLES_EN, ...MERMAID_EXT_EXTRA.ar },
 };
 
 function isHandcraftedMermaidSampleId(

@@ -114,6 +114,9 @@ const EXTRA_DIAGRAM_LABELS: Partial<Record<DiagramTypeTag, LocaleKey>> = {
   voronoi: "llm.wizard.gallery.tag.diagramType.voronoi",
   series: "llm.wizard.gallery.tag.diagramType.clustered",
   histogram: "llm.wizard.gallery.tag.diagramType.histogram",
+  infographic: "llm.wizard.gallery.tag.diagramType.infographic",
+  gauge: "llm.wizard.gallery.tag.diagramType.gauge",
+  dashboard: "llm.wizard.gallery.tag.diagramType.dashboard",
   decision: "llm.wizard.gallery.tag.diagramType.decision",
 };
 
@@ -129,6 +132,9 @@ const EXTRA_DIAGRAM_DESCRIPTIONS: Partial<Record<DiagramTypeTag, LocaleKey>> = {
   voronoi: "llm.wizard.gallery.desc.voronoi",
   series: "llm.wizard.gallery.desc.clustered",
   histogram: "llm.wizard.gallery.desc.histogram",
+  infographic: "llm.wizard.gallery.desc.infographic",
+  gauge: "llm.wizard.gallery.desc.gauge",
+  dashboard: "llm.wizard.gallery.desc.dashboard",
   decision: "llm.wizard.gallery.desc.decision",
 };
 

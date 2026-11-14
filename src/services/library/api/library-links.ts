@@ -24,6 +24,14 @@ export interface LibraryLinkInput {
   viewRender?: "snapshot" | "live" | null;
 }
 
+export interface PublicZoneDiagram {
+  id: string;
+  title: string;
+  language: string;
+  fileName: string;
+  source: string;
+}
+
 export interface PublicEditorLibraryLink {
   delivery: "editor";
   dataAccess: "online" | "offline";
@@ -34,11 +42,14 @@ export interface PublicEditorLibraryLink {
     fileName: string;
     source: string;
   };
+  zones?: PublicZoneDiagram[];
 }
 
 export interface PublicViewLibraryLink {
   delivery: "view";
   svg: string;
+  diagram?: PublicEditorLibraryLink["diagram"];
+  zones?: PublicZoneDiagram[];
 }
 
 export interface LibraryLinkStatBucket {

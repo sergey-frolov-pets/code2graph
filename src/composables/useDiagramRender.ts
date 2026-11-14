@@ -35,6 +35,15 @@ import { didLastPlantUmlRenderUseOnlineServer } from "@/services/plantuml/plantu
 import { isFileProtocol } from "@/pwa/installPromptState";
 import { stripPresentationBlock } from "@/services/presentation/codec";
 import { onlineRenderSiteFor } from "@/utils/online-render-site";
+import { detectType } from "@/services/mermaid/ext/registry";
+import { parseDashboard } from "@/services/mermaid/ext/engines/dashboard";
+import {
+  dashboardCacheFresh,
+  readDashboardSvgCache,
+  writeDashboardSvgCache,
+} from "@/services/dashboard/cache";
+import { composeDashboardSvg, loadDashboardDiagram } from "@/services/dashboard/compose";
+import { refreshDashboardZoneSources } from "@/services/dashboard/refresh";
 
 export interface UseDiagramRenderOptions {
   source: Ref<string>;
@@ -52,6 +61,8 @@ export interface UseDiagramRenderOptions {
   locale: Ref<AppLocale>;
   t: TranslateFn;
   onPersist?: () => void;
+  /** Идентификатор дашборда в библиотеке: по нему лежит кэш SVG. */
+  dashboardDiagramId?: Ref<string | null>;
 }
 
 export function useDiagramRender(options: UseDiagramRenderOptions) {
@@ -70,6 +81,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     locale,
     t,
     onPersist,
+    dashboardDiagramId,
   } = options;
 
   const svg = ref("");
@@ -200,6 +212,64 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     return t(getLanguageModule(diagramFormat.value).engineNotReadyKey);
   }
 
+  let forceDashboardRead = false;
+  let dashboardTimer = 0;
+
+  function clearDashboardTimer(): void {
+    if (dashboardTimer) window.clearTimeout(dashboardTimer);
+    dashboardTimer = 0;
+  }
+
+  function armDashboardTimer(refreshMs: number, at: number): void {
+    clearDashboardTimer();
+    dashboardTimer = window.setTimeout(() => {
+      forceDashboardRead = true;
+      void renderDiagramView();
+    }, Math.max(0, at + refreshMs - Date.now()));
+  }
+
+  async function renderDashboardIfNeeded(
+    source: string,
+    mode: RenderMode,
+    force: boolean,
+  ): Promise<string | null> {
+    if (diagramFormat.value !== "mermaid" || detectType(source) !== "dashboard") return null;
+    const parsed = parseDashboard(source);
+    if (!parsed.ok || !parsed.value) return null;
+    const id = dashboardDiagramId?.value;
+    if (!id) return null;
+    const cached = readDashboardSvgCache(id);
+    const mustRead = force || forceDashboardRead || !dashboardCacheFresh(cached, parsed.value.refreshMs);
+    forceDashboardRead = false;
+    if (!mustRead && cached) {
+      if (parsed.value.refreshMs) armDashboardTimer(parsed.value.refreshMs, cached.at);
+      return cached.svg;
+    }
+    const zoneSources = [];
+    for (const zone of parsed.value.zones) {
+      const diagram = await loadDashboardDiagram(zone.diagramId);
+      if (!diagram) continue;
+      zoneSources.push({
+        id: diagram.id,
+        source: diagram.source,
+        fileName: diagram.fileName,
+        language: diagram.language,
+      });
+    }
+    const refreshed = await refreshDashboardZoneSources(zoneSources);
+    const composed = await composeDashboardSvg(source, buildFormatContext(mode), refreshed.sources);
+    if (!composed) return null;
+    const at = Date.now();
+    writeDashboardSvgCache(id, composed, at);
+    if (parsed.value.refreshMs) armDashboardTimer(parsed.value.refreshMs, at);
+    return composed;
+  }
+
+  function requestDashboardRefresh(): void {
+    forceDashboardRead = true;
+    void renderDiagramView();
+  }
+
   async function renderDiagramView(modeOverride?: RenderMode): Promise<void> {
     const mode = modeOverride ?? renderMode.value;
     const onlineAttempt =
@@ -226,6 +296,14 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
 
     try {
       const diagramSource = currentDiagramSource();
+      const dashboardSvg = await renderDashboardIfNeeded(diagramSource, mode, false);
+      if (dashboardSvg !== null) {
+        if (serial !== renderSerial) return;
+        svg.value = dashboardSvg;
+        error.value = "";
+        isRendering.value = false;
+        return;
+      }
       const result = await renderDiagram(
         diagramFormat.value,
         diagramSource,
@@ -511,6 +589,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
   }
 
   onUnmounted(() => {
+    clearDashboardTimer();
     if (typeof window !== "undefined") {
       window.removeEventListener("online", onNetworkStatusChange);
       window.removeEventListener("offline", onNetworkStatusChange);
@@ -531,5 +610,6 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     renderOnlineOnce,
     scheduleRender,
     bootEngine,
+    requestDashboardRefresh,
   };
 }

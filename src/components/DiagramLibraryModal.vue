@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { reactive, toRef } from "vue";
+import { reactive, ref, toRef, watch } from "vue";
+import LibraryDashboardPanel from "@/components/library/LibraryDashboardPanel.vue";
 import LibraryModalHeader from "@/components/library/LibraryModalHeader.vue";
 import LibraryModalContent from "@/components/library/LibraryModalContent.vue";
 import LibraryModalOverlays from "@/components/library/LibraryModalOverlays.vue";
@@ -14,6 +15,7 @@ const props = defineProps<{
   renderMode: RenderMode;
   layout: LayoutEngine;
   diagramDarkMode: boolean;
+  startDashboard?: number;
 }>();
 
 const emit = defineEmits<{
@@ -36,6 +38,19 @@ useModalStackEntry(
 );
 
 const { t } = useLocale();
+const dashboardEditor = ref<string | null | false>(false);
+
+function openDashboardEditor(diagramId: string | null): void {
+  dashboardEditor.value = diagramId;
+}
+
+watch(
+  () => props.startDashboard,
+  (nonce) => {
+    if (nonce) openDashboardEditor(null);
+  },
+  { immediate: true },
+);
 
 const flow = reactive(
   useLibraryModalFlow({
@@ -52,7 +67,17 @@ const flow = reactive(
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="library-screen" role="dialog" aria-modal="true">
+    <div
+      v-if="open"
+      class="library-screen"
+      role="dialog"
+      aria-modal="true"
+    >
+      <LibraryDashboardPanel
+        v-if="dashboardEditor !== false"
+        :diagram-id="dashboardEditor"
+        @close="dashboardEditor = false"
+      />
       <LibraryModalHeader
         :show-back-button="flow.showBackButton"
         :header-title="flow.headerTitle"
@@ -156,6 +181,8 @@ const flow = reactive(
         @delete="flow.onDeleteDiagram()"
         @delete-diagram="flow.onDeleteDiagramById($event.id, $event.title)"
         @move-diagram="flow.openMoveDiagram($event)"
+        @create-dashboard="openDashboardEditor(null)"
+        @edit-dashboard="openDashboardEditor(flow.selectedDiagram?.id ?? null)"
         @toggle-favorite="flow.onToggleFavorite()"
         @rating-updated="flow.onRatingUpdated($event)"
         @open-versions="flow.isVersionsModalOpen = true"

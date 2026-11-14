@@ -15,7 +15,10 @@ export type ExtDiagramType =
   | "radar"
   | "voronoi"
   | "series"
-  | "histogram";
+  | "histogram"
+  | "infographic"
+  | "gauge"
+  | "dashboard";
 
 export interface ExtParseError {
   message: string;
@@ -44,6 +47,8 @@ export interface ExtRenderOptions {
   strict?: boolean;
   /** Обводка каждого элемента + его id (для отладки раскладки) */
   debugFrames?: boolean;
+  /** Готовые SVG зон дашборда по идентификатору диаграммы. */
+  zoneSvgs?: Record<string, string>;
 }
 
 export interface ExtParseResult<T> {

@@ -15,6 +15,9 @@ import { voronoiEngine } from "@/services/mermaid/ext/engines/voronoi";
 import { seriesEngine } from "@/services/mermaid/ext/engines/series";
 import { powermapEngine } from "@/services/mermaid/ext/engines/powermap";
 import { histogramEngine } from "@/services/mermaid/ext/engines/histogram";
+import { infographicEngine } from "@/services/mermaid/ext/engines/infographic";
+import { gaugeEngine } from "@/services/mermaid/ext/engines/gauge";
+import { dashboardEngine } from "@/services/mermaid/ext/engines/dashboard";
 import type { ExtEngine } from "@/services/mermaid/ext/types";
 
 const PAGES_DIR = join(process.cwd(), "src/services/llm/guides/pages");
@@ -33,6 +36,9 @@ const EXT_ENGINES: Record<string, ExtEngine<unknown>> = {
   series: seriesEngine,
   powermap: powermapEngine,
   histogram: histogramEngine,
+  infographic: infographicEngine,
+  gauge: gaugeEngine,
+  dashboard: dashboardEngine,
 };
 
 function walk(dir: string): string[] {

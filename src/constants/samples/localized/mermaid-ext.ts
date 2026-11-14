@@ -2,9 +2,11 @@ import type { AppLocale } from "@/constants/i18n";
 import type { MermaidExtSampleId } from "@/constants/mermaid-sample-diagrams";
 import { HISTOGRAM_GALLERY_SAMPLES } from "@/constants/samples/histogram-gallery-samples";
 
+type LocalizedExtSampleId = Exclude<MermaidExtSampleId, "infographic" | "gauge" | "dashboard">;
+
 export const MERMAID_EXT_EXTRA: Record<
   Exclude<AppLocale, "ru" | "en">,
-  Record<MermaidExtSampleId, string>
+  Record<LocalizedExtSampleId, string>
 > = {
   es: {
     ...HISTOGRAM_GALLERY_SAMPLES.es,

@@ -1,6 +1,6 @@
 # Mermaid Ext — канонический синтаксис
 
-Расширение добавляет 12 типов диаграмм, которых нет в upstream Mermaid.
+Расширение добавляет 15 типов диаграмм, которых нет в upstream Mermaid.
 Код изолирован в `src/services/mermaid/ext/` и попадает в прод только при
 `__MERMAID_EXT__ = true`.
 
@@ -32,6 +32,9 @@
   | `voronoi` | `voronoi-diagram` |
   | `series` | — |
   | `histogram` | `hist`, `dist` |
+  | `infographic` | `kpi` |
+  | `gauge` | — |
+  | `dashboard` | — |
 
   Алиасы — **синонимы**: `waterfall-variance` не включает отдельный режим,
   он лишь подсказывает, что данные будут с отрицательными шагами.
@@ -47,7 +50,7 @@
 
 | Директива | Формат | Где применимо |
 |---|---|---|
-| `title` | `title <текст до конца строки>` | все 12 типов |
+| `title` | `title <текст до конца строки>` | все типы, кроме infographic и dashboard |
 | `mono` | `mono` / `mono invert` / `mono off` | все типы расширения |
 | `x` (ось) | `x "<подпись>" <min> --> <max>` | bubble, heatmap (без min/max) |
 | `y` (ось) | `y "<подпись>" <min> --> <max>` | waterfall, bubble |
@@ -1210,6 +1213,50 @@ curve weibull shape=1.6 scale=28 "эталон" color=#8250df
 - `colors s1=#hex mean=#hex median=#hex ci=#hex`, `color=#hex` у серии и кривой. `mono` и `mono invert`; явный цвет важнее.
 - `axis x off` прячет подписи бинов, `axis y off` прячет ось значений и её сетку. `rotate 90` / `rotate 0`, `fontsize`, `ratio`, `grid` / `grid <шаг>`.
 - `line <число> "подпись" color= width= style=` — горизонтальный уровень. Стили: `solid`, `dash`, `dot`, `dashdot`.
+
+---
+
+## 11b. `infographic` — цифра или текст
+
+```
+infographic
+value 1280
+prefix "₽ "
+postfix " за месяц"
+font Inter
+fontsize 64
+color #0f766e
+size 480x240
+label top "Выручка" font Inter fontsize 18 color #334155
+when >= 1000 color #15803d show prefix
+when < 0 color #b91c1c hide prefix
+```
+
+`value` обязателен. `text` заменяет число. `prefix` и `postfix` по умолчанию видны. `label` — одна подпись на сторону `left`, `right`, `top` или `bottom`, со своим `font`, `fontsize` и `color`. `when` сравнивает `value` (`>`, `>=`, `<`, `<=`, `==`, `!=`) и может сменить `color`, `fontsize` и показать или скрыть `prefix` / `postfix`.
+
+## 11c. `gauge` — стрелка от минимума до максимума
+
+```
+gauge
+title Загрузка
+min 0
+max 100
+value 72
+```
+
+`min` по умолчанию 0. `max` и `value` обязательны. Стрелка стоит на доле `(value - min) / (max - min)`, обрезанной к отрезку 0..1.
+
+## 11d. `dashboard` — холст из диаграмм библиотеки
+
+```
+dashboard
+size 1280x720
+refresh 5m
+zone 0 0 0.5 0.5 diagram "revenue"
+zone 0.5 0 0.5 1 diagram "load"
+```
+
+`size` — пиксели мира. `refresh` — `30s`, `5m` или `1h`. `zone` — доли `x y w h` внутри холста и идентификатор одной диаграммы этой библиотеки. Движок сам библиотеку не читает: SVG зон приходит в `ExtRenderOptions.zoneSvgs`.
 
 ---
 

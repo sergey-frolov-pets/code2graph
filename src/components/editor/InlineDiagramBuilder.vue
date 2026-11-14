@@ -16,6 +16,10 @@ const props = defineProps<{
   format: DiagramFormat;
 }>();
 
+const emit = defineEmits<{
+  "open-dashboard": [];
+}>();
+
 const { t } = useLocale();
 const active = ref(true);
 
@@ -70,6 +74,7 @@ function onBuilderPasteError(error: TablePasteErrorInfo): void {
         @builder-change="handleBuilderChange"
         @builder-paste-source="handleBuilderPasteSource"
         @builder-paste-error="onBuilderPasteError"
+        @open-dashboard="emit('open-dashboard')"
       />
     </div>
 

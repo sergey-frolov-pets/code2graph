@@ -215,7 +215,21 @@ export function createDefaultBuilderState(
     options,
     appearance: createDefaultDiagramAppearance(),
     preservedComments: [],
+    extRawSource: defaultExtRawSource(diagramType),
   };
+}
+
+function defaultExtRawSource(diagramType: DiagramTypeTag): string | undefined {
+  if (diagramType === "infographic") {
+    return "infographic\nvalue 0\nsize 480x240\n";
+  }
+  if (diagramType === "gauge") {
+    return "gauge\nmin 0\nmax 100\nvalue 0\n";
+  }
+  if (diagramType === "dashboard") {
+    return "dashboard\nsize 1280x720\n";
+  }
+  return undefined;
 }
 
 function aspectRatioToString(
@@ -876,6 +890,12 @@ export function parseMermaidExtToBuilderState(
 
     case "histogram":
       return applyHistogramBuilderState(state, source);
+
+    case "infographic":
+    case "gauge":
+    case "dashboard":
+      state.extRawSource = source;
+      return state;
 
     default:
       return null;
@@ -1755,6 +1775,11 @@ export function emitMermaidExtFromBuilderState(
 
     case "histogram":
       return emitHistogramBuilderSource(state);
+
+    case "infographic":
+    case "gauge":
+    case "dashboard":
+      return state.extRawSource ?? null;
 
     default:
       return null;

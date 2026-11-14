@@ -15,6 +15,9 @@ describe("detectType", () => {
     expect(detectType("voronoi\nA : x=10, y=20")).toBe("voronoi");
     expect(detectType("series\ncategories A, B\nS : 10, 20")).toBe("series");
     expect(detectType("histogram\nseries A : 10, 12, 14")).toBe("histogram");
+    expect(detectType("infographic\nvalue 1")).toBe("infographic");
+    expect(detectType("gauge\nvalue 1")).toBe("gauge");
+    expect(detectType("dashboard\nsize 10x10")).toBe("dashboard");
   });
 
   it("понимает алиасы", () => {
@@ -36,6 +39,7 @@ describe("detectType", () => {
     expect(detectType("series:")).toBe("series");
     expect(detectType("hist")).toBe("histogram");
     expect(detectType("dist")).toBe("histogram");
+    expect(detectType("kpi")).toBe("infographic");
     expect(detectType("clustered\ncategories A, B")).toBeNull();
     expect(detectType("clustered-bar")).toBeNull();
   });
@@ -80,9 +84,9 @@ describe("firstMeaningfulLine", () => {
 });
 
 describe("listTypes", () => {
-  it("перечисляет ровно 12 типов", () => {
+  it("перечисляет ровно 15 типов", () => {
     const types = listTypes();
-    expect(types).toHaveLength(12);
+    expect(types).toHaveLength(15);
     expect(new Set(types)).toEqual(
       new Set([
         "waterfall",
@@ -97,6 +101,9 @@ describe("listTypes", () => {
         "voronoi",
         "series",
         "histogram",
+        "infographic",
+        "gauge",
+        "dashboard",
       ]),
     );
   });

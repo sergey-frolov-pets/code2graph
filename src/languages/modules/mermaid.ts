@@ -7,7 +7,7 @@ import type { DiagramLanguageModule } from "@/languages/types";
 import { isCompleteMermaidDiagram } from "@/utils/mermaid-source";
 
 const MERMAID_TYPE =
-  /^(graph|flowchart|sequencediagram|classdiagram|statediagram|erdiagram|journey|gantt|pie|mindmap|timeline|gitgraph|sankey-beta|xychart-beta|block-beta|waterfall|bubble|heatmap|orgchart|powermap|power-map|power|ev|boxplot|box-plot|treemap|tree-map|radar|radarchart|spider|voronoi|voronoi-diagram|series|histogram|hist|dist)\b/i;
+  /^(graph|flowchart|sequencediagram|classdiagram|statediagram|erdiagram|journey|gantt|pie|mindmap|timeline|gitgraph|sankey-beta|xychart-beta|block-beta|waterfall|bubble|heatmap|orgchart|powermap|power-map|power|ev|boxplot|box-plot|treemap|tree-map|radar|radarchart|spider|voronoi|voronoi-diagram|series|histogram|hist|dist|infographic|kpi|gauge|dashboard)\b/i;
 
 let cachedHandler: FormatHandler | null = null;
 

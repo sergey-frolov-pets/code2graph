@@ -14,6 +14,9 @@ import { radarEngine } from "./engines/radar";
 import { voronoiEngine } from "./engines/voronoi";
 import { seriesEngine } from "./engines/series";
 import { histogramEngine } from "./engines/histogram";
+import { infographicEngine } from "./engines/infographic";
+import { gaugeEngine } from "./engines/gauge";
+import { dashboardEngine } from "./engines/dashboard";
 
 /**
  * Точка входа расширения.
@@ -88,6 +91,12 @@ function loadEngineSync(type: ExtDiagramType) {
       return seriesEngine;
     case "histogram":
       return histogramEngine;
+    case "infographic":
+      return infographicEngine;
+    case "gauge":
+      return gaugeEngine;
+    case "dashboard":
+      return dashboardEngine;
   }
 }
 
@@ -117,6 +126,12 @@ async function loadEngine(type: ExtDiagramType) {
       return (await import("./engines/series")).seriesEngine;
     case "histogram":
       return (await import("./engines/histogram")).histogramEngine;
+    case "infographic":
+      return (await import("./engines/infographic")).infographicEngine;
+    case "gauge":
+      return (await import("./engines/gauge")).gaugeEngine;
+    case "dashboard":
+      return (await import("./engines/dashboard")).dashboardEngine;
   }
 }
 

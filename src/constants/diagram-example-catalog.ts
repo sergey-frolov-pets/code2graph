@@ -74,6 +74,9 @@ export const EXTRA_DIAGRAM_TYPE_IDS = [
   "voronoi",
   "series",
   "histogram",
+  "infographic",
+  "gauge",
+  "dashboard",
   "decision",
 ] as const;
 
@@ -178,6 +181,9 @@ const CHART_FAMILY_BY_DIAGRAM_TYPE: Record<DiagramTypeTag, ChartFamily> = {
   voronoi: "chart",
   series: "chart",
   histogram: "chart",
+  infographic: "chart",
+  gauge: "chart",
+  dashboard: "chart",
   decision: "behavior",
 };
 
@@ -243,6 +249,9 @@ const DIAGRAM_TYPE_OVERRIDE: Record<string, DiagramTypeTag> = {
   "mermaid:histogramMono": "histogram",
   "mermaid:histogramRotate": "histogram",
   "mermaid:histogramLine": "histogram",
+  "mermaid:infographic": "infographic",
+  "mermaid:gauge": "gauge",
+  "mermaid:dashboard": "dashboard",
   "graphml:flow": "flowchart",
   "graphml:decision": "decision",
   "graphml:architecture": "architecture",
@@ -289,6 +298,9 @@ const DOMAIN_OVERRIDE: Record<string, readonly DomainId[]> = {
   "mermaid:histogramMono": ["analytics", "data"],
   "mermaid:histogramRotate": ["analytics", "data"],
   "mermaid:histogramLine": ["analytics", "data"],
+  "mermaid:infographic": ["analytics"],
+  "mermaid:gauge": ["analytics"],
+  "mermaid:dashboard": ["analytics"],
   "graphml:flow": ["businessProcess", "architecture"],
   "graphml:decision": ["businessProcess"],
   "graphml:architecture": ["architecture"],

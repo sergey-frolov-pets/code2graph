@@ -112,7 +112,22 @@ async function renderMermaidOfflineToSvg(
   // Расширение Mermaid (свои типы диаграмм). В проде __MERMAID_EXT__ = false →
   // этот блок вместе с import() вырезается на этапе сборки.
   if (__MERMAID_EXT__) {
-    const { tryRenderExtension } = await import("@/services/mermaid/ext");
+    const { tryRenderExtension, detectType } = await import("@/services/mermaid/ext");
+    if (detectType(prepared) === "dashboard") {
+      const { composeDashboardSvg } = await import("@/services/dashboard/compose");
+      const composed = await composeDashboardSvg(prepared, {
+        layout: "elk",
+        diagramDarkMode: Boolean(options.dark),
+        renderMode: "offline",
+        diagramBackground: options.background,
+        diagramTextColor: options.textColor,
+        diagramFontFamily: options.fontFamily,
+        diagramFontWeight: options.fontWeight,
+        diagramFontStyle: options.fontStyle,
+        locale: options.locale ?? currentUiLocale(),
+      });
+      if (composed) return applyDiagramTypography(composed, options);
+    }
     const extSvg = await tryRenderExtension(source, {
       dark: Boolean(options.dark),
       background: options.background,

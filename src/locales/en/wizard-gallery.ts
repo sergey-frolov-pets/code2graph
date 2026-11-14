@@ -62,6 +62,9 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.tag.diagramType.voronoi": "Voronoi diagram",
   "llm.wizard.gallery.tag.diagramType.clustered": "Series chart",
   "llm.wizard.gallery.tag.diagramType.histogram": "Histogram",
+  "llm.wizard.gallery.tag.diagramType.infographic": "Infographic",
+  "llm.wizard.gallery.tag.diagramType.gauge": "Gauge",
+  "llm.wizard.gallery.tag.diagramType.dashboard": "Dashboard",
   "llm.wizard.gallery.tag.diagramType.decision": "Decision",
   "llm.wizard.gallery.desc.bubble": "Points sized by a third value on two axes.",
   "llm.wizard.gallery.desc.heatmap": "A matrix colored by value.",
@@ -75,6 +78,12 @@ export const wizardGalleryMessages = {
   "llm.wizard.gallery.desc.clustered": "Grouped multi-series bars compared across categories.",
   "llm.wizard.gallery.desc.histogram":
     "Counts or density by bin, with a fitted or given distribution curve, mean, median, and a confidence interval.",
+  "llm.wizard.gallery.desc.infographic":
+    "A number or text with its own font, color, and size, plus side labels and a prefix or postfix that can follow a condition.",
+  "llm.wizard.gallery.desc.gauge":
+    "A needle from a minimum to a maximum.",
+  "llm.wizard.gallery.desc.dashboard":
+    "A canvas that places other library diagrams into marked zones.",
   "llm.wizard.gallery.desc.decision": "A flow that branches on a decision.",
   "llm.wizard.gallery.example.mermaid.waterfall.title": "Waterfall",
   "llm.wizard.gallery.example.mermaid.waterfall.description":

@@ -18,7 +18,8 @@ export type AppRouteName =
   | "clipboard"
   | "preview"
   | "aiChatShare"
-  | "libraryLink";
+  | "libraryLink"
+  | "dashboardEmbed";
 
 export interface ParsedAppRoute {
   name: AppRouteName;
@@ -44,7 +45,7 @@ const LIBRARY_USERNAME_MAX_LENGTH = 80;
 const ROUTE_HASH: Record<
   Exclude<
     AppRouteName,
-    "language" | "diagram" | "clipboard" | "preview" | "libraryLink" | "aiChatShare"
+    "language" | "diagram" | "clipboard" | "preview" | "libraryLink" | "aiChatShare" | "dashboardEmbed"
   >,
   string
 > = {
@@ -169,7 +170,7 @@ export function parseAppRoute(locationLike: {
   // Вкладка превью сохраняет путь редактора (`/local/…`, `/diagram`,
   // библиотечная ссылка) и кладёт сессию в хеш. Иначе вторая вкладка
   // снова открывает редактор и не видит правки кода.
-  if (fromHash.name === "preview") {
+  if (fromHash.name === "preview" || fromHash.name === "dashboardEmbed") {
     return fromHash;
   }
 
@@ -225,7 +226,23 @@ export function localDataLinkCanonicalPath(locationLike: {
 }
 
 export function parseRouteFromHash(hash: string): ParsedAppRoute {
-  const normalized = hash.replace(/^#/, "").replace(/^\//, "").trim().toLowerCase();
+  const raw = hash.replace(/^#/, "").replace(/^\//, "").trim();
+  const embedLocal = /^embed\/local\/([^/]+)$/i.exec(raw);
+  if (embedLocal?.[1]) {
+    return routeResult("dashboardEmbed", null, decodeURIComponent(embedLocal[1]));
+  }
+  const embedServer = /^embed\/server\/([^/]+)\/([^/]+)$/i.exec(raw);
+  if (embedServer?.[1] && embedServer[2]) {
+    return routeResult(
+      "dashboardEmbed",
+      null,
+      null,
+      decodeURIComponent(embedServer[1]),
+      decodeURIComponent(embedServer[2]),
+    );
+  }
+
+  const normalized = raw.toLowerCase();
   const languageMatch = normalized.match(LANGUAGE_ROUTE);
 
   if (languageMatch && isDiagramFormat(languageMatch[1])) {
@@ -292,7 +309,7 @@ function publishedOrigin(origin: string): string {
 export function routeHash(
   route: Exclude<
     AppRouteName,
-    "language" | "diagram" | "clipboard" | "preview" | "libraryLink" | "aiChatShare"
+    "language" | "diagram" | "clipboard" | "preview" | "libraryLink" | "aiChatShare" | "dashboardEmbed"
   >,
 ): string {
   return ROUTE_HASH[route];
@@ -331,7 +348,7 @@ export function diagramDataLinkUrl(origin: string, slug: string): string {
 export function navigateTo(
   route: Exclude<
     AppRouteName,
-    "diagram" | "clipboard" | "preview" | "libraryLink" | "aiChatShare"
+    "diagram" | "clipboard" | "preview" | "libraryLink" | "aiChatShare" | "dashboardEmbed"
   >,
   languageId?: DiagramFormat,
 ): void {

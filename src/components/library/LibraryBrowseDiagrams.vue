@@ -42,6 +42,7 @@ const emit = defineEmits<{
   "filters-change": [];
   "delete-diagram": [payload: { id: string; title: string }];
   "move-diagram": [payload: MoveDiagramRequest];
+  "create-dashboard": [];
 }>();
 
 const { t } = useLocale();
@@ -161,7 +162,14 @@ function onMove(diagram: DiagramListItemDto): void {
           class="select library-search"
           type="search"
           :placeholder="t('library.searchPlaceholder')"
-        />
+        >
+        <button
+          class="btn"
+          type="button"
+          @click="emit('create-dashboard')"
+        >
+          {{ t("library.dashboard.create") }}
+        </button>
         <button
           class="btn library-filters__toggle"
           type="button"
@@ -171,14 +179,30 @@ function onMove(diagram: DiagramListItemDto): void {
           {{ filtersLabel }}
         </button>
       </div>
-      <div v-show="filtersOpen" class="library-filters__advanced">
-        <select v-model="tagFilter" class="select" @change="onFiltersChange()">
-          <option value="">{{ t("library.filterByTag") }}</option>
-          <option v-for="tag in allTags" :key="tag" :value="tag">
+      <div
+        v-show="filtersOpen"
+        class="library-filters__advanced"
+      >
+        <select
+          v-model="tagFilter"
+          class="select"
+          @change="onFiltersChange()"
+        >
+          <option value="">
+            {{ t("library.filterByTag") }}
+          </option>
+          <option
+            v-for="tag in allTags"
+            :key="tag"
+            :value="tag"
+          >
             {{ tag }}
           </option>
         </select>
-        <label v-if="!isLocalLibrary" class="library-filter-field">
+        <label
+          v-if="!isLocalLibrary"
+          class="library-filter-field"
+        >
           <span>{{ t("library.filterMinRating") }}</span>
           <select
             v-model.number="minRatingFilter"
@@ -186,10 +210,17 @@ function onMove(diagram: DiagramListItemDto): void {
             @change="onFiltersChange()"
           >
             <option :value="0">{{ t("library.filterAny") }}</option>
-            <option v-for="star in 5" :key="star" :value="star">{{ star }}+</option>
+            <option
+              v-for="star in 5"
+              :key="star"
+              :value="star"
+            >{{ star }}+</option>
           </select>
         </label>
-        <label v-if="!isLocalLibrary" class="library-filter-field">
+        <label
+          v-if="!isLocalLibrary"
+          class="library-filter-field"
+        >
           <span>{{ t("library.filterMinVotes") }}</span>
           <input
             v-model.number="minVotesFilter"
@@ -198,12 +229,20 @@ function onMove(diagram: DiagramListItemDto): void {
             min="0"
             step="1"
             @change="onFiltersChange()"
-          />
+          >
         </label>
         <label class="library-filter-field">
           <span>{{ t("library.sortBy") }}</span>
-          <select v-model="sortByFilter" class="select" @change="onFiltersChange()">
-            <option v-for="option in sortOptions" :key="option" :value="option">
+          <select
+            v-model="sortByFilter"
+            class="select"
+            @change="onFiltersChange()"
+          >
+            <option
+              v-for="option in sortOptions"
+              :key="option"
+              :value="option"
+            >
               {{ t(`library.sortBy.${option}`) }}
             </option>
           </select>
@@ -211,8 +250,14 @@ function onMove(diagram: DiagramListItemDto): void {
       </div>
     </div>
 
-    <div ref="listRef" class="library-step__content library-step__content--virtual">
-      <LoadingState v-if="isLoading" :message="t('app.loading')" />
+    <div
+      ref="listRef"
+      class="library-step__content library-step__content--virtual"
+    >
+      <LoadingState
+        v-if="isLoading"
+        :message="t('app.loading')"
+      />
       <EmptyState
         v-else-if="diagrams.length === 0"
         :title="t('library.noResults')"
@@ -252,7 +297,10 @@ function onMove(diagram: DiagramListItemDto): void {
                 {{ diagramAt(virtualRow.index).description }}
               </span>
             </span>
-            <span class="library-row__chevron" aria-hidden="true">›</span>
+            <span
+              class="library-row__chevron"
+              aria-hidden="true"
+            >›</span>
           </button>
           <div
             v-if="diagramAllowsWrite(diagramAt(virtualRow.index))"
