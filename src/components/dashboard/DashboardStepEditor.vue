@@ -401,6 +401,7 @@ watch(source, (text) => {
 
 watch(step, (value) => {
   if (value === "bind") void loadLinks();
+  if (value === "preview") void showPreview();
 });
 
 onMounted(async () => {
