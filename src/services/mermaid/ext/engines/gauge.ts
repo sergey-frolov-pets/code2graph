@@ -235,7 +235,8 @@ export function renderGauge(model: GaugeModel, options: ExtRenderOptions = {}): 
     : Math.max(40, Math.min((width - cap * 2) / 2, height - titleH - valueSize - legendH - 28));
   const cx = width / 2;
   const cy = classic ? 168 : titleH + radius;
-  const font = model.font ? { "font-family": model.font } : {};
+  const font: Record<string, string> = {};
+  if (model.font) font["font-family"] = model.font;
 
   const track = model.track ?? palette.fgDim;
   svg.path(arcPath(cx, cy, radius, 0, 1), {
