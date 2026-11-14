@@ -821,6 +821,7 @@ onUnmounted(() => {
   min-height: 0;
   flex: 1;
   gap: 8px;
+  overflow: hidden;
 }
 .dashboard-editor__steps,
 .dashboard-editor__row {
@@ -828,13 +829,15 @@ onUnmounted(() => {
   gap: 4px;
   align-items: center;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 .dashboard-editor__fields {
   display: flex;
   flex-direction: column;
   gap: 8px;
   overflow: auto;
-  max-height: 40%;
+  flex: 1 1 160px;
+  min-height: 0;
 }
 .dashboard-editor__fields label {
   display: flex;
