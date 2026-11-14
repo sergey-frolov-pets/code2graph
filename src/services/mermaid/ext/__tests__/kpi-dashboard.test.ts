@@ -227,6 +227,30 @@ zone 0.5 0 0.5 1 diagram "load"
     expect(load.every((cell) => cell.col === 1)).toBe(true);
   });
 
+  it("разбирает русские и английские образцы", () => {
+    for (const locale of ["ru", "en"] as const) {
+      const parsed = parseDashboard(getMermaidSampleSource("dashboard", locale));
+      expect(parsed.ok, parsed.errors.map((issue) => issue.message).join("; ")).toBe(true);
+      expect(parsed.value?.cells.some((cell) => cell.borderColor === "#0f172a")).toBe(true);
+      expect(parsed.value?.cells.some((cell) => cell.kind === "link")).toBe(true);
+    }
+  });
+
+  it("рисует границу только у ячейки с border", () => {
+    const parsed = parseDashboard(`dashboard
+cols 0.5 0.5
+rows 1
+cell 0 0 diagram "revenue" border #0f172a 2
+cell 1 0 diagram "load"
+`);
+    const svg = renderDashboard(parsed.value!);
+    expect(svg).toContain('stroke="#0f172a"');
+    expect(svg).toContain('stroke-width="2"');
+    expect(svg).toContain('data-diagram="load"');
+    expect(svg.match(/stroke="#0f172a"/g)).toHaveLength(1);
+    expect(svg).not.toContain('stroke="#656d76"');
+  });
+
   it("рисует доли холста и пустую зону без SVG", () => {
     const parsed = parseDashboard(source);
     const cell = parsed.value!.cells.find((item) => item.ref === "revenue")!;
@@ -304,8 +328,8 @@ footer "низ" fontsize 13 align end bottom
     const again = parseDashboard(emitDashboard(parsed.value!));
     expect(again.value?.footer.alignX).toBe("end");
     expect(again.value?.footer.alignY).toBe("bottom");
-    const frameTop = 36;
-    expect(svg).toContain(`y="${frameTop}"`);
+    expect(svg).toContain('height="36"');
+    expect(svg).not.toContain("data-zone");
   });
 
   it("не принимает зону за краем холста", () => {

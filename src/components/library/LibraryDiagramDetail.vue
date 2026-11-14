@@ -7,7 +7,6 @@ import LibraryDataLinkFields from "@/components/library/LibraryDataLinkFields.vu
 import LibraryServerLinks from "@/components/library/LibraryServerLinks.vue";
 import LibraryStarRating from "@/components/library/LibraryStarRating.vue";
 import { useLocale } from "@/composables/useLocale";
-import { detectType } from "@/services/mermaid/ext/registry";
 import { useLibraryDiagramPreview } from "@/composables/useLibraryDiagramPreview";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
@@ -65,11 +64,9 @@ const emit = defineEmits<{
   "toggle-favorite": [];
   "rating-updated": [diagram: DiagramDto];
   "open-versions": [];
-  "edit-dashboard": [];
 }>();
 
 const { t } = useLocale();
-const isDashboard = computed(() => detectType(props.diagram.source) === "dashboard");
 const moreOpen = ref(false);
 const preview = useLibraryDiagramPreview();
 const previewError = preview.error;
@@ -303,14 +300,6 @@ function contentLocaleLabel(locale: string): string {
         v-if="moreOpen"
         class="library-detail__more"
       >
-        <button
-          v-if="isDashboard"
-          class="btn"
-          type="button"
-          @click="emit('edit-dashboard')"
-        >
-          {{ t("library.dashboard.edit") }}
-        </button>
         <button
           v-if="allowsWrite"
           class="btn"

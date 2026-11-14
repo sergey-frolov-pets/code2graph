@@ -277,7 +277,6 @@ onUnmounted(() => {
         @undo="shell.applySourceUndo"
         @redo="shell.applySourceRedo"
         @refresh-data="shell.dataLink.refresh()"
-        @open-dashboard="modals.openLibraryDashboard()"
         @convert="modals.openConvertModal"
         @ai-apply-source="shell.applyAiPlantUml($event.source, $event.label, $event.format)"
         @open-settings="modals.openSettingsModal"

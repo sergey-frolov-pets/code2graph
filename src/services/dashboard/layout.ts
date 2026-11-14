@@ -16,15 +16,7 @@ function withTracks(model: DashboardModel, axis: "col" | "row", tracks: number[]
   return axis === "col" ? { ...model, cols: tracks } : { ...model, rows: tracks };
 }
 
-function widestIndex(tracks: number[]): number {
-  let best = 0;
-  for (let index = 1; index < tracks.length; index += 1) {
-    if (tracks[index] > tracks[best]) best = index;
-  }
-  return best;
-}
-
-/** Режет выбранную или самую широкую долю пополам. `null`, если половина меньше минимума. */
+/** Режет выбранную или первую долю пополам. `null`, если половина меньше минимума. */
 export function insertDashboardLine(
   model: DashboardModel,
   axis: "col" | "row",
@@ -33,7 +25,7 @@ export function insertDashboardLine(
   const tracks = tracksOf(model, axis);
   const index = selectedIndex !== null && selectedIndex >= 0 && selectedIndex < tracks.length
     ? selectedIndex
-    : widestIndex(tracks);
+    : 0;
   const size = tracks[index];
   if (size / 2 < DASHBOARD_MIN_TRACK - 1e-6) return null;
   const left = size / 2;
@@ -110,6 +102,16 @@ export function removeDashboardLine(model: DashboardModel, divider: DashboardDiv
   return { model: { ...withTracks(model, divider.axis, nextTracks), cells: kept }, dropped };
 }
 
+export function centerDashboardDivider(tracks: readonly number[], index: number): number[] {
+  if (index < 0 || index >= tracks.length - 1) return [...tracks];
+  const pair = tracks[index] + tracks[index + 1];
+  const half = pair / 2;
+  const next = [...tracks];
+  next[index] = half;
+  next[index + 1] = pair - half;
+  return next;
+}
+
 export function bindDashboardCell(
   model: DashboardModel,
   col: number,
@@ -117,9 +119,39 @@ export function bindDashboardCell(
   kind: DashboardCell["kind"],
   ref: string,
 ): DashboardModel {
+  const existing = model.cells.find((cell) => cell.col === col && cell.row === row);
   const cells = model.cells.filter((cell) => cell.col !== col || cell.row !== row);
-  cells.push({ col, row, kind, ref });
+  cells.push({
+    col,
+    row,
+    kind,
+    ref,
+    borderColor: existing?.borderColor,
+    borderWidth: existing?.borderWidth,
+  });
   return { ...model, cells };
+}
+
+export function setDashboardCellBorder(
+  model: DashboardModel,
+  col: number,
+  row: number,
+  borderColor: string,
+  borderWidth: number,
+): DashboardModel {
+  return {
+    ...model,
+    cells: model.cells.map((cell) => {
+      if (cell.col !== col || cell.row !== row) return cell;
+      if (!borderColor.trim() || borderWidth <= 0) {
+        const next = { ...cell };
+        delete next.borderColor;
+        delete next.borderWidth;
+        return next;
+      }
+      return { ...cell, borderColor: borderColor.trim(), borderWidth };
+    }),
+  };
 }
 
 export function clearDashboardCell(model: DashboardModel, col: number, row: number): DashboardModel {

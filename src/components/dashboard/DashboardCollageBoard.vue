@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
+import ActionIcon from "@/components/icons/ActionIcon.vue";
+import IconButton from "@/components/IconButton.vue";
 import { useLocale } from "@/composables/useLocale";
 import {
   dashboardCaptionBand,
@@ -198,25 +200,6 @@ onUnmounted(() => {
 
 <template>
   <div class="dashboard-stage-wrap">
-    <div class="dashboard-panel__actions">
-      <label>
-        {{ t("library.dashboard.zoom") }}
-        <input
-          v-model.number="zoom"
-          type="range"
-          min="0.25"
-          max="4"
-          step="0.05"
-        >
-      </label>
-      <button
-        class="btn"
-        type="button"
-        @click="zoom = 1"
-      >
-        {{ t("library.dashboard.fit") }}
-      </button>
-    </div>
     <div
       ref="stageRef"
       class="dashboard-stage"
@@ -298,6 +281,27 @@ onUnmounted(() => {
         </template>
       </div>
     </div>
+    <div class="dashboard-board-bar">
+      <IconButton
+        :label="t('library.dashboard.zoom')"
+        @click="zoom = Math.max(0.25, zoom - 0.15)"
+      >
+        <ActionIcon name="zoom-out" />
+      </IconButton>
+      <IconButton
+        :label="t('library.dashboard.zoom')"
+        @click="zoom = Math.min(4, zoom + 0.15)"
+      >
+        <ActionIcon name="zoom-in" />
+      </IconButton>
+      <IconButton
+        :label="t('library.dashboard.fit')"
+        @click="zoom = 1"
+      >
+        <ActionIcon name="fit" />
+      </IconButton>
+      <slot />
+    </div>
   </div>
 </template>
 
@@ -307,13 +311,15 @@ onUnmounted(() => {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  flex: 1;
   gap: 8px;
 }
-.dashboard-panel__actions {
+.dashboard-board-bar {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   align-items: center;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 .dashboard-stage {
   position: relative;

@@ -41,7 +41,6 @@ const emit = defineEmits<{
       target?: BuilderApplyTarget;
     },
   ];
-  "open-dashboard": [];
 }>();
 
 const { t, locale } = useLocale();
@@ -111,7 +110,6 @@ const {
     emit("apply", payload);
   },
   onClose: () => emit("close"),
-  onOpenDashboard: () => emit("open-dashboard"),
 });
 
 const showLivePreview = computed(() => showLivePreviewPanel.value);
@@ -192,7 +190,6 @@ const showLivePreview = computed(() => showLivePreviewPanel.value);
           @builder-change="handleBuilderChange"
           @builder-paste-source="handleBuilderPasteSource"
           @builder-paste-error="onBuilderPasteError"
-          @open-dashboard="emit('open-dashboard')"
         />
       </div>
 

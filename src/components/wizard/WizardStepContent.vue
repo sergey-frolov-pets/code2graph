@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import BuilderCanvasAxesStep from "@/components/wizard/steps/BuilderCanvasAxesStep.vue";
 import BuilderDataTableStep from "@/components/wizard/steps/BuilderDataTableStep.vue";
 import BuilderOptionsStep from "@/components/wizard/steps/BuilderOptionsStep.vue";
-import { useLocale } from "@/composables/useLocale";
+import DashboardStepEditor from "@/components/dashboard/DashboardStepEditor.vue";
 import type { WizardStepId } from "@/constants/llm-wizard";
 import type { DiagramBuilderState } from "@/services/diagram-builder";
 import type { TablePasteErrorInfo } from "@/services/table-paste/types";
@@ -18,25 +19,23 @@ const emit = defineEmits<{
   "builder-change": [];
   "builder-paste-source": [source: string];
   "builder-paste-error": [error: TablePasteErrorInfo];
-  "open-dashboard": [];
 }>();
 
-const { t } = useLocale();
+const dashboardSource = computed({
+  get: () => builderState.value?.extRawSource ?? "dashboard\nsize 1280x720\ncols 1\nrows 1\n",
+  set: (value: string) => {
+    if (!builderState.value) return;
+    builderState.value.extRawSource = value;
+    emit("builder-change");
+  },
+});
 </script>
 
 <template>
-  <div
+  <DashboardStepEditor
     v-if="currentStepId === 'builder-data' && builderState?.diagramType === 'dashboard'"
-    class="builder-step"
-  >
-    <button
-      class="btn"
-      type="button"
-      @click="emit('open-dashboard')"
-    >
-      {{ t("library.dashboard.create") }}
-    </button>
-  </div>
+    v-model="dashboardSource"
+  />
 
   <BuilderDataTableStep
     v-else-if="currentStepId === 'builder-data' && builderState"

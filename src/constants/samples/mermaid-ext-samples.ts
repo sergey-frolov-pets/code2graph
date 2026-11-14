@@ -645,12 +645,39 @@ zone 0 60 #16a34a "норма"
 zone 60 85 #ca8a04 "внимание"
 zone 85 100 #dc2626 "перегруз"`,
   dashboard: `dashboard
+%% Коллаж диаграмм библиотеки. Ключевое слово — dashboard.
+%% Сначала считаются title, header и footer: полоса с текстом высотой fontSize+20.
+%% Этот запас вычитается из холста, остаток режется вертикальными и горизонтальными линиями.
+%%
+%% Размер и период
+%%   size 1280x720              холст: ширинаxвысота
+%%   refresh 5m                 30s, 5m, 1h или любое Ns / Nm / Nh
+%%
+%% Подписи
+%%   title "Сводка" font "sans-serif" fontsize 22 color none background #ffffff shadow
+%%   header "Сегодня" ... align center middle
+%%   footer "Источник" ... align end bottom
+%%                              align у header и footer: start|center|end и top|middle|bottom
+%%
+%% Сетка
+%%   cols 0.35 0.65             доли ширины оставшегося прямоугольника, сумма 1
+%%   rows 0.5 0.5               доли высоты
+%%
+%% Ячейки
+%%   cell 0 0 diagram "revenue" border #0f172a 2
+%%                              диаграмма из библиотеки по id; border — цвет и толщина
+%%   cell 1 0 link "alice/weekly" публичная ссылка username/slug
+%%   cell 0 1 diagram "load"     без border у ячейки нет линии
 size 1280x720
 refresh 5m
-cols 0.5 0.5
-rows 1
-cell 0 0 diagram "revenue"
-cell 1 0 diagram "load"`,
+title "Сводка" font "sans-serif" fontsize 22 color none background #ffffff shadow
+header "Сегодня" font "sans-serif" fontsize 16 color none background #f1f5f9 shadow align center middle
+footer "Источник" font "sans-serif" fontsize 13 color none background #f8fafc noshadow align end bottom
+cols 0.35 0.65
+rows 0.5 0.5
+cell 0 0 diagram "revenue" border #0f172a 2
+cell 1 0 link "alice/weekly"
+cell 0 1 diagram "load"`,
 };
 
 export const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
@@ -1296,10 +1323,37 @@ zone 0 60 #16a34a "ok"
 zone 60 85 #ca8a04 "watch"
 zone 85 100 #dc2626 "hot"`,
   dashboard: `dashboard
+%% A collage of library diagrams. The keyword is dashboard.
+%% Title, header and footer are measured first: a band with text is fontSize+20 tall.
+%% That height is subtracted from the canvas; the rest is cut by vertical and horizontal lines.
+%%
+%% Size and refresh
+%%   size 1280x720              canvas, widthxheight
+%%   refresh 5m                 30s, 5m, 1h, or any Ns / Nm / Nh
+%%
+%% Captions
+%%   title "Summary" font "sans-serif" fontsize 22 color none background #ffffff shadow
+%%   header "Today" ... align center middle
+%%   footer "Source" ... align end bottom
+%%                              header and footer align: start|center|end and top|middle|bottom
+%%
+%% Grid
+%%   cols 0.35 0.65             shares of the remaining rectangle width, sum to 1
+%%   rows 0.5 0.5               shares of the remaining height
+%%
+%% Cells
+%%   cell 0 0 diagram "revenue" border #0f172a 2
+%%                              a library diagram by id; border is color and thickness
+%%   cell 1 0 link "alice/weekly" a public link, username/slug
+%%   cell 0 1 diagram "load"     without border the cell has no line
 size 1280x720
 refresh 5m
-cols 0.5 0.5
-rows 1
-cell 0 0 diagram "revenue"
-cell 1 0 diagram "load"`,
+title "Summary" font "sans-serif" fontsize 22 color none background #ffffff shadow
+header "Today" font "sans-serif" fontsize 16 color none background #f1f5f9 shadow align center middle
+footer "Source" font "sans-serif" fontsize 13 color none background #f8fafc noshadow align end bottom
+cols 0.35 0.65
+rows 0.5 0.5
+cell 0 0 diagram "revenue" border #0f172a 2
+cell 1 0 link "alice/weekly"
+cell 0 1 diagram "load"`,
 };

@@ -124,8 +124,6 @@ const emit = defineEmits<{
   "open-versions": [];
   "delete-diagram": [payload: { id: string; title: string }];
   "move-diagram": [payload: MoveDiagramRequest];
-  "create-dashboard": [];
-  "edit-dashboard": [];
   "file-change": [event: Event];
   "submit-upload": [];
   export: [payload: { sectionIds: Set<string>; diagramIds: Set<string> }];
@@ -236,7 +234,6 @@ const emit = defineEmits<{
         @filters-change="emit('filters-change')"
         @delete-diagram="emit('delete-diagram', $event)"
         @move-diagram="emit('move-diagram', $event)"
-        @create-dashboard="emit('create-dashboard')"
       />
 
       <LibraryDiagramDetail
@@ -272,7 +269,6 @@ const emit = defineEmits<{
         @share="emit('share')"
         @preview="emit('preview')"
         @delete="emit('delete')"
-        @edit-dashboard="emit('edit-dashboard')"
         @move="emit('move-diagram', $event)"
         @toggle-favorite="emit('toggle-favorite')"
         @rating-updated="emit('rating-updated', $event)"

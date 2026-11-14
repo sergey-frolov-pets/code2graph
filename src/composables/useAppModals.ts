@@ -10,7 +10,6 @@ export function useAppModals() {
   const isWizardModalOpen = ref(false);
   const isSaveToLibraryModalOpen = ref(false);
   const isConvertModalOpen = ref(false);
-  const libraryDashboardNonce = ref(0);
 
   return {
     isSyntaxModalOpen,
@@ -21,7 +20,6 @@ export function useAppModals() {
     isWizardModalOpen,
     isSaveToLibraryModalOpen,
     isConvertModalOpen,
-    libraryDashboardNonce,
     openVersionsModal: () => {
       isVersionsModalOpen.value = true;
     },
@@ -29,10 +27,6 @@ export function useAppModals() {
       isSettingsModalOpen.value = true;
     },
     openLibraryModal: () => {
-      isLibraryModalOpen.value = true;
-    },
-    openLibraryDashboard: () => {
-      libraryDashboardNonce.value += 1;
       isLibraryModalOpen.value = true;
     },
     openWizardModal: () => {

@@ -24,6 +24,8 @@ export interface DashboardCell {
   row: number;
   kind: "diagram" | "link";
   ref: string;
+  borderColor?: string;
+  borderWidth?: number;
 }
 
 export interface DashboardModel {
@@ -129,6 +131,32 @@ function unquote(raw: string): string {
     return t.slice(1, -1).replace(/\\"/g, '"');
   }
   return t;
+}
+
+function parseCellTail(raw: string): {
+  ref: string;
+  borderColor?: string;
+  borderWidth?: number;
+  error?: string;
+} {
+  let rest = raw.trim();
+  let ref = "";
+  if (rest.startsWith('"')) {
+    const quoted = /^"((?:\\"|[^"])*)"\s*(.*)$/.exec(rest);
+    if (!quoted) return { ref: "", error: "cell: нет закрывающей кавычки" };
+    ref = quoted[1].replace(/\\"/g, '"');
+    rest = (quoted[2] ?? "").trim();
+  } else {
+    const token = /^(\S+)\s*(.*)$/.exec(rest);
+    ref = token?.[1] ?? "";
+    rest = (token?.[2] ?? "").trim();
+  }
+  if (!rest) return { ref };
+  const border = /^border\s+(\S+)\s+(\d+(?:\.\d+)?)$/i.exec(rest);
+  if (!border) return { ref: "", error: "cell: после ссылки ожидается border цвет толщина" };
+  const width = Number(border[2]);
+  if (!Number.isFinite(width) || width <= 0) return { ref: "", error: "cell: толщина границы должна быть больше нуля" };
+  return { ref, borderColor: border[1], borderWidth: width };
 }
 
 function parseCaption(rest: string, fallback: DashboardCaption, band: boolean): DashboardCaption | DashboardBand {
@@ -399,14 +427,24 @@ export function parseDashboard(source: string): ExtParseResult<DashboardModel> {
       const col = Number(cell[1]);
       const row = Number(cell[2]);
       const kind = cell[3].toLowerCase() as "diagram" | "link";
-      const ref = unquote(cell[4]);
-      if (!ref) errors.push(error(lineNo, "cell: пустая ссылка"));
-      else if (kind === "link" && !/^[^/\s]+\/[^/\s]+$/.test(ref)) {
+      const parsedCell = parseCellTail(cell[4] ?? "");
+      if (!parsedCell.ref) errors.push(error(lineNo, "cell: пустая ссылка"));
+      else if (kind === "link" && !/^[^/\s]+\/[^/\s]+$/.test(parsedCell.ref)) {
         errors.push(error(lineNo, "cell: ссылка нужна как username/slug"));
+      } else if (parsedCell.error) {
+        errors.push(error(lineNo, parsedCell.error));
       } else if (model.cells.some((item) => item.col === col && item.row === row)) {
         errors.push(error(lineNo, "cell: эта ячейка уже занята"));
       } else {
-        model.cells.push({ col, row, kind, ref });
+        model.cells.push({
+          col,
+          row,
+          kind,
+          ref: parsedCell.ref,
+          ...(parsedCell.borderColor && parsedCell.borderWidth
+            ? { borderColor: parsedCell.borderColor, borderWidth: parsedCell.borderWidth }
+            : {}),
+        });
         sawTracks = true;
       }
       continue;
@@ -466,7 +504,11 @@ export function emitDashboard(model: DashboardModel): string {
   lines.push(`cols ${model.cols.map((value) => fmt(value)).join(" ")}`);
   lines.push(`rows ${model.rows.map((value) => fmt(value)).join(" ")}`);
   for (const cell of model.cells) {
-    lines.push(`cell ${cell.col} ${cell.row} ${cell.kind} ${quoteRef(cell.ref)}`);
+    const parts = [`cell ${cell.col} ${cell.row} ${cell.kind} ${quoteRef(cell.ref)}`];
+    if (cell.borderColor?.trim() && cell.borderWidth && cell.borderWidth > 0) {
+      parts.push("border", cell.borderColor.trim(), fmt(cell.borderWidth));
+    }
+    lines.push(parts.join(" "));
   }
   return lines.join("\n");
 }
@@ -510,14 +552,19 @@ export function renderDashboard(model: DashboardModel, options: ExtRenderOptions
     for (let col = 0; col < model.cols.length; col += 1) {
       const rect = dashboardCellRect(model, col, row);
       const cell = model.cells.find((item) => item.col === col && item.row === row);
+      if (!cell) continue;
+      const borderColor = cell.borderColor?.trim();
+      const borderWidth = cell.borderWidth;
+      const hasBorder = Boolean(borderColor && borderWidth && borderWidth > 0);
       svg.rect(rect.x, rect.y, rect.w, rect.h, {
         fill: "none",
-        stroke: palette.fgDim,
-        "stroke-width": 1,
+        ...(hasBorder && borderColor && borderWidth
+          ? { stroke: borderColor, "stroke-width": borderWidth }
+          : {}),
         "data-zone": `${col}-${row}`,
-        ...(cell ? { "data-diagram": cell.ref, "data-cell": cell.kind } : {}),
+        "data-diagram": cell.ref,
+        "data-cell": cell.kind,
       });
-      if (!cell) continue;
       const child = options.zoneSvgs?.[dashboardCellKey(cell)];
       if (child && child.includes("<svg")) svg.raw(nestedSvg(child, rect.x, rect.y, rect.w, rect.h));
       else {
