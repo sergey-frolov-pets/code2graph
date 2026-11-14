@@ -457,7 +457,7 @@ export const siteMessages = {
   "site.landing.usp.vibecoders": "智能体画图，你来修改：MCP 给 Cursor 源码和图片",
   "site.ext.mermaid.type.powermap": "权力图",
   "site.ext.mermaid.desc.powermap": "画在汇报树上的利益相关者权力图：角色、影响力、行动需求和态度，以及另一家公司的对接人。照片或半身剪影、图例，以及 supporter、enemy 这样的具名箭头。",
-  "site.ext.mermaid.syntax.powermap": "powermap 打开图。company 是卡片上这些人的公司。legend on|off 在图下方画出完整图例：角色、影响力、行动需求、态度和外部对接人的颜色。线型只列出 link，汇报线不进图例。lang zh 指定图例语言。avatar 48 或 avatar off 写照片框。人是 id [姓名|职务]，带 role、influence、action、attitude、counterpart、gender 和 photo。counterpart 是另一家公司的人，不是卡片上的同事。-> 和 -.-> 是汇报线。link 名称 color=#hex style=solid|dash|dot|dashdot label=文字 定义样式，这个 label 只出现在图例。A -名称-> B 画无文字的箭头，A -名称-> B label=文字 给这一条箭头写字。comms on 在图例下方画出沟通表：卡片上的人、另一家公司的对接人和关系。",
+  "site.ext.mermaid.syntax.powermap": "powermap 打开图。company 是卡片上这些人的公司。legend on|off 在图下方画出完整图例：角色、影响力、行动需求、态度和外部对接人的颜色。线型只列出 link，汇报线不进图例。lang zh 指定图例语言。avatar 48 或 avatar off 写照片框。人是 id [姓名|职务]，带 role、influence、action、attitude、counterpart、gender 和 photo。counterpart 是另一家公司的人，不是卡片上的同事。-> 和 -.-> 是汇报线。link 名称 color=#hex style=solid|dash|dot|dashdot label=文字 定义样式，这个 label 只出现在图例。A -名称-> B 画无文字的箭头，A -名称-> B label=文字 给这一条箭头写字，A <-名称-> B 画双向箭头。comms on 在图例下方画沟通表。表头是「公司」加 company 名称、「联系人」、「关系」。单元格写出方向、对方、类型和标注。",
   "site.ext.mermaid.type.histogram": "直方图",
   "site.ext.mermaid.desc.histogram": "按分箱显示次数或密度，可叠加拟合或给定的分布曲线，以及均值、中位数和置信区间。",
   "site.ext.mermaid.syntax.histogram": "histogram 打开图表（别名 hist、dist）。series 名称 : v1, v2, … 是一组观测；空单元格、na、n/a、null、none、nan、-、— 和 . 都是缺失。bins auto、bins N、binwidth W 或 bins a --> b, b --> c 设定区间。scale count 或 scale density 设定柱高。fit normal 拟合曲线，curve weibull shape=1.6 scale=28 按给定参数绘制。stats 列出 mean median sd var ci，ci 0.95 是均值区间。labels、gap、colors、mono、rotate 90、fontsize、ratio、grid、axis 和 line 与 series 相同。",

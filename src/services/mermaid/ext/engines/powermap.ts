@@ -73,6 +73,8 @@ export interface PowerInfluenceEdge {
   name: string;
   /** Подпись этой стрелки. Подпись типа `link` на стрелку не попадает. */
   label?: string;
+  /** `A <-name-> B`: стрелка в обе стороны. */
+  both?: boolean;
 }
 
 export interface PowerModel {
@@ -306,6 +308,7 @@ function splitBracket(raw: string): { body: string; tail: string } {
 }
 
 const NAMED_EDGE_RE = /^(.*?)\s+-\s*([\p{L}][\p{L}\p{N}_-]*)\s*->\s*(.+)$/u;
+const NAMED_BOTH_RE = /^(.*?)\s+<-\s*([\p{L}][\p{L}\p{N}_-]*)\s*->\s*(.+)$/u;
 
 /** `B label="текст"` в хвосте конкретной стрелки, не в объявлении `link`. */
 function splitTrailingLabel(raw: string): { body: string; label?: string } {
@@ -320,13 +323,21 @@ function splitTrailingLabel(raw: string): { body: string; label?: string } {
 
 function parseRelation(
   raw: string,
-): { kind: "report"; style: ReportStyle; from: string; to: string } | { kind: "influence"; name: string; from: string; to: string; label?: string } | null {
+): { kind: "report"; style: ReportStyle; from: string; to: string } | { kind: "influence"; name: string; from: string; to: string; label?: string; both?: boolean } | null {
   const dottedAt = raw.indexOf("-.->");
   if (dottedAt >= 0) {
     const from = unquote(raw.slice(0, dottedAt));
     const to = unquote(raw.slice(dottedAt + 4));
     if (!from || !to) return null;
     return { kind: "report", style: "dotted", from, to };
+  }
+  const both = NAMED_BOTH_RE.exec(raw);
+  if (both) {
+    const from = unquote(both[1]);
+    const target = splitTrailingLabel(both[3]);
+    const to = unquote(target.body);
+    if (!from || !to) return null;
+    return { kind: "influence", name: both[2], from, to, label: target.label, both: true };
   }
   const named = NAMED_EDGE_RE.exec(raw);
   if (named) {
@@ -544,12 +555,13 @@ export function parsePowermap(source: string): ExtParseResult<PowerModel> {
         to: relation.to,
         name: relation.name,
         ...(relation.label ? { label: relation.label } : {}),
+        ...(relation.both ? { both: true } : {}),
       });
       continue;
     }
     if (/->|=>|<-/.test(raw)) {
       errors.push({
-        message: `недопустимый синтаксис ребра «${raw}»: ожидается «A -> B», «A -.-> B» или «A -name-> B»`,
+        message: `недопустимый синтаксис ребра «${raw}»: ожидается «A -> B», «A -.-> B», «A -name-> B» или «A <-name-> B»`,
         line: lineNo,
         col: 0,
       });
@@ -937,6 +949,28 @@ const LEGEND_PHRASES: Record<string, Record<AppLocale, string>> = {
     de: "Person",
     ar: "الشخص",
   },
+  companyWord: {
+    en: "Company",
+    ru: "Компания",
+    es: "Empresa",
+    zh: "公司",
+    ja: "会社",
+    hi: "कंपनी",
+    pt: "Empresa",
+    de: "Firma",
+    ar: "الشركة",
+  },
+  contacts: {
+    en: "Contacts",
+    ru: "Контакты",
+    es: "Contactos",
+    zh: "联系人",
+    ja: "連絡先",
+    hi: "संपर्क",
+    pt: "Contactos",
+    de: "Kontakte",
+    ar: "جهات الاتصال",
+  },
 };
 
 function legendLocale(model: PowerModel, options: ExtRenderOptions): AppLocale {
@@ -1034,6 +1068,7 @@ interface InfluenceDraft {
   to: PlacedTreeNode<PowerPerson>;
   link: PowerLinkStyle;
   label?: string;
+  both?: boolean;
   mode: "down" | "up" | "same";
   x1: number;
   y1: number;
@@ -1107,6 +1142,7 @@ interface RoutedInfluence {
   dash?: string;
   width: number;
   label?: string;
+  both?: boolean;
 }
 
 /** Ломаные стрелки влияния, как линии подчинения: без наложения друг на друга. */
@@ -1162,6 +1198,7 @@ function routeInfluences(
       to,
       link: resolveLink(model, edge.name),
       label: edge.label,
+      both: edge.both,
       mode,
       x1: 0,
       y1,
@@ -1229,6 +1266,7 @@ function routeInfluences(
       dash: STROKE_DASH[draft.link.style],
       width: draft.link.width,
       label: draft.label,
+      both: draft.both,
     };
   });
   return { routes, overflow: Math.max(0, overflow) };
@@ -1302,11 +1340,20 @@ function linkCaption(model: PowerModel, name: string): string {
   return link.name;
 }
 
+function personName(model: PowerModel, id: string): string {
+  return model.people.find((person) => person.id === id)?.name ?? id;
+}
+
+/** Направление от человека в строке таблицы: исходящая, входящая или в обе стороны. */
 function linkLines(model: PowerModel, personId: string): string[] {
   const captions: string[] = [];
   for (const edge of model.influences) {
     if (edge.from !== personId && edge.to !== personId) continue;
-    captions.push(linkCaption(model, edge.name));
+    const otherId = edge.from === personId ? edge.to : edge.from;
+    const arrow = edge.both ? "↔" : edge.from === personId ? "→" : "←";
+    const caption = linkCaption(model, edge.name);
+    const detail = edge.label?.trim() ? `${caption} — ${edge.label.trim()}` : caption;
+    captions.push(`${arrow} ${personName(model, otherId)}: ${detail}`);
   }
   return uniqueFold(captions);
 }
@@ -1322,9 +1369,11 @@ interface CommsTable {
 }
 
 function measureComms(model: PowerModel, locale: AppLocale): CommsTable {
+  const companyWord = legendText("companyWord", locale);
+  const companyName = model.company?.trim();
   const headers = [
-    legendText("person", locale),
-    legendText("otherCompany", locale),
+    companyName ? `${companyWord} ${companyName}` : companyWord,
+    legendText("contacts", locale),
     legendText("links", locale),
   ] as const;
   const rows = model.people
@@ -1511,6 +1560,7 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
       stroke: route.color,
       "stroke-width": route.width,
       "marker-end": arrow.ref,
+      ...(route.both ? { "marker-start": arrow.ref } : {}),
       ...(route.dash ? { "stroke-dasharray": route.dash } : {}),
     });
     if (route.label) {

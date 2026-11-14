@@ -399,6 +399,7 @@ describe("diagram-builder core", () => {
           "CFO [Elena|Finance] role=A gender=f",
           "CEO -> CFO",
           'CFO -ally-> CEO label="личный союз"',
+          "CEO <-ally-> CFO",
         ].join("\n"),
         verify: (s) => {
           const parsed = parsePowermap(s);
@@ -407,7 +408,9 @@ describe("diagram-builder core", () => {
             parsed.value?.company === "Northwind" &&
             parsed.value.legendLang === "de" &&
             parsed.value.people.some((person) => person.name === "Elena" && person.role?.code === "A") &&
-            parsed.value.influences.some((edge) => edge.name === "ally" && edge.label === "личный союз")
+            parsed.value.influences.some((edge) => edge.name === "ally" && edge.label === "личный союз") &&
+            parsed.value.influences.some((edge) => edge.both === true && edge.name === "ally") &&
+            s.includes("<-ally->")
           );
         },
       },

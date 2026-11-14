@@ -237,17 +237,38 @@ link coach color=#bf8700 style=dot label=наставник
     const positions = people.map((name) => texts.indexOf(name));
     expect(positions.every((index) => index >= 0)).toBe(true);
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
-    expect(texts.filter((text) => text === "Илья Сомов")).toHaveLength(2);
     expect(texts.filter((text) => text === "Пётр Белов")).toHaveLength(2);
     expect(texts).not.toContain("пётр белов");
-    expect(texts).toContain("coach — наставник");
+    expect(texts).toContain("→ Илья Сомов: coach — наставник");
+    expect(texts).toContain("← Мария Ким: coach — наставник");
     expect(texts).not.toContain("Roles");
     const legendBottom = 0;
     const personY = Number(/<text\b[^>]* y="([^"]+)"[^>]*>Анна Орлова<\/text>/.exec(svg)?.[1]);
     expect(personY).toBeGreaterThan(legendBottom);
     expect(svg).toContain('data-comms="powermap"');
-    expect(svg).toContain("Other company");
+    expect(svg).toContain("Company");
+    expect(svg).toContain("Contacts");
     expect(svg).toContain("Links");
+  });
+
+  it("заголовки таблицы берут имя компании, а двусторонняя стрелка смотрит в обе стороны", () => {
+    const model = modelOf(`powermap
+company Север
+lang ru
+comms on
+legend off
+link ally color=#1a7f37 style=solid label=союзник
+Анна [Анна Орлова]
+Илья [Илья Сомов]
+Анна <-ally-> Илья label=бюджет`);
+    expect(model.influences[0]).toMatchObject({ from: "Анна", to: "Илья", name: "ally", both: true, label: "бюджет" });
+    const svg = powermapEngine.render(model, {});
+    expect(svg).toContain("Компания Север");
+    expect(svg).toContain("Контакты");
+    expect(svg).toContain("Связи");
+    expect(svg).toContain("↔ Илья Сомов: ally — союзник — бюджет");
+    expect(svg).toContain("↔ Анна Орлова: ally — союзник — бюджет");
+    expect(svg).toContain("marker-start=");
   });
 
   it("без comms таблица не рисуется", () => {
