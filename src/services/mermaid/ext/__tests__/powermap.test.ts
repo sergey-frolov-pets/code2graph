@@ -130,11 +130,14 @@ B -enemy-> A`);
     const height = Number(/viewBox="0 0 [\d.]+ ([\d.]+)/.exec(svg)?.[1]);
     assertSvgInvariants(svg, { expectSize: { width, height } });
     expect(svg).toContain("Northwind");
-    expect(svg).not.toContain("Roles");
+    expect(svg).toContain("Roles");
+    expect(svg).toContain("Endorser");
+    expect(svg).toContain("External counterpart");
+    expect(svg).toContain("Other company");
     expect(svg).not.toContain("Direct report");
     expect(svg).toContain("Links");
     expect(svg).toContain("coach");
-    expect(svg).not.toContain("enemy");
+    expect(svg).not.toContain(">enemy<");
     expect(svg).toContain('data-avatar="?"');
     expect(svg).not.toContain(">?</text>");
     expect(svg).toContain(`href="${PHOTO}"`);
@@ -142,9 +145,9 @@ B -enemy-> A`);
     expect(svg).not.toContain(" Q ");
     const legendY = Number(/data-legend="powermap"[^>]*y="([\d.]+)"/.exec(svg)?.[1] ?? /y="([\d.]+)"[^>]*data-legend="powermap"/.exec(svg)?.[1]);
     const cardBottom = Math.max(
-      ...[...svg.matchAll(/<rect x="[\d.]+" y="([\d.]+)" width="[\d.]+" height="([\d.]+)"([^>]*)>/g)]
-        .filter((match) => !match[3].includes("data-legend"))
-        .map((match) => Number(match[1]) + Number(match[2])),
+      ...[...svg.matchAll(/<rect x="[\d.]+" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)"([^>]*)>/g)]
+        .filter((match) => !match[4].includes("data-legend") && Number(match[2]) > 80 && Number(match[3]) > 40)
+        .map((match) => Number(match[1]) + Number(match[3])),
     );
     expect(legendY).toBeGreaterThan(0);
     expect(legendY).toBeGreaterThanOrEqual(cardBottom - 1);
@@ -221,8 +224,8 @@ Board -enemy-> CFO`);
 comms on
 legend off
 link coach color=#bf8700 style=dot label=наставник
-Мария [Мария Ким] counterpart="Илья Сомов; илья сомов, -"
-Илья [Илья Сомов] counterpart="Мария Ким, Анна Орлова"
+Мария [Мария Ким] counterpart="Пётр Белов; пётр белов, -"
+Илья [Илья Сомов] counterpart="Ольга Ким, Пётр Белов"
 Анна [Анна Орлова] counterpart=-
 Мария -coach-> Илья
 Анна -> Мария`);
@@ -234,14 +237,16 @@ link coach color=#bf8700 style=dot label=наставник
     const positions = people.map((name) => texts.indexOf(name));
     expect(positions.every((index) => index >= 0)).toBe(true);
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
-    expect(texts.filter((text) => text === "Илья Сомов")).toHaveLength(3);
-    expect(texts).not.toContain("илья сомов");
+    expect(texts.filter((text) => text === "Илья Сомов")).toHaveLength(2);
+    expect(texts.filter((text) => text === "Пётр Белов")).toHaveLength(2);
+    expect(texts).not.toContain("пётр белов");
     expect(texts).toContain("coach — наставник");
     expect(texts).not.toContain("Roles");
     const legendBottom = 0;
     const personY = Number(/<text\b[^>]* y="([^"]+)"[^>]*>Анна Орлова<\/text>/.exec(svg)?.[1]);
     expect(personY).toBeGreaterThan(legendBottom);
-    expect(svg).toContain("Contacts");
+    expect(svg).toContain('data-comms="powermap"');
+    expect(svg).toContain("Other company");
     expect(svg).toContain("Links");
   });
 
@@ -252,7 +257,7 @@ B [Борис]
 A -> B`);
     expect(model.comms).toBe(false);
     const svg = powermapEngine.render(model, {});
-    expect(svg).not.toContain("Contacts");
+    expect(svg).not.toContain('data-comms="powermap"');
   });
 
   it("legend off и avatar off убирают легенду и блок фото", () => {
@@ -301,9 +306,13 @@ B [Борис]
 A -> B
 B -supporter-> A`;
     const ru = powermapEngine.render(modelOf(`powermap\nlang ru\n${source.slice("powermap\n".length)}`), {});
+    expect(ru).toContain("Роли");
+    expect(ru).toContain("Внешний контрагент");
+    expect(ru).toContain("Покровитель");
     expect(ru).toContain("Связи");
     expect(ru).toContain("сторонник");
     expect(ru).not.toContain(">supporter<");
+    expect(ru).not.toContain("Direct report");
 
     const fromUi = powermapEngine.render(modelOf(source), { locale: "de" });
     expect(fromUi).toContain("Verbindungen");

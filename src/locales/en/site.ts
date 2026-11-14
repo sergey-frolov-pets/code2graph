@@ -146,7 +146,7 @@ export const siteMessages = {
   "site.ext.mermaid.desc.orgchart":
     "A reporting tree with explicit edges: solid is the main line, dotted -.-> is a secondary manager. A block can set its fill (color) and its border (border, style). avatar turns on a photo or a male, female, or unknown silhouette. Several roots are gathered under an invisible root.",
   "site.ext.mermaid.desc.powermap":
-    "A stakeholder power map on a reporting tree: role, influence, need for action, and attitude, plus a company counterpart. Photos or silhouettes, a legend, and named influence arrows such as supporter and enemy.",
+    "A stakeholder power map on a reporting tree: role, influence, need for action, and attitude, plus counterparts from another company. Photos or bust silhouettes, a legend, and named influence arrows such as supporter and enemy.",
   "site.ext.mermaid.desc.ev":
     "Three cumulative curves by day: planned value PV, earned value EV, and actual cost AC. Plus SV and CV deviations in the legend.",
   "site.ext.mermaid.desc.boxplot":
@@ -170,7 +170,7 @@ export const siteMessages = {
   "site.ext.mermaid.syntax.orgchart":
     "orgchart opens the tree. A node is id [role\\nname] (\\n, <br> and | break the line, \\| stays a pipe, the box fits the text); color=#hex sets the fill, border=#hex and style=solid|dash|dot|dashdot set the border color and style. avatar 48 shows a photo box; gender=m|f|? picks a silhouette, photo= sets an image, avatar off hides the box. A solid edge is ->, a secondary manager is -.->.",
   "site.ext.mermaid.syntax.powermap":
-    "powermap opens the map. company sets the company, legend on|off the key under the chart (link styles only), lang ru sets its language. avatar 48 or avatar off the photo box. A person is id [Name|Title] with role, influence, action, attitude, counterpart, gender, and photo. -> and -.-> are reporting lines. link name color=#hex style=solid|dash|dot|dashdot label=text defines a style; that label is legend text only. A -name-> B draws the arrow with no caption, A -name-> B label=text captions that arrow. comms on draws the communications table under the legend: people, counterpart contacts, and link labels.",
+    "powermap opens the map. company names the company of the people on the cards. legend on|off draws the full key under the chart: role, influence, need for action, attitude, and the external-counterpart color. Line samples are only declared link styles; reporting lines stay out. lang ru sets the key language. avatar 48 or avatar off the photo box. A person is id [Name|Title] with role, influence, action, attitude, counterpart, gender, and photo. counterpart names people from another company, not colleagues on the cards. -> and -.-> are reporting lines. link name color=#hex style=solid|dash|dot|dashdot label=text defines a style; that label is legend text only. A -name-> B draws the arrow with no caption, A -name-> B label=text captions that arrow. comms on draws the communications table under the legend: people on the cards, counterparts from the other company, and link labels.",
   "site.ext.mermaid.syntax.ev":
     "ev opens the chart. days are the days, pv is the plan, ev is earned value, ac is actual cost. \\n in a day label breaks the line.",
   "site.ext.mermaid.syntax.boxplot":

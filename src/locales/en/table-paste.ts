@@ -137,7 +137,7 @@ export const tablePasteMessages = {
     "Generates orgchart nodes and solid (->) or dotted (-.->) reporting lines.",
   "tablePaste.expected.orgchart.headers": "Manager|Report|Link",
   "tablePaste.expected.powermap.columns":
-    "Name, title, manager, role, influence, action, attitude, counterpart, and link (solid, dotted, or a link name).",
+    "Name, title, manager, role, influence, action, attitude, counterpart from another company, and link (solid, dotted, or a link name).",
   "tablePaste.expected.powermap.rules":
     "Each row is a person. solid and dotted are reporting lines. Any other link name is an influence arrow.",
   "tablePaste.expected.powermap.headers":

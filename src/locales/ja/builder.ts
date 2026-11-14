@@ -331,7 +331,7 @@ export const builderMessages = {
   "builder.col.influence": "影響力",
   "builder.col.action": "行動の必要性",
   "builder.col.attitude": "態度",
-  "builder.col.counterpart": "会社側の相手",
+  "builder.col.counterpart": "相手（別の会社）",
   "builder.col.relation": "関係",
   "builder.gender.unset": "未設定",
   "builder.gender.male": "男性",

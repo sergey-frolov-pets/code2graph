@@ -331,7 +331,7 @@ export const builderMessages = {
   "builder.col.influence": "प्रभाव",
   "builder.col.action": "कार्रवाई की ज़रूरत",
   "builder.col.attitude": "रुख",
-  "builder.col.counterpart": "कंपनी समकक्ष",
+  "builder.col.counterpart": "प्रतिपक्ष (दूसरी कंपनी)",
   "builder.col.relation": "कड़ी",
   "builder.gender.unset": "सेट नहीं",
   "builder.gender.male": "पुरुष",

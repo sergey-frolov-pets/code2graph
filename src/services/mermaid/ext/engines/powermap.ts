@@ -49,6 +49,7 @@ export interface PowerPerson {
   influence?: ScoreSwatch;
   action?: ScoreSwatch;
   attitude?: ScoreSwatch;
+  /** Люди другой компании. Не сотрудники `company`, которые стоят на карточках. */
   counterpart: string;
 }
 
@@ -630,11 +631,26 @@ function resolveLink(model: PowerModel, name: string): PowerLinkStyle {
 
 const LEGEND_FONT = 10;
 const LEGEND_TITLE = 11;
+const SWATCH = 16;
 const LEGEND_ROW = 18;
 const LEGEND_PAD = 8;
+const LEGEND_GAP = 16;
+
+/** Заголовки легенды жирные, оценка ширины этого не учитывает. */
+function legendTitleWidth(text: string): number {
+  return measureText(text, LEGEND_TITLE) * 1.45;
+}
+
+function legendColumnWidth(column: LegendColumn): number {
+  const body = Math.max(
+    SWATCH,
+    ...column.rows.map((row) => SWATCH + (row.name ? 4 + measureText(row.name, LEGEND_FONT) : 0)),
+  );
+  return Math.max(legendTitleWidth(column.title), body);
+}
 
 /** Подписи легенды. Свой текст `label=` не переводится, известные слова типа — да. */
-const LEGEND_PHRASES: Record<"links" | "supporter" | "enemy", Record<AppLocale, string>> = {
+const LEGEND_PHRASES: Record<string, Record<AppLocale, string>> = {
   links: {
     en: "Links",
     ru: "Связи",
@@ -668,6 +684,259 @@ const LEGEND_PHRASES: Record<"links" | "supporter" | "enemy", Record<AppLocale, 
     de: "Gegner",
     ar: "خصم",
   },
+  roles: {
+    en: "Roles",
+    ru: "Роли",
+    es: "Roles",
+    zh: "角色",
+    ja: "役割",
+    hi: "भूमिकाएँ",
+    pt: "Papéis",
+    de: "Rollen",
+    ar: "الأدوار",
+  },
+  influence: {
+    en: "Influence",
+    ru: "Влияние",
+    es: "Influencia",
+    zh: "影响力",
+    ja: "影響力",
+    hi: "प्रभाव",
+    pt: "Influência",
+    de: "Einfluss",
+    ar: "التأثير",
+  },
+  action: {
+    en: "Need for Action",
+    ru: "Нужность действия",
+    es: "Necesidad de acción",
+    zh: "行动需求",
+    ja: "行動の必要性",
+    hi: "कार्रवाई की जरूरत",
+    pt: "Necessidade de ação",
+    de: "Handlungsbedarf",
+    ar: "الحاجة إلى إجراء",
+  },
+  attitude: {
+    en: "Attitude vs. Company",
+    ru: "Отношение к компании",
+    es: "Actitud hacia la empresa",
+    zh: "对公司的态度",
+    ja: "会社への態度",
+    hi: "कंपनी के प्रति रवैया",
+    pt: "Atitude face à empresa",
+    de: "Haltung zum Unternehmen",
+    ar: "الموقف تجاه الشركة",
+  },
+  counterpart: {
+    en: "External counterpart",
+    ru: "Внешний контрагент",
+    es: "Contraparte externa",
+    zh: "外部对接人",
+    ja: "外部の相手",
+    hi: "बाहरी प्रतिपक्ष",
+    pt: "Contraparte externa",
+    de: "Externer Counterpart",
+    ar: "الطرف الخارجي",
+  },
+  otherCompany: {
+    en: "Other company",
+    ru: "Другая компания",
+    es: "Otra empresa",
+    zh: "另一家公司",
+    ja: "別の会社",
+    hi: "दूसरी कंपनी",
+    pt: "Outra empresa",
+    de: "Anderes Unternehmen",
+    ar: "شركة أخرى",
+  },
+  "role:E": {
+    en: "Endorser",
+    ru: "Покровитель",
+    es: "Patrocinador",
+    zh: "支持者",
+    ja: "後援者",
+    hi: "समर्थक",
+    pt: "Patrocinador",
+    de: "Förderer",
+    ar: "الراعي",
+  },
+  "role:D": {
+    en: "Decider",
+    ru: "Решающий",
+    es: "Decisor",
+    zh: "决策者",
+    ja: "決定者",
+    hi: "निर्णायक",
+    pt: "Decisor",
+    de: "Entscheider",
+    ar: "صاحب القرار",
+  },
+  "role:A": {
+    en: "Assessor",
+    ru: "Оценщик",
+    es: "Evaluador",
+    zh: "评估者",
+    ja: "評価者",
+    hi: "आकलनकर्ता",
+    pt: "Avaliador",
+    de: "Bewerter",
+    ar: "المقيّم",
+  },
+  "role:U": {
+    en: "User",
+    ru: "Пользователь",
+    es: "Usuario",
+    zh: "使用者",
+    ja: "利用者",
+    hi: "उपयोगकर्ता",
+    pt: "Utilizador",
+    de: "Nutzer",
+    ar: "المستخدم",
+  },
+  "role:C": {
+    en: "Coach",
+    ru: "Наставник",
+    es: "Coach",
+    zh: "教练",
+    ja: "コーチ",
+    hi: "कोच",
+    pt: "Coach",
+    de: "Coach",
+    ar: "المرشد",
+  },
+  "influence:L": {
+    en: "Large",
+    ru: "Высокое",
+    es: "Alta",
+    zh: "高",
+    ja: "大",
+    hi: "अधिक",
+    pt: "Alta",
+    de: "Groß",
+    ar: "كبير",
+  },
+  "influence:M": {
+    en: "Medium",
+    ru: "Среднее",
+    es: "Media",
+    zh: "中",
+    ja: "中",
+    hi: "मध्यम",
+    pt: "Média",
+    de: "Mittel",
+    ar: "متوسط",
+  },
+  "influence:S": {
+    en: "Small",
+    ru: "Низкое",
+    es: "Baja",
+    zh: "低",
+    ja: "小",
+    hi: "कम",
+    pt: "Baixa",
+    de: "Klein",
+    ar: "صغير",
+  },
+  "action:U": {
+    en: "Urgent",
+    ru: "Срочно",
+    es: "Urgente",
+    zh: "紧急",
+    ja: "緊急",
+    hi: "अत्यावश्यक",
+    pt: "Urgente",
+    de: "Dringend",
+    ar: "عاجل",
+  },
+  "action:S": {
+    en: "Significant",
+    ru: "Существенно",
+    es: "Importante",
+    zh: "重要",
+    ja: "重要",
+    hi: "महत्वपूर्ण",
+    pt: "Relevante",
+    de: "Erheblich",
+    ar: "مهم",
+  },
+  "action:M": {
+    en: "Modest",
+    ru: "Умеренно",
+    es: "Moderada",
+    zh: "有限",
+    ja: "控えめ",
+    hi: "सीमित",
+    pt: "Moderada",
+    de: "Gering",
+    ar: "محدود",
+  },
+  "attitude:++": {
+    en: "Enthusiastic",
+    ru: "Энтузиазм",
+    es: "Entusiasta",
+    zh: "热情",
+    ja: "熱心",
+    hi: "उत्साही",
+    pt: "Entusiasta",
+    de: "Begeistert",
+    ar: "متحمس",
+  },
+  "attitude:+": {
+    en: "Positive",
+    ru: "Позитивное",
+    es: "Positiva",
+    zh: "积极",
+    ja: "前向き",
+    hi: "सकारात्मक",
+    pt: "Positiva",
+    de: "Positiv",
+    ar: "إيجابي",
+  },
+  "attitude:0": {
+    en: "Neutral",
+    ru: "Нейтральное",
+    es: "Neutral",
+    zh: "中立",
+    ja: "中立",
+    hi: "तटस्थ",
+    pt: "Neutra",
+    de: "Neutral",
+    ar: "محايد",
+  },
+  "attitude:-": {
+    en: "Negative",
+    ru: "Негативное",
+    es: "Negativa",
+    zh: "消极",
+    ja: "否定的",
+    hi: "नकारात्मक",
+    pt: "Negativa",
+    de: "Negativ",
+    ar: "سلبي",
+  },
+  "attitude:--": {
+    en: "Hostile",
+    ru: "Враждебное",
+    es: "Hostil",
+    zh: "敌对",
+    ja: "敵対的",
+    hi: "शत्रुतापूर्ण",
+    pt: "Hostil",
+    de: "Feindlich",
+    ar: "عدائي",
+  },
+  person: {
+    en: "Person",
+    ru: "Человек",
+    es: "Persona",
+    zh: "人员",
+    ja: "人物",
+    hi: "व्यक्ति",
+    pt: "Pessoa",
+    de: "Person",
+    ar: "الشخص",
+  },
 };
 
 function legendLocale(model: PowerModel, options: ExtRenderOptions): AppLocale {
@@ -688,28 +957,72 @@ interface LegendRow {
   width: number;
 }
 
-interface LegendBox {
+interface LegendColumn {
   title: string;
+  rows: { code: string; name: string; color: string }[];
+}
+
+interface LegendBox {
   width: number;
   height: number;
+  columns: LegendColumn[];
+  linksTitle: string;
   rows: LegendRow[];
 }
 
-/** В легенде только стили, объявленные строкой `link`, без шкал и линий подчинения. */
+function legendText(key: string, locale: AppLocale): string {
+  return LEGEND_PHRASES[key]?.[locale] ?? key;
+}
+
+function scoreRows(
+  items: readonly ScoreSwatch[],
+  axis: string,
+  locale: AppLocale,
+): LegendColumn["rows"] {
+  return items.map((item) => ({
+    code: item.code,
+    name: legendText(`${axis}:${item.code}`, locale),
+    color: item.color,
+  }));
+}
+
+/** Шкалы как раньше. Типы линий — только объявленные `link`, без подчинения. */
 function measureLegend(model: PowerModel, locale: AppLocale): LegendBox | null {
-  if (!model.legend || model.links.length === 0) return null;
+  if (!model.legend) return null;
+  const columns: LegendColumn[] = [
+    { title: legendText("roles", locale), rows: scoreRows(ROLES, "role", locale) },
+    { title: legendText("influence", locale), rows: scoreRows(INFLUENCE, "influence", locale) },
+    { title: legendText("action", locale), rows: scoreRows(ACTIONS, "action", locale) },
+    { title: legendText("attitude", locale), rows: scoreRows(ATTITUDES, "attitude", locale) },
+    {
+      title: legendText("counterpart", locale),
+      rows: [{ code: "", name: legendText("otherCompany", locale), color: COUNTERPART_COLOR }],
+    },
+  ];
+  let columnsWidth = LEGEND_PAD;
+  let rowCount = 1;
+  for (const column of columns) {
+    columnsWidth += legendColumnWidth(column) + LEGEND_GAP;
+    rowCount = Math.max(rowCount, column.rows.length);
+  }
   const rows = model.links.map((link) => ({
     label: translateLinkLabel(link.label, locale),
     color: link.color,
     style: link.style,
     width: link.width,
   }));
-  const title = LEGEND_PHRASES.links[locale];
-  const body = Math.max(28, ...rows.map((row) => 28 + measureText(row.label, LEGEND_FONT)));
+  const linksTitle = legendText("links", locale);
+  const linkW = rows.reduce(
+    (max, link) => Math.max(max, 28 + measureText(link.label, LEGEND_FONT)),
+    measureText(linksTitle, LEGEND_TITLE),
+  );
+  const scalesH = LEGEND_PAD + 16 + rowCount * LEGEND_ROW + 4;
+  const linksH = rows.length > 0 ? 16 + rows.length * LEGEND_ROW : 0;
   return {
-    title,
-    width: LEGEND_PAD * 2 + Math.max(measureText(title, LEGEND_TITLE), body),
-    height: LEGEND_PAD + 16 + rows.length * LEGEND_ROW + 4,
+    width: Math.max(columnsWidth, linkW + LEGEND_PAD * 2),
+    height: scalesH + linksH + LEGEND_PAD,
+    columns,
+    linksTitle,
     rows,
   };
 }
@@ -948,7 +1261,6 @@ const COMMS_FONT = 11;
 const COMMS_LINE = 16;
 const COMMS_PAD_X = 8;
 const COMMS_PAD_Y = 6;
-const COMMS_HEADERS = ["Person", "Contacts", "Links"] as const;
 
 interface CommsRow {
   name: string;
@@ -1002,13 +1314,19 @@ function linkLines(model: PowerModel, personId: string): string[] {
 interface CommsTable {
   width: number;
   height: number;
+  headers: readonly [string, string, string];
   columns: number[];
   rows: CommsRow[];
   headerHeight: number;
   rowHeights: number[];
 }
 
-function measureComms(model: PowerModel): CommsTable {
+function measureComms(model: PowerModel, locale: AppLocale): CommsTable {
+  const headers = [
+    legendText("person", locale),
+    legendText("otherCompany", locale),
+    legendText("links", locale),
+  ] as const;
   const rows = model.people
     .map((person) => ({
       name: person.name,
@@ -1017,7 +1335,7 @@ function measureComms(model: PowerModel): CommsTable {
     }))
     .sort((a, b) => compareAlpha(a.name, b.name));
   const cells = (row: CommsRow): string[][] => [[row.name], row.contacts, row.links];
-  const columns = COMMS_HEADERS.map((header, index) => {
+  const columns = headers.map((header, index) => {
     const widest = rows.reduce((max, row) => {
       const lines = cells(row)[index];
       return Math.max(max, ...lines.map((line) => measureText(line, COMMS_FONT)), 0);
@@ -1032,6 +1350,7 @@ function measureComms(model: PowerModel): CommsTable {
   return {
     width: columns.reduce((sum, width) => sum + width, 0),
     height: headerHeight + rowHeights.reduce((sum, height) => sum + height, 0),
+    headers,
     columns,
     rows,
     headerHeight,
@@ -1052,9 +1371,10 @@ function drawComms(
     stroke: CHIP_STROKE,
     "stroke-width": 1,
     rx: 4,
+    "data-comms": "powermap",
   });
   let cursor = x;
-  COMMS_HEADERS.forEach((header, index) => {
+  table.headers.forEach((header, index) => {
     svg.text(cursor + COMMS_PAD_X, y + COMMS_PAD_Y + 12, header, {
       "font-size": COMMS_FONT,
       "font-weight": 700,
@@ -1110,7 +1430,7 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
   );
   const locale = legendLocale(model, options);
   const legend = measureLegend(model, locale);
-  const comms = model.comms ? measureComms(model) : null;
+  const comms = model.comms ? measureComms(model, locale) : null;
   const titleLines = model.title ? (hasLabelBreak(model.title) ? splitLabelLines(model.title) : [model.title]) : [];
   const companyLines = model.company ? [model.company] : [];
   const titleBlock =
@@ -1226,14 +1546,45 @@ function drawLegend(
     rx: 4,
     "data-legend": "powermap",
   });
-  svg.text(x + LEGEND_PAD, y + 16, legend.title, {
+  let cursor = x + LEGEND_PAD;
+  for (const column of legend.columns) {
+    svg.text(cursor, y + 16, column.title, {
+      "font-size": LEGEND_TITLE,
+      "font-weight": 700,
+      fill: fg,
+      "text-anchor": "start",
+    });
+    column.rows.forEach((row, index) => {
+      const rowY = y + 22 + index * LEGEND_ROW;
+      const fill = chipFill(row.color, mono, invert, index);
+      svg.rect(cursor, rowY, SWATCH, 12, { fill, stroke: CHIP_STROKE, rx: 2 });
+      if (row.code) {
+        svg.text(cursor + SWATCH / 2, rowY + 10, row.code, {
+          "font-size": 8,
+          "font-weight": 700,
+          fill: contrastTextColor(fill) ?? fg,
+        });
+      }
+      if (row.name) {
+        svg.text(cursor + SWATCH + 4, rowY + 10, row.name, {
+          "font-size": LEGEND_FONT,
+          fill: fg,
+          "text-anchor": "start",
+        });
+      }
+    });
+    cursor += legendColumnWidth(column) + LEGEND_GAP;
+  }
+  if (legend.rows.length === 0) return;
+  const linksTop = y + legend.height - LEGEND_PAD - legend.rows.length * LEGEND_ROW - 14;
+  svg.text(x + LEGEND_PAD, linksTop + 12, legend.linksTitle, {
     "font-size": LEGEND_TITLE,
     "font-weight": 700,
     fill: fg,
     "text-anchor": "start",
   });
   legend.rows.forEach((link, index) => {
-    const rowY = y + 22 + index * LEGEND_ROW + 8;
+    const rowY = linksTop + 18 + index * LEGEND_ROW;
     const color = mono ? monoGray(index, Math.max(legend.rows.length, 2), invert) : link.color;
     const dash = STROKE_DASH[link.style];
     svg.line(x + LEGEND_PAD, rowY, x + LEGEND_PAD + 22, rowY, {
