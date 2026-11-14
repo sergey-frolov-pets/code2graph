@@ -236,10 +236,9 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     if (diagramFormat.value !== "mermaid" || detectType(source) !== "dashboard") return null;
     const parsed = parseDashboard(source);
     if (!parsed.ok || !parsed.value) return null;
-    const id = dashboardDiagramId?.value;
-    if (!id) return null;
-    const cached = readDashboardSvgCache(id);
-    const mustRead = force || forceDashboardRead || !dashboardCacheFresh(cached, parsed.value.refreshMs);
+    const id = dashboardDiagramId?.value ?? null;
+    const cached = id ? readDashboardSvgCache(id) : null;
+    const mustRead = force || forceDashboardRead || !id || !dashboardCacheFresh(cached, parsed.value.refreshMs);
     forceDashboardRead = false;
     if (!mustRead && cached) {
       if (parsed.value.refreshMs) armDashboardTimer(parsed.value.refreshMs, cached.at);
@@ -261,7 +260,7 @@ export function useDiagramRender(options: UseDiagramRenderOptions) {
     const composed = await composeDashboardSvg(source, buildFormatContext(mode), refreshed.sources);
     if (!composed) return null;
     const at = Date.now();
-    writeDashboardSvgCache(id, composed, at);
+    if (id) writeDashboardSvgCache(id, composed, at);
     if (parsed.value.refreshMs) armDashboardTimer(parsed.value.refreshMs, at);
     return composed;
   }
