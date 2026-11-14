@@ -17,6 +17,7 @@ const {
   editorFontFamilyId,
   editorSyntaxHighlight,
   editorAutocomplete,
+  editorSurfaceMode,
   svg,
   isValidating,
   syntaxResult,
@@ -117,6 +118,7 @@ function onWizardApply(payload: {
     v-model:editor-font-family-id="editorFontFamilyId"
     v-model:editor-syntax-highlight="editorSyntaxHighlight"
     v-model:editor-autocomplete="editorAutocomplete"
+    v-model:editor-surface-mode="editorSurfaceMode"
     @close="isSettingsModalOpen = false"
     @open-about="openAboutFromSettings"
   />

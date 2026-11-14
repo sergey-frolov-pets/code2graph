@@ -8,6 +8,8 @@ export const settingsMessages = {
   "settings.fontFamily": "Fonte",
   "settings.syntaxHighlight": "Realce de sintaxe",
   "settings.autocomplete": "Sugestões de digitação",
+  "settings.editorSurface": "Vista ao abrir",
+  "settings.editorSurfaceHint": "Na próxima vez, o editor abre na vista que estava ativa ao fechar.",
   "settings.dictation": "Ditado",
   "settings.dictationLanguage": "Idioma do ditado",
   "settings.theme": "Tema da interface",

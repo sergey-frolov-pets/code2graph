@@ -11,6 +11,7 @@ import { useLocale } from "@/composables/useLocale";
 import type {
   EditorFontFamilyId,
   EditorFontSize,
+  EditorSurfaceMode,
 } from "@/constants/editor-settings";
 
 const props = defineProps<{
@@ -19,6 +20,7 @@ const props = defineProps<{
   editorFontFamilyId: EditorFontFamilyId;
   editorSyntaxHighlight: boolean;
   editorAutocomplete: boolean;
+  editorSurfaceMode: EditorSurfaceMode;
 }>();
 
 const emit = defineEmits<{
@@ -27,6 +29,7 @@ const emit = defineEmits<{
   "update:editorFontFamilyId": [value: EditorFontFamilyId];
   "update:editorSyntaxHighlight": [value: boolean];
   "update:editorAutocomplete": [value: boolean];
+  "update:editorSurfaceMode": [value: EditorSurfaceMode];
   openAbout: [];
 }>();
 
@@ -73,10 +76,12 @@ const { activeTab, tabs, showLlmKeyBanner } = useSettingsTabs({
       :editor-font-family-id="editorFontFamilyId"
       :editor-syntax-highlight="editorSyntaxHighlight"
       :editor-autocomplete="editorAutocomplete"
+      :editor-surface-mode="editorSurfaceMode"
       @update:editor-font-size="emit('update:editorFontSize', $event)"
       @update:editor-font-family-id="emit('update:editorFontFamilyId', $event)"
       @update:editor-syntax-highlight="emit('update:editorSyntaxHighlight', $event)"
       @update:editor-autocomplete="emit('update:editorAutocomplete', $event)"
+      @update:editor-surface-mode="emit('update:editorSurfaceMode', $event)"
       @open-about="emit('openAbout')"
     />
 

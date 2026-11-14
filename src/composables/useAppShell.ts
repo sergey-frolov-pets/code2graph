@@ -70,6 +70,7 @@ export interface AppShellContext {
   editorFontFamilyId: Ref<import("@/constants/editor-settings").EditorFontFamilyId>;
   editorSyntaxHighlight: Ref<boolean>;
   editorAutocomplete: Ref<boolean>;
+  editorSurfaceMode: Ref<import("@/constants/editor-settings").EditorSurfaceMode>;
   previewBackground: Ref<string>;
   /** Цвет текста диаграммы; пусто — подбирается под фон. */
   diagramTextColor: Ref<string>;
@@ -203,6 +204,7 @@ export function useAppShell(): AppShellContext {
     editorFontFamilyId,
     editorSyntaxHighlight,
     editorAutocomplete,
+    editorSurfaceMode,
     previewBackground,
     diagramTextColor,
     diagramFontFamily,
@@ -687,6 +689,7 @@ export function useAppShell(): AppShellContext {
     editorFontFamilyId,
     editorSyntaxHighlight,
     editorAutocomplete,
+    editorSurfaceMode,
     previewBackground,
     diagramTextColor,
     diagramFontFamily,

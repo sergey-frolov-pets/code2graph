@@ -8,6 +8,8 @@ export const settingsMessages = {
   "settings.fontFamily": "字体",
   "settings.syntaxHighlight": "语法高亮",
   "settings.autocomplete": "输入建议",
+  "settings.editorSurface": "打开时的视图",
+  "settings.editorSurfaceHint": "下次打开时显示关闭前正在使用的视图。",
   "settings.dictation": "听写",
   "settings.dictationLanguage": "听写语言",
   "settings.theme": "界面主题",

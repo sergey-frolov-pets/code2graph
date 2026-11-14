@@ -8,6 +8,8 @@ export const settingsMessages = {
   "settings.fontFamily": "الخط",
   "settings.syntaxHighlight": "تمييز الصياغة",
   "settings.autocomplete": "اقتراحات الإدخال",
+  "settings.editorSurface": "العرض عند الفتح",
+  "settings.editorSurfaceHint": "في المرة التالية يُفتح العرض الذي كان نشطًا عند الإغلاق.",
   "settings.dictation": "الإملاء",
   "settings.dictationLanguage": "لغة الإملاء",
   "settings.theme": "سمة الواجهة",

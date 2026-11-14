@@ -28,7 +28,9 @@ import { useHasActiveLlm } from "@/composables/useHasActiveLlm";
 import { useFeatureGate } from "@/composables/useFeatureGate";
 import {
   SESSION_CHANGE_TRACKING_ENABLED,
+  resolveVisibleEditorSurface,
   type EditorFontSize,
+  type EditorSurfaceMode,
 } from "@/constants/editor-settings";
 import {
   DIAGRAM_FILE_ACCEPT,
@@ -134,13 +136,7 @@ const regionsModalRef = ref<InstanceType<typeof EditorFoldRegionsModal> | null>(
 const codeSurfaceRef = ref<InstanceType<typeof EditorCodeSurface> | null>(null);
 const isFullscreen = ref(false);
 const snippetsOpen = ref(false);
-export type EditorSurfaceMode = "code" | "builder" | "ai-chat";
-
-const surfaceMode = ref<EditorSurfaceMode>("code");
-
-watch(surfaceMode, (mode) => {
-  emit("surfaceMode", mode);
-});
+export type { EditorSurfaceMode };
 
 const builderAvailable = computed(
   () =>
@@ -162,17 +158,30 @@ const aiChatAvailable = computed(
     allowAiChat.value,
 );
 
-watch(builderAvailable, (available) => {
-  if (!available && surfaceMode.value === "builder") {
-    surfaceMode.value = "code";
-  }
+const preferredSurfaceMode = defineModel<EditorSurfaceMode>("preferredSurfaceMode", {
+  default: "code",
+});
+const surfaceMode = ref<EditorSurfaceMode>("code");
+
+watch(surfaceMode, (mode) => {
+  emit("surfaceMode", mode);
 });
 
-watch(aiChatAvailable, (available) => {
-  if (!available && surfaceMode.value === "ai-chat") {
-    surfaceMode.value = "code";
+function syncSurfaceFromPreference(): void {
+  const next = resolveVisibleEditorSurface(preferredSurfaceMode.value, {
+    builder: builderAvailable.value,
+    aiChat: aiChatAvailable.value,
+  });
+  if (next === "builder" && surfaceMode.value !== "builder") {
+    snippetsOpen.value = false;
   }
-});
+  if (surfaceMode.value !== next) {
+    surfaceMode.value = next;
+  }
+}
+
+watch(preferredSurfaceMode, syncSurfaceFromPreference, { immediate: true });
+watch([builderAvailable, aiChatAvailable], syncSurfaceFromPreference);
 
 function setSurfaceMode(mode: EditorSurfaceMode): void {
   if (mode === "builder" && !builderAvailable.value) {
@@ -181,10 +190,8 @@ function setSurfaceMode(mode: EditorSurfaceMode): void {
   if (mode === "ai-chat" && !aiChatAvailable.value) {
     return;
   }
-  if (mode === "builder") {
-    snippetsOpen.value = false;
-  }
-  surfaceMode.value = mode;
+  preferredSurfaceMode.value = mode;
+  syncSurfaceFromPreference();
 }
 
 

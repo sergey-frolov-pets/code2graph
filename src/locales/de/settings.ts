@@ -8,6 +8,8 @@ export const settingsMessages = {
   "settings.fontFamily": "Schrift",
   "settings.syntaxHighlight": "Syntaxhervorhebung",
   "settings.autocomplete": "Eingabevorschläge",
+  "settings.editorSurface": "Ansicht beim Öffnen",
+  "settings.editorSurfaceHint": "Beim nächsten Öffnen wird die Ansicht gezeigt, die beim Schließen aktiv war.",
   "settings.dictation": "Diktat",
   "settings.dictationLanguage": "Diktatsprache",
   "settings.theme": "Oberflächendesign",

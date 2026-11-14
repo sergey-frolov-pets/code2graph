@@ -4,6 +4,7 @@ export const STORAGE_KEY_EDITOR_SYNTAX_HIGHLIGHT =
   "code2graph-editor-syntax-highlight";
 export const STORAGE_KEY_EDITOR_AUTOCOMPLETE =
   "code2graph-editor-autocomplete";
+export const STORAGE_KEY_EDITOR_SURFACE = "code2graph-editor-surface";
 export const STORAGE_KEY_PREVIEW_BG = "code2graph-preview-bg";
 export const STORAGE_KEY_DIAGRAM_TEXT_COLOR = "code2graph-diagram-text-color";
 export const STORAGE_KEY_DIAGRAM_FONT_FAMILY = "code2graph-diagram-font-family";
@@ -102,6 +103,22 @@ export const EDITOR_TAB_SIZE = 2;
 export const EDITOR_VIRTUAL_LINE_THRESHOLD = 200;
 export const DEFAULT_EDITOR_AUTOCOMPLETE = true;
 
+/** Вид редактора при открытии: код, по шагам или ИИ-чат. */
+export const EDITOR_SURFACE_MODES = ["code", "builder", "ai-chat"] as const;
+
+export type EditorSurfaceMode = (typeof EDITOR_SURFACE_MODES)[number];
+
+export const DEFAULT_EDITOR_SURFACE: EditorSurfaceMode = "code";
+
+export const EDITOR_SURFACE_OPTIONS: readonly {
+  id: EditorSurfaceMode;
+  labelKey: "editor.title" | "editor.surface.builder" | "editor.surface.aiChat";
+}[] = [
+  { id: "code", labelKey: "editor.title" },
+  { id: "builder", labelKey: "editor.surface.builder" },
+  { id: "ai-chat", labelKey: "editor.surface.aiChat" },
+];
+
 /**
  * Сравнение открытого файла со снимком сессии выключено.
  * Правка шла через проекцию diff: Enter и обычный ввод могли вставить
@@ -122,4 +139,25 @@ export function isEditorFontSize(value: string): value is EditorFontSize {
 
 export function isEditorFontFamilyId(value: string): value is EditorFontFamilyId {
   return EDITOR_FONT_FAMILY_OPTIONS.some((option) => option.id === value);
+}
+
+export function isEditorSurfaceMode(value: string): value is EditorSurfaceMode {
+  return (EDITOR_SURFACE_MODES as readonly string[]).includes(value);
+}
+
+/**
+ * Вид, который можно показать сейчас. Если сохранённый режим недоступен
+ * (нет пошагового редактора или ИИ), остаёмся на коде и не затираем выбор.
+ */
+export function resolveVisibleEditorSurface(
+  preferred: EditorSurfaceMode,
+  availability: { builder: boolean; aiChat: boolean },
+): EditorSurfaceMode {
+  if (preferred === "builder" && !availability.builder) {
+    return "code";
+  }
+  if (preferred === "ai-chat" && !availability.aiChat) {
+    return "code";
+  }
+  return preferred;
 }
