@@ -253,6 +253,8 @@ export interface DiagramBuilderState {
   preservedBlocks?: PreservedSourceBlocks;
   /** skinparam и <style> PlantUML, чтобы «По шагам» не стирал цвета. */
   plantUmlSkin?: string[];
+  /** Исходник infographic, gauge и dashboard, который построитель не переписывает таблицей. */
+  extRawSource?: string;
   /** Цвет пакета или дорожки по подписи. */
   groupColors?: Record<string, string>;
 }

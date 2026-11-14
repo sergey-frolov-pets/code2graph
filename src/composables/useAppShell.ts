@@ -272,6 +272,7 @@ export function useAppShell(): AppShellContext {
     locale,
     t,
     onPersist: persistSettings,
+    dashboardDiagramId: linkedLibraryDiagramId,
   });
 
   const {

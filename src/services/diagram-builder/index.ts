@@ -72,6 +72,9 @@ const MERMAID_EXT_TYPES = new Set<string>([
   "voronoi",
   "series",
   "histogram",
+  "infographic",
+  "gauge",
+  "dashboard",
 ]);
 
 export function parseSourceToBuilderState(

@@ -101,6 +101,7 @@ const emit = defineEmits<{
   "editor-fullscreen": [active: boolean];
   refreshData: [];
   showPreview: [];
+  openDashboard: [];
   surfaceMode: [mode: EditorSurfaceMode];
 }>();
 
@@ -592,6 +593,7 @@ onUnmounted(() => {
         v-if="surfaceMode === 'builder'"
         v-model:source="source"
         :format="diagramFormat"
+        @open-dashboard="emit('openDashboard')"
       />
 
       <AiChatPanel

@@ -47,6 +47,9 @@ export function useInlineDiagramBuilder(options: UseInlineDiagramBuilderOptions)
       builderState.value.format,
       builderState.value.diagramType,
     );
+    if (builderState.value.diagramType === "dashboard") {
+      return ["builder-data"];
+    }
     if (hasBuilderOptionsCapabilities(schema.capabilities)) {
       return [...INLINE_BUILDER_BASE_STEPS, "builder-options"];
     }

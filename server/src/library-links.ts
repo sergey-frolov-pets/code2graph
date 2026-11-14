@@ -326,6 +326,14 @@ export function saveLibraryLinkSnapshot(
   return mapLibraryLink(updated);
 }
 
+export interface PublicZoneDiagram {
+  id: string;
+  title: string;
+  language: string;
+  fileName: string;
+  source: string;
+}
+
 export interface PublicEditorLink {
   delivery: "editor";
   dataAccess: LibraryLinkDataAccess;
@@ -336,11 +344,66 @@ export interface PublicEditorLink {
     fileName: string;
     source: string;
   };
+  zones?: PublicZoneDiagram[];
 }
 
 export interface PublicViewLink {
   delivery: "view";
   svg: string;
+  diagram?: PublicEditorLink["diagram"];
+  zones?: PublicZoneDiagram[];
+}
+
+function isDashboardSource(source: string): boolean {
+  for (const raw of source.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith("%%")) continue;
+    return /^dashboard\b/i.test(line);
+  }
+  return false;
+}
+
+function dashboardZoneIds(source: string): string[] {
+  const ids: string[] = [];
+  for (const raw of source.split(/\r?\n/)) {
+    const match = /^zone\s+\S+\s+\S+\s+\S+\s+\S+\s+diagram\s+(.+)$/i.exec(raw.trim());
+    if (!match) continue;
+    const quoted = /^"([^"]*)"/.exec(match[1].trim());
+    const id = quoted ? quoted[1] : match[1].trim();
+    if (id && !ids.includes(id)) ids.push(id);
+  }
+  return ids;
+}
+
+function readDashboardZones(
+  database: Database.Database,
+  source: string,
+  seen: Set<string>,
+): PublicZoneDiagram[] {
+  const zones: PublicZoneDiagram[] = [];
+  for (const id of dashboardZoneIds(source)) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const row = database
+      .prepare(
+        "SELECT id, title, language, file_name, source FROM diagrams WHERE id = ?",
+      )
+      .get(id) as
+      | { id: string; title: string; language: string; file_name: string; source: string }
+      | undefined;
+    if (!row) continue;
+    zones.push({
+      id: row.id,
+      title: row.title,
+      language: row.language,
+      fileName: row.file_name,
+      source: row.source,
+    });
+    if (isDashboardSource(row.source)) {
+      zones.push(...readDashboardZones(database, row.source, seen));
+    }
+  }
+  return zones;
 }
 
 export function readPublicLibraryLink(
@@ -357,6 +420,10 @@ export function readPublicLibraryLink(
     throw new LibraryLinkRequestError(404, "Ссылка не найдена");
   }
 
+  const zones = isDashboardSource(row.source)
+    ? readDashboardZones(database, row.source, new Set([row.diagram_id]))
+    : undefined;
+
   if (row.delivery === "editor") {
     return {
       delivery: "editor",
@@ -368,6 +435,7 @@ export function readPublicLibraryLink(
         fileName: row.file_name,
         source: row.source,
       },
+      ...(zones ? { zones } : {}),
     };
   }
 
@@ -383,7 +451,22 @@ export function readPublicLibraryLink(
     throw new LibraryLinkRequestError(409, "Снимок ещё не сохранён");
   }
 
-  return { delivery: "view", svg };
+  return {
+    delivery: "view",
+    svg,
+    ...(zones
+      ? {
+          diagram: {
+            id: row.diagram_id,
+            title: row.title,
+            language: row.language,
+            fileName: row.file_name,
+            source: row.source,
+          },
+          zones,
+        }
+      : {}),
+  };
 }
 
 export function findLibraryLinkByNames(

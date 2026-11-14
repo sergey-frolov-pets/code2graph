@@ -1140,6 +1140,36 @@
     ]
   },
   {
+    "id": "mermaid/ext/infographic",
+    "path": "mermaid/ext/infographic.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "infographic",
+    "kind": "card",
+    "keywords": ["infographic", "kpi", "инфографика"],
+    "sourceHints": ["(?m)^infographic\\b", "(?m)^kpi\\b"]
+  },
+  {
+    "id": "mermaid/ext/gauge",
+    "path": "mermaid/ext/gauge.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "gauge",
+    "kind": "card",
+    "keywords": ["gauge", "гауч"],
+    "sourceHints": ["(?m)^gauge\\b"]
+  },
+  {
+    "id": "mermaid/ext/dashboard",
+    "path": "mermaid/ext/dashboard.md",
+    "parent": "mermaid/index",
+    "language": "mermaid",
+    "diagramType": "dashboard",
+    "kind": "card",
+    "keywords": ["dashboard", "дашборд"],
+    "sourceHints": ["(?m)^dashboard\\b"]
+  },
+  {
     "id": "mermaid/ext/waterfall-scale",
     "path": "mermaid/ext/waterfall-scale.md",
     "parent": "mermaid/ext/waterfall",

@@ -20,8 +20,11 @@ import { useDualScreenHost, type DualScreenState } from "@/composables/useDualSc
 import { useMediaQuery } from "@/composables/useMediaQuery";
 import { useResizableSplit } from "@/composables/useResizableSplit";
 import { provideAppShell, useAppShell } from "@/composables/useAppShell";
+import { useAppRouter } from "@/composables/useAppRouter";
+import DashboardEmbedView from "@/components/dashboard/DashboardEmbedView.vue";
 
 const shell = useAppShell();
+const { route } = useAppRouter();
 provideAppShell(shell);
 const { alert } = useAppDialog();
 
@@ -184,7 +187,8 @@ onUnmounted(() => {
 
 <template>
   <a class="skip-link" href="#app-main">{{ t("app.mobilePanelEditor") }}</a>
-  <div class="app-shell">
+  <DashboardEmbedView v-if="route.name === 'dashboardEmbed'" />
+  <div v-else class="app-shell">
     <AppHeader
       @open-wizard="modals.openWizardModal"
       @open-library="modals.openLibraryModal"
@@ -270,6 +274,7 @@ onUnmounted(() => {
         @undo="shell.applySourceUndo"
         @redo="shell.applySourceRedo"
         @refresh-data="shell.dataLink.refresh()"
+        @open-dashboard="modals.openLibraryDashboard()"
         @convert="modals.openConvertModal"
         @ai-apply-source="shell.applyAiPlantUml($event.source, $event.label, $event.format)"
         @open-settings="modals.openSettingsModal"

@@ -41,6 +41,9 @@ Reply with diagram source for the editor only. Do not return an image or an exte
 - [radar](./ext/radar.md) — Several series compared on the same axes.
 - [voronoi](./ext/voronoi.md) — Regions around sites on a plane.
 - [histogram](./ext/histogram.md) — Counts or density by bin, with a fitted or given distribution curve.
+- [infographic](./ext/infographic.md) — A number or text with font, color, size, side labels, and a conditional prefix or postfix.
+- [gauge](./ext/gauge.md) — A needle from a minimum to a maximum.
+- [dashboard](./ext/dashboard.md) — Library diagrams placed in zones of one canvas.
 - [series](./ext/series.md) — Grouped bars, stacked columns, or a stacked area for categories.
 - [series-scale](./ext/series-scale.md) — A missing band on the axis (`break`), or a second axis (`y2`) for another unit.
 - [series-analytics](./ext/series-analytics.md) — A constant level line, or a CAGR arrow between bars.

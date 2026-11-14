@@ -568,6 +568,24 @@ series : 120, 145, 165, 190
 series : 80, 95, 110, 130 color=#8250df
 line : 110, 130, 155, 180 color=#0969da style=dash width=2
 line : 70, 100, 120, 150 style=dot`,
+  infographic: `infographic
+value 1280
+prefix "₽ "
+postfix " за месяц"
+fontsize 64
+color #0f766e
+size 480x240
+label top "Выручка" fontsize 18`,
+  gauge: `gauge
+title Загрузка
+min 0
+max 100
+value 72`,
+  dashboard: `dashboard
+size 1280x720
+refresh 5m
+zone 0 0 0.5 1 diagram "revenue"
+zone 0.5 0 0.5 1 diagram "load"`,
 };
 
 export const MERMAID_EXT_SAMPLES_EN: Record<MermaidExtSampleId, string> = {
@@ -1136,4 +1154,22 @@ series : 120, 145, 165, 190
 series : 80, 95, 110, 130 color=#8250df
 line : 110, 130, 155, 180 color=#0969da style=dash width=2
 line : 70, 100, 120, 150 style=dot`,
+  infographic: `infographic
+value 1280
+prefix "₽ "
+postfix " за месяц"
+fontsize 64
+color #0f766e
+size 480x240
+label top "Выручка" fontsize 18`,
+  gauge: `gauge
+title Загрузка
+min 0
+max 100
+value 72`,
+  dashboard: `dashboard
+size 1280x720
+refresh 5m
+zone 0 0 0.5 1 diagram "revenue"
+zone 0.5 0 0.5 1 diagram "load"`,
 };

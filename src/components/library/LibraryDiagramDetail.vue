@@ -7,6 +7,7 @@ import LibraryDataLinkFields from "@/components/library/LibraryDataLinkFields.vu
 import LibraryServerLinks from "@/components/library/LibraryServerLinks.vue";
 import LibraryStarRating from "@/components/library/LibraryStarRating.vue";
 import { useLocale } from "@/composables/useLocale";
+import { detectType } from "@/services/mermaid/ext/registry";
 import { useLibraryDiagramPreview } from "@/composables/useLibraryDiagramPreview";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
@@ -64,9 +65,11 @@ const emit = defineEmits<{
   "toggle-favorite": [];
   "rating-updated": [diagram: DiagramDto];
   "open-versions": [];
+  "edit-dashboard": [];
 }>();
 
 const { t } = useLocale();
+const isDashboard = computed(() => detectType(props.diagram.source) === "dashboard");
 const moreOpen = ref(false);
 const preview = useLibraryDiagramPreview();
 const previewError = preview.error;
@@ -144,35 +147,64 @@ function contentLocaleLabel(locale: string): string {
       <div class="library-step__content library-step__content--form">
         <label class="settings-field">
           <span class="settings-field__label">{{ t("library.diagramTitle") }}</span>
-          <input v-model="editTitle" class="select" type="text" />
+          <input
+            v-model="editTitle"
+            class="select"
+            type="text"
+          >
         </label>
         <label class="settings-field">
           <span class="settings-field__label">{{ t("library.description") }}</span>
-          <textarea v-model="editDescription" class="textarea" rows="4" />
+          <textarea
+            v-model="editDescription"
+            class="textarea"
+            rows="4"
+          />
         </label>
         <label class="settings-field">
           <span class="settings-field__label">{{ t("library.tags") }}</span>
-          <input v-model="editTags" class="select" type="text" />
+          <input
+            v-model="editTags"
+            class="select"
+            type="text"
+          >
         </label>
         <label class="settings-field">
           <span class="settings-field__label">{{ t("library.diagramFormat") }}</span>
-          <select v-model="editLanguage" class="select">
-            <option v-for="lang in DIAGRAM_LANGUAGES" :key="lang" :value="lang">
+          <select
+            v-model="editLanguage"
+            class="select"
+          >
+            <option
+              v-for="lang in DIAGRAM_LANGUAGES"
+              :key="lang"
+              :value="lang"
+            >
               {{ getDiagramFormatLabel(lang) }}
             </option>
           </select>
         </label>
         <label class="settings-field">
           <span class="settings-field__label">{{ t("library.contentLocaleLabel") }}</span>
-          <select v-model="editContentLocale" class="select">
-            <option v-for="locale in CONTENT_LOCALES" :key="locale || 'any'" :value="locale">
+          <select
+            v-model="editContentLocale"
+            class="select"
+          >
+            <option
+              v-for="locale in CONTENT_LOCALES"
+              :key="locale || 'any'"
+              :value="locale"
+            >
               {{ contentLocaleLabel(locale) }}
             </option>
           </select>
         </label>
         <label class="settings-field">
           <span class="settings-field__label">{{ t("library.diagramSection") }}</span>
-          <select v-model="editSectionId" class="select">
+          <select
+            v-model="editSectionId"
+            class="select"
+          >
             <option value="">{{ t("library.noSection") }}</option>
             <option
               v-for="section in sectionChoices"
@@ -183,10 +215,20 @@ function contentLocaleLabel(locale: string): string {
             </option>
           </select>
         </label>
-        <label v-if="!isLocalLibrary" class="settings-field">
+        <label
+          v-if="!isLocalLibrary"
+          class="settings-field"
+        >
           <span class="settings-field__label">{{ t("library.visibility") }}</span>
-          <select v-model="editVisibility" class="select">
-            <option v-for="option in VISIBILITY_OPTIONS" :key="option" :value="option">
+          <select
+            v-model="editVisibility"
+            class="select"
+          >
+            <option
+              v-for="option in VISIBILITY_OPTIONS"
+              :key="option"
+              :value="option"
+            >
               {{ t(`library.visibility.${option}`) }}
             </option>
           </select>
@@ -229,7 +271,10 @@ function contentLocaleLabel(locale: string): string {
           >
             <ActionIcon name="folder-open" />
           </IconButton>
-          <IconButton :label="t('library.preview')" @click="emit('preview')">
+          <IconButton
+            :label="t('library.preview')"
+            @click="emit('preview')"
+          >
             <ActionIcon name="eye" />
           </IconButton>
           <IconButton
@@ -254,7 +299,18 @@ function contentLocaleLabel(locale: string): string {
           </button>
         </div>
       </div>
-      <div v-if="moreOpen" class="library-detail__more">
+      <div
+        v-if="moreOpen"
+        class="library-detail__more"
+      >
+        <button
+          v-if="isDashboard"
+          class="btn"
+          type="button"
+          @click="emit('edit-dashboard')"
+        >
+          {{ t("library.dashboard.edit") }}
+        </button>
         <button
           v-if="allowsWrite"
           class="btn"
@@ -263,10 +319,20 @@ function contentLocaleLabel(locale: string): string {
         >
           {{ t("library.edit") }}
         </button>
-        <button v-if="!isLocalLibrary" class="btn" type="button" @click="emit('share')">
+        <button
+          v-if="!isLocalLibrary"
+          class="btn"
+          type="button"
+          @click="emit('share')"
+        >
           {{ t("library.shareLink") }}
         </button>
-        <button v-if="!isLocalLibrary" class="btn" type="button" @click="emit('open-versions')">
+        <button
+          v-if="!isLocalLibrary"
+          class="btn"
+          type="button"
+          @click="emit('open-versions')"
+        >
           {{ t("library.versions") }}
         </button>
         <button
@@ -281,7 +347,9 @@ function contentLocaleLabel(locale: string): string {
 
       <div class="library-detail__primary">
         <section class="library-detail__summary">
-          <h3 class="library-detail__title">{{ diagram.title }}</h3>
+          <h3 class="library-detail__title">
+            {{ diagram.title }}
+          </h3>
           <p
             class="library-detail__description"
             :class="{ 'library-detail__description--empty': !diagram.description }"
@@ -290,11 +358,20 @@ function contentLocaleLabel(locale: string): string {
           </p>
         </section>
 
-        <section class="library-detail__preview" :aria-label="t('library.preview')">
-          <p v-if="previewError" class="library-detail__preview-status">
+        <section
+          class="library-detail__preview"
+          :aria-label="t('library.preview')"
+        >
+          <p
+            v-if="previewError"
+            class="library-detail__preview-status"
+          >
             {{ previewError }}
           </p>
-          <p v-else-if="previewRendering" class="library-detail__preview-status">
+          <p
+            v-else-if="previewRendering"
+            class="library-detail__preview-status"
+          >
             {{ t("library.previewLoading") }}
           </p>
           <div
@@ -302,7 +379,10 @@ function contentLocaleLabel(locale: string): string {
             class="library-detail__preview-frame"
             v-html="previewMarkup"
           />
-          <p v-else class="library-detail__preview-status">
+          <p
+            v-else
+            class="library-detail__preview-status"
+          >
             {{ t("library.previewEmpty") }}
           </p>
         </section>
@@ -319,56 +399,68 @@ function contentLocaleLabel(locale: string): string {
 
       <div class="library-step__content library-step__content--padded">
         <section class="library-detail__summary">
-            <div class="library-detail__badges">
-              <span class="library-badge library-badge--format">
-                {{ getDiagramFormatLabel(diagram.language) }}
-              </span>
-              <span
-                v-if="diagram.contentLocale"
-                class="library-badge library-badge--locale"
-              >
-                {{ diagram.contentLocale.toUpperCase() }}
-              </span>
-            </div>
-            <p class="library-detail__meta">
-              {{ t("library.updatedAt", { date: formatDate(diagram.updatedAt) }) }}
-              <template v-if="diagram.authorName">
-                · {{ t("library.author", { name: diagram.authorName }) }}
-              </template>
-              <template v-if="!isLocalLibrary">
-                · {{ t(`library.visibility.${diagram.visibility ?? "all"}`) }}
-              </template>
-              <template v-if="diagram.contentLocale">
-                · {{ contentLocaleLabel(diagram.contentLocale) }}
-              </template>
-              <template v-if="!isLocalLibrary && diagram.voteCount">
-                · {{ t("library.ratingVotesShort", { votes: diagram.voteCount }) }}
-              </template>
-            </p>
-            <p class="library-detail__file">
-              {{ t("library.diagramSection") }}:
-              {{ currentSectionTitle || t("library.noSection") }}
-            </p>
-            <p class="library-detail__file">{{ diagram.fileName }}</p>
-            <p v-if="!isLocalLibrary && diagram.avgRating" class="library-detail__rating">
-              <LibraryStarRating
-                :value="Math.round(diagram.avgRating)"
-                readonly
-                size="sm"
-              />
-              <span>{{ diagram.avgRating.toFixed(1) }}</span>
-            </p>
-            <div v-if="diagram.tags.length" class="library-detail__tags">
-              <span v-for="tag in diagram.tags" :key="tag" class="library-tag">
-                {{ tag }}
-              </span>
-            </div>
-            <p
-              v-if="diagram.canDownload === false"
-              class="library-detail__restricted"
+          <div class="library-detail__badges">
+            <span class="library-badge library-badge--format">
+              {{ getDiagramFormatLabel(diagram.language) }}
+            </span>
+            <span
+              v-if="diagram.contentLocale"
+              class="library-badge library-badge--locale"
             >
-              {{ t("library.downloadRestricted") }}
-            </p>
+              {{ diagram.contentLocale.toUpperCase() }}
+            </span>
+          </div>
+          <p class="library-detail__meta">
+            {{ t("library.updatedAt", { date: formatDate(diagram.updatedAt) }) }}
+            <template v-if="diagram.authorName">
+              · {{ t("library.author", { name: diagram.authorName }) }}
+            </template>
+            <template v-if="!isLocalLibrary">
+              · {{ t(`library.visibility.${diagram.visibility ?? "all"}`) }}
+            </template>
+            <template v-if="diagram.contentLocale">
+              · {{ contentLocaleLabel(diagram.contentLocale) }}
+            </template>
+            <template v-if="!isLocalLibrary && diagram.voteCount">
+              · {{ t("library.ratingVotesShort", { votes: diagram.voteCount }) }}
+            </template>
+          </p>
+          <p class="library-detail__file">
+            {{ t("library.diagramSection") }}:
+            {{ currentSectionTitle || t("library.noSection") }}
+          </p>
+          <p class="library-detail__file">
+            {{ diagram.fileName }}
+          </p>
+          <p
+            v-if="!isLocalLibrary && diagram.avgRating"
+            class="library-detail__rating"
+          >
+            <LibraryStarRating
+              :value="Math.round(diagram.avgRating)"
+              readonly
+              size="sm"
+            />
+            <span>{{ diagram.avgRating.toFixed(1) }}</span>
+          </p>
+          <div
+            v-if="diagram.tags.length"
+            class="library-detail__tags"
+          >
+            <span
+              v-for="tag in diagram.tags"
+              :key="tag"
+              class="library-tag"
+            >
+              {{ tag }}
+            </span>
+          </div>
+          <p
+            v-if="diagram.canDownload === false"
+            class="library-detail__restricted"
+          >
+            {{ t("library.downloadRestricted") }}
+          </p>
         </section>
         <LibraryDiagramRatingPanel
           v-if="!isLocalLibrary"

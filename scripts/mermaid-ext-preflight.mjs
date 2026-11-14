@@ -200,6 +200,9 @@ const MINIMAL_SOURCES = {
   voronoi: "voronoi\ndata\nA : x=25, y=50\nB : x=75, y=50",
   series: "series\nrotate 90\ncategories Q1, Q2\nseries A : 10, 20\nseries B : 15, 25",
   histogram: "histogram\nbins 4\nseries A : 10, 12, 14, 18, 22\nfit normal",
+  infographic: "infographic\nvalue 12\nfontsize 32\ncolor #111827\nsize 200x80",
+  gauge: "gauge\nmin 0\nmax 100\nvalue 40",
+  dashboard: 'dashboard\nsize 640x360\nzone 0 0 1 1 diagram "a"',
 };
 
 async function checkWiring() {
@@ -214,7 +217,7 @@ async function checkWiring() {
 
   const { tryRenderExtension, detectType, listTypes } = ext;
 
-  record("wiring", "реестр отдаёт 12 типов", listTypes().length === 12, listTypes().join(", "));
+  record("wiring", "реестр отдаёт 15 типов", listTypes().length === 15, listTypes().join(", "));
 
   for (const [type, source] of Object.entries(MINIMAL_SOURCES)) {
     const detected = detectType(source);
