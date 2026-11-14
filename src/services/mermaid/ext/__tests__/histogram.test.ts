@@ -158,6 +158,69 @@ curve normal mu=4 sigma=1 "эталонная кривая распределе�
     expect(rows.size).toBeGreaterThan(1);
   });
 
+  it("шкала плотности следует за pdf, а не за диапазоном 0…1", () => {
+    const parsed = histogramEngine.parse(`histogram
+title Плотность
+x "мс" 0 --> 80
+y "плотность"
+bins 8
+scale density
+labels none
+fit normal
+series Наблюдения : 12, 18, 22, 25, 30, 28, 35, 40, 16, 21, 27, 33, 19, 24, 38, 14`);
+    expect(parsed.ok, parsed.errors.map((error) => error.message).join("; ")).toBe(true);
+    const svg = histogramEngine.render(parsed.value as HistogramModel, {});
+    const ticks = [...svg.matchAll(/<text\b[^>]*text-anchor="end"[^>]*>([^<]*)<\/text>/g)].map(
+      (match) => Number(match[1]),
+    );
+    const top = Math.max(...ticks.filter((value) => Number.isFinite(value)));
+    expect(top).toBeGreaterThan(0.02);
+    expect(top).toBeLessThan(0.2);
+    const axis = [...svg.matchAll(/<line x1="([^"]+)" y1="([^"]+)" x2="\1" y2="([^"]+)"([^/]*)\/>/g)]
+      .map((match) => ({
+        span: Math.abs(Number(match[3]) - Number(match[2])),
+        dashed: match[4].includes("stroke-dasharray"),
+      }))
+      .find((line) => !line.dashed && line.span > 40);
+    const bars = [...svg.matchAll(/<rect\b[^>]*height="([^"]+)"[^>]*opacity="0\.78"/g)].map((match) =>
+      Number(match[1]),
+    );
+    expect(axis).toBeTruthy();
+    expect(Math.max(...bars) / (axis?.span ?? 1)).toBeGreaterThan(0.45);
+  });
+
+  it("подписи above при повороте стоят за торцом столбца", () => {
+    const parsed = histogramEngine.parse(`histogram
+rotate 90
+labels above
+bins 3
+stats mean
+series A : 12, 18, 22, 25, 30, 28, 35, 40, 16, 21, 27, 33, 19, 24, 38, 14`);
+    expect(parsed.ok, parsed.errors.map((error) => error.message).join("; ")).toBe(true);
+    const svg = histogramEngine.render(parsed.value as HistogramModel, {});
+    const bars = [
+      ...svg.matchAll(
+        /<rect x="([^"]+)" y="[^"]+" width="([^"]+)" height="[^"]+"[^>]*opacity="0\.78"\/><text x="([^"]+)"[^>]*text-anchor="([^"]+)"[^>]*>/g,
+      ),
+    ];
+    expect(bars.length).toBeGreaterThan(0);
+    for (const match of bars) {
+      const tip = Number(match[1]) + Number(match[2]);
+      expect(match[4]).toBe("start");
+      expect(Number(match[3])).toBeGreaterThan(tip + 1);
+    }
+    const viewBox = /viewBox="0 0 ([\d.]+) /.exec(svg);
+    const labelRight = Math.max(
+      ...bars.map((match) => {
+        const text = new RegExp(
+          `<text x="${match[3]}"[^>]*>([^<]*)</text>`,
+        ).exec(svg);
+        return Number(match[3]) + (text?.[1].length ?? 1) * 6;
+      }),
+    );
+    expect(labelRight).toBeLessThan(Number(viewBox?.[1] ?? 0));
+  });
+
   it("не смешивает явные интервалы с числом бинов", () => {
     const parsed = histogramEngine.parse(`histogram
 bins 20

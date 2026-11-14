@@ -48,6 +48,8 @@ const BAR_OPACITY = 0.78;
 const CI_OPACITY = 0.16;
 const CURVE_WIDTH = 2;
 const STATS_GAP = 20;
+/** Зазор между торцом горизонтального столбца и подписью above. */
+const ABOVE_LABEL_GAP = 6;
 const LEGEND_ROW = 18;
 const LEGEND_ITEM_GAP = 14;
 const LINE_DASH: Record<WaterfallLineStyle, string | undefined> = {
@@ -161,6 +163,26 @@ export function renderHistogram(model: HistogramModel, options: ExtRenderOptions
           ...prepared.map((item) => measureLabelWidth(widestStat(model, item), fontSize - 1)),
         ) + 16
       : 0;
+  const labelFont = Math.max(FONT_MIN, fontSize - 1);
+  // При повороте подпись above стоит справа от торца и не должна залезать
+  // в блок статистики или за край холста.
+  let valueLabelRoom = 0;
+  if (model.rotate90 && model.labels === "above") {
+    let widest = 0;
+    for (const item of prepared) {
+      item.counts.forEach((count, index) => {
+        const heightValue = barHeight(
+          count,
+          model.scale,
+          item.cleaned.values.length,
+          binWidths[index],
+        );
+        if (!(heightValue > 0)) return;
+        widest = Math.max(widest, measureLabelWidth(fmt(heightValue), labelFont));
+      });
+    }
+    if (widest > 0) valueLabelRoom = widest + ABOVE_LABEL_GAP + 4;
+  }
 
   let plotAcross = across;
   let plotAlong = along;
@@ -171,7 +193,8 @@ export function renderHistogram(model: HistogramModel, options: ExtRenderOptions
   const legendExtra = legendRowCount > 0 ? legendRowCount * (LEGEND_ROW + 4) + 8 : 0;
   const lineLabelRoom = lineLabelWidth > 0 ? lineLabelWidth + 10 : 0;
   const padTop = PAD.top + titleExtra + legendExtra;
-  const padRight = PAD.right + lineLabelRoom + statsWidth + (statsWidth > 0 ? STATS_GAP : 0);
+  const padRight =
+    PAD.right + lineLabelRoom + valueLabelRoom + statsWidth + (statsWidth > 0 ? STATS_GAP : 0);
   if (model.ratio) {
     const grown = growPlotToAspect(
       {
@@ -219,14 +242,18 @@ export function renderHistogram(model: HistogramModel, options: ExtRenderOptions
   }
   const rawMax = Math.max(...heights.filter((value) => Number.isFinite(value)), 0);
   const valueMin = model.y?.min ?? 0;
-  let auto = niceRange(valueMin, Math.max(rawMax, valueMin + 1), 5);
+  // Шкала числа: даже пустая выборка занимает ось 0…1.
+  // Плотность часто много меньше единицы, и тот же запас прижимает столбцы и pdf к нулю.
+  const domainTop = model.scale === "density" ? rawMax : Math.max(rawMax, valueMin + 1);
+  let auto = niceRange(valueMin, Math.max(domainTop, valueMin), 5);
   // Круглая верхняя граница совпадает с данными — столбик и линия уровня
   // прилипают к рамке и накрывают подпись. Добавляем один шаг шкалы.
   if (model.y?.max === undefined && auto.max <= rawMax + 1e-9) {
     const step = (auto.max - auto.min) / 5 || 1;
     auto = niceRange(valueMin, rawMax + step, 5);
   }
-  const valueMax = model.y?.max ?? Math.max(auto.max, valueMin + 1);
+  const valueMax =
+    model.y?.max ?? (model.scale === "density" ? auto.max : Math.max(auto.max, valueMin + 1));
   const span = valueMax - valueMin || 1;
 
   const binCoord = (offset: number) => (model.rotate90 ? plotTop + offset : plotLeft + offset);
@@ -382,12 +409,22 @@ export function renderHistogram(model: HistogramModel, options: ExtRenderOptions
         const anchor = inside
           ? pointOf(origin + thickness / 2, Math.max(valueMin, 0) + heightValue / 2)
           : pointOf(origin + thickness / 2, Math.max(valueMin, 0) + heightValue);
-        const yShift = inside ? fontSize * 0.35 : model.rotate90 ? fontSize * 0.35 : -4;
-        svg.text(anchor.x, anchor.y + yShift, text, {
-          "font-size": Math.max(FONT_MIN, fontSize - 1),
-          fill,
-          "text-anchor": "middle",
-        });
+        // Горизонтальный столбец растёт вправо: above — сразу за торцом,
+        // иначе середина подписи лежит на самом столбце.
+        if (model.rotate90 && !inside) {
+          svg.text(anchor.x + ABOVE_LABEL_GAP, anchor.y + labelFont * 0.35, text, {
+            "font-size": labelFont,
+            fill,
+            "text-anchor": "start",
+          });
+        } else {
+          const yShift = inside ? fontSize * 0.35 : -4;
+          svg.text(anchor.x, anchor.y + yShift, text, {
+            "font-size": labelFont,
+            fill,
+            "text-anchor": "middle",
+          });
+        }
       }
     });
   });
@@ -474,10 +511,12 @@ export function renderHistogram(model: HistogramModel, options: ExtRenderOptions
 
   if (model.stats !== "off" && statsWidth > 0) {
     let y = plotTop + fontSize;
-    const x = plotLeft + plotAcross + lineLabelRoom + STATS_GAP;
+    const x = model.rotate90
+      ? plotLeft + plotAlong + valueLabelRoom + STATS_GAP
+      : plotLeft + plotAcross + lineLabelRoom + STATS_GAP;
     for (const item of prepared) {
       for (const row of statRows(model, item)) {
-        svg.text(model.rotate90 ? plotLeft + plotAlong + STATS_GAP : x, y, row, {
+        svg.text(x, y, row, {
           "text-anchor": "start",
           "font-size": fontSize - 1,
           fill: item.color,
