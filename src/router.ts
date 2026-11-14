@@ -131,6 +131,25 @@ export function parseLibraryLinkPathname(
 
 const LOCAL_DATA_LINK_PATH = /\/local\/([a-z0-9]+(?:-[a-z0-9]+)*)$/i;
 
+export function parseEmbedPathname(pathname: string): ParsedAppRoute | null {
+  const parts = (pathname.replace(/\/+$/, "") || "/")
+    .split("/")
+    .filter((part) => part.length > 0);
+  if (parts[0]?.toLowerCase() !== "embed") return null;
+  if (parts[1]?.toLowerCase() === "local" && parts[2]) {
+    const id = decodePathSegment(parts[2]);
+    return id ? routeResult("dashboardEmbed", null, id) : null;
+  }
+  if (parts[1]?.toLowerCase() === "server" && parts[2] && parts[3]) {
+    const username = decodePathSegment(parts[2]);
+    const slug = decodePathSegment(parts[3]);
+    return username && slug
+      ? routeResult("dashboardEmbed", null, null, username, slug)
+      : null;
+  }
+  return null;
+}
+
 export function parseDiagramPathname(pathname: string): ParsedAppRoute | null {
   const normalized = pathname.replace(/\/+$/, "");
   const match = normalized.match(LOCAL_DATA_LINK_PATH);
@@ -155,6 +174,7 @@ function parsePagesQueryPath(search: string): ParsedAppRoute | null {
   const path = search.slice(1).split("&")[0] ?? "";
   const normalized = path.startsWith("/") ? path : `/${path}`;
   return (
+    parseEmbedPathname(normalized) ??
     parseDiagramPathname(normalized) ??
     parseClipboardDiagramPathname(normalized) ??
     parseLibraryLinkPathname(normalized)
@@ -175,6 +195,7 @@ export function parseAppRoute(locationLike: {
   }
 
   return (
+    parseEmbedPathname(locationLike.pathname) ??
     parseDiagramPathname(locationLike.pathname) ??
     parseClipboardDiagramPathname(locationLike.pathname) ??
     parseLibraryLinkPathname(locationLike.pathname) ??

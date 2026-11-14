@@ -435,4 +435,9 @@ export const libraryMessages = {
   "library.dashboard.htmlSaved": "確認用ページを保存しました",
   "library.dashboard.copyHtml": "HTMLをコピー",
   "library.dashboard.sourceToggle": "ソース",
+  "library.dashboard.heading": "キャンバスの見出し",
+  "library.dashboard.header": "ヘッダー",
+  "library.dashboard.footer": "フッター",
+  "library.dashboard.move": "移動",
+  "library.dashboard.resize": "サイズ",
 } as const satisfies LocaleMessages;

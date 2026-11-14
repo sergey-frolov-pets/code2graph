@@ -435,4 +435,9 @@ export const libraryMessages = {
   "library.dashboard.htmlSaved": "Страница для проверки сохранена",
   "library.dashboard.copyHtml": "Копировать HTML",
   "library.dashboard.sourceToggle": "Исходник",
+  "library.dashboard.heading": "Заголовок холста",
+  "library.dashboard.header": "Шапка",
+  "library.dashboard.footer": "Подвал",
+  "library.dashboard.move": "Двигать",
+  "library.dashboard.resize": "Размер",
 } as const satisfies LocaleMessages;

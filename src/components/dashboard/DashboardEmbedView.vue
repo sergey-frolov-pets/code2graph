@@ -157,7 +157,17 @@ onUnmounted(clearTimer);
 
 <style scoped>
 .dashboard-embed {
-  padding: 12px;
+  box-sizing: border-box;
+  min-height: 100dvh;
+  margin: 0;
+  padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+}
+.dashboard-embed :deep(svg) {
+  width: 100%;
+  height: auto;
+  max-height: calc(100dvh - 56px);
 }
 .dashboard-embed__bar {
   display: flex;

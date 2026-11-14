@@ -14,7 +14,35 @@ export interface DashboardModel {
   height: number;
   /** Период в миллисекундах. `null` — только открытие и запрос. */
   refreshMs: number | null;
+  title: string;
+  header: string;
+  footer: string;
   zones: DashboardZone[];
+}
+
+const TITLE_BAND = 40;
+const HEADER_BAND = 32;
+const FOOTER_BAND = 28;
+
+export interface DashboardContentFrame {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
+/** Область зон под заголовком и шапкой и над подвалом. */
+export function dashboardContentFrame(model: Pick<DashboardModel, "width" | "height" | "title" | "header" | "footer">): DashboardContentFrame {
+  const titleBand = model.title.trim() ? TITLE_BAND : 0;
+  const headerBand = model.header.trim() ? HEADER_BAND : 0;
+  const footerBand = model.footer.trim() ? FOOTER_BAND : 0;
+  const top = titleBand + headerBand;
+  return {
+    top,
+    left: 0,
+    width: model.width,
+    height: Math.max(48, model.height - top - footerBand),
+  };
 }
 
 function error(line: number, message: string): ExtParseError {
@@ -51,6 +79,9 @@ export function parseDashboard(source: string): ExtParseResult<DashboardModel> {
     width: 1280,
     height: 720,
     refreshMs: null,
+    title: "",
+    header: "",
+    footer: "",
     zones: [],
   };
   let seenType = false;
@@ -80,9 +111,15 @@ export function parseDashboard(source: string): ExtParseResult<DashboardModel> {
       else model.refreshMs = interval;
       continue;
     }
+    const caption = /^(title|header|footer)\b\s*(.*)$/i.exec(raw);
+    if (caption) {
+      const key = caption[1].toLowerCase() as "title" | "header" | "footer";
+      model[key] = unquote(caption[2] ?? "");
+      continue;
+    }
     const zone = /^zone\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+diagram\s+(.+)$/i.exec(raw);
     if (!zone) {
-      errors.push(error(lineNo, "ожидается size, refresh или zone x y w h diagram \"id\""));
+      errors.push(error(lineNo, "ожидается size, refresh, title, header, footer или zone"));
       continue;
     }
     const x = Number(zone[1]);
@@ -112,6 +149,9 @@ export function parseDashboard(source: string): ExtParseResult<DashboardModel> {
 export function emitDashboard(model: DashboardModel): string {
   const lines = ["dashboard", `size ${model.width}x${model.height}`];
   if (model.refreshMs !== null) lines.push(`refresh ${formatRefreshInterval(model.refreshMs)}`);
+  if (model.title.trim()) lines.push(`title "${model.title.replace(/"/g, '\\"')}"`);
+  if (model.header.trim()) lines.push(`header "${model.header.replace(/"/g, '\\"')}"`);
+  if (model.footer.trim()) lines.push(`footer "${model.footer.replace(/"/g, '\\"')}"`);
   for (const zone of model.zones) {
     const id = /[\s"]/.test(zone.diagramId) ? `"${zone.diagramId.replace(/"/g, '\\"')}"` : `"${zone.diagramId}"`;
     lines.push(
@@ -137,11 +177,34 @@ export function renderDashboard(model: DashboardModel, options: ExtRenderOptions
     palette,
     title: "dashboard",
   });
+  const frame = dashboardContentFrame(model);
+  if (model.title.trim()) {
+    svg.text(model.width / 2, 26, model.title, {
+      fill: palette.fg,
+      "font-size": 22,
+      "text-anchor": "middle",
+      "data-role": "title",
+    });
+  }
+  if (model.header.trim()) {
+    svg.text(12, (model.title.trim() ? TITLE_BAND : 0) + 22, model.header, {
+      fill: palette.fg,
+      "font-size": 14,
+      "data-role": "header",
+    });
+  }
+  if (model.footer.trim()) {
+    svg.text(12, model.height - 10, model.footer, {
+      fill: palette.fgDim,
+      "font-size": 12,
+      "data-role": "footer",
+    });
+  }
   model.zones.forEach((zone, index) => {
-    const x = zone.x * model.width;
-    const y = zone.y * model.height;
-    const w = zone.w * model.width;
-    const h = zone.h * model.height;
+    const x = frame.left + zone.x * frame.width;
+    const y = frame.top + zone.y * frame.height;
+    const w = zone.w * frame.width;
+    const h = zone.h * frame.height;
     const child = options.zoneSvgs?.[zone.diagramId];
     svg.rect(x, y, w, h, {
       fill: "none",
