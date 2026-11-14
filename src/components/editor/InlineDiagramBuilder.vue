@@ -111,6 +111,7 @@ function onBuilderPasteError(error: TablePasteErrorInfo): void {
   flex: 1;
   min-height: 0;
   gap: 10px;
+  overflow: hidden;
 }
 
 .inline-builder__header {

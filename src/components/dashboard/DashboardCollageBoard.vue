@@ -52,9 +52,12 @@ const fit = computed(() => {
   return Math.max(0.05, Math.min(scaleX, scaleY));
 });
 
+const boardScale = computed(() => fit.value * zoom.value);
+
 const boardStyle = computed(() => ({
-  width: `${Math.max(1, Math.round(props.model.width * fit.value * zoom.value))}px`,
-  height: `${Math.max(1, Math.round(props.model.height * fit.value * zoom.value))}px`,
+  width: `${Math.max(1, Math.round(props.model.width * boardScale.value))}px`,
+  height: `${Math.max(1, Math.round(props.model.height * boardScale.value))}px`,
+  "--board-scale": String(boardScale.value),
 }));
 
 const frame = computed(() => dashboardContentFrame(props.model));
@@ -222,7 +225,7 @@ onUnmounted(() => {
           <div
             v-if="model.title.text.trim()"
             class="dashboard-band is-x-center is-y-middle"
-            :style="{ ...titleStyle, color: model.title.color || undefined, background: model.title.background || undefined, fontFamily: model.title.font, fontSize: `${model.title.fontSize}px` }"
+            :style="{ ...titleStyle, color: model.title.color || undefined, background: model.title.background || undefined, fontFamily: model.title.font, '--caption-size': `${model.title.fontSize}px` }"
           >
             {{ model.title.text }}
           </div>
@@ -230,7 +233,7 @@ onUnmounted(() => {
             v-if="model.header.text.trim()"
             class="dashboard-band"
             :class="[alignClass('x', model.header.alignX), alignClass('y', model.header.alignY === 'baseline' ? 'top' : model.header.alignY)]"
-            :style="{ ...headerStyle, color: model.header.color || undefined, background: model.header.background || undefined, fontFamily: model.header.font, fontSize: `${model.header.fontSize}px` }"
+            :style="{ ...headerStyle, color: model.header.color || undefined, background: model.header.background || undefined, fontFamily: model.header.font, '--caption-size': `${model.header.fontSize}px` }"
           >
             {{ model.header.text }}
           </div>
@@ -274,7 +277,7 @@ onUnmounted(() => {
             v-if="model.footer.text.trim()"
             class="dashboard-band"
             :class="[alignClass('x', model.footer.alignX), alignClass('y', model.footer.alignY === 'baseline' ? 'top' : model.footer.alignY)]"
-            :style="{ ...footerStyle, color: model.footer.color || undefined, background: model.footer.background || undefined, fontFamily: model.footer.font, fontSize: `${model.footer.fontSize}px` }"
+            :style="{ ...footerStyle, color: model.footer.color || undefined, background: model.footer.background || undefined, fontFamily: model.footer.font, '--caption-size': `${model.footer.fontSize}px` }"
           >
             {{ model.footer.text }}
           </div>
@@ -311,7 +314,7 @@ onUnmounted(() => {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  flex: 1;
+  flex: 1 1 220px;
   gap: 8px;
 }
 .dashboard-board-bar {
@@ -323,7 +326,7 @@ onUnmounted(() => {
 }
 .dashboard-stage {
   position: relative;
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
   display: grid;
@@ -362,10 +365,12 @@ onUnmounted(() => {
 }
 .dashboard-band {
   display: flex;
-  padding: 0 12px;
+  padding: 0 calc(12px * var(--board-scale, 1));
   overflow: hidden;
   pointer-events: none;
   z-index: 1;
+  font-size: calc(var(--caption-size, 16px) * var(--board-scale, 1));
+  line-height: 1.1;
 }
 .dashboard-band.is-x-start { justify-content: flex-start; }
 .dashboard-band.is-x-center { justify-content: center; }
@@ -387,7 +392,7 @@ onUnmounted(() => {
 .dashboard-cell span {
   display: block;
   overflow: hidden;
-  font-size: 12px;
+  font-size: calc(14px * var(--board-scale, 1));
   line-height: 1.2;
 }
 .dashboard-line {
@@ -418,8 +423,4 @@ onUnmounted(() => {
 .dashboard-line.is-selected::after { background: #b45309; width: 3px; }
 .dashboard-line.is-horizontal.is-selected::after { height: 3px; width: auto; }
 .dashboard-line.is-idle { cursor: default; pointer-events: none; }
-@media (max-width: 800px) {
-  .dashboard-stage-wrap { order: -1; }
-  .dashboard-stage { height: 58dvh; flex: none; }
-}
 </style>
