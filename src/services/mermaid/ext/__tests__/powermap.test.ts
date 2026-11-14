@@ -319,6 +319,62 @@ B -ally-> A label="личный союз"`);
     expect(captionedSvg).toContain('data-edge-label="1"');
   });
 
+  it("типы связей в легенде идут в строку и переносятся", () => {
+    const svg = powermapEngine.render(modelOf(`powermap
+lang ru
+link ally color=#1a7f37 style=solid label=союзник
+link coach color=#bf8700 style=dot label=наставник
+link enemy color=#cf222e style=dash label=противник
+A [Анна]
+B [Борис]
+A -> B`), {});
+    const yOf = (label: string) =>
+      Number(new RegExp(`<text\\b[^>]* y="([^"]+)"[^>]*>${label}</text>`).exec(svg)?.[1]);
+    expect(yOf("союзник")).toBeGreaterThan(0);
+    expect(yOf("союзник")).toBe(yOf("наставник"));
+    expect(yOf("наставник")).toBe(yOf("противник"));
+
+    const wrapped = powermapEngine.render(modelOf(`powermap
+link a color=#111111 style=solid label=оченьдлиннаяподписьсвязиодин
+link b color=#222222 style=dash label=оченьдлиннаяподписьсвязидва
+link c color=#333333 style=dot label=оченьдлиннаяподписьсвязитри
+link d color=#444444 style=dashdot label=оченьдлиннаяподписьсвязичетыре
+link e color=#555555 style=solid label=оченьдлиннаяподписьсвязипять
+link f color=#666666 style=dash label=оченьдлиннаяподписьсвязишесть
+A [Анна]
+B [Борис]
+A -> B`), {});
+    const ys = ["один", "два", "три", "четыре", "пять", "шесть"].map((suffix) =>
+      Number(new RegExp(`y="([^"]+)"[^>]*>оченьдлиннаяподписьсвязи${suffix}</text>`).exec(wrapped)?.[1]),
+    );
+    expect(ys.every((y) => y > 0)).toBe(true);
+    expect(new Set(ys).size).toBeGreaterThan(1);
+  });
+
+  it("заголовок таблицы светлый, с полями, а колонка связей шире текста", () => {
+    const caption = "↔ Илья Сомов: ally — союзник — бюджет";
+    const svg = powermapEngine.render(modelOf(`powermap
+company Север
+lang ru
+comms on
+legend off
+link ally color=#1a7f37 style=solid label=союзник
+Анна [Анна Орлова]
+Илья [Илья Сомов]
+Анна <-ally-> Илья label=бюджет`), {});
+    expect(svg).toContain('data-comms-header="powermap"');
+    expect(svg).toContain('fill="#f6f8fa"');
+    expect(svg).toContain('font-weight="700"');
+    const table = /<rect\b([^>]*data-comms="powermap"[^>]*)\/>/.exec(svg)?.[1] ?? "";
+    const attr = (name: string) => Number(new RegExp(`(?:^|\\s)${name}="([^"]+)"`).exec(table)?.[1]);
+    const tableX = attr("x");
+    const tableWidth = attr("width");
+    const headerX = Number(/<text\b[^>]* x="([^"]+)"[^>]*>Компания Север<\/text>/.exec(svg)?.[1]);
+    expect(headerX - tableX).toBeGreaterThanOrEqual(16);
+    const linkX = Number(new RegExp(`<text\\b[^>]* x="([^"]+)"[^>]*>${caption}</text>`).exec(svg)?.[1]);
+    expect(tableX + tableWidth).toBeGreaterThan(linkX + caption.length * 5);
+  });
+
   it("переводит легенду на язык диаграммы, иначе на язык интерфейса", () => {
     const source = `powermap
 link supporter color=#1a7f37 style=solid
@@ -342,6 +398,59 @@ B -supporter-> A`;
     const bad = powermapEngine.parse("powermap\nlang xx\nA [A]\nB [B]\nA -> B");
     expect(bad.ok).toBe(false);
     expect(bad.errors[0].message).toMatch(/язык легенды/);
+  });
+
+  it("стрелка через уровень обходит карточки, а встречные линии не слипаются", () => {
+    const svg = powermapEngine.render(modelOf(`powermap
+link supporter color=#1a7f37 style=solid label=союзник
+link enemy color=#cf222e style=dash label=противник
+link coach color=#bf8700 style=dot label=наставник
+ceo [Анна Орлова|Президент]
+cfo [Илья Сомов|Финансы]
+ops [Мария Ким|Операции]
+legal [Елена Волкова|Юрист]
+ceo -> cfo
+ceo -> ops
+cfo -> legal
+cfo -supporter-> ops label=бюджет
+ops -enemy-> cfo
+ceo -coach-> legal`), {});
+    const num = (attrs: string, name: string) => Number(new RegExp(`(?:^|\\s)${name}="([^"]+)"`).exec(attrs)?.[1]);
+    const cards = [...svg.matchAll(/<rect\b([^>]*)\/?>/g)]
+      .map((match) => match[1])
+      .filter((attrs) => !attrs.includes("data-legend") && !attrs.includes("data-comms"))
+      .map((attrs) => ({
+        x: num(attrs, "x"),
+        y: num(attrs, "y"),
+        width: num(attrs, "width"),
+        height: num(attrs, "height"),
+      }))
+      .filter((rect) => rect.width > 80 && rect.height > 40);
+    const paths = [...svg.matchAll(/<path\b([^>]*)\/>/g)]
+      .map((match) => match[1])
+      .filter((attrs) => attrs.includes("ext-pm-link-"))
+      .map((attrs) => {
+        const d = /d="([^"]+)"/.exec(attrs)?.[1] ?? "";
+        const points = [...d.matchAll(/[ML]\s*(-?[\d.]+)\s+(-?[\d.]+)/g)].map((item) => ({
+          x: Number(item[1]),
+          y: Number(item[2]),
+        }));
+        return { attrs, points };
+      });
+    expect(paths).toHaveLength(3);
+    for (const path of paths) {
+      for (let index = 0; index < path.points.length - 1; index += 1) {
+        const a = path.points[index];
+        const b = path.points[index + 1];
+        for (const card of cards) {
+          const hits = segmentCrossesCard(a, b, card);
+          expect(hits).toBe(false);
+        }
+      }
+    }
+    const pair = paths.filter((path) => !path.attrs.includes("1.5 3.5"));
+    expect(pair).toHaveLength(2);
+    expect(parallelGap(pair[0].points, pair[1].points)).toBeGreaterThanOrEqual(10);
   });
 
   it("стрелки влияния не накладываются", () => {
@@ -375,6 +484,52 @@ function rangesOverlap(a0: number, a1: number, b0: number, b1: number): boolean 
   const overlap =
     Math.min(Math.max(a0, a1), Math.max(b0, b1)) - Math.max(Math.min(a0, a1), Math.min(b0, b1));
   return overlap > 0.5;
+}
+
+function segmentCrossesCard(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+  card: { x: number; y: number; width: number; height: number },
+): boolean {
+  const pad = 3;
+  const left = card.x + pad;
+  const right = card.x + card.width - pad;
+  const top = card.y + pad;
+  const bottom = card.y + card.height - pad;
+  if (Math.abs(a.x - b.x) < 0.6) {
+    if (a.x <= left || a.x >= right) return false;
+    const y0 = Math.min(a.y, b.y);
+    const y1 = Math.max(a.y, b.y);
+    return y1 > top && y0 < bottom;
+  }
+  if (Math.abs(a.y - b.y) < 0.6) {
+    if (a.y <= top || a.y >= bottom) return false;
+    const x0 = Math.min(a.x, b.x);
+    const x1 = Math.max(a.x, b.x);
+    return x1 > left && x0 < right;
+  }
+  return false;
+}
+
+function parallelGap(left: { x: number; y: number }[], right: { x: number; y: number }[]): number {
+  let gap = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < left.length - 1; i += 1) {
+    for (let j = 0; j < right.length - 1; j += 1) {
+      const a1 = left[i];
+      const a2 = left[i + 1];
+      const b1 = right[j];
+      const b2 = right[j + 1];
+      const bothVertical = Math.abs(a1.x - a2.x) < 0.01 && Math.abs(b1.x - b2.x) < 0.01;
+      const bothHorizontal = Math.abs(a1.y - a2.y) < 0.01 && Math.abs(b1.y - b2.y) < 0.01;
+      if (bothVertical && rangesOverlap(a1.y, a2.y, b1.y, b2.y)) {
+        gap = Math.min(gap, Math.abs(a1.x - b1.x));
+      }
+      if (bothHorizontal && rangesOverlap(a1.x, a2.x, b1.x, b2.x)) {
+        gap = Math.min(gap, Math.abs(a1.y - b1.y));
+      }
+    }
+  }
+  return gap;
 }
 
 function strokesOverlay(left: { x: number; y: number }[], right: { x: number; y: number }[]): boolean {

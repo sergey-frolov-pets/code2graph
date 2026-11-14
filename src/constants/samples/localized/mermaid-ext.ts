@@ -1,6 +1,7 @@
 import type { AppLocale } from "@/constants/i18n";
 import type { MermaidExtSampleId } from "@/constants/mermaid-sample-diagrams";
 import { HISTOGRAM_GALLERY_SAMPLES } from "@/constants/samples/histogram-gallery-samples";
+import { SAMPLE_PORTRAITS } from "@/constants/samples/sample-portraits";
 
 export const MERMAID_EXT_EXTRA: Record<
   Exclude<AppLocale, "ru" | "en">,
@@ -248,11 +249,11 @@ comms on
 link supporter color=#1a7f37 style=solid label="aliado"
 link coach color=#bf8700 style=dot label="mentor"
 link enemy color=#cf222e style=dash label="oponente"
-ceo [Ana Vidal|Presidenta] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="https://randomuser.me/api/portraits/women/44.jpg"
-cfo [Ilya Sanz|Finanzas] gender=m role=D influence=L action=S attitude=0 counterpart="Pedro Ruiz, Elena Paz; Pedro Ruiz" photo="https://randomuser.me/api/portraits/men/32.jpg"
-ops [María Soler|Operaciones] gender=f role=A influence=M action=U attitude=- counterpart="Elena Paz" photo="https://randomuser.me/api/portraits/women/68.jpg"
-sales [Pablo Mora|Ventas] gender=m role=U influence=M action=S attitude=+ counterpart="Lea Ortega" photo="https://randomuser.me/api/portraits/men/75.jpg"
-legal [Lucía Rey|Jurídico] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="https://randomuser.me/api/portraits/women/21.jpg"
+ceo [Ana Vidal|Presidenta] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="${SAMPLE_PORTRAITS.woman44}"
+cfo [Ilya Sanz|Finanzas] gender=m role=D influence=L action=S attitude=0 counterpart="Pedro Ruiz, Elena Paz; Pedro Ruiz" photo="${SAMPLE_PORTRAITS.man32}"
+ops [María Soler|Operaciones] gender=f role=A influence=M action=U attitude=- counterpart="Elena Paz" photo="${SAMPLE_PORTRAITS.woman68}"
+sales [Pablo Mora|Ventas] gender=m role=U influence=M action=S attitude=+ counterpart="Lea Ortega" photo="${SAMPLE_PORTRAITS.man75}"
+legal [Lucía Rey|Jurídico] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="${SAMPLE_PORTRAITS.woman21}"
 ceo -> cfo
 ceo -> ops
 ceo -> sales
@@ -260,7 +261,8 @@ cfo -.-> ops
 cfo -> legal
 cfo -supporter-> ops label="presupuesto"
 ops -enemy-> cfo
-ceo <-coach-> sales`,
+ceo <-coach-> sales
+ceo -coach-> legal`,
     ev: `ev
 title Valor ganado del presupuesto
 days 1, 2, 3, 4, 5
@@ -806,11 +808,11 @@ comms on
 link supporter color=#1a7f37 style=solid label="支持者"
 link coach color=#bf8700 style=dot label="导师"
 link enemy color=#cf222e style=dash label="对手"
-ceo [陈丽|总裁] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="https://randomuser.me/api/portraits/women/44.jpg"
-cfo [王伟|财务] gender=m role=D influence=L action=S attitude=0 counterpart="赵敏, 孙浩; 赵敏" photo="https://randomuser.me/api/portraits/men/32.jpg"
-ops [刘洋|运营] gender=f role=A influence=M action=U attitude=- counterpart="孙浩" photo="https://randomuser.me/api/portraits/women/68.jpg"
-sales [赵强|销售] gender=m role=U influence=M action=S attitude=+ counterpart="李婷" photo="https://randomuser.me/api/portraits/men/75.jpg"
-legal [周宁|法务] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="https://randomuser.me/api/portraits/women/21.jpg"
+ceo [陈丽|总裁] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="${SAMPLE_PORTRAITS.woman44}"
+cfo [王伟|财务] gender=m role=D influence=L action=S attitude=0 counterpart="赵敏, 孙浩; 赵敏" photo="${SAMPLE_PORTRAITS.man32}"
+ops [刘洋|运营] gender=f role=A influence=M action=U attitude=- counterpart="孙浩" photo="${SAMPLE_PORTRAITS.woman68}"
+sales [赵强|销售] gender=m role=U influence=M action=S attitude=+ counterpart="李婷" photo="${SAMPLE_PORTRAITS.man75}"
+legal [周宁|法务] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="${SAMPLE_PORTRAITS.woman21}"
 ceo -> cfo
 ceo -> ops
 ceo -> sales
@@ -818,7 +820,8 @@ cfo -.-> ops
 cfo -> legal
 cfo -supporter-> ops label="预算"
 ops -enemy-> cfo
-ceo <-coach-> sales`,
+ceo <-coach-> sales
+ceo -coach-> legal`,
     ev: `ev
 title 预算挣值
 days 1, 2, 3, 4, 5
@@ -1364,11 +1367,11 @@ comms on
 link supporter color=#1a7f37 style=solid label="支援者"
 link coach color=#bf8700 style=dot label="指導者"
 link enemy color=#cf222e style=dash label="敵対者"
-ceo [鈴木美咲|社長] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="https://randomuser.me/api/portraits/women/44.jpg"
-cfo [佐藤健|財務] gender=m role=D influence=L action=S attitude=0 counterpart="高橋蓮, 小林葵; 高橋蓮" photo="https://randomuser.me/api/portraits/men/32.jpg"
-ops [伊藤彩|運営] gender=f role=A influence=M action=U attitude=- counterpart="小林葵" photo="https://randomuser.me/api/portraits/women/68.jpg"
-sales [山本蓮|営業] gender=m role=U influence=M action=S attitude=+ counterpart="森下玲" photo="https://randomuser.me/api/portraits/men/75.jpg"
-legal [中村咲|法務] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="https://randomuser.me/api/portraits/women/21.jpg"
+ceo [鈴木美咲|社長] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="${SAMPLE_PORTRAITS.woman44}"
+cfo [佐藤健|財務] gender=m role=D influence=L action=S attitude=0 counterpart="高橋蓮, 小林葵; 高橋蓮" photo="${SAMPLE_PORTRAITS.man32}"
+ops [伊藤彩|運営] gender=f role=A influence=M action=U attitude=- counterpart="小林葵" photo="${SAMPLE_PORTRAITS.woman68}"
+sales [山本蓮|営業] gender=m role=U influence=M action=S attitude=+ counterpart="森下玲" photo="${SAMPLE_PORTRAITS.man75}"
+legal [中村咲|法務] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="${SAMPLE_PORTRAITS.woman21}"
 ceo -> cfo
 ceo -> ops
 ceo -> sales
@@ -1376,7 +1379,8 @@ cfo -.-> ops
 cfo -> legal
 cfo -supporter-> ops label="予算"
 ops -enemy-> cfo
-ceo <-coach-> sales`,
+ceo <-coach-> sales
+ceo -coach-> legal`,
     ev: `ev
 title 予算のアーンドバリュー
 days 1, 2, 3, 4, 5
@@ -1922,11 +1926,11 @@ comms on
 link supporter color=#1a7f37 style=solid label="समर्थक"
 link coach color=#bf8700 style=dot label="मार्गदर्शक"
 link enemy color=#cf222e style=dash label="विरोधी"
-ceo [अनन्या वर्मा|अध्यक्ष] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="https://randomuser.me/api/portraits/women/44.jpg"
-cfo [अर्जुन शर्मा|वित्त] gender=m role=D influence=L action=S attitude=0 counterpart="रिया मेहता, करण सिंह; रिया मेहता" photo="https://randomuser.me/api/portraits/men/32.jpg"
-ops [मेघा जोशी|संचालन] gender=f role=A influence=M action=U attitude=- counterpart="करण सिंह" photo="https://randomuser.me/api/portraits/women/68.jpg"
-sales [देव शर्मा|बिक्री] gender=m role=U influence=M action=S attitude=+ counterpart="नेहा कपूर" photo="https://randomuser.me/api/portraits/men/75.jpg"
-legal [मीरा दास|विधि] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="https://randomuser.me/api/portraits/women/21.jpg"
+ceo [अनन्या वर्मा|अध्यक्ष] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="${SAMPLE_PORTRAITS.woman44}"
+cfo [अर्जुन शर्मा|वित्त] gender=m role=D influence=L action=S attitude=0 counterpart="रिया मेहता, करण सिंह; रिया मेहता" photo="${SAMPLE_PORTRAITS.man32}"
+ops [मेघा जोशी|संचालन] gender=f role=A influence=M action=U attitude=- counterpart="करण सिंह" photo="${SAMPLE_PORTRAITS.woman68}"
+sales [देव शर्मा|बिक्री] gender=m role=U influence=M action=S attitude=+ counterpart="नेहा कपूर" photo="${SAMPLE_PORTRAITS.man75}"
+legal [मीरा दास|विधि] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="${SAMPLE_PORTRAITS.woman21}"
 ceo -> cfo
 ceo -> ops
 ceo -> sales
@@ -1934,7 +1938,8 @@ cfo -.-> ops
 cfo -> legal
 cfo -supporter-> ops label="बजट"
 ops -enemy-> cfo
-ceo <-coach-> sales`,
+ceo <-coach-> sales
+ceo -coach-> legal`,
     ev: `ev
 title बजट का अर्जित मूल्य
 days 1, 2, 3, 4, 5
@@ -2480,11 +2485,11 @@ comms on
 link supporter color=#1a7f37 style=solid label="aliado"
 link coach color=#bf8700 style=dot label="mentor"
 link enemy color=#cf222e style=dash label="oponente"
-ceo [Elena Costa|Presidente] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="https://randomuser.me/api/portraits/women/44.jpg"
-cfo [André Moraes|Finanças] gender=m role=D influence=L action=S attitude=0 counterpart="Pedro Lima, Rita Nunes; Pedro Lima" photo="https://randomuser.me/api/portraits/men/32.jpg"
-ops [Clara Duarte|Operações] gender=f role=A influence=M action=U attitude=- counterpart="Rita Nunes" photo="https://randomuser.me/api/portraits/women/68.jpg"
-sales [Bruno Alves|Vendas] gender=m role=U influence=M action=S attitude=+ counterpart="Inês Rocha" photo="https://randomuser.me/api/portraits/men/75.jpg"
-legal [Carla Mendes|Jurídico] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="https://randomuser.me/api/portraits/women/21.jpg"
+ceo [Elena Costa|Presidente] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="${SAMPLE_PORTRAITS.woman44}"
+cfo [André Moraes|Finanças] gender=m role=D influence=L action=S attitude=0 counterpart="Pedro Lima, Rita Nunes; Pedro Lima" photo="${SAMPLE_PORTRAITS.man32}"
+ops [Clara Duarte|Operações] gender=f role=A influence=M action=U attitude=- counterpart="Rita Nunes" photo="${SAMPLE_PORTRAITS.woman68}"
+sales [Bruno Alves|Vendas] gender=m role=U influence=M action=S attitude=+ counterpart="Inês Rocha" photo="${SAMPLE_PORTRAITS.man75}"
+legal [Carla Mendes|Jurídico] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="${SAMPLE_PORTRAITS.woman21}"
 ceo -> cfo
 ceo -> ops
 ceo -> sales
@@ -2492,7 +2497,8 @@ cfo -.-> ops
 cfo -> legal
 cfo -supporter-> ops label="orçamento"
 ops -enemy-> cfo
-ceo <-coach-> sales`,
+ceo <-coach-> sales
+ceo -coach-> legal`,
     ev: `ev
 title Valor agregado do orçamento
 days 1, 2, 3, 4, 5
@@ -3038,11 +3044,11 @@ comms on
 link supporter color=#1a7f37 style=solid label="Unterstützer"
 link coach color=#bf8700 style=dot label="Mentor"
 link enemy color=#cf222e style=dash label="Gegner"
-ceo [Elena Hofmann|Vorsitz] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="https://randomuser.me/api/portraits/women/44.jpg"
-cfo [Alexander Berger|Finanzen] gender=m role=D influence=L action=S attitude=0 counterpart="Karl Weber, Nora Klein; Karl Weber" photo="https://randomuser.me/api/portraits/men/32.jpg"
-ops [Clara Vogel|Betrieb] gender=f role=A influence=M action=U attitude=- counterpart="Nora Klein" photo="https://randomuser.me/api/portraits/women/68.jpg"
-sales [Martin Krüger|Vertrieb] gender=m role=U influence=M action=S attitude=+ counterpart="Sofia Hart" photo="https://randomuser.me/api/portraits/men/75.jpg"
-legal [Lena Busch|Recht] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="https://randomuser.me/api/portraits/women/21.jpg"
+ceo [Elena Hofmann|Vorsitz] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="${SAMPLE_PORTRAITS.woman44}"
+cfo [Alexander Berger|Finanzen] gender=m role=D influence=L action=S attitude=0 counterpart="Karl Weber, Nora Klein; Karl Weber" photo="${SAMPLE_PORTRAITS.man32}"
+ops [Clara Vogel|Betrieb] gender=f role=A influence=M action=U attitude=- counterpart="Nora Klein" photo="${SAMPLE_PORTRAITS.woman68}"
+sales [Martin Krüger|Vertrieb] gender=m role=U influence=M action=S attitude=+ counterpart="Sofia Hart" photo="${SAMPLE_PORTRAITS.man75}"
+legal [Lena Busch|Recht] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="${SAMPLE_PORTRAITS.woman21}"
 ceo -> cfo
 ceo -> ops
 ceo -> sales
@@ -3050,7 +3056,8 @@ cfo -.-> ops
 cfo -> legal
 cfo -supporter-> ops label="Budget"
 ops -enemy-> cfo
-ceo <-coach-> sales`,
+ceo <-coach-> sales
+ceo -coach-> legal`,
     ev: `ev
 title Fertigstellungswert des Budgets
 days 1, 2, 3, 4, 5
@@ -3596,11 +3603,11 @@ comms on
 link supporter color=#1a7f37 style=solid label="مؤيد"
 link coach color=#bf8700 style=dot label="موجه"
 link enemy color=#cf222e style=dash label="خصم"
-ceo [ليلى حسن|رئيسة] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="https://randomuser.me/api/portraits/women/44.jpg"
-cfo [أحمد منصور|المالية] gender=m role=D influence=L action=S attitude=0 counterpart="سامي نور, هدى كريم; سامي نور" photo="https://randomuser.me/api/portraits/men/32.jpg"
-ops [نورا فهد|التشغيل] gender=f role=A influence=M action=U attitude=- counterpart="هدى كريم" photo="https://randomuser.me/api/portraits/women/68.jpg"
-sales [كريم عادل|المبيعات] gender=m role=U influence=M action=S attitude=+ counterpart="ليلى ناصر" photo="https://randomuser.me/api/portraits/men/75.jpg"
-legal [منى سالم|الشؤون القانونية] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="https://randomuser.me/api/portraits/women/21.jpg"
+ceo [ليلى حسن|رئيسة] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="${SAMPLE_PORTRAITS.woman44}"
+cfo [أحمد منصور|المالية] gender=m role=D influence=L action=S attitude=0 counterpart="سامي نور, هدى كريم; سامي نور" photo="${SAMPLE_PORTRAITS.man32}"
+ops [نورا فهد|التشغيل] gender=f role=A influence=M action=U attitude=- counterpart="هدى كريم" photo="${SAMPLE_PORTRAITS.woman68}"
+sales [كريم عادل|المبيعات] gender=m role=U influence=M action=S attitude=+ counterpart="ليلى ناصر" photo="${SAMPLE_PORTRAITS.man75}"
+legal [منى سالم|الشؤون القانونية] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="${SAMPLE_PORTRAITS.woman21}"
 ceo -> cfo
 ceo -> ops
 ceo -> sales
@@ -3608,7 +3615,8 @@ cfo -.-> ops
 cfo -> legal
 cfo -supporter-> ops label="ميزانية"
 ops -enemy-> cfo
-ceo <-coach-> sales`,
+ceo <-coach-> sales
+ceo -coach-> legal`,
     ev: `ev
 title القيمة المكتسبة للميزانية
 days 1, 2, 3, 4, 5

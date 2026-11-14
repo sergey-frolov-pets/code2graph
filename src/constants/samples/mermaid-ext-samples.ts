@@ -1,5 +1,6 @@
 import type { MermaidExtSampleId } from "@/constants/mermaid-sample-diagrams";
 import { HISTOGRAM_SAMPLES_EN, HISTOGRAM_SAMPLES_RU } from "@/constants/samples/histogram-gallery-samples";
+import { SAMPLE_PORTRAITS } from "@/constants/samples/sample-portraits";
 
 export const MERMAID_EXT_SAMPLES_RU: Record<MermaidExtSampleId, string> = {
   ...HISTOGRAM_SAMPLES_RU,
@@ -234,12 +235,13 @@ avatar 48
 %% label у link — только строка легенды, на стрелке её нет.
 %% Подпись одной стрелки: A -supporter-> B label="бюджет"
 %% Двусторонняя связь: A <-supporter-> B
+%% Через уровень стрелка обходит карточки между ними: ceo -coach-> legal
 %% Легенда рисуется под схемой: шкалы и цвет контрагента. Из линий в ней только стили link.
 %% supporter (зелёная сплошная) и enemy (красный пунктир) есть, пока строка link их не заменит.
 %% comms on — таблица под легендой. Колонки: «Компания …», «Контакты», «Связи».
 %% В ячейке связи — направление и второй человек, затем тип и подпись.
 %% counterpart — люди другой компании. Запятая или точка с запятой даёт отдельные строки, повторы схлопываются.
-%% photo= — ссылка на бесплатный портрет (randomuser.me).
+%% photo= — снимок внутри примера: data:image jpeg, png, webp или gif. Внешний http(s) превью убирает.
 title Карта влияния
 company "Север"
 avatar 48
@@ -247,11 +249,11 @@ comms on
 link supporter color=#1a7f37 style=solid label="союзник"
 link coach color=#bf8700 style=dot label="наставник"
 link enemy color=#cf222e style=dash label="противник"
-ceo [Анна Орлова|Президент] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="https://randomuser.me/api/portraits/women/44.jpg"
-cfo [Илья Сомов|Финансы] gender=m role=D influence=L action=S attitude=0 counterpart="Пётр Белов, Ольга Ким; Пётр Белов" photo="https://randomuser.me/api/portraits/men/32.jpg"
-ops [Мария Ким|Операции] gender=f role=A influence=M action=U attitude=- counterpart="Ольга Ким" photo="https://randomuser.me/api/portraits/women/68.jpg"
-sales [Павел Морозов|Продажи] gender=m role=U influence=M action=S attitude=+ counterpart="Леа Ортега" photo="https://randomuser.me/api/portraits/men/75.jpg"
-legal [Елена Волкова|Юрист] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="https://randomuser.me/api/portraits/women/21.jpg"
+ceo [Анна Орлова|Президент] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="${SAMPLE_PORTRAITS.woman44}"
+cfo [Илья Сомов|Финансы] gender=m role=D influence=L action=S attitude=0 counterpart="Пётр Белов, Ольга Ким; Пётр Белов" photo="${SAMPLE_PORTRAITS.man32}"
+ops [Мария Ким|Операции] gender=f role=A influence=M action=U attitude=- counterpart="Ольга Ким" photo="${SAMPLE_PORTRAITS.woman68}"
+sales [Павел Морозов|Продажи] gender=m role=U influence=M action=S attitude=+ counterpart="Леа Ортега" photo="${SAMPLE_PORTRAITS.man75}"
+legal [Елена Волкова|Юрист] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="${SAMPLE_PORTRAITS.woman21}"
 ceo -> cfo
 ceo -> ops
 ceo -> sales
@@ -259,7 +261,8 @@ cfo -.-> ops
 cfo -> legal
 cfo -supporter-> ops label="бюджет"
 ops -enemy-> cfo
-ceo <-coach-> sales`,
+ceo <-coach-> sales
+ceo -coach-> legal`,
   ev: `ev
 title Освоение бюджета
 days 1, 2, 3, 4, 5
@@ -801,12 +804,13 @@ CEO -> Ops`,
 %% label on link is legend text only. The arrow itself has no caption.
 %% A caption on one arrow: A -supporter-> B label="budget"
 %% A two-way link: A <-supporter-> B
+%% A link that skips a level goes around the cards in between: ceo -coach-> legal
 %% The legend sits under the chart: the scales and the counterpart color. Line samples are only link styles.
 %% supporter (green solid) and enemy (red dash) exist until a link line replaces them.
 %% comms on draws the table under the legend. Headers: Company …, Contacts, Links.
 %% A link cell names the direction and the other person, then the type and label.
 %% counterpart names people at the other company. A comma or semicolon starts a new row, and duplicates collapse.
-%% photo= is a link to a free portrait (randomuser.me).
+%% photo= embeds the portrait: data:image jpeg, png, webp or gif. The preview drops an external http(s) URL.
 title Power Map
 company "Northwind"
 avatar 48
@@ -814,11 +818,11 @@ comms on
 link supporter color=#1a7f37 style=solid label="ally"
 link coach color=#bf8700 style=dot label="coach"
 link enemy color=#cf222e style=dash label="opponent"
-ceo [Anna Orlova|President] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="https://randomuser.me/api/portraits/women/44.jpg"
-cfo [Ilya Somov|Finance] gender=m role=D influence=L action=S attitude=0 counterpart="Sam Reed, Lea Ortiz; Sam Reed" photo="https://randomuser.me/api/portraits/men/32.jpg"
-ops [Maria Kim|Operations] gender=f role=A influence=M action=U attitude=- counterpart="Lea Ortiz" photo="https://randomuser.me/api/portraits/women/68.jpg"
-sales [Pavel Morozov|Sales] gender=m role=U influence=M action=S attitude=+ counterpart="Lea Ortega" photo="https://randomuser.me/api/portraits/men/75.jpg"
-legal [Elena Volkova|Counsel] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="https://randomuser.me/api/portraits/women/21.jpg"
+ceo [Anna Orlova|President] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="${SAMPLE_PORTRAITS.woman44}"
+cfo [Ilya Somov|Finance] gender=m role=D influence=L action=S attitude=0 counterpart="Sam Reed, Lea Ortiz; Sam Reed" photo="${SAMPLE_PORTRAITS.man32}"
+ops [Maria Kim|Operations] gender=f role=A influence=M action=U attitude=- counterpart="Lea Ortiz" photo="${SAMPLE_PORTRAITS.woman68}"
+sales [Pavel Morozov|Sales] gender=m role=U influence=M action=S attitude=+ counterpart="Lea Ortega" photo="${SAMPLE_PORTRAITS.man75}"
+legal [Elena Volkova|Counsel] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="${SAMPLE_PORTRAITS.woman21}"
 ceo -> cfo
 ceo -> ops
 ceo -> sales
@@ -826,7 +830,8 @@ cfo -.-> ops
 cfo -> legal
 cfo -supporter-> ops label="budget"
 ops -enemy-> cfo
-ceo <-coach-> sales`,
+ceo <-coach-> sales
+ceo -coach-> legal`,
   ev: `ev
 title Budget earned value
 days 1, 2, 3, 4, 5

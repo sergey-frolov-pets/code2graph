@@ -134,8 +134,9 @@ export function renderAvatarBox(
     svg.raw(
       `<defs><clipPath id="${esc(clipId)}"><rect x="${fmt(x)}" y="${fmt(y)}" width="${fmt(size)}" height="${fmt(size)}" rx="4"/></clipPath></defs>`,
     );
+    const href = esc(node.photo);
     svg.raw(
-      `<image href="${esc(node.photo)}" x="${fmt(x)}" y="${fmt(y)}" width="${fmt(size)}" height="${fmt(size)}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${esc(clipId)})"/>`,
+      `<image href="${href}" xlink:href="${href}" x="${fmt(x)}" y="${fmt(y)}" width="${fmt(size)}" height="${fmt(size)}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${esc(clipId)})"/>`,
     );
     return;
   }
