@@ -501,4 +501,7 @@ export const miscMessages = {
   "samples.mermaid.histogramMono": "مدرج — أحادي اللون",
   "samples.mermaid.histogramRotate": "مدرج — دوران 90°",
   "samples.mermaid.histogramLine": "مدرج — خط المستوى",
+  "samples.mermaid.infographic": "إنفोगراف",
+  "samples.mermaid.gauge": "مقياس",
+  "samples.mermaid.dashboard": "لوحة",
 } as const satisfies LocaleMessages;

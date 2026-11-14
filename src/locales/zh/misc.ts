@@ -501,4 +501,7 @@ export const miscMessages = {
   "samples.mermaid.histogramMono": "直方图 — 单色",
   "samples.mermaid.histogramRotate": "直方图 — 旋转 90°",
   "samples.mermaid.histogramLine": "直方图 — 水平线",
+  "samples.mermaid.infographic": "信息图",
+  "samples.mermaid.gauge": "仪表",
+  "samples.mermaid.dashboard": "仪表板",
 } as const satisfies LocaleMessages;

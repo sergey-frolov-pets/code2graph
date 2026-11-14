@@ -501,4 +501,7 @@ export const miscMessages = {
   "samples.mermaid.histogramMono": "ヒストグラム — モノクロ",
   "samples.mermaid.histogramRotate": "ヒストグラム — 90度回転",
   "samples.mermaid.histogramLine": "ヒストグラム — 水準線",
+  "samples.mermaid.infographic": "インフォグラフィック",
+  "samples.mermaid.gauge": "ゲージ",
+  "samples.mermaid.dashboard": "ダッシュボード",
 } as const satisfies LocaleMessages;

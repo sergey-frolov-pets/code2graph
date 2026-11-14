@@ -501,4 +501,7 @@ export const miscMessages = {
   "samples.mermaid.histogramMono": "Histograma — monocromo",
   "samples.mermaid.histogramRotate": "Histograma — giro de 90°",
   "samples.mermaid.histogramLine": "Histograma — línea de nivel",
+  "samples.mermaid.infographic": "Infografía",
+  "samples.mermaid.gauge": "Indicador",
+  "samples.mermaid.dashboard": "Panel",
 } as const satisfies LocaleMessages;

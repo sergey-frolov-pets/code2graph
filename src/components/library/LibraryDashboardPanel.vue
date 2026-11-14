@@ -1,9 +1,22 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useDiagramLibrary } from "@/composables/useDiagramLibrary";
 import { useLibraryAuth } from "@/composables/useLibraryAuth";
 import { useLocale } from "@/composables/useLocale";
 import { getLibraryApiBaseUrl } from "@/config/library-api";
+import type { DiagramListItemDto } from "@/constants/diagram-library";
+import {
+  downloadTextFile,
+  dashboardEmbedDocument,
+  dashboardLocalEmbedUrl,
+  dashboardServerEmbedUrl,
+  readDashboardEmbedHtml,
+  writeDashboardEmbedHtml,
+} from "@/services/dashboard/embed-url";
+import { arrangeDashboardZones, placeDashboardZone, type DashboardArrange } from "@/services/dashboard/layout";
+import { writeDashboardSvgCache } from "@/services/dashboard/cache";
+import { composeDashboardSvg, loadDashboardDiagram } from "@/services/dashboard/compose";
+import { refreshDashboardZoneSources } from "@/services/dashboard/refresh";
 import {
   emitDashboard,
   parseDashboard,
@@ -12,20 +25,10 @@ import {
   type DashboardModel,
   type DashboardZone,
 } from "@/services/mermaid/ext/engines/dashboard";
-import { placeDashboardZone } from "@/services/dashboard/layout";
-import { composeDashboardSvg, loadDashboardDiagram } from "@/services/dashboard/compose";
-import { refreshDashboardZoneSources } from "@/services/dashboard/refresh";
-import { writeDashboardSvgCache } from "@/services/dashboard/cache";
-import {
-  dashboardEmbedSnippet,
-  dashboardLocalEmbedUrl,
-  dashboardServerEmbedUrl,
-} from "@/services/dashboard/embed-url";
 import {
   createLibraryLink,
   fetchLibraryLinks,
 } from "@/services/library/api/library-links";
-import type { DiagramListItemDto } from "@/constants/diagram-library";
 
 const props = defineProps<{
   diagramId: string | null;
@@ -38,13 +41,15 @@ const emit = defineEmits<{
 const { t } = useLocale();
 const library = useDiagramLibrary();
 const auth = useLibraryAuth();
-const step = ref<1 | 2 | 3>(1);
 const title = ref(t("library.dashboard.create"));
 const savedId = ref<string | null>(props.diagramId);
 const parseError = ref("");
 const notice = ref("");
 const missingFiles = ref<string[]>([]);
 const embedCode = ref("");
+const query = ref("");
+const showSource = ref(false);
+const zoom = ref(1);
 const source = ref("dashboard\nsize 1280x720\n");
 const model = ref<DashboardModel>({
   width: 1280,
@@ -53,16 +58,27 @@ const model = ref<DashboardModel>({
   zones: [],
 });
 const previewSvg = ref("");
-const dragging = ref<{ index: number; mode: "move" | "resize"; dx: number; dy: number } | null>(null);
+const stageRef = ref<HTMLElement | null>(null);
+const boardRef = ref<HTMLElement | null>(null);
+const stageSize = ref({ w: 640, h: 480 });
+
+interface DragState {
+  index: number;
+  mode: "move" | "resize";
+  startX: number;
+  startY: number;
+  origin: DashboardZone;
+  boardW: number;
+  boardH: number;
+}
+
+const dragging = ref<DragState | null>(null);
+let stageObserver: ResizeObserver | null = null;
 
 const refreshChoice = computed({
   get: () => (model.value.refreshMs === null ? "" : String(model.value.refreshMs)),
   set: (value: string) => {
-    model.value = {
-      ...model.value,
-      refreshMs: value ? Number(value) : null,
-    };
-    syncSource();
+    commitModel({ ...model.value, refreshMs: value ? Number(value) : null });
   },
 });
 
@@ -70,8 +86,39 @@ const diagrams = computed(() =>
   library.diagrams.value.filter((diagram) => diagram.id !== savedId.value),
 );
 
-function syncSource(): void {
-  source.value = emitDashboard(model.value);
+const visibleDiagrams = computed(() => {
+  const needle = query.value.trim().toLowerCase();
+  if (!needle) return diagrams.value;
+  return diagrams.value.filter((diagram) =>
+    `${diagram.title} ${diagram.id}`.toLowerCase().includes(needle),
+  );
+});
+
+const titleById = computed(() => {
+  const titles = new Map<string, string>();
+  for (const diagram of library.diagrams.value) titles.set(diagram.id, diagram.title);
+  return titles;
+});
+
+const fit = computed(() => {
+  const pad = 32;
+  const scaleX = Math.max(1, stageSize.value.w - pad) / Math.max(1, model.value.width);
+  const scaleY = Math.max(1, stageSize.value.h - pad) / Math.max(1, model.value.height);
+  return Math.max(0.05, Math.min(scaleX, scaleY));
+});
+
+const boardStyle = computed(() => ({
+  width: `${Math.max(1, Math.round(model.value.width * fit.value * zoom.value))}px`,
+  height: `${Math.max(1, Math.round(model.value.height * fit.value * zoom.value))}px`,
+}));
+
+function zoneLabel(diagramId: string): string {
+  return titleById.value.get(diagramId) ?? diagramId;
+}
+
+function commitModel(next: DashboardModel): void {
+  model.value = next;
+  source.value = emitDashboard(next);
   parseError.value = "";
   void paint();
 }
@@ -93,21 +140,36 @@ function toggleDiagram(diagram: DiagramListItemDto): void {
   const zones = [...model.value.zones];
   if (existing >= 0) zones.splice(existing, 1);
   else zones.push(placeDashboardZone(zones, diagram.id));
-  model.value = { ...model.value, zones };
-  syncSource();
+  commitModel({ ...model.value, zones });
 }
 
-function updateZone(index: number, patch: Partial<DashboardZone>): void {
+function arrange(preset: DashboardArrange): void {
+  const ids = model.value.zones.map((zone) => zone.diagramId);
+  if (ids.length === 0) return;
+  commitModel({ ...model.value, zones: arrangeDashboardZones(ids, preset) });
+}
+
+function clampZone(zone: DashboardZone): DashboardZone {
+  const w = Math.min(1, Math.max(0.08, zone.w));
+  const h = Math.min(1, Math.max(0.08, zone.h));
+  return {
+    ...zone,
+    w,
+    h,
+    x: Math.min(Math.max(0, zone.x), 1 - w),
+    y: Math.min(Math.max(0, zone.y), 1 - h),
+  };
+}
+
+function updateZone(index: number, patch: Partial<DashboardZone>, paintNow: boolean): void {
   const zones = model.value.zones.map((zone, zoneIndex) =>
-    zoneIndex === index ? { ...zone, ...patch } : zone,
+    zoneIndex === index ? clampZone({ ...zone, ...patch }) : zone,
   );
-  const zone = zones[index];
-  zone.w = Math.min(1 - zone.x, Math.max(0.05, zone.w));
-  zone.h = Math.min(1 - zone.y, Math.max(0.05, zone.h));
-  zone.x = Math.min(Math.max(0, zone.x), 1 - zone.w);
-  zone.y = Math.min(Math.max(0, zone.y), 1 - zone.h);
   model.value = { ...model.value, zones };
-  syncSource();
+  if (!paintNow) return;
+  source.value = emitDashboard(model.value);
+  parseError.value = "";
+  void paint();
 }
 
 async function paint(): Promise<void> {
@@ -116,42 +178,97 @@ async function paint(): Promise<void> {
     diagramDarkMode: false,
     renderMode: "offline",
   }).catch(() => null);
+  if (dragging.value) return;
   previewSvg.value = composed ?? renderDashboard(model.value);
 }
 
+function stopDragListeners(): void {
+  window.removeEventListener("pointermove", onPointerMove);
+  window.removeEventListener("pointerup", onPointerUp);
+  window.removeEventListener("pointercancel", onPointerUp);
+}
+
 function onPointerDown(event: PointerEvent, index: number, mode: "move" | "resize"): void {
-  const bounds = (event.currentTarget as HTMLElement).closest(".dashboard-board")?.getBoundingClientRect();
-  if (!bounds) return;
-  dragging.value = { index, mode, dx: bounds.width, dy: bounds.height };
-  (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  const bounds = boardRef.value?.getBoundingClientRect();
+  const zone = model.value.zones[index];
+  if (!bounds || !zone || bounds.width < 1 || bounds.height < 1) return;
+  event.preventDefault();
+  event.stopPropagation();
+  dragging.value = {
+    index,
+    mode,
+    startX: event.clientX,
+    startY: event.clientY,
+    origin: { ...zone },
+    boardW: bounds.width,
+    boardH: bounds.height,
+  };
+  window.addEventListener("pointermove", onPointerMove);
+  window.addEventListener("pointerup", onPointerUp);
+  window.addEventListener("pointercancel", onPointerUp);
 }
 
 function onPointerMove(event: PointerEvent): void {
   const drag = dragging.value;
   if (!drag) return;
-  const zone = model.value.zones[drag.index];
-  if (!zone) return;
-  const dx = event.movementX / drag.dx;
-  const dy = event.movementY / drag.dy;
-  if (drag.mode === "move") {
-    updateZone(drag.index, { x: zone.x + dx, y: zone.y + dy });
-  } else {
-    updateZone(drag.index, { w: zone.w + dx, h: zone.h + dy });
-  }
+  const dx = (event.clientX - drag.startX) / drag.boardW;
+  const dy = (event.clientY - drag.startY) / drag.boardH;
+  const next = drag.mode === "move"
+    ? { x: drag.origin.x + dx, y: drag.origin.y + dy }
+    : { w: drag.origin.w + dx, h: drag.origin.h + dy };
+  updateZone(drag.index, next, false);
 }
 
 function onPointerUp(): void {
+  if (!dragging.value) return;
   dragging.value = null;
+  stopDragListeners();
+  source.value = emitDashboard(model.value);
+  void paint();
 }
 
 function onZoneClick(diagramId: string): void {
   if (missingFiles.value.includes(diagramId)) void refreshNow();
 }
 
+function onWheel(event: WheelEvent): void {
+  if (!event.ctrlKey && !event.metaKey) return;
+  event.preventDefault();
+  const factor = event.deltaY > 0 ? 0.9 : 1.1;
+  zoom.value = Math.min(4, Math.max(0.25, zoom.value * factor));
+}
+
+async function embedSrc(diagramId: string): Promise<string> {
+  const origin = window.location.origin;
+  if (library.isLocalMode.value) return dashboardLocalEmbedUrl(origin, diagramId);
+  const baseUrl = getLibraryApiBaseUrl();
+  const user = auth.currentUser.value?.username;
+  if (!baseUrl || !user) return dashboardLocalEmbedUrl(origin, diagramId);
+  const existing = await fetchLibraryLinks(diagramId, baseUrl).catch(() => ({ links: [] }));
+  let slug = existing.links[0]?.slug;
+  if (!slug) {
+    slug = `dash-${diagramId.slice(0, 8).toLowerCase().replace(/[^a-z0-9]/g, "") || "board"}`;
+    const created = await createLibraryLink(
+      diagramId,
+      { slug, delivery: "editor", dataAccess: "online" },
+      baseUrl,
+    );
+    slug = created.link.slug;
+  }
+  return dashboardServerEmbedUrl(origin, user, slug);
+}
+
+async function rememberEmbed(diagramId: string): Promise<string> {
+  const src = await embedSrc(diagramId);
+  const html = dashboardEmbedDocument(src, title.value);
+  writeDashboardEmbedHtml(diagramId, html);
+  embedCode.value = html;
+  return html;
+}
+
 async function save(): Promise<void> {
   const payload = {
     title: title.value.trim() || "Dashboard",
-    description: "",
     tags: ["dashboard"],
     language: "mermaid" as const,
     sectionId: library.selectedSectionId.value,
@@ -161,38 +278,28 @@ async function save(): Promise<void> {
   try {
     const saved = savedId.value
       ? await library.updateDiagram(savedId.value, payload)
-      : await library.addDiagram(payload);
+      : await library.addDiagram({ ...payload, description: "" });
     savedId.value = saved.id;
-    notice.value = t("library.dashboard.copied");
-    await copyEmbed(saved.id);
+    await rememberEmbed(saved.id);
+    notice.value = t("library.dashboard.htmlSaved");
   } catch (error) {
     parseError.value = error instanceof Error ? error.message : t("library.dashboard.parseError");
   }
 }
 
-async function copyEmbed(diagramId: string): Promise<void> {
-  const origin = window.location.origin;
-  let src = dashboardLocalEmbedUrl(origin, diagramId);
-  if (!library.isLocalMode.value) {
-    const baseUrl = getLibraryApiBaseUrl();
-    const user = auth.currentUser.value?.username;
-    if (baseUrl && user) {
-      const existing = await fetchLibraryLinks(diagramId, baseUrl).catch(() => ({ links: [] }));
-      let slug = existing.links[0]?.slug;
-      if (!slug) {
-        slug = `dash-${diagramId.slice(0, 8).toLowerCase().replace(/[^a-z0-9]/g, "") || "board"}`;
-        const created = await createLibraryLink(
-          diagramId,
-          { slug, delivery: "editor", dataAccess: "online" },
-          baseUrl,
-        );
-        slug = created.link.slug;
-      }
-      src = dashboardServerEmbedUrl(origin, user, slug);
-    }
-  }
-  embedCode.value = dashboardEmbedSnippet(src);
+async function saveHtml(): Promise<void> {
+  if (!savedId.value) await save();
+  if (!savedId.value) return;
+  const html = embedCode.value || await rememberEmbed(savedId.value);
+  const filename = `${(title.value.trim() || "dashboard").replace(/[^\w.-]+/g, "-")}.html`;
+  downloadTextFile(filename, html, "text/html;charset=utf-8");
+  notice.value = t("library.dashboard.htmlSaved");
+}
+
+async function copyHtml(): Promise<void> {
+  if (!embedCode.value) return;
   await navigator.clipboard.writeText(embedCode.value).catch(() => undefined);
+  notice.value = t("library.dashboard.copied");
 }
 
 async function refreshNow(): Promise<void> {
@@ -221,21 +328,39 @@ async function refreshNow(): Promise<void> {
   }
 }
 
+function measureStage(): void {
+  const rect = stageRef.value?.getBoundingClientRect();
+  if (!rect) return;
+  stageSize.value = { w: rect.width, h: rect.height };
+}
+
 onMounted(async () => {
-  if (!props.diagramId) {
-    void paint();
-    return;
+  measureStage();
+  if (stageRef.value && typeof ResizeObserver !== "undefined") {
+    stageObserver = new ResizeObserver(() => measureStage());
+    stageObserver.observe(stageRef.value);
   }
-  const diagram = await loadDashboardDiagram(props.diagramId);
-  if (!diagram) return;
-  title.value = diagram.title;
-  applySource(diagram.source);
+  if (props.diagramId) {
+    embedCode.value = readDashboardEmbedHtml(props.diagramId);
+    const diagram = await loadDashboardDiagram(props.diagramId);
+    if (diagram) {
+      title.value = diagram.title;
+      applySource(diagram.source);
+      return;
+    }
+  }
+  void paint();
+});
+
+onUnmounted(() => {
+  stopDragListeners();
+  stageObserver?.disconnect();
 });
 
 watch(
   () => [model.value.width, model.value.height],
   () => {
-    void paint();
+    if (!dragging.value) source.value = emitDashboard(model.value);
   },
 );
 </script>
@@ -256,35 +381,9 @@ watch(
         {{ t("app.cancel") }}
       </button>
     </header>
-    <div class="dashboard-panel__steps">
-      <button
-        class="btn"
-        type="button"
-        :aria-current="step === 1"
-        @click="step = 1"
-      >
-        1. {{ t("library.dashboard.stepCanvas") }}
-      </button>
-      <button
-        class="btn"
-        type="button"
-        :aria-current="step === 2"
-        @click="step = 2"
-      >
-        2. {{ t("library.dashboard.stepDiagrams") }}
-      </button>
-      <button
-        class="btn"
-        type="button"
-        :aria-current="step === 3"
-        @click="step = 3"
-      >
-        3. {{ t("library.dashboard.stepLayout") }}
-      </button>
-    </div>
     <div class="dashboard-panel__body">
       <div class="dashboard-panel__form">
-        <label v-if="step === 1">
+        <label>
           {{ t("library.dashboard.title") }}
           <input
             v-model="title"
@@ -292,45 +391,58 @@ watch(
             type="text"
           >
         </label>
-        <label v-if="step === 1">
+        <label>
           {{ t("library.dashboard.width") }}
           <input
             v-model.number="model.width"
             class="select"
             type="number"
             min="100"
-            @change="syncSource"
+            @change="commitModel({ ...model })"
           >
         </label>
-        <label v-if="step === 1">
+        <label>
           {{ t("library.dashboard.height") }}
           <input
             v-model.number="model.height"
             class="select"
             type="number"
             min="100"
-            @change="syncSource"
+            @change="commitModel({ ...model })"
           >
         </label>
-        <label v-if="step === 1">
+        <label>
           {{ t("library.dashboard.refresh") }}
           <select
             v-model="refreshChoice"
             class="select"
           >
-            <option value="">{{ t("library.dashboard.refreshOff") }}</option>
-            <option :value="String(parseRefreshInterval('30s'))">30s</option>
-            <option :value="String(parseRefreshInterval('5m'))">5m</option>
-            <option :value="String(parseRefreshInterval('1h'))">1h</option>
+            <option value="">
+              {{ t("library.dashboard.refreshOff") }}
+            </option>
+            <option :value="String(parseRefreshInterval('30s'))">
+              30s
+            </option>
+            <option :value="String(parseRefreshInterval('5m'))">
+              5m
+            </option>
+            <option :value="String(parseRefreshInterval('1h'))">
+              1h
+            </option>
           </select>
         </label>
 
-        <ul
-          v-if="step === 2"
-          class="dashboard-panel__list"
-        >
+        <label>
+          {{ t("library.dashboard.search") }}
+          <input
+            v-model="query"
+            class="select"
+            type="search"
+          >
+        </label>
+        <ul class="dashboard-panel__list">
           <li
-            v-for="diagram in diagrams"
+            v-for="diagram in visibleDiagrams"
             :key="diagram.id"
           >
             <label>
@@ -343,67 +455,97 @@ watch(
             </label>
           </li>
         </ul>
-
-        <div v-if="step === 3">
-          <label
-            v-for="(zone, index) in model.zones"
-            :key="`${zone.diagramId}-${index}`"
-            class="dashboard-zone-fields"
+        <div class="dashboard-panel__actions">
+          <span>{{ t("library.dashboard.arrange") }}</span>
+          <button
+            class="btn"
+            type="button"
+            @click="arrange('columns')"
           >
-            <span>{{ zone.diagramId }}</span>
-            <input
-              class="select"
-              type="number"
-              min="0"
-              max="1"
-              step="0.01"
-              :value="zone.x"
-              @change="updateZone(index, { x: Number(($event.target as HTMLInputElement).value) })"
-            >
-            <input
-              class="select"
-              type="number"
-              min="0"
-              max="1"
-              step="0.01"
-              :value="zone.y"
-              @change="updateZone(index, { y: Number(($event.target as HTMLInputElement).value) })"
-            >
-            <input
-              class="select"
-              type="number"
-              min="0.05"
-              max="1"
-              step="0.01"
-              :value="zone.w"
-              @change="updateZone(index, { w: Number(($event.target as HTMLInputElement).value) })"
-            >
-            <input
-              class="select"
-              type="number"
-              min="0.05"
-              max="1"
-              step="0.01"
-              :value="zone.h"
-              @change="updateZone(index, { h: Number(($event.target as HTMLInputElement).value) })"
-            >
-          </label>
-          <label>
-            {{ t("library.dashboard.source") }}
-            <textarea
-              class="select"
-              rows="8"
-              :value="source"
-              @input="applySource(($event.target as HTMLTextAreaElement).value)"
-            />
-          </label>
-          <p
-            v-if="parseError"
-            class="dashboard-panel__error"
+            {{ t("library.dashboard.presetColumns") }}
+          </button>
+          <button
+            class="btn"
+            type="button"
+            @click="arrange('rows')"
           >
-            {{ parseError }}
-          </p>
+            {{ t("library.dashboard.presetRows") }}
+          </button>
+          <button
+            class="btn"
+            type="button"
+            @click="arrange('grid')"
+          >
+            {{ t("library.dashboard.presetGrid") }}
+          </button>
         </div>
+
+        <label
+          v-for="(zone, index) in model.zones"
+          :key="`${zone.diagramId}-${index}`"
+          class="dashboard-zone-fields"
+        >
+          <span>{{ zoneLabel(zone.diagramId) }}</span>
+          <input
+            class="select"
+            type="number"
+            min="0"
+            max="1"
+            step="0.01"
+            :value="zone.x"
+            @change="updateZone(index, { x: Number(($event.target as HTMLInputElement).value) }, true)"
+          >
+          <input
+            class="select"
+            type="number"
+            min="0"
+            max="1"
+            step="0.01"
+            :value="zone.y"
+            @change="updateZone(index, { y: Number(($event.target as HTMLInputElement).value) }, true)"
+          >
+          <input
+            class="select"
+            type="number"
+            min="0.08"
+            max="1"
+            step="0.01"
+            :value="zone.w"
+            @change="updateZone(index, { w: Number(($event.target as HTMLInputElement).value) }, true)"
+          >
+          <input
+            class="select"
+            type="number"
+            min="0.08"
+            max="1"
+            step="0.01"
+            :value="zone.h"
+            @change="updateZone(index, { h: Number(($event.target as HTMLInputElement).value) }, true)"
+          >
+        </label>
+
+        <button
+          class="btn"
+          type="button"
+          @click="showSource = !showSource"
+        >
+          {{ t("library.dashboard.sourceToggle") }}
+        </button>
+        <label v-if="showSource">
+          {{ t("library.dashboard.source") }}
+          <textarea
+            class="select"
+            rows="8"
+            :value="source"
+            @input="applySource(($event.target as HTMLTextAreaElement).value)"
+          />
+        </label>
+        <p
+          v-if="parseError"
+          class="dashboard-panel__error"
+        >
+          {{ parseError }}
+        </p>
 
         <div class="dashboard-panel__actions">
           <button
@@ -412,6 +554,13 @@ watch(
             @click="save"
           >
             {{ t("library.dashboard.save") }}
+          </button>
+          <button
+            class="btn"
+            type="button"
+            @click="saveHtml"
+          >
+            {{ t("library.dashboard.saveHtml") }}
           </button>
           <button
             class="btn"
@@ -431,44 +580,79 @@ watch(
           {{ t("library.dashboard.embed") }}
           <textarea
             class="select"
-            rows="3"
+            rows="8"
             readonly
             :value="embedCode"
           />
+          <button
+            class="btn"
+            type="button"
+            @click="copyHtml"
+          >
+            {{ t("library.dashboard.copyHtml") }}
+          </button>
         </label>
       </div>
 
-      <div
-        class="dashboard-board"
-        :style="{ aspectRatio: `${model.width} / ${model.height}` }"
-        @pointermove="onPointerMove"
-        @pointerup="onPointerUp"
-      >
-        <!-- eslint-disable vue/no-v-html -->
+      <div class="dashboard-stage-wrap">
+        <div class="dashboard-panel__actions">
+          <label>
+            {{ t("library.dashboard.zoom") }}
+            <input
+              v-model.number="zoom"
+              type="range"
+              min="0.25"
+              max="4"
+              step="0.05"
+            >
+          </label>
+          <button
+            class="btn"
+            type="button"
+            @click="zoom = 1"
+          >
+            {{ t("library.dashboard.fit") }}
+          </button>
+        </div>
         <div
-          class="dashboard-board__svg"
-          v-html="previewSvg"
-        />
-        <!-- eslint-enable vue/no-v-html -->
-        <button
-          v-for="(zone, index) in model.zones"
-          :key="`${zone.diagramId}-hit-${index}`"
-          class="dashboard-hit"
-          type="button"
-          :style="{
-            left: `${zone.x * 100}%`,
-            top: `${zone.y * 100}%`,
-            width: `${zone.w * 100}%`,
-            height: `${zone.h * 100}%`,
-          }"
-          @pointerdown="onPointerDown($event, index, 'move')"
-          @click="onZoneClick(zone.diagramId)"
+          ref="stageRef"
+          class="dashboard-stage"
+          @wheel="onWheel"
         >
-          <span
-            class="dashboard-hit__resize"
-            @pointerdown.stop="onPointerDown($event, index, 'resize')"
-          />
-        </button>
+          <div
+            ref="boardRef"
+            class="dashboard-board"
+            :style="boardStyle"
+          >
+            <!-- eslint-disable vue/no-v-html -->
+            <div
+              class="dashboard-board__svg"
+              v-html="previewSvg"
+            />
+            <!-- eslint-enable vue/no-v-html -->
+            <button
+              v-for="(zone, index) in model.zones"
+              :key="`${zone.diagramId}-hit-${index}`"
+              class="dashboard-hit"
+              :class="{ 'is-dragging': dragging?.index === index }"
+              type="button"
+              :style="{
+                left: `${zone.x * 100}%`,
+                top: `${zone.y * 100}%`,
+                width: `${zone.w * 100}%`,
+                height: `${zone.h * 100}%`,
+              }"
+              @pointerdown="onPointerDown($event, index, 'move')"
+              @click="onZoneClick(zone.diagramId)"
+            >
+              <span class="dashboard-hit__label">{{ zoneLabel(zone.diagramId) }}</span>
+              <span
+                class="dashboard-hit__resize"
+                @pointerdown.stop="onPointerDown($event, index, 'resize')"
+              />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -486,16 +670,16 @@ watch(
   background: var(--bg, #fff);
 }
 .dashboard-panel__bar,
-.dashboard-panel__steps,
 .dashboard-panel__actions,
 .dashboard-zone-fields {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
 }
 .dashboard-panel__body {
   display: grid;
-  grid-template-columns: minmax(240px, 360px) 1fr;
+  grid-template-columns: minmax(240px, 340px) minmax(0, 1fr);
   gap: 12px;
   min-height: 0;
   flex: 1;
@@ -512,32 +696,82 @@ watch(
   flex-direction: column;
   gap: 4px;
 }
+.dashboard-panel__list {
+  max-height: 220px;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dashboard-stage-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  gap: 8px;
+}
+.dashboard-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(45deg, #e2e8f0 25%, transparent 25%),
+    linear-gradient(-45deg, #e2e8f0 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
+    linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+  background-size: 24px 24px;
+  background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+  background-color: #f8fafc;
+  border: 1px solid var(--border, #cbd5e1);
+}
 .dashboard-board {
   position: relative;
-  width: 100%;
-  background: var(--surface, #f8fafc);
-  border: 1px solid var(--border, #cbd5e1);
+  flex: none;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+.dashboard-board__svg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 .dashboard-board__svg :deep(svg) {
   width: 100%;
   height: 100%;
+  display: block;
 }
 .dashboard-hit {
   position: absolute;
-  border: 1px dashed transparent;
-  background: transparent;
-  padding: 0;
+  border: 1px solid rgba(15, 118, 110, 0.85);
+  background: rgba(15, 118, 110, 0.12);
+  padding: 4px;
+  text-align: left;
+  cursor: grab;
+  touch-action: none;
+  color: #0f172a;
 }
-.dashboard-hit:hover {
-  border-color: #2563eb;
+.dashboard-hit.is-dragging {
+  cursor: grabbing;
+}
+.dashboard-hit__label {
+  display: block;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.2;
+  pointer-events: none;
 }
 .dashboard-hit__resize {
   position: absolute;
   right: 0;
   bottom: 0;
-  width: 12px;
-  height: 12px;
-  background: #2563eb;
+  width: 18px;
+  height: 18px;
+  background: #0f766e;
+  cursor: nwse-resize;
+  touch-action: none;
 }
 .dashboard-panel__error {
   color: #b91c1c;
