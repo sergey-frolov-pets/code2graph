@@ -30,6 +30,7 @@ import {
   RefreshCw,
   Save,
   Settings,
+  Share2,
   Shield,
   SlidersHorizontal,
   Sparkles,
@@ -56,6 +57,7 @@ export type ActionIconName =
   | "arrow-down"
   | "folder-open"
   | "save"
+  | "share"
   | "check"
   | "clipboard-copy"
   | "trash"
@@ -114,6 +116,7 @@ const ICON_MAP: Record<ActionIconName, Component> = {
   "arrow-down": ArrowDown,
   "folder-open": FolderOpen,
   save: Save,
+  share: Share2,
   check: CircleCheck,
   "clipboard-copy": ClipboardCopy,
   trash: Trash2,

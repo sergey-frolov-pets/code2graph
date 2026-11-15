@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import FileBadgeIcon from "@/components/icons/FileBadgeIcon.vue";
 import IconButton from "@/components/IconButton.vue";
@@ -8,10 +8,13 @@ import PanelFullscreenButton from "@/components/PanelFullscreenButton.vue";
 import { useFeatureGate } from "@/composables/useFeatureGate";
 import { useLocale } from "@/composables/useLocale";
 import {
+  findAnySampleSelectionAnyLocale,
   listSampleIds,
   parseSampleSelection,
+  samplePublicSlug,
   type SampleSelection,
 } from "@/constants/sample-diagrams";
+import { samplePageUrl } from "@/router";
 import {
   isDiagramFormat,
   type DiagramFormat,
@@ -32,6 +35,7 @@ const props = withDefaults(
     canRedo?: boolean;
     canClear: boolean;
     canConvert: boolean;
+    source?: string;
     canPasteTable?: boolean;
     canRefreshData?: boolean;
     snippetsOpen: boolean;
@@ -120,6 +124,33 @@ function onFormatChange(event: Event): void {
   }
 
   emit("changeFormat", value);
+}
+
+const activeSample = computed(() =>
+  props.source ? findAnySampleSelectionAnyLocale(props.source) : null,
+);
+
+const sampleLinkCopied = ref(false);
+let sampleLinkCopiedTimer: ReturnType<typeof setTimeout> | undefined;
+
+async function shareSampleLink(): Promise<void> {
+  const selection = activeSample.value;
+  if (!selection) {
+    return;
+  }
+  const url = samplePageUrl(window.location.origin, samplePublicSlug(selection));
+  try {
+    await navigator.clipboard.writeText(url);
+    sampleLinkCopied.value = true;
+    if (sampleLinkCopiedTimer) {
+      clearTimeout(sampleLinkCopiedTimer);
+    }
+    sampleLinkCopiedTimer = setTimeout(() => {
+      sampleLinkCopied.value = false;
+    }, 1600);
+  } catch {
+    sampleLinkCopied.value = false;
+  }
 }
 
 function onSampleChange(event: Event): void {
@@ -381,6 +412,14 @@ function onSampleChange(event: Event): void {
           </select>
         </label>
       </TooltipWrap>
+      <IconButton
+        v-if="activeSample"
+        :label="t('editor.shareSample')"
+        data-testid="editor-share-sample"
+        @click="shareSampleLink"
+      >
+        <ActionIcon :name="sampleLinkCopied ? 'check' : 'share'" />
+      </IconButton>
     </div>
 
     <PanelFullscreenButton

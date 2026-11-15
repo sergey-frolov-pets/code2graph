@@ -16,6 +16,7 @@ export type AppRouteName =
   | "mcp"
   | "diagram"
   | "clipboard"
+  | "sample"
   | "preview"
   | "aiChatShare"
   | "libraryLink"
@@ -33,6 +34,7 @@ export interface ParsedAppRoute {
 export const LIBRARY_LINK_RESERVED_SEGMENTS = new Set([
   "local",
   "diagram",
+  "samples",
   "api",
   "assets",
   "icons",
@@ -45,7 +47,7 @@ const LIBRARY_USERNAME_MAX_LENGTH = 80;
 const ROUTE_HASH: Record<
   Exclude<
     AppRouteName,
-    "language" | "diagram" | "clipboard" | "preview" | "libraryLink" | "aiChatShare" | "dashboardEmbed"
+    "language" | "diagram" | "clipboard" | "sample" | "preview" | "libraryLink" | "aiChatShare" | "dashboardEmbed"
   >,
   string
 > = {
@@ -159,6 +161,17 @@ export function parseDiagramPathname(pathname: string): ParsedAppRoute | null {
   return routeResult("diagram", null, match[1].toLowerCase());
 }
 
+const SAMPLE_PATH = /^\/samples\/([A-Za-z][A-Za-z0-9]*)-([A-Za-z][A-Za-z0-9_]*)$/;
+
+export function parseSamplePathname(pathname: string): ParsedAppRoute | null {
+  const normalized = pathname.replace(/\/+$/, "") || "/";
+  const match = normalized.match(SAMPLE_PATH);
+  if (!match?.[1] || !match[2]) {
+    return null;
+  }
+  return routeResult("sample", null, `${match[1].toLowerCase()}-${match[2]}`);
+}
+
 export function parseClipboardDiagramPathname(pathname: string): ParsedAppRoute | null {
   const normalized = pathname.replace(/\/+$/, "") || "/";
   if (normalized.toLowerCase() !== CLIPBOARD_DIAGRAM_PATH) {
@@ -177,6 +190,7 @@ function parsePagesQueryPath(search: string): ParsedAppRoute | null {
     parseEmbedPathname(normalized) ??
     parseDiagramPathname(normalized) ??
     parseClipboardDiagramPathname(normalized) ??
+    parseSamplePathname(normalized) ??
     parseLibraryLinkPathname(normalized)
   );
 }
@@ -198,6 +212,7 @@ export function parseAppRoute(locationLike: {
     parseEmbedPathname(locationLike.pathname) ??
     parseDiagramPathname(locationLike.pathname) ??
     parseClipboardDiagramPathname(locationLike.pathname) ??
+    parseSamplePathname(locationLike.pathname) ??
     parseLibraryLinkPathname(locationLike.pathname) ??
     parsePagesQueryPath(locationLike.search ?? "") ??
     fromHash
@@ -207,6 +222,9 @@ export function parseAppRoute(locationLike: {
 function prettyPathForRoute(route: ParsedAppRoute): string | null {
   if (route.name === "clipboard") {
     return CLIPBOARD_DIAGRAM_PATH;
+  }
+  if (route.name === "sample" && route.diagramSlug) {
+    return `/samples/${route.diagramSlug}`;
   }
   if (route.name === "diagram" && route.diagramSlug) {
     return `/local/${route.diagramSlug}`;
@@ -238,6 +256,7 @@ export function localDataLinkCanonicalPath(locationLike: {
   const route =
     parseDiagramPathname(pathname) ??
     parseClipboardDiagramPathname(pathname) ??
+    parseSamplePathname(pathname) ??
     parsePagesQueryPath(search);
   const canonical = route ? prettyPathForRoute(route) : null;
   if (!canonical || (pathname === canonical && search === "")) {
@@ -330,7 +349,7 @@ function publishedOrigin(origin: string): string {
 export function routeHash(
   route: Exclude<
     AppRouteName,
-    "language" | "diagram" | "clipboard" | "preview" | "libraryLink" | "aiChatShare" | "dashboardEmbed"
+    "language" | "diagram" | "clipboard" | "sample" | "preview" | "libraryLink" | "aiChatShare" | "dashboardEmbed"
   >,
 ): string {
   return ROUTE_HASH[route];
@@ -358,6 +377,14 @@ export function libraryLinkUrl(
   return url.toString();
 }
 
+export function samplePageUrl(origin: string, slug: string): string {
+  const url = new URL(publishedOrigin(origin));
+  url.pathname = `/samples/${slug}`;
+  url.search = "";
+  url.hash = "";
+  return url.toString();
+}
+
 export function diagramDataLinkUrl(origin: string, slug: string): string {
   const url = new URL(publishedOrigin(origin));
   url.pathname = `/local/${slug}`;
@@ -369,7 +396,7 @@ export function diagramDataLinkUrl(origin: string, slug: string): string {
 export function navigateTo(
   route: Exclude<
     AppRouteName,
-    "diagram" | "clipboard" | "preview" | "libraryLink" | "aiChatShare" | "dashboardEmbed"
+    "diagram" | "clipboard" | "sample" | "preview" | "libraryLink" | "aiChatShare" | "dashboardEmbed"
   >,
   languageId?: DiagramFormat,
 ): void {
