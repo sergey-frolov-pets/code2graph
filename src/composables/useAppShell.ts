@@ -681,6 +681,8 @@ export function useAppShell(): AppShellContext {
       isLocaleKey(labelKey) ? t(labelKey) : selection.id,
       selection.format,
     );
+    activeMobilePanel.value = "preview";
+    dataLink.expandSignal.value += 1;
   }
 
   function boot(): void {
