@@ -139,11 +139,12 @@ describe("service worker update prompt", () => {
     expect(source).toContain("event.waitUntil(self.skipWaiting())");
   });
 
-  it("serves the app shell for /diagram and /local links, including offline", () => {
+  it("serves the app shell for /diagram, /local, and /samples links, including offline", () => {
     const source = readFileSync(path.join(process.cwd(), "public/sw.js"), "utf8");
 
     expect(source).toContain('CLIPBOARD_DIAGRAM_PATH = "/diagram"');
     expect(source).toContain("LOCAL_DATA_LINK_PATH");
+    expect(source).toContain("SAMPLE_PATH");
     expect(source).toContain("if (!response.ok)");
     expect(source).toContain("readCachedShell");
     expect(source).toContain("networkFirstDeploymentConfig");

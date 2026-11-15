@@ -66,6 +66,7 @@ self.addEventListener("message", (event) => {
 const APP_SHELL_PATH = "/index.html";
 const CLIPBOARD_DIAGRAM_PATH = "/diagram";
 const LOCAL_DATA_LINK_PATH = /^\/local\/[a-z0-9]+(?:-[a-z0-9]+)*$/i;
+const SAMPLE_PATH = /^\/samples\/[a-z][a-z0-9]*-[a-z][a-z0-9_]*$/i;
 
 function normalizedPath(pathname) {
   const path = pathname.replace(/\/+$/, "");
@@ -81,7 +82,8 @@ function isAppShellNavigation(url) {
     path === "/" ||
     path === APP_SHELL_PATH ||
     path.toLowerCase() === CLIPBOARD_DIAGRAM_PATH ||
-    LOCAL_DATA_LINK_PATH.test(path)
+    LOCAL_DATA_LINK_PATH.test(path) ||
+    SAMPLE_PATH.test(path)
   );
 }
 
