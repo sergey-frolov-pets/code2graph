@@ -3,12 +3,17 @@
 import { createApp, h, nextTick } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetDictationForTests } from "@/composables/useDictation";
+import { resetReplySpeechForTests } from "@/composables/useReplySpeech";
 import {
   DICTATION_LOCALE_ORDER,
   DICTATION_SPEECH_TAGS,
 } from "@/constants/dictation";
 import type { DictationAvailabilityQuery, DictationSpeechEvent } from "@/utils/dictation-speech";
-import { AI_CHAT_MESSAGE_MAX_CHARS } from "@/constants/ai-chat";
+import {
+  AI_CHAT_APPLY_MODE_STORAGE_KEY,
+  AI_CHAT_CONTEXT_MODE_STORAGE_KEY,
+  AI_CHAT_MESSAGE_MAX_CHARS,
+} from "@/constants/ai-chat";
 import { addLlmAccount, removeLlmAccount, setChatLlmSelectionId } from "@/config/llm-accounts";
 import { LOCAL_LLM_DEFAULT_BASE_URL, LOCAL_LLM_PROVIDER_ID } from "@/constants/llm-account";
 import { useLocale } from "@/composables/useLocale";
@@ -64,10 +69,14 @@ function mountChat(source = MERMAID_SOURCE) {
 describe("AiChatPanel layout", () => {
   beforeEach(() => {
     resetDictationForTests();
+    resetReplySpeechForTests();
   });
 
   afterEach(() => {
     resetDictationForTests();
+    resetReplySpeechForTests();
+    delete (window as unknown as { speechSynthesis?: unknown }).speechSynthesis;
+    delete (window as unknown as { SpeechSynthesisUtterance?: unknown }).SpeechSynthesisUtterance;
     document.body.innerHTML = "";
   });
 
@@ -699,6 +708,93 @@ describe("AiChatPanel layout", () => {
     expect(textarea.value).toBe("Добавь участника");
     expect(recognition!.startCount).toBe(1);
     expect(sendAiChatMessage).not.toHaveBeenCalled();
+
+    view.unmount();
+  });
+
+  it("names the composer mode icons for the current diagram and confirmation", async () => {
+    useLocale().setLocale("ru");
+    localStorage.setItem(AI_CHAT_CONTEXT_MODE_STORAGE_KEY, "current");
+    localStorage.setItem(AI_CHAT_APPLY_MODE_STORAGE_KEY, "proposal");
+    const view = mountChat();
+    await nextTick();
+
+    const context = view.host.querySelector("[data-testid='ai-chat-hint-context']");
+    const apply = view.host.querySelector("[data-testid='ai-chat-hint-apply']");
+    expect(context?.parentElement?.getAttribute("aria-label")).toBe("Текущая диаграмма");
+    expect(apply?.parentElement?.getAttribute("aria-label")).toBe("Предлагать и ждать подтверждения");
+
+    view.unmount();
+  });
+
+  it("hides voice controls when the system has no speech synthesis", async () => {
+    useLocale().setLocale("ru");
+    const view = mountChat();
+    await nextTick();
+    (view.host.querySelector("[data-testid='ai-chat-modes']") as HTMLButtonElement).click();
+    await nextTick();
+    expect(view.host.querySelector("[data-testid='ai-chat-speak-immediate']")).toBeNull();
+    expect(view.host.querySelector("[data-testid='ai-chat-speech-rate']")).toBeNull();
+    view.unmount();
+  });
+
+  it("places speak next to copy and offers immediate speech with a rate", async () => {
+    useLocale().setLocale("ru");
+    const spoken: Array<{ text: string; rate: number }> = [];
+    class FakeUtterance {
+      lang = "";
+      rate = 1;
+      onend: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      constructor(public text: string) {}
+    }
+    (window as unknown as { SpeechSynthesisUtterance: typeof FakeUtterance }).SpeechSynthesisUtterance =
+      FakeUtterance;
+    (window as unknown as { speechSynthesis: unknown }).speechSynthesis = {
+      getVoices: () => [{ lang: "ru-RU" }],
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      cancel: () => {},
+      speak: (utterance: FakeUtterance) => {
+        spoken.push({ text: utterance.text, rate: utterance.rate });
+      },
+    };
+
+    const view = mountChat();
+    await nextTick();
+    (view.host.querySelector("[data-testid='ai-chat-suggestion']") as HTMLButtonElement).click();
+    await vi.waitFor(() => {
+      expect(view.host.querySelector("[data-testid='ai-chat-speak']")).not.toBeNull();
+    });
+
+    const speak = view.host.querySelector("[data-testid='ai-chat-speak']") as HTMLButtonElement;
+    const actions = speak.closest(".ai-chat-panel__message-actions") as HTMLElement;
+    const copy = [...actions.querySelectorAll("button")].find(
+      (button) => button.getAttribute("aria-label") === "Копировать",
+    );
+    expect(copy).toBeTruthy();
+    expect(copy!.compareDocumentPosition(speak) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(speak.getAttribute("aria-label")).toBe("Ответить голосом");
+
+    speak.click();
+    expect(spoken).toEqual([{ text: "ok", rate: 1 }]);
+
+    (view.host.querySelector("[data-testid='ai-chat-modes']") as HTMLButtonElement).click();
+    await nextTick();
+    const immediate = view.host.querySelector(
+      "[data-testid='ai-chat-speak-immediate']",
+    ) as HTMLButtonElement;
+    const rate = view.host.querySelector("[data-testid='ai-chat-speech-rate']") as HTMLSelectElement;
+    expect(immediate).not.toBeNull();
+    expect(immediate.getAttribute("aria-label")).toBe("Ответить голосом сразу");
+    expect(rate.value).toBe("1");
+    expect([...rate.options].map((option) => option.value)).toEqual([
+      "0.75",
+      "1",
+      "1.25",
+      "1.5",
+      "2",
+    ]);
 
     view.unmount();
   });

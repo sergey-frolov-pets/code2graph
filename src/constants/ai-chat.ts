@@ -92,3 +92,19 @@ export const AI_CHAT_XLSX_MAX_COLUMNS = 40;
 export const AI_CHAT_SECRET_SCAN_MIN_TOKEN_LENGTH = 24;
 
 export const AI_CHAT_APPLY_MODE_STORAGE_KEY = "code2graph-ai-chat-apply-mode";
+
+/** Озвучивать готовый ответ ассистента сразу. */
+export const AI_CHAT_SPEAK_IMMEDIATE_STORAGE_KEY = "code2graph-ai-chat-speak-immediate";
+
+/** Скорость синтеза речи для ответа. */
+export const AI_CHAT_SPEECH_RATES = [0.75, 1, 1.25, 1.5, 2] as const;
+export type AiChatSpeechRate = (typeof AI_CHAT_SPEECH_RATES)[number];
+export const AI_CHAT_SPEECH_RATE_DEFAULT: AiChatSpeechRate = 1;
+export const AI_CHAT_SPEECH_RATE_STORAGE_KEY = "code2graph-ai-chat-speech-rate";
+
+export function parseAiChatSpeechRate(raw: string | null): AiChatSpeechRate {
+  const value = Number(raw);
+  return (AI_CHAT_SPEECH_RATES as readonly number[]).includes(value)
+    ? (value as AiChatSpeechRate)
+    : AI_CHAT_SPEECH_RATE_DEFAULT;
+}
