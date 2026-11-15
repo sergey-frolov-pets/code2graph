@@ -44,6 +44,7 @@ export const editorMessages = {
   "editor.samplesWiremark": "WireMark",
   "editor.samplesTooltip": "サンプル図",
   "editor.sampleOption": "サンプル図",
+  "editor.shareSample": "サンプルのリンクを共有",
   "editor.dropHint": ".puml、.mmd、.graphml、.wiremark、.d2、.dsl ファイルをここにドロップしてください。",
   "editor.dropHintViewOnly": "GraphML は閲覧専用です。.graphml ファイルをここにドロップしてください。",
   "editor.placeholder": "@startuml\nAlice -> Bob : こんにちは\n@enduml",

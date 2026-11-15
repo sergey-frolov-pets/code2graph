@@ -10,7 +10,7 @@ import {
   type InjectionKey,
   type Ref,
 } from "vue";
-import type { TranslateFn } from "@/locales/types";
+import { isLocaleKey, type TranslateFn } from "@/locales/types";
 import { useAiSourceApply } from "@/composables/useAiSourceApply";
 import { useAppDialog } from "@/composables/useAppDialog";
 import { useAppModals } from "@/composables/useAppModals";
@@ -55,6 +55,11 @@ import {
   DATA_LINK_SOURCE_UPDATED_EVENT,
 } from "@/services/local-data-link/constants";
 import { consumeLandingSample } from "@/services/landing-sample";
+import { parseAppRoute } from "@/router";
+import {
+  getSampleSource,
+  parseSamplePublicSlug,
+} from "@/constants/sample-diagrams";
 import { upsertDataLinkMarker } from "@/services/local-data-link/source-marker";
 import type { DataLinkMarkerUpdatedDetail } from "@/services/local-data-link/sync-diagram-source";
 
@@ -656,6 +661,30 @@ export function useAppShell(): AppShellContext {
     window.removeEventListener("popstate", onLibraryLinkNavigation);
   });
 
+  function openSampleFromLocation(): void {
+    const parsed = parseAppRoute({
+      hash: window.location.hash,
+      pathname: window.location.pathname,
+      search: window.location.search,
+    });
+    if (parsed.name !== "sample" || !parsed.diagramSlug) {
+      return;
+    }
+    const selection = parseSamplePublicSlug(parsed.diagramSlug);
+    if (!selection) {
+      return;
+    }
+    const sampleSource = getSampleSource(selection, locale.value);
+    const labelKey = `samples.${selection.format}.${selection.id}`;
+    applyWizardDiagramToNewTab(
+      sampleSource,
+      isLocaleKey(labelKey) ? t(labelKey) : selection.id,
+      selection.format,
+    );
+    activeMobilePanel.value = "preview";
+    dataLink.expandSignal.value += 1;
+  }
+
   function boot(): void {
     restoreDocumentMetadata();
     restoreSettings();
@@ -669,6 +698,7 @@ export function useAppShell(): AppShellContext {
         landingSample.format,
       );
     }
+    openSampleFromLocation();
     void initializeIncomingSources();
     void bootEngine();
     void handleShareLinkOnBoot();

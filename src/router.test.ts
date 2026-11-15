@@ -9,6 +9,7 @@ import {
   parseLibraryLinkPathname,
   parseRouteFromHash,
   routeHash,
+  samplePageUrl,
 } from "@/router";
 
 describe("app routes", () => {
@@ -212,6 +213,33 @@ describe("app routes", () => {
         search: "?/diagram",
       }),
     ).toBe("/diagram");
+  });
+
+  it("opens a sample from /samples/<format>-<id>", () => {
+    expect(parseAppRoute({ hash: "", pathname: "/samples/mermaid-classDiagram" })).toEqual({
+      name: "sample",
+      languageId: null,
+      diagramSlug: "mermaid-classDiagram",
+      libraryUsername: null,
+      libraryLinkSlug: null,
+    });
+    expect(parseAppRoute({ hash: "", pathname: "/samples/plantuml-c4_context/" })).toEqual({
+      name: "sample",
+      languageId: null,
+      diagramSlug: "plantuml-c4_context",
+      libraryUsername: null,
+      libraryLinkSlug: null,
+    });
+    expect(
+      samplePageUrl("https://code2graph.ru", "mermaid-flowchart"),
+    ).toBe("https://www.code2graph.ru/samples/mermaid-flowchart");
+    expect(
+      localDataLinkCanonicalPath({
+        hash: "",
+        pathname: "/",
+        search: "?/samples/d2-flow",
+      }),
+    ).toBe("/samples/d2-flow");
   });
 
   it("reads /user/link and an optional library segment", () => {

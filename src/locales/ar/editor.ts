@@ -44,6 +44,7 @@ export const editorMessages = {
   "editor.samplesWiremark": "WireMark",
   "editor.samplesTooltip": "مخططات نموذجية",
   "editor.sampleOption": "مخطط نموذجي",
+  "editor.shareSample": "مشاركة رابط المثال",
   "editor.dropHint": "أفلت ملف .puml أو .mmd أو .graphml أو .wiremark أو .d2 أو .dsl هنا.",
   "editor.dropHintViewOnly": "GraphML للعرض فقط. أفلت ملف .graphml هنا.",
   "editor.placeholder": "@startuml\nAlice -> Bob : مرحبا\n@enduml",

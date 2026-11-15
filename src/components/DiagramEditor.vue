@@ -558,6 +558,7 @@ onUnmounted(() => {
       :can-undo="canUndo"
       :can-redo="canRedo"
       :can-clear="canClear"
+      :source="source"
       :can-convert="canClear"
       :can-paste-table="canPasteTable"
       :can-refresh-data="canRefreshData"

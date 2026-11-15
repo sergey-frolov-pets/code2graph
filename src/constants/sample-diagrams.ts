@@ -146,6 +146,21 @@ export function getDefaultFileNameForSample(
   return `${label}${extension}`;
 }
 
+/** Public path segment: `code2graph.ru/samples/<format>-<id>`. */
+export function samplePublicSlug(selection: SampleSelection): string {
+  return `${selection.format}-${selection.id}`;
+}
+
+export function parseSamplePublicSlug(slug: string): SampleSelection | null {
+  const separatorIndex = slug.indexOf("-");
+  if (separatorIndex < 1) {
+    return null;
+  }
+  return parseSampleSelection(
+    `${slug.slice(0, separatorIndex)}:${slug.slice(separatorIndex + 1)}`,
+  );
+}
+
 export function parseSampleSelection(value: string): SampleSelection | null {
   const separatorIndex = value.indexOf(":");
   if (separatorIndex < 0) {

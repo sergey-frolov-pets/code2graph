@@ -44,6 +44,7 @@ export const editorMessages = {
   "editor.samplesWiremark": "WireMark",
   "editor.samplesTooltip": "示例图表",
   "editor.sampleOption": "示例图表",
+  "editor.shareSample": "分享示例链接",
   "editor.dropHint": "将 .puml、.mmd、.graphml、.wiremark、.d2 或 .dsl 文件拖到这里。",
   "editor.dropHintViewOnly": "GraphML 仅可查看。将 .graphml 文件拖到这里。",
   "editor.placeholder": "@startuml\nAlice -> Bob : 你好\n@enduml",

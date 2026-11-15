@@ -44,6 +44,7 @@ export const editorMessages = {
   "editor.samplesWiremark": "WireMark",
   "editor.samplesTooltip": "नमूना आरेख",
   "editor.sampleOption": "नमूना आरेख",
+  "editor.shareSample": "उदाहरण लिंक साझा करें",
   "editor.dropHint": ".puml, .mmd, .graphml, .wiremark, .d2 या .dsl फ़ाइल यहाँ छोड़ें।",
   "editor.dropHintViewOnly": "GraphML केवल देखने के लिए है। .graphml फ़ाइल यहाँ छोड़ें।",
   "editor.placeholder": "@startuml\nAlice -> Bob : नमस्ते\n@enduml",
