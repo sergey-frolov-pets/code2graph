@@ -44,6 +44,7 @@ const view = computed(() => {
       return AiChatSharePage;
     case "diagram":
     case "clipboard":
+    case "sample":
     case "libraryLink":
       return App;
     default:
