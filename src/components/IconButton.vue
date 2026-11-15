@@ -14,6 +14,8 @@ const props = defineProps<{
   format?: boolean;
   extraClass?: string;
   preventMousedownDefault?: boolean;
+  /** Показывать подсказку, даже когда панель опций её гасит. */
+  keepTooltip?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -38,27 +40,31 @@ const {
 const tooltipsSuspended = inject(iconButtonTooltipsSuspendedKey, computed(() => false));
 
 watch(tooltipsSuspended, (suspended) => {
-  if (suspended) {
+  if (suspended && !props.keepTooltip) {
     hideTooltip();
   }
 });
 
+function tooltipsBlocked(): boolean {
+  return tooltipsSuspended.value && !props.keepTooltip;
+}
+
 function onMouseEnterGuarded(): void {
-  if (tooltipsSuspended.value) {
+  if (tooltipsBlocked()) {
     return;
   }
   onMouseEnter();
 }
 
 function onPointerDownGuarded(event: PointerEvent): void {
-  if (tooltipsSuspended.value) {
+  if (tooltipsBlocked()) {
     return;
   }
   onPointerDown(event);
 }
 
 function onTouchStartGuarded(event: TouchEvent): void {
-  if (tooltipsSuspended.value) {
+  if (tooltipsBlocked()) {
     return;
   }
   onTouchStart(event);

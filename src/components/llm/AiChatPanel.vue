@@ -19,12 +19,14 @@ import {
   SlidersHorizontal,
   Square,
   Trash2,
+  Volume2,
   X,
   Zap,
 } from "@lucide/vue";
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from "vue";
 import { isAgentDiagramType } from "@shared/agent-diagram";
 import IconButton from "@/components/IconButton.vue";
+import TooltipWrap from "@/components/TooltipWrap.vue";
 import type { LayoutEngine } from "@/constants";
 import { getLlmAccount } from "@/config/llm-accounts";
 import { parseFreeLlmSelectionId } from "@/config/llm-account-record";
@@ -36,6 +38,8 @@ import {
   AI_CHAT_CONTEXT_MODE_DEFAULT,
   AI_CHAT_CONTEXT_MODE_STORAGE_KEY,
   AI_CHAT_DEFAULT_APPLY_MODE,
+  AI_CHAT_SPEECH_RATES,
+  parseAiChatSpeechRate,
   AI_CHAT_MAX_ATTACHMENTS,
   AI_CHAT_MAX_IMAGE_ATTACHMENTS,
   AI_CHAT_MESSAGE_MAX_CHARS,
@@ -52,6 +56,7 @@ import { useAiChatSessions } from "@/composables/useAiChatSessions";
 import { useChatLlmSelection } from "@/composables/useChatLlmSelection";
 import { iconButtonTooltipsSuspendedKey } from "@/composables/useLongPressTooltip";
 import { useDictation } from "@/composables/useDictation";
+import { useReplySpeech } from "@/composables/useReplySpeech";
 import { useLocale } from "@/composables/useLocale";
 import { getLanguageModule } from "@/languages/registry";
 import { isLocaleKey, type LocaleKey } from "@/locales/types";
@@ -143,6 +148,15 @@ const {
   toggleDictation,
   stopDictation,
 } = useDictation();
+const {
+  available: replySpeechAvailable,
+  speakingId,
+  speakImmediately,
+  rate: replySpeechRate,
+  speakReply,
+  stopSpeaking,
+  toggleReplySpeech,
+} = useReplySpeech();
 
 const DICTATION_ERROR_KEYS = {
   "not-allowed": "aiChat.dictateNotAllowed",
@@ -153,9 +167,15 @@ const DICTATION_ERROR_KEYS = {
 } as const satisfies Record<DictationFatalError, LocaleKey>;
 
 function onDictateToggle(): void {
+  stopSpeaking();
   toggleDictation(draft, (error) => {
     attachmentNotice.value = t(DICTATION_ERROR_KEYS[error]);
   });
+}
+
+function onSpeechRateChange(event: Event): void {
+  const value = (event.target as HTMLSelectElement).value;
+  replySpeechRate.value = parseAiChatSpeechRate(value);
 }
 const threadRef = ref<HTMLElement | null>(null);
 const errorMessage = ref("");
@@ -347,6 +367,12 @@ function titleUnlessModesOpen(label: string): string | undefined {
 
 const contextHintIcon = computed(() => (contextMode.value === "new" ? FilePlus : FileCode));
 const applyHintIcon = computed(() => (applyMode.value === "immediate" ? Zap : Eye));
+const contextHintLabel = computed(() =>
+  contextMode.value === "new" ? t("aiChat.contextNew") : t("aiChat.contextCurrent"),
+);
+const applyHintLabel = computed(() =>
+  applyMode.value === "immediate" ? t("aiChat.applyModeImmediate") : t("aiChat.applyModeProposal"),
+);
 
 /** Модель и провайдер выбранной в чате учётки — тем же правилом, что и отправка. */
 const composerSelection = computed(() => {
@@ -535,6 +561,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   stopDictation();
+  stopSpeaking();
   clearSuggestionPressTimer();
   clearSuggestionHoverCloseTimer();
   overlayListenerAttached = false;
@@ -1107,6 +1134,10 @@ async function runSend(
     session.messages.push(assistant);
     await persist(session);
 
+    if (speakImmediately.value && replySpeechAvailable.value) {
+      speakReply(assistant.id, assistant.content);
+    }
+
     if (
       assistant.proposal &&
       applyMode.value === "immediate" &&
@@ -1547,6 +1578,28 @@ async function onCopyChat(): Promise<void> {
               />
             </IconButton>
             <IconButton
+              v-if="message.role === 'assistant' && replySpeechAvailable"
+              :label="speakingId === message.id ? t('aiChat.stopSpeaking') : t('aiChat.speakReply')"
+              :title="titleUnlessModesOpen(speakingId === message.id ? t('aiChat.stopSpeaking') : t('aiChat.speakReply'))"
+              :pressed="speakingId === message.id"
+              extra-class="ai-chat-panel__tool"
+              data-testid="ai-chat-speak"
+              @click="toggleReplySpeech(message.id, message.content)"
+            >
+              <Square
+                v-if="speakingId === message.id"
+                :size="16"
+                :stroke-width="1.8"
+                aria-hidden="true"
+              />
+              <Volume2
+                v-else
+                :size="16"
+                :stroke-width="1.8"
+                aria-hidden="true"
+              />
+            </IconButton>
+            <IconButton
               v-if="message.role === 'user'"
               :label="t('aiChat.editResend')"
               :title="titleUnlessModesOpen(t('aiChat.editResend'))"
@@ -1788,22 +1841,34 @@ async function onCopyChat(): Promise<void> {
                   aria-hidden="true"
                 >
                   <span class="ai-chat-panel__hint-modes">
-                    <component
-                      :is="contextHintIcon"
-                      class="ai-chat-panel__hint-icon"
-                      data-testid="ai-chat-hint-context"
-                      :data-mode="contextMode"
-                      :stroke-width="1.8"
-                      aria-hidden="true"
-                    />
-                    <component
-                      :is="applyHintIcon"
-                      class="ai-chat-panel__hint-icon"
-                      data-testid="ai-chat-hint-apply"
-                      :data-mode="applyMode"
-                      :stroke-width="1.8"
-                      aria-hidden="true"
-                    />
+                    <TooltipWrap
+                      class="ai-chat-panel__hint-tip"
+                      :label="contextHintLabel"
+                      :aria-label="contextHintLabel"
+                    >
+                      <component
+                        :is="contextHintIcon"
+                        class="ai-chat-panel__hint-icon"
+                        data-testid="ai-chat-hint-context"
+                        :data-mode="contextMode"
+                        :stroke-width="1.8"
+                        aria-hidden="true"
+                      />
+                    </TooltipWrap>
+                    <TooltipWrap
+                      class="ai-chat-panel__hint-tip"
+                      :label="applyHintLabel"
+                      :aria-label="applyHintLabel"
+                    >
+                      <component
+                        :is="applyHintIcon"
+                        class="ai-chat-panel__hint-icon"
+                        data-testid="ai-chat-hint-apply"
+                        :data-mode="applyMode"
+                        :stroke-width="1.8"
+                        aria-hidden="true"
+                      />
+                    </TooltipWrap>
                   </span>
                   <span class="ai-chat-panel__hint-copy">
                     <span
@@ -1920,6 +1985,7 @@ async function onCopyChat(): Promise<void> {
               <IconButton
                 :label="t('aiChat.contextCurrent')"
                 :pressed="contextMode === 'current'"
+                keep-tooltip
                 extra-class="ai-chat-panel__tool"
                 @click="contextMode = 'current'"
               >
@@ -1932,6 +1998,7 @@ async function onCopyChat(): Promise<void> {
               <IconButton
                 :label="t('aiChat.contextNew')"
                 :pressed="contextMode === 'new'"
+                keep-tooltip
                 extra-class="ai-chat-panel__tool"
                 data-testid="ai-chat-context-new"
                 @click="contextMode = 'new'"
@@ -1951,6 +2018,7 @@ async function onCopyChat(): Promise<void> {
               <IconButton
                 :label="t('aiChat.applyModeProposal')"
                 :pressed="applyMode === 'proposal'"
+                keep-tooltip
                 extra-class="ai-chat-panel__tool"
                 @click="applyMode = 'proposal'"
               >
@@ -1963,6 +2031,7 @@ async function onCopyChat(): Promise<void> {
               <IconButton
                 :label="t('aiChat.applyModeImmediate')"
                 :pressed="applyMode === 'immediate'"
+                keep-tooltip
                 extra-class="ai-chat-panel__tool"
                 @click="applyMode = 'immediate'"
               >
@@ -1972,6 +2041,48 @@ async function onCopyChat(): Promise<void> {
                   aria-hidden="true"
                 />
               </IconButton>
+            </div>
+            <div
+              v-if="replySpeechAvailable"
+              class="ai-chat-panel__toggles"
+              role="group"
+              :aria-label="t('aiChat.speakReply')"
+            >
+              <IconButton
+                :label="t('aiChat.speakImmediately')"
+                :pressed="speakImmediately"
+                keep-tooltip
+                extra-class="ai-chat-panel__tool"
+                data-testid="ai-chat-speak-immediate"
+                @click="speakImmediately = !speakImmediately"
+              >
+                <Volume2
+                  :size="16"
+                  :stroke-width="1.8"
+                  aria-hidden="true"
+                />
+              </IconButton>
+              <label
+                class="ai-chat-panel__speech-rate"
+                @click.stop
+              >
+                <span class="sr-only">{{ t("aiChat.speechRate") }}</span>
+                <select
+                  class="ai-chat-panel__speech-rate-select"
+                  data-testid="ai-chat-speech-rate"
+                  :value="replySpeechRate"
+                  :aria-label="t('aiChat.speechRate')"
+                  @change="onSpeechRateChange"
+                >
+                  <option
+                    v-for="option in AI_CHAT_SPEECH_RATES"
+                    :key="option"
+                    :value="option"
+                  >
+                    {{ option }}×
+                  </option>
+                </select>
+              </label>
             </div>
           </div>
         </div>
@@ -2176,6 +2287,18 @@ async function onCopyChat(): Promise<void> {
 }
 
 .ai-chat-panel__provider-select option {
+  font-size: var(--ai-chat-provider-font-size);
+}
+
+.ai-chat-panel__speech-rate-select {
+  height: 32px;
+  min-height: 32px;
+  margin: 0;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
   font-size: var(--ai-chat-provider-font-size);
 }
 
@@ -2515,6 +2638,11 @@ async function onCopyChat(): Promise<void> {
   align-items: center;
   justify-content: center;
   gap: 0.125rem;
+}
+
+.ai-chat-panel__hint-tip {
+  display: inline-flex;
+  pointer-events: auto;
 }
 
 .ai-chat-panel__hint-copy {
