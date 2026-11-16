@@ -379,8 +379,11 @@ export function drawLabelLines(
   const direction = placement === "up" ? -1 : 1;
   const origin =
     placement === "center" ? y - ((lines.length - 1) * step) / 2 : y;
+  // Кегль передаём в разметку: у svg.text по умолчанию 12, без этого
+  // многострочная подпись крупнее своей однострочной версии.
+  const textAttrs = { "font-size": fontSize, ...attrs };
   lines.forEach((line, idx) => {
-    svg.text(x, origin + idx * step * direction, line, attrs);
+    svg.text(x, origin + idx * step * direction, line, textAttrs);
   });
 }
 

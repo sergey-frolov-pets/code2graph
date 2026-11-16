@@ -3,10 +3,13 @@ import {
   arrowMarker,
   contrastTextColor,
   createSvg,
+  drawLabelLines,
   fmt,
   getPalette,
   hasLabelBreak,
+  labelLineCount,
   labelLineStep,
+  measureLabelWidth,
   measureText,
   monoFlagsFromMode,
   monoGray,
@@ -316,7 +319,7 @@ const NAMED_BOTH_RE = /^(.*?)\s+<-\s*([\p{L}][\p{L}\p{N}_-]*)\s*->\s*(.+)$/u;
 function splitTrailingLabel(raw: string): { body: string; label?: string } {
   const match = /\slabel=("[^"]*"|'[^']*'|\S+)\s*$/i.exec(raw.trim());
   if (!match || match.index === undefined) return { body: raw.trim() };
-  const label = unquote(match[1]).trim();
+  const label = unquoteLabel(match[1]);
   return {
     body: raw.trim().slice(0, match.index).trim(),
     label: label || undefined,
@@ -1288,7 +1291,10 @@ function rankGapBelow(model: PowerModel): (upperDepth: number) => number {
       if (inGap) influences += 1;
       else if (stub) stubs += 1;
       else continue;
-      if (edge.label) labels += 1;
+      if (edge.label) {
+        const extraLines = Math.max(0, labelLineCount(edge.label) - 1);
+        labels += 1 + extraLines;
+      }
     }
     const need = 12 + reportGroups.size * 14 + influences * 14 + stubs * 14 + labels * 20;
     const gap = Math.max(52, need);
@@ -1343,7 +1349,7 @@ function spreadLabeledSpans(drafts: readonly InfluenceDraft[], offsetX: number):
   };
   for (const draft of drafts) {
     if (!draft.label) continue;
-    const need = measureText(draft.label, EDGE_LABEL_FONT) + 100;
+    const need = measureLabelWidth(draft.label, EDGE_LABEL_FONT) + 100;
     for (let step = 0; step < 48 && Math.abs(draft.x2 - draft.x1) < need; step += 1) {
       const sign = draft.x2 >= draft.x1 ? 1 : -1;
       const movedTo = push(
@@ -1389,22 +1395,24 @@ function hostSegmentIndex(points: readonly RoutePoint[]): number {
   return best;
 }
 
-function labelReserve(y: number, labeled: boolean): { top: number; bottom: number } | null {
-  if (!labeled) return null;
+function labelReserve(y: number, label?: string): { top: number; bottom: number } | null {
+  if (!label) return null;
   const bottom = y - 4;
-  return { top: bottom - EDGE_LABEL_BAND, bottom };
+  const lineCount = labelLineCount(label);
+  const band = lineCount * labelLineStep(EDGE_LABEL_FONT) + 4;
+  return { top: bottom - band, bottom };
 }
 
 function trackConflicts(
   y: number,
   x0: number,
   x1: number,
-  labeled: boolean,
+  label: string | undefined,
   obstacle: TrackObstacle,
 ): boolean {
   if (!rangesOverlap(x0, x1, obstacle.x0, obstacle.x1)) return false;
   if (Math.abs(y - obstacle.y) < TRACK_CLEAR) return true;
-  const reserve = labelReserve(y, labeled);
+  const reserve = labelReserve(y, label);
   if (reserve && obstacle.y > reserve.top - 3 && obstacle.y < y + 3) return true;
   if (
     reserve &&
@@ -1437,9 +1445,9 @@ function gapBand(x0: number, x1: number, y: number, cards: readonly CardBox[]): 
   return { top, bottom };
 }
 
-function writeObstacle(obstacle: TrackObstacle, y: number, labeled: boolean): void {
+function writeObstacle(obstacle: TrackObstacle, y: number, label?: string): void {
   obstacle.y = y;
-  const reserve = labelReserve(y, labeled);
+  const reserve = labelReserve(y, label);
   obstacle.labelTop = reserve?.top;
   obstacle.labelBottom = reserve?.bottom;
 }
@@ -1455,7 +1463,7 @@ function separateInfluenceTracks(
     x0: Math.min(elbow.x1, elbow.x2),
     x1: Math.max(elbow.x1, elbow.x2),
   }));
-  const tracks: { points: RoutePoint[]; index: number; labeled: boolean; obstacle: TrackObstacle }[] = [];
+  const tracks: { points: RoutePoint[]; index: number; label: string | undefined; obstacle: TrackObstacle }[] = [];
   for (const route of routes) {
     const host = hostSegmentIndex(route.points);
     for (let index = 0; index < route.points.length - 1; index += 1) {
@@ -1463,17 +1471,17 @@ function separateInfluenceTracks(
       const a = route.points[index];
       const b = route.points[index + 1];
       if (Math.abs(a.y - b.y) > 0.4 || Math.abs(a.x - b.x) < 8) continue;
-      const labeled = Boolean(route.label) && index === host;
+      const label = index === host ? route.label : undefined;
       const obstacle: TrackObstacle = {
         y: a.y,
         x0: Math.min(a.x, b.x),
         x1: Math.max(a.x, b.x),
       };
-      writeObstacle(obstacle, a.y, labeled);
-      tracks.push({ points: route.points, index, labeled, obstacle });
+      writeObstacle(obstacle, a.y, label);
+      tracks.push({ points: route.points, index, label, obstacle });
     }
   }
-  const ordered = [...tracks].sort((a, b) => Number(b.labeled) - Number(a.labeled));
+  const ordered = [...tracks].sort((a, b) => Number(Boolean(b.label)) - Number(Boolean(a.label)));
   for (const track of ordered) {
     const a = track.points[track.index];
     const b = track.points[track.index + 1];
@@ -1489,7 +1497,7 @@ function separateInfluenceTracks(
         (y) =>
           y >= band.top + 4 &&
           y <= band.bottom - 4 &&
-          !others.some((obstacle) => obstacle !== track.obstacle && trackConflicts(y, x0, x1, track.labeled, obstacle)),
+          !others.some((obstacle) => obstacle !== track.obstacle && trackConflicts(y, x0, x1, track.label, obstacle)),
       );
       if (found !== undefined) {
         next = found;
@@ -1498,7 +1506,7 @@ function separateInfluenceTracks(
     }
     a.y = next;
     b.y = next;
-    writeObstacle(track.obstacle, next, track.labeled);
+    writeObstacle(track.obstacle, next, track.label);
   }
 }
 
@@ -1552,9 +1560,11 @@ function placeEdgeLabel(
   const a = points[hostIndex];
   const b = points[hostIndex + 1];
   const lineY = a.y;
-  const width = measureText(text, EDGE_LABEL_FONT) + 10;
+  const lineCount = labelLineCount(text);
+  const width = measureLabelWidth(text, EDGE_LABEL_FONT) + 10;
+  const band = lineCount * labelLineStep(EDGE_LABEL_FONT) + 4;
   const boxBottom = lineY - 4;
-  const boxTop = boxBottom - EDGE_LABEL_BAND;
+  const boxTop = boxBottom - band;
   const xMin = Math.min(a.x, b.x);
   const xMax = Math.max(a.x, b.x);
   const blocked: { lo: number; hi: number }[] = [];
@@ -1600,7 +1610,9 @@ function placeEdgeLabel(
   } else {
     x = (span.lo + span.hi) / 2;
   }
-  return { x, y: boxBottom - 2 };
+  // Однострочная подпись: Y как раньше. Многострочная: центр блока.
+  const y = lineCount === 1 ? boxBottom - 2 : boxBottom - band / 2;
+  return { x, y };
 }
 
 /** Ломаные стрелки влияния, как линии подчинения: без наложения друг на друга. */
@@ -1982,8 +1994,15 @@ function linkLines(model: PowerModel, personId: string): string[] {
     const otherId = edge.from === personId ? edge.to : edge.from;
     const arrow = edge.both ? "↔" : edge.from === personId ? "→" : "←";
     const caption = linkCaption(model, edge.name);
-    const detail = edge.label?.trim() ? `${caption} — ${edge.label.trim()}` : caption;
-    captions.push(`${arrow} ${personName(model, otherId)}: ${detail}`);
+    if (edge.label?.trim() && hasLabelBreak(edge.label)) {
+      // Многострочная подпись: каждая строка отдельно.
+      const lines = splitLabelLines(edge.label);
+      const prefix = `${arrow} ${personName(model, otherId)}: ${caption} — `;
+      lines.forEach((line) => captions.push(`${prefix}${line}`));
+    } else {
+      const detail = edge.label?.trim() ? `${caption} — ${edge.label.trim()}` : caption;
+      captions.push(`${arrow} ${personName(model, otherId)}: ${detail}`);
+    }
   }
   return uniqueFold(captions);
 }
@@ -2228,19 +2247,35 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
   });
   routed.routes.forEach((route) => {
     if (!route.label) return;
-    const plateWidth = measureText(route.label, EDGE_LABEL_FONT) + 10;
+    const lineCount = labelLineCount(route.label);
+    const step = labelLineStep(EDGE_LABEL_FONT);
+    const plateWidth = measureLabelWidth(route.label, EDGE_LABEL_FONT) + 10;
+    // Однострочная плашка — ровно прежняя высота (14), golden не меняется.
+    // Многострочная растёт на шаг строки за каждую дополнительную строку.
+    const plateHeight = EDGE_LABEL_BAND + Math.max(0, lineCount - 1) * step;
+    const plateY =
+      lineCount === 1
+        ? route.labelY - EDGE_LABEL_BAND + 2
+        : route.labelY - (lineCount - 1) * step / 2 - plateHeight / 2;
+    const textY =
+      lineCount === 1
+        ? route.labelY
+        : route.labelY - (lineCount - 1) * step / 2;
     const plateX = route.labelX - plateWidth / 2;
-    const plateY = route.labelY - EDGE_LABEL_BAND + 2;
-    svg.rect(plateX, plateY, plateWidth, EDGE_LABEL_BAND, {
+    svg.rect(plateX, plateY, plateWidth, plateHeight, {
       fill: palette.bg,
       stroke: "none",
       "data-label-plate": "1",
     });
-    svg.text(route.labelX, route.labelY, route.label, {
-      "font-size": EDGE_LABEL_FONT,
-      fill: route.color,
-      "data-edge-label": "1",
-    });
+    drawLabelLines(
+      svg,
+      route.labelX,
+      textY,
+      route.label,
+      EDGE_LABEL_FONT,
+      { fill: route.color, "data-edge-label": "1" },
+      "center",
+    );
   });
 
   if (legend) {
