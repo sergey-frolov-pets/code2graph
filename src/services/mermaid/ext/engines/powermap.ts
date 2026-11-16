@@ -1996,10 +1996,10 @@ function linkLines(model: PowerModel, personId: string): string[] {
     const arrow = edge.both ? "↔" : edge.from === personId ? "→" : "←";
     const caption = linkCaption(model, edge.name);
     if (edge.label?.trim() && hasLabelBreak(edge.label)) {
-      // Многострочная подпись: каждая строка отдельно.
-      const lines = splitLabelLines(edge.label);
+      // Многострочная подпись: только первая строка с многоточием.
+      const first = splitLabelLines(edge.label)[0] ?? "";
       const prefix = `${arrow} ${personName(model, otherId)}: ${caption} — `;
-      lines.forEach((line) => captions.push(`${prefix}${line}`));
+      captions.push(`${prefix}${first}…`);
     } else {
       const detail = edge.label?.trim() ? `${caption} — ${edge.label.trim()}` : caption;
       captions.push(`${arrow} ${personName(model, otherId)}: ${detail}`);
