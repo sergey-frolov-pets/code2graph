@@ -2256,11 +2256,8 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
     const plateY =
       lineCount === 1
         ? route.labelY - EDGE_LABEL_BAND + 2
-        : route.labelY - (lineCount - 1) * step / 2 - plateHeight / 2;
-    const textY =
-      lineCount === 1
-        ? route.labelY
-        : route.labelY - (lineCount - 1) * step / 2;
+        : route.labelY - plateHeight / 2;
+    const textY = route.labelY;
     const plateX = route.labelX - plateWidth / 2;
     svg.rect(plateX, plateY, plateWidth, plateHeight, {
       fill: palette.bg,
