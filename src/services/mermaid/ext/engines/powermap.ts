@@ -1611,7 +1611,8 @@ function placeEdgeLabel(
     x = (span.lo + span.hi) / 2;
   }
   // Однострочная подпись: Y как раньше. Многострочная: центр блока.
-  const y = lineCount === 1 ? boxBottom - 2 : boxBottom - band / 2;
+  // стало
+  const y = boxBottom - 2 - ((lineCount - 1) * labelLineStep(EDGE_LABEL_FONT)) / 2;
   return { x, y };
 }
 
@@ -2253,10 +2254,7 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
     // Однострочная плашка — ровно прежняя высота (14), golden не меняется.
     // Многострочная растёт на шаг строки за каждую дополнительную строку.
     const plateHeight = EDGE_LABEL_BAND + Math.max(0, lineCount - 1) * step;
-    const plateY =
-      lineCount === 1
-        ? route.labelY - EDGE_LABEL_BAND + 2
-        : route.labelY - plateHeight / 2 + (lineCount) * step * 2;
+    const plateY = route.labelY - (EDGE_LABEL_BAND - 2) - ((lineCount - 1) * step) / 2;
     const textY = route.labelY;
     const plateX = route.labelX - plateWidth / 2;
     svg.rect(plateX, plateY, plateWidth, plateHeight, {
