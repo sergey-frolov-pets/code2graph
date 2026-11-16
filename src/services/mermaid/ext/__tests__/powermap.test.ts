@@ -557,7 +557,70 @@ ceo -> cfo`), {});
     expect(svg).toContain('xmlns:xlink="http://www.w3.org/1999/xlink"');
     expect(svg.indexOf('xmlns:xlink="http://www.w3.org/1999/xlink"')).toBeLessThan(svg.indexOf("xlink:href="));
   });
+
+  it("многострочная подпись стрелки через \\n рисуется отдельными строками", () => {
+    const single = powermapEngine.render(oneLineLabelModel(), {});
+    const wrapped = powermapEngine.render(twoLineLabelModel("\\n"), {});
+    expect(textsOf(wrapped)).toEqual(expect.arrayContaining(["бюджет", "на 2027"]));
+    expect(textsOf(single)).not.toContain("на 2027");
+    // плашка растёт по высоте и не вылезает на стрелки
+    const singlePlate = labelPlates(single)[0];
+    const wrappedPlate = labelPlates(wrapped)[0];
+    expect(wrappedPlate.height).toBeGreaterThan(singlePlate.height);
+  });
+
+  it("многострочная подпись стрелки через <br> работает так же, как \\n", () => {
+    const viaBr = powermapEngine.render(twoLineLabelModel("<br>"), {});
+    const viaNl = powermapEngine.render(twoLineLabelModel("\\n"), {});
+    expect(textsOf(viaBr)).toEqual(textsOf(viaNl));
+    expect(labelPlates(viaBr)[0].height).toBeCloseTo(labelPlates(viaNl)[0].height, 5);
+  });
+
+  it("однострочная подпись остаётся прежней высоты 14", () => {
+    const plate = labelPlates(powermapEngine.render(oneLineLabelModel(), {}))[0];
+    expect(plate.height).toBe(14);
+  });
+
+  it("многострочная подпись не наезжает на чужие штрихи", () => {
+    const svg = powermapEngine.render(twoLineLabelModel("\\n"), {});
+    const plates = labelPlates(svg);
+    const strokes = [...linkPaths(svg), ...reportPaths(svg)];
+    expect(plates.length).toBeGreaterThan(0);
+    for (const plate of plates) {
+      for (const path of strokes) {
+        for (let index = 0; index < path.points.length - 1; index += 1) {
+          expect(segmentHitsRect(path.points[index], path.points[index + 1], plate)).toBe(false);
+        }
+      }
+    }
+  });
 });
+
+/** Подпись в одну строку — базовая модель для сравнения. */
+function oneLineLabelModel() {
+  return modelOf(`powermap
+ceo [Анна] role=decider
+cfo [Илья] role=user
+ops [Пётр] role=user
+ceo -> cfo
+ceo -> ops
+cfo -supporter-> ops label="бюджет"`);
+}
+
+/** Та же модель, но подпись из двух строк через заданный разделитель. */
+function twoLineLabelModel(sep: string) {
+  return modelOf(`powermap
+ceo [Анна] role=decider
+cfo [Илья] role=user
+ops [Пётр] role=user
+ceo -> cfo
+ceo -> ops
+cfo -supporter-> ops label="бюджет${sep}на 2027"`);
+}
+
+function textsOf(svg: string): string[] {
+  return [...svg.matchAll(/<text\b[^>]*>([^<]*)<\/text>/g)].map((match) => match[1]);
+}
 
 function rangesOverlap(a0: number, a1: number, b0: number, b1: number): boolean {
   const overlap =
