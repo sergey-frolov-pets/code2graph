@@ -769,8 +769,8 @@ dev -> qa
 
 | Строка | Смысл |
 |---|---|
-| `team <id> [подпись] [parent=<id>] fill=#hex stroke=#hex radius=<px> padding=<px>` | объявление команды. `parent=<id>` (или путь в id: `team sales/moscow`) вкладывает команду в родительскую. `radius` 0–40, по умолчанию 10; `padding` 0–48, по умолчанию 14. Без `fill`/`stroke` берутся цвета темы |
-| `teams layout=auto\|row\|column\|grid dir=lr\|tb gap=<px> columns=<n>` | как команды стоят друг относительно друга. `gap` 0–200, по умолчанию 24; `columns` 1–12, по умолчанию 2 |
+| `team <id> [подпись] [parent=<id>] fill=#hex stroke=#hex width=<px> style=solid\|dash\|dot\|dashdot radius=<px> padding=<px> frame=on\|off label=on\|off` | объявление команды и её рамки. `parent=<id>` (или путь в id: `team sales/moscow`) вкладывает команду в родительскую. `radius` 0–40, по умолчанию 10; `padding` 0–48, по умолчанию 14; `width` 0,5–4 (толщина, по умолчанию 1,2); `style` — штрих, по умолчанию `dash`. `frame=off` — рамки нет, команда только группирует (и не мешает стрелкам как препятствие). `label=off` — без подписи, место под неё не занимается; `label="…"` задаёт текст вместо `[подпись]`. `fill=off` — без заливки, видна только граница. Без `fill`/`stroke` берутся цвета темы |
+| `teams layout=auto\|row\|column\|grid dir=lr\|tb gap=<px> columns=<n> labels=on\|off` | как команды стоят друг относительно друга. `gap` 0–200, по умолчанию 24; `columns` 1–12, по умолчанию 2. `labels=off` прячет подписи всех команд, рамки остаются |
 | `team=<id>` у блока | к какой команде он относится. Команду можно не объявлять — она создастся сама с дефолтным стилем. `team=-` оставляет блок вне команд |
 
 Правила раскладки:
@@ -1217,8 +1217,8 @@ cfo -supporter-> cto label=бюджет
 
 | Строка | Смысл |
 |---|---|
-| `team <id> [подпись] [parent=<id>] fill=#hex stroke=#hex radius=<px> padding=<px>` | объявление команды. `parent=<id>` (или путь в id: `team sales/moscow`) вкладывает команду в родительскую. `radius` 0–40, по умолчанию 10; `padding` 0–48, по умолчанию 14. Без `fill`/`stroke` берутся цвета темы |
-| `teams layout=auto\|row\|column\|grid dir=lr\|tb gap=<px> columns=<n>` | как команды стоят друг относительно друга. `gap` 0–200, по умолчанию 24; `columns` 1–12, по умолчанию 2 |
+| `team <id> [подпись] [parent=<id>] fill=#hex stroke=#hex width=<px> style=solid\|dash\|dot\|dashdot radius=<px> padding=<px> frame=on\|off label=on\|off` | объявление команды и её рамки. `parent=<id>` (или путь в id: `team sales/moscow`) вкладывает команду в родительскую. `radius` 0–40, по умолчанию 10; `padding` 0–48, по умолчанию 14; `width` 0,5–4 (толщина, по умолчанию 1,2); `style` — штрих, по умолчанию `dash`. `frame=off` — рамки нет, команда только группирует (и не мешает стрелкам как препятствие). `label=off` — без подписи, место под неё не занимается; `label="…"` задаёт текст вместо `[подпись]`. `fill=off` — без заливки, видна только граница. Без `fill`/`stroke` берутся цвета темы |
+| `teams layout=auto\|row\|column\|grid dir=lr\|tb gap=<px> columns=<n> labels=on\|off` | как команды стоят друг относительно друга. `gap` 0–200, по умолчанию 24; `columns` 1–12, по умолчанию 2. `labels=off` прячет подписи всех команд, рамки остаются |
 | `team=<id>` у человека | к какой команде он относится. Команду можно не объявлять — она создастся сама с дефолтным стилем. `team=-` оставляет человека вне команд |
 
 Правила раскладки:

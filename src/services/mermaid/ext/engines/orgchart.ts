@@ -91,6 +91,9 @@ export const VIRTUAL_ROOT_ID = "__root__";
 
 // --- Команды: общий блок для orgchart и powermap ---------------------------
 
+/** Штрих рамки команды. */
+export type TeamDash = "solid" | "dash" | "dot" | "dashdot";
+
 /** Команда: рамка с подписью вокруг своей части дерева. */
 export interface TeamStyle {
   id: string;
@@ -101,6 +104,14 @@ export interface TeamStyle {
   stroke?: string;
   radius: number;
   padding: number;
+  /** Толщина рамки в px (0.5–4). По умолчанию 1.2. */
+  strokeWidth?: number;
+  /** Штрих рамки. По умолчанию dash — прежний вид. */
+  dash?: TeamDash;
+  /** false — рамки нет, команда только группирует. По умолчанию true. */
+  frame?: boolean;
+  /** false — подписи над рамкой нет. По умолчанию true. */
+  showLabel?: boolean;
 }
 
 /** Как команды стоят друг относительно друга. */
@@ -109,6 +120,8 @@ export interface TeamLayoutSpec {
   dir: "lr" | "tb";
   gap: number;
   columns: number;
+  /** `teams labels=off` — спрятать все подписи команд. */
+  labels: boolean;
 }
 
 /** Виртуальная команда для людей без `team=`: рамки у неё нет. */
@@ -117,7 +130,22 @@ export const TEAM_HEADER = 18;
 export const TEAM_HEADER_GAP = 6;
 const TEAM_DEFAULT_RADIUS = 10;
 const TEAM_DEFAULT_PADDING = 14;
-export const DEFAULT_TEAM_LAYOUT: TeamLayoutSpec = { mode: "auto", dir: "lr", gap: 24, columns: 2 };
+export const DEFAULT_TEAM_LAYOUT: TeamLayoutSpec = {
+  mode: "auto",
+  dir: "lr",
+  gap: 24,
+  columns: 2,
+  labels: true,
+};
+
+/** Толщина рамки команды по умолчанию и штрих по умолчанию — прежний вид схем. */
+export const TEAM_DEFAULT_STROKE_WIDTH = 1.2;
+const TEAM_DASH_PATTERN: Record<TeamDash, string | undefined> = {
+  solid: undefined,
+  dash: "6 4",
+  dot: "2 3",
+  dashdot: "8 3 2 3",
+};
 
 export interface TeamBoxFrame {
   id: string;
@@ -132,6 +160,11 @@ export interface TeamBoxFrame {
   radius: number;
   fill?: string;
   stroke?: string;
+  /** Толщина и штрих рамки: настраиваются директивой team. */
+  strokeWidth?: number;
+  dash?: TeamDash;
+  /** false — рамка не рисуется, команда только группирует. */
+  frame?: boolean;
   /** Люди без `team=` — виртуальная команда без рамки и подписи. */
   ghost: boolean;
 }
@@ -140,7 +173,8 @@ export interface TeamBox<T extends { id: string }> extends TeamBoxFrame {
   placed: PlacedTreeNode<T>[];
 }
 
-const TEAM_ATTR_RE = /^(label|parent|fill|stroke|colour|color|radius|padding)=("[^"]*"|'[^']*'|\S*)\s*/i;
+const TEAM_ATTR_RE =
+  /^(label|parent|fill|stroke|colour|color|radius|padding|width|style|frame)=("[^"]*"|'[^']*'|\S*)\s*/i;
 
 /** `team front [Front Office] fill=#f6f8fa radius=12` */
 export function parseTeamLine(raw: string): { team?: TeamStyle; error?: string } | null {
@@ -170,8 +204,35 @@ export function parseTeamLine(raw: string): { team?: TeamStyle; error?: string }
     const key = attr[1].toLowerCase();
     const value = unquote(attr[2]);
     if (key === "label") {
-      label = unquoteLabel(value);
-      team.label = label;
+      const flag = value.trim().toLowerCase();
+      if (flag === "off" || flag === "none" || flag === "false") team.showLabel = false;
+      else if (flag === "on" || flag === "true") team.showLabel = true;
+      else {
+        label = unquoteLabel(value);
+        team.label = label;
+        team.showLabel = true;
+      }
+    } else if (key === "width") {
+      const width = Number(value.replace(/px$/i, "").replace(",", "."));
+      if (!Number.isFinite(width) || width < 0.5 || width > 4) {
+        return { error: `толщина рамки команды: ожидается число 0.5–4, получено «${value}»` };
+      }
+      team.strokeWidth = width;
+    } else if (key === "style") {
+      const dash = value.trim().toLowerCase();
+      if (dash !== "solid" && dash !== "dash" && dash !== "dot" && dash !== "dashdot") {
+        return {
+          error: `штрих рамки команды: ожидается solid, dash, dot или dashdot, получено «${value}»`,
+        };
+      }
+      team.dash = dash;
+    } else if (key === "frame") {
+      const flag = value.trim().toLowerCase();
+      if (flag === "off" || flag === "none" || flag === "false" || flag === "0") team.frame = false;
+      else if (flag === "on" || flag === "true" || flag === "1") team.frame = true;
+      else {
+        return { error: `рамка команды: ожидается on или off, получено «${value}»` };
+      }
     } else if (key === "parent") {
       const parent = unquote(value);
       if (!parent || !/^[\p{L}\p{N}_./-]+$/u.test(parent) || parent === id) {
@@ -179,10 +240,13 @@ export function parseTeamLine(raw: string): { team?: TeamStyle; error?: string }
       }
       team.parent = parent;
     } else if (key === "fill" || key === "stroke" || key === "colour" || key === "color") {
-      if (!isColor(value)) {
+      const noPaint = value.trim().toLowerCase();
+      if (key === "fill" && (noPaint === "off" || noPaint === "none" || noPaint === "transparent")) {
+        // `fill=off` — рамка без заливки: видна только граница.
+        team.fill = "none";
+      } else if (!isColor(value)) {
         return { error: `цвет команды: ожидается #hex или имя, получено «${value}»` };
-      }
-      if (key === "fill") team.fill = value;
+      } else if (key === "fill") team.fill = value;
       else team.stroke = value;
     } else if (key === "radius") {
       const radius = Number(value.replace(/px$/i, "").replace(",", "."));
@@ -209,7 +273,7 @@ export function parseTeamsLine(raw: string): { patch?: Partial<TeamLayoutSpec>; 
   let rest = raw.trim().replace(/^teams\s*/i, "").trim();
   const patch: Partial<TeamLayoutSpec> = {};
   for (let guard = 0; guard < 8 && rest; guard += 1) {
-    const attr = /^(layout|dir|gap|columns)=("[^"]*"|'[^']*'|\S*)\s*/i.exec(rest);
+    const attr = /^(layout|dir|gap|columns|labels)=("[^"]*"|'[^']*'|\S*)\s*/i.exec(rest);
     if (!attr) return { error: `неизвестный параметр раскладки команд «${rest}»` };
     const key = attr[1].toLowerCase();
     const value = unquote(attr[2]).toLowerCase();
@@ -235,6 +299,12 @@ export function parseTeamsLine(raw: string): { patch?: Partial<TeamLayoutSpec>; 
         return { error: `число команд в ряду: ожидается целое 1–12, получено «${value}»` };
       }
       patch.columns = columns;
+    } else if (key === "labels") {
+      if (value === "on" || value === "true") patch.labels = true;
+      else if (value === "off" || value === "false") patch.labels = false;
+      else {
+        return { error: `подписи команд: ожидается on или off, получено «${value}»` };
+      }
     }
     rest = rest.slice(attr[0].length).trim();
   }
@@ -457,7 +527,8 @@ export function layoutTeamGroups<T extends { id: string }>(options: {
     for (let index = 0; index < kids.length; index += 1) {
       kids[index].box.height = items[laid ? index + 1 : index].height;
     }
-    const headerHeight = ghost || !team.label ? 0 : TEAM_HEADER;
+    const labelsOn = layout.labels !== false && team.showLabel !== false;
+    const headerHeight = ghost || !labelsOn || !team.label ? 0 : TEAM_HEADER;
     const padding = ghost ? 0 : team.padding;
     const insetY = headerHeight ? TEAM_HEADER_GAP + headerHeight : 0;
     const box: TeamBox<T> = {
@@ -472,6 +543,9 @@ export function layoutTeamGroups<T extends { id: string }>(options: {
       radius: ghost ? 0 : team.radius,
       fill: team.fill,
       stroke: team.stroke,
+      strokeWidth: ghost ? undefined : team.strokeWidth,
+      dash: ghost ? undefined : team.dash,
+      frame: ghost ? false : team.frame,
       ghost,
       placed: [],
     };
@@ -554,19 +628,23 @@ export function drawTeamBoxes(
     if (box.ghost) continue;
     const x = offsetX + box.x;
     const y = offsetY + box.y;
-    const fill = mono ? monoPaint(box.fill ?? palette.bg, invert) : (box.fill ?? palette.bg);
-    const stroke = mono ? monoPaint(box.stroke ?? palette.axis, invert) : (box.stroke ?? palette.axis);
-    svg.rect(x, y, box.width, box.height, {
-      rx: box.radius,
-      ry: box.radius,
-      fill,
-      "fill-opacity": box.fill ? 0.55 : 0.35,
-      stroke,
-      "stroke-width": 1.2,
-      "stroke-dasharray": "6 4",
-      "data-team": kind,
-      "data-team-id": box.id,
-    });
+    if (box.frame !== false) {
+      const fill = mono ? monoPaint(box.fill ?? palette.bg, invert) : (box.fill ?? palette.bg);
+      const stroke = mono ? monoPaint(box.stroke ?? palette.axis, invert) : (box.stroke ?? palette.axis);
+      const noFill = box.fill === "none";
+      const dash = TEAM_DASH_PATTERN[box.dash ?? "dash"];
+      svg.rect(x, y, box.width, box.height, {
+        rx: box.radius,
+        ry: box.radius,
+        fill: noFill ? "none" : fill,
+        ...(noFill ? {} : { "fill-opacity": box.fill ? 0.55 : 0.35 }),
+        stroke,
+        "stroke-width": box.strokeWidth ?? TEAM_DEFAULT_STROKE_WIDTH,
+        ...(dash ? { "stroke-dasharray": dash } : {}),
+        "data-team": kind,
+        "data-team-id": box.id,
+      });
+    }
     if (box.headerHeight) {
       drawLabelLines(
         svg,
@@ -611,6 +689,7 @@ export function foreignTeamBoxes(
   const out: { left: number; right: number; top: number; bottom: number }[] = [];
   for (const box of boxes) {
     if (box.ghost) continue;
+    if (box.frame === false) continue;
     if (allowed.has(box.id)) continue;
     const left = offsetX + box.x;
     const top = offsetY + box.y;
