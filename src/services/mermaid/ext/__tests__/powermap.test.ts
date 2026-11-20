@@ -845,13 +845,13 @@ describe("powermap: команды", () => {
     const model = modelOf(TEAM_SOURCE);
     expect(model.teams.map((team) => team.id)).toEqual(["front", "back"]);
     expect(model.teams[0]).toMatchObject({
-      label: "Front Office",
+      title: "Front Office",
       fill: "#f6f8fa",
       stroke: "#0969da",
       radius: 12,
       padding: 16,
     });
-    expect(model.teams[1].label).toBe("Back Office");
+    expect(model.teams[1].title).toBe("Back Office");
     expect(model.teamLayout).toMatchObject({ mode: "row", gap: 28 });
     expect(model.people.map((person) => person.team)).toEqual(["front", "front", "back", "back"]);
   });
@@ -862,7 +862,7 @@ a [Анна] team=front
 b [Илья] team=side
 a -> b`);
     expect(model.teams.map((team) => team.id)).toEqual(["front", "side"]);
-    expect(model.teams[0]).toMatchObject({ label: "front", radius: 10, padding: 14 });
+    expect(model.teams[0]).toMatchObject({ title: "front", radius: 10, padding: 14 });
   });
 
   it("без директив команды список пуст — раскладка прежняя", () => {

@@ -667,7 +667,7 @@ export function parsePowermap(source: string): ExtParseResult<PowerModel> {
     const slash = id.lastIndexOf("/");
     const auto: PowerTeam = {
       id,
-      label: slash >= 0 ? id.slice(slash + 1) : id,
+      title: slash >= 0 ? id.slice(slash + 1) : id,
       ...(slash > 0 ? { parent: id.slice(0, slash) } : {}),
       radius: 10,
       padding: 14,
@@ -1816,19 +1816,42 @@ function labelXCandidates(
       ? Math.min(slot.hi - width / 2, Math.max(slot.lo + width / 2, center))
       : (slot.lo + slot.hi) / 2;
   const out = [clamped];
-  for (const span of fits) out.push((span.lo + span.hi) / 2);
-  for (const span of free) out.push((span.lo + span.hi) / 2);
+  // Дополнительные места внутри слотов, куда плашка влезает целиком.
+  for (const span of fits) {
+    out.push(span.lo + width / 2, span.hi - width / 2, (span.lo + span.hi) / 2);
+  }
   const unique: number[] = [];
   for (const x of out) {
+    if (x < xMin || x > xMax) continue;
     if (unique.every((known) => Math.abs(known - x) > 0.5)) unique.push(x);
   }
-  return unique.slice(0, 6);
+  return unique.slice(0, 8);
+}
+
+/** Пересечение двух прямоугольников по площади. */
+function rectOverlap(a: CardBox, b: CardBox): number {
+  const dx = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+  const dy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+  return dx > 0.5 && dy > 0.5 ? dx * dy : 0;
+}
+
+/** Пересечение плашки с полем рамки команды (не с её внутренностью). */
+function frameFieldOverlap(plate: CardBox, frame: CardBox): number {
+  const outer = rectOverlap(plate, frame);
+  if (outer <= 0) return 0;
+  const inner: CardBox = {
+    left: frame.left + 4,
+    right: frame.right - 4,
+    top: frame.top + 4,
+    bottom: frame.bottom - 4,
+  };
+  return outer - rectOverlap(plate, inner);
 }
 
 /**
- * Подпись рядом со своей полкой. Сначала над полкой и в промежутке без чужих штрихов
- * (прежнее поведение), затем под полкой или в другом свободном промежутке — если
- * плашка наезжает на карточки сотрудников.
+ * Подпись рядом со своей связью. Перебирает полки маршрута, сторону (над/под линией)
+ * и небольшой сдвиг по вертикали; берёт место, где плашка не наезжает на карточки,
+ * на уже поставленные подписи и на чужие штрихи, и лишь в крайнем случае — минимальное перекрытие.
  */
 function placeEdgeLabel(
   points: readonly RoutePoint[],
@@ -1836,32 +1859,66 @@ function placeEdgeLabel(
   segments: readonly FlatSegment[],
   owner: number,
   cards: readonly CardBox[] = [],
+  taken: readonly CardBox[] = [],
+  frames: readonly CardBox[] = [],
 ): RoutePoint {
-  const hostIndex = hostSegmentIndex(points);
-  if (hostIndex < 0) return labelAnchor(points);
-  const a = points[hostIndex];
-  const b = points[hostIndex + 1];
-  const lineY = a.y;
   const lineCount = labelLineCount(text);
   const width = measureLabelWidth(text, EDGE_LABEL_FONT) + 10;
-  const xMin = Math.min(a.x, b.x);
-  const xMax = Math.max(a.x, b.x);
-  const center = (xMin + xMax) / 2;
+  const hosts: { xMin: number; xMax: number; lineY: number }[] = [];
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const a = points[index];
+    const b = points[index + 1];
+    if (Math.abs(a.y - b.y) > 0.4) continue;
+    if (Math.abs(a.x - b.x) < 12) continue;
+    hosts.push({ xMin: Math.min(a.x, b.x), xMax: Math.max(a.x, b.x), lineY: a.y });
+  }
+  if (hosts.length === 0) return labelAnchor(points);
+  hosts.sort((left, right) => right.xMax - right.xMin - (left.xMax - left.xMin));
+
+  let best: { x: number; y: number; score: number } | null = null;
   let fallback: { x: number; y: number; overlap: number } | null = null;
-  for (const side of ["above", "below"] as const) {
-    const y = edgeLabelBaseline(lineY, lineCount, side);
-    const plate = edgeLabelPlate(y, lineCount);
-    const free = labelFreeSpans(segments, owner, plate.top, plate.bottom, xMin, xMax);
-    for (const x of labelXCandidates(free, width, center, xMin, xMax)) {
-      const overlap = plateCardOverlap(x - width / 2, x + width / 2, plate.top, plate.bottom, cards);
-      if (overlap <= 0) return { x, y };
-      if (!fallback || overlap < fallback.overlap - 0.5) fallback = { x, y, overlap };
+  const hostCandidates = hosts.slice(0, 3);
+  for (let hostRank = 0; hostRank < hostCandidates.length; hostRank += 1) {
+    const host = hostCandidates[hostRank];
+    const center = (host.xMin + host.xMax) / 2;
+    for (const side of ["above", "below"] as const) {
+      // Сдвиг только от линии: плашка не должна пересекать свою же полку.
+      for (const shift of side === "above" ? [0, -10, -20] : [0, 10, 20]) {
+        const y = edgeLabelBaseline(host.lineY, lineCount, side) + shift;
+        const plate = edgeLabelPlate(y, lineCount);
+        const free = labelFreeSpans(segments, owner, plate.top, plate.bottom, host.xMin, host.xMax);
+        const xs = labelXCandidates(free, width, center, host.xMin, host.xMax);
+        for (const x of xs) {
+          const box: CardBox = {
+            left: x - width / 2,
+            right: x + width / 2,
+            top: plate.top,
+            bottom: plate.bottom,
+          };
+          const hard =
+            plateCardOverlap(box.left, box.right, plate.top, plate.bottom, cards) +
+            plateCardOverlap(box.left, box.right, plate.top, plate.bottom, taken);
+          if (hard > 0) {
+            if (!fallback || hard < fallback.overlap - 0.5) fallback = { x, y, overlap: hard };
+            continue;
+          }
+          const frameCost = frames.reduce((sum, frame) => sum + frameFieldOverlap(box, frame), 0);
+          const score =
+            frameCost * 0.2 +
+            Math.abs(x - center) * 0.05 +
+            hostRank * 3 +
+            Math.abs(shift) * 0.08 +
+            (side === "above" ? 0 : 1.5);
+          if (!best || score < best.score) best = { x, y, score };
+        }
+      }
     }
   }
+  if (best) return { x: best.x, y: best.y };
   // Свободного места нет — ставим там, где перекрытие минимально.
   return fallback
     ? { x: fallback.x, y: fallback.y }
-    : { x: center, y: edgeLabelBaseline(lineY, lineCount, "above") };
+    : { x: (hosts[0].xMin + hosts[0].xMax) / 2, y: edgeLabelBaseline(hosts[0].lineY, lineCount, "above") };
 }
 
 /** Ломаные стрелки влияния, как линии подчинения: без наложения друг на друга. */
@@ -1937,6 +1994,32 @@ function routeInfluences(
   }
 
   const cardCenterX = (card: PlacedTreeNode<PowerPerson>) => offsetX + card.x + card.width / 2;
+  const reports = reportingElbowRoutes(placed, teams ? teams.localReports : model.reports, offsetX, offsetY);
+  const cards = placed.map((card) => cardBox(card, offsetX, offsetY));
+  // Точки входа/выхода связей подчинения: стрелка влияния не должна выходить из той же точки.
+  const reportContacts = reports.flatMap((elbow) => [
+    { x: elbow.x1, y: elbow.y1 },
+    { x: elbow.x2, y: elbow.y2 },
+  ]);
+  const avoidReportContact = (
+    x: number,
+    card: PlacedTreeNode<PowerPerson>,
+    side: "top" | "bottom",
+  ): number => {
+    const limits = contactLimitsOf(card, offsetX);
+    const edgeY = side === "top" ? offsetY + card.y : offsetY + card.y + card.height;
+    const blocked = reportContacts
+      .filter((contact) => Math.abs(contact.y - edgeY) < 1.5 && Math.abs(contact.x - x) < 14)
+      .map((contact) => contact.x);
+    if (blocked.length === 0) return x;
+    for (const dir of [1, -1, 2, -2]) {
+      const next = Math.min(limits.right, Math.max(limits.left, x + dir * 10));
+      if (Math.abs(next - x) < 1) continue;
+      if (blocked.every((known) => Math.abs(known - next) >= 12)) return next;
+    }
+    return x;
+  };
+
   const touches = new Map<string, { draft: InfluenceDraft; end: "x1" | "x2"; otherX: number }[]>();
   for (const draft of drafts) {
     const fromSide = draft.mode === "up" ? "top" : "bottom";
@@ -1957,7 +2040,8 @@ function routeInfluences(
     if (!card) continue;
     const ordered = [...list].sort((a, b) => a.otherX - b.otherX || (a.end === "x1" ? -1 : 1));
     ordered.forEach((item, index) => {
-      const x = contactX(card, offsetX, index, ordered.length);
+      const side = item.end === "x1" ? endSide(item.draft, "x1") : endSide(item.draft, "x2");
+      const x = avoidReportContact(contactX(card, offsetX, index, ordered.length), card, side);
       if (item.end === "x1") item.draft.x1 = x;
       else item.draft.x2 = x;
     });
@@ -1993,10 +2077,34 @@ function routeInfluences(
       ...cardsBetween(placed, draft, offsetX, offsetY),
       ...(teams ? foreignTeamBoxes(teams.boxes, teams.membership, draft.from.node.id, draft.to.node.id, offsetX, offsetY) : []),
     ];
-    const elbow = elbowPoints(draft.x1, draft.y1, draft.x2, draft.y2, midY);
-    const points = pathHitsCards(elbow, obstacles)
-      ? routeAroundCards(draft, fromBox, toBox, obstacles, lane.lane)
-      : elbow;
+    // Полка ищет свободную горизонталь в коридоре: лучше сдвинуть её, чем обходить сбоку.
+    const corridorLo = Math.min(draft.y1, draft.y2) + 6;
+    const corridorHi = Math.max(draft.y1, draft.y2) - 6;
+    const shelfLo = Math.min(draft.x1, draft.x2);
+    const shelfHi = Math.max(draft.x1, draft.x2);
+    const shelves = freeBands(corridorLo, corridorHi, shelfLo, shelfHi, obstacles)
+      .map((band) => Math.min(band.bottom - 5, Math.max(band.top + 5, midY)))
+      .sort((left, right) => Math.abs(left - midY) - Math.abs(right - midY));
+    let points: RoutePoint[] | null = null;
+    for (const y of shelves) {
+      const candidate = elbowPoints(draft.x1, draft.y1, draft.x2, draft.y2, y);
+      if (pathHitsCards(candidate, obstacles)) continue;
+      points = candidate;
+      break;
+    }
+    if (!points) {
+      const elbow = elbowPoints(draft.x1, draft.y1, draft.x2, draft.y2, midY);
+      points = pathHitsCards(elbow, obstacles)
+        ? routeOnGrid(
+            { x: draft.x1, y: draft.y1 },
+            { x: draft.x2, y: draft.y2 },
+            obstacles,
+            fromBox,
+            toBox,
+            lane.lane,
+          )
+        : elbow;
+    }
     const color = mono ? monoPaint(draft.link.color, invert) : draft.link.color;
     return {
       points,
@@ -2017,8 +2125,6 @@ function routeInfluences(
     ? routeCrossReports(placed, teams.crossReports, offsetX, offsetY, teams.boxes, teams.membership, teams.axis)
     : [];
   const routes = [...crossRoutes, ...influenceRoutes];
-  const reports = reportingElbowRoutes(placed, teams ? teams.localReports : model.reports, offsetX, offsetY);
-  const cards = placed.map((card) => cardBox(card, offsetX, offsetY));
   separateInfluenceTracks(
     routes,
     reports,
@@ -2026,6 +2132,8 @@ function routeInfluences(
     teams ? { boxes: teams.boxes, membership: teams.membership, offsetX, offsetY } : undefined,
   );
   const segments = flatSegments(routes, reports);
+  // Плашки уже поставленных подписей: следующая не должна на них наезжать.
+  const takenPlates: CardBox[] = [];
   routes.forEach((route, index) => {
     const labelCards =
       teams && route.fromId && route.toId
@@ -2033,9 +2141,26 @@ function routeInfluences(
             foreignTeamBoxes(teams.boxes, teams.membership, route.fromId, route.toId, offsetX, offsetY),
           )
         : cards;
+    const frames = teams ? teams.boxes.map((box) => ({
+      left: offsetX + box.x,
+      right: offsetX + box.x + box.width,
+      top: offsetY + box.y,
+      bottom: offsetY + box.y + box.height,
+    })) : [];
     const labelAt = route.label
-      ? placeEdgeLabel(route.points, route.label, segments, index, labelCards)
+      ? placeEdgeLabel(route.points, route.label, segments, index, labelCards, takenPlates, frames)
       : labelAnchor(route.points);
+    if (route.label) {
+      const lineCount = labelLineCount(route.label);
+      const width = measureLabelWidth(route.label, EDGE_LABEL_FONT) + 10;
+      const plate = edgeLabelPlate(labelAt.y, lineCount);
+      takenPlates.push({
+        left: labelAt.x - width / 2,
+        right: labelAt.x + width / 2,
+        top: plate.top,
+        bottom: plate.bottom,
+      });
+    }
     route.labelX = labelAt.x;
     route.labelY = labelAt.y;
     const xs = route.points.map((point) => point.x);
@@ -2056,21 +2181,51 @@ function cardBox(card: PlacedTreeNode<PowerPerson>, offsetX: number, offsetY: nu
   };
 }
 
+/** Окно вокруг маршрута, в котором карточки считаются препятствиями. */
+const ROUTE_WINDOW = 60;
+
+/** Карточки рядом с маршрутом влияния: обходить нужно все, а не только те, что между концами. */
 function cardsBetween(
   placed: readonly PlacedTreeNode<PowerPerson>[],
   draft: InfluenceDraft,
   offsetX: number,
   offsetY: number,
 ): CardBox[] {
-  const y0 = Math.min(draft.y1, draft.y2);
-  const y1 = Math.max(draft.y1, draft.y2);
+  const x0 = Math.min(draft.x1, draft.x2) - ROUTE_WINDOW;
+  const x1 = Math.max(draft.x1, draft.x2) + ROUTE_WINDOW;
+  const y0 = Math.min(draft.y1, draft.y2) - ROUTE_WINDOW;
+  const y1 = Math.max(draft.y1, draft.y2) + ROUTE_WINDOW;
   const boxes: CardBox[] = [];
   for (const card of placed) {
     if (card.node.id === draft.from.node.id || card.node.id === draft.to.node.id) continue;
     const box = cardBox(card, offsetX, offsetY);
-    if (box.bottom > y0 + 1 && box.top < y1 - 1) boxes.push(box);
+    if (box.right > x0 && box.left < x1 && box.bottom > y0 && box.top < y1) boxes.push(box);
   }
   return boxes;
+}
+
+/** Свободные по высоте полосы коридора для полки, которая идёт от x0 до x1. */
+function freeBands(
+  lo: number,
+  hi: number,
+  x0: number,
+  x1: number,
+  boxes: readonly CardBox[],
+): { top: number; bottom: number }[] {
+  if (hi <= lo) return [];
+  const blocks = boxes
+    .filter((box) => rangesOverlap(x0, x1, box.left, box.right))
+    .map((box) => ({ top: Math.max(lo, box.top), bottom: Math.min(hi, box.bottom) }))
+    .filter((block) => block.bottom > block.top)
+    .sort((left, right) => left.top - right.top);
+  const bands: { top: number; bottom: number }[] = [];
+  let cursor = lo;
+  for (const block of blocks) {
+    if (block.top > cursor) bands.push({ top: cursor, bottom: block.top });
+    cursor = Math.max(cursor, block.bottom);
+  }
+  if (cursor < hi) bands.push({ top: cursor, bottom: hi });
+  return bands;
 }
 
 function dedupePoints(points: readonly RoutePoint[]): RoutePoint[] {
@@ -2127,56 +2282,6 @@ const AROUND_GUTTER = 16;
 const AROUND_STUB = 12;
 /** Зазор между линией и рамкой при обходе по сетке. */
 const GRID_CLEAR = 5;
-
-/** Обход препятствий промежуточных уровней: вниз (или вверх) сбоку от них, затем к цели. */
-function routeAroundCards(
-  span: { x1: number; y1: number; x2: number; y2: number },
-  fromBox: CardBox,
-  toBox: CardBox,
-  boxes: readonly CardBox[],
-  lane: number,
-): RoutePoint[] {
-  const dir = span.y2 >= span.y1 ? 1 : -1;
-  let exitY = span.y1 + dir * AROUND_STUB;
-  let enterY = span.y2 - dir * AROUND_STUB;
-  for (const box of boxes) {
-    if (dir > 0) {
-      if (exitY > box.top - 4) exitY = Math.min(exitY, box.top - 4);
-      if (enterY < box.bottom + 4) enterY = Math.max(enterY, box.bottom + 4);
-    } else {
-      if (exitY < box.bottom + 4) exitY = Math.max(exitY, box.bottom + 4);
-      if (enterY > box.top - 4) enterY = Math.min(enterY, box.top - 4);
-    }
-  }
-  const left = Math.min(fromBox.left, toBox.left, ...boxes.map((box) => box.left)) - AROUND_GUTTER;
-  const right = Math.max(fromBox.right, toBox.right, ...boxes.map((box) => box.right)) + AROUND_GUTTER;
-  const leftCost = Math.abs(left - span.x1) + Math.abs(left - span.x2);
-  const rightCost = Math.abs(right - span.x1) + Math.abs(right - span.x2);
-  const order: Array<"left" | "right"> = leftCost <= rightCost ? ["left", "right"] : ["right", "left"];
-  for (const side of order) {
-    for (let extra = 0; extra < 4; extra += 1) {
-      const channel = side === "left" ? left - (lane + extra) * 12 : right + (lane + extra) * 12;
-      const points = dedupePoints([
-        { x: span.x1, y: span.y1 },
-        { x: span.x1, y: exitY },
-        { x: channel, y: exitY },
-        { x: channel, y: enterY },
-        { x: span.x2, y: enterY },
-        { x: span.x2, y: span.y2 },
-      ]);
-      if (!pathHitsCards(points, boxes)) return points;
-    }
-  }
-  const channel = order[0] === "left" ? left - lane * 12 : right + lane * 12;
-  return dedupePoints([
-    { x: span.x1, y: span.y1 },
-    { x: span.x1, y: exitY },
-    { x: channel, y: exitY },
-    { x: channel, y: enterY },
-    { x: span.x2, y: enterY },
-    { x: span.x2, y: span.y2 },
-  ]);
-}
 
 /**
  * Обход препятствий по сетке ортогональных коридоров.
@@ -2500,7 +2605,7 @@ function commsTeams(model: PowerModel): CommsTeams | null {
   const labels = new Map<string, string>();
   const order: string[] = [];
   for (const team of model.teams) {
-    labels.set(team.id, team.label.trim() || team.id);
+    labels.set(team.id, team.title.trim() || team.id);
     order.push(team.id);
   }
   return { order, labels, member: powermapMembership(model) };

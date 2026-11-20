@@ -97,7 +97,8 @@ export type TeamDash = "solid" | "dash" | "dot" | "dashdot";
 /** Команда: рамка с подписью вокруг своей части дерева. */
 export interface TeamStyle {
   id: string;
-  label: string;
+  /** Название команды над рамкой: `team front [Front Office]` или `title="…"`. */
+  title: string;
   /** id родительской команды: рамки вкладываются друг в друга. */
   parent?: string;
   fill?: string;
@@ -110,8 +111,8 @@ export interface TeamStyle {
   dash?: TeamDash;
   /** false — рамки нет, команда только группирует. По умолчанию true. */
   frame?: boolean;
-  /** false — подписи над рамкой нет. По умолчанию true. */
-  showLabel?: boolean;
+  /** false — названия над рамкой нет, место под него не занимается. По умолчанию true. */
+  showTitle?: boolean;
 }
 
 /** Как команды стоят друг относительно друга. */
@@ -120,8 +121,8 @@ export interface TeamLayoutSpec {
   dir: "lr" | "tb";
   gap: number;
   columns: number;
-  /** `teams labels=off` — спрятать все подписи команд. */
-  labels: boolean;
+  /** `teams titles=off` — спрятать все названия команд. */
+  titles: boolean;
 }
 
 /** Виртуальная команда для людей без `team=`: рамки у неё нет. */
@@ -135,7 +136,7 @@ export const DEFAULT_TEAM_LAYOUT: TeamLayoutSpec = {
   dir: "lr",
   gap: 24,
   columns: 2,
-  labels: true,
+  titles: true,
 };
 
 /** Толщина рамки команды по умолчанию и штрих по умолчанию — прежний вид схем. */
@@ -174,7 +175,7 @@ export interface TeamBox<T extends { id: string }> extends TeamBoxFrame {
 }
 
 const TEAM_ATTR_RE =
-  /^(label|parent|fill|stroke|colour|color|radius|padding|width|style|frame)=("[^"]*"|'[^']*'|\S*)\s*/i;
+  /^(title|parent|fill|stroke|colour|color|radius|padding|width|style|frame)=("[^"]*"|'[^']*'|\S*)\s*/i;
 
 /** `team front [Front Office] fill=#f6f8fa radius=12` */
 export function parseTeamLine(raw: string): { team?: TeamStyle; error?: string } | null {
@@ -182,10 +183,10 @@ export function parseTeamLine(raw: string): { team?: TeamStyle; error?: string }
   if (!match) return null;
   const id = match[1];
   let rest = match[2].trim();
-  let label = "";
+  let title = "";
   const bracket = /^\[(.*?)\]\s*/.exec(rest);
   if (bracket) {
-    label = unquoteLabel(bracket[1]);
+    title = unquoteLabel(bracket[1]);
     rest = rest.slice(bracket[0].length).trim();
   }
   // `team sales/moscow` — вложенная команда: путь задаёт родителя.
@@ -193,7 +194,7 @@ export function parseTeamLine(raw: string): { team?: TeamStyle; error?: string }
   const parentFromPath = slash > 0 ? id.slice(0, slash) : undefined;
   const team: TeamStyle = {
     id,
-    label,
+    title,
     radius: TEAM_DEFAULT_RADIUS,
     padding: TEAM_DEFAULT_PADDING,
   };
@@ -203,14 +204,14 @@ export function parseTeamLine(raw: string): { team?: TeamStyle; error?: string }
     if (!attr) return { error: `неизвестный параметр команды «${rest}»` };
     const key = attr[1].toLowerCase();
     const value = unquote(attr[2]);
-    if (key === "label") {
+    if (key === "title") {
       const flag = value.trim().toLowerCase();
-      if (flag === "off" || flag === "none" || flag === "false") team.showLabel = false;
-      else if (flag === "on" || flag === "true") team.showLabel = true;
+      if (flag === "off" || flag === "none" || flag === "false") team.showTitle = false;
+      else if (flag === "on" || flag === "true") team.showTitle = true;
       else {
-        label = unquoteLabel(value);
-        team.label = label;
-        team.showLabel = true;
+        title = unquoteLabel(value);
+        team.title = title;
+        team.showTitle = true;
       }
     } else if (key === "width") {
       const width = Number(value.replace(/px$/i, "").replace(",", "."));
@@ -273,7 +274,7 @@ export function parseTeamsLine(raw: string): { patch?: Partial<TeamLayoutSpec>; 
   let rest = raw.trim().replace(/^teams\s*/i, "").trim();
   const patch: Partial<TeamLayoutSpec> = {};
   for (let guard = 0; guard < 8 && rest; guard += 1) {
-    const attr = /^(layout|dir|gap|columns|labels)=("[^"]*"|'[^']*'|\S*)\s*/i.exec(rest);
+    const attr = /^(layout|dir|gap|columns|titles)=("[^"]*"|'[^']*'|\S*)\s*/i.exec(rest);
     if (!attr) return { error: `неизвестный параметр раскладки команд «${rest}»` };
     const key = attr[1].toLowerCase();
     const value = unquote(attr[2]).toLowerCase();
@@ -299,11 +300,11 @@ export function parseTeamsLine(raw: string): { patch?: Partial<TeamLayoutSpec>; 
         return { error: `число команд в ряду: ожидается целое 1–12, получено «${value}»` };
       }
       patch.columns = columns;
-    } else if (key === "labels") {
-      if (value === "on" || value === "true") patch.labels = true;
-      else if (value === "off" || value === "false") patch.labels = false;
+    } else if (key === "titles") {
+      if (value === "on" || value === "true") patch.titles = true;
+      else if (value === "off" || value === "false") patch.titles = false;
       else {
-        return { error: `подписи команд: ожидается on или off, получено «${value}»` };
+        return { error: `названия команд: ожидается on или off, получено «${value}»` };
       }
     }
     rest = rest.slice(attr[0].length).trim();
@@ -323,7 +324,7 @@ export function orderTeams(teams: readonly TeamStyle[]): TeamStyle[] {
   for (let cursor = 0; cursor < list.length; cursor += 1) {
     const parent = list[cursor].parent;
     if (!parent || index.has(parent)) continue;
-    const stub: TeamStyle = { id: parent, label: parent, radius: 10, padding: 14 };
+    const stub: TeamStyle = { id: parent, title: parent, radius: 10, padding: 14 };
     index.set(parent, stub);
     list.push(stub);
   }
@@ -412,7 +413,7 @@ export function layoutTeamGroups<T extends { id: string }>(options: {
     else crossEdges.push(edge);
   }
 
-  const ghostTeam: TeamStyle = { id: TEAM_UNGROUPED, label: "", radius: 0, padding: 0 };
+  const ghostTeam: TeamStyle = { id: TEAM_UNGROUPED, title: "", radius: 0, padding: 0 };
   const byId = new Map<string, TeamStyle>(teams.map((team) => [team.id, team]));
   byId.set(TEAM_UNGROUPED, ghostTeam);
   const known = new Set(teams.map((team) => team.id));
@@ -527,13 +528,13 @@ export function layoutTeamGroups<T extends { id: string }>(options: {
     for (let index = 0; index < kids.length; index += 1) {
       kids[index].box.height = items[laid ? index + 1 : index].height;
     }
-    const labelsOn = layout.labels !== false && team.showLabel !== false;
-    const headerHeight = ghost || !labelsOn || !team.label ? 0 : TEAM_HEADER;
+    const titlesOn = layout.titles !== false && team.showTitle !== false;
+    const headerHeight = ghost || !titlesOn || !team.title ? 0 : TEAM_HEADER;
     const padding = ghost ? 0 : team.padding;
     const insetY = headerHeight ? TEAM_HEADER_GAP + headerHeight : 0;
     const box: TeamBox<T> = {
       id: teamId,
-      label: team.label,
+      label: team.title,
       parent: ghost ? undefined : team.parent,
       x: 0,
       y: 0,
@@ -1174,7 +1175,7 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
     const slash = id.lastIndexOf("/");
     const auto: TeamStyle = {
       id,
-      label: slash >= 0 ? id.slice(slash + 1) : id,
+      title: slash >= 0 ? id.slice(slash + 1) : id,
       ...(slash > 0 ? { parent: id.slice(0, slash) } : {}),
       radius: TEAM_DEFAULT_RADIUS,
       padding: TEAM_DEFAULT_PADDING,
@@ -1463,9 +1464,45 @@ function crossesRect(x0: number, x1: number, y: number, rect: CanvasRect): boole
   return hi > rect.left + 1 && lo < rect.right - 1;
 }
 
+/** Пересекает ли ортогональный отрезок внутренность прямоугольника. */
+function segmentCrossesRect(a: RoutePoint2, b: RoutePoint2, rect: CanvasRect): boolean {
+  const left = rect.left + 1;
+  const right = rect.right - 1;
+  const top = rect.top + 1;
+  const bottom = rect.bottom - 1;
+  if (Math.abs(a.y - b.y) < 0.5) {
+    if (a.y <= top || a.y >= bottom) return false;
+    const x0 = Math.min(a.x, b.x);
+    const x1 = Math.max(a.x, b.x);
+    return x1 > left && x0 < right;
+  }
+  if (Math.abs(a.x - b.x) < 0.5) {
+    if (a.x <= left || a.x >= right) return false;
+    const y0 = Math.min(a.y, b.y);
+    const y1 = Math.max(a.y, b.y);
+    return y1 > top && y0 < bottom;
+  }
+  return false;
+}
+
+interface RoutePoint2 {
+  x: number;
+  y: number;
+}
+
+function pathCrosses(points: readonly RoutePoint2[], obstacles: readonly CanvasRect[]): boolean {
+  for (let index = 0; index < points.length - 1; index += 1) {
+    for (const rect of obstacles) {
+      if (segmentCrossesRect(points[index], points[index + 1], rect)) return true;
+    }
+  }
+  return false;
+}
+
 /**
- * Межкомандная связь: выход из нижней кромки, полка в свободном коридоре и вход
- * в верхнюю кромку. Полка не заходит в чужие рамки команд.
+ * Межкомандная связь: выход из кромки карточки, полка в свободном коридоре и вход
+ * в кромку цели. Полка не заходит ни в чужие рамки команд, ни в карточки.
+ * Если карточки перекрываются по высоте, связь идёт вбок — из боковой кромки.
  */
 function crossTeamRoute(
   from: PlacedTreeNode<OrgNode>,
@@ -1473,21 +1510,59 @@ function crossTeamRoute(
   obstacles: readonly CanvasRect[],
   offsetX: number,
   offsetY: number,
-): { x1: number; y1: number; x2: number; y2: number; midY: number } {
+): RoutePoint2[] {
   const a = cardRect(from, offsetX, offsetY);
   const b = cardRect(to, offsetX, offsetY);
-  const down = b.top >= a.bottom;
-  const up = b.bottom <= a.top;
+  const aMidY = (a.top + a.bottom) / 2;
+  const bMidY = (b.top + b.bottom) / 2;
+  const rowOverlap = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 8;
+
+  if (rowOverlap) {
+    const sideRight = (a.left + a.right) / 2 <= (b.left + b.right) / 2;
+    const x1 = sideRight ? a.right : a.left;
+    const x2 = sideRight ? b.left : b.right;
+    const channels = [
+      (x1 + x2) / 2,
+      sideRight ? x2 - 12 : x2 + 12,
+      sideRight ? x1 + 12 : x1 - 12,
+    ];
+    const exits = [aMidY, a.top + 10, a.bottom - 10];
+    const entries = [bMidY, b.top + 10, b.bottom - 10];
+    let fallback: RoutePoint2[] | null = null;
+    for (const channel of channels) {
+      for (const y1 of exits) {
+        for (const y2 of entries) {
+          const points = [
+            { x: x1, y: y1 },
+            { x: channel, y: y1 },
+            { x: channel, y: y2 },
+            { x: x2, y: y2 },
+          ];
+          if (!pathCrosses(points, obstacles)) return points;
+          if (!fallback) fallback = points;
+        }
+      }
+    }
+    if (fallback) return fallback;
+  }
+
+  const down = b.top >= a.bottom || (!rowOverlap && bMidY > aMidY);
   const x1 = (a.left + a.right) / 2;
   const x2 = (b.left + b.right) / 2;
-  const y1 = down ? a.bottom : up ? a.top : a.bottom;
-  const y2 = down ? b.top : up ? b.bottom : b.top;
+  const y1 = down ? a.bottom : a.top;
+  const y2 = down ? b.top : b.bottom;
 
   const lo = Math.min(y1, y2) + 6;
   const hi = Math.max(y1, y2) - 6;
-  if (hi <= lo) return { x1, y1, x2, y2, midY: (y1 + y2) / 2 };
-
   const mid = (y1 + y2) / 2;
+  if (hi <= lo) {
+    return [
+      { x: x1, y: y1 },
+      { x: x1, y: mid },
+      { x: x2, y: mid },
+      { x: x2, y: y2 },
+    ];
+  }
   const candidates = new Set<number>([mid]);
   for (const rect of obstacles) {
     candidates.add(rect.top - 8);
@@ -1497,7 +1572,41 @@ function crossTeamRoute(
     .filter((y) => y > lo && y < hi)
     .sort((left, right) => Math.abs(left - mid) - Math.abs(right - mid));
   const free = sorted.find((y) => !obstacles.some((rect) => crossesRect(x1, x2, y, rect)));
-  return { x1, y1, x2, y2, midY: free ?? mid };
+  const midY = free ?? mid;
+  return [
+    { x: x1, y: y1 },
+    { x: x1, y: midY },
+    { x: x2, y: midY },
+    { x: x2, y: y2 },
+  ];
+}
+
+/** Полки разных межкомандных связей не сливаются в одну линию. */
+function spreadCrossShelf(
+  points: readonly RoutePoint2[],
+  shelves: readonly { y: number; x0: number; x1: number }[],
+  obstacles: readonly CanvasRect[],
+): RoutePoint2[] {
+  if (points.length !== 4) return [...points];
+  const y = points[1].y;
+  const x0 = Math.min(points[1].x, points[2].x);
+  const x1 = Math.max(points[1].x, points[2].x);
+  for (const delta of [0, 10, -10, 20, -20, 30, -30]) {
+    const next = y + delta;
+    const candidate = [
+      points[0],
+      { x: points[1].x, y: next },
+      { x: points[2].x, y: next },
+      points[3],
+    ];
+    if (pathCrosses(candidate, obstacles)) continue;
+    const merged = shelves.some(
+      (shelf) => Math.abs(shelf.y - next) < 9 && rangesOverlap(x0, x1, shelf.x0, shelf.x1),
+    );
+    if (merged) continue;
+    return candidate;
+  }
+  return [...points];
 }
 
 /** Межкомандные связи: тот же стиль, что у обычных рёбер, но полка обходит чужие рамки. */
@@ -1514,21 +1623,42 @@ function drawCrossTeamEdges(
 ): void {
   if (edges.length === 0) return;
   const byId = new Map(placed.map((card) => [card.node.id, card]));
+  const shelves: { y: number; x0: number; x1: number }[] = [];
   for (const edge of edges) {
     const from = byId.get(edge.from);
     const to = byId.get(edge.to);
     if (!from || !to) continue;
-    const obstacles = foreignTeamBoxes(
-      boxes,
-      membership ?? undefined,
-      edge.from,
-      edge.to,
-      offsetX,
-      offsetY,
-      FONT,
+    const obstacles = [
+      ...placed
+        .filter((card) => card.node.id !== edge.from && card.node.id !== edge.to)
+        .map((card) => cardRect(card, offsetX, offsetY)),
+      ...foreignTeamBoxes(
+        boxes,
+        membership ?? undefined,
+        edge.from,
+        edge.to,
+        offsetX,
+        offsetY,
+        FONT,
+      ),
+    ];
+    const points = spreadCrossShelf(
+      crossTeamRoute(from, to, obstacles, offsetX, offsetY),
+      shelves,
+      obstacles,
     );
-    const { x1, y1, x2, y2, midY } = crossTeamRoute(from, to, obstacles, offsetX, offsetY);
-    const d = `M ${fmt(x1)} ${fmt(y1)} L ${fmt(x1)} ${fmt(midY)} L ${fmt(x2)} ${fmt(midY)} L ${fmt(x2)} ${fmt(y2)}`;
+    const [start, ...rest] = points;
+    if (!start || rest.length === 0) continue;
+    if (points.length === 4) {
+      shelves.push({
+        y: points[1].y,
+        x0: Math.min(points[1].x, points[2].x),
+        x1: Math.max(points[1].x, points[2].x),
+      });
+    }
+    const d = `M ${fmt(start.x)} ${fmt(start.y)} ${rest
+      .map((point) => `L ${fmt(point.x)} ${fmt(point.y)}`)
+      .join(" ")}`;
     const attrs: Record<string, string | number> = {
       d,
       fill: "none",

@@ -698,14 +698,14 @@ dev -> qa`);
     const model = r.value as OrgModel;
     expect(model.teams.map((team) => team.id)).toEqual(["front", "back", "ghost"]);
     expect(model.teams[0]).toMatchObject({
-      label: "Front Office",
+      title: "Front Office",
       fill: "#f6f8fa",
       stroke: "#0969da",
       radius: 12,
       padding: 18,
     });
-    expect(model.teams[1].label).toBe("Back Office");
-    expect(model.teams[2]).toMatchObject({ label: "ghost", radius: 10, padding: 14 });
+    expect(model.teams[1].title).toBe("Back Office");
+    expect(model.teams[2]).toMatchObject({ title: "ghost", radius: 10, padding: 14 });
     expect(model.teamLayout).toMatchObject({ mode: "row", gap: 30, dir: "lr" });
     expect(model.nodes.find((node) => node.id === "qa")?.team).toBe("ghost");
   });
@@ -840,9 +840,9 @@ a -> b`);
     expect(svg).not.toContain('data-team-id="hidden"');
   });
 
-  it("подписи команд отключаются: label=off и teams labels=off", () => {
+  it("названия команд отключаются: title=off и teams titles=off", () => {
     const one = orgchartEngine.parse(`orgchart
-team front [Front] label=off
+team front [Front] title=off
 teams layout=row gap=24
 a [A] team=front
 b [B] team=front
@@ -855,7 +855,7 @@ a -> b`);
     const all = orgchartEngine.parse(`orgchart
 team front [Front]
 team back [Back]
-teams layout=row gap=24 labels=off
+teams layout=row gap=24 titles=off
 a [A] team=front
 b [B] team=back
 a -> b`);
@@ -866,16 +866,16 @@ a -> b`);
     expect(allSvg).not.toContain("data-team-label");
   });
 
-  it("label=\"…\" заменяет подпись из скобок, style=dot даёт точки", () => {
+  it("title=\"…\" заменяет название из скобок, style=dot даёт точки", () => {
     const parsed = orgchartEngine.parse(`orgchart
-team front [Old] label="New title" style=dot
+team front [Old] title="New title" style=dot
 teams layout=row gap=24
 a [A] team=front
 b [B] team=front
 a -> b`);
     expect(parsed.ok).toBe(true);
     const model = parsed.value as OrgModel;
-    expect(model.teams[0].label).toBe("New title");
+    expect(model.teams[0].title).toBe("New title");
     const svg = orgchartEngine.render(model, {});
     expect(svg).toContain("New title");
     expect(svg).toContain('stroke-dasharray="2 3"');
@@ -897,16 +897,16 @@ a -> b`);
     expect(rect).toContain('stroke="#0969da"');
   });
 
-  it("ошибки разбора: style, width, labels", () => {
+  it("ошибки разбора: style, width, titles", () => {
     const style = orgchartEngine.parse(`orgchart
 team a [A] style=wavy`);
     expect(style.ok).toBe(false);
     const width = orgchartEngine.parse(`orgchart
 team a [A] width=9`);
     expect(width.ok).toBe(false);
-    const labels = orgchartEngine.parse(`orgchart
-teams labels=maybe`);
-    expect(labels.ok).toBe(false);
+    const titles = orgchartEngine.parse(`orgchart
+teams titles=maybe`);
+    expect(titles.ok).toBe(false);
   });
 
   it("без команд модель и рендер прежние", () => {
