@@ -1,0 +1,21 @@
+powermap
+title Teams and contacts
+company Northwind
+legend off
+comms on
+avatar 40
+team sales [Sales] fill=#f6f8fa stroke=#0969da padding=16
+team tech [Technology] stroke=#8250df
+teams layout=row gap=32
+link ally color=#1a7f37 style=solid label=ally
+CEO [Alex Morgan|President] role=D influence=L team=sales counterpart="Grace Hall; Grace Hall, -"
+Head [Grace Hall|Sales lead] role=A influence=M team=sales counterpart="Alex Morgan"
+CTO [Priya Nair|Technology] role=D influence=M team=tech counterpart="Grace Hall"
+Dev [Marco Rossi|Developer] role=U influence=S team=tech
+Analyst [Olga Kim|Analyst] role=U influence=S
+CEO -> Head
+CEO -> CTO
+CTO -> Dev
+Head -ally-> CTO label=roadmap
+Analyst -ally-> Head
+Dev -ally-> Head

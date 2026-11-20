@@ -1,0 +1,20 @@
+powermap
+title Вложенные команды
+team company [Компания] padding=12 fill=#f6f8fa stroke=#0969da
+team company/sales [Продажи]
+team company/dev [Разработка] parent=company
+team company/dev/qa [QA]
+teams layout=row gap=24
+ceo [Анна Морозова|Гендиректор] role=decider team=company
+head [Олег Ли|Директор по продажам] team=company/sales
+rep [Илья Сомов|Менеджер] team=company/sales
+cto [Пётр Волков|Техдир] team=company/dev
+dev [Мария Ким|Инженер] team=company/dev
+qa [Борис Ким|Тестировщик] team=company/dev/qa
+ceo -> head
+head -> rep
+ceo -> cto
+cto -> dev
+dev -> qa
+head -supporter-> cto label="общий план"
+comms off

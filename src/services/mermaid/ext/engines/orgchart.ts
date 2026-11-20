@@ -3,6 +3,7 @@ import {
   clamp,
   contrastTextColor,
   createSvg,
+  drawLabelLines,
   fmt,
   getPalette,
   hasLabelBreak,
@@ -52,6 +53,8 @@ export interface OrgNode {
   gender?: AvatarGender;
   /** `avatar=off` прячет блок только у этого узла. */
   hideAvatar?: boolean;
+  /** Команда: id из директивы `team` или значение атрибута `team=`. */
+  team?: string;
 }
 
 export interface OrgEdge {
@@ -78,10 +81,554 @@ export interface OrgModel {
    * Старые схемы без директивы рисуются как раньше.
    */
   avatarSize: number;
+  /** Объявленные команды. Пусто — команды не используются, раскладка прежняя. */
+  teams: TeamStyle[];
+  teamLayout: TeamLayoutSpec;
 }
 
 /** Служебный id виртуального корня. */
 export const VIRTUAL_ROOT_ID = "__root__";
+
+// --- Команды: общий блок для orgchart и powermap ---------------------------
+
+/** Команда: рамка с подписью вокруг своей части дерева. */
+export interface TeamStyle {
+  id: string;
+  label: string;
+  /** id родительской команды: рамки вкладываются друг в друга. */
+  parent?: string;
+  fill?: string;
+  stroke?: string;
+  radius: number;
+  padding: number;
+}
+
+/** Как команды стоят друг относительно друга. */
+export interface TeamLayoutSpec {
+  mode: "auto" | "row" | "column" | "grid";
+  dir: "lr" | "tb";
+  gap: number;
+  columns: number;
+}
+
+/** Виртуальная команда для людей без `team=`: рамки у неё нет. */
+export const TEAM_UNGROUPED = "__ungrouped__";
+export const TEAM_HEADER = 18;
+export const TEAM_HEADER_GAP = 6;
+const TEAM_DEFAULT_RADIUS = 10;
+const TEAM_DEFAULT_PADDING = 14;
+export const DEFAULT_TEAM_LAYOUT: TeamLayoutSpec = { mode: "auto", dir: "lr", gap: 24, columns: 2 };
+
+export interface TeamBoxFrame {
+  id: string;
+  label: string;
+  /** id родительской рамки: вложенные команды рисуются внутри. */
+  parent?: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  headerHeight: number;
+  radius: number;
+  fill?: string;
+  stroke?: string;
+  /** Люди без `team=` — виртуальная команда без рамки и подписи. */
+  ghost: boolean;
+}
+
+export interface TeamBox<T extends { id: string }> extends TeamBoxFrame {
+  placed: PlacedTreeNode<T>[];
+}
+
+const TEAM_ATTR_RE = /^(label|parent|fill|stroke|colour|color|radius|padding)=("[^"]*"|'[^']*'|\S*)\s*/i;
+
+/** `team front [Front Office] fill=#f6f8fa radius=12` */
+export function parseTeamLine(raw: string): { team?: TeamStyle; error?: string } | null {
+  const match = /^team\s+([\p{L}\p{N}_.\/-]+)(.*)$/iu.exec(raw.trim());
+  if (!match) return null;
+  const id = match[1];
+  let rest = match[2].trim();
+  let label = "";
+  const bracket = /^\[(.*?)\]\s*/.exec(rest);
+  if (bracket) {
+    label = unquoteLabel(bracket[1]);
+    rest = rest.slice(bracket[0].length).trim();
+  }
+  // `team sales/moscow` — вложенная команда: путь задаёт родителя.
+  const slash = id.lastIndexOf("/");
+  const parentFromPath = slash > 0 ? id.slice(0, slash) : undefined;
+  const team: TeamStyle = {
+    id,
+    label,
+    radius: TEAM_DEFAULT_RADIUS,
+    padding: TEAM_DEFAULT_PADDING,
+  };
+  if (parentFromPath) team.parent = parentFromPath;
+  for (let guard = 0; guard < 12 && rest; guard += 1) {
+    const attr = TEAM_ATTR_RE.exec(rest);
+    if (!attr) return { error: `неизвестный параметр команды «${rest}»` };
+    const key = attr[1].toLowerCase();
+    const value = unquote(attr[2]);
+    if (key === "label") {
+      label = unquoteLabel(value);
+      team.label = label;
+    } else if (key === "parent") {
+      const parent = unquote(value);
+      if (!parent || !/^[\p{L}\p{N}_.\/-]+$/u.test(parent) || parent === id) {
+        return { error: `родитель команды: ожидается id другой команды, получено «${value}»` };
+      }
+      team.parent = parent;
+    } else if (key === "fill" || key === "stroke" || key === "colour" || key === "color") {
+      if (!isColor(value)) {
+        return { error: `цвет команды: ожидается #hex или имя, получено «${value}»` };
+      }
+      if (key === "fill") team.fill = value;
+      else team.stroke = value;
+    } else if (key === "radius") {
+      const radius = Number(value.replace(/px$/i, "").replace(",", "."));
+      if (!Number.isFinite(radius) || radius < 0 || radius > 40) {
+        return { error: `радиус команды: ожидается число 0–40, получено «${value}»` };
+      }
+      team.radius = radius;
+    } else if (key === "padding") {
+      const padding = Number(value.replace(/px$/i, "").replace(",", "."));
+      if (!Number.isFinite(padding) || padding < 0 || padding > 48) {
+        return { error: `отступ команды: ожидается число 0–48, получено «${value}»` };
+      }
+      team.padding = padding;
+    }
+    rest = rest.slice(attr[0].length).trim();
+  }
+  if (rest) return { error: `неизвестный параметр команды «${rest}»` };
+  return { team };
+}
+
+/** `teams layout=grid dir=lr gap=24 columns=3` */
+export function parseTeamsLine(raw: string): { patch?: Partial<TeamLayoutSpec>; error?: string } | null {
+  if (!/^teams\b/i.test(raw.trim())) return null;
+  let rest = raw.trim().replace(/^teams\s*/i, "").trim();
+  const patch: Partial<TeamLayoutSpec> = {};
+  for (let guard = 0; guard < 8 && rest; guard += 1) {
+    const attr = /^(layout|dir|gap|columns)=("[^"]*"|'[^']*'|\S*)\s*/i.exec(rest);
+    if (!attr) return { error: `неизвестный параметр раскладки команд «${rest}»` };
+    const key = attr[1].toLowerCase();
+    const value = unquote(attr[2]).toLowerCase();
+    if (key === "layout") {
+      if (value !== "auto" && value !== "row" && value !== "column" && value !== "grid") {
+        return { error: `раскладка команд: ожидается auto, row, column или grid, получено «${value}»` };
+      }
+      patch.mode = value;
+    } else if (key === "dir") {
+      if (value !== "lr" && value !== "tb") {
+        return { error: `направление команд: ожидается lr или tb, получено «${value}»` };
+      }
+      patch.dir = value;
+    } else if (key === "gap") {
+      const gap = Number(value.replace(/px$/i, "").replace(",", "."));
+      if (!Number.isFinite(gap) || gap < 0 || gap > 200) {
+        return { error: `зазор между командами: ожидается число 0–200, получено «${value}»` };
+      }
+      patch.gap = gap;
+    } else if (key === "columns") {
+      const columns = Number(value);
+      if (!Number.isInteger(columns) || columns < 1 || columns > 12) {
+        return { error: `число команд в ряду: ожидается целое 1–12, получено «${value}»` };
+      }
+      patch.columns = columns;
+    }
+    rest = rest.slice(attr[0].length).trim();
+  }
+  if (rest) return { error: `неизвестный параметр раскладки команд «${rest}»` };
+  return { patch };
+}
+
+/**
+ * Порядок объявления: родитель раньше детей. Неизвестный родитель создаётся
+ * сам (как и команда из `team=`), цикл вложенности разрывается.
+ */
+export function orderTeams(teams: readonly TeamStyle[]): TeamStyle[] {
+  const list = teams.map((team) => ({ ...team }));
+  const index = new Map(list.map((team) => [team.id, team]));
+  // Родитель, которого не объявили: создаём рамку с подписью-идентификатором.
+  for (let cursor = 0; cursor < list.length; cursor += 1) {
+    const parent = list[cursor].parent;
+    if (!parent || index.has(parent)) continue;
+    const stub: TeamStyle = { id: parent, label: parent, radius: 10, padding: 14 };
+    index.set(parent, stub);
+    list.push(stub);
+  }
+  const out: TeamStyle[] = [];
+  const done = new Set<string>();
+  const remaining = [...list];
+  while (remaining.length > 0) {
+    let moved = false;
+    for (let index = 0; index < remaining.length; ) {
+      const team = remaining[index];
+      if (!team.parent || done.has(team.parent)) {
+        out.push(team);
+        done.add(team.id);
+        remaining.splice(index, 1);
+        moved = true;
+      } else {
+        index += 1;
+      }
+    }
+    if (!moved) {
+      // Цикл: рамки вкладывать некуда, оставляем их верхним уровнем.
+      for (const team of remaining) {
+        delete team.parent;
+        out.push(team);
+      }
+      remaining.length = 0;
+    }
+  }
+  return out;
+}
+
+/** Команда каждого узла: неизвестная или пустая — виртуальная группа. */
+export function teamMembership<T extends { id: string }>(
+  nodes: readonly T[],
+  teams: readonly TeamStyle[],
+  teamOf: (node: T) => string | undefined,
+): Map<string, string> {
+  const known = new Set(teams.map((team) => team.id));
+  const map = new Map<string, string>();
+  for (const node of nodes) {
+    const id = teamOf(node);
+    map.set(node.id, id && known.has(id) ? id : TEAM_UNGROUPED);
+  }
+  return map;
+}
+
+/**
+ * Раскладка с командами: внутри команды — обычное дерево, команды — shelf-паковка.
+ * Координаты узлов возвращаются абсолютными, как у `layoutOrgTree`.
+ */
+export function layoutTeamGroups<T extends { id: string }>(options: {
+  nodes: readonly T[];
+  edges: readonly { from: string; to: string }[];
+  teams: readonly TeamStyle[];
+  layout: TeamLayoutSpec;
+  teamOf: (node: T) => string | undefined;
+  measure: (node: T) => { lines: string[]; width: number; height: number };
+  vGap?: number | ((upperDepth: number) => number);
+}): {
+  placed: PlacedTreeNode<T>[];
+  boxes: TeamBox<T>[];
+  width: number;
+  height: number;
+  localEdges: { from: string; to: string }[];
+  crossEdges: { from: string; to: string }[];
+} {
+  const { nodes, edges, teams: declared, layout, teamOf, measure, vGap } = options;
+  const teams = orderTeams(declared);
+  const membership = teamMembership(nodes, teams, teamOf);
+  const groups = new Map<string, T[]>();
+  for (const team of teams) groups.set(team.id, []);
+  for (const node of nodes) {
+    const id = membership.get(node.id) as string;
+    const list = groups.get(id) ?? [];
+    list.push(node);
+    groups.set(id, list);
+  }
+
+  const localEdges: { from: string; to: string }[] = [];
+  const crossEdges: { from: string; to: string }[] = [];
+  for (const edge of edges) {
+    const from = membership.get(edge.from);
+    const to = membership.get(edge.to);
+    if (from === undefined || to === undefined) continue;
+    if (from === to) localEdges.push(edge);
+    else crossEdges.push(edge);
+  }
+
+  const ghostTeam: TeamStyle = { id: TEAM_UNGROUPED, label: "", radius: 0, padding: 0 };
+  const byId = new Map<string, TeamStyle>(teams.map((team) => [team.id, team]));
+  byId.set(TEAM_UNGROUPED, ghostTeam);
+  const known = new Set(teams.map((team) => team.id));
+  const children = new Map<string, string[]>();
+  const roots: string[] = [];
+  for (const team of teams) {
+    const parent = team.parent && team.parent !== team.id && known.has(team.parent) ? team.parent : undefined;
+    if (!parent) {
+      roots.push(team.id);
+      continue;
+    }
+    const list = children.get(parent) ?? [];
+    list.push(team.id);
+    children.set(parent, list);
+  }
+  if ((groups.get(TEAM_UNGROUPED) ?? []).length > 0 && !roots.includes(TEAM_UNGROUPED)) {
+    roots.push(TEAM_UNGROUPED);
+  }
+
+  interface PackItem {
+    width: number;
+    height: number;
+  }
+  interface TeamNode {
+    id: string;
+    box: TeamBox<T>;
+    contentWidth: number;
+    contentHeight: number;
+    insetY: number;
+    padding: number;
+    items: { x: number; y: number; cards?: PlacedTreeNode<T>[]; kid?: TeamNode }[];
+  }
+
+  /** Shelf-паковка: row / column / grid. Тот же порядок и зазоры на всех уровнях. */
+  const packItems = (
+    items: readonly PackItem[],
+    mode: TeamLayoutSpec["mode"],
+    columns: number,
+    gap: number,
+  ): { pos: { x: number; y: number }[]; rows: { start: number; end: number; height: number }[]; width: number; height: number } => {
+    const perRow = mode === "grid" ? Math.max(1, columns) : mode === "column" ? 1 : Math.max(1, items.length);
+    const pos: { x: number; y: number }[] = [];
+    const rows: { start: number; end: number; height: number }[] = [];
+    let cursorX = 0;
+    let cursorY = 0;
+    let rowHeight = 0;
+    let totalWidth = 0;
+    items.forEach((item, index) => {
+      if (index > 0) {
+        if (index % perRow === 0) {
+          rows.push({ start: index - perRow, end: index, height: rowHeight });
+          cursorX = 0;
+          cursorY += rowHeight + gap;
+          rowHeight = 0;
+        } else {
+          cursorX += items[index - 1].width + gap;
+        }
+      }
+      pos.push({ x: cursorX, y: cursorY });
+      rowHeight = Math.max(rowHeight, item.height);
+      totalWidth = Math.max(totalWidth, cursorX + item.width);
+    });
+    rows.push({
+      start: Math.max(0, items.length - (items.length % perRow || perRow)),
+      end: items.length,
+      height: rowHeight,
+    });
+    return { pos, rows, width: totalWidth, height: cursorY + rowHeight };
+  };
+
+  /** Свои люди команды: обычное дерево внутри её рамки. */
+  const cardsOf = (teamId: string): { placed: PlacedTreeNode<T>[]; width: number; height: number } | null => {
+    const members = groups.get(teamId) ?? [];
+    if (members.length === 0) return null;
+    const ids = new Set(members.map((member) => member.id));
+    const reports = localEdges.filter((edge) => ids.has(edge.from));
+    const hasParent = new Set(reports.map((edge) => edge.to));
+    const idRoots = members.filter((member) => !hasParent.has(member.id)).map((member) => member.id);
+    const virtualRoot = idRoots.length !== 1;
+    return layoutOrgTree(members, reports, virtualRoot, virtualRoot ? null : idRoots[0], measure, vGap);
+  };
+
+  const mode = layout.mode === "auto" ? (layout.dir === "tb" ? "column" : "row") : layout.mode;
+
+  /**
+   * Замер узла: своя группа людей и/или вложенные команды, упакованные как элементы.
+   * Верхний уровень живёт по `teams layout=`, вложенные — по `dir`: дети в ряд или в столбец.
+   */
+  const measureNode = (teamId: string, depth: number): TeamNode | null => {
+    const team = byId.get(teamId);
+    if (!team) return null;
+    const ghost = teamId === TEAM_UNGROUPED;
+    const laid = cardsOf(teamId);
+    const kids = (children.get(teamId) ?? [])
+      .map((id) => measureNode(id, depth + 1))
+      .filter((node): node is TeamNode => node !== null);
+    if (!laid && kids.length === 0) return null;
+    const items: PackItem[] = [];
+    if (laid) items.push({ width: laid.width, height: laid.height });
+    for (const kid of kids) items.push({ width: kid.box.width, height: kid.box.height });
+    const innerMode: TeamLayoutSpec["mode"] =
+      depth === 0 ? mode : layout.dir === "tb" ? "column" : "row";
+    const packed = packItems(items, innerMode, layout.columns, layout.gap);
+    const contentWidth = packed.width;
+    const contentHeight = packed.height;
+    // Рамки одного ряда выравниваются по высоте: разная высота команд выглядит случайной.
+    for (const row of packed.rows) {
+      for (let index = Math.max(0, row.start); index < Math.min(row.end, items.length); index += 1) {
+        items[index].height = row.height;
+      }
+    }
+    for (let index = 0; index < kids.length; index += 1) {
+      kids[index].box.height = items[laid ? index + 1 : index].height;
+    }
+    const headerHeight = ghost || !team.label ? 0 : TEAM_HEADER;
+    const padding = ghost ? 0 : team.padding;
+    const insetY = headerHeight ? TEAM_HEADER_GAP + headerHeight : 0;
+    const box: TeamBox<T> = {
+      id: teamId,
+      label: team.label,
+      parent: ghost ? undefined : team.parent,
+      x: 0,
+      y: 0,
+      width: contentWidth + 2 * padding,
+      height: contentHeight + insetY + 2 * padding,
+      headerHeight,
+      radius: ghost ? 0 : team.radius,
+      fill: team.fill,
+      stroke: team.stroke,
+      ghost,
+      placed: [],
+    };
+    const node: TeamNode = {
+      id: teamId,
+      box,
+      contentWidth,
+      contentHeight,
+      insetY,
+      padding,
+      items: [],
+    };
+    let kidIndex = 0;
+    items.forEach((_item, index) => {
+      const slot: TeamNode["items"][number] = { x: packed.pos[index].x, y: packed.pos[index].y };
+      if (laid && index === 0) slot.cards = laid.placed;
+      else {
+        slot.kid = kids[kidIndex];
+        kidIndex += 1;
+      }
+      node.items.push(slot);
+    });
+    return node;
+  };
+
+  /** Абсолютные координаты: содержимое центрируется в рамке (в т.ч. после выравнивания ряда). */
+  const placeNode = (node: TeamNode, x: number, y: number): void => {
+    node.box.x = x;
+    node.box.y = y;
+    const dx = node.padding + (node.box.width - 2 * node.padding - node.contentWidth) / 2;
+    const slack = node.box.height - node.insetY - 2 * node.padding - node.contentHeight;
+    const dy = node.insetY + node.padding + Math.max(0, slack) / 2;
+    for (const item of node.items) {
+      if (item.cards) {
+        for (const card of item.cards) {
+          node.box.placed.push({ ...card, x: x + dx + item.x + card.x, y: y + dy + item.y + card.y });
+        }
+      }
+      if (item.kid) placeNode(item.kid, x + dx + item.x, y + dy + item.y);
+    }
+  };
+
+  const rootNodes = roots
+    .map((id) => measureNode(id, 0))
+    .filter((node): node is TeamNode => node !== null);
+  const topItems: PackItem[] = rootNodes.map((node) => ({ width: node.box.width, height: node.box.height }));
+  const top = packItems(topItems, mode, layout.columns, layout.gap);
+  for (const row of top.rows) {
+    for (let index = Math.max(0, row.start); index < Math.min(row.end, topItems.length); index += 1) {
+      topItems[index].height = row.height;
+      rootNodes[index].box.height = topItems[index].height;
+    }
+  }
+  rootNodes.forEach((node, index) => placeNode(node, top.pos[index].x, top.pos[index].y));
+
+  const boxes: TeamBox<T>[] = [];
+  const placed: PlacedTreeNode<T>[] = [];
+  const walk = (node: TeamNode): void => {
+    boxes.push(node.box);
+    for (const card of node.box.placed) placed.push(card);
+    for (const item of node.items) if (item.kid) walk(item.kid);
+  };
+  for (const node of rootNodes) walk(node);
+
+  return { placed, boxes, width: top.width, height: top.height, localEdges, crossEdges };
+}
+
+/** Фон команды и её подпись. Рисуется до рёбер, чтобы линии шли поверх рамки. */
+export function drawTeamBoxes(
+  svg: SvgBuilder,
+  boxes: readonly TeamBoxFrame[],
+  offsetX: number,
+  offsetY: number,
+  palette: { bg: string; fg: string; fgDim: string; axis: string },
+  mono: boolean,
+  invert: boolean,
+  kind: "powermap" | "orgchart" = "powermap",
+): void {
+  for (const box of boxes) {
+    if (box.ghost) continue;
+    const x = offsetX + box.x;
+    const y = offsetY + box.y;
+    const fill = mono ? monoPaint(box.fill ?? palette.bg, invert) : (box.fill ?? palette.bg);
+    const stroke = mono ? monoPaint(box.stroke ?? palette.axis, invert) : (box.stroke ?? palette.axis);
+    svg.rect(x, y, box.width, box.height, {
+      rx: box.radius,
+      ry: box.radius,
+      fill,
+      "fill-opacity": box.fill ? 0.55 : 0.35,
+      stroke,
+      "stroke-width": 1.2,
+      "stroke-dasharray": "6 4",
+      "data-team": kind,
+      "data-team-id": box.id,
+    });
+    if (box.headerHeight) {
+      drawLabelLines(
+        svg,
+        x + 12,
+        y + box.headerHeight - 3,
+        box.label,
+        11,
+        { fill: palette.fg, "font-weight": 600, "text-anchor": "start", "data-team-label": "1" },
+        "down",
+      );
+    }
+  }
+}
+
+/**
+ * Чужие рамки команд как препятствия: рамка и её подпись.
+ * Свои команды (`fromTeam`/`toTeam`) не мешают — стрелка выходит из них и входит в них.
+ */
+export function foreignTeamBoxes(
+  boxes: readonly TeamBoxFrame[],
+  membership: Map<string, string> | undefined,
+  fromId: string,
+  toId: string,
+  offsetX: number,
+  offsetY: number,
+  labelFont = 11,
+): { left: number; right: number; top: number; bottom: number }[] {
+  if (!membership) return [];
+  const fromTeam = membership.get(fromId);
+  const toTeam = membership.get(toId);
+  // Общие предки вложенных команд не препятствие: стрелка выходит из них и входит в них.
+  const parents = new Map<string, string>();
+  for (const box of boxes) if (box.parent) parents.set(box.id, box.parent);
+  const allowed = new Set<string>();
+  for (const start of [fromTeam, toTeam]) {
+    let cursor = start;
+    for (let guard = 0; cursor && guard <= boxes.length; guard += 1) {
+      allowed.add(cursor);
+      cursor = parents.get(cursor);
+    }
+  }
+  const out: { left: number; right: number; top: number; bottom: number }[] = [];
+  for (const box of boxes) {
+    if (box.ghost) continue;
+    if (allowed.has(box.id)) continue;
+    const left = offsetX + box.x;
+    const top = offsetY + box.y;
+    out.push({ left, right: left + box.width, top, bottom: top + box.height });
+    if (box.headerHeight && box.label) {
+      const width = measureText(box.label, labelFont + 1) * 1.05 + 8;
+      out.push({
+        left: left + 8,
+        right: left + 8 + width,
+        top: top + 1,
+        bottom: top + box.headerHeight + 2,
+      });
+    }
+  }
+  return out;
+}
+
+
 
 // --- Разбор ---------------------------------------------------------------
 
@@ -126,7 +673,7 @@ const STYLE_KEYS = new Set(["style", "borderstyle", "border-style"]);
 const WIDTH_KEYS = new Set(["width", "thickness", "borderwidth", "border-width"]);
 
 const NODE_ATTR_RE =
-  /^(border-style|borderstyle|border-width|borderwidth|color|colour|fill|border|stroke|style|width|thickness|photo|gender|avatar)=("[^"]*"|'[^']*'|\S*)\s*/i;
+  /^(border-style|borderstyle|border-width|borderwidth|color|colour|fill|border|stroke|style|width|thickness|photo|gender|avatar|team)=("[^"]*"|'[^']*'|\S*)\s*/i;
 
 /** Имена, которые принимает `isColor`, в hex — чтобы подобрать контрастный текст. */
 const NAMED_COLORS: Record<string, string> = {
@@ -160,6 +707,8 @@ interface OrgNodePaint {
   photo?: string;
   gender?: AvatarGender;
   hideAvatar?: boolean;
+  /** `team=<id>` — команда блока. `team=-` выводит из команды. */
+  team?: string;
 }
 
 function unquoteAttr(raw: string): string {
@@ -225,7 +774,7 @@ function firstUnescaped(raw: string, ch: string): number {
  * Без скобок параметры — хвост из `key=value`.
  */
 const NODE_ATTR_START_RE =
-  /(?:^|\s)(?:border-style|borderstyle|border-width|borderwidth|color|colour|fill|border|stroke|style|width|thickness|photo|gender|avatar)=/i;
+  /(?:^|\s)(?:border-style|borderstyle|border-width|borderwidth|color|colour|fill|border|stroke|style|width|thickness|photo|gender|avatar|team)=/i;
 
 function splitNodeAttrs(raw: string): { body: string; tail: string } {
   const open = firstUnescaped(raw, "[");
@@ -309,6 +858,11 @@ function parseNodeAttrs(
         return { error: `avatar узла: ожидается off, получено «${value}»` };
       }
       paint.hideAvatar = true;
+    } else if (key === "team") {
+      if (!value || value === "-" || /^(off|none)$/i.test(value)) paint.team = "";
+      else if (!/^[\p{L}\p{N}_.\/-]+$/u.test(value)) {
+        return { error: `команда узла: ожидается id из букв, цифр, «_» или «-», получено «${value}»` };
+      } else paint.team = value;
     }
     rest = rest.slice(match[0].length).trim();
   }
@@ -349,6 +903,7 @@ function applyPaint(node: OrgNode, paint?: OrgNodePaint): void {
   if (paint.photo) node.photo = paint.photo;
   if (paint.gender) node.gender = paint.gender;
   if (paint.hideAvatar) node.hideAvatar = true;
+  if (paint.team !== undefined) node.team = paint.team || undefined;
 }
 
 /** Hex или имя → цвет, по которому можно посчитать контраст текста. */
@@ -399,6 +954,9 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
   const nodes: OrgNode[] = [];
   const nodeIndex = new Map<string, OrgNode>();
   const edges: OrgEdge[] = [];
+  const teams: TeamStyle[] = [];
+  const teamIndex = new Map<string, TeamStyle>();
+  const teamLayout: TeamLayoutSpec = { ...DEFAULT_TEAM_LAYOUT };
   let seenType = false;
 
   const ensureNode = (id: string, label?: string, paint?: OrgNodePaint): OrgNode => {
@@ -462,6 +1020,40 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
       continue;
     }
 
+    const teamsLine = parseTeamsLine(raw);
+    if (teamsLine) {
+      if (teamsLine.error || !teamsLine.patch) {
+        errors.push({
+          message: teamsLine.error ?? "не удалось разобрать раскладку команд",
+          line: lineNo,
+          col: 0,
+        });
+      } else {
+        Object.assign(teamLayout, teamsLine.patch);
+      }
+      continue;
+    }
+
+    const teamLine = parseTeamLine(raw);
+    if (teamLine) {
+      if (teamLine.error || !teamLine.team) {
+        errors.push({
+          message: teamLine.error ?? "не удалось разобрать команду",
+          line: lineNo,
+          col: 0,
+        });
+      } else {
+        const key = teamLine.team.id;
+        const previous = teamIndex.get(key);
+        if (previous) Object.assign(previous, teamLine.team);
+        else {
+          teamIndex.set(key, teamLine.team);
+          teams.push(teamLine.team);
+        }
+      }
+      continue;
+    }
+
     const edgeMatch = parseEdgeLine(raw);
     if (edgeMatch) {
       ensureNode(edgeMatch.from);
@@ -494,6 +1086,22 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
       continue;
     }
     ensureNode(parsedNode.node.id, parsedNode.node.label, parsedNode.node);
+  }
+
+  // `team=front` без директивы — команда создаётся сама, с дефолтным стилем.
+  for (const node of nodes) {
+    const id = node.team;
+    if (!id || teamIndex.has(id)) continue;
+    const slash = id.lastIndexOf("/");
+    const auto: TeamStyle = {
+      id,
+      label: slash >= 0 ? id.slice(slash + 1) : id,
+      ...(slash > 0 ? { parent: id.slice(0, slash) } : {}),
+      radius: TEAM_DEFAULT_RADIUS,
+      padding: TEAM_DEFAULT_PADDING,
+    };
+    teamIndex.set(id, auto);
+    teams.push(auto);
   }
 
   if (edges.length === 0) {
@@ -534,6 +1142,8 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
       virtualRoot,
       ratio,
       avatarSize,
+      teams: orderTeams(teams),
+      teamLayout,
     },
   };
 }
@@ -707,15 +1317,152 @@ export function layoutOrgTree<T extends { id: string }>(
   return { placed, width: contentWidth, height };
 }
 
-function layout(model: OrgModel): { placed: PlacedTreeNode<OrgNode>[]; width: number; height: number } {
-  return layoutOrgTree(
-    model.nodes,
-    model.edges,
-    model.virtualRoot,
-    model.root,
-    (node) => measureNode(node, model.avatarSize ?? 0),
-  );
+interface OrgLayout {
+  placed: PlacedTreeNode<OrgNode>[];
+  width: number;
+  height: number;
+  /** Рамки команд; пусто — команд нет. */
+  boxes: TeamBox<OrgNode>[];
+  /** Связи внутри команд: рисуются локтями как раньше. */
+  localEdges: OrgEdge[];
+  /** Связи между командами: идут через отдельный роутер. */
+  crossEdges: OrgEdge[];
+  /** Команда каждого узла — только когда команды включены. */
+  membership: Map<string, string> | null;
 }
+
+function layout(model: OrgModel): OrgLayout {
+  const measure = (node: OrgNode) => measureNode(node, model.avatarSize ?? 0);
+  if (model.teams.length === 0) {
+    const tree = layoutOrgTree(model.nodes, model.edges, model.virtualRoot, model.root, measure);
+    return { ...tree, boxes: [], localEdges: model.edges, crossEdges: [], membership: null };
+  }
+
+  const grouped = layoutTeamGroups({
+    nodes: model.nodes,
+    edges: model.edges,
+    teams: model.teams,
+    layout: model.teamLayout ?? DEFAULT_TEAM_LAYOUT,
+    teamOf: (node) => node.team,
+    measure,
+  });
+  const styleOf = new Map(model.edges.map((edge) => [`${edge.from}\u0000${edge.to}`, edge.style]));
+  const wrap = (edge: { from: string; to: string }): OrgEdge => ({
+    from: edge.from,
+    to: edge.to,
+    style: styleOf.get(`${edge.from}\u0000${edge.to}`) ?? "solid",
+  });
+  return {
+    placed: grouped.placed,
+    width: grouped.width,
+    height: grouped.height,
+    boxes: grouped.boxes,
+    localEdges: grouped.localEdges.map(wrap),
+    crossEdges: grouped.crossEdges.map(wrap),
+    membership: teamMembership(model.nodes, model.teams, (node) => node.team),
+  };
+}
+
+/** Прямоугольник карточки в координатах холста. */
+interface CanvasRect {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+function cardRect(card: PlacedTreeNode<OrgNode>, offsetX: number, offsetY: number): CanvasRect {
+  const left = offsetX + card.x;
+  const top = offsetY + card.y;
+  return { left, right: left + card.width, top, bottom: top + card.height };
+}
+
+function crossesRect(x0: number, x1: number, y: number, rect: CanvasRect): boolean {
+  if (y <= rect.top + 1 || y >= rect.bottom - 1) return false;
+  const lo = Math.min(x0, x1);
+  const hi = Math.max(x0, x1);
+  return hi > rect.left + 1 && lo < rect.right - 1;
+}
+
+/**
+ * Межкомандная связь: выход из нижней кромки, полка в свободном коридоре и вход
+ * в верхнюю кромку. Полка не заходит в чужие рамки команд.
+ */
+function crossTeamRoute(
+  from: PlacedTreeNode<OrgNode>,
+  to: PlacedTreeNode<OrgNode>,
+  obstacles: readonly CanvasRect[],
+  offsetX: number,
+  offsetY: number,
+): { x1: number; y1: number; x2: number; y2: number; midY: number } {
+  const a = cardRect(from, offsetX, offsetY);
+  const b = cardRect(to, offsetX, offsetY);
+  const down = b.top >= a.bottom;
+  const up = b.bottom <= a.top;
+  const x1 = (a.left + a.right) / 2;
+  const x2 = (b.left + b.right) / 2;
+  const y1 = down ? a.bottom : up ? a.top : a.bottom;
+  const y2 = down ? b.top : up ? b.bottom : b.top;
+
+  const lo = Math.min(y1, y2) + 6;
+  const hi = Math.max(y1, y2) - 6;
+  if (hi <= lo) return { x1, y1, x2, y2, midY: (y1 + y2) / 2 };
+
+  const mid = (y1 + y2) / 2;
+  const candidates = new Set<number>([mid]);
+  for (const rect of obstacles) {
+    candidates.add(rect.top - 8);
+    candidates.add(rect.bottom + 8);
+  }
+  const sorted = [...candidates]
+    .filter((y) => y > lo && y < hi)
+    .sort((left, right) => Math.abs(left - mid) - Math.abs(right - mid));
+  const free = sorted.find((y) => !obstacles.some((rect) => crossesRect(x1, x2, y, rect)));
+  return { x1, y1, x2, y2, midY: free ?? mid };
+}
+
+/** Межкомандные связи: тот же стиль, что у обычных рёбер, но полка обходит чужие рамки. */
+function drawCrossTeamEdges(
+  svg: SvgBuilder,
+  placed: readonly PlacedTreeNode<OrgNode>[],
+  edges: readonly OrgEdge[],
+  boxes: readonly TeamBoxFrame[],
+  membership: Map<string, string> | null,
+  offsetX: number,
+  offsetY: number,
+  stroke: string,
+  markerRef: string,
+): void {
+  if (edges.length === 0) return;
+  const byId = new Map(placed.map((card) => [card.node.id, card]));
+  for (const edge of edges) {
+    const from = byId.get(edge.from);
+    const to = byId.get(edge.to);
+    if (!from || !to) continue;
+    const obstacles = foreignTeamBoxes(
+      boxes,
+      membership ?? undefined,
+      edge.from,
+      edge.to,
+      offsetX,
+      offsetY,
+      FONT,
+    );
+    const { x1, y1, x2, y2, midY } = crossTeamRoute(from, to, obstacles, offsetX, offsetY);
+    const d = `M ${fmt(x1)} ${fmt(y1)} L ${fmt(x1)} ${fmt(midY)} L ${fmt(x2)} ${fmt(midY)} L ${fmt(x2)} ${fmt(y2)}`;
+    const attrs: Record<string, string | number> = {
+      d,
+      fill: "none",
+      stroke,
+      "stroke-width": 1.2,
+      "marker-end": markerRef,
+      "data-cross-team": "1",
+    };
+    if (edge.style === "dotted") attrs["stroke-dasharray"] = "4 4";
+    svg.path(d, attrs);
+  }
+}
+
 
 // --- Рендер ---------------------------------------------------------------
 
@@ -997,7 +1744,8 @@ export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): stri
   const themeDark = Boolean(options.dark) || usesInvertedMono(model.mono, model.monoInvert, false);
   const invertedMono = usesInvertedMono(model.mono, model.monoInvert, options.dark);
   const palette = getPalette(themeDark);
-  const { placed, width: contentWidth, height: contentHeight } = layout(model);
+  const { placed, width: contentWidth, height: contentHeight, boxes, localEdges, crossEdges, membership } =
+    layout(model);
 
   const titleLines = model.title && hasLabelBreak(model.title) ? splitLabelLines(model.title) : null;
   const titleExtra = titleLines ? (titleLines.length - 1) * labelLineStep(15) : 0;
@@ -1050,7 +1798,21 @@ export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): stri
 
   const marker = arrowMarker(palette, "ext-org-arrow");
   svg.raw(marker.markup);
-  drawReportingElbows(svg, placed, model.edges, offsetX, offsetY, palette.axis, marker.ref);
+  if (boxes.length > 0) {
+    drawTeamBoxes(svg, boxes, offsetX, offsetY, palette, Boolean(model.mono), invertedMono, "orgchart");
+  }
+  drawReportingElbows(svg, placed, localEdges, offsetX, offsetY, palette.axis, marker.ref);
+  drawCrossTeamEdges(
+    svg,
+    placed,
+    crossEdges,
+    boxes,
+    membership,
+    offsetX,
+    offsetY,
+    palette.axis,
+    marker.ref,
+  );
 
   // Узлы
   for (const p of placed) {

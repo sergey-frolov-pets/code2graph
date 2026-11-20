@@ -1,0 +1,16 @@
+orgchart
+title Team org chart
+team exec [Executive] fill=#f6f8fa stroke=#0969da padding=16
+team delivery [Delivery] stroke=#8250df
+teams layout=row gap=40
+ceo [Alex Morgan|CEO] color=#0969da team=exec
+cfo [Elena Chen|CFO] team=exec
+cto [Priya Nair|CTO] team=delivery
+lead [Marco Rossi|Team lead] team=delivery
+dev [Lena Volkova|Engineer] team=delivery
+guest [Sam Reed|Advisor]
+ceo -> cfo
+cto -> lead
+lead -> dev
+cfo -> dev
+lead -.-> guest

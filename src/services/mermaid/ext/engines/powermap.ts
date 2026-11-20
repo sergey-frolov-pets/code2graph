@@ -30,7 +30,24 @@ import {
   sanitizePhotoHref,
   type AvatarGender,
 } from "./avatar";
-import { drawReportingElbows, layoutOrgTree, reportingElbowRoutes, type PlacedTreeNode } from "./orgchart";
+import {
+  DEFAULT_TEAM_LAYOUT,
+  drawReportingElbows,
+  drawTeamBoxes,
+  foreignTeamBoxes,
+  layoutOrgTree,
+  layoutTeamGroups,
+  orderTeams,
+  parseTeamLine,
+  parseTeamsLine,
+  reportingElbowRoutes,
+  teamMembership,
+  TEAM_UNGROUPED,
+  type PlacedTreeNode,
+  type TeamBox as OrgTeamBox,
+  type TeamLayoutSpec,
+  type TeamStyle,
+} from "./orgchart";
 
 export type ReportStyle = "solid" | "dotted";
 export type LinkStroke = "solid" | "dash" | "dot" | "dashdot";
@@ -54,6 +71,8 @@ export interface PowerPerson {
   attitude?: ScoreSwatch;
   /** Люди другой компании. Не сотрудники `company`, которые стоят на карточках. */
   counterpart: string;
+  /** Команда: id из директивы `team` или значение атрибута `team=`. */
+  team?: string;
 }
 
 export interface PowerLinkStyle {
@@ -80,6 +99,12 @@ export interface PowerInfluenceEdge {
   both?: boolean;
 }
 
+/** Команда на карте влияния: рамка с подписью вокруг своей части дерева. */
+export type PowerTeam = TeamStyle;
+
+/** Как команды раскладываются друг относительно друга. */
+export type PowerTeamLayout = TeamLayoutSpec;
+
 export interface PowerModel {
   title?: string;
   company?: string;
@@ -98,6 +123,9 @@ export interface PowerModel {
   links: PowerLinkStyle[];
   root: string | null;
   virtualRoot: boolean;
+  /** Объявленные команды. Пусто — команды не используются, раскладка прежняя. */
+  teams: PowerTeam[];
+  teamLayout: PowerTeamLayout;
 }
 
 const ROLES: readonly ScoreSwatch[] = [
@@ -235,7 +263,7 @@ function normalizeLinkStyle(raw: string): LinkStroke | null {
 }
 
 const PERSON_ATTR_RE =
-  /^(role|influence|action|attitude|counterpart|photo|gender|avatar)=("[^"]*"|'[^']*'|\S*)\s*/i;
+  /^(role|influence|action|attitude|counterpart|photo|gender|avatar|team)=("[^"]*"|'[^']*'|\S*)\s*/i;
 
 interface PersonAttrs {
   role?: ScoreSwatch;
@@ -246,6 +274,7 @@ interface PersonAttrs {
   photo?: string;
   gender?: AvatarGender;
   hideAvatar?: boolean;
+  team?: string;
 }
 
 function parsePersonAttrs(tail: string): { attrs?: PersonAttrs; error?: string } {
@@ -284,6 +313,11 @@ function parsePersonAttrs(tail: string): { attrs?: PersonAttrs; error?: string }
         return { error: `avatar узла: ожидается off, получено «${value}»` };
       }
       attrs.hideAvatar = true;
+    } else if (key === "team") {
+      if (!value || value === "-") attrs.team = undefined;
+      else if (!/^[\p{L}\p{N}_.\/-]+$/u.test(value)) {
+        return { error: `команда узла: ожидается идентификатор из букв, цифр, _ и -, получено «${value}»` };
+      } else attrs.team = value;
     }
     rest = rest.slice(match[0].length).trim();
   }
@@ -305,7 +339,7 @@ function splitBracket(raw: string): { body: string; tail: string } {
   if (open >= 0 && close > open) {
     return { body: raw.slice(0, close + 1).trim(), tail: raw.slice(close + 1).trim() };
   }
-  const attrAt = /(?:^|\s)(?:role|influence|action|attitude|counterpart|photo|gender|avatar)=/i.exec(raw);
+  const attrAt = /(?:^|\s)(?:role|influence|action|attitude|counterpart|photo|gender|avatar|team)=/i.exec(raw);
   if (attrAt && attrAt.index > 0) {
     return { body: raw.slice(0, attrAt.index).trim(), tail: raw.slice(attrAt.index).trim() };
   }
@@ -410,7 +444,11 @@ function applyAttrs(person: PowerPerson, attrs: PersonAttrs | undefined): void {
   if (attrs.photo) person.photo = attrs.photo;
   if (attrs.gender) person.gender = attrs.gender;
   if (attrs.hideAvatar) person.hideAvatar = true;
+  if (attrs.team !== undefined) person.team = attrs.team;
 }
+
+/** Виртуальная команда для людей без `team=`: рамки у неё нет. */
+export const UNGROUPED_TEAM = TEAM_UNGROUPED;
 
 export function parsePowermap(source: string): ExtParseResult<PowerModel> {
   const errors: ExtParseError[] = [];
@@ -430,6 +468,9 @@ export function parsePowermap(source: string): ExtParseResult<PowerModel> {
   const influences: PowerInfluenceEdge[] = [];
   const links: PowerLinkStyle[] = [];
   const linkIndex = new Map<string, PowerLinkStyle>();
+  const teams: PowerTeam[] = [];
+  const teamIndex = new Map<string, PowerTeam>();
+  let teamLayout: PowerTeamLayout = { ...DEFAULT_TEAM_LAYOUT };
   let seenType = false;
 
   const ensure = (id: string, label?: string, attrs?: PersonAttrs): PowerPerson => {
@@ -524,6 +565,32 @@ export function parsePowermap(source: string): ExtParseResult<PowerModel> {
       continue;
     }
 
+    const teamsLine = parseTeamsLine(raw);
+    if (teamsLine) {
+      if (teamsLine.error || !teamsLine.patch) {
+        errors.push({ message: teamsLine.error ?? "не удалось разобрать раскладку команд", line: lineNo, col: 0 });
+      } else {
+        Object.assign(teamLayout, teamsLine.patch);
+      }
+      continue;
+    }
+
+    const teamLine = parseTeamLine(raw);
+    if (teamLine) {
+      if (teamLine.error || !teamLine.team) {
+        errors.push({ message: teamLine.error ?? "не удалось разобрать команду", line: lineNo, col: 0 });
+      } else {
+        const key = teamLine.team.id;
+        const previous = teamIndex.get(key);
+        if (previous) Object.assign(previous, teamLine.team);
+        else {
+          teamIndex.set(key, teamLine.team);
+          teams.push(teamLine.team);
+        }
+      }
+      continue;
+    }
+
     const linkLine = parseLinkLine(raw);
     if (linkLine) {
       if (linkLine.error || !linkLine.link) {
@@ -593,6 +660,22 @@ export function parsePowermap(source: string): ExtParseResult<PowerModel> {
     errors.push({ message: "нет людей: ожидается хотя бы один узел", line: 1, col: 0 });
   }
 
+  // `team=front` без директивы — команда создаётся сама, с дефолтным стилем.
+  for (const person of people) {
+    const id = person.team;
+    if (!id || teamIndex.has(id)) continue;
+    const slash = id.lastIndexOf("/");
+    const auto: PowerTeam = {
+      id,
+      label: slash >= 0 ? id.slice(slash + 1) : id,
+      ...(slash > 0 ? { parent: id.slice(0, slash) } : {}),
+      radius: 10,
+      padding: 14,
+    };
+    teamIndex.set(id, auto);
+    teams.push(auto);
+  }
+
   for (const edge of influences) {
     const key = edge.name.toLowerCase();
     if (!linkIndex.has(key) && !BUILTIN_LINKS[key]) {
@@ -634,6 +717,8 @@ export function parsePowermap(source: string): ExtParseResult<PowerModel> {
       links,
       root: roots.length > 1 ? null : roots[0],
       virtualRoot: roots.length > 1,
+      teams: orderTeams(teams),
+      teamLayout,
     },
   };
 }
@@ -644,6 +729,62 @@ function resolveLink(model: PowerModel, name: string): PowerLinkStyle {
     BUILTIN_LINKS[name.toLowerCase()] ??
     BUILTIN_LINKS.supporter
   );
+}
+
+/** Рамка команды вокруг её части дерева. */
+type TeamBox = OrgTeamBox<PowerPerson>;
+
+interface TeamLayoutResult {
+  placed: PlacedTreeNode<PowerPerson>[];
+  boxes: TeamBox[];
+  width: number;
+  height: number;
+  /** Отчёты внутри команд: рисуются локальными локтями. */
+  localReports: PowerReportEdge[];
+  /** Отчёты между командами: идут через общий роутер как стрелки. */
+  crossReports: PowerReportEdge[];
+}
+
+/**
+ * Раскладка с командами: внутри команды — прежнее дерево, команды — shelf-паковка.
+ * Координаты карточек возвращаются абсолютными, как у обычного `layoutOrgTree`.
+ */
+function layoutTeams(
+  model: PowerModel,
+  measured: Map<string, { width: number; height: number; titleLines: string[] }>,
+  gapBelow: (upperDepth: number) => number,
+): TeamLayoutResult {
+  const grouped = layoutTeamGroups({
+    nodes: model.people,
+    edges: model.reports,
+    teams: model.teams,
+    layout: model.teamLayout ?? DEFAULT_TEAM_LAYOUT,
+    teamOf: (person) => person.team,
+    measure: (person) => {
+      const box = measured.get(person.id)!;
+      return { lines: [person.name], width: box.width, height: box.height };
+    },
+    vGap: gapBelow,
+  });
+  const styleOf = new Map(model.reports.map((edge) => [`${edge.from}\u0000${edge.to}`, edge.style]));
+  const wrap = (edge: { from: string; to: string }): PowerReportEdge => ({
+    from: edge.from,
+    to: edge.to,
+    style: styleOf.get(`${edge.from}\u0000${edge.to}`) ?? "solid",
+  });
+  return {
+    placed: grouped.placed,
+    boxes: grouped.boxes,
+    width: grouped.width,
+    height: grouped.height,
+    localReports: grouped.localEdges.map(wrap),
+    crossReports: grouped.crossEdges.map(wrap),
+  };
+}
+
+/** Команда каждого человека: люди без объявленной команды — в виртуальной. */
+function powermapMembership(model: PowerModel): Map<string, string> {
+  return teamMembership(model.people, model.teams, (person) => person.team);
 }
 
 const LEGEND_FONT = 10;
@@ -976,6 +1117,17 @@ const LEGEND_PHRASES: Record<string, Record<AppLocale, string>> = {
     de: "Kontakte",
     ar: "جهات الاتصال",
   },
+  teamless: {
+    en: "No team",
+    ru: "Без команды",
+    es: "Sin equipo",
+    zh: "无团队",
+    ja: "チームなし",
+    hi: "टीम नहीं",
+    pt: "Sem equipe",
+    de: "Kein Team",
+    ar: "بدون فريق",
+  },
 };
 
 function legendLocale(model: PowerModel, options: ExtRenderOptions): AppLocale {
@@ -1214,6 +1366,9 @@ interface RoutedInfluence {
   both?: boolean;
   minX: number;
   maxX: number;
+  /** Концы ребра: нужны, чтобы подпись обходила чужие команды. */
+  fromId?: string;
+  toId?: string;
 }
 
 /** Кегль подписи на стрелке и полоса над линией, которую нельзя пересекать. */
@@ -1445,8 +1600,7 @@ function gapBand(x0: number, x1: number, y: number, cards: readonly CardBox[]): 
   return { top, bottom };
 }
 
-function writeObstacle(obstacle: TrackObstacle, y: number, label?: string): void {
-  obstacle.y = y;
+function writeObstacle(obstacle: TrackObstacle, y: number, label?: string): void {  obstacle.y = y;
   const reserve = labelReserve(y, label);
   obstacle.labelTop = reserve?.top;
   obstacle.labelBottom = reserve?.bottom;
@@ -1454,18 +1608,32 @@ function writeObstacle(obstacle: TrackObstacle, y: number, label?: string): void
 
 /** Сдвигает горизонтали влияния с шины подчинения и с подписей других стрелок. */
 function separateInfluenceTracks(
-  routes: readonly { points: RoutePoint[]; label?: string }[],
+  routes: readonly { points: RoutePoint[]; label?: string; fromId?: string; toId?: string }[],
   reports: readonly { x1: number; y1: number; x2: number; y2: number; midY: number }[],
   cards: readonly CardBox[],
+  teams?: { boxes: readonly TeamBox[]; membership: Map<string, string>; offsetX: number; offsetY: number },
 ): void {
   const fixed: TrackObstacle[] = reports.map((elbow) => ({
     y: elbow.midY,
     x0: Math.min(elbow.x1, elbow.x2),
     x1: Math.max(elbow.x1, elbow.x2),
   }));
-  const tracks: { points: RoutePoint[]; index: number; label: string | undefined; obstacle: TrackObstacle }[] = [];
+  const tracks: {
+    points: RoutePoint[];
+    index: number;
+    label: string | undefined;
+    obstacle: TrackObstacle;
+    obstacles: readonly CardBox[];
+  }[] = [];
   for (const route of routes) {
     const host = hostSegmentIndex(route.points);
+    // Свои команды коридор не перекрывают, чужие — да: полка не должна залезать в чужую рамку.
+    const obstacles =
+      teams && route.fromId && route.toId
+        ? cards.concat(
+            foreignTeamBoxes(teams.boxes, teams.membership, route.fromId, route.toId, teams.offsetX, teams.offsetY),
+          )
+        : cards;
     for (let index = 0; index < route.points.length - 1; index += 1) {
       if (index === 0 || index + 1 === route.points.length - 1) continue;
       const a = route.points[index];
@@ -1478,7 +1646,7 @@ function separateInfluenceTracks(
         x1: Math.max(a.x, b.x),
       };
       writeObstacle(obstacle, a.y, label);
-      tracks.push({ points: route.points, index, label, obstacle });
+      tracks.push({ points: route.points, index, label, obstacle, obstacles });
     }
   }
   const ordered = [...tracks].sort((a, b) => Number(Boolean(b.label)) - Number(Boolean(a.label)));
@@ -1487,7 +1655,7 @@ function separateInfluenceTracks(
     const b = track.points[track.index + 1];
     const x0 = Math.min(a.x, b.x);
     const x1 = Math.max(a.x, b.x);
-    const band = gapBand(x0, x1, a.y, cards);
+    const band = gapBand(x0, x1, a.y, track.obstacles);
     const others = [...fixed, ...tracks.map((item) => item.obstacle)];
     let next = a.y;
     const span = Math.max(0, band.bottom - band.top);
@@ -1705,6 +1873,13 @@ function routeInfluences(
   treeBottom: number,
   mono: boolean,
   invert: boolean,
+  teams?: {
+    boxes: readonly TeamBox[];
+    membership: Map<string, string>;
+    localReports: readonly PowerReportEdge[];
+    crossReports: readonly PowerReportEdge[];
+    axis: string;
+  },
 ): { routes: RoutedInfluence[]; overflow: number } {
   const byId = new Map(placed.map((card) => [card.node.id, card]));
   const drafts: InfluenceDraft[] = [];
@@ -1809,12 +1984,15 @@ function routeInfluences(
   }
 
   let overflow = 0;
-  const routes = drafts.map((draft) => {
+  const influenceRoutes = drafts.map((draft) => {
     const lane = laneOf.get(draft) ?? { lane: 0, count: 1 };
     const midY = influenceLaneY(draft.gapTop, draft.gapBottom, lane.lane, lane.count, draft.mode);
     const fromBox = cardBox(draft.from, offsetX, offsetY);
     const toBox = cardBox(draft.to, offsetX, offsetY);
-    const obstacles = cardsBetween(placed, draft, offsetX, offsetY);
+    const obstacles = [
+      ...cardsBetween(placed, draft, offsetX, offsetY),
+      ...(teams ? foreignTeamBoxes(teams.boxes, teams.membership, draft.from.node.id, draft.to.node.id, offsetX, offsetY) : []),
+    ];
     const elbow = elbowPoints(draft.x1, draft.y1, draft.x2, draft.y2, midY);
     const points = pathHitsCards(elbow, obstacles)
       ? routeAroundCards(draft, fromBox, toBox, obstacles, lane.lane)
@@ -1831,15 +2009,32 @@ function routeInfluences(
       both: draft.both,
       minX: 0,
       maxX: 0,
+      fromId: draft.from.node.id,
+      toId: draft.to.node.id,
     };
   });
-  const reports = reportingElbowRoutes(placed, model.reports, offsetX, offsetY);
+  const crossRoutes = teams
+    ? routeCrossReports(placed, teams.crossReports, offsetX, offsetY, teams.boxes, teams.membership, teams.axis)
+    : [];
+  const routes = [...crossRoutes, ...influenceRoutes];
+  const reports = reportingElbowRoutes(placed, teams ? teams.localReports : model.reports, offsetX, offsetY);
   const cards = placed.map((card) => cardBox(card, offsetX, offsetY));
-  separateInfluenceTracks(routes, reports, cards);
+  separateInfluenceTracks(
+    routes,
+    reports,
+    cards,
+    teams ? { boxes: teams.boxes, membership: teams.membership, offsetX, offsetY } : undefined,
+  );
   const segments = flatSegments(routes, reports);
   routes.forEach((route, index) => {
+    const labelCards =
+      teams && route.fromId && route.toId
+        ? cards.concat(
+            foreignTeamBoxes(teams.boxes, teams.membership, route.fromId, route.toId, offsetX, offsetY),
+          )
+        : cards;
     const labelAt = route.label
-      ? placeEdgeLabel(route.points, route.label, segments, index, cards)
+      ? placeEdgeLabel(route.points, route.label, segments, index, labelCards)
       : labelAnchor(route.points);
     route.labelX = labelAt.x;
     route.labelY = labelAt.y;
@@ -1930,18 +2125,20 @@ function pathHitsCards(points: readonly RoutePoint[], boxes: readonly CardBox[])
 
 const AROUND_GUTTER = 16;
 const AROUND_STUB = 12;
+/** Зазор между линией и рамкой при обходе по сетке. */
+const GRID_CLEAR = 5;
 
-/** Обход карточек промежуточных уровней: вниз (или вверх) сбоку от них, затем к цели. */
+/** Обход препятствий промежуточных уровней: вниз (или вверх) сбоку от них, затем к цели. */
 function routeAroundCards(
-  draft: InfluenceDraft,
+  span: { x1: number; y1: number; x2: number; y2: number },
   fromBox: CardBox,
   toBox: CardBox,
   boxes: readonly CardBox[],
   lane: number,
 ): RoutePoint[] {
-  const dir = draft.y2 >= draft.y1 ? 1 : -1;
-  let exitY = draft.y1 + dir * AROUND_STUB;
-  let enterY = draft.y2 - dir * AROUND_STUB;
+  const dir = span.y2 >= span.y1 ? 1 : -1;
+  let exitY = span.y1 + dir * AROUND_STUB;
+  let enterY = span.y2 - dir * AROUND_STUB;
   for (const box of boxes) {
     if (dir > 0) {
       if (exitY > box.top - 4) exitY = Math.min(exitY, box.top - 4);
@@ -1953,32 +2150,250 @@ function routeAroundCards(
   }
   const left = Math.min(fromBox.left, toBox.left, ...boxes.map((box) => box.left)) - AROUND_GUTTER;
   const right = Math.max(fromBox.right, toBox.right, ...boxes.map((box) => box.right)) + AROUND_GUTTER;
-  const leftCost = Math.abs(left - draft.x1) + Math.abs(left - draft.x2);
-  const rightCost = Math.abs(right - draft.x1) + Math.abs(right - draft.x2);
+  const leftCost = Math.abs(left - span.x1) + Math.abs(left - span.x2);
+  const rightCost = Math.abs(right - span.x1) + Math.abs(right - span.x2);
   const order: Array<"left" | "right"> = leftCost <= rightCost ? ["left", "right"] : ["right", "left"];
   for (const side of order) {
     for (let extra = 0; extra < 4; extra += 1) {
       const channel = side === "left" ? left - (lane + extra) * 12 : right + (lane + extra) * 12;
       const points = dedupePoints([
-        { x: draft.x1, y: draft.y1 },
-        { x: draft.x1, y: exitY },
+        { x: span.x1, y: span.y1 },
+        { x: span.x1, y: exitY },
         { x: channel, y: exitY },
         { x: channel, y: enterY },
-        { x: draft.x2, y: enterY },
-        { x: draft.x2, y: draft.y2 },
+        { x: span.x2, y: enterY },
+        { x: span.x2, y: span.y2 },
       ]);
       if (!pathHitsCards(points, boxes)) return points;
     }
   }
   const channel = order[0] === "left" ? left - lane * 12 : right + lane * 12;
   return dedupePoints([
-    { x: draft.x1, y: draft.y1 },
-    { x: draft.x1, y: exitY },
+    { x: span.x1, y: span.y1 },
+    { x: span.x1, y: exitY },
     { x: channel, y: exitY },
     { x: channel, y: enterY },
-    { x: draft.x2, y: enterY },
-    { x: draft.x2, y: draft.y2 },
+    { x: span.x2, y: enterY },
+    { x: span.x2, y: span.y2 },
   ]);
+}
+
+/**
+ * Обход препятствий по сетке ортогональных коридоров.
+ * Кандидаты осей — края препятствий плюс отступ; лишние повороты штрафуются,
+ * чтобы путь шёл по ближайшему коридору, а не змейкой.
+ */
+function routeOnGrid(
+  start: RoutePoint,
+  end: RoutePoint,
+  obstacles: readonly CardBox[],
+  fromBox: CardBox,
+  toBox: CardBox,
+  lane = 0,
+): RoutePoint[] {
+  // Каждой связи свой коридор: иначе две стрелки сливаются в одну линию.
+  const pad = AROUND_STUB + (lane % 3) * 7;
+  // Препятствия чуть раздуты: путь не должен идти по самому краю рамки.
+  const grown = obstacles.map((box) => ({
+    left: box.left - GRID_CLEAR,
+    right: box.right + GRID_CLEAR,
+    top: box.top - GRID_CLEAR,
+    bottom: box.bottom + GRID_CLEAR,
+  }));
+  const xs = new Set<number>([start.x, end.x]);
+  const ys = new Set<number>([start.y, end.y]);
+  for (const box of grown) {
+    xs.add(box.left - pad);
+    xs.add(box.right + pad);
+    ys.add(box.top - pad);
+    ys.add(box.bottom + pad);
+  }
+  const xsList = [...xs].sort((left, right) => left - right);
+  const ysList = [...ys].sort((left, right) => left - right);
+  const cols = xsList.length;
+  const rows = ysList.length;
+  const indexOf = (x: number, y: number) =>
+    ysList.findIndex((value) => Math.abs(value - y) < 0.01) * cols +
+    xsList.findIndex((value) => Math.abs(value - x) < 0.01);
+  const startI = indexOf(start.x, start.y);
+  const endI = indexOf(end.x, end.y);
+
+  const free = (a: number, b: number): boolean =>
+    !pathHitsCards(
+      [
+        { x: xsList[a % cols], y: ysList[Math.floor(a / cols)] },
+        { x: xsList[b % cols], y: ysList[Math.floor(b / cols)] },
+      ],
+      grown,
+    );
+
+  const key = (node: number, dir: number) => node * 2 + dir;
+  const best = new Map<number, { cost: number; prevNode: number; prevDir: number }>();
+  const frontier: { node: number; dir: number; cost: number; prevNode: number; prevDir: number }[] = [
+    { node: startI, dir: 0, cost: 0, prevNode: -1, prevDir: -1 },
+    { node: startI, dir: 1, cost: 0, prevNode: -1, prevDir: -1 },
+  ];
+  for (let guard = 0; frontier.length > 0 && guard < 20000; guard += 1) {
+    frontier.sort((left, right) => left.cost - right.cost);
+    const item = frontier.shift()!;
+    const id = key(item.node, item.dir);
+    if (best.has(id)) continue;
+    best.set(id, { cost: item.cost, prevNode: item.prevNode, prevDir: item.prevDir });
+    const col = item.node % cols;
+    const row = Math.floor(item.node / cols);
+    const neighbours: { node: number; dir: number; len: number }[] = [];
+    if (col > 0) neighbours.push({ node: item.node - 1, dir: 0, len: xsList[col] - xsList[col - 1] });
+    if (col + 1 < cols) neighbours.push({ node: item.node + 1, dir: 0, len: xsList[col + 1] - xsList[col] });
+    if (row > 0) neighbours.push({ node: item.node - cols, dir: 1, len: ysList[row] - ysList[row - 1] });
+    if (row + 1 < rows) neighbours.push({ node: item.node + cols, dir: 1, len: ysList[row + 1] - ysList[row] });
+    for (const next of neighbours) {
+      if (!free(item.node, next.node)) continue;
+      const turn = next.dir === item.dir ? 0 : AROUND_GUTTER * 2;
+      frontier.push({
+        node: next.node,
+        dir: next.dir,
+        cost: item.cost + next.len + turn,
+        prevNode: item.node,
+        prevDir: item.dir,
+      });
+    }
+  }
+
+  const finish = [0, 1]
+    .map((dir) => ({ dir, entry: best.get(key(endI, dir)) }))
+    .filter((item): item is { dir: number; entry: { cost: number; prevNode: number; prevDir: number } } => Boolean(item.entry))
+    .sort((left, right) => left.entry.cost - right.entry.cost)[0];
+  if (!finish) return straightFallback(start, end, fromBox, toBox);
+
+  const chain: number[] = [];
+  let node = endI;
+  let dir = finish.dir;
+  for (let guard = 0; guard < 400; guard += 1) {
+    chain.push(node);
+    const entry = best.get(key(node, dir));
+    if (!entry || entry.prevNode < 0) break;
+    node = entry.prevNode;
+    dir = entry.prevDir;
+  }
+  const raw = chain.reverse().map((index) => ({
+    x: xsList[index % cols],
+    y: ysList[Math.floor(index / cols)],
+  }));
+  const points = dedupePoints(raw);
+  if (points.length < 2) return straightFallback(start, end, fromBox, toBox);
+  // Концы подрезаем по краю своих карточек: линия не должна уходить внутрь.
+  points[0] = clipToBoxEdge(points[0], points[1], fromBox);
+  points[points.length - 1] = clipToBoxEdge(points[points.length - 1], points[points.length - 2], toBox);
+  return dedupePoints(trimInsideBoxes(points, fromBox, toBox));
+}
+
+/** Если коридоров не нашлось: простая шина между карточками. */
+function straightFallback(start: RoutePoint, end: RoutePoint, fromBox: CardBox, toBox: CardBox): RoutePoint[] {
+  const midY = (Math.max(fromBox.bottom, toBox.bottom) + 20);
+  return dedupePoints([
+    { x: start.x, y: fromBox.bottom },
+    { x: start.x, y: midY },
+    { x: end.x, y: midY },
+    { x: end.x, y: toBox.bottom },
+  ]);
+}
+
+/** Точка на краю рамки по направлению к соседней точке. */
+function clipToBoxEdge(point: RoutePoint, next: RoutePoint, box: CardBox): RoutePoint {
+  if (Math.abs(next.x - point.x) < 0.6 && Math.abs(next.y - point.y) > 0.6) {
+    return { x: point.x, y: next.y > point.y ? box.bottom : box.top };
+  }
+  if (Math.abs(next.y - point.y) < 0.6 && Math.abs(next.x - point.x) > 0.6) {
+    return { x: next.x > point.x ? box.right : box.left, y: point.y };
+  }
+  return point;
+}
+
+/**
+ * Сетка коридоров идёт до центра карточки, поэтому последний участок может
+ * заходить внутрь своей рамки. Выбрасываем точки, оказавшиеся внутри концов:
+ * путь остаётся ортогональным (подрезка сохраняет ось последнего сегмента).
+ */
+function trimInsideBoxes(points: readonly RoutePoint[], fromBox: CardBox, toBox: CardBox): RoutePoint[] {
+  const inside = (point: RoutePoint, box: CardBox): boolean =>
+    point.x > box.left + 0.5 &&
+    point.x < box.right - 0.5 &&
+    point.y > box.top + 0.5 &&
+    point.y < box.bottom - 0.5;
+  const last = points.length - 1;
+  const kept: RoutePoint[] = [];
+  points.forEach((point, index) => {
+    if (index > 0 && index < last && (inside(point, fromBox) || inside(point, toBox))) return;
+    kept.push(point);
+  });
+  return kept;
+}
+
+/** Отчёты между командами: как стрелки влияния, но цветом оси и без подписи. */
+function routeCrossReports(
+  placed: readonly PlacedTreeNode<PowerPerson>[],
+  edges: readonly PowerReportEdge[],
+  offsetX: number,
+  offsetY: number,
+  boxes: readonly TeamBox[],
+  membership: Map<string, string>,
+  axis: string,
+): RoutedInfluence[] {
+  const byId = new Map(placed.map((card) => [card.node.id, card]));
+  const out: RoutedInfluence[] = [];
+  edges.forEach((edge, index) => {
+    const from = byId.get(edge.from);
+    const to = byId.get(edge.to);
+    if (!from || !to) return;
+    const fromBox = cardBox(from, offsetX, offsetY);
+    const toBox = cardBox(to, offsetX, offsetY);
+    const down = toBox.top >= fromBox.bottom - 1;
+    const up = toBox.bottom <= fromBox.top + 1;
+    const x1 = contactX(from, offsetX, 0, 1);
+    const x2 = contactX(to, offsetX, 0, 1);
+    let y1 = fromBox.bottom;
+    let y2 = toBox.top;
+    let midY = (y1 + y2) / 2;
+    if (up) {
+      y1 = fromBox.top;
+      y2 = toBox.bottom;
+      midY = (y1 + y2) / 2;
+    } else if (!down) {
+      y1 = fromBox.bottom;
+      y2 = toBox.bottom;
+      midY = Math.max(y1, y2) + 18;
+    }
+    const obstacles = [
+      ...placed
+        .filter((card) => card.node.id !== edge.from && card.node.id !== edge.to)
+        .map((card) => cardBox(card, offsetX, offsetY)),
+      ...foreignTeamBoxes(boxes, membership, edge.from, edge.to, offsetX, offsetY),
+    ];
+    const elbow = elbowPoints(x1, y1, x2, y2, midY);
+    const points = pathHitsCards(elbow, obstacles)
+      ? routeOnGrid(
+          { x: (fromBox.left + fromBox.right) / 2, y: (fromBox.top + fromBox.bottom) / 2 },
+          { x: (toBox.left + toBox.right) / 2, y: (toBox.top + toBox.bottom) / 2 },
+          obstacles,
+          fromBox,
+          toBox,
+          index,
+        )
+      : elbow;
+    out.push({
+      points,
+      color: axis,
+      dash: edge.style === "dotted" ? "4 4" : undefined,
+      width: 1.2,
+      labelX: 0,
+      labelY: 0,
+      minX: 0,
+      maxX: 0,
+      fromId: edge.from,
+      toId: edge.to,
+    });
+  });
+  return out;
 }
 
 function labelAnchor(points: readonly RoutePoint[]): RoutePoint {
@@ -2024,6 +2439,10 @@ function measureCard(person: PowerPerson, framePx: number): { width: number; hei
 const COMMS_FONT = 11;
 const COMMS_LINE = 16;
 const COMMS_PAD_Y = 6;
+/** Подпись команды над её таблицей. */
+const COMMS_CAPTION_FONT = 11;
+const COMMS_CAPTION_LINE = 18;
+const COMMS_GROUP_GAP = 14;
 
 interface CommsRow {
   name: string;
@@ -2069,22 +2488,57 @@ function personName(model: PowerModel, id: string): string {
   return model.people.find((person) => person.id === id)?.name ?? id;
 }
 
+/** Команды для таблицы: порядок объявления, подписи и принадлежность людей. */
+interface CommsTeams {
+  order: string[];
+  labels: Map<string, string>;
+  member: Map<string, string>;
+}
+
+function commsTeams(model: PowerModel): CommsTeams | null {
+  if (model.teams.length === 0) return null;
+  const labels = new Map<string, string>();
+  const order: string[] = [];
+  for (const team of model.teams) {
+    labels.set(team.id, team.label.trim() || team.id);
+    order.push(team.id);
+  }
+  return { order, labels, member: powermapMembership(model) };
+}
+
 /** Направление от человека в строке таблицы: исходящая, входящая или в обе стороны. */
-function linkLines(model: PowerModel, personId: string): string[] {
+function linkLines(
+  model: PowerModel,
+  personId: string,
+  locale: AppLocale,
+  teams: CommsTeams | null,
+): string[] {
+  const ownTeam = teams?.member.get(personId);
+  /** Связь из другой команды помечается её названием. */
+  const teamSuffix = (otherId: string): string => {
+    if (!teams || !ownTeam) return "";
+    const otherTeam = teams.member.get(otherId);
+    if (!otherTeam || otherTeam === ownTeam) return "";
+    const label =
+      otherTeam === TEAM_UNGROUPED
+        ? legendText("teamless", locale)
+        : teams.labels.get(otherTeam) ?? otherTeam;
+    return ` (${label})`;
+  };
   const captions: string[] = [];
   for (const edge of model.influences) {
     if (edge.from !== personId && edge.to !== personId) continue;
     const otherId = edge.from === personId ? edge.to : edge.from;
     const arrow = edge.both ? "↔" : edge.from === personId ? "→" : "←";
     const caption = linkCaption(model, edge.name);
+    const other = `${personName(model, otherId)}${teamSuffix(otherId)}`;
     if (edge.label?.trim() && hasLabelBreak(edge.label)) {
       // Многострочная подпись: только первая строка с многоточием.
       const first = splitLabelLines(edge.label)[0] ?? "";
-      const prefix = `${arrow} ${personName(model, otherId)}: ${caption} — `;
-      captions.push(`${prefix}${first}…`);
+      captions.push(`${arrow} ${other}: ${caption} — ${first}…`);
     } else {
       const detail = edge.label?.trim() ? `${caption} — ${edge.label.trim()}` : caption;
-      captions.push(`${arrow} ${personName(model, otherId)}: ${detail}`);
+      captions.push(`${arrow} ${other}: ${detail}`);
     }
   }
   return uniqueFold(captions);
@@ -2101,26 +2555,27 @@ interface CommsTable {
   rowHeights: number[];
 }
 
+/** Таблица одной команды: своя подпись, свои ширины колонок. */
+interface CommsGroup {
+  caption: string;
+  table: CommsTable;
+}
+
+interface CommsBlock {
+  width: number;
+  height: number;
+  groups: CommsGroup[];
+}
+
 /** Заголовок жирный, measureText этого не видит. Колонка связей ещё и с запасом, чтобы текст не обрезался. */
 const COMMS_HEADER_BOLD = 1.12;
 const COMMS_LINK_SLACK = 1.15;
 const COMMS_PADS = [16, 8, 8] as const;
 
-function measureComms(model: PowerModel, locale: AppLocale): CommsTable {
-  const companyWord = legendText("companyWord", locale);
-  const companyName = model.company?.trim();
-  const headers = [
-    companyName ? `${companyWord} ${companyName}` : companyWord,
-    legendText("contacts", locale),
-    legendText("links", locale),
-  ] as const;
-  const rows = model.people
-    .map((person) => ({
-      name: person.name,
-      contacts: contactLines(person.counterpart),
-      links: linkLines(model, person.id),
-    }))
-    .sort((a, b) => compareAlpha(a.name, b.name));
+function measureCommsTable(
+  rows: CommsRow[],
+  headers: readonly [string, string, string],
+): CommsTable {
   const cells = (row: CommsRow): string[][] => [[row.name], row.contacts, row.links];
   const columns = headers.map((header, index) => {
     const slack = index === 2 ? COMMS_LINK_SLACK : 1;
@@ -2147,11 +2602,66 @@ function measureComms(model: PowerModel, locale: AppLocale): CommsTable {
   };
 }
 
+function measureComms(model: PowerModel, locale: AppLocale): CommsBlock {
+  const companyWord = legendText("companyWord", locale);
+  const companyName = model.company?.trim();
+  const headers = [
+    companyName ? `${companyWord} ${companyName}` : companyWord,
+    legendText("contacts", locale),
+    legendText("links", locale),
+  ] as const;
+  const teams = commsTeams(model);
+  const entries = model.people.map((person) => ({
+    id: person.id,
+    row: {
+      name: person.name,
+      contacts: contactLines(person.counterpart),
+      links: linkLines(model, person.id, locale, teams),
+    },
+  }));
+  const byName = (a: { row: CommsRow }, b: { row: CommsRow }) => compareAlpha(a.row.name, b.row.name);
+
+  const groups: { caption: string; rows: CommsRow[] }[] = [];
+  if (!teams) {
+    groups.push({ caption: "", rows: [...entries].sort(byName).map((entry) => entry.row) });
+  } else {
+    for (const teamId of teams.order) {
+      const rows = entries
+        .filter((entry) => teams.member.get(entry.id) === teamId)
+        .sort(byName)
+        .map((entry) => entry.row);
+      if (rows.length > 0) groups.push({ caption: teams.labels.get(teamId) ?? teamId, rows });
+    }
+    const ungrouped = entries
+      .filter((entry) => teams.member.get(entry.id) === TEAM_UNGROUPED)
+      .sort(byName)
+      .map((entry) => entry.row);
+    if (ungrouped.length > 0) groups.push({ caption: legendText("teamless", locale), rows: ungrouped });
+  }
+
+  const measured: CommsGroup[] = groups.map((group) => ({
+    caption: group.caption,
+    table: measureCommsTable(group.rows, headers),
+  }));
+  let height = 0;
+  let width = 0;
+  measured.forEach((group, index) => {
+    if (index > 0) height += COMMS_GROUP_GAP;
+    if (group.caption) height += COMMS_CAPTION_LINE;
+    height += group.table.height;
+    const captionWidth = group.caption
+      ? measureText(group.caption, COMMS_CAPTION_FONT) * COMMS_HEADER_BOLD
+      : 0;
+    width = Math.max(width, group.table.width, captionWidth);
+  });
+  return { width, height, groups: measured };
+}
+
 function commsHeaderFill(dark: boolean): string {
   return dark ? "#2a3036" : "#f6f8fa";
 }
 
-function drawComms(
+function drawCommsTable(
   svg: ReturnType<typeof createSvg>,
   x: number,
   y: number,
@@ -2209,6 +2719,34 @@ function drawComms(
   });
 }
 
+/** Таблица коммуникаций: при наличии команд — отдельная таблица на каждую. */
+function drawComms(
+  svg: ReturnType<typeof createSvg>,
+  x: number,
+  y: number,
+  block: CommsBlock,
+  fg: string,
+  bg: string,
+  dark: boolean,
+): void {
+  let cursorY = y;
+  block.groups.forEach((group, index) => {
+    if (index > 0) cursorY += COMMS_GROUP_GAP;
+    if (group.caption) {
+      svg.text(x, cursorY + 12, group.caption, {
+        "font-size": COMMS_CAPTION_FONT,
+        "font-weight": 700,
+        fill: fg,
+        "text-anchor": "start",
+        "data-comms-team": "powermap",
+      });
+      cursorY += COMMS_CAPTION_LINE;
+    }
+    drawCommsTable(svg, x, cursorY, group.table, fg, bg, dark);
+    cursorY += group.table.height;
+  });
+}
+
 export function renderPowermap(model: PowerModel, options: ExtRenderOptions): string {
   const themeDark = Boolean(options.dark) || usesInvertedMono(model.mono, model.monoInvert, false);
   const invertedMono = usesInvertedMono(model.mono, model.monoInvert, options.dark);
@@ -2217,17 +2755,24 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
   const measured = new Map<string, { width: number; height: number; titleLines: string[] }>();
   for (const person of model.people) measured.set(person.id, measureCard(person, model.avatarSize));
 
-  const laid = layoutOrgTree(
-    model.people,
-    model.reports,
-    model.virtualRoot,
-    model.root,
-    (person) => {
-      const box = measured.get(person.id)!;
-      return { lines: [person.name], width: box.width, height: box.height };
-    },
-    rankGapBelow(model),
-  );
+  const gapBelow = rankGapBelow(model);
+  const teamLayout = model.teams.length > 0 ? layoutTeams(model, measured, gapBelow) : null;
+  const laid = teamLayout
+    ? { placed: teamLayout.placed, width: teamLayout.width, height: teamLayout.height }
+    : layoutOrgTree(
+        model.people,
+        model.reports,
+        model.virtualRoot,
+        model.root,
+        (person) => {
+          const box = measured.get(person.id)!;
+          return { lines: [person.name], width: box.width, height: box.height };
+        },
+        gapBelow,
+      );
+  const teamBoxes = teamLayout?.boxes ?? [];
+  const membership = teamLayout ? powermapMembership(model) : undefined;
+  const intraReports = teamLayout ? teamLayout.localReports : model.reports;
   const locale = legendLocale(model, options);
   const legend = measureLegend(model, locale);
   const comms = model.comms ? measureComms(model, locale) : null;
@@ -2258,7 +2803,24 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
   let offsetX = 24 + padX / 2;
   const offsetY = headerH + padY / 2;
   const treeBottom = offsetY + laid.height;
-  let routed = routeInfluences(laid.placed, model, offsetX, offsetY, treeBottom, mono, invertedMono);
+  let routed = routeInfluences(
+    laid.placed,
+    model,
+    offsetX,
+    offsetY,
+    treeBottom,
+    mono,
+    invertedMono,
+    teamLayout && membership
+      ? {
+          boxes: teamBoxes,
+          membership,
+          localReports: intraReports,
+          crossReports: teamLayout.crossReports,
+          axis: palette.axis,
+        }
+      : undefined,
+  );
   const routeXs = routed.routes.flatMap((route) => route.points.map((point) => point.x));
   if (routeXs.length > 0) {
     const extraLeft = Math.max(0, 8 - Math.min(...routeXs));
@@ -2266,7 +2828,24 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
     if (extraLeft > 0 || extraRight > 0) {
       offsetX += extraLeft;
       width += extraLeft + extraRight;
-      routed = routeInfluences(laid.placed, model, offsetX, offsetY, treeBottom, mono, invertedMono);
+      routed = routeInfluences(
+        laid.placed,
+        model,
+        offsetX,
+        offsetY,
+        treeBottom,
+        mono,
+        invertedMono,
+        teamLayout && membership
+          ? {
+              boxes: teamBoxes,
+              membership,
+              localReports: intraReports,
+              crossReports: teamLayout.crossReports,
+              axis: palette.axis,
+            }
+          : undefined,
+      );
     }
   }
   const legendBlock = legend ? 12 + legend.height + 8 : 0;
@@ -2307,7 +2886,8 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
   const marker = arrowMarker(palette, "ext-pm-report");
   svg.raw(marker.markup);
   const placed: PlacedTreeNode<PowerPerson>[] = laid.placed;
-  drawReportingElbows(svg, placed, model.reports, offsetX, offsetY, palette.axis, marker.ref);
+  if (teamBoxes.length > 0) drawTeamBoxes(svg, teamBoxes, offsetX, offsetY, palette, mono, invertedMono);
+  drawReportingElbows(svg, placed, intraReports, offsetX, offsetY, palette.axis, marker.ref);
 
   placed.forEach((card, cardIndex) => {
     drawCard(svg, card, offsetX, offsetY, model, palette.bg, palette.fg, palette.axis, mono, invertedMono, cardIndex);

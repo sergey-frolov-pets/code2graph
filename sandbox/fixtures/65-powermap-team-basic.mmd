@@ -1,0 +1,20 @@
+powermap
+title Team map
+company Northwind
+legend on
+avatar 40
+team front [Front Office] fill=#f6f8fa stroke=#0969da padding=16
+team back [Back Office] stroke=#8250df
+teams layout=row gap=32
+CEO [Alex Morgan|President] role=D influence=L team=front
+CFO [Elena Chen|Finance] role=A influence=M team=front
+Sales [Sam Reed|Sales] role=U influence=S team=front
+CTO [Priya Nair|Technology] role=D influence=M team=back
+Dev [Marco Rossi|Developer] role=U influence=S team=back
+QA [Lena Volkova|QA] role=U influence=S team=back
+CEO -> CFO
+CEO -> CTO
+CTO -> Dev
+CTO -> QA
+CFO -> Sales
+Sales -supporter-> CTO label=roadmap

@@ -643,3 +643,190 @@ A -> D`);
     expect((svg.match(/<clipPath/g) ?? []).length).toBe(1);
   });
 });
+
+// --- Команды в orgchart ----------------------------------------------------
+
+interface TeamRect {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+function teamRects(svg: string): TeamRect[] {
+  return [...svg.matchAll(/<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)"[^>]*data-team="orgchart"[^>]*data-team-id="([^"]+)"/g)].map(
+    (match) => ({
+      x: Number(match[1]),
+      y: Number(match[2]),
+      width: Number(match[3]),
+      height: Number(match[4]),
+      id: match[5],
+    }),
+  );
+}
+
+function rectsOverlap(a: TeamRect, b: TeamRect): boolean {
+  return (
+    a.x < b.x + b.width - 0.5 &&
+    b.x < a.x + a.width - 0.5 &&
+    a.y < b.y + b.height - 0.5 &&
+    b.y < a.y + a.height - 0.5
+  );
+}
+
+function insidePoint(points: Point[], rect: TeamRect): boolean {
+  return points.some(
+    (p) =>
+      p.x > rect.x + 1 && p.x < rect.x + rect.width - 1 && p.y > rect.y + 1 && p.y < rect.y + rect.height - 1,
+  );
+}
+
+describe("orgchart: команды", () => {
+  it("читает директивы team и teams, атрибут team= и создаёт команду сама", () => {
+    const r = orgchartEngine.parse(`orgchart
+team front [Front Office] fill=#f6f8fa stroke=#0969da radius=12 padding=18
+team back [Back Office]
+teams layout=row gap=30 dir=lr
+ceo [Анна] team=front
+cfo [Илья] team=front
+dev [Пётр] team=back
+qa [Мария] team=ghost
+ceo -> cfo
+dev -> qa`);
+    expect(r.ok).toBe(true);
+    const model = r.value as OrgModel;
+    expect(model.teams.map((team) => team.id)).toEqual(["front", "back", "ghost"]);
+    expect(model.teams[0]).toMatchObject({
+      label: "Front Office",
+      fill: "#f6f8fa",
+      stroke: "#0969da",
+      radius: 12,
+      padding: 18,
+    });
+    expect(model.teams[1].label).toBe("Back Office");
+    expect(model.teams[2]).toMatchObject({ label: "ghost", radius: 10, padding: 14 });
+    expect(model.teamLayout).toMatchObject({ mode: "row", gap: 30, dir: "lr" });
+    expect(model.nodes.find((node) => node.id === "qa")?.team).toBe("ghost");
+  });
+
+  it("team=- выводит узел из команды", () => {
+    const r = orgchartEngine.parse(`orgchart
+team core [Core]
+a [A] team=core
+b [B] team=-
+a -> b`);
+    expect(r.ok).toBe(true);
+    const model = r.value as OrgModel;
+    expect(model.nodes.find((node) => node.id === "b")?.team).toBeUndefined();
+  });
+
+  it("неверная раскладка команд — ошибка разбора", () => {
+    const r = orgchartEngine.parse(`orgchart
+teams layout=circle
+a [A]
+b [B]
+a -> b`);
+    expect(r.ok).toBe(false);
+  });
+
+  it("рамки команд не пересекаются и учитывают padding", () => {
+    const svg = orgchartEngine.render(
+      orgchartEngine.parse(`orgchart
+team front [Front] padding=20
+team back [Back] stroke=#8250df
+teams layout=row gap=36
+ceo [Анна] team=front
+cfo [Илья] team=front
+dev [Пётр] team=back
+qa [Мария] team=back
+ceo -> cfo
+dev -> qa`).value as OrgModel,
+      {},
+    );
+    const teams = teamRects(svg);
+    expect(teams.map((team) => team.id).sort()).toEqual(["back", "front"]);
+    expect(rectsOverlap(teams[0], teams[1])).toBe(false);
+    // padding 20: рамка шире карточек на два отступа, между командами — gap 36.
+    expect(teams[1].x - (teams[0].x + teams[0].width)).toBeGreaterThanOrEqual(35.5);
+  });
+
+  it("вложенные команды: дочерняя рамка внутри родительской", () => {
+    const parsed = orgchartEngine.parse(`orgchart
+team company [Компания] padding=12
+team company/dev [Разработка] parent=company
+team company/dev/qa [QA]
+teams layout=row gap=24
+ceo [Анна] team=company
+cto [Пётр] team=company/dev
+dev [Мария] team=company/dev
+qa [Борис] team=company/dev/qa
+ceo -> cto
+cto -> dev
+dev -> qa`);
+    expect(parsed.ok).toBe(true);
+    const model = parsed.value as OrgModel;
+    expect(model.teams.map((team) => team.id)).toEqual([
+      "company",
+      "company/dev",
+      "company/dev/qa",
+    ]);
+    const teams = teamRects(orgchartEngine.render(model, {}));
+    expect(teams.map((team) => team.id)).toEqual(["company", "company/dev", "company/dev/qa"]);
+    const [company, dev, qa] = teams;
+    expect(dev.x).toBeGreaterThan(company.x);
+    expect(dev.x + dev.width).toBeLessThan(company.x + company.width);
+    expect(qa.x).toBeGreaterThan(dev.x);
+    expect(qa.x + qa.width).toBeLessThan(dev.x + dev.width);
+  });
+
+  it("люди без team= идут группой без рамки", () => {
+    const svg = orgchartEngine.render(
+      orgchartEngine.parse(`orgchart
+team core [Core]
+a [Анна] team=core
+b [Илья] team=core
+g [Гость]
+a -> b
+b -> g`).value as OrgModel,
+      {},
+    );
+    expect(teamRects(svg).map((team) => team.id)).toEqual(["core"]);
+    expect(svg).toContain(">Гость</text>");
+  });
+
+  it("межкомандная стрелка обходит чужие рамки", () => {
+    const svg = orgchartEngine.render(
+      orgchartEngine.parse(`orgchart
+team a [A]
+team b [B]
+team c [C]
+teams layout=row gap=48
+a1 [A1] team=a
+b1 [B1] team=b
+c1 [C1] team=c
+a1 -> c1`).value as OrgModel,
+      {},
+    );
+    const teams = teamRects(svg);
+    expect(teams).toHaveLength(3);
+    const cross = [...svg.matchAll(/<path d="([^"]+)"[^>]*data-cross-team="1"/g)];
+    expect(cross).toHaveLength(1);
+    const nums = [...cross[0][1].matchAll(/-?\d+(?:\.\d+)?/g)].map((item) => Number(item[0]));
+    const points: Point[] = [];
+    for (let i = 0; i + 1 < nums.length; i += 2) points.push({ x: nums[i], y: nums[i + 1] });
+    const middle = teams.find((team) => team.id === "b")!;
+    expect(insidePoint(points, middle)).toBe(false);
+  });
+
+  it("без команд модель и рендер прежние", () => {
+    const r = orgchartEngine.parse(`orgchart
+a [A]
+b [B]
+a -> b`);
+    const model = r.value as OrgModel;
+    expect(model.teams).toEqual([]);
+    const svg = orgchartEngine.render(model, {});
+    expect(svg).not.toContain("data-team=");
+  });
+});

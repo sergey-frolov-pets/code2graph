@@ -734,7 +734,12 @@ function labelPlates(svg: string): { x: number; y: number; width: number; height
 function cardRects(svg: string): { x: number; y: number; width: number; height: number }[] {
   return [...svg.matchAll(/<rect\b([^>]*)\/>/g)]
     .map((match) => match[1])
-    .filter((attrs) => !attrs.includes('data-label-plate="1"') && !attrs.includes('data-legend="powermap"'))
+    .filter(
+      (attrs) =>
+        !attrs.includes('data-label-plate="1"') &&
+        !attrs.includes('data-legend="powermap"') &&
+        !attrs.includes('data-team="powermap"'),
+    )
     .map((attrs) => ({
       x: Number(/\bx="([^"]+)"/.exec(attrs)?.[1]),
       y: Number(/\by="([^"]+)"/.exec(attrs)?.[1]),
@@ -787,3 +792,371 @@ function strokesOverlay(left: { x: number; y: number }[], right: { x: number; y:
   }
   return false;
 }
+
+function teamRects(svg: string): { id: string; x: number; y: number; width: number; height: number }[] {
+  return [...svg.matchAll(/<rect\b([^>]*)\/>/g)]
+    .map((match) => match[1])
+    .filter((attrs) => attrs.includes('data-team="powermap"'))
+    .map((attrs) => ({
+      id: /data-team-id="([^"]+)"/.exec(attrs)?.[1] ?? "",
+      x: Number(/\bx="([^"]+)"/.exec(attrs)?.[1]),
+      y: Number(/\by="([^"]+)"/.exec(attrs)?.[1]),
+      width: Number(/\bwidth="([^"]+)"/.exec(attrs)?.[1]),
+      height: Number(/\bheight="([^"]+)"/.exec(attrs)?.[1]),
+    }));
+}
+
+function rectsOverlap(
+  left: { x: number; y: number; width: number; height: number },
+  right: { x: number; y: number; width: number; height: number },
+): boolean {
+  const overlapX = Math.min(left.x + left.width, right.x + right.width) - Math.max(left.x, right.x);
+  const overlapY = Math.min(left.y + left.height, right.y + right.height) - Math.max(left.y, right.y);
+  return overlapX > 1 && overlapY > 1;
+}
+
+function inside(
+  inner: { x: number; y: number; width: number; height: number },
+  outer: { x: number; y: number; width: number; height: number },
+): boolean {
+  return (
+    inner.x >= outer.x - 0.5 &&
+    inner.y >= outer.y - 0.5 &&
+    inner.x + inner.width <= outer.x + outer.width + 0.5 &&
+    inner.y + inner.height <= outer.y + outer.height + 0.5
+  );
+}
+
+const TEAM_SOURCE = `powermap
+title Команды
+team front [Front Office] fill=#f6f8fa stroke=#0969da radius=12 padding=16
+team back [Back Office]
+teams layout=row gap=28
+ceo [Анна] role=decider team=front
+cfo [Илья] team=front
+dev [Пётр] team=back
+qa [Мария] team=back
+ceo -> cfo
+dev -> qa
+cfo -supporter-> ceo`;
+
+describe("powermap: команды", () => {
+  it("читает директивы team и teams, атрибут team= и создаёт команду сама", () => {
+    const model = modelOf(TEAM_SOURCE);
+    expect(model.teams.map((team) => team.id)).toEqual(["front", "back"]);
+    expect(model.teams[0]).toMatchObject({
+      label: "Front Office",
+      fill: "#f6f8fa",
+      stroke: "#0969da",
+      radius: 12,
+      padding: 16,
+    });
+    expect(model.teams[1].label).toBe("Back Office");
+    expect(model.teamLayout).toMatchObject({ mode: "row", gap: 28 });
+    expect(model.people.map((person) => person.team)).toEqual(["front", "front", "back", "back"]);
+  });
+
+  it("не объявленная команда создаётся автоматически с дефолтным стилем", () => {
+    const model = modelOf(`powermap
+a [Анна] team=front
+b [Илья] team=side
+a -> b`);
+    expect(model.teams.map((team) => team.id)).toEqual(["front", "side"]);
+    expect(model.teams[0]).toMatchObject({ label: "front", radius: 10, padding: 14 });
+  });
+
+  it("без директив команды список пуст — раскладка прежняя", () => {
+    const model = modelOf(`powermap
+a [Анна]
+b [Илья]
+a -> b`);
+    expect(model.teams).toEqual([]);
+    expect(model.teamLayout).toMatchObject({ mode: "auto", dir: "lr", gap: 24, columns: 2 });
+  });
+
+  it("неизвестная раскладка команд — ошибка разбора", () => {
+    const parsed = powermapEngine.parse(`powermap
+teams layout=circle
+a [Анна] team=front`);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.errors[0]?.message).toContain("раскладка команд");
+  });
+
+  it("неверный цвет команды — ошибка разбора", () => {
+    const parsed = powermapEngine.parse(`powermap
+team front fill=неон
+a [Анна] team=front`);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.errors[0]?.message).toContain("цвет команды");
+  });
+
+  it("рамки команд не пересекаются, подписи видны, карточки внутри своих рамок", () => {
+    const model = modelOf(TEAM_SOURCE);
+    const svg = powermapEngine.render(model, { locale: "ru" }) as string;
+    const teams = teamRects(svg);
+    expect(teams.map((team) => team.id).sort()).toEqual(["back", "front"]);
+    expect(rectsOverlap(teams[0], teams[1])).toBe(false);
+    expect(textsOf(svg)).toEqual(expect.arrayContaining(["Front Office", "Back Office"]));
+
+    const cards = cardRects(svg);
+    expect(cards.length).toBe(4);
+    const front = teams.find((team) => team.id === "front")!;
+    const back = teams.find((team) => team.id === "back")!;
+    // Верхние карточки каждой команды — внутри своей рамки, с отступом 16 px.
+    for (const card of cards) {
+      const host = inside(card, front) ? front : back;
+      expect(inside(card, host)).toBe(true);
+    }
+    expect(cards.filter((card) => inside(card, front)).length).toBe(2);
+    expect(cards.filter((card) => inside(card, back)).length).toBe(2);
+    const topLeft = Math.min(...cards.filter((card) => inside(card, front)).map((card) => card.x));
+    expect(topLeft - front.x).toBeGreaterThan(15);
+  });
+
+  it("люди без team= идут отдельной виртуальной группой без рамки", () => {
+    const svg = powermapEngine.render(
+      modelOf(`powermap
+team front [Front]
+a [Анна] team=front
+b [Илья] team=front
+loose [Гость]
+a -> b
+b -> loose`),
+      { locale: "ru" },
+    ) as string;
+    expect(teamRects(svg).map((team) => team.id)).toEqual(["front"]);
+    expect(textsOf(svg)).toEqual(expect.arrayContaining(["Гость"]));
+    expect(cardRects(svg).length).toBe(3);
+  });
+
+  it("вложенные команды: путь и parent= дают рамку внутри рамки", () => {
+    const model = modelOf(`powermap
+team company [Компания] padding=12
+team company/sales [Продажи]
+team company/dev [Разработка] parent=company
+teams layout=row gap=24
+ceo [Анна] team=company
+a [Олег] team=company/sales
+b [Мария] team=company/sales
+c [Пётр] team=company/dev
+ceo -> a
+ceo -> c
+a -> b`);
+    expect(model.teams.map((team) => team.id)).toEqual(["company", "company/sales", "company/dev"]);
+    expect(model.teams[1].parent).toBe("company");
+    const svg = powermapEngine.render(model, { locale: "ru" }) as string;
+    const teams = teamRects(svg);
+    expect(teams.map((team) => team.id)).toEqual(["company", "company/sales", "company/dev"]);
+    const company = teams[0];
+    for (const child of teams.slice(1)) {
+      expect(child.x).toBeGreaterThan(company.x);
+      expect(child.y).toBeGreaterThan(company.y);
+      expect(child.x + child.width).toBeLessThan(company.x + company.width);
+      expect(child.y + child.height).toBeLessThan(company.y + company.height);
+    }
+    const cards = cardRects(svg);
+    const sales = teams[1];
+    const dev = teams[2];
+    expect(cards.filter((card) => inside(card, sales)).length).toBe(2);
+    expect(cards.filter((card) => inside(card, dev)).length).toBe(1);
+    const own = cards.find((card) => !inside(card, sales) && !inside(card, dev))!;
+    for (const child of [sales, dev]) expect(rectsOverlap(own, child)).toBe(false);
+  });
+
+  it("вложенные команды: родитель по пути создаётся сам", () => {
+    const model = modelOf(`powermap
+team sales/moscow [Москва]
+a [Олег] team=sales/moscow
+b [Мария] team=sales/moscow
+a -> b`);
+    expect(model.teams.map((team) => team.id)).toEqual(["sales", "sales/moscow"]);
+    const teams = teamRects(powermapEngine.render(model, { locale: "ru" }) as string);
+    expect(teams.map((team) => team.id)).toEqual(["sales", "sales/moscow"]);
+    expect(inside(teams[1], teams[0])).toBe(true);
+  });
+
+  it("вложенные команды: цикл вложенности не вешает раскладку", () => {
+    const model = modelOf(`powermap
+team a [A] parent=b
+team b [B] parent=a
+x [X] team=a
+y [Y] team=b
+x -> y`);
+    expect(model.teams.length).toBe(2);
+    expect(teamRects(powermapEngine.render(model, { locale: "ru" }) as string).length).toBe(2);
+  });
+
+  it("раскладка grid держит по columns команд в ряду", () => {
+    const model = modelOf(`powermap
+teams layout=grid columns=2 gap=20
+team a [A]
+team b [B]
+team c [C]
+a1 [A1] team=a
+b1 [B1] team=b
+c1 [C1] team=c
+a1 -> b1
+b1 -> c1`);
+    const teams = teamRects(powermapEngine.render(model, { locale: "ru" }) as string);
+    expect(teams.length).toBe(3);
+    const rows = new Map<number, number[]>();
+    for (const team of teams) {
+      const key = Math.round(team.y);
+      rows.set(key, [...(rows.get(key) ?? []), team.x]);
+    }
+    expect(rows.size).toBe(2);
+    expect([...rows.values()].map((row) => row.length).sort()).toEqual([1, 2]);
+  });
+
+  it("межкомандная стрелка обходит чужие команды и карточки", () => {
+    const model = modelOf(`powermap
+teams layout=row gap=40
+team a [A]
+team b [B]
+team c [C]
+a1 [A1] team=a
+a2 [A2] team=a
+b1 [B1] team=b
+b2 [B2] team=b
+c1 [C1] team=c
+c2 [C2] team=c
+a1 -> a2
+b1 -> b2
+c1 -> c2
+a2 -> c1`);
+    const svg = powermapEngine.render(model, { locale: "ru" }) as string;
+    const teams = teamRects(svg);
+    expect(teams.length).toBe(3);
+    const cards = cardRects(svg);
+    const b = teams.find((team) => team.id === "b")!;
+    const cross = linkPaths(svg);
+    expect(cross.length).toBe(1);
+    for (const route of cross) {
+      for (let index = 0; index < route.points.length - 1; index += 1) {
+        const a = route.points[index];
+        const next = route.points[index + 1];
+        expect(segmentHitsRect(a, next, b)).toBe(false);
+        for (const card of cards) expect(segmentHitsRect(a, next, card)).toBe(false);
+      }
+    }
+  });
+
+  it("подпись стрелки не наезжает на чужую команду", () => {
+    const model = modelOf(`powermap
+teams layout=row gap=40
+team a [A]
+team b [B]
+team c [C]
+a1 [A1] team=a
+a2 [A2] team=a
+b1 [B1] team=b
+b2 [B2] team=b
+c1 [C1] team=c
+c2 [C2] team=c
+a1 -> a2
+b1 -> b2
+c1 -> c2
+a1 -supporter-> c2 label="общий бюджет"`);
+    const svg = powermapEngine.render(model, { locale: "ru" }) as string;
+    const teams = teamRects(svg);
+    const plates = labelPlates(svg);
+    expect(plates.length).toBe(1);
+    for (const plate of plates) {
+      for (const team of teams) {
+        expect(rectsOverlap(plate, team)).toBe(false);
+      }
+    }
+  });
+
+  it("в моно команды остаются серыми, рамка не пропадает", () => {
+    const svg = powermapEngine.render(modelOf(`${TEAM_SOURCE}\nmono`), { locale: "ru" }) as string;
+    const teams = teamRects(svg);
+    expect(teams.length).toBe(2);
+    expect(svg).toMatch(/<rect[^>]*fill="#([0-9a-f]{2})\1\1"[^>]*data-team="powermap"/i);
+  });
+});
+
+describe("powermap: команды в comms", () => {
+  const TEAM_COMMS = `powermap
+lang ru
+comms on
+legend off
+link ally color=#1a7f37 style=solid label=союзник
+team sales [Продажи]
+team eng [Разработка]
+a [Анна Орлова] team=sales
+b [Илья Сомов] team=eng
+c [Борис Ким]
+a -ally-> b
+b -ally-> a
+c -ally-> a`;
+
+  interface Box {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }
+
+  const commsBoxes = (svg: string): Box[] =>
+    [...svg.matchAll(/<rect\b([^>]*data-comms="powermap"[^>]*)\/>/g)].map((match) => {
+      const attr = (name: string) =>
+        Number(new RegExp(`(?:^|\\s)${name}="([^"]+)"`).exec(match[1])?.[1]);
+      return { x: attr("x"), y: attr("y"), width: attr("width"), height: attr("height") };
+    });
+
+  const textNodes = (
+    svg: string,
+  ): { x: number; y: number; text: string; caption: boolean }[] =>
+    [...svg.matchAll(/<text\b([^>]*)>([^<]*)<\/text>/g)].map((match) => {
+      const attr = (name: string) =>
+        Number(new RegExp(`(?:^|\\s)${name}="([^"]+)"`).exec(match[1])?.[1]);
+      return {
+        x: attr("x"),
+        y: attr("y"),
+        text: match[2],
+        caption: match[1].includes('data-comms-team="powermap"'),
+      };
+    });
+
+  it("рисует отдельную таблицу на каждую команду и помечает связи между командами", () => {
+    const svg = powermapEngine.render(modelOf(TEAM_COMMS), { locale: "ru" }) as string;
+    const boxes = commsBoxes(svg);
+    // Две объявленные команды и люди без team= — три отдельные таблицы.
+    expect(boxes.length).toBe(3);
+    const sorted = [...boxes].sort((a, b) => a.y - b.y);
+    for (let index = 1; index < sorted.length; index += 1) {
+      expect(sorted[index].y).toBeGreaterThanOrEqual(sorted[index - 1].y + sorted[index - 1].height);
+    }
+
+    const texts = textNodes(svg);
+    const captions = texts.filter((node) => node.caption);
+    expect(captions.map((node) => node.text)).toEqual(["Продажи", "Разработка", "Без команды"]);
+    // Подпись команды стоит над своей таблицей.
+    captions.forEach((caption, index) => {
+      expect(caption.y).toBeLessThanOrEqual(sorted[index].y);
+      expect(caption.y).toBeGreaterThan(sorted[index].y - 24);
+    });
+
+    const lines = texts.map((node) => node.text);
+    expect(lines).toContain("→ Илья Сомов (Разработка): ally — союзник");
+    expect(lines).toContain("← Анна Орлова (Продажи): ally — союзник");
+    expect(lines).toContain("→ Анна Орлова (Продажи): ally — союзник");
+    // Внутри одной команды пометки нет.
+    expect(lines.some((line) => line.includes("Анна Орлова (Продажи): ally") && line.startsWith("←"))).toBe(true);
+    expect(lines).not.toContain("→ Анна Орлова: ally — союзник");
+  });
+
+  it("ширина колонки связей учитывает пометку чужой команды", () => {
+    const svg = powermapEngine.render(modelOf(TEAM_COMMS), { locale: "ru" }) as string;
+    const boxes = commsBoxes(svg);
+    for (const node of textNodes(svg)) {
+      const host = boxes.find(
+        (box) => node.x >= box.x && node.y >= box.y && node.y <= box.y + box.height,
+      );
+      if (!host || !node.text.startsWith("→") && !node.text.startsWith("←") && !node.text.startsWith("↔")) continue;
+      // Оценка снизу: символ 11 px шрифта не уже 5 px.
+      expect(host.x + host.width).toBeGreaterThan(node.x + node.text.length * 5);
+    }
+  });
+});

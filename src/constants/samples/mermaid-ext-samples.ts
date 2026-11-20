@@ -198,11 +198,17 @@ data
   orgchart: `orgchart
 %% Заливка — color=#hex (fill=). Граница — border=#hex и style=solid|dash|dot|dashdot.
 %% Ключи можно сочетать и менять местами. Внутри [скобок] color= остаётся текстом.
-Гендиректор [Генеральный директор\\nИван Петров] color=#8250df
-Техдир [Технический директор\\nАнна Смирнова] color=#ddf4ff border=#0969da
-Финдир [Финансовый директор\\nОльга Орлова] border=#9a6700 style=dash
-Бэкенд [Руководитель серверной разработки\\nСергей Волков]
-Фронтенд [Руководитель клиентской разработки\\nМария Соколова]
+%% Команды: team <id> [Подпись] fill=#hex stroke=#hex radius=px padding=px, teams layout=row|column|grid gap=px.
+%% team=<id> у блока относит его к команде; рамку рисует директива team. Без team= блок идёт отдельной группой.
+%% Связь между командами идёт отдельным маршрутом и обходит чужие рамки.
+team board [Правление]
+team tech [Технологии] stroke=#0969da
+teams layout=row gap=36
+Гендиректор [Генеральный директор\\nИван Петров] color=#8250df team=board
+Финдир [Финансовый директор\\nОльга Орлова] border=#9a6700 style=dash team=board
+Техдир [Технический директор\\nАнна Смирнова] color=#ddf4ff border=#0969da team=tech
+Бэкенд [Руководитель серверной разработки\\nСергей Волков] team=tech
+Фронтенд [Руководитель клиентской разработки\\nМария Соколова] team=tech
 Гендиректор -> Техдир
 Гендиректор -> Финдир
 Техдир -> Бэкенд
@@ -251,18 +257,26 @@ avatar 48
 %% Запасной вид — data:image jpeg, png, webp или gif, снимок внутри текста.
 %% В карточках ниже он вместо ссылки: так пример открывается с лицами без сети и без файлов на диске.
 %% Превью убирает внешний http(s), локальный путь в браузере не открывает.
+%% Команды: team <id> [Подпись] fill=#hex stroke=#hex radius=px padding=px
+%% teams layout=auto|row|column|grid dir=lr|tb gap=px columns=N
+%% team=<id> у узла относит человека к команде. Свою рамку команда получает из директивы team.
+%% Команды раскладываются друг относительно друга; внутри команды дерево прежнее.
+%% Стрелка между командами обходит чужие рамки. Люди без team= идут отдельной группой без рамки.
 title Карта влияния
+team board [Совет директоров] fill=#f6f8fa stroke=#0969da
+team field [Подразделения] stroke=#8250df
+teams layout=row gap=28
 company "Север"
 avatar 48
 comms on
 link supporter color=#1a7f37 style=solid label="союзник"
 link coach color=#bf8700 style=dot label="наставник"
 link enemy color=#cf222e style=dash label="противник"
-ceo [Анна Орлова|Президент] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="${SAMPLE_PORTRAITS.woman44}"
-cfo [Илья Сомов|Финансы] gender=m role=D influence=L action=S attitude=0 counterpart="Пётр Белов, Ольга Ким; Пётр Белов" photo="${SAMPLE_PORTRAITS.man32}"
-ops [Мария Ким|Операции] gender=f role=A influence=M action=U attitude=- counterpart="Ольга Ким" photo="${SAMPLE_PORTRAITS.woman68}"
-sales [Павел Морозов|Продажи] gender=m role=U influence=M action=S attitude=+ counterpart="Леа Ортега" photo="${SAMPLE_PORTRAITS.man75}"
-legal [Елена Волкова|Юрист] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="${SAMPLE_PORTRAITS.woman21}"
+ceo [Анна Орлова|Президент] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="${SAMPLE_PORTRAITS.woman44}" team=board
+cfo [Илья Сомов|Финансы] gender=m role=D influence=L action=S attitude=0 counterpart="Пётр Белов, Ольга Ким" photo="${SAMPLE_PORTRAITS.man32}" team=board
+ops [Мария Ким|Операции] gender=f role=A influence=M action=U attitude=- counterpart="Ольга Ким" photo="${SAMPLE_PORTRAITS.woman68}" team=field
+sales [Павел Морозов|Продажи] gender=m role=U influence=M action=S attitude=+ counterpart="Леа Ортега" photo="${SAMPLE_PORTRAITS.man75}" team=field
+legal [Елена Волкова|Юрист] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="${SAMPLE_PORTRAITS.woman21}" team=field
 ceo -> cfo
 ceo -> ops
 ceo -> sales
@@ -879,11 +893,17 @@ Evening : 40, 45, 65, 50, 35`,
   orgchart: `orgchart
 %% Fill is color=#hex (or fill=). Border is border=#hex and style=solid|dash|dot|dashdot.
 %% Keys combine in any order. Inside [brackets] color= stays part of the label.
-CEO [Chief executive officer\\nAlex Morgan] color=#8250df
-CTO [Chief technology officer\\nElena Chen] color=#ddf4ff border=#0969da
-CFO [Chief financial officer\\nDavid Miller] border=#9a6700 style=dash
-Backend [Head of backend engineering\\nSamir Patel]
-Frontend [Head of frontend engineering\\nClaire Dubois]
+%% Teams: team <id> [Label] fill=#hex stroke=#hex radius=px padding=px, teams layout=row|column|grid gap=px.
+%% team=<id> on a node puts it in a team; the team directive draws the frame. Nodes without team= form a group of their own.
+%% An edge between teams takes its own route and keeps out of other team frames.
+team board [Board]
+team tech [Technology] stroke=#0969da
+teams layout=row gap=36
+CEO [Chief executive officer\\nAlex Morgan] color=#8250df team=board
+CFO [Chief financial officer\\nDavid Miller] border=#9a6700 style=dash team=board
+CTO [Chief technology officer\\nElena Chen] color=#ddf4ff border=#0969da team=tech
+Backend [Head of backend engineering\\nSamir Patel] team=tech
+Frontend [Head of frontend engineering\\nClaire Dubois] team=tech
 CEO -> CTO
 CEO -> CFO
 CTO -> Backend
@@ -932,18 +952,26 @@ CEO -> Ops`,
 %% The fallback is data:image jpeg, png, webp or gif: the picture lives inside the text.
 %% The cards below use that form instead of a link, so the sample opens with faces and no network or disk files.
 %% The preview drops an external http(s) URL, and a browser does not open a local path.
+%% Teams: team <id> [Label] fill=#hex stroke=#hex radius=px padding=px
+%% teams layout=auto|row|column|grid dir=lr|tb gap=px columns=N
+%% team=<id> on a node puts the person in a team. The team directive draws its frame.
+%% Teams are packed next to each other; the tree inside a team stays as before.
+%% An arrow between teams goes around foreign frames. People without team= form a frame-less group.
 title Power Map
+team board [Board] fill=#f6f8fa stroke=#0969da
+team field [Business units] stroke=#8250df
+teams layout=row gap=28
 company "Northwind"
 avatar 48
 comms on
 link supporter color=#1a7f37 style=solid label="ally"
 link coach color=#bf8700 style=dot label="coach"
 link enemy color=#cf222e style=dash label="opponent"
-ceo [Anna Orlova|President] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="${SAMPLE_PORTRAITS.woman44}"
-cfo [Ilya Somov|Finance] gender=m role=D influence=L action=S attitude=0 counterpart="Sam Reed, Lea Ortiz; Sam Reed" photo="${SAMPLE_PORTRAITS.man32}"
-ops [Maria Kim|Operations] gender=f role=A influence=M action=U attitude=- counterpart="Lea Ortiz" photo="${SAMPLE_PORTRAITS.woman68}"
-sales [Pavel Morozov|Sales] gender=m role=U influence=M action=S attitude=+ counterpart="Lea Ortega" photo="${SAMPLE_PORTRAITS.man75}"
-legal [Elena Volkova|Counsel] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="${SAMPLE_PORTRAITS.woman21}"
+ceo [Anna Orlova|President] gender=f role=E influence=L action=M attitude=+ counterpart=- photo="${SAMPLE_PORTRAITS.woman44}" team=board
+cfo [Ilya Somov|Finance] gender=m role=D influence=L action=S attitude=0 counterpart="Sam Reed, Lea Ortiz" photo="${SAMPLE_PORTRAITS.man32}" team=board
+ops [Maria Kim|Operations] gender=f role=A influence=M action=U attitude=- counterpart="Lea Ortiz" photo="${SAMPLE_PORTRAITS.woman68}" team=field
+sales [Pavel Morozov|Sales] gender=m role=U influence=M action=S attitude=+ counterpart="Lea Ortega" photo="${SAMPLE_PORTRAITS.man75}" team=field
+legal [Elena Volkova|Counsel] gender=f role=C influence=S action=M attitude=0 counterpart=- photo="${SAMPLE_PORTRAITS.woman21}" team=field
 ceo -> cfo
 ceo -> ops
 ceo -> sales
