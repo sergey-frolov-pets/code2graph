@@ -173,6 +173,10 @@ const CARD_PAD_Y = 8;
 const CARD_GAP = 8;
 const CHIP_H = 16;
 const COUNTER_H = 16;
+/** Шаг строк в поле counterpart: имя на строку, не больше ширины поля. */
+const COUNTER_LINE = 12;
+/** Отступ текста от краёв поля counterpart. */
+const COUNTER_PAD = 4;
 const CARD_MIN_WIDTH = 120;
 const HEADER_PAD = 20;
 
@@ -1985,7 +1989,8 @@ function labelFreeSpans(
 ): { lo: number; hi: number }[] {
   const blocked: { lo: number; hi: number }[] = [];
   for (const segment of segments) {
-    if (segment.owner === owner && segment.host) continue;
+    // Своя линия под плашкой — нормально: плашка закрывает её фоном. Чужие штрихи мешают.
+    if (segment.owner === owner) continue;
     const vertical = Math.abs(segment.x0 - segment.x1) < 0.6;
     const horizontal = Math.abs(segment.y0 - segment.y1) < 0.6;
     if (vertical) {
@@ -2018,6 +2023,7 @@ function labelFreeSpans(
 }
 
 /** Кандидаты X в порядке предпочтения: прежний слот, затем середины свободных промежутков. */
+/** Середина свободного промежутка плюс сам центр полки: центр — тоже кандидат. */
 function labelXCandidates(
   free: readonly { lo: number; hi: number }[],
   width: number,
@@ -2036,7 +2042,8 @@ function labelXCandidates(
     slot.hi - slot.lo >= width
       ? Math.min(slot.hi - width / 2, Math.max(slot.lo + width / 2, center))
       : (slot.lo + slot.hi) / 2;
-  const out = [clamped];
+  // Центр полки — всегда кандидат: пересечение чужих штрихов теперь стоит, но не запрещено.
+  const out = [center, clamped];
   // Дополнительные места внутри слотов, куда плашка влезает целиком.
   for (const span of fits) {
     out.push(span.lo + width / 2, span.hi - width / 2, (span.lo + span.hi) / 2);
@@ -2049,24 +2056,41 @@ function labelXCandidates(
   return unique.slice(0, 8);
 }
 
-/** Пересечение двух прямоугольников по площади. */
-function rectOverlap(a: CardBox, b: CardBox): number {
-  const dx = Math.min(a.right, b.right) - Math.max(a.left, b.left);
-  const dy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
-  return dx > 0.5 && dy > 0.5 ? dx * dy : 0;
+/** Чужие штрихи, которые перерезает плашка. Пересечение стоит штраф, но не запрещено. */
+function crossedStrokes(segments: readonly FlatSegment[], owner: number, box: CardBox): number {
+  let count = 0;
+  for (const segment of segments) {
+    if (segment.owner === owner) continue;
+    if (Math.abs(segment.x0 - segment.x1) < 0.6) {
+      const y0 = Math.min(segment.y0, segment.y1);
+      const y1 = Math.max(segment.y0, segment.y1);
+      if (y1 <= box.top || y0 >= box.bottom) continue;
+      if (segment.x0 <= box.left + 1 || segment.x0 >= box.right - 1) continue;
+      count += 1;
+      continue;
+    }
+    if (Math.abs(segment.y0 - segment.y1) >= 0.6) continue;
+    if (segment.y0 <= box.top + 1 || segment.y0 >= box.bottom - 1) continue;
+    if (!rangesOverlap(box.left, box.right, Math.min(segment.x0, segment.x1), Math.max(segment.x0, segment.x1))) {
+      continue;
+    }
+    count += 1;
+  }
+  return count;
 }
 
-/** Пересечение плашки с полем рамки команды (не с её внутренностью). */
-function frameFieldOverlap(plate: CardBox, frame: CardBox): number {
-  const outer = rectOverlap(plate, frame);
-  if (outer <= 0) return 0;
-  const inner: CardBox = {
-    left: frame.left + 4,
-    right: frame.right - 4,
-    top: frame.top + 4,
-    bottom: frame.bottom - 4,
-  };
-  return outer - rectOverlap(plate, inner);
+/** Сколько границ рамок команд плашка перерезает. Стоять внутри рамки — нормально. */
+function crossedFrameBorders(box: CardBox, frames: readonly CardBox[]): number {
+  let count = 0;
+  for (const frame of frames) {
+    const overlapsY = box.top < frame.bottom - 1 && box.bottom > frame.top + 1;
+    const overlapsX = box.left < frame.right - 1 && box.right > frame.left + 1;
+    if (!overlapsY || !overlapsX) continue;
+    if (box.left < frame.left || box.right > frame.right || box.top < frame.top || box.bottom > frame.bottom) {
+      count += 1;
+    }
+  }
+  return count;
 }
 
 /**
@@ -2097,41 +2121,46 @@ function placeEdgeLabel(
   hosts.sort((left, right) => right.xMax - right.xMin - (left.xMax - left.xMin));
 
   let best: { x: number; y: number; score: number } | null = null;
-  let fallback: { x: number; y: number; overlap: number } | null = null;
+  let fallback: { x: number; y: number; overlap: number; score: number } | null = null;
   const hostCandidates = hosts.slice(0, 3);
   for (let hostRank = 0; hostRank < hostCandidates.length; hostRank += 1) {
     const host = hostCandidates[hostRank];
     const center = (host.xMin + host.xMax) / 2;
     for (const side of ["above", "below"] as const) {
-      // Сдвиг только от линии: плашка не должна пересекать свою же полку.
-      for (const shift of side === "above" ? [0, -10, -20] : [0, 10, 20]) {
-        const y = edgeLabelBaseline(host.lineY, lineCount, side) + shift;
-        const plate = edgeLabelPlate(y, lineCount);
-        const free = labelFreeSpans(segments, owner, plate.top, plate.bottom, host.xMin, host.xMax);
-        const xs = labelXCandidates(free, width, center, host.xMin, host.xMax);
-        for (const x of xs) {
-          const box: CardBox = {
-            left: x - width / 2,
-            right: x + width / 2,
-            top: plate.top,
-            bottom: plate.bottom,
-          };
-          const hard =
-            plateCardOverlap(box.left, box.right, plate.top, plate.bottom, cards) +
-            plateCardOverlap(box.left, box.right, plate.top, plate.bottom, taken);
-          if (hard > 0) {
-            if (!fallback || hard < fallback.overlap - 0.5) fallback = { x, y, overlap: hard };
-            continue;
+      // Плашка стоит вплотную к своей полке: вертикальный сдвиг отрывал её от связи.
+      const y = edgeLabelBaseline(host.lineY, lineCount, side);
+      const plate = edgeLabelPlate(y, lineCount);
+      const free = labelFreeSpans(segments, owner, plate.top, plate.bottom, host.xMin, host.xMax);
+      const xs = labelXCandidates(free, width, center, host.xMin, host.xMax);
+      for (const x of xs) {
+        const box: CardBox = {
+          left: x - width / 2,
+          right: x + width / 2,
+          top: plate.top,
+          bottom: plate.bottom,
+        };
+        const hard =
+          plateCardOverlap(box.left, box.right, plate.top, plate.bottom, cards) +
+          plateCardOverlap(box.left, box.right, plate.top, plate.bottom, taken);
+        // Чужие штрихи и границы рамок — цена места, а не запрет: иначе подпись
+        // уезжает от своей полки туда, где свободно, и выглядит чужой.
+        const score =
+          Math.abs(x - center) * 1.2 +
+          crossedStrokes(segments, owner, box) * 18 +
+          crossedFrameBorders(box, frames) * 10 +
+          hostRank * 8 +
+          (side === "above" ? 0 : 6);
+        if (hard > 0) {
+          if (
+            !fallback ||
+            hard < fallback.overlap - 0.5 ||
+            (Math.abs(hard - fallback.overlap) <= 0.5 && score < fallback.score)
+          ) {
+            fallback = { x, y, overlap: hard, score };
           }
-          const frameCost = frames.reduce((sum, frame) => sum + frameFieldOverlap(box, frame), 0);
-          const score =
-            frameCost * 0.2 +
-            Math.abs(x - center) * 0.05 +
-            hostRank * 3 +
-            Math.abs(shift) * 0.08 +
-            (side === "above" ? 0 : 1.5);
-          if (!best || score < best.score) best = { x, y, score };
+          continue;
         }
+        if (!best || score < best.score) best = { x, y, score };
       }
     }
   }
@@ -2817,23 +2846,127 @@ function chipFill(color: string, mono: boolean, invert: boolean, index: number):
   return monoGray(index, 6, invert);
 }
 
-function measureCard(person: PowerPerson, framePx: number): { width: number; height: number; titleLines: string[] } {
+/** Явный перенос в поле counterpart: `<br>` или `\n` из исходника. */
+const COUNTER_BREAK = /<br\s*\/?>|\\n|\r?\n/gi;
+
+interface CounterChunk {
+  text: string;
+  /** Разделитель, стоявший после имени: `,` или `;`. */
+  sep: "," | ";" | "";
+}
+
+/**
+ * Имена counterpart по строкам исходника: явные переносы (`<br>`, `\n`) делят
+ * текст на группы, внутри группы имена разделены запятой или точкой с запятой.
+ */
+function counterpartGroups(raw: string): CounterChunk[][] {
+  const src = String(raw ?? "").trim();
+  if (!src || src === "-") return [];
+  const groups: CounterChunk[][] = [];
+  // Повтор того же имени (регистр не важен) и заглушка `-` второй раз не нужны.
+  const seen = new Set<string>();
+  for (const block of src.split(COUNTER_BREAK)) {
+    const chunks: CounterChunk[] = [];
+    const parts = block.split(/([,;])/);
+    for (let index = 0; index < parts.length; index += 2) {
+      const text = (parts[index] ?? "").trim();
+      const sep = (parts[index + 1] ?? "").trim();
+      if (!text) continue;
+      const key = text.toLowerCase();
+      if (key === "-" || key === "—" || seen.has(key)) continue;
+      seen.add(key);
+      chunks.push({ text, sep: sep === ";" ? ";" : sep === "," ? "," : "" });
+    }
+    if (chunks.length > 0) groups.push(chunks);
+  }
+  return groups;
+}
+
+/** Плоский список имён counterpart — для ширины карточки. */
+function counterpartNames(raw: string): string[] {
+  return counterpartGroups(raw).flatMap((group) => group.map((chunk) => chunk.text));
+}
+
+/**
+ * Строки поля counterpart. Явный перенос начинает новую строку, внутри группы
+ * имена пакуются, пока влезают; иначе имя уезжает на следующую строку.
+ */
+function counterpartLines(raw: string, maxWidth: number): string[] {
+  const groups = counterpartGroups(raw);
+  if (groups.length === 0) return ["-"];
+  const limit = Math.max(24, maxWidth);
+  const lines: string[] = [];
+  for (const group of groups) {
+    let line = "";
+    for (let index = 0; index < group.length; index += 1) {
+      const item = group[index];
+      const sep = index > 0 ? group[index - 1].sep || "," : "";
+      const piece = sep ? `${sep} ${item.text}` : item.text;
+      const candidate = line + piece;
+      if (!line || measureText(candidate, TITLE_FONT) <= limit) {
+        line = candidate;
+        continue;
+      }
+      lines.push(line.replace(/[,;]\s*$/, ""));
+      line = item.text;
+    }
+    if (line) lines.push(line.replace(/[,;]\s*$/, ""));
+  }
+  return lines.length > 0 ? lines : ["-"];
+}
+
+/** Высота поля counterpart: одна строка — как раньше, дальше шаг на строку. */
+function counterBandHeight(lineCount: number): number {
+  return COUNTER_H + Math.max(0, lineCount - 1) * COUNTER_LINE;
+}
+
+interface CardBase {
+  width: number;
+  /** Высота без поля counterpart и без нижнего отступа. */
+  height: number;
+  titleLines: string[];
+  /** Ширина области поля counterpart под текст. */
+  inner: number;
+}
+
+/**
+ * Габариты карточки без поля counterpart. Ширину задаёт самое длинное имя
+ * counterpart, а не весь список: длинный список переносится по строкам.
+ */
+function cardBase(person: PowerPerson, framePx: number): CardBase {
   const titleLines = person.title ? splitLabelLines(person.title) : [];
   const slot = avatarBoxSize(framePx, person);
-  const textW = Math.max(
-    measureText(person.name, NAME_FONT),
-    ...titleLines.map((line) => measureText(line, TITLE_FONT)),
-    measureText(person.counterpart || "-", TITLE_FONT),
-    4 * 22,
-  );
+  const names = counterpartNames(person.counterpart);
+  const counterW =
+    (names.length > 0
+      ? names.reduce((max, name) => Math.max(max, measureText(name, TITLE_FONT)), 0)
+      : measureText("-", TITLE_FONT)) +
+    COUNTER_PAD * 2;
+  const textW = Math.max(measureText(person.name, NAME_FONT), ...titleLines.map((line) => measureText(line, TITLE_FONT)), counterW, 4 * 22);
   const width = Math.max(CARD_MIN_WIDTH, textW + CARD_PAD_X * 2, slot + CARD_PAD_X * 2);
   let height = CARD_PAD_Y;
   if (slot > 0) height += slot + CARD_GAP;
   height += LINE_HEIGHT;
   height += titleLines.length * LINE_HEIGHT;
-  height += CARD_GAP + CHIP_H + COUNTER_H + CARD_PAD_Y;
-  return { width, height, titleLines };
+  height += CARD_GAP + CHIP_H;
+  return { width, titleLines, height, inner: width - CARD_PAD_X * 2 - COUNTER_PAD * 2 };
 }
+
+interface CardMeasure {
+  width: number;
+  height: number;
+  titleLines: string[];
+  /** Высота поля counterpart у этой карточки. */
+  band: number;
+}
+
+function measureCard(person: PowerPerson, framePx: number, minBand = 0): CardMeasure {
+  const base = cardBase(person, framePx);
+  const own = counterBandHeight(counterpartLines(person.counterpart, base.inner).length);
+  const band = Math.max(own, minBand);
+  return { width: base.width, height: base.height + band + CARD_PAD_Y, titleLines: base.titleLines, band };
+}
+
 
 const COMMS_FONT = 11;
 const COMMS_LINE = 16;
@@ -3191,24 +3324,54 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
   const invertedMono = usesInvertedMono(model.mono, model.monoInvert, options.dark);
   const palette = getPalette(themeDark);
   const mono = Boolean(model.mono);
-  const measured = new Map<string, { width: number; height: number; titleLines: string[] }>();
-  for (const person of model.people) measured.set(person.id, measureCard(person, model.avatarSize));
-
   const gapBelow = rankGapBelow(model);
-  const teamLayout = model.teams.length > 0 ? layoutTeams(model, measured, gapBelow) : null;
-  const laid = teamLayout
-    ? { placed: teamLayout.placed, width: teamLayout.width, height: teamLayout.height }
-    : layoutOrgTree(
-        model.people,
-        model.reports,
-        model.virtualRoot,
-        model.root,
-        (person) => {
-          const box = measured.get(person.id)!;
-          return { lines: [person.name], width: box.width, height: box.height };
-        },
-        gapBelow,
-      );
+
+  const measureAll = (bandOf?: ReadonlyMap<string, number>): Map<string, CardMeasure> => {
+    const boxes = new Map<string, CardMeasure>();
+    for (const person of model.people) {
+      boxes.set(person.id, measureCard(person, model.avatarSize, bandOf?.get(person.id) ?? 0));
+    }
+    return boxes;
+  };
+  const buildLayout = (boxes: Map<string, CardMeasure>) => {
+    const team = model.teams.length > 0 ? layoutTeams(model, boxes, gapBelow) : null;
+    const tree = team
+      ? { placed: team.placed, width: team.width, height: team.height }
+      : layoutOrgTree(
+          model.people,
+          model.reports,
+          model.virtualRoot,
+          model.root,
+          (person) => {
+            const box = boxes.get(person.id)!;
+            return { lines: [person.name], width: box.width, height: box.height };
+          },
+          gapBelow,
+        );
+    return { team, laid: tree };
+  };
+
+  // Первый проход — своя высота поля counterpart; второй — выравниваем поле
+  // по самому высокому в ряду, чтобы ряд карточек выглядел симметрично.
+  let measured = measureAll();
+  let built = buildLayout(measured);
+  const rowBand = new Map<string, number>();
+  for (const card of built.laid.placed) {
+    const key = `${card.y}`;
+    rowBand.set(key, Math.max(rowBand.get(key) ?? 0, measured.get(card.node.id)?.band ?? 0));
+  }
+  const rowTarget = new Map<string, number>();
+  for (const card of built.laid.placed) {
+    const own = measured.get(card.node.id);
+    const target = rowBand.get(`${card.y}`) ?? 0;
+    if (own && target > own.band) rowTarget.set(card.node.id, target);
+  }
+  if (rowTarget.size > 0) {
+    measured = measureAll(rowTarget);
+    built = buildLayout(measured);
+  }
+  const teamLayout = built.team;
+  const laid = built.laid;
   const teamBoxes = teamLayout?.boxes ?? [];
   const membership = teamLayout ? powermapMembership(model) : undefined;
   const intraReports = teamLayout ? teamLayout.localReports : model.reports;
@@ -3516,11 +3679,19 @@ function drawCard(
     }
   });
   cursor += CHIP_H;
+  const base = cardBase(person, model.avatarSize);
+  const band = Math.max(COUNTER_H, card.height - base.height - CARD_PAD_Y);
+  const bandTop = y + card.height - CARD_PAD_Y - band;
   const counterFill = mono ? monoGray(4, 6, invert) : COUNTERPART_COLOR;
-  svg.rect(x + CARD_PAD_X, cursor, inner, COUNTER_H, { fill: counterFill });
-  svg.text(x + card.width / 2, cursor + 12, person.counterpart || "-", {
-    "font-size": TITLE_FONT,
-    fill: contrastTextColor(counterFill) ?? fg,
+  svg.rect(x + CARD_PAD_X, bandTop, inner, band, { fill: counterFill });
+  const lines = counterpartLines(person.counterpart, base.inner);
+  const step = COUNTER_LINE;
+  const first = bandTop + (band - (lines.length - 1) * step) / 2 + 4;
+  lines.forEach((line, index) => {
+    svg.text(x + card.width / 2, first + index * step, line, {
+      "font-size": TITLE_FONT,
+      fill: contrastTextColor(counterFill) ?? fg,
+    });
   });
 }
 

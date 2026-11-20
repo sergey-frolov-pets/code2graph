@@ -266,7 +266,8 @@ link coach color=#bf8700 style=dot label=наставник
     const positions = people.map((name) => texts.indexOf(name));
     expect(positions.every((index) => index >= 0)).toBe(true);
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
-    expect(texts.filter((text) => text === "Пётр Белов")).toHaveLength(2);
+    // Поле counterpart рисуется построчно: имя встречается в двух карточках и в таблице.
+    expect(texts.filter((text) => text === "Пётр Белов").length).toBeGreaterThanOrEqual(2);
     expect(texts).not.toContain("пётр белов");
     expect(texts).toContain("→ Илья Сомов: coach — наставник");
     expect(texts).toContain("← Мария Ким: coach — наставник");
@@ -575,6 +576,45 @@ ceo -coach-> legal`), {});
         }
       }
     }
+  });
+
+  it("подпись держится своей связи: по центру полки и вплотную к ней", () => {
+    // Тесный коридор: под полкой supporter идут ещё три связи, а над ней — карточки.
+    // Раньше подпись уезжала в сторону и ниже своей линии, чтобы не пересекать чужие штрихи.
+    const svg = powermapEngine.render(modelOf(`powermap
+team a [A]
+team b [B]
+teams layout=row gap=24
+x [Икс] team=a counterpart="Ольга Ким, Пётр Белов, Леа Ортега"
+y [Игрек] team=b counterpart="Леа Ортега"
+x -> y
+x -supporter-> y label="общий бюджет"
+x -.-> y
+y -enemy-> x`), {});
+    const supporter = [...svg.matchAll(/<path d="([^"]+)"([^>]*)\/>/g)].find((match) =>
+      match[2].includes('stroke="#1a7f37"'),
+    );
+    expect(supporter).toBeTruthy();
+    const points = pathPoints(supporter![1]);
+    let host: { x0: number; x1: number; y: number } | null = null;
+    for (let index = 0; index + 1 < points.length; index += 1) {
+      const a = points[index];
+      const b = points[index + 1];
+      if (Math.abs(a.y - b.y) > 0.4) continue;
+      const span = Math.abs(a.x - b.x);
+      if (span < 12) continue;
+      if (!host || span > Math.abs(host.x1 - host.x0)) {
+        host = { x0: Math.min(a.x, b.x), x1: Math.max(a.x, b.x), y: a.y };
+      }
+    }
+    expect(host).toBeTruthy();
+    const plate = labelPlates(svg)[0];
+    // По центру своей полки, а не у её края.
+    expect(Math.abs(plate.x + plate.width / 2 - (host!.x0 + host!.x1) / 2)).toBeLessThanOrEqual(12);
+    // Вплотную к линии: зазор не больше 6 px (сверху или снизу).
+    const gapAbove = host!.y - (plate.y + plate.height);
+    const gapBelow = plate.y - host!.y;
+    expect(Math.min(Math.abs(gapAbove), Math.abs(gapBelow))).toBeLessThanOrEqual(6);
   });
 
   it("объявляет пространство имён xlink у снимка", () => {
@@ -1095,6 +1135,35 @@ a1 -supporter-> c2 label="общий бюджет"`);
         expect(rectsOverlap(plate, team)).toBe(false);
       }
     }
+  });
+
+  it("layout=column ставит вложенные команды друг под другом", () => {
+    // Явная раскладка действует на всех уровнях: внутри одной корневой команды тоже.
+    const model = modelOf(`powermap
+team company [Компания]
+team a [A] parent=company
+team b [B] parent=company
+teams layout=column gap=24
+x [Икс] team=a
+y [Игрек] team=b
+x -> y`);
+    const svg = powermapEngine.render(model, { locale: "ru" }) as string;
+    const a = teamRects(svg).find((team) => team.id === "a")!;
+    const b = teamRects(svg).find((team) => team.id === "b")!;
+    expect(b.x).toBeCloseTo(a.x, 0);
+    expect(b.y).toBeGreaterThan(a.y + a.height);
+  });
+
+  it("labels=off прячет подписи команд (как titles=off)", () => {
+    const model = modelOf(`powermap
+team a [A]
+teams layout=row gap=24 labels=off
+x [Икс] team=a
+y [Игрек] team=a
+x -> y`);
+    expect(model.teamLayout).toMatchObject({ titles: false });
+    const svg = powermapEngine.render(model, { locale: "ru" }) as string;
+    expect(svg).not.toContain('data-team-label="1"');
   });
 
   it("в моно команды остаются серыми, рамка не пропадает", () => {

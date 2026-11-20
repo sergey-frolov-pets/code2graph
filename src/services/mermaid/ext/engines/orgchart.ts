@@ -314,7 +314,7 @@ export function parseTeamsLine(raw: string): { patch?: Partial<TeamLayoutSpec>; 
   let rest = raw.trim().replace(/^teams\s*/i, "").trim();
   const patch: Partial<TeamLayoutSpec> = {};
   for (let guard = 0; guard < 8 && rest; guard += 1) {
-    const attr = /^(layout|dir|gap|columns|titles)=("[^"]*"|'[^']*'|\S*)\s*/i.exec(rest);
+    const attr = /^(layout|dir|gap|columns|titles|labels)=("[^"]*"|'[^']*'|\S*)\s*/i.exec(rest);
     if (!attr) return { error: `неизвестный параметр раскладки команд «${rest}»` };
     const key = attr[1].toLowerCase();
     const value = unquote(attr[2]).toLowerCase();
@@ -340,7 +340,7 @@ export function parseTeamsLine(raw: string): { patch?: Partial<TeamLayoutSpec>; 
         return { error: `число команд в ряду: ожидается целое 1–12, получено «${value}»` };
       }
       patch.columns = columns;
-    } else if (key === "titles") {
+    } else if (key === "titles" || key === "labels") {
       if (value === "on" || value === "true") patch.titles = true;
       else if (value === "off" || value === "false") patch.titles = false;
       else {
@@ -554,8 +554,10 @@ export function layoutTeamGroups<T extends { id: string }>(options: {
     const items: PackItem[] = [];
     if (laid) items.push({ width: laid.width, height: laid.height });
     for (const kid of kids) items.push({ width: kid.box.width, height: kid.box.height });
+    // Явная раскладка (`row` / `column` / `grid`) действует на всех уровнях,
+    // `dir` — только при `layout=auto`: иначе `layout=column` менял бы лишь верх.
     const innerMode: TeamLayoutSpec["mode"] =
-      depth === 0 ? mode : layout.dir === "tb" ? "column" : "row";
+      layout.mode !== "auto" ? mode : depth === 0 ? mode : layout.dir === "tb" ? "column" : "row";
     const packed = packItems(items, innerMode, layout.columns, layout.gap);
     const contentWidth = packed.width;
     const contentHeight = packed.height;
