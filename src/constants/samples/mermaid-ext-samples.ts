@@ -235,6 +235,7 @@ avatar 48
 %%   A -supporter-> B
 %% label у link — только строка легенды, на стрелке её нет.
 %% Подпись одной стрелки: A -supporter-> B label="бюджет"
+%% Подпись не уходит на карточки: если полка идёт под ними, текст встаёт под полку.
 %% Двусторонняя связь: A <-supporter-> B
 %% Через уровень стрелка обходит карточки между ними: ceo -coach-> legal
 %% Легенда рисуется под схемой: шкалы и цвет контрагента. Из линий в ней только стили link.
@@ -268,6 +269,7 @@ ceo -> sales
 cfo -.-> ops
 cfo -> legal
 cfo -supporter-> ops label="бюджет"
+cfo -supporter-> sales label="общий бюджет"
 ops -enemy-> cfo
 ceo <-coach-> sales
 ceo -coach-> legal`,
@@ -914,6 +916,7 @@ CEO -> Ops`,
 %%   A -supporter-> B
 %% label on link is legend text only. The arrow itself has no caption.
 %% A caption on one arrow: A -supporter-> B label="budget"
+%% A caption never lands on the cards: when the shelf runs under them, the text sits below it.
 %% A two-way link: A <-supporter-> B
 %% A link that skips a level goes around the cards in between: ceo -coach-> legal
 %% The legend sits under the chart: the scales and the counterpart color. Line samples are only link styles.
@@ -947,6 +950,7 @@ ceo -> sales
 cfo -.-> ops
 cfo -> legal
 cfo -supporter-> ops label="budget"
+cfo -supporter-> sales label="shared budget"
 ops -enemy-> cfo
 ceo <-coach-> sales
 ceo -coach-> legal`,

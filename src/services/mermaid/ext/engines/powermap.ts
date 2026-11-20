@@ -1548,25 +1548,52 @@ function flatSegments(
   return segments;
 }
 
-/** Подпись над своей полкой, в промежутке, где нет чужого штриха. */
-function placeEdgeLabel(
-  points: readonly RoutePoint[],
-  text: string,
+/**
+ * Прямоугольник плашки подписи ровно таким, каким его рисует render:
+ * однострочная — 14 px над базовой линией, многострочная — по центру базовой линии.
+ */
+function edgeLabelPlate(labelY: number, lineCount: number): { top: number; bottom: number; height: number } {
+  const extra = Math.max(0, lineCount - 1) * labelLineStep(EDGE_LABEL_FONT);
+  const height = EDGE_LABEL_BAND + extra;
+  // Плашка растёт вверх от полки: низ остаётся на прежнем месте при любой длине.
+  const top = labelY - (EDGE_LABEL_BAND - 2) - extra / 2;
+  return { top, bottom: top + height, height };
+}
+
+/** Базовая линия подписи: над полкой (как раньше) или под ней, если сверху карточки. */
+function edgeLabelBaseline(lineY: number, lineCount: number, side: "above" | "below"): number {
+  const extra = Math.max(0, lineCount - 1) * labelLineStep(EDGE_LABEL_FONT);
+  if (side === "above") return lineY - 6 - extra / 2;
+  const { height } = edgeLabelPlate(0, lineCount);
+  return lineY + 4 + EDGE_LABEL_BAND - 2 + (height - EDGE_LABEL_BAND) / 2;
+}
+
+/** Площадь пересечения плашки с карточками: 0 — свободно. */
+function plateCardOverlap(
+  left: number,
+  right: number,
+  top: number,
+  bottom: number,
+  cards: readonly CardBox[],
+): number {
+  let area = 0;
+  for (const card of cards) {
+    const overlapX = Math.min(right, card.right) - Math.max(left, card.left);
+    const overlapY = Math.min(bottom, card.bottom) - Math.max(top, card.top);
+    if (overlapX > 0.5 && overlapY > 0.5) area += overlapX * overlapY;
+  }
+  return area;
+}
+
+/** Свободные по X промежутки внутри полосы подписи: чужие штрихи её не перерезают. */
+function labelFreeSpans(
   segments: readonly FlatSegment[],
   owner: number,
-): RoutePoint {
-  const hostIndex = hostSegmentIndex(points);
-  if (hostIndex < 0) return labelAnchor(points);
-  const a = points[hostIndex];
-  const b = points[hostIndex + 1];
-  const lineY = a.y;
-  const lineCount = labelLineCount(text);
-  const width = measureLabelWidth(text, EDGE_LABEL_FONT) + 10;
-  const band = lineCount * labelLineStep(EDGE_LABEL_FONT) + 4;
-  const boxBottom = lineY - 4;
-  const boxTop = boxBottom - band;
-  const xMin = Math.min(a.x, b.x);
-  const xMax = Math.max(a.x, b.x);
+  boxTop: number,
+  boxBottom: number,
+  xMin: number,
+  xMax: number,
+): { lo: number; hi: number }[] {
   const blocked: { lo: number; hi: number }[] = [];
   for (const segment of segments) {
     if (segment.owner === owner && segment.host) continue;
@@ -1598,22 +1625,75 @@ function placeEdgeLabel(
     cursor = Math.max(cursor, mark.hi);
   }
   if (cursor < xMax) free.push({ lo: cursor, hi: xMax });
+  return free;
+}
+
+/** Кандидаты X в порядке предпочтения: прежний слот, затем середины свободных промежутков. */
+function labelXCandidates(
+  free: readonly { lo: number; hi: number }[],
+  width: number,
+  center: number,
+  xMin: number,
+  xMax: number,
+): number[] {
+  const fits = free.filter((interval) => interval.hi - interval.lo >= width);
+  const widest =
+    free.length > 0
+      ? [...free].sort((left, right) => right.hi - right.lo - (left.hi - left.lo))[0]
+      : { lo: xMin, hi: xMax };
+  const slot = fits[0] ?? widest;
+  // Прежний выбор X: центр, зажатый в первый походящий слот (иначе — его середина).
+  const clamped =
+    slot.hi - slot.lo >= width
+      ? Math.min(slot.hi - width / 2, Math.max(slot.lo + width / 2, center))
+      : (slot.lo + slot.hi) / 2;
+  const out = [clamped];
+  for (const span of fits) out.push((span.lo + span.hi) / 2);
+  for (const span of free) out.push((span.lo + span.hi) / 2);
+  const unique: number[] = [];
+  for (const x of out) {
+    if (unique.every((known) => Math.abs(known - x) > 0.5)) unique.push(x);
+  }
+  return unique.slice(0, 6);
+}
+
+/**
+ * Подпись рядом со своей полкой. Сначала над полкой и в промежутке без чужих штрихов
+ * (прежнее поведение), затем под полкой или в другом свободном промежутке — если
+ * плашка наезжает на карточки сотрудников.
+ */
+function placeEdgeLabel(
+  points: readonly RoutePoint[],
+  text: string,
+  segments: readonly FlatSegment[],
+  owner: number,
+  cards: readonly CardBox[] = [],
+): RoutePoint {
+  const hostIndex = hostSegmentIndex(points);
+  if (hostIndex < 0) return labelAnchor(points);
+  const a = points[hostIndex];
+  const b = points[hostIndex + 1];
+  const lineY = a.y;
+  const lineCount = labelLineCount(text);
+  const width = measureLabelWidth(text, EDGE_LABEL_FONT) + 10;
+  const xMin = Math.min(a.x, b.x);
+  const xMax = Math.max(a.x, b.x);
   const center = (xMin + xMax) / 2;
-  let slot = free.find((interval) => interval.hi - interval.lo >= width) ?? null;
-  if (!slot && free.length > 0) {
-    slot = [...free].sort((left, right) => right.hi - right.lo - (left.hi - left.lo))[0];
+  let fallback: { x: number; y: number; overlap: number } | null = null;
+  for (const side of ["above", "below"] as const) {
+    const y = edgeLabelBaseline(lineY, lineCount, side);
+    const plate = edgeLabelPlate(y, lineCount);
+    const free = labelFreeSpans(segments, owner, plate.top, plate.bottom, xMin, xMax);
+    for (const x of labelXCandidates(free, width, center, xMin, xMax)) {
+      const overlap = plateCardOverlap(x - width / 2, x + width / 2, plate.top, plate.bottom, cards);
+      if (overlap <= 0) return { x, y };
+      if (!fallback || overlap < fallback.overlap - 0.5) fallback = { x, y, overlap };
+    }
   }
-  const span = slot ?? { lo: xMin, hi: xMax };
-  let x = center;
-  if (span.hi - span.lo >= width) {
-    x = Math.min(span.hi - width / 2, Math.max(span.lo + width / 2, center));
-  } else {
-    x = (span.lo + span.hi) / 2;
-  }
-  // Однострочная подпись: Y как раньше. Многострочная: центр блока.
-  // стало
-  const y = boxBottom - 2 - ((lineCount - 1) * labelLineStep(EDGE_LABEL_FONT)) / 2;
-  return { x, y };
+  // Свободного места нет — ставим там, где перекрытие минимально.
+  return fallback
+    ? { x: fallback.x, y: fallback.y }
+    : { x: center, y: edgeLabelBaseline(lineY, lineCount, "above") };
 }
 
 /** Ломаные стрелки влияния, как линии подчинения: без наложения друг на друга. */
@@ -1758,7 +1838,9 @@ function routeInfluences(
   separateInfluenceTracks(routes, reports, cards);
   const segments = flatSegments(routes, reports);
   routes.forEach((route, index) => {
-    const labelAt = route.label ? placeEdgeLabel(route.points, route.label, segments, index) : labelAnchor(route.points);
+    const labelAt = route.label
+      ? placeEdgeLabel(route.points, route.label, segments, index, cards)
+      : labelAnchor(route.points);
     route.labelX = labelAt.x;
     route.labelY = labelAt.y;
     const xs = route.points.map((point) => point.x);

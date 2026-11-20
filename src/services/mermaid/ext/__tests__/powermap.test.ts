@@ -594,6 +594,28 @@ ceo -> cfo`), {});
       }
     }
   });
+  it("подпись стрелки не наезжает на карточки сотрудников", () => {
+    const svg = powermapEngine.render(modelOf(`powermap
+ceo [Анна Орлова|Президент]
+left [Илья Сомов|Финансы]
+mid [Мария Ким|Операции]
+right [Пётр Морозов|Разработка]
+ceo -> left
+ceo -> mid
+ceo -> right
+left -supporter-> right label="общий бюджет на 2027"`), {});
+    const plates = labelPlates(svg);
+    const cards = cardRects(svg);
+    expect(plates.length).toBeGreaterThan(0);
+    expect(cards.length).toBeGreaterThan(0);
+    for (const plate of plates) {
+      for (const card of cards) {
+        const overlapX = Math.min(plate.x + plate.width, card.x + card.width) - Math.max(plate.x, card.x);
+        const overlapY = Math.min(plate.y + plate.height, card.y + card.height) - Math.max(plate.y, card.y);
+        expect(overlapX > 1 && overlapY > 1).toBe(false);
+      }
+    }
+  });
 });
 
 /** Подпись в одну строку — базовая модель для сравнения. */
@@ -707,6 +729,19 @@ function labelPlates(svg: string): { x: number; y: number; width: number; height
       width: Number(/\bwidth="([^"]+)"/.exec(attrs)?.[1]),
       height: Number(/\bheight="([^"]+)"/.exec(attrs)?.[1]),
     }));
+}
+
+function cardRects(svg: string): { x: number; y: number; width: number; height: number }[] {
+  return [...svg.matchAll(/<rect\b([^>]*)\/>/g)]
+    .map((match) => match[1])
+    .filter((attrs) => !attrs.includes('data-label-plate="1"') && !attrs.includes('data-legend="powermap"'))
+    .map((attrs) => ({
+      x: Number(/\bx="([^"]+)"/.exec(attrs)?.[1]),
+      y: Number(/\by="([^"]+)"/.exec(attrs)?.[1]),
+      width: Number(/\bwidth="([^"]+)"/.exec(attrs)?.[1]),
+      height: Number(/\bheight="([^"]+)"/.exec(attrs)?.[1]),
+    }))
+    .filter((rect) => rect.width > 80 && rect.height > 40);
 }
 
 function segmentHitsRect(
