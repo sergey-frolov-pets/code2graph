@@ -178,6 +178,45 @@ const TEAM_ATTR_RE =
   /^(title|parent|fill|stroke|colour|color|radius|padding|width|style|frame)=("[^"]*"|'[^']*'|\S*)\s*/i;
 
 /** `team front [Front Office] fill=#f6f8fa radius=12` */
+/** Директива `hide id1, id2`: список id сотрудников, команд (и типов связи в powermap). */
+export function parseHideLine(raw: string): string[] | null {
+  const match = /^hide\b(.*)$/i.exec(raw.trim());
+  if (!match) return null;
+  return match[1]
+    .split(/[,\s]+/)
+    .map((value) => value.replace(/^#/, "").trim())
+    .filter((value) => value.length > 0);
+}
+
+/** Скрытые команды: сам id или вложенная в скрытого родителя (`corp` скрывает `corp/board`). */
+export function hiddenTeamIds(
+  teams: readonly TeamStyle[],
+  wanted: ReadonlySet<string>,
+): Set<string> {
+  const hidden = new Set<string>();
+  for (const team of teams) {
+    const id = team.id.toLowerCase();
+    for (const key of wanted) {
+      if (id === key || id.startsWith(`${key}/`)) {
+        hidden.add(team.id);
+        break;
+      }
+    }
+  }
+  return hidden;
+}
+
+/** Относится ли команда человека к скрытым (учитывает вложенность путей). */
+export function teamIsHidden(teamId: string | undefined, hidden: ReadonlySet<string>): boolean {
+  if (!teamId) return false;
+  const id = teamId.toLowerCase();
+  for (const key of hidden) {
+    const lower = key.toLowerCase();
+    if (id === lower || id.startsWith(`${lower}/`)) return true;
+  }
+  return false;
+}
+
 export function parseTeamLine(raw: string): { team?: TeamStyle; error?: string } | null {
   const match = /^team\s+([\p{L}\p{N}_./-]+)(.*)$/iu.exec(raw.trim());
   if (!match) return null;
@@ -1037,6 +1076,7 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
   const teams: TeamStyle[] = [];
   const teamIndex = new Map<string, TeamStyle>();
   const teamLayout: TeamLayoutSpec = { ...DEFAULT_TEAM_LAYOUT };
+  const hidden: string[] = [];
   let seenType = false;
 
   const ensureNode = (id: string, label?: string, paint?: OrgNodePaint): OrgNode => {
@@ -1100,6 +1140,19 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
       continue;
     }
 
+    const hideLine = parseHideLine(raw);
+    if (hideLine) {
+      if (hideLine.length === 0) {
+        errors.push({
+          message: "hide: нужен хотя бы один id — сотрудник или команда",
+          line: lineNo,
+          col: 0,
+        });
+      } else {
+        hidden.push(...hideLine);
+      }
+      continue;
+    }
     const teamsLine = parseTeamsLine(raw);
     if (teamsLine) {
       if (teamsLine.error || !teamsLine.patch) {
@@ -1182,6 +1235,41 @@ export function parseOrgchart(source: string): ExtParseResult<OrgModel> {
     };
     teamIndex.set(id, auto);
     teams.push(auto);
+  }
+
+  if (hidden.length > 0) {
+    const wanted = new Set(hidden.map((id) => id.toLowerCase()));
+    const hiddenTeams = hiddenTeamIds(teams, wanted);
+    const known = new Set<string>([
+      ...nodes.map((node) => node.id.toLowerCase()),
+      ...teams.map((team) => team.id.toLowerCase()),
+    ]);
+    for (const id of wanted) {
+      if (!known.has(id)) errors.push({ message: `hide: неизвестный id «${id}»`, line: 0, col: 0 });
+    }
+    const removed = new Set(
+      nodes
+        .filter((node) => wanted.has(node.id.toLowerCase()) || teamIsHidden(node.team, hiddenTeams))
+        .map((node) => node.id),
+    );
+    const keptNodes = nodes.filter((node) => !removed.has(node.id));
+    nodes.length = 0;
+    nodes.push(...keptNodes);
+    const keptEdges = edges.filter((edge) => !removed.has(edge.from) && !removed.has(edge.to));
+    edges.length = 0;
+    edges.push(...keptEdges);
+    const keptTeams = teams.filter((team) => !hiddenTeams.has(team.id));
+    teams.length = 0;
+    teams.push(...keptTeams);
+  }
+
+  if (hidden.length > 0 && errors.length === 0 && edges.length === 0) {
+    errors.push({
+      message: "hide: после скрытия не осталось ни одного узла или связи",
+      line: 0,
+      col: 0,
+    });
+    return { ok: false, errors };
   }
 
   if (edges.length === 0) {

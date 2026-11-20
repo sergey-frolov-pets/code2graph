@@ -1189,3 +1189,70 @@ c -ally-> a`;
     }
   });
 });
+
+describe("powermap: hide", () => {
+  const base = `powermap
+company Север
+lang ru
+comms on
+legend off
+link ally color=#1a7f37 style=solid label=союзник
+team corp [Группа]
+team corp/board [Совет] fill=#f6f8fa
+team corp/field [Подразделения]
+Анна [Анна Орлова] team=corp/board
+Илья [Илья Сомов] team=corp/board
+Мария [Мария Ким] team=corp/field
+Пётр [Пётр Белов]
+Анна -> Илья
+Анна -> Мария
+Анна -> Пётр
+Илья -ally-> Мария label=бюджет`;
+
+  it("скрывает сотрудника вместе с его связями", () => {
+    const model = modelOf(`${base}\nhide Илья`);
+    expect(model.people.map((person) => person.id)).toEqual(["Анна", "Мария", "Пётр"]);
+    expect(model.reports.map((edge) => `${edge.from}→${edge.to}`)).toEqual([
+      "Анна→Мария",
+      "Анна→Пётр",
+    ]);
+    expect(model.influences).toHaveLength(0);
+    const svg = powermapEngine.render(model, {});
+    expect(svg).not.toContain("Илья Сомов");
+  });
+
+  it("скрывает тип связи и его строку в легенде", () => {
+    const model = modelOf(`${base}\nhide ally`);
+    expect(model.influences).toHaveLength(0);
+    expect(model.links.some((link) => link.name === "ally")).toBe(false);
+  });
+
+  it("скрывает команду вместе с сотрудниками и их связями", () => {
+    const model = modelOf(`${base}\nhide corp/field`);
+    expect(model.people.map((person) => person.id)).toEqual(["Анна", "Илья", "Пётр"]);
+    expect(model.teams.map((team) => team.id)).toEqual(["corp", "corp/board"]);
+    expect(model.influences).toHaveLength(0);
+    const svg = powermapEngine.render(model, {});
+    expect(svg).not.toContain("Мария Ким");
+    expect(svg).not.toContain('data-team-id="corp/field"');
+  });
+
+  it("скрывает вложенные команды скрытого родителя", () => {
+    const model = modelOf(`${base}\nhide corp`);
+    expect(model.teams).toHaveLength(0);
+    expect(model.people.map((person) => person.id)).toEqual(["Пётр"]);
+    expect(model.reports).toHaveLength(0);
+  });
+
+  it("не прячет сотрудников из строки comms, пока команда не скрыта", () => {
+    const model = modelOf(`${base}\nhide Пётр`);
+    const svg = powermapEngine.render(model, {});
+    expect(svg).not.toContain("Пётр Белов");
+  });
+
+  it("неизвестный id — ошибка разбора", () => {
+    const parsed = powermapEngine.parse(`${base}\nhide НетТакого`);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.errors[0]?.message).toContain("неизвестный id");
+  });
+});

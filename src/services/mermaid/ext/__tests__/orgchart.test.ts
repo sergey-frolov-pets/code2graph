@@ -920,3 +920,43 @@ a -> b`);
     expect(svg).not.toContain("data-team=");
   });
 });
+
+describe("orgchart: hide", () => {
+  const base = `orgchart
+team front [Фронт]
+team back [Бэк]
+Гендиректор [Генеральный директор]
+Финдир [Финдир] team=front
+Техдир [Техдир] team=back
+Гендиректор -> Финдир
+Гендиректор -> Техдир`;
+
+  const modelOf = (source: string): OrgModel => {
+    const parsed = orgchartEngine.parse(source);
+    expect(parsed.ok, parsed.errors[0]?.message).toBe(true);
+    return parsed.value as OrgModel;
+  };
+
+  it("скрывает узел вместе с его связями", () => {
+    const model = modelOf(`${base}\nhide Финдир`);
+    expect(model.nodes.map((node) => node.id)).toEqual(["Гендиректор", "Техдир"]);
+    expect(model.edges.map((edge) => `${edge.from}→${edge.to}`)).toEqual(["Гендиректор→Техдир"]);
+    const svg = orgchartEngine.render(model, {});
+    expect(svg).not.toContain(">Финдир<");
+  });
+
+  it("скрывает команду вместе с её узлами и рамкой", () => {
+    const model = modelOf(`${base}\nhide back`);
+    expect(model.nodes.map((node) => node.id)).toEqual(["Гендиректор", "Финдир"]);
+    expect(model.teams.map((team) => team.id)).toEqual(["front"]);
+    const svg = orgchartEngine.render(model, {});
+    expect(svg).not.toContain('data-team-id="back"');
+    expect(svg).not.toContain("Техдир");
+  });
+
+  it("неизвестный id — ошибка разбора", () => {
+    const parsed = orgchartEngine.parse(`${base}\nhide НетТакого`);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.errors[0]?.message).toContain("неизвестный id");
+  });
+});

@@ -200,7 +200,9 @@ data
 %% Ключи можно сочетать и менять местами. Внутри [скобок] color= остаётся текстом.
 %% Команды: team <id> [Подпись] fill=#hex stroke=#hex width=px style=solid|dash|dot|dashdot radius=px padding=px frame=on|off label=on|off
 %% teams layout=row|column|grid dir=lr|tb gap=px labels=on|off
+%% hide id1, id2 — убирает из схемы сотрудников, команды и типы связи. Скрытая команда уносит своих людей и их связи.
 %% frame=off — команда только группирует, рамку не рисует. label=off — без подписи. labels=off прячет все подписи. fill=off — без заливки.
+%% hide id1, id2 — убирает узлы и их связи; скрытая команда убирает свои узлы и рамку.
 %% team=<id> у блока относит его к команде; рамку рисует директива team. Без team= блок идёт отдельной группой.
 %% Связь между командами идёт отдельным маршрутом и обходит чужие рамки.
 team board [Правление]
@@ -961,7 +963,9 @@ CEO -> Ops`,
 %% The preview drops an external http(s) URL, and a browser does not open a local path.
 %% Teams: team <id> [Label] fill=#hex stroke=#hex width=px style=solid|dash|dot|dashdot radius=px padding=px frame=on|off label=on|off
 %% teams layout=auto|row|column|grid dir=lr|tb gap=px columns=N labels=on|off
+%% hide id1, id2 removes employees, teams and link types. A hidden team takes its people and their links with it.
 %% frame=off groups without a frame. label=off drops one title, labels=off drops every title. fill=off drops the fill.
+%% hide id1, id2 removes nodes and their edges; a hidden team removes its nodes and frame.
 %% team=<id> on a node puts the person in a team. The team directive draws its frame.
 %% Nesting: a slash in the id — team corp/board — puts the team inside its parent.
 %% Teams are packed next to each other; the tree inside a team stays as before.

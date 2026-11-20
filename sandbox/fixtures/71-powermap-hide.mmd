@@ -1,0 +1,23 @@
+powermap
+title Hide directive
+company Northwind
+legend on
+comms on
+avatar 40
+team corp [Group] fill=none stroke=#8a9199
+team corp/board [Board] fill=#f6f8fa stroke=#0969da
+team corp/field [Business units] stroke=#8250df
+teams layout=row gap=32
+link ally color=#1a7f37 style=solid label=ally
+link rival color=#cf222e style=dash label=rival
+hide corp/field, rival
+ceo [Alex Morgan|President] role=D influence=L team=corp/board counterpart="Grace Hall"
+cfo [Ilya Somov|Finance] role=A influence=M team=corp/board
+ops [Maria Kim|Operations] role=U influence=S team=corp/field
+head [Grace Hall|Sales lead] role=A influence=S
+ceo -> cfo
+ceo -> ops
+ceo -> head
+cfo -> ops
+cfo -ally-> ops label=budget
+head -rival-> cfo

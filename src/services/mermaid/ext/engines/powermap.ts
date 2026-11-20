@@ -38,9 +38,12 @@ import {
   layoutOrgTree,
   layoutTeamGroups,
   orderTeams,
+  parseHideLine,
   parseTeamLine,
   parseTeamsLine,
   reportingElbowRoutes,
+  hiddenTeamIds,
+  teamIsHidden,
   teamMembership,
   TEAM_UNGROUPED,
   type PlacedTreeNode,
@@ -471,6 +474,7 @@ export function parsePowermap(source: string): ExtParseResult<PowerModel> {
   const teams: PowerTeam[] = [];
   const teamIndex = new Map<string, PowerTeam>();
   const teamLayout: PowerTeamLayout = { ...DEFAULT_TEAM_LAYOUT };
+  const hidden: string[] = [];
   let seenType = false;
 
   const ensure = (id: string, label?: string, attrs?: PersonAttrs): PowerPerson => {
@@ -519,6 +523,19 @@ export function parsePowermap(source: string): ExtParseResult<PowerModel> {
       if (!flag || flag === "on") legend = true;
       else if (flag === "off") legend = false;
       else errors.push({ message: `легенда: ожидается on или off, получено «${flag}»`, line: lineNo, col: 0 });
+      continue;
+    }
+    const hideLine = parseHideLine(raw);
+    if (hideLine) {
+      if (hideLine.length === 0) {
+        errors.push({
+          message: "hide: нужен хотя бы один id — сотрудник, команда или тип связи",
+          line: lineNo,
+          col: 0,
+        });
+      } else {
+        hidden.push(...hideLine);
+      }
       continue;
     }
     if (/^comms\b/i.test(raw)) {
@@ -689,8 +706,55 @@ export function parsePowermap(source: string): ExtParseResult<PowerModel> {
 
   if (errors.length) return { ok: false, errors };
 
+  if (hidden.length > 0) {
+    const wanted = new Set(hidden.map((id) => id.toLowerCase()));
+    const hiddenTeams = hiddenTeamIds(teams, wanted);
+    const known = new Set<string>([
+      ...people.map((person) => person.id.toLowerCase()),
+      ...teams.map((team) => team.id.toLowerCase()),
+      ...links.map((link) => link.name.toLowerCase()),
+      ...influences.map((edge) => edge.name.toLowerCase()),
+      ...Object.keys(BUILTIN_LINKS),
+    ]);
+    for (const id of wanted) {
+      if (!known.has(id)) errors.push({ message: `hide: неизвестный id «${id}»`, line: 0, col: 0 });
+    }
+    const removed = new Set(
+      people
+        .filter((person) => wanted.has(person.id.toLowerCase()) || teamIsHidden(person.team, hiddenTeams))
+        .map((person) => person.id),
+    );
+    const keptPeople = people.filter((person) => !removed.has(person.id));
+    people.length = 0;
+    people.push(...keptPeople);
+    const keptReports = reports.filter((edge) => !removed.has(edge.from) && !removed.has(edge.to));
+    reports.length = 0;
+    reports.push(...keptReports);
+    const keptInfluences = influences.filter(
+      (edge) =>
+        !removed.has(edge.from) && !removed.has(edge.to) && !wanted.has(edge.name.toLowerCase()),
+    );
+    influences.length = 0;
+    influences.push(...keptInfluences);
+    const keptTeams = teams.filter((team) => !hiddenTeams.has(team.id));
+    teams.length = 0;
+    teams.push(...keptTeams);
+    // Скрытый тип связи уходит и из легенды.
+    const keptLinks = links.filter((link) => !wanted.has(link.name.toLowerCase()));
+    links.length = 0;
+    links.push(...keptLinks);
+  }
+
+  if (errors.length) return { ok: false, errors };
+
   const hasParent = new Set(reports.map((edge) => edge.to));
   const roots = people.filter((person) => !hasParent.has(person.id)).map((person) => person.id);
+  if (people.length === 0 && hidden.length > 0) {
+    return {
+      ok: false,
+      errors: [{ message: "hide: не осталось ни одного сотрудника", line: 0, col: 0 }],
+    };
+  }
   if (roots.length === 0) {
     return {
       ok: false,

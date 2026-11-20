@@ -1,0 +1,17 @@
+orgchart
+%% hide id — убирает узел вместе со связями; hide team — убирает команду, её узлы и рамку.
+title Hide directive
+team front [Front office] stroke=#0969da
+team back [Back office] stroke=#8250df
+teams layout=row gap=32
+ceo [Гендиректор|Иван Петров]
+cfo [Финдир|Ольга Орлова] team=front
+sales [Продажи|Мария Ким] team=front
+cto [Техдир|Пётр Волков] team=back
+dev [Разработка|Борис Ким] team=back
+hide back
+ceo -> cfo
+ceo -> cto
+ceo -> sales
+cfo -> sales
+cto -> dev
