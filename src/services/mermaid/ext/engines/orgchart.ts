@@ -144,7 +144,7 @@ const TEAM_ATTR_RE = /^(label|parent|fill|stroke|colour|color|radius|padding)=("
 
 /** `team front [Front Office] fill=#f6f8fa radius=12` */
 export function parseTeamLine(raw: string): { team?: TeamStyle; error?: string } | null {
-  const match = /^team\s+([\p{L}\p{N}_.\/-]+)(.*)$/iu.exec(raw.trim());
+  const match = /^team\s+([\p{L}\p{N}_./-]+)(.*)$/iu.exec(raw.trim());
   if (!match) return null;
   const id = match[1];
   let rest = match[2].trim();
@@ -174,7 +174,7 @@ export function parseTeamLine(raw: string): { team?: TeamStyle; error?: string }
       team.label = label;
     } else if (key === "parent") {
       const parent = unquote(value);
-      if (!parent || !/^[\p{L}\p{N}_.\/-]+$/u.test(parent) || parent === id) {
+      if (!parent || !/^[\p{L}\p{N}_./-]+$/u.test(parent) || parent === id) {
         return { error: `родитель команды: ожидается id другой команды, получено «${value}»` };
       }
       team.parent = parent;
@@ -860,7 +860,7 @@ function parseNodeAttrs(
       paint.hideAvatar = true;
     } else if (key === "team") {
       if (!value || value === "-" || /^(off|none)$/i.test(value)) paint.team = "";
-      else if (!/^[\p{L}\p{N}_.\/-]+$/u.test(value)) {
+      else if (!/^[\p{L}\p{N}_./-]+$/u.test(value)) {
         return { error: `команда узла: ожидается id из букв, цифр, «_» или «-», получено «${value}»` };
       } else paint.team = value;
     }

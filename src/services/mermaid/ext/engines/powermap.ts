@@ -315,7 +315,7 @@ function parsePersonAttrs(tail: string): { attrs?: PersonAttrs; error?: string }
       attrs.hideAvatar = true;
     } else if (key === "team") {
       if (!value || value === "-") attrs.team = undefined;
-      else if (!/^[\p{L}\p{N}_.\/-]+$/u.test(value)) {
+      else if (!/^[\p{L}\p{N}_./-]+$/u.test(value)) {
         return { error: `команда узла: ожидается идентификатор из букв, цифр, _ и -, получено «${value}»` };
       } else attrs.team = value;
     }
@@ -470,7 +470,7 @@ export function parsePowermap(source: string): ExtParseResult<PowerModel> {
   const linkIndex = new Map<string, PowerLinkStyle>();
   const teams: PowerTeam[] = [];
   const teamIndex = new Map<string, PowerTeam>();
-  let teamLayout: PowerTeamLayout = { ...DEFAULT_TEAM_LAYOUT };
+  const teamLayout: PowerTeamLayout = { ...DEFAULT_TEAM_LAYOUT };
   let seenType = false;
 
   const ensure = (id: string, label?: string, attrs?: PersonAttrs): PowerPerson => {
