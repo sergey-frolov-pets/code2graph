@@ -200,9 +200,8 @@ data
 %% Ключи можно сочетать и менять местами. Внутри [скобок] color= остаётся текстом.
 %% Команды: team <id> [Подпись] fill=#hex stroke=#hex width=px style=solid|dash|dot|dashdot radius=px padding=px frame=on|off label=on|off
 %% teams layout=row|column|grid dir=lr|tb gap=px labels=on|off
-%% hide id1, id2 — убирает из схемы сотрудников, команды и типы связи. Скрытая команда уносит своих людей и их связи.
+%% hide id1, id2 — убирает сотрудников и команды вместе с их связями; id команды уносит вложенные команды и их людей.
 %% frame=off — команда только группирует, рамку не рисует. label=off — без подписи. labels=off прячет все подписи. fill=off — без заливки.
-%% hide id1, id2 — убирает узлы и их связи; скрытая команда убирает свои узлы и рамку.
 %% team=<id> у блока относит его к команде; рамку рисует директива team. Без team= блок идёт отдельной группой.
 %% Связь между командами идёт отдельным маршрутом и обходит чужие рамки.
 team board [Правление]
@@ -213,8 +212,12 @@ teams layout=row gap=36
 Техдир [Технический директор\\nАнна Смирнова] color=#ddf4ff border=#0969da team=tech
 Бэкенд [Руководитель серверной разработки\\nСергей Волков] team=tech
 Фронтенд [Руководитель клиентской разработки\\nМария Соколова] team=tech
+%% Пример директивы hide: помощник объявлен, но в этой схеме скрыт.
+Помощник [Помощник генерального директора\\nАнна Белова] team=board
+hide Помощник
 Гендиректор -> Техдир
 Гендиректор -> Финдир
+Гендиректор -> Помощник
 Техдир -> Бэкенд
 Техдир -> Фронтенд
 Финдир -.-> Бэкенд`,
@@ -268,6 +271,7 @@ avatar 48
 %% Вложенность: косая черта в id — team corp/board — вкладывает команду в родителя.
 %% Команды раскладываются друг относительно друга; внутри команды дерево прежнее.
 %% Стрелка между командами обходит чужие рамки. Люди без team= идут отдельной группой без рамки.
+%% hide id1, id2 — убирает людей, команды и типы связи; скрытая команда уносит своих людей, их связи и рамку.
 title Карта влияния
 team corp [Группа «Север»] stroke=#8a9199 fill=none
 team corp/board [Совет директоров] fill=#f6f8fa stroke=#0969da
@@ -284,11 +288,15 @@ cfo [Илья Сомов|Финансы] gender=m role=D influence=L action=S at
 ops [Мария Ким|Операции] gender=f role=A influence=M action=U attitude=- counterpart="Ольга Ким" team=corp/field photo="${SAMPLE_PORTRAITS.woman68}"
 sales [Павел Морозов|Продажи] gender=m role=U influence=M action=S attitude=+ counterpart="Леа Ортега" team=corp/field photo="${SAMPLE_PORTRAITS.man75}"
 legal [Елена Волкова|Юрист] gender=f role=C influence=S action=M attitude=0 counterpart=- team=corp/field photo="${SAMPLE_PORTRAITS.woman21}"
+%% Пример директивы hide: советник объявлен, но в этой схеме скрыт.
+advisor [Олег Белов|Советник] gender=m role=C influence=S action=M attitude=0 team=corp/board
+hide advisor
 ceo -> cfo
 ceo -> ops
 ceo -> sales
 cfo -.-> ops
 cfo -> legal
+ceo -> advisor
 cfo -supporter-> ops label="бюджет"
 cfo -supporter-> sales label="общий бюджет"
 ops -enemy-> cfo
@@ -902,6 +910,7 @@ Evening : 40, 45, 65, 50, 35`,
 %% Keys combine in any order. Inside [brackets] color= stays part of the label.
 %% Teams: team <id> [Label] fill=#hex stroke=#hex width=px style=solid|dash|dot|dashdot radius=px padding=px frame=on|off label=on|off
 %% teams layout=row|column|grid dir=lr|tb gap=px labels=on|off
+%% hide id1, id2 removes nodes and teams together with their edges; a hidden team takes nested teams and their people with it.
 %% frame=off groups without a frame. label=off drops one title, labels=off drops every title. fill=off drops the fill.
 %% team=<id> on a node puts it in a team; the team directive draws the frame. Nodes without team= form a group of their own.
 %% An edge between teams takes its own route and keeps out of other team frames.
@@ -913,8 +922,12 @@ CFO [Chief financial officer\\nDavid Miller] border=#9a6700 style=dash team=boar
 CTO [Chief technology officer\\nElena Chen] color=#ddf4ff border=#0969da team=tech
 Backend [Head of backend engineering\\nSamir Patel] team=tech
 Frontend [Head of frontend engineering\\nClaire Dubois] team=tech
+%% hide example: the assistant is declared but hidden from this chart.
+Assistant [Executive assistant\\nAnna Bell] team=board
+hide Assistant
 CEO -> CTO
 CEO -> CFO
+CEO -> Assistant
 CTO -> Backend
 CTO -> Frontend
 CFO -.-> Backend`,
@@ -963,9 +976,8 @@ CEO -> Ops`,
 %% The preview drops an external http(s) URL, and a browser does not open a local path.
 %% Teams: team <id> [Label] fill=#hex stroke=#hex width=px style=solid|dash|dot|dashdot radius=px padding=px frame=on|off label=on|off
 %% teams layout=auto|row|column|grid dir=lr|tb gap=px columns=N labels=on|off
-%% hide id1, id2 removes employees, teams and link types. A hidden team takes its people and their links with it.
+%% hide id1, id2 removes people, teams and link types; a hidden team takes its people, their links and its frame with it.
 %% frame=off groups without a frame. label=off drops one title, labels=off drops every title. fill=off drops the fill.
-%% hide id1, id2 removes nodes and their edges; a hidden team removes its nodes and frame.
 %% team=<id> on a node puts the person in a team. The team directive draws its frame.
 %% Nesting: a slash in the id — team corp/board — puts the team inside its parent.
 %% Teams are packed next to each other; the tree inside a team stays as before.
@@ -986,11 +998,15 @@ cfo [Ilya Somov|Finance] gender=m role=D influence=L action=S attitude=0 counter
 ops [Maria Kim|Operations] gender=f role=A influence=M action=U attitude=- counterpart="Lea Ortiz" team=corp/field photo="${SAMPLE_PORTRAITS.woman68}"
 sales [Pavel Morozov|Sales] gender=m role=U influence=M action=S attitude=+ counterpart="Lea Ortega" team=corp/field photo="${SAMPLE_PORTRAITS.man75}"
 legal [Elena Volkova|Counsel] gender=f role=C influence=S action=M attitude=0 counterpart=- team=corp/field photo="${SAMPLE_PORTRAITS.woman21}"
+%% hide example: the advisor is declared but hidden from this chart.
+advisor [Olga Belova|Advisor] gender=f role=C influence=S action=M attitude=0 team=corp/board
+hide advisor
 ceo -> cfo
 ceo -> ops
 ceo -> sales
 cfo -.-> ops
 cfo -> legal
+ceo -> advisor
 cfo -supporter-> ops label="budget"
 cfo -supporter-> sales label="shared budget"
 ops -enemy-> cfo

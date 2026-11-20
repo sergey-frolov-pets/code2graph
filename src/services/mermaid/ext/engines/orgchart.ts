@@ -26,6 +26,7 @@ import {
   type AvatarGender,
 } from "./avatar";
 import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
+import { clipToNearEdge, repairLanePath, routeAvoiding, type LaneDir } from "./edge-lanes";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 import { isColor } from "./waterfall/directive-parsers";
 
@@ -1578,6 +1579,26 @@ interface RoutePoint2 {
   y: number;
 }
 
+/** Порядок сторон выхода: своя кромка первой, дальше вертикаль, потом бока. */
+function portDirs(point: RoutePoint2, rect: CanvasRect): LaneDir[] {
+  const eps = 1.5;
+  const primary: LaneDir | null =
+    Math.abs(point.y - rect.bottom) < eps
+      ? "down"
+      : Math.abs(point.y - rect.top) < eps
+        ? "up"
+        : Math.abs(point.x - rect.left) < eps
+          ? "left"
+          : Math.abs(point.x - rect.right) < eps
+            ? "right"
+            : null;
+  if (primary === "down") return ["down", "left", "right", "up"];
+  if (primary === "up") return ["up", "left", "right", "down"];
+  if (primary === "left") return ["left", "up", "down", "right"];
+  if (primary === "right") return ["right", "up", "down", "left"];
+  return ["down", "up", "left", "right"];
+}
+
 function pathCrosses(points: readonly RoutePoint2[], obstacles: readonly CanvasRect[]): boolean {
   for (let index = 0; index < points.length - 1; index += 1) {
     for (const rect of obstacles) {
@@ -1730,11 +1751,30 @@ function drawCrossTeamEdges(
         FONT,
       ),
     ];
-    const points = spreadCrossShelf(
+    let points = spreadCrossShelf(
       crossTeamRoute(from, to, obstacles, offsetX, offsetY),
       shelves,
       obstacles,
     );
+    // Эвристика «полка между карточками» не проверяет вертикальные ножки:
+    // карточка над точкой выхода разрезается линией. Проверяем путь целиком
+    // (включая свои карточки) и при пересечении перекладываем по сетке.
+    const fromRect = cardRect(from, offsetX, offsetY);
+    const toRect = cardRect(to, offsetX, offsetY);
+    const cardObstacles = placed
+      .filter((card) => card.node.id !== edge.from && card.node.id !== edge.to)
+      .map((card) => cardRect(card, offsetX, offsetY));
+    const fixed = repairLanePath(points, cardObstacles, [fromRect, toRect]);
+    if (fixed) points = fixed;
+    // Вход и выход — строго по ближней кромке: линия не должна прошивать карточку.
+    if (points.length >= 2) {
+      points[0] = clipToNearEdge(points[0], points[1], cardRect(from, offsetX, offsetY));
+      points[points.length - 1] = clipToNearEdge(
+        points[points.length - 1],
+        points[points.length - 2],
+        cardRect(to, offsetX, offsetY),
+      );
+    }
     const [start, ...rest] = points;
     if (!start || rest.length === 0) continue;
     if (points.length === 4) {
@@ -1789,9 +1829,12 @@ interface DrawableEdge {
   edge: { from: string; to: string; style: OrgEdgeStyle };
   from: PlacedTreeNode<{ id: string }>;
   to: PlacedTreeNode<{ id: string }>;
+  /** down — цель ниже источника, up — выше, side — ряды перекрываются. */
+  dir: "down" | "up" | "side";
   y1: number;
   y2: number;
   corridorTop: number;
+  corridorBottom: number;
   x1: number;
   x2: number;
 }
@@ -1938,6 +1981,11 @@ export interface ReportingElbow {
   y2: number;
   midY: number;
   style: OrgEdgeStyle;
+  /** Боковой выход (цикл в одном ряду): полка вертикальная, на этой x. */
+  midX?: number;
+  /** Концы связи: по ним путь проверяется на заход в карточки. */
+  from?: string;
+  to?: string;
 }
 
 /** Ломаные подчинения: те же точки, что рисует `drawReportingElbows`. */
@@ -1953,16 +2001,31 @@ export function reportingElbowRoutes<T extends { id: string }>(
     const from = byId.get(edge.from);
     const to = byId.get(edge.to);
     if (!from || !to) continue;
-    const y1 = offsetY + from.y + from.height;
-    const y2 = offsetY + to.y;
-    const corridorTop = from.depth < to.depth ? offsetY + from.y + from.rowHeight : y1;
+    const aTop = offsetY + from.y;
+    const aBottom = aTop + from.height;
+    const bTop = offsetY + to.y;
+    const bBottom = bTop + to.height;
+    // Цель ниже — обычная вилка. Цель выше или в том же ряду (цикл) выходит
+    // от ближней кромки: иначе вертикаль идёт сквозь собственную карточку.
+    const dir: DrawableEdge["dir"] =
+      bTop >= aBottom - 1 ? "down" : bBottom <= aTop + 1 ? "up" : "side";
+    const y1 = dir === "down" ? aBottom : dir === "up" ? aTop : (aTop + aBottom) / 2;
+    const y2 = dir === "down" ? bTop : dir === "up" ? bBottom : (bTop + bBottom) / 2;
+    const corridorTop =
+      dir === "down"
+        ? from.depth < to.depth
+          ? offsetY + from.y + from.rowHeight
+          : y1
+        : Math.min(y1, y2);
     drawable.push({
       edge,
       from,
       to,
+      dir,
       y1,
       y2,
       corridorTop,
+      corridorBottom: Math.max(y1, y2),
       x1: offsetX + from.x + from.width / 2,
       x2: offsetX + to.x + to.width / 2,
     });
@@ -1979,7 +2042,7 @@ export function reportingElbowRoutes<T extends { id: string }>(
 
   const corridors = new Map<string, DrawableEdge[]>();
   for (const item of drawable) {
-    const key = corridorKey(item.corridorTop, item.y2);
+    const key = corridorKey(item.corridorTop, item.corridorBottom);
     const list = corridors.get(key) ?? [];
     list.push(item);
     corridors.set(key, list);
@@ -2005,10 +2068,42 @@ export function reportingElbowRoutes<T extends { id: string }>(
 
   const elbows: ReportingElbow[] = [];
   for (const item of drawable) {
-    const { edge, y1, y2, corridorTop, x1, x2 } = item;
+    const { edge, dir, y1, y2, corridorTop, x1, x2 } = item;
     const lane = laneByEdge.get(item) ?? { lane: 0, laneCount: 1 };
-    const midY = elbowLaneY(corridorTop, y2, lane.lane, lane.laneCount);
-    elbows.push({ x1, y1, x2, y2, midY, style: edge.style });
+    if (dir === "side") {
+      const a = item.from;
+      const b = item.to;
+      const toRight = offsetX + a.x + a.width / 2 <= offsetX + b.x + b.width / 2;
+      const sx = toRight ? offsetX + a.x + a.width : offsetX + a.x;
+      const ex = toRight ? offsetX + b.x : offsetX + b.x + b.width;
+      const midX = (sx + ex) / 2 + lane.lane * ELBOW_LANE_GAP;
+      elbows.push({
+        x1: sx,
+        y1,
+        x2: ex,
+        y2,
+        midY: (y1 + y2) / 2,
+        midX,
+        style: edge.style,
+        from: edge.from,
+        to: edge.to,
+      });
+      continue;
+    }
+    const midY =
+      dir === "down"
+        ? elbowLaneY(corridorTop, y2, lane.lane, lane.laneCount)
+        : elbowLaneY(y2, y1, lane.lane, lane.laneCount);
+    elbows.push({
+      x1,
+      y1,
+      x2,
+      y2,
+      midY,
+      style: edge.style,
+      from: edge.from,
+      to: edge.to,
+    });
   }
   return elbows;
 }
@@ -2022,9 +2117,51 @@ export function drawReportingElbows<T extends { id: string }>(
   stroke: string,
   markerRef: string,
 ): void {
-  for (const elbow of reportingElbowRoutes(placed, edges, offsetX, offsetY)) {
-    const { x1, y1, x2, y2, midY } = elbow;
-    const d = `M ${fmt(x1)} ${fmt(y1)} L ${fmt(x1)} ${fmt(midY)} L ${fmt(x2)} ${fmt(midY)} L ${fmt(x2)} ${fmt(y2)}`;
+  const routes = reportingElbowRoutes(placed, edges, offsetX, offsetY).map((elbow) => {
+    const { x1, y1, x2, y2, midY, midX } = elbow;
+    const points =
+      midX === undefined
+        ? [
+            { x: x1, y: y1 },
+            { x: x1, y: midY },
+            { x: x2, y: midY },
+            { x: x2, y: y2 },
+          ]
+        : [
+            { x: x1, y: y1 },
+            { x: midX, y: y1 },
+            { x: midX, y: y2 },
+            { x: x2, y: y2 },
+          ];
+    return { points, style: elbow.style, fromId: elbow.from, toId: elbow.to };
+  });
+  // Пост-обработки двигают концы и полки по отдельности — путь мог снова
+  // оказаться внутри карточки. Проверяем и при необходимости перекладываем.
+  const boxes = placed.map((card) => ({
+    left: offsetX + card.x,
+    right: offsetX + card.x + card.width,
+    top: offsetY + card.y,
+    bottom: offsetY + card.y + card.height,
+  }));
+  const byId = new Map(placed.map((card, index) => [card.node.id, index]));
+  for (const route of routes) {
+    if (route.points.length < 2) continue;
+    const fromIndex = route.fromId === undefined ? undefined : byId.get(route.fromId);
+    const toIndex = route.toId === undefined ? undefined : byId.get(route.toId);
+    const own = [fromIndex, toIndex]
+      .filter((index): index is number => index !== undefined)
+      .map((index) => boxes[index]);
+    const others = boxes.filter((_, index) => index !== fromIndex && index !== toIndex);
+    const fixed = repairLanePath(route.points, others, own);
+    if (fixed) route.points = fixed;
+  }
+  for (const route of routes) {
+    const first = route.points[0];
+    if (!first) continue;
+    const d = `M ${fmt(first.x)} ${fmt(first.y)} ${route.points
+      .slice(1)
+      .map((point) => `L ${fmt(point.x)} ${fmt(point.y)}`)
+      .join(" ")}`;
     const attrs: Record<string, string | number> = {
       d,
       fill: "none",
@@ -2032,7 +2169,7 @@ export function drawReportingElbows<T extends { id: string }>(
       "stroke-width": 1.2,
       "marker-end": markerRef,
     };
-    if (elbow.style === "dotted") attrs["stroke-dasharray"] = "4 4";
+    if (route.style === "dotted") attrs["stroke-dasharray"] = "4 4";
     svg.path(d, attrs);
   }
 }

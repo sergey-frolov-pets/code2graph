@@ -19,6 +19,7 @@ import {
   usesInvertedMono,
 } from "../common";
 import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
+import { clipToNearEdge, repairLanePath, routeAvoiding } from "./edge-lanes";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 import { isColor } from "./waterfall/directive-parsers";
 import {
@@ -1896,14 +1897,27 @@ function clearEdgeJogs(routes: readonly { points: RoutePoint[] }[], cards: reado
 
 function flatSegments(
   routes: readonly { points: RoutePoint[] }[],
-  reports: readonly { x1: number; y1: number; x2: number; y2: number; midY: number }[],
+  reports: readonly {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    midY: number;
+    midX?: number;
+  }[],
 ): FlatSegment[] {
   const segments: FlatSegment[] = [];
   reports.forEach((elbow, index) => {
     const owner = -1 - index;
-    segments.push({ x0: elbow.x1, y0: elbow.y1, x1: elbow.x1, y1: elbow.midY, owner, host: false });
-    segments.push({ x0: elbow.x1, y0: elbow.midY, x1: elbow.x2, y1: elbow.midY, owner, host: false });
-    segments.push({ x0: elbow.x2, y0: elbow.midY, x1: elbow.x2, y1: elbow.y2, owner, host: false });
+    if (elbow.midX === undefined) {
+      segments.push({ x0: elbow.x1, y0: elbow.y1, x1: elbow.x1, y1: elbow.midY, owner, host: false });
+      segments.push({ x0: elbow.x1, y0: elbow.midY, x1: elbow.x2, y1: elbow.midY, owner, host: false });
+      segments.push({ x0: elbow.x2, y0: elbow.midY, x1: elbow.x2, y1: elbow.y2, owner, host: false });
+      return;
+    }
+    segments.push({ x0: elbow.x1, y0: elbow.y1, x1: elbow.midX, y1: elbow.y1, owner, host: false });
+    segments.push({ x0: elbow.midX, y0: elbow.y1, x1: elbow.midX, y1: elbow.y2, owner, host: false });
+    segments.push({ x0: elbow.midX, y0: elbow.y2, x1: elbow.x2, y1: elbow.y2, owner, host: false });
   });
   routes.forEach((route, owner) => {
     const host = hostSegmentIndex(route.points);
@@ -2316,6 +2330,23 @@ function routeInfluences(
           )
         : elbow;
     }
+    // Страховка: полка и ножки могли лечь внутрь собственных карточек.
+    if (points.length >= 2) {
+      points[0] = clipToNearEdge(points[0], points[1], fromBox);
+      points[points.length - 1] = clipToNearEdge(points[points.length - 1], points[points.length - 2], toBox);
+    }
+    if (pathHitsCards(points, [fromBox, toBox])) {
+      const routed = routeAvoiding(
+        { x: draft.x1, y: draft.y1 },
+        { x: draft.x2, y: draft.y2 },
+        obstacles,
+        { startBox: fromBox, endBox: toBox },
+      );
+      if (routed) {
+        const shaped = dedupePoints(routed);
+        if (!pathHitsCards(shaped, [fromBox, toBox])) points = shaped;
+      }
+    }
     const color = mono ? monoPaint(draft.link.color, invert) : draft.link.color;
     return {
       points,
@@ -2344,6 +2375,7 @@ function routeInfluences(
   );
   spreadContacts(routes, cards);
   clearEdgeJogs(routes, cards);
+  repairRoutes(routes, cards, new Map(placed.map((card, index) => [card.node.id, index])));
   const segments = flatSegments(routes, reports);
   // Плашки уже поставленных подписей: следующая не должна на них наезжать.
   const takenPlates: CardBox[] = [];
@@ -2688,7 +2720,7 @@ function routeCrossReports(
       ...foreignTeamBoxes(boxes, membership, edge.from, edge.to, offsetX, offsetY),
     ];
     const elbow = elbowPoints(x1, y1, x2, y2, midY);
-    const points = pathHitsCards(elbow, obstacles)
+    let points: RoutePoint[] = pathHitsCards(elbow, obstacles)
       ? routeOnGrid(
           { x: (fromBox.left + fromBox.right) / 2, y: (fromBox.top + fromBox.bottom) / 2 },
           { x: (toBox.left + toBox.right) / 2, y: (toBox.top + toBox.bottom) / 2 },
@@ -2698,6 +2730,22 @@ function routeCrossReports(
           index,
         )
       : elbow;
+    if (points.length >= 2) {
+      points[0] = clipToNearEdge(points[0], points[1], fromBox);
+      points[points.length - 1] = clipToNearEdge(points[points.length - 1], points[points.length - 2], toBox);
+    }
+    if (pathHitsCards(points, [fromBox, toBox])) {
+      const routed = routeAvoiding(
+        { x: x1, y: y1 },
+        { x: x2, y: y2 },
+        obstacles,
+        { startBox: fromBox, endBox: toBox },
+      );
+      if (routed) {
+        const shaped = dedupePoints(routed);
+        if (!pathHitsCards(shaped, [fromBox, toBox])) points = shaped;
+      }
+    }
     out.push({
       points,
       color: axis,
@@ -2712,6 +2760,39 @@ function routeCrossReports(
     });
   });
   return out;
+}
+
+/**
+ * Финальный ремонт уже разложенных связей. `spreadContacts` и `clearEdgeJogs`
+ * двигают концы и полки независимо, поэтому линия может вернуться в карточку
+ * (в свою или чужую). Здесь путь проверяется целиком и при пересечении
+ * перекладывается страховочным роутером.
+ */
+function repairRoutes(
+  routes: readonly { points: RoutePoint[]; fromId?: string; toId?: string }[],
+  cards: readonly CardBox[],
+  byId: ReadonlyMap<string, number>,
+): number {
+  let repaired = 0;
+  for (const route of routes) {
+    if (route.points.length < 2) continue;
+    const fromIndex = route.fromId === undefined ? undefined : byId.get(route.fromId);
+    const toIndex = route.toId === undefined ? undefined : byId.get(route.toId);
+    const fromBox = fromIndex === undefined ? undefined : cards[fromIndex];
+    const toBox = toIndex === undefined ? undefined : cards[toIndex];
+    const own = [fromBox, toBox].filter((box): box is CardBox => box !== undefined);
+    if (fromBox && toBox) {
+      route.points[0] = clipToNearEdge(route.points[0], route.points[1], fromBox);
+      const last = route.points.length - 1;
+      route.points[last] = clipToNearEdge(route.points[last], route.points[last - 1], toBox);
+    }
+    const obstacles = cards.filter((_, index) => index !== fromIndex && index !== toIndex);
+    const fixed = repairLanePath(route.points, obstacles, own);
+    if (!fixed) continue;
+    route.points = dedupePoints(fixed);
+    repaired += 1;
+  }
+  return repaired;
 }
 
 function labelAnchor(points: readonly RoutePoint[]): RoutePoint {
