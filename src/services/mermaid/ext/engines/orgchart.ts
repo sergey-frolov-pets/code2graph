@@ -26,7 +26,7 @@ import {
   type AvatarGender,
 } from "./avatar";
 import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
-import { clipToNearEdge, repairLanePath, routeAvoiding, type LaneDir } from "./edge-lanes";
+import { clipToNearEdge, repairLanePath } from "./edge-lanes";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 import { isColor } from "./waterfall/directive-parsers";
 
@@ -1577,26 +1577,6 @@ function segmentCrossesRect(a: RoutePoint2, b: RoutePoint2, rect: CanvasRect): b
 interface RoutePoint2 {
   x: number;
   y: number;
-}
-
-/** Порядок сторон выхода: своя кромка первой, дальше вертикаль, потом бока. */
-function portDirs(point: RoutePoint2, rect: CanvasRect): LaneDir[] {
-  const eps = 1.5;
-  const primary: LaneDir | null =
-    Math.abs(point.y - rect.bottom) < eps
-      ? "down"
-      : Math.abs(point.y - rect.top) < eps
-        ? "up"
-        : Math.abs(point.x - rect.left) < eps
-          ? "left"
-          : Math.abs(point.x - rect.right) < eps
-            ? "right"
-            : null;
-  if (primary === "down") return ["down", "left", "right", "up"];
-  if (primary === "up") return ["up", "left", "right", "down"];
-  if (primary === "left") return ["left", "up", "down", "right"];
-  if (primary === "right") return ["right", "up", "down", "left"];
-  return ["down", "up", "left", "right"];
 }
 
 function pathCrosses(points: readonly RoutePoint2[], obstacles: readonly CanvasRect[]): boolean {
