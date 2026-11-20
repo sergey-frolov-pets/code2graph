@@ -1117,6 +1117,28 @@ const LEGEND_PHRASES: Record<string, Record<AppLocale, string>> = {
     de: "Kontakte",
     ar: "جهات الاتصال",
   },
+  employee: {
+    en: "Employee",
+    ru: "Сотрудник",
+    es: "Empleado",
+    zh: "员工",
+    ja: "社員",
+    hi: "कर्मचारी",
+    pt: "Funcionário",
+    de: "Mitarbeiter",
+    ar: "موظف",
+  },
+  manager: {
+    en: "Manager",
+    ru: "Менеджер",
+    es: "Gerente",
+    zh: "经理",
+    ja: "上司",
+    hi: "प्रबंधक",
+    pt: "Gerente",
+    de: "Vorgesetzter",
+    ar: "المدير",
+  },
   teamless: {
     en: "No team",
     ru: "Без команды",
@@ -1672,6 +1694,17 @@ function separateInfluenceTracks(
         break;
       }
     }
+    const clashes = (y: number): boolean =>
+      others.some(
+        (obstacle) => obstacle !== track.obstacle && trackConflicts(y, x0, x1, track.label, obstacle),
+      );
+    if (clashes(next)) {
+      // В полосе между карточками места не осталось: уводим полку ниже полосы.
+      // Высота схемы считается по фактическим y маршрутов, поэтому место появится.
+      let below = band.bottom + 8;
+      for (let guard = 0; guard < 400 && clashes(below); guard += 1) below += 12;
+      next = below;
+    }
     a.y = next;
     b.y = next;
     writeObstacle(track.obstacle, next, track.label);
@@ -1685,6 +1718,116 @@ interface FlatSegment {
   y1: number;
   owner: number;
   host: boolean;
+}
+
+/** Точки входа стрелок на одной грани карточки не должны совпадать: иначе две линии сливаются. */
+const CONTACT_MIN_GAP = 14;
+
+function spreadContacts(routes: readonly { points: RoutePoint[] }[], cards: readonly CardBox[]): void {
+  interface EndRef {
+    points: RoutePoint[];
+    index: number;
+    card: CardBox;
+    side: "top" | "bottom";
+  }
+  const ends: EndRef[] = [];
+  const cardAt = (point: RoutePoint): { card: CardBox; side: "top" | "bottom" } | undefined => {
+    for (const card of cards) {
+      const insideX = point.x >= card.left - 0.6 && point.x <= card.right + 0.6;
+      if (!insideX) continue;
+      if (Math.abs(point.y - card.top) < 0.8) return { card, side: "top" };
+      if (Math.abs(point.y - card.bottom) < 0.8) return { card, side: "bottom" };
+    }
+    return undefined;
+  };
+  for (const route of routes) {
+    if (route.points.length < 2) continue;
+    const first = route.points[0];
+    const head = cardAt(first);
+    if (head) ends.push({ points: route.points, index: 0, card: head.card, side: head.side });
+    const lastIndex = route.points.length - 1;
+    const tail = cardAt(route.points[lastIndex]);
+    if (tail) ends.push({ points: route.points, index: lastIndex, card: tail.card, side: tail.side });
+  }
+  const byKey = new Map<string, EndRef[]>();
+  for (const end of ends) {
+    const key = `${end.card.left}|${end.card.top}|${end.side}`;
+    byKey.set(key, [...(byKey.get(key) ?? []), end]);
+  }
+  for (const group of byKey.values()) {
+    if (group.length < 2) continue;
+    const card = group[0].card;
+    const inset = Math.min(12, Math.max(4, (card.right - card.left) * 0.16));
+    const left = card.left + inset;
+    const right = card.right - inset;
+    const sorted = [...group].sort((a, b) => a.points[a.index].x - b.points[b.index].x);
+    // Если точек больше, чем влезает с шагом, шаг ужимаем — но не меньше 8 px.
+    const step = Math.max(8, Math.min(CONTACT_MIN_GAP, (right - left) / Math.max(1, group.length - 1)));
+    const span = step * (sorted.length - 1);
+    const average = sorted.reduce((sum, end) => sum + end.points[end.index].x, 0) / sorted.length;
+    let cursor = Math.min(right - span, Math.max(left, average - span / 2));
+    for (const end of sorted) {
+      const point = end.points[end.index];
+      const nextX = Math.min(right, Math.max(left, cursor));
+      const neighbour = end.index === 0 ? end.points[1] : end.points[end.points.length - 2];
+      if (neighbour && Math.abs(neighbour.x - point.x) < 0.6) neighbour.x = nextX;
+      point.x = nextX;
+      cursor += step;
+    }
+  }
+}
+
+/** Линия не должна идти по самой грани карточки: отступ вниз/вверх на 8 px. */
+const CONTACT_JOG = 8;
+
+function clearEdgeJogs(routes: readonly { points: RoutePoint[] }[], cards: readonly CardBox[]): void {
+  const edgeAt = (point: RoutePoint): { side: "top" | "bottom"; key: string } | undefined => {
+    for (const card of cards) {
+      if (point.x < card.left - 0.6 || point.x > card.right + 0.6) continue;
+      const key = `${card.left}|${card.top}`;
+      if (Math.abs(point.y - card.top) < 0.8) return { side: "top", key };
+      if (Math.abs(point.y - card.bottom) < 0.8) return { side: "bottom", key };
+    }
+    return undefined;
+  };
+  /** Отступ растёт для каждой следующей стрелки с той же грани: иначе отступы совпадают. */
+  const used = new Map<string, number>();
+  const pushAway = (points: RoutePoint[], edge: "top" | "bottom", key: string): void => {
+    const seen = used.get(key) ?? 0;
+    used.set(key, seen + 1);
+    const distance = CONTACT_JOG + seen * 6;
+    const shift = edge === "bottom" ? distance : -distance;
+    const y = points[0].y;
+    // Начало: короткий спуск/подъём, затем смещаем все точки, лежавшие на грани.
+    const onEdge: number[] = [];
+    for (let index = 0; index < points.length; index += 1) {
+      if (Math.abs(points[index].y - y) < 0.4) onEdge.push(index);
+      else break;
+    }
+    points.splice(1, 0, { x: points[0].x, y: y + shift });
+    for (const index of onEdge) {
+      if (index === 0) continue;
+      points[index + 1].y = y + shift;
+    }
+  };
+  for (const route of routes) {
+    const points = route.points;
+    if (points.length < 3) continue;
+    const firstEdge = edgeAt(points[0]);
+    if (firstEdge && Math.abs(points[1].y - points[0].y) < 0.4) {
+      pushAway(points, firstEdge.side, `${firstEdge.key}|head`);
+    }
+    const lastIndex = points.length - 1;
+    const lastEdge = edgeAt(points[lastIndex]);
+    if (lastEdge && Math.abs(points[lastIndex - 1].y - points[lastIndex].y) < 0.4) {
+      // Хвост разворачиваем зеркально: работаем с копией, затем переворачиваем обратно.
+      const reversed = [...points].reverse().map((point) => ({ x: point.x, y: point.y }));
+      pushAway(reversed, lastEdge.side, `${lastEdge.key}|tail`);
+      reversed.reverse();
+      points.length = 0;
+      points.push(...reversed);
+    }
+  }
 }
 
 function flatSegments(
@@ -2078,8 +2221,12 @@ function routeInfluences(
       ...(teams ? foreignTeamBoxes(teams.boxes, teams.membership, draft.from.node.id, draft.to.node.id, offsetX, offsetY) : []),
     ];
     // Полка ищет свободную горизонталь в коридоре: лучше сдвинуть её, чем обходить сбоку.
-    const corridorLo = Math.min(draft.y1, draft.y2) + 6;
-    const corridorHi = Math.max(draft.y1, draft.y2) - 6;
+    // Коридор считаем по зазору между карточками, а не по концам стрелки:
+    // у связей одного уровня y1 и y2 совпадают, и прежняя формула давала
+    // инвертированный диапазон — полка могла лечь внутрь карточки.
+    const corridorLo = Math.min(draft.gapTop, draft.gapBottom) + 6;
+    let corridorHi = Math.max(draft.gapTop, draft.gapBottom) - 6;
+    if (corridorHi - corridorLo < 12) corridorHi = corridorLo + 24;
     const shelfLo = Math.min(draft.x1, draft.x2);
     const shelfHi = Math.max(draft.x1, draft.x2);
     const shelves = freeBands(corridorLo, corridorHi, shelfLo, shelfHi, obstacles)
@@ -2131,6 +2278,8 @@ function routeInfluences(
     cards,
     teams ? { boxes: teams.boxes, membership: teams.membership, offsetX, offsetY } : undefined,
   );
+  spreadContacts(routes, cards);
+  clearEdgeJogs(routes, cards);
   const segments = flatSegments(routes, reports);
   // Плашки уже поставленных подписей: следующая не должна на них наезжать.
   const takenPlates: CardBox[] = [];
@@ -2548,9 +2697,14 @@ const COMMS_PAD_Y = 6;
 const COMMS_CAPTION_FONT = 11;
 const COMMS_CAPTION_LINE = 18;
 const COMMS_GROUP_GAP = 14;
+/** Заголовок блока таблиц: «Компания …» — над первой таблицей, не колонка. */
+const COMMS_TITLE_FONT = 13;
+const COMMS_TITLE_LINE = 20;
 
 interface CommsRow {
   name: string;
+  /** Прямые руководители из дерева подчинения. */
+  manager: string[];
   contacts: string[];
   links: string[];
 }
@@ -2591,6 +2745,19 @@ function linkCaption(model: PowerModel, name: string): string {
 
 function personName(model: PowerModel, id: string): string {
   return model.people.find((person) => person.id === id)?.name ?? id;
+}
+
+/** Прямые руководители: стрелка подчинения идёт от руководителя, поэтому to — подчинённый. */
+function managerNames(model: PowerModel): Map<string, string[]> {
+  const map = new Map<string, string[]>();
+  for (const edge of model.reports) {
+    const names = map.get(edge.to) ?? [];
+    const name = personName(model, edge.from);
+    const key = name.toLocaleLowerCase("ru");
+    if (!names.some((known) => known.toLocaleLowerCase("ru") === key)) names.push(name);
+    map.set(edge.to, names);
+  }
+  return map;
 }
 
 /** Команды для таблицы: порядок объявления, подписи и принадлежность людей. */
@@ -2652,9 +2819,9 @@ function linkLines(
 interface CommsTable {
   width: number;
   height: number;
-  headers: readonly [string, string, string];
+  headers: readonly [string, string, string, string];
   columns: number[];
-  pads: readonly [number, number, number];
+  pads: readonly [number, number, number, number];
   rows: CommsRow[];
   headerHeight: number;
   rowHeights: number[];
@@ -2669,21 +2836,28 @@ interface CommsGroup {
 interface CommsBlock {
   width: number;
   height: number;
+  /** Заголовок таблицы: «Компания …» — не колонка. */
+  title: string;
   groups: CommsGroup[];
 }
 
 /** Заголовок жирный, measureText этого не видит. Колонка связей ещё и с запасом, чтобы текст не обрезался. */
 const COMMS_HEADER_BOLD = 1.12;
 const COMMS_LINK_SLACK = 1.15;
-const COMMS_PADS = [16, 8, 8] as const;
+const COMMS_PADS = [16, 12, 8, 8] as const;
 
 function measureCommsTable(
   rows: CommsRow[],
-  headers: readonly [string, string, string],
+  headers: readonly [string, string, string, string],
 ): CommsTable {
-  const cells = (row: CommsRow): string[][] => [[row.name], row.contacts, row.links];
+  const cells = (row: CommsRow): string[][] => [
+    [row.name],
+    row.manager,
+    row.contacts,
+    row.links,
+  ];
   const columns = headers.map((header, index) => {
-    const slack = index === 2 ? COMMS_LINK_SLACK : 1;
+    const slack = index === 3 ? COMMS_LINK_SLACK : 1;
     const widest = rows.reduce((max, row) => {
       const lines = cells(row)[index];
       return Math.max(max, ...lines.map((line) => measureText(line, COMMS_FONT) * slack), 0);
@@ -2692,7 +2866,7 @@ function measureCommsTable(
   });
   const headerHeight = COMMS_LINE + COMMS_PAD_Y * 2;
   const rowHeights = rows.map((row) => {
-    const lines = Math.max(1, row.contacts.length, row.links.length);
+    const lines = Math.max(1, row.manager.length, row.contacts.length, row.links.length);
     return lines * COMMS_LINE + COMMS_PAD_Y * 2;
   });
   return {
@@ -2710,16 +2884,20 @@ function measureCommsTable(
 function measureComms(model: PowerModel, locale: AppLocale): CommsBlock {
   const companyWord = legendText("companyWord", locale);
   const companyName = model.company?.trim();
+  const title = companyName ? `${companyWord} ${companyName}` : companyWord;
   const headers = [
-    companyName ? `${companyWord} ${companyName}` : companyWord,
+    legendText("employee", locale),
+    legendText("manager", locale),
     legendText("contacts", locale),
     legendText("links", locale),
   ] as const;
   const teams = commsTeams(model);
+  const managers = managerNames(model);
   const entries = model.people.map((person) => ({
     id: person.id,
     row: {
       name: person.name,
+      manager: managers.get(person.id) ?? ["-"],
       contacts: contactLines(person.counterpart),
       links: linkLines(model, person.id, locale, teams),
     },
@@ -2748,8 +2926,9 @@ function measureComms(model: PowerModel, locale: AppLocale): CommsBlock {
     caption: group.caption,
     table: measureCommsTable(group.rows, headers),
   }));
-  let height = 0;
-  let width = 0;
+  let height = COMMS_TITLE_LINE;
+  const titleWidth = measureText(title, COMMS_TITLE_FONT) * COMMS_HEADER_BOLD;
+  let width = titleWidth;
   measured.forEach((group, index) => {
     if (index > 0) height += COMMS_GROUP_GAP;
     if (group.caption) height += COMMS_CAPTION_LINE;
@@ -2759,7 +2938,7 @@ function measureComms(model: PowerModel, locale: AppLocale): CommsBlock {
       : 0;
     width = Math.max(width, group.table.width, captionWidth);
   });
-  return { width, height, groups: measured };
+  return { width, height, title, groups: measured };
 }
 
 function commsHeaderFill(dark: boolean): string {
@@ -2805,7 +2984,7 @@ function drawCommsTable(
   let rowY = y + table.headerHeight;
   svg.line(x, rowY, x + table.width, rowY, { stroke: CHIP_STROKE, "stroke-width": 1 });
   table.rows.forEach((row, rowIndex) => {
-    const groups = [[row.name], row.contacts, row.links];
+    const groups = [[row.name], row.manager, row.contacts, row.links];
     let cellX = x;
     groups.forEach((lines, index) => {
       lines.forEach((line, lineIndex) => {
@@ -2835,6 +3014,16 @@ function drawComms(
   dark: boolean,
 ): void {
   let cursorY = y;
+  if (block.title) {
+    svg.text(x, cursorY + 14, block.title, {
+      "font-size": COMMS_TITLE_FONT,
+      "font-weight": 700,
+      fill: fg,
+      "text-anchor": "start",
+      "data-comms-title": "powermap",
+    });
+    cursorY += COMMS_TITLE_LINE;
+  }
   block.groups.forEach((group, index) => {
     if (index > 0) cursorY += COMMS_GROUP_GAP;
     if (group.caption) {

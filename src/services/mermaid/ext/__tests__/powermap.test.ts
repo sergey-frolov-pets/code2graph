@@ -380,7 +380,7 @@ A -> B`), {});
     expect(new Set(ys).size).toBeGreaterThan(1);
   });
 
-  it("заголовок таблицы светлый, с полями, а колонка связей шире текста", () => {
+  it("компания — заголовок таблицы, а первая колонка — сотрудник", () => {
     const caption = "↔ Илья Сомов: ally — союзник — бюджет";
     const svg = powermapEngine.render(modelOf(`powermap
 company Север
@@ -392,16 +392,45 @@ link ally color=#1a7f37 style=solid label=союзник
 Илья [Илья Сомов]
 Анна <-ally-> Илья label=бюджет`), {});
     expect(svg).toContain('data-comms-header="powermap"');
+    expect(svg).toContain('data-comms-title="powermap"');
+    expect(svg).toContain(">Компания Север</text>");
+    expect(svg).toContain(">Сотрудник</text>");
+    expect(svg).toContain(">Менеджер</text>");
+    expect(svg).not.toContain(">Компания Север</text></text>");
     expect(svg).toContain('fill="#f6f8fa"');
     expect(svg).toContain('font-weight="700"');
     const table = /<rect\b([^>]*data-comms="powermap"[^>]*)\/>/.exec(svg)?.[1] ?? "";
     const attr = (name: string) => Number(new RegExp(`(?:^|\\s)${name}="([^"]+)"`).exec(table)?.[1]);
     const tableX = attr("x");
     const tableWidth = attr("width");
-    const headerX = Number(/<text\b[^>]* x="([^"]+)"[^>]*>Компания Север<\/text>/.exec(svg)?.[1]);
+    const headerX = Number(/<text\b[^>]* x="([^"]+)"[^>]*>Сотрудник<\/text>/.exec(svg)?.[1]);
     expect(headerX - tableX).toBeGreaterThanOrEqual(16);
     const linkX = Number(new RegExp(`<text\\b[^>]* x="([^"]+)"[^>]*>${caption}</text>`).exec(svg)?.[1]);
     expect(tableX + tableWidth).toBeGreaterThan(linkX + caption.length * 5);
+  });
+
+  it("в таблице коммс есть менеджер из дерева подчинения", () => {
+    const svg = powermapEngine.render(modelOf(`powermap
+company Север
+lang ru
+comms on
+legend off
+Анна [Анна Орлова]
+Илья [Илья Сомов]
+Анна -> Илья`), {});
+    expect(svg).toContain(">Менеджер</text>");
+    expect(svg).toContain(">Анна Орлова</text>");
+  });
+
+  it("рамка команды по умолчанию сплошная", () => {
+    const svg = powermapEngine.render(modelOf(`powermap
+team front [Фронт]
+Анна [Анна Орлова] team=front
+Борис [Борис Ким] team=front
+Анна -> Борис`), {});
+    const frame = /<rect\b([^>]*data-team="powermap"[^>]*)\/>/.exec(svg)?.[1] ?? "";
+    expect(frame).not.toBe("");
+    expect(frame).not.toContain("stroke-dasharray");
   });
 
   it("переводит легенду на язык диаграммы, иначе на язык интерфейса", () => {

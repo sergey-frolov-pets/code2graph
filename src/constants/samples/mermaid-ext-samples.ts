@@ -248,7 +248,7 @@ avatar 48
 %% Через уровень стрелка обходит карточки между ними: ceo -coach-> legal
 %% Легенда рисуется под схемой: шкалы и цвет контрагента. Из линий в ней только стили link.
 %% supporter (зелёная сплошная) и enemy (красный пунктир) есть, пока строка link их не заменит.
-%% comms on — таблица под легендой. Колонки: «Компания …», «Контакты», «Связи».
+%% comms on — таблица под легендой. Заголовок таблицы — «Компания …», колонки: «Сотрудник», «Менеджер», «Контакты», «Связи».
 %% В ячейке связи — направление и второй человек, затем тип и подпись.
 %% counterpart — люди другой компании. Запятая или точка с запятой даёт отдельные строки, повторы схлопываются.
 %% Основной photo= — ссылка. Файл рядом со схемой или полный путь:
@@ -263,11 +263,13 @@ avatar 48
 %% teams layout=auto|row|column|grid dir=lr|tb gap=px columns=N labels=on|off
 %% frame=off — команда только группирует, рамки нет. label=off — подпись не рисуется. labels=off прячет все подписи.
 %% team=<id> у узла относит человека к команде. Свою рамку команда получает из директивы team.
+%% Вложенность: косая черта в id — team corp/board — вкладывает команду в родителя.
 %% Команды раскладываются друг относительно друга; внутри команды дерево прежнее.
 %% Стрелка между командами обходит чужие рамки. Люди без team= идут отдельной группой без рамки.
 title Карта влияния
-team board [Совет директоров] fill=#f6f8fa stroke=#0969da
-team field [Подразделения] stroke=#8250df
+team corp [Группа «Север»] stroke=#8a9199 fill=none
+team corp/board [Совет директоров] fill=#f6f8fa stroke=#0969da
+team corp/field [Подразделения] stroke=#8250df
 teams layout=row gap=28
 company "Север"
 avatar 48
@@ -275,11 +277,11 @@ comms on
 link supporter color=#1a7f37 style=solid label="союзник"
 link coach color=#bf8700 style=dot label="наставник"
 link enemy color=#cf222e style=dash label="противник"
-ceo [Анна Орлова|Президент] gender=f role=E influence=L action=M attitude=+ counterpart=- team=board photo="${SAMPLE_PORTRAITS.woman44}"
-cfo [Илья Сомов|Финансы] gender=m role=D influence=L action=S attitude=0 counterpart="Пётр Белов, Ольга Ким" team=board photo="${SAMPLE_PORTRAITS.man32}"
-ops [Мария Ким|Операции] gender=f role=A influence=M action=U attitude=- counterpart="Ольга Ким" team=field photo="${SAMPLE_PORTRAITS.woman68}"
-sales [Павел Морозов|Продажи] gender=m role=U influence=M action=S attitude=+ counterpart="Леа Ортега" team=field photo="${SAMPLE_PORTRAITS.man75}"
-legal [Елена Волкова|Юрист] gender=f role=C influence=S action=M attitude=0 counterpart=- team=field photo="${SAMPLE_PORTRAITS.woman21}"
+ceo [Анна Орлова|Президент] gender=f role=E influence=L action=M attitude=+ counterpart=- team=corp/board photo="${SAMPLE_PORTRAITS.woman44}"
+cfo [Илья Сомов|Финансы] gender=m role=D influence=L action=S attitude=0 counterpart="Пётр Белов, Ольга Ким" team=corp/board photo="${SAMPLE_PORTRAITS.man32}"
+ops [Мария Ким|Операции] gender=f role=A influence=M action=U attitude=- counterpart="Ольга Ким" team=corp/field photo="${SAMPLE_PORTRAITS.woman68}"
+sales [Павел Морозов|Продажи] gender=m role=U influence=M action=S attitude=+ counterpart="Леа Ортега" team=corp/field photo="${SAMPLE_PORTRAITS.man75}"
+legal [Елена Волкова|Юрист] gender=f role=C influence=S action=M attitude=0 counterpart=- team=corp/field photo="${SAMPLE_PORTRAITS.woman21}"
 ceo -> cfo
 ceo -> ops
 ceo -> sales
@@ -946,7 +948,7 @@ CEO -> Ops`,
 %% A link that skips a level goes around the cards in between: ceo -coach-> legal
 %% The legend sits under the chart: the scales and the counterpart color. Line samples are only link styles.
 %% supporter (green solid) and enemy (red dash) exist until a link line replaces them.
-%% comms on draws the table under the legend. Headers: Company …, Contacts, Links.
+%% comms on draws the table under the legend. The table title is Company …, the columns are Employee, Manager, Contacts, Links.
 %% A link cell names the direction and the other person, then the type and label.
 %% counterpart names people at the other company. A comma or semicolon starts a new row, and duplicates collapse.
 %% The usual photo= is a link. A file next to the chart, or a full path:
@@ -961,11 +963,13 @@ CEO -> Ops`,
 %% teams layout=auto|row|column|grid dir=lr|tb gap=px columns=N labels=on|off
 %% frame=off groups without a frame. label=off drops one title, labels=off drops every title. fill=off drops the fill.
 %% team=<id> on a node puts the person in a team. The team directive draws its frame.
+%% Nesting: a slash in the id — team corp/board — puts the team inside its parent.
 %% Teams are packed next to each other; the tree inside a team stays as before.
 %% An arrow between teams goes around foreign frames. People without team= form a frame-less group.
 title Power Map
-team board [Board] fill=#f6f8fa stroke=#0969da
-team field [Business units] stroke=#8250df
+team corp [Northwind group] stroke=#8a9199 fill=none
+team corp/board [Board] fill=#f6f8fa stroke=#0969da
+team corp/field [Business units] stroke=#8250df
 teams layout=row gap=28
 company "Northwind"
 avatar 48
@@ -973,11 +977,11 @@ comms on
 link supporter color=#1a7f37 style=solid label="ally"
 link coach color=#bf8700 style=dot label="coach"
 link enemy color=#cf222e style=dash label="opponent"
-ceo [Anna Orlova|President] gender=f role=E influence=L action=M attitude=+ counterpart=- team=board photo="${SAMPLE_PORTRAITS.woman44}"
-cfo [Ilya Somov|Finance] gender=m role=D influence=L action=S attitude=0 counterpart="Sam Reed, Lea Ortiz" team=board photo="${SAMPLE_PORTRAITS.man32}"
-ops [Maria Kim|Operations] gender=f role=A influence=M action=U attitude=- counterpart="Lea Ortiz" team=field photo="${SAMPLE_PORTRAITS.woman68}"
-sales [Pavel Morozov|Sales] gender=m role=U influence=M action=S attitude=+ counterpart="Lea Ortega" team=field photo="${SAMPLE_PORTRAITS.man75}"
-legal [Elena Volkova|Counsel] gender=f role=C influence=S action=M attitude=0 counterpart=- team=field photo="${SAMPLE_PORTRAITS.woman21}"
+ceo [Anna Orlova|President] gender=f role=E influence=L action=M attitude=+ counterpart=- team=corp/board photo="${SAMPLE_PORTRAITS.woman44}"
+cfo [Ilya Somov|Finance] gender=m role=D influence=L action=S attitude=0 counterpart="Sam Reed, Lea Ortiz" team=corp/board photo="${SAMPLE_PORTRAITS.man32}"
+ops [Maria Kim|Operations] gender=f role=A influence=M action=U attitude=- counterpart="Lea Ortiz" team=corp/field photo="${SAMPLE_PORTRAITS.woman68}"
+sales [Pavel Morozov|Sales] gender=m role=U influence=M action=S attitude=+ counterpart="Lea Ortega" team=corp/field photo="${SAMPLE_PORTRAITS.man75}"
+legal [Elena Volkova|Counsel] gender=f role=C influence=S action=M attitude=0 counterpart=- team=corp/field photo="${SAMPLE_PORTRAITS.woman21}"
 ceo -> cfo
 ceo -> ops
 ceo -> sales

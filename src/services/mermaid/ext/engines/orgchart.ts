@@ -107,7 +107,7 @@ export interface TeamStyle {
   padding: number;
   /** Толщина рамки в px (0.5–4). По умолчанию 1.2. */
   strokeWidth?: number;
-  /** Штрих рамки. По умолчанию dash — прежний вид. */
+  /** Штрих рамки. По умолчанию solid. */
   dash?: TeamDash;
   /** false — рамки нет, команда только группирует. По умолчанию true. */
   frame?: boolean;
@@ -633,7 +633,7 @@ export function drawTeamBoxes(
       const fill = mono ? monoPaint(box.fill ?? palette.bg, invert) : (box.fill ?? palette.bg);
       const stroke = mono ? monoPaint(box.stroke ?? palette.axis, invert) : (box.stroke ?? palette.axis);
       const noFill = box.fill === "none";
-      const dash = TEAM_DASH_PATTERN[box.dash ?? "dash"];
+      const dash = TEAM_DASH_PATTERN[box.dash ?? "solid"];
       svg.rect(x, y, box.width, box.height, {
         rx: box.radius,
         ry: box.radius,
