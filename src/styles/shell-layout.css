@@ -228,7 +228,14 @@
 }
 
 .app-main.app-main--ai-chat {
-  padding-bottom: 0;
+  padding: 0;
+  gap: 0;
+}
+
+/* Чат без внешней обвязки: панель чата занимает свою область целиком,
+   без отступа 16 px от окна и 12 px внутри panel-body. */
+.app-main--ai-chat .editor-panel .panel-body {
+  padding: 0;
 }
 
 .preview-panel .panel-body {
