@@ -28,3 +28,6 @@ sandbox/.cache-golden/
 sandbox/golden.bak/
 sandbox/.cache-preflight/
 sandbox/.cache-refresh/
+
+# черновая папка разработки
+tmp/
