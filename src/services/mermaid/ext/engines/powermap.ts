@@ -1851,6 +1851,253 @@ function spreadContacts(routes: readonly { points: RoutePoint[] }[], cards: read
 const CONTACT_JOG = 8;
 
 /** Вертикаль у кромки не должна идти вплотную к линии подчинения. */
+const SHELF_GAP = 8;
+const SHELF_BORDER = 10;
+
+/** Полка остаётся с внешней стороны порта и не лежит на кромке или на чужой полке. */
+function restackShelves(
+  routes: readonly { points: RoutePoint[] }[],
+  reports: readonly { x1: number; y1: number; x2: number; y2: number; midY: number; midX?: number }[],
+  cards: readonly CardBox[],
+  frames: readonly CardBox[],
+): void {
+  const taken: { y: number; x0: number; x1: number }[] = [];
+  for (const report of reports) {
+    if (report.midX === undefined) {
+      taken.push({
+        y: report.midY,
+        x0: Math.min(report.x1, report.x2),
+        x1: Math.max(report.x1, report.x2),
+      });
+    }
+  }
+  const verticalHits = (x: number, y0: number, y1: number): boolean => {
+    const lo = Math.min(y0, y1);
+    const hi = Math.max(y0, y1);
+    return cards.some((box) => {
+      if (x <= box.left + 0.5 || x >= box.right - 0.5) return false;
+      return hi > box.top + 1 && lo < box.bottom - 1;
+    });
+  };
+  const shelfHits = (y: number, x0: number, x1: number): boolean => {
+    const onCard = cards.some(
+      (box) =>
+        x1 > box.left + 2 &&
+        x0 < box.right - 2 &&
+        y > box.top - SHELF_BORDER &&
+        y < box.bottom + SHELF_BORDER,
+    );
+    const onFrame = frames.some((box) => {
+      if (x1 <= box.left + 2 || x0 >= box.right - 2) return false;
+      return Math.abs(y - box.top) < SHELF_BORDER || Math.abs(y - box.bottom) < SHELF_BORDER;
+    });
+    return (
+      onCard ||
+      onFrame ||
+      taken.some((item) => Math.abs(item.y - y) < SHELF_GAP && x1 > item.x0 + 2 && x0 < item.x1 - 2)
+    );
+  };
+
+  const shelves: { points: RoutePoint[]; index: number }[] = [];
+  for (const route of routes) {
+    for (let index = 0; index < route.points.length - 1; index += 1) {
+      const a = route.points[index];
+      const b = route.points[index + 1];
+      if (Math.abs(a.y - b.y) > 0.5 || Math.abs(a.x - b.x) < 8) continue;
+      shelves.push({ points: route.points, index });
+    }
+  }
+  shelves.sort((left, right) => {
+    const span = (shelf: { points: RoutePoint[]; index: number }) =>
+      Math.abs(shelf.points[shelf.index].x - shelf.points[shelf.index + 1].x);
+    return span(right) - span(left) || left.points[left.index].y - right.points[right.index].y;
+  });
+  for (const shelf of shelves) {
+    const points = shelf.points;
+    const index = shelf.index;
+    const a = points[index];
+    const b = points[index + 1];
+    const x0 = Math.min(a.x, b.x);
+    const x1 = Math.max(a.x, b.x);
+    const fits = (y: number): boolean => {
+      const prevOk = (y: number): boolean =>
+        index === 0 ||
+        verticalHits(a.x, points[index - 1].y, y) === verticalHits(a.x, points[index - 1].y, a.y) ||
+        !verticalHits(a.x, points[index - 1].y, y);
+      const nextOk = (y: number): boolean =>
+        index + 1 >= points.length - 1 ||
+        !verticalHits(b.x, y, points[index + 2].y) ||
+        verticalHits(b.x, a.y, points[index + 2].y);
+      if (shelfHits(y, x0, x1)) return false;
+      return prevOk(y) && nextOk(y);
+    };
+    let next = a.y;
+    if (!fits(next)) {
+      const seek = (y0: number): number | undefined => {
+        for (let step = 0; step <= 420; step += SHELF_GAP) {
+          for (const y of step === 0 ? [y0] : [y0 + step, y0 - step]) {
+            if (shelfHits(y, x0, x1)) continue;
+            if (index > 0 && verticalHits(a.x, points[index - 1].y, y) && !verticalHits(a.x, points[index - 1].y, a.y)) continue;
+            if (index + 1 < points.length - 1 && verticalHits(b.x, y, points[index + 2].y) && !verticalHits(b.x, a.y, points[index + 2].y)) continue;
+            return y;
+          }
+        }
+        return undefined;
+      };
+      const direct = seek(a.y);
+      if (direct === undefined) {
+        taken.push({ y: a.y, x0, x1 });
+        continue;
+      }
+      next = direct;
+    }
+    a.y = next;
+    b.y = next;
+    taken.push({ y: next, x0: Math.min(a.x, b.x), x1: Math.max(a.x, b.x) });
+  }
+}
+
+function spreadVerticals(
+  routes: readonly { points: RoutePoint[] }[],
+  reports: readonly { x1: number; y1: number; x2: number; y2: number; midY: number; midX?: number }[],
+  cards: readonly CardBox[],
+): void {
+  const placed: { x: number; y0: number; y1: number }[] = [];
+  for (const report of reports) {
+    if (report.midX === undefined) {
+      placed.push({ x: report.x1, y0: Math.min(report.y1, report.midY), y1: Math.max(report.y1, report.midY) });
+      placed.push({ x: report.x2, y0: Math.min(report.y2, report.midY), y1: Math.max(report.y2, report.midY) });
+    } else {
+      placed.push({ x: report.midX, y0: Math.min(report.y1, report.y2), y1: Math.max(report.y1, report.y2) });
+    }
+  }
+  const segments: { points: RoutePoint[]; index: number }[] = [];
+  for (const route of routes) {
+    for (let index = 0; index < route.points.length - 1; index += 1) {
+      const a = route.points[index];
+      const b = route.points[index + 1];
+      if (Math.abs(a.x - b.x) > 0.5 || Math.abs(a.y - b.y) < 8) continue;
+      segments.push({ points: route.points, index });
+    }
+  }
+  segments.sort((left, right) => right.points[right.index].y - left.points[left.index].y);
+  const crossesCard = (x: number, y0: number, y1: number): boolean =>
+    cards.some(
+      (box) => x > box.left + 0.5 && x < box.right - 0.5 && y1 > box.top + 0.5 && y0 < box.bottom - 0.5,
+    );
+  const hostOf = (x: number, y: number): CardBox | undefined =>
+    cards.find(
+      (box) =>
+        x >= box.left - 1 &&
+        x <= box.right + 1 &&
+        (Math.abs(y - box.top) < 1.5 || Math.abs(y - box.bottom) < 1.5),
+    );
+  for (const segment of segments) {
+    const a = segment.points[segment.index];
+    const b = segment.points[segment.index + 1];
+    const y0 = Math.min(a.y, b.y);
+    const y1 = Math.max(a.y, b.y);
+    const hostA = hostOf(a.x, a.y);
+    const hostB = hostOf(b.x, b.y);
+    const candidates = [0, 1, -1, 2, -2, 3, -3, 4, -4].map((step) => a.x + step * SHELF_GAP);
+    const shelfCrosses = (x: number): boolean => {
+      const prev = segment.index > 0 ? segment.points[segment.index - 1] : undefined;
+      const next = segment.points[segment.index + 2];
+      const spans = [prev ? { y: a.y, x0: Math.min(prev.x, x), x1: Math.max(prev.x, x) } : undefined, next ? { y: b.y, x0: Math.min(next.x, x), x1: Math.max(next.x, x) } : undefined];
+      return spans.some(
+        (span) =>
+          span !== undefined &&
+          cards.some(
+            (box) =>
+              span.y > box.top + 0.5 &&
+              span.y < box.bottom - 0.5 &&
+              span.x1 > box.left + 0.5 &&
+              span.x0 < box.right - 0.5,
+          ),
+      );
+    };
+    const next = candidates.find((x) => {
+      if (placed.some((item) => Math.abs(item.x - x) < SHELF_GAP && y1 > item.y0 + 2 && y0 < item.y1 - 2)) return false;
+      if (crossesCard(x, y0, y1) || shelfCrosses(x)) return false;
+      if (hostA && (x < hostA.left + 8 || x > hostA.right - 8)) return false;
+      if (hostB && (x < hostB.left + 8 || x > hostB.right - 8)) return false;
+      return true;
+    });
+    if (next === undefined) {
+      placed.push({ x: a.x, y0, y1 });
+      continue;
+    }
+    a.x = next;
+    b.x = next;
+    placed.push({ x: next, y0, y1 });
+  }
+}
+
+function separateSameShelves(routes: readonly { points: RoutePoint[] }[], cards: readonly CardBox[]): void {
+  const shelves: { points: RoutePoint[]; index: number }[] = [];
+  for (const route of routes) {
+    for (let index = 0; index < route.points.length - 1; index += 1) {
+      const a = route.points[index];
+      const b = route.points[index + 1];
+      if (Math.abs(a.y - b.y) > 0.5 || Math.abs(a.x - b.x) < 8) continue;
+      shelves.push({ points: route.points, index });
+    }
+  }
+  const taken: { y: number; x0: number; x1: number }[] = [];
+  const hitsCard = (y: number, x0: number, x1: number): boolean =>
+    cards.some(
+      (box) =>
+        x1 > box.left + 2 &&
+        x0 < box.right - 2 &&
+        y > box.top - SHELF_BORDER &&
+        y < box.bottom + SHELF_BORDER,
+    );
+  const stubHits = (x: number, y0: number, y1: number): boolean => {
+    const lo = Math.min(y0, y1);
+    const hi = Math.max(y0, y1);
+    return cards.some((box) => x > box.left + 0.5 && x < box.right - 0.5 && hi > box.top + 0.5 && lo < box.bottom - 0.5);
+  };
+  shelves.sort((left, right) => left.points[left.index].y - right.points[right.index].y);
+  for (const shelf of shelves) {
+    const points = shelf.points;
+    const index = shelf.index;
+    const a = points[index];
+    const b = points[index + 1];
+    const x0 = Math.min(a.x, b.x);
+    const x1 = Math.max(a.x, b.x);
+    const crowded = (y: number): boolean =>
+      hitsCard(y, x0, x1) ||
+      taken.some((item) => Math.abs(item.y - y) < SHELF_GAP && x1 > item.x0 + 2 && x0 < item.x1 - 2) ||
+      (index === 1 && stubHits(a.x, points[0].y, y)) ||
+      (index + 1 < points.length - 1 &&
+        stubHits(b.x, y, points[index + 2].y) &&
+        !stubHits(b.x, a.y, points[index + 2].y));
+    let next = a.y;
+    if (crowded(next)) {
+      let found = false;
+      for (let step = SHELF_GAP; step <= 420; step += SHELF_GAP) {
+        if (!crowded(a.y + step)) {
+          next = a.y + step;
+          found = true;
+          break;
+        }
+        if (!crowded(a.y - step)) {
+          next = a.y - step;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        taken.push({ y: a.y, x0, x1 });
+        continue;
+      }
+    }
+    a.y = next;
+    b.y = next;
+    taken.push({ y: next, x0, x1 });
+  }
+}
+
 function pushVerticalsOffReports(
   routes: readonly { points: RoutePoint[] }[],
   reports: readonly { x1: number; y1: number; x2: number; y2: number; midY: number; midX?: number }[],
@@ -2433,6 +2680,20 @@ function routeInfluences(
     new Map(placed.map((card, index) => [card.node.id, index])),
     teams ? { boxes: teams.boxes, membership: teams.membership, offsetX, offsetY } : undefined,
   );
+  const frameBoxes = teams
+    ? teams.boxes
+        .filter((box) => !box.ghost && box.frame !== false)
+        .map((box) => ({
+          left: offsetX + box.x,
+          right: offsetX + box.x + box.width,
+          top: offsetY + box.y,
+          bottom: offsetY + box.y + box.height,
+        }))
+    : [];
+  restackShelves(routes, reports, cards, frameBoxes);
+  for (let pass = 0; pass < 4; pass += 1) restackShelves(routes, reports, cards, frameBoxes);
+  separateSameShelves(routes, cards);
+  spreadVerticals(routes, reports, cards);
   const segments = flatSegments(routes, reports);
   // Плашки уже поставленных подписей: следующая не должна на них наезжать.
   const takenPlates: CardBox[] = [];
