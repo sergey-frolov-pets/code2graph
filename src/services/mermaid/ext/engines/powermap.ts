@@ -20,7 +20,7 @@ import {
   usesInvertedMono,
 } from "../common";
 import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
-import { clipToNearEdge, repairLanePath, routeAvoiding } from "./edge-lanes";
+import { clipToNearEdge, repairLanePath, routeCompact } from "./edge-lanes";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 import { isColor } from "./waterfall/directive-parsers";
 import {
@@ -1850,6 +1850,42 @@ function spreadContacts(routes: readonly { points: RoutePoint[] }[], cards: read
 /** Линия не должна идти по самой грани карточки: отступ вниз/вверх на 8 px. */
 const CONTACT_JOG = 8;
 
+/** Вертикаль у кромки не должна идти вплотную к линии подчинения. */
+function pushVerticalsOffReports(
+  routes: readonly { points: RoutePoint[] }[],
+  reports: readonly { x1: number; y1: number; x2: number; y2: number; midY: number; midX?: number }[],
+): void {
+  const buses: { x: number; y0: number; y1: number }[] = [];
+  for (const report of reports) {
+    if (report.midX === undefined) {
+      buses.push({ x: report.x1, y0: report.y1, y1: report.midY });
+      buses.push({ x: report.x2, y0: report.midY, y1: report.y2 });
+    } else {
+      buses.push({ x: report.midX, y0: report.y1, y1: report.y2 });
+    }
+  }
+  for (const route of routes) {
+    const points = route.points;
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const a = points[index];
+      const b = points[index + 1];
+      if (Math.abs(a.x - b.x) > 0.6) continue;
+      const y0 = Math.min(a.y, b.y);
+      const y1 = Math.max(a.y, b.y);
+      for (const bus of buses) {
+        const overlap = Math.min(y1, Math.max(bus.y0, bus.y1)) - Math.max(y0, Math.min(bus.y0, bus.y1));
+        if (overlap < 4) continue;
+        const dx = a.x - bus.x;
+        if (Math.abs(dx) >= 12) continue;
+        const dir = dx === 0 ? 1 : Math.sign(dx);
+        const next = bus.x + dir * 12;
+        a.x = next;
+        b.x = next;
+      }
+    }
+  }
+}
+
 function clearEdgeJogs(routes: readonly { points: RoutePoint[] }[], cards: readonly CardBox[]): void {
   const edgeAt = (point: RoutePoint): { side: "top" | "bottom"; key: string } | undefined => {
     for (const card of cards) {
@@ -2350,32 +2386,17 @@ function routeInfluences(
     if (!points) {
       const elbow = elbowPoints(draft.x1, draft.y1, draft.x2, draft.y2, midY);
       points = pathHitsCards(elbow, obstacles)
-        ? routeOnGrid(
+        ? routeCompact(
             { x: draft.x1, y: draft.y1 },
             { x: draft.x2, y: draft.y2 },
             obstacles,
-            fromBox,
-            toBox,
-            lane.lane,
+            { startBox: fromBox, endBox: toBox },
           )
         : elbow;
     }
-    // Страховка: полка и ножки могли лечь внутрь собственных карточек.
     if (points.length >= 2) {
       points[0] = clipToNearEdge(points[0], points[1], fromBox);
       points[points.length - 1] = clipToNearEdge(points[points.length - 1], points[points.length - 2], toBox);
-    }
-    if (pathHitsCards(points, [fromBox, toBox])) {
-      const routed = routeAvoiding(
-        { x: draft.x1, y: draft.y1 },
-        { x: draft.x2, y: draft.y2 },
-        obstacles,
-        { startBox: fromBox, endBox: toBox },
-      );
-      if (routed) {
-        const shaped = dedupePoints(routed);
-        if (!pathHitsCards(shaped, [fromBox, toBox])) points = shaped;
-      }
     }
     const color = mono ? monoPaint(draft.link.color, invert) : draft.link.color;
     return {
@@ -2404,8 +2425,14 @@ function routeInfluences(
     teams ? { boxes: teams.boxes, membership: teams.membership, offsetX, offsetY } : undefined,
   );
   spreadContacts(routes, cards);
+  pushVerticalsOffReports(routes, reports);
   clearEdgeJogs(routes, cards);
-  repairRoutes(routes, cards, new Map(placed.map((card, index) => [card.node.id, index])));
+  repairRoutes(
+    routes,
+    cards,
+    new Map(placed.map((card, index) => [card.node.id, index])),
+    teams ? { boxes: teams.boxes, membership: teams.membership, offsetX, offsetY } : undefined,
+  );
   const segments = flatSegments(routes, reports);
   // Плашки уже поставленных подписей: следующая не должна на них наезжать.
   const takenPlates: CardBox[] = [];
@@ -2553,161 +2580,6 @@ function pathHitsCards(points: readonly RoutePoint[], boxes: readonly CardBox[])
   return false;
 }
 
-const AROUND_GUTTER = 16;
-const AROUND_STUB = 12;
-/** Зазор между линией и рамкой при обходе по сетке. */
-const GRID_CLEAR = 5;
-
-/**
- * Обход препятствий по сетке ортогональных коридоров.
- * Кандидаты осей — края препятствий плюс отступ; лишние повороты штрафуются,
- * чтобы путь шёл по ближайшему коридору, а не змейкой.
- */
-function routeOnGrid(
-  start: RoutePoint,
-  end: RoutePoint,
-  obstacles: readonly CardBox[],
-  fromBox: CardBox,
-  toBox: CardBox,
-  lane = 0,
-): RoutePoint[] {
-  // Каждой связи свой коридор: иначе две стрелки сливаются в одну линию.
-  const pad = AROUND_STUB + (lane % 3) * 7;
-  // Препятствия чуть раздуты: путь не должен идти по самому краю рамки.
-  const grown = obstacles.map((box) => ({
-    left: box.left - GRID_CLEAR,
-    right: box.right + GRID_CLEAR,
-    top: box.top - GRID_CLEAR,
-    bottom: box.bottom + GRID_CLEAR,
-  }));
-  const xs = new Set<number>([start.x, end.x]);
-  const ys = new Set<number>([start.y, end.y]);
-  for (const box of grown) {
-    xs.add(box.left - pad);
-    xs.add(box.right + pad);
-    ys.add(box.top - pad);
-    ys.add(box.bottom + pad);
-  }
-  const xsList = [...xs].sort((left, right) => left - right);
-  const ysList = [...ys].sort((left, right) => left - right);
-  const cols = xsList.length;
-  const rows = ysList.length;
-  const indexOf = (x: number, y: number) =>
-    ysList.findIndex((value) => Math.abs(value - y) < 0.01) * cols +
-    xsList.findIndex((value) => Math.abs(value - x) < 0.01);
-  const startI = indexOf(start.x, start.y);
-  const endI = indexOf(end.x, end.y);
-
-  const free = (a: number, b: number): boolean =>
-    !pathHitsCards(
-      [
-        { x: xsList[a % cols], y: ysList[Math.floor(a / cols)] },
-        { x: xsList[b % cols], y: ysList[Math.floor(b / cols)] },
-      ],
-      grown,
-    );
-
-  const key = (node: number, dir: number) => node * 2 + dir;
-  const best = new Map<number, { cost: number; prevNode: number; prevDir: number }>();
-  const frontier: { node: number; dir: number; cost: number; prevNode: number; prevDir: number }[] = [
-    { node: startI, dir: 0, cost: 0, prevNode: -1, prevDir: -1 },
-    { node: startI, dir: 1, cost: 0, prevNode: -1, prevDir: -1 },
-  ];
-  for (let guard = 0; frontier.length > 0 && guard < 20000; guard += 1) {
-    frontier.sort((left, right) => left.cost - right.cost);
-    const item = frontier.shift()!;
-    const id = key(item.node, item.dir);
-    if (best.has(id)) continue;
-    best.set(id, { cost: item.cost, prevNode: item.prevNode, prevDir: item.prevDir });
-    const col = item.node % cols;
-    const row = Math.floor(item.node / cols);
-    const neighbours: { node: number; dir: number; len: number }[] = [];
-    if (col > 0) neighbours.push({ node: item.node - 1, dir: 0, len: xsList[col] - xsList[col - 1] });
-    if (col + 1 < cols) neighbours.push({ node: item.node + 1, dir: 0, len: xsList[col + 1] - xsList[col] });
-    if (row > 0) neighbours.push({ node: item.node - cols, dir: 1, len: ysList[row] - ysList[row - 1] });
-    if (row + 1 < rows) neighbours.push({ node: item.node + cols, dir: 1, len: ysList[row + 1] - ysList[row] });
-    for (const next of neighbours) {
-      if (!free(item.node, next.node)) continue;
-      const turn = next.dir === item.dir ? 0 : AROUND_GUTTER * 2;
-      frontier.push({
-        node: next.node,
-        dir: next.dir,
-        cost: item.cost + next.len + turn,
-        prevNode: item.node,
-        prevDir: item.dir,
-      });
-    }
-  }
-
-  const finish = [0, 1]
-    .map((dir) => ({ dir, entry: best.get(key(endI, dir)) }))
-    .filter((item): item is { dir: number; entry: { cost: number; prevNode: number; prevDir: number } } => Boolean(item.entry))
-    .sort((left, right) => left.entry.cost - right.entry.cost)[0];
-  if (!finish) return straightFallback(start, end, fromBox, toBox);
-
-  const chain: number[] = [];
-  let node = endI;
-  let dir = finish.dir;
-  for (let guard = 0; guard < 400; guard += 1) {
-    chain.push(node);
-    const entry = best.get(key(node, dir));
-    if (!entry || entry.prevNode < 0) break;
-    node = entry.prevNode;
-    dir = entry.prevDir;
-  }
-  const raw = chain.reverse().map((index) => ({
-    x: xsList[index % cols],
-    y: ysList[Math.floor(index / cols)],
-  }));
-  const points = dedupePoints(raw);
-  if (points.length < 2) return straightFallback(start, end, fromBox, toBox);
-  // Концы подрезаем по краю своих карточек: линия не должна уходить внутрь.
-  points[0] = clipToBoxEdge(points[0], points[1], fromBox);
-  points[points.length - 1] = clipToBoxEdge(points[points.length - 1], points[points.length - 2], toBox);
-  return dedupePoints(trimInsideBoxes(points, fromBox, toBox));
-}
-
-/** Если коридоров не нашлось: простая шина между карточками. */
-function straightFallback(start: RoutePoint, end: RoutePoint, fromBox: CardBox, toBox: CardBox): RoutePoint[] {
-  const midY = (Math.max(fromBox.bottom, toBox.bottom) + 20);
-  return dedupePoints([
-    { x: start.x, y: fromBox.bottom },
-    { x: start.x, y: midY },
-    { x: end.x, y: midY },
-    { x: end.x, y: toBox.bottom },
-  ]);
-}
-
-/** Точка на краю рамки по направлению к соседней точке. */
-function clipToBoxEdge(point: RoutePoint, next: RoutePoint, box: CardBox): RoutePoint {
-  if (Math.abs(next.x - point.x) < 0.6 && Math.abs(next.y - point.y) > 0.6) {
-    return { x: point.x, y: next.y > point.y ? box.bottom : box.top };
-  }
-  if (Math.abs(next.y - point.y) < 0.6 && Math.abs(next.x - point.x) > 0.6) {
-    return { x: next.x > point.x ? box.right : box.left, y: point.y };
-  }
-  return point;
-}
-
-/**
- * Сетка коридоров идёт до центра карточки, поэтому последний участок может
- * заходить внутрь своей рамки. Выбрасываем точки, оказавшиеся внутри концов:
- * путь остаётся ортогональным (подрезка сохраняет ось последнего сегмента).
- */
-function trimInsideBoxes(points: readonly RoutePoint[], fromBox: CardBox, toBox: CardBox): RoutePoint[] {
-  const inside = (point: RoutePoint, box: CardBox): boolean =>
-    point.x > box.left + 0.5 &&
-    point.x < box.right - 0.5 &&
-    point.y > box.top + 0.5 &&
-    point.y < box.bottom - 0.5;
-  const last = points.length - 1;
-  const kept: RoutePoint[] = [];
-  points.forEach((point, index) => {
-    if (index > 0 && index < last && (inside(point, fromBox) || inside(point, toBox))) return;
-    kept.push(point);
-  });
-  return kept;
-}
 
 /** Отчёты между командами: как стрелки влияния, но цветом оси и без подписи. */
 function routeCrossReports(
@@ -2721,7 +2593,7 @@ function routeCrossReports(
 ): RoutedInfluence[] {
   const byId = new Map(placed.map((card) => [card.node.id, card]));
   const out: RoutedInfluence[] = [];
-  edges.forEach((edge, index) => {
+  edges.forEach((edge) => {
     const from = byId.get(edge.from);
     const to = byId.get(edge.to);
     if (!from || !to) return;
@@ -2751,30 +2623,11 @@ function routeCrossReports(
     ];
     const elbow = elbowPoints(x1, y1, x2, y2, midY);
     let points: RoutePoint[] = pathHitsCards(elbow, obstacles)
-      ? routeOnGrid(
-          { x: (fromBox.left + fromBox.right) / 2, y: (fromBox.top + fromBox.bottom) / 2 },
-          { x: (toBox.left + toBox.right) / 2, y: (toBox.top + toBox.bottom) / 2 },
-          obstacles,
-          fromBox,
-          toBox,
-          index,
-        )
+      ? routeCompact({ x: x1, y: y1 }, { x: x2, y: y2 }, obstacles, { startBox: fromBox, endBox: toBox })
       : elbow;
     if (points.length >= 2) {
       points[0] = clipToNearEdge(points[0], points[1], fromBox);
       points[points.length - 1] = clipToNearEdge(points[points.length - 1], points[points.length - 2], toBox);
-    }
-    if (pathHitsCards(points, [fromBox, toBox])) {
-      const routed = routeAvoiding(
-        { x: x1, y: y1 },
-        { x: x2, y: y2 },
-        obstacles,
-        { startBox: fromBox, endBox: toBox },
-      );
-      if (routed) {
-        const shaped = dedupePoints(routed);
-        if (!pathHitsCards(shaped, [fromBox, toBox])) points = shaped;
-      }
     }
     out.push({
       points,
@@ -2802,6 +2655,7 @@ function repairRoutes(
   routes: readonly { points: RoutePoint[]; fromId?: string; toId?: string }[],
   cards: readonly CardBox[],
   byId: ReadonlyMap<string, number>,
+  teams?: { boxes: readonly TeamBox[]; membership: Map<string, string>; offsetX: number; offsetY: number },
 ): number {
   let repaired = 0;
   for (const route of routes) {
@@ -2816,7 +2670,11 @@ function repairRoutes(
       const last = route.points.length - 1;
       route.points[last] = clipToNearEdge(route.points[last], route.points[last - 1], toBox);
     }
-    const obstacles = cards.filter((_, index) => index !== fromIndex && index !== toIndex);
+    const frames =
+      teams && route.fromId && route.toId
+        ? foreignTeamBoxes(teams.boxes, teams.membership, route.fromId, route.toId, teams.offsetX, teams.offsetY)
+        : [];
+    const obstacles = cards.filter((_, index) => index !== fromIndex && index !== toIndex).concat(frames);
     const fixed = repairLanePath(route.points, obstacles, own);
     if (!fixed) continue;
     route.points = dedupePoints(fixed);

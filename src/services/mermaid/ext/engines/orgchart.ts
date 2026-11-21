@@ -26,7 +26,7 @@ import {
   type AvatarGender,
 } from "./avatar";
 import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
-import { clipToNearEdge, repairLanePath } from "./edge-lanes";
+import { clipToNearEdge, repairLanePath, routeCompact } from "./edge-lanes";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 import { isColor } from "./waterfall/directive-parsers";
 
@@ -239,6 +239,20 @@ export function parseTeamLine(raw: string): { team?: TeamStyle; error?: string }
     padding: TEAM_DEFAULT_PADDING,
   };
   if (parentFromPath) team.parent = parentFromPath;
+  if (!title) {
+    const quoted = /^"([^"]*)"\s*/.exec(rest);
+    if (quoted) {
+      title = quoted[1];
+      team.title = title;
+      rest = rest.slice(quoted[0].length).trim();
+    }
+  }
+  const nested = /^in\s+([\p{L}\p{N}_./-]+)\s*/iu.exec(rest);
+  if (nested) {
+    if (nested[1] === id) return { error: `родитель команды: ожидается id другой команды, получено «${nested[1]}»` };
+    team.parent = nested[1];
+    rest = rest.slice(nested[0].length).trim();
+  }
   for (let guard = 0; guard < 12 && rest; guard += 1) {
     const attr = TEAM_ATTR_RE.exec(rest);
     if (!attr) return { error: `неизвестный параметр команды «${rest}»` };
@@ -314,6 +328,22 @@ export function parseTeamsLine(raw: string): { patch?: Partial<TeamLayoutSpec>; 
   let rest = raw.trim().replace(/^teams\s*/i, "").trim();
   const patch: Partial<TeamLayoutSpec> = {};
   for (let guard = 0; guard < 8 && rest; guard += 1) {
+    const bareLayout = /^(auto|row|column|grid)\b\s*/i.exec(rest);
+    if (bareLayout) {
+      patch.mode = bareLayout[1].toLowerCase() as TeamLayoutSpec["mode"];
+      rest = rest.slice(bareLayout[0].length).trim();
+      continue;
+    }
+    const bareGap = /^gap\s+(\d+(?:[.,]\d+)?)\b\s*/i.exec(rest);
+    if (bareGap) {
+      const gap = Number(bareGap[1].replace(",", "."));
+      if (!Number.isFinite(gap) || gap < 0 || gap > 200) {
+        return { error: `зазор между командами: ожидается число 0–200, получено «${bareGap[1]}»` };
+      }
+      patch.gap = gap;
+      rest = rest.slice(bareGap[0].length).trim();
+      continue;
+    }
     const attr = /^(layout|dir|gap|columns|titles|labels)=("[^"]*"|'[^']*'|\S*)\s*/i.exec(rest);
     if (!attr) return { error: `неизвестный параметр раскладки команд «${rest}»` };
     const key = attr[1].toLowerCase();
@@ -1664,12 +1694,14 @@ function crossTeamRoute(
     .sort((left, right) => Math.abs(left - mid) - Math.abs(right - mid));
   const free = sorted.find((y) => !obstacles.some((rect) => crossesRect(x1, x2, y, rect)));
   const midY = free ?? mid;
-  return [
+  const elbow = [
     { x: x1, y: y1 },
     { x: x1, y: midY },
     { x: x2, y: midY },
     { x: x2, y: y2 },
   ];
+  if (!pathCrosses(elbow, obstacles)) return elbow;
+  return routeCompact({ x: x1, y: y1 }, { x: x2, y: y2 }, obstacles, { startBox: a, endBox: b });
 }
 
 /** Полки разных межкомандных связей не сливаются в одну линию. */
