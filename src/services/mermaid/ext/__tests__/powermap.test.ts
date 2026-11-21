@@ -925,6 +925,22 @@ dev -> qa
 cfo -supporter-> ceo`;
 
 describe("powermap: команды", () => {
+  it("короткая запись команды: кавычки, in и teams row", () => {
+    const model = modelOf(`powermap
+team sales "Продажи"
+team qa "QA" in sales
+teams row gap 28
+a [Анна] team=qa
+b [Борис] team=sales
+a -> b`);
+    expect(model.teams.map((team) => [team.id, team.title, team.parent])).toEqual([
+      ["sales", "Продажи", undefined],
+      ["qa", "QA", "sales"],
+    ]);
+    expect(model.teamLayout?.mode).toBe("row");
+    expect(model.teamLayout?.gap).toBe(28);
+  });
+
   it("читает директивы team и teams, атрибут team= и создаёт команду сама", () => {
     const model = modelOf(TEAM_SOURCE);
     expect(model.teams.map((team) => team.id)).toEqual(["front", "back"]);
