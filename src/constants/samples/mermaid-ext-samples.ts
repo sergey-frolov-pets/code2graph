@@ -198,15 +198,14 @@ data
   orgchart: `orgchart
 %% Заливка — color=#hex (fill=). Граница — border=#hex и style=solid|dash|dot|dashdot.
 %% Ключи можно сочетать и менять местами. Внутри [скобок] color= остаётся текстом.
-%% Команды: team <id> [Подпись] fill=#hex stroke=#hex width=px style=solid|dash|dot|dashdot radius=px padding=px frame=on|off label=on|off
-%% teams layout=row|column|grid dir=lr|tb gap=px labels=on|off
-%% hide id1, id2 — убирает сотрудников и команды вместе с их связями; id команды уносит вложенные команды и их людей.
-%% frame=off — команда только группирует, рамку не рисует. label=off — без подписи. labels=off прячет все подписи. fill=off — без заливки.
-%% team=<id> у блока относит его к команде; рамку рисует директива team. Без team= блок идёт отдельной группой.
-%% Связь между командами идёт отдельным маршрутом и обходит чужие рамки.
-team board [Правление]
-team tech [Технологии] stroke=#0969da
-teams layout=row gap=36
+%% Команда: team id "Подпись". Вложенная: team qa "QA" in tech. Цвет рамки: stroke=#hex fill=#hex.
+%% Раскладка: teams row gap 36. Ещё column или grid. Старая запись teams layout=row gap=36 тоже работает.
+%% hide id1, id2 — убирает блоки и команды вместе со связями; id команды уносит вложенные команды и их людей.
+%% team=<id> относит блок к команде. Без team= блок стоит отдельно, без рамки.
+%% Связь между командами — одна полка в зазоре или обход сбоку, не больше четырёх изломов. В чужие рамки не заходит.
+team board "Правление"
+team tech "Технологии" stroke=#0969da
+teams row gap 36
 Гендиректор [Генеральный директор\\nИван Петров] color=#8250df team=board
 Финдир [Финансовый директор\\nОльга Орлова] border=#9a6700 style=dash team=board
 Техдир [Технический директор\\nАнна Смирнова] color=#ddf4ff border=#0969da team=tech
@@ -248,9 +247,9 @@ avatar 48
 %%   A -supporter-> B
 %% label у link — только строка легенды, на стрелке её нет.
 %% Подпись одной стрелки: A -supporter-> B label="бюджет"
-%% Подпись не уходит на карточки: если полка идёт под ними, текст встаёт под полку.
+%% Подпись одной стрелки стоит на плашке цвета фона под ней: холст или заливка команды.
 %% Двусторонняя связь: A <-supporter-> B
-%% Через уровень стрелка обходит карточки между ними: ceo -coach-> legal
+%% Связь — одна полка. Если на пути чужая карточка или рамка, стрелка уходит в боковой жёлоб. Больше четырёх изломов не бывает.
 %% Легенда рисуется под схемой: шкалы и цвет контрагента. Из линий в ней только стили link.
 %% supporter (зелёная сплошная) и enemy (красный пунктир) есть, пока строка link их не заменит.
 %% comms on — таблица под легендой. Заголовок таблицы — «Компания …», колонки: «Сотрудник», «Менеджер», «Контакты», «Связи».
@@ -264,32 +263,28 @@ avatar 48
 %% Запасной вид — data:image jpeg, png, webp или gif, снимок внутри текста.
 %% В карточках ниже он вместо ссылки: так пример открывается с лицами без сети и без файлов на диске.
 %% Превью убирает внешний http(s), локальный путь в браузере не открывает.
-%% Команды: team <id> [Подпись] fill=#hex stroke=#hex width=px style=solid|dash|dot|dashdot radius=px padding=px frame=on|off label=on|off
-%% teams layout=auto|row|column|grid dir=lr|tb gap=px columns=N labels=on|off
-%% frame=off — команда только группирует, рамки нет. label=off — подпись не рисуется. labels=off прячет все подписи.
-%% team=<id> у узла относит человека к команде. Свою рамку команда получает из директивы team.
-%% Вложенность: косая черта в id — team corp/board — вкладывает команду в родителя.
-%% Команды раскладываются друг относительно друга; внутри команды дерево прежнее.
-%% Стрелка между командами обходит чужие рамки. Люди без team= идут отдельной группой без рамки.
+%% Команда: team id "Подпись". Вложенная: team board "Совет" in corp. Цвет: stroke=#hex fill=#hex.
+%% Раскладка: teams row gap 28. Ещё column или grid. Старая запись teams layout=row gap=28 тоже работает.
+%% team=<id> относит человека к команде. Без team= человек стоит отдельно, без рамки.
 %% hide id1, id2 — убирает людей, команды и типы связи; скрытая команда уносит своих людей, их связи и рамку.
 title Карта влияния
-team corp [Группа «Север»] stroke=#8a9199 fill=none
-team corp/board [Совет директоров] fill=#f6f8fa stroke=#0969da
-team corp/field [Подразделения] stroke=#8250df
-teams layout=row gap=28
+team corp "Группа «Север»" stroke=#8a9199 fill=none
+team board "Совет директоров" in corp fill=#f6f8fa stroke=#0969da
+team field "Подразделения" in corp stroke=#8250df
+teams row gap 28
 company "Север"
 avatar 48
 comms on
 link supporter color=#1a7f37 style=solid label="союзник"
 link coach color=#bf8700 style=dot label="наставник"
 link enemy color=#cf222e style=dash label="противник"
-ceo [Анна Орлова|Президент] gender=f role=E influence=L action=M attitude=+ counterpart=- team=corp/board photo="${SAMPLE_PORTRAITS.woman44}"
-cfo [Илья Сомов|Финансы] gender=m role=D influence=L action=S attitude=0 counterpart="Пётр Белов, Ольга Ким" team=corp/board photo="${SAMPLE_PORTRAITS.man32}"
-ops [Мария Ким|Операции] gender=f role=A influence=M action=U attitude=- counterpart="Ольга Ким" team=corp/field photo="${SAMPLE_PORTRAITS.woman68}"
-sales [Павел Морозов|Продажи] gender=m role=U influence=M action=S attitude=+ counterpart="Леа Ортега" team=corp/field photo="${SAMPLE_PORTRAITS.man75}"
-legal [Елена Волкова|Юрист] gender=f role=C influence=S action=M attitude=0 counterpart=- team=corp/field photo="${SAMPLE_PORTRAITS.woman21}"
+ceo [Анна Орлова|Президент] gender=f role=E influence=L action=M attitude=+ counterpart=- team=board photo="${SAMPLE_PORTRAITS.woman44}"
+cfo [Илья Сомов|Финансы] gender=m role=D influence=L action=S attitude=0 counterpart="Пётр Белов, Ольга Ким" team=board photo="${SAMPLE_PORTRAITS.man32}"
+ops [Мария Ким|Операции] gender=f role=A influence=M action=U attitude=- counterpart="Ольга Ким" team=field photo="${SAMPLE_PORTRAITS.woman68}"
+sales [Павел Морозов|Продажи] gender=m role=U influence=M action=S attitude=+ counterpart="Леа Ортега" team=field photo="${SAMPLE_PORTRAITS.man75}"
+legal [Елена Волкова|Юрист] gender=f role=C influence=S action=M attitude=0 counterpart=- team=field photo="${SAMPLE_PORTRAITS.woman21}"
 %% Пример директивы hide: советник объявлен, но в этой схеме скрыт.
-advisor [Олег Белов|Советник] gender=m role=C influence=S action=M attitude=0 team=corp/board
+advisor [Олег Белов|Советник] gender=m role=C influence=S action=M attitude=0 team=board
 hide advisor
 ceo -> cfo
 ceo -> ops
@@ -908,15 +903,14 @@ Evening : 40, 45, 65, 50, 35`,
   orgchart: `orgchart
 %% Fill is color=#hex (or fill=). Border is border=#hex and style=solid|dash|dot|dashdot.
 %% Keys combine in any order. Inside [brackets] color= stays part of the label.
-%% Teams: team <id> [Label] fill=#hex stroke=#hex width=px style=solid|dash|dot|dashdot radius=px padding=px frame=on|off label=on|off
-%% teams layout=row|column|grid dir=lr|tb gap=px labels=on|off
+%% Team: team id "Label". Nested: team qa "QA" in tech. Frame color: stroke=#hex fill=#hex.
+%% Layout: teams row gap 36. Also column or grid. The older teams layout=row gap=36 still works.
 %% hide id1, id2 removes nodes and teams together with their edges; a hidden team takes nested teams and their people with it.
-%% frame=off groups without a frame. label=off drops one title, labels=off drops every title. fill=off drops the fill.
-%% team=<id> on a node puts it in a team; the team directive draws the frame. Nodes without team= form a group of their own.
-%% An edge between teams takes its own route and keeps out of other team frames.
-team board [Board]
-team tech [Technology] stroke=#0969da
-teams layout=row gap=36
+%% team=<id> puts a node in a team. Without team= the node stands alone, with no frame.
+%% A link between teams is one shelf, or a side gutter when a foreign frame is in the way. At most four bends.
+team board "Board"
+team tech "Technology" stroke=#0969da
+teams row gap 36
 CEO [Chief executive officer\\nAlex Morgan] color=#8250df team=board
 CFO [Chief financial officer\\nDavid Miller] border=#9a6700 style=dash team=board
 CTO [Chief technology officer\\nElena Chen] color=#ddf4ff border=#0969da team=tech
@@ -958,9 +952,9 @@ CEO -> Ops`,
 %%   A -supporter-> B
 %% label on link is legend text only. The arrow itself has no caption.
 %% A caption on one arrow: A -supporter-> B label="budget"
-%% A caption never lands on the cards: when the shelf runs under them, the text sits below it.
+%% A caption sits on a plate the color of whatever is behind it: the canvas or a team fill.
 %% A two-way link: A <-supporter-> B
-%% A link that skips a level goes around the cards in between: ceo -coach-> legal
+%% A link is one shelf. A foreign card or frame sends it out through a side gutter. At most four bends.
 %% The legend sits under the chart: the scales and the counterpart color. Line samples are only link styles.
 %% supporter (green solid) and enemy (red dash) exist until a link line replaces them.
 %% comms on draws the table under the legend. The table title is Company …, the columns are Employee, Manager, Contacts, Links.
@@ -974,32 +968,28 @@ CEO -> Ops`,
 %% The fallback is data:image jpeg, png, webp or gif: the picture lives inside the text.
 %% The cards below use that form instead of a link, so the sample opens with faces and no network or disk files.
 %% The preview drops an external http(s) URL, and a browser does not open a local path.
-%% Teams: team <id> [Label] fill=#hex stroke=#hex width=px style=solid|dash|dot|dashdot radius=px padding=px frame=on|off label=on|off
-%% teams layout=auto|row|column|grid dir=lr|tb gap=px columns=N labels=on|off
+%% Team: team id "Label". Nested: team board "Board" in corp. Color: stroke=#hex fill=#hex.
+%% Layout: teams row gap 28. Also column or grid. The older teams layout=row gap=28 still works.
+%% team=<id> puts a person in a team. Without team= the person stands alone, with no frame.
 %% hide id1, id2 removes people, teams and link types; a hidden team takes its people, their links and its frame with it.
-%% frame=off groups without a frame. label=off drops one title, labels=off drops every title. fill=off drops the fill.
-%% team=<id> on a node puts the person in a team. The team directive draws its frame.
-%% Nesting: a slash in the id — team corp/board — puts the team inside its parent.
-%% Teams are packed next to each other; the tree inside a team stays as before.
-%% An arrow between teams goes around foreign frames. People without team= form a frame-less group.
 title Power Map
-team corp [Northwind group] stroke=#8a9199 fill=none
-team corp/board [Board] fill=#f6f8fa stroke=#0969da
-team corp/field [Business units] stroke=#8250df
-teams layout=row gap=28
+team corp "Northwind group" stroke=#8a9199 fill=none
+team board "Board" in corp fill=#f6f8fa stroke=#0969da
+team field "Business units" in corp stroke=#8250df
+teams row gap 28
 company "Northwind"
 avatar 48
 comms on
 link supporter color=#1a7f37 style=solid label="ally"
 link coach color=#bf8700 style=dot label="coach"
 link enemy color=#cf222e style=dash label="opponent"
-ceo [Anna Orlova|President] gender=f role=E influence=L action=M attitude=+ counterpart=- team=corp/board photo="${SAMPLE_PORTRAITS.woman44}"
-cfo [Ilya Somov|Finance] gender=m role=D influence=L action=S attitude=0 counterpart="Sam Reed, Lea Ortiz" team=corp/board photo="${SAMPLE_PORTRAITS.man32}"
-ops [Maria Kim|Operations] gender=f role=A influence=M action=U attitude=- counterpart="Lea Ortiz" team=corp/field photo="${SAMPLE_PORTRAITS.woman68}"
-sales [Pavel Morozov|Sales] gender=m role=U influence=M action=S attitude=+ counterpart="Lea Ortega" team=corp/field photo="${SAMPLE_PORTRAITS.man75}"
-legal [Elena Volkova|Counsel] gender=f role=C influence=S action=M attitude=0 counterpart=- team=corp/field photo="${SAMPLE_PORTRAITS.woman21}"
+ceo [Anna Orlova|President] gender=f role=E influence=L action=M attitude=+ counterpart=- team=board photo="${SAMPLE_PORTRAITS.woman44}"
+cfo [Ilya Somov|Finance] gender=m role=D influence=L action=S attitude=0 counterpart="Sam Reed, Lea Ortiz" team=board photo="${SAMPLE_PORTRAITS.man32}"
+ops [Maria Kim|Operations] gender=f role=A influence=M action=U attitude=- counterpart="Lea Ortiz" team=field photo="${SAMPLE_PORTRAITS.woman68}"
+sales [Pavel Morozov|Sales] gender=m role=U influence=M action=S attitude=+ counterpart="Lea Ortega" team=field photo="${SAMPLE_PORTRAITS.man75}"
+legal [Elena Volkova|Counsel] gender=f role=C influence=S action=M attitude=0 counterpart=- team=field photo="${SAMPLE_PORTRAITS.woman21}"
 %% hide example: the advisor is declared but hidden from this chart.
-advisor [Olga Belova|Advisor] gender=f role=C influence=S action=M attitude=0 team=corp/board
+advisor [Olga Belova|Advisor] gender=f role=C influence=S action=M attitude=0 team=board
 hide advisor
 ceo -> cfo
 ceo -> ops

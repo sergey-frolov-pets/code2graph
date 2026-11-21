@@ -734,9 +734,9 @@ orgchart
 ```mermaid
 orgchart
 title Команды
-team exec [Правление] fill=#f6f8fa stroke=#0969da radius=12 padding=16
-team delivery [Разработка] stroke=#8250df
-teams layout=row gap=36
+team exec "Правление" fill=#f6f8fa stroke=#0969da
+team delivery "Разработка" stroke=#8250df
+teams row gap 36
 ceo [Анна Морозова|Гендиректор] color=#0969da team=exec
 cfo [Илья Сомов|Финдир] team=exec
 cto [Пётр Волков|Техдир] team=delivery
@@ -748,15 +748,15 @@ lead -> dev
 cfo -> dev
 ```
 
-Вложенные команды: путь в id или `parent=`.
+Вложенные команды: `in` (то же самое, что `parent=` или путь в id).
 
 ```mermaid
 powermap
-team company [Компания] padding=12
-team company/sales [Продажи]
-team company/dev [Разработка] parent=company
-team company/dev/qa [QA]
-teams layout=row gap=24
+team company "Компания"
+team sales "Продажи" in company
+team dev "Разработка" in company
+team qa "QA" in dev
+teams row gap 24
 ceo [Анна Морозова|Гендиректор] team=company
 head [Олег Ли|Директор по продажам] team=company/sales
 cto [Пётр Волков|Техдир] team=company/dev
@@ -1204,9 +1204,9 @@ link coach color=#e3c34a style=dot label=наставник
 ```mermaid
 powermap
 title Команды
-team front [Front Office] fill=#f6f8fa stroke=#0969da radius=12 padding=16
-team back [Back Office]
-teams layout=row gap=28
+team front "Front Office" fill=#f6f8fa stroke=#0969da
+team back "Back Office"
+teams row gap 28
 ceo [Анна|Директор] role=D team=front
 cfo [Илья|Финансы] role=A team=front
 cto [Пётр|Технологии] role=D team=back
