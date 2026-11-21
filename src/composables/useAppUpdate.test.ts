@@ -154,12 +154,13 @@ describe("service worker update prompt", () => {
     expect(source).toContain("event.waitUntil(self.skipWaiting())");
   });
 
-  it("does not intercept document loads", () => {
+  it("does not intercept document loads or force client reloads", () => {
     const source = readFileSync(path.join(process.cwd(), "public/sw.js"), "utf8");
 
     expect(source).not.toContain("handleNavigation");
     expect(source).not.toContain('request.mode === "navigate"');
     expect(source).not.toContain('cache: "reload"');
+    expect(source).not.toContain("client.navigate");
     expect(source).toContain("networkFirstDeploymentConfig");
     expect(source).toContain("/deployment.json");
     expect(source).toContain('cache: "no-store"');
