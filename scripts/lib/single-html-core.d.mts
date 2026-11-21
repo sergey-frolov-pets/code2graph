@@ -6,3 +6,12 @@ export function stampServiceWorker(source: string, version: string): string;
 export function readAppVersion(): string;
 
 export function writeStampedServiceWorker(targetPath: string): void;
+
+export function writeReleaseManifest(targetDir: string): void;
+
+export function buildHostedHtmlDocument(options: {
+  cssHref: string;
+  appJsHref: string;
+  headExtra?: string;
+  includePwaBootstrap?: boolean;
+}): string;

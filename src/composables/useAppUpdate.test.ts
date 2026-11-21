@@ -24,7 +24,10 @@ vi.mock("vue", async () => {
 });
 
 import { UPDATE_RELOAD_FALLBACK_MS, useAppUpdate } from "@/composables/useAppUpdate";
-import { stampServiceWorker } from "../../scripts/lib/single-html-core.mjs";
+import {
+  buildHostedHtmlDocument,
+  stampServiceWorker,
+} from "../../scripts/lib/single-html-core.mjs";
 
 class FakeWorker extends EventTarget {
   state: ServiceWorkerState;
@@ -182,10 +185,7 @@ describe("stampServiceWorker", () => {
 });
 
 describe("buildHostedHtmlDocument", () => {
-  it("keeps the shell thin and points at external assets", async () => {
-    const { buildHostedHtmlDocument } = await import(
-      "../../scripts/lib/single-html-core.mjs"
-    );
+  it("keeps the shell thin and points at external assets", () => {
     const html = buildHostedHtmlDocument({
       cssHref: "./assets/app.css?v=1.2.90",
       appJsHref: "./assets/app.js?v=1.2.90",
