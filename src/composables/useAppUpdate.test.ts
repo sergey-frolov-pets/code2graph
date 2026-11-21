@@ -143,14 +143,14 @@ describe("useAppUpdate", () => {
 });
 
 describe("service worker update prompt", () => {
-  it("waits for SKIP_WAITING instead of activating during install", () => {
+  it("activates the new worker during install so a stuck shell can recover", () => {
     const source = readFileSync(path.join(process.cwd(), "public/sw.js"), "utf8");
     const installHandler = source.slice(
       source.indexOf('addEventListener("install"'),
       source.indexOf('addEventListener("activate"'),
     );
 
-    expect(installHandler).not.toContain("skipWaiting");
+    expect(installHandler).toContain("self.skipWaiting()");
     expect(source).toContain("event.waitUntil(self.skipWaiting())");
   });
 
@@ -166,8 +166,10 @@ describe("service worker update prompt", () => {
     expect(source).toContain("/deployment.json");
     expect(source).toContain('cache: "no-store"');
     expect(source).toContain("/release.json");
-    expect(source).toContain('cache: "no-cache"');
-    expect(source).toContain("APP_SHELL_UPDATED");
+    expect(source).toContain('cache: "reload"');
+    expect(source).toContain("previous === latest");
+    const precache = source.slice(source.indexOf("PRECACHE_URLS"), source.indexOf("addEventListener"));
+    expect(precache).not.toContain("index.html");
     expect(source).toContain("__C2G_APP_VERSION__");
     expect(source).toContain("code2graph-precache-${APP_RELEASE}");
   });
