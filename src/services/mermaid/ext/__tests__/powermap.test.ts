@@ -578,6 +578,21 @@ ceo -coach-> legal`), {});
     }
   });
 
+  it("плашка подписи берёт цвет фона под ней", () => {
+    const svg = powermapEngine.render(modelOf(`powermap
+team front [Фронт] fill=#ff0000
+a [Анна] team=front
+b [Борис] team=front
+a -> b
+a -supporter-> b label=бюджет`), {});
+    const plate = [...svg.matchAll(/<rect\b([^>]*)\/>/g)]
+      .map((match) => match[1])
+      .find((attrs) => attrs.includes('data-label-plate="1"'));
+    expect(plate).toBeTruthy();
+    // Команда рисуется #ff0000 поверх белого холста с непрозрачностью 0.55.
+    expect(plate).toContain('fill="#ff7373"');
+  });
+
   it("подпись держится своей связи: по центру полки и вплотную к ней", () => {
     // Тесный коридор: под полкой supporter идут ещё три связи, а над ней — карточки.
     // Раньше подпись уезжала в сторону и ниже своей линии, чтобы не пересекать чужие штрихи.
@@ -910,6 +925,22 @@ dev -> qa
 cfo -supporter-> ceo`;
 
 describe("powermap: команды", () => {
+  it("короткая запись команды: кавычки, in и teams row", () => {
+    const model = modelOf(`powermap
+team sales "Продажи"
+team qa "QA" in sales
+teams row gap 28
+a [Анна] team=qa
+b [Борис] team=sales
+a -> b`);
+    expect(model.teams.map((team) => [team.id, team.title, team.parent])).toEqual([
+      ["sales", "Продажи", undefined],
+      ["qa", "QA", "sales"],
+    ]);
+    expect(model.teamLayout?.mode).toBe("row");
+    expect(model.teamLayout?.gap).toBe(28);
+  });
+
   it("читает директивы team и teams, атрибут team= и создаёт команду сама", () => {
     const model = modelOf(TEAM_SOURCE);
     expect(model.teams.map((team) => team.id)).toEqual(["front", "back"]);

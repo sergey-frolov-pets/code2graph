@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { orgchartEngine, type OrgModel } from "@/services/mermaid/ext/engines/orgchart";
 import { powermapEngine, type PowerModel } from "@/services/mermaid/ext/engines/powermap";
+import { lanePathHits, routeCompact } from "@/services/mermaid/ext/engines/edge-lanes";
 
 type Rect = { x: number; y: number; width: number; height: number };
 type Pt = { x: number; y: number };
@@ -153,5 +154,25 @@ describe("связи не заходят внутрь карточек", () => {
       if (count > 0) bad.push(`seed ${seed}: ${count}`);
     }
     expect(bad).toEqual([]);
+  });
+});
+
+describe("короткий маршрут", () => {
+  it("обходит карточку полкой или жёлобом и не делает больше четырёх изломов", () => {
+    const blocker = { left: 40, right: 180, top: 30, bottom: 80 };
+    const points = routeCompact({ x: 20, y: 110 }, { x: 220, y: 10 }, [blocker]);
+    let bends = 0;
+    for (let index = 1; index < points.length - 1; index += 1) {
+      const before = points[index - 1];
+      const point = points[index];
+      const after = points[index + 1];
+      const straight =
+        (Math.abs(before.x - point.x) < 0.4 && Math.abs(point.x - after.x) < 0.4) ||
+        (Math.abs(before.y - point.y) < 0.4 && Math.abs(point.y - after.y) < 0.4);
+      if (!straight) bends += 1;
+    }
+    expect(bends).toBeLessThanOrEqual(4);
+    expect(points.length).toBeLessThanOrEqual(6);
+    expect(lanePathHits(points, [blocker])).toBe(false);
   });
 });

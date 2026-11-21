@@ -242,10 +242,101 @@ function gridRoute(
   return dedupe(points);
 }
 
+function bendCount(points: readonly LanePoint[]): number {
+  let bends = 0;
+  for (let index = 1; index < points.length - 1; index += 1) {
+    const before = points[index - 1];
+    const point = points[index];
+    const after = points[index + 1];
+    const same =
+      (Math.abs(before.x - point.x) < 0.4 && Math.abs(point.x - after.x) < 0.4) ||
+      (Math.abs(before.y - point.y) < 0.4 && Math.abs(point.y - after.y) < 0.4);
+    if (!same) bends += 1;
+  }
+  return bends;
+}
+
+function pathBlocked(points: readonly LanePoint[], boxes: readonly LaneBox[], own: readonly LaneBox[]): boolean {
+  const shaped = dedupe(points);
+  if (shaped.length < 2) return true;
+  if (lanePathHits(shaped, boxes, 0)) return true;
+  return own.length > 0 && lanePathHits(shaped, own, 0);
+}
+
+/**
+ * Короткая ортогональная связь: прямая, одна полка или обход в боковой жёлоб.
+ * Больше четырёх изломов не бывает — сетка по краям препятствий сюда не входит.
+ */
+export function routeCompact(
+  start: LanePoint,
+  end: LanePoint,
+  boxes: readonly LaneBox[],
+  options: { startBox?: LaneBox; endBox?: LaneBox; clear?: number } = {},
+): LanePoint[] {
+  const clear = options.clear ?? LANE_CLEAR;
+  const blockers = boxes.map((box) => grow(box, clear));
+  const own = [options.startBox, options.endBox].filter((box): box is LaneBox => Boolean(box));
+  const ok = (points: LanePoint[]): LanePoint[] | null =>
+    pathBlocked(points, blockers, own) ? null : dedupe(points);
+
+  if (Math.abs(start.x - end.x) < 0.6 || Math.abs(start.y - end.y) < 0.6) {
+    const direct = ok([start, end]);
+    if (direct) return direct;
+  }
+
+  const x0 = Math.min(start.x, end.x);
+  const x1 = Math.max(start.x, end.x);
+  const shelves: number[] = [];
+  const gap = Math.abs(start.y - end.y);
+  if (gap > 16) shelves.push((start.y + end.y) / 2);
+  shelves.push(Math.max(start.y, end.y) + 18, Math.min(start.y, end.y) - 18);
+
+  let left = Math.min(start.x, end.x);
+  let right = Math.max(start.x, end.x);
+  for (const box of blockers) {
+    left = Math.min(left, box.left);
+    right = Math.max(right, box.right);
+    if (box.right > x0 && box.left < x1) {
+      shelves.push(box.top - 8, box.bottom + 8);
+    }
+  }
+
+  let best: LanePoint[] | null = null;
+  const consider = (points: LanePoint[]): void => {
+    const shaped = ok(points);
+    if (!shaped) return;
+    if (!best || bendCount(shaped) < bendCount(best)) best = shaped;
+  };
+
+  for (const y of shelves) {
+    consider([start, { x: start.x, y }, { x: end.x, y }, end]);
+    if (best && bendCount(best) <= 2) return best;
+  }
+
+  const stub = 12;
+  const gutters = [left - 16, right + 16];
+  for (const gutter of gutters) {
+    const leave = start.y <= end.y ? start.y + stub : start.y - stub;
+    const approach = start.y <= end.y ? end.y - stub : end.y + stub;
+    consider([
+      start,
+      { x: start.x, y: leave },
+      { x: gutter, y: leave },
+      { x: gutter, y: approach },
+      { x: end.x, y: approach },
+      end,
+    ]);
+  }
+  if (best) return best;
+
+  const mid = (start.y + end.y) / 2;
+  return dedupe([start, { x: start.x, y: mid }, { x: end.x, y: mid }, end]);
+}
+
 /**
  * Путь между двумя точками на кромках карточек. Пробует простые формы
- * (выход перпендикулярно кромке + полка), затем сетку коридоров.
- * Возвращает null, если свободного пути нет.
+ * (выход перпендикулярно кромке + полка), затем обход жёлобом, и только
+ * потом сетку коридоров. Возвращает null, если свободного пути нет.
  */
 export function routeAvoiding(
   start: LanePoint,
@@ -304,7 +395,15 @@ export function routeAvoiding(
     }
   }
 
-  // 2. Сетка коридоров от ближайших к кромкам точек.
+  // 2. Обход в боковой жёлоб: не больше четырёх изломов.
+  for (const stub of stubs) {
+    const compact = routeCompact(stub.start, stub.end, blockers, { clear: 0 });
+    const ok = accept([start, ...compact, end]);
+    if (ok && bendCount(ok) <= 4) return ok;
+  }
+
+  // 3. Сетка коридоров — только если жёлоб тоже перекрыт.
+
   for (const stub of stubs) {
     const points = gridRoute(stub.start, stub.end, blockers, gutter);
     if (!points) continue;
