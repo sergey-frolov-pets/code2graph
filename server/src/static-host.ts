@@ -24,12 +24,19 @@ export function cacheControl(filePath: string): string {
   // no-cache оставляет 304, поэтому совпавший релиз не качается целиком.
   if (
     base === "index.html" ||
+    base === "404.html" ||
     base === "sw.js" ||
     base === "release.json" ||
-    base === "deployment.json" ||
-    base === "app.js"
+    base === "deployment.json"
   ) {
     return "no-cache";
+  }
+  // app.js / app.css и vendor/* версионируются query ?v= в HTML.
+  if (
+    filePath.includes(`${path.sep}assets${path.sep}`) ||
+    filePath.includes(`${path.sep}vendor${path.sep}`)
+  ) {
+    return "public, max-age=31536000, immutable";
   }
   return "public, max-age=3600";
 }

@@ -97,8 +97,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(networkFirstDeploymentConfig(request));
   }
 
-  // Навигацию не перехватываем. Документ ~31 МБ: прогон через Cache Storage
-  // обрывал ответ. Браузер кэширует его сам и следует редиректу на www.
+  // Навигацию не перехватываем: документ грузит браузер (тонкий HTML + assets).
 });
 
 async function networkFirstDeploymentConfig(request) {

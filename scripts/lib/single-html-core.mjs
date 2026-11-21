@@ -336,6 +336,20 @@ export function analyticsSnippet(
 `;
 }
 
+const SPA_PATH_RESTORE_SCRIPT = `      (function (l) {
+        if (l.search.length > 1 && l.search.charAt(1) === "/") {
+          var decoded = l.search
+            .slice(1)
+            .split("&")
+            .map(function (part) {
+              return part.replace(/~and~/g, "&");
+            })
+            .join("?");
+          var base = l.pathname.replace(/\\/$/, "");
+          history.replaceState(null, "", base + decoded + l.hash);
+        }
+      })(location);`;
+
 export function buildSingleHtmlDocument({
   css,
   appJs,
@@ -357,19 +371,7 @@ export function buildSingleHtmlDocument({
     <meta charset="UTF-8" />
     <base href="/" />
     <script>
-      (function (l) {
-        if (l.search.length > 1 && l.search.charAt(1) === "/") {
-          var decoded = l.search
-            .slice(1)
-            .split("&")
-            .map(function (part) {
-              return part.replace(/~and~/g, "&");
-            })
-            .join("?");
-          var base = l.pathname.replace(/\\/$/, "");
-          history.replaceState(null, "", base + decoded + l.hash);
-        }
-      })(location);
+${SPA_PATH_RESTORE_SCRIPT}
     </script>
     <meta
       name="viewport"
@@ -395,6 +397,80 @@ ${analyticsSnippet()}
   </body>
 </html>
 `;
+}
+
+/** Thin shell for GitHub Pages: HTML stays small, app and vendors load as files. */
+export function buildHostedHtmlDocument({
+  cssHref,
+  appJsHref,
+  headExtra = "",
+  includePwaBootstrap = false,
+}) {
+  const pwaBootstrap = includePwaBootstrap
+    ? readFileSync(
+        path.join(appRoot, "public", "pwa-install-bootstrap.js"),
+        "utf8",
+      )
+    : "";
+  const stylesheet = cssHref
+    ? `    <link rel="preload" href="${cssHref}" as="style" />\n    <link rel="stylesheet" href="${cssHref}" />\n`
+    : "";
+  const scriptPreload = `    <link rel="preload" href="${appJsHref}" as="script" />\n`;
+
+  return `<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <base href="/" />
+    <script>
+${SPA_PATH_RESTORE_SCRIPT}
+    </script>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <title>Code2Graph</title>
+    ${headExtra}
+${stylesheet}${scriptPreload}    ${includePwaBootstrap ? `<script>\n${escapeScriptContent(pwaBootstrap)}\n    </script>` : ""}
+  </head>
+  <body>
+${LOADING_SHELL}
+    <script>
+${ERROR_HANDLER_SCRIPT}
+    </script>
+    <script src="${appJsHref}" defer></script>
+${analyticsSnippet()}
+  </body>
+</html>
+`;
+}
+
+export function findDistAssetFileName(extension) {
+  const assetsDir = path.join(distDir, "assets");
+  if (!existsSync(assetsDir)) {
+    return null;
+  }
+  return (
+    readdirSync(assetsDir).find((fileName) => fileName.endsWith(extension)) ??
+    null
+  );
+}
+
+export function writePreparedVendorFiles(targetDir = distDir) {
+  const vendorOut = path.join(targetDir, "vendor");
+  mkdirSync(vendorOut, { recursive: true });
+  copyFileSync(
+    path.join(vendorDir, "viz-global.js"),
+    path.join(vendorOut, "viz-global.js"),
+  );
+  writeFileSync(
+    path.join(vendorOut, "plantuml.js"),
+    preparePlantUmlEngine(
+      readFileSync(path.join(vendorDir, "plantuml.js"), "utf8"),
+    ),
+    "utf8",
+  );
 }
 
 export function readBuiltAssets() {
