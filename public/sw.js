@@ -11,7 +11,6 @@ const PRECACHE = `code2graph-precache-${APP_RELEASE}`;
 self.__code2graphRelease = APP_RELEASE;
 
 const PRECACHE_URLS = [
-  "./index.html",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
@@ -22,18 +21,19 @@ const PRECACHE_URLS = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(
-          keys
-            .filter((key) => key.startsWith(CACHE_PREFIX) && key !== PRECACHE)
-            .map((key) => caches.delete(key)),
-        ),
-      )
-      .then(() => caches.open(PRECACHE))
-      .then((cache) => cache.addAll(PRECACHE_URLS))
-      .catch(() => undefined),
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter((key) => key.startsWith(CACHE_PREFIX) && key !== PRECACHE)
+          .map((key) => caches.delete(key)),
+      );
+      const cache = await caches.open(PRECACHE);
+      await cache.addAll(PRECACHE_URLS);
+      // Страница на старой оболочке может не догрузиться и не нажать
+      // «Обновить». Новый воркер забирает управление сам.
+      await self.skipWaiting();
+    })(),
   );
 });
 
@@ -90,12 +90,6 @@ function isAppShellNavigation(url) {
 
 async function readCachedShell() {
   const shellUrl = new URL(APP_SHELL_PATH, self.location.origin).href;
-  const precache = await caches.open(PRECACHE);
-  const fromPrecache =
-    (await precache.match(shellUrl)) || (await precache.match("./index.html"));
-  if (fromPrecache) {
-    return fromPrecache;
-  }
   const shellCache = await caches.open(APP_SHELL_CACHE);
   return (await shellCache.match(shellUrl)) || (await shellCache.match("./index.html"));
 }
@@ -139,13 +133,6 @@ async function fetchReleaseVersion() {
   }
 }
 
-async function notifyShellUpdated() {
-  const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-  for (const client of clients) {
-    client.postMessage({ type: "APP_SHELL_UPDATED" });
-  }
-}
-
 function shellRequestUrl(request) {
   const url = new URL(request.url);
   const path = normalizedPath(url.pathname);
@@ -154,19 +141,20 @@ function shellRequestUrl(request) {
   return prettyPath ? new URL(APP_SHELL_PATH, self.location.origin).href : request.url;
 }
 
-// Большой index.html не качается заново, пока release.json совпадает с
-// сохранённой оболочкой. no-cache (а не no-store) позволяет 304, когда
-// релиз всё-таки сменился.
-async function refreshShell(request) {
-  const previous = await readStoredRelease();
+// Кэш оболочки отдаём только если её релиз совпал с release.json.
+// Иначе Pages продолжает показывать старый index.html (v1.2.82), который
+// precache сохранял впереди проверки версии. reload обходит HTTP-кэш.
+async function handleNavigation(request) {
   const latest = await fetchReleaseVersion();
-  if (previous && latest && previous === latest) {
-    return readCachedShell();
+  const previous = await readStoredRelease();
+  const cached = await readCachedShell();
+  if (cached && latest && previous === latest) {
+    return cached;
   }
 
   try {
     const response = await fetch(shellRequestUrl(request), {
-      cache: "no-cache",
+      cache: "reload",
       credentials: "same-origin",
     });
     if (response.ok) {
@@ -174,27 +162,14 @@ async function refreshShell(request) {
       if (latest) {
         await storeRelease(latest);
       }
-      if (previous && latest && previous !== latest) {
-        await notifyShellUpdated();
-      }
       return response;
     }
   } catch {
     // Offline: the installed PWA still opens /local/<slug> and /diagram from the shell.
   }
 
-  return readCachedShell();
-}
-
-async function handleNavigation(refresh) {
-  const cached = await readCachedShell();
   if (cached) {
     return cached;
-  }
-
-  const fresh = await refresh;
-  if (fresh) {
-    return fresh;
   }
 
   return new Response("Code2Graph is offline", {
@@ -231,9 +206,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (request.mode === "navigate" && isAppShellNavigation(url)) {
-    const refresh = refreshShell(request);
-    event.waitUntil(refresh.catch(() => undefined));
-    event.respondWith(handleNavigation(refresh));
+    event.respondWith(handleNavigation(request));
   }
 });
 
