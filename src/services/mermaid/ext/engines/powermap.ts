@@ -14,6 +14,7 @@ import {
   monoFlagsFromMode,
   monoGray,
   monoPaint,
+  parseHexColor,
   parseMonoDirective,
   splitLabelLines,
   usesInvertedMono,
@@ -3522,7 +3523,16 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
     const textY = route.labelY;
     const plateX = route.labelX - plateWidth / 2;
     svg.rect(plateX, plateY, plateWidth, plateHeight, {
-      fill: palette.bg,
+      fill: labelPlateFill(
+        route.labelX,
+        route.labelY,
+        palette.bg,
+        teamBoxes,
+        offsetX,
+        offsetY,
+        mono,
+        invertedMono,
+      ),
       stroke: "none",
       "data-label-plate": "1",
     });
@@ -3542,6 +3552,41 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
   }
 
   return svg.toString();
+}
+
+/** Заливка плашки подписи: тот же цвет, что уже нарисован под ней. */
+function labelPlateFill(
+  x: number,
+  y: number,
+  canvas: string,
+  boxes: readonly TeamBox[],
+  offsetX: number,
+  offsetY: number,
+  mono: boolean,
+  invert: boolean,
+): string {
+  let paint: string | undefined;
+  let opacity = 0;
+  for (const box of boxes) {
+    if (box.ghost || box.frame === false || box.fill === "none") continue;
+    const left = offsetX + box.x;
+    const top = offsetY + box.y;
+    if (x < left || x > left + box.width || y < top || y > top + box.height) continue;
+    const raw = box.fill ?? canvas;
+    paint = mono ? monoPaint(raw, invert) : raw;
+    opacity = box.fill ? 0.55 : 0.35;
+  }
+  if (!paint || opacity <= 0) return canvas;
+  return blendOver(canvas, paint, opacity);
+}
+
+function blendOver(base: string, paint: string, opacity: number): string {
+  const bg = parseHexColor(base);
+  const fg = parseHexColor(paint);
+  if (!bg || !fg) return base;
+  const mix = (from: number, to: number) => Math.round(from * (1 - opacity) + to * opacity);
+  const channel = (value: number) => value.toString(16).padStart(2, "0");
+  return `#${channel(mix(bg.r, fg.r))}${channel(mix(bg.g, fg.g))}${channel(mix(bg.b, fg.b))}`;
 }
 
 function drawLegend(

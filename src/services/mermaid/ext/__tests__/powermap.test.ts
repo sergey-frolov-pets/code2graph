@@ -578,6 +578,21 @@ ceo -coach-> legal`), {});
     }
   });
 
+  it("плашка подписи берёт цвет фона под ней", () => {
+    const svg = powermapEngine.render(modelOf(`powermap
+team front [Фронт] fill=#ff0000
+a [Анна] team=front
+b [Борис] team=front
+a -> b
+a -supporter-> b label=бюджет`), {});
+    const plate = [...svg.matchAll(/<rect\b([^>]*)\/>/g)]
+      .map((match) => match[1])
+      .find((attrs) => attrs.includes('data-label-plate="1"'));
+    expect(plate).toBeTruthy();
+    // Команда рисуется #ff0000 поверх белого холста с непрозрачностью 0.55.
+    expect(plate).toContain('fill="#ff7373"');
+  });
+
   it("подпись держится своей связи: по центру полки и вплотную к ней", () => {
     // Тесный коридор: под полкой supporter идут ещё три связи, а над ней — карточки.
     // Раньше подпись уезжала в сторону и ниже своей линии, чтобы не пересекать чужие штрихи.
