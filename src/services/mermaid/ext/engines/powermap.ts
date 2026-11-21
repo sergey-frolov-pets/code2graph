@@ -2622,7 +2622,7 @@ function routeCrossReports(
       ...foreignTeamBoxes(boxes, membership, edge.from, edge.to, offsetX, offsetY),
     ];
     const elbow = elbowPoints(x1, y1, x2, y2, midY);
-    let points: RoutePoint[] = pathHitsCards(elbow, obstacles)
+    const points: RoutePoint[] = pathHitsCards(elbow, obstacles)
       ? routeCompact({ x: x1, y: y1 }, { x: x2, y: y2 }, obstacles, { startBox: fromBox, endBox: toBox })
       : elbow;
     if (points.length >= 2) {
