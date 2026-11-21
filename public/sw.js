@@ -36,16 +36,9 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    (async () => {
-      await self.clients.claim();
-      // Вкладка с ответом сломанного воркера сама документ не перезапросит.
-      const windows = await self.clients.matchAll({ type: "window" });
-      await Promise.all(
-        windows.map((client) => (client.navigate ? client.navigate(client.url) : undefined)),
-      );
-    })(),
-  );
+  // Без принудительного reload вкладок: иначе первый заход рвёт скачивание
+  // большого assets/app.js и зависает на лоадере.
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener("message", (event) => {
