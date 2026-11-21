@@ -617,6 +617,41 @@ ceo -coach-> legal`), {});
         expect(gap).toBeGreaterThanOrEqual(8);
       }
     }
+    const colored = [...svg.matchAll(/<path d="([^"]+)"([^>]*)\/>/g)]
+      .filter((match) => match[2].includes("ext-pm-link-"))
+      .map((match) => ({
+        points: pathPoints(match[1]),
+        stroke: /stroke="([^"]+)"/.exec(match[2])?.[1] ?? "",
+      }));
+    for (const path of colored) {
+      let bends = 0;
+      for (let index = 1; index < path.points.length - 1; index += 1) {
+        const before = path.points[index - 1];
+        const point = path.points[index];
+        const after = path.points[index + 1];
+        const straight =
+          (Math.abs(before.x - point.x) < 0.6 && Math.abs(point.x - after.x) < 0.6) ||
+          (Math.abs(before.y - point.y) < 0.6 && Math.abs(point.y - after.y) < 0.6);
+        if (!straight) bends += 1;
+      }
+      expect(bends, `${path.stroke} ${JSON.stringify(path.points)}`).toBeLessThanOrEqual(3);
+    }
+    const budget = [...svg.matchAll(/<text\b([^>]*)>([^<]*)<\/text>/g)].find((match) => match[2] === "бюджет");
+    expect(budget).toBeTruthy();
+    const labelX = Number(/\bx="([^"]+)"/.exec(budget?.[1] ?? "")?.[1]);
+    const labelY = Number(/\by="([^"]+)"/.exec(budget?.[1] ?? "")?.[1]);
+    const owns = colored.some(
+      (path) =>
+        path.stroke === "#1a7f37" &&
+        path.points.some((point, index) => {
+          const next = path.points[index + 1];
+          if (!next || Math.abs(point.y - next.y) > 0.6) return false;
+          const x0 = Math.min(point.x, next.x);
+          const x1 = Math.max(point.x, next.x);
+          return labelX >= x0 - 4 && labelX <= x1 + 4 && Math.abs(labelY - point.y) < 18;
+        }),
+    );
+    expect(owns).toBe(true);
   });
 
   it("плашка подписи берёт цвет фона под ней", () => {

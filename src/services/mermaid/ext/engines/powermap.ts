@@ -1373,6 +1373,11 @@ interface InfluenceDraft {
   gapTop: number;
   gapBottom: number;
   corridor: string;
+  /** Выход и вход через бок карточки, когда люди стоят в разных колонках. */
+  side1?: "left" | "right";
+  side2?: "left" | "right";
+  channel?: number;
+  preset?: RoutePoint[];
 }
 
 function rangesOverlap(a0: number, a1: number, b0: number, b1: number): boolean {
@@ -1900,7 +1905,7 @@ function restackShelves(
 
   const shelves: { points: RoutePoint[]; index: number }[] = [];
   for (const route of routes) {
-    for (let index = 0; index < route.points.length - 1; index += 1) {
+    for (let index = 1; index < route.points.length - 2; index += 1) {
       const a = route.points[index];
       const b = route.points[index + 1];
       if (Math.abs(a.y - b.y) > 0.5 || Math.abs(a.x - b.x) < 8) continue;
@@ -2036,7 +2041,7 @@ function spreadVerticals(
 function separateSameShelves(routes: readonly { points: RoutePoint[] }[], cards: readonly CardBox[]): void {
   const shelves: { points: RoutePoint[]; index: number }[] = [];
   for (const route of routes) {
-    for (let index = 0; index < route.points.length - 1; index += 1) {
+    for (let index = 1; index < route.points.length - 2; index += 1) {
       const a = route.points[index];
       const b = route.points[index + 1];
       if (Math.abs(a.y - b.y) > 0.5 || Math.abs(a.x - b.x) < 8) continue;
@@ -2044,6 +2049,15 @@ function separateSameShelves(routes: readonly { points: RoutePoint[] }[], cards:
     }
   }
   const taken: { y: number; x0: number; x1: number }[] = [];
+  for (const route of routes) {
+    for (const index of [0, route.points.length - 2]) {
+      if (index < 0 || index >= route.points.length - 1) continue;
+      const a = route.points[index];
+      const b = route.points[index + 1];
+      if (Math.abs(a.y - b.y) > 0.5 || Math.abs(a.x - b.x) < 8) continue;
+      taken.push({ y: a.y, x0: Math.min(a.x, b.x), x1: Math.max(a.x, b.x) });
+    }
+  }
   const hitsCard = (y: number, x0: number, x1: number): boolean =>
     cards.some(
       (box) =>
@@ -2581,6 +2595,7 @@ function routeInfluences(
     });
   }
   spreadLabeledSpans(drafts, offsetX);
+  if (teams) assignSidePorts(drafts, placed, offsetX, offsetY, reports);
 
   const laneOf = new Map<InfluenceDraft, { lane: number; count: number }>();
   const corridors = new Map<string, InfluenceDraft[]>();
@@ -2620,10 +2635,19 @@ function routeInfluences(
     if (corridorHi - corridorLo < 12) corridorHi = corridorLo + 24;
     const shelfLo = Math.min(draft.x1, draft.x2);
     const shelfHi = Math.max(draft.x1, draft.x2);
-    const shelves = freeBands(corridorLo, corridorHi, shelfLo, shelfHi, obstacles)
-      .map((band) => Math.min(band.bottom - 5, Math.max(band.top + 5, midY)))
-      .sort((left, right) => Math.abs(left - midY) - Math.abs(right - midY));
     let points: RoutePoint[] | null = null;
+    if (draft.preset) {
+      const shaped = draft.preset.map((point) => ({ ...point }));
+      const blocked = cardsBetween(placed, draft, offsetX, offsetY);
+      if (!pathHitsCards(shaped, blocked) && !pathHitsCards(shaped, [fromBox, toBox])) {
+        points = shaped;
+      }
+    }
+    const shelves = points
+      ? []
+      : freeBands(corridorLo, corridorHi, shelfLo, shelfHi, obstacles)
+          .map((band) => Math.min(band.bottom - 5, Math.max(band.top + 5, midY)))
+          .sort((left, right) => Math.abs(left - midY) - Math.abs(right - midY));
     for (const y of shelves) {
       const candidate = elbowPoints(draft.x1, draft.y1, draft.x2, draft.y2, y);
       if (pathHitsCards(candidate, obstacles)) continue;
@@ -2659,10 +2683,20 @@ function routeInfluences(
       maxX: 0,
       fromId: draft.from.node.id,
       toId: draft.to.node.id,
+      preset: draft.preset?.map((point) => ({ ...point })),
     };
   });
+  const usedLanes: { y: number; x0: number; x1: number }[] = [];
+  for (const route of influenceRoutes) {
+    for (let index = 0; index < route.points.length - 1; index += 1) {
+      const a = route.points[index];
+      const b = route.points[index + 1];
+      if (Math.abs(a.y - b.y) > 0.5 || Math.abs(a.x - b.x) < 8) continue;
+      usedLanes.push({ y: a.y, x0: Math.min(a.x, b.x), x1: Math.max(a.x, b.x) });
+    }
+  }
   const crossRoutes = teams
-    ? routeCrossReports(placed, teams.crossReports, offsetX, offsetY, teams.boxes, teams.membership, teams.axis)
+    ? routeCrossReports(placed, teams.crossReports, offsetX, offsetY, teams.boxes, teams.membership, teams.axis, usedLanes)
     : [];
   const routes = [...crossRoutes, ...influenceRoutes];
   separateInfluenceTracks(
@@ -2801,6 +2835,100 @@ function dedupePoints(points: readonly RoutePoint[]): RoutePoint[] {
   return kept;
 }
 
+function assignSidePorts(
+  drafts: InfluenceDraft[],
+  placed: readonly PlacedTreeNode<PowerPerson>[],
+  offsetX: number,
+  offsetY: number,
+  reports: readonly { x1: number; x2: number; midY: number; midX?: number }[] = [],
+): void {
+  const taken: { y: number; x0: number; x1: number }[] = [];
+  for (const report of reports) {
+    if (report.midX !== undefined) continue;
+    taken.push({
+      y: report.midY,
+      x0: Math.min(report.x1, report.x2),
+      x1: Math.max(report.x1, report.x2),
+    });
+  }
+  const ordered = [...drafts].sort((a, b) => Number(Boolean(b.label)) - Number(Boolean(a.label)));
+  for (const draft of ordered) {
+    const fromBox = cardBox(draft.from, offsetX, offsetY);
+    const toBox = cardBox(draft.to, offsetX, offsetY);
+    const fromOnLeft = fromBox.right <= toBox.left + 1;
+    const fromOnRight = fromBox.left >= toBox.right - 1;
+    if (!fromOnLeft && !fromOnRight) continue;
+    const others = placed
+      .filter((card) => card.node.id !== draft.from.node.id && card.node.id !== draft.to.node.id)
+      .map((card) => cardBox(card, offsetX, offsetY));
+    const sourceX = fromOnLeft ? fromBox.right : fromBox.left;
+    const targetX = fromOnLeft ? toBox.left : toBox.right;
+    const labelSpan = draft.label ? measureLabelWidth(draft.label, EDGE_LABEL_FONT) + 24 : 0;
+    const overlapTop = Math.max(fromBox.top, toBox.top) + 12;
+    const overlapBottom = Math.min(fromBox.bottom, toBox.bottom) - 12;
+    const direct: number[] = [];
+    if (overlapBottom - overlapTop > 8) {
+      direct.push((overlapTop + overlapBottom) / 2, overlapTop, overlapBottom);
+    }
+    for (const y of direct) {
+      const points = [
+        { x: sourceX, y },
+        { x: targetX, y },
+      ];
+      if (pathHitsCards(points, others) || pathHitsCards(points, [fromBox, toBox])) continue;
+      const x0 = Math.min(sourceX, targetX);
+      const x1 = Math.max(sourceX, targetX);
+      if (x1 - x0 < labelSpan) continue;
+      if (taken.some((item) => Math.abs(item.y - y) < 12 && x1 > item.x0 + 2 && x0 < item.x1 - 2)) continue;
+      draft.x1 = sourceX;
+      draft.y1 = y;
+      draft.x2 = targetX;
+      draft.y2 = y;
+      draft.side1 = fromOnLeft ? "right" : "left";
+      draft.side2 = fromOnLeft ? "left" : "right";
+      draft.channel = targetX;
+      draft.preset = points.map((point) => ({ ...point }));
+      taken.push({ y, x0, x1 });
+      break;
+    }
+    if (draft.channel !== undefined) continue;
+    const arriveX = Math.min(toBox.right - 14, Math.max(toBox.left + 14, (toBox.left + toBox.right) / 2));
+    const shelves: { y: number; endY: number }[] = [];
+    for (let extra = 0; extra <= 5; extra += 1) {
+      shelves.push({ y: toBox.top - 16 - extra * 14, endY: toBox.top });
+      shelves.push({ y: toBox.bottom + 16 + extra * 14, endY: toBox.bottom });
+    }
+    for (const shelf of shelves) {
+      const onSide = shelf.y > fromBox.top + 8 && shelf.y < fromBox.bottom - 8;
+      const start = onSide
+        ? { x: sourceX, y: shelf.y }
+        : {
+            x: Math.min(fromBox.right - 12, Math.max(fromBox.left + 12, arriveX)),
+            y: shelf.y < (fromBox.top + fromBox.bottom) / 2 ? fromBox.top : fromBox.bottom,
+          };
+      const end = { x: arriveX, y: shelf.endY };
+      const points = onSide
+        ? dedupePoints([start, { x: end.x, y: start.y }, end])
+        : dedupePoints([start, { x: start.x, y: shelf.y }, { x: end.x, y: shelf.y }, end]);
+      if (pathHitsCards(points, others) || pathHitsCards(points, [fromBox, toBox])) continue;
+      const x0 = Math.min(start.x, end.x);
+      const x1 = Math.max(start.x, end.x);
+      if (Math.abs(start.x - end.x) < labelSpan) continue;
+      if (taken.some((item) => Math.abs(item.y - shelf.y) < 12 && x1 > item.x0 + 2 && x0 < item.x1 - 2)) continue;
+      draft.x1 = start.x;
+      draft.y1 = start.y;
+      draft.x2 = end.x;
+      draft.y2 = end.y;
+      draft.side1 = onSide ? (fromOnLeft ? "right" : "left") : undefined;
+      draft.side2 = undefined;
+      draft.channel = end.x;
+      draft.preset = points.map((point) => ({ ...point }));
+      taken.push({ y: shelf.y, x0: Math.min(start.x, end.x), x1: Math.max(start.x, end.x) });
+      break;
+    }
+  }
+}
+
 function elbowPoints(x1: number, y1: number, x2: number, y2: number, midY: number): RoutePoint[] {
   return dedupePoints([
     { x: x1, y: y1 },
@@ -2843,6 +2971,52 @@ function pathHitsCards(points: readonly RoutePoint[], boxes: readonly CardBox[])
 
 
 /** Отчёты между командами: как стрелки влияния, но цветом оси и без подписи. */
+function facingRoute(
+  fromBox: CardBox,
+  toBox: CardBox,
+  others: readonly CardBox[],
+  taken: { y: number; x0: number; x1: number }[],
+): RoutePoint[] | null {
+  const fromOnLeft = fromBox.right <= toBox.left + 1;
+  const fromOnRight = fromBox.left >= toBox.right - 1;
+  if (!fromOnLeft && !fromOnRight) return null;
+  const sourceX = fromOnLeft ? fromBox.right : fromBox.left;
+  const blocked = (points: RoutePoint[], y: number): boolean => {
+    if (pathHitsCards(points, others) || pathHitsCards(points, [fromBox, toBox])) return true;
+    const x0 = Math.min(...points.map((point) => point.x));
+    const x1 = Math.max(...points.map((point) => point.x));
+    return taken.some((item) => Math.abs(item.y - y) < 12 && x1 > item.x0 + 2 && x0 < item.x1 - 2);
+  };
+  const arriveX = Math.min(toBox.right - 14, Math.max(toBox.left + 14, (toBox.left + toBox.right) / 2));
+  // Короткая полка между соседними карточками не вмещает подпись: её оставляет прежний маршрут.
+  if (Math.abs(arriveX - sourceX) < 90) return null;
+  for (let extra = 0; extra <= 6; extra += 1) {
+    for (const shelf of [
+      { y: toBox.top - 16 - extra * 14, endY: toBox.top },
+      { y: toBox.bottom + 16 + extra * 14, endY: toBox.bottom },
+    ]) {
+      const onSide = shelf.y > fromBox.top + 8 && shelf.y < fromBox.bottom - 8;
+      const start = onSide
+        ? { x: sourceX, y: shelf.y }
+        : {
+            x: Math.min(fromBox.right - 12, Math.max(fromBox.left + 12, arriveX)),
+            y: shelf.y < (fromBox.top + fromBox.bottom) / 2 ? fromBox.top : fromBox.bottom,
+          };
+      const end = { x: arriveX, y: shelf.endY };
+      const points = onSide
+        ? dedupePoints([start, { x: end.x, y: start.y }, end])
+        : dedupePoints([start, { x: start.x, y: shelf.y }, { x: end.x, y: shelf.y }, end]);
+      if (!blocked(points, shelf.y)) {
+        const x0 = Math.min(...points.map((point) => point.x));
+        const x1 = Math.max(...points.map((point) => point.x));
+        taken.push({ y: shelf.y, x0, x1 });
+        return points;
+      }
+    }
+  }
+  return null;
+}
+
 function routeCrossReports(
   placed: readonly PlacedTreeNode<PowerPerson>[],
   edges: readonly PowerReportEdge[],
@@ -2851,9 +3025,11 @@ function routeCrossReports(
   boxes: readonly TeamBox[],
   membership: Map<string, string>,
   axis: string,
+  lanes: { y: number; x0: number; x1: number }[] = [],
 ): RoutedInfluence[] {
   const byId = new Map(placed.map((card) => [card.node.id, card]));
   const out: RoutedInfluence[] = [];
+  const reportLanes: { y: number; x0: number; x1: number }[] = [...lanes];
   edges.forEach((edge) => {
     const from = byId.get(edge.from);
     const to = byId.get(edge.to);
@@ -2876,16 +3052,20 @@ function routeCrossReports(
       y2 = toBox.bottom;
       midY = Math.max(y1, y2) + 18;
     }
+    const cardObstacles = placed
+      .filter((card) => card.node.id !== edge.from && card.node.id !== edge.to)
+      .map((card) => cardBox(card, offsetX, offsetY));
     const obstacles = [
-      ...placed
-        .filter((card) => card.node.id !== edge.from && card.node.id !== edge.to)
-        .map((card) => cardBox(card, offsetX, offsetY)),
+      ...cardObstacles,
       ...foreignTeamBoxes(boxes, membership, edge.from, edge.to, offsetX, offsetY),
     ];
     const elbow = elbowPoints(x1, y1, x2, y2, midY);
-    const points: RoutePoint[] = pathHitsCards(elbow, obstacles)
-      ? routeCompact({ x: x1, y: y1 }, { x: x2, y: y2 }, obstacles, { startBox: fromBox, endBox: toBox })
-      : elbow;
+    const facing = facingRoute(fromBox, toBox, cardObstacles, reportLanes);
+    const points: RoutePoint[] = facing
+      ? facing
+      : pathHitsCards(elbow, obstacles)
+        ? routeCompact({ x: x1, y: y1 }, { x: x2, y: y2 }, obstacles, { startBox: fromBox, endBox: toBox })
+        : elbow;
     if (points.length >= 2) {
       points[0] = clipToNearEdge(points[0], points[1], fromBox);
       points[points.length - 1] = clipToNearEdge(points[points.length - 1], points[points.length - 2], toBox);
