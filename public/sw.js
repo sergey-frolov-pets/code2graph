@@ -1,8 +1,6 @@
 const CACHE_PREFIX = "code2graph-";
 const SHARED_PUML_CACHE = "shared-puml-v1";
-const APP_SHELL_CACHE = "code2graph-shell-v3";
 const LIBRARY_API_CACHE = "code2graph-library-api-v1";
-const SHELL_RELEASE_KEY = "./shell-release";
 
 // Подставляется при сборке. Имя precache и байты sw.js меняются с релизом,
 // поэтому registration.update() видит новый воркер без query ?v=.
@@ -38,7 +36,16 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    (async () => {
+      await self.clients.claim();
+      // Вкладка с ответом сломанного воркера сама документ не перезапросит.
+      const windows = await self.clients.matchAll({ type: "window" });
+      await Promise.all(
+        windows.map((client) => (client.navigate ? client.navigate(client.url) : undefined)),
+      );
+    })(),
+  );
 });
 
 self.addEventListener("message", (event) => {
@@ -64,120 +71,6 @@ self.addEventListener("message", (event) => {
   );
 });
 
-const APP_SHELL_PATH = "/index.html";
-const CLIPBOARD_DIAGRAM_PATH = "/diagram";
-const LOCAL_DATA_LINK_PATH = /^\/local\/[a-z0-9]+(?:-[a-z0-9]+)*$/i;
-const SAMPLE_PATH = /^\/samples\/[a-z][a-z0-9]*-[a-z][a-z0-9_]*$/i;
-
-function normalizedPath(pathname) {
-  const path = pathname.replace(/\/+$/, "");
-  return path || "/";
-}
-
-function isAppShellNavigation(url) {
-  if (url.origin !== self.location.origin) {
-    return false;
-  }
-  const path = normalizedPath(url.pathname);
-  return (
-    path === "/" ||
-    path === APP_SHELL_PATH ||
-    path.toLowerCase() === CLIPBOARD_DIAGRAM_PATH ||
-    LOCAL_DATA_LINK_PATH.test(path) ||
-    SAMPLE_PATH.test(path)
-  );
-}
-
-async function readCachedShell() {
-  const shellUrl = new URL(APP_SHELL_PATH, self.location.origin).href;
-  const shellCache = await caches.open(APP_SHELL_CACHE);
-  return (await shellCache.match(shellUrl)) || (await shellCache.match("./index.html"));
-}
-
-async function storeShell(response) {
-  if (!response.ok) {
-    return;
-  }
-  const cache = await caches.open(APP_SHELL_CACHE);
-  await cache.put(new URL(APP_SHELL_PATH, self.location.origin).href, response.clone());
-}
-
-async function readStoredRelease() {
-  const cache = await caches.open(APP_SHELL_CACHE);
-  const response = await cache.match(SHELL_RELEASE_KEY);
-  if (!response) {
-    return null;
-  }
-  const version = (await response.text()).trim();
-  return version || null;
-}
-
-async function storeRelease(version) {
-  const cache = await caches.open(APP_SHELL_CACHE);
-  await cache.put(SHELL_RELEASE_KEY, new Response(version));
-}
-
-async function fetchReleaseVersion() {
-  try {
-    const response = await fetch(new URL("/release.json", self.location.origin).href, {
-      cache: "no-store",
-      credentials: "same-origin",
-    });
-    if (!response.ok) {
-      return null;
-    }
-    const data = await response.json();
-    return typeof data.version === "string" && data.version ? data.version : null;
-  } catch {
-    return null;
-  }
-}
-
-function shellRequestUrl(request) {
-  const url = new URL(request.url);
-  const path = normalizedPath(url.pathname);
-  const prettyPath = path !== "/" && path !== APP_SHELL_PATH;
-  // Pretty routes (/diagram, /local/…, /samples/…) отдаются тем же index.html.
-  return prettyPath ? new URL(APP_SHELL_PATH, self.location.origin).href : request.url;
-}
-
-// Кэш оболочки отдаём только если её релиз совпал с release.json.
-// Иначе Pages продолжает показывать старый index.html (v1.2.82), который
-// precache сохранял впереди проверки версии. reload обходит HTTP-кэш.
-async function handleNavigation(request) {
-  const latest = await fetchReleaseVersion();
-  const previous = await readStoredRelease();
-  const cached = await readCachedShell();
-  if (cached && latest && previous === latest) {
-    return cached;
-  }
-
-  try {
-    const response = await fetch(shellRequestUrl(request), {
-      cache: "reload",
-      credentials: "same-origin",
-    });
-    if (response.ok) {
-      await storeShell(response);
-      if (latest) {
-        await storeRelease(latest);
-      }
-      return response;
-    }
-  } catch {
-    // Offline: the installed PWA still opens /local/<slug> and /diagram from the shell.
-  }
-
-  if (cached) {
-    return cached;
-  }
-
-  return new Response("Code2Graph is offline", {
-    status: 503,
-    headers: { "Content-Type": "text/plain; charset=utf-8" },
-  });
-}
-
 self.addEventListener("fetch", (event) => {
   const request = event.request;
 
@@ -202,12 +95,10 @@ self.addEventListener("fetch", (event) => {
 
   if (url.origin === self.location.origin && url.pathname.endsWith("/deployment.json")) {
     event.respondWith(networkFirstDeploymentConfig(request));
-    return;
   }
 
-  if (request.mode === "navigate" && isAppShellNavigation(url)) {
-    event.respondWith(handleNavigation(request));
-  }
+  // Навигацию не перехватываем. Документ ~31 МБ: прогон через Cache Storage
+  // обрывал ответ. Браузер кэширует его сам и следует редиректу на www.
 });
 
 async function networkFirstDeploymentConfig(request) {
