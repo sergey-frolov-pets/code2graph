@@ -636,22 +636,32 @@ ceo -coach-> legal`), {});
       }
       expect(bends, `${path.stroke} ${JSON.stringify(path.points)}`).toBeLessThanOrEqual(3);
     }
-    const budget = [...svg.matchAll(/<text\b([^>]*)>([^<]*)<\/text>/g)].find((match) => match[2] === "бюджет");
-    expect(budget).toBeTruthy();
-    const labelX = Number(/\bx="([^"]+)"/.exec(budget?.[1] ?? "")?.[1]);
-    const labelY = Number(/\by="([^"]+)"/.exec(budget?.[1] ?? "")?.[1]);
-    const owns = colored.some(
-      (path) =>
-        path.stroke === "#1a7f37" &&
-        path.points.some((point, index) => {
-          const next = path.points[index + 1];
-          if (!next || Math.abs(point.y - next.y) > 0.6) return false;
+    const plates = labelPlates(svg);
+    const labels = [...svg.matchAll(/<text\b[^>]*data-edge-label="1"[^>]*>([^<]*)<\/text>/g)].map((match) => match[1]);
+    expect(labels).toEqual(["бюджет", "общий бюджет"]);
+    for (const [index, plate] of plates.entries()) {
+      const centerX = plate.x + plate.width / 2;
+      const shelves = colored.flatMap((path) =>
+        path.points.slice(0, -1).flatMap((point, pointIndex) => {
+          const next = path.points[pointIndex + 1];
+          if (!next || Math.abs(point.y - next.y) > 0.6) return [];
           const x0 = Math.min(point.x, next.x);
           const x1 = Math.max(point.x, next.x);
-          return labelX >= x0 - 4 && labelX <= x1 + 4 && Math.abs(labelY - point.y) < 18;
+          if (x1 < plate.x - 1 || x0 > plate.x + plate.width + 1) return [];
+          const above = point.y - (plate.y + plate.height);
+          const below = plate.y - point.y;
+          const gap = above >= -0.5 ? above : below;
+          return [{ stroke: path.stroke, y: point.y, gap, mid: (x0 + x1) / 2 }];
         }),
-    );
-    expect(owns).toBe(true);
+      );
+      shelves.sort((left, right) => left.gap - right.gap);
+      const own = shelves[0];
+      expect(own?.stroke, labels[index]).toBe("#1a7f37");
+      expect(own.gap, labels[index]).toBeLessThanOrEqual(4);
+      expect(own.gap, labels[index]).toBeGreaterThanOrEqual(-0.5);
+      if (shelves[1]) expect(shelves[1].gap - own.gap, labels[index]).toBeGreaterThanOrEqual(8);
+      if (labels[index] === "бюджет") expect(Math.abs(centerX - own.mid)).toBeLessThanOrEqual(8);
+    }
   });
 
   it("плашка подписи берёт цвет фона под ней", () => {

@@ -2251,12 +2251,11 @@ function edgeLabelPlate(labelY: number, lineCount: number): { top: number; botto
   return { top, bottom: top + height, height };
 }
 
-/** Базовая линия подписи: над полкой (как раньше) или под ней, если сверху карточки. */
+/** Базовая линия подписи вплотную к полке: зазор плашки до штриха — 2px. */
 function edgeLabelBaseline(lineY: number, lineCount: number, side: "above" | "below"): number {
   const extra = Math.max(0, lineCount - 1) * labelLineStep(EDGE_LABEL_FONT);
-  if (side === "above") return lineY - 6 - extra / 2;
-  const { height } = edgeLabelPlate(0, lineCount);
-  return lineY + 4 + EDGE_LABEL_BAND - 2 + (height - EDGE_LABEL_BAND) / 2;
+  if (side === "above") return lineY - 4 - extra / 2;
+  return lineY + EDGE_LABEL_BAND + extra / 2;
 }
 
 /** Площадь пересечения плашки с карточками: 0 — свободно. */
@@ -2377,6 +2376,25 @@ function crossedStrokes(segments: readonly FlatSegment[], owner: number, box: Ca
   return count;
 }
 
+/**
+ * Чужая полка на той же высоте, что и плашка, читается как её линия,
+ * даже если штрих обрывается рядом. Штраф падает, пока зазор по X не станет явным.
+ */
+function sharedBandPenalty(segments: readonly FlatSegment[], owner: number, box: CardBox): number {
+  let penalty = 0;
+  for (const segment of segments) {
+    if (segment.owner === owner) continue;
+    if (Math.abs(segment.y0 - segment.y1) >= 0.6) continue;
+    if (segment.y0 <= box.top + 1 || segment.y0 >= box.bottom - 1) continue;
+    const x0 = Math.min(segment.x0, segment.x1);
+    const x1 = Math.max(segment.x0, segment.x1);
+    const gap = box.left >= x1 ? box.left - x1 : x0 >= box.right ? x0 - box.right : 0;
+    if (gap >= 28) continue;
+    penalty += (28 - gap) * 4;
+  }
+  return penalty;
+}
+
 /** Сколько границ рамок команд плашка перерезает. Стоять внутри рамки — нормально. */
 function crossedFrameBorders(box: CardBox, frames: readonly CardBox[]): number {
   let count = 0;
@@ -2392,9 +2410,9 @@ function crossedFrameBorders(box: CardBox, frames: readonly CardBox[]): number {
 }
 
 /**
- * Подпись рядом со своей связью. Перебирает полки маршрута, сторону (над/под линией)
- * и небольшой сдвиг по вертикали; берёт место, где плашка не наезжает на карточки,
- * на уже поставленные подписи и на чужие штрихи, и лишь в крайнем случае — минимальное перекрытие.
+ * Подпись над серединой своей полки. Если это место пересекает карточку, чужой
+ * штрих или другую подпись — сдвигаем вдоль полки или на другую сторону, но
+ * плашка остаётся вплотную к своей линии, а чужое оказывается дальше.
  */
 function placeEdgeLabel(
   points: readonly RoutePoint[],
@@ -2419,7 +2437,6 @@ function placeEdgeLabel(
   hosts.sort((left, right) => right.xMax - right.xMin - (left.xMax - left.xMin));
 
   let best: { x: number; y: number; score: number } | null = null;
-  let fallback: { x: number; y: number; overlap: number; score: number } | null = null;
   const hostCandidates = hosts.slice(0, 3);
   for (let hostRank = 0; hostRank < hostCandidates.length; hostRank += 1) {
     const host = hostCandidates[hostRank];
@@ -2430,43 +2447,39 @@ function placeEdgeLabel(
       const plate = edgeLabelPlate(y, lineCount);
       const free = labelFreeSpans(segments, owner, plate.top, plate.bottom, host.xMin, host.xMax);
       const xs = labelXCandidates(free, width, center, host.xMin, host.xMax);
+      for (let step = 16; step <= Math.max(host.xMax - host.xMin, width); step += 16) {
+        xs.push(center - step, center + step);
+      }
       for (const x of xs) {
+        if (x + width / 2 < host.xMin + 8 || x - width / 2 > host.xMax - 8) continue;
         const box: CardBox = {
           left: x - width / 2,
           right: x + width / 2,
           top: plate.top,
           bottom: plate.bottom,
         };
-        const hard =
+        const overlap =
           plateCardOverlap(box.left, box.right, plate.top, plate.bottom, cards) +
           plateCardOverlap(box.left, box.right, plate.top, plate.bottom, taken);
-        // Чужие штрихи и границы рамок — цена места, а не запрет: иначе подпись
-        // уезжает от своей полки туда, где свободно, и выглядит чужой.
+        const strokes = crossedStrokes(segments, owner, box);
+        // Сначала своя полка без чужих штрихов и карточек, затем середина и сторона «над».
         const score =
+          strokes * 100000 +
+          overlap * 100 +
+          hostRank * 400 +
+          sharedBandPenalty(segments, owner, box) +
           Math.abs(x - center) * 1.2 +
-          crossedStrokes(segments, owner, box) * 18 +
           crossedFrameBorders(box, frames) * 10 +
-          hostRank * 8 +
-          (side === "above" ? 0 : 6);
-        if (hard > 0) {
-          if (
-            !fallback ||
-            hard < fallback.overlap - 0.5 ||
-            (Math.abs(hard - fallback.overlap) <= 0.5 && score < fallback.score)
-          ) {
-            fallback = { x, y, overlap: hard, score };
-          }
-          continue;
-        }
+          (side === "above" ? 0 : 8);
         if (!best || score < best.score) best = { x, y, score };
       }
     }
   }
   if (best) return { x: best.x, y: best.y };
-  // Свободного места нет — ставим там, где перекрытие минимально.
-  return fallback
-    ? { x: fallback.x, y: fallback.y }
-    : { x: (hosts[0].xMin + hosts[0].xMax) / 2, y: edgeLabelBaseline(hosts[0].lineY, lineCount, "above") };
+  return {
+    x: (hosts[0].xMin + hosts[0].xMax) / 2,
+    y: edgeLabelBaseline(hosts[0].lineY, lineCount, "above"),
+  };
 }
 
 /** Ломаные стрелки влияния, как линии подчинения: без наложения друг на друга. */
