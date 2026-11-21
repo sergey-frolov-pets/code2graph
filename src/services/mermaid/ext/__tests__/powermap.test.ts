@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { MERMAID_EXT_SAMPLES_RU } from "@/constants/samples/mermaid-ext-samples";
 import { powermapEngine, type PowerModel } from "../engines/powermap";
 import { checkFixturesForType } from "./fixtures.test";
 import { assertSvgInvariants } from "./svg-invariants";
@@ -574,6 +575,46 @@ ceo -coach-> legal`), {});
         for (let index = 0; index < path.points.length - 1; index += 1) {
           expect(segmentHitsRect(path.points[index], path.points[index + 1], plate)).toBe(false);
         }
+      }
+    }
+  });
+
+  it("связи образца не ложатся друг на друга и не идут по кромке", () => {
+    const svg = powermapEngine.render(modelOf(MERMAID_EXT_SAMPLES_RU.powermap), {});
+    const rects = [...svg.matchAll(/<rect\b([^>]*)\/>/g)]
+      .map((match) => match[1])
+      .filter((attrs) => attrs.includes('data-team="powermap"') || (/\bwidth="([^"]+)"/.exec(attrs) && Number(/\bwidth="([^"]+)"/.exec(attrs)?.[1]) > 80 && Number(/\bheight="([^"]+)"/.exec(attrs)?.[1]) > 40 && !attrs.includes("data-legend") && !attrs.includes("data-comms") && !attrs.includes("data-label-plate")))
+      .map((attrs) => ({
+        x: Number(/\bx="([^"]+)"/.exec(attrs)?.[1]),
+        y: Number(/\by="([^"]+)"/.exec(attrs)?.[1]),
+        width: Number(/\bwidth="([^"]+)"/.exec(attrs)?.[1]),
+        height: Number(/\bheight="([^"]+)"/.exec(attrs)?.[1]),
+        team: attrs.includes('data-team="powermap"'),
+      }));
+    const paths = [...linkPaths(svg), ...reportPaths(svg)];
+    const gap = 8;
+    for (const path of paths) {
+      for (let index = 0; index < path.points.length - 1; index += 1) {
+        const a = path.points[index];
+        const b = path.points[index + 1];
+        if (Math.abs(a.y - b.y) > 0.6 || Math.abs(a.x - b.x) < 12) continue;
+        const x0 = Math.min(a.x, b.x);
+        const x1 = Math.max(a.x, b.x);
+        for (const rect of rects) {
+          if (x1 <= rect.x + 2 || x0 >= rect.x + rect.width - 2) continue;
+          const top = rect.y;
+          const bottom = rect.y + rect.height;
+          const rides = rect.team
+            ? Math.abs(a.y - top) < gap || Math.abs(a.y - bottom) < gap
+            : a.y > top - gap && a.y < bottom + gap;
+          expect(rides, `полка y=${a.y} x ${x0}..${x1} по рамке ${rect.y}..${bottom} x ${rect.x}..${rect.x + rect.width} team=${rect.team}`).toBe(false);
+        }
+      }
+    }
+    for (let left = 0; left < paths.length; left += 1) {
+      for (let right = left + 1; right < paths.length; right += 1) {
+        const gap = parallelGap(paths[left].points, paths[right].points);
+        expect(gap).toBeGreaterThanOrEqual(8);
       }
     }
   });
