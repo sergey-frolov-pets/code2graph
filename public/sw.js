@@ -1,12 +1,13 @@
 const CACHE_PREFIX = "code2graph-";
-const PRECACHE = "code2graph-precache-v3";
 const SHARED_PUML_CACHE = "shared-puml-v1";
 const APP_SHELL_CACHE = "code2graph-shell-v3";
 const LIBRARY_API_CACHE = "code2graph-library-api-v1";
+const SHELL_RELEASE_KEY = "./shell-release";
 
-// Подставляется при сборке. Новый релиз меняет байты sw.js, поэтому уже
-// открытая вкладка со старым ?v= замечает обновление.
+// Подставляется при сборке. Имя precache и байты sw.js меняются с релизом,
+// поэтому registration.update() видит новый воркер без query ?v=.
 const APP_RELEASE = "__C2G_APP_VERSION__";
+const PRECACHE = `code2graph-precache-${APP_RELEASE}`;
 self.__code2graphRelease = APP_RELEASE;
 
 const PRECACHE_URLS = [
@@ -107,33 +108,93 @@ async function storeShell(response) {
   await cache.put(new URL(APP_SHELL_PATH, self.location.origin).href, response.clone());
 }
 
-async function handleNavigation(request) {
+async function readStoredRelease() {
+  const cache = await caches.open(APP_SHELL_CACHE);
+  const response = await cache.match(SHELL_RELEASE_KEY);
+  if (!response) {
+    return null;
+  }
+  const version = (await response.text()).trim();
+  return version || null;
+}
+
+async function storeRelease(version) {
+  const cache = await caches.open(APP_SHELL_CACHE);
+  await cache.put(SHELL_RELEASE_KEY, new Response(version));
+}
+
+async function fetchReleaseVersion() {
+  try {
+    const response = await fetch(new URL("/release.json", self.location.origin).href, {
+      cache: "no-store",
+      credentials: "same-origin",
+    });
+    if (!response.ok) {
+      return null;
+    }
+    const data = await response.json();
+    return typeof data.version === "string" && data.version ? data.version : null;
+  } catch {
+    return null;
+  }
+}
+
+async function notifyShellUpdated() {
+  const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+  for (const client of clients) {
+    client.postMessage({ type: "APP_SHELL_UPDATED" });
+  }
+}
+
+function shellRequestUrl(request) {
   const url = new URL(request.url);
   const path = normalizedPath(url.pathname);
   const prettyPath = path !== "/" && path !== APP_SHELL_PATH;
-  // Pages отдаёт index.html с max-age=600. Запрос по адресу, а не клоном
-  // навигации: mode "navigate" нельзя пересоздать, а no-store не даёт
-  // перезагрузке оставить прошлую версию из HTTP-кэша.
-  const target = prettyPath
-    ? new URL(APP_SHELL_PATH, self.location.origin).href
-    : request.url;
+  // Pretty routes (/diagram, /local/…, /samples/…) отдаются тем же index.html.
+  return prettyPath ? new URL(APP_SHELL_PATH, self.location.origin).href : request.url;
+}
+
+// Большой index.html не качается заново, пока release.json совпадает с
+// сохранённой оболочкой. no-cache (а не no-store) позволяет 304, когда
+// релиз всё-таки сменился.
+async function refreshShell(request) {
+  const previous = await readStoredRelease();
+  const latest = await fetchReleaseVersion();
+  if (previous && latest && previous === latest) {
+    return readCachedShell();
+  }
 
   try {
-    const response = await fetch(target, {
-      cache: "no-store",
+    const response = await fetch(shellRequestUrl(request), {
+      cache: "no-cache",
       credentials: "same-origin",
     });
     if (response.ok) {
       await storeShell(response);
+      if (latest) {
+        await storeRelease(latest);
+      }
+      if (previous && latest && previous !== latest) {
+        await notifyShellUpdated();
+      }
       return response;
     }
   } catch {
     // Offline: the installed PWA still opens /local/<slug> and /diagram from the shell.
   }
 
+  return readCachedShell();
+}
+
+async function handleNavigation(refresh) {
   const cached = await readCachedShell();
   if (cached) {
     return cached;
+  }
+
+  const fresh = await refresh;
+  if (fresh) {
+    return fresh;
   }
 
   return new Response("Code2Graph is offline", {
@@ -170,7 +231,9 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (request.mode === "navigate" && isAppShellNavigation(url)) {
-    event.respondWith(handleNavigation(request));
+    const refresh = refreshShell(request);
+    event.waitUntil(refresh.catch(() => undefined));
+    event.respondWith(handleNavigation(refresh));
   }
 });
 

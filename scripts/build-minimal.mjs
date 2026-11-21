@@ -5,6 +5,7 @@ import {
   buildSingleHtmlDocument,
   ensureVendorFiles,
   readBuiltAssets,
+  writeReleaseManifest,
   writeStampedServiceWorker,
 } from "./lib/single-html-core.mjs";
 
@@ -34,6 +35,7 @@ function buildMinimalPackage() {
     path.join(minimalDir, "manifest.webmanifest"),
   );
   writeStampedServiceWorker(path.join(minimalDir, "sw.js"));
+  writeReleaseManifest(minimalDir);
 
   const outputSize = Buffer.byteLength(html, "utf8");
   console.log(`Minimal package (${MINIMAL_FILES.join(", ")}):`);

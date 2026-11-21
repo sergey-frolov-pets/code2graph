@@ -17,6 +17,23 @@ export function deploymentDocument(): {
   };
 }
 
+export function cacheControl(filePath: string): string {
+  const base = path.basename(filePath);
+  // Оболочка, воркер и маркер релиза должны перепроверяться. Иначе браузер
+  // час отдаёт старый sw.js и index.html, а приложение «не обновляет версию».
+  // no-cache оставляет 304, поэтому совпавший релиз не качается целиком.
+  if (
+    base === "index.html" ||
+    base === "sw.js" ||
+    base === "release.json" ||
+    base === "deployment.json" ||
+    base === "app.js"
+  ) {
+    return "no-cache";
+  }
+  return "public, max-age=3600";
+}
+
 function contentType(filePath: string): string {
   if (filePath.endsWith(".html")) return "text/html; charset=utf-8";
   if (filePath.endsWith(".js")) return "text/javascript; charset=utf-8";
@@ -62,9 +79,7 @@ export function registerStaticHost(app: Hono): void {
     const body = new Uint8Array(readFileSync(filePath));
     return context.body(body, 200, {
       "Content-Type": contentType(filePath),
-      "Cache-Control": filePath.endsWith("deployment.json")
-        ? "no-store"
-        : "public, max-age=3600",
+      "Cache-Control": cacheControl(filePath),
     });
   });
 }
