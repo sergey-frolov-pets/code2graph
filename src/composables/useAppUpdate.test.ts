@@ -45,9 +45,9 @@ function installServiceWorker(worker: FakeWorker | null) {
       bucket.add(listener);
       listeners.set(type, bucket);
     },
-    dispatch(type: string) {
+    dispatch(type: string, event?: Event) {
       for (const listener of listeners.get(type) ?? []) {
-        listener(new Event(type));
+        listener(event ?? new Event(type));
       }
     },
   };
@@ -108,6 +108,21 @@ describe("useAppUpdate", () => {
     expect(reload).toHaveBeenCalledOnce();
   });
 
+  it("shows the update prompt when a newer shell was cached", async () => {
+    const serviceWorker = installServiceWorker(null);
+
+    const { updateAvailable } = useAppUpdate(reload);
+    await vi.waitFor(() => expect(registerAppServiceWorker).toHaveBeenCalled());
+    expect(updateAvailable.value).toBe(false);
+
+    serviceWorker.dispatch(
+      "message",
+      new MessageEvent("message", { data: { type: "APP_SHELL_UPDATED" } }),
+    );
+
+    expect(updateAvailable.value).toBe(true);
+  });
+
   it("reloads if the worker never takes control", async () => {
     vi.useFakeTimers();
     const worker = new FakeWorker("installed");
@@ -150,7 +165,11 @@ describe("service worker update prompt", () => {
     expect(source).toContain("networkFirstDeploymentConfig");
     expect(source).toContain("/deployment.json");
     expect(source).toContain('cache: "no-store"');
+    expect(source).toContain("/release.json");
+    expect(source).toContain('cache: "no-cache"');
+    expect(source).toContain("APP_SHELL_UPDATED");
     expect(source).toContain("__C2G_APP_VERSION__");
+    expect(source).toContain("code2graph-precache-${APP_RELEASE}");
   });
 });
 

@@ -423,12 +423,21 @@ export function writeStampedServiceWorker(targetPath) {
   writeFileSync(targetPath, stampServiceWorker(source, readAppVersion()), "utf8");
 }
 
+export function writeReleaseManifest(targetDir) {
+  writeFileSync(
+    path.join(targetDir, "release.json"),
+    `${JSON.stringify({ version: readAppVersion() })}\n`,
+    "utf8",
+  );
+}
+
 export function copyPwaDistAssets(targetDir = distDir) {
   copyFileSync(
     path.join(appRoot, "public", "manifest.webmanifest"),
     path.join(targetDir, "manifest.webmanifest"),
   );
   writeStampedServiceWorker(path.join(targetDir, "sw.js"));
+  writeReleaseManifest(targetDir);
   copyFileSync(
     path.join(appRoot, "public", "pwa-install-bootstrap.js"),
     path.join(targetDir, "pwa-install-bootstrap.js"),

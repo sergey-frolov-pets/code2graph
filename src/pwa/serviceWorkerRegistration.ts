@@ -10,9 +10,10 @@ const REGISTRATION_TIMEOUT_MS = 10_000;
 let registrationPromise: Promise<ServiceWorkerRegistration | null> | null = null;
 
 export function resolveServiceWorkerUrl(): string {
-  const url = new URL(SW_SCRIPT, window.location.href);
-  url.searchParams.set("v", __APP_VERSION__);
-  return url.href;
+  // Без ?v=: registration.update() перепроверяет тот URL, с которым воркер
+  // был зарегистрирован. Версия в query навсегда привязывает вкладку к
+  // старому скрипту, если CDN кэширует адрес целиком. Релиз меняет байты sw.js.
+  return new URL(SW_SCRIPT, window.location.href).href;
 }
 
 export function resolveServiceWorkerScope(): string {

@@ -103,9 +103,16 @@ export function useAppUpdate(reloadPage: () => void = defaultReload) {
     }
   }
 
+  function onServiceWorkerMessage(event: MessageEvent): void {
+    if (event.data?.type === "APP_SHELL_UPDATED") {
+      updateAvailable.value = true;
+    }
+  }
+
   onMounted(() => {
     void checkForUpdates();
     document.addEventListener("visibilitychange", onVisibilityChange);
+    navigator.serviceWorker?.addEventListener("message", onServiceWorkerMessage);
     checkTimer = window.setInterval(() => {
       void checkForUpdates();
     }, UPDATE_CHECK_INTERVAL_MS);
@@ -113,6 +120,7 @@ export function useAppUpdate(reloadPage: () => void = defaultReload) {
 
   onUnmounted(() => {
     document.removeEventListener("visibilitychange", onVisibilityChange);
+    navigator.serviceWorker?.removeEventListener("message", onServiceWorkerMessage);
     if (checkTimer !== null) {
       window.clearInterval(checkTimer);
     }
