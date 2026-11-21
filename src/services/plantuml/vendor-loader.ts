@@ -77,6 +77,33 @@ function loadVizGlobalFromFile(): Promise<void> {
   return vizGlobalPromise;
 }
 
+function loadPlantUmlFromFile(): Promise<PlantUmlApi> {
+  if (window.PlantUML) {
+    return Promise.resolve(window.PlantUML);
+  }
+
+  if (import.meta.env.DEV) {
+    return import(/* @vite-ignore */ getVendorUrl(
+      "plantuml.js",
+    )) as Promise<PlantUmlApi>;
+  }
+
+  return new Promise<PlantUmlApi>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = getVendorUrl("plantuml.js");
+    script.onload = () => {
+      if (!window.PlantUML) {
+        reject(new LocalizedAppError("engine.plantumlInitFailed"));
+        return;
+      }
+      resolve(window.PlantUML);
+    };
+    script.onerror = () =>
+      reject(new LocalizedAppError("engine.plantumlEmbeddedMissing"));
+    document.head.appendChild(script);
+  });
+}
+
 export async function loadVizGlobal(): Promise<void> {
   if (window.Viz) {
     return;
@@ -91,12 +118,10 @@ export async function loadVizGlobal(): Promise<void> {
     return;
   }
 
-  if (import.meta.env.DEV) {
-    await loadVizGlobalFromFile();
-    return;
+  await loadVizGlobalFromFile();
+  if (!window.Viz) {
+    throw new LocalizedAppError("engine.vizInitFailed");
   }
-
-  throw new LocalizedAppError("engine.vizEmbeddedMissing");
 }
 
 export async function loadEngine(): Promise<PlantUmlApi> {
@@ -117,13 +142,7 @@ export async function loadEngine(): Promise<PlantUmlApi> {
         return window.PlantUML;
       }
 
-      if (import.meta.env.DEV) {
-        return import(/* @vite-ignore */ getVendorUrl(
-          "plantuml.js",
-        )) as Promise<PlantUmlApi>;
-      }
-
-      throw new LocalizedAppError("engine.plantumlEmbeddedMissing");
+      return loadPlantUmlFromFile();
     })();
   }
 

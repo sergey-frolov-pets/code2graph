@@ -180,3 +180,21 @@ describe("stampServiceWorker", () => {
     expect(() => stampServiceWorker("const CACHE = 1;", "1.2.32")).toThrow(/version token/);
   });
 });
+
+describe("buildHostedHtmlDocument", () => {
+  it("keeps the shell thin and points at external assets", async () => {
+    const { buildHostedHtmlDocument } = await import(
+      "../../scripts/lib/single-html-core.mjs"
+    );
+    const html = buildHostedHtmlDocument({
+      cssHref: "./assets/app.css?v=1.2.90",
+      appJsHref: "./assets/app.js?v=1.2.90",
+    });
+
+    expect(html).toContain('href="./assets/app.css?v=1.2.90"');
+    expect(html).toContain('src="./assets/app.js?v=1.2.90"');
+    expect(html).not.toContain("vendor-viz-global");
+    expect(html).not.toContain("vendor-plantuml");
+    expect(Buffer.byteLength(html, "utf8")).toBeLessThan(64 * 1024);
+  });
+});
