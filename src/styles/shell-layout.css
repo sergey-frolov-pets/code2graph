@@ -112,13 +112,17 @@
 }
 
 .editor-panel .panel-header {
-  align-items: flex-start;
+  align-items: center;
+  align-content: flex-start;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  row-gap: 6px;
 }
 
+/* Кнопки и селекты шапки — соседи вкладок, а не отдельная колонка справа.
+   Свободная ширина делится между ними поровну и при переносе на новую строку. */
 .editor-panel .panel-header__toolbar {
-  flex-wrap: wrap;
-  align-content: flex-start;
-  overflow: visible;
+  display: contents;
 }
 
 .panel--corner-controls {
@@ -414,6 +418,15 @@
     flex-wrap: wrap;
     overflow-x: visible;
     touch-action: auto;
+  }
+
+  .editor-panel .panel-header {
+    justify-content: start;
+  }
+
+  .editor-panel .panel-header__toolbar {
+    display: flex;
+    justify-content: space-evenly;
   }
 }
 

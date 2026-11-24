@@ -554,7 +554,7 @@ function onSampleChange(event: Event): void {
 
 .sample-select-wrap {
   display: inline-flex;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 96px;
   margin: 0;
 }
