@@ -177,6 +177,7 @@ export function createDefaultBuilderState(
     legendLang: "",
     avatarSize: "",
     powerLinks: [],
+    powerTeamLines: [],
   };
 
   const initialColCount = diagramType === "radar" ? 3 : 2;
@@ -720,6 +721,10 @@ export function parseMermaidExtToBuilderState(
         style: link.style,
         label: link.label,
       }));
+      state.options.powerTeamLines = source
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => /^teams\b/i.test(line) || /^team\s/i.test(line));
 
       const byId = new Map(model.people.map((person) => [person.id, person]));
       const seen = new Set<string>();
@@ -741,6 +746,7 @@ export function parseMermaidExtToBuilderState(
           otherPerson?.name || other,
           relation,
           edgeLabel,
+          person.team ?? "",
         ]);
         seen.add(person.id);
       };
@@ -1488,6 +1494,10 @@ export function emitMermaidExtFromBuilderState(
       if (options.legendLang?.trim()) lines.push(`lang ${options.legendLang.trim()}`);
       const avatarLine = emitAvatarDirective(options.avatarSize);
       if (avatarLine) lines.push(avatarLine);
+      for (const teamLine of options.powerTeamLines ?? []) {
+        const trimmed = teamLine.trim();
+        if (trimmed) lines.push(trimmed);
+      }
       for (const link of options.powerLinks) {
         const name = link.name.trim();
         if (!name) continue;
@@ -1510,6 +1520,7 @@ export function emitMermaidExtFromBuilderState(
           action: string;
           attitude: string;
           counterpart: string;
+          team: string;
         }
       >();
       const edgeLines: string[] = [];
@@ -1528,6 +1539,7 @@ export function emitMermaidExtFromBuilderState(
         action: "",
         attitude: "",
         counterpart: "",
+        team: "",
       });
       const fillPerson = (
         current: ReturnType<typeof blankPerson>,
@@ -1542,6 +1554,7 @@ export function emitMermaidExtFromBuilderState(
         current.action = take(current.action, row[6]);
         current.attitude = take(current.attitude, row[7]);
         current.counterpart = take(current.counterpart, row[8]);
+        current.team = take(current.team, row[12]);
       };
 
       state.rows.forEach((row, idx) => {
@@ -1589,6 +1602,7 @@ export function emitMermaidExtFromBuilderState(
           person.action ? `action=${person.action}` : "",
           person.attitude ? `attitude=${person.attitude}` : "",
           person.counterpart ? `counterpart=${quoteIfNeeded(person.counterpart)}` : "",
+          person.team ? `team=${quoteIfNeeded(person.team)}` : "",
           person.gender ? `gender=${person.gender}` : "",
           person.photo ? `photo=${quoteIfNeeded(person.photo)}` : "",
         ].filter(Boolean);

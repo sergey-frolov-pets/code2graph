@@ -228,6 +228,11 @@ export interface BuilderOptionsSettings {
   avatarSize: string;
   /** Объявленные стрелки влияния (`link`). */
   powerLinks: BuilderPowerLink[];
+  /**
+   * Строки `teams` и `team` карты влияния.
+   * Пошаговый режим их не редактирует, но должен вернуть в код как были.
+   */
+  powerTeamLines: string[];
 }
 
 export interface DiagramBuilderState {
