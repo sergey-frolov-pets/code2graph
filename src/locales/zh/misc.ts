@@ -398,6 +398,17 @@ export const miscMessages = {
     "商业用途在 30 天试用期内免费；之后需要付费许可证。",
   "about.licenseRead": "阅读许可证",
   "about.licenseCommercialLink": "商业许可证",
+  "about.privacy": "隐私",
+  "about.privacyLead":
+    "{name} 通过 GoatCounter 收集匿名使用统计。不使用 Cookie。图表源码、文件名、资料库内容和 API 密钥都留在您的设备上，不会发送。",
+  "about.privacyHow":
+    "GoatCounter 脚本会在您打开页面或执行被记录的操作时发送一次计数。广告拦截或离线使用会停止发送。",
+  "about.privacyWhat": "发送的内容",
+  "about.privacyPages": "打开的页面，例如首页或图表编辑器。",
+  "about.privacyActions":
+    "操作类型：打开、保存或导出图表（含格式和图表类型），以及部分界面点击。只发送类型，不包含文件名或源码。",
+  "about.privacyTech":
+    "浏览器、屏幕尺寸、来源页面，以及 GoatCounter 每天轮换的 IP 地址哈希。IP 地址本身不保存，位置仅精确到国家。",
   "about.components": "第三方组件",
   "about.aiLead": "进一步了解提供商设置以及如何获取 API 密钥：",
   "about.ai": "AI / LLM",
