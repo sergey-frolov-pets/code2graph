@@ -209,8 +209,23 @@ export function useEditorDisplayModel(options: {
     return rows;
   });
 
-  const renderLineHighlight = (line: string): string =>
-    getFormatHandler(diagramFormat.value).highlightLine(line);
+  const highlightCache = new Map<string, string>();
+
+  const renderLineHighlight = (line: string): string => {
+    const key = `${diagramFormat.value}\0${line}`;
+    const cached = highlightCache.get(key);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const html = getFormatHandler(diagramFormat.value).highlightLine(line);
+    highlightCache.set(key, html);
+    if (highlightCache.size > 4000) {
+      highlightCache.clear();
+      highlightCache.set(key, html);
+    }
+    return html;
+  };
 
   const visibleEditorLines = computed<VisibleEditorLine[]>(() => {
     void highlightRevision.value;

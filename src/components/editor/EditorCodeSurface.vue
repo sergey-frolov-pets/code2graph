@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from "vue";
+import EditorColorPopover from "@/components/editor/EditorColorPopover.vue";
 import { resolveDiagramTypeSlug, trackClipboardPaste } from "@/analytics";
 import { useLocale } from "@/composables/useLocale";
 import type { VisibleEditorLine } from "@/composables/editor/useEditorDisplayModel";
@@ -18,6 +19,7 @@ import {
   detectDiagramFormatFromSource,
 } from "@/utils/diagram-format";
 import { applyEnterAtLineEnd } from "@/utils/editor-enter-indent";
+import { findHexColorAt } from "@/utils/editor-color-token";
 
 const props = defineProps<{
   source: string;
@@ -43,6 +45,13 @@ const emit = defineEmits<{
 
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const highlightsRef = ref<HTMLDivElement | null>(null);
+const colorEdit = ref<{
+  start: number;
+  end: number;
+  hex: string;
+  top: number;
+  left: number;
+} | null>(null);
 
 defineExpose({
   get textareaEl() {
@@ -260,21 +269,78 @@ function revealCaret(textarea: HTMLTextAreaElement, caret: number): void {
 
 function onTextareaKeyup(event: KeyboardEvent): void {
   emit("select");
-  if (
+  const textarea = textareaRef.value;
+  const isNav =
     event.key === "ArrowLeft" ||
     event.key === "ArrowRight" ||
     event.key === "ArrowUp" ||
     event.key === "ArrowDown" ||
     event.key === "Home" ||
-    event.key === "End"
-  ) {
-    props.autocomplete.refresh();
+    event.key === "End";
+  if (!isNav || !textarea) {
+    return;
   }
+
+  // Пока тянется выделение, не пересчитываем подсказки: это сбрасывает кадр
+  // и Shift+стрелка не успевает дойти до конца строки.
+  if (textarea.selectionStart !== textarea.selectionEnd) {
+    props.autocomplete.close();
+    return;
+  }
+
+  props.autocomplete.refresh();
 }
 
-function onTextareaClick(): void {
+function openColorPickerAtCaret(event: MouseEvent): void {
+  if (props.readOnly) {
+    colorEdit.value = null;
+    return;
+  }
+
+  const textarea = textareaRef.value;
+  if (!textarea || textarea.selectionStart !== textarea.selectionEnd) {
+    return;
+  }
+
+  const token = findHexColorAt(textarea.value, textarea.selectionStart);
+  if (!token) {
+    colorEdit.value = null;
+    return;
+  }
+
+  const margin = 8;
+  const width = 240;
+  const left = Math.min(event.clientX, window.innerWidth - width - margin);
+  const top = Math.min(event.clientY + 12, window.innerHeight - 160);
+  colorEdit.value = {
+    start: token.start,
+    end: token.end,
+    hex: token.value,
+    top: Math.max(margin, top),
+    left: Math.max(margin, left),
+  };
+}
+
+function applyColorEdit(hex: string): void {
+  const edit = colorEdit.value;
+  const textarea = textareaRef.value;
+  if (!edit || !textarea) {
+    colorEdit.value = null;
+    return;
+  }
+
+  const next = `${textarea.value.slice(0, edit.start)}${hex}${textarea.value.slice(edit.end)}`;
+  colorEdit.value = null;
+  emit(
+    "update:source",
+    mergeDisplayTextIntoSource(next, props.source, props.folds),
+  );
+}
+
+function onTextareaClick(event: MouseEvent): void {
   emit("select");
   props.autocomplete.refresh();
+  openColorPickerAtCaret(event);
 }
 
 function onTextareaBlur(): void {
@@ -348,6 +414,14 @@ function onTextareaScroll(): void {
       @scroll="onTextareaScroll"
       @select="emit('select')"
       @mouseup="emit('mouseup')"
+    />
+    <EditorColorPopover
+      v-if="colorEdit"
+      :hex="colorEdit.hex"
+      :top="colorEdit.top"
+      :left="colorEdit.left"
+      @apply="applyColorEdit"
+      @cancel="colorEdit = null"
     />
     <ul
       v-if="

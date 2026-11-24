@@ -271,6 +271,54 @@
   background: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
+.editor-color-popover {
+  position: fixed;
+  z-index: 20;
+  display: grid;
+  gap: 8px;
+  min-width: 220px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.editor-color-popover__picker,
+.editor-color-popover__hex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.editor-color-popover__picker input[type="color"] {
+  width: 42px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+}
+
+.editor-color-popover__hex input {
+  width: 108px;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--editor-font-family, var(--font-mono));
+}
+
+.editor-color-popover__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .code-editor__completions {
   position: absolute;
   z-index: 3;

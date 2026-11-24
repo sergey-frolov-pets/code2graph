@@ -79,12 +79,10 @@
 
 .code-editor__line-content .tok-comment {
   color: var(--syntax-comment);
-  font-style: italic;
 }
 
 .code-editor__line-content .tok-directive {
   color: var(--syntax-directive);
-  font-weight: 600;
 }
 
 .code-editor__line-content .tok-preprocessor {
@@ -93,7 +91,6 @@
 
 .code-editor__line-content .tok-keyword {
   color: var(--syntax-keyword);
-  font-weight: 600;
 }
 
 .code-editor__line-content .tok-string {
