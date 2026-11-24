@@ -20,7 +20,7 @@ import {
   usesInvertedMono,
 } from "../common";
 import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
-import { clipToNearEdge, repairLanePath, routeCompact } from "./edge-lanes";
+import { clipToNearEdge, pullOffFrameStrokes, repairLanePath, routeCompact } from "./edge-lanes";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 import { isColor } from "./waterfall/directive-parsers";
 import {
@@ -37,6 +37,7 @@ import {
   drawReportingElbows,
   drawTeamBoxes,
   foreignTeamBoxes,
+  teamFrameBoxes,
   layoutOrgTree,
   layoutTeamGroups,
   orderTeams,
@@ -2766,6 +2767,11 @@ function routeInfluences(
   for (let pass = 0; pass < 4; pass += 1) restackShelves(routes, reports, cards, frameBoxes);
   separateSameShelves(routes, cards);
   spreadVerticals(routes, reports, cards);
+  if (frameBoxes.length > 0) {
+    for (const route of routes) {
+      route.points = pullOffFrameStrokes(route.points, frameBoxes, cards);
+    }
+  }
   const segments = flatSegments(routes, reports);
   // Плашки уже поставленных подписей: следующая не должна на них наезжать.
   const takenPlates: CardBox[] = [];
@@ -3827,7 +3833,16 @@ export function renderPowermap(model: PowerModel, options: ExtRenderOptions): st
   svg.raw(marker.markup);
   const placed: PlacedTreeNode<PowerPerson>[] = laid.placed;
   if (teamBoxes.length > 0) drawTeamBoxes(svg, teamBoxes, offsetX, offsetY, palette, mono, invertedMono);
-  drawReportingElbows(svg, placed, intraReports, offsetX, offsetY, palette.axis, marker.ref);
+  drawReportingElbows(
+    svg,
+    placed,
+    intraReports,
+    offsetX,
+    offsetY,
+    palette.axis,
+    marker.ref,
+    teamFrameBoxes(teamBoxes, offsetX, offsetY),
+  );
 
   placed.forEach((card, cardIndex) => {
     drawCard(svg, card, offsetX, offsetY, model, palette.bg, palette.fg, palette.axis, mono, invertedMono, cardIndex);

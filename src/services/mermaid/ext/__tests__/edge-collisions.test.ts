@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { orgchartEngine, type OrgModel } from "@/services/mermaid/ext/engines/orgchart";
 import { powermapEngine, type PowerModel } from "@/services/mermaid/ext/engines/powermap";
-import { lanePathHits, routeCompact } from "@/services/mermaid/ext/engines/edge-lanes";
+import { lanePathHits, pullOffFrameStrokes, routeCompact } from "@/services/mermaid/ext/engines/edge-lanes";
 
 type Rect = { x: number; y: number; width: number; height: number };
 type Pt = { x: number; y: number };
@@ -56,6 +56,49 @@ function hits(p: Pt, q: Pt, rect: Rect): boolean {
     return Math.min(p.y, q.y) < y1 && Math.max(p.y, q.y) > y0;
   }
   return false;
+}
+
+function teamFrames(svg: string): Rect[] {
+  const out: Rect[] = [];
+  for (const tag of svg.match(/<rect[^>]*>/g) ?? []) {
+    if (attr(tag, "data-team") === undefined) continue;
+    const x = Number(attr(tag, "x"));
+    const y = Number(attr(tag, "y"));
+    const width = Number(attr(tag, "width"));
+    const height = Number(attr(tag, "height"));
+    if ([x, y, width, height].every((value) => Number.isFinite(value))) out.push({ x, y, width, height });
+  }
+  return out;
+}
+
+/** Ход вдоль границы команды. Короткое пересечение рамки сюда не входит. */
+function borderRides(svg: string): number {
+  const frames = teamFrames(svg);
+  const clear = 6;
+  let bad = 0;
+  for (const path of edges(svg)) {
+    for (let index = 0; index < path.length - 1; index += 1) {
+      const a = path[index];
+      const b = path[index + 1];
+      const horizontal = Math.abs(a.y - b.y) < 0.6;
+      const vertical = Math.abs(a.x - b.x) < 0.6;
+      if (!horizontal && !vertical) continue;
+      for (const frame of frames) {
+        if (horizontal) {
+          const overlap =
+            Math.min(Math.max(a.x, b.x), frame.x + frame.width) - Math.max(Math.min(a.x, b.x), frame.x);
+          if (overlap < 12) continue;
+          if (Math.abs(a.y - frame.y) < clear || Math.abs(a.y - (frame.y + frame.height)) < clear) bad += 1;
+        } else {
+          const overlap =
+            Math.min(Math.max(a.y, b.y), frame.y + frame.height) - Math.max(Math.min(a.y, b.y), frame.y);
+          if (overlap < 12) continue;
+          if (Math.abs(a.x - frame.x) < clear || Math.abs(a.x - (frame.x + frame.width)) < clear) bad += 1;
+        }
+      }
+    }
+  }
+  return bad;
 }
 
 function collisions(svg: string): number {
@@ -138,8 +181,10 @@ describe("связи не заходят внутрь карточек", () => {
       const { powermap } = build(seed);
       const parsed = powermapEngine.parse(powermap);
       if (!parsed.ok) continue;
-      const count = collisions(powermapEngine.render(parsed.value as PowerModel, {}));
-      if (count > 0) bad.push(`seed ${seed}: ${count}`);
+      const svg = powermapEngine.render(parsed.value as PowerModel, {});
+      const count = collisions(svg);
+      const rides = borderRides(svg);
+      if (count > 0 || rides > 0) bad.push(`seed ${seed}: cards ${count}, borders ${rides}`);
     }
     expect(bad).toEqual([]);
   });
@@ -150,10 +195,43 @@ describe("связи не заходят внутрь карточек", () => {
       const { orgchart } = build(seed);
       const parsed = orgchartEngine.parse(orgchart);
       if (!parsed.ok) continue;
-      const count = collisions(orgchartEngine.render(parsed.value as OrgModel, {}));
-      if (count > 0) bad.push(`seed ${seed}: ${count}`);
+      const svg = orgchartEngine.render(parsed.value as OrgModel, {});
+      const count = collisions(svg);
+      const rides = borderRides(svg);
+      if (count > 0 || rides > 0) bad.push(`seed ${seed}: cards ${count}, borders ${rides}`);
     }
     expect(bad).toEqual([]);
+  });
+});
+
+describe("линия и граница команды", () => {
+  it("сдвигает ход вдоль рамки и оставляет поперечное пересечение", () => {
+    const frame = { left: 100, right: 220, top: 40, bottom: 180 };
+    const along = pullOffFrameStrokes(
+      [
+        { x: 102, y: 20 },
+        { x: 102, y: 200 },
+      ],
+      [frame],
+    );
+    expect(Math.abs(along[0].x - frame.left)).toBeGreaterThanOrEqual(8);
+    expect(along[0].x).toBe(along[1].x);
+
+    const crossing = [
+      { x: 160, y: 10 },
+      { x: 160, y: 210 },
+    ];
+    expect(pullOffFrameStrokes(crossing, [frame])).toEqual(crossing);
+
+    const onTop = pullOffFrameStrokes(
+      [
+        { x: 80, y: 40 },
+        { x: 240, y: 40 },
+      ],
+      [frame],
+    );
+    expect(Math.abs(onTop[0].y - frame.top)).toBeGreaterThanOrEqual(8);
+    expect(onTop[0].y).toBe(onTop[1].y);
   });
 });
 

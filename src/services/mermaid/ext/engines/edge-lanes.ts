@@ -472,3 +472,264 @@ export function repairLanePath(
   }
   return null;
 }
+
+/** Линия не должна совпадать с обводкой рамки: ближе этого зазора её отодвигаем. */
+export const FRAME_STROKE_CLEAR = 8;
+/** Короче этого отрезок считается пересечением границы, а не ходом вдоль неё. */
+const FRAME_RIDE_MIN = 10;
+
+function spanOverlap(a0: number, a1: number, b0: number, b1: number): number {
+  return Math.min(Math.max(a0, a1), Math.max(b0, b1)) - Math.max(Math.min(a0, a1), Math.min(b0, b1));
+}
+
+/** К какой кромке карточки приклеена точка: по этой оси её двигать нельзя. */
+function cardAttachment(
+  point: LanePoint,
+  cards: readonly LaneBox[],
+): { box: LaneBox; axis: "x" | "y" } | null {
+  for (const box of cards) {
+    const onX = point.x >= box.left - 1 && point.x <= box.right + 1;
+    const onY = point.y >= box.top - 1 && point.y <= box.bottom + 1;
+    if (onX && (Math.abs(point.y - box.top) < 1.2 || Math.abs(point.y - box.bottom) < 1.2)) {
+      return { box, axis: "y" };
+    }
+    if (onY && (Math.abs(point.x - box.left) < 1.2 || Math.abs(point.x - box.right) < 1.2)) {
+      return { box, axis: "x" };
+    }
+  }
+  return null;
+}
+
+function segmentClearOfCards(a: LanePoint, b: LanePoint, cards: readonly LaneBox[]): boolean {
+  return !cards.some((card) => laneSegmentHits(a, b, card));
+}
+
+/**
+ * Зазор до параллельной кромки рамки на участке, где отрезок идёт вдоль неё.
+ * Пересечение кромки поперёк почти не перекрывает её по длине и сюда не попадает.
+ */
+function frameClearance(
+  horizontal: boolean,
+  fixed: number,
+  from: number,
+  to: number,
+  frames: readonly LaneBox[],
+): number {
+  let best = Number.POSITIVE_INFINITY;
+  for (const frame of frames) {
+    if (horizontal) {
+      if (spanOverlap(from, to, frame.left, frame.right) < FRAME_RIDE_MIN) continue;
+      best = Math.min(best, Math.abs(fixed - frame.top), Math.abs(fixed - frame.bottom));
+    } else {
+      if (spanOverlap(from, to, frame.top, frame.bottom) < FRAME_RIDE_MIN) continue;
+      best = Math.min(best, Math.abs(fixed - frame.left), Math.abs(fixed - frame.right));
+    }
+  }
+  return best;
+}
+
+function gapAhead(
+  horizontal: boolean,
+  edge: number,
+  sign: number,
+  from: number,
+  to: number,
+  frames: readonly LaneBox[],
+): number {
+  let gap = Number.POSITIVE_INFINITY;
+  for (const frame of frames) {
+    const edges = horizontal ? [frame.top, frame.bottom] : [frame.left, frame.right];
+    const spanLo = horizontal ? frame.left : frame.top;
+    const spanHi = horizontal ? frame.right : frame.bottom;
+    if (spanOverlap(from, to, spanLo, spanHi) < FRAME_RIDE_MIN) continue;
+    for (const other of edges) {
+      const delta = (other - edge) * sign;
+      if (delta > 0.4) gap = Math.min(gap, delta);
+    }
+  }
+  return gap;
+}
+
+/** Отрезок на новой координате и короткие уступы к ней не входят в карточки. */
+function spanClear(
+  horizontal: boolean,
+  cross: number,
+  from: number,
+  to: number,
+  cards: readonly LaneBox[],
+  jogAt: readonly { along: number; from: number; to: number }[] = [],
+): boolean {
+  const at = (along: number, value: number): LanePoint =>
+    horizontal ? { x: along, y: value } : { x: value, y: along };
+  if (!segmentClearOfCards(at(from, cross), at(to, cross), cards)) return false;
+  return jogAt.every((jog) => segmentClearOfCards(at(jog.along, jog.from), at(jog.along, jog.to), cards));
+}
+
+/**
+ * Если весь отрезок сдвинуть нельзя (конец сидит на карточке),
+ * уводим только ту часть, что идёт вдоль границы.
+ */
+function jogOffFrame(
+  points: readonly LanePoint[],
+  index: number,
+  frames: readonly LaneBox[],
+  cards: readonly LaneBox[],
+  clear: number,
+): LanePoint[] | null {
+  const a = points[index];
+  const b = points[index + 1];
+  const horizontal = Math.abs(a.y - b.y) < 0.6;
+  if (!horizontal && Math.abs(a.x - b.x) >= 0.6) return null;
+  const alongA = horizontal ? a.x : a.y;
+  const alongB = horizontal ? b.x : b.y;
+  const cross = horizontal ? a.y : a.x;
+  const lo = Math.min(alongA, alongB);
+  const hi = Math.max(alongA, alongB);
+  let best: { cutLo: number; cutHi: number; target: number; room: number } | null = null;
+  for (const frame of frames) {
+    const edges = horizontal ? [frame.top, frame.bottom] : [frame.left, frame.right];
+    const spanLo = horizontal ? frame.left : frame.top;
+    const spanHi = horizontal ? frame.right : frame.bottom;
+    const mid = horizontal ? (frame.top + frame.bottom) / 2 : (frame.left + frame.right) / 2;
+    const cutLo = Math.max(lo, spanLo);
+    const cutHi = Math.min(hi, spanHi);
+    if (cutHi - cutLo < FRAME_RIDE_MIN) continue;
+    for (const edge of edges) {
+      const dist = Math.abs(cross - edge);
+      if (dist >= clear - 0.2) continue;
+      const outward = edge <= mid ? -1 : 1;
+      const sign = dist < 0.4 ? outward : Math.sign(cross - edge);
+      for (const candidateSign of [sign, -sign]) {
+        const gap = gapAhead(horizontal, edge, candidateSign, cutLo, cutHi, frames);
+        const offset = Math.min(clear, gap / 2);
+        if (offset < 3) continue;
+        const target = edge + candidateSign * offset;
+        const jogAt = [
+          { along: cutLo, from: cross, to: target },
+          { along: cutHi, from: cross, to: target },
+        ];
+        if (!spanClear(horizontal, target, cutLo, cutHi, cards, jogAt)) continue;
+        const room = frameClearance(horizontal, target, cutLo, cutHi, frames);
+        if (room <= dist + 0.4) continue;
+        if (!best || room > best.room + 0.2) best = { cutLo, cutHi, target, room };
+      }
+    }
+  }
+  if (!best) return null;
+  const at = (along: number, value: number): LanePoint =>
+    horizontal ? { x: along, y: value } : { x: value, y: along };
+  const dir = Math.sign(alongB - alongA) || 1;
+  const first = dir > 0 ? best.cutLo : best.cutHi;
+  const second = dir > 0 ? best.cutHi : best.cutLo;
+  const seq: LanePoint[] = [];
+  const push = (point: LanePoint) => {
+    const prev = seq[seq.length - 1];
+    if (prev && Math.abs(prev.x - point.x) < 0.4 && Math.abs(prev.y - point.y) < 0.4) return;
+    seq.push(point);
+  };
+  push({ ...a });
+  if (Math.abs(alongA - first) > 0.4) push(at(first, cross));
+  push(at(first, best.target));
+  push(at(second, best.target));
+  if (Math.abs(alongB - second) > 0.4) push(at(second, cross));
+  push({ ...b });
+  return seq.length > 2 ? seq : null;
+}
+
+function slideFits(
+  points: readonly LanePoint[],
+  index: number,
+  horizontal: boolean,
+  next: number,
+  cards: readonly LaneBox[],
+): boolean {
+  const a = points[index];
+  const b = points[index + 1];
+  const moved = (point: LanePoint): LanePoint =>
+    horizontal ? { x: point.x, y: next } : { x: next, y: point.y };
+  for (const point of [a, b]) {
+    const attached = cardAttachment(point, cards);
+    if (!attached) continue;
+    if (horizontal && attached.axis === "y") return false;
+    if (!horizontal && attached.axis === "x") return false;
+    const lo = horizontal ? attached.box.top + 4 : attached.box.left + 4;
+    const hi = horizontal ? attached.box.bottom - 4 : attached.box.right - 4;
+    if (next < lo || next > hi) return false;
+  }
+  const first = moved(a);
+  const second = moved(b);
+  if (!segmentClearOfCards(first, second, cards)) return false;
+  if (index > 0 && !segmentClearOfCards(points[index - 1], first, cards)) return false;
+  if (index + 2 < points.length && !segmentClearOfCards(second, points[index + 2], cards)) return false;
+  return true;
+}
+
+/**
+ * Отодвигает отрезки, которые идут вдоль границы рамки команды.
+ * Короткое пересечение границы остаётся: линия может войти в команду и выйти из неё.
+ */
+export function pullOffFrameStrokes(
+  points: readonly LanePoint[],
+  frames: readonly LaneBox[],
+  cards: readonly LaneBox[] = [],
+  clear = FRAME_STROKE_CLEAR,
+): LanePoint[] {
+  if (points.length < 2 || frames.length === 0) return points.map((point) => ({ ...point }));
+  const next = points.map((point) => ({ x: point.x, y: point.y }));
+  for (let pass = 0; pass < 4; pass += 1) {
+    let moved = false;
+    for (let index = 0; index < next.length - 1; index += 1) {
+      const a = next[index];
+      const b = next[index + 1];
+      const horizontal = Math.abs(a.y - b.y) < 0.6;
+      const vertical = Math.abs(a.x - b.x) < 0.6;
+      if (!horizontal && !vertical) continue;
+      const from = horizontal ? Math.min(a.x, b.x) : Math.min(a.y, b.y);
+      const to = horizontal ? Math.max(a.x, b.x) : Math.max(a.y, b.y);
+      if (to - from < FRAME_RIDE_MIN) continue;
+      const fixed = horizontal ? a.y : a.x;
+      if (frameClearance(horizontal, fixed, from, to, frames) >= clear - 0.2) continue;
+      const candidates: number[] = [];
+      for (const frame of frames) {
+        const edges = horizontal ? [frame.top, frame.bottom] : [frame.left, frame.right];
+        const span = horizontal ? [frame.left, frame.right] : [frame.top, frame.bottom];
+        if (spanOverlap(from, to, span[0], span[1]) < FRAME_RIDE_MIN) continue;
+        const mid = horizontal ? (frame.top + frame.bottom) / 2 : (frame.left + frame.right) / 2;
+        for (const edge of edges) {
+          if (Math.abs(fixed - edge) >= clear - 0.2) continue;
+          const outward = edge <= mid ? -1 : 1;
+          const sign = Math.abs(fixed - edge) < 0.4 ? outward : Math.sign(fixed - edge);
+          candidates.push(edge + sign * clear, edge - sign * clear);
+        }
+      }
+      let best: number | null = null;
+      let bestClear = frameClearance(horizontal, fixed, from, to, frames);
+      for (const candidate of candidates) {
+        if (!slideFits(next, index, horizontal, candidate, cards)) continue;
+        const room = frameClearance(horizontal, candidate, from, to, frames);
+        if (room < clear - 0.2) continue;
+        if (best === null || room > bestClear + 0.2) {
+          best = candidate;
+          bestClear = room;
+        }
+      }
+      if (best === null) {
+        const jogged = jogOffFrame(next, index, frames, cards, clear);
+        if (!jogged) continue;
+        next.splice(index, 2, ...jogged);
+        moved = true;
+        break;
+      }
+      if (horizontal) {
+        a.y = best;
+        b.y = best;
+      } else {
+        a.x = best;
+        b.x = best;
+      }
+      moved = true;
+    }
+    if (!moved) break;
+  }
+  return dedupe(next);
+}

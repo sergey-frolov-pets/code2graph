@@ -198,11 +198,12 @@ data
   orgchart: `orgchart
 %% Заливка — color=#hex (fill=). Граница — border=#hex и style=solid|dash|dot|dashdot.
 %% Ключи можно сочетать и менять местами. Внутри [скобок] color= остаётся текстом.
-%% Команда: team id "Подпись". Вложенная: team qa "QA" in tech. Цвет рамки: stroke=#hex fill=#hex.
+%% Команда: team id "Подпись" (label="…" — то же, что title=). Вложенная: team qa "QA" in tech. Цвет рамки: stroke=#hex fill=#hex.
+%% Внутри команды: team tech column — карточки и вложенные команды столбцом, team tech row — в ряд.
 %% Раскладка: teams row gap 36. Ещё column или grid. Старая запись teams layout=row gap=36 тоже работает.
 %% hide id1, id2 — убирает блоки и команды вместе со связями; id команды уносит вложенные команды и их людей.
 %% team=<id> относит блок к команде. Без team= блок стоит отдельно, без рамки.
-%% Связь между командами — одна полка в зазоре или обход сбоку, не больше четырёх изломов. В чужие рамки не заходит.
+%% Связь между командами — одна полка в зазоре или обход сбоку, не больше четырёх изломов. Линия может пересечь границу команды, но не идёт вдоль неё.
 team board "Правление"
 team tech "Технологии" stroke=#0969da
 teams row gap 36
@@ -249,7 +250,7 @@ avatar 48
 %% Подпись одной стрелки: A -supporter-> B label="бюджет"
 %% Подпись одной стрелки стоит на плашке цвета фона под ней: холст или заливка команды.
 %% Двусторонняя связь: A <-supporter-> B
-%% Связь — одна полка. Если на пути чужая карточка или рамка, стрелка уходит в боковой жёлоб. Больше четырёх изломов не бывает.
+%% Связь — одна полка. Если на пути чужая карточка или рамка, стрелка уходит в боковой жёлоб. Больше четырёх изломов не бывает. Границу команды линия может пересечь, но не идёт вдоль неё.
 %% Легенда рисуется под схемой: шкалы и цвет контрагента. Из линий в ней только стили link.
 %% supporter (зелёная сплошная) и enemy (красный пунктир) есть, пока строка link их не заменит.
 %% comms on — таблица под легендой. Заголовок таблицы — «Компания …», колонки: «Сотрудник», «Менеджер», «Контакты», «Связи».
@@ -263,7 +264,8 @@ avatar 48
 %% Запасной вид — data:image jpeg, png, webp или gif, снимок внутри текста.
 %% В карточках ниже он вместо ссылки: так пример открывается с лицами без сети и без файлов на диске.
 %% Превью убирает внешний http(s), локальный путь в браузере не открывает.
-%% Команда: team id "Подпись". Вложенная: team board "Совет" in corp. Цвет: stroke=#hex fill=#hex.
+%% Команда: team id "Подпись" (label="…" — то же, что title=). Вложенная: team board "Совет" in corp. Цвет: stroke=#hex fill=#hex.
+%% Внутри команды: team sales column — карточки и вложенные команды столбцом, team sales row — в ряд.
 %% Раскладка: teams row gap 28. Ещё column или grid. Старая запись teams layout=row gap=28 тоже работает.
 %% team=<id> относит человека к команде. Без team= человек стоит отдельно, без рамки.
 %% hide id1, id2 — убирает людей, команды и типы связи; скрытая команда уносит своих людей, их связи и рамку.
@@ -903,11 +905,12 @@ Evening : 40, 45, 65, 50, 35`,
   orgchart: `orgchart
 %% Fill is color=#hex (or fill=). Border is border=#hex and style=solid|dash|dot|dashdot.
 %% Keys combine in any order. Inside [brackets] color= stays part of the label.
-%% Team: team id "Label". Nested: team qa "QA" in tech. Frame color: stroke=#hex fill=#hex.
+%% Team: team id "Label" (label="…" is the same as title=). Nested: team qa "QA" in tech. Frame color: stroke=#hex fill=#hex.
+%% Inside a team: team tech column stacks its cards and nested teams; team tech row places them side by side.
 %% Layout: teams row gap 36. Also column or grid. The older teams layout=row gap=36 still works.
 %% hide id1, id2 removes nodes and teams together with their edges; a hidden team takes nested teams and their people with it.
 %% team=<id> puts a node in a team. Without team= the node stands alone, with no frame.
-%% A link between teams is one shelf, or a side gutter when a foreign frame is in the way. At most four bends.
+%% A link between teams is one shelf, or a side gutter when a foreign frame is in the way. At most four bends. A line may cross a team border, but it does not run along that border.
 team board "Board"
 team tech "Technology" stroke=#0969da
 teams row gap 36
@@ -954,7 +957,7 @@ CEO -> Ops`,
 %% A caption on one arrow: A -supporter-> B label="budget"
 %% A caption sits on a plate the color of whatever is behind it: the canvas or a team fill.
 %% A two-way link: A <-supporter-> B
-%% A link is one shelf. A foreign card or frame sends it out through a side gutter. At most four bends.
+%% A link is one shelf. A foreign card or frame sends it out through a side gutter. At most four bends. A line may cross a team border, but it does not run along that border.
 %% The legend sits under the chart: the scales and the counterpart color. Line samples are only link styles.
 %% supporter (green solid) and enemy (red dash) exist until a link line replaces them.
 %% comms on draws the table under the legend. The table title is Company …, the columns are Employee, Manager, Contacts, Links.
@@ -968,7 +971,8 @@ CEO -> Ops`,
 %% The fallback is data:image jpeg, png, webp or gif: the picture lives inside the text.
 %% The cards below use that form instead of a link, so the sample opens with faces and no network or disk files.
 %% The preview drops an external http(s) URL, and a browser does not open a local path.
-%% Team: team id "Label". Nested: team board "Board" in corp. Color: stroke=#hex fill=#hex.
+%% Team: team id "Label" (label="…" is the same as title=). Nested: team board "Board" in corp. Color: stroke=#hex fill=#hex.
+%% Inside a team: team sales column stacks its cards and nested teams; team sales row places them side by side.
 %% Layout: teams row gap 28. Also column or grid. The older teams layout=row gap=28 still works.
 %% team=<id> puts a person in a team. Without team= the person stands alone, with no frame.
 %% hide id1, id2 removes people, teams and link types; a hidden team takes its people, their links and its frame with it.

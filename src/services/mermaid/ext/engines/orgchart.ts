@@ -26,7 +26,7 @@ import {
   type AvatarGender,
 } from "./avatar";
 import { growPlotToAspect, parseAspectDirective, type ChartAspect } from "../chart-aspect";
-import { clipToNearEdge, repairLanePath, routeCompact } from "./edge-lanes";
+import { clipToNearEdge, pullOffFrameStrokes, repairLanePath, routeCompact, type LaneBox } from "./edge-lanes";
 import type { ExtEngine, ExtParseError, ExtParseResult, ExtRenderOptions } from "../types";
 import { isColor } from "./waterfall/directive-parsers";
 
@@ -98,8 +98,13 @@ export type TeamDash = "solid" | "dash" | "dot" | "dashdot";
 /** Команда: рамка с подписью вокруг своей части дерева. */
 export interface TeamStyle {
   id: string;
-  /** Название команды над рамкой: `team front [Front Office]` или `title="…"`. */
+  /** Название команды над рамкой: `team front [Front Office]`, `title="…"` или `label="…"`. */
   title: string;
+  /**
+   * Как внутри этой команды стоят её карточки и вложенные команды.
+   * `row` — в ряд, `column` — столбцом. Без поля берётся общая `teams layout`.
+   */
+  flow?: "row" | "column";
   /** id родительской команды: рамки вкладываются друг в друга. */
   parent?: string;
   fill?: string;
@@ -176,7 +181,7 @@ export interface TeamBox<T extends { id: string }> extends TeamBoxFrame {
 }
 
 const TEAM_ATTR_RE =
-  /^(title|parent|fill|stroke|colour|color|radius|padding|width|style|frame)=("[^"]*"|'[^']*'|\S*)\s*/i;
+  /^(title|label|parent|fill|stroke|colour|color|radius|padding|width|style|frame|layout|flow)=("[^"]*"|'[^']*'|\S*)\s*/i;
 
 /** `team front [Front Office] fill=#f6f8fa radius=12` */
 /** Директива `hide id1, id2`: список id сотрудников, команд (и типов связи в powermap). */
@@ -253,12 +258,18 @@ export function parseTeamLine(raw: string): { team?: TeamStyle; error?: string }
     team.parent = nested[1];
     rest = rest.slice(nested[0].length).trim();
   }
-  for (let guard = 0; guard < 12 && rest; guard += 1) {
+  for (let guard = 0; guard < 16 && rest; guard += 1) {
+    const flowToken = /^(row|column)\b\s*/i.exec(rest);
+    if (flowToken) {
+      team.flow = flowToken[1].toLowerCase() as "row" | "column";
+      rest = rest.slice(flowToken[0].length).trim();
+      continue;
+    }
     const attr = TEAM_ATTR_RE.exec(rest);
     if (!attr) return { error: `неизвестный параметр команды «${rest}»` };
     const key = attr[1].toLowerCase();
     const value = unquote(attr[2]);
-    if (key === "title") {
+    if (key === "title" || key === "label") {
       const flag = value.trim().toLowerCase();
       if (flag === "off" || flag === "none" || flag === "false") team.showTitle = false;
       else if (flag === "on" || flag === "true") team.showTitle = true;
@@ -281,6 +292,12 @@ export function parseTeamLine(raw: string): { team?: TeamStyle; error?: string }
         };
       }
       team.dash = dash;
+    } else if (key === "layout" || key === "flow") {
+      const flow = value.trim().toLowerCase();
+      if (flow !== "row" && flow !== "column") {
+        return { error: `раскладка внутри команды: ожидается row или column, получено «${value}»` };
+      }
+      team.flow = flow;
     } else if (key === "frame") {
       const flag = value.trim().toLowerCase();
       if (flag === "off" || flag === "none" || flag === "false" || flag === "0") team.frame = false;
@@ -577,7 +594,8 @@ export function layoutTeamGroups<T extends { id: string }>(options: {
 
   /**
    * Замер узла: своя группа людей и/или вложенные команды, упакованные как элементы.
-   * Верхний уровень живёт по `teams layout=`, вложенные — по `dir`: дети в ряд или в столбец.
+   * `row` / `column` у команды раскладывает её карточки и вложенные команды.
+   * Иначе верхний уровень живёт по `teams layout`, вложенные — по `dir`.
    */
   const measureNode = (teamId: string, depth: number): TeamNode | null => {
     const team = byId.get(teamId);
@@ -591,10 +609,11 @@ export function layoutTeamGroups<T extends { id: string }>(options: {
     const items: PackItem[] = [];
     if (laid) items.push({ width: laid.width, height: laid.height });
     for (const kid of kids) items.push({ width: kid.box.width, height: kid.box.height });
-    // Явная раскладка (`row` / `column` / `grid`) действует на всех уровнях,
-    // `dir` — только при `layout=auto`: иначе `layout=column` менял бы лишь верх.
+    // `team id row|column` задаёт ряд или столбец внутри этой команды.
+    // Иначе явная `teams layout` действует на всех уровнях, а `dir` — только при `layout=auto`.
     const innerMode: TeamLayoutSpec["mode"] =
-      layout.mode !== "auto" ? mode : depth === 0 ? mode : layout.dir === "tb" ? "column" : "row";
+      team.flow ??
+      (layout.mode !== "auto" ? mode : depth === 0 ? mode : layout.dir === "tb" ? "column" : "row");
     const packed = packItems(items, innerMode, layout.columns, layout.gap);
     const contentWidth = packed.width;
     const contentHeight = packed.height;
@@ -737,6 +756,22 @@ export function drawTeamBoxes(
       );
     }
   }
+}
+
+/** Рамки команд в координатах холста. Связь может их пересечь, но не должна идти вдоль обводки. */
+export function teamFrameBoxes(
+  boxes: readonly TeamBoxFrame[],
+  offsetX: number,
+  offsetY: number,
+): LaneBox[] {
+  const out: LaneBox[] = [];
+  for (const box of boxes) {
+    if (box.ghost || box.frame === false) continue;
+    const left = offsetX + box.x;
+    const top = offsetY + box.y;
+    out.push({ left, right: left + box.width, top, bottom: top + box.height });
+  }
+  return out;
 }
 
 /**
@@ -1796,6 +1831,9 @@ function drawCrossTeamEdges(
         cardRect(to, offsetX, offsetY),
       );
     }
+    const frames = teamFrameBoxes(boxes, offsetX, offsetY);
+    const cardBoxes = placed.map((card) => cardRect(card, offsetX, offsetY));
+    points = pullOffFrameStrokes(points, frames, cardBoxes);
     const [start, ...rest] = points;
     if (!start || rest.length === 0) continue;
     if (points.length === 4) {
@@ -2137,6 +2175,7 @@ export function drawReportingElbows<T extends { id: string }>(
   offsetY: number,
   stroke: string,
   markerRef: string,
+  frames: readonly LaneBox[] = [],
 ): void {
   const routes = reportingElbowRoutes(placed, edges, offsetX, offsetY).map((elbow) => {
     const { x1, y1, x2, y2, midY, midX } = elbow;
@@ -2175,6 +2214,7 @@ export function drawReportingElbows<T extends { id: string }>(
     const others = boxes.filter((_, index) => index !== fromIndex && index !== toIndex);
     const fixed = repairLanePath(route.points, others, own);
     if (fixed) route.points = fixed;
+    if (frames.length > 0) route.points = pullOffFrameStrokes(route.points, frames, boxes);
   }
   for (const route of routes) {
     const first = route.points[0];
@@ -2256,7 +2296,16 @@ export function renderOrgchart(model: OrgModel, options: ExtRenderOptions): stri
   if (boxes.length > 0) {
     drawTeamBoxes(svg, boxes, offsetX, offsetY, palette, Boolean(model.mono), invertedMono, "orgchart");
   }
-  drawReportingElbows(svg, placed, localEdges, offsetX, offsetY, palette.axis, marker.ref);
+  drawReportingElbows(
+    svg,
+    placed,
+    localEdges,
+    offsetX,
+    offsetY,
+    palette.axis,
+    marker.ref,
+    teamFrameBoxes(boxes, offsetX, offsetY),
+  );
   drawCrossTeamEdges(
     svg,
     placed,
