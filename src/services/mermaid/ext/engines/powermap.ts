@@ -1471,6 +1471,8 @@ interface RoutedInfluence {
 /** Кегль подписи на стрелке и полоса над линией, которую нельзя пересекать. */
 const EDGE_LABEL_FONT = 10;
 const EDGE_LABEL_BAND = 14;
+/** Зазор плашки до обводки карточки: глиф шире оценки и не должен касаться рамки. */
+const EDGE_LABEL_CARD_PAD = 6;
 /** Минимальный зазор между параллельными штрихами, иначе они читаются как одна линия. */
 const TRACK_CLEAR = 12;
 
@@ -2458,14 +2460,37 @@ function placeEdgeLabel(
           top: plate.top,
           bottom: plate.bottom,
         };
-        const overlap =
-          plateCardOverlap(box.left, box.right, plate.top, plate.bottom, cards) +
-          plateCardOverlap(box.left, box.right, plate.top, plate.bottom, taken);
+        const cardOverlap = plateCardOverlap(box.left, box.right, plate.top, plate.bottom, cards);
+        // Плашка уже текста: оценка ширины короче глифа, низ не покрывает выносные.
+        const textOverlap = plateCardOverlap(
+          box.left - 4,
+          box.right + 4,
+          plate.top - 2,
+          plate.bottom + 3,
+          cards,
+        );
+        const paddedOverlap = plateCardOverlap(
+          box.left - EDGE_LABEL_CARD_PAD,
+          box.right + EDGE_LABEL_CARD_PAD,
+          plate.top - EDGE_LABEL_CARD_PAD,
+          plate.bottom + EDGE_LABEL_CARD_PAD,
+          cards,
+        );
+        const takenOverlap = plateCardOverlap(box.left, box.right, plate.top, plate.bottom, taken);
         const strokes = crossedStrokes(segments, owner, box);
-        // Сначала своя полка без чужих штрихов и карточек, затем середина и сторона «над».
+        // Пересечение с карточкой запрещено почти безусловно: тонкая полоска
+        // у границы раньше проигрывала центру полки. Запас под глиф лишь
+        // слегка отодвигает подпись, не срывая её с середины.
+        const grazes = textOverlap <= 0.5 && paddedOverlap > 0.5;
+        const halo = Math.max(0, textOverlap - cardOverlap);
         const score =
           strokes * 100000 +
-          overlap * 100 +
+          (cardOverlap > 0.5 ? 80000 : 0) +
+          cardOverlap * 100 +
+          // Ореол глифа сдвигает подпись на несколько пикселей, не на другую полку.
+          (halo > 0.5 ? Math.min(halo, 24) * 0.45 : 0) +
+          takenOverlap * 100 +
+          (grazes ? Math.min(paddedOverlap, 40) * 0.08 : 0) +
           hostRank * 400 +
           sharedBandPenalty(segments, owner, box) +
           Math.abs(x - center) * 1.2 +

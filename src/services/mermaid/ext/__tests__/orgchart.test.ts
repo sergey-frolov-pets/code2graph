@@ -780,6 +780,43 @@ dev -> qa`);
     expect(qa.x + qa.width).toBeLessThan(dev.x + dev.width);
   });
 
+  it("layout=column центрирует команды, стрелка стыкуется с карточками", () => {
+    const svg = orgchartEngine.render(
+      orgchartEngine.parse(`orgchart
+team wide [Широкая]
+team slim [Узкая]
+teams layout=column gap=28
+a [Анна Сергеевна Орлова] team=wide
+b [Илья] team=slim
+a -> b`).value as OrgModel,
+      {},
+    );
+    const teams = teamRects(svg);
+    const wide = teams.find((team) => team.id === "wide")!;
+    const slim = teams.find((team) => team.id === "slim")!;
+    expect(slim.width).toBeLessThan(wide.width);
+    expect(Math.abs(slim.x + slim.width / 2 - (wide.x + wide.width / 2))).toBeLessThanOrEqual(1);
+    const cards = cardsIn(svg);
+    const routes = edgePaths(svg);
+    expect(routes.length).toBe(1);
+    const start = routes[0].points[0];
+    const end = routes[0].points[routes[0].points.length - 1];
+    const onCard = (point: Point) =>
+      cards.some(
+        (card) =>
+          point.x >= card.x - 1 &&
+          point.x <= card.x + card.width + 1 &&
+          point.y >= card.y - 1 &&
+          point.y <= card.y + card.height + 1,
+      );
+    expect(onCard(start)).toBe(true);
+    expect(onCard(end)).toBe(true);
+    const wideCard = cards.find((card) => card.label.includes("Анна"))!;
+    expect(Math.abs(wideCard.x + wideCard.width / 2 - (wide.x + wide.width / 2))).toBeLessThanOrEqual(1);
+    const slimCard = cards.find((card) => card.label.includes("Илья"))!;
+    expect(Math.abs(slimCard.x + slimCard.width / 2 - (slim.x + slim.width / 2))).toBeLessThanOrEqual(1);
+  });
+
   it("люди без team= идут группой без рамки", () => {
     const svg = orgchartEngine.render(
       orgchartEngine.parse(`orgchart

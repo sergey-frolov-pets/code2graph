@@ -1271,6 +1271,49 @@ x -> y`);
     expect(b.y).toBeGreaterThan(a.y + a.height);
   });
 
+  it("layout=column центрирует команды разной ширины, стрелка выходит из их карточек", () => {
+    const model = modelOf(`powermap
+team wide [Широкая]
+team slim [Узкая]
+teams layout=column gap=28
+a [Анна Сергеевна Орлова] team=wide
+b [Илья] team=slim
+a -> b
+a -supporter-> b label="общий бюджет"`);
+    const svg = powermapEngine.render(model, { locale: "ru" }) as string;
+    const teams = teamRects(svg);
+    const wide = teams.find((team) => team.id === "wide")!;
+    const slim = teams.find((team) => team.id === "slim")!;
+    expect(slim.width).toBeLessThan(wide.width);
+    expect(Math.abs(slim.x + slim.width / 2 - (wide.x + wide.width / 2))).toBeLessThanOrEqual(1);
+    const cards = cardRects(svg);
+    const routes = [...reportPaths(svg), ...linkPaths(svg)];
+    expect(routes.length).toBeGreaterThan(0);
+    for (const route of routes) {
+      const start = route.points[0];
+      const end = route.points[route.points.length - 1];
+      const onCard = (point: { x: number; y: number }) =>
+        cards.some(
+          (card) =>
+            point.x >= card.x - 1 &&
+            point.x <= card.x + card.width + 1 &&
+            point.y >= card.y - 1 &&
+            point.y <= card.y + card.height + 1,
+        );
+      expect(onCard(start)).toBe(true);
+      expect(onCard(end)).toBe(true);
+    }
+    const plates = labelPlates(svg);
+    expect(plates.length).toBe(1);
+    for (const plate of plates) {
+      for (const card of cards) {
+        const overlapX = Math.min(plate.x + plate.width, card.x + card.width) - Math.max(plate.x, card.x);
+        const overlapY = Math.min(plate.y + plate.height, card.y + card.height) - Math.max(plate.y, card.y);
+        expect(overlapX > 0.5 && overlapY > 0.5).toBe(false);
+      }
+    }
+  });
+
   it("labels=off прячет подписи команд (как titles=off)", () => {
     const model = modelOf(`powermap
 team a [A]
