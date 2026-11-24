@@ -438,6 +438,41 @@ describe("diagram-builder core", () => {
     }
   });
 
+  it("keeps powermap team directives and membership when a title is added in steps", () => {
+    const source = [
+      "powermap",
+      "company Northwind",
+      "teams layout=grid dir=lr gap=32 columns=3 titles=off",
+      "team front [Front Office] fill=#f6f8fa stroke=#57606a radius=12 padding=18 width=2 style=dash",
+      "team back [Back Office] parent=front frame=off",
+      "CEO [Alex|Lead] role=D team=front gender=m",
+      "CFO [Elena|Finance] role=A team=back gender=f",
+      "CEO -> CFO",
+    ].join("\n");
+    const state = parseSourceToBuilderState(source, "mermaid");
+    state.canvas.title = "Карта влияния";
+    const emitted = emitSourceFromBuilderState(state);
+    const parsed = parsePowermap(emitted);
+    expect(parsed.ok).toBe(true);
+    expect(parsed.value?.title).toBe("Карта влияния");
+    expect(emitted).toContain("teams layout=grid dir=lr gap=32 columns=3 titles=off");
+    expect(emitted).toContain(
+      "team front [Front Office] fill=#f6f8fa stroke=#57606a radius=12 padding=18 width=2 style=dash",
+    );
+    expect(emitted).toContain("team back [Back Office] parent=front frame=off");
+    const front = parsed.value?.teams.find((team) => team.id === "front");
+    const back = parsed.value?.teams.find((team) => team.id === "back");
+    expect(front?.fill).toBe("#f6f8fa");
+    expect(front?.strokeWidth).toBe(2);
+    expect(front?.dash).toBe("dash");
+    expect(parsed.value?.teamLayout.mode).toBe("grid");
+    expect(parsed.value?.teamLayout.titles).toBe(false);
+    expect(back?.parent).toBe("front");
+    expect(back?.frame).toBe(false);
+    expect(parsed.value?.people.find((person) => person.name === "Alex")?.team).toBe("front");
+    expect(parsed.value?.people.find((person) => person.name === "Elena")?.team).toBe("back");
+  });
+
   it("parses and emits standard tabular and graph diagrams (pie, gantt, flowchart, plantuml sequence)", () => {
     const pieState = parseSourceToBuilderState(
       'pie showData\n    title Shares\n    "A" : 60\n    "B" : 40',
