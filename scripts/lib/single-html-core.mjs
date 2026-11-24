@@ -399,10 +399,48 @@ ${analyticsSnippet()}
 `;
 }
 
+/** Ссылки из index.html, который собрал Vite, до перезаписи оболочки. */
+export function readViteIndexAssets(html) {
+  const links = html.match(/<link\b[^>]*>/gi) ?? [];
+  const scripts = html.match(/<script\b[^>]*>/gi) ?? [];
+  const stylesheets = [];
+  const modulePreloads = [];
+  const modules = [];
+
+  for (const tag of links) {
+    const rel = /rel="([^"]+)"/.exec(tag)?.[1] ?? "";
+    const href = /href="([^"]+)"/.exec(tag)?.[1] ?? "";
+    if (!href) {
+      continue;
+    }
+    if (rel === "stylesheet") {
+      stylesheets.push(href);
+    }
+    if (rel === "modulepreload") {
+      modulePreloads.push(href);
+    }
+  }
+
+  for (const tag of scripts) {
+    if (!/type="module"/.test(tag)) {
+      continue;
+    }
+    const src = /src="([^"]+)"/.exec(tag)?.[1];
+    if (src) {
+      modules.push(src);
+    }
+  }
+
+  return { stylesheets, modulePreloads, modules };
+}
+
 /** Thin shell for GitHub Pages: HTML stays small, app and vendors load as files. */
 export function buildHostedHtmlDocument({
-  cssHref,
-  appJsHref,
+  cssHref = "",
+  appJsHref = "",
+  stylesheets = [],
+  modulePreloads = [],
+  modules = [],
   headExtra = "",
   includePwaBootstrap = false,
 }) {
@@ -412,10 +450,28 @@ export function buildHostedHtmlDocument({
         "utf8",
       )
     : "";
-  const stylesheet = cssHref
-    ? `    <link rel="preload" href="${cssHref}" as="style" />\n    <link rel="stylesheet" href="${cssHref}" />\n`
-    : "";
-  const scriptPreload = `    <link rel="preload" href="${appJsHref}" as="script" />\n`;
+  const cssList = stylesheets.length > 0 ? stylesheets : cssHref ? [cssHref] : [];
+  const jsList = modules.length > 0 ? modules : [];
+  const stylesheet = cssList
+    .map(
+      (href) =>
+        `    <link rel="preload" href="${href}" as="style" />\n    <link rel="stylesheet" href="${href}" />\n`,
+    )
+    .join("");
+  const preloadTags = [
+    ...modulePreloads.map(
+      (href) => `    <link rel="modulepreload" href="${href}" />\n`,
+    ),
+    ...(jsList.length === 0 && appJsHref
+      ? [`    <link rel="preload" href="${appJsHref}" as="script" />\n`]
+      : []),
+  ].join("");
+  const scriptTags =
+    jsList.length > 0
+      ? jsList
+          .map((src) => `    <script type="module" src="${src}"></script>\n`)
+          .join("")
+      : `    <script src="${appJsHref}" defer></script>\n`;
 
   return `<!DOCTYPE html>
 <html lang="ru">
@@ -432,14 +488,14 @@ ${SPA_PATH_RESTORE_SCRIPT}
     <meta name="color-scheme" content="light dark" />
     <title>Code2Graph</title>
     ${headExtra}
-${stylesheet}${scriptPreload}    ${includePwaBootstrap ? `<script>\n${escapeScriptContent(pwaBootstrap)}\n    </script>` : ""}
+${stylesheet}${preloadTags}    ${includePwaBootstrap ? `<script>\n${escapeScriptContent(pwaBootstrap)}\n    </script>` : ""}
   </head>
   <body>
 ${LOADING_SHELL}
     <script>
 ${ERROR_HANDLER_SCRIPT}
     </script>
-    <script src="${appJsHref}" defer></script>
+${scriptTags}
 ${analyticsSnippet()}
   </body>
 </html>

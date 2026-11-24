@@ -1,25 +1,50 @@
-import { trackEvent } from "@/analytics";
+import { trackEvent } from "@/analytics/goatcounter";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
-import { DIAGRAM_LANGUAGE_MODULES } from "@/languages/registry";
-import type {
-  DiagramLanguageModule,
-  DiagramLanguageSiteCopy,
-} from "@/languages/types";
+import type { LocaleKey } from "@/locales/types";
 import { languagePageHash } from "@/router";
 
-export type PublicLanguagePage = DiagramLanguageModule & {
-  site: DiagramLanguageSiteCopy;
-};
-
-function hasPublicSite(
-  module: DiagramLanguageModule,
-): module is PublicLanguagePage {
-  return module.site != null;
+export interface PublicLanguagePageLink {
+  id: DiagramFormat;
+  labelKey: LocaleKey;
+  site: { purposeKey: LocaleKey };
 }
 
-/** Diagram languages that have a public page at `#/lang/<id>`. */
-export const PUBLIC_LANGUAGE_PAGES: readonly PublicLanguagePage[] =
-  DIAGRAM_LANGUAGE_MODULES.filter(hasPublicSite);
+/**
+ * Ссылки лендинга на языковые страницы. Без реестра движков:
+ * тот тянет D2, Mermaid и PlantUML в первый экран.
+ */
+export const PUBLIC_LANGUAGE_PAGES: readonly PublicLanguagePageLink[] = [
+  {
+    id: "plantuml",
+    labelKey: "editor.format.plantuml",
+    site: { purposeKey: "site.formats.plantuml.purpose" },
+  },
+  {
+    id: "mermaid",
+    labelKey: "editor.format.mermaid",
+    site: { purposeKey: "site.formats.mermaid.purpose" },
+  },
+  {
+    id: "graphml",
+    labelKey: "editor.format.graphml",
+    site: { purposeKey: "site.formats.graphml.purpose" },
+  },
+  {
+    id: "wiremark",
+    labelKey: "editor.format.wiremark",
+    site: { purposeKey: "site.formats.wiremark.purpose" },
+  },
+  {
+    id: "d2",
+    labelKey: "editor.format.d2",
+    site: { purposeKey: "site.formats.d2.purpose" },
+  },
+  {
+    id: "structurizr",
+    labelKey: "editor.format.structurizr",
+    site: { purposeKey: "site.formats.structurizr.purpose" },
+  },
+];
 
 export { languagePageHash };
 

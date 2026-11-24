@@ -44,6 +44,46 @@ export const LIBRARY_LINK_RESERVED_SEGMENTS = new Set([
 
 const LIBRARY_USERNAME_MAX_LENGTH = 80;
 
+/** Редактор уже открывали: следующий заход на сайт должен открыть его, а не лендинг. */
+export const LAST_ENTRY_STORAGE_KEY = "code2graph-last-entry";
+
+/** Эта вкладка сама попросила лендинг (логотип, «на сайт»). */
+export const EXPLICIT_LANDING_STORAGE_KEY = "code2graph-explicit-landing";
+
+const EDITOR_ENTRY_ROUTES = new Set<AppRouteName>([
+  "app",
+  "diagram",
+  "clipboard",
+  "sample",
+  "libraryLink",
+  "dashboardEmbed",
+  "preview",
+]);
+
+export function isEditorEntry(name: AppRouteName): boolean {
+  return EDITOR_ENTRY_ROUTES.has(name);
+}
+
+/** `#` и `#/` — адрес сайта без конкретной страницы. */
+export function isDefaultLandingHash(hash: string): boolean {
+  const raw = hash.replace(/^#/, "");
+  return raw === "" || raw === "/";
+}
+
+export function shouldRestoreEditor(input: {
+  routeName: AppRouteName;
+  hash: string;
+  lastEntry: string | null;
+  explicitLanding: boolean;
+}): boolean {
+  return (
+    !input.explicitLanding &&
+    input.lastEntry === "app" &&
+    input.routeName === "landing" &&
+    isDefaultLandingHash(input.hash)
+  );
+}
+
 const ROUTE_HASH: Record<
   Exclude<
     AppRouteName,
@@ -406,6 +446,16 @@ export function navigateTo(
       : route === "language"
         ? ROUTE_HASH.landing
         : ROUTE_HASH[route];
+
+  try {
+    if (route === "landing") {
+      sessionStorage.setItem(EXPLICIT_LANDING_STORAGE_KEY, "1");
+    } else if (route === "app") {
+      sessionStorage.removeItem(EXPLICIT_LANDING_STORAGE_KEY);
+    }
+  } catch {
+    // sessionStorage нет в части тестов и приватном режиме.
+  }
 
   if (window.location.hash !== target) {
     window.location.hash = target;

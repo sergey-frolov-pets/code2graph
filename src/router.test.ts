@@ -10,6 +10,7 @@ import {
   parseRouteFromHash,
   routeHash,
   samplePageUrl,
+  shouldRestoreEditor,
 } from "@/router";
 
 describe("app routes", () => {
@@ -54,6 +55,49 @@ describe("app routes", () => {
       libraryUsername: null,
       libraryLinkSlug: null,
     });
+  });
+
+  it("opens the editor again when the last visit was the app", () => {
+    expect(
+      shouldRestoreEditor({
+        routeName: "landing",
+        hash: "",
+        lastEntry: "app",
+        explicitLanding: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldRestoreEditor({
+        routeName: "landing",
+        hash: "#/",
+        lastEntry: "app",
+        explicitLanding: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldRestoreEditor({
+        routeName: "landing",
+        hash: "#/",
+        lastEntry: "app",
+        explicitLanding: true,
+      }),
+    ).toBe(false);
+    expect(
+      shouldRestoreEditor({
+        routeName: "landing",
+        hash: "#/",
+        lastEntry: null,
+        explicitLanding: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldRestoreEditor({
+        routeName: "login",
+        hash: "#/login",
+        lastEntry: "app",
+        explicitLanding: false,
+      }),
+    ).toBe(false);
   });
 
   it("keeps the landing as the fallback", () => {

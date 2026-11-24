@@ -65,23 +65,3 @@ export const LAYOUT_ENGINES = {
 } as const;
 
 export type LayoutEngine = (typeof LAYOUT_ENGINES)[keyof typeof LAYOUT_ENGINES];
-
-export {
-  getDefaultSource,
-  getSampleSource,
-  isDefaultSource,
-  translateSourceForLocale,
-  PLANTUML_SAMPLE_IDS,
-  MERMAID_SAMPLE_IDS,
-  WIREMARK_SAMPLE_IDS,
-  D2_SAMPLE_IDS,
-  GRAPHML_SAMPLE_IDS,
-  STRUCTURIZR_SAMPLE_IDS,
-  type PlantUmlSampleId,
-  type MermaidSampleId,
-  type WiremarkSampleId,
-  type D2SampleId,
-  type GraphmlSampleId,
-  type StructurizrSampleId,
-  type SampleSelection,
-} from "@/constants/sample-diagrams";

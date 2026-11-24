@@ -2,7 +2,7 @@ import {
   copyFileSync,
   existsSync,
   readdirSync,
-  renameSync,
+  readFileSync,
   writeFileSync,
 } from "node:fs";
 import path from "node:path";
@@ -13,30 +13,16 @@ import {
   copyPwaDistAssets,
   distDir,
   ensureVendorFiles,
-  findDistAssetFileName,
-  readAppVersion,
+  readViteIndexAssets,
   writePreparedVendorFiles,
 } from "./lib/single-html-core.mjs";
 
-function stabilizeAssetName(extension, stableName) {
-  const current = findDistAssetFileName(extension);
-  if (!current) {
-    throw new Error(`Vite did not emit a ${extension} asset under dist/assets`);
-  }
-  const assetsDir = path.join(distDir, "assets");
-  if (current === stableName) {
-    return stableName;
-  }
-  renameSync(path.join(assetsDir, current), path.join(assetsDir, stableName));
-  return stableName;
-}
-
 function buildHostedPackage() {
-  const version = readAppVersion();
-  const appJsName = stabilizeAssetName(".js", "app.js");
-  const cssName = findDistAssetFileName(".css")
-    ? stabilizeAssetName(".css", "app.css")
-    : null;
+  const viteHtmlPath = path.join(distDir, "index.html");
+  const assets = readViteIndexAssets(readFileSync(viteHtmlPath, "utf8"));
+  if (assets.modules.length === 0) {
+    throw new Error("Vite did not emit a module entry in dist/index.html");
+  }
 
   const headExtra = `
     <meta
@@ -50,8 +36,9 @@ function buildHostedPackage() {
     <meta name="theme-color" content="#42b883" />`;
 
   const html = buildHostedHtmlDocument({
-    cssHref: cssName ? `./assets/${cssName}?v=${version}` : "",
-    appJsHref: `./assets/${appJsName}?v=${version}`,
+    stylesheets: assets.stylesheets,
+    modulePreloads: assets.modulePreloads,
+    modules: assets.modules,
     headExtra,
     includePwaBootstrap: true,
   });
@@ -71,7 +58,7 @@ function buildHostedPackage() {
   const htmlBytes = Buffer.byteLength(html, "utf8");
   console.log(`Dist package: ${distFiles.join(", ")}`);
   console.log(
-    `Built hosted dist/index.html (${(htmlBytes / 1024).toFixed(1)} KB shell; app at assets/${appJsName})`,
+    `Built hosted dist/index.html (${(htmlBytes / 1024).toFixed(1)} KB shell; entry ${assets.modules[0]})`,
   );
 }
 

@@ -1,16 +1,37 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, defineAsyncComponent, defineComponent, h, watch } from "vue";
 import AppUpdateBanner from "@/components/AppUpdateBanner.vue";
-import App from "@/App.vue";
 import { bindAppRouterListeners, useAppRouter } from "@/composables/useAppRouter";
-import AccountPage from "@/pages/AccountPage.vue";
 import LandingPage from "@/pages/LandingPage.vue";
-import LanguagePage from "@/pages/LanguagePage.vue";
-import McpPage from "@/pages/McpPage.vue";
-import PreviewPage from "@/pages/PreviewPage.vue";
-import AiChatSharePage from "@/pages/AiChatSharePage.vue";
-import LoginPage from "@/pages/LoginPage.vue";
-import RegisterPage from "@/pages/RegisterPage.vue";
+
+const pageLoading = defineComponent({
+  name: "PageLoading",
+  setup() {
+    return () =>
+      h("div", {
+        class: "app-boot-placeholder",
+        role: "status",
+        "aria-live": "polite",
+        "aria-label": "Code2Graph",
+      });
+  },
+});
+
+const asyncPage = (loader: () => Promise<{ default: object }>) =>
+  defineAsyncComponent({
+    loader,
+    delay: 0,
+    loadingComponent: pageLoading,
+  });
+
+const App = asyncPage(() => import("@/App.vue"));
+const AccountPage = asyncPage(() => import("@/pages/AccountPage.vue"));
+const LanguagePage = asyncPage(() => import("@/pages/LanguagePage.vue"));
+const McpPage = asyncPage(() => import("@/pages/McpPage.vue"));
+const PreviewPage = asyncPage(() => import("@/pages/PreviewPage.vue"));
+const AiChatSharePage = asyncPage(() => import("@/pages/AiChatSharePage.vue"));
+const LoginPage = asyncPage(() => import("@/pages/LoginPage.vue"));
+const RegisterPage = asyncPage(() => import("@/pages/RegisterPage.vue"));
 
 bindAppRouterListeners();
 

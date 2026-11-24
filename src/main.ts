@@ -1,6 +1,5 @@
 import { createApp } from "vue";
-import { registerShareSupport } from "@/composables/usePumlShare";
-import { trackPageview } from "@/analytics";
+import { trackPageview } from "@/analytics/goatcounter";
 import { useAnalytics } from "@/composables/useAnalytics";
 import { loadDeploymentConfig } from "@/config/library-api";
 import Root from "./Root.vue";
@@ -12,7 +11,9 @@ import "./styles/utilities.css";
 async function boot(): Promise<void> {
   await loadDeploymentConfig();
   initInstallPromptCapture();
-  void registerShareSupport();
+  void import("@/composables/usePumlShare").then((module) => {
+    module.registerShareSupport();
+  });
   createApp(Root).mount("#app");
 }
 
