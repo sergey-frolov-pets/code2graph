@@ -477,20 +477,28 @@ async function checkSamples() {
 
 function checkDist() {
   section("8. Прод-бандл (если собран)");
+  const assetsDir = path.join(root, "dist", "assets");
+  const splitBundle = existsSync(assetsDir)
+    ? readdirSync(assetsDir)
+        .filter((name) => name.endsWith(".js"))
+        .map((name) => path.join(assetsDir, name))
+    : [];
   const candidates = [
-    { file: path.join(root, "dist", "assets", "app.js"), kind: "js" },
+    ...splitBundle.map((file) => ({ file, kind: "js" })),
     { file: path.join(root, "dist-single", "index.html"), kind: "html" },
   ];
-  const bundle = candidates.find((c) => existsSync(c.file));
+  const present = candidates.filter((c) => existsSync(c.file));
 
-  if (!bundle) {
+  if (present.length === 0) {
     record("dist", "бандл найден", true, "не собирали — пропущено");
     return;
   }
 
-  const text = readFileSync(bundle.file, "utf8");
-  const rel = path.relative(root, bundle.file);
-  const stat = statSync(bundle.file);
+  const jsBundles = present.filter((item) => item.kind === "js");
+  const scanned = jsBundles.length > 0 ? jsBundles : present.slice(0, 1);
+  const text = scanned.map((item) => readFileSync(item.file, "utf8")).join("\n");
+  const rel = jsBundles.length > 0 ? "dist/assets/*.js" : path.relative(root, scanned[0].file);
+  const stat = statSync(scanned[0].file);
 
   // Маркеры движка расширения. Минификация переименовывает функции, но
   // пользовательские строки (сообщения об ошибках, ключевые слова) остаются.
@@ -527,7 +535,11 @@ function checkDist() {
 
   if (existsSync(path.join(root, "dist", "index.html"))) {
     const html = readFileSync(path.join(root, "dist", "index.html"), "utf8");
-    record("dist", "dist/index.html ссылается на app.js", html.includes("assets/app.js"));
+    record(
+      "dist",
+      "dist/index.html ссылается на модуль сборки",
+      html.includes('type="module"') && html.includes("assets/"),
+    );
   }
 }
 

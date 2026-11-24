@@ -1,6 +1,6 @@
 import { watch } from "vue";
 import { useAppRouter } from "@/composables/useAppRouter";
-import { trackEvent as trackRawEvent } from "@/analytics";
+import { trackEvent as trackRawEvent } from "@/analytics/goatcounter";
 
 /**
  * Router-driven GoatCounter tracking.

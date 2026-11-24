@@ -31,7 +31,7 @@ export function cacheControl(filePath: string): string {
   ) {
     return "no-cache";
   }
-  // app.js / app.css и vendor/* версионируются query ?v= в HTML.
+  // Хеш в имени чанка и vendor/* можно кэшировать надолго.
   if (
     filePath.includes(`${path.sep}assets${path.sep}`) ||
     filePath.includes(`${path.sep}vendor${path.sep}`)

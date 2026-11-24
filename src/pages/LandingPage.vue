@@ -25,7 +25,7 @@ import {
 } from "@/components/site/language-pages";
 import McpConnectionTag from "@/components/site/McpConnectionTag.vue";
 import SiteHeader from "@/components/site/SiteHeader.vue";
-import { trackEvent } from "@/analytics";
+import { trackEvent } from "@/analytics/goatcounter";
 import { useAppRouter } from "@/composables/useAppRouter";
 import { useLocale } from "@/composables/useLocale";
 import { APP_LINKS } from "@/constants";

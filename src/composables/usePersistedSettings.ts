@@ -1,12 +1,10 @@
 import { computed, ref, watch } from "vue";
 import {
-  getDefaultSource,
   LAYOUT_ENGINES,
   STORAGE_KEY_DIAGRAM_DARK,
   STORAGE_KEY_LAYOUT,
   STORAGE_KEY_SOURCE,
   STORAGE_KEY_UI_DARK,
-  translateSourceForLocale,
   type LayoutEngine,
 } from "@/constants";
 import {
@@ -16,8 +14,10 @@ import {
 } from "@/constants/render-settings";
 import {
   findAnySampleSelectionAnyLocale,
+  getDefaultSource,
   getSampleSource,
   isDefaultSource,
+  translateSourceForLocale,
 } from "@/constants/sample-diagrams";
 import {
   DEFAULT_EDITOR_AUTOCOMPLETE,

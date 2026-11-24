@@ -1,7 +1,6 @@
 import { LAYOUT_ENGINES } from "@/constants";
 import { DEFAULT_RENDER_MODE } from "@/constants/render-settings";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
-import { bootFormatEngine, renderDiagram } from "@/formats";
 import type { FormatContext } from "@/formats/types";
 
 const renderTailByFormat = new Map<string, Promise<void>>();
@@ -23,6 +22,7 @@ export function renderLanguageDiagramThumb(
   const key = `${format}:${dark ? "dark" : "light"}`;
   const previous = renderTailByFormat.get(key) ?? Promise.resolve();
   const render = previous.then(async () => {
+    const { bootFormatEngine, renderDiagram } = await import("@/formats");
     await bootFormatEngine(format, context);
     return renderDiagram(format, source, context);
   });

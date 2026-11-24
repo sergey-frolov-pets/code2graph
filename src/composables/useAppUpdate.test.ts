@@ -194,6 +194,7 @@ describe("buildHostedHtmlDocument", () => {
 
     expect(html).toContain('href="./assets/app.css?v=1.2.90"');
     expect(html).toContain('src="./assets/app.js?v=1.2.90"');
+    expect(html).toContain("defer");
     expect(html).not.toContain("vendor-viz-global");
     expect(html).not.toContain("vendor-plantuml");
     expect(Buffer.byteLength(html, "utf8")).toBeLessThan(64 * 1024);

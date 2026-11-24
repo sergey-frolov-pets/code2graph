@@ -9,6 +9,16 @@ const packageJson = JSON.parse(
   readFileSync(path.join(appRoot, "package.json"), "utf8"),
 ) as { version: string };
 
+/**
+ * Один IIFE нужен только офлайн-файлу dist-single: динамические import()
+ * туда вклеиваются в ту же область видимости. esbuild тогда может выдать
+ * два `const` с одним именем (`Identifier 'AXs' has already been declared`),
+ * и страница умирает на «Ошибка запуска».
+ * Обычная сборка — ES-модули с отдельными чанками: у каждого своя область,
+ * а лендинг не ждёт mermaid и редактор.
+ */
+const singleFile = process.env.CODE2GRAPH_SINGLE_FILE === "1";
+
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),
@@ -37,21 +47,37 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 4173,
   },
+  esbuild: singleFile
+    ? {
+        // В одном файле переименование идентификаторов и даёт повторный const.
+        minifyIdentifiers: false,
+        minifySyntax: true,
+        minifyWhitespace: true,
+      }
+    : undefined,
   build: {
     outDir: "dist",
     emptyOutDir: true,
     sourcemap: false,
     target: "es2018",
-    cssCodeSplit: false,
-    // Single-file IIFE bundles the full app (incl. mermaid); size warning is expected.
-    chunkSizeWarningLimit: 6000,
+    cssCodeSplit: !singleFile,
+    modulePreload: { polyfill: false },
+    // Тяжёлые чанки (D2, мастер, elk) грузятся отдельно, не на первом экране.
+    chunkSizeWarningLimit: 8000,
     rollupOptions: {
-      output: {
-        format: "iife",
-        name: "PlantumlSmetanaApp",
-        inlineDynamicImports: true,
-        entryFileNames: "assets/app.js",
-      },
+      output: singleFile
+        ? {
+            format: "iife",
+            name: "PlantumlSmetanaApp",
+            inlineDynamicImports: true,
+            entryFileNames: "assets/app.js",
+          }
+        : {
+            format: "es",
+            entryFileNames: "assets/[name]-[hash].js",
+            chunkFileNames: "assets/[name]-[hash].js",
+            assetFileNames: "assets/[name]-[hash][extname]",
+          },
     },
   },
   test: {

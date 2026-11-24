@@ -1,3 +1,9 @@
+.app-boot-placeholder {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--bg, #f4f6f8);
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
