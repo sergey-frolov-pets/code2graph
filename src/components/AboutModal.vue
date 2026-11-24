@@ -122,6 +122,16 @@ const featureKeys = [
       </a>
     </p>
 
+    <h3 class="about-subtitle">{{ t("about.privacy") }}</h3>
+    <p class="about-meta">{{ t("about.privacyLead", { name: APP_META.name }) }}</p>
+    <p class="about-meta">{{ t("about.privacyHow") }}</p>
+    <p class="about-meta">{{ t("about.privacyWhat") }}</p>
+    <ul class="about-list">
+      <li>{{ t("about.privacyPages") }}</li>
+      <li>{{ t("about.privacyActions") }}</li>
+      <li>{{ t("about.privacyTech") }}</li>
+    </ul>
+
     <h3 class="about-subtitle">{{ t("about.components") }}</h3>
     <ul class="about-links">
       <li>

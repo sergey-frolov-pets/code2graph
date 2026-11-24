@@ -398,6 +398,17 @@ export const miscMessages = {
     "El uso comercial es gratis durante una prueba de 30 días; después hace falta una licencia de pago.",
   "about.licenseRead": "Leer la licencia",
   "about.licenseCommercialLink": "Licencia comercial",
+  "about.privacy": "Privacidad",
+  "about.privacyLead":
+    "{name} recopila estadísticas de uso anonimizadas con GoatCounter. No usa cookies. El código de los diagramas, los nombres de archivo, el contenido de la biblioteca y las claves de API permanecen en su dispositivo y no se envían.",
+  "about.privacyHow":
+    "El script de GoatCounter envía un recuento al abrir una página o realizar una acción registrada. Un bloqueador de anuncios o el uso sin conexión lo detiene.",
+  "about.privacyWhat": "Qué se envía",
+  "about.privacyPages": "La página abierta, por ejemplo la de inicio o el editor de diagramas.",
+  "about.privacyActions":
+    "El tipo de acción: abrir, guardar o exportar un diagrama, incluido el formato y el tipo de diagrama, y algunos clics de la interfaz. Solo se envía el tipo, nunca el nombre del archivo ni el código.",
+  "about.privacyTech":
+    "Navegador, tamaño de pantalla, página de origen y un hash de la dirección IP que GoatCounter rota cada día. La dirección IP no se guarda; la ubicación solo a nivel de país.",
   "about.components": "Componentes de terceros",
   "about.aiLead": "Más información sobre cómo configurar el proveedor y obtener una clave de API:",
   "about.ai": "IA / LLM",

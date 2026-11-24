@@ -414,6 +414,17 @@ export const miscMessages = {
     "Commercial use is free during a 30-day trial; a paid license is required afterwards.",
   "about.licenseRead": "Read license",
   "about.licenseCommercialLink": "Commercial license",
+  "about.privacy": "Privacy",
+  "about.privacyLead":
+    "{name} collects anonymized usage statistics with GoatCounter. No cookies are used. Diagram source, file names, library contents, and API keys stay on your device and are not sent.",
+  "about.privacyHow":
+    "The GoatCounter script sends a count when you open a page or take a tracked action. An ad blocker or offline use stops that.",
+  "about.privacyWhat": "What is sent",
+  "about.privacyPages": "The page you opened, such as the home page or a diagram editor.",
+  "about.privacyActions":
+    "The kind of action: opening, saving, or exporting a diagram, including the format and diagram type, and some interface clicks. Only the kind is sent, never the file name or source.",
+  "about.privacyTech":
+    "Browser, screen size, referrer, and a hash of the IP address that GoatCounter rotates daily. The IP address itself is not stored; location is kept only at country level.",
   "about.components": "Third-party components",
   "about.aiLead": "Learn more about provider setup and getting an API key:",
   "about.ai": "AI / LLM",
