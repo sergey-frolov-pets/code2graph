@@ -14,3 +14,5 @@ Lead -> Eng
 ```
 
 Declare `id [label]`, then edges `A -> B` or dotted `A -.-> B`.
+
+`team id [Label]` draws a frame. `label="…"` is the same as `title="…"`. `team id row` or `team id column` packs that team's cards and nested teams in a row or in a column. A line may cross a team border, but it does not run along that border.

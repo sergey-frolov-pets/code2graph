@@ -683,6 +683,48 @@ function insidePoint(points: Point[], rect: TeamRect): boolean {
 }
 
 describe("orgchart: команды", () => {
+  it("label — синоним title, row и column задают раскладку внутри команды", () => {
+    const parsed = orgchartEngine.parse(`orgchart
+team front label="Front Office" column
+team front/a [A] layout=row
+team back [Back] label=off
+a [A] team=front
+b [B] team=front/a
+c [C] team=back
+a -> b`);
+    expect(parsed.ok).toBe(true);
+    const model = parsed.value as OrgModel;
+    expect(model.teams[0]).toMatchObject({ title: "Front Office", flow: "column", showTitle: true });
+    expect(model.teams[1]).toMatchObject({ title: "A", flow: "row" });
+    expect(model.teams[2]).toMatchObject({ title: "Back", showTitle: false });
+  });
+
+  it("column ставит карточки и вложенные команды столбцом, row — в ряд", () => {
+    const source = (flow: "row" | "column") => `orgchart
+team corp [Corp] ${flow}
+team corp/a [A]
+team corp/b [B]
+p [P] team=corp
+a [A] team=corp/a
+b [B] team=corp/b
+p -> a
+p -> b`;
+    const place = (flow: "row" | "column") => {
+      const svg = orgchartEngine.render(orgchartEngine.parse(source(flow)).value as OrgModel, {});
+      const teams = teamRects(svg);
+      return {
+        a: teams.find((team) => team.id === "corp/a")!,
+        b: teams.find((team) => team.id === "corp/b")!,
+      };
+    };
+    const row = place("row");
+    const column = place("column");
+    expect(row.b.x).toBeGreaterThan(row.a.x + row.a.width - 1);
+    expect(Math.abs(row.a.y - row.b.y)).toBeLessThan(2);
+    expect(column.b.y).toBeGreaterThan(column.a.y + column.a.height - 1);
+    expect(Math.abs(column.a.x - column.b.x)).toBeLessThan(2);
+  });
+
   it("читает директивы team и teams, атрибут team= и создаёт команду сама", () => {
     const r = orgchartEngine.parse(`orgchart
 team front [Front Office] fill=#f6f8fa stroke=#0969da radius=12 padding=18
