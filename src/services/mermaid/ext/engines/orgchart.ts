@@ -551,6 +551,13 @@ export function layoutTeamGroups<T extends { id: string }>(options: {
       end: items.length,
       height: rowHeight,
     });
+    // Столбец: узкая команда стоит по центру широкой, а не у левого края.
+    // Координаты — те же, что потом берут стрелки.
+    if (perRow === 1) {
+      items.forEach((item, index) => {
+        pos[index].x = (totalWidth - item.width) / 2;
+      });
+    }
     return { pos, rows, width: totalWidth, height: cursorY + rowHeight };
   };
 
