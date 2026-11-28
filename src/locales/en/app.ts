@@ -44,6 +44,7 @@ export const appMessages = {
   "app.wait": "Please wait…",
   "app.unknownRenderError": "Unknown rendering error",
   "app.exportPngFailed": "Failed to export PNG",
+  "app.a11yDiagramFallbackTitle": "Diagram",
   "app.exportGifFailed": "Failed to save GIF",
   "app.exportHtmlFailed": "Failed to save HTML",
   "app.copyPngFailed": "Failed to copy PNG to the clipboard",

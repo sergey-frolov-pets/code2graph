@@ -65,8 +65,6 @@ const { canExport, exportSvg, exportPng, copyPng } = useDiagramExport({
   error,
   isRendering,
   previewBackground,
-  source,
-  diagramFormat,
 });
 
 function currentSettings(): DualScreenPreviewSettings {

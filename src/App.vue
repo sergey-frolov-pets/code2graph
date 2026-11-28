@@ -308,6 +308,7 @@ onUnmounted(() => {
         class="split-pane split-pane--preview"
         :style="isDesktopLayout ? previewPaneStyle : undefined"
         :svg="svg"
+        :diagram-title="shell.activeDocumentTitle.value"
         :error="error"
         :is-rendering="isRendering"
         :can-export="canExport"

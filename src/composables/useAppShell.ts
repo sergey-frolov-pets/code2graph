@@ -136,6 +136,7 @@ export interface AppShellContext {
   openFrameDiagram: (payload: { label: string; source: string }) => void;
   editorDocuments: ReturnType<typeof useEditorDocuments>["documents"];
   activeDocumentId: ReturnType<typeof useEditorDocuments>["activeDocumentId"];
+  activeDocumentTitle: ComputedRef<string>;
   switchEditorTab: (documentId: string) => void;
   closeEditorTab: (documentId: string) => void;
   savePuml: () => Promise<void>;
@@ -334,13 +335,16 @@ export function useAppShell(): AppShellContext {
     { immediate: true },
   );
 
+  const activeDocumentTitle = computed(
+    () => editorDocumentsApi.activeDocument.value?.label ?? "",
+  );
+
   const { canExport, exportSvg, exportPng, copyPng } = useDiagramExport({
     svg,
     error,
     isRendering,
     previewBackground,
-    source,
-    diagramFormat,
+    a11y: { title: activeDocumentTitle },
   });
 
   const {
@@ -758,6 +762,7 @@ export function useAppShell(): AppShellContext {
     openFrameDiagram,
     editorDocuments: editorDocumentsApi.documents,
     activeDocumentId: editorDocumentsApi.activeDocumentId,
+    activeDocumentTitle,
     switchEditorTab,
     closeEditorTab,
     savePuml,

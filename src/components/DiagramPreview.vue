@@ -23,6 +23,8 @@ import { onlineRenderSiteFor } from "@/utils/online-render-site";
 
 const props = defineProps<{
   svg: string;
+  /** Название диаграммы — идёт в <title> для скринридеров. */
+  diagramTitle?: string;
   error: string;
   isRendering: boolean;
   canExport: boolean;
@@ -89,6 +91,10 @@ const frameDragOver = ref(false);
 const { activeSize, isCustom, sizedMarkup, setWidth, setHeight, resetSize } = useImageSize(
   computed(() => props.svg),
   computed(() => (frameHref.value ? TRANSPARENT_PREVIEW_BG : props.previewBackground)),
+  {
+    title: computed(() => props.diagramTitle ?? ""),
+    fallbackTitle: computed(() => t("app.a11yDiagramFallbackTitle")),
+  },
 );
 
 const previewMarkup = computed(() => {

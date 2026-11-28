@@ -1,6 +1,12 @@
 export { normalizeSvgPaintColors } from "@/services/export/svg-paint";
 
 export {
+  applySvgAccessibility,
+  type SvgA11yOptions,
+  type SvgA11yReport,
+} from "@/services/export/svg-a11y";
+
+export {
   applyPreviewBackground,
   isTransparentBackground,
   sanitizeSvgForPreview,

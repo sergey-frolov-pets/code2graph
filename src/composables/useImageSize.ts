@@ -3,6 +3,7 @@ import {
   MAX_IMAGE_SIDE,
   MIN_IMAGE_SIDE,
   applyPreviewBackground,
+  applySvgAccessibility,
   applySvgSize,
   parseSvgSize,
   type ImageSize,
@@ -30,6 +31,14 @@ function readStoredSize(): ImageSizeOverride {
   }
 }
 
+/** Заголовок и описание для скринридеров; не заданы — нейтральный фолбэк. */
+export interface ImageA11yOptions {
+  title?: Ref<string>;
+  description?: Ref<string>;
+  /** Локализованный фолбэк, если `title` пуст. */
+  fallbackTitle?: Ref<string>;
+}
+
 /**
  * Размер генерируемого изображения.
  * Хранит «ручной» размер (или null — натуральный) и отдаёт SVG,
@@ -43,6 +52,7 @@ function readStoredSize(): ImageSizeOverride {
 export function useImageSize(
   svgMarkup: Ref<string>,
   previewBackground?: Ref<string>,
+  a11y?: ImageA11yOptions,
 ) {
   const override = ref<ImageSizeOverride>(readStoredSize());
 
@@ -64,8 +74,15 @@ export function useImageSize(
       svgMarkup.value,
       previewBackground?.value ?? "",
     );
-    if (!override.value) return markup;
-    return applySvgSize(markup, override.value);
+    // Доступность — последним шагом: префиксация id должна видеть финальный
+    // документ, включая clipPath, добавленные фоном.
+    const accessible = applySvgAccessibility(markup, {
+      title: a11y?.title?.value,
+      description: a11y?.description?.value,
+      fallbackTitle: a11y?.fallbackTitle?.value,
+    }).svg;
+    if (!override.value) return accessible;
+    return applySvgSize(accessible, override.value);
   });
 
   function setSize(width: number, height: number): void {

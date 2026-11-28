@@ -1,13 +1,12 @@
 import { computed, type Ref } from "vue";
-import { trackClipboardImageCopy, trackDiagramExport } from "@/analytics";
 import { useAppDialog } from "@/composables/useAppDialog";
-import type { DiagramFormat } from "@/constants/diagram-formats";
 import { useDiagramIrCache } from "@/composables/useDiagramIrCache";
 import { useLocale } from "@/composables/useLocale";
 import { isFeatureAllowed } from "@/composables/useFeatureGate";
 import { embedSvgMetadata } from "@/services/conversion/metadata/svg-metadata";
 import {
   applyPreviewBackground,
+  applySvgAccessibility,
   copyPngBlobToClipboard,
   downloadBlob,
   downloadTextFile,
@@ -25,15 +24,14 @@ export interface UseDiagramExportOptions {
   error: Ref<string>;
   isRendering: Ref<boolean>;
   previewBackground: Ref<string>;
-  source: Ref<string>;
-  diagramFormat: Ref<DiagramFormat>;
   /** Размер готового PNG; null/undefined — натуральный размер SVG. */
   imageSize?: Ref<{ width: number; height: number } | null>;
+  /** Заголовок/описание для скринридеров в скачанном SVG. */
+  a11y?: { title?: Ref<string>; description?: Ref<string> };
 }
 
 export function useDiagramExport(options: UseDiagramExportOptions) {
-  const { svg, error, isRendering, previewBackground, imageSize, source, diagramFormat } =
-    options;
+  const { svg, error, isRendering, previewBackground, imageSize, a11y } = options;
   const { alert } = useAppDialog();
   const { t } = useLocale();
   const { getLastDiagramIr } = useDiagramIrCache();
@@ -52,9 +50,17 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     const themed = applyPreviewBackground(svg.value, previewBackground.value);
     // Прозрачный фон предпросмотра = прозрачный фон файла: снимаем плашку,
     // иначе в SVG и PNG остаётся непрозрачный прямоугольник на весь холст.
-    return isTransparentBackground(previewBackground.value)
+    const base = isTransparentBackground(previewBackground.value)
       ? withTransparentSvgBackground(themed)
       : themed;
+
+    // Доступность — последним шагом: <title>/<desc> и префиксация id должны
+    // видеть финальный документ (включая clipPath прозрачного фона).
+    return applySvgAccessibility(base, {
+      title: a11y?.title?.value,
+      description: a11y?.description?.value,
+      fallbackTitle: t("app.a11yDiagramFallbackTitle"),
+    }).svg;
   }
 
   function createPngBlob(): Promise<Blob> {
@@ -83,7 +89,6 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     const ir = getLastDiagramIr();
     const payload = ir ? await embedSvgMetadata(base, ir) : base;
     downloadTextFile(payload, "diagram.svg", "image/svg+xml;charset=utf-8");
-    trackDiagramExport("svg", diagramFormat.value, source.value);
   }
 
   async function exportPng(): Promise<void> {
@@ -94,7 +99,6 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     try {
       const pngBlob = await createPngBlob();
       downloadBlob(pngBlob, "diagram.png");
-      trackDiagramExport("png", diagramFormat.value, source.value);
     } catch (exportError) {
       const message = resolveLocalizedErrorMessage(
         exportError,
@@ -116,7 +120,6 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
 
     try {
       await copyPngBlobToClipboard(createPngBlob());
-      trackClipboardImageCopy(diagramFormat.value, source.value);
       return true;
     } catch (copyError) {
       const message = resolveLocalizedErrorMessage(
