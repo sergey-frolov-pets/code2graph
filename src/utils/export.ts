@@ -7,6 +7,21 @@ export {
 } from "@/services/export/svg-a11y";
 
 export {
+  checkSvgQuality,
+  QUALITY_CHECKS,
+  QUALITY_MESSAGE_KEYS,
+} from "@/services/export/quality/svg-quality";
+
+export type {
+  QualityCheckId,
+  QualityCheckResult,
+  QualityIssue,
+  QualityOptions,
+  QualityReport,
+  QualityStatus,
+} from "@/services/export/quality/types";
+
+export {
   applyPreviewBackground,
   isTransparentBackground,
   sanitizeSvgForPreview,
