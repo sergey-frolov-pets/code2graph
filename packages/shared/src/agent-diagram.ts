@@ -3,6 +3,17 @@
  * accepts. The MCP server and the in-app wizard both read this table.
  */
 
+import {
+  checkDiagramBudget,
+  type DiagramBudgetReport,
+  type DiagramComplexityCounts,
+} from "./diagram-budget.js";
+import {
+  DIAGRAM_PATTERNS,
+  detectDiagramPattern,
+  getDiagramPattern,
+} from "./diagram-patterns.js";
+
 export const AGENT_DIAGRAM_LANGUAGES = [
   "plantuml",
   "mermaid",
@@ -372,6 +383,12 @@ export interface DiagramPlan {
   fileName: string;
   reason: string;
   warnings: string[];
+  /** Semantic pattern that shaped the plan, when one was recognised. */
+  pattern?: string;
+  patternLabel?: string;
+  patternReason?: string;
+  /** Present only when the caller supplied complexity counts. */
+  budget?: DiagramBudgetReport;
 }
 
 export interface DiagramScaffold {
@@ -460,6 +477,8 @@ export function planDiagram(input: {
   request: string;
   format?: string;
   diagramType?: string;
+  pattern?: string;
+  complexity?: DiagramComplexityCounts;
 }): DiagramPlan {
   const request = input.request.trim();
   const warnings: string[] = [];
@@ -472,9 +491,23 @@ export function planDiagram(input: {
       ? input.diagramType
       : detectDiagramType(request);
 
+  // A pattern is either named by the caller or recognised in the request text.
+  const namedPattern = input.pattern ? getDiagramPattern(input.pattern) : null;
+  if (input.pattern && !namedPattern) {
+    warnings.push(
+      `Unknown pattern "${input.pattern}". Known patterns: ${DIAGRAM_PATTERNS.map((item) => item.id).join(", ")}.`,
+    );
+  }
+  const pattern = namedPattern ?? detectDiagramPattern(request);
+  if (pattern && requestedType && requestedType !== pattern.type) {
+    warnings.push(
+      `Request asks for ${requestedType}, while ${pattern.pattern} usually reads as ${pattern.type}. Keeping ${requestedType}.`,
+    );
+  }
+
   let format: AgentDiagramLanguage =
     explicitArgument ?? explicitText ?? "plantuml";
-  let diagramType = requestedType ?? defaultType(format);
+  let diagramType = requestedType ?? pattern?.type ?? defaultType(format);
   let reason = explicitArgument
     ? `Format ${format} was requested.`
     : explicitText
@@ -504,13 +537,30 @@ export function planDiagram(input: {
     warnings.push("Empty request. Returning the default diagram for the format.");
   }
 
+  const budget = input.complexity
+    ? checkDiagramBudget(diagramType, input.complexity)
+    : undefined;
+  if (budget) {
+    warnings.push(...budget.warnings);
+  }
+
+  const planReason = pattern ? `${reason} ${pattern.reason}` : reason;
+
   return {
     format,
     diagramType,
     label: FORMAT_LABELS[format],
     fileName: FILE_NAMES[format],
-    reason,
+    reason: planReason,
     warnings,
+    ...(pattern
+      ? {
+          pattern: pattern.pattern,
+          patternLabel: pattern.label,
+          patternReason: pattern.reason,
+        }
+      : {}),
+    ...(budget ? { budget } : {}),
   };
 }
 

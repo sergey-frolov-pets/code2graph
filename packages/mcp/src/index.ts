@@ -118,15 +118,34 @@ server.registerTool(
   "plan_diagram",
   {
     description:
-      "Choose the Code2Graph language and diagram type for a natural-language request. Does not generate source.",
+      "Choose the Code2Graph language and diagram type for a natural-language request. Recognises semantic patterns (fan-in-queue, lifecycle-phase, secure-paved-road, governance-catalog, paired-policy-traces) and checks a complexity budget when counts are given. Does not generate source.",
     inputSchema: {
       request: z.string().describe("What the diagram should show"),
       format: formatSchema
         .optional()
         .describe("Force plantuml, mermaid, graphml, wiremark, d2, or structurizr"),
+      pattern: z
+        .string()
+        .optional()
+        .describe(
+          "Force a semantic pattern id: fan-in-queue, lifecycle-phase, secure-paved-road, governance-catalog, paired-policy-traces",
+        ),
+      complexity: z
+        .object({
+          nodes: z.number().int().min(0).optional(),
+          edges: z.number().int().min(0).optional(),
+          lifelines: z.number().int().min(0).optional(),
+          entities: z.number().int().min(0).optional(),
+          lanes: z.number().int().min(0).optional(),
+          depth: z.number().int().min(0).optional(),
+          steps: z.number().int().min(0).optional(),
+        })
+        .optional()
+        .describe("Planned counts; returns budget warnings when a per-type limit is exceeded"),
     },
   },
-  async ({ request, format }) => jsonText(planDiagram({ request, format })),
+  async ({ request, format, pattern, complexity }) =>
+    jsonText(planDiagram({ request, format, pattern, complexity })),
 );
 
 server.registerTool(

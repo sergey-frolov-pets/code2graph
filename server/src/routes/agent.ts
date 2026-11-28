@@ -8,6 +8,7 @@ import {
   type AgentDiagramDirection,
   type AgentDiagramLocale,
 } from "../../../packages/shared/src/agent-diagram.js";
+import type { DiagramComplexityCounts } from "../../../packages/shared/src/diagram-budget.js";
 import { AGENT_API_ALLOW_PUBLIC, AGENT_API_TOKEN } from "../config.js";
 
 export const agentRouter = new Hono();
@@ -32,6 +33,34 @@ function readLocale(value: unknown): AgentDiagramLocale | undefined {
 
 function readDirection(value: unknown): AgentDiagramDirection | undefined {
   return value === "TB" || value === "LR" ? value : undefined;
+}
+
+const COMPLEXITY_KEYS = [
+  "nodes",
+  "edges",
+  "lifelines",
+  "entities",
+  "lanes",
+  "depth",
+  "steps",
+] as const;
+
+function readComplexity(value: unknown): DiagramComplexityCounts | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  const counts: DiagramComplexityCounts = {};
+  let seen = false;
+  for (const key of COMPLEXITY_KEYS) {
+    const raw = (value as Record<string, unknown>)[key];
+    if (typeof raw === "number" && Number.isFinite(raw) && raw >= 0) {
+      counts[key] = Math.round(raw);
+      seen = true;
+    }
+  }
+
+  return seen ? counts : undefined;
 }
 
 agentRouter.use("*", async (context, next) => {
@@ -71,11 +100,18 @@ agentRouter.post("/diagrams/plan", async (context) => {
     return context.json({ error: "unknown_diagram_type" }, 400);
   }
 
+  const pattern = "pattern" in body && typeof body.pattern === "string"
+    ? body.pattern
+    : undefined;
+  const complexity = readComplexity("complexity" in body ? body.complexity : undefined);
+
   return context.json(
     planDiagram({
       request,
       format,
       diagramType,
+      pattern,
+      complexity,
     }),
   );
 });

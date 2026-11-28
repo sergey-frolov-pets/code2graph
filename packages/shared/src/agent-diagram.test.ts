@@ -122,4 +122,44 @@ describe("agent diagram planner", () => {
     expect(scaffold.source).toContain("shape: hexagon");
     expect(scaffold.fileName).toBe("diagram.d2");
   });
+
+  it("lets a recognised pattern pick the diagram type", () => {
+    const plan = planDiagram({ request: "статусы заявки и переходы между ними" });
+    expect(plan.diagramType).toBe("state");
+    expect(plan.format).toBe("plantuml");
+    expect(plan.pattern).toBe("lifecycle-phase");
+    expect(plan.patternLabel).toBe("Lifecycle / phase map");
+    expect(plan.reason).toContain("state machine");
+  });
+
+  it("honours an explicit type over the pattern and says so", () => {
+    const plan = planDiagram({
+      request: "статусы заявки и переходы",
+      diagramType: "activity",
+    });
+    expect(plan.diagramType).toBe("activity");
+    expect(plan.pattern).toBe("lifecycle-phase");
+    expect(plan.warnings.join(" ")).toContain("usually reads as state");
+  });
+
+  it("accepts a pattern by id and warns about an unknown one", () => {
+    expect(planDiagram({ request: "схема оплаты", pattern: "governance-catalog" }).diagramType).toBe("er");
+
+    const plan = planDiagram({ request: "схема оплаты", pattern: "nope" });
+    expect(plan.pattern).toBeUndefined();
+    expect(plan.warnings.join(" ")).toContain("Unknown pattern");
+  });
+
+  it("returns budget warnings for an oversized diagram", () => {
+    const plan = planDiagram({
+      request: "структура сервисов",
+      diagramType: "component",
+      complexity: { nodes: 12, edges: 20 },
+    });
+    expect(plan.budget?.violations.map((item) => item.metric)).toEqual([
+      "nodes",
+      "edges",
+    ]);
+    expect(plan.warnings.join(" ")).toContain("12 nodes with a budget of 9");
+  });
 });

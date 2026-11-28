@@ -2,6 +2,7 @@ import {
   AGENT_TYPES_BY_LANGUAGE,
   type RequestedDiagramChange,
 } from "@shared/agent-diagram";
+import { detectDiagramPattern } from "@shared/diagram-patterns";
 import {
   AI_CHAT_CONTEXT_SOURCE_MAX_CHARS,
   AI_CHAT_MAX_CLARIFICATION_QUESTIONS,
@@ -37,6 +38,21 @@ Rules:
 - Always include nextSteps: 2-4 short suggestions for what the user can do next (for example: apply or review the proposal, add a missing element, explain a part, refine styling, save the result). Each nextStep is a self-contained user instruction that can be sent as the next message.
 ${LLM_UNTRUSTED_INPUT_RULES}
 - For pure questions (how/why/syntax), use kind=answer and explain with a minimal example; do not attach a proposal unless the user asked to change the diagram.`;
+
+/** Editor-side hint: a described behaviour names a pattern, and the pattern names a type. */
+export function formatDiagramPatternBlock(request: string | undefined): string {
+  const match = request ? detectDiagramPattern(request) : null;
+  if (!match) {
+    return "";
+  }
+
+  return [
+    "Semantic pattern hint:",
+    `- The request reads as ${match.pattern} (${match.label}); a ${match.type} diagram fits that behaviour.`,
+    `- ${match.reason}`,
+    `- If the user wants to switch type, set proposal.diagramType to "${match.type}". If the current type already fits, keep the diagram as it is.`,
+  ].join("\n");
+}
 
 export function formatAiChatSwitchBlock(target: RequestedDiagramChange): string {
   if (!target.active) {
@@ -127,6 +143,7 @@ export function buildAiChatContextBlock(input: {
 }): string {
   const mode = input.contextMode ?? "current";
   const switchBlock = input.target ? formatAiChatSwitchBlock(input.target) : "";
+  const patternBlock = formatDiagramPatternBlock(input.userRequest);
   const guide = formatSyntaxPage(syntaxPageBody(input));
   if (mode === "new") {
     return [
@@ -139,6 +156,7 @@ export function buildAiChatContextBlock(input: {
       }.`,
       formatUntrustedField("Summary of earlier turns", "summary", input.summary, "none."),
       switchBlock,
+      patternBlock,
       guide,
     ]
       .filter((part) => part.length > 0)
@@ -161,6 +179,7 @@ export function buildAiChatContextBlock(input: {
     }.`,
     formatUntrustedField("Summary of earlier turns", "summary", input.summary, "none."),
     switchBlock,
+    patternBlock,
     guide,
   ]
     .filter((part) => part.length > 0)

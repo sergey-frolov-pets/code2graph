@@ -67,6 +67,30 @@ describe("buildAiChatContextBlock", () => {
     expect(block).toContain("SecretCurrent");
   });
 
+  it("adds a semantic pattern hint for behaviour-driven requests", () => {
+    const block = buildAiChatContextBlock({
+      format: "mermaid",
+      source: OPEN_SOURCE,
+      userRequest: "покажи статусы заявки и переходы между ними",
+      appliedCount: 0,
+      rejectedTitles: [],
+    });
+    expect(block).toContain("Semantic pattern hint:");
+    expect(block).toContain("lifecycle-phase");
+    expect(block).toContain('proposal.diagramType to "state"');
+  });
+
+  it("adds no pattern hint for a plain request", () => {
+    const block = buildAiChatContextBlock({
+      format: "mermaid",
+      source: OPEN_SOURCE,
+      userRequest: "добавь разрыв шкалы",
+      appliedCount: 0,
+      rejectedTitles: [],
+    });
+    expect(block).not.toContain("Semantic pattern hint:");
+  });
+
   it("tells the model which language and type to write when the user asks to switch", () => {
     const target = resolveRequestedDiagramChange({
       request: "переведи в mermaid sequence",
