@@ -161,7 +161,7 @@ export function useDiagramDocument(options: UseDiagramDocumentOptions) {
     const shared = await consumeSharedLaunch();
     if (shared) {
       const format = detectDiagramFormat(shared.content, shared.fileName);
-      trackDiagramOpen(format, shared.content, "Open shared file");
+      trackDiagramOpen(format, shared.content);
       applyLoadedSource(shared.content, shared.fileName);
     }
   }

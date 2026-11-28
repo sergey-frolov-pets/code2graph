@@ -2,18 +2,22 @@ export {
   diagramAnalyticsKind,
   resolveDiagramTypeSlug,
   resolveTypedDiagramKind,
-  trackClipboardImageCopy,
-  trackClipboardPaste,
-  trackDiagramExport,
   trackDiagramOpen,
 } from "./diagram-type";
+export { trackEvent } from "./goatcounter";
 export {
-  resolveOpenKind,
-  trackEvent,
-  trackOpen,
-  trackPageview,
-  trackSave,
-} from "./goatcounter";
+  analyticsSlug,
+  reportAppVisit,
+  reportClick,
+  reportLanguage,
+  reportOpen,
+  reportPage,
+  reportSiteClick,
+  reportSurface,
+  reportWizardOpen,
+  resetUsageMemory,
+} from "./usage";
+export type { EditorSurface, PageSection } from "./usage";
 export {
   DEFAULT_GOATCOUNTER_ORIGIN,
   isAnalyticsEnabled,

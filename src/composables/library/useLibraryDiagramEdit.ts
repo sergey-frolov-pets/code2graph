@@ -93,7 +93,7 @@ export function useLibraryDiagramEdit(options: {
       diagram.fileName,
       diagram.language,
     );
-    trackDiagramOpen(format, diagram.source, "Open library diagram");
+    trackDiagramOpen(format, diagram.source);
     onOpenDiagram({
       content: diagram.source,
       fileName: diagram.fileName,

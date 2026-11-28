@@ -25,7 +25,7 @@ import {
 } from "@/components/site/language-pages";
 import McpConnectionTag from "@/components/site/McpConnectionTag.vue";
 import SiteHeader from "@/components/site/SiteHeader.vue";
-import { trackEvent } from "@/analytics/goatcounter";
+import { reportClick, reportOpen } from "@/analytics";
 import { useAppRouter } from "@/composables/useAppRouter";
 import { useLocale } from "@/composables/useLocale";
 import { APP_LINKS } from "@/constants";
@@ -40,18 +40,19 @@ const { navigateTo } = useAppRouter();
 const ASSET_BASE = `${import.meta.env.BASE_URL}landing/`;
 
 function openApp(): void {
-  trackEvent("cta-landing-app", "Open editor");
+  reportClick("cta-landing-app");
   navigateTo("app");
 }
 
 function openMcp(): void {
-  trackEvent("cta-landing-mcp", "Open MCP page");
+  reportClick("cta-landing-mcp");
   navigateTo("mcp");
 }
 
 /** Open the editor with exactly the diagram the visitor just clicked. */
 function openSample(format: DiagramFormat, source: string, label: string, eventName: string): void {
-  trackEvent(eventName, label);
+  reportClick(eventName);
+  reportOpen(format);
   writeLandingSample({ format, source, label });
   navigateTo("app");
 }
@@ -110,7 +111,7 @@ const activeSource = computed(() =>
 
 function selectAudience(id: AudienceId): void {
   activeAudienceId.value = id;
-  trackEvent(`audience-${id}`, `Audience ${id}`);
+  reportClick(`audience-${id}`);
 }
 
 function tryActiveScenario(): void {

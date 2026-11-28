@@ -1,11 +1,6 @@
 import { MAX_PUML_FILE_BYTES } from "@/constants/diagram-library";
 import { downloadTextFile } from "@/utils/export";
-import {
-  resolveOpenKind,
-  trackDiagramExport,
-  trackDiagramOpen,
-  trackOpen,
-} from "@/analytics";
+import { reportOpen, trackDiagramOpen } from "@/analytics";
 import { isDiagramFormat } from "@/constants/diagram-format-ids";
 import { detectDiagramFormatFromSource } from "@/utils/diagram-format";
 import { LocalizedAppError } from "@/utils/localized-app-error";
@@ -70,10 +65,9 @@ export async function loadPumlFromFile(file: File): Promise<{
     detectDiagramFormatFromSource(content) ??
     (fileFormat && isDiagramFormat(fileFormat) ? fileFormat : null);
   if (detected) {
-    trackDiagramOpen(detected, content, "Open shared file");
+    trackDiagramOpen(detected, content);
   } else {
-    const kind = resolveOpenKind(file.name, fileFormat);
-    trackOpen(kind, `Open shared file: ${kind}`);
+    reportOpen(fileFormat ?? "unknown");
   }
 
   return {
@@ -84,5 +78,4 @@ export async function loadPumlFromFile(file: File): Promise<{
 
 export function savePumlSource(source: string, fileName: string): void {
   downloadTextFile(source, resolvePumlFileName(fileName), PUML_MIME_TYPE);
-  trackDiagramExport("source", "plantuml", source);
 }

@@ -1,5 +1,5 @@
 import { computed, ref, type Ref } from "vue";
-import { resolveOpenKind, trackDiagramOpen, trackOpen } from "@/analytics";
+import { reportOpen, trackDiagramOpen } from "@/analytics";
 import { detectDiagramFormatFromSource } from "@/utils/diagram-format";
 import {
   getDefaultFileNameForSample,
@@ -54,10 +54,9 @@ export function useEditorFileImport(options: {
         detectDiagramFormatFromSource(loaded.content) ??
         detectFormatFromFileName(file.name);
       if (detected) {
-        trackDiagramOpen(detected, loaded.content, "Open file");
+        trackDiagramOpen(detected, loaded.content);
       } else {
-        const kind = resolveOpenKind(file.name, null);
-        trackOpen(kind, `Open file: ${kind}`);
+        reportOpen("unknown");
       }
       resetFolds();
       source.value = loaded.content;

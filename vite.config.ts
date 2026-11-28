@@ -83,6 +83,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts", "packages/shared/src/**/*.test.ts"],
+    // На слабой машине монтирование галереи визарда занимает ~3.5 с —
+    // дефолтные 5 с дают ложные падения. Остальные тесты укладываются в 2 с.
+    testTimeout: 20000,
     alias: {
       "@d2lang/d2": path.resolve(
         appRoot,

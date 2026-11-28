@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, toRef, watch } from "vue";
+import { onBeforeUnmount, ref, toRef } from "vue";
 import WizardExampleGrid from "@/components/wizard/WizardExampleGrid.vue";
 import WizardExampleSearch from "@/components/wizard/WizardExampleSearch.vue";
 import WizardExampleZoom from "@/components/wizard/WizardExampleZoom.vue";
@@ -7,17 +7,15 @@ import WizardFavoriteStrip from "@/components/wizard/WizardFavoriteStrip.vue";
 import WizardTagCloud from "@/components/wizard/WizardTagCloud.vue";
 import { useWizardExampleGallery } from "@/composables/wizard/useWizardExampleGallery";
 import { useWizardFavoriteGallery } from "@/composables/wizard/useWizardFavoriteGallery";
-import { exampleTagKey, type DiagramExample } from "@/constants/diagram-example-catalog";
+import type { DiagramExample } from "@/constants/diagram-example-catalog";
 import {
   diagramExamplePrompt,
   diagramExampleTitle,
 } from "@/constants/diagram-example-text";
 import {
   WIZARD_GALLERY_POPOVER_CLASS,
-  WIZARD_GALLERY_SEARCH_TRACK_MS,
   type GalleryExampleAction,
 } from "@/constants/wizard-gallery";
-import { diagramAnalyticsKind, trackEvent } from "@/analytics";
 import { useLocale } from "@/composables/useLocale";
 import type { LayoutEngine } from "@/constants";
 import type { DiagramFormat } from "@/constants/diagram-formats";
@@ -51,7 +49,6 @@ const {
   isTagSelected,
   toggleTag,
   resetFilters,
-  selectedTags,
 } = useWizardExampleGallery(t);
 
 const {
@@ -81,34 +78,10 @@ const {
 const pinnedId = ref<string | null>(null);
 const actionsId = ref<string | null>(null);
 const zoomExample = ref<DiagramExample | null>(null);
-let searchTimer: ReturnType<typeof setTimeout> | null = null;
-
-watch(query, (value) => {
-  if (searchTimer) {
-    clearTimeout(searchTimer);
-  }
-
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return;
-  }
-
-  searchTimer = setTimeout(() => {
-    trackEvent(
-      "wizard-gallery-search",
-      `Wizard gallery search: ${trimmed.length}`,
-    );
-  }, WIZARD_GALLERY_SEARCH_TRACK_MS);
-});
-
 function onToggle(tag: DiagramExample["tags"][number]): void {
   pinnedId.value = null;
   actionsId.value = null;
   toggleTag(tag);
-  trackEvent(
-    "wizard-gallery-filter",
-    `Wizard gallery filter: ${selectedTags.value.map(exampleTagKey).join(" ")}`,
-  );
 }
 
 function onReset(): void {
@@ -152,11 +125,6 @@ function onOpenFavorite(id: string): void {
 }
 
 function onChoose(example: DiagramExample, action: GalleryExampleAction): void {
-  const kind = diagramAnalyticsKind(example.format, example.diagramType);
-  trackEvent(
-    `wizard-gallery-${action}-${kind}`,
-    `Wizard gallery ${action}: ${example.format} / ${example.diagramType}`,
-  );
   emit("choose", {
     example,
     action,
@@ -197,9 +165,6 @@ window.addEventListener("keydown", onKeydown);
 window.addEventListener("pointerdown", onWindowPointerDown);
 
 onBeforeUnmount(() => {
-  if (searchTimer) {
-    clearTimeout(searchTimer);
-  }
   window.removeEventListener("keydown", onKeydown);
   window.removeEventListener("pointerdown", onWindowPointerDown);
 });

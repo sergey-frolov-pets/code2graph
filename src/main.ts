@@ -1,6 +1,8 @@
 import { createApp } from "vue";
-import { trackPageview } from "@/analytics/goatcounter";
+import { registerShareSupport } from "@/composables/usePumlShare";
+import { reportAppVisit } from "@/analytics";
 import { useAnalytics } from "@/composables/useAnalytics";
+import { readInitialLocale } from "@/composables/useLocale";
 import { loadDeploymentConfig } from "@/config/library-api";
 import Root from "./Root.vue";
 import { initInstallPromptCapture } from "./pwa/installPromptState";
@@ -15,16 +17,14 @@ async function boot(): Promise<void> {
     module.registerShareSupport();
   });
   createApp(Root).mount("#app");
+  // Один визит на открытие приложения; язык интерфейса прикладывается к нему
+  // (раз в сутки) — см. reportAppVisit в @/analytics/usage.
+  reportAppVisit(readInitialLocale());
 }
 
 void boot();
 
-// Hash-routed SPA: GoatCounter only sees the initial load, so every route
-// change has to be reported explicitly. Without this all visits collapse to "/".
-window.addEventListener("hashchange", () => {
-  trackPageview(window.location.hash);
-});
-
-// Router-driven tracking (named routes, language pages) on top of the raw
-// hash listener above.
+// Router-driven tracking (named routes, language pages): просмотры разделов
+// идут как page/<раздел>. Сырые pageview по хешу сняты — в отчёте они
+// дублировали page/*.
 useAnalytics();

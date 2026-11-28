@@ -43,7 +43,6 @@ import {
 import { WIZARD_FAVORITES_STORAGE_KEY } from "@/constants/wizard-favorites";
 import { STORAGE_KEY_IMAGE_SIZE } from "@/composables/useImageSize";
 import { readStorageItem, removeStorageItem, writeStorageItem } from "@/core/safe-storage";
-import { trackSave } from "@/analytics";
 import {
   loadAllDiagramDetailsFromCache,
   loadSectionsFromCache,
@@ -403,5 +402,4 @@ export function downloadAppBackup(backup: AppBackupFile): void {
     APP_BACKUP_FILE_NAME,
     APP_BACKUP_MIME_TYPE,
   );
-  trackSave("app-backup-json", "Save app backup: JSON");
 }

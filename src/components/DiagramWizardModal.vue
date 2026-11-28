@@ -11,11 +11,7 @@ import WizardModalFooter from "@/components/wizard/WizardModalFooter.vue";
 import { useDiagramWizardFlow } from "@/composables/wizard/useDiagramWizardFlow";
 import { useWizardOnboarding } from "@/composables/wizard/useWizardOnboarding";
 import { useLocale } from "@/composables/useLocale";
-import {
-  diagramAnalyticsKind,
-  resolveDiagramTypeSlug,
-  trackEvent,
-} from "@/analytics";
+import { reportWizardOpen } from "@/analytics";
 import type { DiagramFormat } from "@/constants/diagram-formats";
 import type { LayoutEngine } from "@/constants";
 import type { RenderMode } from "@/constants/render-settings";
@@ -51,7 +47,7 @@ function onBuilderPasteError(error: TablePasteErrorInfo): void {
 }
 
 function trackWizardOpen(): void {
-  trackEvent("wizard-open", "Wizard: new diagram");
+  reportWizardOpen();
 }
 
 watch(
@@ -103,10 +99,6 @@ const {
   locale,
   t,
   onApply: (payload) => {
-    const type = resolveDiagramTypeSlug(payload.source, payload.format);
-    const kind = diagramAnalyticsKind(payload.format, type);
-    const label = type ? `${payload.format} / ${type}` : payload.format;
-    trackEvent(`wizard-apply-${kind}`, `Wizard apply: ${label}`);
     emit("apply", payload);
   },
   onClose: () => emit("close"),

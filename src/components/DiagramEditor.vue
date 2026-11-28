@@ -21,8 +21,8 @@ import EditorCodeSurface from "@/components/editor/EditorCodeSurface.vue";
 import EditorFoldOnboardingBanner from "@/components/editor/EditorFoldOnboardingBanner.vue";
 import EditorFoldRegionsModal from "@/components/editor/EditorFoldRegionsModal.vue";
 import { reportTablePasteError } from "@/composables/useTablePasteError";
+import { reportSurface } from "@/analytics";
 import { isFeatureAllowed } from "@/composables/useFeatureGate";
-import { trackClipboardPaste } from "@/analytics";
 import { useLocale } from "@/composables/useLocale";
 import { useHasActiveLlm } from "@/composables/useHasActiveLlm";
 import { useFeatureGate } from "@/composables/useFeatureGate";
@@ -165,6 +165,9 @@ const surfaceMode = ref<EditorSurfaceMode>("code");
 
 watch(surfaceMode, (mode) => {
   emit("surfaceMode", mode);
+  // Какой вид редактора используется: код, по шагам или ИИ-чат.
+  // Один раз за открытие на вид — см. reportSurface.
+  reportSurface(mode);
 });
 
 function syncSurfaceFromPreference(): void {
@@ -454,7 +457,6 @@ async function onPasteTableFromClipboard(): Promise<void> {
     return;
   }
 
-  trackClipboardPaste("table", diagramFormat.value, result.diagramType);
   resetFolds();
   source.value = result.fullSource;
 }

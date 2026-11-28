@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { trackEvent, trackPageview } from "@/analytics/goatcounter";
+import { trackEvent } from "@/analytics/goatcounter";
 
 describe("goatcounter analytics", () => {
   const count = vi.fn();
@@ -14,41 +14,33 @@ describe("goatcounter analytics", () => {
     delete window.goatcounter;
   });
 
-  it("maps the landing hash to the readable landing path", () => {
-    trackPageview("#/", "Code2Graph");
-    expect(count).toHaveBeenCalledWith({ path: "/landing", title: "Code2Graph" });
-  });
-
-  it("sends readable paths for app, mcp and master pages", () => {
-    trackPageview("#/app");
-    trackPageview("#/mcp");
-    trackPageview("#/lang/mermaid");
-    expect(count).toHaveBeenNthCalledWith(1, { path: "/app", title: document.title });
-    expect(count).toHaveBeenNthCalledWith(2, { path: "/mcp", title: document.title });
-    expect(count).toHaveBeenNthCalledWith(3, {
-      path: "/master-mermaid",
-      title: document.title,
-    });
-  });
-
-  it("treats an empty hash as the landing page", () => {
-    trackPageview("");
-    expect(count).toHaveBeenCalledWith({ path: "/landing", title: document.title });
-  });
-
   it("sends custom events with the event flag", () => {
-    trackEvent("cta-landing-app", "Open editor");
+    trackEvent("visit/app");
     expect(count).toHaveBeenCalledWith({
-      path: "cta-landing-app",
-      title: "Open editor",
+      path: "visit/app",
+      title: "visit/app",
       event: true,
     });
   });
 
+  it("keeps the custom title when one is given", () => {
+    trackEvent("page/landing", "Landing");
+    expect(count).toHaveBeenCalledWith({
+      path: "page/landing",
+      title: "Landing",
+      event: true,
+    });
+  });
+
+  it("sends events one by one, without deduplication", () => {
+    trackEvent("click/github");
+    trackEvent("click/github");
+    expect(count).toHaveBeenCalledTimes(2);
+  });
+
   it("stays silent when the tracker is not loaded", () => {
     delete window.goatcounter;
-    expect(() => trackPageview("#/app")).not.toThrow();
-    expect(() => trackEvent("cta-landing-app")).not.toThrow();
+    expect(() => trackEvent("visit/app")).not.toThrow();
     expect(count).not.toHaveBeenCalled();
   });
 });

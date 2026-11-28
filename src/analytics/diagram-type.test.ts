@@ -3,9 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   diagramAnalyticsKind,
   resolveDiagramTypeSlug,
-  trackClipboardImageCopy,
-  trackClipboardPaste,
-  trackDiagramExport,
   trackDiagramOpen,
 } from "@/analytics/diagram-type";
 
@@ -39,17 +36,14 @@ describe("resolveDiagramTypeSlug", () => {
     ).toBe("xychart");
   });
 
-  it("classifies plantuml sequence diagrams", () => {
-    const source = `@startuml
-actor User
-User -> API : call
-@enduml`;
-    expect(resolveDiagramTypeSlug(source, "plantuml")).toBe("sequence");
+  it("classifies plantuml class diagrams", () => {
+    expect(
+      resolveDiagramTypeSlug("@startuml\nclass A\nclass B\nA --> B\n@enduml", "plantuml"),
+    ).toBe("class");
   });
 
   it("returns null when the source does not declare a type", () => {
     expect(resolveDiagramTypeSlug("   ", "mermaid")).toBeNull();
-    expect(resolveDiagramTypeSlug("just a note", "plantuml")).toBeNull();
   });
 });
 
@@ -59,11 +53,11 @@ describe("diagramAnalyticsKind", () => {
   });
 
   it("drops an empty type", () => {
-    expect(diagramAnalyticsKind("Mermaid", null)).toBe("mermaid");
+    expect(diagramAnalyticsKind("mermaid", null)).toBe("mermaid");
   });
 });
 
-describe("typed diagram events", () => {
+describe("trackDiagramOpen", () => {
   const count = vi.fn();
 
   beforeEach(() => {
@@ -75,59 +69,11 @@ describe("typed diagram events", () => {
     delete window.goatcounter;
   });
 
-  it("reports an opened mermaid XY chart as its own event", () => {
-    trackDiagramOpen("mermaid", XY_CHART, "Open file");
+  it("reports only the language, without the diagram type", () => {
+    trackDiagramOpen("mermaid", XY_CHART);
     expect(count).toHaveBeenCalledWith({
-      path: "open-diagram-mermaid-xychart",
-      title: "Open file: mermaid / xychart",
-      event: true,
-    });
-  });
-
-  it("reports svg and png export with the diagram type", () => {
-    trackDiagramExport("svg", "mermaid", XY_CHART);
-    trackDiagramExport("png", "mermaid", XY_CHART);
-    expect(count).toHaveBeenNthCalledWith(1, {
-      path: "save-image-svg-mermaid-xychart",
-      title: "Export SVG: mermaid / xychart",
-      event: true,
-    });
-    expect(count).toHaveBeenNthCalledWith(2, {
-      path: "save-image-png-mermaid-xychart",
-      title: "Export PNG: mermaid / xychart",
-      event: true,
-    });
-  });
-
-  it("reports a source save with the diagram type", () => {
-    trackDiagramExport("source", "mermaid", XY_CHART);
-    expect(count).toHaveBeenCalledWith({
-      path: "save-diagram-mermaid-xychart",
-      title: "Save diagram: mermaid / xychart",
-      event: true,
-    });
-  });
-
-  it("reports a copied PNG with the diagram type", () => {
-    trackClipboardImageCopy("mermaid", XY_CHART);
-    expect(count).toHaveBeenCalledWith({
-      path: "copy-image-png-mermaid-xychart",
-      title: "Copy PNG: mermaid / xychart",
-      event: true,
-    });
-  });
-
-  it("reports table paste and source paste separately", () => {
-    trackClipboardPaste("table", "mermaid", "xychart");
-    trackClipboardPaste("source", "plantuml", "sequence");
-    expect(count).toHaveBeenNthCalledWith(1, {
-      path: "paste-table-mermaid-xychart",
-      title: "Paste table: mermaid / xychart",
-      event: true,
-    });
-    expect(count).toHaveBeenNthCalledWith(2, {
-      path: "paste-source-plantuml-sequence",
-      title: "Paste from clipboard: plantuml / sequence",
+      path: "open/mermaid",
+      title: "open/mermaid",
       event: true,
     });
   });

@@ -1,19 +1,42 @@
 import { watch } from "vue";
 import { useAppRouter } from "@/composables/useAppRouter";
-import { trackEvent as trackRawEvent } from "@/analytics/goatcounter";
+import { reportPage, type PageSection } from "@/analytics";
+import type { ParsedAppRoute } from "@/router";
 
 /**
  * Router-driven GoatCounter tracking.
  *
  * The app is a hash-routed SPA: `window.location.pathname` is always "/", so
- * the tracker's own onload hit would collapse every visit into a single row.
- *
- * `src/main.ts` already reports the first load and every `hashchange` through
- * `trackPageview()` (see `src/analytics`), which maps hash routes to readable
- * paths via `pagePath()`. This composable is the router-level layer on top of
- * it: it watches the parsed route so programmatic navigation is reported the
- * same way, and it re-exports the event helper the components import.
+ * raw pageviews would collapse every visit into a single row. Instead this
+ * composable maps the parsed route to a section and reports `page/<раздел>`
+ * once per app opening (see `reportPage` in `@/analytics/usage`).
  */
+
+/** Route name → section of the `page/*` counter. */
+const SECTION_BY_ROUTE: Record<ParsedAppRoute["name"], PageSection | null> = {
+  landing: "landing",
+  login: "login",
+  register: "register",
+  account: "account",
+  app: "app",
+  language: null, // /master-<язык> — строится из languageId ниже
+  mcp: "mcp",
+  diagram: "diagram",
+  clipboard: "clipboard",
+  sample: "sample",
+  preview: "preview",
+  aiChatShare: null,
+  libraryLink: "library",
+  dashboardEmbed: null,
+};
+
+/** Section for a parsed route, or null when the route is not a section. */
+export function pageSectionOf(route: ParsedAppRoute): PageSection | null {
+  if (route.name === "language") {
+    return route.languageId ? (`master-${route.languageId}` as PageSection) : null;
+  }
+  return SECTION_BY_ROUTE[route.name] ?? null;
+}
 
 /**
  * Starts router-driven tracking. Must be called once, after the app is
@@ -22,12 +45,12 @@ import { trackEvent as trackRawEvent } from "@/analytics/goatcounter";
 export function useAnalytics(): void {
   const { route } = useAppRouter();
 
-  watch(route, (next) => {
-    trackRawEvent(`route-${next.name}`, `Route: ${next.name}`);
-  });
-}
-
-/** Custom event; shows up under "Events" in the GoatCounter dashboard. */
-export function trackEvent(name: string, title?: string): void {
-  trackRawEvent(name, title);
+  watch(
+    route,
+    (next) => {
+      const section = pageSectionOf(next);
+      if (section) reportPage(section);
+    },
+    { immediate: true },
+  );
 }

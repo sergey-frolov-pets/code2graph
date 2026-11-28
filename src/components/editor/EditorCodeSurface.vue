@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from "vue";
 import EditorColorPopover from "@/components/editor/EditorColorPopover.vue";
-import { resolveDiagramTypeSlug, trackClipboardPaste } from "@/analytics";
 import { useLocale } from "@/composables/useLocale";
 import type { VisibleEditorLine } from "@/composables/editor/useEditorDisplayModel";
 import type { useEditorAutocomplete } from "@/composables/useEditorAutocomplete";
@@ -14,10 +13,7 @@ import {
 import { applyDisplayedEditorTab } from "@/utils/editor-indent";
 import { isSnippetsHotkey } from "@/constants/snippets-settings";
 import { getLanguageModule } from "@/languages/registry";
-import {
-  detectDiagramFormat,
-  detectDiagramFormatFromSource,
-} from "@/utils/diagram-format";
+import { detectDiagramFormat } from "@/utils/diagram-format";
 import { applyEnterAtLineEnd } from "@/utils/editor-enter-indent";
 import { findHexColorAt } from "@/utils/editor-color-token";
 
@@ -79,15 +75,6 @@ function onPaste(event: ClipboardEvent): void {
   const textarea = textareaRef.value;
   if (!textarea) {
     return;
-  }
-
-  const detectedFormat = detectDiagramFormatFromSource(pasted);
-  if (detectedFormat) {
-    trackClipboardPaste(
-      "source",
-      detectedFormat,
-      resolveDiagramTypeSlug(pasted, detectedFormat),
-    );
   }
 
   const pastedFormat = detectDiagramFormat(pasted);

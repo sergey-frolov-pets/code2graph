@@ -12,6 +12,7 @@ import { useLibraryApiUrl } from "@/composables/useLibraryApiUrl";
 import { useLocale } from "@/composables/useLocale";
 import { useAppRouter } from "@/composables/useAppRouter";
 import { APP_LINKS, APP_META } from "@/constants";
+import { reportClick } from "@/analytics";
 
 const props = withDefaults(
   defineProps<{ landingNav?: boolean; languageLinks?: boolean }>(),
@@ -69,6 +70,7 @@ const { isLocalMode } = useLibraryApiUrl();
           :href="APP_LINKS.github"
           target="_blank"
           rel="noopener noreferrer"
+          @click="reportClick('github')"
         >
           {{ t("site.nav.github") }}
         </a>
@@ -79,6 +81,7 @@ const { isLocalMode } = useLibraryApiUrl();
           :href="APP_LINKS.discussions"
           target="_blank"
           rel="noopener noreferrer"
+          @click="reportClick('discussions')"
         >
           {{ t("site.nav.discussions") }}
         </a>

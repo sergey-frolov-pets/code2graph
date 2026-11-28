@@ -1,4 +1,4 @@
-import { trackEvent } from "@/analytics/goatcounter";
+import { reportSiteClick } from "@/analytics";
 import type { DiagramFormat } from "@/constants/diagram-format-ids";
 import type { LocaleKey } from "@/locales/types";
 import { languagePageHash } from "@/router";
@@ -49,5 +49,5 @@ export const PUBLIC_LANGUAGE_PAGES: readonly PublicLanguagePageLink[] = [
 export { languagePageHash };
 
 export function trackLanguagePage(languageId: DiagramFormat): void {
-  trackEvent(`cta-language-${languageId}`, `Open ${languageId} page`);
+  reportSiteClick(languageId);
 }
