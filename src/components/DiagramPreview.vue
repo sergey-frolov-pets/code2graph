@@ -310,6 +310,7 @@ watch(
         <DiagramToolbar
           :is-rendering="isRendering"
           :can-export="canExport"
+          :svg="svg"
           :preview-background="previewBackground"
           :zoom-percent="zoomPercent"
           :image-width="activeSize.width"

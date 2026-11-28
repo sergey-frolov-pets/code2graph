@@ -5,10 +5,12 @@ import DiagramSizeControls from "@/components/DiagramSizeControls.vue";
 import ActionIcon from "@/components/icons/ActionIcon.vue";
 import FileBadgeIcon from "@/components/icons/FileBadgeIcon.vue";
 import PresentationGlyph from "@/components/preview/PresentationGlyph.vue";
+import QualityBadge from "@/components/preview/QualityBadge.vue";
 import IconButton from "@/components/IconButton.vue";
 import TooltipWrap from "@/components/TooltipWrap.vue";
 import { useFeatureGate } from "@/composables/useFeatureGate";
 import { useLocale } from "@/composables/useLocale";
+import { useSvgQuality } from "@/composables/useSvgQuality";
 import {
   DEFAULT_PREVIEW_BG,
   isTransparentPreviewBg,
@@ -19,6 +21,8 @@ import { contrastTextColor } from "@/services/mermaid/ext/common";
 const props = defineProps<{
   isRendering: boolean;
   canExport: boolean;
+  /** Текущий SVG превью — из него считается отчёт качества. */
+  svg?: string;
   previewBackground: string;
   zoomPercent?: number;
   imageWidth?: number;
@@ -152,7 +156,11 @@ const previewTextColor = computed(() => {
   return contrastTextColor(props.previewBackground) ?? "#1f2328";
 });
 
-const exportDisabled = computed(() => !props.canExport || !allowExport.value);
+const { report: qualityReport, blocked: qualityBlocked } = useSvgQuality(() => props.svg);
+
+const exportDisabled = computed(
+  () => !props.canExport || !allowExport.value || qualityBlocked.value,
+);
 
 const copiedPng = ref(false);
 let copyAckTimer = 0;
@@ -331,6 +339,11 @@ async function acknowledgeCopiedPng(): Promise<void> {
         <PresentationGlyph name="next" />
       </IconButton>
     </div>
+
+    <QualityBadge
+      v-if="qualityReport"
+      :report="qualityReport"
+    />
 
     <div
       class="preview-toolbar__export"

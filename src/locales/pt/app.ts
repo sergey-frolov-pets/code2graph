@@ -36,6 +36,7 @@ export const appMessages = {
   "app.resizePanels": "Redimensionar os painéis do editor e da prévia",
   "app.editorRegion": "Editor do código do diagrama",
   "app.previewRegion": "Prévia do diagrama",
+  "app.a11yDiagramFallbackTitle": "Diagrama",
   "app.exportError": "Erro de exportação",
   "app.savePuml": "Salvar .puml",
   "app.saveDiagram": "Salvar arquivo",

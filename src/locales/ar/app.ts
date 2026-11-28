@@ -36,6 +36,7 @@ export const appMessages = {
   "app.resizePanels": "تغيير حجم لوحتي المحرر والمعاينة",
   "app.editorRegion": "محرر مصدر المخطط",
   "app.previewRegion": "معاينة المخطط",
+  "app.a11yDiagramFallbackTitle": "مخطط",
   "app.exportError": "خطأ في التصدير",
   "app.savePuml": "حفظ .puml",
   "app.saveDiagram": "حفظ الملف",

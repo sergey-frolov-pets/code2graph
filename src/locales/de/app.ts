@@ -36,6 +36,7 @@ export const appMessages = {
   "app.resizePanels": "Größe von Editor- und Vorschaubereich ändern",
   "app.editorRegion": "Editor für den Diagrammquelltext",
   "app.previewRegion": "Diagrammvorschau",
+  "app.a11yDiagramFallbackTitle": "Diagramm",
   "app.exportError": "Exportfehler",
   "app.savePuml": ".puml speichern",
   "app.saveDiagram": "Datei speichern",

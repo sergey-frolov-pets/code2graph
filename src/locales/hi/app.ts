@@ -36,6 +36,7 @@ export const appMessages = {
   "app.resizePanels": "संपादक और पूर्वावलोकन पैनल का आकार बदलें",
   "app.editorRegion": "आरेख स्रोत संपादक",
   "app.previewRegion": "आरेख पूर्वावलोकन",
+  "app.a11yDiagramFallbackTitle": "आरेख",
   "app.exportError": "निर्यात त्रुटि",
   "app.savePuml": ".puml सहेजें",
   "app.saveDiagram": "फ़ाइल सहेजें",

@@ -36,6 +36,7 @@ export const appMessages = {
   "app.resizePanels": "调整编辑器与预览面板大小",
   "app.editorRegion": "图表源码编辑器",
   "app.previewRegion": "图表预览",
+  "app.a11yDiagramFallbackTitle": "图表",
   "app.exportError": "导出错误",
   "app.savePuml": "保存 .puml",
   "app.saveDiagram": "保存文件",

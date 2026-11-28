@@ -36,6 +36,7 @@ export const appMessages = {
   "app.resizePanels": "エディタとプレビューの幅を変更",
   "app.editorRegion": "図のソースエディタ",
   "app.previewRegion": "図のプレビュー",
+  "app.a11yDiagramFallbackTitle": "図",
   "app.exportError": "エクスポートエラー",
   "app.savePuml": ".puml を保存",
   "app.saveDiagram": "ファイルを保存",
