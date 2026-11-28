@@ -1,5 +1,4 @@
 import { createApp } from "vue";
-import { registerShareSupport } from "@/composables/usePumlShare";
 import { reportAppVisit } from "@/analytics";
 import { useAnalytics } from "@/composables/useAnalytics";
 import { readInitialLocale } from "@/composables/useLocale";
