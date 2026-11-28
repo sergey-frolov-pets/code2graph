@@ -10,6 +10,7 @@ import {
 } from "../../../packages/shared/src/agent-diagram.js";
 import { resolveLlmPage } from "../../../packages/shared/src/llm-pages.js";
 import { attachDiagramImage } from "./attach-image.js";
+import { CONVERT_FORMATS, convertTool, type ConvertToolLocale } from "./convert.js";
 import { readLlmPageFile } from "./llm-page-file.js";
 
 const formatSchema = z.enum(AGENT_DIAGRAM_LANGUAGES);
@@ -87,6 +88,29 @@ server.registerTool(
       request: request ?? "",
     });
     return markdownText(readLlmPageFile(page.path));
+  },
+);
+
+server.registerTool(
+  "convert_diagram",
+  {
+    description:
+      "Convert diagram source between the text languages PlantUML, Mermaid, and D2 in-process. Returns the converted source, the quality level, and the list of semantics that may be lost. Does not render an image.",
+    inputSchema: {
+      source: z.string().describe("Diagram source to convert"),
+      from: z.enum(CONVERT_FORMATS).describe("Source language: plantuml, mermaid, or d2"),
+      to: z.enum(CONVERT_FORMATS).describe("Target language: plantuml, mermaid, or d2"),
+      locale: z.enum(["ru", "en"]).optional().describe("Language for loss labels, ru by default"),
+    },
+  },
+  async ({ source, from, to, locale }) => {
+    const result = await convertTool({
+      source,
+      from,
+      to,
+      locale: locale as ConvertToolLocale | undefined,
+    });
+    return jsonText(result);
   },
 );
 

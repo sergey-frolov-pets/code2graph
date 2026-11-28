@@ -84,7 +84,7 @@ sudo bash scripts/deploy/vdsina-update.sh
 }
 ```
 
-Тот же вид подходит другим MCP-клиентам, которые запускают команду сервера. Инструменты: `list_diagram_formats`, `plan_diagram`, `generate_diagram`. Пакет: [packages/mcp](packages/mcp).
+Тот же вид подходит другим MCP-клиентам, которые запускают команду сервера. Инструменты: `list_diagram_formats`, `plan_diagram`, `generate_diagram`, `convert_diagram`. Пакет: [packages/mcp](packages/mcp).
 
 ## Сценарии
 

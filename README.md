@@ -84,7 +84,7 @@ Run the server from a checkout of this repository. Replace the path. `CODE2GRAPH
 }
 ```
 
-The same shape works for other MCP clients that read a server command. Tools: `list_diagram_formats`, `plan_diagram`, `generate_diagram`. Package: [packages/mcp](packages/mcp).
+The same shape works for other MCP clients that read a server command. Tools: `list_diagram_formats`, `plan_diagram`, `generate_diagram`, `convert_diagram`. Package: [packages/mcp](packages/mcp).
 
 ## Use cases
 
