@@ -162,4 +162,115 @@ describe("agent diagram planner", () => {
     ]);
     expect(plan.warnings.join(" ")).toContain("12 nodes with a budget of 9");
   });
+
+  it("defaults the output handles and writes a fidelity receipt", () => {
+    const plan = planDiagram({ request: "схема заказа" });
+
+    expect(plan.size).toBe("doc-inline");
+    expect(plan.sizePreset.fontPx).toBe(12);
+    expect(plan.detail).toBe("balanced");
+    expect(plan.detailLimits.nodes).toBe(12);
+    expect(plan.audience).toBe("mixed");
+    expect(plan.audienceRule).toContain("Plain nouns");
+    expect(plan.fidelity).toContain("fidelity: plantuml");
+    expect(plan.fidelity).toContain("counts not supplied");
+    expect(plan.fidelity).toContain("audience mixed");
+  });
+
+  it("warns about unknown handles instead of failing", () => {
+    const plan = planDiagram({
+      request: "схема заказа",
+      size: "billboard",
+      detail: "full",
+      audience: "boss",
+    });
+
+    const text = plan.warnings.join(" ");
+    expect(text).toContain("Unknown size");
+    expect(text).toContain("Unknown detail");
+    expect(text).toContain("Unknown audience");
+    expect(plan.size).toBe("doc-inline");
+    expect(plan.detail).toBe("balanced");
+    expect(plan.audience).toBe("mixed");
+  });
+
+  it("turns detail over the ceiling into a warning, not a cut", () => {
+    const plan = planDiagram({
+      request: "структура сервисов",
+      diagramType: "component",
+      detail: "simplified",
+      complexity: { nodes: 12, edges: 20 },
+    });
+
+    expect(plan.warnings.join(" ")).toContain(
+      "drop in order: decor → duplicates → leaf clusters → infrastructure",
+    );
+    expect(plan.fidelity).toContain("detail simplified (≤7 nodes): over");
+    expect(plan.diagramType).toBe("component");
+  });
+
+  it("carries the slide size into PlantUML as skinparams", () => {
+    const { plan, scaffold } = generateDiagramScaffold({
+      request: "блок-схема заказа",
+      format: "plantuml",
+      size: "slide-16x9",
+    });
+
+    expect(plan.size).toBe("slide-16x9");
+    expect(scaffold.sizeApplied).toBe(true);
+    expect(scaffold.source).toContain("skinparam defaultFontSize 16");
+    expect(scaffold.source).toContain("skinparam nodesep 48");
+    expect(scaffold.source).toContain("skinparam ranksep 72");
+    expect(scaffold.fidelity).toBe(plan.fidelity);
+  });
+
+  it("carries the size and audience into Mermaid", () => {
+    const { scaffold } = generateDiagramScaffold({
+      request: "блок-схема оплаты",
+      format: "mermaid",
+      size: "social-og",
+      audience: "executive",
+    });
+
+    expect(scaffold.source).toContain(
+      '%%{init: {"themeVariables":{"fontSize":"14px"}',
+    );
+    expect(scaffold.source).toContain('"nodeSpacing":36');
+    expect(scaffold.source).toContain("audience executive: Name the outcome");
+    expect(scaffold.audience).toBe("executive");
+  });
+
+  it("says when a format cannot take size hints", () => {
+    const { scaffold } = generateDiagramScaffold({
+      request: "контекст системы",
+      format: "structurizr",
+      size: "print-a4",
+    });
+
+    expect(scaffold.sizeApplied).toBe(false);
+    expect(scaffold.warnings.join(" ")).toContain(
+      "Size hints (print-a4) are not wired for Structurizr",
+    );
+  });
+
+  it("rewrites scaffold labels for the executive audience", () => {
+    const engineer = generateDiagramScaffold({
+      request: "схема магазина",
+      format: "d2",
+      diagramType: "sequence",
+      locale: "ru",
+      audience: "engineer",
+    });
+    const executive = generateDiagramScaffold({
+      request: "схема магазина",
+      format: "d2",
+      diagramType: "sequence",
+      locale: "ru",
+      audience: "executive",
+    });
+
+    expect(engineer.scaffold.source).toContain('"Заказ"');
+    expect(executive.scaffold.source).toContain('"Оформление заказа"');
+    expect(executive.scaffold.source).toContain("# audience executive");
+  });
 });

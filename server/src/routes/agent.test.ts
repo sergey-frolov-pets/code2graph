@@ -55,6 +55,56 @@ describe("agent diagram routes", () => {
     expect(body.source).toContain("sequence_diagram");
   });
 
+  it("passes the output handles through the scaffold route", async () => {
+    const app = await loadAgentRouter({ token: AGENT_TOKEN });
+    const response = await app.request("/api/agent/diagrams/scaffold", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${AGENT_TOKEN}`,
+      },
+      body: JSON.stringify({
+        request: "блок-схема оформления заказа",
+        format: "plantuml",
+        size: "slide-16x9",
+        detail: "simplified",
+        audience: "executive",
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      size: string;
+      detail: string;
+      audience: string;
+      fidelity: string;
+      source: string;
+    };
+    expect(body.size).toBe("slide-16x9");
+    expect(body.detail).toBe("simplified");
+    expect(body.audience).toBe("executive");
+    expect(body.fidelity).toContain("fidelity: plantuml");
+    expect(body.fidelity).toContain("audience executive");
+    expect(body.source).toContain("skinparam defaultFontSize 16");
+  });
+
+  it("warns instead of failing on an unknown handle", async () => {
+    const app = await loadAgentRouter({ token: AGENT_TOKEN });
+    const response = await app.request("/api/agent/diagrams/plan", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${AGENT_TOKEN}`,
+      },
+      body: JSON.stringify({ request: "схема заказа", size: "billboard" }),
+    });
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { size: string; warnings: string[] };
+    expect(body.size).toBe("doc-inline");
+    expect(body.warnings.join(" ")).toContain("Unknown size");
+  });
+
   it("rejects an unknown format", async () => {
     const app = await loadAgentRouter({ token: AGENT_TOKEN });
     const response = await app.request("/api/agent/diagrams/plan", {

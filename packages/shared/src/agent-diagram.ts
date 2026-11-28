@@ -13,6 +13,27 @@ import {
   detectDiagramPattern,
   getDiagramPattern,
 } from "./diagram-patterns.js";
+import {
+  DEFAULT_DIAGRAM_AUDIENCE,
+  DEFAULT_DIAGRAM_DETAIL,
+  DEFAULT_DIAGRAM_SIZE,
+  DIAGRAM_AUDIENCES,
+  DIAGRAM_DETAILS,
+  DIAGRAM_SIZES,
+  DIAGRAM_SIZE_PRESETS,
+  audienceRule,
+  checkDiagramDetail,
+  diagramDetailBudget,
+  diagramFidelity,
+  isDiagramAudience,
+  isDiagramDetail,
+  isDiagramSize,
+  type DiagramAudience,
+  type DiagramDetail,
+  type DiagramSize,
+  type DiagramSizePreset,
+} from "./diagram-handles.js";
+import type { DiagramBudget } from "./diagram-budget.js";
 
 export const AGENT_DIAGRAM_LANGUAGES = [
   "plantuml",
@@ -194,10 +215,45 @@ const SCAFFOLD_WORDS = {
   },
 } as const satisfies Record<string, Record<ScaffoldLocale, string>>;
 
+type ScaffoldWordKey = keyof typeof SCAFFOLD_WORDS;
+
+/**
+ * The base vocabulary reads as "mixed": plain nouns, no jargon. `engineer` adds
+ * technical short forms, `executive` swaps mechanism names for outcomes. Only
+ * ru and en are overridden; other languages keep the base word.
+ */
+const AUDIENCE_WORDS: Record<
+  DiagramAudience,
+  Partial<Record<ScaffoldWordKey, { ru: string; en: string }>>
+> = {
+  engineer: {
+    database: { ru: "БД", en: "DB" },
+  },
+  mixed: {},
+  executive: {
+    user: { ru: "Покупатель", en: "Buyer" },
+    database: { ru: "Учёт заказов", en: "Order records" },
+    shop: { ru: "Витрина", en: "Storefront" },
+    order: { ru: "Оформление заказа", en: "Checkout" },
+    places: { ru: "оплачивает", en: "pays for" },
+    customer: { ru: "Клиент", en: "Client" },
+    mail: { ru: "Письмо о заказе", en: "Order email" },
+    screen: { ru: "Витрина заказа", en: "Order screen" },
+    continue: { ru: "Перейти к оплате", en: "Go to payment" },
+  },
+};
+
 function scaffoldWord(
   locale: ScaffoldLocale,
-  key: keyof typeof SCAFFOLD_WORDS,
+  key: ScaffoldWordKey,
+  audience: DiagramAudience = DEFAULT_DIAGRAM_AUDIENCE,
 ): string {
+  if (locale === "ru" || locale === "en") {
+    const override = AUDIENCE_WORDS[audience][key];
+    if (override) {
+      return override[locale];
+    }
+  }
   return SCAFFOLD_WORDS[key][locale];
 }
 
@@ -383,6 +439,16 @@ export interface DiagramPlan {
   fileName: string;
   reason: string;
   warnings: string[];
+  /** Frame preset: width, label size and node spacing for the renderer. */
+  size: DiagramSize;
+  sizePreset: DiagramSizePreset;
+  /** Detail ceiling; advisory, the diagram itself is never trimmed. */
+  detail: DiagramDetail;
+  detailLimits: DiagramBudget;
+  audience: DiagramAudience;
+  audienceRule: string;
+  /** One-line receipt: counts, detail verdict, size and audience. */
+  fidelity: string;
   /** Semantic pattern that shaped the plan, when one was recognised. */
   pattern?: string;
   patternLabel?: string;
@@ -397,6 +463,12 @@ export interface DiagramScaffold {
   source: string;
   fileName: string;
   warnings: string[];
+  /** Frame preset carried into the source as render hints. */
+  size: DiagramSize;
+  /** False when the format has no place for size hints. */
+  sizeApplied: boolean;
+  audience: DiagramAudience;
+  fidelity: string;
 }
 
 export function isAgentDiagramLanguage(
@@ -473,12 +545,54 @@ function defaultType(format: AgentDiagramLanguage): AgentDiagramType {
   return AGENT_TYPES_BY_LANGUAGE[format][0];
 }
 
+function resolveSize(value: string | undefined, warnings: string[]): DiagramSize {
+  if (!value) {
+    return DEFAULT_DIAGRAM_SIZE;
+  }
+  if (isDiagramSize(value)) {
+    return value;
+  }
+  warnings.push(
+    `Unknown size "${value}". Known sizes: ${DIAGRAM_SIZES.join(", ")}. Using ${DEFAULT_DIAGRAM_SIZE}.`,
+  );
+  return DEFAULT_DIAGRAM_SIZE;
+}
+
+function resolveDetail(value: string | undefined, warnings: string[]): DiagramDetail {
+  if (!value) {
+    return DEFAULT_DIAGRAM_DETAIL;
+  }
+  if (isDiagramDetail(value)) {
+    return value;
+  }
+  warnings.push(
+    `Unknown detail "${value}". Known levels: ${DIAGRAM_DETAILS.join(", ")}. Using ${DEFAULT_DIAGRAM_DETAIL}.`,
+  );
+  return DEFAULT_DIAGRAM_DETAIL;
+}
+
+function resolveAudience(value: string | undefined, warnings: string[]): DiagramAudience {
+  if (!value) {
+    return DEFAULT_DIAGRAM_AUDIENCE;
+  }
+  if (isDiagramAudience(value)) {
+    return value;
+  }
+  warnings.push(
+    `Unknown audience "${value}". Known audiences: ${DIAGRAM_AUDIENCES.join(", ")}. Using ${DEFAULT_DIAGRAM_AUDIENCE}.`,
+  );
+  return DEFAULT_DIAGRAM_AUDIENCE;
+}
+
 export function planDiagram(input: {
   request: string;
   format?: string;
   diagramType?: string;
   pattern?: string;
   complexity?: DiagramComplexityCounts;
+  size?: string;
+  detail?: string;
+  audience?: string;
 }): DiagramPlan {
   const request = input.request.trim();
   const warnings: string[] = [];
@@ -544,6 +658,20 @@ export function planDiagram(input: {
     warnings.push(...budget.warnings);
   }
 
+  const size = resolveSize(input.size, warnings);
+  const detail = resolveDetail(input.detail, warnings);
+  const audience = resolveAudience(input.audience, warnings);
+  const detailReport = checkDiagramDetail(detail, input.complexity);
+  warnings.push(...detailReport.warnings);
+  const fidelity = diagramFidelity({
+    format,
+    diagramType,
+    size,
+    detail,
+    audience,
+    counts: input.complexity,
+  });
+
   const planReason = pattern ? `${reason} ${pattern.reason}` : reason;
 
   return {
@@ -553,6 +681,13 @@ export function planDiagram(input: {
     fileName: FILE_NAMES[format],
     reason: planReason,
     warnings,
+    size,
+    sizePreset: DIAGRAM_SIZE_PRESETS[size],
+    detail,
+    detailLimits: diagramDetailBudget(detail),
+    audience,
+    audienceRule: audienceRule(audience),
+    fidelity,
     ...(pattern
       ? {
           pattern: pattern.pattern,
@@ -648,11 +783,12 @@ function scaffoldD2(
   locale: ScaffoldLocale,
   direction: AgentDiagramDirection,
   count: number,
+  audience: DiagramAudience = DEFAULT_DIAGRAM_AUDIENCE,
 ): string {
   const flow = d2Direction(direction);
-  const user = scaffoldWord(locale, "user");
+  const user = scaffoldWord(locale, "user", audience);
   const api = "API";
-  const database = scaffoldWord(locale, "database");
+  const database = scaffoldWord(locale, "database", audience);
 
   if (diagramType === "sequence") {
     return [
@@ -661,8 +797,8 @@ function scaffoldD2(
       "checkout: {",
       "  shape: sequence_diagram",
       `  buyer: "${user}"`,
-      `  shop: "${scaffoldWord(locale, "shop")}"`,
-      `  buyer -> shop: "${scaffoldWord(locale, "order")}"`,
+      `  shop: "${scaffoldWord(locale, "shop", audience)}"`,
+      `  buyer -> shop: "${scaffoldWord(locale, "order", audience)}"`,
       "}",
     ].join("\n");
   }
@@ -677,12 +813,12 @@ function scaffoldD2(
       "  +name: string",
       "}",
       "",
-      `Order: "${scaffoldWord(locale, "order")}" {`,
+      `Order: "${scaffoldWord(locale, "order", audience)}" {`,
       "  shape: class",
       "  +id: int",
       "}",
       "",
-      `User -> Order: "${scaffoldWord(locale, "places")}"`,
+      `User -> Order: "${scaffoldWord(locale, "places", audience)}"`,
     ].join("\n");
   }
 
@@ -711,7 +847,7 @@ function scaffoldD2(
       `direction: ${flow}`,
       "",
       "network: {",
-      `  web: "${scaffoldWord(locale, "web")}"`,
+      `  web: "${scaffoldWord(locale, "web", audience)}"`,
       `  api: "${api}" {`,
       "    shape: hexagon",
       "  }",
@@ -742,11 +878,12 @@ function scaffoldStructurizr(
   locale: ScaffoldLocale,
   direction: AgentDiagramDirection,
   count: number,
+  audience: DiagramAudience = DEFAULT_DIAGRAM_AUDIENCE,
 ): string {
   const layout = autolayout(direction);
-  const customer = scaffoldWord(locale, "customer");
-  const shop = scaffoldWord(locale, "shop");
-  const mail = scaffoldWord(locale, "mail");
+  const customer = scaffoldWord(locale, "customer", audience);
+  const shop = scaffoldWord(locale, "shop", audience);
+  const mail = scaffoldWord(locale, "mail", audience);
 
   if (diagramType === "c4_container") {
     return [
@@ -864,9 +1001,13 @@ function scaffoldStructurizr(
   return lines.join("\n");
 }
 
-function scaffoldWiremark(locale: ScaffoldLocale, count: number): string {
-  const title = scaffoldWord(locale, "screen");
-  const action = scaffoldWord(locale, "continue");
+function scaffoldWiremark(
+  locale: ScaffoldLocale,
+  count: number,
+  audience: DiagramAudience = DEFAULT_DIAGRAM_AUDIENCE,
+): string {
+  const title = scaffoldWord(locale, "screen", audience);
+  const action = scaffoldWord(locale, "continue", audience);
   const lines = [
     "Wireframe #screen mobile",
     "  Stack column gap=2",
@@ -954,12 +1095,103 @@ function scaffoldPlantUml(
   }
 }
 
+const SIZE_HINT_FORMATS: ReadonlySet<AgentDiagramLanguage> = new Set([
+  "plantuml",
+  "mermaid",
+  "d2",
+]);
+
+function audienceNote(
+  format: AgentDiagramLanguage,
+  audience: DiagramAudience,
+): string | null {
+  if (audience === DEFAULT_DIAGRAM_AUDIENCE) {
+    return null;
+  }
+  const rule = audienceRule(audience);
+  switch (format) {
+    case "plantuml":
+      return `' audience ${audience}: ${rule}`;
+    case "mermaid":
+      return `%% audience ${audience}: ${rule}`;
+    case "d2":
+      return `# audience ${audience}: ${rule}`;
+    case "graphml":
+      return `<!-- audience ${audience}: ${rule} -->`;
+    default:
+      return null;
+  }
+}
+
+/**
+ * Size becomes source hints, not a crop: PlantUML skinparams, a Mermaid init
+ * directive, a D2 pad. A format without such knobs keeps its own typography and
+ * the caller gets a warning instead of a silently ignored handle.
+ */
+function applyOutputHandles(
+  format: AgentDiagramLanguage,
+  source: string,
+  preset: DiagramSizePreset,
+  audience: DiagramAudience,
+): string {
+  const note = audienceNote(format, audience);
+
+  if (format === "plantuml") {
+    const [head, ...rest] = source.split("\n");
+    const hints = [`skinparam defaultFontSize ${preset.fontPx}`];
+    if (head.startsWith("@startuml")) {
+      hints.push(
+        `skinparam nodesep ${preset.nodeSpacing}`,
+        `skinparam ranksep ${preset.rankSpacing}`,
+        `skinparam padding ${preset.pad}`,
+      );
+    }
+    return [head, ...hints, ...(note ? [note] : []), ...rest].join("\n");
+  }
+
+  if (format === "mermaid") {
+    const flowchart = /^(flowchart|graph)\b/.test(source.trimStart());
+    const config = {
+      themeVariables: { fontSize: `${preset.fontPx}px` },
+      ...(flowchart
+        ? {
+            flowchart: {
+              nodeSpacing: preset.nodeSpacing,
+              rankSpacing: preset.rankSpacing,
+              padding: preset.pad,
+            },
+          }
+        : {}),
+    };
+    const header = `%%{init: ${JSON.stringify(config)}}%%`;
+    return [header, ...(note ? [note] : []), source].join("\n");
+  }
+
+  if (format === "d2") {
+    return [
+      `vars: { d2-config: { pad: ${preset.pad} } }`,
+      ...(note ? [note] : []),
+      "",
+      source,
+    ].join("\n");
+  }
+
+  if (format === "graphml" && note) {
+    return source.replace("?>", `?>\n${note}`);
+  }
+
+  return source;
+}
+
 export function scaffoldDiagram(input: {
   format: AgentDiagramLanguage;
   diagramType?: AgentDiagramType;
   locale?: ScaffoldLocale;
   direction?: AgentDiagramDirection;
   count?: number;
+  size?: string;
+  detail?: string;
+  audience?: string;
 }): DiagramScaffold {
   const warnings: string[] = [];
   const format = input.format;
@@ -975,17 +1207,26 @@ export function scaffoldDiagram(input: {
   const locale = input.locale ?? "en";
   const direction = input.direction ?? "TB";
   const count = clampCount(input.count);
+  const size = resolveSize(input.size, warnings);
+  const detail = resolveDetail(input.detail, warnings);
+  const audience = resolveAudience(input.audience, warnings);
+  const sizeApplied = SIZE_HINT_FORMATS.has(format);
+  if (!sizeApplied) {
+    warnings.push(
+      `Size hints (${size}) are not wired for ${FORMAT_LABELS[format]}; the source keeps its default typography.`,
+    );
+  }
   let source: string;
 
   switch (format) {
     case "d2":
-      source = scaffoldD2(diagramType, locale, direction, count);
+      source = scaffoldD2(diagramType, locale, direction, count, audience);
       break;
     case "structurizr":
-      source = scaffoldStructurizr(diagramType, locale, direction, count);
+      source = scaffoldStructurizr(diagramType, locale, direction, count, audience);
       break;
     case "wiremark":
-      source = scaffoldWiremark(locale, count);
+      source = scaffoldWiremark(locale, count, audience);
       break;
     case "graphml":
       source = scaffoldGraphml(direction, count);
@@ -1000,12 +1241,25 @@ export function scaffoldDiagram(input: {
       source = "";
   }
 
+  source = applyOutputHandles(format, source, DIAGRAM_SIZE_PRESETS[size], audience);
+
   return {
     format,
     diagramType,
     source,
     fileName: FILE_NAMES[format],
     warnings,
+    size,
+    sizeApplied,
+    audience,
+    fidelity: diagramFidelity({
+      format,
+      diagramType,
+      size,
+      detail,
+      audience,
+      sizeApplied,
+    }),
   };
 }
 
@@ -1016,6 +1270,9 @@ export function generateDiagramScaffold(input: {
   locale?: AgentDiagramLocale;
   direction?: AgentDiagramDirection;
   count?: number;
+  size?: string;
+  detail?: string;
+  audience?: string;
 }): { plan: DiagramPlan; scaffold: DiagramScaffold } {
   const plan = planDiagram(input);
   const scaffold = scaffoldDiagram({
@@ -1024,12 +1281,16 @@ export function generateDiagramScaffold(input: {
     locale: input.locale,
     direction: input.direction,
     count: input.count,
+    size: plan.size,
+    detail: plan.detail,
+    audience: plan.audience,
   });
   return {
     plan,
     scaffold: {
       ...scaffold,
       warnings: [...plan.warnings, ...scaffold.warnings],
+      fidelity: plan.fidelity,
     },
   };
 }

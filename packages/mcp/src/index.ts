@@ -16,6 +16,16 @@ import { readLlmPageFile } from "./llm-page-file.js";
 const formatSchema = z.enum(AGENT_DIAGRAM_LANGUAGES);
 const localeSchema = z.enum(["ru", "en"]);
 const directionSchema = z.enum(["TB", "LR"]);
+const sizeSchema = z.enum(["doc-inline", "slide-16x9", "social-og", "print-a4"]);
+const detailSchema = z.enum(["faithful", "balanced", "simplified"]);
+const audienceSchema = z.enum(["engineer", "mixed", "executive"]);
+
+const sizeDescription =
+  "Frame preset: doc-inline (960px, 12px labels), slide-16x9 (1600×900, 16px), social-og (1200×630, 14px), print-a4 (1240×1754, 14px). Also widens node and rank spacing.";
+const detailDescription =
+  "Detail ceiling: faithful ≤24 nodes, balanced ≤12, simplified ≤7. Exceeding it returns a warning with the degradation ladder (decor → duplicates → leaf clusters → infrastructure); nothing is removed.";
+const audienceDescription =
+  "Label wording: engineer (technical names), mixed (plain nouns), executive (outcome names). Changes wording only, never the number of nodes.";
 
 const server = new McpServer({
   name: "code2graph",
@@ -118,7 +128,7 @@ server.registerTool(
   "plan_diagram",
   {
     description:
-      "Choose the Code2Graph language and diagram type for a natural-language request. Recognises semantic patterns (fan-in-queue, lifecycle-phase, secure-paved-road, governance-catalog, paired-policy-traces) and checks a complexity budget when counts are given. Does not generate source.",
+      "Choose the Code2Graph language and diagram type for a natural-language request. Recognises semantic patterns (fan-in-queue, lifecycle-phase, secure-paved-road, governance-catalog, paired-policy-traces) and checks a complexity budget when counts are given. Takes the output handles size, detail, and audience and returns a one-line fidelity receipt. Does not generate source.",
     inputSchema: {
       request: z.string().describe("What the diagram should show"),
       format: formatSchema
@@ -142,17 +152,20 @@ server.registerTool(
         })
         .optional()
         .describe("Planned counts; returns budget warnings when a per-type limit is exceeded"),
+      size: sizeSchema.optional().describe(sizeDescription),
+      detail: detailSchema.optional().describe(detailDescription),
+      audience: audienceSchema.optional().describe(audienceDescription),
     },
   },
-  async ({ request, format, pattern, complexity }) =>
-    jsonText(planDiagram({ request, format, pattern, complexity })),
+  async ({ request, format, pattern, complexity, size, detail, audience }) =>
+    jsonText(planDiagram({ request, format, pattern, complexity, size, detail, audience })),
 );
 
 server.registerTool(
   "generate_diagram",
   {
     description:
-      "Pick a Code2Graph language and return diagram source plus a rendered image. Uses CODE2GRAPH_API_URL for the source when set, otherwise builds the scaffold locally. The image is a separate MCP image block: PNG for PlantUML, D2, Structurizr (Kroki), GraphML, and WireMark; JPEG for Mermaid (mermaid.ink). Languages: PlantUML, Mermaid, GraphML, WireMark, D2, Structurizr.",
+      "Pick a Code2Graph language and return diagram source plus a rendered image. Uses CODE2GRAPH_API_URL for the source when set, otherwise builds the scaffold locally. The image is a separate MCP image block: PNG for PlantUML, D2, Structurizr (Kroki), GraphML, and WireMark; JPEG for Mermaid (mermaid.ink). Languages: PlantUML, Mermaid, GraphML, WireMark, D2, Structurizr. Output handles: size (frame and typography), detail (advisory node ceiling), audience (label wording); every result carries a one-line fidelity receipt.",
     inputSchema: {
       request: z.string().describe("What the diagram should show"),
       format: formatSchema.optional(),
@@ -160,9 +173,12 @@ server.registerTool(
       locale: localeSchema.optional(),
       direction: directionSchema.optional(),
       count: z.number().int().min(1).max(8).optional(),
+      size: sizeSchema.optional().describe(sizeDescription),
+      detail: detailSchema.optional().describe(detailDescription),
+      audience: audienceSchema.optional().describe(audienceDescription),
     },
   },
-  async ({ request, format, diagramType, locale, direction, count }) => {
+  async ({ request, format, diagramType, locale, direction, count, size, detail, audience }) => {
     const remote = await generateFromSite({
       request,
       format,
@@ -170,6 +186,9 @@ server.registerTool(
       locale,
       direction,
       count,
+      size,
+      detail,
+      audience,
     });
     if (remote) {
       return attachDiagramImage(remote);
@@ -182,12 +201,16 @@ server.registerTool(
       locale,
       direction,
       count,
+      size,
+      detail,
+      audience,
     });
     return attachDiagramImage({
       ...generated.plan,
       source: generated.scaffold.source,
       fileName: generated.scaffold.fileName,
       warnings: generated.scaffold.warnings,
+      fidelity: generated.scaffold.fidelity,
     });
   },
 );
@@ -199,6 +222,9 @@ async function generateFromSite(body: {
   locale?: AgentDiagramLocale;
   direction?: "TB" | "LR";
   count?: number;
+  size?: string;
+  detail?: string;
+  audience?: string;
 }): Promise<unknown | null> {
   const baseUrl = process.env.CODE2GRAPH_API_URL?.trim().replace(/\/$/, "");
   if (!baseUrl) {

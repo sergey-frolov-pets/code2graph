@@ -104,6 +104,9 @@ agentRouter.post("/diagrams/plan", async (context) => {
     ? body.pattern
     : undefined;
   const complexity = readComplexity("complexity" in body ? body.complexity : undefined);
+  const size = readHandle(body, "size");
+  const detail = readHandle(body, "detail");
+  const audience = readHandle(body, "audience");
 
   return context.json(
     planDiagram({
@@ -112,6 +115,9 @@ agentRouter.post("/diagrams/plan", async (context) => {
       diagramType,
       pattern,
       complexity,
+      size,
+      detail,
+      audience,
     }),
   );
 });
@@ -151,6 +157,9 @@ agentRouter.post("/diagrams/scaffold", async (context) => {
     locale: readLocale("locale" in body ? body.locale : undefined),
     direction: readDirection("direction" in body ? body.direction : undefined),
     count,
+    size: readHandle(body, "size"),
+    detail: readHandle(body, "detail"),
+    audience: readHandle(body, "audience"),
   });
 
   return context.json({
@@ -158,5 +167,11 @@ agentRouter.post("/diagrams/scaffold", async (context) => {
     source: result.scaffold.source,
     fileName: result.scaffold.fileName,
     warnings: result.scaffold.warnings,
+    fidelity: result.scaffold.fidelity,
   });
 });
+
+function readHandle(body: Record<string, unknown>, key: string): string | undefined {
+  const value = body[key];
+  return typeof value === "string" ? value : undefined;
+}
